@@ -315,3 +315,86 @@ class TestExtractModelMetadata:
         assert metadata[model_key].get("open") is False
         assert metadata[model_key].get("merge") is False
         assert metadata[model_key].get("trained_from_scratch") is False
+
+    def test_false_not_overwritten_by_later_true(self) -> None:
+        """Regression test: explicit False should not be overwritten by later True.
+
+        Before the fix, truthiness checks like `if old_value := existing.get(...)`
+        treated False as absent, allowing later True values to overwrite explicit False.
+        """
+        # First record with explicit False values
+        record_false = self._record(
+            name="org/model-bool-test",
+            additional_details={
+                "commercially_licensed": False,
+                "open": False,
+                "merge": "false",
+                "trained_from_scratch": False,
+                "model_url": "https://huggingface.co/org/model-bool-test",
+            },
+        )
+
+        # Second record with True values (later in processing order)
+        record_true = self._record(
+            name="org/model-bool-test",
+            additional_details={
+                "commercially_licensed": True,
+                "open": True,
+                "merge": "true",
+                "trained_from_scratch": True,
+                "model_url": "https://huggingface.co/org/model-bool-test",
+            },
+        )
+
+        metadata = extract_model_metadata(results=[record_false, record_true])
+        model_key = "org/model-bool-test"
+
+        # Explicit False values should be preserved (not overwritten by later True)
+        assert metadata[model_key].get("commercial") is False
+        assert metadata[model_key].get("open") is False
+        assert metadata[model_key].get("merge") is False
+        assert metadata[model_key].get("trained_from_scratch") is False
+
+    def test_fallback_model_url_stores_when_missing(self) -> None:
+        """Regression test: generated fallback URL should be stored when missing.
+
+        Before the fix, model_url_present remained False after generating fallback,
+        so the fallback URL was never stored.
+        """
+        # Record without explicit model_url (fallback will be generated)
+        # Use ollama/ prefix so generate_ollama_url can generate URL without API calls
+        record_no_url = self._record(
+            name="ollama/test-model",
+            additional_details={
+                "commercially_licensed": True,
+            },
+        )
+
+        metadata = extract_model_metadata(results=[record_no_url])
+        model_key = "ollama/test-model"
+
+        # Fallback URL should be stored
+        assert metadata[model_key].get("model_url") is not None
+        assert "ollama.com" in metadata[model_key]["model_url"]
+
+    def test_fallback_model_url_does_not_overwrite_explicit(self) -> None:
+        """Fallback URL should fill missing but not overwrite explicit URLs."""
+        # First record with explicit URL. Use ollama/ prefix to avoid API calls
+        record_with_url = self._record(
+            name="ollama/model-explicit-url",
+            additional_details={
+                "model_url": "https://explicit.example.com/model",
+            },
+        )
+
+        # Second record without URL (would generate fallback if first wasn't present)
+        record_no_url = self._record(
+            name="ollama/model-explicit-url",
+            additional_details={},
+        )
+
+        metadata = extract_model_metadata(results=[record_with_url, record_no_url])
+        model_key = "ollama/model-explicit-url"
+
+        # Explicit URL should be preserved (not overwritten by generated fallback)
+        assert metadata[model_key].get("model_url") == "https://explicit.example.com/model"

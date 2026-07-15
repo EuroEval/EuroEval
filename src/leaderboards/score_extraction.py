@@ -84,18 +84,25 @@ def _is_better_metadata(
         return False
 
     # For generative_type, prefer non-empty over empty
+    # When both are non-empty, preserve existing (don't overwrite)
     if field == "generative_type":
         if not old_value and new_value:
             return True
         if old_value and not new_value:
             return False
+        # Both non-empty: preserve existing
+        return False
 
     # For model_url, prefer non-empty over empty
+    # When both are non-empty (e.g. explicit URL vs generated fallback),
+    # preserve the existing explicit URL (don't overwrite)
     if field == "model_url":
         if not old_value and new_value:
             return True
         if old_value and not new_value:
             return False
+        # Both non-empty: preserve existing (don't overwrite explicit with generated)
+        return False
 
     # Default: prefer new value (preserves existing behaviour for equal values)
     return True
@@ -252,6 +259,9 @@ def extract_model_metadata(
             model_url = generate_model_url(
                 model_id=plain_model_id(get_model_name(record))
             )
+            # Fallback URL is stored but doesn't count as "explicitly present"
+            # (won't overwrite an existing explicit URL from another record)
+            model_url_present = True
 
         num_params = _to_float_or_nan(num_params_raw)
         vocab_size = _to_float_or_nan(vocab_size_raw)
@@ -275,81 +285,87 @@ def extract_model_metadata(
             # or misfiled results) from overwriting enriched metadata with
             # missing/default values. Only compare when the field is explicitly
             # present in the record.
-            # Float fields (parameters, vocabulary_size, context)
-            if old_value := existing.get("parameters"):
+            # Float fields (parameters, vocabulary_size, context) - use key
+            # presence checks (not truthiness) to preserve 0 values
+            if "parameters" in existing:
                 if _is_better_metadata(
-                    new_value=num_params, old_value=old_value, field="parameters"
+                    new_value=num_params,
+                    old_value=existing["parameters"],
+                    field="parameters",
                 ):
                     existing["parameters"] = num_params
             else:
                 existing["parameters"] = num_params
-            if old_value := existing.get("vocabulary_size"):
+            if "vocabulary_size" in existing:
                 if _is_better_metadata(
                     new_value=vocab_size,
-                    old_value=old_value,
+                    old_value=existing["vocabulary_size"],
                     field="vocabulary_size",
                 ):
                     existing["vocabulary_size"] = vocab_size
             else:
                 existing["vocabulary_size"] = vocab_size
-            if old_value := existing.get("context"):
+            if "context" in existing:
                 if _is_better_metadata(
-                    new_value=context, old_value=old_value, field="context"
+                    new_value=context, old_value=existing["context"], field="context"
                 ):
                     existing["context"] = context
             else:
                 existing["context"] = context
             # Boolean/string fields - only update if explicitly present
+            # Use explicit key presence checks (not truthiness) to preserve False values
             if generative_type_present:
-                if old_value := existing.get("generative_type"):
+                if "generative_type" in existing:
                     if _is_better_metadata(
                         new_value=generative_type,
-                        old_value=old_value,
+                        old_value=existing["generative_type"],
                         field="generative_type",
                     ):
                         existing["generative_type"] = generative_type
                 else:
                     existing["generative_type"] = generative_type
             if commercial_present:
-                if old_value := existing.get("commercial"):
+                if "commercial" in existing:
                     if _is_better_metadata(
                         new_value=commercially_licensed,
-                        old_value=old_value,
+                        old_value=existing["commercial"],
                         field="commercial",
                     ):
                         existing["commercial"] = commercially_licensed
                 else:
                     existing["commercial"] = commercially_licensed
             if merge_present:
-                if old_value := existing.get("merge"):
+                if "merge" in existing:
                     if _is_better_metadata(
-                        new_value=merge, old_value=old_value, field="merge"
+                        new_value=merge, old_value=existing["merge"], field="merge"
                     ):
                         existing["merge"] = merge
                 else:
                     existing["merge"] = merge
             if open_present:
-                if old_value := existing.get("open"):
+                if "open" in existing:
                     if _is_better_metadata(
-                        new_value=open_weights, old_value=old_value, field="open"
+                        new_value=open_weights, old_value=existing["open"], field="open"
                     ):
                         existing["open"] = open_weights
                 else:
                     existing["open"] = open_weights
             if trained_present:
-                if old_value := existing.get("trained_from_scratch"):
+                if "trained_from_scratch" in existing:
                     if _is_better_metadata(
                         new_value=trained_from_scratch,
-                        old_value=old_value,
+                        old_value=existing["trained_from_scratch"],
                         field="trained_from_scratch",
                     ):
                         existing["trained_from_scratch"] = trained_from_scratch
                 else:
                     existing["trained_from_scratch"] = trained_from_scratch
             if model_url_present:
-                if old_value := existing.get("model_url"):
+                if "model_url" in existing:
                     if _is_better_metadata(
-                        new_value=model_url, old_value=old_value, field="model_url"
+                        new_value=model_url,
+                        old_value=existing["model_url"],
+                        field="model_url",
                     ):
                         existing["model_url"] = model_url
                 else:
