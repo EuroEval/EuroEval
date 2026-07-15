@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from leaderboards.score_extraction import _is_better_metadata, extract_model_metadata
 
 
@@ -456,3 +458,92 @@ class TestExtractModelMetadata:
         # URL should be present (first generated fallback preserved)
         assert metadata[model_key].get("model_url") is not None
         assert "ollama.com" in metadata[model_key]["model_url"]
+
+    def test_all_standard_metadata_keys_present_for_all_models(self) -> None:
+        """Regression test: all models have all standard metadata keys.
+
+        Before the fix, extract_model_metadata() only set metadata fields when
+        explicitly present in records, causing KeyError in generate_dataframe()
+        which expects all standard columns to exist for every model.
+
+        This test verifies that models with missing metadata fields still get
+        all standard keys with appropriate defaults.
+        """
+        # Record with full metadata (use ollama/ prefix to avoid API calls)
+        record_full = self._record(
+            name="ollama/model-full",
+            additional_details={
+                "generative_type": "instruction_tuned",
+                "commercially_licensed": True,
+                "open": True,
+                "merge": "false",
+                "trained_from_scratch": True,
+                "num_model_parameters": "7000000000",
+                "vocabulary_size": "32000",
+                "max_sequence_length": "4096",
+                "model_url": "https://huggingface.co/ollama/model-full",
+            },
+        )
+
+        # Record lacking generative_type and other metadata
+        record_missing = self._record(
+            name="ollama/model-missing-generative-type",
+            additional_details={
+                # No generative_type field
+                "commercially_licensed": False,  # Explicit False should be preserved
+            },
+        )
+
+        metadata = extract_model_metadata(results=[record_full, record_missing])
+
+        # Both models should have all standard keys
+        standard_keys = [
+            "parameters",
+            "vocabulary_size",
+            "context",
+            "generative_type",
+            "commercial",
+            "merge",
+            "open",
+            "trained_from_scratch",
+            "model_url",
+        ]
+
+        model_full_key = "ollama/model-full"
+        model_missing_key = "ollama/model-missing-generative-type"
+
+        # Model with full metadata should have all keys
+        for key in standard_keys:
+            assert key in metadata[model_full_key], (
+                f"Model {model_full_key!r} missing key {key!r}"
+            )
+
+        # Model with missing metadata should also have all keys (with defaults)
+        for key in standard_keys:
+            assert key in metadata[model_missing_key], (
+                f"Model {model_missing_key!r} missing key {key!r}"
+            )
+
+        # Verify specific default values for the model with missing metadata
+        assert metadata[model_missing_key]["generative_type"] is None
+        assert metadata[model_missing_key]["commercial"] is False  # Explicit False
+        assert metadata[model_missing_key]["merge"] is False  # Default
+        assert metadata[model_missing_key]["open"] is None  # Default
+        assert metadata[model_missing_key]["trained_from_scratch"] is None  # Default
+        assert math.isnan(metadata[model_missing_key]["parameters"])
+        assert math.isnan(metadata[model_missing_key]["vocabulary_size"])
+        assert math.isnan(metadata[model_missing_key]["context"])
+        # model_url should have generated fallback for ollama model
+        assert metadata[model_missing_key]["model_url"] is not None
+        assert "ollama.com" in metadata[model_missing_key]["model_url"]
+
+        # Verify full metadata model has correct values
+        assert metadata[model_full_key]["generative_type"] == "instruction_tuned"
+        assert metadata[model_full_key]["commercial"] is True
+        assert metadata[model_full_key]["merge"] is False
+        assert metadata[model_full_key]["open"] is True
+        assert metadata[model_full_key]["trained_from_scratch"] is True
+        assert metadata[model_full_key]["parameters"] == 7_000_000_000.0
+        assert metadata[model_full_key]["vocabulary_size"] == 32_000.0
+        assert metadata[model_full_key]["context"] == 4_096.0
+        assert metadata[model_full_key]["model_url"] == "https://huggingface.co/ollama/model-full"

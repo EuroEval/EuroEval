@@ -406,6 +406,30 @@ def extract_model_metadata(
                     if scored is not None:
                         existing[f"{dataset}_scored"] = scored
 
+    # Ensure every model has all standard metadata keys with defaults.
+    # This prevents KeyError/AssertionError in generate_dataframe() which
+    # expects these columns to exist for all models.
+    standard_keys_defaults: dict[str, t.Any] = {
+        "parameters": math.nan,
+        "vocabulary_size": math.nan,
+        "context": math.nan,
+        "generative_type": None,
+        "commercial": False,
+        "merge": False,
+        "open": None,
+        "trained_from_scratch": None,
+        "model_url": None,
+    }
+    for model_id, metadata in metadata_dict.items():
+        for key, default_value in standard_keys_defaults.items():
+            if key not in metadata:
+                # For model_url, try to generate a fallback if missing
+                if key == "model_url":
+                    fallback_url = generate_model_url(model_id=model_id)
+                    metadata[key] = fallback_url if fallback_url else default_value
+                else:
+                    metadata[key] = default_value
+
     logger.info("Extracted model metadata.")
     return metadata_dict
 
