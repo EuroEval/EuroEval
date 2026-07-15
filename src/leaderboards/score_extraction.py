@@ -21,7 +21,7 @@ from requests.exceptions import RequestException
 
 from euroeval.logging_utils import log_once
 
-from .constants import TRAINED_FROM_SCRATCH_PATTERNS
+from .constants import PERMISSIVE_LICENSES, TRAINED_FROM_SCRATCH_PATTERNS
 from .link_generation import generate_model_url
 from .record_fields import (
     deduplicate_records,
@@ -121,24 +121,6 @@ def _is_better_metadata(
     return True
 
 
-# Permissive licences that imply commercial use is allowed
-_PERMISSIVE_LICENSES: frozenset[str] = frozenset(
-    {
-        "apache-2.0",
-        "mit",
-        "bsd-3-clause",
-        "bsd-2-clause",
-        "isc",
-        "cc-by-4.0",
-        "cc-by-3.0",
-        "cc0-1.0",
-        "unlicense",
-        "wtfpl",
-        "0bsd",
-    }
-)
-
-
 def _infer_missing_metadata(metadata_dict: dict[str, dict[str, t.Any]]) -> None:
     """Infer missing metadata fields from HF model info and patterns.
 
@@ -198,7 +180,7 @@ def _infer_missing_metadata(metadata_dict: dict[str, dict[str, t.Any]]) -> None:
                                 licence = tag.removeprefix("license:").lower()
                                 break
                     hf_license_cache[hf_model_id] = (
-                        licence in _PERMISSIVE_LICENSES if licence else None
+                        licence in PERMISSIVE_LICENSES if licence else None
                     )
                 except (
                     GatedRepoError,

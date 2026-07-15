@@ -48,6 +48,28 @@ from euroeval.languages import (
 )
 
 # ---------------------------------------------------------------------------
+# Permissive licences
+# ---------------------------------------------------------------------------
+
+# Licences that imply commercial use is allowed. Used for best-effort
+# inference of ``commercially_licensed`` metadata from Hugging Face model info.
+PERMISSIVE_LICENSES: frozenset[str] = frozenset(
+    {
+        "apache-2.0",
+        "mit",
+        "bsd-3-clause",
+        "bsd-2-clause",
+        "isc",
+        "cc-by-4.0",
+        "cc-by-3.0",
+        "cc0-1.0",
+        "unlicense",
+        "wtfpl",
+        "0bsd",
+    }
+)
+
+# ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 
