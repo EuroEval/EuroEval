@@ -22,42 +22,75 @@ class TestIsBetterMetadata:
             is True
         )
 
-    def test_prefers_true_over_false_for_booleans(self) -> None:
-        """For boolean fields, True is preferred over False."""
+    def test_prefers_present_over_absent_for_booleans(self) -> None:
+        """For boolean fields, present (non-None) is preferred over absent (None).
+
+        Explicit False is legitimate metadata and should be preserved.
+        """
+        # Present value preferred over absent
         assert (
-            _is_better_metadata(new_value=True, old_value=False, field="commercial")
+            _is_better_metadata(new_value=True, old_value=None, field="commercial")
             is True
         )
         assert (
-            _is_better_metadata(new_value=False, old_value=True, field="commercial")
+            _is_better_metadata(new_value=False, old_value=None, field="commercial")
+            is True
+        )
+        # Absent value not preferred over present
+        assert (
+            _is_better_metadata(new_value=None, old_value=True, field="commercial")
+            is False
+        )
+        assert (
+            _is_better_metadata(new_value=None, old_value=False, field="commercial")
+            is False
+        )
+        # Equal presence: neither is "better" (don't overwrite existing)
+        assert (
+            _is_better_metadata(new_value=False, old_value=False, field="commercial")
             is False
         )
 
-    def test_prefers_true_over_false_for_merge(self) -> None:
-        """For merge field, True is preferred over False."""
+    def test_prefers_present_over_absent_for_merge(self) -> None:
+        """For merge field, present (non-None) is preferred over absent (None).
+
+        Explicit False is legitimate metadata and should be preserved.
+        """
         assert (
-            _is_better_metadata(new_value=True, old_value=False, field="merge") is True
+            _is_better_metadata(new_value=False, old_value=None, field="merge") is True
         )
         assert (
-            _is_better_metadata(new_value=False, old_value=True, field="merge") is False
+            _is_better_metadata(new_value=None, old_value=False, field="merge") is False
         )
 
-    def test_prefers_true_over_false_for_open(self) -> None:
-        """For open field, True is preferred over False."""
+    def test_prefers_present_over_absent_for_open(self) -> None:
+        """For open field, present (non-None) is preferred over absent (None).
+
+        Explicit False is legitimate metadata and should be preserved.
+        """
         assert (
-            _is_better_metadata(new_value=True, old_value=False, field="open") is True
+            _is_better_metadata(new_value=False, old_value=None, field="open") is True
         )
         assert (
-            _is_better_metadata(new_value=False, old_value=True, field="open") is False
+            _is_better_metadata(new_value=None, old_value=False, field="open") is False
         )
 
-    def test_prefers_true_over_false_for_trained_from_scratch(self) -> None:
-        """For trained_from_scratch field, True is preferred over False."""
+    def test_prefers_present_over_absent_for_trained_from_scratch(self) -> None:
+        """For trained_from_scratch field, present (non-None) is preferred over absent.
+
+        Explicit False is legitimate metadata and should be preserved.
+        """
         assert (
             _is_better_metadata(
-                new_value=True, old_value=False, field="trained_from_scratch"
+                new_value=False, old_value=None, field="trained_from_scratch"
             )
             is True
+        )
+        assert (
+            _is_better_metadata(
+                new_value=None, old_value=False, field="trained_from_scratch"
+            )
+            is False
         )
 
     def test_prefers_non_nan_over_nan_for_floats(self) -> None:
@@ -242,3 +275,43 @@ class TestExtractModelMetadata:
         assert metadata[model_key].get("commercial") is True
         assert metadata[model_key].get("open") is True
         assert metadata[model_key].get("trained_from_scratch") is True
+
+    def test_false_metadata_preserved_against_stale_none(self) -> None:
+        """Legitimate False metadata should be preserved against stale None values.
+
+        Regression test: models with merge=False, open=False, etc. should not
+        have their explicit False values overwritten by later stale records
+        with None/missing metadata.
+        """
+        # Record with explicit False values (legitimate metadata)
+        record_with_false = self._record(
+            name="org/model-false",
+            additional_details={
+                "commercially_licensed": False,
+                "open": False,
+                "merge": "false",
+                "trained_from_scratch": False,
+                "model_url": "https://huggingface.co/org/model-false",
+            },
+        )
+
+        # Stale record with None/missing metadata
+        stale = self._record(
+            name="org/model-false",
+            additional_details={
+                "commercially_licensed": None,
+                "open": None,
+                "merge": None,
+                "trained_from_scratch": None,
+                "model_url": "https://huggingface.co/org/model-false",
+            },
+        )
+
+        metadata = extract_model_metadata(results=[record_with_false, stale])
+        model_key = "org/model-false"
+
+        # Explicit False values should be preserved
+        assert metadata[model_key].get("commercial") is False
+        assert metadata[model_key].get("open") is False
+        assert metadata[model_key].get("merge") is False
+        assert metadata[model_key].get("trained_from_scratch") is False
