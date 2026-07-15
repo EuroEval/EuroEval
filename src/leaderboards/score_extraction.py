@@ -93,15 +93,16 @@ def _is_better_metadata(
         # Both non-empty: preserve existing
         return False
 
-    # For model_url, prefer non-empty over empty
-    # When both are non-empty (e.g. explicit URL vs generated fallback),
-    # preserve the existing explicit URL (don't overwrite)
+    # For model_url, prefer non-empty over empty.
+    # Note: explicit vs generated fallback distinction is handled in
+    # extract_model_metadata, not here. This function only handles
+    # empty vs non-empty comparison.
     if field == "model_url":
         if not old_value and new_value:
             return True
         if old_value and not new_value:
             return False
-        # Both non-empty: preserve existing (don't overwrite explicit with generated)
+        # Both non-empty: preserve existing
         return False
 
     # Default: prefer new value (preserves existing behaviour for equal values)
@@ -219,6 +220,8 @@ def extract_model_metadata(
     """
     logger.info("Extracting model metadata...")
     metadata_dict: dict[str, dict[str, t.Any]] = defaultdict(dict)
+    # Track whether each model's URL is explicit (from record) vs generated fallback
+    model_url_explicit: dict[str, bool] = {}
     for record in results:
         model_ids = extract_model_ids_from_record(record=record)
 
@@ -250,18 +253,21 @@ def extract_model_metadata(
         # leaderboard (which reads raw records without that filter). Generate
         # the URL on the fly when it's missing so they still get an anchor tag.
         model_url = additional.get("model_url", None)
-        model_url_present = (
+        model_url_explicit_record = (
             "model_url" in additional
             and additional["model_url"] is not None
             and additional["model_url"] != ""
         )
+        # model_url_present indicates if we have a URL to store (explicit or generated)
+        model_url_present = model_url_explicit_record
         if model_url is None:
             model_url = generate_model_url(
                 model_id=plain_model_id(get_model_name(record))
             )
-            # Fallback URL is stored but doesn't count as "explicitly present"
-            # (won't overwrite an existing explicit URL from another record)
-            model_url_present = True
+            # Mark as present (we have a URL to potentially store)
+            # but model_url_explicit_record remains False (it's generated, not explicit)
+            if model_url is not None:
+                model_url_present = True
 
         num_params = _to_float_or_nan(num_params_raw)
         vocab_size = _to_float_or_nan(vocab_size_raw)
@@ -362,14 +368,31 @@ def extract_model_metadata(
                     existing["trained_from_scratch"] = trained_from_scratch
             if model_url_present:
                 if "model_url" in existing:
-                    if _is_better_metadata(
-                        new_value=model_url,
-                        old_value=existing["model_url"],
-                        field="model_url",
-                    ):
-                        existing["model_url"] = model_url
+                    # Check if existing URL is explicit (from record) vs generated
+                    existing_is_explicit = model_url_explicit.get(model_id, False)
+                    # Only allow update if:
+                    # 1. Existing is generated (not explicit), or
+                    # 2. Both are explicit and new is "better" per _is_better_metadata
+                    if not existing_is_explicit:
+                        # Existing is generated; explicit always wins, generated
+                        # only fills if missing (already handled by else branch)
+                        if model_url_explicit_record:
+                            # New is explicit, replace generated
+                            existing["model_url"] = model_url
+                            model_url_explicit[model_id] = True
+                        # else: both are generated, keep existing (first-come)
+                    else:
+                        # Existing is explicit; only replace with better explicit
+                        if model_url_explicit_record and _is_better_metadata(
+                            new_value=model_url,
+                            old_value=existing["model_url"],
+                            field="model_url",
+                        ):
+                            existing["model_url"] = model_url
+                            # model_url_explicit already True
                 else:
                     existing["model_url"] = model_url
+                    model_url_explicit[model_id] = model_url_explicit_record
             if dataset:
                 existing[f"{dataset}_version"] = version
                 # Include failure counts for all versions. For versions after

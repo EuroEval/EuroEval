@@ -398,3 +398,61 @@ class TestExtractModelMetadata:
 
         # Explicit URL should be preserved (not overwritten by generated fallback)
         assert metadata[model_key].get("model_url") == "https://explicit.example.com/model"
+
+    def test_explicit_model_url_replaces_fallback(self) -> None:
+        """Regression test: explicit URL should replace generated fallback.
+
+        Before the fix, if a record without model_url was processed before one
+        with an explicit URL for the same model, the generated fallback blocked
+        the explicit URL from being stored.
+        """
+        # First record without URL (fallback will be generated and stored)
+        # Use ollama/ prefix so generate_ollama_url can generate URL without API calls
+        record_no_url = self._record(
+            name="ollama/model-fallback-first",
+            additional_details={
+                "commercially_licensed": True,
+            },
+        )
+
+        # Second record with explicit URL
+        record_with_url = self._record(
+            name="ollama/model-fallback-first",
+            additional_details={
+                "model_url": "https://explicit.example.com/model",
+            },
+        )
+
+        metadata = extract_model_metadata(results=[record_no_url, record_with_url])
+        model_key = "ollama/model-fallback-first"
+
+        # Explicit URL should replace the generated fallback
+        assert metadata[model_key].get("model_url") == "https://explicit.example.com/model"
+
+    def test_generated_fallback_preserved_when_no_explicit_url(self) -> None:
+        """Regression test: generated fallback kept if no explicit URL arrives.
+
+        When multiple records without explicit URLs are processed for the same model,
+        the first generated fallback should be preserved.
+        """
+        # Two records without explicit URLs for the same model
+        record_no_url_1 = self._record(
+            name="ollama/model-multiple-fallbacks",
+            additional_details={
+                "commercially_licensed": True,
+            },
+        )
+
+        record_no_url_2 = self._record(
+            name="ollama/model-multiple-fallbacks",
+            additional_details={
+                "open": True,
+            },
+        )
+
+        metadata = extract_model_metadata(results=[record_no_url_1, record_no_url_2])
+        model_key = "ollama/model-multiple-fallbacks"
+
+        # URL should be present (first generated fallback preserved)
+        assert metadata[model_key].get("model_url") is not None
+        assert "ollama.com" in metadata[model_key]["model_url"]
