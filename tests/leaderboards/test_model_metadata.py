@@ -1,0 +1,230 @@
+"""Tests for the `leaderboards.model_metadata` module.
+
+These tests verify that model metadata lookups correctly handle validation
+and zero-shot suffixes (e.g., ``(val)``, ``(zero-shot)``) by normalising them
+to the base model ID before cache operations.
+"""
+
+from __future__ import annotations
+
+import re
+from unittest.mock import MagicMock, Mock, patch
+
+from huggingface_hub.errors import RepositoryNotFoundError
+
+from leaderboards.cache import Cache
+from leaderboards.model_metadata import (
+    is_commercially_licensed,
+    is_merge,
+    is_open,
+    is_trained_from_scratch,
+)
+
+
+def _record(model_name: str, generative: bool = True) -> dict:
+    """Create a minimal record for testing.
+
+    Args:
+        model_name:
+            The model name for the record.
+        generative (optional):
+            Whether the model is generative. Defaults to True.
+
+    Returns:
+        A minimal record dictionary.
+    """
+    return {
+        "model_info": {"name": model_name, "additional_details": {}},
+        "generative": generative,
+    }
+
+
+class TestValSuffixMetadataLookup:
+    """Tests that validation/zero-shot suffixes do not break metadata lookups."""
+
+    def test_is_commercially_licensed_uses_base_model_cache(self) -> None:
+        """A model with (val) suffix should use cached metadata from base model.
+
+        Regression test for issue where ``Qwen/Qwen3.6-27B-FP8 (val)`` was
+        treated as an invalid HF repo and metadata defaulted to false instead
+        of using the cached value for ``Qwen/Qwen3.6-27B-FP8``.
+        """
+        cache = Cache()
+        # Pre-populate cache with base model metadata
+        cache.commercially_licensed["Qwen/Qwen3.6-27B-FP8"] = True
+
+        # Record with (val) suffix should use the base model's cached value
+        record = _record(model_name="Qwen/Qwen3.6-27B-FP8 (val)")
+        result = is_commercially_licensed(record=record, cache=cache)
+
+        assert result is True
+        # The cache key should be the normalised model ID, not the suffixed one
+        assert "Qwen/Qwen3.6-27B-FP8" in cache.commercially_licensed
+
+    def test_is_open_uses_base_model_cache(self) -> None:
+        """A model with (val) suffix should use cached openness from base model."""
+        cache = Cache()
+        cache.open["meta-llama/Llama-3.1-8B"] = True
+
+        record = _record(model_name="meta-llama/Llama-3.1-8B (val)")
+        result = is_open(record=record, cache=cache)
+
+        assert result is True
+
+    def test_is_merge_uses_base_model_cache(self) -> None:
+        """A model with (zero-shot) suffix should use cached merge status."""
+        cache = Cache()
+        cache.merge["HuggingFaceH4/zephyr-7b-beta"] = False
+
+        record = _record(model_name="HuggingFaceH4/zephyr-7b-beta (zero-shot)")
+        result = is_merge(record=record, cache=cache)
+
+        assert result is False
+
+    def test_is_trained_from_scratch_uses_base_model_cache(self) -> None:
+        """A model with (val) suffix should use cached scratch-trained status."""
+        cache = Cache()
+        cache.trained_from_scratch["mistralai/Mistral-7B-v0.1"] = True
+
+        record = _record(model_name="mistralai/Mistral-7B-v0.1 (val)")
+        result = is_trained_from_scratch(
+            record=record, trained_from_scratch_patterns=[], cache=cache
+        )
+
+        assert result is True
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_is_merge_looks_up_base_model_on_hf(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """HfApi.model_info should be called with base model ID, not suffixed one.
+
+        This test verifies that when metadata isn't cached, the HF API is called
+        with the normalised model ID (without suffix) rather than the raw ID.
+        """
+        cache = Cache()
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+
+        # Model info with merge tags
+        mock_model_info = MagicMock()
+        mock_model_info.tags = ["merge", "mergekit"]
+        mock_api.model_info.return_value = mock_model_info
+
+        # Record with (val) suffix
+        record = _record(model_name="openchat/openchat-3.5-1210 (val)")
+
+        result = is_merge(record=record, cache=cache)
+
+        # Should return True (has merge tag)
+        assert result is True
+        # HfApi.model_info should have been called with base model ID
+        mock_api.model_info.assert_called_once_with(
+            repo_id="openchat/openchat-3.5-1210"
+        )
+        # Cache should store under normalised key
+        assert "openchat/openchat-3.5-1210" in cache.merge
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_is_open_looks_up_base_model_on_hf(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """HfApi.model_info should be called with base model ID for openness check."""
+        cache = Cache()
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+
+        # Model exists on HF (no exception raised)
+        mock_api.model_info.return_value = MagicMock()
+
+        record = _record(model_name="google/gemma-2-9b (zero-shot, val)")
+
+        result = is_open(record=record, cache=cache)
+
+        assert result is True
+        mock_api.model_info.assert_called_once_with(repo_id="google/gemma-2-9b")
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_is_open_returns_false_for_nonexistent_base_model(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Non-existent base model should return False for openness.
+
+        When a model with suffix isn't found on HF (using base ID), it should
+        be treated as closed, not raise an error.
+        """
+        cache = Cache()
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+
+        # RepositoryNotFoundError requires a response object
+        mock_response = Mock()
+        mock_response.status_code = 404
+        mock_response.headers = {}
+        mock_response.text = "Not found"
+        mock_response.request = Mock()
+        mock_response.request.url = "https://huggingface.co/api/models/fake"
+
+        mock_api.model_info.side_effect = RepositoryNotFoundError(
+            "Model not found", response=mock_response
+        )
+
+        record = _record(model_name="unknown-org/unknown-model (val)")
+
+        result = is_open(record=record, cache=cache)
+
+        assert result is False
+        mock_api.model_info.assert_called_once_with(repo_id="unknown-org/unknown-model")
+
+    def test_combined_zero_shot_val_suffix(self) -> None:
+        """Combined (zero-shot, val) suffix should also normalise correctly."""
+        cache = Cache()
+        cache.commercially_licensed["Qwen/Qwen2.5-72B-Instruct"] = True
+
+        record = _record(model_name="Qwen/Qwen2.5-72B-Instruct (zero-shot, val)")
+        result = is_commercially_licensed(record=record, cache=cache)
+
+        assert result is True
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_merge_detection_ignores_suffix(self, mock_hf_api_class: MagicMock) -> None:
+        """Merge detection via HF tags should work regardless of suffix."""
+        cache = Cache()
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+
+        # Model without merge tags
+        mock_model_info = MagicMock()
+        mock_model_info.tags = ["pytorch", "safetensors"]
+        mock_api.model_info.return_value = mock_model_info
+
+        record = _record(model_name="microsoft/Phi-3-mini-4k-instruct (val)")
+
+        result = is_merge(record=record, cache=cache)
+
+        assert result is False
+        mock_api.model_info.assert_called_once_with(
+            repo_id="microsoft/Phi-3-mini-4k-instruct"
+        )
+
+
+class TestTrainedFromScratchPatterns:
+    """Tests for trained_from_scratch pattern matching with suffixes."""
+
+    def test_pattern_matching_strips_suffix_first(self) -> None:
+        """Pattern matching should happen on normalised model ID.
+
+        This ensures that patterns like ``^fresh/.*`` match even when the
+        record has a (val) suffix.
+        """
+        cache = Cache()
+        # Pattern for "fresh" models
+        patterns = [re.compile(r"^fresh/.*")]
+
+        record = _record(model_name="fresh/my-custom-model (val)")
+        result = is_trained_from_scratch(
+            record=record, trained_from_scratch_patterns=patterns, cache=cache
+        )
+
+        # Should match the pattern and return True without prompting
+        assert result is True

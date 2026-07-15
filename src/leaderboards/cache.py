@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 from euroeval.string_utils import split_model_id
 
 from .jsonl_io import load_records_from_jsonl_files
+from .records import plain_model_id
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ class Cache:
             model_id: str = model_name
             if (match := re.search(r">(.+?)<", model_name)) is not None:
                 model_id = match.group(1)
-            model_id = split_model_id(model_id=model_id).model_id
+            model_id = split_model_id(model_id=plain_model_id(model_id)).model_id
 
             additional = record["model_info"]["additional_details"]
             if "generative_type" in additional:
