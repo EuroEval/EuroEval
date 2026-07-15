@@ -13,14 +13,20 @@ import typing as t
 import warnings
 from copy import deepcopy
 
+import httpx
 from huggingface_hub import HfApi
-from huggingface_hub.errors import HFValidationError
+from huggingface_hub.errors import (
+    GatedRepoError,
+    HFValidationError,
+    LocalTokenNotFoundError,
+)
 from huggingface_hub.hf_api import RepositoryNotFoundError
+from requests.exceptions import RequestException
 
 from euroeval.string_utils import split_model_id
 
 from .cache import Cache
-from .constants import GENERATIVE_TYPE_KEYWORDS, RESULTS_DIR
+from .constants import GENERATIVE_TYPE_KEYWORDS, PERMISSIVE_LICENSES, RESULTS_DIR
 from .link_generation import ask_user_to_remove_model, generate_model_url
 from .record_fields import get_few_shot, get_task, get_version
 from .records import get_bool_field, get_model_name, plain_model_id
@@ -263,8 +269,69 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
             logger.error("Invalid input. Please try again.")
 
 
+def _infer_commercial_from_hf_licence(
+    model_id: str, licence_cache: dict[str, bool | None]
+) -> bool | None:
+    """Infer commercial licence status from HF model info.
+
+    Best-effort function that checks the Hugging Face model page for a
+    permissive licence tag. Returns ``True`` for permissive licences
+    (MIT, Apache-2.0, BSD, etc.), ``None`` for unknown/non-permissive
+    licences or on any HF/network/auth error. Never crashes.
+
+    Caches lookups per model_id to avoid repeated API calls.
+
+    Args:
+        model_id:
+            The Hugging Face model ID (e.g. ``BAAI/bge-m3``).
+        licence_cache:
+            Cache dict mapping model IDs to inferred licence status.
+
+    Returns:
+        ``True`` if licence is permissive, ``False`` if explicitly
+        non-permissive (not possible with current logic), or ``None``
+        if unknown or on error.
+    """
+    if model_id in licence_cache:
+        return licence_cache[model_id]
+
+    try:
+        api = HfApi()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            model_info = api.model_info(repo_id=model_id)
+    except (
+        GatedRepoError,
+        LocalTokenNotFoundError,
+        RepositoryNotFoundError,
+        HFValidationError,
+        RequestException,
+        OSError,
+        httpx.HTTPError,
+        httpx.TransportError,
+    ):
+        licence_cache[model_id] = None
+        return None
+
+    # Extract licence from tags (format: "license:apache-2.0")
+    licence: str | None = None
+    if model_info.tags:
+        for tag in model_info.tags:
+            if tag.startswith("license:"):
+                licence = tag.removeprefix("license:").lower()
+                break
+
+    result = licence in PERMISSIVE_LICENSES if licence else None
+    licence_cache[model_id] = result
+    return result
+
+
 def is_commercially_licensed(record: dict, cache: Cache) -> bool:
-    """Asks if a model is commercially licensed.
+    """Determine if a model is commercially licensed.
+
+    First checks the cache, then tries best-effort inference from the
+    Hugging Face model licence. Falls back to user prompt if licence
+    cannot be inferred.
 
     Args:
         record:
@@ -282,11 +349,24 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
     # Assume that non-generative models are always commercially licensed
     if not get_bool_field(record, "generative", True):
         cache.commercially_licensed[model_id] = True
+        return True
 
+    # Check cache first
+    if model_id in cache.commercially_licensed:
+        return cache.commercially_licensed[model_id]
+
+    # Best-effort inference from HF licence
+    # Use a separate cache dict since inference can return None on error
+    licence_cache: dict[str, bool | None] = {}
+    inferred = _infer_commercial_from_hf_licence(
+        model_id=model_id, licence_cache=licence_cache
+    )
+    if inferred is not None:
+        cache.commercially_licensed[model_id] = inferred
+        return inferred
+
+    # Fall back to user prompt
     while True:
-        if model_id in cache.commercially_licensed:
-            return cache.commercially_licensed[model_id]
-
         msg = f"Is {model_id!r} commercially licensed?"
         if "/" in model_id:
             msg += f" (https://hf.co/{model_id})"
@@ -294,10 +374,11 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
         user_input = input(msg)
         if user_input.lower() in {"y", "yes"}:
             cache.commercially_licensed[model_id] = True
-        elif user_input.lower() in {"n", "no"}:
+            return True
+        if user_input.lower() in {"n", "no"}:
             cache.commercially_licensed[model_id] = False
-        else:
-            logger.error("Invalid input. Please try again.")
+            return False
+        logger.error("Invalid input. Please try again.")
 
 
 def is_trained_from_scratch(

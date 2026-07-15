@@ -10,7 +10,8 @@ from __future__ import annotations
 import re
 from unittest.mock import MagicMock, Mock, patch
 
-from huggingface_hub.errors import RepositoryNotFoundError
+import httpx
+from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
 
 from leaderboards.cache import Cache
 from leaderboards.model_metadata import (
@@ -228,3 +229,216 @@ class TestTrainedFromScratchPatterns:
 
         # Should match the pattern and return True without prompting
         assert result is True
+
+
+class TestCommercialLicenceInference:
+    """Tests for best-effort commercial licence inference from HF model info."""
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_permissive_licence_inferred_without_prompt(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Model with permissive licence (e.g. MIT) returns True without input().
+
+        Regression test: BAAI/bge-m3 with licence:mit should not prompt.
+        """
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+
+        # Mock model_info to return MIT licence
+        mock_model_info = MagicMock()
+        mock_model_info.tags = ["transformers", "license:mit", "safetensors"]
+        mock_api.model_info.return_value = mock_model_info
+
+        # Record for BAAI/bge-m3-like model
+        record = _record(model_name="BAAI/bge-m3")
+        cache = Cache()
+
+        # Should return True without calling input()
+        result = is_commercially_licensed(record=record, cache=cache)
+
+        assert result is True
+        assert cache.commercially_licensed["BAAI/bge-m3"] is True
+        mock_api.model_info.assert_called_once_with(repo_id="BAAI/bge-m3")
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_permissive_licence_variants(self, mock_hf_api_class: MagicMock) -> None:
+        """Various permissive licences (apache-2.0, BSD, etc.) infer True."""
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        mock_model_info = MagicMock()
+        mock_model_info.tags = ["license:apache-2.0"]
+        mock_api.model_info.return_value = mock_model_info
+
+        record = _record(model_name="org/apache-model")
+        cache = Cache()
+
+        result = is_commercially_licensed(record=record, cache=cache)
+
+        assert result is True
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_non_permissive_licence_falls_through_to_prompt(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Non-permissive licence (e.g. llama-3) should fall through to prompt."""
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        mock_model_info = MagicMock()
+        mock_model_info.tags = ["license:llama-3"]
+        mock_api.model_info.return_value = mock_model_info
+
+        record = _record(model_name="meta-llama/Llama-3")
+        cache = Cache()
+
+        # Patch input to return "n" (not commercially licensed)
+        with patch("leaderboards.model_metadata.input", return_value="n"):
+            result = is_commercially_licensed(record=record, cache=cache)
+
+        assert result is False
+        assert cache.commercially_licensed["meta-llama/Llama-3"] is False
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_no_licence_tag_falls_through_to_prompt(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Model without licence tag should fall through to prompt."""
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        mock_model_info = MagicMock()
+        mock_model_info.tags = ["transformers", "safetensors"]  # No licence tag
+        mock_api.model_info.return_value = mock_model_info
+
+        record = _record(model_name="org/model-no-licence")
+        cache = Cache()
+
+        with patch("leaderboards.model_metadata.input", return_value="y"):
+            result = is_commercially_licensed(record=record, cache=cache)
+
+        assert result is True
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_hf_repository_not_found_falls_through_to_prompt(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """RepositoryNotFoundError should fall through to prompt, not crash."""
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+
+        # RepositoryNotFoundError requires a response object
+        mock_response = Mock()
+        mock_response.status_code = 404
+        mock_response.headers = {}
+        mock_response.text = "Not found"
+        mock_response.request = Mock()
+        mock_response.request.url = "https://huggingface.co/api/models/fake"
+
+        mock_api.model_info.side_effect = RepositoryNotFoundError(
+            "Model not found", response=mock_response
+        )
+
+        record = _record(model_name="unknown-org/unknown-model")
+        cache = Cache()
+
+        with patch("leaderboards.model_metadata.input", return_value="y"):
+            result = is_commercially_licensed(record=record, cache=cache)
+
+        assert result is True
+        mock_api.model_info.assert_called_once_with(repo_id="unknown-org/unknown-model")
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_httpx_error_falls_through_to_prompt(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Httpx errors should fall through to prompt, not crash."""
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        mock_api.model_info.side_effect = httpx.ConnectError("Connection failed")
+
+        record = _record(model_name="org/httpx-error-model")
+        cache = Cache()
+
+        with patch("leaderboards.model_metadata.input", return_value="n"):
+            result = is_commercially_licensed(record=record, cache=cache)
+
+        assert result is False
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_gated_repo_error_falls_through_to_prompt(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """GatedRepoError should fall through to prompt, not crash."""
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+
+        # GatedRepoError requires a response object
+        mock_response = Mock()
+        mock_response.status_code = 403
+        mock_response.headers = {}
+        mock_response.text = "Gated"
+        mock_response.request = Mock()
+        mock_response.request.url = "https://huggingface.co/api/models/fake"
+
+        mock_api.model_info.side_effect = GatedRepoError(
+            "Gated repo", response=mock_response
+        )
+
+        record = _record(model_name="meta-llama/Llama-2-7b")
+        cache = Cache()
+
+        with patch("leaderboards.model_metadata.input", return_value="y"):
+            result = is_commercially_licensed(record=record, cache=cache)
+
+        assert result is True
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_licence_lookup_is_cached(self, mock_hf_api_class: MagicMock) -> None:
+        """HF licence lookup should be cached to avoid repeated API calls."""
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        mock_model_info = MagicMock()
+        mock_model_info.tags = ["license:mit"]
+        mock_api.model_info.return_value = mock_model_info
+
+        record = _record(model_name="BAAI/bge-m3")
+        cache = Cache()
+
+        # First call - should call HF API
+        result1 = is_commercially_licensed(record=record, cache=cache)
+        assert result1 is True
+        assert mock_api.model_info.call_count == 1
+
+        # Second call with same model - should use cache
+        result2 = is_commercially_licensed(record=record, cache=cache)
+        assert result2 is True
+        assert mock_api.model_info.call_count == 1  # Not called again
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_error_result_is_cached_to_avoid_repeated_failures(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """HF lookup errors should be cached to avoid repeated API calls.
+
+        After an error, the user is prompted. Their answer is cached, so
+        subsequent calls don't re-prompt or re-try the HF API.
+        """
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        mock_api.model_info.side_effect = httpx.ConnectError("Connection failed")
+
+        record = _record(model_name="org/error-model")
+        cache = Cache()
+
+        # First call - should try HF API and fail, then prompt
+        with patch("leaderboards.model_metadata.input", return_value="y") as mock_input:
+            result1 = is_commercially_licensed(record=record, cache=cache)
+        assert result1 is True
+        assert mock_api.model_info.call_count == 1
+        assert mock_input.call_count == 1
+
+        # Second call - should use cached user decision, no HF lookup or prompt
+        with patch("leaderboards.model_metadata.input", return_value="n") as mock_input:
+            result2 = is_commercially_licensed(record=record, cache=cache)
+        assert result2 is True  # Cached from first call
+        assert mock_api.model_info.call_count == 1  # Not called again
+        assert mock_input.call_count == 0  # Not prompted again
