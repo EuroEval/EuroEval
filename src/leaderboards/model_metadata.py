@@ -221,17 +221,17 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
     Returns:
         The generative type of the model.
     """
-    model_id = _model_id_from_record(record=record)
+    raw_model_id = _model_id_from_record(record=record)
 
-    if "#thinking" in model_id:
-        cache.generative_type[model_id] = "reasoning"
+    if "#thinking" in raw_model_id:
+        cache.generative_type[raw_model_id] = "reasoning"
         return "reasoning"
-    elif "#no-thinking" in model_id:
-        cache.generative_type[model_id] = "instruction_tuned"
+    elif "#no-thinking" in raw_model_id:
+        cache.generative_type[raw_model_id] = "instruction_tuned"
         return "instruction_tuned"
 
-    # Remove revisions and parameters from the model ID.
-    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
+    # Remove revisions and parameters from the model ID, and strip variant suffixes.
+    model_id = split_model_id(model_id=plain_model_id(raw_model_id)).model_id
 
     while True:
         if model_id in cache.generative_type:
@@ -275,7 +275,9 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
     Returns:
         Whether the model is commercially licensed.
     """
-    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
 
     # Assume that non-generative models are always commercially licensed
     if not get_bool_field(record, "generative", True):
@@ -314,7 +316,9 @@ def is_trained_from_scratch(
     Returns:
         True if the model was trained from scratch.
     """
-    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
 
     base_model_cache = {
         _base_model_id(m): value for m, value in cache.trained_from_scratch.items()
@@ -368,7 +372,9 @@ def is_merge(record: dict, cache: Cache) -> bool:
     Returns:
         Whether the model is a merged model.
     """
-    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
 
     if model_id in cache.merge:
         return cache.merge[model_id]
@@ -409,7 +415,9 @@ def is_open(record: dict, cache: Cache) -> bool:
     Returns:
         Whether the model is open (open-weight). Closed models return False.
     """
-    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
 
     base_model_cache = {_base_model_id(m): value for m, value in cache.open.items()}
     base_model_id = _base_model_id(model_id)
