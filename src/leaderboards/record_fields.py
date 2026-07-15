@@ -27,20 +27,16 @@ def _metadata_richness_score(record: dict) -> int:
     additional = record.get("model_info", {}).get("additional_details", {})
     score = 0
 
-    # commercially_licensed: non-default (default is False)
-    commercially_licensed = additional.get("commercially_licensed", False)
-    if commercially_licensed:
+    # commercially_licensed: non-null (explicit False is known metadata)
+    if additional.get("commercially_licensed") is not None:
         score += 1
 
     # open: non-null
     if additional.get("open") is not None:
         score += 1
 
-    # merge: non-default (default is "false" -> False)
-    merge_raw = additional.get("merge", "false")
-    if isinstance(merge_raw, bool) and merge_raw:
-        score += 1
-    elif isinstance(merge_raw, str) and merge_raw.lower() == "true":
+    # merge: non-null (explicit False is known metadata)
+    if additional.get("merge") is not None:
         score += 1
 
     # trained_from_scratch: non-null

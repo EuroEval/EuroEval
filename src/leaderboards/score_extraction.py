@@ -70,12 +70,18 @@ def _is_better_metadata(
         if isinstance(new_value, float) and math.isnan(new_value):
             return False
 
-    # For boolean fields, prefer True over False (more informative in context)
+    # For boolean fields, prefer present (non-None) over missing (None).
+    # Explicit False is legitimate metadata (e.g. merge=False, open=False)
+    # and should be preserved against later stale/conflicting records.
+    # When both are present (even if different), neither is "better" -
+    # returning False means the new value won't overwrite the old one.
     if field in ("commercial", "merge", "open", "trained_from_scratch"):
-        if old_value is False and new_value is True:
+        if old_value is None and new_value is not None:
             return True
-        if old_value is True and new_value is False:
+        if old_value is not None and new_value is None:
             return False
+        # Both present: don't overwrite (preserve existing)
+        return False
 
     # For generative_type, prefer non-empty over empty
     if field == "generative_type":
@@ -214,16 +220,34 @@ def extract_model_metadata(
         vocab_size_raw = additional.get("vocabulary_size", "-1")
         context_raw = additional.get("max_sequence_length", "-1")
         merge_raw = additional.get("merge", "false")
+        # Track which metadata fields are explicitly present (not None/empty) vs missing
         generative_type = additional.get("generative_type", None)
+        generative_type_present = "generative_type" in additional and additional[
+            "generative_type"
+        ] is not None
         commercially_licensed = additional.get("commercially_licensed", False)
+        commercial_present = (
+            "commercially_licensed" in additional
+            and additional["commercially_licensed"] is not None
+        )
         open_weights = additional.get("open", None)
+        open_present = "open" in additional and additional["open"] is not None
         trained_from_scratch = additional.get("trained_from_scratch", None)
+        trained_present = (
+            "trained_from_scratch" in additional
+            and additional["trained_from_scratch"] is not None
+        )
         # Models below MINIMUM_NUMBER_OF_MODEL_RECORDS are dropped by
         # `process_results` before `add_missing_entries` runs, so their stored
         # records never get a `model_url`, yet they still appear in the
         # leaderboard (which reads raw records without that filter). Generate
         # the URL on the fly when it's missing so they still get an anchor tag.
         model_url = additional.get("model_url", None)
+        model_url_present = (
+            "model_url" in additional
+            and additional["model_url"] is not None
+            and additional["model_url"] != ""
+        )
         if model_url is None:
             model_url = generate_model_url(
                 model_id=plain_model_id(get_model_name(record))
@@ -232,7 +256,11 @@ def extract_model_metadata(
         num_params = _to_float_or_nan(num_params_raw)
         vocab_size = _to_float_or_nan(vocab_size_raw)
         context = _to_float_or_nan(context_raw)
+        merge_raw = additional.get("merge", "false")
         merge = _to_bool(merge_raw)
+        # For merge, key must exist and not be None to be considered present
+        # ("false" string is a valid explicit value, not a default)
+        merge_present = "merge" in additional and additional["merge"] is not None
 
         # The frontend hides version columns and doesn't sort by them, so the
         # plain version string is sufficient.
@@ -242,27 +270,90 @@ def extract_model_metadata(
 
         for model_id in model_ids:
             existing = metadata_dict[model_id]
-            new_metadata = {
-                "parameters": num_params,
-                "vocabulary_size": vocab_size,
-                "context": context,
-                "generative_type": generative_type,
-                "commercial": commercially_licensed,
-                "merge": merge,
-                "open": open_weights,
-                "trained_from_scratch": trained_from_scratch,
-                "model_url": model_url,
-            }
             # Merge metadata: only update if the new value is "better" than the
             # existing one. This prevents stale records (e.g. from unknown.jsonl
             # or misfiled results) from overwriting enriched metadata with
-            # missing/default values.
-            for field, new_value in new_metadata.items():
-                old_value = existing.get(field)
-                if old_value is None or _is_better_metadata(
-                    new_value=new_value, old_value=old_value, field=field
+            # missing/default values. Only compare when the field is explicitly
+            # present in the record.
+            # Float fields (parameters, vocabulary_size, context)
+            if old_value := existing.get("parameters"):
+                if _is_better_metadata(
+                    new_value=num_params, old_value=old_value, field="parameters"
                 ):
-                    existing[field] = new_value
+                    existing["parameters"] = num_params
+            else:
+                existing["parameters"] = num_params
+            if old_value := existing.get("vocabulary_size"):
+                if _is_better_metadata(
+                    new_value=vocab_size,
+                    old_value=old_value,
+                    field="vocabulary_size",
+                ):
+                    existing["vocabulary_size"] = vocab_size
+            else:
+                existing["vocabulary_size"] = vocab_size
+            if old_value := existing.get("context"):
+                if _is_better_metadata(
+                    new_value=context, old_value=old_value, field="context"
+                ):
+                    existing["context"] = context
+            else:
+                existing["context"] = context
+            # Boolean/string fields - only update if explicitly present
+            if generative_type_present:
+                if old_value := existing.get("generative_type"):
+                    if _is_better_metadata(
+                        new_value=generative_type,
+                        old_value=old_value,
+                        field="generative_type",
+                    ):
+                        existing["generative_type"] = generative_type
+                else:
+                    existing["generative_type"] = generative_type
+            if commercial_present:
+                if old_value := existing.get("commercial"):
+                    if _is_better_metadata(
+                        new_value=commercially_licensed,
+                        old_value=old_value,
+                        field="commercial",
+                    ):
+                        existing["commercial"] = commercially_licensed
+                else:
+                    existing["commercial"] = commercially_licensed
+            if merge_present:
+                if old_value := existing.get("merge"):
+                    if _is_better_metadata(
+                        new_value=merge, old_value=old_value, field="merge"
+                    ):
+                        existing["merge"] = merge
+                else:
+                    existing["merge"] = merge
+            if open_present:
+                if old_value := existing.get("open"):
+                    if _is_better_metadata(
+                        new_value=open_weights, old_value=old_value, field="open"
+                    ):
+                        existing["open"] = open_weights
+                else:
+                    existing["open"] = open_weights
+            if trained_present:
+                if old_value := existing.get("trained_from_scratch"):
+                    if _is_better_metadata(
+                        new_value=trained_from_scratch,
+                        old_value=old_value,
+                        field="trained_from_scratch",
+                    ):
+                        existing["trained_from_scratch"] = trained_from_scratch
+                else:
+                    existing["trained_from_scratch"] = trained_from_scratch
+            if model_url_present:
+                if old_value := existing.get("model_url"):
+                    if _is_better_metadata(
+                        new_value=model_url, old_value=old_value, field="model_url"
+                    ):
+                        existing["model_url"] = model_url
+                else:
+                    existing["model_url"] = model_url
             if dataset:
                 existing[f"{dataset}_version"] = version
                 # Include failure counts for all versions. For versions after
