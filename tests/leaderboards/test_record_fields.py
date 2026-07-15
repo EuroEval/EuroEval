@@ -1,6 +1,6 @@
 """Tests for the `leaderboards.record_fields` module."""
 
-from leaderboards.record_fields import deduplicate_records
+from leaderboards.record_fields import _metadata_richness_score, deduplicate_records
 
 
 def _record(
@@ -28,10 +28,13 @@ def _record(
     additional: dict[str, object] = {"dataset": dataset}
     if generative is not None:
         additional["generative"] = generative
-    library: dict[str, object] = {"additional_details": additional}
+    model_info: dict[str, object] = {"name": name, "additional_details": additional}
+    library: dict[str, object] = {"additional_details": {"dataset": dataset}}
+    if generative is not None:
+        library["additional_details"]["generative"] = generative
     if version is not None:
         library["version"] = version
-    return {"model_info": {"name": name}, "eval_library": library}
+    return {"model_info": model_info, "eval_library": library}
 
 
 def test_deduplicate_collapses_generative_flag_variants() -> None:
@@ -63,3 +66,117 @@ def test_deduplicate_preserves_distinct_datasets() -> None:
         _record(name="org/other", dataset="angry-tweets"),
     ]
     assert len(deduplicate_records(records=records)) == 3
+
+
+def test_metadata_richness_score_empty() -> None:
+    """A record with no metadata gets a score of 0."""
+    record = _record()
+    assert _metadata_richness_score(record=record) == 0
+
+
+def test_metadata_richness_score_commercial() -> None:
+    """A record with commercially_licensed=True gets +1."""
+    record = _record()
+    record["model_info"]["additional_details"]["commercially_licensed"] = True
+    assert _metadata_richness_score(record=record) == 1
+
+
+def test_metadata_richness_score_open() -> None:
+    """A record with open=True gets +1."""
+    record = _record()
+    record["model_info"]["additional_details"]["open"] = True
+    assert _metadata_richness_score(record=record) == 1
+
+
+def test_metadata_richness_score_merge() -> None:
+    """A record with merge=True gets +1."""
+    record = _record()
+    record["model_info"]["additional_details"]["merge"] = True
+    assert _metadata_richness_score(record=record) == 1
+
+
+def test_metadata_richness_score_trained_from_scratch() -> None:
+    """A record with trained_from_scratch=True gets +1."""
+    record = _record()
+    record["model_info"]["additional_details"]["trained_from_scratch"] = True
+    assert _metadata_richness_score(record=record) == 1
+
+
+def test_metadata_richness_score_generative_type() -> None:
+    """A record with generative_type gets +1."""
+    record = _record()
+    record["model_info"]["additional_details"]["generative_type"] = "instruction_tuned"
+    assert _metadata_richness_score(record=record) == 1
+
+
+def test_metadata_richness_score_model_url() -> None:
+    """A record with model_url gets +1."""
+    record = _record()
+    record["model_info"]["additional_details"]["model_url"] = (
+        "https://example.com/model"
+    )
+    assert _metadata_richness_score(record=record) == 1
+
+
+def test_metadata_richness_score_full() -> None:
+    """A record with all metadata fields gets a score of 6."""
+    record = _record()
+    record["model_info"]["additional_details"].update(
+        {
+            "commercially_licensed": True,
+            "open": True,
+            "merge": True,
+            "trained_from_scratch": True,
+            "generative_type": "instruction_tuned",
+            "model_url": "https://example.com/model",
+        }
+    )
+    assert _metadata_richness_score(record=record) == 6
+
+
+def test_deduplicate_prefers_richer_metadata_same_version() -> None:
+    """Among same-version duplicates, the one with richer metadata wins.
+
+    Regression test for issue where stale records from unknown.jsonl or
+    misfiled results would override enriched metadata during deduplication.
+    """
+    # Enriched record with full metadata
+    enriched = _record(name="Qwen/Qwen3.6-27B-FP8 (val)", version="17.6.0")
+    enriched["model_info"]["additional_details"].update(
+        {
+            "commercially_licensed": True,
+            "open": True,
+            "merge": False,
+            "trained_from_scratch": True,
+            "generative_type": "instruction_tuned",
+            "model_url": "https://huggingface.co/Qwen/Qwen3.6-27B-FP8",
+        }
+    )
+
+    # Stale record with missing metadata (simulating unknown.jsonl style)
+    stale = _record(name="Qwen/Qwen3.6-27B-FP8 (val)", version="17.6.0")
+    # No additional metadata - defaults only
+
+    # Stale record comes last in input order
+    deduped = deduplicate_records(records=[enriched, stale])
+
+    assert len(deduped) == 1
+    # Enriched record should win despite being first in input order
+    result = deduped[0]
+    additional = result["model_info"]["additional_details"]
+    assert additional.get("commercially_licensed") is True
+    assert additional.get("open") is True
+    assert additional.get("trained_from_scratch") is True
+
+
+def test_deduplicate_richness_beats_input_order() -> None:
+    """Richer metadata wins even when the poorer record appears later."""
+    poor = _record(version="17.6.0")
+    rich = _record(version="17.6.0")
+    rich["model_info"]["additional_details"]["open"] = True
+
+    # Poor record comes last
+    deduped = deduplicate_records(records=[rich, poor])
+
+    assert len(deduped) == 1
+    assert deduped[0]["model_info"]["additional_details"].get("open") is True

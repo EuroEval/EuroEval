@@ -9,6 +9,55 @@ import typing as t
 from .records import get_bool_field, get_record_hash
 
 
+def _metadata_richness_score(record: dict) -> int:
+    """Score how "rich" a record's metadata is.
+
+    Higher scores indicate more complete, non-default metadata. Used to break
+    ties during deduplication when two records share the same version.
+
+    Args:
+        record:
+            A result record in EEE format.
+
+    Returns:
+        An integer score: +1 for each non-default metadata field found among
+        ``commercially_licensed``, ``open``, ``merge``, ``trained_from_scratch``,
+        ``generative_type``, and ``model_url``.
+    """
+    additional = record.get("model_info", {}).get("additional_details", {})
+    score = 0
+
+    # commercially_licensed: non-default (default is False)
+    commercially_licensed = additional.get("commercially_licensed", False)
+    if commercially_licensed:
+        score += 1
+
+    # open: non-null
+    if additional.get("open") is not None:
+        score += 1
+
+    # merge: non-default (default is "false" -> False)
+    merge_raw = additional.get("merge", "false")
+    if isinstance(merge_raw, bool) and merge_raw:
+        score += 1
+    elif isinstance(merge_raw, str) and merge_raw.lower() == "true":
+        score += 1
+
+    # trained_from_scratch: non-null
+    if additional.get("trained_from_scratch") is not None:
+        score += 1
+
+    # generative_type: non-null
+    if additional.get("generative_type") is not None:
+        score += 1
+
+    # model_url: non-null
+    if additional.get("model_url") is not None:
+        score += 1
+
+    return score
+
+
 def get_task(record: dict) -> str | None:
     """Get the task name from an EEE record.
 
@@ -133,8 +182,10 @@ def deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.Any
 
     Records sharing a :func:`~leaderboards.records.get_record_hash` value render
     on the same leaderboard row, so only one should survive. Among records with
-    an equal (newest) version, the last one in input order wins. Output is
-    ordered by hash for stable, diff-friendly downstream files.
+    an equal (newest) version, the one with richer metadata wins (more non-default
+    fields for commercially_licensed, open, merge, trained_from_scratch,
+    generative_type, model_url). If still tied, the last one in input order wins.
+    Output is ordered by hash for stable, diff-friendly downstream files.
 
     Args:
         records:
@@ -145,14 +196,21 @@ def deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.Any
         The deduplicated records, ordered by hash. Note that
         ``get_record_hash`` raises ``ValueError`` if any record has no dataset.
     """
-    best: dict[str, tuple[list[int], dict[str, t.Any]]] = {}
+    best: dict[str, tuple[list[int], int, dict[str, t.Any]]] = {}
     for record in records:
         hash_value = get_record_hash(record=record)
         version = list(map(int, (get_version(record=record) or "0.0.0").split(".")))
+        richness = _metadata_richness_score(record=record)
         existing = best.get(hash_value)
-        if existing is None or version >= existing[0]:
-            best[hash_value] = (version, record)
-    return [record for _, (_, record) in sorted(best.items())]
+        # Prefer: newer version > richer metadata > later in input order
+        if existing is None or version > existing[0]:
+            best[hash_value] = (version, richness, record)
+        elif version == existing[0] and richness > existing[1]:
+            best[hash_value] = (version, richness, record)
+        elif version == existing[0] and richness == existing[1]:
+            # Same version and richness: later in input order wins (existing behaviour)
+            best[hash_value] = (version, richness, record)
+    return [record for _, (_, _, record) in sorted(best.items())]
 
 
 def get_few_shot(record: dict) -> bool:

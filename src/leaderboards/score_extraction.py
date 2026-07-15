@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import statistics
 import typing as t
 from collections import defaultdict
@@ -29,6 +30,69 @@ from .split_sizes import get_split_sizes
 from .task_metadata import dataset_sources, task_metric_names
 
 logger = logging.getLogger(__name__)
+
+
+def _is_better_metadata(
+    new_value: bool | str | float | None,
+    old_value: bool | str | float | None,
+    field: str,
+) -> bool:
+    """Check if new metadata value is "better" than the old one.
+
+    A value is "better" if it's more informative (non-null/non-default) when
+    the old value is null/default. Used to prevent stale records from
+    overwriting enriched metadata during extraction.
+
+    Args:
+        new_value:
+            The new metadata value from the current record.
+        old_value:
+            The existing metadata value already stored.
+        field:
+            The field name being compared.
+
+    Returns:
+        True if the new value should replace the old one.
+    """
+    # Prefer non-None over None
+    if old_value is None and new_value is not None:
+        return True
+    if old_value is not None and new_value is None:
+        return False
+
+    # For float fields (parameters, vocabulary_size, context), prefer non-NaN
+    # over NaN
+    if field in ("parameters", "vocabulary_size", "context"):
+        if isinstance(old_value, float) and math.isnan(old_value):
+            if isinstance(new_value, float) and not math.isnan(new_value):
+                return True
+            return False
+        if isinstance(new_value, float) and math.isnan(new_value):
+            return False
+
+    # For boolean fields, prefer True over False (more informative in context)
+    if field in ("commercial", "merge", "open", "trained_from_scratch"):
+        if old_value is False and new_value is True:
+            return True
+        if old_value is True and new_value is False:
+            return False
+
+    # For generative_type, prefer non-empty over empty
+    if field == "generative_type":
+        if not old_value and new_value:
+            return True
+        if old_value and not new_value:
+            return False
+
+    # For model_url, prefer non-empty over empty
+    if field == "model_url":
+        if not old_value and new_value:
+            return True
+        if old_value and not new_value:
+            return False
+
+    # Default: prefer new value (preserves existing behaviour for equal values)
+    return True
 
 
 def group_results_by_model(
@@ -177,31 +241,40 @@ def extract_model_metadata(
         num_failed = get_num_failed_instances(record)
 
         for model_id in model_ids:
-            metadata_dict[model_id].update(
-                {
-                    "parameters": num_params,
-                    "vocabulary_size": vocab_size,
-                    "context": context,
-                    "generative_type": generative_type,
-                    "commercial": commercially_licensed,
-                    "merge": merge,
-                    "open": open_weights,
-                    "trained_from_scratch": trained_from_scratch,
-                    "model_url": model_url,
-                }
-            )
+            existing = metadata_dict[model_id]
+            new_metadata = {
+                "parameters": num_params,
+                "vocabulary_size": vocab_size,
+                "context": context,
+                "generative_type": generative_type,
+                "commercial": commercially_licensed,
+                "merge": merge,
+                "open": open_weights,
+                "trained_from_scratch": trained_from_scratch,
+                "model_url": model_url,
+            }
+            # Merge metadata: only update if the new value is "better" than the
+            # existing one. This prevents stale records (e.g. from unknown.jsonl
+            # or misfiled results) from overwriting enriched metadata with
+            # missing/default values.
+            for field, new_value in new_metadata.items():
+                old_value = existing.get(field)
+                if old_value is None or _is_better_metadata(
+                    new_value=new_value, old_value=old_value, field=field
+                ):
+                    existing[field] = new_value
             if dataset:
-                metadata_dict[model_id][f"{dataset}_version"] = version
+                existing[f"{dataset}_version"] = version
                 # Include failure counts for all versions. For versions after
                 # 17.5.0, these count only genuine scoring failures. For 17.5.0
                 # and earlier, they also include samples where the fallback
                 # label was correct (recoverable errors) — the frontend adds a
                 # caveat in the tooltip for those versions.
                 if num_failed is not None:
-                    metadata_dict[model_id][f"{dataset}_failures"] = num_failed
+                    existing[f"{dataset}_failures"] = num_failed
                     scored = _scored_count(record=record, dataset=dataset)
                     if scored is not None:
-                        metadata_dict[model_id][f"{dataset}_scored"] = scored
+                        existing[f"{dataset}_scored"] = scored
 
     logger.info("Extracted model metadata.")
     return metadata_dict
