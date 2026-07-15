@@ -5,6 +5,8 @@ from __future__ import annotations
 import math
 from unittest.mock import MagicMock, patch
 
+import httpx
+
 from leaderboards.score_extraction import _is_better_metadata, extract_model_metadata
 
 
@@ -699,13 +701,16 @@ class TestMissingMetadataInference:
         mock_api.model_info.return_value = mock_model_info
         mock_hf_api_class.return_value = mock_api
 
-        # Two records for the same model ID
+        # Two distinct leaderboard keys sharing the same HF repo/model_url:
+        # one canonical record and one validation-split record
         record1 = {
             "model_info": {
                 "name": "Qwen/Qwen-Cached",
                 "additional_details": {
                     "dataset": "mmlu",
                     "model_url": "https://hf.co/Qwen/Qwen-Cached",
+                    "few_shot": True,
+                    "validation_split": False,
                     # No commercially_licensed field
                 },
             },
@@ -713,10 +718,12 @@ class TestMissingMetadataInference:
         }
         record2 = {
             "model_info": {
-                "name": "Qwen/Qwen-Cached",
+                "name": "Qwen/Qwen-Cached (val)",
                 "additional_details": {
                     "dataset": "belebele",
                     "model_url": "https://hf.co/Qwen/Qwen-Cached",
+                    "few_shot": True,
+                    "validation_split": True,
                     # No commercially_licensed field
                 },
             },
@@ -724,9 +731,51 @@ class TestMissingMetadataInference:
         }
 
         metadata = extract_model_metadata(results=[record1, record2])
-        model_key = "Qwen/Qwen-Cached"
+        model_key_canonical = "Qwen/Qwen-Cached"
+        model_key_val = "Qwen/Qwen-Cached (val)"
 
-        # commercial should be inferred to True from permissive license
-        assert metadata[model_key]["commercial"] is True
-        # model_info should be called only once due to caching
+        # commercial should be inferred to True from permissive license for both
+        assert metadata[model_key_canonical]["commercial"] is True
+        assert metadata[model_key_val]["commercial"] is True
+        # model_info should be called only once due to caching (same model_url)
         assert mock_api.model_info.call_count == 1
+
+    @patch("leaderboards.score_extraction.HfApi")
+    def test_httpx_error_does_not_crash_metadata_extraction(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Regression test: httpx errors should not crash extract_model_metadata().
+
+        Licence inference is best-effort. When HfApi.model_info() raises
+        httpx.HTTPError (e.g. ConnectError, TimeoutError), the function
+        should cache None for that model and continue without crashing.
+        """
+        # Mock model_info to raise httpx.ConnectError
+        mock_api = MagicMock()
+        mock_api.model_info.side_effect = httpx.ConnectError("Connection failed")
+        mock_hf_api_class.return_value = mock_api
+
+        # Record with missing commercial field but explicit HF URL
+        record = {
+            "model_info": {
+                "name": "Qwen/Qwen-Httpx-Error",
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "model_url": "https://hf.co/Qwen/Qwen-Httpx-Error",
+                    # No commercially_licensed field
+                },
+            },
+            "eval_library": {"version": "17.6.0"},
+        }
+
+        # Should not raise, just infer nothing for commercial
+        metadata = extract_model_metadata(results=[record])
+        model_key = "Qwen/Qwen-Httpx-Error"
+
+        # commercial should default to False (not inferred from HF)
+        assert metadata[model_key]["commercial"] is False
+        # But inferred open and trained_from_scratch should still work
+        assert metadata[model_key]["open"] is True
+        assert metadata[model_key]["trained_from_scratch"] is True
+        # Verify model_info was called (and raised)
+        mock_api.model_info.assert_called_once_with(repo_id="Qwen/Qwen-Httpx-Error")
