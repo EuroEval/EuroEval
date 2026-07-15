@@ -6,22 +6,10 @@ import logging
 import math
 import statistics
 import typing as t
-import warnings
 from collections import defaultdict
-
-import httpx
-from huggingface_hub import HfApi
-from huggingface_hub.errors import (
-    GatedRepoError,
-    HFValidationError,
-    LocalTokenNotFoundError,
-)
-from huggingface_hub.hf_api import RepositoryNotFoundError
-from requests.exceptions import RequestException
 
 from euroeval.logging_utils import log_once
 
-from .constants import PERMISSIVE_LICENSES, TRAINED_FROM_SCRATCH_PATTERNS
 from .link_generation import generate_model_url
 from .record_fields import (
     deduplicate_records,
@@ -119,83 +107,6 @@ def _is_better_metadata(
 
     # Default: prefer new value (preserves existing behaviour for equal values)
     return True
-
-
-def _infer_missing_metadata(metadata_dict: dict[str, dict[str, t.Any]]) -> None:
-    """Infer missing metadata fields from HF model info and patterns.
-
-    For models where standard metadata fields remain missing after merging
-    records, infer safe positive values:
-    - open=True if model_url is an HF Hub URL
-    - trained_from_scratch=True if model_id matches TRAINED_FROM_SCRATCH_PATTERNS
-    - commercial=True if on HF Hub with permissive licence
-
-    Only infers positive values (True); never overwrites explicit False values.
-    Caches HF model_info lookups to avoid repeated API calls.
-
-    Args:
-        metadata_dict:
-            The metadata dictionary to update in-place.
-    """
-    hf_license_cache: dict[str, bool | None] = {}
-
-    for model_id, metadata in metadata_dict.items():
-        plain_id = plain_model_id(model_id)
-        model_url = metadata.get("model_url")
-
-        # Infer open=True from HF URL
-        if metadata.get("open") is None and model_url:
-            if model_url.startswith(("https://hf.co/", "https://huggingface.co/")):
-                metadata["open"] = True
-
-        # Infer trained_from_scratch=True from patterns
-        if metadata.get("trained_from_scratch") is None:
-            if any(
-                pattern.match(plain_id) is not None
-                for pattern in TRAINED_FROM_SCRATCH_PATTERNS
-            ):
-                metadata["trained_from_scratch"] = True
-
-        # Infer commercial=True from HF licence (only when missing)
-        if metadata.get("commercial") is None and model_url:
-            # Extract model_id from HF URL for API lookup
-            hf_model_id = None
-            if model_url.startswith("https://hf.co/"):
-                hf_model_id = model_url.removeprefix("https://hf.co/")
-            elif model_url.startswith("https://huggingface.co/"):
-                hf_model_id = model_url.removeprefix("https://huggingface.co/")
-
-            if hf_model_id and hf_model_id not in hf_license_cache:
-                # Look up licence from HF Hub
-                try:
-                    api = HfApi()
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore", category=UserWarning)
-                        model_info = api.model_info(repo_id=hf_model_id)
-                    # Extract licence from tags (format: "license:apache-2.0")
-                    licence = None
-                    if model_info.tags:
-                        for tag in model_info.tags:
-                            if tag.startswith("license:"):
-                                licence = tag.removeprefix("license:").lower()
-                                break
-                    hf_license_cache[hf_model_id] = (
-                        licence in PERMISSIVE_LICENSES if licence else None
-                    )
-                except (
-                    GatedRepoError,
-                    LocalTokenNotFoundError,
-                    RepositoryNotFoundError,
-                    HFValidationError,
-                    RequestException,
-                    OSError,
-                    httpx.HTTPError,
-                    httpx.TransportError,
-                ):
-                    hf_license_cache[hf_model_id] = None
-
-            if hf_license_cache.get(hf_model_id) is True:
-                metadata["commercial"] = True
 
 
 def group_results_by_model(
@@ -495,11 +406,6 @@ def extract_model_metadata(
                     scored = _scored_count(record=record, dataset=dataset)
                     if scored is not None:
                         existing[f"{dataset}_scored"] = scored
-
-    # Infer missing metadata from HF model info and trained-from-scratch patterns.
-    # This runs after merging all records, filling in safe positive defaults
-    # for models where all records had missing metadata (e.g. Qwen/Qwen3.6-27B-FP8).
-    _infer_missing_metadata(metadata_dict)
 
     # Ensure every model has all standard metadata keys with defaults.
     # This prevents KeyError/AssertionError in generate_dataframe() which
