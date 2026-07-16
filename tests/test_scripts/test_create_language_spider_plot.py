@@ -21,6 +21,7 @@ from src.scripts.create_language_spider_plot import (
     _extract_scores_from_record,
     _filter_by_shots,
     _get_language_display_name,
+    _hex_to_rgba,
     _normalise_language_input,
     _resolve_languages,
     cli,
@@ -34,6 +35,8 @@ def make_eee_record(
     few_shot: bool,
     task: str = "summarization",
     dataset: str = "nordjylland-news",
+    raw_scores: list[float] | None = None,
+    metric_name: str = "macro_f1",
 ) -> JsonDict:
     """Create a minimal EEE-format record for testing.
 
@@ -46,13 +49,18 @@ def make_eee_record(
         languages:
             Language codes.
         scores:
-            Dict mapping metric names to scores.
+            Dict mapping metric names to aggregated scores.
         few_shot:
             Whether this is a few-shot record.
         task (optional):
             Task name. Defaults to "summarization".
         dataset (optional):
             Dataset name. Defaults to "nordjylland-news" (Danish summarisation).
+        raw_scores (optional):
+            List of raw per-iteration/bootstrap scores. If provided, these
+            are used for rank score computation instead of aggregated scores.
+        metric_name (optional):
+            Metric name for raw scores. Defaults to "macro_f1".
 
     Returns:
         EEE-format record dictionary.
@@ -67,18 +75,27 @@ def make_eee_record(
         for metric_name, score in scores.items()
     ]
 
+    additional_details: dict[str, str] = {
+        "languages": json.dumps(languages),
+        "few_shot": "true" if few_shot else "false",
+        "task": task,
+        "dataset": dataset,
+    }
+
+    # Add raw results if provided
+    if raw_scores is not None:
+        raw_results = [
+            {f"test_{metric_name}": score, metric_name: score} for score in raw_scores
+        ]
+        additional_details["raw_results"] = json.dumps(raw_results)
+
     return {
         "schema_version": "0.2.1",
         "model_info": {"name": model_name, "id": model_name, "additional_details": {}},
         "eval_library": {
             "name": "euroeval",
             "version": "17.0.0",
-            "additional_details": {
-                "languages": json.dumps(languages),
-                "few_shot": "true" if few_shot else "false",
-                "task": task,
-                "dataset": dataset,
-            },
+            "additional_details": additional_details,
         },
         "evaluation_results": eval_results,
     }
@@ -280,38 +297,94 @@ class TestFilterByShots:
 
 
 class TestBuildScoreMatrix:
-    """Tests for _build_score_matrix function with rank scores."""
+    """Tests for _build_score_matrix function with rank scores.
+
+    Tests use raw per-iteration/bootstrap scores to verify the exact
+    EuroEval rank score methodology.
+    """
 
     def test_single_model_rank_is_one(self) -> None:
         """Single model should have rank score of 1.0 (best by definition)."""
-        records = [make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False)]
+        # Single model with raw bootstrap scores for mcc metric
+        # mean = 0.8, pooled_std = std([0.8, 0.82, 0.78]) ≈ 0.016
+        # best_mean = 0.8, rank = 1 + (0.8 - 0.8) / 0.016 = 1.0
+        records = [
+            make_eee_record(
+                "model1",
+                ["da"],
+                {"test_mcc": 0.8},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.8, 0.82, 0.78],
+                metric_name="mcc",
+            )
+        ]
         matrix = _build_score_matrix(records, ["model1"], ["da"], None)
-        # Single model is always best, so rank score = 1.0
         assert matrix["model1"]["da"] == 1.0
 
-    def test_two_models_different_scores(self) -> None:
-        """Two models: better score gets rank closer to 1.0."""
+    def test_two_models_with_raw_scores(self) -> None:
+        """Two models: better mean raw score gets rank closer to 1.0."""
+        # Model1: raw scores [0.9, 0.92, 0.88] -> mean = 0.9
+        # Model2: raw scores [0.7, 0.72, 0.68] -> mean = 0.7
+        # All scores: [0.9, 0.92, 0.88, 0.7, 0.72, 0.68]
+        # pooled_std = std(all) ≈ 0.098
+        # best_mean = 0.9
+        # rank1 = 1 + (0.9 - 0.9) / 0.098 = 1.0
+        # rank2 = 1 + (0.9 - 0.7) / 0.098 ≈ 3.04
         records = [
-            make_eee_record("model1", ["da"], {"test_macro_f1": 90.0}, False),
-            make_eee_record("model2", ["da"], {"test_macro_f1": 70.0}, False),
+            make_eee_record(
+                "model1",
+                ["da"],
+                {"test_mcc": 0.9},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.9, 0.92, 0.88],
+                metric_name="mcc",
+            ),
+            make_eee_record(
+                "model2",
+                ["da"],
+                {"test_mcc": 0.7},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.7, 0.72, 0.68],
+                metric_name="mcc",
+            ),
         ]
         matrix = _build_score_matrix(records, ["model1", "model2"], ["da"], None)
-        # model1 is best (90), so rank = 1.0
-        # model2: rank = 1 + (90 - 70) / pooled_std
-        # pooled_std = std([90, 70]) = 10*sqrt(2) ≈ 14.14
-        # rank2 = 1 + 20/14.14 ≈ 2.41
         assert matrix["model1"]["da"] == 1.0
         assert matrix["model2"]["da"] > 1.0
         assert matrix["model2"]["da"] > matrix["model1"]["da"]
 
-    def test_equal_scores_same_rank(self) -> None:
-        """Models with equal scores should have same rank (1.0)."""
+    def test_equal_raw_scores_same_rank(self) -> None:
+        """Models with equal mean raw scores should have same rank (1.0)."""
+        # Both models have identical raw scores -> same mean -> same rank
         records = [
-            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
-            make_eee_record("model2", ["da"], {"test_macro_f1": 80.0}, False),
+            make_eee_record(
+                "model1",
+                ["da"],
+                {"test_mcc": 0.8},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.8, 0.82, 0.78],
+                metric_name="mcc",
+            ),
+            make_eee_record(
+                "model2",
+                ["da"],
+                {"test_mcc": 0.8},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.8, 0.82, 0.78],
+                metric_name="mcc",
+            ),
         ]
         matrix = _build_score_matrix(records, ["model1", "model2"], ["da"], None)
-        # Both tied for best, both get rank = 1.0
         assert matrix["model1"]["da"] == 1.0
         assert matrix["model2"]["da"] == 1.0
 
@@ -321,18 +394,22 @@ class TestBuildScoreMatrix:
             make_eee_record(
                 "model1",
                 ["da"],
-                {"test_macro_f1": 90.0},
+                {"test_mcc": 0.9},
                 False,
-                task="summarization",
-                dataset="nordjylland-news",
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.9, 0.91, 0.89],
+                metric_name="mcc",
             ),
             make_eee_record(
                 "model1",
                 ["da"],
-                {"test_macro_f1": 70.0},
+                {"test_mcc": 0.7},
                 False,
-                task="sentiment-classification",
-                dataset="angry-tweets",
+                task="linguistic-acceptability",
+                dataset="da-language-modeling",
+                raw_scores=[0.7, 0.71, 0.69],
+                metric_name="mcc",
             ),
         ]
         matrix = _build_score_matrix(records, ["model1"], ["da"], None)
@@ -340,58 +417,131 @@ class TestBuildScoreMatrix:
         # Mean across datasets = 1.0
         assert matrix["model1"]["da"] == 1.0
 
-    def test_two_models_two_datasets(self) -> None:
-        """Two models on two datasets: aggregation to language level."""
-        # Model1: 90 on nordjylland-news, 85 on angry-tweets
-        # Model2: 70 on nordjylland-news, 75 on angry-tweets
+    def test_two_models_two_datasets_raw_scores(self) -> None:
+        """Two models on two datasets with raw scores."""
         records = [
             make_eee_record(
                 "model1",
                 ["da"],
-                {"test_macro_f1": 90.0},
+                {"test_mcc": 0.9},
                 False,
-                task="summarization",
-                dataset="nordjylland-news",
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.9, 0.91, 0.89],
+                metric_name="mcc",
             ),
             make_eee_record(
                 "model1",
                 ["da"],
-                {"test_macro_f1": 85.0},
+                {"test_mcc": 0.85},
                 False,
-                task="sentiment-classification",
-                dataset="angry-tweets",
+                task="linguistic-acceptability",
+                dataset="da-language-modeling",
+                raw_scores=[0.85, 0.86, 0.84],
+                metric_name="mcc",
             ),
             make_eee_record(
                 "model2",
                 ["da"],
-                {"test_macro_f1": 70.0},
+                {"test_mcc": 0.7},
                 False,
-                task="summarization",
-                dataset="nordjylland-news",
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.7, 0.71, 0.69],
+                metric_name="mcc",
             ),
             make_eee_record(
                 "model2",
                 ["da"],
-                {"test_macro_f1": 75.0},
+                {"test_mcc": 0.75},
                 False,
-                task="sentiment-classification",
-                dataset="angry-tweets",
+                task="linguistic-acceptability",
+                dataset="da-language-modeling",
+                raw_scores=[0.75, 0.76, 0.74],
+                metric_name="mcc",
             ),
         ]
         matrix = _build_score_matrix(records, ["model1", "model2"], ["da"], None)
-        # Model1 should have better (lower) rank score than model2
         assert matrix["model1"]["da"] < matrix["model2"]["da"]
         assert matrix["model1"]["da"] >= 1.0
+
+    def test_rank_scores_not_raw_values(self) -> None:
+        """Verify plotted values are rank scores, not raw metric values."""
+        # Raw scores are 0.85-0.95 range, but rank scores should be 1.x
+        records = [
+            make_eee_record(
+                "model1",
+                ["da"],
+                {"test_mcc": 0.95},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.95, 0.96, 0.94],
+                metric_name="mcc",
+            ),
+            make_eee_record(
+                "model2",
+                ["da"],
+                {"test_mcc": 0.85},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.85, 0.86, 0.84],
+                metric_name="mcc",
+            ),
+        ]
+        matrix = _build_score_matrix(records, ["model1", "model2"], ["da"], None)
+        # Rank scores should be around 1-3, not 0.85-0.95
+        assert 1.0 <= matrix["model1"]["da"] < 5.0
+        assert 1.0 <= matrix["model2"]["da"] < 5.0
+        # Best model should have rank 1.0
+        assert matrix["model1"]["da"] == 1.0
 
     def test_score_order_independent(self) -> None:
         """Result should be same regardless of record order."""
         records_ordered = [
-            make_eee_record("model1", ["da"], {"test_macro_f1": 90.0}, False),
-            make_eee_record("model2", ["da"], {"test_macro_f1": 70.0}, False),
+            make_eee_record(
+                "model1",
+                ["da"],
+                {"test_mcc": 0.9},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.9, 0.91, 0.89],
+                metric_name="mcc",
+            ),
+            make_eee_record(
+                "model2",
+                ["da"],
+                {"test_mcc": 0.7},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.7, 0.71, 0.69],
+                metric_name="mcc",
+            ),
         ]
         records_shuffled = [
-            make_eee_record("model2", ["da"], {"test_macro_f1": 70.0}, False),
-            make_eee_record("model1", ["da"], {"test_macro_f1": 90.0}, False),
+            make_eee_record(
+                "model2",
+                ["da"],
+                {"test_mcc": 0.7},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.7, 0.71, 0.69],
+                metric_name="mcc",
+            ),
+            make_eee_record(
+                "model1",
+                ["da"],
+                {"test_mcc": 0.9},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.9, 0.91, 0.89],
+                metric_name="mcc",
+            ),
         ]
         matrix_ordered = _build_score_matrix(
             records_ordered, ["model1", "model2"], ["da"], None
@@ -402,19 +552,34 @@ class TestBuildScoreMatrix:
         assert matrix_ordered["model1"]["da"] == matrix_shuffled["model1"]["da"]
         assert matrix_ordered["model2"]["da"] == matrix_shuffled["model2"]["da"]
 
-    def test_non_finite_scores_ignored(self) -> None:
-        """Should ignore NaN and infinite scores."""
+    def test_no_raw_scores_returns_none(self) -> None:
+        """Records without raw_scores should result in None (no data)."""
+        # Without raw_scores, the new methodology can't compute rank scores
         records = [
-            make_eee_record("model1", ["da"], {"test_macro_f1": float("nan")}, False),
-            make_eee_record("model1", ["sv"], {"test_macro_f1": 75.0}, False),
+            make_eee_record(
+                "model1",
+                ["da"],
+                {"test_mcc": 0.8},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+            )
         ]
-        matrix = _build_score_matrix(records, ["model1"], ["da", "sv"], None)
+        matrix = _build_score_matrix(records, ["model1"], ["da"], None)
         assert matrix["model1"]["da"] is None
-        assert matrix["model1"]["sv"] == 1.0  # Single valid score, rank = 1.0
 
     def test_missing_dataset_skips_record(self) -> None:
         """Records without dataset field should be skipped."""
-        record = make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False)
+        record = make_eee_record(
+            "model1",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.81, 0.79],
+            metric_name="mcc",
+        )
         # Remove dataset from all possible locations
         eval_lib = record.get("eval_library", {})
         if isinstance(eval_lib, dict):
@@ -557,40 +722,92 @@ class TestComputeMaxScore:
         assert max_score == 3.5
 
 
+class TestHexToRgba:
+    """Tests for _hex_to_rgba helper function."""
+
+    def test_hex_to_rgba_default_alpha(self) -> None:
+        """Should convert hex to rgba with default alpha 0.2."""
+        result = _hex_to_rgba("#1f77b4")
+        assert result == "rgba(31, 119, 180, 0.2)"
+
+    def test_hex_to_rgba_custom_alpha(self) -> None:
+        """Should convert hex to rgba with custom alpha."""
+        result = _hex_to_rgba("#ff7f0e", alpha=0.5)
+        assert result == "rgba(255, 127, 14, 0.5)"
+
+    def test_hex_to_rgba_transparency(self) -> None:
+        """Should produce transparent fill colours for overlapping traces."""
+        result = _hex_to_rgba("#2ca02c", alpha=0.1)
+        assert "0.1" in result
+
+
 class TestCreateSpiderPlot:
     """Tests for _create_spider_plot function."""
 
     def test_basic_plot_creation(self) -> None:
         """Should create a basic spider plot."""
         model_scores: dict[str, dict[str, float | None]] = {
-            "model1": {"da": 80.0, "sv": 75.0}
+            "model1": {"da": 1.5, "sv": 2.0}
         }
-        fig = _create_spider_plot(model_scores, ["da", "sv"], 100.0)
+        fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
         assert len(fig.data) == 1
         assert fig.layout.title.text == "Language Performance Comparison"
 
     def test_multiple_models(self) -> None:
         """Should handle multiple models."""
         model_scores: dict[str, dict[str, float | None]] = {
-            "model1": {"da": 80.0, "sv": 75.0},
-            "model2": {"da": 82.0, "sv": 77.0},
+            "model1": {"da": 1.5, "sv": 2.0},
+            "model2": {"da": 1.8, "sv": 2.3},
         }
-        fig = _create_spider_plot(model_scores, ["da", "sv"], 100.0)
+        fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
         assert len(fig.data) == 2
 
-    def test_axis_always_reversed(self) -> None:
-        """Should always reverse radial axis (rank score is lower-is-better)."""
+    def test_axis_reversed_with_minimum_one(self) -> None:
+        """Should reverse radial axis with minimum 1 (not 0)."""
         model_scores: dict[str, dict[str, float | None]] = {
-            "model1": {"da": 80.0, "sv": 75.0}
+            "model1": {"da": 1.5, "sv": 2.0}
         }
-        fig = _create_spider_plot(model_scores, ["da", "sv"], 100.0)
+        fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
         radial_range = fig.layout.polar.radialaxis.range
-        assert tuple(radial_range) == (100.0, 0)
+        # Range should be [max, 1], not [max, 0]
+        assert tuple(radial_range) == (3.0, 1)
+
+    def test_radial_tick_format_one_decimal(self) -> None:
+        """Radial axis ticks should show one decimal place."""
+        model_scores: dict[str, dict[str, float | None]] = {
+            "model1": {"da": 1.5, "sv": 2.0}
+        }
+        fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
+        tickformat = fig.layout.polar.radialaxis.tickformat
+        assert tickformat == ".1f"
+
+    def test_radial_axis_dtick(self) -> None:
+        """Radial axis should have 0.5 tick interval."""
+        model_scores: dict[str, dict[str, float | None]] = {
+            "model1": {"da": 1.5, "sv": 2.0}
+        }
+        fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
+        dtick = fig.layout.polar.radialaxis.dtick
+        assert dtick == 0.5
+
+    def test_transparent_fill_for_readability(self) -> None:
+        """Should use transparent fills so overlapping traces remain readable."""
+        model_scores: dict[str, dict[str, float | None]] = {
+            "model1": {"da": 1.5, "sv": 2.0},
+            "model2": {"da": 1.8, "sv": 2.3},
+        }
+        fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
+        # Check that fill colours use rgba with low alpha
+        for trace in fig.data:
+            fillcolor = trace.fillcolor
+            assert fillcolor.startswith("rgba")
+            # Alpha should be 0.2 (transparent)
+            assert "0.2" in fillcolor
 
     def test_none_scores_treated_as_zero(self) -> None:
         """Should treat None scores as zero in plot."""
-        model_scores = {"model1": {"da": 80.0, "sv": None}}
-        fig = _create_spider_plot(model_scores, ["da", "sv"], 100.0)
+        model_scores = {"model1": {"da": 1.5, "sv": None}}
+        fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
         assert len(fig.data) == 1
 
 
@@ -663,13 +880,45 @@ class TestIntegrationWithTempFiles:
         """Test full pipeline using temp JSONL files."""
         records = [
             make_eee_record(
-                "test/model1", ["da", "sv"], {"test_macro_f1": 80.0}, False
+                "test/model1",
+                ["da", "sv"],
+                {"test_mcc": 0.8},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.8, 0.82, 0.78],
+                metric_name="mcc",
             ),
-            make_eee_record("test/model1", ["no"], {"test_macro_f1": 75.0}, False),
             make_eee_record(
-                "test/model2", ["da", "sv"], {"test_macro_f1": 85.0}, False
+                "test/model1",
+                ["no"],
+                {"test_mcc": 0.75},
+                False,
+                task="sentiment-classification",
+                dataset="norec",
+                raw_scores=[0.75, 0.76, 0.74],
+                metric_name="mcc",
             ),
-            make_eee_record("test/model2", ["no"], {"test_macro_f1": 78.0}, False),
+            make_eee_record(
+                "test/model2",
+                ["da", "sv"],
+                {"test_mcc": 0.85},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.85, 0.86, 0.84],
+                metric_name="mcc",
+            ),
+            make_eee_record(
+                "test/model2",
+                ["no"],
+                {"test_mcc": 0.78},
+                False,
+                task="sentiment-classification",
+                dataset="norec",
+                raw_scores=[0.78, 0.79, 0.77],
+                metric_name="mcc",
+            ),
         ]
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -712,9 +961,25 @@ class TestIntegrationWithTempFiles:
         """Test that language intersection is used when some models miss languages."""
         records = [
             make_eee_record(
-                "test/model1", ["da", "sv"], {"test_macro_f1": 80.0}, False
+                "test/model1",
+                ["da", "sv"],
+                {"test_mcc": 0.8},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.8, 0.82, 0.78],
+                metric_name="mcc",
             ),
-            make_eee_record("test/model2", ["da"], {"test_macro_f1": 85.0}, False),
+            make_eee_record(
+                "test/model2",
+                ["da"],
+                {"test_mcc": 0.85},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.85, 0.86, 0.84],
+                metric_name="mcc",
+            ),
         ]
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -792,10 +1057,28 @@ class TestIntegrationWithTempFiles:
     def test_shots_auto_detection(self) -> None:
         """Test auto shot detection with temp files."""
         zero_records = [
-            make_eee_record("test/model1", ["da"], {"test_macro_f1": 80.0}, False)
+            make_eee_record(
+                "test/model1",
+                ["da"],
+                {"test_mcc": 0.8},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.8, 0.82, 0.78],
+                metric_name="mcc",
+            )
         ]
         few_records = [
-            make_eee_record("test/model1", ["da"], {"test_macro_f1": 85.0}, True)
+            make_eee_record(
+                "test/model1",
+                ["da"],
+                {"test_mcc": 0.85},
+                True,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.85, 0.86, 0.84],
+                metric_name="mcc",
+            )
         ]
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -859,7 +1142,16 @@ class TestIntegrationWithTempFiles:
         """Test that result JSONL files are not mutated."""
         original_content = (
             json.dumps(
-                make_eee_record("test/model1", ["da"], {"test_macro_f1": 80.0}, False)
+                make_eee_record(
+                    "test/model1",
+                    ["da"],
+                    {"test_mcc": 0.8},
+                    False,
+                    task="sentiment-classification",
+                    dataset="angry-tweets",
+                    raw_scores=[0.8, 0.82, 0.78],
+                    metric_name="mcc",
+                )
             )
             + "\n"
         )
@@ -900,8 +1192,26 @@ class TestIntegrationWithTempFiles:
         This tests the parse_jsonl_lines ability to handle malformed JSONL
         where multiple JSON objects appear on a single line without newlines.
         """
-        record1 = make_eee_record("test/model1", ["da"], {"test_macro_f1": 80.0}, False)
-        record2 = make_eee_record("test/model1", ["sv"], {"test_macro_f1": 75.0}, False)
+        record1 = make_eee_record(
+            "test/model1",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.82, 0.78],
+            metric_name="mcc",
+        )
+        record2 = make_eee_record(
+            "test/model1",
+            ["sv"],
+            {"test_mcc": 0.75},
+            False,
+            task="sentiment-classification",
+            dataset="swerec",
+            raw_scores=[0.75, 0.76, 0.74],
+            metric_name="mcc",
+        )
 
         concatenated = json.dumps(record1) + json.dumps(record2)
 

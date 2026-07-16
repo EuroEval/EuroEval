@@ -25,7 +25,12 @@ from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.jsonl_io import parse_jsonl_lines
 from euroeval.languages import get_all_languages
 from leaderboards.constants import RESULTS_DIR
-from leaderboards.record_fields import get_few_shot, get_task, get_total_scores
+from leaderboards.record_fields import (
+    get_few_shot,
+    get_raw_results,
+    get_task,
+    get_total_scores,
+)
 from leaderboards.records import get_dataset
 from leaderboards.task_metadata import (
     language_name_to_codes,
@@ -364,6 +369,56 @@ def _extract_scores_from_record(record: JsonDict) -> dict[str, float]:
     return scores if scores is not None else {}
 
 
+def _extract_raw_scores_from_record(
+    record: JsonDict, primary_metric: str, secondary_metric: str | None
+) -> list[float]:
+    """Extract raw per-iteration scores from an EEE-format record.
+
+    Retrieves raw bootstrap/iteration scores for the primary metric (or
+    secondary if primary is unavailable) from the record's raw_results.
+
+    Args:
+        record:
+            EEE-format result record.
+        primary_metric:
+            Primary metric name (e.g. "mcc", "macro_f1").
+        secondary_metric:
+            Secondary metric name, or None if single-metric task.
+
+    Returns:
+        List of raw per-iteration scores. Empty list if no raw scores found.
+    """
+    raw_results = get_raw_results(record)
+    if raw_results is None:
+        return []
+
+    raw_scores: list[float] = []
+    metrics_to_try = [primary_metric]
+    if secondary_metric:
+        metrics_to_try.append(secondary_metric)
+
+    for result_dict in raw_results:
+        if not isinstance(result_dict, dict):
+            continue
+        score: float | None = None
+        for metric in metrics_to_try:
+            # Try with test_ prefix first, then bare metric name
+            if f"test_{metric}" in result_dict:
+                score = float(result_dict[f"test_{metric}"])
+                break
+            if metric in result_dict:
+                score = float(result_dict[metric])
+                break
+        if score is not None and math.isfinite(score):
+            raw_scores.append(score)
+
+    # Scale normalised scores [0, 1] back to [0, 100] if needed
+    if raw_scores and max(raw_scores) <= 1.0:
+        raw_scores = [s * 100.0 for s in raw_scores]
+
+    return raw_scores
+
+
 def _get_model_identifier(record: JsonDict) -> str:
     """Extract model identifier from an EEE-format record.
 
@@ -476,9 +531,11 @@ def _build_score_matrix(
     """Build a model x language mean rank score matrix from records.
 
     Computes per-language mean rank scores following the EuroEval methodology:
-    1. Extract aggregated scores per (model, dataset, language)
-    2. Compute dataset rank scores: 1 + (best_mean - model_mean) / pooled_std
-    3. Aggregate hierarchy: dataset -> task -> language (unweighted means)
+    1. Extract raw per-iteration/bootstrap scores per (model, dataset, language)
+    2. Compute mean_score(m,d) = mean of all raw scores for model m on dataset d
+    3. Compute pooled_std(d) = std of ALL raw scores from all models on dataset d
+    4. Compute rank_score = 1 + (best_mean - model_mean) / pooled_std
+    5. Aggregate hierarchy: dataset -> task -> language (unweighted means)
 
     Rank score of 1 is perfect (best on dataset). Lower is better.
 
@@ -495,9 +552,9 @@ def _build_score_matrix(
     Returns:
         Model x language mean rank score matrix (lower is better).
     """
-    # Step 1: Collect aggregated scores per (model, dataset, language)
-    # Structure: model -> dataset -> language -> list of scores
-    model_dataset_lang_scores: dict[str, dict[str, dict[str, list[float]]]] = (
+    # Step 1: Collect raw per-iteration scores per (model, dataset, language)
+    # Structure: model -> dataset -> language -> list of raw scores
+    model_dataset_lang_raw_scores: dict[str, dict[str, dict[str, list[float]]]] = (
         defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     )
 
@@ -522,87 +579,60 @@ def _build_score_matrix(
             continue
 
         record_languages = _extract_languages_from_record(record)
-        scores = _extract_scores_from_record(record)
         dataset = get_dataset(record)
 
         if not dataset or not record_languages:
             continue
 
-        # Get primary metric for this task
+        # Get primary/secondary metric for this task
         primary_metric, secondary_metric = task_metric_names(task_name)
-        metrics_to_try = [primary_metric]
-        if secondary_metric:
-            metrics_to_try.append(secondary_metric)
 
-        score: float | None = None
-        for metric in metrics_to_try:
-            if metric is None:
-                continue
-            test_metric = f"test_{metric}"
-            if test_metric in scores:
-                score = scores[test_metric]
-                break
-            if metric in scores:
-                score = scores[metric]
-                break
+        # Extract raw per-iteration scores (not aggregated)
+        raw_scores = _extract_raw_scores_from_record(
+            record, primary_metric, secondary_metric
+        )
 
-        # Fallbacks for legacy records
-        if score is None:
-            for fallback in ["test_macro_f1", "test_accuracy", "test_rouge"]:
-                if fallback in scores:
-                    score = scores[fallback]
-                    break
-        if score is None:
-            for fallback in ["macro_f1", "accuracy", "rouge"]:
-                if fallback in scores:
-                    score = scores[fallback]
-                    break
-
-        if score is None or not math.isfinite(score):
+        if not raw_scores:
             continue
 
         for lang in record_languages:
             if lang in languages:
-                model_dataset_lang_scores[matching_model][dataset][lang].append(score)
+                model_dataset_lang_raw_scores[matching_model][dataset][lang].extend(
+                    raw_scores
+                )
 
-    if not model_dataset_lang_scores:
+    if not model_dataset_lang_raw_scores:
         return {model: {lang: None for lang in languages} for model in models}
 
-    # Step 2: Compute mean score per (model, dataset, language)
-    model_dataset_lang_means: dict[str, dict[str, dict[str, float]]] = {}
-    for model, datasets in model_dataset_lang_scores.items():
-        model_dataset_lang_means[model] = {}
-        for dataset, lang_scores in datasets.items():
-            model_dataset_lang_means[model][dataset] = {}
-            for lang, scores_list in lang_scores.items():
-                if scores_list:
-                    model_dataset_lang_means[model][dataset][lang] = sum(
-                        scores_list
-                    ) / len(scores_list)
+    # Step 2: Compute mean score per (model, dataset) from raw scores
+    # mean_score(m,d) = mean of ALL raw scores for model m on dataset d
+    model_dataset_means: dict[str, dict[str, float]] = defaultdict(dict)
+    for model, datasets in model_dataset_lang_raw_scores.items():
+        for dataset, lang_raw_scores in datasets.items():
+            all_raw_scores: list[float] = []
+            for scores_list in lang_raw_scores.values():
+                all_raw_scores.extend(scores_list)
+            if all_raw_scores:
+                model_dataset_means[model][dataset] = float(np.mean(all_raw_scores))
 
-    # Step 3: Compute dataset-level statistics (best_mean, pooled_std)
-    # Need all models' scores on each dataset to compute these
-    dataset_all_scores: dict[str, list[float]] = defaultdict(list)
-    dataset_model_means: dict[str, dict[str, float]] = defaultdict(dict)
-
-    for model, dataset_lang_means in model_dataset_lang_means.items():
-        for dataset, lang_means in dataset_lang_means.items():
-            # Mean across languages for this model-dataset
-            if lang_means:
-                dataset_mean = sum(lang_means.values()) / len(lang_means)
-                dataset_model_means[dataset][model] = dataset_mean
-                # Collect all raw scores for pooled std
-                for lang_scores in model_dataset_lang_scores[model][dataset].values():
-                    dataset_all_scores[dataset].extend(lang_scores)
+    # Step 3: Compute pooled_std per dataset from ALL raw scores across all models
+    dataset_all_raw_scores: dict[str, list[float]] = defaultdict(list)
+    for model, datasets in model_dataset_lang_raw_scores.items():
+        for dataset, lang_raw_scores in datasets.items():
+            for scores_list in lang_raw_scores.values():
+                dataset_all_raw_scores[dataset].extend(scores_list)
 
     dataset_stats: dict[str, tuple[float, float]] = {}
-    for dataset, all_scores in dataset_all_scores.items():
+    for dataset, all_scores in dataset_all_raw_scores.items():
         if not all_scores:
             continue
-        model_means = dataset_model_means[dataset]
-        if not model_means:
+        # Check which models have this dataset
+        models_with_dataset = {
+            m for m, ds_means in model_dataset_means.items() if dataset in ds_means
+        }
+        if not models_with_dataset:
             continue
-        best_mean = max(model_means.values())
+        best_mean = max(model_dataset_means[m][dataset] for m in models_with_dataset)
         pooled_std = float(np.std(all_scores)) if len(all_scores) > 1 else 1.0
         if pooled_std <= 0:
             pooled_std = 1.0
@@ -610,16 +640,20 @@ def _build_score_matrix(
 
     # Step 4: Compute rank score per (model, dataset, language)
     # rank_score = 1 + (best_mean - model_mean) / pooled_std
-    model_dataset_lang_rank_scores: dict[str, dict[str, dict[str, float]]] = {}
+    model_dataset_lang_rank_scores: dict[str, dict[str, dict[str, float]]] = (
+        defaultdict(lambda: defaultdict(dict))
+    )
     for model in models:
-        model_dataset_lang_rank_scores[model] = defaultdict(dict)
-        if model not in model_dataset_lang_means:
+        if model not in model_dataset_lang_raw_scores:
             continue
-        for dataset, lang_means in model_dataset_lang_means[model].items():
+        for dataset, lang_raw_scores in model_dataset_lang_raw_scores[model].items():
             if dataset not in dataset_stats:
                 continue
             best_mean, pooled_std = dataset_stats[dataset]
-            for lang, model_mean in lang_means.items():
+            for lang, raw_scores_list in lang_raw_scores.items():
+                if not raw_scores_list:
+                    continue
+                model_mean = float(np.mean(raw_scores_list))
                 rank_score = 1.0 + (best_mean - model_mean) / pooled_std
                 model_dataset_lang_rank_scores[model][dataset][lang] = rank_score
 
@@ -764,6 +798,25 @@ def _get_language_display_name(code: str) -> str:
     return code
 
 
+def _hex_to_rgba(hex_colour: str, alpha: float = 0.2) -> str:
+    """Convert hex colour to rgba string with specified alpha.
+
+    Args:
+        hex_colour:
+            Hex colour string (e.g. "#1f77b4").
+        alpha (optional):
+            Alpha value (0.0 to 1.0). Defaults to 0.2.
+
+    Returns:
+        RGBA colour string (e.g. "rgba(31, 119, 180, 0.2)").
+    """
+    hex_val = hex_colour.lstrip("#")
+    r = int(hex_val[0:2], 16)
+    g = int(hex_val[2:4], 16)
+    b = int(hex_val[4:6], 16)
+    return f"rgba({r}, {g}, {b}, {alpha})"
+
+
 def _create_spider_plot(
     model_scores: dict[str, dict[str, float | None]],
     languages: list[str],
@@ -772,7 +825,8 @@ def _create_spider_plot(
     """Create a Plotly spider/radial plot.
 
     Creates a plot with rank score (lower is better), so the radial axis
-    is always reversed.
+    is always reversed. Radial axis minimum is 1 (perfect rank score),
+    ticks show one decimal place.
 
     Args:
         model_scores:
@@ -814,11 +868,11 @@ def _create_spider_plot(
                 fill="toself",
                 name=display_name,
                 line=dict(color=colour, width=2),
-                fillcolor=colour.replace(")", ", 0.2)").replace("rgb", "rgba"),
+                fillcolor=_hex_to_rgba(colour, alpha=0.2),
             )
         )
 
-    radial_axis = dict(visible=True, range=[max_score, 0], tickformat=".0f")
+    radial_axis = dict(visible=True, range=[max_score, 1], tickformat=".1f", dtick=0.5)
 
     fig.update_layout(
         polar=dict(radialaxis=radial_axis),
