@@ -944,6 +944,16 @@ class TestCreateSpiderPlot:
         assert all(trace.fill == "none" for trace in lines)
         assert all(trace.line.width == 2.5 for trace in lines)
 
+    def test_traces_are_closed_between_last_and_first_language(self) -> None:
+        """Traces should repeat the first point to close the polygon."""
+        model_scores: dict[str, dict[str, float | None]] = {
+            "model1": {"da": 1.5, "sv": 2.0, "no": 2.2}
+        }
+        fig = _create_spider_plot(model_scores, ["da", "sv", "no"], 3.0)
+        for trace in fig.data:
+            assert trace.r[0] == trace.r[-1]
+            assert trace.theta[0] == trace.theta[-1]
+
     def test_transparent_fill_for_readability(self) -> None:
         """Should use transparent fills so overlapping traces remain readable."""
         model_scores: dict[str, dict[str, float | None]] = {

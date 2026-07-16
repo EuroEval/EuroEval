@@ -1000,18 +1000,20 @@ def _create_spider_plot(
 
     fig = go.Figure()
 
+    closed_languages_display = [*languages_display, languages_display[0]]
     prepared_traces: list[tuple[str, list[float], str]] = []
     for idx, (model_id, lang_scores) in enumerate(model_scores.items()):
         scores = [lang_scores.get(lang, 0) or 0 for lang in languages]
+        closed_scores = [*scores, scores[0]]
         display_name = _normalise_model_name(model_id)
         colour = colours[idx % len(colours)]
-        prepared_traces.append((display_name, scores, colour))
+        prepared_traces.append((display_name, closed_scores, colour))
 
     for display_name, scores, colour in prepared_traces:
         fig.add_trace(
             go.Scatterpolar(
                 r=scores,
-                theta=languages_display,
+                theta=closed_languages_display,
                 fill="toself",
                 name=display_name,
                 line=dict(color=_hex_to_rgba(colour, alpha=0.0), width=0),
@@ -1025,7 +1027,7 @@ def _create_spider_plot(
         fig.add_trace(
             go.Scatterpolar(
                 r=scores,
-                theta=languages_display,
+                theta=closed_languages_display,
                 fill="none",
                 name=display_name,
                 line=dict(color=colour, width=2.5),
