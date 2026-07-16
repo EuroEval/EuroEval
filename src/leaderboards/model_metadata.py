@@ -500,15 +500,31 @@ def is_open(record: dict, cache: Cache) -> bool:
         model_id=plain_model_id(_model_id_from_record(record=record))
     ).model_id
 
-    base_model_cache = {_base_model_id(m): value for m, value in cache.open.items()}
-    base_model_id = _base_model_id(model_id)
-    if base_model_id in base_model_cache:
-        value = base_model_cache[base_model_id]
-        if model_id not in cache.open:
-            cache.open[model_id] = value
-        return value
+    # Use exact model-id cache only (no base-model broadening)
+    if model_id in cache.open:
+        cached_value = cache.open[model_id]
+        # Trust cached True; re-check HF for cached False if record has HF URL
+        if cached_value is True:
+            return True
+        # Cached False: check if record has HF URL for this model
+        model_url = (
+            record.get("model_info", {}).get("additional_details", {}).get("model_url")
+        )
+        if model_url and _is_hf_url_for_model(model_url, model_id):
+            # Re-check HF to repair potentially stale/corrupt False
+            try:
+                api = HfApi()
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=UserWarning)
+                    api.model_info(repo_id=model_id)
+            except (RepositoryNotFoundError, HFValidationError):
+                return False
+            # Model exists on HF: update cache and return True
+            cache.open[model_id] = True
+            return True
+        return False
 
-    # Assume closed if not found on HF Hub
+    # Not in cache: check HF
     try:
         api = HfApi()
         with warnings.catch_warnings():
@@ -539,6 +555,24 @@ def _model_id_from_record(record: dict) -> str:
         if model_id_match:
             return model_id_match.group(1)
     return model_id
+
+
+def _is_hf_url_for_model(model_url: str, model_id: str) -> bool:
+    """Check if a model URL is a Hugging Face URL for the given model.
+
+    Args:
+        model_url:
+            The model URL to check.
+        model_id:
+            The model ID (e.g., ``org/repo``).
+
+    Returns:
+        True if the URL is an HF Hub URL for the model, False otherwise.
+    """
+    model_id = plain_model_id(model_id)
+    return model_url.startswith(
+        (f"https://hf.co/{model_id}", f"https://huggingface.co/{model_id}")
+    )
 
 
 def _base_model_id(model_id: str) -> str:

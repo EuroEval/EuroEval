@@ -3,6 +3,8 @@
 These tests verify that model metadata lookups correctly handle validation
 and zero-shot suffixes (e.g., ``(val)``, ``(zero-shot)``) by normalising them
 to the base model ID before cache operations.
+
+Also tests repair of stale/corrupt open=False metadata for HF-hosted models.
 """
 
 from __future__ import annotations
@@ -16,6 +18,7 @@ from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
 from leaderboards.cache import Cache
 from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
 from leaderboards.model_metadata import (
+    _is_hf_url_for_model,
     is_commercially_licensed,
     is_merge,
     is_open,
@@ -495,3 +498,219 @@ class TestCommercialLicenceInference:
         assert result2 is True  # Cached from first call
         assert mock_api.model_info.call_count == 1  # Not called again
         assert mock_input.call_count == 0  # Not prompted again
+
+
+class TestStaleOpenFalseRepair:
+    """Tests for repair of stale/corrupt open=False metadata for HF-hosted models.
+
+    These tests ensure that:
+    1. Cached open=False is repaired when the model has an HF URL and exists on HF.
+    2. Base-model cache broadening does not propagate stale values across variants.
+    3. Non-HF/nonexistent model false remains false.
+    """
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_open_false_repaired_with_hf_url(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Model with open=False + HF URL should be repaired to True by is_open()."""
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        # Model exists on HF (no exception raised)
+        mock_api.model_info.return_value = MagicMock()
+
+        # Record with stale open=False but valid HF URL
+        record = {
+            "model_info": {
+                "name": "Qwen/Qwen3-32B#no-thinking",
+                "additional_details": {
+                    "open": False,
+                    "model_url": "https://hf.co/Qwen/Qwen3-32B",
+                },
+            },
+            "generative": True,
+        }
+        cache = Cache()
+        # Pre-populate cache with stale False value
+        # Note: split_model_id() strips '#no-thinking', so cache key is 'Qwen/Qwen3-32B'
+        cache.open["Qwen/Qwen3-32B"] = False
+
+        result = is_open(record=record, cache=cache)
+
+        assert result is True
+        # Cache is updated with repaired True
+        assert cache.open["Qwen/Qwen3-32B"] is True
+        mock_api.model_info.assert_called_once_with(repo_id="Qwen/Qwen3-32B")
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_base_model_broadening_does_not_propagate_false(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Cached false for Qwen/Qwen3-0.6B should not affect Qwen/Qwen3-32B.
+
+        This tests that _base_model_id() broadening is NOT used for openness,
+        preventing propagation of stale values across unrelated model variants.
+        """
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        # Make HF lookup fail so we can test the cache behavior
+        mock_response = Mock()
+        mock_response.status_code = 404
+        mock_response.headers = {}
+        mock_response.text = "Not Found"
+        mock_response.request = Mock()
+        mock_response.request.url = "https://huggingface.co/api/models/fake"
+        mock_api.model_info.side_effect = RepositoryNotFoundError(
+            "Repository Not Found", response=mock_response
+        )
+
+        cache = Cache()
+        # Cache False for a different Qwen3 variant
+        cache.open["Qwen/Qwen3-0.6B"] = False
+
+        # Record for Qwen3-32B (no HF URL, not in cache)
+        record = {
+            "model_info": {"name": "Qwen/Qwen3-32B", "additional_details": {}},
+            "generative": True,
+        }
+
+        # Should not return cached False from different model Qwen/Qwen3-0.6B
+        # Instead, it should try HF lookup (which fails) and return False
+        result = is_open(record=record, cache=cache)
+
+        # Result is False because HF lookup fails (mocked), NOT because of
+        # base-model broadening from Qwen/Qwen3-0.6B
+        assert result is False
+        # Verify that Qwen/Qwen3-32B now has its own cache entry (not inherited)
+        assert "Qwen/Qwen3-32B" in cache.open
+        assert cache.open["Qwen/Qwen3-32B"] is False
+        # Verify Qwen/Qwen3-0.6B cache is still there unchanged
+        assert cache.open["Qwen/Qwen3-0.6B"] is False
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_non_hf_model_false_remains_false(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Non-HF/nonexistent model should remain False."""
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        # Model does NOT exist on HF (RepositoryNotFoundError raised)
+        mock_response = Mock()
+        mock_response.status_code = 404
+        mock_response.headers = {}
+        mock_response.text = "Not Found"
+        mock_response.request = Mock()
+        mock_response.request.url = "https://huggingface.co/api/models/fake"
+        mock_api.model_info.side_effect = RepositoryNotFoundError(
+            "Repository Not Found", response=mock_response
+        )
+
+        record = {
+            "model_info": {"name": "openai/gpt-4", "additional_details": {}},
+            "generative": True,
+        }
+        cache = Cache()
+
+        result = is_open(record=record, cache=cache)
+
+        assert result is False
+        assert cache.open["openai/gpt-4"] is False
+
+    def test_is_hf_url_for_model_detects_hf_urls(self) -> None:
+        """Test the _is_hf_url_for_model helper function."""
+        assert (
+            _is_hf_url_for_model("https://hf.co/Qwen/Qwen3-32B", "Qwen/Qwen3-32B")
+            is True
+        )
+        assert (
+            _is_hf_url_for_model(
+                "https://huggingface.co/Qwen/Qwen3-32B", "Qwen/Qwen3-32B"
+            )
+            is True
+        )
+        assert (
+            _is_hf_url_for_model(
+                "https://hf.co/meta-llama/Llama-3.1-8B", "Qwen/Qwen3-32B"
+            )
+            is False
+        )
+        assert _is_hf_url_for_model("https://openai.com/gpt-4", "openai/gpt-4") is False
+        assert (
+            _is_hf_url_for_model("https://api.openai.com/gpt-4", "openai/gpt-4")
+            is False
+        )
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_cached_true_is_trusted(self, mock_hf_api_class: MagicMock) -> None:
+        """Cached open=True should be returned without HF lookup."""
+        cache = Cache()
+        # split_model_id() strips '#no-thinking', so cache key is 'Qwen/Qwen3-32B'
+        cache.open["Qwen/Qwen3-32B"] = True
+
+        record = {
+            "model_info": {
+                "name": "Qwen/Qwen3-32B#no-thinking",
+                "additional_details": {},
+            },
+            "generative": True,
+        }
+
+        result = is_open(record=record, cache=cache)
+
+        assert result is True
+        # Verify HF API was NOT called (cached True is trusted)
+        mock_hf_api_class.assert_not_called()
+
+    def test_cache_from_records_does_not_cache_false_with_hf_url(self) -> None:
+        """Cache._from_records() should not cache open=False when HF URL exists."""
+        # Create a record with open=False and HF URL
+        record: dict[str, object] = {
+            "model_info": {
+                "name": "org/repo",
+                "additional_details": {
+                    "open": False,
+                    "model_url": "https://hf.co/org/repo",
+                },
+            },
+            "generative": True,
+        }
+
+        cache = Cache._from_records(records=[record], desc="Test")
+
+        # Should NOT cache False because there's an HF URL
+        assert "org/repo" not in cache.open
+
+    def test_cache_from_records_caches_false_without_hf_url(self) -> None:
+        """Cache._from_records() should cache open=False when no HF URL."""
+        # Create a record with open=False and no model_url
+        record: dict[str, object] = {
+            "model_info": {
+                "name": "openai/gpt-4",
+                "additional_details": {"open": False},
+            },
+            "generative": True,
+        }
+
+        cache = Cache._from_records(records=[record], desc="Test")
+
+        # Should cache False because there's no HF URL
+        assert cache.open["openai/gpt-4"] is False
+
+    def test_cache_from_records_caches_true_with_hf_url(self) -> None:
+        """Cache._from_records() should cache open=True even with HF URL."""
+        # Create a record with open=True and HF URL
+        record: dict[str, object] = {
+            "model_info": {
+                "name": "org/repo",
+                "additional_details": {
+                    "open": True,
+                    "model_url": "https://hf.co/org/repo",
+                },
+            },
+            "generative": True,
+        }
+
+        cache = Cache._from_records(records=[record], desc="Test")
+
+        # Should cache True
+        assert cache.open["org/repo"] is True
