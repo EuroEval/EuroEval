@@ -399,31 +399,31 @@ class TestComputeMaxScore:
     """Tests for _compute_max_score function."""
 
     def test_auto_compute_rounds_up(self) -> None:
-        """Should compute max from scores and round up to nearest 10."""
+        """Should compute max from rank scores and round up to nearest 0.5."""
         model_scores: dict[str, dict[str, float | None]] = {
-            "model1": {"da": 80.0, "sv": 75.0},
-            "model2": {"da": 82.0, "sv": 77.0},
+            "model1": {"da": 3.2, "sv": 2.8},
+            "model2": {"da": 3.6, "sv": 3.0},
         }
         max_score = _compute_max_score(model_scores, max_score_override=None)
-        assert max_score == 90.0
+        assert max_score == 4.0
 
     def test_max_score_at_boundary(self) -> None:
-        """Should not round up when at exact boundary."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 80.0}}
+        """Should not round up when at exact 0.5 boundary."""
+        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.5}}
         max_score = _compute_max_score(model_scores, max_score_override=None)
-        assert max_score == 80.0
+        assert max_score == 3.5
 
     def test_override_valid(self) -> None:
         """Should use override when valid."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 80.0}}
-        max_score = _compute_max_score(model_scores, max_score_override=100.0)
-        assert max_score == 100.0
+        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.2}}
+        max_score = _compute_max_score(model_scores, max_score_override=5.0)
+        assert max_score == 5.0
 
     def test_override_too_small(self) -> None:
         """Should raise error when override is too small."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 85.0}}
+        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.5}}
         with pytest.raises(ValueError, match="too small"):
-            _compute_max_score(model_scores, max_score_override=80.0)
+            _compute_max_score(model_scores, max_score_override=3.0)
 
     def test_override_nan_raises(self) -> None:
         """Should reject NaN override."""
@@ -439,27 +439,39 @@ class TestComputeMaxScore:
 
     def test_override_negative_raises(self) -> None:
         """Should reject negative override."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 80.0}}
-        with pytest.raises(ValueError, match="positive"):
-            _compute_max_score(model_scores, max_score_override=-10.0)
+        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.0}}
+        with pytest.raises(ValueError, match="> 1"):
+            _compute_max_score(model_scores, max_score_override=-1.0)
 
     def test_override_zero_raises(self) -> None:
         """Should reject zero override."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 80.0}}
-        with pytest.raises(ValueError, match="positive"):
+        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.0}}
+        with pytest.raises(ValueError, match="> 1"):
             _compute_max_score(model_scores, max_score_override=0.0)
+
+    def test_override_one_raises(self) -> None:
+        """Should reject override of exactly 1 (perfect score)."""
+        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.0}}
+        with pytest.raises(ValueError, match="> 1"):
+            _compute_max_score(model_scores, max_score_override=1.0)
+
+    def test_min_2_5_applied(self) -> None:
+        """Should apply minimum of 2.5 even for very small scores."""
+        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 1.5}}
+        max_score = _compute_max_score(model_scores, max_score_override=None)
+        assert max_score == 2.5
 
     def test_empty_scores_default(self) -> None:
         """Should return default for empty scores."""
         model_scores: dict[str, dict[str, float | None]] = {}
         max_score = _compute_max_score(model_scores, max_score_override=None)
-        assert max_score == 100.0
+        assert max_score == 2.5
 
     def test_none_scores_ignored(self) -> None:
         """Should ignore None scores."""
-        model_scores = {"model1": {"da": None, "sv": 80.0}}
+        model_scores = {"model1": {"da": None, "sv": 3.2}}
         max_score = _compute_max_score(model_scores, max_score_override=None)
-        assert max_score == 80.0
+        assert max_score == 3.5
 
 
 class TestCreateSpiderPlot:
@@ -591,7 +603,6 @@ class TestIntegrationWithTempFiles:
                 with tempfile.TemporaryDirectory() as workdir:
                     original_cwd = Path.cwd()
                     try:
-
                         os.chdir(workdir)
                         result = runner.invoke(
                             cli,
@@ -637,7 +648,6 @@ class TestIntegrationWithTempFiles:
                 with tempfile.TemporaryDirectory() as workdir:
                     original_cwd = Path.cwd()
                     try:
-
                         os.chdir(workdir)
                         result = runner.invoke(
                             cli,
@@ -719,7 +729,6 @@ class TestIntegrationWithTempFiles:
                 with tempfile.TemporaryDirectory() as workdir:
                     original_cwd = Path.cwd()
                     try:
-
                         os.chdir(workdir)
                         result = runner.invoke(
                             cli,
@@ -740,7 +749,6 @@ class TestIntegrationWithTempFiles:
                 with tempfile.TemporaryDirectory() as workdir:
                     original_cwd = Path.cwd()
                     try:
-
                         os.chdir(workdir)
                         result = runner.invoke(
                             cli,
@@ -784,7 +792,6 @@ class TestIntegrationWithTempFiles:
                 with tempfile.TemporaryDirectory() as workdir:
                     original_cwd = Path.cwd()
                     try:
-
                         os.chdir(workdir)
                         result = runner.invoke(
                             cli,
@@ -826,7 +833,6 @@ class TestIntegrationWithTempFiles:
                 with tempfile.TemporaryDirectory() as workdir:
                     original_cwd = Path.cwd()
                     try:
-
                         os.chdir(workdir)
                         result = runner.invoke(
                             cli,

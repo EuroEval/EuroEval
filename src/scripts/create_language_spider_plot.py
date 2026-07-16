@@ -63,8 +63,9 @@ def main(
         shots:
             Shot setting: "auto", "zero", or "few".
         max_score (optional):
-            Override maximum score for radial axis. If omitted, automatically
-            computed from the plotted rank scores (rounded up to nearest 10).
+            Override maximum rank score for the radial axis. If omitted,
+            auto-computed from plotted rank scores (rounded up to nearest 0.5,
+            minimum 2.5; rank score of 1 is perfect).
 
     Returns:
         Exit code (0 for success, 1 for failure).
@@ -553,25 +554,26 @@ def _build_score_matrix(
 def _compute_max_score(
     model_scores: dict[str, dict[str, float | None]], max_score_override: float | None
 ) -> float:
-    """Compute or validate maximum score for radial axis.
+    """Compute or validate maximum rank score for radial axis.
 
     If max_score_override is None, automatically computes the maximum from
-    all plotted scores and rounds up to the nearest 10. If provided, validates
-    that it is finite, positive, and >= all plotted scores.
+    all plotted rank scores and rounds up to the nearest 0.5, with a minimum
+    of 2.5 (since rank score of 1 is perfect, typical values are 2.5–6).
+    If provided, validates that it is finite, > 1, and >= all plotted scores.
 
     Args:
         model_scores:
-            Nested dict of model -> language -> score (or None).
+            Nested dict of model -> language -> rank score (or None).
         max_score_override (optional):
-            User-provided max score override. If omitted, auto-computed from
-            the plotted scores.
+            User-provided maximum rank score override. If omitted, auto-computed
+            from the plotted rank scores.
 
     Returns:
-        Maximum score value.
+        Maximum rank score value for the radial axis.
 
     Raises:
         ValueError:
-            If override is invalid (NaN, inf, non-positive, or too small).
+            If override is invalid (NaN, inf, <= 1, or too small).
     """
     all_scores: list[float] = []
     for lang_scores in model_scores.values():
@@ -580,7 +582,7 @@ def _compute_max_score(
                 all_scores.append(score)
 
     if not all_scores:
-        return 100.0
+        return 2.5
 
     max_found = max(all_scores)
 
@@ -589,18 +591,20 @@ def _compute_max_score(
             raise ValueError(
                 f"max-score {max_score_override} is invalid (must be finite)."
             )
-        if max_score_override <= 0:
+        if max_score_override <= 1:
             raise ValueError(
-                f"max-score {max_score_override} is invalid (must be positive)."
+                f"max-score {max_score_override} is invalid (must be > 1, "
+                f"since rank score of 1 is perfect)."
             )
         if max_score_override < max_found:
             raise ValueError(
                 f"max-score {max_score_override} is too small; "
-                f"found scores up to {max_found:.2f}"
+                f"found rank scores up to {max_found:.2f}"
             )
         return max_score_override
 
-    return math.ceil(max_found / 10) * 10
+    rounded = math.ceil(max_found * 2) / 2
+    return max(rounded, 2.5)
 
 
 def _normalise_model_name(model_id: str) -> str:
@@ -731,8 +735,11 @@ def _create_spider_plot(
     "--max-score",
     type=float,
     metavar="FLOAT",
-    help="Optional override for maximum radial axis score. When omitted, "
-    "automatically computed from plotted rank scores (rounded up to nearest 10).",
+    help=(
+        "Optional override for maximum rank score on the radial axis. "
+        "When omitted, auto-computed from plotted rank scores (rounded up "
+        "to nearest 0.5, minimum 2.5; rank score of 1 is perfect)."
+    ),
 )
 def cli(
     models: tuple[str, ...],
