@@ -26,12 +26,183 @@ from leaderboards.task_metadata import (
     task_metric_names,
 )
 
+# Type alias for dynamic EEE evaluation records (JSON structure varies by task/config)
+EEERecord: t.TypeAlias = dict[str, t.Any]
+
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+
+@click.command()
+@click.option(
+    "--model",
+    "-m",
+    "models",
+    multiple=True,
+    required=True,
+    metavar="MODEL",
+    help="Model ID to include (can be repeated).",
+)
+@click.option(
+    "--language",
+    "-l",
+    "languages",
+    multiple=True,
+    metavar="LANGUAGE",
+    help="Language name or code to include (can be repeated). "
+    "Defaults to official languages.",
+)
+@click.option(
+    "--shots",
+    type=click.Choice(["auto", "zero", "few"]),
+    default="auto",
+    show_default=True,
+    help="Shot setting: zero-shot, few-shot, or auto-detect.",
+)
+@click.option(
+    "--metric",
+    default="primary",
+    show_default=True,
+    help="Metric to use for scores. 'primary' uses task-specific primary metric.",
+)
+@click.option(
+    "--max-score",
+    type=float,
+    metavar="FLOAT",
+    help="Override maximum score for radial axis.",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=str),
+    default="language_spider_plot.html",
+    show_default=True,
+    help="Output HTML file path.",
+)
+@click.option(
+    "--lower-is-better",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Reverse radial axis so lower values are better (for rank-like metrics).",
+)
+@click.option(
+    "--require-complete/--allow-incomplete",
+    default=True,
+    show_default=True,
+    help="Whether to require all model-language scores to be present.",
+)
+def main(
+    models: tuple[str, ...],
+    languages: tuple[str, ...],
+    shots: str,
+    metric: str,
+    max_score: float | None,
+    output: str,
+    lower_is_better: bool,
+    require_complete: bool,
+) -> int:
+    """Create a language spider plot comparing models across languages.
+
+    Loads evaluation results from local JSONL files and generates an
+    interactive Plotly polar chart comparing selected models across languages.
+
+    Returns:
+        Exit code (0 for success, 1 for failure).
+    """
+    model_list = list(models)
+    language_list = list(languages) if languages else None
+
+    try:
+        resolved_languages = _resolve_languages(language_list)
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    if not language_list:
+        logger.info(f"Using {len(resolved_languages)} official languages by default")
+
+    logger.info(f"Loading results for {len(model_list)} model(s)")
+    records = _load_results_for_models(model_list)
+
+    if not records:
+        click.echo("Error: No results found for specified models", err=True)
+        sys.exit(1)
+
+    logger.info(f"Loaded {len(records)} total records")
+
+    try:
+        filtered_records = _filter_by_shots(
+            records, t.cast(t.Literal["auto", "zero", "few"], shots)
+        )
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    if not filtered_records:
+        click.echo("Error: No records after shot filtering", err=True)
+        sys.exit(1)
+
+    logger.info(f"Using {len(filtered_records)} records after shot filtering")
+
+    shot_value: bool | None = None
+    if shots == "zero":
+        shot_value = False
+    elif shots == "few":
+        shot_value = True
+
+    model_scores_matrix = _build_score_matrix(
+        records=filtered_records,
+        models=model_list,
+        languages=resolved_languages,
+        metric=metric,
+        shot_value=shot_value,
+    )
+
+    if require_complete:
+        for model_id, lang_scores in model_scores_matrix.items():
+            missing = [lang for lang, score in lang_scores.items() if score is None]
+            if missing:
+                logger.warning(
+                    f"Model {model_id} missing scores for {len(missing)} language(s): "
+                    f"{', '.join(missing[:5])}{'...' if len(missing) > 5 else ''}"
+                )
+
+        completeness = _check_completeness(model_scores_matrix)
+        if not completeness:
+            click.echo(
+                "Error: Incomplete score matrix. Some model-language combinations "
+                "are missing scores. Use --allow-incomplete to proceed anyway.",
+                err=True,
+            )
+            sys.exit(1)
+
+    try:
+        max_score_val = _compute_max_score(model_scores_matrix, max_score)
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    logger.info(f"Max score: {max_score_val:.2f}")
+
+    fig = _create_spider_plot(
+        model_scores=model_scores_matrix,
+        languages=resolved_languages,
+        max_score=max_score_val,
+        lower_is_better=lower_is_better,
+    )
+
+    output_path = Path(output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.write_html(str(output_path), include_plotlyjs=True)
+    logger.info(f"Wrote spider plot to {output_path}")
+
+    return 0
 
 
 def _normalise_language_input(language_input: str) -> set[str]:
@@ -115,7 +286,7 @@ def _get_primary_metric_for_task(task: str) -> str:
     return primary
 
 
-def _extract_languages_from_record(record: dict[str, t.Any]) -> list[str]:
+def _extract_languages_from_record(record: EEERecord) -> list[str]:
     """Extract language codes from an EEE-format record.
 
     Handles both modern EEE format (JSON-encoded string in eval_library) and
@@ -154,7 +325,7 @@ def _extract_languages_from_record(record: dict[str, t.Any]) -> list[str]:
     return []
 
 
-def _extract_task_from_record(record: dict[str, t.Any]) -> str | None:
+def _extract_task_from_record(record: EEERecord) -> str | None:
     """Extract task name from an EEE-format record.
 
     Args:
@@ -167,7 +338,7 @@ def _extract_task_from_record(record: dict[str, t.Any]) -> str | None:
     return record.get("eval_library", {}).get("additional_details", {}).get("task")
 
 
-def _extract_scores_from_record(record: dict[str, t.Any]) -> dict[str, float]:
+def _extract_scores_from_record(record: EEERecord) -> dict[str, float]:
     """Extract all scores from an EEE-format record.
 
     Uses the robust get_total_scores helper which handles the
@@ -184,7 +355,7 @@ def _extract_scores_from_record(record: dict[str, t.Any]) -> dict[str, float]:
     return scores if scores is not None else {}
 
 
-def _get_model_identifier(record: dict[str, t.Any]) -> str:
+def _get_model_identifier(record: EEERecord) -> str:
     """Extract model identifier from an EEE-format record.
 
     Args:
@@ -198,7 +369,7 @@ def _get_model_identifier(record: dict[str, t.Any]) -> str:
     return model_info.get("name", "") or model_info.get("id", "")
 
 
-def _load_results_for_models(model_ids: list[str]) -> list[dict[str, t.Any]]:
+def _load_results_for_models(model_ids: list[str]) -> list[EEERecord]:
     """Load all results for the specified model IDs from local JSONL files.
 
     Args:
@@ -208,7 +379,7 @@ def _load_results_for_models(model_ids: list[str]) -> list[dict[str, t.Any]]:
     Returns:
         List of EEE-format result records.
     """
-    records: list[dict[str, t.Any]] = []
+    records: list[EEERecord] = []
     model_files = sorted(RESULTS_DIR.glob("*.jsonl"))
 
     if not model_files:
@@ -229,16 +400,16 @@ def _load_results_for_models(model_ids: list[str]) -> list[dict[str, t.Any]]:
                 lines=lines, source=str(jsonl_path), strict=False
             )
             records.extend(file_records)
-            logger.info("Loaded %d records from %s", len(file_records), jsonl_path.name)
+            logger.info(f"Loaded {len(file_records)} records from {jsonl_path.name}")
         except Exception as exc:
-            logger.warning("Failed to parse %s: %s", jsonl_path, exc)
+            logger.warning(f"Failed to parse {jsonl_path}: {exc}")
 
     return records
 
 
 def _filter_by_shots(
-    records: list[dict[str, t.Any]], shots_setting: t.Literal["auto", "zero", "few"]
-) -> list[dict[str, t.Any]]:
+    records: list[EEERecord], shots_setting: t.Literal["auto", "zero", "few"]
+) -> list[EEERecord]:
     """Filter records by shot setting.
 
     Args:
@@ -284,7 +455,7 @@ def _filter_by_shots(
 
 
 def _build_score_matrix(
-    records: list[dict[str, t.Any]],
+    records: list[EEERecord],
     models: list[str],
     languages: list[str],
     metric: str,
@@ -529,7 +700,8 @@ def _create_spider_plot(
             )
         )
 
-    radial_axis: dict[str, t.Any] = dict(
+    # Plotly polar axis config
+    radial_axis = dict(
         visible=True,
         range=[0, max_score] if not lower_is_better else [max_score, 0],
         tickformat=".0f",
@@ -546,174 +718,5 @@ def _create_spider_plot(
     return fig
 
 
-@click.command()
-@click.option(
-    "--model",
-    "-m",
-    "models",
-    multiple=True,
-    required=True,
-    metavar="MODEL",
-    help="Model ID to include (can be repeated).",
-)
-@click.option(
-    "--language",
-    "-l",
-    "languages",
-    multiple=True,
-    metavar="LANGUAGE",
-    help="Language name or code to include (can be repeated). "
-    "Defaults to official languages.",
-)
-@click.option(
-    "--shots",
-    type=click.Choice(["auto", "zero", "few"]),
-    default="auto",
-    show_default=True,
-    help="Shot setting: zero-shot, few-shot, or auto-detect.",
-)
-@click.option(
-    "--metric",
-    default="primary",
-    show_default=True,
-    help="Metric to use for scores. 'primary' uses task-specific primary metric.",
-)
-@click.option(
-    "--max-score",
-    type=float,
-    metavar="FLOAT",
-    help="Override maximum score for radial axis.",
-)
-@click.option(
-    "--output",
-    "-o",
-    type=click.Path(path_type=str),
-    default="language_spider_plot.html",
-    show_default=True,
-    help="Output HTML file path.",
-)
-@click.option(
-    "--lower-is-better",
-    is_flag=True,
-    default=False,
-    show_default=True,
-    help="Reverse radial axis so lower values are better (for rank-like metrics).",
-)
-@click.option(
-    "--require-complete/--allow-incomplete",
-    default=True,
-    show_default=True,
-    help="Whether to require all model-language scores to be present.",
-)
-def main(
-    models: tuple[str, ...],
-    languages: tuple[str, ...],
-    shots: str,
-    metric: str,
-    max_score: float | None,
-    output: str,
-    lower_is_better: bool,
-    require_complete: bool,
-) -> int:
-    """Create a language spider plot comparing models across languages.
-
-    Loads evaluation results from local JSONL files and generates an
-    interactive Plotly polar chart comparing selected models across languages.
-
-    Returns:
-        Exit code (0 for success, 1 for failure).
-    """
-    model_list = list(models)
-    language_list = list(languages) if languages else None
-
-    try:
-        resolved_languages = _resolve_languages(language_list)
-    except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
-
-    if not language_list:
-        logger.info("Using %d official languages by default", len(resolved_languages))
-
-    logger.info("Loading results for %d model(s)", len(model_list))
-    records = _load_results_for_models(model_list)
-
-    if not records:
-        click.echo("Error: No results found for specified models", err=True)
-        sys.exit(1)
-
-    logger.info("Loaded %d total records", len(records))
-
-    try:
-        filtered_records = _filter_by_shots(
-            records, t.cast(t.Literal["auto", "zero", "few"], shots)
-        )
-    except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
-
-    if not filtered_records:
-        click.echo("Error: No records after shot filtering", err=True)
-        sys.exit(1)
-
-    logger.info("Using %d records after shot filtering", len(filtered_records))
-
-    shot_value: bool | None = None
-    if shots == "zero":
-        shot_value = False
-    elif shots == "few":
-        shot_value = True
-
-    model_scores_matrix = _build_score_matrix(
-        records=filtered_records,
-        models=model_list,
-        languages=resolved_languages,
-        metric=metric,
-        shot_value=shot_value,
-    )
-
-    if require_complete:
-        for model_id, lang_scores in model_scores_matrix.items():
-            missing = [lang for lang, score in lang_scores.items() if score is None]
-            if missing:
-                logger.warning(
-                    "Model %s missing scores for %d language(s): %s",
-                    model_id,
-                    len(missing),
-                    ", ".join(missing[:5]) + ("..." if len(missing) > 5 else ""),
-                )
-
-        completeness = _check_completeness(model_scores_matrix)
-        if not completeness:
-            click.echo(
-                "Error: Incomplete score matrix. Some model-language combinations "
-                "are missing scores. Use --allow-incomplete to proceed anyway.",
-                err=True,
-            )
-            sys.exit(1)
-
-    try:
-        max_score_val = _compute_max_score(model_scores_matrix, max_score)
-    except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
-
-    logger.info("Max score: %.2f", max_score_val)
-
-    fig = _create_spider_plot(
-        model_scores=model_scores_matrix,
-        languages=resolved_languages,
-        max_score=max_score_val,
-        lower_is_better=lower_is_better,
-    )
-
-    output_path = Path(output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.write_html(str(output_path), include_plotlyjs=True)
-    logger.info("Wrote spider plot to %s", output_path)
-
-    return 0
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

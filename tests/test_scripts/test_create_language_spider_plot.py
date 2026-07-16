@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import tempfile
-import typing as t
 from pathlib import Path
 from unittest.mock import patch
 
@@ -12,6 +11,7 @@ import pytest
 from click.testing import CliRunner
 
 from src.scripts.create_language_spider_plot import (
+    EEERecord,
     _build_score_matrix,
     _check_completeness,
     _compute_max_score,
@@ -32,7 +32,7 @@ def make_eee_record(
     scores: dict[str, float],
     few_shot: bool,
     task: str = "summarization",
-) -> dict[str, t.Any]:
+) -> EEERecord:
     """Create a minimal EEE-format record for testing.
 
     Args:
