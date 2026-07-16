@@ -25,7 +25,7 @@ from requests.exceptions import RequestException
 
 from euroeval.string_utils import split_model_id
 
-from .cache import Cache
+from .cache import Cache, _is_hf_url_for_model
 from .constants import GENERATIVE_TYPE_KEYWORDS, PERMISSIVE_LICENSES, RESULTS_DIR
 from .link_generation import ask_user_to_remove_model, generate_model_url
 from .record_fields import get_few_shot, get_task, get_version
@@ -75,7 +75,15 @@ def add_missing_entries(
         model_additional["commercially_licensed"] = is_commercially_licensed(
             record=record, cache=cache
         )
-    if "open" not in model_additional:
+    # Recheck/repair open when missing OR when stale False with HF URL
+    if "open" not in model_additional or (
+        model_additional["open"] is False
+        and "model_url" in model_additional
+        and model_additional["model_url"] is not None
+        and _is_hf_url_for_model(
+            model_additional["model_url"], get_model_name(record=record)
+        )
+    ):
         model_additional["open"] = is_open(record=record, cache=cache)
     if "trained_from_scratch" not in model_additional:
         model_additional["trained_from_scratch"] = is_trained_from_scratch(
@@ -500,15 +508,31 @@ def is_open(record: dict, cache: Cache) -> bool:
         model_id=plain_model_id(_model_id_from_record(record=record))
     ).model_id
 
-    base_model_cache = {_base_model_id(m): value for m, value in cache.open.items()}
-    base_model_id = _base_model_id(model_id)
-    if base_model_id in base_model_cache:
-        value = base_model_cache[base_model_id]
-        if model_id not in cache.open:
-            cache.open[model_id] = value
-        return value
+    # Use exact model-id cache only (no base-model broadening)
+    if model_id in cache.open:
+        cached_value = cache.open[model_id]
+        # Trust cached True; re-check HF for cached False if record has HF URL
+        if cached_value is True:
+            return True
+        # Cached False: check if record has HF URL for this model
+        model_url = (
+            record.get("model_info", {}).get("additional_details", {}).get("model_url")
+        )
+        if model_url and _is_hf_url_for_model(model_url, model_id):
+            # Re-check HF to repair potentially stale/corrupt False
+            try:
+                api = HfApi()
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=UserWarning)
+                    api.model_info(repo_id=model_id)
+            except (RepositoryNotFoundError, HFValidationError):
+                return False
+            # Model exists on HF: update cache and return True
+            cache.open[model_id] = True
+            return True
+        return False
 
-    # Assume closed if not found on HF Hub
+    # Not in cache: check HF
     try:
         api = HfApi()
         with warnings.catch_warnings():
