@@ -543,6 +543,22 @@ class TestClickCLI:
         result = runner.invoke(cli, ["--help"])
         assert "--lower-is-better" not in result.output
 
+    def test_cli_max_score_help_documents_auto(self) -> None:
+        """CLI help for --max-score should document automatic computation."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["--help"])
+        assert "--max-score" in result.output
+        assert (
+            "automatically" in result.output.lower() or "auto" in result.output.lower()
+        )
+
+    def test_cli_max_score_help_documents_optional(self) -> None:
+        """CLI help for --max-score should document it is optional."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["--help"])
+        assert "--max-score" in result.output
+        assert "optional" in result.output.lower() or "omitted" in result.output.lower()
+
 
 class TestIntegrationWithTempFiles:
     """Integration tests using temporary JSONL files."""
