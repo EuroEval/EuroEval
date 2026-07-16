@@ -917,12 +917,12 @@ class TestCreateSpiderPlot:
         assert len(fig.layout.images) == 1
         logo = fig.layout.images[0]
         assert logo.source.startswith("data:image/png;base64,")
-        assert logo.x == 0.985
-        assert logo.y == 0.015
+        assert logo.x == 1.12
+        assert logo.y == -0.14
         assert logo.xanchor == "right"
         assert logo.yanchor == "bottom"
-        assert logo.sizex == 0.12
-        assert logo.sizey == 0.12
+        assert logo.sizex == 0.24
+        assert logo.sizey == 0.24
 
     def test_none_scores_treated_as_zero(self) -> None:
         """Should treat None scores as zero in plot."""
