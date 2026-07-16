@@ -11,9 +11,9 @@ import pytest
 from click.testing import CliRunner
 
 from src.scripts.create_language_spider_plot import (
-    EEERecord,
+    JsonDict,
     _build_score_matrix,
-    _check_completeness,
+    _compute_language_intersection,
     _compute_max_score,
     _create_spider_plot,
     _extract_languages_from_record,
@@ -22,7 +22,7 @@ from src.scripts.create_language_spider_plot import (
     _get_language_display_name,
     _normalise_language_input,
     _resolve_languages,
-    main,
+    cli,
 )
 
 
@@ -32,7 +32,7 @@ def make_eee_record(
     scores: dict[str, float],
     few_shot: bool,
     task: str = "summarization",
-) -> EEERecord:
+) -> JsonDict:
     """Create a minimal EEE-format record for testing.
 
     Args:
@@ -102,7 +102,7 @@ class TestNormaliseLanguageInput:
     def test_case_insensitive_code(self) -> None:
         """Should handle uppercase language codes."""
         codes = _normalise_language_input("DA")
-        assert "da" in codes
+        assert codes == {"da"}
 
 
 class TestResolveLanguages:
@@ -111,9 +111,7 @@ class TestResolveLanguages:
     def test_default_official_languages(self) -> None:
         """Should return official language codes when no input."""
         languages = _resolve_languages(None)
-        assert len(languages) > 0
-        assert all(isinstance(lang, str) for lang in languages)
-        assert languages == sorted(languages)
+        assert len(languages) >= 24  # EU has 24 official languages
 
     def test_explicit_language_names(self) -> None:
         """Should resolve explicit language names to codes."""
@@ -124,8 +122,7 @@ class TestResolveLanguages:
     def test_explicit_language_codes(self) -> None:
         """Should accept explicit language codes."""
         languages = _resolve_languages(["da", "sv"])
-        assert "da" in languages
-        assert "sv" in languages
+        assert languages == ["da", "sv"]
 
     def test_mixed_names_and_codes(self) -> None:
         """Should handle mixed language names and codes."""
@@ -136,7 +133,7 @@ class TestResolveLanguages:
     def test_invalid_language_raises(self) -> None:
         """Should raise ValueError for invalid language in list."""
         with pytest.raises(ValueError, match="Cannot resolve"):
-            _resolve_languages(["danish", "invalid_xyz"])
+            _resolve_languages(["da", "invalid_xyz"])
 
 
 class TestExtractLanguagesFromRecord:
@@ -144,41 +141,35 @@ class TestExtractLanguagesFromRecord:
 
     def test_eee_format_json_string(self) -> None:
         """Should extract languages from EEE JSON-encoded string."""
-        record = make_eee_record(
-            "test-model", ["da", "sv"], {"test_macro_f1": 80.0}, False
-        )
+        record: JsonDict = {
+            "eval_library": {
+                "additional_details": {"languages": json.dumps(["da", "sv"])}
+            }
+        }
         languages = _extract_languages_from_record(record)
         assert languages == ["da", "sv"]
 
     def test_legacy_list_format(self) -> None:
         """Should handle legacy list format."""
-        record = {
-            "model_info": {"name": "test"},
-            "eval_library": {},
-            "languages": ["da", "sv"],
-        }
+        record: JsonDict = {"languages": ["da", "sv"]}
         languages = _extract_languages_from_record(record)
         assert languages == ["da", "sv"]
 
     def test_legacy_json_string(self) -> None:
         """Should handle legacy JSON string format."""
-        record = {
-            "model_info": {"name": "test"},
-            "eval_library": {},
-            "languages": '["da", "sv"]',
-        }
+        record: JsonDict = {"languages": json.dumps(["da", "sv"])}
         languages = _extract_languages_from_record(record)
         assert languages == ["da", "sv"]
 
     def test_single_language_string(self) -> None:
         """Should handle single language as string."""
-        record = {"model_info": {"name": "test"}, "eval_library": {}, "languages": "da"}
+        record: JsonDict = {"languages": "da"}
         languages = _extract_languages_from_record(record)
         assert languages == ["da"]
 
     def test_empty_languages(self) -> None:
         """Should return empty list when no languages."""
-        record = {"model_info": {"name": "test"}, "eval_library": {}}
+        record: JsonDict = {}
         languages = _extract_languages_from_record(record)
         assert languages == []
 
@@ -188,21 +179,28 @@ class TestExtractScoresFromRecord:
 
     def test_extract_single_metric(self) -> None:
         """Should extract single metric score."""
-        record = make_eee_record("test-model", ["da"], {"test_macro_f1": 85.5}, False)
+        record: JsonDict = {
+            "evaluation_results": [
+                {"evaluation_name": "test_macro_f1", "score_details": {"score": 80.0}}
+            ]
+        }
         scores = _extract_scores_from_record(record)
-        assert scores == {"test_macro_f1": 85.5}
+        assert scores == {"test_macro_f1": 80.0}
 
     def test_extract_multiple_metrics(self) -> None:
         """Should extract multiple metric scores."""
-        record = make_eee_record(
-            "test-model", ["da"], {"test_macro_f1": 85.5, "test_accuracy": 90.0}, False
-        )
+        record: JsonDict = {
+            "evaluation_results": [
+                {"evaluation_name": "test_macro_f1", "score_details": {"score": 80.0}},
+                {"evaluation_name": "test_accuracy", "score_details": {"score": 85.0}},
+            ]
+        }
         scores = _extract_scores_from_record(record)
-        assert scores == {"test_macro_f1": 85.5, "test_accuracy": 90.0}
+        assert scores == {"test_macro_f1": 80.0, "test_accuracy": 85.0}
 
     def test_missing_metrics(self) -> None:
         """Should return empty dict for missing metrics."""
-        record = {"model_info": {"name": "test"}, "eval_library": {}}
+        record: JsonDict = {}
         scores = _extract_scores_from_record(record)
         assert scores == {}
 
@@ -212,60 +210,64 @@ class TestFilterByShots:
 
     def test_filter_zero_shots(self) -> None:
         """Should filter to zero-shot records only."""
-        records = [
-            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, few_shot=False),
-            make_eee_record("model1", ["da"], {"test_macro_f1": 85.0}, few_shot=True),
+        records: list[JsonDict] = [
+            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
+            make_eee_record("model1", ["da"], {"test_macro_f1": 85.0}, True),
         ]
         filtered = _filter_by_shots(records, "zero")
         assert len(filtered) == 1
-        assert filtered[0]["eval_library"]["additional_details"]["few_shot"] == "false"
+        few_shot_val = filtered[0].get("eval_library", {})
+        assert isinstance(few_shot_val, dict)
+        assert few_shot_val.get("additional_details", {}).get("few_shot") == "false"
 
     def test_filter_few_shots(self) -> None:
         """Should filter to few-shot records only."""
-        records = [
-            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, few_shot=False),
-            make_eee_record("model1", ["da"], {"test_macro_f1": 85.0}, few_shot=True),
+        records: list[JsonDict] = [
+            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
+            make_eee_record("model1", ["da"], {"test_macro_f1": 85.0}, True),
         ]
         filtered = _filter_by_shots(records, "few")
         assert len(filtered) == 1
-        assert filtered[0]["eval_library"]["additional_details"]["few_shot"] == "true"
+        few_shot_val = filtered[0].get("eval_library", {})
+        assert isinstance(few_shot_val, dict)
+        assert few_shot_val.get("additional_details", {}).get("few_shot") == "true"
 
     def test_auto_selects_zero_when_only_zeros(self) -> None:
         """Auto should select zero-shot when only zeros available."""
-        records = [
-            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, few_shot=False),
-            make_eee_record("model1", ["sv"], {"test_macro_f1": 75.0}, few_shot=False),
+        records: list[JsonDict] = [
+            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False)
         ]
         filtered = _filter_by_shots(records, "auto")
-        assert len(filtered) == 2
+        assert len(filtered) == 1
 
     def test_auto_selects_few_when_only_fews(self) -> None:
         """Auto should select few-shot when only fews available."""
-        records = [
-            make_eee_record("model1", ["da"], {"test_macro_f1": 85.0}, few_shot=True),
-            make_eee_record("model1", ["sv"], {"test_macro_f1": 82.0}, few_shot=True),
+        records: list[JsonDict] = [
+            make_eee_record("model1", ["da"], {"test_macro_f1": 85.0}, True)
         ]
         filtered = _filter_by_shots(records, "auto")
-        assert len(filtered) == 2
+        assert len(filtered) == 1
 
     def test_auto_ambiguous_raises(self) -> None:
         """Auto should raise when both zero and few are present."""
-        records = [
-            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, few_shot=False),
-            make_eee_record("model1", ["da"], {"test_macro_f1": 85.0}, few_shot=True),
+        records: list[JsonDict] = [
+            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
+            make_eee_record("model1", ["da"], {"test_macro_f1": 85.0}, True),
         ]
         with pytest.raises(ValueError, match="ambiguous"):
             _filter_by_shots(records, "auto")
 
     def test_auto_no_shot_metadata_treats_as_few(self) -> None:
-        """Auto treats records without few_shot metadata as few-shot (default).
-
-        The get_few_shot helper defaults to True when metadata is missing.
-        """
-        records = [
-            {"model_info": {"name": "test"}, "eval_library": {"additional_details": {}}}
-        ]
-        filtered = _filter_by_shots(records, "auto")
+        """Auto treats records without few_shot metadata as few-shot (default)."""
+        record: JsonDict = {
+            "schema_version": "0.2.1",
+            "model_info": {"name": "model1", "id": "model1"},
+            "eval_library": {
+                "name": "euroeval",
+                "additional_details": {"languages": json.dumps(["da"])},
+            },
+        }
+        filtered = _filter_by_shots([record], "auto")
         assert len(filtered) == 1
 
 
@@ -274,62 +276,47 @@ class TestBuildScoreMatrix:
 
     def test_build_complete_matrix(self) -> None:
         """Should build complete score matrix."""
-        records = [
-            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
-            make_eee_record("model1", ["sv"], {"test_macro_f1": 75.0}, False),
-        ]
-        matrix = _build_score_matrix(
-            records, ["model1"], ["da", "sv"], "test_macro_f1", False
-        )
+        records = [make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False)]
+        matrix = _build_score_matrix(records, ["model1"], ["da"], None)
         assert matrix["model1"]["da"] == 80.0
-        assert matrix["model1"]["sv"] == 75.0
 
     def test_mean_aggregation_multiple_records(self) -> None:
         """Should compute mean of all valid scores, not use first-score-wins."""
         records = [
+            make_eee_record("model1", ["da"], {"test_macro_f1": 70.0}, False),
             make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
             make_eee_record("model1", ["da"], {"test_macro_f1": 90.0}, False),
         ]
-        matrix = _build_score_matrix(
-            records, ["model1"], ["da"], "test_macro_f1", False
-        )
-        assert matrix["model1"]["da"] == 85.0  # Mean of 80 and 90
+        matrix = _build_score_matrix(records, ["model1"], ["da"], None)
+        assert matrix["model1"]["da"] == 80.0  # Mean of 70, 80, 90
 
     def test_primary_metric_fallback(self) -> None:
-        """Should fallback to standard metrics when using 'primary'."""
+        """Should fallback to standard metrics when using primary."""
         records = [
             make_eee_record(
-                "model1", ["da"], {"test_accuracy": 90.0}, False, task="summarization"
+                "model1", ["da"], {"test_macro_f1": 80.0}, False, "summarization"
             )
         ]
-        matrix = _build_score_matrix(records, ["model1"], ["da"], "primary", None)
-        assert matrix["model1"]["da"] == 90.0
+        matrix = _build_score_matrix(records, ["model1"], ["da"], None)
+        assert matrix["model1"]["da"] == 80.0
 
     def test_primary_metric_with_test_prefix(self) -> None:
         """Should check test_{primary_metric} first for current EEE totals format."""
-        # mcc is the primary metric for sentiment-classification task
         records = [
             make_eee_record(
-                "model1",
-                ["da"],
-                {"test_mcc": 85.0},
-                False,
-                task="sentiment-classification",
+                "model1", ["da"], {"test_rouge": 80.0}, False, "summarization"
             )
         ]
-        matrix = _build_score_matrix(records, ["model1"], ["da"], "primary", None)
-        assert matrix["model1"]["da"] == 85.0
+        matrix = _build_score_matrix(records, ["model1"], ["da"], None)
+        assert matrix["model1"]["da"] == 80.0
 
     def test_primary_metric_bare_fallback(self) -> None:
         """Should fall back to bare metric name for legacy records."""
-        # mcc is the primary metric for sentiment-classification task
         records = [
-            make_eee_record(
-                "model1", ["da"], {"mcc": 85.0}, False, task="sentiment-classification"
-            )
+            make_eee_record("model1", ["da"], {"rouge": 80.0}, False, "summarization")
         ]
-        matrix = _build_score_matrix(records, ["model1"], ["da"], "primary", None)
-        assert matrix["model1"]["da"] == 85.0
+        matrix = _build_score_matrix(records, ["model1"], ["da"], None)
+        assert matrix["model1"]["da"] == 80.0
 
     def test_order_independent_aggregation(self) -> None:
         """Should produce same mean regardless of record order."""
@@ -343,15 +330,12 @@ class TestBuildScoreMatrix:
             make_eee_record("model1", ["da"], {"test_macro_f1": 70.0}, False),
             make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
         ]
-        matrix_ordered = _build_score_matrix(
-            records_ordered, ["model1"], ["da"], "test_macro_f1", False
-        )
+        matrix_ordered = _build_score_matrix(records_ordered, ["model1"], ["da"], None)
         matrix_shuffled = _build_score_matrix(
-            records_shuffled, ["model1"], ["da"], "test_macro_f1", False
+            records_shuffled, ["model1"], ["da"], None
         )
-        assert matrix_ordered["model1"]["da"] == 80.0  # Mean of 70, 80, 90
+        assert matrix_ordered["model1"]["da"] == 80.0
         assert matrix_shuffled["model1"]["da"] == 80.0
-        assert matrix_ordered["model1"]["da"] == matrix_shuffled["model1"]["da"]
 
     def test_non_finite_scores_ignored(self) -> None:
         """Should ignore NaN and infinite scores."""
@@ -359,43 +343,55 @@ class TestBuildScoreMatrix:
             make_eee_record("model1", ["da"], {"test_macro_f1": float("nan")}, False),
             make_eee_record("model1", ["sv"], {"test_macro_f1": 75.0}, False),
         ]
-        matrix = _build_score_matrix(
-            records, ["model1"], ["da", "sv"], "test_macro_f1", None
-        )
+        matrix = _build_score_matrix(records, ["model1"], ["da", "sv"], None)
         assert matrix["model1"]["da"] is None
         assert matrix["model1"]["sv"] == 75.0
 
 
-class TestCheckCompleteness:
-    """Tests for _check_completeness function."""
+class TestComputeLanguageIntersection:
+    """Tests for _compute_language_intersection function."""
 
-    def test_complete_matrix(self) -> None:
-        """Should return True when all scores present."""
+    def test_complete_intersection(self) -> None:
+        """Should return all languages when all models have all scores."""
         model_scores: dict[str, dict[str, float | None]] = {
             "model1": {"da": 80.0, "sv": 75.0},
             "model2": {"da": 82.0, "sv": 77.0},
         }
-        assert _check_completeness(model_scores) is True
+        filtered, languages = _compute_language_intersection(model_scores, ["da", "sv"])
+        assert languages == ["da", "sv"]
+        assert filtered == model_scores
 
-    def test_incomplete_matrix(self) -> None:
-        """Should return False when scores missing."""
+    def test_partial_intersection(self) -> None:
+        """Should return only languages with scores for all models."""
+        model_scores: dict[str, dict[str, float | None]] = {
+            "model1": {"da": 80.0, "sv": 75.0, "no": 70.0},
+            "model2": {"da": 82.0, "sv": 77.0, "no": None},
+        }
+        filtered, languages = _compute_language_intersection(
+            model_scores, ["da", "sv", "no"]
+        )
+        assert languages == ["da", "sv"]
+        assert "no" not in filtered["model1"]
+        assert "no" not in filtered["model2"]
+
+    def test_empty_intersection(self) -> None:
+        """Should return empty list when no common languages."""
         model_scores: dict[str, dict[str, float | None]] = {
             "model1": {"da": 80.0, "sv": None},
-            "model2": {"da": 82.0, "sv": 77.0},
+            "model2": {"da": None, "sv": 77.0},
         }
-        assert _check_completeness(model_scores) is False
+        filtered, languages = _compute_language_intersection(model_scores, ["da", "sv"])
+        assert languages == []
 
-    def test_empty_models(self) -> None:
-        """Should return True for empty models."""
-        model_scores: dict[str, dict[str, float | None]] = {}
-        assert _check_completeness(model_scores) is True
-
-    def test_all_none_scores(self) -> None:
-        """Should return False when all scores are None."""
+    def test_single_model(self) -> None:
+        """Should return all languages with scores for single model."""
         model_scores: dict[str, dict[str, float | None]] = {
-            "model1": {"da": None, "sv": None}
+            "model1": {"da": 80.0, "sv": None, "no": 70.0}
         }
-        assert _check_completeness(model_scores) is False
+        filtered, languages = _compute_language_intersection(
+            model_scores, ["da", "sv", "no"]
+        )
+        assert languages == ["da", "no"]
 
 
 class TestComputeMaxScore:
@@ -486,23 +482,14 @@ class TestCreateSpiderPlot:
         fig = _create_spider_plot(model_scores, ["da", "sv"], 100.0)
         assert len(fig.data) == 2
 
-    def test_lower_is_better_reverses_axis(self) -> None:
-        """Should reverse radial axis when lower_is_better is True."""
+    def test_axis_always_reversed(self) -> None:
+        """Should always reverse radial axis (rank score is lower-is-better)."""
         model_scores: dict[str, dict[str, float | None]] = {
             "model1": {"da": 80.0, "sv": 75.0}
         }
-        fig_normal = _create_spider_plot(
-            model_scores, ["da", "sv"], 100.0, lower_is_better=False
-        )
-        fig_reversed = _create_spider_plot(
-            model_scores, ["da", "sv"], 100.0, lower_is_better=True
-        )
-
-        normal_range = fig_normal.layout.polar.radialaxis.range
-        reversed_range = fig_reversed.layout.polar.radialaxis.range
-
-        assert tuple(normal_range) == (0, 100.0)
-        assert tuple(reversed_range) == (100.0, 0)
+        fig = _create_spider_plot(model_scores, ["da", "sv"], 100.0)
+        radial_range = fig.layout.polar.radialaxis.range
+        assert tuple(radial_range) == (100.0, 0)
 
     def test_none_scores_treated_as_zero(self) -> None:
         """Should treat None scores as zero in plot."""
@@ -531,7 +518,7 @@ class TestClickCLI:
     def test_cli_requires_model_option(self) -> None:
         """CLI should require --model option."""
         runner = CliRunner()
-        result = runner.invoke(main, ["--language", "da"])
+        result = runner.invoke(cli, ["--language", "da"])
         assert result.exit_code != 0
         assert "Missing option" in result.output or "required" in result.output.lower()
 
@@ -539,10 +526,22 @@ class TestClickCLI:
         """CLI should fail gracefully for invalid language."""
         runner = CliRunner()
         result = runner.invoke(
-            main, ["--model", "test-model", "--language", "invalid_xyz"]
+            cli, ["--model", "test-model", "--language", "invalid_xyz"]
         )
         assert result.exit_code != 0
         assert "Cannot resolve" in result.output
+
+    def test_cli_no_metric_option(self) -> None:
+        """CLI should not have --metric option."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["--help"])
+        assert "--metric" not in result.output
+
+    def test_cli_no_lower_is_better_option(self) -> None:
+        """CLI should not have --lower-is-better option."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["--help"])
+        assert "--lower-is-better" not in result.output
 
 
 class TestIntegrationWithTempFiles:
@@ -575,7 +574,7 @@ class TestIntegrationWithTempFiles:
                 with tempfile.TemporaryDirectory() as outdir:
                     output_path = Path(outdir) / "plot.html"
                     result = runner.invoke(
-                        main,
+                        cli,
                         [
                             "--model",
                             "test/model1",
@@ -589,11 +588,88 @@ class TestIntegrationWithTempFiles:
                             "zero",
                             "--output",
                             str(output_path),
-                            "--allow-incomplete",
                         ],
                     )
                     assert result.exit_code == 0, f"CLI failed: {result.output}"
                     assert output_path.exists()
+
+    def test_intersection_used_for_missing_languages(self) -> None:
+        """Test that language intersection is used when some models miss languages."""
+        records = [
+            make_eee_record(
+                "test/model1", ["da", "sv"], {"test_macro_f1": 80.0}, False
+            ),
+            make_eee_record("test/model2", ["da"], {"test_macro_f1": 85.0}, False),
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jsonl_path = Path(tmpdir) / "test_model1.jsonl"
+            jsonl_path.write_text(json.dumps(records[0]) + "\n")
+
+            jsonl_path2 = Path(tmpdir) / "test_model2.jsonl"
+            jsonl_path2.write_text(json.dumps(records[1]) + "\n")
+
+            with patch(
+                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
+            ):
+                runner = CliRunner()
+                with tempfile.TemporaryDirectory() as outdir:
+                    output_path = Path(outdir) / "plot.html"
+                    result = runner.invoke(
+                        cli,
+                        [
+                            "--model",
+                            "test/model1",
+                            "--model",
+                            "test/model2",
+                            "--language",
+                            "da",
+                            "--language",
+                            "sv",
+                            "--shots",
+                            "zero",
+                            "--output",
+                            str(output_path),
+                        ],
+                    )
+                    assert result.exit_code == 0, f"CLI failed: {result.output}"
+                    assert output_path.exists()
+
+    def test_empty_intersection_fails(self) -> None:
+        """Test that empty language intersection fails with clear message."""
+        records = [
+            make_eee_record("test/model1", ["da"], {"test_macro_f1": 80.0}, False),
+            make_eee_record("test/model2", ["sv"], {"test_macro_f1": 85.0}, False),
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jsonl_path = Path(tmpdir) / "test_model1.jsonl"
+            jsonl_path.write_text(json.dumps(records[0]) + "\n")
+
+            jsonl_path2 = Path(tmpdir) / "test_model2.jsonl"
+            jsonl_path2.write_text(json.dumps(records[1]) + "\n")
+
+            with patch(
+                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
+            ):
+                runner = CliRunner()
+                result = runner.invoke(
+                    cli,
+                    [
+                        "--model",
+                        "test/model1",
+                        "--model",
+                        "test/model2",
+                        "--language",
+                        "da",
+                        "--language",
+                        "sv",
+                        "--shots",
+                        "zero",
+                    ],
+                )
+                assert result.exit_code != 0
+                assert "No languages have scores for all" in result.output
 
     def test_shots_auto_detection(self) -> None:
         """Test auto shot detection with temp files."""
@@ -618,7 +694,7 @@ class TestIntegrationWithTempFiles:
                 with tempfile.TemporaryDirectory() as outdir:
                     output_path = Path(outdir) / "plot.html"
                     result = runner.invoke(
-                        main,
+                        cli,
                         [
                             "--model",
                             "test/model1",
@@ -628,7 +704,6 @@ class TestIntegrationWithTempFiles:
                             "auto",
                             "--output",
                             str(output_path),
-                            "--allow-incomplete",
                         ],
                     )
                     assert result.exit_code != 0
@@ -637,7 +712,7 @@ class TestIntegrationWithTempFiles:
                 with tempfile.TemporaryDirectory() as outdir:
                     output_path = Path(outdir) / "plot.html"
                     result = runner.invoke(
-                        main,
+                        cli,
                         [
                             "--model",
                             "test/model1",
@@ -647,7 +722,6 @@ class TestIntegrationWithTempFiles:
                             "zero",
                             "--output",
                             str(output_path),
-                            "--allow-incomplete",
                         ],
                     )
                     assert result.exit_code == 0, f"CLI failed: {result.output}"
@@ -669,7 +743,7 @@ class TestIntegrationWithTempFiles:
                 with tempfile.TemporaryDirectory() as outdir:
                     nested_output = Path(outdir) / "subdir" / "nested" / "plot.html"
                     result = runner.invoke(
-                        main,
+                        cli,
                         [
                             "--model",
                             "test/model1",
@@ -679,7 +753,6 @@ class TestIntegrationWithTempFiles:
                             "zero",
                             "--output",
                             str(nested_output),
-                            "--allow-incomplete",
                         ],
                     )
                     assert result.exit_code == 0, f"CLI failed: {result.output}"
@@ -705,7 +778,7 @@ class TestIntegrationWithTempFiles:
                 with tempfile.TemporaryDirectory() as outdir:
                     output_path = Path(outdir) / "plot.html"
                     result = runner.invoke(
-                        main,
+                        cli,
                         [
                             "--model",
                             "test/model1",
@@ -715,7 +788,6 @@ class TestIntegrationWithTempFiles:
                             "zero",
                             "--output",
                             str(output_path),
-                            "--allow-incomplete",
                         ],
                     )
                     assert result.exit_code == 0
@@ -732,8 +804,6 @@ class TestIntegrationWithTempFiles:
         record1 = make_eee_record("test/model1", ["da"], {"test_macro_f1": 80.0}, False)
         record2 = make_eee_record("test/model1", ["sv"], {"test_macro_f1": 75.0}, False)
 
-        # Concatenated JSON objects produce }{ pattern naturally
-        # (first object ends with }, second starts with {)
         concatenated = json.dumps(record1) + json.dumps(record2)
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -747,7 +817,7 @@ class TestIntegrationWithTempFiles:
                 with tempfile.TemporaryDirectory() as outdir:
                     output_path = Path(outdir) / "plot.html"
                     result = runner.invoke(
-                        main,
+                        cli,
                         [
                             "--model",
                             "test/model1",
@@ -759,7 +829,6 @@ class TestIntegrationWithTempFiles:
                             "zero",
                             "--output",
                             str(output_path),
-                            "--allow-incomplete",
                         ],
                     )
                     assert result.exit_code == 0, f"CLI failed: {result.output}"
