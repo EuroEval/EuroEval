@@ -872,6 +872,96 @@ class TestClickCLI:
         assert "--max-score" in result.output
         assert "optional" in result.output.lower() or "omitted" in result.output.lower()
 
+    def test_cli_success_single_line_output(self) -> None:
+        """Successful CLI invocation should produce exactly one stdout line."""
+        record = make_eee_record(
+            "test/model",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.82, 0.78],
+            metric_name="mcc",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jsonl_path = Path(tmpdir) / "test_model.jsonl"
+            jsonl_path.write_text(json.dumps(record) + "\n")
+
+            with patch(
+                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
+            ):
+                runner = CliRunner()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "zero",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                        lines = [
+                            line for line in result.output.strip().split("\n") if line
+                        ]
+                        assert len(lines) == 1, (
+                            f"Expected 1 line, got {len(lines)}: {lines}"
+                        )
+                    finally:
+                        os.chdir(original_cwd)
+
+    def test_cli_success_output_contains_file_uri(self) -> None:
+        """Successful output should contain PNG filename or file:// URI."""
+        record = make_eee_record(
+            "test/model",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.82, 0.78],
+            metric_name="mcc",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jsonl_path = Path(tmpdir) / "test_model.jsonl"
+            jsonl_path.write_text(json.dumps(record) + "\n")
+
+            with patch(
+                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
+            ):
+                runner = CliRunner()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "zero",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                        assert (
+                            "language-spider-plot.png" in result.output
+                            or "file://" in result.output
+                        ), f"Output should contain filename or URI: {result.output}"
+                    finally:
+                        os.chdir(original_cwd)
+
 
 class TestIntegrationWithTempFiles:
     """Integration tests using temporary JSONL files."""
