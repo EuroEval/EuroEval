@@ -938,6 +938,8 @@ class TestCreateSpiderPlot:
         fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
         angle = fig.layout.polar.radialaxis.angle
         assert angle == 180
+        assert fig.layout.polar.radialaxis.showline is False
+        assert fig.layout.polar.angularaxis.rotation == 6
 
     def test_transparent_fill_for_readability(self) -> None:
         """Should use transparent fills so overlapping traces remain readable."""

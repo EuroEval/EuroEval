@@ -1017,13 +1017,18 @@ def _create_spider_plot(
         )
 
     radial_axis = dict(
-        visible=True, range=[max_score, 1], tickformat=".1f", dtick=0.5, angle=180
+        visible=True,
+        range=[max_score, 1],
+        tickformat=".1f",
+        dtick=0.5,
+        angle=180,
+        showline=False,
     )
 
     plot_title = title if title else "Language Performance Comparison"
 
     fig.update_layout(
-        polar=dict(radialaxis=radial_axis),
+        polar=dict(radialaxis=radial_axis, angularaxis=dict(rotation=6)),
         showlegend=True,
         title=dict(text=plot_title, x=0.5, y=0.95),
         height=700,
