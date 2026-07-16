@@ -18,6 +18,26 @@ from .records import plain_model_id
 logger = logging.getLogger(__name__)
 
 
+def _normalise_model_id_for_hf_matching(model_id: str) -> str:
+    """Normalise a model ID for Hugging Face URL/repo matching.
+
+    Strips HTML anchor, variant suffixes, AND parameter/revision suffixes.
+    This is narrower than :func:`plain_model_id` which preserves #param and
+    @revision for meaningful model differentiation.
+
+    Args:
+        model_id:
+            The model ID to normalise.
+
+    Returns:
+        The base repo ID suitable for HF URL comparison (e.g. "org/repo").
+    """
+    # Strip anchor and variant suffix first
+    model_id = plain_model_id(model_id)
+    # Then strip #param and @revision for HF repo comparison
+    return split_model_id(model_id).model_id
+
+
 def _is_hf_url_for_model(model_url: str, model_id: str) -> bool:
     """Check if a model URL is a Hugging Face URL for the given model.
 
@@ -28,12 +48,13 @@ def _is_hf_url_for_model(model_url: str, model_id: str) -> bool:
         model_url:
             The model URL to check.
         model_id:
-            The model ID (e.g., ``org/repo``).
+            The model ID (e.g., ``org/repo``). May contain anchors,
+            variant suffixes, or #param/@revision suffixes.
 
     Returns:
         True if the URL is an HF Hub URL for the model, False otherwise.
     """
-    model_id = plain_model_id(model_id)
+    model_id = _normalise_model_id_for_hf_matching(model_id)
     parsed = urllib.parse.urlparse(model_url)
     if parsed.netloc not in (
         "hf.co",
@@ -122,7 +143,7 @@ class Cache:
             model_id: str = model_name
             if (match := re.search(r">(.+?)<", model_name)) is not None:
                 model_id = match.group(1)
-            model_id = split_model_id(model_id=plain_model_id(model_id)).model_id
+            model_id = _normalise_model_id_for_hf_matching(model_id)
 
             additional = record["model_info"]["additional_details"]
             if "generative_type" in additional:
