@@ -8,24 +8,20 @@ Output is a PNG file.
 
 from __future__ import annotations
 
-import collections.abc as c
 import json
 import logging
 import math
-import os
 import re
-import select
+import subprocess
 import sys
+import tempfile
 import typing as t
 from collections import defaultdict
-from contextlib import contextmanager
-from io import StringIO
 from pathlib import Path
 
 import click
 import numpy as np
 import plotly.graph_objects as go
-from kaleido.errors import KaleidoError
 
 from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.jsonl_io import parse_jsonl_lines
@@ -987,73 +983,13 @@ def _create_spider_plot(
     return fig
 
 
-@contextmanager
-def _suppress_subprocess_output() -> c.Generator[tuple[StringIO, StringIO], None, None]:
-    """Suppress stdout/stderr at file-descriptor level for subprocess output.
-
-    Kaleido/Chromium write directly to file descriptors, bypassing Python's
-    redirect_stdout/redirect_stderr. This context manager redirects at the FD
-    level to capture all subprocess output.
-
-    Yields:
-        Tuple of (stdout_capture, stderr_capture) StringIO objects.
-    """
-    stdout_capture = StringIO()
-    stderr_capture = StringIO()
-
-    # Save original file descriptors
-    original_stdout_fd = os.dup(1)
-    original_stderr_fd = os.dup(2)
-
-    # Create pipe file descriptors for capturing output
-    stdout_read_fd, stdout_write_fd = os.pipe()
-    stderr_read_fd, stderr_write_fd = os.pipe()
-
-    try:
-        # Redirect stdout and stderr to pipes
-        os.close(1)
-        os.dup2(stdout_write_fd, 1)
-        os.close(2)
-        os.dup2(stderr_write_fd, 2)
-
-        # Close write ends in parent (child inherits them)
-        os.close(stdout_write_fd)
-        os.close(stderr_write_fd)
-
-        yield stdout_capture, stderr_capture
-    finally:
-        # Restore original file descriptors
-        os.close(1)
-        os.dup2(original_stdout_fd, 1)
-        os.close(2)
-        os.dup2(original_stderr_fd, 2)
-
-        # Close original saved descriptors
-        os.close(original_stdout_fd)
-        os.close(original_stderr_fd)
-
-        # Read captured output from pipes
-        # Use non-blocking read with small timeout
-
-        # Read stdout
-        if select.select([stdout_read_fd], [], [], 0.1)[0]:
-            captured = os.read(stdout_read_fd, 65536).decode("utf-8", errors="ignore")
-            stdout_capture.write(captured)
-        # Read stderr
-        if select.select([stderr_read_fd], [], [], 0.1)[0]:
-            captured = os.read(stderr_read_fd, 65536).decode("utf-8", errors="ignore")
-            stderr_capture.write(captured)
-
-        # Close read ends
-        os.close(stdout_read_fd)
-        os.close(stderr_read_fd)
-
-
 def _write_image_silent(fig: go.Figure, path: str) -> None:
-    """Write Plotly figure to image, suppressing Kaleido/Chromium noise.
+    """Write Plotly figure to image without leaking Kaleido cleanup output.
 
-    Uses file-descriptor-level suppression to capture output from
-    Kaleido's Chromium subprocess, which bypasses Python's redirect utilities.
+    Kaleido/Chromium can write directly to stdout/stderr during interpreter
+    shutdown, after normal Python redirection has ended. Running export in a
+    child process lets this script capture all normal and shutdown output, then
+    print only the final PNG URI on success.
 
     Args:
         fig:
@@ -1065,22 +1001,41 @@ def _write_image_silent(fig: go.Figure, path: str) -> None:
         ClickException:
             If image export fails, includes captured diagnostic output.
     """
-    try:
-        with _suppress_subprocess_output() as (stdout_capture, stderr_capture):
-            fig.write_image(path)
-    except KaleidoError as exc:
-        captured_out = stdout_capture.getvalue()
-        captured_err = stderr_capture.getvalue()
-        diagnostic = ""
-        if captured_out:
-            diagnostic += f"\nCaptured stdout: {captured_out.strip()}"
-        if captured_err:
-            diagnostic += f"\nCaptured stderr: {captured_err.strip()}"
-        raise click.ClickException(
-            f"Kaleido error: {exc._message}{diagnostic}"
-        ) from exc
-    except Exception as exc:
-        raise click.ClickException(f"Failed to write image: {exc}") from exc
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        figure_path = Path(tmp_dir) / "figure.json"
+        fig.write_json(figure_path)
+        result = subprocess.run(
+            [sys.executable, "-c", _IMAGE_EXPORT_CODE, str(figure_path), path],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    if result.returncode == 0:
+        return
+
+    diagnostic_parts: list[str] = []
+    if result.stdout.strip():
+        diagnostic_parts.append(f"stdout: {result.stdout.strip()}")
+    if result.stderr.strip():
+        diagnostic_parts.append(f"stderr: {result.stderr.strip()}")
+    diagnostic = "\n".join(diagnostic_parts)
+    message = "Failed to write PNG image"
+    if diagnostic:
+        message = f"{message}\n{diagnostic}"
+    raise click.ClickException(message)
+
+
+_IMAGE_EXPORT_CODE = """
+import sys
+
+import kaleido
+import plotly.io as pio
+
+figure = pio.read_json(sys.argv[1])
+figure.write_image(sys.argv[2])
+kaleido.stop_sync_server(silence_warnings=True)
+"""
 
 
 @click.command()
