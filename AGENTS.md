@@ -69,9 +69,9 @@ The `src/scripts/collect_evaluation_results.py` script orchestrates this flow:
 There are scripts in `scripts` of various kinds, including generation of leaderboards,
 building SEO files, API reference, creating individual datasets, etc.
 
-- **`create_language_spider_plot.py`** — Generate interactive Plotly spider/radial plots
-  comparing models across languages. Use when asked to create a radial/spider plot for
-  language performance comparison.
+- **`create_language_spider_plot.py`** — Generate Plotly spider/radial plots comparing
+  models across languages. Output is a PNG file (`language-spider-plot.png`). Use when
+  asked to create a radial/spider plot for language performance comparison.
   `uv run src/scripts/create_language_spider_plot.py -m MODEL [-l LANGUAGE]`
 
 ### Tests
