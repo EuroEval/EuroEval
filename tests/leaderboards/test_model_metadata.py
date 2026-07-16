@@ -4,7 +4,8 @@ These tests verify that model metadata lookups correctly handle validation
 and zero-shot suffixes (e.g., ``(val)``, ``(zero-shot)``) by normalising them
 to the base model ID before cache operations.
 
-Also tests repair of stale/corrupt open=False metadata for HF-hosted models.
+Also tests that cached open metadata (including False) is preserved without
+unnecessary Hugging Face API calls.
 """
 
 from __future__ import annotations
@@ -15,10 +16,9 @@ from unittest.mock import MagicMock, Mock, patch
 import httpx
 from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
 
-from leaderboards.cache import Cache
+from leaderboards.cache import Cache, _is_hf_url_for_model
 from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
 from leaderboards.model_metadata import (
-    _is_hf_url_for_model,
     add_missing_entries,
     is_commercially_licensed,
     is_merge,
@@ -501,26 +501,19 @@ class TestCommercialLicenceInference:
         assert mock_input.call_count == 0  # Not prompted again
 
 
-class TestStaleOpenFalseRepair:
-    """Tests for repair of stale/corrupt open=False metadata for HF-hosted models.
+class TestCachePriority:
+    """Tests for cache priority in is_open().
 
     These tests ensure that:
-    1. Cached open=False is repaired when the model has an HF URL and exists on HF.
-    2. Base-model cache broadening does not propagate stale values across variants.
+    1. Cached open values (True and False) are returned without HF API calls.
+    2. Base-model cache broadening does not propagate values across variants.
     3. Non-HF/nonexistent model false remains false.
+    4. Cached False is preserved, not automatically repaired.
     """
 
-    @patch("leaderboards.model_metadata.HfApi")
-    def test_open_false_repaired_with_hf_url(
-        self, mock_hf_api_class: MagicMock
-    ) -> None:
-        """Model with open=False + HF URL should be repaired to True by is_open()."""
-        mock_api = MagicMock()
-        mock_hf_api_class.return_value = mock_api
-        # Model exists on HF (no exception raised)
-        mock_api.model_info.return_value = MagicMock()
-
-        # Record with stale open=False but valid HF URL
+    def test_cached_false_is_preserved_without_hf_call(self) -> None:
+        """Cached open=False is returned without HF API call."""
+        # Record with open=False and HF URL
         record = {
             "model_info": {
                 "name": "Qwen/Qwen3-32B#no-thinking",
@@ -532,16 +525,17 @@ class TestStaleOpenFalseRepair:
             "generative": True,
         }
         cache = Cache()
-        # Pre-populate cache with stale False value
+        # Pre-populate cache with False value
         # Note: split_model_id() strips '#no-thinking', so cache key is 'Qwen/Qwen3-32B'
         cache.open["Qwen/Qwen3-32B"] = False
 
-        result = is_open(record=record, cache=cache)
+        with patch("leaderboards.model_metadata.HfApi") as mock_hf_api_class:
+            result = is_open(record=record, cache=cache)
 
-        assert result is True
-        # Cache is updated with repaired True
-        assert cache.open["Qwen/Qwen3-32B"] is True
-        mock_api.model_info.assert_called_once_with(repo_id="Qwen/Qwen3-32B")
+            # Cached False is returned, no HF call
+            assert result is False
+            assert cache.open["Qwen/Qwen3-32B"] is False
+            mock_hf_api_class.assert_not_called()
 
     @patch("leaderboards.model_metadata.HfApi")
     def test_base_model_broadening_does_not_propagate_false(
@@ -663,8 +657,8 @@ class TestStaleOpenFalseRepair:
         # Verify HF API was NOT called (cached True is trusted)
         mock_hf_api_class.assert_not_called()
 
-    def test_cache_from_records_does_not_cache_false_with_hf_url(self) -> None:
-        """Cache._from_records() should not cache open=False when HF URL exists."""
+    def test_cache_from_records_caches_false_with_hf_url(self) -> None:
+        """Cache._from_records() should cache open=False even when HF URL exists."""
         # Create a record with open=False and HF URL
         record: dict[str, object] = {
             "model_info": {
@@ -679,8 +673,8 @@ class TestStaleOpenFalseRepair:
 
         cache = Cache._from_records(records=[record], desc="Test")
 
-        # Should NOT cache False because there's an HF URL
-        assert "org/repo" not in cache.open
+        # Should cache False even with HF URL (cache priority)
+        assert cache.open["org/repo"] is False
 
     def test_cache_from_records_caches_false_without_hf_url(self) -> None:
         """Cache._from_records() should cache open=False when no HF URL."""
@@ -717,18 +711,10 @@ class TestStaleOpenFalseRepair:
         # Should cache True
         assert cache.open["org/repo"] is True
 
-    @patch("leaderboards.model_metadata.HfApi")
-    def test_add_missing_entries_repairs_stale_open_false(
-        self, mock_hf_api_class: MagicMock
-    ) -> None:
-        """add_missing_entries should repair open=False when HF URL exists."""
-        mock_api = MagicMock()
-        mock_hf_api_class.return_value = mock_api
-        # Model exists on HF (no exception raised)
-        mock_api.model_info.return_value = MagicMock()
-
-        # Record with stale open=False and valid HF URL
-        # Pre-populate generative_type to avoid interactive prompt
+    def test_add_missing_entries_preserves_existing_open_false(self) -> None:
+        """add_missing_entries should preserve existing open=False, not recheck."""
+        # Record with existing open=False and HF URL
+        # Pre-populate other fields to avoid interactive prompts
         record = {
             "model_info": {
                 "name": "Qwen/Qwen3-32B",
@@ -748,28 +734,23 @@ class TestStaleOpenFalseRepair:
         }
         cache = Cache()
 
-        result = add_missing_entries(
-            record=record,
-            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
-            cache=cache,
-        )
+        with patch("leaderboards.model_metadata.HfApi") as mock_hf_api_class:
+            result = add_missing_entries(
+                record=record,
+                trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+                cache=cache,
+            )
 
-        # open should be repaired to True
-        assert result["model_info"]["additional_details"]["open"] is True
-        mock_api.model_info.assert_called_once_with(repo_id="Qwen/Qwen3-32B")
+            # open should remain False, no HF call
+            assert result["model_info"]["additional_details"]["open"] is False
+            mock_hf_api_class.assert_not_called()
 
-    @patch("leaderboards.model_metadata.HfApi")
-    def test_add_missing_entries_repairs_stale_open_false_with_param_suffix(
-        self, mock_hf_api_class: MagicMock
+    def test_add_missing_entries_preserves_existing_open_false_with_param_suffix(
+        self,
     ) -> None:
-        """add_missing_entries should repair open=False with #no-thinking suffix."""
-        mock_api = MagicMock()
-        mock_hf_api_class.return_value = mock_api
-        # Model exists on HF (no exception raised)
-        mock_api.model_info.return_value = MagicMock()
-
-        # Record with stale open=False, valid HF URL, and parameterised model ID
-        # Pre-populate generative_type to avoid interactive prompt
+        """add_missing_entries preserves existing open=False with param suffix."""
+        # Record with existing open=False, HF URL, and parameterised model ID
+        # Pre-populate other fields to avoid interactive prompts
         record = {
             "model_info": {
                 "name": "Qwen/Qwen3-32B#no-thinking",
@@ -789,15 +770,16 @@ class TestStaleOpenFalseRepair:
         }
         cache = Cache()
 
-        result = add_missing_entries(
-            record=record,
-            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
-            cache=cache,
-        )
+        with patch("leaderboards.model_metadata.HfApi") as mock_hf_api_class:
+            result = add_missing_entries(
+                record=record,
+                trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+                cache=cache,
+            )
 
-        # open should be repaired to True
-        assert result["model_info"]["additional_details"]["open"] is True
-        mock_api.model_info.assert_called_once_with(repo_id="Qwen/Qwen3-32B")
+            # open should remain False, no HF call
+            assert result["model_info"]["additional_details"]["open"] is False
+            mock_hf_api_class.assert_not_called()
 
     @patch("leaderboards.model_metadata.HfApi")
     def test_add_missing_entries_preserves_non_hf_false(

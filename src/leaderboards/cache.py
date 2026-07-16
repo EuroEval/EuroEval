@@ -155,18 +155,7 @@ class Cache:
                     "commercially_licensed"
                 ]
             if "open" in additional:
-                # Avoid caching stale False when model has an HF URL
-                open_value = additional["open"]
-                model_url = additional.get("model_url")
-                if open_value is False and model_url:
-                    # Check if it's an HF URL for this model
-                    if _is_hf_url_for_model(model_url, model_id):
-                        # Don't cache False; let is_open() re-check HF
-                        pass
-                    else:
-                        cache.open[model_id] = open_value
-                else:
-                    cache.open[model_id] = open_value
+                cache.open[model_id] = additional["open"]
             if "trained_from_scratch" in additional:
                 cache.trained_from_scratch[model_id] = additional[
                     "trained_from_scratch"
