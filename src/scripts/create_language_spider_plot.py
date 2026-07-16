@@ -14,6 +14,8 @@ import math
 import sys
 import typing as t
 from collections import defaultdict
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
 from pathlib import Path
 
 import click
@@ -90,16 +92,12 @@ def main(
         sys.exit(1)
 
     if not language_list:
-        logger.info(f"Using {len(resolved_languages)} official languages by default")
-
-    logger.info(f"Loading results for {len(model_list)} model(s)")
+        pass  # Default languages used (no output on success)
     records = _load_results_for_models(model_list)
 
     if not records:
         click.echo("Error: No results found for specified models", err=True)
         sys.exit(1)
-
-    logger.info(f"Loaded {len(records)} total records")
 
     try:
         filtered_records = _filter_by_shots(
@@ -112,8 +110,6 @@ def main(
     if not filtered_records:
         click.echo("Error: No records after shot filtering", err=True)
         sys.exit(1)
-
-    logger.info(f"Using {len(filtered_records)} records after shot filtering")
 
     shot_value: bool | None = None
     if shots == "zero":
@@ -145,11 +141,7 @@ def main(
         )
         sys.exit(1)
 
-    if used_languages != resolved_languages:
-        logger.info(
-            f"Using {len(used_languages)} languages (intersection of all models): "
-            f"{', '.join(used_languages)}"
-        )
+    # Language intersection applied silently (no output on success)
 
     try:
         max_score_val = _compute_max_score(model_scores_matrix, max_score)
@@ -157,21 +149,19 @@ def main(
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
 
-    logger.info(f"Max score: {max_score_val:.2f}")
-
     fig = _create_spider_plot(
         model_scores=model_scores_matrix,
         languages=used_languages,
         max_score=max_score_val,
     )
 
-    output_path = Path("language-spider-plot.png")
+    output_path = Path("language-spider-plot.png").resolve()
     try:
-        fig.write_image(str(output_path))
+        _write_image_silent(fig, str(output_path))
     except KaleidoError as exc:
         click.echo(f"Error writing PNG: {exc}", err=True)
         return 1
-    logger.info(f"Wrote spider plot to {output_path}")
+    click.echo(f"Wrote spider plot to file://{output_path}")
 
     return 0
 
@@ -468,7 +458,7 @@ def _load_results_for_models(model_ids: list[str]) -> list[JsonDict]:
             for rec in file_records:
                 if isinstance(rec, dict):
                     records.append(t.cast(JsonDict, rec))
-            logger.info(f"Loaded {len(file_records)} records from {jsonl_path.name}")
+            pass  # Silently loaded (no output on success)
         except Exception as exc:
             logger.warning(f"Failed to parse {jsonl_path}: {exc}")
 
@@ -883,6 +873,35 @@ def _create_spider_plot(
     )
 
     return fig
+
+
+def _write_image_silent(fig: go.Figure, path: str) -> None:
+    """Write Plotly figure to image, suppressing Kaleido/Chromium noise.
+
+    Args:
+        fig:
+            Plotly figure to write.
+        path:
+            Output file path.
+
+    Raises:
+        KaleidoError:
+            If image export fails.
+    """
+    stdout_capture = StringIO()
+    stderr_capture = StringIO()
+    try:
+        with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+            fig.write_image(path)
+    except KaleidoError as exc:
+        captured_out = stdout_capture.getvalue()
+        captured_err = stderr_capture.getvalue()
+        diagnostic = ""
+        if captured_out:
+            diagnostic += f"\nCaptured stdout: {captured_out.strip()}"
+        if captured_err:
+            diagnostic += f"\nCaptured stderr: {captured_err.strip()}"
+        raise KaleidoError(exc._code, f"{exc._message}{diagnostic}") from exc
 
 
 @click.command()
