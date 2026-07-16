@@ -64,7 +64,7 @@ def main(
             Shot setting: "auto", "zero", or "few".
         max_score (optional):
             Override maximum score for radial axis. If omitted, automatically
-            computed from the plotted rank scores (rounded up to nearest 10).
+            computed from the plotted rank scores (rounded up to nearest 0.5).
 
     Returns:
         Exit code (0 for success, 1 for failure).
@@ -556,7 +556,7 @@ def _compute_max_score(
     """Compute or validate maximum score for radial axis.
 
     If max_score_override is None, automatically computes the maximum from
-    all plotted scores and rounds up to the nearest 10. If provided, validates
+    all plotted scores and rounds up to the nearest 0.5. If provided, validates
     that it is finite, positive, and >= all plotted scores.
 
     Args:
@@ -580,7 +580,7 @@ def _compute_max_score(
                 all_scores.append(score)
 
     if not all_scores:
-        return 100.0
+        return 10.0
 
     max_found = max(all_scores)
 
@@ -600,7 +600,7 @@ def _compute_max_score(
             )
         return max_score_override
 
-    return math.ceil(max_found / 10) * 10
+    return math.ceil(max_found * 2) / 2
 
 
 def _normalise_model_name(model_id: str) -> str:
@@ -732,7 +732,7 @@ def _create_spider_plot(
     type=float,
     metavar="FLOAT",
     help="Optional override for maximum radial axis score. When omitted, "
-    "automatically computed from plotted rank scores (rounded up to nearest 10).",
+    "automatically computed from plotted rank scores (rounded up to nearest 0.5).",
 )
 def cli(
     models: tuple[str, ...],
