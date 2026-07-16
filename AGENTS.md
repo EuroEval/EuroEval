@@ -18,21 +18,24 @@ Vue.js + Typescript + Vite frontend with configs in the repo root (e.g., `packag
 handled with Vercel.
 
 To build and deploy the frontend to production, run `make frontend`. This builds the
-project with `vercel build --prod` and deploys it with `vercel deploy --prebuilt --prod`.
+project with `vercel build --prod` and deploys it with
+`vercel deploy --prebuilt --prod`.
 
 ### Leaderboard Generation
 
-Python package with config in `pyproject.toml` (same as evaluation framework)
-and source code in `src/leaderboards`. Leaderboards are CSVs and the evaluation
-queue is handled via Github issues.
+Python package with config in `pyproject.toml` (same as evaluation framework) and source
+code in `src/leaderboards`. Leaderboards are CSVs and the evaluation queue is handled
+via Github issues.
 
 ### Data Flow and Storage
 
 Evaluation results flow through three storage layers:
 
 1. **Hugging Face Bucket** (source of truth):
-   - `EuroEval/results`: Single bucket with per-model JSONL files (one file per model, append-only)
-   - All files contain metadata fields (`commercially_licensed`, `open`, `trained_from_scratch`)
+   - `EuroEval/results`: Single bucket with per-model JSONL files (one file per model,
+     append-only)
+   - All files contain metadata fields (`commercially_licensed`, `open`,
+     `trained_from_scratch`)
    - Synced via `hf sync` command (requires `HF_TOKEN`)
 
 2. **Local `results/` directory** (working copy):
@@ -66,6 +69,11 @@ The `src/scripts/collect_evaluation_results.py` script orchestrates this flow:
 There are scripts in `scripts` of various kinds, including generation of leaderboards,
 building SEO files, API reference, creating individual datasets, etc.
 
+- **`create_language_spider_plot.py`** — Generate interactive Plotly spider/radial plots
+  comparing models across languages. Use when asked to create a radial/spider plot for
+  language performance comparison.
+  `uv run src/scripts/create_language_spider_plot.py -m MODEL [-l LANGUAGE]`
+
 ### Tests
 
 All evaluation framework tests are in `tests` and can be run with `make test`. This
@@ -74,23 +82,22 @@ have changed. There are no tests for the frontend or leaderboard generation.
 
 ## Formatting, linting, and type checking
 
-All checks are run with `make check`, which runs all the pre-commit hooks. The
-following tools are used:
+All checks are run with `make check`, which runs all the pre-commit hooks. The following
+tools are used:
 
 - **Ruff** — Python formatter and linter (includes Jupyter notebook support)
 - **ty** — Python type checker
 - **markdownlint-cli2** — Markdown linting
 - **vue-tsc** — TypeScript type checking for the frontend (`src/frontend/`)
 
-The pre-commit hooks also include basic quality checks (end-of-file fixer,
-trailing whitespace, debug statements, type annotation enforcement, and
-notebook stripping).
+The pre-commit hooks also include basic quality checks (end-of-file fixer, trailing
+whitespace, debug statements, type annotation enforcement, and notebook stripping).
 
 ## Changelog
 
-`CHANGELOG.md` is the release notes for the `euroeval` Python package published to
-PyPI. Only add a changelog entry when the change touches the package itself (i.e.
-files under `src/euroeval/`).
+`CHANGELOG.md` is the release notes for the `euroeval` Python package published to PyPI.
+Only add a changelog entry when the change touches the package itself (i.e. files under
+`src/euroeval/`).
 
 Do **not** add changelog entries for changes to:
 
