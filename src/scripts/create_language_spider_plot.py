@@ -1000,35 +1000,44 @@ def _create_spider_plot(
 
     fig = go.Figure()
 
+    prepared_traces: list[tuple[str, list[float], str]] = []
     for idx, (model_id, lang_scores) in enumerate(model_scores.items()):
         scores = [lang_scores.get(lang, 0) or 0 for lang in languages]
         display_name = _normalise_model_name(model_id)
         colour = colours[idx % len(colours)]
+        prepared_traces.append((display_name, scores, colour))
 
+    for display_name, scores, colour in prepared_traces:
         fig.add_trace(
             go.Scatterpolar(
                 r=scores,
                 theta=languages_display,
                 fill="toself",
                 name=display_name,
-                line=dict(color=colour, width=2),
-                fillcolor=_hex_to_rgba(colour, alpha=0.2),
+                line=dict(color=_hex_to_rgba(colour, alpha=0.0), width=0),
+                fillcolor=_hex_to_rgba(colour, alpha=0.16),
+                hoverinfo="skip",
+                showlegend=False,
             )
         )
 
-    radial_axis = dict(
-        visible=True,
-        range=[max_score, 1],
-        tickformat=".1f",
-        dtick=0.5,
-        angle=180,
-        showline=False,
-    )
+    for display_name, scores, colour in prepared_traces:
+        fig.add_trace(
+            go.Scatterpolar(
+                r=scores,
+                theta=languages_display,
+                fill="none",
+                name=display_name,
+                line=dict(color=colour, width=2.5),
+            )
+        )
+
+    radial_axis = dict(visible=True, range=[max_score, 1], tickformat=".1f", dtick=0.5)
 
     plot_title = title if title else "Language Performance Comparison"
 
     fig.update_layout(
-        polar=dict(radialaxis=radial_axis, angularaxis=dict(rotation=6)),
+        polar=dict(radialaxis=radial_axis),
         showlegend=True,
         title=dict(text=plot_title, x=0.5, y=0.95),
         height=700,

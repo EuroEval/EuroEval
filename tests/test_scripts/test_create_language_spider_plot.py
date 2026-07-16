@@ -890,7 +890,7 @@ class TestCreateSpiderPlot:
             "model1": {"da": 1.5, "sv": 2.0}
         }
         fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
-        assert len(fig.data) == 1
+        assert len(fig.data) == 2
         assert fig.layout.title.text == "Language Performance Comparison"
 
     def test_multiple_models(self) -> None:
@@ -900,7 +900,7 @@ class TestCreateSpiderPlot:
             "model2": {"da": 1.8, "sv": 2.3},
         }
         fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
-        assert len(fig.data) == 2
+        assert len(fig.data) == 4
 
     def test_axis_reversed_with_minimum_one(self) -> None:
         """Should reverse radial axis with minimum 1 (not 0)."""
@@ -930,16 +930,19 @@ class TestCreateSpiderPlot:
         dtick = fig.layout.polar.radialaxis.dtick
         assert dtick == 0.5
 
-    def test_radial_tick_labels_offset_from_spokes(self) -> None:
-        """Radial tick labels should not sit directly on a language spoke."""
+    def test_model_lines_are_drawn_above_fills(self) -> None:
+        """Model lines should be layered above fills so they stay visible."""
         model_scores: dict[str, dict[str, float | None]] = {
-            "model1": {"da": 1.5, "sv": 2.0}
+            "model1": {"da": 1.5, "sv": 2.0},
+            "model2": {"da": 1.8, "sv": 2.3},
         }
         fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
-        angle = fig.layout.polar.radialaxis.angle
-        assert angle == 180
-        assert fig.layout.polar.radialaxis.showline is False
-        assert fig.layout.polar.angularaxis.rotation == 6
+        fills = fig.data[:2]
+        lines = fig.data[2:]
+        assert all(trace.fill == "toself" for trace in fills)
+        assert all(trace.showlegend is False for trace in fills)
+        assert all(trace.fill == "none" for trace in lines)
+        assert all(trace.line.width == 2.5 for trace in lines)
 
     def test_transparent_fill_for_readability(self) -> None:
         """Should use transparent fills so overlapping traces remain readable."""
@@ -948,12 +951,11 @@ class TestCreateSpiderPlot:
             "model2": {"da": 1.8, "sv": 2.3},
         }
         fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
-        # Check that fill colours use rgba with low alpha
-        for trace in fig.data:
+        # Fill traces are first and use rgba with low alpha.
+        for trace in fig.data[:2]:
             fillcolor = trace.fillcolor
             assert fillcolor.startswith("rgba")
-            # Alpha should be 0.2 (transparent)
-            assert "0.2" in fillcolor
+            assert "0.16" in fillcolor
 
     def test_logo_added_bottom_right(self) -> None:
         """Should add the EuroEval logo in the bottom-right corner."""
@@ -975,7 +977,7 @@ class TestCreateSpiderPlot:
         """Should treat None scores as zero in plot."""
         model_scores = {"model1": {"da": 1.5, "sv": None}}
         fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
-        assert len(fig.data) == 1
+        assert len(fig.data) == 2
 
 
 class TestGetLanguageDisplayName:
