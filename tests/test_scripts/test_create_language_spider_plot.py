@@ -596,6 +596,110 @@ class TestBuildScoreMatrix:
         matrix = _build_score_matrix([record], ["model1"], ["da"], None)
         assert matrix["model1"]["da"] is None
 
+    def test_rank_scores_use_all_records_as_reference(self) -> None:
+        """Rank scores should use all available records, not just selected models.
+
+        This tests the key requirement: when plotting only model1 and model2,
+        the rank scores should be computed relative to ALL models in the
+        reference population (including model3), not just model1 and model2.
+        """
+        # model3 best (0.95), model1 middle (0.8), model2 worst (0.7)
+        all_records = [
+            make_eee_record(
+                "model1",
+                ["da"],
+                {"test_mcc": 0.8},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.8, 0.82, 0.78],
+                metric_name="mcc",
+            ),
+            make_eee_record(
+                "model2",
+                ["da"],
+                {"test_mcc": 0.7},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.7, 0.72, 0.68],
+                metric_name="mcc",
+            ),
+            make_eee_record(
+                "model3",  # Best model, not in selected models
+                ["da"],
+                {"test_mcc": 0.95},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.95, 0.96, 0.94],
+                metric_name="mcc",
+            ),
+        ]
+
+        # Plot only model1 and model2, but use all three as reference
+        matrix = _build_score_matrix(
+            all_records=all_records,
+            models=["model1", "model2"],
+            languages=["da"],
+            shot_value=None,
+        )
+
+        # Neither model1 nor model2 should have rank 1.0 because model3 is best
+        # model1 (0.8) should be better than model2 (0.7), so model1 has lower rank
+        assert matrix["model1"]["da"] > 1.0, (
+            "model1 should not have rank 1.0 when model3 (0.95) exists"
+        )
+        assert matrix["model2"]["da"] > 1.0, (
+            "model2 should not have rank 1.0 when model3 (0.95) exists"
+        )
+        assert matrix["model1"]["da"] < matrix["model2"]["da"], (
+            "model1 (0.8) should have better rank than model2 (0.7)"
+        )
+
+    def test_rank_scores_with_single_selected_but_all_reference(self) -> None:
+        """Single selected model should not have rank 1.0 if better models exist.
+
+        When only model1 is selected for plotting but model3 exists in the
+        reference population with better scores, model1 should not have rank 1.0.
+        """
+        all_records = [
+            make_eee_record(
+                "model1",
+                ["da"],
+                {"test_mcc": 0.8},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.8, 0.82, 0.78],
+                metric_name="mcc",
+            ),
+            make_eee_record(
+                "model3",  # Better model, not selected for plotting
+                ["da"],
+                {"test_mcc": 0.9},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+                raw_scores=[0.9, 0.92, 0.88],
+                metric_name="mcc",
+            ),
+        ]
+
+        # Plot only model1, but use all records as reference
+        matrix = _build_score_matrix(
+            all_records=all_records,
+            models=["model1"],
+            languages=["da"],
+            shot_value=None,
+        )
+
+        # model1 should NOT have rank 1.0 because model3 is better
+        assert matrix["model1"]["da"] > 1.0, (
+            "Single selected model should not have rank 1.0 "
+            "when better models exist in reference population"
+        )
+
 
 class TestComputeLanguageIntersection:
     """Tests for _compute_language_intersection function."""
@@ -1331,5 +1435,375 @@ class TestIntegrationWithTempFiles:
                             ],
                         )
                         assert result.exit_code == 0, f"CLI failed: {result.output}"
+                    finally:
+                        os.chdir(original_cwd)
+
+
+class TestTitleAndFilenameOptions:
+    """Tests for --title and --filename CLI options."""
+
+    def test_cli_title_option_sets_plot_title(self) -> None:
+        """CLI --title option should set the plot title."""
+        record = make_eee_record(
+            "test/model",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.82, 0.78],
+            metric_name="mcc",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jsonl_path = Path(tmpdir) / "test_model.jsonl"
+            jsonl_path.write_text(json.dumps(record) + "\n")
+
+            with patch(
+                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
+            ):
+                runner = CliRunner()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "zero",
+                                "--title",
+                                "My Custom Plot Title",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                    finally:
+                        os.chdir(original_cwd)
+
+    def test_cli_filename_option_sets_output_file(self) -> None:
+        """CLI --filename option should set the output filename."""
+        record = make_eee_record(
+            "test/model",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.82, 0.78],
+            metric_name="mcc",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jsonl_path = Path(tmpdir) / "test_model.jsonl"
+            jsonl_path.write_text(json.dumps(record) + "\n")
+
+            with patch(
+                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
+            ):
+                runner = CliRunner()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "zero",
+                                "--filename",
+                                "custom-plot.png",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                        output_path = Path(workdir) / "custom-plot.png"
+                        assert output_path.exists(), "Custom filename should be created"
+                    finally:
+                        os.chdir(original_cwd)
+
+    def test_cli_filename_without_png_extension(self) -> None:
+        """CLI --filename without .png should have it appended."""
+        record = make_eee_record(
+            "test/model",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.82, 0.78],
+            metric_name="mcc",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jsonl_path = Path(tmpdir) / "test_model.jsonl"
+            jsonl_path.write_text(json.dumps(record) + "\n")
+
+            with patch(
+                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
+            ):
+                runner = CliRunner()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "zero",
+                                "--filename",
+                                "myplot",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                        output_path = Path(workdir) / "myplot.png"
+                        assert output_path.exists(), ".png should be appended"
+                    finally:
+                        os.chdir(original_cwd)
+
+    def test_cli_title_infers_filename_snake_case(self) -> None:
+        """CLI --title without --filename should infer filename using snake_case."""
+        record = make_eee_record(
+            "test/model",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.82, 0.78],
+            metric_name="mcc",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jsonl_path = Path(tmpdir) / "test_model.jsonl"
+            jsonl_path.write_text(json.dumps(record) + "\n")
+
+            with patch(
+                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
+            ):
+                runner = CliRunner()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "zero",
+                                "--title",
+                                "My Plot Title",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                        # Title "My Plot Title" -> "my_plot_title.png"
+                        output_path = Path(workdir) / "my_plot_title.png"
+                        assert output_path.exists(), (
+                            "Filename should be inferred from title as snake_case"
+                        )
+                    finally:
+                        os.chdir(original_cwd)
+
+    def test_cli_title_special_chars_infers_filename(self) -> None:
+        """CLI --title with special chars should infer clean snake_case filename."""
+        record = make_eee_record(
+            "test/model",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.82, 0.78],
+            metric_name="mcc",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jsonl_path = Path(tmpdir) / "test_model.jsonl"
+            jsonl_path.write_text(json.dumps(record) + "\n")
+
+            with patch(
+                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
+            ):
+                runner = CliRunner()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "zero",
+                                "--title",
+                                "My Plot! Title: 2024 (Test)",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                        # Title with special chars -> "my_plot_title_2024_test.png"
+                        output_path = Path(workdir) / "my_plot_title_2024_test.png"
+                        assert output_path.exists(), (
+                            "Special chars should be removed from inferred filename"
+                        )
+                    finally:
+                        os.chdir(original_cwd)
+
+    def test_cli_default_filename_without_options(self) -> None:
+        """CLI without --title or --filename should use default filename."""
+        record = make_eee_record(
+            "test/model",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.82, 0.78],
+            metric_name="mcc",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jsonl_path = Path(tmpdir) / "test_model.jsonl"
+            jsonl_path.write_text(json.dumps(record) + "\n")
+
+            with patch(
+                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
+            ):
+                runner = CliRunner()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "zero",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                        output_path = Path(workdir) / "language-spider-plot.png"
+                        assert output_path.exists(), "Default filename should be used"
+                    finally:
+                        os.chdir(original_cwd)
+
+    def test_cli_success_output_is_single_line_with_file_uri(self) -> None:
+        """Successful output should be exactly one line with file:// URI."""
+        record = make_eee_record(
+            "test/model",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.82, 0.78],
+            metric_name="mcc",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jsonl_path = Path(tmpdir) / "test_model.jsonl"
+            jsonl_path.write_text(json.dumps(record) + "\n")
+
+            with patch(
+                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
+            ):
+                runner = CliRunner()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "zero",
+                                "--title",
+                                "Test Title",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                        lines = [
+                            line for line in result.output.strip().split("\n") if line
+                        ]
+                        assert len(lines) == 1, (
+                            f"Expected exactly 1 line, got {len(lines)}: {lines}"
+                        )
+                        assert lines[0].startswith("file://"), (
+                            f"Output should be file:// URI: {lines[0]}"
+                        )
+                        assert lines[0].endswith(".png"), (
+                            f"URI should end with .png: {lines[0]}"
+                        )
+                    finally:
+                        os.chdir(original_cwd)
+
+    def test_cli_shots_auto_no_extra_output(self) -> None:
+        """CLI --shots auto should not emit extra logs on success."""
+        record = make_eee_record(
+            "test/model",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.82, 0.78],
+            metric_name="mcc",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            jsonl_path = Path(tmpdir) / "test_model.jsonl"
+            jsonl_path.write_text(json.dumps(record) + "\n")
+
+            with patch(
+                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
+            ):
+                runner = CliRunner()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "auto",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                        lines = [
+                            line for line in result.output.strip().split("\n") if line
+                        ]
+                        assert len(lines) == 1, (
+                            f"--shots auto should emit exactly 1 line, got {len(lines)}"
+                        )
                     finally:
                         os.chdir(original_cwd)
