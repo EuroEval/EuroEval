@@ -908,6 +908,22 @@ class TestCreateSpiderPlot:
             # Alpha should be 0.2 (transparent)
             assert "0.2" in fillcolor
 
+    def test_logo_added_bottom_right(self) -> None:
+        """Should add the EuroEval logo in the bottom-right corner."""
+        model_scores: dict[str, dict[str, float | None]] = {
+            "model1": {"da": 1.5, "sv": 2.0}
+        }
+        fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
+        assert len(fig.layout.images) == 1
+        logo = fig.layout.images[0]
+        assert logo.source.startswith("data:image/png;base64,")
+        assert logo.x == 0.985
+        assert logo.y == 0.015
+        assert logo.xanchor == "right"
+        assert logo.yanchor == "bottom"
+        assert logo.sizex == 0.12
+        assert logo.sizey == 0.12
+
     def test_none_scores_treated_as_zero(self) -> None:
         """Should treat None scores as zero in plot."""
         model_scores = {"model1": {"da": 1.5, "sv": None}}

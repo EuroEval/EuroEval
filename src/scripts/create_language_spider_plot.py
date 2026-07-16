@@ -8,6 +8,7 @@ Output is a PNG file.
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import math
@@ -44,6 +45,9 @@ from leaderboards.task_metadata import (
 # Type alias for evaluation records (recursive JSON structure)
 Json = dict[str, "Json"] | list["Json"] | str | int | float | bool | None
 JsonDict = dict[str, Json]
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+EUROEVAL_LOGO_PATH = REPO_ROOT / "gfx" / "euroeval.png"
 
 
 # Silence logging by default; script should emit exactly one line on success
@@ -979,8 +983,34 @@ def _create_spider_plot(
         height=700,
         width=900,
     )
+    fig.add_layout_image(
+        dict(
+            source=_load_logo_data_uri(),
+            xref="paper",
+            yref="paper",
+            x=0.985,
+            y=0.015,
+            sizex=0.12,
+            sizey=0.12,
+            xanchor="right",
+            yanchor="bottom",
+            sizing="contain",
+            opacity=0.85,
+            layer="above",
+        )
+    )
 
     return fig
+
+
+def _load_logo_data_uri() -> str:
+    """Load the EuroEval logo as a PNG data URI.
+
+    Returns:
+        Base64-encoded PNG data URI.
+    """
+    encoded_logo = base64.b64encode(EUROEVAL_LOGO_PATH.read_bytes()).decode("ascii")
+    return f"data:image/png;base64,{encoded_logo}"
 
 
 def _write_image_silent(fig: go.Figure, path: str) -> None:
