@@ -109,6 +109,7 @@ dev = [
     "ty>=0.0.40",
     "tqdm-stubs>=0.2.1",
     "pre-commit>=4.5.1",
+    "plotly>=6.9.0",
 ]
 
 [tool.uv.sources]
