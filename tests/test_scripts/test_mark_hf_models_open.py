@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -409,7 +410,7 @@ class TestProcessJsonlFile:
 
 
 class TestUploadChangedFiles:
-    """Tests for the upload_changed_files function."""
+    """Tests for the upload_changed_files function using hf buckets cp CLI."""
 
     def test_dry_run_logs_without_upload(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
@@ -419,28 +420,171 @@ class TestUploadChangedFiles:
         jsonl_file.write_text('{"test": true}\n')
 
         with caplog.at_level(logging.INFO):
-            uploaded = upload_changed_files(changed_files=[jsonl_file], dry_run=True)
+            uploaded = upload_changed_files(
+                changed_files=[jsonl_file], results_dir=tmp_path, dry_run=True
+            )
 
         assert uploaded == 1
-        assert "Would upload changed.jsonl" in caplog.text
+        assert "Would copy changed.jsonl" in caplog.text
 
-    def test_no_upload_without_token(
+    def test_uses_hf_buckets_cp_for_upload(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Should use hf buckets cp CLI for uploading."""
+        jsonl_file = tmp_path / "changed.jsonl"
+        jsonl_file.write_text('{"test": true}\n')
+
+        # Mock subprocess.run to avoid actual CLI call
+        mock_run = MagicMock()
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+
+        with patch("subprocess.run", return_value=mock_run.return_value) as mock_sub:
+            uploaded = upload_changed_files(
+                changed_files=[jsonl_file], results_dir=tmp_path, dry_run=False
+            )
+
+        assert uploaded == 1
+        mock_sub.assert_called_once()
+        call_args = mock_sub.call_args
+        # Verify hf buckets cp command structure
+        cmd = call_args.args[0]
+        assert cmd[0] == "hf"
+        assert cmd[1] == "buckets"
+        assert cmd[2] == "cp"
+        assert str(jsonl_file) in cmd
+        assert "hf://buckets/EuroEval/results/changed.jsonl" in cmd
+
+    def test_upload_handles_cli_failure(
         self,
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Should skip upload if no HF_TOKEN found."""
+        """Should handle CLI upload failure gracefully."""
         jsonl_file = tmp_path / "changed.jsonl"
         jsonl_file.write_text('{"test": true}\n')
 
-        # Ensure no token exists
-        monkeypatch.delenv("HF_TOKEN", raising=False)
-        with patch("pathlib.Path.exists", return_value=False):
+        # Mock subprocess.run to simulate failure
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stderr = "Authentication failed"
+        mock_result.stdout = ""
+
+        mock_run = MagicMock(
+            side_effect=subprocess.CalledProcessError(
+                1, ["hf"], stderr="Authentication failed"
+            )
+        )
+
+        with patch("subprocess.run", side_effect=mock_run):
             with caplog.at_level(logging.WARNING):
                 uploaded = upload_changed_files(
-                    changed_files=[jsonl_file], dry_run=False
+                    changed_files=[jsonl_file], results_dir=tmp_path, dry_run=False
                 )
 
         assert uploaded == 0
-        assert "No HF_TOKEN found" in caplog.text
+        assert "Failed to upload" in caplog.text
+
+    def test_upload_handles_missing_cli(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Should handle missing hf CLI gracefully."""
+        jsonl_file = tmp_path / "changed.jsonl"
+        jsonl_file.write_text('{"test": true}\n')
+
+        # Mock subprocess.run to raise FileNotFoundError
+        with patch("subprocess.run", side_effect=FileNotFoundError("hf not found")):
+            with caplog.at_level(logging.WARNING):
+                uploaded = upload_changed_files(
+                    changed_files=[jsonl_file], results_dir=tmp_path, dry_run=False
+                )
+
+        assert uploaded == 0
+        assert "hf CLI not found" in caplog.text
+
+
+class TestProcessJsonlFileStrictParsing:
+    """Tests for strict JSONL parsing behaviour."""
+
+    def test_invalid_json_raises_value_error(self, tmp_path: Path) -> None:
+        """Should raise ValueError on invalid JSON and not rewrite file."""
+        jsonl_file = tmp_path / "test.jsonl"
+        # File with one valid and one invalid line
+        original_content = '{"model_info": {"id": "org/repo"}}\ninvalid json here\n'
+        jsonl_file.write_text(original_content)
+
+        mock_api = MagicMock()
+        existence_cache: dict[str, bool] = {}
+
+        # Should raise ValueError due to invalid JSON
+        with pytest.raises(ValueError):
+            process_jsonl_file(
+                jsonl_path=jsonl_file,
+                hf_api=mock_api,
+                existence_cache=existence_cache,
+                dry_run=False,
+            )
+
+        # File should NOT be modified - original content preserved
+        assert jsonl_file.read_text() == original_content
+
+    def test_creates_additional_details_if_missing(self, tmp_path: Path) -> None:
+        """Should create additional_details dict if it's missing."""
+        jsonl_file = tmp_path / "test.jsonl"
+        # Record with no additional_details key
+        record = {"model_info": {"id": "meta-llama/Llama-2-7b", "name": "Llama 2"}}
+        jsonl_file.write_text(json.dumps(record) + "\n")
+
+        mock_api = MagicMock()
+        mock_api.model_info.return_value = MagicMock()
+        existence_cache: dict[str, bool] = {}
+
+        checked, changed, _ = process_jsonl_file(
+            jsonl_path=jsonl_file,
+            hf_api=mock_api,
+            existence_cache=existence_cache,
+            dry_run=False,
+        )
+
+        assert checked == 1
+        assert changed == 1
+
+        # Verify additional_details was created and open=True was set
+        updated = json.loads(jsonl_file.read_text().strip())
+        assert "additional_details" in updated["model_info"]
+        assert updated["model_info"]["additional_details"]["open"] is True
+
+    def test_creates_additional_details_if_none(self, tmp_path: Path) -> None:
+        """Should create additional_details dict if it's None."""
+        jsonl_file = tmp_path / "test.jsonl"
+        # Record with additional_details explicitly None
+        record = {
+            "model_info": {
+                "id": "meta-llama/Llama-2-7b",
+                "name": "Llama 2",
+                "additional_details": None,
+            }
+        }
+        jsonl_file.write_text(json.dumps(record) + "\n")
+
+        mock_api = MagicMock()
+        mock_api.model_info.return_value = MagicMock()
+        existence_cache: dict[str, bool] = {}
+
+        checked, changed, _ = process_jsonl_file(
+            jsonl_path=jsonl_file,
+            hf_api=mock_api,
+            existence_cache=existence_cache,
+            dry_run=False,
+        )
+
+        assert checked == 1
+        assert changed == 1
+
+        # Verify additional_details was created and open=True was set
+        updated = json.loads(jsonl_file.read_text().strip())
+        assert isinstance(updated["model_info"]["additional_details"], dict)
+        assert updated["model_info"]["additional_details"]["open"] is True

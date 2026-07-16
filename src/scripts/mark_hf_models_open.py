@@ -18,11 +18,12 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import os
 import random
 import re
+import subprocess
 import sys
 import time
+import typing as t
 from pathlib import Path
 
 from huggingface_hub import HfApi
@@ -182,6 +183,10 @@ def process_jsonl_file(
 ) -> tuple[int, int, int]:
     """Process a single JSONL file, marking open models as ``open=True``.
 
+    Only mutates ``model_info.additional_details.open`` to True for records
+    whose HF repo exists. Records with malformed JSON cause the function to
+    raise ``ValueError`` - the file is not modified in that case.
+
     Args:
         jsonl_path:
             Path to the JSONL file.
@@ -206,16 +211,23 @@ def process_jsonl_file(
     retries_used = 0
 
     lines = jsonl_path.read_text(encoding="utf-8").splitlines()
-    records = parse_jsonl_lines(lines=lines, source=str(jsonl_path), strict=False)
+    # Use strict=True to fail on invalid JSON rather than silently dropping lines
+    records = parse_jsonl_lines(lines=lines, source=str(jsonl_path), strict=True)
 
     modified_records: list[dict] = []
 
     for record in records:
         # Navigate to model_info.additional_details.open in EEE format
         model_info = record.get("model_info", {})
-        additional_details = model_info.get("additional_details", {})
+        additional_details = model_info.get("additional_details")
 
-        open_value = additional_details.get("open") if additional_details else None
+        # Treat missing key same as None - need to create dict
+        if additional_details is None:
+            additional_details = {}
+            model_info_typed = t.cast("dict[str, object]", model_info)
+            model_info_typed["additional_details"] = additional_details
+
+        open_value = additional_details.get("open")
         model_id = ""
         if model_info:
             model_id = model_info.get("id", model_info.get("name", ""))
@@ -252,8 +264,7 @@ def process_jsonl_file(
 
             if exists:
                 logger.info(f"Marking {model_id!r} -> {canonical_id!r} as open=True")
-                if isinstance(additional_details, dict):
-                    additional_details["open"] = True
+                additional_details["open"] = True
                 records_changed += 1
             elif exists is False:
                 logger.debug(
@@ -280,14 +291,21 @@ def process_jsonl_file(
 
 def upload_changed_files(
     changed_files: list[Path],
+    results_dir: Path,
     hf_bucket: str = "EuroEval/results",
     dry_run: bool = False,
 ) -> int:
-    """Upload changed JSONL files to the Hugging Face bucket.
+    """Upload changed JSONL files to the Hugging Face bucket using ``hf buckets cp``.
+
+    Uses the ``hf buckets cp`` CLI to copy individual files to the bucket.
+    Authentication is handled automatically via cached credentials or ``HF_TOKEN``
+    environment variable - no explicit token is passed or printed.
 
     Args:
         changed_files:
             List of JSONL file paths to upload.
+        results_dir:
+            Directory containing the JSONL files (parent directory for source paths).
         hf_bucket (optional):
             The HF bucket path (e.g. ``"EuroEval/results"``).
         dry_run (optional):
@@ -297,38 +315,37 @@ def upload_changed_files(
         Number of files successfully uploaded.
     """
     uploaded = 0
-    hf_token: str | None = None
-    if not dry_run:
-        token_path = Path.home().expanduser()
-        token_path = token_path.joinpath(".cache/huggingface/token")
-        hf_token = os.getenv("HF_TOKEN") or ("token" if token_path.exists() else None)
-
-    if not hf_token and not dry_run:
-        logger.warning("No HF_TOKEN found - skipping bucket upload")
-        return 0
-
-    api = HfApi(token=hf_token if not dry_run else None)
 
     for file_path in changed_files:
         if dry_run:
             logger.info(
-                f"[dry-run] Would upload {file_path.name} to hf://buckets/{hf_bucket}/"
+                f"[dry-run] Would copy {file_path.name} to hf://buckets/{hf_bucket}/"
             )
             uploaded += 1
             continue
 
         try:
-            # Use upload_file to upload individual files to the bucket
-            api.upload_file(
-                path_or_fileobj=str(file_path),
-                path_in_repo=file_path.name,
-                repo_id=hf_bucket,
-                repo_type="bucket",
+            # Use hf buckets cp CLI to upload individual files
+            # Authentication is handled via cached credentials or HF_TOKEN env var
+            bucket_path = f"hf://buckets/{hf_bucket}/{file_path.name}"
+            subprocess.run(
+                ["hf", "buckets", "cp", str(file_path), bucket_path, "--quiet"],
+                check=True,
+                capture_output=True,
+                text=True,
             )
-            logger.info(f"Uploaded {file_path.name} to hf://buckets/{hf_bucket}/")
+            logger.info(f"Uploaded {file_path.name} to {bucket_path}")
             uploaded += 1
-        except Exception as e:
-            logger.warning(f"Failed to upload {file_path.name}: {e}")
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Failed to upload {file_path.name} to bucket: {e.stderr or e.stdout}"
+            )
+        except FileNotFoundError:
+            logger.warning(
+                "hf CLI not found - skipping bucket upload. "
+                "Install with: pip install huggingface_hub[cli]"
+            )
+            return uploaded
 
     return uploaded
 
@@ -443,7 +460,7 @@ def main() -> None:
     if not args.no_upload and changed_files:
         logger.info("Uploading changed files to HF bucket...")
         uploaded = upload_changed_files(
-            changed_files=changed_files, dry_run=args.dry_run
+            changed_files=changed_files, results_dir=results_dir, dry_run=args.dry_run
         )
         logger.info(f"  Files uploaded: {uploaded}")
     elif changed_files and args.no_upload:
