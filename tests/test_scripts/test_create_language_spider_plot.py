@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -587,27 +588,31 @@ class TestIntegrationWithTempFiles:
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
             ):
                 runner = CliRunner()
-                with tempfile.TemporaryDirectory() as outdir:
-                    output_path = Path(outdir) / "plot.html"
-                    result = runner.invoke(
-                        cli,
-                        [
-                            "--model",
-                            "test/model1",
-                            "--model",
-                            "test/model2",
-                            "--language",
-                            "da",
-                            "--language",
-                            "sv",
-                            "--shots",
-                            "zero",
-                            "--output",
-                            str(output_path),
-                        ],
-                    )
-                    assert result.exit_code == 0, f"CLI failed: {result.output}"
-                    assert output_path.exists()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model1",
+                                "--model",
+                                "test/model2",
+                                "--language",
+                                "da",
+                                "--language",
+                                "sv",
+                                "--shots",
+                                "zero",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                        output_path = Path(workdir) / "language-spider-plot.png"
+                        assert output_path.exists()
+                    finally:
+                        os.chdir(original_cwd)
 
     def test_intersection_used_for_missing_languages(self) -> None:
         """Test that language intersection is used when some models miss languages."""
@@ -629,27 +634,31 @@ class TestIntegrationWithTempFiles:
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
             ):
                 runner = CliRunner()
-                with tempfile.TemporaryDirectory() as outdir:
-                    output_path = Path(outdir) / "plot.html"
-                    result = runner.invoke(
-                        cli,
-                        [
-                            "--model",
-                            "test/model1",
-                            "--model",
-                            "test/model2",
-                            "--language",
-                            "da",
-                            "--language",
-                            "sv",
-                            "--shots",
-                            "zero",
-                            "--output",
-                            str(output_path),
-                        ],
-                    )
-                    assert result.exit_code == 0, f"CLI failed: {result.output}"
-                    assert output_path.exists()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model1",
+                                "--model",
+                                "test/model2",
+                                "--language",
+                                "da",
+                                "--language",
+                                "sv",
+                                "--shots",
+                                "zero",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                        output_path = Path(workdir) / "language-spider-plot.png"
+                        assert output_path.exists()
+                    finally:
+                        os.chdir(original_cwd)
 
     def test_empty_intersection_fails(self) -> None:
         """Test that empty language intersection fails with clear message."""
@@ -707,72 +716,53 @@ class TestIntegrationWithTempFiles:
             ):
                 runner = CliRunner()
 
-                with tempfile.TemporaryDirectory() as outdir:
-                    output_path = Path(outdir) / "plot.html"
-                    result = runner.invoke(
-                        cli,
-                        [
-                            "--model",
-                            "test/model1",
-                            "--language",
-                            "da",
-                            "--shots",
-                            "auto",
-                            "--output",
-                            str(output_path),
-                        ],
-                    )
-                    assert result.exit_code != 0
-                    assert "ambiguous" in result.output.lower()
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
 
-                with tempfile.TemporaryDirectory() as outdir:
-                    output_path = Path(outdir) / "plot.html"
-                    result = runner.invoke(
-                        cli,
-                        [
-                            "--model",
-                            "test/model1",
-                            "--language",
-                            "da",
-                            "--shots",
-                            "zero",
-                            "--output",
-                            str(output_path),
-                        ],
-                    )
-                    assert result.exit_code == 0, f"CLI failed: {result.output}"
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model1",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "auto",
+                            ],
+                        )
+                        assert result.exit_code != 0
+                        assert "ambiguous" in result.output.lower()
+                    finally:
+                        os.chdir(original_cwd)
 
-    def test_output_path_parent_created(self) -> None:
-        """Test that output path parent directories are created."""
-        records = [
-            make_eee_record("test/model1", ["da"], {"test_macro_f1": 80.0}, False)
-        ]
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model1.jsonl"
-            jsonl_path.write_text(json.dumps(records[0]) + "\n")
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model1",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "zero",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                    finally:
+                        os.chdir(original_cwd)
 
-            with patch(
-                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
-            ):
-                runner = CliRunner()
-                with tempfile.TemporaryDirectory() as outdir:
-                    nested_output = Path(outdir) / "subdir" / "nested" / "plot.html"
-                    result = runner.invoke(
-                        cli,
-                        [
-                            "--model",
-                            "test/model1",
-                            "--language",
-                            "da",
-                            "--shots",
-                            "zero",
-                            "--output",
-                            str(nested_output),
-                        ],
-                    )
-                    assert result.exit_code == 0, f"CLI failed: {result.output}"
-                    assert nested_output.exists()
+    def test_cli_no_output_option(self) -> None:
+        """CLI should not have --output option."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["--help"])
+        assert "--output" not in result.output
+        assert "-o" not in result.output
 
     def test_result_files_not_mutated(self) -> None:
         """Test that result JSONL files are not mutated."""
@@ -791,22 +781,25 @@ class TestIntegrationWithTempFiles:
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
             ):
                 runner = CliRunner()
-                with tempfile.TemporaryDirectory() as outdir:
-                    output_path = Path(outdir) / "plot.html"
-                    result = runner.invoke(
-                        cli,
-                        [
-                            "--model",
-                            "test/model1",
-                            "--language",
-                            "da",
-                            "--shots",
-                            "zero",
-                            "--output",
-                            str(output_path),
-                        ],
-                    )
-                    assert result.exit_code == 0
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model1",
+                                "--language",
+                                "da",
+                                "--shots",
+                                "zero",
+                            ],
+                        )
+                        assert result.exit_code == 0
+                    finally:
+                        os.chdir(original_cwd)
 
             content_after = jsonl_path.read_text()
             assert content_after == original_content
@@ -830,21 +823,24 @@ class TestIntegrationWithTempFiles:
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
             ):
                 runner = CliRunner()
-                with tempfile.TemporaryDirectory() as outdir:
-                    output_path = Path(outdir) / "plot.html"
-                    result = runner.invoke(
-                        cli,
-                        [
-                            "--model",
-                            "test/model1",
-                            "--language",
-                            "da",
-                            "--language",
-                            "sv",
-                            "--shots",
-                            "zero",
-                            "--output",
-                            str(output_path),
-                        ],
-                    )
-                    assert result.exit_code == 0, f"CLI failed: {result.output}"
+                with tempfile.TemporaryDirectory() as workdir:
+                    original_cwd = Path.cwd()
+                    try:
+
+                        os.chdir(workdir)
+                        result = runner.invoke(
+                            cli,
+                            [
+                                "--model",
+                                "test/model1",
+                                "--language",
+                                "da",
+                                "--language",
+                                "sv",
+                                "--shots",
+                                "zero",
+                            ],
+                        )
+                        assert result.exit_code == 0, f"CLI failed: {result.output}"
+                    finally:
+                        os.chdir(original_cwd)

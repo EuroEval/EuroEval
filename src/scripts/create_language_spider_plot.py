@@ -1,8 +1,9 @@
 """Create a language spider/radial plot comparing models across languages.
 
-This script loads evaluation results from local JSONL files and generates an
-interactive Plotly polar chart comparing selected models across languages.
+This script loads evaluation results from local JSONL files and generates a
+Plotly polar chart comparing selected models across languages.
 Only rank score is plotted (lower is better, axis is reversed).
+Output is a PNG file.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from pathlib import Path
 
 import click
 import plotly.graph_objects as go
+from kaleido.errors import KaleidoError
 
 from euroeval.jsonl_io import parse_jsonl_lines
 from euroeval.languages import get_all_languages
@@ -45,13 +47,13 @@ def main(
     languages: tuple[str, ...],
     shots: str,
     max_score: float | None,
-    output: str,
 ) -> int:
     """Create a language spider plot comparing models across languages.
 
-    Loads evaluation results from local JSONL files and generates an
-    interactive Plotly polar chart comparing selected models across languages.
+    Loads evaluation results from local JSONL files and generates a Plotly
+    polar chart comparing selected models across languages.
     Only rank score is plotted (lower is better).
+    Output is a PNG file.
 
     Args:
         models:
@@ -63,8 +65,6 @@ def main(
         max_score (optional):
             Override maximum score for radial axis. If omitted, automatically
             computed from the plotted rank scores (rounded up to nearest 10).
-        output:
-            Output HTML file path.
 
     Returns:
         Exit code (0 for success, 1 for failure).
@@ -154,9 +154,12 @@ def main(
         max_score=max_score_val,
     )
 
-    output_path = Path(output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.write_html(str(output_path), include_plotlyjs=True)
+    output_path = Path("language-spider-plot.png")
+    try:
+        fig.write_image(str(output_path))
+    except KaleidoError as exc:
+        click.echo(f"Error writing PNG: {exc}", err=True)
+        return 1
     logger.info(f"Wrote spider plot to {output_path}")
 
     return 0
@@ -731,28 +734,15 @@ def _create_spider_plot(
     help="Optional override for maximum radial axis score. When omitted, "
     "automatically computed from plotted rank scores (rounded up to nearest 10).",
 )
-@click.option(
-    "--output",
-    "-o",
-    type=click.Path(path_type=str),
-    default="language_spider_plot.html",
-    show_default=True,
-    help="Output HTML file path.",
-)
 def cli(
     models: tuple[str, ...],
     languages: tuple[str, ...],
     shots: str,
     max_score: float | None,
-    output: str,
 ) -> None:
     """Command-line entry point."""
     exit_code = main(
-        models=models,
-        languages=languages,
-        shots=shots,
-        max_score=max_score,
-        output=output,
+        models=models, languages=languages, shots=shots, max_score=max_score
     )
     if exit_code != 0:
         sys.exit(exit_code)
