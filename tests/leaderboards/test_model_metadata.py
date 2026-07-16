@@ -19,6 +19,7 @@ from leaderboards.cache import Cache
 from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
 from leaderboards.model_metadata import (
     _is_hf_url_for_model,
+    add_missing_entries,
     is_commercially_licensed,
     is_merge,
     is_open,
@@ -550,19 +551,12 @@ class TestStaleOpenFalseRepair:
 
         This tests that _base_model_id() broadening is NOT used for openness,
         preventing propagation of stale values across unrelated model variants.
+        HF lookup should succeed for Qwen3-32B and return True.
         """
         mock_api = MagicMock()
         mock_hf_api_class.return_value = mock_api
-        # Make HF lookup fail so we can test the cache behavior
-        mock_response = Mock()
-        mock_response.status_code = 404
-        mock_response.headers = {}
-        mock_response.text = "Not Found"
-        mock_response.request = Mock()
-        mock_response.request.url = "https://huggingface.co/api/models/fake"
-        mock_api.model_info.side_effect = RepositoryNotFoundError(
-            "Repository Not Found", response=mock_response
-        )
+        # Model exists on HF (no exception raised)
+        mock_api.model_info.return_value = MagicMock()
 
         cache = Cache()
         # Cache False for a different Qwen3 variant
@@ -574,16 +568,16 @@ class TestStaleOpenFalseRepair:
             "generative": True,
         }
 
-        # Should not return cached False from different model Qwen/Qwen3-0.6B
-        # Instead, it should try HF lookup (which fails) and return False
+        # Should do HF lookup (not use cached False from Qwen/Qwen3-0.6B)
         result = is_open(record=record, cache=cache)
 
-        # Result is False because HF lookup fails (mocked), NOT because of
-        # base-model broadening from Qwen/Qwen3-0.6B
-        assert result is False
+        # Result is True because HF lookup succeeds
+        assert result is True
+        # Verify model_info was called with the exact repo_id
+        mock_api.model_info.assert_called_once_with(repo_id="Qwen/Qwen3-32B")
         # Verify that Qwen/Qwen3-32B now has its own cache entry (not inherited)
         assert "Qwen/Qwen3-32B" in cache.open
-        assert cache.open["Qwen/Qwen3-32B"] is False
+        assert cache.open["Qwen/Qwen3-32B"] is True
         # Verify Qwen/Qwen3-0.6B cache is still there unchanged
         assert cache.open["Qwen/Qwen3-0.6B"] is False
 
@@ -639,6 +633,14 @@ class TestStaleOpenFalseRepair:
             _is_hf_url_for_model("https://api.openai.com/gpt-4", "openai/gpt-4")
             is False
         )
+        # Boundary test: repo2 should NOT match repo
+        assert _is_hf_url_for_model("https://hf.co/org/repo2", "org/repo") is False
+        assert (
+            _is_hf_url_for_model("https://huggingface.co/org/repo2", "org/repo")
+            is False
+        )
+        # But exact match should work
+        assert _is_hf_url_for_model("https://hf.co/org/repo", "org/repo") is True
 
     @patch("leaderboards.model_metadata.HfApi")
     def test_cached_true_is_trusted(self, mock_hf_api_class: MagicMock) -> None:
@@ -714,3 +716,92 @@ class TestStaleOpenFalseRepair:
 
         # Should cache True
         assert cache.open["org/repo"] is True
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_add_missing_entries_repairs_stale_open_false(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """add_missing_entries should repair open=False when HF URL exists."""
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        # Model exists on HF (no exception raised)
+        mock_api.model_info.return_value = MagicMock()
+
+        # Record with stale open=False and valid HF URL
+        # Pre-populate generative_type to avoid interactive prompt
+        record = {
+            "model_info": {
+                "name": "Qwen/Qwen3-32B",
+                "additional_details": {
+                    "open": False,
+                    "model_url": "https://hf.co/Qwen/Qwen3-32B",
+                    "generative_type": "base",
+                    "merge": False,
+                    "commercially_licensed": False,
+                    "trained_from_scratch": False,
+                },
+            },
+            "generative": True,
+            "eval_library": {
+                "additional_details": {"validation_split": False, "few_shot": True}
+            },
+        }
+        cache = Cache()
+
+        result = add_missing_entries(
+            record=record,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=cache,
+        )
+
+        # open should be repaired to True
+        assert result["model_info"]["additional_details"]["open"] is True
+        mock_api.model_info.assert_called_once_with(repo_id="Qwen/Qwen3-32B")
+
+    @patch("leaderboards.model_metadata.HfApi")
+    def test_add_missing_entries_preserves_non_hf_false(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """add_missing_entries should preserve open=False for non-HF models."""
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        # Model does NOT exist on HF
+        mock_response = Mock()
+        mock_response.status_code = 404
+        mock_response.headers = {}
+        mock_response.text = "Not Found"
+        mock_response.request = Mock()
+        mock_response.request.url = "https://huggingface.co/api/models/fake"
+        mock_api.model_info.side_effect = RepositoryNotFoundError(
+            "Repository Not Found", response=mock_response
+        )
+
+        # Record with open=False and non-HF URL
+        # Pre-populate to avoid interactive prompts
+        record = {
+            "model_info": {
+                "name": "openai/gpt-4",
+                "additional_details": {
+                    "open": False,
+                    "model_url": "https://openai.com/gpt-4",
+                    "generative_type": "base",
+                    "merge": False,
+                    "commercially_licensed": False,
+                    "trained_from_scratch": False,
+                },
+            },
+            "generative": True,
+            "eval_library": {
+                "additional_details": {"validation_split": False, "few_shot": True}
+            },
+        }
+        cache = Cache()
+
+        result = add_missing_entries(
+            record=record,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=cache,
+        )
+
+        # open should remain False (non-HF URL)
+        assert result["model_info"]["additional_details"]["open"] is False

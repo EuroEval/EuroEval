@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -15,6 +16,35 @@ from .jsonl_io import load_records_from_jsonl_files
 from .records import plain_model_id
 
 logger = logging.getLogger(__name__)
+
+
+def _is_hf_url_for_model(model_url: str, model_id: str) -> bool:
+    """Check if a model URL is a Hugging Face URL for the given model.
+
+    Uses exact repo-path matching to avoid false positives from prefix
+    matching (e.g., https://hf.co/org/repo2 should not match org/repo).
+
+    Args:
+        model_url:
+            The model URL to check.
+        model_id:
+            The model ID (e.g., ``org/repo``).
+
+    Returns:
+        True if the URL is an HF Hub URL for the model, False otherwise.
+    """
+    model_id = plain_model_id(model_id)
+    parsed = urllib.parse.urlparse(model_url)
+    if parsed.netloc not in (
+        "hf.co",
+        "huggingface.co",
+        "www.hf.co",
+        "www.huggingface.co",
+    ):
+        return False
+    # Path should be exactly /{model_id}
+    path = parsed.path.rstrip("/")
+    return path == f"/{model_id}"
 
 
 @dataclass
@@ -109,12 +139,7 @@ class Cache:
                 model_url = additional.get("model_url")
                 if open_value is False and model_url:
                     # Check if it's an HF URL for this model
-                    if model_url.startswith(
-                        (
-                            f"https://hf.co/{model_id}",
-                            f"https://huggingface.co/{model_id}",
-                        )
-                    ):
+                    if _is_hf_url_for_model(model_url, model_id):
                         # Don't cache False; let is_open() re-check HF
                         pass
                     else:

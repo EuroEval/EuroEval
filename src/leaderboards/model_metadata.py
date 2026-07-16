@@ -25,7 +25,7 @@ from requests.exceptions import RequestException
 
 from euroeval.string_utils import split_model_id
 
-from .cache import Cache
+from .cache import Cache, _is_hf_url_for_model
 from .constants import GENERATIVE_TYPE_KEYWORDS, PERMISSIVE_LICENSES, RESULTS_DIR
 from .link_generation import ask_user_to_remove_model, generate_model_url
 from .record_fields import get_few_shot, get_task, get_version
@@ -75,7 +75,15 @@ def add_missing_entries(
         model_additional["commercially_licensed"] = is_commercially_licensed(
             record=record, cache=cache
         )
-    if "open" not in model_additional:
+    # Recheck/repair open when missing OR when stale False with HF URL
+    if "open" not in model_additional or (
+        model_additional["open"] is False
+        and "model_url" in model_additional
+        and model_additional["model_url"] is not None
+        and _is_hf_url_for_model(
+            model_additional["model_url"], plain_model_id(get_model_name(record=record))
+        )
+    ):
         model_additional["open"] = is_open(record=record, cache=cache)
     if "trained_from_scratch" not in model_additional:
         model_additional["trained_from_scratch"] = is_trained_from_scratch(
@@ -555,24 +563,6 @@ def _model_id_from_record(record: dict) -> str:
         if model_id_match:
             return model_id_match.group(1)
     return model_id
-
-
-def _is_hf_url_for_model(model_url: str, model_id: str) -> bool:
-    """Check if a model URL is a Hugging Face URL for the given model.
-
-    Args:
-        model_url:
-            The model URL to check.
-        model_id:
-            The model ID (e.g., ``org/repo``).
-
-    Returns:
-        True if the URL is an HF Hub URL for the model, False otherwise.
-    """
-    model_id = plain_model_id(model_id)
-    return model_url.startswith(
-        (f"https://hf.co/{model_id}", f"https://huggingface.co/{model_id}")
-    )
 
 
 def _base_model_id(model_id: str) -> str:
