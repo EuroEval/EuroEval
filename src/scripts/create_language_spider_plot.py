@@ -13,19 +13,24 @@ import logging
 import math
 import sys
 import typing as t
+from collections import defaultdict
 from pathlib import Path
 
 import click
+import numpy as np
 import plotly.graph_objects as go
 from kaleido.errors import KaleidoError
 
+from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.jsonl_io import parse_jsonl_lines
 from euroeval.languages import get_all_languages
 from leaderboards.constants import RESULTS_DIR
-from leaderboards.record_fields import get_few_shot, get_total_scores
+from leaderboards.record_fields import get_few_shot, get_task, get_total_scores
+from leaderboards.records import get_dataset
 from leaderboards.task_metadata import (
     language_name_to_codes,
     languages_with_official_datasets,
+    official_datasets_for_language,
     task_metric_names,
 )
 
@@ -468,11 +473,14 @@ def _build_score_matrix(
     languages: list[str],
     shot_value: bool | None,
 ) -> dict[str, dict[str, float | None]]:
-    """Build a model x language score matrix from records.
+    """Build a model x language mean rank score matrix from records.
 
-    Aggregates scores by collecting all valid scores per model-language
-    combination and computing their mean. Returns None for combinations
-    with no valid scores.
+    Computes per-language mean rank scores following the EuroEval methodology:
+    1. Extract aggregated scores per (model, dataset, language)
+    2. Compute dataset rank scores: 1 + (best_mean - model_mean) / pooled_std
+    3. Aggregate hierarchy: dataset -> task -> language (unweighted means)
+
+    Rank score of 1 is perfect (best on dataset). Lower is better.
 
     Args:
         records:
@@ -485,11 +493,13 @@ def _build_score_matrix(
             None for any, True for few-shot, False for zero-shot.
 
     Returns:
-        Model x language score matrix.
+        Model x language mean rank score matrix (lower is better).
     """
-    score_collections: dict[str, dict[str, list[float]]] = {}
-    for model in models:
-        score_collections[model] = {lang: [] for lang in languages}
+    # Step 1: Collect aggregated scores per (model, dataset, language)
+    # Structure: model -> dataset -> language -> list of scores
+    model_dataset_lang_scores: dict[str, dict[str, dict[str, list[float]]]] = (
+        defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    )
 
     for record in records:
         model_name = _get_model_identifier(record)
@@ -507,44 +517,160 @@ def _build_score_matrix(
             if record_few_shot != shot_value:
                 continue
 
+        task_name = get_task(record)
+        if not task_name or task_name in ORTHOGONAL_TASKS:
+            continue
+
         record_languages = _extract_languages_from_record(record)
         scores = _extract_scores_from_record(record)
+        dataset = get_dataset(record)
+
+        if not dataset or not record_languages:
+            continue
+
+        # Get primary metric for this task
+        primary_metric, secondary_metric = task_metric_names(task_name)
+        metrics_to_try = [primary_metric]
+        if secondary_metric:
+            metrics_to_try.append(secondary_metric)
 
         score: float | None = None
-        task = _extract_task_from_record(record)
-        if task:
-            primary_metric = _get_primary_metric_for_task(task)
-            test_metric = f"test_{primary_metric}"
+        for metric in metrics_to_try:
+            if metric is None:
+                continue
+            test_metric = f"test_{metric}"
             if test_metric in scores:
                 score = scores[test_metric]
-            elif primary_metric in scores:
-                score = scores[primary_metric]
+                break
+            if metric in scores:
+                score = scores[metric]
+                break
 
+        # Fallbacks for legacy records
         if score is None:
-            for fallback_metric in ["test_macro_f1", "test_accuracy", "test_rouge"]:
-                if fallback_metric in scores:
-                    score = scores[fallback_metric]
+            for fallback in ["test_macro_f1", "test_accuracy", "test_rouge"]:
+                if fallback in scores:
+                    score = scores[fallback]
                     break
-            if score is None:
-                for fallback_metric in ["macro_f1", "accuracy", "rouge"]:
-                    if fallback_metric in scores:
-                        score = scores[fallback_metric]
-                        break
+        if score is None:
+            for fallback in ["macro_f1", "accuracy", "rouge"]:
+                if fallback in scores:
+                    score = scores[fallback]
+                    break
 
         if score is None or not math.isfinite(score):
             continue
 
         for lang in record_languages:
             if lang in languages:
-                score_collections[matching_model][lang].append(score)
+                model_dataset_lang_scores[matching_model][dataset][lang].append(score)
 
+    if not model_dataset_lang_scores:
+        return {model: {lang: None for lang in languages} for model in models}
+
+    # Step 2: Compute mean score per (model, dataset, language)
+    model_dataset_lang_means: dict[str, dict[str, dict[str, float]]] = {}
+    for model, datasets in model_dataset_lang_scores.items():
+        model_dataset_lang_means[model] = {}
+        for dataset, lang_scores in datasets.items():
+            model_dataset_lang_means[model][dataset] = {}
+            for lang, scores_list in lang_scores.items():
+                if scores_list:
+                    model_dataset_lang_means[model][dataset][lang] = sum(
+                        scores_list
+                    ) / len(scores_list)
+
+    # Step 3: Compute dataset-level statistics (best_mean, pooled_std)
+    # Need all models' scores on each dataset to compute these
+    dataset_all_scores: dict[str, list[float]] = defaultdict(list)
+    dataset_model_means: dict[str, dict[str, float]] = defaultdict(dict)
+
+    for model, dataset_lang_means in model_dataset_lang_means.items():
+        for dataset, lang_means in dataset_lang_means.items():
+            # Mean across languages for this model-dataset
+            if lang_means:
+                dataset_mean = sum(lang_means.values()) / len(lang_means)
+                dataset_model_means[dataset][model] = dataset_mean
+                # Collect all raw scores for pooled std
+                for lang_scores in model_dataset_lang_scores[model][dataset].values():
+                    dataset_all_scores[dataset].extend(lang_scores)
+
+    dataset_stats: dict[str, tuple[float, float]] = {}
+    for dataset, all_scores in dataset_all_scores.items():
+        if not all_scores:
+            continue
+        model_means = dataset_model_means[dataset]
+        if not model_means:
+            continue
+        best_mean = max(model_means.values())
+        pooled_std = float(np.std(all_scores)) if len(all_scores) > 1 else 1.0
+        if pooled_std <= 0:
+            pooled_std = 1.0
+        dataset_stats[dataset] = (best_mean, pooled_std)
+
+    # Step 4: Compute rank score per (model, dataset, language)
+    # rank_score = 1 + (best_mean - model_mean) / pooled_std
+    model_dataset_lang_rank_scores: dict[str, dict[str, dict[str, float]]] = {}
+    for model in models:
+        model_dataset_lang_rank_scores[model] = defaultdict(dict)
+        if model not in model_dataset_lang_means:
+            continue
+        for dataset, lang_means in model_dataset_lang_means[model].items():
+            if dataset not in dataset_stats:
+                continue
+            best_mean, pooled_std = dataset_stats[dataset]
+            for lang, model_mean in lang_means.items():
+                rank_score = 1.0 + (best_mean - model_mean) / pooled_std
+                model_dataset_lang_rank_scores[model][dataset][lang] = rank_score
+
+    # Step 5: Aggregate rank scores: dataset -> task -> language
+    # Use official dataset configs to map datasets to tasks and languages
+    dataset_to_task: dict[str, str] = {}
+    dataset_to_lang_name: dict[str, str] = {}
+
+    # Official languages have configs; iterate all to build mappings
+    for lang_name in languages_with_official_datasets():
+        try:
+            lang_configs = official_datasets_for_language(lang_name)
+            for task_name, datasets_list in lang_configs.items():
+                for ds in datasets_list:
+                    if ds not in dataset_to_task:  # First match wins
+                        dataset_to_task[ds] = task_name
+                        dataset_to_lang_name[ds] = lang_name
+        except Exception:
+            continue
+
+    # Group rank scores by (language, task)
+    model_lang_task_scores: dict[str, dict[str, dict[str, list[float]]]] = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(list))
+    )
+
+    for model in models:
+        model_rank_scores = model_dataset_lang_rank_scores.get(model, {})
+        for dataset, lang_rank_scores in model_rank_scores.items():
+            task = dataset_to_task.get(dataset)
+            lang_name = dataset_to_lang_name.get(dataset)
+            if not task or task in ORTHOGONAL_TASKS or not lang_name:
+                continue
+            for lang_code, rank_score in lang_rank_scores.items():
+                if lang_code in languages:
+                    model_lang_task_scores[model][lang_code][task].append(rank_score)
+
+    # Step 6: Aggregate to language mean rank scores (unweighted mean across tasks)
     matrix: dict[str, dict[str, float | None]] = {}
     for model in models:
         matrix[model] = {}
+        lang_task_scores = model_lang_task_scores.get(model, {})
+
         for lang in languages:
-            collected = score_collections[model][lang]
-            if collected:
-                matrix[model][lang] = sum(collected) / len(collected)
+            task_scores = lang_task_scores.get(lang, {})
+            if not task_scores:
+                matrix[model][lang] = None
+                continue
+            # Mean of each task's dataset scores, then mean across tasks
+            task_means = [np.mean(scores) for scores in task_scores.values() if scores]
+            if task_means:
+                matrix[model][lang] = float(np.mean(task_means))
             else:
                 matrix[model][lang] = None
 

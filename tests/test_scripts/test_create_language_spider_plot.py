@@ -33,8 +33,12 @@ def make_eee_record(
     scores: dict[str, float],
     few_shot: bool,
     task: str = "summarization",
+    dataset: str = "nordjylland-news",
 ) -> JsonDict:
     """Create a minimal EEE-format record for testing.
+
+    Uses real dataset names from the official EuroEval configs so that
+    dataset-to-task-to-language mapping works correctly.
 
     Args:
         model_name:
@@ -47,6 +51,8 @@ def make_eee_record(
             Whether this is a few-shot record.
         task (optional):
             Task name. Defaults to "summarization".
+        dataset (optional):
+            Dataset name. Defaults to "nordjylland-news" (Danish summarisation).
 
     Returns:
         EEE-format record dictionary.
@@ -54,7 +60,7 @@ def make_eee_record(
     eval_results = [
         {
             "evaluation_name": metric_name,
-            "source_data": {"dataset_name": "test-dataset"},
+            "source_data": {"dataset_name": dataset},
             "metric_config": {"lower_is_better": False},
             "score_details": {"score": score, "details": {}},
         }
@@ -71,6 +77,7 @@ def make_eee_record(
                 "languages": json.dumps(languages),
                 "few_shot": "true" if few_shot else "false",
                 "task": task,
+                "dataset": dataset,
             },
         },
         "evaluation_results": eval_results,
@@ -273,70 +280,127 @@ class TestFilterByShots:
 
 
 class TestBuildScoreMatrix:
-    """Tests for _build_score_matrix function."""
+    """Tests for _build_score_matrix function with rank scores."""
 
-    def test_build_complete_matrix(self) -> None:
-        """Should build complete score matrix."""
+    def test_single_model_rank_is_one(self) -> None:
+        """Single model should have rank score of 1.0 (best by definition)."""
         records = [make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False)]
         matrix = _build_score_matrix(records, ["model1"], ["da"], None)
-        assert matrix["model1"]["da"] == 80.0
+        # Single model is always best, so rank score = 1.0
+        assert matrix["model1"]["da"] == 1.0
 
-    def test_mean_aggregation_multiple_records(self) -> None:
-        """Should compute mean of all valid scores, not use first-score-wins."""
+    def test_two_models_different_scores(self) -> None:
+        """Two models: better score gets rank closer to 1.0."""
         records = [
-            make_eee_record("model1", ["da"], {"test_macro_f1": 70.0}, False),
-            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
             make_eee_record("model1", ["da"], {"test_macro_f1": 90.0}, False),
+            make_eee_record("model2", ["da"], {"test_macro_f1": 70.0}, False),
         ]
-        matrix = _build_score_matrix(records, ["model1"], ["da"], None)
-        assert matrix["model1"]["da"] == 80.0  # Mean of 70, 80, 90
+        matrix = _build_score_matrix(records, ["model1", "model2"], ["da"], None)
+        # model1 is best (90), so rank = 1.0
+        # model2: rank = 1 + (90 - 70) / pooled_std
+        # pooled_std = std([90, 70]) = 10*sqrt(2) ≈ 14.14
+        # rank2 = 1 + 20/14.14 ≈ 2.41
+        assert matrix["model1"]["da"] == 1.0
+        assert matrix["model2"]["da"] > 1.0
+        assert matrix["model2"]["da"] > matrix["model1"]["da"]
 
-    def test_primary_metric_fallback(self) -> None:
-        """Should fallback to standard metrics when using primary."""
+    def test_equal_scores_same_rank(self) -> None:
+        """Models with equal scores should have same rank (1.0)."""
+        records = [
+            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
+            make_eee_record("model2", ["da"], {"test_macro_f1": 80.0}, False),
+        ]
+        matrix = _build_score_matrix(records, ["model1", "model2"], ["da"], None)
+        # Both tied for best, both get rank = 1.0
+        assert matrix["model1"]["da"] == 1.0
+        assert matrix["model2"]["da"] == 1.0
+
+    def test_multiple_datasets_aggregate_to_language(self) -> None:
+        """Multiple datasets should aggregate to single language rank score."""
         records = [
             make_eee_record(
-                "model1", ["da"], {"test_macro_f1": 80.0}, False, "summarization"
-            )
+                "model1",
+                ["da"],
+                {"test_macro_f1": 90.0},
+                False,
+                task="summarization",
+                dataset="nordjylland-news",
+            ),
+            make_eee_record(
+                "model1",
+                ["da"],
+                {"test_macro_f1": 70.0},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+            ),
         ]
         matrix = _build_score_matrix(records, ["model1"], ["da"], None)
-        assert matrix["model1"]["da"] == 80.0
+        # Single model on both datasets, so rank = 1.0 for each
+        # Mean across datasets = 1.0
+        assert matrix["model1"]["da"] == 1.0
 
-    def test_primary_metric_with_test_prefix(self) -> None:
-        """Should check test_{primary_metric} first for current EEE totals format."""
+    def test_two_models_two_datasets(self) -> None:
+        """Two models on two datasets: aggregation to language level."""
+        # Model1: 90 on nordjylland-news, 85 on angry-tweets
+        # Model2: 70 on nordjylland-news, 75 on angry-tweets
         records = [
             make_eee_record(
-                "model1", ["da"], {"test_rouge": 80.0}, False, "summarization"
-            )
+                "model1",
+                ["da"],
+                {"test_macro_f1": 90.0},
+                False,
+                task="summarization",
+                dataset="nordjylland-news",
+            ),
+            make_eee_record(
+                "model1",
+                ["da"],
+                {"test_macro_f1": 85.0},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+            ),
+            make_eee_record(
+                "model2",
+                ["da"],
+                {"test_macro_f1": 70.0},
+                False,
+                task="summarization",
+                dataset="nordjylland-news",
+            ),
+            make_eee_record(
+                "model2",
+                ["da"],
+                {"test_macro_f1": 75.0},
+                False,
+                task="sentiment-classification",
+                dataset="angry-tweets",
+            ),
         ]
-        matrix = _build_score_matrix(records, ["model1"], ["da"], None)
-        assert matrix["model1"]["da"] == 80.0
+        matrix = _build_score_matrix(records, ["model1", "model2"], ["da"], None)
+        # Model1 should have better (lower) rank score than model2
+        assert matrix["model1"]["da"] < matrix["model2"]["da"]
+        assert matrix["model1"]["da"] >= 1.0
 
-    def test_primary_metric_bare_fallback(self) -> None:
-        """Should fall back to bare metric name for legacy records."""
-        records = [
-            make_eee_record("model1", ["da"], {"rouge": 80.0}, False, "summarization")
-        ]
-        matrix = _build_score_matrix(records, ["model1"], ["da"], None)
-        assert matrix["model1"]["da"] == 80.0
-
-    def test_order_independent_aggregation(self) -> None:
-        """Should produce same mean regardless of record order."""
+    def test_score_order_independent(self) -> None:
+        """Result should be same regardless of record order."""
         records_ordered = [
-            make_eee_record("model1", ["da"], {"test_macro_f1": 70.0}, False),
-            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
             make_eee_record("model1", ["da"], {"test_macro_f1": 90.0}, False),
+            make_eee_record("model2", ["da"], {"test_macro_f1": 70.0}, False),
         ]
         records_shuffled = [
+            make_eee_record("model2", ["da"], {"test_macro_f1": 70.0}, False),
             make_eee_record("model1", ["da"], {"test_macro_f1": 90.0}, False),
-            make_eee_record("model1", ["da"], {"test_macro_f1": 70.0}, False),
-            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
         ]
-        matrix_ordered = _build_score_matrix(records_ordered, ["model1"], ["da"], None)
-        matrix_shuffled = _build_score_matrix(
-            records_shuffled, ["model1"], ["da"], None
+        matrix_ordered = _build_score_matrix(
+            records_ordered, ["model1", "model2"], ["da"], None
         )
-        assert matrix_ordered["model1"]["da"] == 80.0
-        assert matrix_shuffled["model1"]["da"] == 80.0
+        matrix_shuffled = _build_score_matrix(
+            records_shuffled, ["model1", "model2"], ["da"], None
+        )
+        assert matrix_ordered["model1"]["da"] == matrix_shuffled["model1"]["da"]
+        assert matrix_ordered["model2"]["da"] == matrix_shuffled["model2"]["da"]
 
     def test_non_finite_scores_ignored(self) -> None:
         """Should ignore NaN and infinite scores."""
@@ -346,7 +410,26 @@ class TestBuildScoreMatrix:
         ]
         matrix = _build_score_matrix(records, ["model1"], ["da", "sv"], None)
         assert matrix["model1"]["da"] is None
-        assert matrix["model1"]["sv"] == 75.0
+        assert matrix["model1"]["sv"] == 1.0  # Single valid score, rank = 1.0
+
+    def test_missing_dataset_skips_record(self) -> None:
+        """Records without dataset field should be skipped."""
+        record = make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False)
+        # Remove dataset from all possible locations
+        eval_lib = record.get("eval_library", {})
+        if isinstance(eval_lib, dict):
+            additional = eval_lib.get("additional_details", {})
+            if isinstance(additional, dict) and "dataset" in additional:
+                del additional["dataset"]
+        eval_results = record.get("evaluation_results", [])
+        if isinstance(eval_results, list):
+            for er in eval_results:
+                if isinstance(er, dict):
+                    source_data = er.get("source_data", {})
+                    if isinstance(source_data, dict) and "dataset_name" in source_data:
+                        del source_data["dataset_name"]
+        matrix = _build_score_matrix([record], ["model1"], ["da"], None)
+        assert matrix["model1"]["da"] is None
 
 
 class TestComputeLanguageIntersection:
