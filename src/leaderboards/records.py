@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import re
 
-from euroeval.string_utils import split_model_id
-
 from .constants import ANCHOR_RE, VARIANT_SUFFIX_RE
 
 
@@ -35,19 +33,19 @@ def plain_model_id(model_id: str) -> str:
     canonical ``org/repo`` slug — we don't want to list the same model
     several times.
 
-    Also strips ``#no-thinking``, ``#thinking`` and ``@revision`` suffixes
-    used for parameterised model IDs.
+    Preserves ``#no-thinking``, ``#thinking`` and ``@revision`` suffixes
+    used for parameterised model IDs — these are meaningful for upload
+    filenames and core/per-model grouping.
 
     Args:
         model_id:
             The (possibly anchored, possibly variant-suffixed) identifier.
 
     Returns:
-        The canonical ``org/repo`` slug.
+        The canonical ``org/repo`` slug with variant suffix removed, but
+        ``#param`` and ``@revision`` preserved.
     """
-    # First strip #param and @revision suffixes via split_model_id
-    model_id = split_model_id(model_id).model_id
-    # Then strip HTML anchors and (val)/(zero-shot) variant suffixes
+    # Strip HTML anchors and (val)/(zero-shot) variant suffixes only
     return VARIANT_SUFFIX_RE.sub("", strip_anchor(model_id))
 
 

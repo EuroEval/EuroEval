@@ -81,7 +81,7 @@ def add_missing_entries(
         and "model_url" in model_additional
         and model_additional["model_url"] is not None
         and _is_hf_url_for_model(
-            model_additional["model_url"], plain_model_id(get_model_name(record=record))
+            model_additional["model_url"], get_model_name(record=record)
         )
     ):
         model_additional["open"] = is_open(record=record, cache=cache)
