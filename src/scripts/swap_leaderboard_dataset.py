@@ -881,8 +881,24 @@ def execute_jobs(
     logger.info(f"Evaluation log: {log_path}")
 
     with tqdm(jobs, desc="Evaluating models", unit="model") as progress:
-        for job in progress:
+        for idx, job in enumerate(progress, start=1):
             progress.set_postfix_str(job.model_id)
+
+            # Write job header to log before starting evaluation
+            shot = "zero-shot" if job.zero_shot else "few-shot"
+            split = "test" if job.evaluate_test_split else "val"
+            source = "API" if job.is_api else "open-weight"
+            with open(log_path, "a", encoding="utf-8") as log_file:
+                log_file.write("\n")
+                log_file.write(f"Job [{idx}/{len(jobs)}] Starting\n")
+                log_file.write("-" * 40 + "\n")
+                log_file.write(f"Model: {job.model_id}\n")
+                log_file.write(f"Languages: {', '.join(job.languages)}\n")
+                log_file.write(f"Split: {split} | {shot} | {source}\n")
+                log_file.write("Output:\n")
+                log_file.flush()
+
+            # Run evaluation with log file for live output capture
             returncode, output = run_euroeval(
                 model_id=job.model_id,
                 languages=job.languages,
@@ -891,16 +907,15 @@ def execute_jobs(
                 zero_shot=job.zero_shot,
                 gpu_memory_utilization=gpu_memory_utilization,
                 stream_output=False,
+                log_file=log_path,
             )
 
-            # Append job results to log file
+            # Append job completion status
             with open(log_path, "a", encoding="utf-8") as log_file:
                 log_file.write("\n")
-                log_file.write("Job Result\n")
-                log_file.write("----------\n")
-                log_file.write(f"Model: {job.model_id}\n")
+                log_file.write(f"Job [{idx}/{len(jobs)}] Completed\n")
                 log_file.write(f"Exit Code: {returncode}\n")
-                log_file.write(f"Output:\n{output}\n")
+                log_file.write("=" * 40 + "\n")
 
             if returncode != 0:
                 output_tail = "\n".join(output.splitlines()[-40:])

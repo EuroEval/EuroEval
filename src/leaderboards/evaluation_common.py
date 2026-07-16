@@ -27,6 +27,7 @@ import struct
 import subprocess
 import sys
 import termios
+import typing as t
 from functools import lru_cache
 from pathlib import Path
 
@@ -59,6 +60,7 @@ def run_euroeval(
     clear_model_cache: bool = True,
     gpu_memory_utilization: float | None = None,
     stream_output: bool = True,
+    log_file: Path | t.IO[bytes] | None = None,
 ) -> tuple[int, str]:
     """Run the euroeval CLI for the given model, languages, and datasets.
 
@@ -93,6 +95,12 @@ def run_euroeval(
             ``FULL_LOG=1`` for maximum verbosity. When False, suppress
             terminal output (subprocess writes go to /dev/null) and leave
             verbosity at the CLI default. Defaults to True.
+        log_file (optional):
+            When provided, write subprocess output to this file (or file-like
+            object) as it arrives. Accepts a :class:`Path` (opened in append
+            binary mode) or a binary file-like object with a ``write()`` method.
+            Terminal output behaviour is still controlled by ``stream_output``.
+            Defaults to None.
 
     Returns:
         A ``(returncode, combined_output)`` pair. A returncode of 127
@@ -151,6 +159,14 @@ def run_euroeval(
         return 127, "`euroeval` CLI not found on PATH."
     os.close(child_fd)
 
+    # Open log file if a Path was provided
+    log_fh: t.IO[bytes] | None = None
+    if isinstance(log_file, Path):
+        log_fh = open(log_file, "ab")
+    elif log_file is not None:
+        # Assume it's already a file-like object
+        log_fh = log_file
+
     captured: list[bytes] = []
     with no_terminal_output(disable=stream_output):
         try:
@@ -163,8 +179,12 @@ def run_euroeval(
                         break
                     if not chunk:
                         break
-                    sys.stderr.buffer.write(chunk)
-                    sys.stderr.buffer.flush()
+                    if stream_output:
+                        sys.stderr.buffer.write(chunk)
+                        sys.stderr.buffer.flush()
+                    if log_fh is not None:
+                        log_fh.write(chunk)
+                        log_fh.flush()
                     captured.append(chunk)
                 elif proc.poll() is not None:
                     try:
@@ -172,14 +192,21 @@ def run_euroeval(
                             chunk = os.read(parent_fd, 4096)
                             if not chunk:
                                 break
-                            sys.stderr.buffer.write(chunk)
-                            sys.stderr.buffer.flush()
+                            if stream_output:
+                                sys.stderr.buffer.write(chunk)
+                                sys.stderr.buffer.flush()
+                            if log_fh is not None:
+                                log_fh.write(chunk)
+                                log_fh.flush()
                             captured.append(chunk)
                     except OSError:
                         pass
                     break
         finally:
             os.close(parent_fd)
+            if log_fh is not None and isinstance(log_file, Path):
+                # Only close if we opened it
+                log_fh.close()
         proc.wait()
     output = b"".join(captured).decode("utf-8", errors="replace")
     note = _killed_by_signal_note(proc.returncode)

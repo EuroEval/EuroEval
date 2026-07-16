@@ -303,8 +303,16 @@ class TestExecuteJobsLogging:
         )
 
         # Mock run_euroeval to return failure with custom output
-        def mock_run_euroeval(**kwargs) -> tuple[int, str]:
-            return (1, "error output from evaluation\nstack trace here")
+        # Also write to log_file if provided (simulating live output)
+        def mock_run_euroeval(
+            log_file: Path | None = None, **kwargs
+        ) -> tuple[int, str]:
+            output = "error output from evaluation\nstack trace here"
+            # Simulate live output to log file
+            if log_file is not None:
+                with open(log_file, "ab") as fh:
+                    fh.write(output.encode("utf-8"))
+            return (1, output)
 
         monkeypatch.setattr(
             target=swap_leaderboard_dataset,
@@ -333,10 +341,11 @@ class TestExecuteJobsLogging:
         log_path = log_files[0]
         content = log_path.read_text(encoding="utf-8")
 
-        # Verify job result section
-        assert "Job Result" in content
+        # Verify job header and completion status
+        assert "Job [1/1] Starting" in content
         assert "Model: failing-model" in content
         assert "Exit Code: 1" in content
+        assert "Job [1/1] Completed" in content
         assert "error output from evaluation" in content
         assert "stack trace here" in content
 
@@ -434,3 +443,73 @@ class TestExecuteJobsLogging:
         ]
         assert len(log_messages) == 1
         assert re.search(r"eval_log_\d{8}_\d{6}\.log", log_messages[0])
+
+    def test_live_output_written_during_execution(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Should write subprocess output to log file as it arrives."""
+        Job = swap_leaderboard_dataset.Job
+        write_order: list[str] = []
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+
+        # Mock that writes output incrementally to simulate live streaming
+        def mock_run_euroeval(
+            log_file: Path | None = None, **kwargs
+        ) -> tuple[int, str]:
+            output_lines = ["line 1", "line 2", "line 3"]
+            output = "\n".join(output_lines)
+            # Simulate live output: write each line as it arrives
+            if log_file is not None:
+                with open(log_file, "ab") as fh:
+                    for line in output_lines:
+                        fh.write(f"{line}\n".encode("utf-8"))
+                        fh.flush()
+                        write_order.append(f"write:{line}")
+            write_order.append("return")
+            return (0, output)
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="run_euroeval",
+            value=mock_run_euroeval,
+        )
+
+        jobs = [
+            Job(
+                model_id="test-model",
+                languages=("da",),
+                is_api=False,
+                evaluate_test_split=True,
+                zero_shot=False,
+            )
+        ]
+
+        swap_leaderboard_dataset.execute_jobs(
+            jobs=jobs, dataset="test-dataset", gpu_memory_utilization=None
+        )
+
+        # Verify write order: header -> output lines -> return -> completion
+        assert write_order[0] == "write:line 1"
+        assert write_order[1] == "write:line 2"
+        assert write_order[2] == "write:line 3"
+        assert write_order[3] == "return"
+
+        # Verify log file contains all content
+        log_files = list(tmp_path.glob("eval_log_*.log"))
+        assert len(log_files) == 1
+        content = log_files[0].read_text(encoding="utf-8")
+
+        # Header should come before output
+        header_pos = content.find("Job [1/1] Starting")
+        line1_pos = content.find("line 1")
+        completion_pos = content.find("Job [1/1] Completed")
+
+        assert header_pos < line1_pos < completion_pos, (
+            "Log file should have: header < live output < completion"
+        )
+        assert "line 1" in content
+        assert "line 2" in content
+        assert "line 3" in content
