@@ -16,10 +16,14 @@ from huggingface_hub.errors import (
 )
 
 from src.scripts.mark_hf_models_open import (
+    UploadError,
     canonical_model_id,
     check_hf_repo_exists,
+    parse_jsonl_file_strict,
     process_jsonl_file,
+    process_parsed_records,
     upload_changed_files,
+    write_jsonl_file,
 )
 
 
@@ -455,21 +459,13 @@ class TestUploadChangedFiles:
         assert "hf://buckets/EuroEval/results/changed.jsonl" in cmd
 
     def test_upload_handles_cli_failure(
-        self,
-        tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
-        caplog: pytest.LogCaptureFixture,
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should handle CLI upload failure gracefully."""
+        """CLI upload failure should raise UploadError."""
         jsonl_file = tmp_path / "changed.jsonl"
         jsonl_file.write_text('{"test": true}\n')
 
         # Mock subprocess.run to simulate failure
-        mock_result = MagicMock()
-        mock_result.returncode = 1
-        mock_result.stderr = "Authentication failed"
-        mock_result.stdout = ""
-
         mock_run = MagicMock(
             side_effect=subprocess.CalledProcessError(
                 1, ["hf"], stderr="Authentication failed"
@@ -477,33 +473,27 @@ class TestUploadChangedFiles:
         )
 
         with patch("subprocess.run", side_effect=mock_run):
-            with caplog.at_level(logging.WARNING):
-                uploaded = upload_changed_files(
+            with pytest.raises(UploadError) as exc_info:
+                upload_changed_files(
                     changed_files=[jsonl_file], results_dir=tmp_path, dry_run=False
                 )
 
-        assert uploaded == 0
-        assert "Failed to upload" in caplog.text
+        assert str(jsonl_file) in str(exc_info.value)
 
     def test_upload_handles_missing_cli(
-        self,
-        tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
-        caplog: pytest.LogCaptureFixture,
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should handle missing hf CLI gracefully."""
+        """Missing hf CLI should raise UploadError."""
         jsonl_file = tmp_path / "changed.jsonl"
         jsonl_file.write_text('{"test": true}\n')
 
-        # Mock subprocess.run to raise FileNotFoundError
         with patch("subprocess.run", side_effect=FileNotFoundError("hf not found")):
-            with caplog.at_level(logging.WARNING):
-                uploaded = upload_changed_files(
+            with pytest.raises(UploadError) as exc_info:
+                upload_changed_files(
                     changed_files=[jsonl_file], results_dir=tmp_path, dry_run=False
                 )
 
-        assert uploaded == 0
-        assert "hf CLI not found" in caplog.text
+        assert "hf CLI not found" in str(exc_info.value)
 
 
 class TestProcessJsonlFileStrictParsing:
@@ -588,3 +578,234 @@ class TestProcessJsonlFileStrictParsing:
         updated = json.loads(jsonl_file.read_text().strip())
         assert isinstance(updated["model_info"]["additional_details"], dict)
         assert updated["model_info"]["additional_details"]["open"] is True
+
+
+class TestTransactionalProcessing:
+    """Tests for transactional two-phase processing."""
+
+    def test_parse_all_files_before_writing(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Should parse all files before writing any - invalid JSON aborts early."""
+        # Create two files: one valid, one invalid
+        valid_file = tmp_path / "valid.jsonl"
+        invalid_file = tmp_path / "invalid.jsonl"
+
+        valid_record = {
+            "model_info": {
+                "id": "meta-llama/Llama-2-7b",
+                "name": "Llama 2",
+                "additional_details": {"open": False},
+            }
+        }
+        valid_file.write_text(json.dumps(valid_record) + "\n")
+        invalid_file.write_text('{"invalid json}\n')
+
+        # Parse valid file - should succeed
+        records = parse_jsonl_file_strict(jsonl_path=valid_file)
+        assert len(records) == 1
+
+        # Parse invalid file - should raise ValueError
+        with pytest.raises(ValueError):
+            parse_jsonl_file_strict(jsonl_path=invalid_file)
+
+        # Valid file should NOT be modified (no write happened)
+        original_content = json.dumps(valid_record) + "\n"
+        assert valid_file.read_text() == original_content
+
+    def test_process_parsed_records_returns_modified_subset(
+        self, tmp_path: Path
+    ) -> None:
+        """process_parsed_records should return only modified records."""
+        records = [
+            {
+                "model_info": {
+                    "id": "org/repo-exists",
+                    "name": "Exists",
+                    "additional_details": {"open": False},
+                }
+            },
+            {
+                "model_info": {
+                    "id": "org/repo-missing",
+                    "name": "Missing",
+                    "additional_details": {"open": False},
+                }
+            },
+            {
+                "model_info": {
+                    "id": "org/repo-open",
+                    "name": "AlreadyOpen",
+                    "additional_details": {"open": True},
+                }
+            },
+        ]
+
+        mock_api = MagicMock()
+
+        # Mock: repo-exists exists, repo-missing doesn't
+        def mock_model_info(repo_id: str, **kwargs: object) -> object:
+            if "repo-exists" in repo_id:
+                return MagicMock()
+            exc = RepositoryNotFoundError.__new__(RepositoryNotFoundError)
+            exc.args = ("Not found",)
+            raise exc
+
+        mock_api.model_info.side_effect = mock_model_info
+        existence_cache: dict[str, bool] = {}
+
+        modified, checked, changed, retries = process_parsed_records(
+            records=records, hf_api=mock_api, existence_cache=existence_cache
+        )
+
+        assert checked == 3
+        assert changed == 1
+        assert len(modified) == 1
+        # The modified record should be the first one (repo-exists)
+        assert modified[0]["model_info"]["id"] == "org/repo-exists"
+
+    def test_missing_repo_no_additional_details_created(self, tmp_path: Path) -> None:
+        """Records with missing HF repos should NOT get additional_details: {} added."""
+        jsonl_file = tmp_path / "test.jsonl"
+        # Record with no additional_details at all
+        record_no_ad = {"model_info": {"id": "fake/missing-repo", "name": "Missing"}}
+        # Record with additional_details but no 'open' key
+        record_ad_no_open = {
+            "model_info": {
+                "id": "fake/missing-repo-2",
+                "name": "Missing2",
+                "additional_details": {"other_key": "value"},
+            }
+        }
+        jsonl_file.write_text(
+            json.dumps(record_no_ad) + "\n" + json.dumps(record_ad_no_open) + "\n"
+        )
+
+        mock_api = MagicMock()
+        # Both repos missing
+        exc = RepositoryNotFoundError.__new__(RepositoryNotFoundError)
+        exc.args = ("Not found",)
+        mock_api.model_info.side_effect = exc
+        existence_cache: dict[str, bool] = {}
+
+        checked, changed, _ = process_jsonl_file(
+            jsonl_path=jsonl_file,
+            hf_api=mock_api,
+            existence_cache=existence_cache,
+            dry_run=False,
+        )
+
+        assert checked == 2
+        assert changed == 0
+
+        # Verify file was NOT modified - no additional_details added
+        lines = jsonl_file.read_text().strip().splitlines()
+        updated_no_ad = json.loads(lines[0])
+        updated_ad_no_open = json.loads(lines[1])
+
+        # Record with no additional_details should still have none
+        assert "additional_details" not in updated_no_ad["model_info"]
+
+        # Record with additional_details but no open should keep original
+        assert updated_ad_no_open["model_info"]["additional_details"] == {
+            "other_key": "value"
+        }
+        assert "open" not in updated_ad_no_open["model_info"]["additional_details"]
+
+
+class TestUploadErrorHandling:
+    """Tests for upload error handling - failures should be fatal."""
+
+    def test_upload_failure_raises_exception(self, tmp_path: Path) -> None:
+        """Upload failures should raise UploadError with failed file paths."""
+        jsonl_file = tmp_path / "changed.jsonl"
+        jsonl_file.write_text('{"test": true}\n')
+
+        # Mock subprocess.run to simulate failure
+        mock_run = MagicMock(
+            side_effect=subprocess.CalledProcessError(
+                1, ["hf"], stderr="Authentication failed"
+            )
+        )
+
+        with patch("subprocess.run", side_effect=mock_run):
+            with pytest.raises(UploadError) as exc_info:
+                upload_changed_files(
+                    changed_files=[jsonl_file], results_dir=tmp_path, dry_run=False
+                )
+
+        # Exception message should include failed file path
+        assert str(jsonl_file) in str(exc_info.value)
+        assert "Failed to upload" in str(exc_info.value)
+
+    def test_upload_cli_missing_raises_exception(self, tmp_path: Path) -> None:
+        """Missing hf CLI should raise UploadError."""
+        jsonl_file = tmp_path / "changed.jsonl"
+        jsonl_file.write_text('{"test": true}\n')
+
+        with patch("subprocess.run", side_effect=FileNotFoundError("hf not found")):
+            with pytest.raises(UploadError) as exc_info:
+                upload_changed_files(
+                    changed_files=[jsonl_file], results_dir=tmp_path, dry_run=False
+                )
+
+        assert "hf CLI not found" in str(exc_info.value)
+
+    def test_multiple_upload_failures_reported(self, tmp_path: Path) -> None:
+        """Multiple upload failures should all be reported in exception."""
+        file1 = tmp_path / "file1.jsonl"
+        file2 = tmp_path / "file2.jsonl"
+        file1.write_text('{"test": 1}\n')
+        file2.write_text('{"test": 2}\n')
+
+        mock_run = MagicMock(
+            side_effect=subprocess.CalledProcessError(1, ["hf"], stderr="Upload failed")
+        )
+
+        with patch("subprocess.run", side_effect=mock_run):
+            with pytest.raises(UploadError) as exc_info:
+                upload_changed_files(
+                    changed_files=[file1, file2], results_dir=tmp_path, dry_run=False
+                )
+
+        # Both files should be mentioned in the error
+        assert str(file1) in str(exc_info.value)
+        assert str(file2) in str(exc_info.value)
+
+
+class TestParseAndWriteFunctions:
+    """Tests for the new parse_jsonl_file_strict and write_jsonl_file functions."""
+
+    def test_parse_jsonl_file_strict_valid(self, tmp_path: Path) -> None:
+        """parse_jsonl_file_strict should parse valid JSONL correctly."""
+        jsonl_file = tmp_path / "test.jsonl"
+        records = [{"id": 1, "name": "first"}, {"id": 2, "name": "second"}]
+        jsonl_file.write_text("\n".join(json.dumps(r) for r in records) + "\n")
+
+        parsed = parse_jsonl_file_strict(jsonl_path=jsonl_file)
+
+        assert len(parsed) == 2
+        assert parsed[0]["id"] == 1
+        assert parsed[1]["id"] == 2
+
+    def test_parse_jsonl_file_strict_invalid(self, tmp_path: Path) -> None:
+        """parse_jsonl_file_strict should raise ValueError on invalid JSON."""
+        jsonl_file = tmp_path / "test.jsonl"
+        jsonl_file.write_text('{"valid": true}\ninvalid json here\n')
+
+        with pytest.raises(ValueError):
+            parse_jsonl_file_strict(jsonl_path=jsonl_file)
+
+    def test_write_jsonl_file(self, tmp_path: Path) -> None:
+        """write_jsonl_file should write records with trailing newline."""
+        jsonl_file = tmp_path / "output.jsonl"
+        records = [{"id": 1, "name": "first"}, {"id": 2, "name": "second"}]
+
+        write_jsonl_file(jsonl_path=jsonl_file, records=records)
+
+        lines = jsonl_file.read_text().strip().splitlines()
+        assert len(lines) == 2
+        assert json.loads(lines[0]) == {"id": 1, "name": "first"}
+        assert json.loads(lines[1]) == {"id": 2, "name": "second"}
+        # Verify trailing newline
+        assert jsonl_file.read_text().endswith("\n")

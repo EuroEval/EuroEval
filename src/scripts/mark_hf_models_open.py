@@ -172,30 +172,45 @@ def check_hf_repo_exists(
     return None
 
 
-def process_jsonl_file(
-    jsonl_path: Path,
-    hf_api: HfApi,
-    existence_cache: dict[str, bool],
-    dry_run: bool = False,
-    max_retries: int = 5,
-    base_delay: float = 1.0,
-    max_delay: float = 60.0,
-) -> tuple[int, int, int]:
-    """Process a single JSONL file, marking open models as ``open=True``.
+def parse_jsonl_file_strict(jsonl_path: Path) -> list[dict]:
+    """Parse a JSONL file strictly, raising ValueError on any invalid line.
 
-    Only mutates ``model_info.additional_details.open`` to True for records
-    whose HF repo exists. Records with malformed JSON cause the function to
-    raise ``ValueError`` - the file is not modified in that case.
+    This function validates the file without modifying it. Use this in a
+    first-pass validation phase before any writes occur.
 
     Args:
         jsonl_path:
             Path to the JSONL file.
+
+    Returns:
+        List of parsed records.
+    """
+    lines = jsonl_path.read_text(encoding="utf-8").splitlines()
+    return parse_jsonl_lines(lines=lines, source=str(jsonl_path), strict=True)
+
+
+def process_parsed_records(
+    records: list[dict],
+    hf_api: HfApi,
+    existence_cache: dict[str, bool],
+    max_retries: int = 5,
+    base_delay: float = 1.0,
+    max_delay: float = 60.0,
+) -> tuple[list[dict], int, int, int]:
+    """Process parsed records, marking open models as ``open=True``.
+
+    Only mutates ``model_info.additional_details.open`` to True for records
+    whose HF repo exists. The ``additional_details`` dict is only created
+    when actually setting ``open=True``, not prematurely for records whose
+    repo doesn't exist.
+
+    Args:
+        records:
+            List of parsed record dicts.
         hf_api:
             The Hugging Face API client.
         existence_cache:
             Cache mapping canonical repo IDs to existence status.
-        dry_run (optional):
-            If True, log what would be changed without modifying the file.
         max_retries (optional):
             Maximum number of retry attempts for HF API calls.
         base_delay (optional):
@@ -204,16 +219,12 @@ def process_jsonl_file(
             Maximum delay in seconds.
 
     Returns:
-        Tuple of (records_checked, records_changed, retries_used).
+        Tuple of (modified_records, records_checked, records_changed, retries_used).
+        modified_records is a subset containing only records that were changed.
     """
     records_checked = 0
     records_changed = 0
     retries_used = 0
-
-    lines = jsonl_path.read_text(encoding="utf-8").splitlines()
-    # Use strict=True to fail on invalid JSON rather than silently dropping lines
-    records = parse_jsonl_lines(lines=lines, source=str(jsonl_path), strict=True)
-
     modified_records: list[dict] = []
 
     for record in records:
@@ -221,13 +232,10 @@ def process_jsonl_file(
         model_info = record.get("model_info", {})
         additional_details = model_info.get("additional_details")
 
-        # Treat missing key same as None - need to create dict
-        if additional_details is None:
-            additional_details = {}
-            model_info_typed = t.cast("dict[str, object]", model_info)
-            model_info_typed["additional_details"] = additional_details
+        open_value = None
+        if additional_details is not None and isinstance(additional_details, dict):
+            open_value = additional_details.get("open")
 
-        open_value = additional_details.get("open")
         model_id = ""
         if model_info:
             model_id = model_info.get("id", model_info.get("name", ""))
@@ -264,19 +272,97 @@ def process_jsonl_file(
 
             if exists:
                 logger.info(f"Marking {model_id!r} -> {canonical_id!r} as open=True")
+                # Only create additional_details dict when actually setting open=True
+                is_missing = additional_details is None or not isinstance(
+                    additional_details, dict
+                )
+                if is_missing:
+                    additional_details = {}
+                    model_info_typed: dict[str, object] = t.cast(
+                        "dict[str, object]", model_info
+                    )
+                    model_info_typed["additional_details"] = additional_details
                 additional_details["open"] = True
                 records_changed += 1
+                modified_records.append(record)
             elif exists is False:
                 logger.debug(
                     f"HF repo {canonical_id!r} not found - skipping {model_id!r}"
                 )
 
+    return modified_records, records_checked, records_changed, retries_used
+
+
+def write_jsonl_file(jsonl_path: Path, records: list[dict]) -> None:
+    """Write records to a JSONL file with trailing newline.
+
+    Args:
+        jsonl_path:
+            Path to the JSONL file.
+        records:
+            List of record dicts to write.
+    """
+    with jsonl_path.open("w", encoding="utf-8") as f:
+        for record in records:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def process_jsonl_file(
+    jsonl_path: Path,
+    hf_api: HfApi,
+    existence_cache: dict[str, bool],
+    dry_run: bool = False,
+    max_retries: int = 5,
+    base_delay: float = 1.0,
+    max_delay: float = 60.0,
+) -> tuple[int, int, int]:
+    """Process a single JSONL file, marking open models as ``open=True``.
+
+    This function combines parsing, processing, and writing for backward
+    compatibility. For transactional safety across multiple files, use
+    ``parse_jsonl_file_strict`` and ``process_parsed_records`` separately.
+
+    Only mutates ``model_info.additional_details.open`` to True for records
+    whose HF repo exists. Records with malformed JSON cause the function to
+    raise ``ValueError`` - the file is not modified in that case.
+
+    Args:
+        jsonl_path:
+            Path to the JSONL file.
+        hf_api:
+            The Hugging Face API client.
+        existence_cache:
+            Cache mapping canonical repo IDs to existence status.
+        dry_run (optional):
+            If True, log what would be changed without modifying the file.
+        max_retries (optional):
+            Maximum number of retry attempts for HF API calls.
+        base_delay (optional):
+            Base delay in seconds for exponential backoff.
+        max_delay (optional):
+            Maximum delay in seconds.
+
+    Returns:
+        Tuple of (records_checked, records_changed, retries_used).
+    """
+    # Parse strictly first - will raise ValueError on invalid JSON
+    records = parse_jsonl_file_strict(jsonl_path=jsonl_path)
+
+    # Process records
+    modified_records, records_checked, records_changed, retries_used = (
+        process_parsed_records(
+            records=records,
+            hf_api=hf_api,
+            existence_cache=existence_cache,
+            max_retries=max_retries,
+            base_delay=base_delay,
+            max_delay=max_delay,
+        )
+    )
+
     if records_changed > 0 and not dry_run:
-        modified_records = records
         # Write back with trailing newline
-        with jsonl_path.open("w", encoding="utf-8") as f:
-            for record in modified_records:
-                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        write_jsonl_file(jsonl_path=jsonl_path, records=records)
         logger.info(
             f"Updated {records_changed}/{records_checked} records in {jsonl_path.name}"
         )
@@ -287,6 +373,12 @@ def process_jsonl_file(
         )
 
     return records_checked, records_changed, retries_used
+
+
+class UploadError(Exception):
+    """Raised when file upload to HF bucket fails."""
+
+    pass
 
 
 def upload_changed_files(
@@ -301,6 +393,8 @@ def upload_changed_files(
     Authentication is handled automatically via cached credentials or ``HF_TOKEN``
     environment variable - no explicit token is passed or printed.
 
+    Any upload failure raises ``UploadError`` with the failed file paths.
+
     Args:
         changed_files:
             List of JSONL file paths to upload.
@@ -313,8 +407,14 @@ def upload_changed_files(
 
     Returns:
         Number of files successfully uploaded.
+
+    Raises:
+        UploadError:
+            If any file fails to upload (includes failed file paths in message).
     """
     uploaded = 0
+    failed_files: list[Path] = []
+    cli_missing = False
 
     for file_path in changed_files:
         if dry_run:
@@ -337,21 +437,39 @@ def upload_changed_files(
             logger.info(f"Uploaded {file_path.name} to {bucket_path}")
             uploaded += 1
         except subprocess.CalledProcessError as e:
-            logger.warning(
+            failed_files.append(file_path)
+            logger.error(
                 f"Failed to upload {file_path.name} to bucket: {e.stderr or e.stdout}"
             )
         except FileNotFoundError:
-            logger.warning(
-                "hf CLI not found - skipping bucket upload. "
+            cli_missing = True
+            logger.error(
+                "hf CLI not found - cannot upload to bucket. "
                 "Install with: pip install huggingface_hub[cli]"
             )
-            return uploaded
+            break
+
+    # report failures as fatal
+    if failed_files:
+        raise UploadError(
+            f"Failed to upload {len(failed_files)} file(s): "
+            f"{', '.join(str(f) for f in failed_files)}"
+        )
+    if cli_missing:
+        raise UploadError("hf CLI not found - cannot upload to bucket")
 
     return uploaded
 
 
 def main() -> None:
-    """Main entry point."""
+    """Main entry point.
+
+    Uses a two-phase approach for transactional safety:
+    1. Parse all files strictly (fail fast on invalid JSON)
+    2. Process all records (check HF repos, collect changes in memory)
+    3. Write changed files
+    4. Upload changed files (failures are fatal)
+    """
     parser = argparse.ArgumentParser(
         description="Mark models as open=True if their HF repo exists"
     )
@@ -419,22 +537,39 @@ def main() -> None:
 
     logger.info(f"Found {len(jsonl_files)} JSONL files to process")
 
+    # PHASE 1: Parse all files strictly - fail fast on any invalid JSON
+    logger.info("Phase 1: Parsing all files (strict validation)...")
+    parsed_files: dict[Path, list[dict]] = {}
+    for jsonl_path in jsonl_files:
+        logger.debug(f"Parsing {jsonl_path.name}...")
+        try:
+            records = parse_jsonl_file_strict(jsonl_path=jsonl_path)
+            parsed_files[jsonl_path] = records
+        except ValueError as e:
+            logger.error(f"Failed to parse {jsonl_path.name}: {e}")
+            logger.error(
+                "Aborting before any modifications - fix invalid JSON and retry"
+            )
+            sys.exit(1)
+    logger.info(f"Successfully parsed {len(parsed_files)} files")
+
+    # PHASE 2: Process all records (check HF repos, collect changes in memory)
+    logger.info("Phase 2: Processing records (checking HF repos)...")
     hf_api = HfApi()
     existence_cache: dict[str, bool] = {}
 
     total_checked = 0
     total_changed = 0
     total_retries = 0
-    changed_files: list[Path] = []
+    files_to_write: dict[Path, list[dict]] = {}
     skipped_missing = 0
 
-    for jsonl_path in jsonl_files:
-        logger.info(f"Processing {jsonl_path.name}...")
-        checked, changed, retries = process_jsonl_file(
-            jsonl_path=jsonl_path,
+    for jsonl_path, records in parsed_files.items():
+        logger.debug(f"Processing {jsonl_path.name}...")
+        modified_records, checked, changed, retries = process_parsed_records(
+            records=records,
             hf_api=hf_api,
             existence_cache=existence_cache,
-            dry_run=args.dry_run,
             max_retries=args.max_retries,
             base_delay=args.base_delay,
             max_delay=args.max_delay,
@@ -442,11 +577,25 @@ def main() -> None:
         total_checked += checked
         total_changed += changed
         total_retries += retries
-        if changed > 0:
-            changed_files.append(jsonl_path)
+        if modified_records:
+            files_to_write[jsonl_path] = modified_records
 
     # Estimate skipped missing (repos that don't exist)
     skipped_missing = sum(1 for exists in existence_cache.values() if not exists)
+
+    # PHASE 3: Write changed files
+    if files_to_write and not args.dry_run:
+        logger.info("Phase 3: Writing changed files...")
+        for jsonl_path in files_to_write:
+            write_jsonl_file(jsonl_path=jsonl_path, records=parsed_files[jsonl_path])
+            logger.info(f"Wrote {jsonl_path.name}")
+    elif files_to_write and args.dry_run:
+        logger.info(f"[dry-run] Would write {len(files_to_write)} changed files")
+    else:
+        logger.info("No files to write (no changes made)")
+
+    # PHASE 4: Upload changed files (failures are fatal)
+    changed_files = list(files_to_write.keys())
 
     logger.info("=" * 60)
     logger.info("Summary:")
@@ -459,10 +608,16 @@ def main() -> None:
 
     if not args.no_upload and changed_files:
         logger.info("Uploading changed files to HF bucket...")
-        uploaded = upload_changed_files(
-            changed_files=changed_files, results_dir=results_dir, dry_run=args.dry_run
-        )
-        logger.info(f"  Files uploaded: {uploaded}")
+        try:
+            uploaded = upload_changed_files(
+                changed_files=changed_files,
+                results_dir=results_dir,
+                dry_run=args.dry_run,
+            )
+            logger.info(f"  Files uploaded: {uploaded}")
+        except UploadError as e:
+            logger.error(f"Upload failed: {e}")
+            sys.exit(1)
     elif changed_files and args.no_upload:
         logger.info("Upload skipped (--no-upload flag set)")
     elif not changed_files:
