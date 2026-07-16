@@ -759,6 +759,47 @@ class TestStaleOpenFalseRepair:
         mock_api.model_info.assert_called_once_with(repo_id="Qwen/Qwen3-32B")
 
     @patch("leaderboards.model_metadata.HfApi")
+    def test_add_missing_entries_repairs_stale_open_false_with_param_suffix(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """add_missing_entries should repair open=False with #no-thinking suffix."""
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        # Model exists on HF (no exception raised)
+        mock_api.model_info.return_value = MagicMock()
+
+        # Record with stale open=False, valid HF URL, and parameterised model ID
+        # Pre-populate generative_type to avoid interactive prompt
+        record = {
+            "model_info": {
+                "name": "Qwen/Qwen3-32B#no-thinking",
+                "additional_details": {
+                    "open": False,
+                    "model_url": "https://hf.co/Qwen/Qwen3-32B",
+                    "generative_type": "base",
+                    "merge": False,
+                    "commercially_licensed": False,
+                    "trained_from_scratch": False,
+                },
+            },
+            "generative": True,
+            "eval_library": {
+                "additional_details": {"validation_split": False, "few_shot": True}
+            },
+        }
+        cache = Cache()
+
+        result = add_missing_entries(
+            record=record,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=cache,
+        )
+
+        # open should be repaired to True
+        assert result["model_info"]["additional_details"]["open"] is True
+        mock_api.model_info.assert_called_once_with(repo_id="Qwen/Qwen3-32B")
+
+    @patch("leaderboards.model_metadata.HfApi")
     def test_add_missing_entries_preserves_non_hf_false(
         self, mock_hf_api_class: MagicMock
     ) -> None:
