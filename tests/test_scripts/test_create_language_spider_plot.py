@@ -17,6 +17,7 @@ from src.scripts.create_language_spider_plot import (
     _compute_language_intersection,
     _compute_max_score,
     _create_spider_plot,
+    _default_plot_title,
     _extract_languages_from_record,
     _extract_scores_from_record,
     _filter_by_shots,
@@ -26,6 +27,29 @@ from src.scripts.create_language_spider_plot import (
     _resolve_languages,
     cli,
 )
+
+
+@pytest.fixture(autouse=True)
+def browser_open_calls(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Prevent tests from opening generated PNG files.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+
+    Returns:
+        List of file URIs passed to webbrowser.open.
+    """
+    calls: list[str] = []
+
+    def fake_open(url: str) -> bool:
+        calls.append(url)
+        return True
+
+    monkeypatch.setattr(
+        "src.scripts.create_language_spider_plot.webbrowser.open", fake_open
+    )
+    return calls
 
 
 def make_eee_record(
@@ -845,6 +869,18 @@ class TestHexToRgba:
         assert "0.1" in result
 
 
+class TestDefaultPlotTitle:
+    """Tests for _default_plot_title function."""
+
+    def test_zero_shot_title(self) -> None:
+        """Should create default zero-shot title."""
+        assert _default_plot_title(shot_value=False) == "Zero-shot EuroEval Results"
+
+    def test_few_shot_title(self) -> None:
+        """Should create default few-shot title."""
+        assert _default_plot_title(shot_value=True) == "Few-shot EuroEval Results"
+
+
 class TestCreateSpiderPlot:
     """Tests for _create_spider_plot function."""
 
@@ -917,12 +953,12 @@ class TestCreateSpiderPlot:
         assert len(fig.layout.images) == 1
         logo = fig.layout.images[0]
         assert logo.source.startswith("data:image/png;base64,")
-        assert logo.x == 1.12
+        assert logo.x == 1.22
         assert logo.y == -0.14
         assert logo.xanchor == "right"
         assert logo.yanchor == "bottom"
-        assert logo.sizex == 0.24
-        assert logo.sizey == 0.24
+        assert logo.sizex == 0.36
+        assert logo.sizey == 0.36
 
     def test_none_scores_treated_as_zero(self) -> None:
         """Should treat None scores as zero in plot."""
@@ -1724,7 +1760,9 @@ class TestTitleAndFilenameOptions:
                     finally:
                         os.chdir(original_cwd)
 
-    def test_cli_success_output_is_single_line_with_file_uri(self) -> None:
+    def test_cli_success_output_is_single_line_with_file_uri(
+        self, browser_open_calls: list[str]
+    ) -> None:
         """Successful output should be exactly one line with file:// URI."""
         record = make_eee_record(
             "test/model",
@@ -1769,12 +1807,18 @@ class TestTitleAndFilenameOptions:
                         assert len(lines) == 1, (
                             f"Expected exactly 1 line, got {len(lines)}: {lines}"
                         )
-                        assert lines[0].startswith("file://"), (
-                            f"Output should be file:// URI: {lines[0]}"
+                        assert lines[0].startswith("Finished. "), (
+                            f"Output should announce completion: {lines[0]}"
+                        )
+                        assert "output plot can now be found at" in lines[0]
+                        assert "file://" in lines[0], (
+                            f"Output should include file:// URI: {lines[0]}"
                         )
                         assert lines[0].endswith(".png"), (
                             f"URI should end with .png: {lines[0]}"
                         )
+                        assert len(browser_open_calls) == 1
+                        assert browser_open_calls[0] in lines[0]
                     finally:
                         os.chdir(original_cwd)
 

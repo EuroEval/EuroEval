@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import typing as t
+import webbrowser
 from collections import defaultdict
 from pathlib import Path
 
@@ -125,11 +126,10 @@ def main(
         click.echo("Error: No records after shot filtering", err=True)
         sys.exit(1)
 
-    shot_value: bool | None = None
-    if shots == "zero":
-        shot_value = False
-    elif shots == "few":
-        shot_value = True
+    shot_value = _resolve_shot_value(
+        filtered_records=filtered_records,
+        shots_setting=t.cast(t.Literal["auto", "zero", "few"], shots),
+    )
 
     # Build score matrix using all records as reference population
     model_scores_matrix = _build_score_matrix(
@@ -168,18 +168,29 @@ def main(
         model_scores=model_scores_matrix,
         languages=used_languages,
         max_score=max_score_val,
-        title=title,
+        title=title or _default_plot_title(shot_value=shot_value),
     )
 
     # Determine output filename
     output_filename = _determine_output_filename(title, filename)
     output_path = Path(output_filename).resolve()
+    file_uri = output_path.as_uri()
     try:
         _write_image_silent(fig, str(output_path))
     except Exception as exc:
         click.echo(f"Error writing PNG: {exc}", err=True)
         return 1
-    click.echo(f"file://{output_path}")
+
+    try:
+        opened = webbrowser.open(file_uri)
+    except Exception as exc:
+        click.echo(f"Error opening PNG: {exc}", err=True)
+        return 1
+    if not opened:
+        click.echo(f"Error opening PNG: {file_uri}", err=True)
+        return 1
+
+    click.echo(f"Finished. The output plot can now be found at {file_uri}")
 
     return 0
 
@@ -502,6 +513,41 @@ def _load_results_for_models(model_ids: list[str]) -> list[JsonDict]:
     return records
 
 
+def _resolve_shot_value(
+    filtered_records: list[JsonDict], shots_setting: t.Literal["auto", "zero", "few"]
+) -> bool:
+    """Resolve the shot setting to a Boolean few-shot value.
+
+    Args:
+        filtered_records:
+            Records remaining after shot filtering.
+        shots_setting:
+            User-requested shot setting.
+
+    Returns:
+        True for few-shot, False for zero-shot.
+    """
+    if shots_setting == "zero":
+        return False
+    if shots_setting == "few":
+        return True
+    return get_few_shot(filtered_records[0]) is True
+
+
+def _default_plot_title(shot_value: bool) -> str:
+    """Create the default plot title for the resolved shot setting.
+
+    Args:
+        shot_value:
+            True for few-shot, False for zero-shot.
+
+    Returns:
+        Default plot title.
+    """
+    shot_label = "Few-shot" if shot_value else "Zero-shot"
+    return f"{shot_label} EuroEval Results"
+
+
 def _filter_by_shots(
     records: list[JsonDict], shots_setting: t.Literal["auto", "zero", "few"]
 ) -> list[JsonDict]:
@@ -532,10 +578,8 @@ def _filter_by_shots(
     few_count = len(few_records)
 
     if zero_count > 0 and few_count == 0:
-        logger.info("Auto-detected: using zero-shot (few-shot records not found)")
         return zero_records
     elif few_count > 0 and zero_count == 0:
-        logger.info("Auto-detected: using few-shot (zero-shot records not found)")
         return few_records
     elif zero_count > 0 and few_count > 0:
         raise ValueError(
@@ -988,10 +1032,10 @@ def _create_spider_plot(
             source=_load_logo_data_uri(),
             xref="paper",
             yref="paper",
-            x=1.12,
+            x=1.22,
             y=-0.14,
-            sizex=0.24,
-            sizey=0.24,
+            sizex=0.36,
+            sizey=0.36,
             xanchor="right",
             yanchor="bottom",
             sizing="contain",
