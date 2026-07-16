@@ -45,6 +45,7 @@ import re
 import subprocess
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 import click
@@ -850,6 +851,35 @@ def execute_jobs(
     """
     evaluated: list[str] = []
     failed: list[str] = []
+
+    # Create detailed evaluation log file before starting progress bar
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    log_filename = f"eval_log_{timestamp}.log"
+    log_path = REPO_ROOT / log_filename
+
+    # Log run-level metadata and job plans upfront
+    with open(log_path, "w", encoding="utf-8") as log_file:
+        log_file.write("Evaluation Log\n")
+        log_file.write("================\n")
+        log_file.write(f"Timestamp (UTC): {timestamp}\n")
+        log_file.write(f"Dataset: {dataset}\n")
+        log_file.write(f"GPU Memory Utilization: {gpu_memory_utilization}\n")
+        log_file.write(f"Total Jobs: {len(jobs)}\n")
+        log_file.write("\n")
+        log_file.write("Job Plan\n")
+        log_file.write("--------\n")
+        for idx, job in enumerate(jobs, start=1):
+            shot = "zero-shot" if job.zero_shot else "few-shot"
+            split = "test" if job.evaluate_test_split else "val"
+            source = "API" if job.is_api else "open-weight"
+            log_file.write(
+                f"[{idx}/{len(jobs)}] {job.model_id} | "
+                f"languages: {', '.join(job.languages)} | "
+                f"split: {split} | {shot} | {source}\n"
+            )
+
+    logger.info(f"Evaluation log: {log_path}")
+
     with tqdm(jobs, desc="Evaluating models", unit="model") as progress:
         for job in progress:
             progress.set_postfix_str(job.model_id)
@@ -862,6 +892,16 @@ def execute_jobs(
                 gpu_memory_utilization=gpu_memory_utilization,
                 stream_output=False,
             )
+
+            # Append job results to log file
+            with open(log_path, "a", encoding="utf-8") as log_file:
+                log_file.write("\n")
+                log_file.write("Job Result\n")
+                log_file.write("----------\n")
+                log_file.write(f"Model: {job.model_id}\n")
+                log_file.write(f"Exit Code: {returncode}\n")
+                log_file.write(f"Output:\n{output}\n")
+
             if returncode != 0:
                 output_tail = "\n".join(output.splitlines()[-40:])
                 logger.warning(
