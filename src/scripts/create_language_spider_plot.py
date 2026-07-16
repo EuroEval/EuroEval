@@ -6,7 +6,6 @@ interactive Plotly polar chart comparing selected models across languages.
 
 from __future__ import annotations
 
-import argparse
 import json
 import logging
 import math
@@ -14,12 +13,18 @@ import sys
 import typing as t
 from pathlib import Path
 
+import click
 import plotly.graph_objects as go
 
 from euroeval.jsonl_io import parse_jsonl_lines
 from euroeval.languages import get_all_languages
 from leaderboards.constants import RESULTS_DIR
-from leaderboards.task_metadata import languages_with_official_datasets
+from leaderboards.record_fields import get_few_shot, get_total_scores
+from leaderboards.task_metadata import (
+    language_name_to_codes,
+    languages_with_official_datasets,
+    task_metric_names,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,68 +34,171 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse command-line arguments.
+def _normalise_language_input(language_input: str) -> set[str]:
+    """Normalise a language input (name or code) to a set of language codes.
+
+    Handles both language names (e.g., "danish") and codes (e.g., "da").
+    Uses the leaderboard language name → code mapping for names.
 
     Args:
-        argv (optional):
-            Argument list. Defaults to sys.argv[1:].
+        language_input:
+            Language name or code.
 
     Returns:
-        Parsed arguments.
+        Set of language codes (may contain multiple codes for names like
+        "norwegian" which map to both "nb" and "nn").
+
+    Raises:
+        ValueError:
+            If the language cannot be resolved to any valid code.
     """
-    parser = argparse.ArgumentParser(
-        description="Create a language spider plot comparing models across languages.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    lang_input = language_input.strip().lower()
+
+    # Try as a language name first (using leaderboard mapping)
+    codes_from_name = language_name_to_codes(lang_input)
+    if codes_from_name:
+        return codes_from_name
+
+    # Try as a direct language code
+    all_languages = get_all_languages()
+    if lang_input in all_languages:
+        return {lang_input}
+
+    # Check if it's a case mismatch for a direct code
+    for code in all_languages:
+        if code.lower() == lang_input:
+            return {code}
+
+    raise ValueError(
+        f"Cannot resolve language {language_input!r} to any valid language code. "
+        f"Use a language name (e.g., 'danish') or code (e.g., 'da')."
     )
-    parser.add_argument(
-        "--model",
-        "-m",
-        action="append",
-        required=True,
-        dest="models",
-        metavar="MODEL",
-        help="Model ID to include (can be repeated).",
-    )
-    parser.add_argument(
-        "--language",
-        "-l",
-        action="append",
-        dest="languages",
-        metavar="LANGUAGE",
-        help="Language code to include (can be repeated). Defaults to official"
-        " languages.",
-    )
-    parser.add_argument(
-        "--shots",
-        choices=["auto", "zero", "few"],
-        default="auto",
-        help="Shot setting: zero-shot, few-shot, or auto-detect.",
-    )
-    parser.add_argument(
-        "--max-score",
-        type=float,
-        dest="max_score",
-        metavar="FLOAT",
-        help="Override maximum score for radial axis.",
-    )
-    parser.add_argument(
-        "--output",
-        "-o",
-        type=Path,
-        default=Path("language_spider_plot.html"),
-        help="Output HTML file path.",
-    )
-    parser.add_argument(
-        "--metric",
-        default="primary",
-        choices=["primary", "test_macro_f1", "test_accuracy", "test_rouge"],
-        help="Metric to use for scores.",
-    )
-    return parser.parse_args(argv)
 
 
-def load_results_for_models(model_ids: list[str]) -> list[dict[str, t.Any]]:
+def _resolve_languages(language_inputs: list[str] | None) -> list[str]:
+    """Resolve language inputs to a list of language codes.
+
+    Args:
+        language_inputs (optional):
+            List of language names or codes. If None, uses official languages.
+
+    Returns:
+        List of language codes.
+    """
+    if language_inputs:
+        all_codes: set[str] = set()
+        for lang_input in language_inputs:
+            codes = _normalise_language_input(lang_input)
+            all_codes.update(codes)
+        return sorted(all_codes)
+    else:
+        # Use official language names and convert to codes
+        lang_names = languages_with_official_datasets()
+        all_codes: set[str] = set()
+        for name in lang_names:
+            codes = language_name_to_codes(name)
+            all_codes.update(codes)
+        return sorted(all_codes)
+
+
+def _get_primary_metric_for_task(task: str) -> str:
+    """Get the primary metric for a task.
+
+    Args:
+        task:
+            Task name.
+
+    Returns:
+        Primary metric name.
+    """
+    primary, _ = task_metric_names(task)
+    return primary
+
+
+def _extract_languages_from_record(record: dict[str, t.Any]) -> list[str]:
+    """Extract language codes from an EEE-format record.
+
+    Handles both modern EEE format (JSON-encoded string in eval_library) and
+    legacy formats.
+
+    Args:
+        record:
+            EEE-format result record.
+
+    Returns:
+        List of language codes.
+    """
+    eval_lib = record.get("eval_library", {})
+    additional = eval_lib.get("additional_details", {})
+    languages_json = additional.get("languages")
+
+    if languages_json:
+        try:
+            languages = json.loads(languages_json)
+            if isinstance(languages, list):
+                return [str(lang) for lang in languages]
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    legacy_languages_value = record.get("languages")
+    if isinstance(legacy_languages_value, str):
+        try:
+            languages = json.loads(legacy_languages_value)
+            if isinstance(languages, list):
+                return [str(lang) for lang in languages]
+        except (json.JSONDecodeError, TypeError):
+            return [legacy_languages_value]
+    elif isinstance(legacy_languages_value, list):
+        return [str(lang) for lang in legacy_languages_value]
+
+    return []
+
+
+def _extract_task_from_record(record: dict[str, t.Any]) -> str | None:
+    """Extract task name from an EEE-format record.
+
+    Args:
+        record:
+            EEE-format result record.
+
+    Returns:
+        Task name, or None if not found.
+    """
+    return record.get("eval_library", {}).get("additional_details", {}).get("task")
+
+
+def _extract_scores_from_record(record: dict[str, t.Any]) -> dict[str, float]:
+    """Extract all scores from an EEE-format record.
+
+    Uses the robust get_total_scores helper which handles the
+    evaluation_results structure.
+
+    Args:
+        record:
+            EEE-format result record.
+
+    Returns:
+        Dict mapping metric names to scores. Empty dict if no scores found.
+    """
+    scores = get_total_scores(record)
+    return scores if scores is not None else {}
+
+
+def _get_model_identifier(record: dict[str, t.Any]) -> str:
+    """Extract model identifier from an EEE-format record.
+
+    Args:
+        record:
+            EEE-format result record.
+
+    Returns:
+        Model name/ID.
+    """
+    model_info = record.get("model_info", {})
+    return model_info.get("name", "") or model_info.get("id", "")
+
+
+def _load_results_for_models(model_ids: list[str]) -> list[dict[str, t.Any]]:
     """Load all results for the specified model IDs from local JSONL files.
 
     Args:
@@ -128,126 +236,136 @@ def load_results_for_models(model_ids: list[str]) -> list[dict[str, t.Any]]:
     return records
 
 
-def extract_languages_from_record(record: dict[str, t.Any]) -> list[str]:
-    """Extract language codes from an EEE-format record.
-
-    Handles both modern EEE format (JSON-encoded string in eval_library) and
-    legacy formats.
+def _filter_by_shots(
+    records: list[dict[str, t.Any]], shots_setting: t.Literal["auto", "zero", "few"]
+) -> list[dict[str, t.Any]]:
+    """Filter records by shot setting.
 
     Args:
-        record:
-            EEE-format result record.
+        records:
+            All result records.
+        shots_setting:
+            Shot setting: "auto", "zero", or "few".
 
     Returns:
-        List of language codes.
+        Filtered records.
+
+    Raises:
+        ValueError:
+            If auto-detection is ambiguous or fails.
     """
-    # Try EEE format first
-    eval_lib = record.get("eval_library", {})
-    additional = eval_lib.get("additional_details", {})
-    languages_json = additional.get("languages")
+    if shots_setting == "zero":
+        return [r for r in records if get_few_shot(r) is False]
+    elif shots_setting == "few":
+        return [r for r in records if get_few_shot(r) is True]
 
-    if languages_json:
-        try:
-            languages = json.loads(languages_json)
-            if isinstance(languages, list):
-                return [str(lang) for lang in languages]
-        except (json.JSONDecodeError, TypeError):
-            pass
+    zero_records = [r for r in records if get_few_shot(r) is False]
+    few_records = [r for r in records if get_few_shot(r) is True]
 
-    # Legacy format fallback
-    languages_value = record.get("languages")
-    if isinstance(languages_value, str):
-        try:
-            languages = json.loads(languages_value)
-            if isinstance(languages, list):
-                return [str(lang) for lang in languages]
-        except (json.JSONDecodeError, TypeError):
-            return [languages_value]
-    elif isinstance(languages_value, list):
-        return [str(lang) for lang in languages_value]
+    zero_count = len(zero_records)
+    few_count = len(few_records)
 
-    return []
+    if zero_count > 0 and few_count == 0:
+        logger.info("Auto-detected: using zero-shot (few-shot records not found)")
+        return zero_records
+    elif few_count > 0 and zero_count == 0:
+        logger.info("Auto-detected: using few-shot (zero-shot records not found)")
+        return few_records
+    elif zero_count > 0 and few_count > 0:
+        raise ValueError(
+            f"Auto-detection ambiguous: found {zero_count} zero-shot and "
+            f"{few_count} few-shot records. Please specify --shots zero or --shots few."
+        )
+    else:
+        raise ValueError(
+            "Auto-detection failed: no records with known shot setting. "
+            "Records may be missing few_shot metadata."
+        )
 
 
-def extract_score_from_record(record: dict[str, t.Any], metric: str) -> float | None:
-    """Extract the primary score from an EEE-format record.
+def _build_score_matrix(
+    records: list[dict[str, t.Any]],
+    models: list[str],
+    languages: list[str],
+    metric: str,
+    shot_value: bool | None,
+) -> dict[str, dict[str, float | None]]:
+    """Build a model x language score matrix from records.
+
+    Aggregates scores properly: uses the first valid score found for each
+    model-language combination (does not replace with None from later records).
 
     Args:
-        record:
-            EEE-format result record.
+        records:
+            Result records.
+        models:
+            Model IDs.
+        languages:
+            Language codes.
         metric:
             Metric name to extract.
+        shot_value:
+            None for any, True for few-shot, False for zero-shot.
 
     Returns:
-        Score as float, or None if not found.
+        Model x language score matrix.
     """
-    eval_results = record.get("evaluation_results", [])
-    for eval_result in eval_results:
-        eval_name = eval_result.get("evaluation_name", "")
-        if eval_name == metric:
-            score_details = eval_result.get("score_details", {})
-            score = score_details.get("score")
-            if score is not None:
-                try:
-                    return float(score)
-                except (TypeError, ValueError):
-                    pass
+    matrix: dict[str, dict[str, float | None]] = {}
+    for model in models:
+        matrix[model] = {lang: None for lang in languages}
 
-    return None
+    for record in records:
+        model_name = _get_model_identifier(record)
+        matching_model: str | None = None
+        for model in models:
+            if model_name == model or model_name.endswith("/" + model):
+                matching_model = model
+                break
 
+        if matching_model is None:
+            continue
 
-def is_few_shot(record: dict[str, t.Any]) -> bool | None:
-    """Determine if a record is few-shot from EEE format.
+        record_few_shot = get_few_shot(record)
+        if shot_value is not None and record_few_shot is not None:
+            if record_few_shot != shot_value:
+                continue
 
-    Args:
-        record:
-            EEE-format result record.
+        record_languages = _extract_languages_from_record(record)
+        scores = _extract_scores_from_record(record)
 
-    Returns:
-        True if few-shot, False if zero-shot, None if unknown.
-    """
-    eval_lib = record.get("eval_library", {})
-    additional = eval_lib.get("additional_details", {})
-    few_shot_str = additional.get("few_shot")
+        score: float | None = None
+        if metric in scores:
+            score = scores[metric]
+        elif metric == "primary":
+            task = _extract_task_from_record(record)
+            if task:
+                primary_metric = _get_primary_metric_for_task(task)
+                if primary_metric in scores:
+                    score = scores[primary_metric]
+            if score is None:
+                for fallback_metric in ["test_macro_f1", "test_accuracy", "test_rouge"]:
+                    if fallback_metric in scores:
+                        score = scores[fallback_metric]
+                        break
 
-    if few_shot_str is None:
-        return None
+        if score is None or not math.isfinite(score):
+            continue
 
-    if isinstance(few_shot_str, bool):
-        return few_shot_str
+        for lang in record_languages:
+            if lang in languages:
+                existing = matrix[matching_model][lang]
+                if existing is None:
+                    matrix[matching_model][lang] = score
 
-    if few_shot_str.lower() == "true":
-        return True
-    if few_shot_str.lower() == "false":
-        return False
-
-    return None
-
-
-def get_model_name_from_record(record: dict[str, t.Any]) -> str:
-    """Extract model name from an EEE-format record.
-
-    Args:
-        record:
-            EEE-format result record.
-
-    Returns:
-        Model name/ID.
-    """
-    model_info = record.get("model_info", {})
-    return model_info.get("name", "") or model_info.get("id", "")
+    return matrix
 
 
-def check_completeness(
-    model_scores: dict[str, dict[str, float | None]], shots_filter: bool | None
-) -> bool:
+def _check_completeness(model_scores: dict[str, dict[str, float | None]]) -> bool:
     """Check if all model-language combinations have scores.
 
     Args:
         model_scores:
             Nested dict of model -> language -> score (or None).
-        shots_filter:
-            None for any, True for few-shot only, False for zero-shot only.
 
     Returns:
         True if complete (no None values), False otherwise.
@@ -259,173 +377,16 @@ def check_completeness(
     return True
 
 
-def filter_by_shots(
-    records: list[dict[str, t.Any]],
-    shots_setting: t.Literal["auto", "zero", "few"],
-    models: list[str],
-    languages: list[str],
-) -> list[dict[str, t.Any]] | None:
-    """Filter records by shot setting, with auto-detection support.
-
-    Args:
-        records:
-            All result records.
-        shots_setting:
-            Shot setting: "auto", "zero", or "few".
-        models:
-            Model IDs to consider.
-        languages:
-            Language codes to consider.
-
-    Returns:
-        Filtered records, or None if auto-detection is ambiguous.
-
-    """
-    if shots_setting == "zero":
-        return [r for r in records if is_few_shot(r) is False]
-    elif shots_setting == "few":
-        return [r for r in records if is_few_shot(r) is True]
-
-    # Auto-detection: check completeness for both zero and few
-    zero_records = [r for r in records if is_few_shot(r) is False]
-    few_records = [r for r in records if is_few_shot(r) is True]
-
-    def build_score_matrix(
-        recs: list[dict[str, t.Any]],
-    ) -> dict[str, dict[str, float | None]]:
-        """Build model x language score matrix.
-
-        Args:
-            recs:
-                Records to build matrix from.
-
-        Returns:
-            Model x language score matrix with None for missing scores.
-        """
-        matrix: dict[str, dict[str, float | None]] = {}
-        for model in models:
-            matrix[model] = {lang: None for lang in languages}
-
-        for record in recs:
-            model_name = get_model_name_from_record(record)
-            if not any(model_name == m or model_name.endswith("/" + m) for m in models):
-                continue
-
-            record_languages = extract_languages_from_record(record)
-            for lang in record_languages:
-                if lang in languages:
-                    score = extract_score_from_record(record, metric="test_macro_f1")
-                    if score is None:
-                        score = extract_score_from_record(
-                            record, metric="test_accuracy"
-                        )
-                    if score is None:
-                        score = extract_score_from_record(record, metric="test_rouge")
-
-                    for model in models:
-                        if model_name == model or model_name.endswith("/" + model):
-                            matrix[model][lang] = score
-
-        return matrix
-
-    zero_matrix = build_score_matrix(zero_records)
-    few_matrix = build_score_matrix(few_records)
-
-    zero_complete = check_completeness(zero_matrix, shots_filter=None)
-    few_complete = check_completeness(few_matrix, shots_filter=None)
-
-    if zero_complete and not few_complete:
-        logger.info("Auto-detected: using zero-shot (few-shot incomplete)")
-        return zero_records
-    elif few_complete and not zero_complete:
-        logger.info("Auto-detected: using few-shot (zero-shot incomplete)")
-        return few_records
-    elif zero_complete and few_complete:
-        logger.error(
-            "Auto-detection ambiguous: both zero-shot and few-shot are complete. "
-            "Please specify --shots zero or --shots few explicitly."
-        )
-        return None
-    else:
-        logger.error(
-            "Auto-detection failed: neither zero-shot nor few-shot is complete. "
-            "Please specify --shots zero or --shots few explicitly."
-        )
-        return None
-
-
-def compute_language_scores(
-    records: list[dict[str, t.Any]],
-    models: list[str],
-    languages: list[str],
-    metric: str,
-) -> dict[str, dict[str, float]]:
-    """Compute scores per model per language.
-
-    Args:
-        records:
-            Filtered result records.
-        models:
-            Model IDs.
-        languages:
-            Language codes.
-        metric:
-            Metric to use.
-
-    Returns:
-        Nested dict of model -> language -> score.
-
-    Raises:
-        ValueError:
-            If no scores found.
-    """
-    model_scores: dict[str, dict[str, float]] = {}
-    for model in models:
-        model_scores[model] = {}
-
-    for record in records:
-        model_name = get_model_name_from_record(record)
-        matching_model = None
-        for model in models:
-            if model_name == model or model_name.endswith("/" + model):
-                matching_model = model
-                break
-
-        if matching_model is None:
-            continue
-
-        record_languages = extract_languages_from_record(record)
-        score = extract_score_from_record(record, metric)
-
-        if score is None and metric == "primary":
-            score = extract_score_from_record(record, "test_macro_f1")
-        if score is None and metric == "primary":
-            score = extract_score_from_record(record, "test_accuracy")
-        if score is None and metric == "primary":
-            score = extract_score_from_record(record, "test_rouge")
-
-        if score is None:
-            continue
-
-        for lang in record_languages:
-            if lang in languages:
-                model_scores[matching_model][lang] = score
-
-    # Validate we have scores
-    if not any(scores for scores in model_scores.values()):
-        raise ValueError("No scores found for the specified models and languages.")
-
-    return model_scores
-
-
-def compute_max_score(
-    model_scores: dict[str, dict[str, float]], max_score_override: float | None
+def _compute_max_score(
+    model_scores: dict[str, dict[str, float | None]], max_score_override: float | None
 ) -> float:
     """Compute or validate maximum score for radial axis.
 
+    Validates that max_score is finite, positive, and >= all plotted scores.
+
     Args:
         model_scores:
-            Nested dict of model -> language -> score.
+            Nested dict of model -> language -> score (or None).
         max_score_override (optional):
             User-provided max score override.
 
@@ -434,33 +395,39 @@ def compute_max_score(
 
     Raises:
         ValueError:
-            If override is too small for the data.
+            If override is invalid (NaN, inf, non-positive, or too small).
     """
-    all_scores = [
-        score
-        for lang_scores in model_scores.values()
-        for score in lang_scores.values()
-        if math.isfinite(score)
-    ]
+    all_scores: list[float] = []
+    for lang_scores in model_scores.values():
+        for score in lang_scores.values():
+            if score is not None and math.isfinite(score) and score > 0:
+                all_scores.append(score)
 
     if not all_scores:
         return 100.0
 
-    auto_max = max(all_scores)
+    max_found = max(all_scores)
 
     if max_score_override is not None:
-        if max_score_override < auto_max:
+        if not math.isfinite(max_score_override):
+            raise ValueError(
+                f"max-score {max_score_override} is invalid (must be finite)."
+            )
+        if max_score_override <= 0:
+            raise ValueError(
+                f"max-score {max_score_override} is invalid (must be positive)."
+            )
+        if max_score_override < max_found:
             raise ValueError(
                 f"max-score {max_score_override} is too small; "
-                f"found scores up to {auto_max:.2f}"
+                f"found scores up to {max_found:.2f}"
             )
         return max_score_override
 
-    # Round up to nearest 10 for nice axis
-    return math.ceil(auto_max / 10) * 10
+    return math.ceil(max_found / 10) * 10
 
 
-def normalise_model_name(model_id: str) -> str:
+def _normalise_model_name(model_id: str) -> str:
     """Normalise model ID for display.
 
     Args:
@@ -475,27 +442,46 @@ def normalise_model_name(model_id: str) -> str:
     return model_id
 
 
-def create_spider_plot(
-    model_scores: dict[str, dict[str, float]], languages: list[str], max_score: float
+def _get_language_display_name(code: str) -> str:
+    """Get display name for a language code.
+
+    Args:
+        code:
+            Language code.
+
+    Returns:
+        Language name if known, otherwise the code itself.
+    """
+    all_languages = get_all_languages()
+    if code in all_languages:
+        return all_languages[code].name
+    return code
+
+
+def _create_spider_plot(
+    model_scores: dict[str, dict[str, float | None]],
+    languages: list[str],
+    max_score: float,
+    lower_is_better: bool = False,
 ) -> go.Figure:
     """Create a Plotly spider/radial plot.
 
     Args:
         model_scores:
-            Nested dict of model -> language -> score.
+            Nested dict of model -> language -> score (or None).
         languages:
             Language codes in order.
         max_score:
             Maximum score for radial axis.
+        lower_is_better (optional):
+            If True, reverse the radial axis so lower values are better.
+            Defaults to False.
 
     Returns:
         Plotly figure.
     """
-    languages_display = [
-        get_all_languages().get(lang, {}).name or lang for lang in languages
-    ]
+    languages_display = [_get_language_display_name(lang) for lang in languages]
 
-    # Colour palette for models
     colours = [
         "#1f77b4",
         "#ff7f0e",
@@ -512,8 +498,8 @@ def create_spider_plot(
     fig = go.Figure()
 
     for idx, (model_id, lang_scores) in enumerate(model_scores.items()):
-        scores = [lang_scores.get(lang, 0) for lang in languages]
-        display_name = normalise_model_name(model_id)
+        scores = [lang_scores.get(lang, 0) or 0 for lang in languages]
+        display_name = _normalise_model_name(model_id)
         colour = colours[idx % len(colours)]
 
         fig.add_trace(
@@ -527,10 +513,14 @@ def create_spider_plot(
             )
         )
 
+    radial_axis: dict[str, t.Any] = dict(
+        visible=True,
+        range=[0, max_score] if not lower_is_better else [max_score, 0],
+        tickformat=".0f",
+    )
+
     fig.update_layout(
-        polar=dict(
-            radialaxis=dict(visible=True, range=[0, max_score], tickformat=".0f")
-        ),
+        polar=dict(radialaxis=radial_axis),
         showlegend=True,
         title=dict(text="Language Performance Comparison", x=0.5, y=0.95),
         height=700,
@@ -540,93 +530,168 @@ def create_spider_plot(
     return fig
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Main entry point.
+@click.command()
+@click.option(
+    "--model",
+    "-m",
+    "models",
+    multiple=True,
+    required=True,
+    metavar="MODEL",
+    help="Model ID to include (can be repeated).",
+)
+@click.option(
+    "--language",
+    "-l",
+    "languages",
+    multiple=True,
+    metavar="LANGUAGE",
+    help="Language name or code to include (can be repeated). "
+    "Defaults to official languages.",
+)
+@click.option(
+    "--shots",
+    type=click.Choice(["auto", "zero", "few"]),
+    default="auto",
+    show_default=True,
+    help="Shot setting: zero-shot, few-shot, or auto-detect.",
+)
+@click.option(
+    "--metric",
+    default="primary",
+    show_default=True,
+    help="Metric to use for scores. 'primary' uses task-specific primary metric.",
+)
+@click.option(
+    "--max-score",
+    type=float,
+    metavar="FLOAT",
+    help="Override maximum score for radial axis.",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=str),
+    default="language_spider_plot.html",
+    show_default=True,
+    help="Output HTML file path.",
+)
+@click.option(
+    "--lower-is-better",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Reverse radial axis so lower values are better (for rank-like metrics).",
+)
+@click.option(
+    "--require-complete/--allow-incomplete",
+    default=True,
+    show_default=True,
+    help="Whether to require all model-language scores to be present.",
+)
+def main(
+    models: tuple[str, ...],
+    languages: tuple[str, ...],
+    shots: str,
+    metric: str,
+    max_score: float | None,
+    output: str,
+    lower_is_better: bool,
+    require_complete: bool,
+) -> int:
+    """Create a language spider plot comparing models across languages.
 
-    Args:
-        argv (optional):
-            Command-line arguments. Defaults to sys.argv[1:].
+    Loads evaluation results from local JSONL files and generates an
+    interactive Plotly polar chart comparing selected models across languages.
 
     Returns:
-        Exit code (0 for success, non-zero for failure).
+        Exit code (0 for success, 1 for failure).
     """
-    args = parse_args(argv)
+    model_list = list(models)
+    language_list = list(languages) if languages else None
 
-    # Validate models provided
-    if not args.models:
-        logger.error("At least one model must be specified with --model/-m")
-        return 1
+    try:
+        resolved_languages = _resolve_languages(language_list)
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
 
-    # Determine languages
-    if args.languages:
-        languages = args.languages
-    else:
-        languages = languages_with_official_datasets()
-        logger.info("Using %d official languages by default", len(languages))
+    if not language_list:
+        logger.info("Using %d official languages by default", len(resolved_languages))
 
-    # Load results
-    logger.info("Loading results for %d model(s)", len(args.models))
-    records = load_results_for_models(args.models)
+    logger.info("Loading results for %d model(s)", len(model_list))
+    records = _load_results_for_models(model_list)
 
     if not records:
-        logger.error("No results found for specified models")
-        return 1
+        click.echo("Error: No results found for specified models", err=True)
+        sys.exit(1)
 
     logger.info("Loaded %d total records", len(records))
 
-    # Filter by shots
-    if args.shots == "auto":
-        filtered_records = filter_by_shots(records, args.shots, args.models, languages)
-        if filtered_records is None:
-            return 1
-    else:
-        filtered_records = filter_by_shots(records, args.shots, args.models, languages)
-        if filtered_records is None:
-            return 1
+    try:
+        filtered_records = _filter_by_shots(
+            records, t.cast(t.Literal["auto", "zero", "few"], shots)
+        )
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
 
     if not filtered_records:
-        logger.error("No records after shot filtering")
-        return 1
+        click.echo("Error: No records after shot filtering", err=True)
+        sys.exit(1)
 
     logger.info("Using %d records after shot filtering", len(filtered_records))
 
-    # Compute scores
-    try:
-        model_scores = compute_language_scores(
-            records=filtered_records,
-            models=args.models,
-            languages=languages,
-            metric=args.metric,
-        )
-    except ValueError as exc:
-        logger.error("%s", exc)
-        return 1
+    shot_value: bool | None = None
+    if shots == "zero":
+        shot_value = False
+    elif shots == "few":
+        shot_value = True
 
-    # Validate completeness
-    for model_id, lang_scores in model_scores.items():
-        missing = [lang for lang, score in lang_scores.items() if score is None]
-        if missing:
-            logger.warning(
-                "Model %s missing scores for %d language(s): %s",
-                model_id,
-                len(missing),
-                ", ".join(missing[:5]) + ("..." if len(missing) > 5 else ""),
+    model_scores_matrix = _build_score_matrix(
+        records=filtered_records,
+        models=model_list,
+        languages=resolved_languages,
+        metric=metric,
+        shot_value=shot_value,
+    )
+
+    if require_complete:
+        for model_id, lang_scores in model_scores_matrix.items():
+            missing = [lang for lang, score in lang_scores.items() if score is None]
+            if missing:
+                logger.warning(
+                    "Model %s missing scores for %d language(s): %s",
+                    model_id,
+                    len(missing),
+                    ", ".join(missing[:5]) + ("..." if len(missing) > 5 else ""),
+                )
+
+        completeness = _check_completeness(model_scores_matrix)
+        if not completeness:
+            click.echo(
+                "Error: Incomplete score matrix. Some model-language combinations "
+                "are missing scores. Use --allow-incomplete to proceed anyway.",
+                err=True,
             )
+            sys.exit(1)
 
-    # Compute max score
     try:
-        max_score = compute_max_score(model_scores, args.max_score)
+        max_score_val = _compute_max_score(model_scores_matrix, max_score)
     except ValueError as exc:
-        logger.error("%s", exc)
-        return 1
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
 
-    logger.info("Max score: %.2f", max_score)
+    logger.info("Max score: %.2f", max_score_val)
 
-    # Create plot
-    fig = create_spider_plot(model_scores, languages, max_score)
+    fig = _create_spider_plot(
+        model_scores=model_scores_matrix,
+        languages=resolved_languages,
+        max_score=max_score_val,
+        lower_is_better=lower_is_better,
+    )
 
-    # Write output
-    output_path = args.output
+    output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.write_html(str(output_path), include_plotlyjs=True)
     logger.info("Wrote spider plot to %s", output_path)
