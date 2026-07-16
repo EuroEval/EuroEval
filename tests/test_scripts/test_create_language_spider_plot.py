@@ -284,16 +284,16 @@ class TestBuildScoreMatrix:
         assert matrix["model1"]["da"] == 80.0
         assert matrix["model1"]["sv"] == 75.0
 
-    def test_first_score_wins_no_replacement(self) -> None:
-        """Should use first valid score, not replace with None from later records."""
+    def test_mean_aggregation_multiple_records(self) -> None:
+        """Should compute mean of all valid scores, not use first-score-wins."""
         records = [
             make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
-            make_eee_record("model1", ["da"], {}, False),
+            make_eee_record("model1", ["da"], {"test_macro_f1": 90.0}, False),
         ]
         matrix = _build_score_matrix(
             records, ["model1"], ["da"], "test_macro_f1", False
         )
-        assert matrix["model1"]["da"] == 80.0
+        assert matrix["model1"]["da"] == 85.0  # Mean of 80 and 90
 
     def test_primary_metric_fallback(self) -> None:
         """Should fallback to standard metrics when using 'primary'."""
@@ -304,6 +304,54 @@ class TestBuildScoreMatrix:
         ]
         matrix = _build_score_matrix(records, ["model1"], ["da"], "primary", None)
         assert matrix["model1"]["da"] == 90.0
+
+    def test_primary_metric_with_test_prefix(self) -> None:
+        """Should check test_{primary_metric} first for current EEE totals format."""
+        # mcc is the primary metric for sentiment-classification task
+        records = [
+            make_eee_record(
+                "model1",
+                ["da"],
+                {"test_mcc": 85.0},
+                False,
+                task="sentiment-classification",
+            )
+        ]
+        matrix = _build_score_matrix(records, ["model1"], ["da"], "primary", None)
+        assert matrix["model1"]["da"] == 85.0
+
+    def test_primary_metric_bare_fallback(self) -> None:
+        """Should fall back to bare metric name for legacy records."""
+        # mcc is the primary metric for sentiment-classification task
+        records = [
+            make_eee_record(
+                "model1", ["da"], {"mcc": 85.0}, False, task="sentiment-classification"
+            )
+        ]
+        matrix = _build_score_matrix(records, ["model1"], ["da"], "primary", None)
+        assert matrix["model1"]["da"] == 85.0
+
+    def test_order_independent_aggregation(self) -> None:
+        """Should produce same mean regardless of record order."""
+        records_ordered = [
+            make_eee_record("model1", ["da"], {"test_macro_f1": 70.0}, False),
+            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
+            make_eee_record("model1", ["da"], {"test_macro_f1": 90.0}, False),
+        ]
+        records_shuffled = [
+            make_eee_record("model1", ["da"], {"test_macro_f1": 90.0}, False),
+            make_eee_record("model1", ["da"], {"test_macro_f1": 70.0}, False),
+            make_eee_record("model1", ["da"], {"test_macro_f1": 80.0}, False),
+        ]
+        matrix_ordered = _build_score_matrix(
+            records_ordered, ["model1"], ["da"], "test_macro_f1", False
+        )
+        matrix_shuffled = _build_score_matrix(
+            records_shuffled, ["model1"], ["da"], "test_macro_f1", False
+        )
+        assert matrix_ordered["model1"]["da"] == 80.0  # Mean of 70, 80, 90
+        assert matrix_shuffled["model1"]["da"] == 80.0
+        assert matrix_ordered["model1"]["da"] == matrix_shuffled["model1"]["da"]
 
     def test_non_finite_scores_ignored(self) -> None:
         """Should ignore NaN and infinite scores."""
@@ -344,7 +392,9 @@ class TestCheckCompleteness:
 
     def test_all_none_scores(self) -> None:
         """Should return False when all scores are None."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": None, "sv": None}}
+        model_scores: dict[str, dict[str, float | None]] = {
+            "model1": {"da": None, "sv": None}
+        }
         assert _check_completeness(model_scores) is False
 
 
@@ -420,7 +470,9 @@ class TestCreateSpiderPlot:
 
     def test_basic_plot_creation(self) -> None:
         """Should create a basic spider plot."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 80.0, "sv": 75.0}}
+        model_scores: dict[str, dict[str, float | None]] = {
+            "model1": {"da": 80.0, "sv": 75.0}
+        }
         fig = _create_spider_plot(model_scores, ["da", "sv"], 100.0)
         assert len(fig.data) == 1
         assert fig.layout.title.text == "Language Performance Comparison"
@@ -436,7 +488,9 @@ class TestCreateSpiderPlot:
 
     def test_lower_is_better_reverses_axis(self) -> None:
         """Should reverse radial axis when lower_is_better is True."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 80.0, "sv": 75.0}}
+        model_scores: dict[str, dict[str, float | None]] = {
+            "model1": {"da": 80.0, "sv": 75.0}
+        }
         fig_normal = _create_spider_plot(
             model_scores, ["da", "sv"], 100.0, lower_is_better=False
         )
