@@ -292,8 +292,9 @@ def _build_score_matrix(
 ) -> dict[str, dict[str, float | None]]:
     """Build a model x language score matrix from records.
 
-    Aggregates scores properly: uses the first valid score found for each
-    model-language combination (does not replace with None from later records).
+    Aggregates scores by collecting all valid scores per model-language
+    combination and computing their mean. Returns None for combinations
+    with no valid scores.
 
     Args:
         records:
@@ -310,9 +311,10 @@ def _build_score_matrix(
     Returns:
         Model x language score matrix.
     """
-    matrix: dict[str, dict[str, float | None]] = {}
+    # Collect all scores per model-language combination
+    score_collections: dict[str, dict[str, list[float]]] = {}
     for model in models:
-        matrix[model] = {lang: None for lang in languages}
+        score_collections[model] = {lang: [] for lang in languages}
 
     for record in records:
         model_name = _get_model_identifier(record)
@@ -340,7 +342,12 @@ def _build_score_matrix(
             task = _extract_task_from_record(record)
             if task:
                 primary_metric = _get_primary_metric_for_task(task)
-                if primary_metric in scores:
+                # Check test_{primary_metric} first (current EEE totals format)
+                test_metric = f"test_{primary_metric}"
+                if test_metric in scores:
+                    score = scores[test_metric]
+                elif primary_metric in scores:
+                    # Fallback to bare metric name for legacy records
                     score = scores[primary_metric]
             if score is None:
                 for fallback_metric in ["test_macro_f1", "test_accuracy", "test_rouge"]:
@@ -353,9 +360,18 @@ def _build_score_matrix(
 
         for lang in record_languages:
             if lang in languages:
-                existing = matrix[matching_model][lang]
-                if existing is None:
-                    matrix[matching_model][lang] = score
+                score_collections[matching_model][lang].append(score)
+
+    # Aggregate by computing mean of all collected scores
+    matrix: dict[str, dict[str, float | None]] = {}
+    for model in models:
+        matrix[model] = {}
+        for lang in languages:
+            collected = score_collections[model][lang]
+            if collected:
+                matrix[model][lang] = sum(collected) / len(collected)
+            else:
+                matrix[model][lang] = None
 
     return matrix
 
