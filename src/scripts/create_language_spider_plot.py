@@ -1016,7 +1016,9 @@ def _create_spider_plot(
             )
         )
 
-    radial_axis = dict(visible=True, range=[max_score, 1], tickformat=".1f", dtick=0.5)
+    radial_axis = dict(
+        visible=True, range=[max_score, 1], tickformat=".1f", dtick=0.5, angle=180
+    )
 
     plot_title = title if title else "Language Performance Comparison"
 

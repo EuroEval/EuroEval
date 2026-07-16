@@ -930,6 +930,15 @@ class TestCreateSpiderPlot:
         dtick = fig.layout.polar.radialaxis.dtick
         assert dtick == 0.5
 
+    def test_radial_tick_labels_offset_from_spokes(self) -> None:
+        """Radial tick labels should not sit directly on a language spoke."""
+        model_scores: dict[str, dict[str, float | None]] = {
+            "model1": {"da": 1.5, "sv": 2.0}
+        }
+        fig = _create_spider_plot(model_scores, ["da", "sv"], 3.0)
+        angle = fig.layout.polar.radialaxis.angle
+        assert angle == 180
+
     def test_transparent_fill_for_readability(self) -> None:
         """Should use transparent fills so overlapping traces remain readable."""
         model_scores: dict[str, dict[str, float | None]] = {
