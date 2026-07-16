@@ -8,13 +8,17 @@ Output is a PNG file.
 
 from __future__ import annotations
 
+import collections.abc as c
 import json
 import logging
 import math
+import os
+import re
+import select
 import sys
 import typing as t
 from collections import defaultdict
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import contextmanager
 from io import StringIO
 from pathlib import Path
 
@@ -46,8 +50,9 @@ Json = dict[str, "Json"] | list["Json"] | str | int | float | bool | None
 JsonDict = dict[str, Json]
 
 
+# Silence logging by default; script should emit exactly one line on success
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.CRITICAL,
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -59,6 +64,8 @@ def main(
     languages: tuple[str, ...],
     shots: str,
     max_score: float | None,
+    title: str | None,
+    filename: str | None,
 ) -> int:
     """Create a language spider plot comparing models across languages.
 
@@ -78,6 +85,12 @@ def main(
             Override maximum rank score for the radial axis. If omitted,
             auto-computed from plotted rank scores (rounded up to nearest 0.5,
             minimum 2.5; rank score of 1 is perfect).
+        title (optional):
+            Plot title. If omitted, uses default title.
+        filename (optional):
+            Output PNG filename (without .png suffix if desired, it will be
+            appended). If omitted and title is set, inferred from title using
+            snake_case. If both omitted, uses "language-spider-plot.png".
 
     Returns:
         Exit code (0 for success, 1 for failure).
@@ -91,17 +104,18 @@ def main(
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
 
-    if not language_list:
-        pass  # Default languages used (no output on success)
-    records = _load_results_for_models(model_list)
+    # Load all records as reference population (for rank score computation)
+    all_records = _load_all_results()
 
-    if not records:
+    # Verify requested models have data
+    requested_model_records = _load_results_for_models(model_list)
+    if not requested_model_records:
         click.echo("Error: No results found for specified models", err=True)
         sys.exit(1)
 
     try:
         filtered_records = _filter_by_shots(
-            records, t.cast(t.Literal["auto", "zero", "few"], shots)
+            requested_model_records, t.cast(t.Literal["auto", "zero", "few"], shots)
         )
     except ValueError as exc:
         click.echo(f"Error: {exc}", err=True)
@@ -117,8 +131,9 @@ def main(
     elif shots == "few":
         shot_value = True
 
+    # Build score matrix using all records as reference population
     model_scores_matrix = _build_score_matrix(
-        records=filtered_records,
+        all_records=all_records,
         models=model_list,
         languages=resolved_languages,
         shot_value=shot_value,
@@ -153,15 +168,18 @@ def main(
         model_scores=model_scores_matrix,
         languages=used_languages,
         max_score=max_score_val,
+        title=title,
     )
 
-    output_path = Path("language-spider-plot.png").resolve()
+    # Determine output filename
+    output_filename = _determine_output_filename(title, filename)
+    output_path = Path(output_filename).resolve()
     try:
         _write_image_silent(fig, str(output_path))
-    except KaleidoError as exc:
+    except Exception as exc:
         click.echo(f"Error writing PNG: {exc}", err=True)
         return 1
-    click.echo(f"Wrote spider plot to file://{output_path}")
+    click.echo(f"file://{output_path}")
 
     return 0
 
@@ -425,29 +443,24 @@ def _get_model_identifier(record: JsonDict) -> str:
     return model_info.get("name", "") or model_info.get("id", "")
 
 
-def _load_results_for_models(model_ids: list[str]) -> list[JsonDict]:
-    """Load all results for the specified model IDs from local JSONL files.
+def _load_all_results() -> list[JsonDict]:
+    """Load all results from local JSONL files (reference population).
 
-    Args:
-        model_ids:
-            List of model IDs to load results for.
+    Skips unknown.jsonl as it is not authoritative. Loads all other
+    JSONL files in the results directory.
 
     Returns:
-        List of EEE-format result records.
+        List of EEE-format result records from all models.
     """
     records: list[JsonDict] = []
     model_files = sorted(RESULTS_DIR.glob("*.jsonl"))
 
     if not model_files:
-        logger.error("No JSONL files found in %s", RESULTS_DIR)
         return records
 
     for jsonl_path in model_files:
-        model_id_from_file = jsonl_path.stem.replace("_", "/", 1)
-        if not any(
-            model_id_from_file == m or model_id_from_file.endswith("/" + m)
-            for m in model_ids
-        ):
+        # Skip unknown.jsonl as it is not authoritative
+        if jsonl_path.stem == "unknown":
             continue
 
         try:
@@ -458,9 +471,33 @@ def _load_results_for_models(model_ids: list[str]) -> list[JsonDict]:
             for rec in file_records:
                 if isinstance(rec, dict):
                     records.append(t.cast(JsonDict, rec))
-            pass  # Silently loaded (no output on success)
-        except Exception as exc:
-            logger.warning(f"Failed to parse {jsonl_path}: {exc}")
+        except Exception:
+            # Silently skip unparseable files
+            pass
+
+    return records
+
+
+def _load_results_for_models(model_ids: list[str]) -> list[JsonDict]:
+    """Load results for the specified model IDs from local JSONL files.
+
+    Used to verify requested models have data. For rank score computation,
+    use _load_all_results() to get the full reference population.
+
+    Args:
+        model_ids:
+            List of model IDs to load results for.
+
+    Returns:
+        List of EEE-format result records for the specified models.
+    """
+    all_records = _load_all_results()
+    records: list[JsonDict] = []
+
+    for record in all_records:
+        model_name = _get_model_identifier(record)
+        if any(model_name == m or model_name.endswith("/" + m) for m in model_ids):
+            records.append(record)
 
     return records
 
@@ -513,7 +550,7 @@ def _filter_by_shots(
 
 
 def _build_score_matrix(
-    records: list[JsonDict],
+    all_records: list[JsonDict],
     models: list[str],
     languages: list[str],
     shot_value: bool | None,
@@ -524,18 +561,21 @@ def _build_score_matrix(
     1. Extract raw per-iteration/bootstrap scores per (model, dataset, language)
     2. Compute mean_score(m,d) = mean of all raw scores for model m on dataset d
     3. Compute pooled_std(d) = std of ALL raw scores from all models on dataset d
+       (uses all_records as reference population, not just requested models)
     4. Compute rank_score = 1 + (best_mean - model_mean) / pooled_std
     5. Aggregate hierarchy: dataset -> task -> language (unweighted means)
 
     Rank score of 1 is perfect (best on dataset). Lower is better.
+    Reference population is all available records; output matrix contains
+    only the requested models.
 
     Args:
-        records:
-            Result records.
+        all_records:
+            All result records (reference population for rank scores).
         models:
-            Model IDs.
+            Model IDs to include in output matrix.
         languages:
-            Language codes.
+            Language codes to include in output matrix.
         shot_value:
             None for any, True for few-shot, False for zero-shot.
 
@@ -543,21 +583,14 @@ def _build_score_matrix(
         Model x language mean rank score matrix (lower is better).
     """
     # Step 1: Collect raw per-iteration scores per (model, dataset, language)
+    # from ALL records (reference population), not just requested models
     # Structure: model -> dataset -> language -> list of raw scores
     model_dataset_lang_raw_scores: dict[str, dict[str, dict[str, list[float]]]] = (
         defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     )
 
-    for record in records:
+    for record in all_records:
         model_name = _get_model_identifier(record)
-        matching_model: str | None = None
-        for model in models:
-            if model_name == model or model_name.endswith("/" + model):
-                matching_model = model
-                break
-
-        if matching_model is None:
-            continue
 
         record_few_shot = get_few_shot(record)
         if shot_value is not None and record_few_shot is not None:
@@ -585,9 +618,10 @@ def _build_score_matrix(
         if not raw_scores:
             continue
 
+        # Collect raw scores from ALL models (reference population)
         for lang in record_languages:
             if lang in languages:
-                model_dataset_lang_raw_scores[matching_model][dataset][lang].extend(
+                model_dataset_lang_raw_scores[model_name][dataset][lang].extend(
                     raw_scores
                 )
 
@@ -788,6 +822,79 @@ def _get_language_display_name(code: str) -> str:
     return code
 
 
+def _normalise_model_name(model_id: str) -> str:
+    """Normalise model identifier for display.
+
+    Extracts the short model name from a full identifier like
+    "author/model-name" -> "model-name".
+
+    Args:
+        model_id:
+            Model identifier (may include author prefix).
+
+    Returns:
+        Normalised model name for display.
+    """
+    if "/" in model_id:
+        return model_id.split("/")[-1]
+    return model_id
+
+
+def _to_snake_case(text: str) -> str:
+    """Convert text to snake_case.
+
+    Converts spaces and special characters to underscores, lowercases,
+    and removes consecutive underscores.
+
+    Args:
+        text:
+            Text to convert.
+
+    Returns:
+        Snake-case string.
+    """
+    # Replace spaces and hyphens with underscores
+    result = text.replace(" ", "_").replace("-", "_")
+    # Remove non-alphanumeric except underscores
+    result = re.sub(r"[^a-z0-9_]", "", result.lower())
+    # Remove consecutive underscores
+    result = re.sub(r"_+", "_", result)
+    # Remove leading/trailing underscores
+    return result.strip("_")
+
+
+def _determine_output_filename(title: str | None, filename: str | None) -> str:
+    """Determine output PNG filename based on title and filename options.
+
+    Priority:
+    1. If filename is set, use it (append .png if missing).
+    2. If title is set (but filename not), infer from title using snake_case.
+    3. Otherwise, use default "language-spider-plot.png".
+
+    Args:
+        title:
+            Plot title (optional).
+        filename:
+            Explicit filename (optional).
+
+    Returns:
+        PNG filename with .png extension.
+    """
+    if filename:
+        # Ensure .png extension
+        if not filename.lower().endswith(".png"):
+            return filename + ".png"
+        return filename
+
+    if title:
+        # Infer filename from title
+        base_name = _to_snake_case(title)
+        return base_name + ".png"
+
+    # Default filename
+    return "language-spider-plot.png"
+
+
 def _hex_to_rgba(hex_colour: str, alpha: float = 0.2) -> str:
     """Convert hex colour to rgba string with specified alpha.
 
@@ -811,6 +918,7 @@ def _create_spider_plot(
     model_scores: dict[str, dict[str, float | None]],
     languages: list[str],
     max_score: float,
+    title: str | None = None,
 ) -> go.Figure:
     """Create a Plotly spider/radial plot.
 
@@ -825,6 +933,8 @@ def _create_spider_plot(
             Language codes in order.
         max_score:
             Maximum score for radial axis.
+        title (optional):
+            Plot title. Uses default if omitted.
 
     Returns:
         Plotly figure.
@@ -864,10 +974,12 @@ def _create_spider_plot(
 
     radial_axis = dict(visible=True, range=[max_score, 1], tickformat=".1f", dtick=0.5)
 
+    plot_title = title if title else "Language Performance Comparison"
+
     fig.update_layout(
         polar=dict(radialaxis=radial_axis),
         showlegend=True,
-        title=dict(text="Language Performance Comparison", x=0.5, y=0.95),
+        title=dict(text=plot_title, x=0.5, y=0.95),
         height=700,
         width=900,
     )
@@ -875,8 +987,73 @@ def _create_spider_plot(
     return fig
 
 
+@contextmanager
+def _suppress_subprocess_output() -> c.Generator[tuple[StringIO, StringIO], None, None]:
+    """Suppress stdout/stderr at file-descriptor level for subprocess output.
+
+    Kaleido/Chromium write directly to file descriptors, bypassing Python's
+    redirect_stdout/redirect_stderr. This context manager redirects at the FD
+    level to capture all subprocess output.
+
+    Yields:
+        Tuple of (stdout_capture, stderr_capture) StringIO objects.
+    """
+    stdout_capture = StringIO()
+    stderr_capture = StringIO()
+
+    # Save original file descriptors
+    original_stdout_fd = os.dup(1)
+    original_stderr_fd = os.dup(2)
+
+    # Create pipe file descriptors for capturing output
+    stdout_read_fd, stdout_write_fd = os.pipe()
+    stderr_read_fd, stderr_write_fd = os.pipe()
+
+    try:
+        # Redirect stdout and stderr to pipes
+        os.close(1)
+        os.dup2(stdout_write_fd, 1)
+        os.close(2)
+        os.dup2(stderr_write_fd, 2)
+
+        # Close write ends in parent (child inherits them)
+        os.close(stdout_write_fd)
+        os.close(stderr_write_fd)
+
+        yield stdout_capture, stderr_capture
+    finally:
+        # Restore original file descriptors
+        os.close(1)
+        os.dup2(original_stdout_fd, 1)
+        os.close(2)
+        os.dup2(original_stderr_fd, 2)
+
+        # Close original saved descriptors
+        os.close(original_stdout_fd)
+        os.close(original_stderr_fd)
+
+        # Read captured output from pipes
+        # Use non-blocking read with small timeout
+
+        # Read stdout
+        if select.select([stdout_read_fd], [], [], 0.1)[0]:
+            captured = os.read(stdout_read_fd, 65536).decode("utf-8", errors="ignore")
+            stdout_capture.write(captured)
+        # Read stderr
+        if select.select([stderr_read_fd], [], [], 0.1)[0]:
+            captured = os.read(stderr_read_fd, 65536).decode("utf-8", errors="ignore")
+            stderr_capture.write(captured)
+
+        # Close read ends
+        os.close(stdout_read_fd)
+        os.close(stderr_read_fd)
+
+
 def _write_image_silent(fig: go.Figure, path: str) -> None:
     """Write Plotly figure to image, suppressing Kaleido/Chromium noise.
+
+    Uses file-descriptor-level suppression to capture output from
+    Kaleido's Chromium subprocess, which bypasses Python's redirect utilities.
 
     Args:
         fig:
@@ -885,13 +1062,11 @@ def _write_image_silent(fig: go.Figure, path: str) -> None:
             Output file path.
 
     Raises:
-        KaleidoError:
-            If image export fails.
+        ClickException:
+            If image export fails, includes captured diagnostic output.
     """
-    stdout_capture = StringIO()
-    stderr_capture = StringIO()
     try:
-        with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+        with _suppress_subprocess_output() as (stdout_capture, stderr_capture):
             fig.write_image(path)
     except KaleidoError as exc:
         captured_out = stdout_capture.getvalue()
@@ -901,7 +1076,11 @@ def _write_image_silent(fig: go.Figure, path: str) -> None:
             diagnostic += f"\nCaptured stdout: {captured_out.strip()}"
         if captured_err:
             diagnostic += f"\nCaptured stderr: {captured_err.strip()}"
-        raise KaleidoError(exc._code, f"{exc._message}{diagnostic}") from exc
+        raise click.ClickException(
+            f"Kaleido error: {exc._message}{diagnostic}"
+        ) from exc
+    except Exception as exc:
+        raise click.ClickException(f"Failed to write image: {exc}") from exc
 
 
 @click.command()
@@ -940,15 +1119,38 @@ def _write_image_silent(fig: go.Figure, path: str) -> None:
         "to nearest 0.5, minimum 2.5; rank score of 1 is perfect)."
     ),
 )
+@click.option(
+    "--title",
+    type=str,
+    metavar="TEXT",
+    help="Plot title. If omitted, uses default title.",
+)
+@click.option(
+    "--filename",
+    type=str,
+    metavar="PATH",
+    help=(
+        "Output PNG filename. If omitted and --title is set, "
+        "inferred from title using snake_case. If both omitted, "
+        "uses language-spider-plot.png. .png extension appended if missing."
+    ),
+)
 def cli(
     models: tuple[str, ...],
     languages: tuple[str, ...],
     shots: str,
     max_score: float | None,
+    title: str | None,
+    filename: str | None,
 ) -> None:
     """Command-line entry point."""
     exit_code = main(
-        models=models, languages=languages, shots=shots, max_score=max_score
+        models=models,
+        languages=languages,
+        shots=shots,
+        max_score=max_score,
+        title=title,
+        filename=filename,
     )
     if exit_code != 0:
         sys.exit(exit_code)
