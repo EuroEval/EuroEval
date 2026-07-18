@@ -17,7 +17,7 @@ from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
 from .cache import Cache
-from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
+from .constants import HF_RESULTS_BUCKET, RESULTS_DIR, UNKNOWN_RESULTS_FILENAME
 from .eee_validation import dump_jsonl_records
 from .evaluation_common import resolve_hf_token
 from .model_metadata import add_missing_entries, fix_metadata, record_is_valid
@@ -145,6 +145,11 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
         file_path = RESULTS_DIR / filename
         content = dump_jsonl_records(records=model_records)
         file_path.write_text(content, encoding="utf-8")
+
+    unknown_path = RESULTS_DIR / UNKNOWN_RESULTS_FILENAME
+    if unknown_path.exists():
+        unknown_path.unlink()
+        logger.warning("Removed non-authoritative %s before upload.", unknown_path)
 
     api = HfApi()
     api.sync_bucket(source=str(RESULTS_DIR), dest=hf_results_bucket, token=hf_token)

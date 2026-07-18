@@ -10,14 +10,19 @@ unnecessary Hugging Face API calls.
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import httpx
 from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
 
 from leaderboards.cache import Cache, _is_hf_url_for_model
-from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
+from leaderboards.constants import (
+    TRAINED_FROM_SCRATCH_PATTERNS,
+    UNKNOWN_RESULTS_FILENAME,
+)
 from leaderboards.model_metadata import (
     add_missing_entries,
     is_commercially_licensed,
@@ -828,3 +833,40 @@ class TestCachePriority:
 
         # open should remain False (non-HF URL)
         assert result["model_info"]["additional_details"]["open"] is False
+
+
+def test_cache_ignores_unknown_jsonl(tmp_path: Path) -> None:
+    """Stale unknown.jsonl records must not override per-model metadata."""
+    rich_record = {
+        "model_info": {
+            "name": "Qwen/Qwen3.6-27B-FP8",
+            "additional_details": {
+                "open": True,
+                "commercially_licensed": True,
+                "trained_from_scratch": False,
+            },
+        }
+    }
+    stale_record = {
+        "model_info": {
+            "name": "Qwen/Qwen3.6-27B-FP8",
+            "additional_details": {
+                "open": False,
+                "commercially_licensed": False,
+                "trained_from_scratch": False,
+            },
+        }
+    }
+
+    (tmp_path / "Qwen_Qwen3.6-27B-FP8.jsonl").write_text(
+        json.dumps(rich_record) + "\n", encoding="utf-8"
+    )
+    (tmp_path / UNKNOWN_RESULTS_FILENAME).write_text(
+        json.dumps(stale_record) + "\n", encoding="utf-8"
+    )
+
+    cache = Cache.from_results_dir(results_dir=tmp_path)
+
+    assert cache.open["Qwen/Qwen3.6-27B-FP8"] is True
+    assert cache.commercially_licensed["Qwen/Qwen3.6-27B-FP8"] is True
+    assert cache.trained_from_scratch["Qwen/Qwen3.6-27B-FP8"] is False
