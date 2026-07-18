@@ -5,7 +5,6 @@
 #     "huggingface-hub==0.24.0",
 #     "pandas==2.2.0",
 #     "requests==2.32.3",
-#     "scikit-learn==1.6.1",
 # ]
 # ///
 
@@ -17,7 +16,6 @@ import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -46,21 +44,16 @@ def main() -> None:
     bin_val_df = _create_binary_df(bin_val)
     bin_test_df = _create_binary_df(bin_test)
 
-    # Cap splits to EuroEval standard sizes while preserving source boundaries
-    bin_train_split = _cap_split(bin_train_df, 1024, stratify=True)
-    bin_val_split = _cap_split(bin_val_df, 256, stratify=True)
-    bin_test_split = _cap_split(bin_test_df, 2048, stratify=True)
-
     logger.info(
-        f"Preserved binary splits (capped): {len(bin_train_split)} / "
-        f"{len(bin_val_split)} / {len(bin_test_split)}"
+        f"Preserved binary splits exactly: {len(bin_train_df)} / "
+        f"{len(bin_val_df)} / {len(bin_test_df)}"
     )
 
     bin_dataset = DatasetDict(
         {
-            "train": Dataset.from_pandas(bin_train_split[["text", "label"]]),
-            "val": Dataset.from_pandas(bin_val_split[["text", "label"]]),
-            "test": Dataset.from_pandas(bin_test_split[["text", "label"]]),
+            "train": Dataset.from_pandas(bin_train_df[["text", "label"]]),
+            "val": Dataset.from_pandas(bin_val_df[["text", "label"]]),
+            "test": Dataset.from_pandas(bin_test_df[["text", "label"]]),
         }
     )
 
@@ -82,21 +75,16 @@ def main() -> None:
     mul_val_df = _create_multi_df(mul_val)
     mul_test_df = _create_multi_df(mul_test)
 
-    # Cap splits to EuroEval standard sizes while preserving source boundaries
-    mul_train_split = _cap_split(mul_train_df, 1024, stratify=True)
-    mul_val_split = _cap_split(mul_val_df, 256, stratify=True)
-    mul_test_split = _cap_split(mul_test_df, 2048, stratify=True)
-
     logger.info(
-        f"Preserved multi splits (capped): {len(mul_train_split)} / "
-        f"{len(mul_val_split)} / {len(mul_test_split)}"
+        f"Preserved multi splits exactly: {len(mul_train_df)} / "
+        f"{len(mul_val_df)} / {len(mul_test_df)}"
     )
 
     mul_dataset = DatasetDict(
         {
-            "train": Dataset.from_pandas(mul_train_split[["text", "label"]]),
-            "val": Dataset.from_pandas(mul_val_split[["text", "label"]]),
-            "test": Dataset.from_pandas(mul_test_split[["text", "label"]]),
+            "train": Dataset.from_pandas(mul_train_df[["text", "label"]]),
+            "val": Dataset.from_pandas(mul_val_df[["text", "label"]]),
+            "test": Dataset.from_pandas(mul_test_df[["text", "label"]]),
         }
     )
 
@@ -162,34 +150,6 @@ def _create_multi_df(data: list[dict]) -> pd.DataFrame:
             for item in data
         ]
     )
-
-
-def _cap_split(df: pd.DataFrame, max_size: int, stratify: bool = False) -> pd.DataFrame:
-    """Cap a split to max size while preserving label distribution.
-
-    Args:
-        df:
-            DataFrame to cap.
-        max_size:
-            Maximum number of samples to keep.
-        stratify:
-            Whether to stratify by label when sampling.
-
-    Returns:
-        Capped DataFrame with reset index.
-    """
-    if len(df) <= max_size:
-        return df.reset_index(drop=True)
-
-    if stratify and "label" in df.columns:
-        # Sample with stratification to preserve label distribution
-        df, _ = train_test_split(
-            df, train_size=max_size, stratify=df["label"], random_state=42
-        )
-    else:
-        df = df.sample(n=max_size, random_state=42)
-
-    return df.reset_index(drop=True)
 
 
 if __name__ == "__main__":
