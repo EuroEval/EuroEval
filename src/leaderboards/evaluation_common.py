@@ -141,6 +141,7 @@ def run_euroeval(
 
     parent_fd, child_fd = pty.openpty()
     _set_pty_window_size(fd=child_fd)
+    spawned_pgid: int | None = None
     try:
         # Safe: ``cmd`` is a fixed argument list run without a shell; only the
         # known euroeval CLI flags and operator-controlled model/language ids
@@ -152,7 +153,9 @@ def run_euroeval(
             stderr=child_fd,
             close_fds=True,
             env=env,
+            preexec_fn=os.setsid,  # New process group for scoped cleanup
         )
+        spawned_pgid = os.getpgid(proc.pid)
     except FileNotFoundError:
         os.close(parent_fd)
         os.close(child_fd)
@@ -174,6 +177,14 @@ def run_euroeval(
         parent_exit_time: float | None = None
         try:
             while True:
+                # Check deadline first: once parent exits, bound the drain time
+                # regardless of whether bytes are available. This prevents a
+                # chatty descendant from keeping the loop alive forever.
+                if parent_exit_time is not None:
+                    elapsed = time.monotonic() - parent_exit_time
+                    if elapsed > MAX_DRAIN_TIME_AFTER_EXIT:
+                        break
+
                 ready, _, _ = select.select([parent_fd], [], [], 0.1)
                 try:
                     chunk = os.read(parent_fd, 4096) if ready else b""
@@ -188,18 +199,23 @@ def run_euroeval(
                         log_fh.write(chunk)
                         log_fh.flush()
                     captured.append(chunk)
+                    # Parent may have exited while we read; start deadline
+                    if proc.poll() is not None and parent_exit_time is None:
+                        parent_exit_time = time.monotonic()
                 elif proc.poll() is not None:
-                    # Parent exited. Start deadline timer if not already set.
-                    # Preserve output available immediately after exit, but do
-                    # not wait indefinitely for chatty grandchildren.
+                    # Parent exited and no more bytes immediately available.
+                    # Start deadline timer if not already set.
                     if parent_exit_time is None:
-                        parent_exit_time = time.time()
-                    elapsed = time.time() - parent_exit_time
-                    if elapsed > MAX_DRAIN_TIME_AFTER_EXIT:
-                        break
+                        parent_exit_time = time.monotonic()
                 # else: process still running, continue waiting
         finally:
             os.close(parent_fd)
+            # Kill process group for scoped cleanup (no broad pkill/killall)
+            if spawned_pgid is not None:
+                try:
+                    os.killpg(spawned_pgid, signal.SIGTERM)
+                except (ProcessLookupError, OSError):
+                    pass
             if log_fh is not None and isinstance(log_file, Path):
                 # Only close if we opened it
                 log_fh.close()
