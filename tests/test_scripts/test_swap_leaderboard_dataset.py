@@ -1,5 +1,6 @@
 """Tests for the swap_leaderboard_dataset script."""
 
+import json
 import logging
 import re
 import subprocess
@@ -513,3 +514,144 @@ class TestExecuteJobsLogging:
         assert "line 1" in content
         assert "line 2" in content
         assert "line 3" in content
+
+
+class TestLoadCorpusAndBuildEvalJobs:
+    """Tests for load_corpus and build_eval_jobs functions."""
+
+    def test_load_corpus_includes_euroeval_benchmark_results(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Should load records from euroeval_benchmark_results.jsonl at repo root."""
+        # Setup: create euroeval_benchmark_results.jsonl with a test record
+        benchmark_results = tmp_path / "euroeval_benchmark_results.jsonl"
+        test_record = {
+            "model_info": {"name": "test-model"},
+            "eval_library": {
+                "additional_details": {"dataset": "test-dataset", "languages": ["da"]}
+            },
+        }
+        benchmark_results.write_text(json.dumps(test_record) + "\n", encoding="utf-8")
+
+        # Mock REPO_ROOT and RESULTS_DIR to use tmp_path
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="RESULTS_DIR",
+            value=tmp_path / "results",
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="EUROEVAL_BENCHMARK_RESULTS_PATH",
+            value=benchmark_results,
+        )
+
+        # Call load_corpus
+        corpus = swap_leaderboard_dataset.load_corpus()
+
+        # Verify the record is in observations
+        assert ("test-model", "test-dataset", "da") in corpus.observations
+
+    def test_load_corpus_handles_missing_benchmark_results(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Load successfully when euroeval_benchmark_results.jsonl is missing."""
+        # Setup: create results directory with a file (so load_corpus succeeds)
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+        model_file = results_dir / "test-model.jsonl"
+        test_record = {
+            "model_info": {"name": "test-model"},
+            "eval_library": {
+                "additional_details": {"dataset": "test-dataset", "languages": ["da"]}
+            },
+        }
+        model_file.write_text(json.dumps(test_record) + "\n", encoding="utf-8")
+
+        # Mock REPO_ROOT and RESULTS_DIR
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
+        )
+        # Don't set EUROEVAL_BENCHMARK_RESULTS_PATH - let it default to non-existent
+
+        # Should not raise
+        corpus = swap_leaderboard_dataset.load_corpus()
+        assert ("test-model", "test-dataset", "da") in corpus.observations
+
+    def test_build_eval_jobs_skips_existing_observations(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Skip (model, language) pairs with results for new dataset."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        # Create a corpus with an existing observation
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": {"old-dataset"}}},
+            api_model_ids=set(),
+            observations={("test-model", "new-dataset", "da")},  # Already exists
+            eval_configs={
+                ("test-model", "old-dataset", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                )
+            },
+        )
+
+        # Ranked pairs include the model that already has results
+        ranked = {("test-model", "da")}
+
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked=ranked,
+            old_dataset="old-dataset",
+            new_dataset="new-dataset",
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=False,
+        )
+
+        # Should skip the existing observation
+        assert len(jobs) == 0
+        assert skipped_count == 1
+
+    def test_build_eval_jobs_runs_when_observation_missing(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Should create jobs for (model, language) pairs without existing results."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        # Create a corpus without the new-dataset observation
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": {"old-dataset"}}},
+            api_model_ids=set(),
+            observations=set(),  # No existing observations
+            eval_configs={
+                ("test-model", "old-dataset", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                )
+            },
+        )
+
+        ranked = {("test-model", "da")}
+
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked=ranked,
+            old_dataset="old-dataset",
+            new_dataset="new-dataset",
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=False,
+        )
+
+        # Should create a job since no existing observation
+        assert len(jobs) == 1
+        assert jobs[0].model_id == "test-model"
+        assert jobs[0].languages == ("da",)
+        assert skipped_count == 0
