@@ -182,3 +182,87 @@ def test_pty_drain_handles_exited_parent_with_open_grandchild(
     assert line_count < 50, (
         f"Should stop reading after deadline, got {line_count} lines"
     )
+
+
+def test_run_euroeval_constructs_disable_flashinfer_autotune_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that run_euroeval appends --disable-flashinfer-autotune when requested.
+
+    Verifies that the command construction includes the flag when
+    ``disable_flashinfer_autotune=True`` is passed to ``run_euroeval``.
+    """
+    captured_cmd: list[str] | None = None
+
+    class CmdCaptureError(Exception):  # type: ignore[no-redef]
+        """Custom exception to capture the command and short-circuit execution."""
+
+    def mock_popen(
+        cmd: list[str],
+        *args: t.Any,  # noqa: ANN002, ANN401
+        **kwargs: t.Any,  # noqa: ANN003, ANN401
+    ) -> subprocess.Popen:
+        nonlocal captured_cmd
+        captured_cmd = cmd.copy()
+        # Raise to short-circuit before PTY operations (not caught by run_euroeval)
+        raise CmdCaptureError("cmd_captured")  # type: ignore[misc]
+
+    monkeypatch.setattr(subprocess, "Popen", mock_popen)
+
+    # Call with disable_flashinfer_autotune=True - will raise CmdCaptureError
+    # but we capture the cmd before that
+    with pytest.raises(CmdCaptureError, match="cmd_captured"):
+        evaluation_common.run_euroeval(
+            model_id="test-model",
+            languages=["en", "da"],
+            disable_flashinfer_autotune=True,
+            stream_output=False,
+        )
+
+    assert captured_cmd is not None, "Command should have been captured"
+    assert "--disable-flashinfer-autotune" in captured_cmd, (
+        "Command should include --disable-flashinfer-autotune flag. "
+        f"Got: {captured_cmd}"
+    )
+
+
+def test_run_euroeval_omits_disable_flashinfer_autotune_when_false(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that run_euroeval omits --disable-flashinfer-autotune by default.
+
+    Verifies that the command construction excludes the flag when
+    ``disable_flashinfer_autotune=False`` (the default).
+    """
+    captured_cmd: list[str] | None = None
+
+    class CmdCaptureError(Exception):  # type: ignore[no-redef]
+        """Custom exception to capture the command and short-circuit execution."""
+
+    def mock_popen(
+        cmd: list[str],
+        *args: t.Any,  # noqa: ANN002, ANN401
+        **kwargs: t.Any,  # noqa: ANN003, ANN401
+    ) -> subprocess.Popen:
+        nonlocal captured_cmd
+        captured_cmd = cmd.copy()
+        # Raise to short-circuit before PTY operations (not caught by run_euroeval)
+        raise CmdCaptureError("cmd_captured")  # type: ignore[misc]
+
+    monkeypatch.setattr(subprocess, "Popen", mock_popen)
+
+    # Call with disable_flashinfer_autotune=False (default) - will raise
+    # CmdCaptureError but we capture the cmd before that
+    with pytest.raises(CmdCaptureError, match="cmd_captured"):
+        evaluation_common.run_euroeval(
+            model_id="test-model",
+            languages=["en"],
+            disable_flashinfer_autotune=False,
+            stream_output=False,
+        )
+
+    assert captured_cmd is not None, "Command should have been captured"
+    assert "--disable-flashinfer-autotune" not in captured_cmd, (
+        f"Command should not include --disable-flashinfer-autotune by default. "
+        f"Got: {captured_cmd}"
+    )
