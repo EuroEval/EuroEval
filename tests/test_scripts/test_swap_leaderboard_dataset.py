@@ -570,14 +570,19 @@ class TestLoadCorpusAndBuildEvalJobs:
         }
         model_file.write_text(json.dumps(test_record) + "\n", encoding="utf-8")
 
-        # Mock REPO_ROOT and RESULTS_DIR
+        # Mock REPO_ROOT, RESULTS_DIR and EUROEVAL_BENCHMARK_RESULTS_PATH
         monkeypatch.setattr(
             target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
         )
         monkeypatch.setattr(
             target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
         )
-        # Don't set EUROEVAL_BENCHMARK_RESULTS_PATH - let it default to non-existent
+        # Point to a definitely absent path under tmp_path
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="EUROEVAL_BENCHMARK_RESULTS_PATH",
+            value=tmp_path / "euroeval_benchmark_results.jsonl",
+        )
 
         # Should not raise
         corpus = swap_leaderboard_dataset.load_corpus()
