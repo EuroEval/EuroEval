@@ -633,7 +633,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - **Few-shot evaluation is not available** due to the absence of training data.
-- Only instruction-tuned models can be evaluated on this dataset.
+- Both base and instruction-tuned models can be evaluated in zero-shot mode.
 - Instruction-tuned prompt template:
 
   ```text
