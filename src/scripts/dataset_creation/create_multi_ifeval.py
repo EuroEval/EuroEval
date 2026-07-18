@@ -51,13 +51,7 @@ TARGET_REPO = "EuroEval/multi-ifeval-{language}"
 
 
 def main() -> None:
-    """Create the MultiIFEval datasets and upload to HF Hub.
-
-    Raises:
-        ValueError:
-            If the dataset has more than one split, or if the columns could not be
-            properly identified.
-    """
+    """Create the MultiIFEval datasets and upload to HF Hub."""
     for subset_name in tqdm(SUBSET_LANGUAGES, desc="Creating datasets"):
         dataset = load_dataset(SOURCE_REPO, name=subset_name)
 
