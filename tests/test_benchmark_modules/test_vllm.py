@@ -384,6 +384,67 @@ class TestLoadModelMaxModelLen:
         assert call_kwargs["max_model_len"] == expected_max_model_len
 
 
+class TestEnableFlashinferAutotune:
+    """Test that enable_flashinfer_autotune is always disabled."""
+
+    def test_load_model_disables_flashinfer_autotune(
+        self,
+        model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Test that load_model passes enable_flashinfer_autotune=False to LLM.
+
+        FlashInfer autotuning is unconditionally disabled to avoid CUDA kernel
+        compilation overhead during model initialisation.
+        """
+        mock_llm_instance = MagicMock()
+        mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
+        mock_hf_model_config.dtype = torch.float16
+        mock_tokeniser = MagicMock()
+
+        mock_vllm_module = MagicMock()
+        mock_vllm_module.config = MagicMock(spec=[])
+
+        with (
+            patch(
+                "euroeval.benchmark_modules.vllm.LLM",
+                return_value=mock_llm_instance,
+                create=True,
+            ) as mock_llm_cls,
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
+            patch("euroeval.benchmark_modules.vllm.clear_vllm"),
+            patch(
+                "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
+                return_value=("mp", 1, 1),
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.internet_connection_available",
+                return_value=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params",
+                return_value={},
+            ),
+        ):
+            load_model(
+                model_config=model_config,
+                benchmark_config=benchmark_config,
+                attention_backend=None,
+                generative_type=GenerativeType.INSTRUCTION_TUNED,
+                true_max_model_len=MAX_CONTEXT_LENGTH,
+                tokeniser=mock_tokeniser,
+                hf_model_config=mock_hf_model_config,
+            )
+
+        mock_llm_cls.assert_called_once()
+        call_kwargs = mock_llm_cls.call_args.kwargs
+        assert call_kwargs["enable_flashinfer_autotune"] is False
+
+
 class TestComputeBPCFromPromptLogprobs:
     """Tests for `compute_bpc_scores` using prompt_logprobs."""
 
