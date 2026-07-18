@@ -741,6 +741,9 @@ class BenchmarkConfig:
             Whether to compute bits-per-character (BPC) on the ground-truth answer.
             For multiple-choice tasks, treats benchmark as text-to-text with bare
             question → full answer text. Only supported for base decoder models.
+        disable_flashinfer_autotune:
+            Whether to disable FlashInfer autotuning for vLLM. Defaults to False.
+            Only relevant if the model is generative and uses vLLM.
     """
 
     datasets: c.Sequence[DatasetConfig]
@@ -776,6 +779,7 @@ class BenchmarkConfig:
     max_context_length: int | None
     vocabulary_size: int | None
     use_bits_per_character: bool = False
+    disable_flashinfer_autotune: bool = False
 
     @property
     def tasks(self) -> c.Sequence[Task]:
@@ -832,6 +836,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     max_context_length: int | None
     vocabulary_size: int | None
     use_bits_per_character: bool = False
+    disable_flashinfer_autotune: bool = False
 
 
 def _convert_old_raw_results_format(config: dict[str, object]) -> None:
