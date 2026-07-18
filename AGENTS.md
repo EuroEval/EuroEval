@@ -75,10 +75,10 @@ this directory are _persistent_ scripts. One-off scripts don't belong in the rep
 - **Dataset creation scripts** — Preserve upstream split boundaries when the source
   dataset already has splits. Do not concatenate train/dev/validation/test and
   regenerate new splits unless there is no source split information. Never let source
-  training samples end up in validation or test splits. For mini datasets, cap each
-  source split independently at 1,024 train, 256 validation, and 2,048 test samples. If
-  a dataset is capped for upload, the Hugging Face repo ID and `DatasetConfig.source`
-  should end in `-mini`.
+  training samples end up in validation or test splits. Cap every dataset by capping
+  each source split independently at 1,024 train, 256 validation, and 2,048 test
+  samples. Add a `-mini` suffix to the Hugging Face repo ID and `DatasetConfig.source`
+  only when these caps truncate at least one split.
 - **`create_language_spider_plot.py`** — Generate Plotly spider/radial plots comparing
   models across languages. Output is a PNG file (`language-spider-plot.png`). Use when
   asked to create a radial/spider plot for language performance comparison.
