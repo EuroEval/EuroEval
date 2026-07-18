@@ -49,7 +49,7 @@ const loadFor = async (stem: string) => {
     generativeMetadata.value = gMeta ?? null;
     allModelsMetadata.value = aMeta ?? null;
     if (!g && !a) {
-      error.value = `No leaderboard data found for "${stem}".`;
+      error.value = `Leaderboard for ${stem.charAt(0).toUpperCase() + stem.slice(1)} is on the way!`
     }
   } catch (e) {
     error.value = (e as Error).message;
