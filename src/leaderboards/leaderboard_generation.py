@@ -36,7 +36,7 @@ def generate_leaderboard(
     Args:
         leaderboard_name:
             The slug used in output filenames (e.g. ``"danish"``,
-            ``"mainland_scandinavian"``).
+            ``"scandinavian"``).
         language_names:
             The languages the leaderboard covers. Each name must resolve via
             ``euroeval.languages``; the official leaderboard datasets are

@@ -136,7 +136,7 @@ def main(
             force=force,
         )
     # Multilingual leaderboards stay yaml-configured since they encode a
-    # curated grouping (e.g. Mainland Scandinavian, Slavic).
+    # curated grouping (e.g. Scandinavian, Slavic).
     for config_path in sorted(LEADERBOARD_CONFIGS_DIR.glob("*.yaml")):
         with config_path.open(mode="r") as f:
             config = safe_load(stream=f)
