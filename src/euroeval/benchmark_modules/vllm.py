@@ -1534,6 +1534,8 @@ def load_model(
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
             enable_prefix_caching=False,
+            # Disable FlashInfer autotuning to avoid CUDA kernel compilation overhead
+            enable_flashinfer_autotune=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
             limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
