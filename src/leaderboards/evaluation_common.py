@@ -27,6 +27,7 @@ import struct
 import subprocess
 import sys
 import termios
+import time
 import typing as t
 from functools import lru_cache
 from pathlib import Path
@@ -168,10 +169,10 @@ def run_euroeval(
         log_fh = log_file
 
     captured: list[bytes] = []
+    MAX_DRAIN_TIME_AFTER_EXIT = 2.0  # Fixed deadline after parent exit
     with no_terminal_output(disable=stream_output):
+        parent_exit_time: float | None = None
         try:
-            drained_empty_reads = 0
-            max_empty_reads_after_exit = 5
             while True:
                 ready, _, _ = select.select([parent_fd], [], [], 0.1)
                 try:
@@ -180,7 +181,6 @@ def run_euroeval(
                     break
 
                 if chunk:
-                    drained_empty_reads = 0
                     if stream_output:
                         sys.stderr.buffer.write(chunk)
                         sys.stderr.buffer.flush()
@@ -189,11 +189,13 @@ def run_euroeval(
                         log_fh.flush()
                     captured.append(chunk)
                 elif proc.poll() is not None:
-                    # Subprocess exited. Use a counter to avoid hanging if a
-                    # grandchild keeps the PTY slave open (PTY reports "ready"
-                    # but read() returns empty). Break after N empty iterations.
-                    drained_empty_reads += 1
-                    if drained_empty_reads > max_empty_reads_after_exit:
+                    # Parent exited. Start deadline timer if not already set.
+                    # Preserve output available immediately after exit, but do
+                    # not wait indefinitely for chatty grandchildren.
+                    if parent_exit_time is None:
+                        parent_exit_time = time.time()
+                    elapsed = time.time() - parent_exit_time
+                    if elapsed > MAX_DRAIN_TIME_AFTER_EXIT:
                         break
                 # else: process still running, continue waiting
         finally:
