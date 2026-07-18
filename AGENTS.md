@@ -68,9 +68,17 @@ The `src/scripts/collect_evaluation_results.py` script orchestrates this flow:
 
 There are scripts in `scripts` of various kinds, including generation of leaderboards,
 building SEO files, API reference, creating individual datasets, etc. All scripts in
-this directory are *persistent* scripts. One-off scripts don't belong in the repository
+this directory are _persistent_ scripts. One-off scripts don't belong in the repository
+
 - if you need to run a one-off script, store it in /tmp or in-memory.
 
+- **Dataset creation scripts** — Preserve upstream split boundaries when the source
+  dataset already has splits. Do not concatenate train/dev/validation/test and
+  regenerate new splits unless there is no source split information. Never let source
+  training samples end up in validation or test splits. For mini datasets, cap each
+  source split independently at 1,024 train, 256 validation, and 2,048 test samples. If
+  a dataset is capped for upload, the Hugging Face repo ID and `DatasetConfig.source`
+  should end in `-mini`.
 - **`create_language_spider_plot.py`** — Generate Plotly spider/radial plots comparing
   models across languages. Output is a PNG file (`language-spider-plot.png`). Use when
   asked to create a radial/spider plot for language performance comparison.
