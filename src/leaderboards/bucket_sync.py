@@ -17,6 +17,7 @@ from huggingface_hub.errors import HfHubHTTPError
 from euroeval.data_models import BenchmarkResult
 
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
+from .evaluation_common import resolve_hf_token
 
 load_dotenv()
 
@@ -29,24 +30,25 @@ def sync_bucket() -> None:
     Syncs from bucket to local directory using ``HfApi.sync_bucket``.
     Creates local directory if needed.
 
-    HF_TOKEN is loaded from .env by load_dotenv() at module import.
+    Raises:
+        RuntimeError:
+            If no Hugging Face token is available.
     """
-    hf_token = os.getenv("HF_TOKEN")
+    hf_token = resolve_hf_token()
     if not hf_token:
-        logger.warning("HF_TOKEN not set. Cannot sync from bucket.")
-        return
+        raise RuntimeError(
+            "HF_TOKEN not set. Cannot sync results from Hugging Face bucket. "
+            "Run 'hf auth login' or set the HF_TOKEN environment variable."
+        )
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     logger.info(f"Syncing bucket {HF_RESULTS_BUCKET} -> {RESULTS_DIR}...")
-    try:
-        HfApi().sync_bucket(
-            source=f"hf://buckets/{HF_RESULTS_BUCKET}/",
-            dest=str(RESULTS_DIR),
-            token=hf_token,
-        )
-        logger.info(f"Synced bucket {HF_RESULTS_BUCKET}.")
-    except HfHubHTTPError as e:
-        logger.warning(f"Bucket sync failed: {e}")
+    HfApi().sync_bucket(
+        source=f"hf://buckets/{HF_RESULTS_BUCKET}/",
+        dest=str(RESULTS_DIR),
+        token=hf_token,
+    )
+    logger.info(f"Synced bucket {HF_RESULTS_BUCKET}.")
 
 
 def upload_results_to_bucket(results_file: Path) -> None:

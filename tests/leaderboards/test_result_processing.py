@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from huggingface_hub.errors import HfHubHTTPError
 
-from leaderboards import result_processing
+from leaderboards import bucket_sync, result_processing
 from leaderboards.cache import Cache
 
 
@@ -86,14 +86,39 @@ def test_upload_per_model_files_raises_without_hf_token(
             result_processing._upload_per_model_files(processed_records=[])
 
 
+def test_upload_per_model_files_passes_hf_token(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Test that _upload_per_model_files passes the resolved HF token."""
+    monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+    monkeypatch.setattr(result_processing, "dump_jsonl_records", lambda records: "{}\n")
+
+    mock_api = MagicMock()
+    record: dict[str, t.Any] = {
+        "model_info": {"name": "org/model", "additional_details": {}},
+        "dataset": {"name": "dataset"},
+        "task": {"name": "classification"},
+        "eval_library": {"name": "euroeval", "version": "1.0.0"},
+        "results": {},
+    }
+
+    with patch("leaderboards.result_processing.HfApi", return_value=mock_api):
+        with patch(
+            "leaderboards.result_processing.resolve_hf_token", return_value="test_token"
+        ):
+            result_processing._upload_per_model_files(processed_records=[record])
+
+    mock_api.sync_bucket.assert_called_once_with(
+        source=str(tmp_path), dest="hf://buckets/EuroEval/results", token="test_token"
+    )
+
+
 def test_upload_per_model_files_raises_on_sync_failure(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """Test that _upload_per_model_files raises when bucket sync fails."""
-    # Patch RESULTS_DIR to use a temp directory
     monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
-    # Mock HfApi.sync_bucket to raise an error
     mock_api = MagicMock()
     mock_api.sync_bucket.side_effect = HfHubHTTPError(
         "Bucket sync failed", response=MagicMock(status_code=500)
@@ -105,6 +130,35 @@ def test_upload_per_model_files_raises_on_sync_failure(
         ):
             with pytest.raises(HfHubHTTPError, match="Bucket sync failed"):
                 result_processing._upload_per_model_files(processed_records=[])
+
+
+def test_sync_bucket_raises_without_hf_token(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Test that sync_bucket raises without HF_TOKEN set."""
+    monkeypatch.setattr(bucket_sync, "RESULTS_DIR", tmp_path)
+
+    with patch("leaderboards.bucket_sync.resolve_hf_token", return_value=None):
+        with pytest.raises(RuntimeError, match="HF_TOKEN not set"):
+            bucket_sync.sync_bucket()
+
+
+def test_sync_bucket_passes_hf_token(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Test that sync_bucket passes the resolved HF token."""
+    monkeypatch.setattr(bucket_sync, "RESULTS_DIR", tmp_path)
+    mock_api = MagicMock()
+
+    with patch("leaderboards.bucket_sync.HfApi", return_value=mock_api):
+        with patch(
+            "leaderboards.bucket_sync.resolve_hf_token", return_value="test_token"
+        ):
+            bucket_sync.sync_bucket()
+
+    mock_api.sync_bucket.assert_called_once_with(
+        source="hf://buckets/EuroEval/results/", dest=str(tmp_path), token="test_token"
+    )
 
 
 def test_process_results_clears_cache_after_upload(
