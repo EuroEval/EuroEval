@@ -1,10 +1,12 @@
 """Tests for the `leaderboards.evaluation_common` module."""
 
+import collections.abc as c
 import os
-import pty
-import select
+import signal
 import subprocess
 import time
+import typing as t
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -99,77 +101,86 @@ def test_killed_by_signal_note_describes_signal_death(
         assert needle in note
 
 
-def test_pty_drain_handles_exited_parent_with_open_grandchild(tmp_path: Path) -> None:
+def test_pty_drain_handles_exited_parent_with_open_grandchild(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Regression test for the PTY drain hang.
 
     When a subprocess spawns a grandchild that inherits the PTY slave fd,
-    the grandchild can keep the PTY open after the parent exits. The old
-    blocking os.read() drain would hang forever waiting for EOF. This test
-    verifies the select-driven drain with a counter completes quickly and
-    returns the correct non-zero return code.
+    the grandchild can keep the PTY open after the parent exits. The drain
+    loop must bound the post-parent-exit wait with a fixed deadline to avoid
+    hanging indefinitely on chatty grandchildren.
 
-    The parent script spawns a background sleep (grandchild) that inherits
-    stdio and keeps the PTY open, then exits with code 42. The drain should
-    complete after a few empty reads, not wait for the sleep to finish.
+    This test exercises ``run_euroeval()`` directly by monkeypatching
+    ``subprocess.Popen`` to spawn a shell script that creates a background
+    grandchild keeping the PTY open.
     """
-    # Parent spawns background child that keeps PTY open, then exits non-zero
     parent_script = tmp_path / "parent.sh"
     parent_script.write_text(
-        "sleep 10 &\n"  # Grandchild keeps PTY slave open
-        "echo 'parent exiting'\n"
+        "# Background grandchild inherits PTY and keeps it open\n"
+        "sleep 60 &\n"
+        "# Parent exits quickly\n"
+        "echo 'parent output'\n"
         "exit 42\n"
     )
     parent_script.chmod(0o755)
 
-    parent_fd, child_fd = pty.openpty()
-    try:
-        proc = subprocess.Popen(
-            ["bash", str(parent_script)],
-            stdin=child_fd,
-            stdout=child_fd,
-            stderr=child_fd,
-            close_fds=True,
-        )
-        os.close(child_fd)
+    # Mock slow/optional dependencies to avoid heavy imports
+    @contextmanager
+    def _mock_no_terminal_output(disable: bool = True) -> c.Generator[None, None, None]:
+        yield
 
-        # Drain loop - mirrors the fixed code in run_euroeval
-        captured: list[bytes] = []
-        drained_empty_reads = 0
-        max_empty_reads_after_exit = 5
-        start_time = time.time()
+    def _mock_resolve_hf_token() -> None:
+        return None
 
-        while True:
-            ready, _, _ = select.select([parent_fd], [], [], 0.1)
-            try:
-                chunk = os.read(parent_fd, 4096) if ready else b""
-            except OSError:
-                break
+    # Patch before calling run_euroeval
+    monkeypatch.setattr(
+        "euroeval.logging_utils.no_terminal_output",
+        _mock_no_terminal_output,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "leaderboards.evaluation_common.resolve_hf_token", _mock_resolve_hf_token
+    )
 
-            if chunk:
-                drained_empty_reads = 0
-                captured.append(chunk)
-            elif proc.poll() is not None:
-                # Parent exited with grandchild still holding PTY open.
-                # Break after N empty reads to avoid hanging.
-                drained_empty_reads += 1
-                if drained_empty_reads > max_empty_reads_after_exit:
-                    break
-            # else: process still running, continue waiting
+    # Track and cleanup spawned processes via process group
+    spawned_pgid: int | None = None
+    original_popen = subprocess.Popen
 
-        elapsed = time.time() - start_time
-        proc.wait()  # Reap the parent (grandchild may still be running)
+    def mock_popen(
+        cmd: list[str],
+        *args: t.Any,  # noqa: ANN002, ANN401
+        **kwargs: t.Any,  # noqa: ANN003, ANN401
+    ) -> subprocess.Popen:
+        nonlocal spawned_pgid
+        if cmd and cmd[0] == "euroeval":
+            cmd = ["bash", str(parent_script)]
+            # Start in new process group for scoped cleanup
+            kwargs["preexec_fn"] = os.setsid
+        proc = original_popen(cmd, *args, **kwargs)
+        if cmd and cmd[0] == "bash":
+            spawned_pgid = os.getpgid(proc.pid)
+        return proc
 
-        # Assertions
-        assert proc.returncode == 42, "Parent should exit with code 42"
-        assert elapsed < 2.0, f"Drain should complete quickly, took {elapsed:.2f}s"
-        output = b"".join(captured).decode("utf-8", errors="replace")
-        assert "parent exiting" in output, "Should capture parent output"
-    finally:
-        os.close(parent_fd)
-        # Clean up background sleep process
+    monkeypatch.setattr(subprocess, "Popen", mock_popen)
+
+    start_time = time.time()
+
+    # Call run_euroeval directly
+    returncode, output = evaluation_common.run_euroeval(
+        model_id="test-model", languages=["en"], stream_output=False
+    )
+
+    elapsed = time.time() - start_time
+
+    # Scoped cleanup of process group (no broad pkill)
+    if spawned_pgid is not None:
         try:
-            subprocess.run(
-                ["pkill", "-f", "sleep 10"], capture_output=True, timeout=1, check=False
-            )
-        except subprocess.TimeoutExpired:
+            os.killpg(spawned_pgid, signal.SIGTERM)
+        except (ProcessLookupError, OSError):
             pass
+
+    # Assertions
+    assert returncode == 42, "Should return the parent's exit code"
+    assert elapsed < 3.0, f"Drain should complete within deadline, took {elapsed:.2f}s"
+    assert "parent output" in output, "Should capture parent's output"
