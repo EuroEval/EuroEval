@@ -1,5 +1,11 @@
 """Tests for the `leaderboards.evaluation_common` module."""
 
+import os
+import pty
+import select
+import subprocess
+import time
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -91,3 +97,79 @@ def test_killed_by_signal_note_describes_signal_death(
     assert note is not None
     for needle in must_contain:
         assert needle in note
+
+
+def test_pty_drain_handles_exited_parent_with_open_grandchild(tmp_path: Path) -> None:
+    """Regression test for the PTY drain hang.
+
+    When a subprocess spawns a grandchild that inherits the PTY slave fd,
+    the grandchild can keep the PTY open after the parent exits. The old
+    blocking os.read() drain would hang forever waiting for EOF. This test
+    verifies the select-driven drain with a counter completes quickly and
+    returns the correct non-zero return code.
+
+    The parent script spawns a background sleep (grandchild) that inherits
+    stdio and keeps the PTY open, then exits with code 42. The drain should
+    complete after a few empty reads, not wait for the sleep to finish.
+    """
+    # Parent spawns background child that keeps PTY open, then exits non-zero
+    parent_script = tmp_path / "parent.sh"
+    parent_script.write_text(
+        "sleep 10 &\n"  # Grandchild keeps PTY slave open
+        "echo 'parent exiting'\n"
+        "exit 42\n"
+    )
+    parent_script.chmod(0o755)
+
+    parent_fd, child_fd = pty.openpty()
+    try:
+        proc = subprocess.Popen(
+            ["bash", str(parent_script)],
+            stdin=child_fd,
+            stdout=child_fd,
+            stderr=child_fd,
+            close_fds=True,
+        )
+        os.close(child_fd)
+
+        # Drain loop - mirrors the fixed code in run_euroeval
+        captured: list[bytes] = []
+        drained_empty_reads = 0
+        max_empty_reads_after_exit = 5
+        start_time = time.time()
+
+        while True:
+            ready, _, _ = select.select([parent_fd], [], [], 0.1)
+            try:
+                chunk = os.read(parent_fd, 4096) if ready else b""
+            except OSError:
+                break
+
+            if chunk:
+                drained_empty_reads = 0
+                captured.append(chunk)
+            elif proc.poll() is not None:
+                # Parent exited with grandchild still holding PTY open.
+                # Break after N empty reads to avoid hanging.
+                drained_empty_reads += 1
+                if drained_empty_reads > max_empty_reads_after_exit:
+                    break
+            # else: process still running, continue waiting
+
+        elapsed = time.time() - start_time
+        proc.wait()  # Reap the parent (grandchild may still be running)
+
+        # Assertions
+        assert proc.returncode == 42, "Parent should exit with code 42"
+        assert elapsed < 2.0, f"Drain should complete quickly, took {elapsed:.2f}s"
+        output = b"".join(captured).decode("utf-8", errors="replace")
+        assert "parent exiting" in output, "Should capture parent output"
+    finally:
+        os.close(parent_fd)
+        # Clean up background sleep process
+        try:
+            subprocess.run(
+                ["pkill", "-f", "sleep 10"], capture_output=True, timeout=1, check=False
+            )
+        except subprocess.TimeoutExpired:
+            pass

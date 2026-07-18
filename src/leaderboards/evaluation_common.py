@@ -170,15 +170,17 @@ def run_euroeval(
     captured: list[bytes] = []
     with no_terminal_output(disable=stream_output):
         try:
+            drained_empty_reads = 0
+            max_empty_reads_after_exit = 5
             while True:
                 ready, _, _ = select.select([parent_fd], [], [], 0.1)
-                if ready:
-                    try:
-                        chunk = os.read(parent_fd, 4096)
-                    except OSError:
-                        break
-                    if not chunk:
-                        break
+                try:
+                    chunk = os.read(parent_fd, 4096) if ready else b""
+                except OSError:
+                    break
+
+                if chunk:
+                    drained_empty_reads = 0
                     if stream_output:
                         sys.stderr.buffer.write(chunk)
                         sys.stderr.buffer.flush()
@@ -187,21 +189,13 @@ def run_euroeval(
                         log_fh.flush()
                     captured.append(chunk)
                 elif proc.poll() is not None:
-                    try:
-                        while True:
-                            chunk = os.read(parent_fd, 4096)
-                            if not chunk:
-                                break
-                            if stream_output:
-                                sys.stderr.buffer.write(chunk)
-                                sys.stderr.buffer.flush()
-                            if log_fh is not None:
-                                log_fh.write(chunk)
-                                log_fh.flush()
-                            captured.append(chunk)
-                    except OSError:
-                        pass
-                    break
+                    # Subprocess exited. Use a counter to avoid hanging if a
+                    # grandchild keeps the PTY slave open (PTY reports "ready"
+                    # but read() returns empty). Break after N empty iterations.
+                    drained_empty_reads += 1
+                    if drained_empty_reads > max_empty_reads_after_exit:
+                        break
+                # else: process still running, continue waiting
         finally:
             os.close(parent_fd)
             if log_fh is not None and isinstance(log_file, Path):
