@@ -390,8 +390,12 @@ class TestLoadModelDisableFlashinferAutotune:
     def test_load_model_passes_flashinfer_autotune_when_disabled(
         self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
-        """Test that load_model passes enable_flashinfer_autotune=False when
-        disabled."""
+        """Test that load_model passes enable_flashinfer_autotune=False when disabled.
+
+        Verifies that when ``disable_flashinfer_autotune`` is True, the
+        ``enable_flashinfer_autotune=False`` parameter is passed to the vLLM
+        LLM constructor.
+        """
         mock_llm_instance = MagicMock()
         mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
         mock_hf_model_config.dtype = torch.float16
@@ -446,8 +450,12 @@ class TestLoadModelDisableFlashinferAutotune:
     def test_load_model_omits_flashinfer_autotune_when_enabled(
         self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
-        """Test that load_model omits enable_flashinfer_autotune when enabled
-        (default)."""
+        """Test that load_model omits enable_flashinfer_autotune when enabled (default).
+
+        Verifies that when ``disable_flashinfer_autotune`` is False (the
+        default), the ``enable_flashinfer_autotune`` parameter is not passed
+        to the vLLM LLM constructor.
+        """
         mock_llm_instance = MagicMock()
         mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
         mock_hf_model_config.dtype = torch.float16
