@@ -343,7 +343,7 @@ The original ltzGLUE-RTE dataset contains 1,877 / 197 / 626 samples for training
 validation and testing, respectively. We cap each split independently to at most 1,024
 train, 256 val, and 2,048 test samples, preserving source split boundaries (no samples
 are moved between splits). The published mini dataset contains up to 1,024 / 197 / 626
-samples (all splits are below the caps).
+samples (train is capped, val and test are below the caps).
 
 Here are a few examples from the training split:
 
@@ -549,8 +549,8 @@ paperjam.lu, today.lu, and wort.lu, covering politics, economy, sports, and cult
 The original dataset contains 9,932 / 1,240 / 1,245 samples for training, validation and
 testing. We cap each split independently to at most 1,024 train, 256 val, and 2,048 test
 samples, preserving source split boundaries (no samples are moved between splits). The
-published mini dataset contains up to 1,024 / 256 / 1,245 samples (val and test are
-below the caps).
+published mini dataset contains up to 1,024 / 256 / 1,245 samples (train and val are
+capped, test is below the cap).
 
 Here are a few examples from the training split:
 
