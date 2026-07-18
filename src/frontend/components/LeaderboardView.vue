@@ -116,9 +116,10 @@ const MULTILINGUAL_STEMS = new Set([
   "baltic",
   "finnic",
   "germanic",
-  "mainland_scandinavian",
   "romance",
+  "scandinavian",
   "slavic",
+  "west_germanic",
 ]);
 const isMultilingual = computed(() => MULTILINGUAL_STEMS.has(props.stem));
 
