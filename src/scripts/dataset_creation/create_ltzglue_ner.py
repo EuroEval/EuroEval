@@ -5,7 +5,6 @@
 #     "huggingface-hub==0.24.0",
 #     "pandas==2.2.0",
 #     "requests==2.32.3",
-#     "scikit-learn==1.6.1",
 # ]
 # ///
 
@@ -17,7 +16,6 @@ import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -41,22 +39,16 @@ def main() -> None:
     val_df = _load_split(val_data)
     test_df = _load_split(test_data)
 
-    # Cap splits to EuroEval standard sizes while preserving source boundaries
-    # No stratification for NER (sequence tagging with multiple token-level labels)
-    final_train = _cap_split(train_df, 1024, stratify=False)
-    final_val = _cap_split(val_df, 256, stratify=False)
-    final_test = _cap_split(test_df, 2048, stratify=False)
-
     logger.info(
-        f"Preserved splits (capped): {len(final_train)} train, {len(final_val)} val, "
-        f"{len(final_test)} test"
+        f"Preserved splits exactly: {len(train_df)} train, {len(val_df)} val, "
+        f"{len(test_df)} test"
     )
 
     dataset = DatasetDict(
         {
-            "train": Dataset.from_pandas(final_train[["tokens", "labels"]]),
-            "val": Dataset.from_pandas(final_val[["tokens", "labels"]]),
-            "test": Dataset.from_pandas(final_test[["tokens", "labels"]]),
+            "train": Dataset.from_pandas(train_df[["tokens", "labels"]]),
+            "val": Dataset.from_pandas(val_df[["tokens", "labels"]]),
+            "test": Dataset.from_pandas(test_df[["tokens", "labels"]]),
         }
     )
 
@@ -97,34 +89,6 @@ def _load_split(data: list[dict]) -> pd.DataFrame:
     return pd.DataFrame(
         [{"tokens": item["tokens"], "labels": item["ner_tags"]} for item in data]
     )
-
-
-def _cap_split(df: pd.DataFrame, max_size: int, stratify: bool = False) -> pd.DataFrame:
-    """Cap a split to max size while preserving label distribution.
-
-    Args:
-        df:
-            DataFrame to cap.
-        max_size:
-            Maximum number of samples to keep.
-        stratify:
-            Whether to stratify by label when sampling.
-
-    Returns:
-        Capped DataFrame with reset index.
-    """
-    if len(df) <= max_size:
-        return df.reset_index(drop=True)
-
-    if stratify and "label" in df.columns:
-        # Sample with stratification to preserve label distribution
-        df, _ = train_test_split(
-            df, train_size=max_size, stratify=df["label"], random_state=42
-        )
-    else:
-        df = df.sample(n=max_size, random_state=42)
-
-    return df.reset_index(drop=True)
 
 
 if __name__ == "__main__":

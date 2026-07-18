@@ -81,7 +81,6 @@ LTZGLUE_ID_CONFIG = DatasetConfig(
     task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
     train_split=None,
-    val_split=None,
     num_few_shot_examples=0,
     labels=[
         "addtoplaylist",

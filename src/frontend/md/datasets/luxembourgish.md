@@ -15,9 +15,7 @@ positive). The data is collected from Luxembourgish social media posts and news 
 comments, covering various domains including politics, culture, and daily life.
 
 The original ltzGLUE-SA dataset contains 3,022 / 597 / 926 samples for training,
-validation and testing, respectively. We preserve the source splits exactly, capping
-them to EuroEval standard sizes (1,024 / 256 / 2,048) with stratified sampling to
-maintain label balance.
+validation and testing, respectively. We preserve the source splits exactly.
 
 Here are a few examples from the training split:
 
@@ -89,10 +87,7 @@ from major Luxembourgish news outlets including Luxemburger Wort, RTL Lëtzebuer
 paperjam.lu, today.lu, and wort.lu.
 
 The original ltzGLUE-NER dataset contains 27,245 / 3,327 / 3,821 samples for training,
-validation and testing, respectively. We preserve the source splits exactly, capping
-them to EuroEval standard sizes (1,024 / 256 / 2,048) using random sampling
-(stratification not applicable for sequence tagging with multiple token-level labels per
-sample).
+validation and testing, respectively. We preserve the source splits exactly.
 
 Here are a few examples from the training split:
 
@@ -191,9 +186,7 @@ Wort, RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu) as well as systematic
 corrupted examples with various error types (word order, agreement, case, etc.).
 
 The original ltzGLUE-LA dataset contains 14,678 / 2,094 / 4,045 samples for training,
-validation and testing, with balanced classes. We preserve the source splits exactly,
-capping them to EuroEval standard sizes (1,024 / 256 / 2,048) using stratified sampling
-on the correct/incorrect labels.
+validation and testing, with balanced classes. We preserve the source splits exactly.
 
 Here are a few examples from the training split:
 
@@ -264,8 +257,7 @@ Lëtzebuerg, paperjam.lu, today.lu, and wort.lu) as well as systematically corru
 examples with various error types (word order, agreement, case, etc.).
 
 The original dataset contains 14,678 / 2,094 / 4,045 samples for training, validation
-and testing. We preserve the source splits exactly, capping them to EuroEval standard
-sizes (1,024 / 256 / 2,048) using stratified sampling on the error type labels.
+and testing. We preserve the source splits exactly.
 
 Here are a few examples from the training split:
 
@@ -337,10 +329,7 @@ determine if the hypothesis is entailed by or contradicts the premise (binary
 classification).
 
 The original ltzGLUE-RTE dataset contains 1,877 / 197 / 626 samples for training,
-validation and testing, respectively. We preserve the source splits exactly, capping
-them to EuroEval standard sizes (1,024 / 256 / 2,048) using stratified sampling on the
-entailment/contradiction labels. Due to limited validation and test data, we use all
-available samples (197 validation, 626 test).
+validation and testing, respectively. We preserve the source splits exactly.
 
 Here are a few examples from the training split:
 
@@ -480,9 +469,7 @@ Wort, RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu), models must predict 
 the headline correctly represents the article content.
 
 The original ltzGLUE-HC dataset contains 20,716 / 2,960 / 5,919 samples for training,
-validation and testing, respectively. We preserve the source splits exactly, capping
-them to EuroEval standard sizes (1,024 / 256 / 2,048) using stratified sampling on the
-yes/no labels.
+validation and testing, respectively. We preserve the source splits exactly.
 
 Here are a few examples from the training split:
 
@@ -543,9 +530,7 @@ from major Luxembourgish news outlets including Luxemburger Wort, RTL Lëtzebuer
 paperjam.lu, today.lu, and wort.lu, covering politics, economy, sports, and culture.
 
 The original dataset contains 9,932 / 1,240 / 1,245 samples for training, validation and
-testing. We preserve the source splits exactly, capping them to EuroEval standard sizes
-(1,024 / 256 / 2,048) using stratified sampling on the topic labels. Due to limited test
-data, we use all available samples (1,245 test).
+testing. We preserve the source splits exactly.
 
 Here are a few examples from the training split:
 
