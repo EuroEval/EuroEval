@@ -182,15 +182,16 @@ const toggleKind = (k: ModelKind) => {
 
 const isKindHidden = (k: ModelKind) => hiddenKinds.value.has(k);
 
-const visiblePoints = computed<Point[]>(() =>
-  allPoints.value.filter((p) => {
+const visiblePoints = computed<Point[]>(() => {
+  const query = searchQuery.value.toLowerCase().trim();
+  return allPoints.value.filter((p) => {
     if (hiddenKinds.value.has(p.kind)) return false;
     if (p.commercial && hideCommercial.value) return false;
     if (!p.commercial && hideNonCommercial.value) return false;
-    if (searchQuery.value && !p.label.toLowerCase().includes(searchQuery.value.toLowerCase())) return false;
+    if (query && !p.label.toLowerCase().includes(query)) return false;
     return true;
-  }),
-);
+  });
+});
 
 // SVG plot geometry.
 const width = 800;
