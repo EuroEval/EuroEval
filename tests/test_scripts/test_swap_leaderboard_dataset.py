@@ -3,6 +3,7 @@
 import logging
 import re
 import subprocess
+import typing as t
 from pathlib import Path
 
 import pytest
@@ -513,3 +514,51 @@ class TestExecuteJobsLogging:
         assert "line 1" in content
         assert "line 2" in content
         assert "line 3" in content
+
+    def test_execute_jobs_passes_disable_flashinfer_autotune(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Should pass disable_flashinfer_autotune to run_euroeval when set.
+
+        Args:
+            tmp_path:
+                Temporary directory for test isolation.
+            monkeypatch:
+                Pytest fixture for patching.
+        """
+        Job = swap_leaderboard_dataset.Job
+        captured_kwargs: dict[str, t.Any] = {}
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+
+        # Capture kwargs passed to run_euroeval
+        def mock_run_euroeval(**kwargs) -> tuple[int, str]:
+            captured_kwargs.update(kwargs)
+            return (0, "ok")
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="run_euroeval",
+            value=mock_run_euroeval,
+        )
+
+        jobs = [
+            Job(
+                model_id="test-model",
+                languages=("da",),
+                is_api=False,
+                evaluate_test_split=True,
+                zero_shot=False,
+            )
+        ]
+
+        swap_leaderboard_dataset.execute_jobs(
+            jobs=jobs,
+            dataset="test-dataset",
+            gpu_memory_utilization=None,
+            disable_flashinfer_autotune=True,
+        )
+
+        assert captured_kwargs.get("disable_flashinfer_autotune") is True

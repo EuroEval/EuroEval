@@ -382,7 +382,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
     @property
     def generative_type(self) -> GenerativeType | None:
-        """Get the generative type of the model.
+        """The generative type of the model.
 
         Returns:
             The generative type of the model, or None if it has not been set yet.

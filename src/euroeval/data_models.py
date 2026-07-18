@@ -574,7 +574,7 @@ class DatasetConfig:
 
     @property
     def main_language(self) -> Language | tuple[Language, Language]:
-        """Get the main language of the dataset.
+        """The main language of the dataset.
 
         Returns:
             The main language or languages of the dataset.
@@ -783,7 +783,7 @@ class BenchmarkConfig:
 
     @property
     def tasks(self) -> c.Sequence[Task]:
-        """Get the tasks in the benchmark configuration."""
+        """The tasks in the benchmark configuration."""
         return list({dataset_config.task for dataset_config in self.datasets})
 
     def __post_init__(self) -> None:
