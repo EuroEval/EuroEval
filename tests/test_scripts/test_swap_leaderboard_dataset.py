@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from huggingface_hub import HfApi
 
 from euroeval.data_models import DatasetConfig
 from euroeval.languages import DANISH, SWEDISH
@@ -178,20 +179,14 @@ class TestSyncResults:
         monkeypatch.setattr(
             target=swap_leaderboard_dataset,
             name="HF_RESULTS_BUCKET",
-            value="test-bucket",
+            value="test/bucket",
         )
 
         # Create empty results dir
         (tmp_path / "results").mkdir()
 
-        # Mock hf buckets sync to do nothing
-        monkeypatch.setattr(
-            target=subprocess,
-            name="run",
-            value=lambda *args, **kwargs: subprocess.CompletedProcess(
-                args=[], returncode=0, stdout="", stderr=""
-            ),
-        )
+        # Mock hf_api.sync_bucket to do nothing
+        monkeypatch.setattr(HfApi, "sync_bucket", lambda *args, **kwargs: None)
 
         with caplog.at_level(logging.WARNING):
             swap_leaderboard_dataset.sync_results_from_bucket()
