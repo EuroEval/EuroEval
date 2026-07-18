@@ -1514,34 +1514,38 @@ def load_model(
     )
 
     def _create_llm() -> "LLM":
-        return LLM(
-            model=model_location,
-            tokenizer=model_location,
-            gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
-            max_model_len=max_model_len,
-            max_num_batched_tokens=max_model_len,
-            download_dir=download_dir,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            revision=revision,
-            seed=4242,
-            distributed_executor_backend=distributed_executor_backend,
-            tensor_parallel_size=tensor_parallel_size,
-            pipeline_parallel_size=pipeline_parallel_size,
-            disable_custom_all_reduce=True,
-            quantization=quantization,
-            dtype=dtype,  # ty: ignore[invalid-argument-type]
-            enforce_eager=True,
+        llm_kwargs: dict[str, t.Any] = {
+            "model": model_location,
+            "tokenizer": model_location,
+            "gpu_memory_utilization": benchmark_config.gpu_memory_utilization,
+            "max_model_len": max_model_len,
+            "max_num_batched_tokens": max_model_len,
+            "download_dir": download_dir,
+            "trust_remote_code": benchmark_config.trust_remote_code,
+            "revision": revision,
+            "seed": 4242,
+            "distributed_executor_backend": distributed_executor_backend,
+            "tensor_parallel_size": tensor_parallel_size,
+            "pipeline_parallel_size": pipeline_parallel_size,
+            "disable_custom_all_reduce": True,
+            "quantization": quantization,
+            "dtype": dtype,  # ty: ignore[invalid-argument-type]
+            "enforce_eager": True,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
-            enable_prefix_caching=False,
-            enable_lora=model_config.adapter_base_model_id is not None,
-            max_lora_rank=256,
-            limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
+            "enable_prefix_caching": False,
+            "enable_lora": model_config.adapter_base_model_id is not None,
+            "max_lora_rank": 256,
+            "limit_mm_per_prompt": {"image": 0, "video": 0, "audio": 0},
             # runner is required for LLM.generate() to work with generative models
-            runner="generate",
+            "runner": "generate",
             **({"hf_overrides": hf_overrides} if hf_overrides else {}),
             **vllm_params,
-        )
+        }
+        # Pass enable_flashinfer_autotune only if explicitly disabled
+        if benchmark_config.disable_flashinfer_autotune:
+            llm_kwargs["enable_flashinfer_autotune"] = False
+        return LLM(**llm_kwargs)
 
     try:
         model = _create_llm()

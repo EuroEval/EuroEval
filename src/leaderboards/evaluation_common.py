@@ -60,6 +60,7 @@ def run_euroeval(
     trust_remote_code: bool = True,
     clear_model_cache: bool = True,
     gpu_memory_utilization: float | None = None,
+    disable_flashinfer_autotune: bool = False,
     stream_output: bool = True,
     log_file: Path | t.IO[bytes] | None = None,
 ) -> tuple[int, str]:
@@ -91,6 +92,8 @@ def run_euroeval(
             When set, pass ``--gpu-memory-utilization VALUE``. When None,
             omit the flag so the euroeval CLI's default applies. Defaults
             to None.
+        disable_flashinfer_autotune (optional):
+            Pass ``--disable-flashinfer-autotune``. Defaults to False.
         stream_output (optional):
             When True, stream subprocess output live to stderr and force
             ``FULL_LOG=1`` for maximum verbosity. When False, suppress
@@ -123,6 +126,8 @@ def run_euroeval(
         cmd += ["--dataset", dataset]
     if gpu_memory_utilization is not None:
         cmd += ["--gpu-memory-utilization", str(gpu_memory_utilization)]
+    if disable_flashinfer_autotune:
+        cmd.append("--disable-flashinfer-autotune")
     if stream_output:
         logger.info(f"Running: {' '.join(cmd)}")
     else:

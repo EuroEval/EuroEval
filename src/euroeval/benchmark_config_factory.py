@@ -87,6 +87,7 @@ def build_benchmark_config(
         download_only=benchmark_config_params.download_only,
         max_context_length=benchmark_config_params.max_context_length,
         vocabulary_size=benchmark_config_params.vocabulary_size,
+        disable_flashinfer_autotune=benchmark_config_params.disable_flashinfer_autotune,
     )
 
 
