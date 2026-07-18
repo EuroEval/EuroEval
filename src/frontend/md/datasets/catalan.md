@@ -551,7 +551,7 @@ euroeval --model <model-id> --dataset dacsa-ca
 
 ## Instruction-following
 
-### MultiIFEval-ca
+### Unofficial: MultiIFEval-ca
 
 This dataset is part of the MultiIFEval benchmark, which translates and localises IFEval
 prompts into 305 languages using a structured LLM generation pipeline. For each target
@@ -627,7 +627,7 @@ You can evaluate a model on this dataset as follows:
 euroeval --model <model-id> --dataset multi-ifeval-ca
 ```
 
-### Unofficial: IFEval-ca
+### IFEval-ca
 
 This dataset was published
 [here](https://huggingface.co/datasets/projecte-aina/IFEval_ca) and is a translation of
