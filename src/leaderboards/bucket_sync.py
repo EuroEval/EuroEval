@@ -6,13 +6,11 @@ results directory. Also provides backup functionality.
 
 import json
 import logging
-import os
 from collections import defaultdict
 from pathlib import Path
 
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
-from huggingface_hub.errors import HfHubHTTPError
 
 from euroeval.data_models import BenchmarkResult
 
@@ -60,11 +58,17 @@ def upload_results_to_bucket(results_file: Path) -> None:
     Args:
         results_file:
             Path to the merged results file (euroeval_benchmark_results.jsonl).
+
+    Raises:
+        RuntimeError:
+            If no Hugging Face token is available.
     """
-    hf_token = os.getenv("HF_TOKEN")
+    hf_token = resolve_hf_token()
     if not hf_token:
-        logger.warning("HF_TOKEN not set. Cannot upload to bucket.")
-        return
+        raise RuntimeError(
+            "HF_TOKEN not set. Cannot upload results to Hugging Face bucket. "
+            "Run 'hf auth login' or set the HF_TOKEN environment variable."
+        )
 
     if not results_file.exists():
         logger.warning(
@@ -100,15 +104,12 @@ def upload_results_to_bucket(results_file: Path) -> None:
                 f.write(line + "\n")
 
     logger.info(f"Syncing local {RESULTS_DIR} -> bucket {HF_RESULTS_BUCKET}...")
-    try:
-        HfApi().sync_bucket(
-            source=str(RESULTS_DIR),
-            dest=f"hf://buckets/{HF_RESULTS_BUCKET}/",
-            token=hf_token,
-        )
-        logger.info(f"Uploaded results to bucket {HF_RESULTS_BUCKET}.")
-    except HfHubHTTPError as e:
-        logger.warning(f"Bucket upload failed: {e}")
+    HfApi().sync_bucket(
+        source=str(RESULTS_DIR),
+        dest=f"hf://buckets/{HF_RESULTS_BUCKET}/",
+        token=hf_token,
+    )
+    logger.info(f"Uploaded results to bucket {HF_RESULTS_BUCKET}.")
 
 
 def _sanitise_model_id(model_id: str) -> str:
