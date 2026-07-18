@@ -42,19 +42,17 @@ def main() -> None:
         f"{len(bin_val)} val, {len(bin_test)} test"
     )
 
-    binary_df = pd.concat(
-        [
-            _create_binary_df(bin_train),
-            _create_binary_df(bin_val),
-            _create_binary_df(bin_test),
-        ],
-        ignore_index=True,
-    )
+    bin_train_df = _create_binary_df(bin_train)
+    bin_val_df = _create_binary_df(bin_val)
+    bin_test_df = _create_binary_df(bin_test)
 
-    bin_train_split, bin_val_split, bin_test_split = _create_splits(binary_df)
+    # Cap splits to EuroEval standard sizes while preserving source boundaries
+    bin_train_split = _cap_split(bin_train_df, 1024, stratify=True)
+    bin_val_split = _cap_split(bin_val_df, 256, stratify=True)
+    bin_test_split = _cap_split(bin_test_df, 2048, stratify=True)
 
     logger.info(
-        f"Created binary splits: {len(bin_train_split)} / "
+        f"Preserved binary splits (capped): {len(bin_train_split)} / "
         f"{len(bin_val_split)} / {len(bin_test_split)}"
     )
 
@@ -80,19 +78,17 @@ def main() -> None:
         f"{len(mul_val)} val, {len(mul_test)} test"
     )
 
-    multi_df = pd.concat(
-        [
-            _create_multi_df(mul_train),
-            _create_multi_df(mul_val),
-            _create_multi_df(mul_test),
-        ],
-        ignore_index=True,
-    )
+    mul_train_df = _create_multi_df(mul_train)
+    mul_val_df = _create_multi_df(mul_val)
+    mul_test_df = _create_multi_df(mul_test)
 
-    mul_train_split, mul_val_split, mul_test_split = _create_splits(multi_df)
+    # Cap splits to EuroEval standard sizes while preserving source boundaries
+    mul_train_split = _cap_split(mul_train_df, 1024, stratify=True)
+    mul_val_split = _cap_split(mul_val_df, 256, stratify=True)
+    mul_test_split = _cap_split(mul_test_df, 2048, stratify=True)
 
     logger.info(
-        f"Created multi splits: {len(mul_train_split)} / "
+        f"Preserved multi splits (capped): {len(mul_train_split)} / "
         f"{len(mul_val_split)} / {len(mul_test_split)}"
     )
 
@@ -168,35 +164,32 @@ def _create_multi_df(data: list[dict]) -> pd.DataFrame:
     )
 
 
-def _create_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create standardized EuroEval splits (1024/256/2048).
+def _cap_split(df: pd.DataFrame, max_size: int, stratify: bool = False) -> pd.DataFrame:
+    """Cap a split to max size while preserving label distribution.
 
     Args:
         df:
-            Combined dataset.
+            DataFrame to cap.
+        max_size:
+            Maximum number of samples to keep.
+        stratify:
+            Whether to stratify by label when sampling.
 
     Returns:
-        Tuple of (train, val, test) DataFrames with capped sizes.
+        Capped DataFrame with reset index.
     """
-    n = len(df)
-    n_train = min(1024, int(n * 0.5))
-    n_val = min(256, int(n * 0.15))
-    n_test = min(2048, int(n * 0.35))
+    if len(df) <= max_size:
+        return df.reset_index(drop=True)
 
-    train, temp = train_test_split(
-        df, train_size=n_train, random_state=42, stratify=df["label"]
-    )
-    val, test = train_test_split(
-        temp,
-        train_size=n_val,
-        test_size=n_test,
-        random_state=42,
-        stratify=temp["label"],
-    )
+    if stratify and "label" in df.columns:
+        # Sample with stratification to preserve label distribution
+        df, _ = train_test_split(
+            df, train_size=max_size, stratify=df["label"], random_state=42
+        )
+    else:
+        df = df.sample(n=max_size, random_state=42)
 
-    for d in [train, val, test]:
-        d.reset_index(drop=True, inplace=True)
-    return train, val, test
+    return df.reset_index(drop=True)
 
 
 if __name__ == "__main__":

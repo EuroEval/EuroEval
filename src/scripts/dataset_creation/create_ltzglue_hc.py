@@ -41,18 +41,21 @@ def main() -> None:
     val_df = _load_split(val_data)
     test_df = _load_split(test_data)
 
-    final_train, final_val, final_test = _create_splits(train_df, val_df, test_df)
+    # Cap splits to EuroEval standard sizes while preserving source boundaries
+    train_df = _cap_split(train_df, 1024, stratify=True)
+    val_df = _cap_split(val_df, 256, stratify=True)
+    test_df = _cap_split(test_df, 2048, stratify=True)
 
     logger.info(
-        f"Created splits: {len(final_train)} train, {len(final_val)} val, "
-        f"{len(final_test)} test"
+        f"Preserved splits (capped): {len(train_df)} train, {len(val_df)} val, "
+        f"{len(test_df)} test"
     )
 
     dataset = DatasetDict(
         {
-            "train": Dataset.from_pandas(final_train[["text", "label"]]),
-            "val": Dataset.from_pandas(final_val[["text", "label"]]),
-            "test": Dataset.from_pandas(final_test[["text", "label"]]),
+            "train": Dataset.from_pandas(train_df[["text", "label"]]),
+            "val": Dataset.from_pandas(val_df[["text", "label"]]),
+            "test": Dataset.from_pandas(test_df[["text", "label"]]),
         }
     )
 
@@ -101,44 +104,32 @@ def _load_split(data: list[dict]) -> pd.DataFrame:
     )
 
 
-def _create_splits(
-    train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create standardized EuroEval splits (1024/256/2048).
+def _cap_split(df: pd.DataFrame, max_size: int, stratify: bool = False) -> pd.DataFrame:
+    """Cap a split to max size while preserving label distribution.
 
     Args:
-        train_df:
-            Training data.
-        val_df:
-            Validation data.
-        test_df:
-            Test data.
+        df:
+            DataFrame to cap.
+        max_size:
+            Maximum number of samples to keep.
+        stratify:
+            Whether to stratify by label when sampling.
 
     Returns:
-        Tuple of (train, val, test) DataFrames with capped sizes.
+        Capped DataFrame with reset index.
     """
-    all_data = pd.concat([train_df, val_df, test_df], ignore_index=True)
-    all_data = all_data.drop_duplicates(subset=["text"])
+    if len(df) <= max_size:
+        return df.reset_index(drop=True)
 
-    n_train = min(1024, int(len(all_data) * 0.5))
-    n_val = min(256, int(len(all_data) * 0.15))
+    if stratify and "label" in df.columns:
+        # Sample with stratification to preserve label distribution
+        df, _ = train_test_split(
+            df, train_size=max_size, stratify=df["label"], random_state=42
+        )
+    else:
+        df = df.sample(n=max_size, random_state=42)
 
-    train_data, temp = train_test_split(
-        all_data, train_size=n_train, random_state=42, stratify=all_data["label"]
-    )
-    n_test = min(2048, len(temp) - n_val)
-    val_data, test_data = train_test_split(
-        temp,
-        train_size=n_val,
-        test_size=n_test,
-        random_state=42,
-        stratify=temp["label"],
-    )
-
-    for df in [train_data, val_data, test_data]:
-        df.reset_index(drop=True, inplace=True)
-
-    return train_data, val_data, test_data
+    return df.reset_index(drop=True)
 
 
 if __name__ == "__main__":
