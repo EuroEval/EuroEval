@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import type { LeaderboardTable } from "@/leaderboard";
+import { matchesQuery } from "@/filter";
 
 const props = defineProps<{
   table: LeaderboardTable;
@@ -183,12 +184,12 @@ const toggleKind = (k: ModelKind) => {
 const isKindHidden = (k: ModelKind) => hiddenKinds.value.has(k);
 
 const visiblePoints = computed<Point[]>(() => {
-  const query = searchQuery.value.toLowerCase().trim();
+  const query = searchQuery.value.trim();
   return allPoints.value.filter((p) => {
     if (hiddenKinds.value.has(p.kind)) return false;
     if (p.commercial && hideCommercial.value) return false;
     if (!p.commercial && hideNonCommercial.value) return false;
-    if (query && !p.label.toLowerCase().includes(query)) return false;
+    if (query && !matchesQuery(p.label, query)) return false;
     return true;
   });
 });
