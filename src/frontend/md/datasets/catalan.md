@@ -627,6 +627,7 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ifeval-ca
 ```
+
 ### Unofficial: MultiIFEval-ca
 
 This dataset is part of the MultiIFEval benchmark, which translates and localises IFEval
