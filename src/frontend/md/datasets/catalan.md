@@ -551,83 +551,7 @@ euroeval --model <model-id> --dataset dacsa-ca
 
 ## Instruction-following
 
-### MultiIFEval-ca
-
-This dataset is part of the MultiIFEval benchmark, which translates and localises IFEval
-prompts into 305 languages using a structured LLM generation pipeline. For each target
-language, a randomly chosen target-language Wikipedia article is included as grounding
-to reduce hallucination and improve cultural localisation. Instruction IDs are preserved
-for traceability, and kwargs keys are retained (with values localised where
-appropriate), so constraints can still be checked programmatically. Outputs are
-schema-validated; malformed or empty outputs were excluded.
-
-This dataset is part of the MultiIFEval benchmark introduced in
-[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
-
-We use the dataset as the test split, and do not include other splits, as we only
-evaluate models zero-shot and the size is too small to warrant a validation set.
-
-Here are a few examples from the test split:
-
-```json
-{
-  "text": "Escriu un resum de més de 300 paraules de la pàgina de la Viquipèdia \"https://ca.wikipedia.org/wiki/Ramon_III_de_Tr%C3%ADpols\". No utilitzis cap coma i ressalta almenys 3 seccions que tinguin títols en format markdown, per exemple *part de la secció ressaltada 1*, *part de la secció ressaltada 2*, *part de la secció ressaltada 3*.",
-  "target_text": {
-    "instruction_id_list": [
-      "punctuation:no_comma",
-      "detectable_format:number_highlighted_sections",
-      "length_constraints:number_words"
-    ],
-    "kwargs": [
-      {},
-      { "num_highlights": 3 },
-      { "num_words": 300, "relation": "at least" }
-    ]
-  }
-}
-```
-
-```json
-{
-  "text": "Estic planejant un viatge al Japó i m'agradaria que m'escriguessis un itinerari per a la meva travessia amb un estil shakespearià. No tens permès utilitzar cap coma en la teva resposta.",
-  "target_text": {
-    "instruction_id_list": ["punctuation:no_comma"],
-    "kwargs": [{}]
-  }
-}
-```
-
-```json
-{
-  "text": "Escriu un currículum per a un graduat de secundària recent que busca la seva primera feina. Assegura't d'incloure almenys 12 marcadors de posició representats per claudàtors, com ara [adreça] o [nom].",
-  "target_text": {
-    "instruction_id_list": ["detectable_content:number_placeholders"],
-    "kwargs": [{ "num_placeholders": 12 }]
-  }
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 0
-- No prefix prompt, as only instruction-tuned models are evaluated on this task.
-- No base prompt template, as only instruction-tuned models are evaluated on this task.
-- Instruction-tuned prompt template:
-
-  ```text
-  {text}
-  ```
-
-  I.e., we just use the instruction directly as the prompt.
-
-You can evaluate a model on this dataset as follows:
-
-```bash
-euroeval --model <model-id> --dataset multi-ifeval-ca
-```
-
-### Unofficial: IFEval-ca
+### IFEval-ca
 
 This dataset was published
 [here](https://huggingface.co/datasets/projecte-aina/IFEval_ca) and is a translation of
@@ -703,3 +627,80 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ifeval-ca
 ```
+
+### Unofficial: MultiIFEval-ca
+
+This dataset is part of the MultiIFEval benchmark, which translates and localises IFEval
+prompts into 305 languages using a structured LLM generation pipeline. For each target
+language, a randomly chosen target-language Wikipedia article is included as grounding
+to reduce hallucination and improve cultural localisation. Instruction IDs are preserved
+for traceability, and kwargs keys are retained (with values localised where
+appropriate), so constraints can still be checked programmatically. Outputs are
+schema-validated; malformed or empty outputs were excluded.
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Escriu un resum de més de 300 paraules de la pàgina de la Viquipèdia \"https://ca.wikipedia.org/wiki/Ramon_III_de_Tr%C3%ADpols\". No utilitzis cap coma i ressalta almenys 3 seccions que tinguin títols en format markdown, per exemple *part de la secció ressaltada 1*, *part de la secció ressaltada 2*, *part de la secció ressaltada 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Estic planejant un viatge al Japó i m'agradaria que m'escriguessis un itinerari per a la meva travessia amb un estil shakespearià. No tens permès utilitzar cap coma en la teva resposta.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Escriu un currículum per a un graduat de secundària recent que busca la seva primera feina. Assegura't d'incloure almenys 12 marcadors de posició representats per claudàtors, com ara [adreça] o [nom].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-ca
+```
+
