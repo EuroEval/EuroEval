@@ -80,6 +80,9 @@ LTZGLUE_ID_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-id",
     task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
+    train_split=None,
+    val_split=None,
+    num_few_shot_examples=0,
     labels=[
         "addtoplaylist",
         "alarm cancel alarm",

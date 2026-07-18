@@ -15,9 +15,9 @@ positive). The data is collected from Luxembourgish social media posts and news 
 comments, covering various domains including politics, culture, and daily life.
 
 The original ltzGLUE-SA dataset contains 3,022 / 597 / 926 samples for training,
-validation and testing, respectively, with stratified sampling to maintain label
-balance. Due to limited test data, we use all 926 test samples and cap training at 1,024
-samples. The new splits are subsets of the original splits.
+validation and testing, respectively. We preserve the source splits exactly, capping
+them to EuroEval standard sizes (1,024 / 256 / 2,048) with stratified sampling to
+maintain label balance.
 
 Here are a few examples from the training split:
 
@@ -89,10 +89,10 @@ from major Luxembourgish news outlets including Luxemburger Wort, RTL Lëtzebuer
 paperjam.lu, today.lu, and wort.lu.
 
 The original ltzGLUE-NER dataset contains 27,245 / 3,327 / 3,821 samples for training,
-validation and testing, respectively. We apply the standard EuroEval cap of 1,024 / 256
-/ 2,048 samples using random sampling (stratification not applicable for sequence
-tagging with multiple token-level labels per sample). The new splits are subsets of the
-original splits.
+validation and testing, respectively. We preserve the source splits exactly, capping
+them to EuroEval standard sizes (1,024 / 256 / 2,048) using random sampling
+(stratification not applicable for sequence tagging with multiple token-level labels per
+sample).
 
 Here are a few examples from the training split:
 
@@ -191,9 +191,9 @@ Wort, RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu) as well as systematic
 corrupted examples with various error types (word order, agreement, case, etc.).
 
 The original ltzGLUE-LA dataset contains 14,678 / 2,094 / 4,045 samples for training,
-validation and testing, with balanced classes. We apply the standard EuroEval cap of
-1,024 / 256 / 2,048 samples using stratified sampling on the correct/incorrect labels.
-The new splits are subsets of the original splits.
+validation and testing, with balanced classes. We preserve the source splits exactly,
+capping them to EuroEval standard sizes (1,024 / 256 / 2,048) using stratified sampling
+on the correct/incorrect labels.
 
 Here are a few examples from the training split:
 
@@ -264,9 +264,8 @@ Lëtzebuerg, paperjam.lu, today.lu, and wort.lu) as well as systematically corru
 examples with various error types (word order, agreement, case, etc.).
 
 The original dataset contains 14,678 / 2,094 / 4,045 samples for training, validation
-and testing. We apply the standard EuroEval cap of 1,024 / 256 / 2,048 samples using
-stratified sampling on the error type labels. The new splits are subsets of the original
-splits.
+and testing. We preserve the source splits exactly, capping them to EuroEval standard
+sizes (1,024 / 256 / 2,048) using stratified sampling on the error type labels.
 
 Here are a few examples from the training split:
 
@@ -338,10 +337,10 @@ determine if the hypothesis is entailed by or contradicts the premise (binary
 classification).
 
 The original ltzGLUE-RTE dataset contains 1,877 / 197 / 626 samples for training,
-validation and testing, respectively. Due to limited validation and test data, we use
-all available samples (197 validation, 626 test) and cap training at 1,024 samples using
-stratified sampling on the entailment/contradiction labels. The new splits are subsets
-of the original splits.
+validation and testing, respectively. We preserve the source splits exactly, capping
+them to EuroEval standard sizes (1,024 / 256 / 2,048) using stratified sampling on the
+entailment/contradiction labels. Due to limited validation and test data, we use all
+available samples (197 validation, 626 test).
 
 Here are a few examples from the training split:
 
@@ -481,9 +480,9 @@ Wort, RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu), models must predict 
 the headline correctly represents the article content.
 
 The original ltzGLUE-HC dataset contains 20,716 / 2,960 / 5,919 samples for training,
-validation and testing, respectively. We apply the standard EuroEval cap of 1,024 / 256
-/ 2,048 samples using stratified sampling on the yes/no labels. The new splits are
-subsets of the original splits.
+validation and testing, respectively. We preserve the source splits exactly, capping
+them to EuroEval standard sizes (1,024 / 256 / 2,048) using stratified sampling on the
+yes/no labels.
 
 Here are a few examples from the training split:
 
@@ -544,9 +543,9 @@ from major Luxembourgish news outlets including Luxemburger Wort, RTL Lëtzebuer
 paperjam.lu, today.lu, and wort.lu, covering politics, economy, sports, and culture.
 
 The original dataset contains 9,932 / 1,240 / 1,245 samples for training, validation and
-testing. We cap training at 1,024 samples using stratified sampling on the topic labels,
-and use all available test data (1,245 samples, below the 2,048 target). The new splits
-are subsets of the original splits.
+testing. We preserve the source splits exactly, capping them to EuroEval standard sizes
+(1,024 / 256 / 2,048) using stratified sampling on the topic labels. Due to limited test
+data, we use all available samples (1,245 test).
 
 Here are a few examples from the training split:
 
@@ -618,11 +617,11 @@ annotated with intent categories such as weather lookup, restaurant booking, mus
 playback, alarm setting, and creative work search. The queries are synthetically
 generated to cover common voice assistant and search engine intents.
 
-The original dataset contains 53 validation and 66 test samples with no training data.
-We combine these and create train/val/test splits (59/17/41 samples) without
-stratification due to some classes having very few samples.
+The original dataset contains 53 validation and 66 test samples with **no training
+data**. We preserve the source splits exactly, exposing `lb.valid` as the `val` split
+and `lb.test` as the `test` split. There is no `train` split in the published dataset.
 
-Here are a few examples from the training split:
+Here are a few examples from the validation split:
 
 ```json
 {
@@ -648,20 +647,8 @@ Here are a few examples from the training split:
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
-- Number of few-shot examples: 12
-- Prefix prompt:
-
-  ```text
-  Folgend si Benotzerufruffen an hir Intentiounen.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Ufruff: {text}
-  Intentioun: {label}
-  ```
-
+- **Few-shot evaluation is not available** due to the absence of training data.
+- Only instruction-tuned models can be evaluated on this dataset.
 - Instruction-tuned prompt template:
 
   ```text

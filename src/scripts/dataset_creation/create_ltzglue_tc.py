@@ -41,11 +41,13 @@ def main() -> None:
     val_df = _load_split(val_data)
     test_df = _load_split(test_data)
 
-    combined = pd.concat([train_df, val_df, test_df], ignore_index=True)
-    final_train, final_val, final_test = _make_splits(combined)
+    # Cap splits to EuroEval standard sizes while preserving source boundaries
+    final_train = _cap_split(train_df, 1024, stratify=True)
+    final_val = _cap_split(val_df, 256, stratify=True)
+    final_test = _cap_split(test_df, 2048, stratify=True)
 
     logger.info(
-        f"Created splits: {len(final_train)} train, {len(final_val)} val, "
+        f"Preserved splits (capped): {len(final_train)} train, {len(final_val)} val, "
         f"{len(final_test)} test"
     )
 
@@ -102,35 +104,32 @@ def _load_split(data: list[dict]) -> pd.DataFrame:
     )
 
 
-def _make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create train/val/test splits with stratification.
+def _cap_split(df: pd.DataFrame, max_size: int, stratify: bool = False) -> pd.DataFrame:
+    """Cap a split to max size while preserving label distribution.
 
     Args:
         df:
-            Combined dataset.
+            DataFrame to cap.
+        max_size:
+            Maximum number of samples to keep.
+        stratify:
+            Whether to stratify by label when sampling.
 
     Returns:
-        Tuple of (train, val, test) DataFrames.
+        Capped DataFrame with reset index.
     """
-    n = len(df)
-    n_train = min(1024, int(n * 0.5))
-    n_val = min(256, int(n * 0.15))
+    if len(df) <= max_size:
+        return df.reset_index(drop=True)
 
-    train, temp = train_test_split(
-        df, train_size=n_train, random_state=42, stratify=df["label"]
-    )
-    n_test = min(2048, len(temp) - n_val)
-    val, test = train_test_split(
-        temp,
-        train_size=n_val,
-        test_size=n_test,
-        random_state=42,
-        stratify=temp["label"],
-    )
+    if stratify and "label" in df.columns:
+        # Sample with stratification to preserve label distribution
+        df, _ = train_test_split(
+            df, train_size=max_size, stratify=df["label"], random_state=42
+        )
+    else:
+        df = df.sample(n=max_size, random_state=42)
 
-    for d in [train, val, test]:
-        d.reset_index(drop=True, inplace=True)
-    return train, val, test
+    return df.reset_index(drop=True)
 
 
 if __name__ == "__main__":

@@ -17,7 +17,6 @@ import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -29,7 +28,8 @@ def main() -> None:
     """Create the ltzGLUE-ID dataset.
 
     Note that ltzGLUE ID only provides lb.valid.json and lb.test.json.
-    No training data is available.
+    No training data is available. We preserve the source splits exactly,
+    exposing lb.valid as "val" and lb.test as "test".
     """
     logger.info("Downloading ltzGLUE-ID data from GitHub...")
     val_data = _download_split("lb.valid")
@@ -39,22 +39,13 @@ def main() -> None:
         f"Downloaded: {len(val_data)} val, {len(test_data)} test (no training data)"
     )
 
-    combined = pd.concat(
-        [_load_split(val_data), _load_split(test_data)], ignore_index=True
-    )
-
-    final_train, final_val, final_test = _make_splits(combined)
-
-    logger.info(
-        f"Created splits: {len(final_train)} train, {len(final_val)} val, "
-        f"{len(final_test)} test"
-    )
+    val_df = _load_split(val_data)
+    test_df = _load_split(test_data)
 
     dataset = DatasetDict(
         {
-            "train": Dataset.from_pandas(final_train[["text", "label"]]),
-            "val": Dataset.from_pandas(final_val[["text", "label"]]),
-            "test": Dataset.from_pandas(final_test[["text", "label"]]),
+            "val": Dataset.from_pandas(val_df[["text", "label"]]),
+            "test": Dataset.from_pandas(test_df[["text", "label"]]),
         }
     )
 
@@ -114,34 +105,6 @@ def _load_split(data: list[dict]) -> pd.DataFrame:
             for item in data
         ]
     )
-
-
-def _make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create train/val/test splits without stratification.
-
-    Args:
-        df:
-            Combined dataset.
-
-    Returns:
-        Tuple of (train, val, test) DataFrames.
-
-    Note:
-        Does not use stratification as ID has classes with very few samples.
-    """
-    n = len(df)
-    n_train = min(1024, int(n * 0.5))
-    n_val = min(256, int(n * 0.15))
-    n_test = min(2048, len(df) - n_train - n_val)
-
-    train, temp = train_test_split(df, train_size=n_train, random_state=42)
-    val, test = train_test_split(
-        temp, train_size=n_val, test_size=n_test, random_state=42
-    )
-
-    for d in [train, val, test]:
-        d.reset_index(drop=True, inplace=True)
-    return train, val, test
 
 
 if __name__ == "__main__":
