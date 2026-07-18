@@ -15,7 +15,10 @@ positive). The data is collected from Luxembourgish social media posts and news 
 comments, covering various domains including politics, culture, and daily life.
 
 The original ltzGLUE-SA dataset contains 3,022 / 597 / 926 samples for training,
-validation and testing, respectively. We preserve the source splits exactly.
+validation and testing, respectively. We cap each split independently to at most 1,024
+train, 256 val, and 2,048 test samples, preserving source split boundaries (no samples
+are moved between splits). The published mini dataset contains up to 1,024 / 256 / 926
+samples (test split is below the cap).
 
 Here are a few examples from the training split:
 
@@ -87,7 +90,10 @@ from major Luxembourgish news outlets including Luxemburger Wort, RTL Lëtzebuer
 paperjam.lu, today.lu, and wort.lu.
 
 The original ltzGLUE-NER dataset contains 27,245 / 3,327 / 3,821 samples for training,
-validation and testing, respectively. We preserve the source splits exactly.
+validation and testing, respectively. We cap each split independently to at most 1,024
+train, 256 val, and 2,048 test samples, preserving source split boundaries (no samples
+are moved between splits). The published mini dataset contains up to 1,024 / 256 / 2,048
+samples.
 
 Here are a few examples from the training split:
 
@@ -186,7 +192,10 @@ Wort, RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu) as well as systematic
 corrupted examples with various error types (word order, agreement, case, etc.).
 
 The original ltzGLUE-LA dataset contains 14,678 / 2,094 / 4,045 samples for training,
-validation and testing, with balanced classes. We preserve the source splits exactly.
+validation and testing, with balanced classes. We cap each split independently to at
+most 1,024 train, 256 val, and 2,048 test samples, preserving source split boundaries
+(no samples are moved between splits). The published mini dataset contains up to 1,024 /
+256 / 2,048 samples.
 
 Here are a few examples from the training split:
 
@@ -257,7 +266,9 @@ Lëtzebuerg, paperjam.lu, today.lu, and wort.lu) as well as systematically corru
 examples with various error types (word order, agreement, case, etc.).
 
 The original dataset contains 14,678 / 2,094 / 4,045 samples for training, validation
-and testing. We preserve the source splits exactly.
+and testing. We cap each split independently to at most 1,024 train, 256 val, and 2,048
+test samples, preserving source split boundaries (no samples are moved between splits).
+The published mini dataset contains up to 1,024 / 256 / 2,048 samples.
 
 Here are a few examples from the training split:
 
@@ -329,7 +340,10 @@ determine if the hypothesis is entailed by or contradicts the premise (binary
 classification).
 
 The original ltzGLUE-RTE dataset contains 1,877 / 197 / 626 samples for training,
-validation and testing, respectively. We preserve the source splits exactly.
+validation and testing, respectively. We cap each split independently to at most 1,024
+train, 256 val, and 2,048 test samples, preserving source split boundaries (no samples
+are moved between splits). The published mini dataset contains up to 1,024 / 197 / 626
+samples (all splits are below the caps).
 
 Here are a few examples from the training split:
 
@@ -469,7 +483,10 @@ Wort, RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu), models must predict 
 the headline correctly represents the article content.
 
 The original ltzGLUE-HC dataset contains 20,716 / 2,960 / 5,919 samples for training,
-validation and testing, respectively. We preserve the source splits exactly.
+validation and testing, respectively. We cap each split independently to at most 1,024
+train, 256 val, and 2,048 test samples, preserving source split boundaries (no samples
+are moved between splits). The published mini dataset contains up to 1,024 / 256 / 2,048
+samples.
 
 Here are a few examples from the training split:
 
@@ -530,7 +547,10 @@ from major Luxembourgish news outlets including Luxemburger Wort, RTL Lëtzebuer
 paperjam.lu, today.lu, and wort.lu, covering politics, economy, sports, and culture.
 
 The original dataset contains 9,932 / 1,240 / 1,245 samples for training, validation and
-testing. We preserve the source splits exactly.
+testing. We cap each split independently to at most 1,024 train, 256 val, and 2,048 test
+samples, preserving source split boundaries (no samples are moved between splits). The
+published mini dataset contains up to 1,024 / 256 / 1,245 samples (val and test are
+below the caps).
 
 Here are a few examples from the training split:
 
@@ -603,8 +623,10 @@ playback, alarm setting, and creative work search. The queries are synthetically
 generated to cover common voice assistant and search engine intents.
 
 The original dataset contains 53 validation and 66 test samples with **no training
-data**. We preserve the source splits exactly, exposing `lb.valid` as the `val` split
-and `lb.test` as the `test` split. There is no `train` split in the published dataset.
+data**. We cap each split independently to at most 256 val and 2,048 test samples,
+preserving source split boundaries. The published mini dataset contains up to 53 / 66
+samples (both splits are below the caps). There is no `train` split in the published
+dataset.
 
 Here are a few examples from the validation split:
 

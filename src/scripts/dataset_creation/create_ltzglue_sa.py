@@ -22,6 +22,11 @@ logging.basicConfig(level=logging.INFO)
 
 BASE_URL = "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/sa"
 
+# Capping limits for mini datasets
+MAX_TRAIN = 1024
+MAX_VAL = 256
+MAX_TEST = 2048
+
 
 def main() -> None:
     """Create the ltzGLUE-SA dataset and upload to HF Hub."""
@@ -39,9 +44,13 @@ def main() -> None:
     val_df = _load_split(val_data)
     test_df = _load_split(test_data)
 
+    # Cap each split independently, preserving source split boundaries
+    train_df = _cap_split(train_df, MAX_TRAIN)
+    val_df = _cap_split(val_df, MAX_VAL)
+    test_df = _cap_split(test_df, MAX_TEST)
+
     logger.info(
-        f"Preserved splits exactly: {len(train_df)} train, {len(val_df)} val, "
-        f"{len(test_df)} test"
+        f"Capped splits: {len(train_df)} train, {len(val_df)} val, {len(test_df)} test"
     )
 
     dataset = DatasetDict(
@@ -52,7 +61,7 @@ def main() -> None:
         }
     )
 
-    dataset_id = "EuroEval/ltzglue-sa"
+    dataset_id = "EuroEval/ltzglue-sa-mini"
     logger.info(f"Uploading to {dataset_id}...")
 
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
@@ -74,6 +83,24 @@ def _download_split(split: str) -> list[dict]:
     response = requests.get(str(url), timeout=30)
     response.raise_for_status()
     return response.json()
+
+
+def _cap_split(df: pd.DataFrame, max_size: int) -> pd.DataFrame:
+    """Cap a split to max_size rows using deterministic sampling.
+
+    Args:
+        df:
+            DataFrame to cap.
+        max_size:
+            Maximum number of rows to keep.
+
+    Returns:
+        Capped DataFrame. Rows are selected deterministically from the start
+        of the split to ensure reproducibility and preserve split membership.
+    """
+    if len(df) <= max_size:
+        return df
+    return df.iloc[:max_size].reset_index(drop=True)
 
 
 def _load_split(data: list[dict]) -> pd.DataFrame:

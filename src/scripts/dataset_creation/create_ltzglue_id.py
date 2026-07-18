@@ -22,13 +22,18 @@ logging.basicConfig(level=logging.INFO)
 
 BASE_URL = "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/id"
 
+# Capping limits for mini datasets
+MAX_VAL = 256
+MAX_TEST = 2048
+
 
 def main() -> None:
     """Create the ltzGLUE-ID dataset.
 
     Note that ltzGLUE ID only provides lb.valid.json and lb.test.json.
-    No training data is available. We preserve the source splits exactly,
-    exposing lb.valid as "val" and lb.test as "test".
+    No training data is available. We cap the source splits independently
+    (val to 256, test to 2048), exposing lb.valid as "val" and lb.test as "test".
+    The published dataset ID ends with -mini to indicate capping.
     """
     logger.info("Downloading ltzGLUE-ID data from GitHub...")
     val_data = _download_split("lb.valid")
@@ -41,6 +46,14 @@ def main() -> None:
     val_df = _load_split(val_data)
     test_df = _load_split(test_data)
 
+    # Cap each split independently, preserving source split boundaries
+    val_df = _cap_split(val_df, MAX_VAL)
+    test_df = _cap_split(test_df, MAX_TEST)
+
+    logger.info(
+        f"Capped splits: {len(val_df)} val, {len(test_df)} test (no training data)"
+    )
+
     dataset = DatasetDict(
         {
             "val": Dataset.from_pandas(val_df[["text", "label"]]),
@@ -48,12 +61,30 @@ def main() -> None:
         }
     )
 
-    dataset_id = "EuroEval/ltzglue-id"
+    dataset_id = "EuroEval/ltzglue-id-mini"
     logger.info(f"Uploading to {dataset_id}...")
 
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
     logger.info(f"✓ Uploaded {dataset_id}")
+
+
+def _cap_split(df: pd.DataFrame, max_size: int) -> pd.DataFrame:
+    """Cap a split to max_size rows using deterministic sampling.
+
+    Args:
+        df:
+            DataFrame to cap.
+        max_size:
+            Maximum number of rows to keep.
+
+    Returns:
+        Capped DataFrame. Rows are selected deterministically from the start
+        of the split to ensure reproducibility and preserve split membership.
+    """
+    if len(df) <= max_size:
+        return df
+    return df.iloc[:max_size].reset_index(drop=True)
 
 
 def _download_split(split: str) -> list[dict]:

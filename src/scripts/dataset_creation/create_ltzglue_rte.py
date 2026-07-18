@@ -23,6 +23,11 @@ logging.basicConfig(level=logging.INFO)
 
 BASE_URL = "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/rte"
 
+# Capping limits for mini datasets
+MAX_TRAIN = 1024
+MAX_VAL = 256
+MAX_TEST = 2048
+
 
 def main() -> None:
     """Create the ltzGLUE-RTE dataset and upload to HF Hub."""
@@ -35,9 +40,13 @@ def main() -> None:
         f"Downloaded: {len(train_df)} train, {len(val_df)} val, {len(test_df)} test"
     )
 
+    # Cap each split independently, preserving source split boundaries
+    train_df = _cap_split(train_df, MAX_TRAIN)
+    val_df = _cap_split(val_df, MAX_VAL)
+    test_df = _cap_split(test_df, MAX_TEST)
+
     logger.info(
-        f"Preserved splits exactly: {len(train_df)} train, {len(val_df)} val, "
-        f"{len(test_df)} test"
+        f"Capped splits: {len(train_df)} train, {len(val_df)} val, {len(test_df)} test"
     )
 
     # Create 'text' column combining premise and hypothesis (required by EuroEval)
@@ -55,12 +64,30 @@ def main() -> None:
         }
     )
 
-    dataset_id = "EuroEval/ltzglue-rte"
+    dataset_id = "EuroEval/ltzglue-rte-mini"
     logger.info(f"Uploading to {dataset_id}...")
 
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
     logger.info(f"✓ Uploaded {dataset_id}")
+
+
+def _cap_split(df: pd.DataFrame, max_size: int) -> pd.DataFrame:
+    """Cap a split to max_size rows using deterministic sampling.
+
+    Args:
+        df:
+            DataFrame to cap.
+        max_size:
+            Maximum number of rows to keep.
+
+    Returns:
+        Capped DataFrame. Rows are selected deterministically from the start
+        of the split to ensure reproducibility and preserve split membership.
+    """
+    if len(df) <= max_size:
+        return df
+    return df.iloc[:max_size].reset_index(drop=True)
 
 
 def _download_split(split: str) -> pd.DataFrame:

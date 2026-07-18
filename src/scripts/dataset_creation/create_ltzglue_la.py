@@ -27,6 +27,11 @@ BASE_URL_MULTI = (
     "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/la/multi"
 )
 
+# Capping limits for mini datasets
+MAX_TRAIN = 1024
+MAX_VAL = 256
+MAX_TEST = 2048
+
 
 def main() -> None:
     """Create both LA binary and multi-class datasets."""
@@ -44,8 +49,13 @@ def main() -> None:
     bin_val_df = _create_binary_df(bin_val)
     bin_test_df = _create_binary_df(bin_test)
 
+    # Cap each split independently, preserving source split boundaries
+    bin_train_df = _cap_split(bin_train_df, MAX_TRAIN)
+    bin_val_df = _cap_split(bin_val_df, MAX_VAL)
+    bin_test_df = _cap_split(bin_test_df, MAX_TEST)
+
     logger.info(
-        f"Preserved binary splits exactly: {len(bin_train_df)} / "
+        f"Capped binary splits: {len(bin_train_df)} / "
         f"{len(bin_val_df)} / {len(bin_test_df)}"
     )
 
@@ -57,9 +67,11 @@ def main() -> None:
         }
     )
 
-    HfApi().delete_repo("EuroEval/ltzglue-la", repo_type="dataset", missing_ok=True)
-    bin_dataset.push_to_hub("EuroEval/ltzglue-la", private=True)
-    logger.info("✓ Uploaded EuroEval/ltzglue-la (binary)")
+    HfApi().delete_repo(
+        "EuroEval/ltzglue-la-mini", repo_type="dataset", missing_ok=True
+    )
+    bin_dataset.push_to_hub("EuroEval/ltzglue-la-mini", private=True)
+    logger.info("✓ Uploaded EuroEval/ltzglue-la-mini (binary)")
 
     logger.info("Downloading ltzGLUE-LA multi-class data from GitHub...")
     mul_train = _download_split(BASE_URL_MULTI, "train")
@@ -75,8 +87,13 @@ def main() -> None:
     mul_val_df = _create_multi_df(mul_val)
     mul_test_df = _create_multi_df(mul_test)
 
+    # Cap each split independently, preserving source split boundaries
+    mul_train_df = _cap_split(mul_train_df, MAX_TRAIN)
+    mul_val_df = _cap_split(mul_val_df, MAX_VAL)
+    mul_test_df = _cap_split(mul_test_df, MAX_TEST)
+
     logger.info(
-        f"Preserved multi splits exactly: {len(mul_train_df)} / "
+        f"Capped multi splits: {len(mul_train_df)} / "
         f"{len(mul_val_df)} / {len(mul_test_df)}"
     )
 
@@ -89,10 +106,28 @@ def main() -> None:
     )
 
     HfApi().delete_repo(
-        "EuroEval/ltzglue-la-multi", repo_type="dataset", missing_ok=True
+        "EuroEval/ltzglue-la-multi-mini", repo_type="dataset", missing_ok=True
     )
-    mul_dataset.push_to_hub("EuroEval/ltzglue-la-multi", private=True)
-    logger.info("✓ Uploaded EuroEval/ltzglue-la-multi (multi-class)")
+    mul_dataset.push_to_hub("EuroEval/ltzglue-la-multi-mini", private=True)
+    logger.info("✓ Uploaded EuroEval/ltzglue-la-multi-mini (multi-class)")
+
+
+def _cap_split(df: pd.DataFrame, max_size: int) -> pd.DataFrame:
+    """Cap a split to max_size rows using deterministic sampling.
+
+    Args:
+        df:
+            DataFrame to cap.
+        max_size:
+            Maximum number of rows to keep.
+
+    Returns:
+        Capped DataFrame. Rows are selected deterministically from the start
+        of the split to ensure reproducibility and preserve split membership.
+    """
+    if len(df) <= max_size:
+        return df
+    return df.iloc[:max_size].reset_index(drop=True)
 
 
 def _download_split(base_url: str, split: str) -> list[dict]:
