@@ -67,7 +67,9 @@ The `src/scripts/collect_evaluation_results.py` script orchestrates this flow:
 ### Scripts
 
 There are scripts in `scripts` of various kinds, including generation of leaderboards,
-building SEO files, API reference, creating individual datasets, etc.
+building SEO files, API reference, creating individual datasets, etc. All scripts in
+this directory are *persistent* scripts. One-off scripts don't belong in the repository
+- if you need to run a one-off script, store it in /tmp or in-memory.
 
 - **`create_language_spider_plot.py`** — Generate Plotly spider/radial plots comparing
   models across languages. Output is a PNG file (`language-spider-plot.png`). Use when
