@@ -272,7 +272,8 @@ def main(
             force=force,
             dry_run=dry_run,
         )
-        upload_results_to_bucket(results_file=EUROEVAL_BENCHMARK_RESULTS_PATH)
+        if not dry_run:
+            upload_results_to_bucket(results_file=EUROEVAL_BENCHMARK_RESULTS_PATH)
 
     changed = apply_swap(
         old_dataset=old_dataset, new_dataset=new_dataset, dry_run=dry_run
