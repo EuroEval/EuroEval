@@ -335,80 +335,7 @@ euroeval --model <model-id> --dataset dane
 
 ## Linguistic Acceptability
 
-### ScaLA-da
-
-This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the
-[Danish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master)
-by assuming that the documents in the treebank are correct, and corrupting the samples
-to create grammatically incorrect samples. The corruptions were done by either removing
-a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
-that this does indeed break the grammaticality of the sentence, a set of rules were used
-on the part-of-speech tags of the words in the sentence.
-
-The original dataset consists of 5,512 samples, from which we use 1,024 / 256 / 2,048
-samples for training, validation and testing, respectively (so 3,328 samples used in
-total). These splits are used as-is in the framework.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Samme dame dukkede netop nu op sammen med Odd-Catla's erklærede yndling, væbneren Aikin af Cantir.",
-  "label": "correct"
-}
-```
-
-```json
-{
-  "text": "Gebyrets størrelse afhænger nemlig af helt, i hvilken kategori den pågældende \"levnedsmiddelvirksomhed\" placeres.",
-  "label": "incorrect"
-}
-```
-
-```json
-{
-  "text": "Den statsansatte dyrlæge Kronfågels på slagteri i Kristiansstad, Karl Erik Bjørkman, understreger, belægningen hos producenten betyder meget for dyrenes trivsel:",
-  "label": "incorrect"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 12
-- Prefix prompt:
-
-  ```text
-  Følgende er sætninger og om de er grammatisk korrekte.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Sætning: {text}
-  Grammatisk korrekt: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Sætning: {text}
-
-  Bestem om sætningen er grammatisk korrekt eller ej. Svar med 'ja', hvis sætningen er korrekt, og 'nej', hvis den ikke er.
-  ```
-
-- Label mapping:
-  - `correct` ➡️ `ja`
-  - `incorrect` ➡️ `nej`
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset scala-da
-```
-
-### Unofficial: DaLA
+### DaLA
 
 This dataset was published in [this paper](https://arxiv.org/abs/2512.04799) and,
 similarly to ScaLA, was automatically created from the
@@ -487,6 +414,79 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset dala
+```
+
+### Unofficial: ScaLA-da
+
+This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
+and was automatically created from the
+[Danish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
+
+The original dataset consists of 5,512 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Samme dame dukkede netop nu op sammen med Odd-Catla's erklærede yndling, væbneren Aikin af Cantir.",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Gebyrets størrelse afhænger nemlig af helt, i hvilken kategori den pågældende \"levnedsmiddelvirksomhed\" placeres.",
+  "label": "incorrect"
+}
+```
+
+```json
+{
+  "text": "Den statsansatte dyrlæge Kronfågels på slagteri i Kristiansstad, Karl Erik Bjørkman, understreger, belægningen hos producenten betyder meget for dyrenes trivsel:",
+  "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er sætninger og om de er grammatisk korrekte.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Sætning: {text}
+  Grammatisk korrekt: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Sætning: {text}
+
+  Bestem om sætningen er grammatisk korrekt eller ej. Svar med 'ja', hvis sætningen er korrekt, og 'nej', hvis den ikke er.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nej`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset scala-da
 ```
 
 ## Natural Language Inference
