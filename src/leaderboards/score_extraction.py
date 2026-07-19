@@ -291,10 +291,9 @@ def extract_model_metadata(
         for model_id in model_ids:
             existing = metadata_dict[model_id]
             # Merge metadata: only update if the new value is "better" than the
-            # existing one. This prevents stale records (e.g. from unknown.jsonl
-            # or misfiled results) from overwriting enriched metadata with
-            # missing/default values. Only compare when the field is explicitly
-            # present in the record.
+            # existing one. This prevents stale or misfiled records from
+            # overwriting enriched metadata with missing/default values. Only
+            # compare when the field is explicitly present in the record.
             # Float fields (parameters, vocabulary_size, context) - use key
             # presence checks (not truthiness) to preserve 0 values
             if "parameters" in existing:

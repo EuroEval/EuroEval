@@ -156,8 +156,8 @@ def test_metadata_richness_score_full() -> None:
 def test_deduplicate_prefers_richer_metadata_same_version() -> None:
     """Among same-version duplicates, the one with richer metadata wins.
 
-    Regression test for issue where stale records from unknown.jsonl or
-    misfiled results would override enriched metadata during deduplication.
+    Regression test for issue where misfiled results would override
+    enriched metadata during deduplication.
     """
     # Enriched record with full metadata
     enriched = _record(name="Qwen/Qwen3.6-27B-FP8 (val)", version="17.6.0")
@@ -172,7 +172,7 @@ def test_deduplicate_prefers_richer_metadata_same_version() -> None:
         }
     )
 
-    # Stale record with missing metadata (simulating unknown.jsonl style)
+    # Stale record with missing metadata
     stale = _record(name="Qwen/Qwen3.6-27B-FP8 (val)", version="17.6.0")
     # No additional metadata - defaults only
 

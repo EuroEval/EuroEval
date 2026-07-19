@@ -12,7 +12,6 @@ from tqdm.auto import tqdm
 
 from euroeval.string_utils import split_model_id
 
-from .constants import UNKNOWN_RESULTS_FILENAME
 from .jsonl_io import load_records_from_jsonl_files
 from .records import plain_model_id
 
@@ -115,11 +114,7 @@ class Cache:
         if not results_dir.exists():
             raise FileNotFoundError(f"Results directory {results_dir} not found.")
 
-        jsonl_files = sorted(
-            path
-            for path in results_dir.glob("*.jsonl")
-            if path.name != UNKNOWN_RESULTS_FILENAME
-        )
+        jsonl_files = sorted(results_dir.glob("*.jsonl"))
         records = load_records_from_jsonl_files(paths=jsonl_files)
 
         return cls._from_records(
