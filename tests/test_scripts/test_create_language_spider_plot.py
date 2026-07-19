@@ -1065,8 +1065,9 @@ class TestClickCLI:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model.jsonl"
-            jsonl_path.write_text(json.dumps(record) + "\n")
+            model_dir = Path(tmpdir) / "test_model"
+            model_dir.mkdir()
+            (model_dir / "record_0.json").write_text(json.dumps(record))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1111,8 +1112,9 @@ class TestClickCLI:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model.jsonl"
-            jsonl_path.write_text(json.dumps(record) + "\n")
+            model_dir = Path(tmpdir) / "test_model"
+            model_dir.mkdir()
+            (model_dir / "record_0.json").write_text(json.dumps(record))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1143,10 +1145,10 @@ class TestClickCLI:
 
 
 class TestIntegrationWithTempFiles:
-    """Integration tests using temporary JSONL files."""
+    """Integration tests using temporary result tree files."""
 
     def test_full_pipeline_with_temp_files(self) -> None:
-        """Test full pipeline using temp JSONL files."""
+        """Test full pipeline using temp result tree files."""
         records = [
             make_eee_record(
                 "test/model1",
@@ -1191,11 +1193,15 @@ class TestIntegrationWithTempFiles:
         ]
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model1.jsonl"
-            jsonl_path.write_text("\n".join(json.dumps(r) for r in records[:2]) + "\n")
+            model1_dir = Path(tmpdir) / "test_model1"
+            model1_dir.mkdir()
+            (model1_dir / "record_0.json").write_text(json.dumps(records[0]))
+            (model1_dir / "record_1.json").write_text(json.dumps(records[1]))
 
-            jsonl_path2 = Path(tmpdir) / "test_model2.jsonl"
-            jsonl_path2.write_text("\n".join(json.dumps(r) for r in records[2:]) + "\n")
+            model2_dir = Path(tmpdir) / "test_model2"
+            model2_dir.mkdir()
+            (model2_dir / "record_0.json").write_text(json.dumps(records[2]))
+            (model2_dir / "record_1.json").write_text(json.dumps(records[3]))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1252,11 +1258,13 @@ class TestIntegrationWithTempFiles:
         ]
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model1.jsonl"
-            jsonl_path.write_text(json.dumps(records[0]) + "\n")
+            model1_dir = Path(tmpdir) / "test_model1"
+            model1_dir.mkdir()
+            (model1_dir / "record_0.json").write_text(json.dumps(records[0]))
 
-            jsonl_path2 = Path(tmpdir) / "test_model2.jsonl"
-            jsonl_path2.write_text(json.dumps(records[1]) + "\n")
+            model2_dir = Path(tmpdir) / "test_model2"
+            model2_dir.mkdir()
+            (model2_dir / "record_0.json").write_text(json.dumps(records[1]))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1295,11 +1303,13 @@ class TestIntegrationWithTempFiles:
         ]
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model1.jsonl"
-            jsonl_path.write_text(json.dumps(records[0]) + "\n")
+            model1_dir = Path(tmpdir) / "test_model1"
+            model1_dir.mkdir()
+            (model1_dir / "record_0.json").write_text(json.dumps(records[0]))
 
-            jsonl_path2 = Path(tmpdir) / "test_model2.jsonl"
-            jsonl_path2.write_text(json.dumps(records[1]) + "\n")
+            model2_dir = Path(tmpdir) / "test_model2"
+            model2_dir.mkdir()
+            (model2_dir / "record_0.json").write_text(json.dumps(records[1]))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1351,10 +1361,10 @@ class TestIntegrationWithTempFiles:
         ]
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model1.jsonl"
-            jsonl_path.write_text(
-                "\n".join(json.dumps(r) for r in zero_records + few_records) + "\n"
-            )
+            model_dir = Path(tmpdir) / "test_model1"
+            model_dir.mkdir()
+            (model_dir / "record_0.json").write_text(json.dumps(zero_records[0]))
+            (model_dir / "record_1.json").write_text(json.dumps(few_records[0]))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1408,26 +1418,23 @@ class TestIntegrationWithTempFiles:
         assert "-o" not in result.output
 
     def test_result_files_not_mutated(self) -> None:
-        """Test that result JSONL files are not mutated."""
-        original_content = (
-            json.dumps(
-                make_eee_record(
-                    "test/model1",
-                    ["da"],
-                    {"test_mcc": 0.8},
-                    False,
-                    task="sentiment-classification",
-                    dataset="angry-tweets",
-                    raw_scores=[0.8, 0.82, 0.78],
-                    metric_name="mcc",
-                )
-            )
-            + "\n"
+        """Test that result tree files are not mutated."""
+        record = make_eee_record(
+            "test/model1",
+            ["da"],
+            {"test_mcc": 0.8},
+            False,
+            task="sentiment-classification",
+            dataset="angry-tweets",
+            raw_scores=[0.8, 0.82, 0.78],
+            metric_name="mcc",
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model1.jsonl"
-            jsonl_path.write_text(original_content)
+            model_dir = Path(tmpdir) / "test_model1"
+            model_dir.mkdir()
+            record_path = model_dir / "record_0.json"
+            record_path.write_text(json.dumps(record))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1452,15 +1459,11 @@ class TestIntegrationWithTempFiles:
                     finally:
                         os.chdir(original_cwd)
 
-            content_after = jsonl_path.read_text()
-            assert content_after == original_content
+            content_after = record_path.read_text()
+            assert content_after == json.dumps(record)
 
-    def test_concatenated_jsonl_objects(self) -> None:
-        """Test handling of concatenated }{ JSON objects.
-
-        This tests the parse_jsonl_lines ability to handle malformed JSONL
-        where multiple JSON objects appear on a single line without newlines.
-        """
+    def test_multiple_json_files(self) -> None:
+        """Test handling of multiple JSON files per model."""
         record1 = make_eee_record(
             "test/model1",
             ["da"],
@@ -1482,11 +1485,11 @@ class TestIntegrationWithTempFiles:
             metric_name="mcc",
         )
 
-        concatenated = json.dumps(record1) + json.dumps(record2)
-
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model1.jsonl"
-            jsonl_path.write_text(concatenated)
+            model_dir = Path(tmpdir) / "test_model1"
+            model_dir.mkdir()
+            (model_dir / "record_0.json").write_text(json.dumps(record1))
+            (model_dir / "record_1.json").write_text(json.dumps(record2))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1531,8 +1534,9 @@ class TestTitleAndFilenameOptions:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model.jsonl"
-            jsonl_path.write_text(json.dumps(record) + "\n")
+            model_dir = Path(tmpdir) / "test_model"
+            model_dir.mkdir()
+            (model_dir / "record_0.json").write_text(json.dumps(record))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1573,8 +1577,9 @@ class TestTitleAndFilenameOptions:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model.jsonl"
-            jsonl_path.write_text(json.dumps(record) + "\n")
+            model_dir = Path(tmpdir) / "test_model"
+            model_dir.mkdir()
+            (model_dir / "record_0.json").write_text(json.dumps(record))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1617,8 +1622,9 @@ class TestTitleAndFilenameOptions:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model.jsonl"
-            jsonl_path.write_text(json.dumps(record) + "\n")
+            model_dir = Path(tmpdir) / "test_model"
+            model_dir.mkdir()
+            (model_dir / "record_0.json").write_text(json.dumps(record))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1661,8 +1667,9 @@ class TestTitleAndFilenameOptions:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model.jsonl"
-            jsonl_path.write_text(json.dumps(record) + "\n")
+            model_dir = Path(tmpdir) / "test_model"
+            model_dir.mkdir()
+            (model_dir / "record_0.json").write_text(json.dumps(record))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1708,8 +1715,9 @@ class TestTitleAndFilenameOptions:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model.jsonl"
-            jsonl_path.write_text(json.dumps(record) + "\n")
+            model_dir = Path(tmpdir) / "test_model"
+            model_dir.mkdir()
+            (model_dir / "record_0.json").write_text(json.dumps(record))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1755,8 +1763,9 @@ class TestTitleAndFilenameOptions:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model.jsonl"
-            jsonl_path.write_text(json.dumps(record) + "\n")
+            model_dir = Path(tmpdir) / "test_model"
+            model_dir.mkdir()
+            (model_dir / "record_0.json").write_text(json.dumps(record))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1799,8 +1808,9 @@ class TestTitleAndFilenameOptions:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model.jsonl"
-            jsonl_path.write_text(json.dumps(record) + "\n")
+            model_dir = Path(tmpdir) / "test_model"
+            model_dir.mkdir()
+            (model_dir / "record_0.json").write_text(json.dumps(record))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
@@ -1859,8 +1869,9 @@ class TestTitleAndFilenameOptions:
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            jsonl_path = Path(tmpdir) / "test_model.jsonl"
-            jsonl_path.write_text(json.dumps(record) + "\n")
+            model_dir = Path(tmpdir) / "test_model"
+            model_dir.mkdir()
+            (model_dir / "record_0.json").write_text(json.dumps(record))
 
             with patch(
                 "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
