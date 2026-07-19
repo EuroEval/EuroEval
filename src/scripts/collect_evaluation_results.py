@@ -50,8 +50,10 @@ from leaderboards.github_api import close_issue, comment_on_issue, gh_request
 from leaderboards.queue_parsing import extract_model_id
 from leaderboards.result_identity import (
     ResultIdentity,
+    dedup_newer_record,
     identity_from_eee_record,
     identity_to_path,
+    raise_on_collision,
     sanitise_model_dir_name,
 )
 
@@ -550,8 +552,10 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
                 logger.debug(f"Skipping line {line_number}: no identity")
                 continue
 
-            # Dedup: existing wins if same identity (already synced from bucket)
-            if identity not in existing:
+            # Dedup: keep newer record by euroeval_version, then retrieved_timestamp
+            if identity in existing:
+                existing[identity] = dedup_newer_record(existing[identity], record)
+            else:
                 existing[identity] = record
         except json.JSONDecodeError:
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
@@ -560,6 +564,14 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
     for existing_file in RESULTS_DIR.rglob("*.json"):
         if existing_file.is_file():
             existing_file.unlink()
+
+    # Build path -> identity map to detect collisions before writing
+    path_to_identity: dict[Path, ResultIdentity] = {}
+    for identity in existing:
+        record_path = RESULTS_DIR / identity_to_path(identity)
+        if record_path in path_to_identity:
+            raise_on_collision(identity, path_to_identity[record_path])
+        path_to_identity[record_path] = identity
 
     records_written = 0
     for identity, record in existing.items():
@@ -579,6 +591,12 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
     logger.info(
         f"Wrote {records_written} record files to {RESULTS_DIR}, syncing to bucket..."
     )
+
+    # Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts (not repo-root files)
+    for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
+        if jsonl_file.is_file():
+            jsonl_file.unlink()
+            logger.info(f"Removed stale artefact {jsonl_file}")
 
     # Sync to bucket
     try:
