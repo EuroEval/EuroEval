@@ -1,8 +1,38 @@
 """Tests for the process_evaluation_queue script orchestration."""
 
+from pathlib import Path
+
 import pytest
 
+from leaderboards import bucket_sync
 from src.scripts import process_evaluation_queue
+
+
+def test_sync_bucket_preserves_local_only_lines(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Local lines not yet in the bucket should survive startup sync."""
+    results_dir = tmp_path / "results"
+    results_dir.mkdir()
+    model_file = results_dir / "foo_bar.jsonl"
+    model_file.write_text('{"local": true}\n', encoding="utf-8")
+
+    class FakeHfApi:
+        def sync_bucket(self, source: str, dest: str, token: str) -> None:
+            model_file.write_text('{"remote": true}\n', encoding="utf-8")
+
+    monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
+    monkeypatch.setattr(target=bucket_sync, name="HfApi", value=FakeHfApi)
+    monkeypatch.setattr(
+        target=bucket_sync, name="resolve_hf_token", value=lambda: "token"
+    )
+
+    bucket_sync.sync_bucket()
+
+    assert model_file.read_text(encoding="utf-8").splitlines() == [
+        '{"remote": true}',
+        '{"local": true}',
+    ]
 
 
 def test_process_issue_fails_when_official_results_are_missing(
@@ -121,6 +151,9 @@ def test_process_issue_fails_when_official_results_are_missing(
         groups=[
             "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)"
         ],
+        assignee="tester",
+        vm_id="test-vm",
+        gpu_memory_utilization=None,
     )
 
     assert assigned == [17]
@@ -240,7 +273,12 @@ def test_process_issue_does_not_special_case_oom_anymore(
     )
 
     process_evaluation_queue.process_issue(
-        issue={"number": 42, "body": ""}, model_id="foo/bar", groups=["Greek"]
+        issue={"number": 42, "body": ""},
+        model_id="foo/bar",
+        groups=["Greek"],
+        assignee="tester",
+        vm_id="test-vm",
+        gpu_memory_utilization=None,
     )
 
     assert len(comments) == 1
@@ -371,7 +409,12 @@ def test_process_issue_marks_ready_when_missing_pairs_are_skips(
     )
 
     process_evaluation_queue.process_issue(
-        issue={"number": 7, "body": ""}, model_id="foo/bar", groups=["Greek"]
+        issue={"number": 7, "body": ""},
+        model_id="foo/bar",
+        groups=["Greek"],
+        assignee="tester",
+        vm_id="test-vm",
+        gpu_memory_utilization=None,
     )
 
     assert comments == []

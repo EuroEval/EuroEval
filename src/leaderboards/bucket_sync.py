@@ -16,6 +16,7 @@ from euroeval.data_models import BenchmarkResult
 
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR, UNKNOWN_RESULTS_FILENAME
 from .evaluation_common import resolve_hf_token
+from .jsonl_io import parse_jsonl_lines
 
 load_dotenv()
 
@@ -40,14 +41,84 @@ def sync_bucket() -> None:
         )
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    local_lines = {
+        path.name: path.read_text(encoding="utf-8").splitlines()
+        for path in RESULTS_DIR.glob("*.jsonl")
+    }
+
     logger.info(f"Syncing bucket {HF_RESULTS_BUCKET} -> {RESULTS_DIR}...")
     HfApi().sync_bucket(
         source=f"hf://buckets/{HF_RESULTS_BUCKET}/",
         dest=str(RESULTS_DIR),
         token=hf_token,
     )
+    for filename, lines in local_lines.items():
+        path = RESULTS_DIR / filename
+        synced_lines = (
+            set(path.read_text(encoding="utf-8").splitlines())
+            if path.exists()
+            else set()
+        )
+        missing_lines = [line for line in lines if line not in synced_lines]
+        if missing_lines:
+            with path.open("a", encoding="utf-8") as f:
+                for line in missing_lines:
+                    f.write(line + "\n")
+
     _remove_unknown_results_file()
     logger.info(f"Synced bucket {HF_RESULTS_BUCKET}.")
+
+
+def merge_results(results_file: Path) -> int:
+    """Merge per-model bucket results into a single JSONL file.
+
+    Args:
+        results_file:
+            Path to the merged JSONL file to write.
+
+    Returns:
+        Number of unique results written.
+    """
+    existing: dict[tuple[str, str, str, str], str] = {}
+
+    if results_file.exists():
+        records = parse_jsonl_lines(
+            lines=results_file.read_text(encoding="utf-8").splitlines(),
+            source=str(results_file),
+        )
+        for rec in records:
+            result = BenchmarkResult.from_dict(config=rec)
+            key = _extract_dedup_key(result=result)
+            if key:
+                existing[key] = json.dumps(rec)
+
+    for jsonl_file in sorted(RESULTS_DIR.glob("*.jsonl")):
+        try:
+            records = parse_jsonl_lines(
+                lines=jsonl_file.read_text(encoding="utf-8").splitlines(),
+                source=str(jsonl_file),
+            )
+        except ValueError as e:
+            logger.warning(f"Skipping malformed file {jsonl_file}: {e}")
+            continue
+        for rec in records:
+            try:
+                result = BenchmarkResult.from_dict(config=rec)
+                key = _extract_dedup_key(result=result)
+                if key:
+                    existing[key] = json.dumps(rec)
+            except Exception as e:
+                logger.debug(f"Skipping invalid record: {e}")
+
+    if not existing:
+        logger.warning("No results found to merge")
+        return 0
+
+    results_file.parent.mkdir(parents=True, exist_ok=True)
+    with results_file.open("w", encoding="utf-8") as f:
+        for line in sorted(existing.values()):
+            f.write(line + "\n")
+    return len(existing)
 
 
 def upload_results_to_bucket(results_file: Path) -> None:
@@ -113,6 +184,26 @@ def upload_results_to_bucket(results_file: Path) -> None:
         token=hf_token,
     )
     logger.info(f"Uploaded results to bucket {HF_RESULTS_BUCKET}.")
+
+
+def _extract_dedup_key(result: BenchmarkResult) -> tuple[str, str, str, str] | None:
+    """Extract the identity key for one benchmark result.
+
+    Args:
+        result:
+            Parsed benchmark result.
+
+    Returns:
+        Result identity key, or None if required fields are missing.
+    """
+    if not result.model or not result.dataset:
+        return None
+    return (
+        result.model,
+        result.dataset,
+        str(result.validation_split),
+        str(result.few_shot),
+    )
 
 
 def _remove_unknown_results_file() -> None:
