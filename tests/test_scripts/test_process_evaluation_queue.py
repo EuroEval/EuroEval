@@ -201,7 +201,10 @@ def test_process_issue_fails_when_official_results_are_missing(
         value=lambda number: True,
     )
 
-    lines_per_read = iter([[], [], ["before"], ["before"]])
+    # _run_claimed_issue reads the model's result subdirectory directly (not via
+    # read_jsonl_lines), then reads the local euroeval output once, followed by a
+    # before/after read per pending language.
+    lines_per_read = iter([[], ["before"], ["before"]])
 
     monkeypatch.setattr(
         target=process_evaluation_queue,

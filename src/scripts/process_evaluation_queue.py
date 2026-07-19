@@ -56,7 +56,6 @@ from leaderboards.github_api import (
     remove_gated_label,
     unassign_issue,
 )
-from leaderboards.jsonl_io import load_records_from_result_tree
 from leaderboards.queue_env import (
     acquire_single_instance_lock,
     load_dotenv_into_environ,
@@ -85,7 +84,11 @@ from leaderboards.queue_runtime import (
     cool_down_between_issues,
     lower_process_priority,
 )
-from leaderboards.result_identity import identity_from_eee_record, identity_to_path
+from leaderboards.result_identity import (
+    identity_from_eee_record,
+    identity_to_path,
+    sanitise_model_dir_name,
+)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -627,14 +630,19 @@ def _run_claimed_issue(
     number = issue["number"]
 
     results_path = Path("euroeval_benchmark_results.jsonl")
-    # Read existing uploaded results from tree + local euroeval output
+    # Read this model's already-uploaded results from its own subdirectory in
+    # the per-record JSON tree, plus the local euroeval output file. Reading
+    # only the model's subdirectory avoids loading the entire results tree.
     existing_lines: list[str] = []
-    if RESULTS_DIR.exists() and any(RESULTS_DIR.rglob("*.json")):
-        # Load from tree and convert to JSONL lines for this model
-        for record in load_records_from_result_tree(RESULTS_DIR):
-            record_model = record.get("model_info", {}).get("name", "")
-            if record_model == model_id:
-                existing_lines.append(json.dumps(record))
+    model_dir = RESULTS_DIR / sanitise_model_dir_name(model_id)
+    if model_dir.is_dir():
+        for record_path in sorted(model_dir.glob("*.json")):
+            try:
+                record = json.loads(record_path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError) as e:
+                logger.debug(f"Skipping unreadable record {record_path}: {e}")
+                continue
+            existing_lines.append(json.dumps(record))
     existing_lines.extend(read_jsonl_lines(path=results_path))
     accumulated = result_lines_for_model(lines=existing_lines, model_id=model_id)
     done = completed_languages(lines=accumulated, requested_languages=languages)
