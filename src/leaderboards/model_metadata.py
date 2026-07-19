@@ -132,9 +132,8 @@ def _remove_model_results(model_id: str) -> None:
             The model id whose result directory should be removed.
     """
     model_dir = RESULTS_DIR / sanitise_model_dir_name(plain_model_id(model_id))
-    if model_dir.exists():
-        shutil.rmtree(model_dir)
-        logger.info(f"Removed result directory {model_dir.name} for {model_id}.")
+    shutil.rmtree(model_dir, ignore_errors=True)
+    logger.info(f"Removed result directory {model_dir.name} for {model_id}.")
 
 
 def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any]:

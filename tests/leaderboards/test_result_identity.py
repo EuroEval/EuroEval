@@ -53,10 +53,7 @@ def _make_eee_record(
     """
     return {
         "schema_version": "0.2.1",
-        "model_info": {
-            "id": model_id,
-            "name": "Test Model",
-        },
+        "model_info": {"id": model_id, "name": "Test Model"},
         "eval_library": {
             "name": "euroeval",
             "version": version,
@@ -253,10 +250,7 @@ class TestRecordRelativePath:
             validation_split=False,
             few_shot=True,
         )
-        expected = (
-            "Qwen_Qwen3-30B-A3B#no-thinking"
-            "/test_dataset__test__fewshot.json"
-        )
+        expected = "Qwen_Qwen3-30B-A3B#no-thinking/test_dataset__test__fewshot.json"
         assert str(path) == expected
 
 
@@ -288,19 +282,13 @@ class TestIdentityFromEeeRecord:
 
     def test_string_bool_values(self) -> None:
         """String boolean values should be normalised."""
-        record = _make_eee_record(
-            validation_split="true",
-            few_shot="false",
-        )
+        record = _make_eee_record(validation_split="true", few_shot="false")
         identity = identity_from_eee_record(record)
         assert identity == ("org/model", "test_dataset", True, False)
 
     def test_none_bool_values(self) -> None:
         """None boolean values should be preserved."""
-        record = _make_eee_record(
-            validation_split=None,
-            few_shot=None,
-        )
+        record = _make_eee_record(validation_split=None, few_shot=None)
         identity = identity_from_eee_record(record)
         assert identity == ("org/model", "test_dataset", None, None)
 
@@ -315,7 +303,15 @@ class TestIdentityFromEeeRecord:
         """Missing model info should raise ValueError."""
         record = _make_eee_record()
         del record["model_info"]
-        with pytest.raises(ValueError, match="Missing model_info"):
+        with pytest.raises(ValueError, match="model_info.id and model_info.name"):
+            identity_from_eee_record(record)
+
+    def test_missing_id_and_name_raises(self) -> None:
+        """Missing both id and name should raise ValueError."""
+        record = _make_eee_record()
+        del record["model_info"]["id"]
+        del record["model_info"]["name"]
+        with pytest.raises(ValueError, match="model_info.id and model_info.name"):
             identity_from_eee_record(record)
 
     def test_missing_dataset_raises(self) -> None:
