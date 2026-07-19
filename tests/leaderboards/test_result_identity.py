@@ -450,12 +450,8 @@ class TestExtractTimestamp:
 
     def test_iso8601_dedup_deterministic(self) -> None:
         """ISO-8601 timestamps should enable deterministic dedup."""
-        record_a = _make_eee_record(
-            version="1.0.0", timestamp="2024-01-01T00:00:00Z"
-        )
-        record_b = _make_eee_record(
-            version="1.0.0", timestamp="2024-01-02T00:00:00Z"
-        )
+        record_a = _make_eee_record(version="1.0.0", timestamp="2024-01-01T00:00:00Z")
+        record_b = _make_eee_record(version="1.0.0", timestamp="2024-01-02T00:00:00Z")
         # record_b is newer, should win
         winner = dedup_newer_record(record_a, record_b)
         assert winner is record_b

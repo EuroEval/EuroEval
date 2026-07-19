@@ -12,6 +12,7 @@ from huggingface_hub import HfApi
 from euroeval.data_models import DatasetConfig
 from euroeval.languages import DANISH, SWEDISH
 from euroeval.tasks import LA
+from leaderboards import bucket_sync
 from src.scripts import swap_leaderboard_dataset
 
 
@@ -201,8 +202,6 @@ class TestSyncResults:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Should log correct total and new record counts."""
-        from leaderboards import bucket_sync
-
         results_dir = tmp_path / "results"
         results_dir.mkdir()
         new_results_path = tmp_path / "new_results.jsonl"
