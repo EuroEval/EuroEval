@@ -17,19 +17,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   Serbian, Slovak, Slovene, Spanish, Swedish, Ukrainian). All are marked `unofficial` as
   the published Hugging Face versions are placeholder test-split-only snapshots awaiting
   full regeneration. This was contributed by @FrejaThoresen ✨
-- Added Norwegian instruction-following datasets `ifeval-nb` (Bokmål) and `ifeval-nn`
-  (Nynorsk), integrating the Norwegian splits of
-  [MultiIFEval](https://huggingface.co/datasets/danish-foundation-models/multi-ifeval)
-  (524 examples each, unofficial, test-only). Added a
-  `length_constraints:number_sentences_with_language` constraint that takes a `language`
-  keyword argument (an NLTK language name such as `"norwegian"`) and counts sentences
-  with the matching NLTK Punkt tokenizer, so abbreviations such as `f.eks.` and `bl.a.`
-  are not miscounted as sentence boundaries; the existing
-  `length_constraints:number_sentences` constraint is unchanged. Following MultiIFEval,
-  the `language:response_language` constraint is left out for Norwegian, as language
-  detection cannot reliably separate Bokmål from Nynorsk. This was contributed by
-  @avalyset ✨
-- Added support for Luxembourgish! This includes the ltzGLUE benchmark datasets for
+- Added the new MultiIFEval instruction-following datasets, translated and adapted from
+  the English IFEval dataset, changing several of the constraints to accomodate
+  non-English languages. This was in part contributed by @avalyset ✨
+- Added support for Luxembourgish 🇱🇺! This includes the ltzGLUE benchmark datasets for
   headline classification, intent detection, linguistic acceptability (binary and
   multi-class), named entity recognition, textual entailment, sentiment analysis, and
   topic classification. The MultiWikiQA-lb reading comprehension dataset is also
