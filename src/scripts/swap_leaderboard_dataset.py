@@ -49,6 +49,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import click
+from generate_leaderboards import main as generate_leaderboards
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
@@ -280,6 +281,7 @@ def main(
             force=force,
             dry_run=dry_run,
         )
+        generate_leaderboards()
 
     changed = apply_swap(
         old_dataset=old_dataset, new_dataset=new_dataset, dry_run=dry_run
@@ -1527,11 +1529,14 @@ def open_pull_request(
     """
     for path in changed_paths:
         _git("add", str(path))
+        _git("add", "src/frontend/csv")
+
     # Check if there are any actual changes to commit
     diff_result = _git("diff", "--cached", "--quiet", check=False)
     if diff_result.returncode == 0:
         logger.info("No changes to commit; skipping PR creation.")
         return
+
     title = f"feat: swap official dataset {old_dataset} -> {new_dataset}"
     body = _pr_body(old_dataset=old_dataset, new_dataset=new_dataset)
     _git("commit", "-m", title, "-m", body)
