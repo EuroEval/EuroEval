@@ -409,6 +409,74 @@ class TestUploadPerModelFilesPerRecordTree:
         written_record = json.loads(content)
         assert written_record["model_info"]["additional_details"]["score"] == 90
 
+    def test_path_collision_raises_clear_error(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Test that distinct identities mapping to same path raise clear error.
+
+        Dataset names 'a/b' and 'a_b' both sanitise to 'a_b', causing a path
+        collision. This should raise ValueError with a message naming the
+        collision before any filesystem mutation occurs.
+        """
+        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+
+        mock_api = MagicMock()
+
+        # Record with dataset 'a/b' -> sanitises to 'a_b'
+        record_a: dict[str, t.Any] = {
+            "model_info": {
+                "id": "org/model",
+                "name": "org/model",
+                "additional_details": {"score": 50},
+            },
+            "dataset": {"name": "a/b"},
+            "task": {"name": "classification"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "1.0.0",
+                "additional_details": {
+                    "dataset": "a/b",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "results": {},
+        }
+
+        # Record with dataset 'a_b' -> also sanitises to 'a_b'
+        record_b: dict[str, t.Any] = {
+            "model_info": {
+                "id": "org/model",
+                "name": "org/model",
+                "additional_details": {"score": 90},
+            },
+            "dataset": {"name": "a_b"},
+            "task": {"name": "classification"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "1.0.0",
+                "additional_details": {
+                    "dataset": "a_b",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "results": {},
+        }
+
+        with patch("leaderboards.result_processing.HfApi", return_value=mock_api):
+            with patch(
+                "leaderboards.result_processing.resolve_hf_token",
+                return_value="test_token",
+            ):
+                with pytest.raises(ValueError, match="Identity collision detected"):
+                    result_processing._upload_per_model_files(
+                        processed_records=[record_a, record_b]
+                    )
+
+        # No files should be written on collision
+        assert list(tmp_path.iterdir()) == []
+
     def test_invalid_model_record_dropped_with_log(
         self,
         monkeypatch: pytest.MonkeyPatch,

@@ -25,8 +25,10 @@ from .model_metadata import add_missing_entries, fix_metadata, record_is_valid
 from .record_fields import deduplicate_records
 from .records import get_model_name
 from .result_identity import (
+    ResultIdentity,
     dedup_newer_record,
     identity_from_eee_record,
+    raise_on_collision,
     record_relative_path,
 )
 from .result_loading import load_raw_results
@@ -132,7 +134,9 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
     Raises:
         RuntimeError:
             If HF_TOKEN is not set or bucket sync fails.
-    """
+        ValueError:
+            If distinct identities sanitise to the same relative path.
+    """  # noqa: DOC502
     hf_token = resolve_hf_token()
     if not hf_token:
         raise RuntimeError(
@@ -140,8 +144,9 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
             "Run 'hf auth login' or set the HF_TOKEN environment variable."
         )
 
-    # Group records by their identity path, handling deduplication
-    records_by_path: dict[Path, dict[str, t.Any]] = {}
+    # Group records by path, handling deduplication and collision detection.
+    # Store (record, identity) to detect when distinct identities map to same path.
+    records_by_path: dict[Path, tuple[dict[str, t.Any], ResultIdentity]] = {}
     dropped_count = 0
 
     for record in processed_records:
@@ -160,17 +165,23 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
         )
 
         if relative_path in records_by_path:
-            # Duplicate identity - keep the newer record
-            existing = records_by_path[relative_path]
-            records_by_path[relative_path] = dedup_newer_record(existing, record)
+            # Path collision - check if identities match
+            existing_record, existing_identity = records_by_path[relative_path]
+            # raise_on_collision will raise ValueError if identities differ
+            raise_on_collision(existing_identity, identity)
+            # Identities match - keep the newer record based on version/timestamp
+            records_by_path[relative_path] = (
+                dedup_newer_record(existing_record, record),
+                identity,
+            )
         else:
-            records_by_path[relative_path] = record
+            records_by_path[relative_path] = (record, identity)
 
     hf_results_bucket = f"hf://buckets/{HF_RESULTS_BUCKET}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     logger.info("Uploading results to HF bucket...")
-    for relative_path, record in records_by_path.items():
+    for relative_path, (record, _) in records_by_path.items():
         file_path = RESULTS_DIR / relative_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
         content = json.dumps(record, ensure_ascii=False) + "\n"
