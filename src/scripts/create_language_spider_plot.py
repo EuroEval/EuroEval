@@ -457,8 +457,7 @@ def _get_model_identifier(record: JsonDict) -> str:
 def _load_all_results() -> list[JsonDict]:
     """Load all results from local JSONL files (reference population).
 
-    Skips unknown.jsonl as it is not authoritative. Loads all other
-    JSONL files in the results directory.
+    Loads all JSONL files in the results directory.
 
     Returns:
         List of EEE-format result records from all models.
@@ -470,9 +469,6 @@ def _load_all_results() -> list[JsonDict]:
         return records
 
     for jsonl_path in model_files:
-        # Skip unknown.jsonl as it is not authoritative
-        if jsonl_path.stem == "unknown":
-            continue
 
         try:
             lines = jsonl_path.read_text(encoding="utf-8").splitlines()

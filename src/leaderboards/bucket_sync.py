@@ -14,7 +14,7 @@ from huggingface_hub import HfApi
 
 from euroeval.data_models import BenchmarkResult
 
-from .constants import HF_RESULTS_BUCKET, RESULTS_DIR, UNKNOWN_RESULTS_FILENAME
+from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
 from .evaluation_common import resolve_hf_token
 from .jsonl_io import parse_jsonl_lines
 
@@ -79,7 +79,6 @@ def sync_bucket() -> None:
                 for line in missing_lines:
                     f.write(line + "\n")
 
-    _remove_unknown_results_file()
     logger.info(f"Synced bucket {HF_RESULTS_BUCKET}.")
 
 
@@ -189,8 +188,6 @@ def upload_results_to_bucket(results_file: Path) -> None:
             for line in lines:
                 f.write(line + "\n")
 
-    _remove_unknown_results_file()
-
     logger.info(f"Syncing local {RESULTS_DIR} -> bucket {HF_RESULTS_BUCKET}...")
     HfApi().sync_bucket(
         source=str(RESULTS_DIR),
@@ -245,14 +242,6 @@ def _keyed_result_lines_from_row(
         if key:
             keyed_lines.append((key, result_line))
     return keyed_lines
-
-
-def _remove_unknown_results_file() -> None:
-    """Remove the non-authoritative duplicate result file if synced locally."""
-    unknown_path = RESULTS_DIR / UNKNOWN_RESULTS_FILENAME
-    if unknown_path.exists():
-        unknown_path.unlink()
-        logger.warning("Removed non-authoritative %s.", unknown_path)
 
 
 def _sanitise_model_id(model_id: str) -> str:

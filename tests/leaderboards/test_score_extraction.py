@@ -181,8 +181,8 @@ class TestExtractModelMetadata:
     def test_metadata_not_overwritten_by_stale_record(self) -> None:
         """Enriched metadata should not be overwritten by a stale record.
 
-        Regression test for issue where stale records from unknown.jsonl or
-        misfiled results would override enriched metadata during extraction.
+        Regression test for issue where misfiled results would override
+        enriched metadata during extraction.
         """
         # Enriched record with full metadata
         enriched = self._record(
@@ -245,11 +245,11 @@ class TestExtractModelMetadata:
         assert metadata[model_key].get("commercial") is True
         assert metadata[model_key].get("open") is True
 
-    def test_stale_unknown_jsonl_style_record_does_not_override(self) -> None:
-        """A stale unknown.jsonl-style record should not override enriched metadata.
+    def test_stale_record_does_not_override_enriched_metadata(self) -> None:
+        """A stale record should not override enriched metadata.
 
         This simulates the case where misfiled records for other models end up
-        in the same file, or records from unknown.jsonl have null metadata.
+        in the same file, or records have null/default metadata.
         """
         enriched = self._record(
             name="Qwen/Qwen3.6-27B-FP8 (val)",
@@ -262,7 +262,7 @@ class TestExtractModelMetadata:
             },
         )
 
-        # Simulate a stale record like from unknown.jsonl with null/false defaults
+        # Simulate a stale record with null/false defaults
         stale = self._record(
             name="Qwen/Qwen3.6-27B-FP8 (val)",
             additional_details={

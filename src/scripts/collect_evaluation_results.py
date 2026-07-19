@@ -45,7 +45,6 @@ from leaderboards.constants import (
     REPO,
     RESULTS_DIR,
     RESULTS_READY_LABEL,
-    UNKNOWN_RESULTS_FILENAME,
 )
 from leaderboards.github_api import close_issue, comment_on_issue, gh_request
 from leaderboards.jsonl_io import parse_jsonl_lines
@@ -320,7 +319,7 @@ def list_all_result_files() -> list[BucketFile]:
             for f in files
             if isinstance(f, BucketFile)
             and f.path.endswith(".jsonl")
-            and f.path != UNKNOWN_RESULTS_FILENAME
+
         ]
     except Exception as e:
         logger.error(f"Failed to list bucket files: {e}")
@@ -526,11 +525,6 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
     except HfHubHTTPError as e:
         logger.warning(f"Could not sync from bucket: {e}. Starting fresh.")
 
-    unknown_path = RESULTS_DIR / UNKNOWN_RESULTS_FILENAME
-    if unknown_path.exists():
-        unknown_path.unlink()
-        logger.warning("Removed non-authoritative %s.", unknown_path)
-
     # Load existing results by model
     existing_by_model: dict[str, set[str]] = {}
     for model_file in RESULTS_DIR.glob("*.jsonl"):
@@ -559,11 +553,6 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
                     f.write(line + "\n")
         except json.JSONDecodeError:
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
-
-    unknown_path = RESULTS_DIR / UNKNOWN_RESULTS_FILENAME
-    if unknown_path.exists():
-        unknown_path.unlink()
-        logger.warning("Removed non-authoritative %s before upload.", unknown_path)
 
     # Sync updated results to EuroEval/results bucket
     logger.info(f"Syncing results to {HF_RESULTS_BUCKET}...")

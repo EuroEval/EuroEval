@@ -8,7 +8,7 @@ from functools import cache
 
 from .backup import backup_results
 from .bucket_sync import sync_bucket
-from .constants import NEW_RESULTS_PATH, RESULTS_DIR, UNKNOWN_RESULTS_FILENAME
+from .constants import NEW_RESULTS_PATH, RESULTS_DIR
 from .eee_validation import is_eee_record
 from .jsonl_io import load_records_from_jsonl_files
 
@@ -40,11 +40,7 @@ def load_raw_results() -> list[dict[str, t.Any]]:
     """
     _sync_results_from_bucket()
 
-    model_files = sorted(
-        path
-        for path in RESULTS_DIR.glob("*.jsonl")
-        if path.name != UNKNOWN_RESULTS_FILENAME
-    )
+    model_files = sorted(RESULTS_DIR.glob("*.jsonl"))
     records = load_records_from_jsonl_files(paths=model_files)
     logger.info(f"Loaded {len(records):,} existing results from {RESULTS_DIR}.")
 
