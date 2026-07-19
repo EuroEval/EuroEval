@@ -145,7 +145,9 @@ def identity_from_eee_record(record: dict) -> ResultIdentity:
     model_info = record.get("model_info", {})
     model_id = model_info.get("id") or model_info.get("name")
     if not model_id:
-        raise ValueError("Missing model_info.id and model_info.name in record")
+        raise ValueError(
+            "model_info.id and model_info.name are both missing or empty in record"
+        )
 
     additional = record.get("eval_library", {}).get("additional_details", {})
 
@@ -179,9 +181,7 @@ def identity_from_benchmark_result(result: BenchmarkResult) -> ResultIdentity:
 
 
 def record_filename(
-    dataset: str,
-    validation_split: bool | None,
-    few_shot: bool | None,
+    dataset: str, validation_split: bool | None, few_shot: bool | None
 ) -> str:
     """Produce the per-record filename for a given identity.
 
@@ -207,10 +207,7 @@ def record_filename(
 
 
 def record_relative_path(
-    model_id: str,
-    dataset: str,
-    validation_split: bool | None,
-    few_shot: bool | None,
+    model_id: str, dataset: str, validation_split: bool | None, few_shot: bool | None
 ) -> Path:
     """Produce the full relative path for a result record.
 

@@ -28,10 +28,6 @@ def main() -> None:
         if not record_file.is_file():
             continue
 
-        # Extract model_id from parent directory name (reverse sanitisation)
-        model_dir_name = record_file.parent.name
-        model_id = model_dir_name.replace("_", "/", 1)
-
         # Read single JSON record
         try:
             record: dict[str, t.Any] = json.loads(
@@ -39,6 +35,14 @@ def main() -> None:
             )
         except (json.JSONDecodeError, ValueError) as exc:
             print(f"Error parsing {record_file}: {exc}")
+            files_to_remove.append(record_file)
+            continue
+
+        # Extract model_id from record's model_info, not directory name
+        model_info = record.get("model_info", {})
+        model_id = model_info.get("id") or model_info.get("name")
+        if not model_id:
+            print(f"Dropping {record_file}: missing model_info.id and model_info.name")
             files_to_remove.append(record_file)
             continue
 
