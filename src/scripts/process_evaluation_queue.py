@@ -11,6 +11,7 @@ HF_TOKEN              A Hugging Face token with read access to gated repos.
 """
 
 import datetime as dt
+import json
 import logging
 import os
 import sys
@@ -55,6 +56,7 @@ from leaderboards.github_api import (
     remove_gated_label,
     unassign_issue,
 )
+from leaderboards.jsonl_io import load_records_from_result_tree
 from leaderboards.queue_env import (
     acquire_single_instance_lock,
     load_dotenv_into_environ,
@@ -83,6 +85,7 @@ from leaderboards.queue_runtime import (
     cool_down_between_issues,
     lower_process_priority,
 )
+from leaderboards.result_identity import identity_from_eee_record, identity_to_path
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -546,8 +549,9 @@ def process_issue(
 def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     """Upload result lines to the HF results bucket.
 
-    Appends new lines to the model-specific file and uploads only that file.
-    Never deletes existing files or lines from the bucket (additive only).
+    Writes one JSON file per logical result via result_identity paths
+    (results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json), then syncs
+    to the bucket. Never deletes existing files (additive only).
 
     Args:
         lines:
@@ -559,30 +563,33 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
         True if upload succeeded, False otherwise.
     """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    model_file = RESULTS_DIR / f"{model_id.replace('/', '_')}.jsonl"
 
-    existing_lines: set[str] = set()
-    if model_file.exists():
-        existing_lines = {
-            line
-            for line in model_file.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        }
+    records_written = 0
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+            identity = identity_from_eee_record(record)
+            record_path = RESULTS_DIR / identity_to_path(identity)
+            record_path.parent.mkdir(parents=True, exist_ok=True)
+            record_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
+            records_written += 1
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            logger.debug(f"Skipping invalid record: {e}")
 
-    new_lines = [line for line in lines if line and line not in existing_lines]
-    if new_lines:
-        with model_file.open("a", encoding="utf-8") as f:
-            for line in new_lines:
-                f.write(line + "\n")
+    if not records_written:
+        logger.warning("No valid results found to upload.")
+        return False
 
     try:
-        logger.info(f"Uploading results to {HF_RESULTS_BUCKET}...")
+        logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
         api = HfApi()
         api.sync_bucket(
             source=str(RESULTS_DIR), dest=f"hf://buckets/{HF_RESULTS_BUCKET}/"
         )
         logger.info(
-            f"Uploaded {len(new_lines)} new result lines for {model_id!r} to HF bucket."
+            f"Uploaded {records_written} result records for {model_id!r} to HF bucket."
         )
         return True
     except HfHubHTTPError as e:
@@ -620,10 +627,15 @@ def _run_claimed_issue(
     number = issue["number"]
 
     results_path = Path("euroeval_benchmark_results.jsonl")
-    model_results_path = RESULTS_DIR / f"{model_id.replace('/', '_')}.jsonl"
-    existing_lines = read_jsonl_lines(path=model_results_path) + read_jsonl_lines(
-        path=results_path
-    )
+    # Read existing uploaded results from tree + local euroeval output
+    existing_lines: list[str] = []
+    if RESULTS_DIR.exists() and any(RESULTS_DIR.rglob("*.json")):
+        # Load from tree and convert to JSONL lines for this model
+        for record in load_records_from_result_tree(RESULTS_DIR):
+            record_model = record.get("model_info", {}).get("name", "")
+            if record_model == model_id:
+                existing_lines.append(json.dumps(record))
+    existing_lines.extend(read_jsonl_lines(path=results_path))
     accumulated = result_lines_for_model(lines=existing_lines, model_id=model_id)
     done = completed_languages(lines=accumulated, requested_languages=languages)
     pending = [lang for lang in languages if lang not in done]
