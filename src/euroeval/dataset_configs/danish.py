@@ -30,6 +30,10 @@ ANGRY_TWEETS_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
+DALA_CONFIG = DatasetConfig(
+    name="dala", pretty_name="DaLA", source="EuroEval/dala", task=LA, languages=[DANISH]
+)
+
 DANSK_CONFIG = DatasetConfig(
     name="dansk",
     pretty_name="DANSK",
@@ -99,9 +103,6 @@ VALEU_DA_CONFIG = DatasetConfig(
     bootstrap_samples=False,
 )
 
-DALA_CONFIG = DatasetConfig(
-    name="dala", pretty_name="DaLA", source="EuroEval/dala", task=LA, languages=[DANISH]
-)
 
 # Unofficial datasets ###
 
