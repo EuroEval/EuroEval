@@ -30,14 +30,6 @@ ANGRY_TWEETS_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
-SCALA_DA_CONFIG = DatasetConfig(
-    name="scala-da",
-    pretty_name="ScaLA-da",
-    source="EuroEval/scala-da",
-    task=LA,
-    languages=[DANISH],
-)
-
 DANSK_CONFIG = DatasetConfig(
     name="dansk",
     pretty_name="DANSK",
@@ -107,7 +99,20 @@ VALEU_DA_CONFIG = DatasetConfig(
     bootstrap_samples=False,
 )
 
+DALA_CONFIG = DatasetConfig(
+    name="dala", pretty_name="DaLA", source="giannor/dala", task=LA, languages=[DANISH]
+)
+
 # Unofficial datasets ###
+
+SCALA_DA_CONFIG = DatasetConfig(
+    name="scala-da",
+    pretty_name="ScaLA-da",
+    source="EuroEval/scala-da",
+    task=LA,
+    languages=[DANISH],
+    unofficial=True,
+)
 
 RAGTRUTH_DA_CONFIG = DatasetConfig(
     name="ragtruth-da",
@@ -116,15 +121,6 @@ RAGTRUTH_DA_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[DANISH],
     train_split=None,
-    unofficial=True,
-)
-
-DALA_CONFIG = DatasetConfig(
-    name="dala",
-    pretty_name="DaLA",
-    source="giannor/dala",
-    task=LA,
-    languages=[DANISH],
     unofficial=True,
 )
 

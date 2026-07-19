@@ -14,10 +14,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   European languages (Danish, Albanian, Belarusian, Bosnian, Bulgarian, Catalan,
   Croatian, Czech, Dutch, Estonian, Faroese, Finnish, French, German, Greek, Hungarian,
   Icelandic, Italian, Latvian, Lithuanian, Norwegian, Polish, Portuguese, Romanian,
-  Serbian, Slovak, Slovene, Spanish, Swedish, Ukrainian). All are marked
-  `unofficial` as the published Hugging Face versions are placeholder
-  test-split-only snapshots awaiting full regeneration. This was contributed by
-  @FrejaThoresen ✨
+  Serbian, Slovak, Slovene, Spanish, Swedish, Ukrainian). All are marked `unofficial` as
+  the published Hugging Face versions are placeholder test-split-only snapshots awaiting
+  full regeneration. This was contributed by @FrejaThoresen ✨
 - Added Norwegian instruction-following datasets `ifeval-nb` (Bokmål) and `ifeval-nn`
   (Nynorsk), integrating the Norwegian splits of
   [MultiIFEval](https://huggingface.co/datasets/danish-foundation-models/multi-ifeval)
@@ -36,6 +35,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   topic classification. The MultiWikiQA-lb reading comprehension dataset is also
   included.
 
+### Changed
+
+- Made the Danish linguistic acceptability dataset DaLA the new official such one, over
+  the previous ScaLA-da, which has now been demoted to unofficial.
+
 ### Fixed
 
 - vLLM model loading now unconditionally disables FlashInfer autotuning by passing
@@ -51,8 +55,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   benchmarking. Now uses `ignore_errors=True` to handle concurrent deletions gracefully.
 - The HF, vLLM and fresh model tokeniser loaders no longer pass `verbose=False` to
   `AutoTokenizer.from_pretrained`, since the `MistralCommonBackend` rejects this
-  argument. The vLLM mistral tokeniser fallback is now gated on model identity (model
-  ID and/or model config) rather than the error string, which previously matched the
+  argument. The vLLM mistral tokeniser fallback is now gated on model identity (model ID
+  and/or model config) rather than the error string, which previously matched the
   `MistralCommonBackend` message for unrelated models.
 
 ## [v17.6.0] - 2026-06-30
@@ -82,17 +86,17 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   largest entry was used, undercounting models with weights split across multiple
   dtypes.
 - Fixed the finetuning NaN-retry not actually switching to fp32. When NaN values were
-  detected under mixed precision, the retry disabled autocast but reloaded the model
-  via `get_dtype`, which is hardware-driven and kept returning bf16/fp16 on CUDA — so
-  the weights stayed in the same NaN-producing dtype and the retry was a no-op (notably
-  for embedding-finetuned encoders like `intfloat/multilingual-e5-large-instruct`,
-  whose CUDA fused-attention backward NaNs in bf16). The retry now threads a
-  `dtype_override` down to model loading so the weights are genuinely reloaded in fp32.
+  detected under mixed precision, the retry disabled autocast but reloaded the model via
+  `get_dtype`, which is hardware-driven and kept returning bf16/fp16 on CUDA — so the
+  weights stayed in the same NaN-producing dtype and the retry was a no-op (notably for
+  embedding-finetuned encoders like `intfloat/multilingual-e5-large-instruct`, whose
+  CUDA fused-attention backward NaNs in bf16). The retry now threads a `dtype_override`
+  down to model loading so the weights are genuinely reloaded in fp32.
 - Added `download()` method to `PipelineMetric` class
   - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
     Values metric)
-  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and
-      caching the pipeline
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
+    the pipeline
 - Fixed `BenchmarkResult.from_dict()` failing to parse legacy results from Hugging Face
   bucket where `results.raw` contained nested dicts (e.g. `{"test": [{"mcc": 0.5}]}`)
   instead of flattened format (`{"test_mcc": 0.5}`)

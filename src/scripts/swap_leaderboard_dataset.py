@@ -56,6 +56,7 @@ from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
+from leaderboards.bucket_sync import upload_results_to_bucket
 from leaderboards.constants import (
     DEFAULT_GPU_MEMORY_UTILIZATION,
     LEADERBOARD_CATEGORIES,
@@ -271,6 +272,8 @@ def main(
             force=force,
             dry_run=dry_run,
         )
+        if not dry_run:
+            upload_results_to_bucket(results_file=EUROEVAL_BENCHMARK_RESULTS_PATH)
 
     changed = apply_swap(
         old_dataset=old_dataset, new_dataset=new_dataset, dry_run=dry_run
@@ -893,9 +896,11 @@ def execute_jobs(
             shot = "zero-shot" if job.zero_shot else "few-shot"
             split = "test" if job.evaluate_test_split else "val"
             source = "API" if job.is_api else "open-weight"
+            job_start = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
             with open(log_path, "a", encoding="utf-8") as log_file:
                 log_file.write("\n")
                 log_file.write(f"Job [{idx}/{len(jobs)}] Starting\n")
+                log_file.write(f"Started at: {job_start}\n")
                 log_file.write("-" * 40 + "\n")
                 log_file.write(f"Model: {job.model_id}\n")
                 log_file.write(f"Languages: {', '.join(job.languages)}\n")
@@ -916,9 +921,11 @@ def execute_jobs(
             )
 
             # Append job completion status
+            job_end = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
             with open(log_path, "a", encoding="utf-8") as log_file:
                 log_file.write("\n")
                 log_file.write(f"Job [{idx}/{len(jobs)}] Completed\n")
+                log_file.write(f"Finished at: {job_end}\n")
                 log_file.write(f"Exit Code: {returncode}\n")
                 log_file.write("=" * 40 + "\n")
 
@@ -1501,11 +1508,13 @@ def open_pull_request(
     """
     for path in changed_paths:
         _git("add", str(path))
+
     # Check if there are any actual changes to commit
     diff_result = _git("diff", "--cached", "--quiet", check=False)
     if diff_result.returncode == 0:
         logger.info("No changes to commit; skipping PR creation.")
         return
+
     title = f"feat: swap official dataset {old_dataset} -> {new_dataset}"
     body = _pr_body(old_dataset=old_dataset, new_dataset=new_dataset)
     _git("commit", "-m", title, "-m", body)
