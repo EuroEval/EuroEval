@@ -25,6 +25,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   multi-class), named entity recognition, textual entailment, sentiment analysis, and
   topic classification. The MultiWikiQA-lb reading comprehension dataset is also
   included.
+- Added the `alx/` provider, being the Danish [ALX
+  Platform](https://platform.alexandra.dk/).
 
 ### Changed
 

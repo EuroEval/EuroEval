@@ -107,9 +107,11 @@ VOCAB_SIZE_MAPPING = {
     r"(gemini/)?gemini-[1-9](\.[0-9])?-(flash|pro).*": 256_128,
     # xAI models
     r"(xai/)?grok.*": -1,
-    # Chat.dk models
+    # Ordbogen models
     r"(ordbogen/)?odin-medium.*": -1,
     r"(ordbogen/)?odin-large.*": -1,
+    # ALX models
+    r"(alx/)?qwen3\.5-397b.*": 248_320,
 }
 
 
@@ -142,9 +144,11 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"(gemini/)?gemini-[23](\.[05])?.*": 1_048_576,
     # xAI models
     r"(xai/)?grok.*": 131_072,
-    # Chat.dk models
+    # Ordbogen models
     r"(ordbogen/)?odin-medium.*": 131_072,
     r"(ordbogen/)?odin-large.*": 202_752,
+    # ALX models
+    r"(alx/)?qwen3\.5-397b.*": 262_144,
 }
 
 
@@ -161,9 +165,11 @@ NUM_PARAMS_MAPPING = {
     r"(gemini/)?gemini-[23](.[05])?.*": -1,
     # xAI models
     r"(xai/)?grok.*": -1,
-    # Chat.dk models
+    # Ordbogen models
     r"(ordbogen/)?odin-medium.*": -1,
     r"(ordbogen/)?odin-large.*": -1,
+    # ALX models
+    r"(alx/)?qwen3\.5-397b.*": 403_000_000_000,
 }
 
 
@@ -196,7 +202,7 @@ CUSTOM_INFERENCE_API_PREFIXES = [
     "lm_studio/",
 ]
 
-UNOFFICIAL_INFERENCE_API_PREFIXES = ["ordbogen/"]
+UNOFFICIAL_INFERENCE_API_PREFIXES = ["ordbogen/", "alx/"]
 
 
 class LiteLLMModel(BenchmarkModule):
@@ -1754,7 +1760,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
 
-        # If the model is a Chat.dk model, we make sure reasoning traces are not
+        # If the model is an Ordbogen model, we make sure reasoning traces are not
         # included in the output
         if self.model_config.model_id.startswith("ordbogen/"):
             generation_kwargs["include_reasoning"] = False
@@ -2019,3 +2025,6 @@ def set_up_benchmark_config_for_model(
     if model_id.startswith("ordbogen/"):
         benchmark_config.api_key = os.getenv("ORDBOGEN_API_KEY")
         benchmark_config.api_base = "https://api.ordbogen.ai/v1"
+    elif model_id.startswith("alx/"):
+        benchmark_config.api_key = os.getenv("ALX_API_KEY")
+        benchmark_config.api_base = "https://inference.alexandra.dk/v1"

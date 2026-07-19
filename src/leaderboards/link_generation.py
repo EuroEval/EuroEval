@@ -94,6 +94,7 @@ def generate_model_url(model_id: str) -> str | None:
         generate_google_url,
         generate_xai_url,
         generate_ordbogen_url,
+        generate_alx_url,
     )
     for url_generator in url_generators:
         url = url_generator(model_id=model_id_without_extras)
@@ -289,6 +290,23 @@ def generate_ordbogen_url(model_id: str) -> str | None:
         return None
     model_id = model_id.replace("ordbogen/", "")
     return f"https://www.ordbogen.ai/docs/models/{model_id}"
+
+
+@cache
+def generate_alx_url(model_id: str) -> str | None:
+    """Generate a model URL for a model hosted on ALX.
+
+    Args:
+        model_id:
+            The ALX model ID.
+
+    Returns:
+        The ALX platform URL for the provider, or None if the model ID is not an ALX
+        model.
+    """
+    if not model_id.startswith("alx/"):
+        return None
+    return "https://platform.alexandra.dk/pricing/"
 
 
 def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
