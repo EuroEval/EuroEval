@@ -560,12 +560,7 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
         except json.JSONDecodeError:
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
 
-    # Clear existing tree and write deduplicated results
-    for existing_file in RESULTS_DIR.rglob("*.json"):
-        if existing_file.is_file():
-            existing_file.unlink()
-
-    # Build path -> identity map to detect collisions before writing
+    # === VALIDATE PHASE: build path->identity map before any mutation ===
     path_to_identity: dict[Path, ResultIdentity] = {}
     for identity in existing:
         record_path = RESULTS_DIR / identity_to_path(identity)
@@ -573,6 +568,19 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
             raise_on_collision(identity, path_to_identity[record_path])
         path_to_identity[record_path] = identity
 
+    # === MUTATE PHASE: only after validation succeeds ===
+    # Clear existing tree
+    for existing_file in RESULTS_DIR.rglob("*.json"):
+        if existing_file.is_file():
+            existing_file.unlink()
+
+    # Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts (not repo-root files)
+    for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
+        if jsonl_file.is_file():
+            jsonl_file.unlink()
+            logger.info(f"Removed stale artefact {jsonl_file}")
+
+    # Write deduplicated results
     records_written = 0
     for identity, record in existing.items():
         model_id, dataset, validation_split, few_shot = identity
@@ -591,12 +599,6 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
     logger.info(
         f"Wrote {records_written} record files to {RESULTS_DIR}, syncing to bucket..."
     )
-
-    # Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts (not repo-root files)
-    for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
-        if jsonl_file.is_file():
-            jsonl_file.unlink()
-            logger.info(f"Removed stale artefact {jsonl_file}")
 
     # Sync to bucket
     try:
