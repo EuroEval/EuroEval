@@ -557,9 +557,21 @@ class TestUploadResultsToBucket:
     def test_upload_results_to_bucket_raises_on_collision(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that upload_results_to_bucket raises on identity path collision."""
+        """Test that upload_results_to_bucket raises on identity path collision.
+
+        Verifies that on collision, NO filesystem mutation occurs - pre-existing
+        files in RESULTS_DIR remain intact.
+        """
         results_dir = tmp_path / "results"
         results_file = tmp_path / "results.jsonl"
+
+        # Create a pre-existing file in results dir to verify it's preserved
+        pre_existing_model_dir = results_dir / "other_model"
+        pre_existing_model_dir.mkdir(parents=True)
+        pre_existing_file = pre_existing_model_dir / "other_ds__none__none.json"
+        pre_existing_file.write_text(
+            json.dumps({"pre_existing": True}), encoding="utf-8"
+        )
 
         # Two records with different identities but same sanitised path
         # "model/a" and "model_a" both sanitise to "model_a" directory
@@ -590,3 +602,16 @@ class TestUploadResultsToBucket:
             with patch.object(HfApi, "sync_bucket", return_value=None):
                 with pytest.raises(ValueError, match="Identity collision detected"):
                     bucket_sync.upload_results_to_bucket(results_file=results_file)
+
+        # Verify no mutation occurred: pre-existing file should still be intact
+        assert pre_existing_file.exists(), (
+            "Pre-existing file should not have been deleted on collision"
+        )
+        assert json.loads(pre_existing_file.read_text(encoding="utf-8")) == {
+            "pre_existing": True
+        }
+        # The collision path should NOT have been written
+        collision_path = results_dir / "model_a" / "test_ds__none__none.json"
+        assert not collision_path.exists(), (
+            "Collision path should not have been written"
+        )
