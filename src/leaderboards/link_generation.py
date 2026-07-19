@@ -298,7 +298,7 @@ def generate_alx_url(model_id: str) -> str | None:
 
     Args:
         model_id:
-            The Ordbogen model ID.
+            The ALX model ID.
 
     Returns:
         The ALX platform URL for the provider, or None if the model ID is not an ALX
