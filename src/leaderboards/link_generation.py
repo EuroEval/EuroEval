@@ -303,6 +303,7 @@ def generate_alx_url(model_id: str) -> str | None:
     Returns:
         The ALX platform URL for the provider, or None if the model ID is not an ALX
         model.
+    """
     if not model_id.startswith("alx/"):
         return None
     return "https://platform.alexandra.dk/pricing/"
