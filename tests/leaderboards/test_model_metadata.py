@@ -11,11 +11,14 @@ unnecessary Hugging Face API calls.
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import httpx
+import pytest
 from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
 
+from leaderboards import model_metadata
 from leaderboards.cache import Cache, _is_hf_url_for_model
 from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
 from leaderboards.model_metadata import (
@@ -862,3 +865,54 @@ class TestCachePriority:
 
         # open should remain False (non-HF URL)
         assert result["model_info"]["additional_details"]["open"] is False
+
+
+class TestRemoveModelResults:
+    """Tests for the _remove_model_results function."""
+
+    def test_deletes_model_directory(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Test that _remove_model_results deletes the model's subdirectory."""
+        monkeypatch.setattr(model_metadata, "RESULTS_DIR", tmp_path)
+
+        # Create a model directory with result files
+        model_dir = tmp_path / "org_model"
+        model_dir.mkdir(parents=True)
+        (model_dir / "mmlu__test__zeroshot.json").write_text("{}", encoding="utf-8")
+        (model_dir / "mmlu__test__fewshot.json").write_text("{}", encoding="utf-8")
+
+        assert model_dir.exists()
+        assert len(list(model_dir.iterdir())) == 2
+
+        model_metadata._remove_model_results(model_id="org/model")
+
+        # Directory should be deleted
+        assert not model_dir.exists()
+
+    def test_deletes_directory_with_slashes_in_model_id(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Test deletion works correctly with model IDs containing slashes."""
+        monkeypatch.setattr(model_metadata, "RESULTS_DIR", tmp_path)
+
+        # Create a model directory (slashes are sanitised to underscores)
+        model_dir = tmp_path / "org_Qwen3-0.6B"
+        model_dir.mkdir(parents=True)
+        (model_dir / "mmlu__test__zeroshot.json").write_text("{}", encoding="utf-8")
+
+        model_metadata._remove_model_results(model_id="org/Qwen3-0.6B")
+
+        assert not model_dir.exists()
+
+    def test_no_error_if_directory_does_not_exist(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Test that _remove_model_results does not raise if directory doesn't exist."""
+        monkeypatch.setattr(model_metadata, "RESULTS_DIR", tmp_path)
+
+        # Should not raise
+        model_metadata._remove_model_results(model_id="nonexistent/model")
+
+        # Directory should still not exist
+        assert not (tmp_path / "nonexistent_model").exists()
