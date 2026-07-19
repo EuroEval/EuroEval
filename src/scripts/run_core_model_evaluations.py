@@ -48,6 +48,10 @@ from leaderboards.evaluation_common import (
     official_dataset_language_pairs,
     run_euroeval,
 )
+from leaderboards.jsonl_io import (
+    load_records_from_jsonl_files,
+    load_records_from_result_tree,
+)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -233,7 +237,7 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
     """Return the ``(model_id, dataset, language)`` triples already benchmarked.
 
     Reads the merged result corpus the same way the leaderboard pipeline
-    does -- the per-model files in ``RESULTS_DIR`` plus the optional
+    does -- the per-record JSON tree in ``RESULTS_DIR`` plus the optional
     ``new_results.jsonl`` -- but without the destructive unlink that
     :func:`leaderboards.result_loading.load_raw_results` performs.
 
@@ -243,62 +247,38 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
         HTML anchor so the keys line up with the canonical ids in
         ``core_models.yaml``.
     """
-    lines: list[str] = []
-    for model_file in sorted(RESULTS_DIR.glob("*.jsonl")):
-        lines.extend(model_file.read_text(encoding="utf-8").splitlines())
+    records: list[dict[str, object]] = []
+    if RESULTS_DIR.exists() and any(RESULTS_DIR.rglob("*.json")):
+        records.extend(load_records_from_result_tree(RESULTS_DIR))
     if NEW_RESULTS_PATH.exists():
-        lines.extend(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
+        records.extend(load_records_from_jsonl_files([NEW_RESULTS_PATH]))
 
     observations: set[tuple[str, str, str]] = set()
-    parse_failures = 0
-    for line_idx, line in enumerate(lines):
-        line = line.strip()
-        if not line:
-            continue
-        # Some lines pack multiple JSON objects back-to-back; split on '}{'
-        # the same way result_loading does.
-        for record_text in re.split(pattern=r"(?<=})(?={)", string=line):
-            if not record_text.strip():
-                continue
-            try:
-                raw_record = json.loads(record_text)
-            except json.JSONDecodeError as e:
-                parse_failures += 1
-                logger.warning(
-                    f"Skipping malformed JSON on result line {line_idx:,}: {e}; "
-                    f"snippet={record_text[:120]!r}."
-                )
-                continue
-
-            # EEE: model_info.name, eval_library.additional_details.dataset/languages
-            model = raw_record.get("model_info", {}).get("name", "")
-            eval_additional = raw_record.get("eval_library", {}).get(
-                "additional_details", {}
+    for raw_record in records:
+        # EEE: model_info.name, eval_library.additional_details.dataset/languages
+        model = raw_record.get("model_info", {}).get("name", "")
+        eval_additional = raw_record.get("eval_library", {}).get(
+            "additional_details", {}
+        )
+        dataset = eval_additional.get("dataset")
+        languages_raw = eval_additional.get("languages", "[]")
+        try:
+            languages = (
+                json.loads(languages_raw)
+                if isinstance(languages_raw, str)
+                else languages_raw
             )
-            dataset = eval_additional.get("dataset")
-            languages_raw = eval_additional.get("languages", "[]")
-            try:
-                languages = (
-                    json.loads(languages_raw)
-                    if isinstance(languages_raw, str)
-                    else languages_raw
-                )
-            except json.JSONDecodeError:
-                languages = []
+        except json.JSONDecodeError:
+            languages = []
 
-            model = _strip_anchor(model_id=str(model))
-            if not model or not dataset:
-                continue
-            for language in languages:
-                observations.add((model, str(dataset), str(language)))
+        model = _strip_anchor(model_id=str(model))
+        if not model or not dataset:
+            continue
+        for language in languages:
+            observations.add((model, str(dataset), str(language)))
     logger.info(
         f"Loaded {len(observations):,} (model, dataset, language) observations."
     )
-    if parse_failures:
-        logger.warning(
-            f"Skipped {parse_failures:,} unparseable result record(s); see "
-            "earlier warnings for details."
-        )
     return observations
 
 

@@ -43,6 +43,8 @@ import logging
 import os
 import re
 import subprocess
+import tempfile
+import typing as t
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -56,7 +58,7 @@ from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
-from leaderboards.bucket_sync import upload_results_to_bucket
+from leaderboards.bucket_sync import merge_results, upload_results_to_bucket
 from leaderboards.constants import (
     DEFAULT_GPU_MEMORY_UTILIZATION,
     LEADERBOARD_CATEGORIES,
@@ -67,6 +69,10 @@ from leaderboards.evaluation_common import (
     gpu_total_memory_bytes,
     model_fits_locally,
     run_euroeval,
+)
+from leaderboards.jsonl_io import (
+    load_records_from_jsonl_files,
+    load_records_from_result_tree,
 )
 from leaderboards.records import get_bool_field, get_dataset, plain_model_id
 from leaderboards.task_metadata import (
@@ -89,9 +95,10 @@ EUROEVAL_BENCHMARK_RESULTS_PATH = REPO_ROOT / "euroeval_benchmark_results.jsonl"
 def sync_results_from_bucket() -> None:
     """Sync results from the HF bucket and consolidate into NEW_RESULTS_PATH.
 
-    Downloads all .jsonl files from the EuroEval/results bucket to RESULTS_DIR,
-    then merges them into NEW_RESULTS_PATH (appending, not overwriting) so
-    subsequent evaluations can detect and skip already-completed runs.
+    Downloads all result files from the EuroEval/results bucket to RESULTS_DIR,
+    then merges the per-record JSON tree into NEW_RESULTS_PATH (appending, not
+    overwriting) so subsequent evaluations can detect and skip already-completed
+    runs.
     """
     logger.info("Syncing results from HF bucket %s...", HF_RESULTS_BUCKET)
 
@@ -103,35 +110,45 @@ def sync_results_from_bucket() -> None:
         verbose=True,
     )
 
-    # Consolidate all results into NEW_RESULTS_PATH (append mode)
-    all_lines: list[str] = []
-    for model_file in sorted(RESULTS_DIR.glob("*.jsonl")):
-        all_lines.extend(model_file.read_text(encoding="utf-8").splitlines())
+    # Merge per-record JSON tree into NEW_RESULTS_PATH
+    # First read existing lines to avoid duplicates
+    existing_lines: set[str] = set()
+    if NEW_RESULTS_PATH.exists():
+        existing_lines = set(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
 
-    if all_lines:
-        # Read existing lines from NEW_RESULTS_PATH if it exists
-        existing_lines: set[str] = set()
-        if NEW_RESULTS_PATH.exists():
-            existing_lines = set(
-                NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines()
-            )
+    # Use merge_results to consolidate tree into a temp location, then append
+    # unique records to NEW_RESULTS_PATH
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".jsonl", delete=False, encoding="utf-8"
+    ) as tmp:
+        tmp_path = Path(tmp.name)
 
-        # Append only new lines
-        new_lines = [line for line in all_lines if line not in existing_lines]
-        if new_lines:
-            logger.info(
-                "Consolidating %s result lines into %s (%s new).",
-                len(all_lines),
-                NEW_RESULTS_PATH,
-                len(new_lines),
-            )
-            with NEW_RESULTS_PATH.open("a", encoding="utf-8") as f:
-                for line in new_lines:
-                    f.write(line + "\n")
+    try:
+        record_count = merge_results(tmp_path)
+        if record_count > 0:
+            # Read merged records and append unique ones
+            new_lines: list[str] = []
+            for line in tmp_path.read_text(encoding="utf-8").splitlines():
+                if line and line not in existing_lines:
+                    new_lines.append(line)
+
+            if new_lines:
+                logger.info(
+                    "Consolidating %s result records into %s (%s new).",
+                    len(new_lines),
+                    NEW_RESULTS_PATH,
+                    len(new_lines),
+                )
+                with NEW_RESULTS_PATH.open("a", encoding="utf-8") as f:
+                    for line in new_lines:
+                        f.write(line + "\n")
+            else:
+                logger.info("No new result records to consolidate.")
         else:
-            logger.info("No new result lines to consolidate.")
-    else:
-        logger.warning("No results found in bucket.")
+            logger.warning("No results found in bucket.")
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
 
 
 DATASET_CONFIG_DIR = REPO_ROOT / "src" / "euroeval" / "dataset_configs"
@@ -520,7 +537,7 @@ def run_evaluations(
 def load_corpus() -> _Corpus:
     """Load the recorded results, indexed for selection and mirroring.
 
-    Reads the per-model JSONL files in ``RESULTS_DIR``, the optional
+    Reads the per-record JSON tree in ``RESULTS_DIR``, the optional
     ``new_results.jsonl``, and the optional ``euroeval_benchmark_results.jsonl``
     from local ``euroeval`` CLI runs. A model counts as an API model when its
     record was produced by the ``litellm`` engine or is flagged as not
@@ -535,16 +552,15 @@ def load_corpus() -> _Corpus:
         click.ClickException:
             When no results can be loaded.
     """
-    lines: list[str] = []
-    for model_file in sorted(RESULTS_DIR.glob("*.jsonl")):
-        lines.extend(model_file.read_text(encoding="utf-8").splitlines())
+    # Load from per-record JSON tree
+    records: list[dict[str, object]] = []
+    if RESULTS_DIR.exists() and any(RESULTS_DIR.rglob("*.json")):
+        records.extend(load_records_from_result_tree(RESULTS_DIR))
     if NEW_RESULTS_PATH.exists():
-        lines.extend(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
+        records.extend(load_records_from_jsonl_files([NEW_RESULTS_PATH]))
     if EUROEVAL_BENCHMARK_RESULTS_PATH.exists():
-        lines.extend(
-            EUROEVAL_BENCHMARK_RESULTS_PATH.read_text(encoding="utf-8").splitlines()
-        )
-    if not lines:
+        records.extend(load_records_from_jsonl_files([EUROEVAL_BENCHMARK_RESULTS_PATH]))
+    if not records:
         raise click.ClickException(
             f"No results found under {RESULTS_DIR}; cannot find ranked models."
         )
@@ -555,46 +571,33 @@ def load_corpus() -> _Corpus:
     api_model_ids: set[str] = set()
     observations: set[tuple[str, str, str]] = set()
     eval_configs: dict[tuple[str, str, str], _ObsConfig] = {}
-    for line in lines:
-        line = line.strip()
-        if not line:
+    for record in records:
+        model = plain_model_id(str(record.get("model_info", {}).get("name", "")))
+        dataset = get_dataset(record=record)
+        if not model or not dataset:
             continue
-        for record_text in re.split(pattern=r"(?<=})(?={)", string=line):
-            if not record_text.strip():
-                continue
-            try:
-                record = json.loads(record_text)
-            except json.JSONDecodeError:
-                logger.warning(
-                    "Skipping malformed JSON record: %s...", record_text[:80]
-                )
-                continue
-            model = plain_model_id(str(record.get("model_info", {}).get("name", "")))
-            dataset = get_dataset(record=record)
-            if not model or not dataset:
-                continue
-            model_info = record.get("model_info", {})
-            if record_is_api(model_info=model_info):
-                api_model_ids.add(model)
-            config = _ObsConfig(
-                validation_split=get_bool_field(record, "validation_split", False),
-                few_shot=get_bool_field(record, "few_shot", True),
-                generative=str(
-                    model_info.get("additional_details", {}).get("generative")
-                ).lower()
-                == "true",
-            )
-            for language in _record_languages(record=record):
-                datasets_by_language[language][model].add(str(dataset))
-                key = (model, str(dataset), language)
-                observations.add(key)
-                existing = eval_configs.get(key)
-                # Prefer the test-split record: when a model has both, the
-                # leaderboard row shows the test-split variant.
-                if existing is None or (
-                    not config.validation_split and existing.validation_split
-                ):
-                    eval_configs[key] = config
+        model_info = t.cast(dict[str, object], record.get("model_info", {}))
+        if record_is_api(model_info=model_info):
+            api_model_ids.add(model)
+        config = _ObsConfig(
+            validation_split=get_bool_field(record, "validation_split", False),
+            few_shot=get_bool_field(record, "few_shot", True),
+            generative=str(
+                model_info.get("additional_details", {}).get("generative")
+            ).lower()
+            == "true",
+        )
+        for language in _record_languages(record=record):
+            datasets_by_language[language][model].add(str(dataset))
+            key = (model, str(dataset), language)
+            observations.add(key)
+            existing = eval_configs.get(key)
+            # Prefer the test-split record: when a model has both, the
+            # leaderboard row shows the test-split variant.
+            if existing is None or (
+                not config.validation_split and existing.validation_split
+            ):
+                eval_configs[key] = config
     logger.info(
         f"Loaded results for {len(datasets_by_language):,} language(s) "
         f"({len(api_model_ids):,} API model(s))."
