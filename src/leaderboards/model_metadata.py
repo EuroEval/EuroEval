@@ -401,15 +401,8 @@ def is_trained_from_scratch(
         model_id=plain_model_id(_model_id_from_record(record=record))
     ).model_id
 
-    base_model_cache = {
-        _base_model_id(m): value for m, value in cache.trained_from_scratch.items()
-    }
-    base_model_id = _base_model_id(model_id)
-    if base_model_id in base_model_cache:
-        value = base_model_cache[base_model_id]
-        if model_id not in cache.trained_from_scratch:
-            cache.trained_from_scratch[model_id] = value
-        return value
+    if model_id in cache.trained_from_scratch:
+        return cache.trained_from_scratch[model_id]
 
     # Check if model is open or closed
     model_openness = cache.open.get(model_id)
@@ -535,20 +528,3 @@ def _model_id_from_record(record: dict) -> str:
         if model_id_match:
             return model_id_match.group(1)
     return model_id
-
-
-def _base_model_id(model_id: str) -> str:
-    """Return the base-model slug (``org/repo-prefix``) for a model id.
-
-    Args:
-        model_id:
-            The full model id (e.g. ``org/repo-instruct``).
-
-    Returns:
-        The base-model slug (e.g. ``org/repo``), or the id unchanged if it
-        has no ``org/repo`` structure.
-    """
-    if "/" not in model_id:
-        return model_id
-    parts = model_id.split("/")
-    return f"{parts[0]}/{parts[1].split('-')[0]}"

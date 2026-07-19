@@ -40,6 +40,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- vLLM model loading now unconditionally disables FlashInfer autotuning by passing
+  `enable_flashinfer_autotune=False` to `vllm.LLM`. This avoids CUDA kernel compilation
+  overhead during model initialisation.
 - vLLM's own caches (compiled graphs and the model-info registry) are now stored under
   the euroeval cache directory (`<cache_dir>/vllm`) alongside the downloaded weights,
   instead of the shared `~/.cache/vllm`. This avoids `PermissionError`s on shared

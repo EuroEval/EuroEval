@@ -1,12 +1,13 @@
 """Tests for the swap_leaderboard_dataset script."""
 
+import json
 import logging
 import re
 import subprocess
-import typing as t
 from pathlib import Path
 
 import pytest
+from huggingface_hub import HfApi
 
 from euroeval.data_models import DatasetConfig
 from euroeval.languages import DANISH, SWEDISH
@@ -178,20 +179,14 @@ class TestSyncResults:
         monkeypatch.setattr(
             target=swap_leaderboard_dataset,
             name="HF_RESULTS_BUCKET",
-            value="test-bucket",
+            value="test/bucket",
         )
 
         # Create empty results dir
         (tmp_path / "results").mkdir()
 
-        # Mock hf buckets sync to do nothing
-        monkeypatch.setattr(
-            target=subprocess,
-            name="run",
-            value=lambda *args, **kwargs: subprocess.CompletedProcess(
-                args=[], returncode=0, stdout="", stderr=""
-            ),
-        )
+        # Mock hf_api.sync_bucket to do nothing
+        monkeypatch.setattr(HfApi, "sync_bucket", lambda *args, **kwargs: None)
 
         with caplog.at_level(logging.WARNING):
             swap_leaderboard_dataset.sync_results_from_bucket()
@@ -515,50 +510,148 @@ class TestExecuteJobsLogging:
         assert "line 2" in content
         assert "line 3" in content
 
-    def test_execute_jobs_passes_disable_flashinfer_autotune(
+
+class TestLoadCorpusAndBuildEvalJobs:
+    """Tests for load_corpus and build_eval_jobs functions."""
+
+    def test_load_corpus_includes_euroeval_benchmark_results(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Should pass disable_flashinfer_autotune to run_euroeval when set.
+        """Should load records from euroeval_benchmark_results.jsonl at repo root."""
+        # Setup: create euroeval_benchmark_results.jsonl with a test record
+        benchmark_results = tmp_path / "euroeval_benchmark_results.jsonl"
+        test_record = {
+            "model_info": {"name": "test-model"},
+            "eval_library": {
+                "additional_details": {"dataset": "test-dataset", "languages": ["da"]}
+            },
+        }
+        benchmark_results.write_text(json.dumps(test_record) + "\n", encoding="utf-8")
 
-        Args:
-            tmp_path:
-                Temporary directory for test isolation.
-            monkeypatch:
-                Pytest fixture for patching.
-        """
-        Job = swap_leaderboard_dataset.Job
-        captured_kwargs: dict[str, t.Any] = {}
-
+        # Mock REPO_ROOT and RESULTS_DIR to use tmp_path
         monkeypatch.setattr(
             target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
         )
-
-        # Capture kwargs passed to run_euroeval
-        def mock_run_euroeval(**kwargs) -> tuple[int, str]:
-            captured_kwargs.update(kwargs)
-            return (0, "ok")
-
         monkeypatch.setattr(
             target=swap_leaderboard_dataset,
-            name="run_euroeval",
-            value=mock_run_euroeval,
+            name="RESULTS_DIR",
+            value=tmp_path / "results",
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="EUROEVAL_BENCHMARK_RESULTS_PATH",
+            value=benchmark_results,
         )
 
-        jobs = [
-            Job(
-                model_id="test-model",
-                languages=("da",),
-                is_api=False,
-                evaluate_test_split=True,
-                zero_shot=False,
-            )
-        ]
+        # Call load_corpus
+        corpus = swap_leaderboard_dataset.load_corpus()
 
-        swap_leaderboard_dataset.execute_jobs(
-            jobs=jobs,
-            dataset="test-dataset",
-            gpu_memory_utilization=None,
-            disable_flashinfer_autotune=True,
+        # Verify the record is in observations
+        assert ("test-model", "test-dataset", "da") in corpus.observations
+
+    def test_load_corpus_handles_missing_benchmark_results(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Load successfully when euroeval_benchmark_results.jsonl is missing."""
+        # Setup: create results directory with a file (so load_corpus succeeds)
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+        model_file = results_dir / "test-model.jsonl"
+        test_record = {
+            "model_info": {"name": "test-model"},
+            "eval_library": {
+                "additional_details": {"dataset": "test-dataset", "languages": ["da"]}
+            },
+        }
+        model_file.write_text(json.dumps(test_record) + "\n", encoding="utf-8")
+
+        # Mock REPO_ROOT, RESULTS_DIR and EUROEVAL_BENCHMARK_RESULTS_PATH
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
+        )
+        # Point to a definitely absent path under tmp_path
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="EUROEVAL_BENCHMARK_RESULTS_PATH",
+            value=tmp_path / "euroeval_benchmark_results.jsonl",
         )
 
-        assert captured_kwargs.get("disable_flashinfer_autotune") is True
+        # Should not raise
+        corpus = swap_leaderboard_dataset.load_corpus()
+        assert ("test-model", "test-dataset", "da") in corpus.observations
+
+    def test_build_eval_jobs_skips_existing_observations(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Skip (model, language) pairs with results for new dataset."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        # Create a corpus with an existing observation
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": {"old-dataset"}}},
+            api_model_ids=set(),
+            observations={("test-model", "new-dataset", "da")},  # Already exists
+            eval_configs={
+                ("test-model", "old-dataset", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                )
+            },
+        )
+
+        # Ranked pairs include the model that already has results
+        ranked = {("test-model", "da")}
+
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked=ranked,
+            old_dataset="old-dataset",
+            new_dataset="new-dataset",
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=False,
+        )
+
+        # Should skip the existing observation
+        assert len(jobs) == 0
+        assert skipped_count == 1
+
+    def test_build_eval_jobs_runs_when_observation_missing(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Should create jobs for (model, language) pairs without existing results."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        # Create a corpus without the new-dataset observation
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": {"old-dataset"}}},
+            api_model_ids=set(),
+            observations=set(),  # No existing observations
+            eval_configs={
+                ("test-model", "old-dataset", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                )
+            },
+        )
+
+        ranked = {("test-model", "da")}
+
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked=ranked,
+            old_dataset="old-dataset",
+            new_dataset="new-dataset",
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=False,
+        )
+
+        # Should create a job since no existing observation
+        assert len(jobs) == 1
+        assert jobs[0].model_id == "test-model"
+        assert jobs[0].languages == ("da",)
+        assert skipped_count == 0

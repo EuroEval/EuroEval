@@ -1125,7 +1125,7 @@ import kaleido
 import plotly.io as pio
 
 figure = pio.read_json(sys.argv[1])
-figure.write_image(sys.argv[2])
+figure.write_image(sys.argv[2], scale=3)
 kaleido.stop_sync_server(silence_warnings=True)
 """
 

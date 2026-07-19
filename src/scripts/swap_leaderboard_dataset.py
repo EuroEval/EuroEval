@@ -82,6 +82,7 @@ logger = logging.getLogger("swap_leaderboard_dataset")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HF_RESULTS_BUCKET = "EuroEval/results"
+EUROEVAL_BENCHMARK_RESULTS_PATH = REPO_ROOT / "euroeval_benchmark_results.jsonl"
 
 
 def sync_results_from_bucket() -> None:
@@ -531,13 +532,13 @@ def run_evaluations(
 def load_corpus() -> _Corpus:
     """Load the recorded results, indexed for selection and mirroring.
 
-    Reads the per-model JSONL files in ``RESULTS_DIR`` plus the optional
-    ``new_results.jsonl`` without the destructive unlink the leaderboard
-    pipeline performs. A model counts as an API model when its record was
-    produced by the ``litellm`` engine or is flagged as not open-weight. Each
-    ``(model, dataset, language)`` triple records its leaderboard variant
-    (split + prompting), preferring the test-split record when both exist
-    (that is the row the leaderboard shows).
+    Reads the per-model JSONL files in ``RESULTS_DIR``, the optional
+    ``new_results.jsonl``, and the optional ``euroeval_benchmark_results.jsonl``
+    from local ``euroeval`` CLI runs. A model counts as an API model when its
+    record was produced by the ``litellm`` engine or is flagged as not
+    open-weight. Each ``(model, dataset, language)`` triple records its
+    leaderboard variant (split + prompting), preferring the test-split record
+    when both exist (that is the row the leaderboard shows).
 
     Returns:
         The parsed corpus.
@@ -551,6 +552,10 @@ def load_corpus() -> _Corpus:
         lines.extend(model_file.read_text(encoding="utf-8").splitlines())
     if NEW_RESULTS_PATH.exists():
         lines.extend(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
+    if EUROEVAL_BENCHMARK_RESULTS_PATH.exists():
+        lines.extend(
+            EUROEVAL_BENCHMARK_RESULTS_PATH.read_text(encoding="utf-8").splitlines()
+        )
     if not lines:
         raise click.ClickException(
             f"No results found under {RESULTS_DIR}; cannot find ranked models."

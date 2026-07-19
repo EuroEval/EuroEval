@@ -92,7 +92,7 @@ class TestValSuffixMetadataLookup:
 
         assert result is False
 
-    def test_is_trained_from_scratch_uses_base_model_cache(self) -> None:
+    def test_is_trained_from_scratch_uses_normalised_model_cache(self) -> None:
         """A model with (val) suffix should use cached scratch-trained status."""
         cache = Cache()
         cache.trained_from_scratch["mistralai/Mistral-7B-v0.1"] = True
@@ -103,6 +103,40 @@ class TestValSuffixMetadataLookup:
         )
 
         assert result is True
+
+    def test_is_trained_from_scratch_uses_exact_model_cache(self) -> None:
+        """Hyphenated model families must not share scratch-trained status."""
+        cache = Cache()
+        cache.trained_from_scratch["openeurollm/oellm-1b"] = False
+        cache.trained_from_scratch["openeurollm/oellm-9b-128k-theta32m-v3"] = True
+
+        record = _record(model_name="openeurollm/oellm-9b-128k-theta32m-v3")
+        result = is_trained_from_scratch(
+            record=record, trained_from_scratch_patterns=[], cache=cache
+        )
+
+        assert result is True
+
+    @patch("leaderboards.model_metadata.input")
+    def test_is_trained_from_scratch_does_not_use_hyphen_prefix_cache(
+        self, mock_input: MagicMock
+    ) -> None:
+        """A sibling model prefix must not suppress the manual prompt."""
+        cache = Cache()
+        cache.open["openeurollm/oellm-9b-128k-theta32m-v3"] = True
+        cache.trained_from_scratch["openeurollm/oellm-1b"] = False
+        mock_input.return_value = "y"
+
+        record = _record(model_name="openeurollm/oellm-9b-128k-theta32m-v3")
+        result = is_trained_from_scratch(
+            record=record, trained_from_scratch_patterns=[], cache=cache
+        )
+
+        assert result is True
+        mock_input.assert_called_once()
+        assert (
+            cache.trained_from_scratch["openeurollm/oellm-9b-128k-theta32m-v3"] is True
+        )
 
     @patch("leaderboards.model_metadata.HfApi")
     def test_is_merge_looks_up_base_model_on_hf(
@@ -548,8 +582,8 @@ class TestCachePriority:
     ) -> None:
         """Cached false for Qwen/Qwen3-0.6B should not affect Qwen/Qwen3-32B.
 
-        This tests that _base_model_id() broadening is NOT used for openness,
-        preventing propagation of stale values across unrelated model variants.
+        This tests that prefix broadening is NOT used for openness, preventing
+        propagation of stale values across unrelated model variants.
         HF lookup should succeed for Qwen3-32B and return True.
         """
         mock_api = MagicMock()
