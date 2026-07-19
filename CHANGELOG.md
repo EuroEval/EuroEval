@@ -32,7 +32,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 - Made the Danish linguistic acceptability dataset DaLA the new official such one, over
   the previous ScaLA-da, which has now been demoted to unofficial.
-- The DaLA dataset source was moved from `giannor/dala` to `EuroEval/dala` for stability.
+- The DaLA dataset source was moved from `giannor/dala` to `EuroEval/dala` for
+  stability.
 
 ### Fixed
 
