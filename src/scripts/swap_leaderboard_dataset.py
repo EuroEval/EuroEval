@@ -135,7 +135,7 @@ def sync_results_from_bucket() -> None:
             if new_lines:
                 logger.info(
                     "Consolidating %s result records into %s (%s new).",
-                    len(new_lines),
+                    record_count,
                     NEW_RESULTS_PATH,
                     len(new_lines),
                 )
@@ -572,11 +572,12 @@ def load_corpus() -> _Corpus:
     observations: set[tuple[str, str, str]] = set()
     eval_configs: dict[tuple[str, str, str], _ObsConfig] = {}
     for record in records:
-        model = plain_model_id(str(record.get("model_info", {}).get("name", "")))
+        model_info = t.cast(dict[str, object], record.get("model_info", {}))
+        # Fall back to model_info.id when name is missing (valid for EEE records)
+        model = plain_model_id(str(model_info.get("name") or model_info.get("id", "")))
         dataset = get_dataset(record=record)
         if not model or not dataset:
             continue
-        model_info = t.cast(dict[str, object], record.get("model_info", {}))
         if record_is_api(model_info=model_info):
             api_model_ids.add(model)
         config = _ObsConfig(
