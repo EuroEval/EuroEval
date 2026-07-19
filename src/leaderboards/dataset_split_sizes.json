@@ -139,6 +139,12 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/dala": {
+    "full_train": 5352,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/dameta": {
     "test": 723,
     "train": 64,
