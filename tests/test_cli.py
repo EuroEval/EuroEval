@@ -36,6 +36,5 @@ def test_cli_param_names(cli_params: dict[str, ParamType]) -> None:
         "debug",
         "max_context_length",
         "vocabulary_size",
-        "disable_flashinfer_autotune",
         "help",
     }

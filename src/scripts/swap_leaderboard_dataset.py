@@ -215,13 +215,6 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     help="Print the planned evaluations and file edits without running or "
     "modifying anything.",
 )
-@click.option(
-    "--disable-flashinfer-autotune/--enable-flashinfer-autotune",
-    is_flag=True,
-    default=False,
-    help="Disable FlashInfer autotuning for vLLM. Defaults to False (autotuning "
-    "enabled).",
-)
 def main(
     old_dataset: str,
     new_dataset: str,
@@ -234,7 +227,6 @@ def main(
     reviewer: str,
     force: bool,
     dry_run: bool,
-    disable_flashinfer_autotune: bool,
 ) -> None:
     """Replace an official leaderboard dataset with a new one.
 
@@ -277,7 +269,6 @@ def main(
             include_api=include_api,
             api_providers_arg=api_providers,
             gpu_memory_utilization=gpu_memory_utilization,
-            disable_flashinfer_autotune=disable_flashinfer_autotune,
             force=force,
             dry_run=dry_run,
         )
@@ -440,7 +431,6 @@ def run_evaluations(
     include_api: bool,
     api_providers_arg: str | None,
     gpu_memory_utilization: float | None,
-    disable_flashinfer_autotune: bool,
     force: bool,
     dry_run: bool,
 ) -> None:
@@ -461,8 +451,6 @@ def run_evaluations(
             Optional comma-separated provider filter.
         gpu_memory_utilization:
             vLLM GPU memory utilization fraction, or None for the default.
-        disable_flashinfer_autotune:
-            Whether to disable FlashInfer autotuning for vLLM.
         force:
             When True, re-run pairs already holding a new-dataset result.
         dry_run:
@@ -517,10 +505,7 @@ def run_evaluations(
         return
 
     evaluated, failed = execute_jobs(
-        jobs=jobs,
-        dataset=new_dataset,
-        gpu_memory_utilization=gpu_memory_utilization,
-        disable_flashinfer_autotune=disable_flashinfer_autotune,
+        jobs=jobs, dataset=new_dataset, gpu_memory_utilization=gpu_memory_utilization
     )
     _log_summary(
         evaluated=evaluated,
@@ -855,10 +840,7 @@ def apply_size_filter(
 
 
 def execute_jobs(
-    jobs: list[Job],
-    dataset: str,
-    gpu_memory_utilization: float | None,
-    disable_flashinfer_autotune: bool = False,
+    jobs: list[Job], dataset: str, gpu_memory_utilization: float | None
 ) -> tuple[list[str], list[str]]:
     """Run each evaluation in sequence via the shared euroeval runner.
 
@@ -869,8 +851,6 @@ def execute_jobs(
             The new dataset id to evaluate on.
         gpu_memory_utilization:
             The utilization fraction to pass to euroeval, or None.
-        disable_flashinfer_autotune:
-            Whether to disable FlashInfer autotuning for vLLM. Defaults to False.
 
     Returns:
         Tuple of model ids evaluated successfully and model ids that failed
@@ -891,7 +871,6 @@ def execute_jobs(
         log_file.write(f"Timestamp (UTC): {timestamp}\n")
         log_file.write(f"Dataset: {dataset}\n")
         log_file.write(f"GPU Memory Utilization: {gpu_memory_utilization}\n")
-        log_file.write(f"Disable FlashInfer Autotune: {disable_flashinfer_autotune}\n")
         log_file.write(f"Total Jobs: {len(jobs)}\n")
         log_file.write("\n")
         log_file.write("Job Plan\n")
@@ -936,7 +915,6 @@ def execute_jobs(
                 evaluate_test_split=job.evaluate_test_split,
                 zero_shot=job.zero_shot,
                 gpu_memory_utilization=gpu_memory_utilization,
-                disable_flashinfer_autotune=disable_flashinfer_autotune,
                 stream_output=False,
                 log_file=log_path,
             )

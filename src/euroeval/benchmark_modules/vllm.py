@@ -1544,9 +1544,6 @@ def load_model(
             **({"hf_overrides": hf_overrides} if hf_overrides else {}),
             **vllm_params,
         }
-        # Pass enable_flashinfer_autotune only if explicitly disabled
-        if benchmark_config.disable_flashinfer_autotune:
-            llm_kwargs["enable_flashinfer_autotune"] = False
         return LLM(**llm_kwargs)
 
     try:

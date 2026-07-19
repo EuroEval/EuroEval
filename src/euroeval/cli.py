@@ -240,13 +240,6 @@ from .languages import get_all_languages
     help="Override for the vocabulary size of the model. If not specified, the value "
     "will be inferred automatically from the model.",
 )
-@click.option(
-    "--disable-flashinfer-autotune/--enable-flashinfer-autotune",
-    default=False,
-    show_default=True,
-    help="Disable FlashInfer autotuning for vLLM. Only relevant if the model is "
-    "generative and uses vLLM. Defaults to False (autotuning enabled).",
-)
 def benchmark(
     model: tuple[str],
     dataset: tuple[str | DatasetConfig],
@@ -278,7 +271,6 @@ def benchmark(
     debug: bool,
     max_context_length: int | None,
     vocabulary_size: int | None,
-    disable_flashinfer_autotune: bool,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
     Benchmarker(
@@ -314,7 +306,6 @@ def benchmark(
         download_only=download_only,
         max_context_length=max_context_length,
         vocabulary_size=vocabulary_size,
-        disable_flashinfer_autotune=disable_flashinfer_autotune,
     ).benchmark(model=list(model))
 
 

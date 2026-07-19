@@ -34,9 +34,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   multi-class), named entity recognition, textual entailment, sentiment analysis, and
   topic classification. The MultiWikiQA-lb reading comprehension dataset is also
   included.
-- Added `--disable-flashinfer-autotune` CLI option to disable FlashInfer autotuning for
-  vLLM, which can help with Nemotron and other models that have stability issues with
-  the default autotuning behaviour. Defaults to False (autotuning enabled).
 
 ### Fixed
 

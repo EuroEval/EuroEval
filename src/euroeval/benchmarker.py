@@ -89,7 +89,6 @@ class Benchmarker:
         download_only: bool = False,
         max_context_length: int | None = None,
         vocabulary_size: int | None = None,
-        disable_flashinfer_autotune: bool = False,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -184,9 +183,6 @@ class Benchmarker:
             vocabulary_size:
                 Override for the vocabulary size of the model. If None, the value will
                 be inferred automatically from the model. Defaults to None.
-            disable_flashinfer_autotune:
-                Whether to disable FlashInfer autotuning for vLLM. Only relevant if the
-                model is generative and uses vLLM. Defaults to False.
 
         Raises:
             ValueError:
@@ -241,7 +237,6 @@ class Benchmarker:
             run_with_cli=run_with_cli,
             max_context_length=max_context_length,
             vocabulary_size=vocabulary_size,
-            disable_flashinfer_autotune=disable_flashinfer_autotune,
         )
 
         self.benchmark_config = build_benchmark_config(
@@ -373,7 +368,6 @@ class Benchmarker:
         debug: bool | None = None,
         max_context_length: int | None = None,
         vocabulary_size: int | None = None,
-        disable_flashinfer_autotune: bool | None = None,
     ) -> c.Sequence[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -489,10 +483,6 @@ class Benchmarker:
                 Override for the vocabulary size of the model. If None, the value will
                 be inferred automatically from the model. Defaults to the value
                 specified when initialising the benchmarker.
-            disable_flashinfer_autotune:
-                Whether to disable FlashInfer autotuning for vLLM. Only relevant if the
-                model is generative and uses vLLM. Defaults to the value specified when
-                initialising the benchmarker.
 
         Returns:
             A list of benchmark results.
@@ -690,11 +680,6 @@ class Benchmarker:
                 vocabulary_size
                 if vocabulary_size is not None
                 else self.benchmark_config_default_params.vocabulary_size
-            ),
-            disable_flashinfer_autotune=(
-                disable_flashinfer_autotune
-                if disable_flashinfer_autotune is not None
-                else self.benchmark_config_default_params.disable_flashinfer_autotune
             ),
         )
         benchmark_config = build_benchmark_config(
