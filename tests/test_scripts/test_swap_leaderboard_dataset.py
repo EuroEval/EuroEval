@@ -556,14 +556,16 @@ class TestLoadCorpusAndBuildEvalJobs:
         # Setup: create results directory with a file (so load_corpus succeeds)
         results_dir = tmp_path / "results"
         results_dir.mkdir()
-        model_file = results_dir / "test-model.jsonl"
+        model_dir = results_dir / "test_model"
+        model_dir.mkdir()
+        record_file = model_dir / "test_dataset__test__none.json"
         test_record = {
             "model_info": {"name": "test-model"},
             "eval_library": {
                 "additional_details": {"dataset": "test-dataset", "languages": ["da"]}
             },
         }
-        model_file.write_text(json.dumps(test_record) + "\n", encoding="utf-8")
+        record_file.write_text(json.dumps(test_record), encoding="utf-8")
 
         # Mock REPO_ROOT, RESULTS_DIR and EUROEVAL_BENCHMARK_RESULTS_PATH
         monkeypatch.setattr(
