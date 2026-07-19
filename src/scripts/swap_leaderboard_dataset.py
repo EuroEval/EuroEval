@@ -49,7 +49,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import click
-from generate_leaderboards import main as generate_leaderboards
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
@@ -57,6 +56,7 @@ from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
+from leaderboards.bucket_sync import upload_results_to_bucket
 from leaderboards.constants import (
     DEFAULT_GPU_MEMORY_UTILIZATION,
     LEADERBOARD_CATEGORIES,
@@ -281,7 +281,7 @@ def main(
             force=force,
             dry_run=dry_run,
         )
-        generate_leaderboards()
+        upload_results_to_bucket(results_file=EUROEVAL_BENCHMARK_RESULTS_PATH)
 
     changed = apply_swap(
         old_dataset=old_dataset, new_dataset=new_dataset, dry_run=dry_run
@@ -1529,7 +1529,6 @@ def open_pull_request(
     """
     for path in changed_paths:
         _git("add", str(path))
-        _git("add", "src/frontend/csv")
 
     # Check if there are any actual changes to commit
     diff_result = _git("diff", "--cached", "--quiet", check=False)
