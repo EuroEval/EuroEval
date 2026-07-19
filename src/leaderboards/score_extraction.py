@@ -191,7 +191,7 @@ def group_results_by_model(
             raw_scores = [score * scale_factor for score in raw_scores]
 
             # EEE records don't carry a std err, so compute it from raw scores.
-            # Compute fallback after scaling so std_err is on the same scale as displayed scores.
+            # Fallback computed after scaling so std_err matches the displayed scores.
             std_err: float = total_scores.get(std_err_key, 0.0)
             # Scale std_err to match the scaled raw scores
             std_err = std_err * scale_factor

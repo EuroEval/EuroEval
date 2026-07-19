@@ -209,7 +209,7 @@ class TestExtractModelMetadata:
         # Process enriched first, then stale
         metadata = extract_model_metadata(results=[enriched, stale])
 
-        # Model ID will be normalized by extract_model_ids_from_record
+        # Model ID will be normalised by extract_model_ids_from_record
         model_key = "Qwen/Qwen3.6-27B-FP8 (val)"
 
         # Metadata should preserve enriched values
@@ -551,7 +551,7 @@ class TestGroupResultsByModel:
     def test_std_err_scaled_with_raw_scores(self) -> None:
         """Regression test: std_err should be scaled when raw scores are scaled.
 
-        When raw scores are normalized to [0, 1] and scaled to [0, 100],
+        When raw scores are normalised to [0, 1] and scaled to [0, 100],
         the std_err must also be scaled by 100 to match. Otherwise, cells
         show values like "61.86 ± 0.01" instead of "61.86 ± 1.00".
         """
@@ -564,21 +564,12 @@ class TestGroupResultsByModel:
                     "dataset": "angry-tweets",
                     "task": "sentiment-classification",
                     # Raw scores in [0, 1] range (will be scaled to [0, 100])
-                    "raw_results": [
-                        {"test_mcc": 0.60},
-                        {"test_mcc": 0.62},
-                    ],
+                    "raw_results": [{"test_mcc": 0.60}, {"test_mcc": 0.62}],
                 },
             },
             "evaluation_results": [
-                {
-                    "evaluation_name": "test_mcc",
-                    "score_details": {"score": 61.86},
-                },
-                {
-                    "evaluation_name": "test_mcc_se",
-                    "score_details": {"score": 0.01},
-                },
+                {"evaluation_name": "test_mcc", "score_details": {"score": 61.86}},
+                {"evaluation_name": "test_mcc_se", "score_details": {"score": 0.01}},
             ],
         }
 
@@ -593,4 +584,43 @@ class TestGroupResultsByModel:
         # Total score is already postprocessed (not scaled here)
         assert total_score == 61.86
         # std_err should be scaled from 0.01 to 1.0
+        assert std_err == 1.0
+
+    def test_std_err_fallback_computed_from_scaled_raw_scores(self) -> None:
+        """Test fallback std_err computation when test_mcc_se is absent.
+
+        When no std_err is provided in the record, it should be computed from
+        the scaled raw scores using the standard error formula.
+        """
+        # Build a minimal EEE-style record with raw scores in [0, 1] range
+        # but NO test_mcc_se evaluation (fallback path)
+        record = {
+            "model_info": {"name": "org/model"},
+            "eval_library": {
+                "version": "17.6.0",
+                "additional_details": {
+                    "dataset": "angry-tweets",
+                    "task": "sentiment-classification",
+                    # Raw scores in [0, 1] range (will be scaled to [0, 100])
+                    "raw_results": [{"test_mcc": 0.60}, {"test_mcc": 0.62}],
+                },
+            },
+            "evaluation_results": [
+                # Only the primary metric, NO test_mcc_se
+                {"evaluation_name": "test_mcc", "score_details": {"score": 61.86}}
+            ],
+        }
+
+        result = group_results_by_model(results=[record])
+
+        # Extract the grouped result
+        model_data = result["org/model"]["angry-tweets"][0]
+        raw_scores, total_score, std_err = model_data
+
+        # Raw scores should be scaled from [0, 1] to [0, 100]
+        assert raw_scores == [60.0, 62.0]
+        # Total score is already postprocessed (not scaled here)
+        assert total_score == 61.86
+        # std_err should be computed from scaled raw scores:
+        # stdev([60.0, 62.0]) / sqrt(2) = 1.414... / 1.414... = 1.0
         assert std_err == 1.0
