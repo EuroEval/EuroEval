@@ -255,8 +255,9 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
 
     observations: set[tuple[str, str, str]] = set()
     for raw_record in records:
-        # EEE: model_info.name, eval_library.additional_details.dataset/languages
-        model = raw_record.get("model_info", {}).get("name", "")
+        # Fall back to model_info.id when name is missing
+        model_info = raw_record.get("model_info", {})
+        model = model_info.get("name") or model_info.get("id", "")
         eval_additional = raw_record.get("eval_library", {}).get(
             "additional_details", {}
         )
