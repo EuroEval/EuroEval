@@ -1,5 +1,6 @@
 """Tests for the `leaderboards.result_processing` module."""
 
+import json
 import typing as t
 from enum import Enum, auto
 from pathlib import Path
@@ -177,22 +178,26 @@ def test_upload_results_to_bucket_passes_hf_token(
     """Test that upload_results_to_bucket passes the resolved HF token."""
     results_dir = tmp_path / "results"
     results_file = tmp_path / "results.jsonl"
-    results_file.write_text("{}\n", encoding="utf-8")
+
+    # Write valid record in EEE format
+    valid_record = {
+        "model_info": {"id": "org/model"},
+        "eval_library": {
+            "additional_details": {"dataset": "test_ds"},
+            "version": "1.0.0",
+        },
+        "retrieved_timestamp": "2024-01-01T00:00:00Z",
+    }
+    results_file.write_text(json.dumps(valid_record) + "\n", encoding="utf-8")
     monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
 
-    mock_result = MagicMock()
-    mock_result.model = "org/model"
     mock_api = MagicMock()
 
     with patch("leaderboards.bucket_sync.HfApi", return_value=mock_api):
         with patch(
             "leaderboards.bucket_sync.resolve_hf_token", return_value="test_token"
         ):
-            with patch(
-                "leaderboards.bucket_sync.BenchmarkResult.from_dict",
-                return_value=mock_result,
-            ):
-                bucket_sync.upload_results_to_bucket(results_file=results_file)
+            bucket_sync.upload_results_to_bucket(results_file=results_file)
 
     mock_api.sync_bucket.assert_called_once_with(
         source=str(results_dir),
@@ -207,11 +212,19 @@ def test_upload_results_to_bucket_raises_on_sync_failure(
     """Test that upload_results_to_bucket raises when bucket sync fails."""
     results_dir = tmp_path / "results"
     results_file = tmp_path / "results.jsonl"
-    results_file.write_text("{}\n", encoding="utf-8")
+
+    # Write valid record in EEE format
+    valid_record = {
+        "model_info": {"id": "org/model"},
+        "eval_library": {
+            "additional_details": {"dataset": "test_ds"},
+            "version": "1.0.0",
+        },
+        "retrieved_timestamp": "2024-01-01T00:00:00Z",
+    }
+    results_file.write_text(json.dumps(valid_record) + "\n", encoding="utf-8")
     monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
 
-    mock_result = MagicMock()
-    mock_result.model = "org/model"
     mock_api = MagicMock()
     mock_api.sync_bucket.side_effect = HfHubHTTPError(
         "Bucket sync failed", response=MagicMock(status_code=500)
@@ -221,12 +234,8 @@ def test_upload_results_to_bucket_raises_on_sync_failure(
         with patch(
             "leaderboards.bucket_sync.resolve_hf_token", return_value="test_token"
         ):
-            with patch(
-                "leaderboards.bucket_sync.BenchmarkResult.from_dict",
-                return_value=mock_result,
-            ):
-                with pytest.raises(HfHubHTTPError, match="Bucket sync failed"):
-                    bucket_sync.upload_results_to_bucket(results_file=results_file)
+            with pytest.raises(HfHubHTTPError, match="Bucket sync failed"):
+                bucket_sync.upload_results_to_bucket(results_file=results_file)
 
 
 def test_process_results_clears_cache_after_upload(
