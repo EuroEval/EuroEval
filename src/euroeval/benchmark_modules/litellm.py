@@ -148,7 +148,7 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"(ordbogen/)?odin-medium.*": 131_072,
     r"(ordbogen/)?odin-large.*": 202_752,
     # ALX models
-    r"(alx/)?qwen3.5-397b": 262144,
+    r"(alx/)?qwen3\.5-397b.*": 262_144,
 }
 
 
