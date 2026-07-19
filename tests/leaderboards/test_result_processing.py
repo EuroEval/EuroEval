@@ -1,5 +1,6 @@
 """Tests for the `leaderboards.result_processing` module."""
 
+import json
 import typing as t
 from enum import Enum, auto
 from pathlib import Path
@@ -91,14 +92,25 @@ def test_upload_per_model_files_passes_hf_token(
 ) -> None:
     """Test that _upload_per_model_files passes the resolved HF token."""
     monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
-    monkeypatch.setattr(result_processing, "dump_jsonl_records", lambda records: "{}\n")
 
     mock_api = MagicMock()
     record: dict[str, t.Any] = {
-        "model_info": {"name": "org/model", "additional_details": {}},
+        "model_info": {
+            "id": "org/model",
+            "name": "org/model",
+            "additional_details": {},
+        },
         "dataset": {"name": "dataset"},
         "task": {"name": "classification"},
-        "eval_library": {"name": "euroeval", "version": "1.0.0"},
+        "eval_library": {
+            "name": "euroeval",
+            "version": "1.0.0",
+            "additional_details": {
+                "dataset": "dataset",
+                "few_shot": False,
+                "validation_split": False,
+            },
+        },
         "results": {},
     }
 
@@ -267,3 +279,234 @@ def test_process_results_clears_cache_after_upload(
     assert cache_clear_called, (
         "load_raw_results.cache_clear() should be called after upload"
     )
+
+
+class TestUploadPerModelFilesPerRecordTree:
+    """Tests for the per-record JSON tree storage format."""
+
+    def test_writes_expected_directory_tree(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Test that _upload_per_model_files writes the expected directory structure."""
+        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+
+        mock_api = MagicMock()
+        record: dict[str, t.Any] = {
+            "model_info": {
+                "id": "org/Qwen3-0.6B",
+                "name": "org/Qwen3-0.6B",
+                "additional_details": {},
+            },
+            "dataset": {"name": "mmlu"},
+            "task": {"name": "classification"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "1.0.0",
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "results": {},
+        }
+
+        with patch("leaderboards.result_processing.HfApi", return_value=mock_api):
+            with patch(
+                "leaderboards.result_processing.resolve_hf_token",
+                return_value="test_token",
+            ):
+                result_processing._upload_per_model_files(processed_records=[record])
+
+        # Check directory structure
+        model_dir = tmp_path / "org_Qwen3-0.6B"
+        assert model_dir.exists(), "Model directory should be created"
+
+        # Check file exists with expected name
+        result_file = model_dir / "mmlu__test__zeroshot.json"
+        assert result_file.exists(), "Result file should be created"
+
+        # Check content is valid JSON with metadata preserved
+        content = result_file.read_text(encoding="utf-8")
+        written_record = json.loads(content)
+        assert written_record["model_info"]["id"] == "org/Qwen3-0.6B"
+        assert "additional_details" in written_record["model_info"]
+
+    def test_older_duplicate_does_not_clobber_newer(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Test that when two records have the same identity, the newer is kept."""
+        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+
+        mock_api = MagicMock()
+
+        # Older record (version 1.0.0)
+        older_record: dict[str, t.Any] = {
+            "model_info": {
+                "id": "org/model",
+                "name": "org/model",
+                "additional_details": {"score": 50},
+            },
+            "dataset": {"name": "mmlu"},
+            "task": {"name": "classification"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "1.0.0",  # Older version
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "results": {},
+        }
+
+        # Newer record (version 2.0.0)
+        newer_record: dict[str, t.Any] = {
+            "model_info": {
+                "id": "org/model",
+                "name": "org/model",
+                "additional_details": {"score": 90},
+            },
+            "dataset": {"name": "mmlu"},
+            "task": {"name": "classification"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "2.0.0",  # Newer version
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "results": {},
+        }
+
+        with patch("leaderboards.result_processing.HfApi", return_value=mock_api):
+            with patch(
+                "leaderboards.result_processing.resolve_hf_token",
+                return_value="test_token",
+            ):
+                result_processing._upload_per_model_files(
+                    processed_records=[older_record, newer_record]
+                )
+
+        # Only one file should exist
+        model_dir = tmp_path / "org_model"
+        result_file = model_dir / "mmlu__test__zeroshot.json"
+        assert result_file.exists()
+
+        # The newer record should be kept (score=90)
+        content = result_file.read_text(encoding="utf-8")
+        written_record = json.loads(content)
+        assert written_record["model_info"]["additional_details"]["score"] == 90
+
+    def test_invalid_model_record_dropped_with_log(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test that records with unresolvable model identities are dropped."""
+        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+
+        mock_api = MagicMock()
+
+        # Invalid record (missing model_info.id and name)
+        invalid_record: dict[str, t.Any] = {
+            "model_info": {"additional_details": {}},
+            "dataset": {"name": "mmlu"},
+            "task": {"name": "classification"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "1.0.0",
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "results": {},
+        }
+
+        with patch("leaderboards.result_processing.HfApi", return_value=mock_api):
+            with patch(
+                "leaderboards.result_processing.resolve_hf_token",
+                return_value="test_token",
+            ):
+                with caplog.at_level("WARNING"):
+                    result_processing._upload_per_model_files(
+                        processed_records=[invalid_record]
+                    )
+
+        # No files should be written
+        assert list(tmp_path.iterdir()) == []
+
+        # Should log a warning
+        assert "unresolvable identity" in caplog.text.lower()
+
+    def test_metadata_preserved_in_written_record(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Test that all metadata fields are preserved in the written JSON."""
+        monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
+
+        mock_api = MagicMock()
+        record: dict[str, t.Any] = {
+            "model_info": {
+                "id": "org/model",
+                "name": "org/model",
+                "additional_details": {
+                    "generative": True,
+                    "generative_type": "chat",
+                    "merge": False,
+                    "open": True,
+                    "commercially_licensed": False,
+                    "trained_from_scratch": True,
+                    "model_url": "https://huggingface.co/org/model",
+                },
+            },
+            "dataset": {"name": "mmlu"},
+            "task": {"name": "classification"},
+            "eval_library": {
+                "name": "euroeval",
+                "version": "1.0.0",
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "few_shot": False,
+                    "validation_split": False,
+                },
+            },
+            "results": {},
+        }
+
+        with patch("leaderboards.result_processing.HfApi", return_value=mock_api):
+            with patch(
+                "leaderboards.result_processing.resolve_hf_token",
+                return_value="test_token",
+            ):
+                result_processing._upload_per_model_files(processed_records=[record])
+
+        model_dir = tmp_path / "org_model"
+        result_file = model_dir / "mmlu__test__zeroshot.json"
+        assert result_file.exists()
+
+        content = result_file.read_text(encoding="utf-8")
+        written_record = json.loads(content)
+
+        # Verify metadata is preserved
+        assert written_record["model_info"]["additional_details"]["generative"] is True
+        assert (
+            written_record["model_info"]["additional_details"]["generative_type"]
+            == "chat"
+        )
+        assert written_record["model_info"]["additional_details"]["merge"] is False
+        assert written_record["model_info"]["additional_details"]["open"] is True
+        assert (
+            written_record["model_info"]["additional_details"]["commercially_licensed"]
+            is False
+        )
+        assert (
+            written_record["model_info"]["additional_details"]["trained_from_scratch"]
+            is True
+        )
