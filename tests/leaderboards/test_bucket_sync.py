@@ -52,11 +52,7 @@ class TestSyncBucket:
         local_file.write_text(json.dumps(local_record), encoding="utf-8")
 
         # Mock HfApi.sync_bucket to simulate bucket sync that removes the file
-        def mock_sync(
-            source: str,
-            dest: str,
-            token: str | None = None,
-        ) -> None:
+        def mock_sync(source: str, dest: str, token: str | None = None) -> None:
             # Simulate sync removing the local file
             if local_file.exists():
                 local_file.unlink()
@@ -69,9 +65,10 @@ class TestSyncBucket:
                 # This should not raise, but should log a warning
                 bucket_sync.sync_bucket()
 
-        # The file should NOT be restored (we can't restore without content)
-        # but the function should complete without error
-        assert not local_file.exists()
+        # The file should be restored since we keep content in memory
+        assert local_file.exists()
+        restored_record = json.loads(local_file.read_text(encoding="utf-8"))
+        assert restored_record["model_info"]["id"] == "test/model"
 
     def test_sync_bucket_calls_hf_api_with_token(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -81,18 +78,13 @@ class TestSyncBucket:
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
         with (
-            patch(
-                "leaderboards.bucket_sync.resolve_hf_token",
-                return_value="token123",
-            ),
+            patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token123"),
             patch.object(HfApi, "sync_bucket", return_value=None) as mock_sync,
         ):
             bucket_sync.sync_bucket()
 
         mock_sync.assert_called_once_with(
-            source="hf://buckets/test/results/",
-            dest=str(tmp_path),
-            token="token123",
+            source="hf://buckets/test/results/", dest=str(tmp_path), token="token123"
         )
 
     def test_sync_bucket_raises_on_sync_failure(
@@ -107,8 +99,7 @@ class TestSyncBucket:
                 HfApi,
                 "sync_bucket",
                 side_effect=HfHubHTTPError(
-                    "Sync failed",
-                    response=MagicMock(status_code=500),
+                    "Sync failed", response=MagicMock(status_code=500)
                 ),
             ):
                 with pytest.raises(HfHubHTTPError, match="Sync failed"):
@@ -148,12 +139,10 @@ class TestMergeResults:
         }
 
         (model_dir / "dataset1__test__test.json").write_text(
-            json.dumps(record1),
-            encoding="utf-8",
+            json.dumps(record1), encoding="utf-8"
         )
         (model_dir / "dataset2__test__test.json").write_text(
-            json.dumps(record2),
-            encoding="utf-8",
+            json.dumps(record2), encoding="utf-8"
         )
 
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
@@ -200,8 +189,7 @@ class TestMergeResults:
             "extra_field": "should_be_deduped",
         }
         (model_dir2 / "dataset1__test__test.json").write_text(
-            json.dumps(record_same_identity),
-            encoding="utf-8",
+            json.dumps(record_same_identity), encoding="utf-8"
         )
 
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
@@ -242,8 +230,7 @@ class TestMergeResults:
 
         # Invalid JSON file
         (model_dir / "bad__test__test.json").write_text(
-            "not valid json",
-            encoding="utf-8",
+            "not valid json", encoding="utf-8"
         )
 
         # Valid file
@@ -256,8 +243,7 @@ class TestMergeResults:
             "retrieved_timestamp": "2024-01-01T00:00:00Z",
         }
         (model_dir / "good__test__test.json").write_text(
-            json.dumps(valid_record),
-            encoding="utf-8",
+            json.dumps(valid_record), encoding="utf-8"
         )
 
         monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
@@ -382,8 +368,7 @@ class TestUploadResultsToBucket:
                 HfApi,
                 "sync_bucket",
                 side_effect=HfHubHTTPError(
-                    "Upload failed",
-                    response=MagicMock(status_code=500),
+                    "Upload failed", response=MagicMock(status_code=500)
                 ),
             ):
                 with pytest.raises(HfHubHTTPError, match="Upload failed"):
@@ -406,3 +391,202 @@ class TestUploadResultsToBucket:
             bucket_sync.upload_results_to_bucket(results_file=results_file)
 
         assert "does not exist" in caplog.text
+
+    def test_sync_bucket_restores_local_only_file(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that sync_bucket restores a local-only file that was removed by sync."""
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+
+        # Create a local-only record file
+        model_dir = results_dir / "local_model"
+        model_dir.mkdir()
+        local_record = {
+            "model_info": {"id": "local/only"},
+            "eval_library": {
+                "additional_details": {"dataset": "local_ds"},
+                "version": "1.0.0",
+            },
+            "retrieved_timestamp": "2024-01-02T00:00:00Z",
+        }
+        local_file = model_dir / "local_ds__none__none.json"
+        local_file.write_text(json.dumps(local_record), encoding="utf-8")
+
+        # Mock sync that removes the local file
+        def mock_sync(source: str, dest: str, token: str | None = None) -> None:
+            if local_file.exists():
+                local_file.unlink()
+
+        monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
+        monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
+
+        with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="test"):
+            with patch.object(HfApi, "sync_bucket", side_effect=mock_sync):
+                bucket_sync.sync_bucket()
+
+        # File should be restored
+        assert local_file.exists()
+        restored = json.loads(local_file.read_text(encoding="utf-8"))
+        assert restored["model_info"]["id"] == "local/only"
+
+    def test_sync_bucket_locally_newer_wins(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that locally-newer same-identity wins over older bucket."""
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+
+        # Local record with newer timestamp
+        model_dir = results_dir / "test_model"
+        model_dir.mkdir()
+        local_record = {
+            "model_info": {"id": "test/model"},
+            "eval_library": {
+                "additional_details": {"dataset": "test_ds"},
+                "version": "1.0.0",
+            },
+            "retrieved_timestamp": "2024-01-02T00:00:00Z",  # Newer
+        }
+        local_file = model_dir / "test_ds__none__none.json"
+        local_file.write_text(json.dumps(local_record), encoding="utf-8")
+
+        # Mock sync that puts an older bucket record
+        def mock_sync(source: str, dest: str, token: str | None = None) -> None:
+            # Create an older bucket record
+            older_record = {
+                "model_info": {"id": "test/model"},
+                "eval_library": {
+                    "additional_details": {"dataset": "test_ds"},
+                    "version": "1.0.0",
+                },
+                "retrieved_timestamp": "2024-01-01T00:00:00Z",  # Older
+            }
+            local_file.write_text(json.dumps(older_record), encoding="utf-8")
+
+        monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
+        monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
+
+        with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="test"):
+            with patch.object(HfApi, "sync_bucket", side_effect=mock_sync):
+                bucket_sync.sync_bucket()
+
+        # Local record should win (newer timestamp)
+        final_record = json.loads(local_file.read_text(encoding="utf-8"))
+        assert final_record["retrieved_timestamp"] == "2024-01-02T00:00:00Z"
+
+    def test_sync_bucket_collision_raises(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that distinct-identity path collision raises an error."""
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+
+        # Local record with identity A: "model/a" sanitises to "model_a"
+        model_dir = results_dir / "model_a"
+        model_dir.mkdir()
+        local_record = {
+            "model_info": {"id": "model/a"},  # sanitises to "model_a"
+            "eval_library": {
+                "additional_details": {"dataset": "test_ds"},
+                "version": "1.0.0",
+            },
+            "retrieved_timestamp": "2024-01-01T00:00:00Z",
+        }
+        local_file = model_dir / "test_ds__none__none.json"
+        local_file.write_text(json.dumps(local_record), encoding="utf-8")
+
+        # Mock sync that puts a record with different identity at same path
+        def mock_sync(source: str, dest: str, token: str | None = None) -> None:
+            # Record with different identity but same sanitised path
+            # "model_a" also sanitises to "model_a" (no change)
+            bucket_record = {
+                "model_info": {"id": "model_a"},  # Different from "model/a"
+                "eval_library": {
+                    "additional_details": {"dataset": "test_ds"},
+                    "version": "1.0.0",
+                },
+                "retrieved_timestamp": "2024-01-01T00:00:00Z",
+            }
+            local_file.write_text(json.dumps(bucket_record), encoding="utf-8")
+
+        monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
+        monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
+
+        with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="test"):
+            with patch.object(HfApi, "sync_bucket", side_effect=mock_sync):
+                with pytest.raises(ValueError, match="Identity collision detected"):
+                    bucket_sync.sync_bucket()
+
+    def test_upload_results_removes_stale_jsonl(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that upload_results_to_bucket removes stale root *.jsonl files."""
+        results_dir = tmp_path / "results"
+        results_file = tmp_path / "results.jsonl"
+
+        # Create a stale jsonl file in results dir
+        stale_jsonl = results_dir / "old_results.jsonl"
+        stale_jsonl.parent.mkdir()
+        stale_jsonl.write_text('{"old": true}\n', encoding="utf-8")
+
+        # Create valid record
+        record = {
+            "model_info": {"id": "test/model"},
+            "eval_library": {
+                "additional_details": {"dataset": "test_ds"},
+                "version": "1.0.0",
+            },
+            "retrieved_timestamp": "2024-01-01T00:00:00Z",
+        }
+        results_file.write_text(json.dumps(record) + "\n", encoding="utf-8")
+
+        monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
+        monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
+
+        with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
+            with patch.object(HfApi, "sync_bucket", return_value=None):
+                bucket_sync.upload_results_to_bucket(results_file=results_file)
+
+        # Stale jsonl should be removed
+        assert not stale_jsonl.exists()
+        # But tree layout should be created
+        expected_path = results_dir / "test_model" / "test_ds__none__none.json"
+        assert expected_path.exists()
+
+    def test_upload_results_to_bucket_raises_on_collision(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that upload_results_to_bucket raises on identity path collision."""
+        results_dir = tmp_path / "results"
+        results_file = tmp_path / "results.jsonl"
+
+        # Two records with different identities but same sanitised path
+        # "model/a" and "model_a" both sanitise to "model_a" directory
+        record_a = {
+            "model_info": {"id": "model/a"},
+            "eval_library": {
+                "additional_details": {"dataset": "test_ds"},
+                "version": "1.0.0",
+            },
+            "retrieved_timestamp": "2024-01-01T00:00:00Z",
+        }
+        record_b = {
+            "model_info": {"id": "model_a"},
+            "eval_library": {
+                "additional_details": {"dataset": "test_ds"},
+                "version": "1.0.0",
+            },
+            "retrieved_timestamp": "2024-01-01T00:00:00Z",
+        }
+        results_file.write_text(
+            json.dumps(record_a) + "\n" + json.dumps(record_b) + "\n", encoding="utf-8"
+        )
+
+        monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
+        monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
+
+        with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
+            with patch.object(HfApi, "sync_bucket", return_value=None):
+                with pytest.raises(ValueError, match="Identity collision detected"):
+                    bucket_sync.upload_results_to_bucket(results_file=results_file)
