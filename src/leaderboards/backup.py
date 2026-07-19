@@ -285,9 +285,7 @@ def _validate_results() -> None:
             # Validate EEE envelope structure (required for all records)
             if not is_eee_record(record):
                 model_id = record.get("model_info", {}).get("name", "unknown")
-                logger.error(
-                    f"Missing EEE envelope in {json_file}, model '{model_id}'"
-                )
+                logger.error(f"Missing EEE envelope in {json_file}, model '{model_id}'")
                 file_has_issues = True
                 records_with_issues += 1
 

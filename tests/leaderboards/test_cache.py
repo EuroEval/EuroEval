@@ -65,12 +65,7 @@ def _make_eee_record(
     # Add metadata fields if provided
     has_metadata = any(
         v is not None
-        for v in [
-            commercially_licensed,
-            open_license,
-            trained_from_scratch,
-            model_url,
-        ]
+        for v in [commercially_licensed, open_license, trained_from_scratch, model_url]
     )
     if has_metadata:
         additional = {}
@@ -97,9 +92,7 @@ class TestCacheFromResultsDir:
 
         # Record with some metadata to ensure cache populates
         record = _make_eee_record(
-            model_id="test/model",
-            model_name="test/model",
-            open_license=True,
+            model_id="test/model", model_name="test/model", open_license=True
         )
         json_file = model_dir / "dataset1__test__zeroshot.json"
         json_file.write_text(json.dumps(record))
@@ -141,14 +134,10 @@ class TestCacheFromResultsDir:
         model_b_dir.mkdir()
 
         record_a = _make_eee_record(
-            model_id="model/a",
-            model_name="model/a",
-            open_license=True,
+            model_id="model/a", model_name="model/a", open_license=True
         )
         record_b = _make_eee_record(
-            model_id="model/b",
-            model_name="model/b",
-            commercially_licensed=True,
+            model_id="model/b", model_name="model/b", commercially_licensed=True
         )
 
         (model_a_dir / "ds__test__zeroshot.json").write_text(json.dumps(record_a))

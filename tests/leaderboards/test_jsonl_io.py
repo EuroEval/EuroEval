@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import typing as t
 from pathlib import Path
 
 import pytest
@@ -16,9 +17,7 @@ from leaderboards.jsonl_io import (
 class TestLoadRecordsFromResultTree:
     """Tests for load_records_from_result_tree."""
 
-    def test_loads_single_record_per_file(
-        self, tmp_path: Path
-    ) -> None:
+    def test_loads_single_record_per_file(self, tmp_path: Path) -> None:
         """Should load one record per JSON file in the tree structure."""
         model_dir = tmp_path / "test_model"
         model_dir.mkdir()
@@ -34,9 +33,7 @@ class TestLoadRecordsFromResultTree:
         assert records[0]["model_info"]["id"] == "test_model"  # ty: ignore[not-subscriptable]
         assert records[0]["scores"]["acc"] == 0.5  # ty: ignore[not-subscriptable]
 
-    def test_loads_multiple_models(
-        self, tmp_path: Path
-    ) -> None:
+    def test_loads_multiple_models(self, tmp_path: Path) -> None:
         """Should load records from multiple model subdirectories."""
         model_a_dir = tmp_path / "model_a"
         model_b_dir = tmp_path / "model_b"
@@ -52,14 +49,10 @@ class TestLoadRecordsFromResultTree:
         records = load_records_from_result_tree(results_dir=tmp_path)
 
         assert len(records) == 2
-        model_ids = {
-            r["model_info"]["id"] for r in records  # ty: ignore[not-subscriptable]
-        }
+        model_ids = {t.cast(dict[str, object], r["model_info"])["id"] for r in records}
         assert model_ids == {"model_a", "model_b"}
 
-    def test_loads_multiple_datasets_per_model(
-        self, tmp_path: Path
-    ) -> None:
+    def test_loads_multiple_datasets_per_model(self, tmp_path: Path) -> None:
         """Should load multiple dataset files per model."""
         model_dir = tmp_path / "test_model"
         model_dir.mkdir()
@@ -74,9 +67,7 @@ class TestLoadRecordsFromResultTree:
 
         assert len(records) == 2
 
-    def test_raises_on_malformed_json(
-        self, tmp_path: Path
-    ) -> None:
+    def test_raises_on_malformed_json(self, tmp_path: Path) -> None:
         """Should raise JSONDecodeError on malformed JSON files."""
         model_dir = tmp_path / "bad_model"
         model_dir.mkdir()
@@ -87,9 +78,7 @@ class TestLoadRecordsFromResultTree:
         with pytest.raises(json.JSONDecodeError):
             load_records_from_result_tree(results_dir=tmp_path)
 
-    def test_raises_on_non_dict_content(
-        self, tmp_path: Path
-    ) -> None:
+    def test_raises_on_non_dict_content(self, tmp_path: Path) -> None:
         """Should raise ValueError if JSON file contains non-dict."""
         model_dir = tmp_path / "bad_model"
         model_dir.mkdir()
@@ -100,9 +89,7 @@ class TestLoadRecordsFromResultTree:
         with pytest.raises(ValueError, match="Expected dict"):
             load_records_from_result_tree(results_dir=tmp_path)
 
-    def test_empty_directory_returns_empty_list(
-        self, tmp_path: Path
-    ) -> None:
+    def test_empty_directory_returns_empty_list(self, tmp_path: Path) -> None:
         """Should return empty list for directory with no JSON files."""
         (tmp_path / "empty_model").mkdir()
 
@@ -110,9 +97,7 @@ class TestLoadRecordsFromResultTree:
 
         assert records == []
 
-    def test_preserves_metadata_fields(
-        self, tmp_path: Path
-    ) -> None:
+    def test_preserves_metadata_fields(self, tmp_path: Path) -> None:
         """Should preserve all metadata fields in model_info."""
         model_dir = tmp_path / "test_model"
         model_dir.mkdir()
@@ -150,9 +135,7 @@ class TestLoadRecordsFromResultTree:
 class TestLoadRecordsFromJsonlFiles:
     """Tests for load_records_from_jsonl_files (unchanged API)."""
 
-    def test_loads_jsonl_records(
-        self, tmp_path: Path
-    ) -> None:
+    def test_loads_jsonl_records(self, tmp_path: Path) -> None:
         """Should load records from JSONL files."""
         jsonl_file = tmp_path / "model.jsonl"
         jsonl_file.write_text(

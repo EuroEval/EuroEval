@@ -45,9 +45,7 @@ def test_upload_results_to_hf_collision_leaves_results_dir_unmutated(
         },
         "retrieved_timestamp": 1704067200,  # 2024-01-01T00:00:00Z as Unix timestamp
     }
-    existing_record_file.write_text(
-        json.dumps(existing_record), encoding="utf-8"
-    )
+    existing_record_file.write_text(json.dumps(existing_record), encoding="utf-8")
 
     # Create new results file with a colliding identity
     # Dataset "dataset_one" also sanitises to "dataset_one" - same path!
@@ -76,7 +74,9 @@ def test_upload_results_to_hf_collision_leaves_results_dir_unmutated(
 
     # Should raise ValueError due to collision
     with pytest.raises(ValueError, match="Identity collision detected"):
-        collect_evaluation_results.upload_results_to_hf(new_results_path=new_results_file)
+        collect_evaluation_results.upload_results_to_hf(
+            new_results_path=new_results_file
+        )
 
     # Existing record should STILL exist (no data loss)
     assert existing_record_file.exists(), "Existing record was incorrectly deleted"
@@ -329,9 +329,7 @@ def test_upload_results_to_hf_does_not_touch_repo_root_jsonl(
     monkeypatch.setattr(
         target=collect_evaluation_results, name="RESULTS_DIR", value=results_dir
     )
-    monkeypatch.setattr(
-        target=constants, name="REPO_ROOT", value=repo_root
-    )
+    monkeypatch.setattr(target=constants, name="REPO_ROOT", value=repo_root)
     monkeypatch.setattr(
         target=collect_evaluation_results, name="HfApi", value=FakeHfApi
     )
@@ -348,6 +346,4 @@ def test_upload_results_to_hf_does_not_touch_repo_root_jsonl(
         "euroeval_benchmark_results.jsonl was incorrectly deleted"
     )
     assert new_results_file.read_text(encoding="utf-8") == '{"data": "new"}'
-    assert (
-        benchmark_results_file.read_text(encoding="utf-8") == '{"data": "benchmark"}'
-    )
+    assert benchmark_results_file.read_text(encoding="utf-8") == '{"data": "benchmark"}'

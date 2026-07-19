@@ -192,9 +192,7 @@ class TestBackupResultsIntegration:
 class TestTreeStructureBackup:
     """Tests for backup/restore with the new tree layout."""
 
-    def test_write_snapshot_preserves_tree_structure(
-        self, tmp_path: Path
-    ) -> None:
+    def test_write_snapshot_preserves_tree_structure(self, tmp_path: Path) -> None:
         """_write_snapshot should tar the full tree structure, not flatten."""
         # Create tree structure
         source = tmp_path / "results"
@@ -234,9 +232,7 @@ class TestTreeStructureBackup:
             # Should NOT have flat structure at root
             assert not any(n == "dataset__test__zero.json" for n in names)
 
-    def test_extract_backup_preserves_tree_structure(
-        self, tmp_path: Path
-    ) -> None:
+    def test_extract_backup_preserves_tree_structure(self, tmp_path: Path) -> None:
         """_extract_backup should preserve the tree structure on extraction."""
         # Create a backup with tree structure
         backup_dir = tmp_path / "backup"
@@ -270,9 +266,7 @@ class TestTreeStructureBackup:
         flat_file = dest / "dataset__test__zero.json"
         assert not flat_file.exists()
 
-    def test_validate_results_with_tree_structure(
-        self, tmp_path: Path
-    ) -> None:
+    def test_validate_results_with_tree_structure(self, tmp_path: Path) -> None:
         """_validate_results should sample JSON files from tree layout."""
         results_dir = tmp_path / "results"
         model_dir = results_dir / "test_model"
@@ -287,9 +281,7 @@ class TestTreeStructureBackup:
             # Should validate successfully
             _validate_results()
 
-    def test_validate_results_tree_invalid_json_fails(
-        self, tmp_path: Path
-    ) -> None:
+    def test_validate_results_tree_invalid_json_fails(self, tmp_path: Path) -> None:
         """_validate_results should fail on invalid JSON in tree structure."""
         results_dir = tmp_path / "results"
         model_dir = results_dir / "test_model"
@@ -318,9 +310,7 @@ class TestTreeStructureBackup:
         hash2 = _content_hash(paths=[file2, file1])
         assert hash1 == hash2, "Hash should be order-independent"
 
-    def test_restore_from_backup_understands_tree_layout(
-        self, tmp_path: Path
-    ) -> None:
+    def test_restore_from_backup_understands_tree_layout(self, tmp_path: Path) -> None:
         """restore_from_backup_if_missing should check for tree layout .json files."""
         # Test 1: Empty dir should trigger restore
         target_empty = tmp_path / "empty"
@@ -359,9 +349,7 @@ class TestTreeStructureBackup:
             result = restore_from_backup_if_missing(target=target_empty)
         assert result is False, "Should not restore when tree files exist"
 
-    def test_write_snapshot_skips_identical_tree_content(
-        self, tmp_path: Path
-    ) -> None:
+    def test_write_snapshot_skips_identical_tree_content(self, tmp_path: Path) -> None:
         """_write_snapshot should skip if tree content hash matches."""
         source = tmp_path / "results"
         model_dir = source / "test_model"
