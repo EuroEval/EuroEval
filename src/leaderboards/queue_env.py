@@ -247,8 +247,8 @@ def acquire_single_instance_lock(lock_path: Path) -> int:
         os.close(fd)
         logger.error(
             f"Another process_evaluation_queue.py is already running "
-            f"(pid {existing_pid}); aborting. Set EUROEVAL_QUEUE_LOCK to a "
-            f"different path if you need to run a second instance."
+            f"(pid {existing_pid}); aborting. Pass --lock-path with a different "
+            f"path if you need to run a second instance."
         )
         sys.exit(1)
 

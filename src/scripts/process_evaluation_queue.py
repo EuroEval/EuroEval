@@ -211,7 +211,7 @@ def main(
             try:
                 sync_bucket()
                 merge_results(results_file=Path("euroeval_benchmark_results.jsonl"))
-            except RuntimeError as e:
+            except (HfHubHTTPError, RuntimeError) as e:
                 logger.warning(f"Could not download results from HF bucket: {e}")
 
             process_queue_once(
@@ -621,7 +621,9 @@ def _run_claimed_issue(
 
     results_path = Path("euroeval_benchmark_results.jsonl")
     model_results_path = RESULTS_DIR / f"{model_id.replace('/', '_')}.jsonl"
-    existing_lines = read_jsonl_lines(path=model_results_path)
+    existing_lines = read_jsonl_lines(path=model_results_path) + read_jsonl_lines(
+        path=results_path
+    )
     accumulated = result_lines_for_model(lines=existing_lines, model_id=model_id)
     done = completed_languages(lines=accumulated, requested_languages=languages)
     pending = [lang for lang in languages if lang not in done]

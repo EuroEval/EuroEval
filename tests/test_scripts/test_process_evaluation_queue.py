@@ -1,5 +1,6 @@
 """Tests for the process_evaluation_queue script orchestration."""
 
+import json
 from pathlib import Path
 
 import pytest
@@ -35,6 +36,143 @@ def test_sync_bucket_preserves_local_only_lines(
     ]
 
 
+def test_sync_bucket_prefers_synced_line_for_existing_result_key(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Remote metadata repairs should not be overwritten by stale local rows."""
+    results_dir = tmp_path / "results"
+    results_dir.mkdir()
+    model_file = results_dir / "foo_bar.jsonl"
+    local_line = (
+        '{"model":"foo/bar","dataset":"greek_ner",'
+        '"few_shot":false,"validation_split":true}'
+    )
+    remote_line = (
+        '{"model":"foo/bar","dataset":"greek_ner",'
+        '"few_shot":false,"validation_split":true,"open":true}'
+    )
+    model_file.write_text(local_line + "\n", encoding="utf-8")
+
+    class FakeHfApi:
+        def sync_bucket(self, source: str, dest: str, token: str) -> None:
+            model_file.write_text(remote_line + "\n", encoding="utf-8")
+
+    monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
+    monkeypatch.setattr(target=bucket_sync, name="HfApi", value=FakeHfApi)
+    monkeypatch.setattr(
+        target=bucket_sync, name="resolve_hf_token", value=lambda: "token"
+    )
+
+    bucket_sync.sync_bucket()
+
+    assert model_file.read_text(encoding="utf-8").splitlines() == [remote_line]
+
+
+def test_sync_bucket_splits_concatenated_local_rows_by_key(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Concatenated rows should only restore missing result keys."""
+    results_dir = tmp_path / "results"
+    results_dir.mkdir()
+    model_file = results_dir / "foo_bar.jsonl"
+    stale_result = {
+        "model": "foo/bar",
+        "dataset": "greek_ner",
+        "few_shot": False,
+        "validation_split": True,
+    }
+    remote_result = stale_result | {"open": True}
+    local_only_result = {
+        "model": "foo/bar",
+        "dataset": "danish_ner",
+        "few_shot": False,
+        "validation_split": True,
+    }
+    remote_line = json.dumps(remote_result)
+    local_only_line = json.dumps(local_only_result)
+    model_file.write_text(
+        json.dumps(stale_result) + local_only_line + "\n", encoding="utf-8"
+    )
+
+    class FakeHfApi:
+        def sync_bucket(self, source: str, dest: str, token: str) -> None:
+            model_file.write_text(remote_line + "\n", encoding="utf-8")
+
+    monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
+    monkeypatch.setattr(target=bucket_sync, name="HfApi", value=FakeHfApi)
+    monkeypatch.setattr(
+        target=bucket_sync, name="resolve_hf_token", value=lambda: "token"
+    )
+
+    bucket_sync.sync_bucket()
+
+    assert model_file.read_text(encoding="utf-8").splitlines() == [
+        remote_line,
+        local_only_line,
+    ]
+
+
+def test_run_claimed_issue_resumes_from_merged_results(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Merged canonical results should count when resuming an issue."""
+    results_ready: list[int] = []
+    cleared_markers: list[tuple[int, str]] = []
+
+    def read_lines(path: Path) -> list[str]:
+        if path.name == "euroeval_benchmark_results.jsonl":
+            return ['{"model":"foo/bar"}']
+        return []
+
+    monkeypatch.setattr(
+        target=process_evaluation_queue, name="read_jsonl_lines", value=read_lines
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="result_lines_for_model",
+        value=lambda lines, model_id: lines,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="completed_languages",
+        value=lambda lines, requested_languages: (
+            list(requested_languages) if lines == ['{"model":"foo/bar"}'] else []
+        ),
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="run_euroeval",
+        value=lambda **kwargs: pytest.fail("merged results should avoid re-running"),
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="remove_failed_label",
+        value=lambda number: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="add_results_ready_label",
+        value=lambda number: results_ready.append(number),
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="clear_vm_marker",
+        value=lambda number, vm_id: cleared_markers.append((number, vm_id)),
+    )
+
+    process_evaluation_queue._run_claimed_issue(
+        issue={"number": 8},
+        model_id="foo/bar",
+        languages=["el"],
+        assignee="tester",
+        vm_id="test-vm",
+        gpu_memory_utilization=None,
+    )
+
+    assert results_ready == [8]
+    assert cleared_markers == [(8, "test-vm")]
+
+
 def test_process_issue_fails_when_official_results_are_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -49,7 +187,7 @@ def test_process_issue_fails_when_official_results_are_missing(
         value=lambda number: True,
     )
 
-    lines_per_read = iter([["before"], ["before", '{"foo":"bar"}', '{"baz":"qux"}']])
+    lines_per_read = iter([[], [], ["before"], ["before"]])
 
     monkeypatch.setattr(
         target=process_evaluation_queue,

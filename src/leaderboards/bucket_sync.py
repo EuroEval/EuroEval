@@ -55,11 +55,25 @@ def sync_bucket() -> None:
     for filename, lines in local_lines.items():
         path = RESULTS_DIR / filename
         synced_lines = (
-            set(path.read_text(encoding="utf-8").splitlines())
-            if path.exists()
-            else set()
+            path.read_text(encoding="utf-8").splitlines() if path.exists() else []
         )
-        missing_lines = [line for line in lines if line not in synced_lines]
+        synced_line_set = set(synced_lines)
+        synced_keys = {
+            key
+            for line in synced_lines
+            for key, _ in _keyed_result_lines_from_row(line=line, source=str(path))
+        }
+        missing_lines: list[str] = []
+        for line in lines:
+            keyed_lines = _keyed_result_lines_from_row(line=line, source=str(path))
+            if keyed_lines:
+                for key, result_line in keyed_lines:
+                    if key not in synced_keys:
+                        missing_lines.append(result_line)
+                        synced_keys.add(key)
+            elif line not in synced_line_set:
+                missing_lines.append(line)
+
         if missing_lines:
             with path.open("a", encoding="utf-8") as f:
                 for line in missing_lines:
@@ -204,6 +218,33 @@ def _extract_dedup_key(result: BenchmarkResult) -> tuple[str, str, str, str] | N
         str(result.validation_split),
         str(result.few_shot),
     )
+
+
+def _keyed_result_lines_from_row(
+    line: str, source: str
+) -> list[tuple[tuple[str, str, str, str], str]]:
+    """Extract keyed result lines from one JSONL row.
+
+    Args:
+        line:
+            JSONL row to parse.
+        source:
+            Human-readable source label for log messages.
+
+    Returns:
+        Result identity keys paired with one serialised JSON object each.
+    """
+    keyed_lines: list[tuple[tuple[str, str, str, str], str]] = []
+    for record in parse_jsonl_lines(lines=[line], source=source, strict=False):
+        result_line = json.dumps(record)
+        try:
+            key = _extract_dedup_key(result=BenchmarkResult.from_dict(config=record))
+        except Exception as e:
+            logger.debug(f"Skipping invalid record while preserving local line: {e}")
+            continue
+        if key:
+            keyed_lines.append((key, result_line))
+    return keyed_lines
 
 
 def _remove_unknown_results_file() -> None:
