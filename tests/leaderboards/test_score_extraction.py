@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import math
 
-from leaderboards.score_extraction import _is_better_metadata, extract_model_metadata
+from leaderboards.score_extraction import (
+    _is_better_metadata,
+    extract_model_metadata,
+    group_results_by_model,
+)
 
 
 class TestIsBetterMetadata:
@@ -539,3 +543,54 @@ class TestExtractModelMetadata:
             metadata[model_full_key]["model_url"]
             == "https://huggingface.co/ollama/model-full"
         )
+
+
+class TestGroupResultsByModel:
+    """Tests for the `group_results_by_model` function."""
+
+    def test_std_err_scaled_with_raw_scores(self) -> None:
+        """Regression test: std_err should be scaled when raw scores are scaled.
+
+        When raw scores are normalized to [0, 1] and scaled to [0, 100],
+        the std_err must also be scaled by 100 to match. Otherwise, cells
+        show values like "61.86 ± 0.01" instead of "61.86 ± 1.00".
+        """
+        # Build a minimal EEE-style record with raw scores in [0, 1] range
+        record = {
+            "model_info": {"name": "org/model"},
+            "eval_library": {
+                "version": "17.6.0",
+                "additional_details": {
+                    "dataset": "angry-tweets",
+                    "task": "sentiment-classification",
+                    # Raw scores in [0, 1] range (will be scaled to [0, 100])
+                    "raw_results": [
+                        {"test_mcc": 0.60},
+                        {"test_mcc": 0.62},
+                    ],
+                },
+            },
+            "evaluation_results": [
+                {
+                    "evaluation_name": "test_mcc",
+                    "score_details": {"score": 61.86},
+                },
+                {
+                    "evaluation_name": "test_mcc_se",
+                    "score_details": {"score": 0.01},
+                },
+            ],
+        }
+
+        result = group_results_by_model(results=[record])
+
+        # Extract the grouped result
+        model_data = result["org/model"]["angry-tweets"][0]
+        raw_scores, total_score, std_err = model_data
+
+        # Raw scores should be scaled from [0, 1] to [0, 100]
+        assert raw_scores == [60.0, 62.0]
+        # Total score is already postprocessed (not scaled here)
+        assert total_score == 61.86
+        # std_err should be scaled from 0.01 to 1.0
+        assert std_err == 1.0

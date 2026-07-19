@@ -185,18 +185,21 @@ def group_results_by_model(
 
             total_score: float = float(total_score_val)
 
+            # Sometimes the raw scores are normalised to [0, 1], so we need to scale
+            # them back to [0, 100]
+            scale_factor = 100.0 if max(raw_scores) <= 1 else 1.0
+            raw_scores = [score * scale_factor for score in raw_scores]
+
             # EEE records don't carry a std err, so compute it from raw scores.
+            # Compute fallback after scaling so std_err is on the same scale as displayed scores.
             std_err: float = total_scores.get(std_err_key, 0.0)
+            # Scale std_err to match the scaled raw scores
+            std_err = std_err * scale_factor
             if std_err == 0.0 and len(raw_scores) > 1:
                 try:
                     std_err = statistics.stdev(raw_scores) / (len(raw_scores) ** 0.5)
                 except statistics.StatisticsError:
                     std_err = 0.0
-
-            # Sometimes the raw scores are normalised to [0, 1], so we need to scale
-            # them back to [0, 100]
-            if max(raw_scores) <= 1:
-                raw_scores = [score * 100 for score in raw_scores]
 
             for model_id in model_ids:
                 model_scores[model_id][dataset].append(
