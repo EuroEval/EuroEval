@@ -9,6 +9,7 @@ import pytest
 from euroeval.data_models import BenchmarkResult
 from leaderboards.result_identity import (
     ResultIdentity,
+    _extract_timestamp,
     dedup_newer_record,
     identity_from_benchmark_result,
     identity_from_eee_record,
@@ -30,7 +31,7 @@ def _make_eee_record(
     validation_split: bool | str | None = False,
     few_shot: bool | str | None = True,
     version: str | None = "1.0.0",
-    timestamp: str = "1234567890",
+    timestamp: str | int | None = "1234567890",
 ) -> dict:
     """Helper to create an EEE-format record for testing.
 
@@ -406,6 +407,58 @@ class TestDedupNewerRecord:
         record_b = _make_eee_record(version="1.9.0", timestamp="200")
         winner = dedup_newer_record(record_a, record_b)
         assert winner is record_a
+
+
+class TestExtractTimestamp:
+    """Tests for _extract_timestamp."""
+
+    def test_integer_string(self) -> None:
+        """Integer string should be returned as-is."""
+        record = _make_eee_record(timestamp="1234567890")
+        assert _extract_timestamp(record) == 1234567890
+
+    def test_integer(self) -> None:
+        """Integer should be returned as-is."""
+        record = _make_eee_record(timestamp=1234567890)
+        assert _extract_timestamp(record) == 1234567890
+
+    def test_none(self) -> None:
+        """None should return 0."""
+        record = _make_eee_record(timestamp=None)
+        assert _extract_timestamp(record) == 0
+
+    def test_iso8601_with_z(self) -> None:
+        """ISO-8601 timestamp with trailing Z should be parsed."""
+        record = _make_eee_record(timestamp="2024-01-01T00:00:00Z")
+        # 2024-01-01 00:00:00 UTC = 1704067200
+        assert _extract_timestamp(record) == 1704067200
+
+    def test_iso8601_with_offset(self) -> None:
+        """ISO-8601 timestamp with timezone offset should be parsed."""
+        record = _make_eee_record(timestamp="2024-01-01T00:00:00+00:00")
+        assert _extract_timestamp(record) == 1704067200
+
+    def test_iso8601_without_timezone_defaults_utc(self) -> None:
+        """ISO-8601 timestamp without timezone should default to UTC."""
+        record = _make_eee_record(timestamp="2024-01-01T00:00:00")
+        assert _extract_timestamp(record) == 1704067200
+
+    def test_invalid_string_returns_zero(self) -> None:
+        """Invalid string should return 0."""
+        record = _make_eee_record(timestamp="not-a-timestamp")
+        assert _extract_timestamp(record) == 0
+
+    def test_iso8601_dedup_deterministic(self) -> None:
+        """ISO-8601 timestamps should enable deterministic dedup."""
+        record_a = _make_eee_record(
+            version="1.0.0", timestamp="2024-01-01T00:00:00Z"
+        )
+        record_b = _make_eee_record(
+            version="1.0.0", timestamp="2024-01-02T00:00:00Z"
+        )
+        # record_b is newer, should win
+        winner = dedup_newer_record(record_a, record_b)
+        assert winner is record_b
 
 
 class TestRaiseOnCollision:

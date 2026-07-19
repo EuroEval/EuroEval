@@ -9,6 +9,7 @@ is the full model identifier including ``@revision`` and ``#param`` variants.
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 from euroeval.data_models import BenchmarkResult
@@ -310,12 +311,16 @@ def _extract_version(record: dict) -> str | None:
 def _extract_timestamp(record: dict) -> int:
     """Extract the retrieved_timestamp from a record.
 
+    Handles integer strings (e.g. '1234567890') and ISO-8601 timestamps
+    (e.g. '2024-01-01T00:00:00Z' with trailing Z). Integer string behaviour
+    is preserved.
+
     Args:
         record:
             A record in EEE format.
 
     Returns:
-        Timestamp as integer, or 0 if not found.
+        Timestamp as integer (Unix timestamp), or 0 if not found or unparseable.
     """
     ts = record.get("retrieved_timestamp")
     if ts is None:
@@ -323,7 +328,17 @@ def _extract_timestamp(record: dict) -> int:
     try:
         return int(ts)
     except (ValueError, TypeError):
-        return 0
+        pass
+    if isinstance(ts, str):
+        try:
+            iso_str = ts.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(iso_str)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return int(dt.timestamp())
+        except (ValueError, TypeError):
+            pass
+    return 0
 
 
 def _compare_versions(version_a: str | None, version_b: str | None) -> int:
