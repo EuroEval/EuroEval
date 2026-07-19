@@ -35,6 +35,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   topic classification. The MultiWikiQA-lb reading comprehension dataset is also
   included.
 
+### Changed
+
+- Made the Danish linguistic acceptability dataset DaLA the new official such one, over
+  the previous ScaLA-da, which has now been demoted to unofficial.
+
 ### Fixed
 
 - vLLM model loading now unconditionally disables FlashInfer autotuning by passing
