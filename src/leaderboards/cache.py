@@ -12,7 +12,7 @@ from tqdm.auto import tqdm
 
 from euroeval.string_utils import split_model_id
 
-from .jsonl_io import load_records_from_jsonl_files
+from .jsonl_io import load_records_from_result_tree
 from .records import plain_model_id
 
 logger = logging.getLogger(__name__)
@@ -99,9 +99,14 @@ class Cache:
     def from_results_dir(cls, results_dir: Path) -> "Cache":
         """Create a cache from records in the results directory.
 
+        Walks the JSON tree structure (``results_dir/<model>/*.json``) and
+        loads all records. Preserves metadata fields in
+        ``model_info.additional_details`` (commercially_licensed, open,
+        trained_from_scratch, model_url, etc.).
+
         Args:
             results_dir:
-                The path to the directory containing per-model JSONL files
+                The path to the directory containing per-record JSON files
                 with metadata.
 
         Returns:
@@ -114,8 +119,7 @@ class Cache:
         if not results_dir.exists():
             raise FileNotFoundError(f"Results directory {results_dir} not found.")
 
-        jsonl_files = sorted(results_dir.glob("*.jsonl"))
-        records = load_records_from_jsonl_files(paths=jsonl_files)
+        records = load_records_from_result_tree(results_dir=results_dir)
 
         return cls._from_records(
             records=records, desc="Building caches from results dir"
