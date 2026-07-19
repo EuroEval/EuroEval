@@ -217,22 +217,12 @@ def upload_results_to_bucket(results_file: Path) -> None:
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Remove stale ROOT-level *.jsonl artefacts (old flat store) before upload
-    # Only delete *.jsonl directly inside RESULTS_DIR, never repo-root files
-    for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
-        if jsonl_file.is_file():
-            logger.info(f"Removing stale jsonl file {jsonl_file}")
-            jsonl_file.unlink()
-
-    # Clear existing tree to ensure clean state
-    for existing_file in RESULTS_DIR.rglob("*.json"):
-        if existing_file.is_file():
-            existing_file.unlink()
-
+    # PHASE 1: Parse ALL input records and build the COMPLETE path→identity map.
+    # raise_on_collision is called for any distinct-identity path collision BEFORE
+    # any filesystem mutation. On collision, RESULTS_DIR is left untouched.
     logger.info(f"Reading results from {results_file}...")
-    records_written = 0
-    # rel_path -> identity for collision check
-    path_identity_map: dict[str, ResultIdentity] = {}
+    # rel_path -> (identity, record) for writing after validation
+    path_record_map: dict[str, tuple[ResultIdentity, dict]] = {}
     with results_file.open(encoding="utf-8") as f:
         for line in f:
             if not line.strip():
@@ -260,17 +250,33 @@ def upload_results_to_bucket(results_file: Path) -> None:
             rel_path = str(record_path.relative_to(RESULTS_DIR))
 
             # Check for collision: distinct identity at same path
-            if rel_path in path_identity_map:
-                raise_on_collision(path_identity_map[rel_path], identity)
-            path_identity_map[rel_path] = identity
+            if rel_path in path_record_map:
+                raise_on_collision(path_record_map[rel_path][0], identity)
+            path_record_map[rel_path] = (identity, record)
 
-            record_path.parent.mkdir(parents=True, exist_ok=True)
-            record_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
-            records_written += 1
-
-    if not records_written:
+    if not path_record_map:
         logger.warning("No valid results found to upload.")
         return
+
+    # PHASE 2: Validation passed. Now mutate the filesystem.
+    # Remove stale ROOT-level *.jsonl artefacts (old flat store)
+    for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
+        if jsonl_file.is_file():
+            logger.info(f"Removing stale jsonl file {jsonl_file}")
+            jsonl_file.unlink()
+
+    # Clear existing tree to ensure clean state
+    for existing_file in RESULTS_DIR.rglob("*.json"):
+        if existing_file.is_file():
+            existing_file.unlink()
+
+    # Write all validated records
+    records_written = 0
+    for rel_path, (_, record) in path_record_map.items():
+        record_path = RESULTS_DIR / rel_path
+        record_path.parent.mkdir(parents=True, exist_ok=True)
+        record_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
+        records_written += 1
 
     logger.info(
         f"Wrote {records_written} record files to {RESULTS_DIR}, syncing to bucket..."
