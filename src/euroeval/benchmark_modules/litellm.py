@@ -169,7 +169,7 @@ NUM_PARAMS_MAPPING = {
     r"(ordbogen/)?odin-medium.*": -1,
     r"(ordbogen/)?odin-large.*": -1,
     # ALX models
-    r"(alx/)?qwen3.5-397b": 403_000_000_000,
+    r"(alx/)?qwen3\.5-397b.*": 403_000_000_000,
 }
 
 
