@@ -466,9 +466,10 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
             continue
         try:
             content = local_path.read_text(encoding="utf-8")
-            # Validate it's valid JSON
-            json.loads(content)
-            results.append(content)
+            record = json.loads(content)  # validates and parses
+            results.append(
+                json.dumps(record, separators=(",", ":"))
+            )  # compact to single line
         except (json.JSONDecodeError, OSError) as e:
             logger.warning(f"Failed to read {local_path}: {e}")
 
@@ -587,7 +588,9 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
         try:
             record_path = RESULTS_DIR / identity_to_path(identity)
             record_path.parent.mkdir(parents=True, exist_ok=True)
-            record_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
+            record_path.write_text(
+                json.dumps(record, separators=(",", ":")), encoding="utf-8"
+            )
             records_written += 1
         except (ValueError, OSError) as e:
             logger.warning(f"Failed to write record for {identity}: {e}")
