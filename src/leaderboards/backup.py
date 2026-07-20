@@ -1,10 +1,10 @@
 """Off-repo backup rotation for the results directory.
 
-`RESULTS_DIR` holds one JSONL file per model and is the source of truth for
-the leaderboard pipeline. We don't track it in git (tens of MB and growing),
-so this module snapshots each successful run to BACKUPS_DIR as a single
-compressed archive with a timestamp suffix, and prunes the oldest backups
-whenever the directory exceeds BACKUPS_MAX_BYTES.
+`RESULTS_DIR` holds a tree of JSON records (results/<model>/<record>.json)
+and is the source of truth for the leaderboard pipeline. We don't track it
+in git (tens of MB and growing), so this module snapshots each successful
+run to BACKUPS_DIR as a single compressed archive with a timestamp suffix,
+and prunes the oldest backups whenever the directory exceeds BACKUPS_MAX_BYTES.
 
 If `RESULTS_DIR` is missing or empty at startup,
 `restore_from_backup_if_missing` extracts the most recent backup into place so
@@ -15,13 +15,12 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
+import json
 import logging
 import random
 import sys
 import tarfile
 from pathlib import Path
-
-from euroeval.jsonl_io import parse_jsonl_lines
 
 from .constants import (
     BACKUP_ARCHIVE_ROOT,
@@ -48,7 +47,8 @@ def restore_from_backup_if_missing(target: Path = RESULTS_DIR) -> bool:
         True if a restore happened, False if `target` already held results or
         no backup was available.
     """
-    if target.exists() and any(target.glob("*.jsonl")):
+    # Check for tree layout: any .json files in subdirs
+    if target.exists() and any(target.rglob("*.json")):
         return False
     backups = _list_backups()
     if not backups:
@@ -115,8 +115,9 @@ def _write_snapshot(source: Path) -> Path | None:
     """
     BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
 
-    model_files = sorted(source.glob("*.jsonl"))
-    content_hash = _content_hash(paths=model_files)
+    # Recursively find all JSON files in the tree (results/<model>/<record>.json)
+    json_files = sorted(source.rglob("*.json"))
+    content_hash = _content_hash(paths=json_files)
 
     existing = _list_backups()
     if existing and _backup_hash(existing[0]) == content_hash:
@@ -131,10 +132,12 @@ def _write_snapshot(source: Path) -> Path | None:
         BACKUPS_DIR / f"{BACKUP_PREFIX}{timestamp}_{content_hash}{BACKUP_SUFFIX}"
     )
     with tarfile.open(backup_path, "w:gz") as tar:
-        for model_file in model_files:
-            tar.add(name=model_file, arcname=f"{BACKUP_ARCHIVE_ROOT}/{model_file.name}")
+        for json_file in json_files:
+            # Preserve the tree structure: results/<model>/<record>.json
+            rel_path = json_file.relative_to(source.parent)
+            tar.add(name=json_file, arcname=str(rel_path))
     logger.info(
-        f"Snapshotted {len(model_files):,} files from {source} -> {backup_path} "
+        f"Snapshotted {len(json_files):,} files from {source} -> {backup_path} "
         f"({backup_path.stat().st_size:,} bytes)"
     )
 
@@ -147,15 +150,25 @@ def _content_hash(paths: list[Path]) -> str:
 
     Args:
         paths:
-            The files to hash, in a stable (sorted) order.
+            The files to hash. Will be sorted by relative path for stable
+            ordering regardless of input order.
 
     Returns:
         The first `BACKUP_HASH_LEN` hex characters of a SHA-256 over each
-        file's name and bytes.
+        file's relative path and bytes.
     """
     hasher = hashlib.sha256()
-    for path in paths:
-        hasher.update(path.name.encode("utf-8"))
+    # Compute relative paths and sort by them for stable ordering
+
+    def _rel_path(p: Path) -> str:
+        return str(p.relative_to(p.parent.parent))
+
+    sorted_paths = sorted(paths, key=_rel_path)
+    for path in sorted_paths:
+        # Use the relative path from results root for stable identity
+        # (e.g., "model_name/dataset__split__shot.json")
+        rel_path = _rel_path(path)
+        hasher.update(rel_path.encode("utf-8"))
         hasher.update(b"\0")
         hasher.update(path.read_bytes())
         hasher.update(b"\0")
@@ -179,42 +192,55 @@ def _backup_hash(backup: Path) -> str | None:
 
 
 def _extract_backup(archive: Path, dest: Path) -> None:
-    """Extract the per-model JSONL files from `archive` into `dest`.
+    """Extract the per-record JSON tree from `archive` into `dest`.
 
-    Members are flattened to their base name so the archive's internal
-    directory prefix can't write outside `dest`.
+    Preserves the tree structure: `results/<model>/<record>.json`.
+    Path traversal is prevented by ensuring all members live under the
+    archive root prefix.
 
     Args:
         archive:
             The ``.tar.gz`` backup to read.
         dest:
-            The directory to populate with the per-model JSONL files.
+            The directory to populate with the per-record JSON tree.
     """
     dest.mkdir(parents=True, exist_ok=True)
     with tarfile.open(archive, "r:gz") as tar:
         for member in tar.getmembers():
-            name = Path(member.name).name
-            if not member.isfile() or not name.endswith(".jsonl"):
+            # Only process files under the results/ prefix
+            if not member.name.startswith(f"{BACKUP_ARCHIVE_ROOT}/"):
                 continue
+            if not member.isfile() or not member.name.endswith(".json"):
+                continue
+            # Strip the "results/" prefix to get relative path within dest
+            rel_path = Path(member.name).relative_to(BACKUP_ARCHIVE_ROOT)
+            target_path = dest / rel_path
+            # Ensure we don't write outside dest (path traversal protection)
+            try:
+                target_path.relative_to(dest)
+            except ValueError:
+                logger.warning(f"Skipping {member.name} - path traversal detected")
+                continue
+            target_path.parent.mkdir(parents=True, exist_ok=True)
             extracted = tar.extractfile(member)
             if extracted is None:
                 continue
-            (dest / name).write_bytes(extracted.read())
+            target_path.write_bytes(extracted.read())
 
 
 def _validate_results() -> None:
     """Validate that results exist and have valid JSON structure.
 
     Checks that:
-    1. RESULTS_DIR exists and contains .jsonl files
+    1. RESULTS_DIR exists and contains JSON files in the tree layout
+       (results/<model>/<record>.json)
     2. Sample files (up to 5) contain valid JSON with EEE envelope structure
 
-    Invalid JSON lines are rejected (strict=True), ensuring corrupted files
-    are caught before backup. Raw results synced from the HF bucket may be
-    missing the "precious" metadata fields (commercially_licensed, open,
-    trained_from_scratch). Those fields are filled in later by
-    ``add_missing_entries`` and enforced when processed results are written
-    out by ``dump_jsonl_records``.
+    Each file contains a single JSON dict (one record per file). Raw results
+    synced from the HF bucket may be missing the "precious" metadata fields
+    (commercially_licensed, open, trained_from_scratch). Those fields are
+    filled in later by ``add_missing_entries`` and enforced when processed
+    results are written out by ``dump_jsonl_records``.
 
     Raises:
         FileNotFoundError:
@@ -228,19 +254,20 @@ def _validate_results() -> None:
             "Run evaluation result collection before backing up."
         )
 
-    model_files = list(RESULTS_DIR.glob("*.jsonl"))
-    if not model_files:
+    # Find all JSON files in the tree (results/<model>/<record>.json)
+    json_files = list(RESULTS_DIR.rglob("*.json"))
+    if not json_files:
         raise FileNotFoundError(
             f"No result files found in {RESULTS_DIR}. "
             "Run evaluation result collection before backing up."
         )
 
     # Sample up to 5 files for validation
-    sample_size = min(5, len(model_files))
-    sampled_files = random.sample(model_files, sample_size)
+    sample_size = min(5, len(json_files))
+    sampled_files = random.sample(json_files, sample_size)
 
     logger.info(
-        f"Validating {sample_size} sampled result files (of {len(model_files):,} total)"
+        f"Validating {sample_size} sampled result files (of {len(json_files):,} total)"
         " for valid JSON and EEE envelope structure"
     )
 
@@ -248,28 +275,22 @@ def _validate_results() -> None:
     records_checked = 0
     records_with_issues = 0
 
-    for model_file in sampled_files:
+    for json_file in sampled_files:
         file_has_issues = False
         try:
-            content = model_file.read_text(encoding="utf-8")
-            lines = content.splitlines()
-            records = parse_jsonl_lines(
-                lines=lines, source=str(model_file), strict=True
-            )
+            content = json_file.read_text(encoding="utf-8")
+            record = json.loads(content)
+            records_checked += 1
 
-            for record in records:
-                records_checked += 1
-                # Validate EEE envelope structure (required for all records)
-                if not is_eee_record(record):
-                    model_id = record.get("model_info", {}).get("name", "unknown")
-                    logger.error(
-                        f"Missing EEE envelope in {model_file.name}, model '{model_id}'"
-                    )
-                    file_has_issues = True
-                    records_with_issues += 1
+            # Validate EEE envelope structure (required for all records)
+            if not is_eee_record(record):
+                model_id = record.get("model_info", {}).get("name", "unknown")
+                logger.error(f"Missing EEE envelope in {json_file}, model '{model_id}'")
+                file_has_issues = True
+                records_with_issues += 1
 
         except Exception as e:
-            logger.error(f"Failed to read {model_file.name}: {e}")
+            logger.error(f"Failed to read {json_file}: {e}")
             file_has_issues = True
 
         if file_has_issues:

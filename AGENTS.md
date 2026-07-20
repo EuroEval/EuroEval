@@ -32,21 +32,23 @@ via Github issues.
 Evaluation results flow through three storage layers:
 
 1. **Hugging Face Bucket** (source of truth):
-   - `EuroEval/results`: Single bucket with per-model JSONL files (one file per model,
-     append-only)
+   - `EuroEval/results`: Tree layout with one JSON file per logical result:
+     `results/<sanitise(model_id)>/<dataset>__<split_label>__<shot_label>.json`
+   - Identity/filename keyed on `(model_id, dataset, validation_split, few_shot)` —
+     distinct results never share a path, so sync is a union (no per-file clobbering)
    - All files contain metadata fields (`commercially_licensed`, `open`,
      `trained_from_scratch`)
    - Synced via `hf sync` command (requires `HF_TOKEN`)
 
 2. **Local `results/` directory** (working copy):
-   - Contains all per-model JSONL files (unified, not split into raw/processed)
+   - Contains the same per-record JSON tree as the HF bucket
    - Git-ignored, synced bidirectionally with HF bucket
 
 3. **`results.tar.gz`** (historical archive):
    - **Location:** `~/pCloud Drive/data/euroeval_backup/results.tar.gz`
    - **Override:** Set `EUROEVAL_RESULTS_BACKUP_DIR` environment variable
-   - Contains single `results/results.jsonl` (all results merged with metadata)
-   - Rebuilt from `results/*.jsonl` files on each run
+   - Contains the `results/` tree (all per-record JSON files)
+   - Rebuilt from `results/**/*.json` files on each run
    - 43+ MB, not tracked in git
 
 4. **Backup snapshots** (disaster recovery):

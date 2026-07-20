@@ -1,6 +1,6 @@
 """Create a language spider/radial plot comparing models across languages.
 
-This script loads evaluation results from local JSONL files and generates a
+This script loads evaluation results from the local result tree and generates a
 Plotly polar chart comparing selected models across languages.
 Only rank score is plotted (lower is better, axis is reversed).
 Output is a PNG file.
@@ -26,9 +26,9 @@ import numpy as np
 import plotly.graph_objects as go
 
 from euroeval.constants import ORTHOGONAL_TASKS
-from euroeval.jsonl_io import parse_jsonl_lines
 from euroeval.languages import get_all_languages
 from leaderboards.constants import RESULTS_DIR
+from leaderboards.jsonl_io import load_records_from_result_tree
 from leaderboards.record_fields import (
     get_few_shot,
     get_raw_results,
@@ -455,38 +455,18 @@ def _get_model_identifier(record: JsonDict) -> str:
 
 
 def _load_all_results() -> list[JsonDict]:
-    """Load all results from local JSONL files (reference population).
+    """Load all results from the local result tree (reference population).
 
-    Skips unknown.jsonl as it is not authoritative. Loads all other
-    JSONL files in the results directory.
+    Loads all JSON files in the results tree structure.
 
     Returns:
         List of EEE-format result records from all models.
     """
-    records: list[JsonDict] = []
-    model_files = sorted(RESULTS_DIR.glob("*.jsonl"))
-
-    if not model_files:
-        return records
-
-    for jsonl_path in model_files:
-        # Skip unknown.jsonl as it is not authoritative
-        if jsonl_path.stem == "unknown":
-            continue
-
-        try:
-            lines = jsonl_path.read_text(encoding="utf-8").splitlines()
-            file_records = parse_jsonl_lines(
-                lines=lines, source=str(jsonl_path), strict=False
-            )
-            for rec in file_records:
-                if isinstance(rec, dict):
-                    records.append(t.cast(JsonDict, rec))
-        except Exception:
-            # Silently skip unparseable files
-            pass
-
-    return records
+    try:
+        records = load_records_from_result_tree(RESULTS_DIR)
+        return [t.cast(JsonDict, rec) for rec in records]
+    except Exception:
+        return []
 
 
 def _load_results_for_models(model_ids: list[str]) -> list[JsonDict]:

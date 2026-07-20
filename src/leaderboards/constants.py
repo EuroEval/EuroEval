@@ -136,10 +136,6 @@ NEW_RESULTS_PATH: Path = _env_path(
 # hf://buckets/EuroEval/results/.
 RESULTS_DIR: Path = REPO_ROOT / "results"
 
-# Non-authoritative duplicate result file sometimes produced by older tooling.
-# It must not be loaded, cached, backed up, or synced back to the bucket.
-UNKNOWN_RESULTS_FILENAME = "unknown.jsonl"
-
 # ---------------------------------------------------------------------------
 # GitHub API
 # ---------------------------------------------------------------------------

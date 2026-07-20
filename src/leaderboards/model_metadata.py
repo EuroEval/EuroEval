@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import re
+import shutil
 import typing as t
 import warnings
 from copy import deepcopy
@@ -30,6 +31,7 @@ from .constants import GENERATIVE_TYPE_KEYWORDS, PERMISSIVE_LICENSES, RESULTS_DI
 from .link_generation import ask_user_to_remove_model, generate_model_url
 from .record_fields import get_few_shot, get_task, get_version
 from .records import get_bool_field, get_model_name, plain_model_id
+from .result_identity import sanitise_model_dir_name
 
 logger = logging.getLogger(__name__)
 
@@ -120,19 +122,18 @@ def generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
 
 
 def _remove_model_results(model_id: str) -> None:
-    """Delete a model's result file from RESULTS_DIR.
+    """Delete a model's result directory from RESULTS_DIR.
 
     ``RESULTS_DIR`` is the source of truth for the leaderboard, so removing
-    the file drops the model from future builds.
+    the directory drops the model from future builds.
 
     Args:
         model_id:
-            The model id whose result file should be removed.
+            The model id whose result directory should be removed.
     """
-    result_file = RESULTS_DIR / f"{plain_model_id(model_id).replace('/', '_')}.jsonl"
-    if result_file.exists():
-        result_file.unlink()
-        logger.info(f"Removed result file {result_file.name} for {model_id}.")
+    model_dir = RESULTS_DIR / sanitise_model_dir_name(plain_model_id(model_id))
+    shutil.rmtree(model_dir, ignore_errors=True)
+    logger.info(f"Removed result directory {model_dir.name} for {model_id}.")
 
 
 def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any]:

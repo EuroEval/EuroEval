@@ -10,19 +10,17 @@ unnecessary Hugging Face API calls.
 
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import httpx
+import pytest
 from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
 
+from leaderboards import model_metadata
 from leaderboards.cache import Cache, _is_hf_url_for_model
-from leaderboards.constants import (
-    TRAINED_FROM_SCRATCH_PATTERNS,
-    UNKNOWN_RESULTS_FILENAME,
-)
+from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
 from leaderboards.model_metadata import (
     add_missing_entries,
     is_commercially_licensed,
@@ -869,38 +867,52 @@ class TestCachePriority:
         assert result["model_info"]["additional_details"]["open"] is False
 
 
-def test_cache_ignores_unknown_jsonl(tmp_path: Path) -> None:
-    """Stale unknown.jsonl records must not override per-model metadata."""
-    rich_record = {
-        "model_info": {
-            "name": "Qwen/Qwen3.6-27B-FP8",
-            "additional_details": {
-                "open": True,
-                "commercially_licensed": True,
-                "trained_from_scratch": False,
-            },
-        }
-    }
-    stale_record = {
-        "model_info": {
-            "name": "Qwen/Qwen3.6-27B-FP8",
-            "additional_details": {
-                "open": False,
-                "commercially_licensed": False,
-                "trained_from_scratch": False,
-            },
-        }
-    }
+class TestRemoveModelResults:
+    """Tests for the _remove_model_results function."""
 
-    (tmp_path / "Qwen_Qwen3.6-27B-FP8.jsonl").write_text(
-        json.dumps(rich_record) + "\n", encoding="utf-8"
-    )
-    (tmp_path / UNKNOWN_RESULTS_FILENAME).write_text(
-        json.dumps(stale_record) + "\n", encoding="utf-8"
-    )
+    def test_deletes_model_directory(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Test that _remove_model_results deletes the model's subdirectory."""
+        monkeypatch.setattr(model_metadata, "RESULTS_DIR", tmp_path)
 
-    cache = Cache.from_results_dir(results_dir=tmp_path)
+        # Create a model directory with result files
+        model_dir = tmp_path / "org_model"
+        model_dir.mkdir(parents=True)
+        (model_dir / "mmlu__test__zeroshot.json").write_text("{}", encoding="utf-8")
+        (model_dir / "mmlu__test__fewshot.json").write_text("{}", encoding="utf-8")
 
-    assert cache.open["Qwen/Qwen3.6-27B-FP8"] is True
-    assert cache.commercially_licensed["Qwen/Qwen3.6-27B-FP8"] is True
-    assert cache.trained_from_scratch["Qwen/Qwen3.6-27B-FP8"] is False
+        assert model_dir.exists()
+        assert len(list(model_dir.iterdir())) == 2
+
+        model_metadata._remove_model_results(model_id="org/model")
+
+        # Directory should be deleted
+        assert not model_dir.exists()
+
+    def test_deletes_directory_with_slashes_in_model_id(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Test deletion works correctly with model IDs containing slashes."""
+        monkeypatch.setattr(model_metadata, "RESULTS_DIR", tmp_path)
+
+        # Create a model directory (slashes are sanitised to underscores)
+        model_dir = tmp_path / "org_Qwen3-0.6B"
+        model_dir.mkdir(parents=True)
+        (model_dir / "mmlu__test__zeroshot.json").write_text("{}", encoding="utf-8")
+
+        model_metadata._remove_model_results(model_id="org/Qwen3-0.6B")
+
+        assert not model_dir.exists()
+
+    def test_no_error_if_directory_does_not_exist(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Test that _remove_model_results does not raise if directory doesn't exist."""
+        monkeypatch.setattr(model_metadata, "RESULTS_DIR", tmp_path)
+
+        # Should not raise
+        model_metadata._remove_model_results(model_id="nonexistent/model")
+
+        # Directory should still not exist
+        assert not (tmp_path / "nonexistent_model").exists()

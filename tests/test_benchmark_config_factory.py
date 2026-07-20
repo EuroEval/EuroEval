@@ -15,7 +15,7 @@ from euroeval.benchmark_config_factory import (
 )
 from euroeval.data_models import DatasetConfig, Language
 from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.dataset_configs.danish import MULTI_WIKI_QA_DA_CONFIG, SCALA_DA_CONFIG
+from euroeval.dataset_configs.danish import DALA_CONFIG, MULTI_WIKI_QA_DA_CONFIG
 from euroeval.enums import Device
 from euroeval.languages import (
     DANISH,
@@ -129,36 +129,36 @@ def test_prepare_languages(
             list(get_all_languages().values()),
             "all_official_la_dataset_configs",
         ),
-        (None, "scala-da", list(get_all_languages().values()), [SCALA_DA_CONFIG]),
+        (None, "dala", list(get_all_languages().values()), [DALA_CONFIG]),
         (
             "linguistic-acceptability",
-            ["scala-da", "multi-wiki-qa-da"],
+            ["dala", "multi-wiki-qa-da"],
             list(get_all_languages().values()),
-            [SCALA_DA_CONFIG],
+            [DALA_CONFIG],
         ),
         (
             ["linguistic-acceptability", "named-entity-recognition"],
-            "scala-da",
+            "dala",
             list(get_all_languages().values()),
-            [SCALA_DA_CONFIG],
+            [DALA_CONFIG],
         ),
         (
             ["linguistic-acceptability", "reading-comprehension"],
-            ["scala-da", "multi-wiki-qa-da", "nordjylland-news"],
+            ["dala", "multi-wiki-qa-da", "nordjylland-news"],
             list(get_all_languages().values()),
-            [SCALA_DA_CONFIG, MULTI_WIKI_QA_DA_CONFIG],
+            [DALA_CONFIG, MULTI_WIKI_QA_DA_CONFIG],
         ),
         (
             ["linguistic-acceptability", "reading-comprehension"],
-            ["scala-da", "multi-wiki-qa-da", "multi-wiki-qa-sv"],
+            ["dala", "multi-wiki-qa-da", "multi-wiki-qa-sv"],
             [DANISH],
-            [SCALA_DA_CONFIG, MULTI_WIKI_QA_DA_CONFIG],
+            [DALA_CONFIG, MULTI_WIKI_QA_DA_CONFIG],
         ),
         (
             ["linguistic-acceptability", "reading-comprehension"],
             None,
             [DANISH],
-            [SCALA_DA_CONFIG, MULTI_WIKI_QA_DA_CONFIG],
+            [DALA_CONFIG, MULTI_WIKI_QA_DA_CONFIG],
         ),
         (
             None,
@@ -252,7 +252,7 @@ class TestBitsPerCharacterGating:
 
     def test_bpc_on_non_mcq_dataset_logs_debug(self) -> None:
         """BPC on a non-MCQ dataset logs a debug message."""
-        benchmarker = Benchmarker(dataset="scala-da", use_bits_per_character=True)
+        benchmarker = Benchmarker(dataset="dala", use_bits_per_character=True)
         # Non-MCQ tasks still set the flag but log a debug message
         assert benchmarker.benchmark_config.use_bits_per_character is True
 

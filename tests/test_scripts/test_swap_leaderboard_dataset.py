@@ -12,6 +12,7 @@ from huggingface_hub import HfApi
 from euroeval.data_models import DatasetConfig
 from euroeval.languages import DANISH, SWEDISH
 from euroeval.tasks import LA
+from leaderboards import bucket_sync
 from src.scripts import swap_leaderboard_dataset
 
 
@@ -193,6 +194,70 @@ class TestSyncResults:
 
         # Should warn about no results
         assert "No results found" in caplog.text
+
+    def test_sync_results_logs_correct_counts(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Should log correct total and new record counts."""
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+        new_results_path = tmp_path / "new_results.jsonl"
+
+        # Create a mock result file in the tree
+        model_dir = results_dir / "test_model"
+        model_dir.mkdir()
+        record_file = model_dir / "test_dataset__test__none.json"
+        test_record = {
+            "model_info": {"name": "test-model"},
+            "eval_library": {
+                "additional_details": {"dataset": "test-dataset", "languages": ["da"]}
+            },
+            "validation_split": False,
+            "few_shot": True,
+        }
+        record_file.write_text(json.dumps(test_record), encoding="utf-8")
+
+        # Pre-populate new_results.jsonl with one existing record (different identity)
+        existing_record = {
+            "model_info": {"name": "existing-model"},
+            "eval_library": {
+                "additional_details": {"dataset": "other-dataset", "languages": ["da"]}
+            },
+            "validation_split": False,
+            "few_shot": True,
+        }
+        new_results_path.write_text(
+            json.dumps(existing_record) + "\n", encoding="utf-8"
+        )
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
+        )
+        monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="NEW_RESULTS_PATH",
+            value=new_results_path,
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="HF_RESULTS_BUCKET",
+            value="test/bucket",
+        )
+
+        # Mock hf_api.sync_bucket to do nothing
+        monkeypatch.setattr(HfApi, "sync_bucket", lambda *args, **kwargs: None)
+
+        with caplog.at_level(logging.INFO):
+            swap_leaderboard_dataset.sync_results_from_bucket()
+
+        # Should log: "Consolidating 1 result records into ... (1 new)."
+        # Total count should be 1 (from merge_results), new count should be 1
+        assert "Consolidating" in caplog.text
+        assert "result records" in caplog.text
 
 
 class TestConfigBlockSpan:
@@ -556,14 +621,16 @@ class TestLoadCorpusAndBuildEvalJobs:
         # Setup: create results directory with a file (so load_corpus succeeds)
         results_dir = tmp_path / "results"
         results_dir.mkdir()
-        model_file = results_dir / "test-model.jsonl"
+        model_dir = results_dir / "test_model"
+        model_dir.mkdir()
+        record_file = model_dir / "test_dataset__test__none.json"
         test_record = {
             "model_info": {"name": "test-model"},
             "eval_library": {
                 "additional_details": {"dataset": "test-dataset", "languages": ["da"]}
             },
         }
-        model_file.write_text(json.dumps(test_record) + "\n", encoding="utf-8")
+        record_file.write_text(json.dumps(test_record), encoding="utf-8")
 
         # Mock REPO_ROOT, RESULTS_DIR and EUROEVAL_BENCHMARK_RESULTS_PATH
         monkeypatch.setattr(
@@ -582,6 +649,43 @@ class TestLoadCorpusAndBuildEvalJobs:
         # Should not raise
         corpus = swap_leaderboard_dataset.load_corpus()
         assert ("test-model", "test-dataset", "da") in corpus.observations
+
+    def test_load_corpus_falls_back_to_model_info_id(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Should fall back to model_info.id when name is missing."""
+        # Setup: create results directory with a record that only has model_info.id
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+        model_dir = results_dir / "test_model"
+        model_dir.mkdir()
+        record_file = model_dir / "test_dataset__test__none.json"
+        # Record with only 'id' field, no 'name' (valid EEE format)
+        test_record = {
+            "model_info": {"id": "test/org-model"},
+            "eval_library": {
+                "additional_details": {"dataset": "test-dataset", "languages": ["da"]}
+            },
+        }
+        record_file.write_text(json.dumps(test_record), encoding="utf-8")
+
+        # Mock REPO_ROOT, RESULTS_DIR and EUROEVAL_BENCHMARK_RESULTS_PATH
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="EUROEVAL_BENCHMARK_RESULTS_PATH",
+            value=tmp_path / "euroeval_benchmark_results.jsonl",
+        )
+
+        # Should load the record using the id field
+        corpus = swap_leaderboard_dataset.load_corpus()
+        # plain_model_id strips variants, so "test/org-model" stays as-is
+        assert ("test/org-model", "test-dataset", "da") in corpus.observations
 
     def test_build_eval_jobs_skips_existing_observations(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

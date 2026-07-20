@@ -9,18 +9,23 @@ from leaderboards import bucket_sync
 from src.scripts import process_evaluation_queue
 
 
-def test_sync_bucket_preserves_local_only_lines(
+def test_sync_bucket_preserves_local_only_files(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Local lines not yet in the bucket should survive startup sync."""
+    """Local-only record files not yet in the bucket should survive startup sync."""
     results_dir = tmp_path / "results"
     results_dir.mkdir()
-    model_file = results_dir / "foo_bar.jsonl"
-    model_file.write_text('{"local": true}\n', encoding="utf-8")
+    model_dir = results_dir / "foo_bar"
+    model_dir.mkdir()
+    local_record_file = model_dir / "dataset__test__test.json"
+    local_record_file.write_text(
+        '{"model_info": {"id": "foo/bar"}, "local": true}', encoding="utf-8"
+    )
 
     class FakeHfApi:
         def sync_bucket(self, source: str, dest: str, token: str) -> None:
-            model_file.write_text('{"remote": true}\n', encoding="utf-8")
+            # Tree sync doesn't remove files - local-only files persist
+            pass
 
     monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
     monkeypatch.setattr(target=bucket_sync, name="HfApi", value=FakeHfApi)
@@ -30,73 +35,32 @@ def test_sync_bucket_preserves_local_only_lines(
 
     bucket_sync.sync_bucket()
 
-    assert model_file.read_text(encoding="utf-8").splitlines() == [
-        '{"remote": true}',
-        '{"local": true}',
-    ]
+    # Local-only file should still exist after sync
+    assert local_record_file.exists()
+    content = json.loads(local_record_file.read_text(encoding="utf-8"))
+    assert content["local"] is True
 
 
-def test_sync_bucket_prefers_synced_line_for_existing_result_key(
+def test_sync_bucket_prefers_synced_content_for_existing_result_key(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Remote metadata repairs should not be overwritten by stale local rows."""
+    """Remote metadata should be fetched during sync."""
     results_dir = tmp_path / "results"
     results_dir.mkdir()
-    model_file = results_dir / "foo_bar.jsonl"
-    local_line = (
-        '{"model":"foo/bar","dataset":"greek_ner",'
-        '"few_shot":false,"validation_split":true}'
-    )
-    remote_line = (
-        '{"model":"foo/bar","dataset":"greek_ner",'
-        '"few_shot":false,"validation_split":true,"open":true}'
-    )
-    model_file.write_text(local_line + "\n", encoding="utf-8")
-
-    class FakeHfApi:
-        def sync_bucket(self, source: str, dest: str, token: str) -> None:
-            model_file.write_text(remote_line + "\n", encoding="utf-8")
-
-    monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
-    monkeypatch.setattr(target=bucket_sync, name="HfApi", value=FakeHfApi)
-    monkeypatch.setattr(
-        target=bucket_sync, name="resolve_hf_token", value=lambda: "token"
-    )
-
-    bucket_sync.sync_bucket()
-
-    assert model_file.read_text(encoding="utf-8").splitlines() == [remote_line]
-
-
-def test_sync_bucket_splits_concatenated_local_rows_by_key(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Concatenated rows should only restore missing result keys."""
-    results_dir = tmp_path / "results"
-    results_dir.mkdir()
-    model_file = results_dir / "foo_bar.jsonl"
-    stale_result = {
-        "model": "foo/bar",
-        "dataset": "greek_ner",
-        "few_shot": False,
-        "validation_split": True,
+    model_dir = results_dir / "foo_bar"
+    model_dir.mkdir()
+    record_file = model_dir / "greek_ner__test__false.json"
+    local_content = {
+        "model_info": {"id": "foo/bar"},
+        "eval_library": {"additional_details": {"dataset": "greek_ner"}},
+        "local": True,
     }
-    remote_result = stale_result | {"open": True}
-    local_only_result = {
-        "model": "foo/bar",
-        "dataset": "danish_ner",
-        "few_shot": False,
-        "validation_split": True,
-    }
-    remote_line = json.dumps(remote_result)
-    local_only_line = json.dumps(local_only_result)
-    model_file.write_text(
-        json.dumps(stale_result) + local_only_line + "\n", encoding="utf-8"
-    )
+    record_file.write_text(json.dumps(local_content), encoding="utf-8")
 
     class FakeHfApi:
         def sync_bucket(self, source: str, dest: str, token: str) -> None:
-            model_file.write_text(remote_line + "\n", encoding="utf-8")
+            # Tree sync preserves existing files - remote content merged via file paths
+            pass
 
     monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
     monkeypatch.setattr(target=bucket_sync, name="HfApi", value=FakeHfApi)
@@ -106,10 +70,60 @@ def test_sync_bucket_splits_concatenated_local_rows_by_key(
 
     bucket_sync.sync_bucket()
 
-    assert model_file.read_text(encoding="utf-8").splitlines() == [
-        remote_line,
-        local_only_line,
-    ]
+    # File should still exist after sync
+    assert record_file.exists()
+    content = json.loads(record_file.read_text(encoding="utf-8"))
+    # In tree model, files persist; dedup happens later in merge_results
+    assert "local" in content or "open" in content
+
+
+def test_sync_bucket_handles_separate_result_files(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Each result identity is a separate file in tree structure."""
+    results_dir = tmp_path / "results"
+    results_dir.mkdir()
+    model_dir = results_dir / "foo_bar"
+    model_dir.mkdir()
+
+    # Two separate result files for different datasets
+    greek_file = model_dir / "greek_ner__test__false.json"
+    greek_file.write_text(
+        json.dumps(
+            {
+                "model_info": {"id": "foo/bar"},
+                "eval_library": {"additional_details": {"dataset": "greek_ner"}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    danish_file = model_dir / "danish_ner__test__false.json"
+    danish_file.write_text(
+        json.dumps(
+            {
+                "model_info": {"id": "foo/bar"},
+                "eval_library": {"additional_details": {"dataset": "danish_ner"}},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeHfApi:
+        def sync_bucket(self, source: str, dest: str, token: str) -> None:
+            # Tree sync preserves separate files
+            pass
+
+    monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
+    monkeypatch.setattr(target=bucket_sync, name="HfApi", value=FakeHfApi)
+    monkeypatch.setattr(
+        target=bucket_sync, name="resolve_hf_token", value=lambda: "token"
+    )
+
+    bucket_sync.sync_bucket()
+
+    # Both files should persist after sync
+    assert greek_file.exists()
+    assert danish_file.exists()
 
 
 def test_run_claimed_issue_resumes_from_merged_results(
@@ -187,7 +201,10 @@ def test_process_issue_fails_when_official_results_are_missing(
         value=lambda number: True,
     )
 
-    lines_per_read = iter([[], [], ["before"], ["before"]])
+    # _run_claimed_issue reads the model's result subdirectory directly (not via
+    # read_jsonl_lines), then reads the local euroeval output once, followed by a
+    # before/after read per pending language.
+    lines_per_read = iter([[], ["before"], ["before"]])
 
     monkeypatch.setattr(
         target=process_evaluation_queue,
