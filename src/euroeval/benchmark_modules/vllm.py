@@ -661,7 +661,13 @@ class VLLMModel(HuggingFaceEncoderModel):
             elif self.dataset_config.task == LOGIC:
                 # Extract N (number of objects) and K (number of attributes) from the
                 # first sample to create a dynamic schema for LOGIC tasks.
-                first_sample = inputs["target_text"][0]
+                # The target_text is a JSON string, so parse it first.
+                first_sample_raw = inputs["target_text"][0]
+                first_sample = (
+                    json.loads(first_sample_raw)
+                    if isinstance(first_sample_raw, str)
+                    else first_sample_raw
+                )
                 object_keys = [
                     key for key in first_sample.keys() if key.startswith("object_")
                 ]
