@@ -78,6 +78,7 @@ def sync_bucket() -> None:
             source=f"hf://buckets/{HF_RESULTS_BUCKET}/",
             dest=str(RESULTS_DIR),
             token=hf_token,
+            ignore_times=True,  # Compare by content hash, not mtime
         )
     except HfHubHTTPError as e:
         logger.error(f"Bucket sync failed: {e}")
@@ -286,6 +287,7 @@ def upload_results_to_bucket(results_file: Path) -> None:
             source=str(RESULTS_DIR),
             dest=f"hf://buckets/{HF_RESULTS_BUCKET}/",
             token=hf_token,
+            ignore_times=True,  # Compare by content hash, not mtime
         )
     except HfHubHTTPError as e:
         logger.error(f"Bucket sync failed: {e}")

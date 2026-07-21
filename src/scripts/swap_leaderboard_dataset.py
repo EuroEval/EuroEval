@@ -108,6 +108,7 @@ def sync_results_from_bucket() -> None:
         source=f"hf://buckets/{HF_RESULTS_BUCKET}",
         dest=RESULTS_DIR.as_posix(),
         verbose=True,
+        ignore_times=True,  # Compare by content hash, not mtime
     )
 
     # Merge per-record JSON tree into NEW_RESULTS_PATH

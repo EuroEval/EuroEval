@@ -375,7 +375,9 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
         # Sync existing results from EuroEval/results bucket
         logger.info(f"Syncing existing results from {HF_RESULTS_BUCKET}...")
         HfApi().sync_bucket(
-            source=f"hf://buckets/{HF_RESULTS_BUCKET}/", dest=str(RESULTS_DIR)
+            source=f"hf://buckets/{HF_RESULTS_BUCKET}/",
+            dest=str(RESULTS_DIR),
+            ignore_times=True,  # Compare by content hash, not mtime
         )
         logger.info("Downloaded existing results from bucket.")
     except HfHubHTTPError as e:
@@ -483,7 +485,9 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
     # Sync to bucket
     try:
         HfApi().sync_bucket(
-            source=str(RESULTS_DIR), dest=f"hf://buckets/{HF_RESULTS_BUCKET}/"
+            source=str(RESULTS_DIR),
+            dest=f"hf://buckets/{HF_RESULTS_BUCKET}/",
+            ignore_times=True,  # Compare by content hash, not mtime
         )
         logger.info(f"Uploaded results to {HF_RESULTS_BUCKET}.")
     except HfHubHTTPError as e:
