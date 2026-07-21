@@ -479,7 +479,6 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
                 path_or_fileobj=str(local_path),
                 path_in_repo=path_in_repo,
                 repo_id=HF_RESULTS_BUCKET,
-                repo_type="bucket",
             )
         except HfHubHTTPError as e:
             logger.error(f"Failed to upload {path_in_repo}: {e}")

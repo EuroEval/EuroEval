@@ -43,7 +43,7 @@ def sync_bucket(ignore_sizes: bool = False) -> None:
         ignore_sizes:
             When True, skip file size comparison during sync. Works around
             huggingface_hub bug reporting wrong sizes, making sync compare by
-            filename only.
+            mtime only.
 
     Raises:
         RuntimeError:
@@ -84,8 +84,8 @@ def sync_bucket(ignore_sizes: bool = False) -> None:
             source=f"hf://buckets/{HF_RESULTS_BUCKET}/",
             dest=str(RESULTS_DIR),
             token=hf_token,
-            ignore_times=True,  # Compare by content hash, not mtime
-            ignore_sizes=ignore_sizes,  # Skip size comparison when True
+            ignore_times=True,  # Compare by size only
+            ignore_sizes=ignore_sizes,  # When True, compare by mtime only
         )
     except HfHubHTTPError as e:
         logger.error(f"Bucket sync failed: {e}")
@@ -294,7 +294,7 @@ def upload_results_to_bucket(results_file: Path) -> None:
             source=str(RESULTS_DIR),
             dest=f"hf://buckets/{HF_RESULTS_BUCKET}/",
             token=hf_token,
-            ignore_times=True,  # Compare by content hash, not mtime
+            ignore_times=True,  # Compare by size only
         )
     except HfHubHTTPError as e:
         logger.error(f"Bucket sync failed: {e}")
