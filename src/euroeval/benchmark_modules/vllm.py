@@ -657,7 +657,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 structured_outputs = StructuredOutputsParams(
                     json=structured_generation_schema
                 )
-            elif "target_text" in inputs and len(inputs["target_text"]) > 0:
+            elif self.dataset_config.task.name == "logical-reasoning":
                 # Extract N (number of objects) and K (number of attributes) from the
                 # first sample to create a dynamic schema for LOGIC tasks.
                 first_sample = inputs["target_text"][0]
