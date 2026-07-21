@@ -600,8 +600,8 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
             logger.debug(f"Skipping invalid record: {e}")
 
     if not records_written:
-        logger.warning("No valid results found to upload.")
-        return False
+        logger.info("No valid results to upload; records unchanged.")
+        return True
 
     try:
         logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
