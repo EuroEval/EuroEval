@@ -567,6 +567,7 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
+    valid_records_seen = 0
     records_written = 0
     written_paths: list[Path] = []
     for line in lines:
@@ -579,6 +580,9 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
             record_path.parent.mkdir(parents=True, exist_ok=True)
             # Use canonical JSON for consistent comparison
             new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
+
+            # Count as seen before checking if unchanged
+            valid_records_seen += 1
 
             # Only write if file doesn't exist or content differs
             if record_path.exists():
@@ -599,8 +603,12 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
         except (json.JSONDecodeError, ValueError, KeyError) as e:
             logger.debug(f"Skipping invalid record: {e}")
 
-    if not records_written:
-        logger.info("No valid results to upload; records unchanged.")
+    if valid_records_seen == 0:
+        logger.info("No valid records to process.")
+        return True
+
+    if records_written == 0:
+        logger.info("All records unchanged.")
         return True
 
     try:
