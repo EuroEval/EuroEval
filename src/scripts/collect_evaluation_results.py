@@ -468,29 +468,18 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
         f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
     )
 
-    # Upload only changed files to bucket (avoid sync_bucket which reports 52k
-    # files need upload due to huggingface_hub bug)
+    # Upload only changed files to bucket using batch operation
     api = HfApi()
-    upload_failures = 0
-    for local_path in written_paths:
-        path_in_repo = str(local_path.relative_to(RESULTS_DIR))
-        try:
-            api.upload_file(
-                path_or_fileobj=str(local_path),
-                path_in_repo=path_in_repo,
-                repo_id=HF_RESULTS_BUCKET,
-            )
-        except HfHubHTTPError as e:
-            logger.error(f"Failed to upload {path_in_repo}: {e}")
-            upload_failures += 1
-
-    if upload_failures:
-        logger.error(f"{upload_failures} file(s) failed to upload.")
+    add_list = [
+        (str(path), str(path.relative_to(RESULTS_DIR))) for path in written_paths
+    ]
+    try:
+        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
+        logger.info(f"Uploaded {len(written_paths)} file(s) to {HF_RESULTS_BUCKET}.")
+        return True
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to upload to HF bucket: {e}")
         return False
-
-    logger.info(f"Uploaded {len(written_paths)} file(s) to {HF_RESULTS_BUCKET}.")
-
-    return True
 
 
 def regenerate_leaderboards(force: bool = False) -> bool:
