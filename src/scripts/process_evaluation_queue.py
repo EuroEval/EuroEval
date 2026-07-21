@@ -576,7 +576,7 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
             identity = identity_from_eee_record(record)
             record_path = RESULTS_DIR / identity_to_path(identity)
             record_path.parent.mkdir(parents=True, exist_ok=True)
-            record_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
+            record_path.write_text(json.dumps(record, separators=(",", ":")), encoding="utf-8")
             records_written += 1
         except (json.JSONDecodeError, ValueError, KeyError) as e:
             logger.debug(f"Skipping invalid record: {e}")
