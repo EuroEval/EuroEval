@@ -657,6 +657,32 @@ class VLLMModel(HuggingFaceEncoderModel):
                 structured_outputs = StructuredOutputsParams(
                     json=structured_generation_schema
                 )
+            elif "target_text" in inputs and len(inputs["target_text"]) > 0:
+                # Extract N (number of objects) and K (number of attributes) from the
+                # first sample to create a dynamic schema for LOGIC tasks.
+                first_sample = inputs["target_text"][0]
+                object_keys = [
+                    key for key in first_sample.keys() if key.startswith("object_")
+                ]
+                n = len(object_keys)
+                # Extract K from the first object's attribute list
+                k = len(first_sample[object_keys[0]]) if object_keys else 0
+                keys_and_their_types: dict[str, t.Any] = {
+                    f"object_{i}": (list[str], ...) for i in range(1, n + 1)
+                }
+                answer_format_class = create_model(
+                    "AnswerFormat", **keys_and_their_types
+                )
+                structured_generation_schema = answer_format_class.model_json_schema()
+                log_once(
+                    f"LOGIC task with {n} objects and {k} attributes per object. "
+                    f"Using structured generation with the JSON schema: "
+                    f"{json.dumps(structured_generation_schema, ensure_ascii=False)}",
+                    level=logging.DEBUG,
+                )
+                structured_outputs = StructuredOutputsParams(
+                    json=structured_generation_schema
+                )
             else:
                 raise InvalidTask(
                     message=(
