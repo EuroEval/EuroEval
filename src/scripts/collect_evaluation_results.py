@@ -443,12 +443,16 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
         record_path = RESULTS_DIR / identity_to_path(identity)
         desired = json.dumps(record, separators=(",", ":"))
         try:
-            if (
-                record_path.exists()
-                and record_path.read_text(encoding="utf-8") == desired
-            ):
-                records_unchanged += 1
-                continue
+            if record_path.exists():
+                try:
+                    existing_content = json.loads(
+                        record_path.read_text(encoding="utf-8")
+                    )
+                    if existing_content == record:
+                        records_unchanged += 1
+                        continue
+                except (json.JSONDecodeError, ValueError):
+                    pass
             record_path.parent.mkdir(parents=True, exist_ok=True)
             record_path.write_text(desired, encoding="utf-8")
             records_written += 1
