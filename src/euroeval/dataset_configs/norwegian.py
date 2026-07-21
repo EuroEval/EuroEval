@@ -346,7 +346,6 @@ ZEBRA_PUZZLE_EASY_NB_CONFIG = DatasetConfig(
     source="EuroEval/zebra-puzzles-easy-nb",
     task=LOGIC,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
-    unofficial=True,
 )
 
 ZEBRA_PUZZLE_HARD_NB_CONFIG = DatasetConfig(
@@ -364,7 +363,6 @@ ZEBRA_PUZZLE_EASY_NN_CONFIG = DatasetConfig(
     source="EuroEval/zebra-puzzles-easy-nn",
     task=LOGIC,
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
-    unofficial=True,
 )
 
 ZEBRA_PUZZLE_HARD_NN_CONFIG = DatasetConfig(

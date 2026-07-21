@@ -201,7 +201,6 @@ ZEBRA_PUZZLE_EASY_DE_CONFIG = DatasetConfig(
     source="EuroEval/zebra-puzzles-easy-de",
     task=LOGIC,
     languages=[GERMAN],
-    unofficial=True,
 )
 
 ZEBRA_PUZZLE_HARD_DE_CONFIG = DatasetConfig(
