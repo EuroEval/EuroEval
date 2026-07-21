@@ -577,9 +577,23 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
             identity = identity_from_eee_record(record)
             record_path = RESULTS_DIR / identity_to_path(identity)
             record_path.parent.mkdir(parents=True, exist_ok=True)
-            record_path.write_text(
-                json.dumps(record, separators=(",", ":")), encoding="utf-8"
-            )
+            # Use canonical JSON for consistent comparison
+            new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
+
+            # Only write if file doesn't exist or content differs
+            if record_path.exists():
+                try:
+                    existing_content = record_path.read_text(encoding="utf-8").strip()
+                    existing_record = json.loads(existing_content)
+                    canonical_existing = json.dumps(
+                        existing_record, sort_keys=True, separators=(",", ":")
+                    )
+                    if canonical_existing == new_content:
+                        continue  # Skip unchanged files
+                except (json.JSONDecodeError, OSError):
+                    pass  # If we can't parse existing, overwrite it
+
+            record_path.write_text(new_content, encoding="utf-8")
             records_written += 1
             written_paths.append(record_path)
         except (json.JSONDecodeError, ValueError, KeyError) as e:
@@ -593,7 +607,7 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
         logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
         # Skip any files that are empty (0 bytes)
         api = HfApi()
-        add_list = [
+        add_list: list[tuple[str | Path | bytes, str]] = [
             (str(path), str(path.relative_to(RESULTS_DIR)))
             for path in written_paths
             if path.is_file() and path.stat().st_size > 0

@@ -187,25 +187,36 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
     for relative_path, (record, _) in records_by_path.items():
         file_path = RESULTS_DIR / relative_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        content = json.dumps(record, ensure_ascii=False) + "\n"
+        # Use canonical JSON serialization for consistent comparison
+        canonical_content = json.dumps(
+            record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
 
-        # Only write if file doesn't exist or content differs
+        # Only write if file doesn't exist or content differs (semantic comparison)
         if file_path.exists():
-            existing_content = file_path.read_text(encoding="utf-8")
-            if existing_content == content:
-                continue  # Skip unchanged files
+            try:
+                existing_content = file_path.read_text(encoding="utf-8").strip()
+                # Parse and compare dicts for semantic equality
+                existing_record = json.loads(existing_content)
+                canonical_existing = json.dumps(
+                    existing_record, sort_keys=True, separators=(",", ":")
+                )
+                if canonical_existing == canonical_content:
+                    continue  # Skip unchanged files
+            except (json.JSONDecodeError, OSError):
+                pass  # If we can't parse existing, overwrite it
 
-        file_path.write_text(content, encoding="utf-8")
+        file_path.write_text(canonical_content + "\n", encoding="utf-8")
         # Skip empty files
         if file_path.stat().st_size > 0:
             written_files.append((file_path, str(relative_path)))
 
     api = HfApi()
     # Upload only the written files to the bucket
-    api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token)
-    logger.info(
-        f"Uploaded {len(written_files):,} result files to {hf_results_bucket}."
+    api.batch_bucket_files(
+        bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token
     )
+    logger.info(f"Uploaded {len(written_files):,} result files to {hf_results_bucket}.")
 
     if dropped_count > 0:
         logger.info(f"Dropped {dropped_count:,} records with unresolvable identities.")
