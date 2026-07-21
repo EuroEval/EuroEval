@@ -72,18 +72,21 @@ class LogicPuzzleMetric(Metric):
             formatted_predictions: list[dict[str, list[str]]] = []
             for raw_prediction in raw_predictions:
                 if not isinstance(raw_prediction, str):
-                    logger.warning(
+                    logger.debug(
                         "The prediction is not a string. Please ensure that the model "
-                        "outputs are parsed correctly."
+                        "outputs are parsed correctly. Here is the raw prediction: "
+                        f"{raw_prediction=}"
                     )
                     raw_prediction = str(raw_prediction)
                 formatted_prediction = extract_json_dict_from_string(s=raw_prediction)
                 if formatted_prediction is None or not self._check_full_type(
                     formatted_prediction, dict[str, list[str]]
                 ):
-                    logger.warning(
+                    logger.debug(
                         "The prediction string was not converted to a dictionary. "
-                        "Please ensure that the model outputs are parsed correctly."
+                        "Please ensure that the model outputs are parsed correctly. "
+                        f"Here is the raw and formatted prediction: {raw_prediction=}, "
+                        f"{formatted_prediction=}"
                     )
                     formatted_prediction = {
                         "object_1": [f"Invalid prediction: {raw_prediction}"]
