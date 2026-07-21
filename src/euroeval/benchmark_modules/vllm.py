@@ -66,6 +66,7 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
+from ..tasks import LOGIC
 from ..tokenisation_utils import (
     apply_chat_template,
     get_bos_token,
@@ -657,7 +658,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 structured_outputs = StructuredOutputsParams(
                     json=structured_generation_schema
                 )
-            elif self.dataset_config.task.name == "logical-reasoning":
+            elif self.dataset_config.task == LOGIC:
                 # Extract N (number of objects) and K (number of attributes) from the
                 # first sample to create a dynamic schema for LOGIC tasks.
                 first_sample = inputs["target_text"][0]
