@@ -624,7 +624,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 "FULL_LOG=1 to see what the error was. Skipping this evaluation."
             )
 
-        structured_generation_schema = None
         if (
             self.dataset_config.task.uses_structured_output
             or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
