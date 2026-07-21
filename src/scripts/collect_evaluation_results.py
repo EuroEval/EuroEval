@@ -570,10 +570,30 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
         path_to_identity[record_path] = identity
 
     # === MUTATE PHASE: only after validation succeeds ===
-    # Clear existing tree
-    for existing_file in RESULTS_DIR.rglob("*.json"):
-        if existing_file.is_file():
-            existing_file.unlink()
+    # Only rewrite records whose content actually changed. The initial bucket
+    # download populated RESULTS_DIR with the current bucket state and we have
+    # not modified it since, so comparing each desired record against the file
+    # already on disk tells us exactly which records changed. Rewriting only the
+    # changed files avoids touching every file's mtime and re-syncing the whole
+    # tree on every run. We never drop identities (existing is only merged into,
+    # never pruned), so there are no orphaned files to clear.
+    records_written = 0
+    records_unchanged = 0
+    for identity, record in existing.items():
+        record_path = RESULTS_DIR / identity_to_path(identity)
+        desired = json.dumps(record, separators=(",", ":"))
+        try:
+            if (
+                record_path.exists()
+                and record_path.read_text(encoding="utf-8") == desired
+            ):
+                records_unchanged += 1
+                continue
+            record_path.parent.mkdir(parents=True, exist_ok=True)
+            record_path.write_text(desired, encoding="utf-8")
+            records_written += 1
+        except (ValueError, OSError) as e:
+            logger.warning(f"Failed to write record for {identity}: {e}")
 
     # Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts (not repo-root files)
     for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
@@ -581,26 +601,19 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
             jsonl_file.unlink()
             logger.info(f"Removed stale artefact {jsonl_file}")
 
-    # Write deduplicated results
-    records_written = 0
-    for identity, record in existing.items():
-        model_id, dataset, validation_split, few_shot = identity
-        try:
-            record_path = RESULTS_DIR / identity_to_path(identity)
-            record_path.parent.mkdir(parents=True, exist_ok=True)
-            record_path.write_text(
-                json.dumps(record, separators=(",", ":")), encoding="utf-8"
-            )
-            records_written += 1
-        except (ValueError, OSError) as e:
-            logger.warning(f"Failed to write record for {identity}: {e}")
-
-    if not records_written:
+    if not existing:
         logger.warning("No valid results to upload.")
         return False
 
+    if not records_written:
+        logger.info(
+            f"All {records_unchanged:,} records already up to date; nothing to sync."
+        )
+        return True
+
     logger.info(
-        f"Wrote {records_written} record files to {RESULTS_DIR}, syncing to bucket..."
+        f"Wrote {records_written:,} changed record file(s) "
+        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, syncing to bucket..."
     )
 
     # Sync to bucket
