@@ -592,23 +592,10 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     try:
         logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
         api = HfApi()
-        upload_failures = 0
-        for local_path in written_paths:
-            path_in_repo = str(local_path.relative_to(RESULTS_DIR))
-            try:
-                api.upload_file(
-                    path_or_fileobj=str(local_path),
-                    path_in_repo=path_in_repo,
-                    repo_id=HF_RESULTS_BUCKET,
-                )
-            except HfHubHTTPError as e:
-                logger.error(f"Failed to upload {path_in_repo}: {e}")
-                upload_failures += 1
-
-        if upload_failures:
-            logger.error(f"{upload_failures} file(s) failed to upload.")
-            return False
-
+        add_list = [
+            (str(path), str(path.relative_to(RESULTS_DIR))) for path in written_paths
+        ]
+        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
         logger.info(
             f"Uploaded {records_written} result records for {model_id!r} to HF bucket."
         )
