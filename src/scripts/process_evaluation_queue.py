@@ -215,7 +215,7 @@ def main(
 
         while True:
             try:
-                sync_bucket(ignore_sizes=True)
+                sync_bucket()
                 merge_results(results_file=Path("euroeval_benchmark_results.jsonl"))
             except (HfHubHTTPError, RuntimeError) as e:
                 logger.warning(f"Could not download results from HF bucket: {e}")
@@ -600,7 +600,6 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
                     path_or_fileobj=str(local_path),
                     path_in_repo=path_in_repo,
                     repo_id=HF_RESULTS_BUCKET,
-                    repo_type="bucket",
                 )
             except HfHubHTTPError as e:
                 logger.error(f"Failed to upload {path_in_repo}: {e}")
