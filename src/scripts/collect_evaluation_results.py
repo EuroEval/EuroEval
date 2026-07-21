@@ -425,6 +425,7 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
     # are no orphaned files to clear.
     records_written = 0
     records_unchanged = 0
+    written_paths: list[Path] = []
     for identity, record in existing.items():
         record_path = RESULTS_DIR / identity_to_path(identity)
         desired = json.dumps(record, separators=(",", ":"))
@@ -442,6 +443,7 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
             record_path.parent.mkdir(parents=True, exist_ok=True)
             record_path.write_text(desired, encoding="utf-8")
             records_written += 1
+            written_paths.append(record_path)
         except (ValueError, OSError) as e:
             logger.warning(f"Failed to write record for {identity}: {e}")
 
@@ -463,20 +465,31 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
 
     logger.info(
         f"Wrote {records_written:,} changed record file(s) "
-        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, syncing to bucket..."
+        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
     )
 
-    # Sync to bucket
-    try:
-        HfApi().sync_bucket(
-            source=str(RESULTS_DIR),
-            dest=f"hf://buckets/{HF_RESULTS_BUCKET}/",
-            ignore_times=True,  # Compare by content hash, not mtime
-        )
-        logger.info(f"Uploaded results to {HF_RESULTS_BUCKET}.")
-    except HfHubHTTPError as e:
-        logger.error(f"Failed to sync to bucket: {e}")
+    # Upload only changed files to bucket (avoid sync_bucket which reports 52k
+    # files need upload due to huggingface_hub bug)
+    api = HfApi()
+    upload_failures = 0
+    for local_path in written_paths:
+        path_in_repo = str(local_path.relative_to(RESULTS_DIR))
+        try:
+            api.upload_file(
+                path_or_fileobj=str(local_path),
+                path_in_repo=path_in_repo,
+                repo_id=HF_RESULTS_BUCKET,
+                repo_type="bucket",
+            )
+        except HfHubHTTPError as e:
+            logger.error(f"Failed to upload {path_in_repo}: {e}")
+            upload_failures += 1
+
+    if upload_failures:
+        logger.error(f"{upload_failures} file(s) failed to upload.")
         return False
+
+    logger.info(f"Uploaded {len(written_paths)} file(s) to {HF_RESULTS_BUCKET}.")
 
     return True
 
