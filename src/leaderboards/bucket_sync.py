@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import TypedDict
 
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
+from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
@@ -30,7 +30,73 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def sync_bucket(ignore_sizes: bool = False) -> None:
+def _cleanup_empty_bucket_files(hf_token: str) -> None:
+    """Delete 0-byte JSON files from the Hugging Face bucket.
+
+    Lists all files in the bucket, identifies empty JSON files by size,
+    and removes them via batch operation.
+
+    Args:
+        hf_token:
+            Hugging Face authentication token.
+    """
+    api = HfApi()
+    empty_files: list[str] = []
+
+    try:
+        # List all files in the bucket
+        files = api.list_bucket_files(
+            bucket_id=HF_RESULTS_BUCKET, token=hf_token, recursive=True
+        )
+        for file_info in files:
+            # Check if it's a JSON file with size 0
+            if isinstance(file_info, BucketFile):
+                if file_info.path.endswith(".json") and file_info.size == 0:
+                    empty_files.append(file_info.path)
+            elif isinstance(file_info, dict):
+                # Handle dict format if API returns that
+                path = file_info.get("path", "")
+                size = file_info.get("size", 0)
+                if path.endswith(".json") and size == 0:
+                    empty_files.append(path)
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to list bucket files: {e}")
+        return
+
+    if empty_files:
+        logger.info(f"Found {len(empty_files)} empty file(s) in bucket, deleting...")
+        delete_list = [(f, f) for f in empty_files]
+        try:
+            api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, delete=delete_list)
+            logger.info(f"Deleted {len(empty_files)} empty file(s) from bucket.")
+        except HfHubHTTPError as e:
+            logger.error(f"Failed to delete empty bucket files: {e}")
+
+
+def remove_empty_json_files(results_dir: Path) -> list[str]:
+    """Find and delete empty JSON files (0 bytes).
+
+    Scans recursively for all *.json files and removes any with zero size.
+
+    Args:
+        results_dir:
+            Directory to scan for empty JSON files.
+
+    Returns:
+        List of relative paths that were deleted.
+    """
+    deleted: list[str] = []
+    for json_file in results_dir.rglob("*.json"):
+        if json_file.is_file() and json_file.stat().st_size == 0:
+            logger.info(f"Removing empty file {json_file}")
+            json_file.unlink()
+            deleted.append(str(json_file.relative_to(results_dir)))
+    if deleted:
+        logger.info(f"Deleted {len(deleted)} empty JSON file(s).")
+    return deleted
+
+
+def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
     """Sync HF results bucket into the local results directory.
 
     Before sync, reads all local record files into memory keyed by relative path.
@@ -44,6 +110,9 @@ def sync_bucket(ignore_sizes: bool = False) -> None:
             When True, skip file size comparison during sync. Works around
             huggingface_hub bug reporting wrong sizes, making sync compare by
             mtime only.
+        delete_empty:
+            When True, scan both local directory and bucket for 0-byte JSON
+            files and delete them. Defaults to True.
 
     Raises:
         RuntimeError:
@@ -128,6 +197,14 @@ def sync_bucket(ignore_sizes: bool = False) -> None:
                 # Different identity at same path - collision!
                 raise_on_collision(local_identity, bucket_identity)
 
+    # Clean up empty JSON files locally
+    if delete_empty:
+        remove_empty_json_files(RESULTS_DIR)
+
+    # Optionally clean up empty files in the bucket
+    if delete_empty:
+        _cleanup_empty_bucket_files(hf_token)
+
     logger.info(f"Synced bucket {HF_RESULTS_BUCKET}.")
 
 
@@ -165,6 +242,9 @@ def merge_results(results_file: Path) -> int:
         Number of unique results written.
     """
     existing: dict[ResultIdentity, dict] = {}
+
+    # Remove empty JSON files before processing
+    remove_empty_json_files(RESULTS_DIR)
 
     # Read all record files from the tree
     if RESULTS_DIR.exists():
@@ -278,9 +358,14 @@ def upload_results_to_bucket(results_file: Path) -> None:
         if existing_file.is_file():
             existing_file.unlink()
 
-    # Write all validated records
+    # Write all validated records, skipping any that would be empty
     records_written = 0
     for rel_path, (_, record) in path_record_map.items():
+        # Skip records that would produce empty files (safety check)
+        record_json = json.dumps(record, indent=2)
+        if not record_json.strip():
+            logger.warning(f"Skipping empty record for {rel_path}")
+            continue
         record_path = RESULTS_DIR / rel_path
         record_path.parent.mkdir(parents=True, exist_ok=True)
         record_path.write_text(json.dumps(record, indent=2), encoding="utf-8")

@@ -591,9 +591,12 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
 
     try:
         logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
+        # Skip any files that are empty (0 bytes)
         api = HfApi()
         add_list = [
-            (str(path), str(path.relative_to(RESULTS_DIR))) for path in written_paths
+            (str(path), str(path.relative_to(RESULTS_DIR)))
+            for path in written_paths
+            if path.is_file() and path.stat().st_size > 0
         ]
         api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
         logger.info(
