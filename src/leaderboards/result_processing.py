@@ -188,6 +188,13 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
         file_path = RESULTS_DIR / relative_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
         content = json.dumps(record, ensure_ascii=False) + "\n"
+
+        # Only write if file doesn't exist or content differs
+        if file_path.exists():
+            existing_content = file_path.read_text(encoding="utf-8")
+            if existing_content == content:
+                continue  # Skip unchanged files
+
         file_path.write_text(content, encoding="utf-8")
         # Skip empty files
         if file_path.stat().st_size > 0:
