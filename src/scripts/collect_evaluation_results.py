@@ -354,13 +354,9 @@ def _extract_identity_key(result: dict) -> ResultIdentity | None:
 def upload_results_to_hf(new_results_path: Path) -> bool:
     """Upload results to Hugging Face bucket.
 
-    Syncs the local results directory with the HF bucket (incremental download
-    of changed files only), merges new results from the JSONL file,
-    deduplicates by identity (newer records win), then syncs changed files
-    back to the bucket.
-
-    Handles both new harvested results and full bucket syncs when no new
-    results are provided.
+    Loads existing results from local RESULTS_DIR, merges new results from the
+    JSONL file, deduplicates by identity (newer records win), then syncs
+    changed files back to the bucket.
 
     Args:
         new_results_path:
@@ -370,18 +366,6 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
         True if upload succeeded, False otherwise.
     """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    try:
-        # Sync existing results from EuroEval/results bucket
-        logger.info(f"Syncing existing results from {HF_RESULTS_BUCKET}...")
-        HfApi().sync_bucket(
-            source=f"hf://buckets/{HF_RESULTS_BUCKET}/",
-            dest=str(RESULTS_DIR),
-            ignore_times=True,  # Compare by content hash, not mtime
-        )
-        logger.info("Downloaded existing results from bucket.")
-    except HfHubHTTPError as e:
-        logger.warning(f"Could not sync from bucket: {e}. Starting fresh.")
 
     # Load existing results as identity -> record dict
     existing: dict[ResultIdentity, dict] = {}
@@ -432,13 +416,13 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
         path_to_identity[record_path] = identity
 
     # === MUTATE PHASE: only after validation succeeds ===
-    # Only rewrite records whose content actually changed. The initial bucket
-    # download populated RESULTS_DIR with the current bucket state and we have
-    # not modified it since, so comparing each desired record against the file
-    # already on disk tells us exactly which records changed. Rewriting only the
-    # changed files avoids touching every file's mtime and re-syncing the whole
-    # tree on every run. We never drop identities (existing is only merged into,
-    # never pruned), so there are no orphaned files to clear.
+    # Only rewrite records whose content actually changed. RESULTS_DIR contains
+    # results from previous runs (already synced to the bucket), so comparing
+    # each desired record against the file already on disk tells us exactly
+    # which records changed. Rewriting only the changed files avoids touching
+    # every file's mtime and re-syncing the whole tree on every run. We never
+    # drop identities (existing is only merged into, never pruned), so there
+    # are no orphaned files to clear.
     records_written = 0
     records_unchanged = 0
     for identity, record in existing.items():
