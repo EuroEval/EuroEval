@@ -180,17 +180,24 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
     hf_results_bucket = f"hf://buckets/{HF_RESULTS_BUCKET}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    logger.info("Uploading results to HF bucket...")
+    # Track which files were written to upload only these files
+    written_files: list[tuple[str | Path | bytes, str]] = []
+
+    logger.info("Writing result files...")
     for relative_path, (record, _) in records_by_path.items():
         file_path = RESULTS_DIR / relative_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
         content = json.dumps(record, ensure_ascii=False) + "\n"
         file_path.write_text(content, encoding="utf-8")
+        # Skip empty files
+        if file_path.stat().st_size > 0:
+            written_files.append((file_path, str(relative_path)))
 
     api = HfApi()
-    api.sync_bucket(source=str(RESULTS_DIR), dest=hf_results_bucket, token=hf_token)
+    # Upload only the written files to the bucket
+    api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token)
     logger.info(
-        f"Uploaded {len(records_by_path):,} result files to {hf_results_bucket}."
+        f"Uploaded {len(written_files):,} result files to {hf_results_bucket}."
     )
 
     if dropped_count > 0:
