@@ -30,7 +30,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def sync_bucket() -> None:
+def sync_bucket(ignore_sizes: bool = False) -> None:
     """Sync HF results bucket into the local results directory.
 
     Before sync, reads all local record files into memory keyed by relative path.
@@ -38,6 +38,12 @@ def sync_bucket() -> None:
     - Local-only files (missing after sync) are restored.
     - Files present in both are compared by identity; the newer record wins.
     - Path collisions between distinct identities raise an error.
+
+    Args:
+        ignore_sizes:
+            When True, skip file size comparison during sync. Works around
+            huggingface_hub bug reporting wrong sizes, making sync compare by
+            filename only.
 
     Raises:
         RuntimeError:
@@ -79,6 +85,7 @@ def sync_bucket() -> None:
             dest=str(RESULTS_DIR),
             token=hf_token,
             ignore_times=True,  # Compare by content hash, not mtime
+            ignore_sizes=ignore_sizes,  # Skip size comparison when True
         )
     except HfHubHTTPError as e:
         logger.error(f"Bucket sync failed: {e}")

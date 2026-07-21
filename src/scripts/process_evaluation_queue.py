@@ -215,7 +215,7 @@ def main(
 
         while True:
             try:
-                sync_bucket()
+                sync_bucket(ignore_sizes=True)
                 merge_results(results_file=Path("euroeval_benchmark_results.jsonl"))
             except (HfHubHTTPError, RuntimeError) as e:
                 logger.warning(f"Could not download results from HF bucket: {e}")
@@ -553,8 +553,8 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     """Upload result lines to the HF results bucket.
 
     Writes one JSON file per logical result via result_identity paths
-    (results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json), then syncs
-    to the bucket. Never deletes existing files (additive only).
+    (results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json), then uploads
+    only those files to the bucket. Never deletes existing files (additive only).
 
     Args:
         lines:
@@ -568,6 +568,7 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     records_written = 0
+    written_paths: list[Path] = []
     for line in lines:
         if not line.strip():
             continue
@@ -576,8 +577,11 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
             identity = identity_from_eee_record(record)
             record_path = RESULTS_DIR / identity_to_path(identity)
             record_path.parent.mkdir(parents=True, exist_ok=True)
-            record_path.write_text(json.dumps(record, separators=(",", ":")), encoding="utf-8")
+            record_path.write_text(
+                json.dumps(record, separators=(",", ":")), encoding="utf-8"
+            )
             records_written += 1
+            written_paths.append(record_path)
         except (json.JSONDecodeError, ValueError, KeyError) as e:
             logger.debug(f"Skipping invalid record: {e}")
 
@@ -588,9 +592,24 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     try:
         logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
         api = HfApi()
-        api.sync_bucket(
-            source=str(RESULTS_DIR), dest=f"hf://buckets/{HF_RESULTS_BUCKET}/"
-        )
+        upload_failures = 0
+        for local_path in written_paths:
+            path_in_repo = str(local_path.relative_to(RESULTS_DIR))
+            try:
+                api.upload_file(
+                    path_or_fileobj=str(local_path),
+                    path_in_repo=path_in_repo,
+                    repo_id=HF_RESULTS_BUCKET,
+                    repo_type="bucket",
+                )
+            except HfHubHTTPError as e:
+                logger.error(f"Failed to upload {path_in_repo}: {e}")
+                upload_failures += 1
+
+        if upload_failures:
+            logger.error(f"{upload_failures} file(s) failed to upload.")
+            return False
+
         logger.info(
             f"Uploaded {records_written} result records for {model_id!r} to HF bucket."
         )
