@@ -345,72 +345,23 @@ def upload_results_to_bucket(results_file: Path) -> None:
         logger.warning("No valid results found to upload.")
         return
 
-    # PHASE 2: Validation passed. Load existing records from bucket to compare.
-    # Only upload files that have changed (semantic comparison, not raw JSON).
-
-    # Load existing records from bucket
-    existing_records: dict[str, dict] = {}
-    try:
-        bucket_files = list_bucket_tree(
-            bucket_id=HF_RESULTS_BUCKET, token=hf_token, recursive=True
-        )
-        for file_info in bucket_files:
-            if isinstance(file_info, BucketFile):
-                path = file_info.path
-            elif isinstance(file_info, dict):
-                path = file_info.get("path", "")
-            else:
-                continue
-
-            if not path.endswith(".json"):
-                continue
-            # Download and parse the record
-            try:
-                # Use HfApi to read the file content from the bucket. Since we can't
-                # easily read bucket file content, fall back to local cache.
-                pass
-            except Exception:
-                pass
-    except HfHubHTTPError:
-        pass  # If we can't read bucket, just use local cache
-
-    # Load existing local records
-    for rel_path in path_record_map.keys():
-        local_file = RESULTS_DIR / rel_path
-        if local_file.exists():
-            try:
-                existing_records[rel_path] = json.loads(
-                    local_file.read_text(encoding="utf-8")
-                )
-            except (json.JSONDecodeError, OSError):
-                pass
-
     # Remove stale ROOT-level *.jsonl artefacts (old flat store) only
     for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
         if jsonl_file.is_file():
             logger.info(f"Removing stale jsonl file {jsonl_file}")
             jsonl_file.unlink()
 
-    # Write all validated records, skipping any that would be empty or unchanged
+    # Write all validated records from path_record_map (source of truth from JSONL)
     # Type: list of (local_path, remote_path) tuples for batch upload
     written_files: list[tuple[str | Path | bytes, str]] = []
     for rel_path, (_, record) in path_record_map.items():
-        # Use canonical JSON serialization for comparison
+        # Use canonical JSON serialization
         new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
         if not new_content.strip():
             logger.warning(f"Skipping empty record for {rel_path}")
             continue
 
-        # Check if record already exists and is unchanged
         record_path = RESULTS_DIR / rel_path
-        if rel_path in existing_records:
-            old_content = json.dumps(
-                existing_records[rel_path], sort_keys=True, separators=(",", ":")
-            )
-            if old_content == new_content:
-                logger.debug(f"Skipping unchanged record {rel_path}")
-                continue
-
         record_path.parent.mkdir(parents=True, exist_ok=True)
         record_path.write_text(new_content, encoding="utf-8")
         if record_path.stat().st_size > 0:
