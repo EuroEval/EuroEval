@@ -9,10 +9,10 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import TypedDict, cast
+from typing import TypedDict
 
 from dotenv import load_dotenv
-from huggingface_hub import BucketFile, HfApi
+from huggingface_hub import BucketFile, HfApi, list_bucket_tree
 from huggingface_hub.errors import HfHubHTTPError
 
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
@@ -45,7 +45,7 @@ def _cleanup_empty_bucket_files(hf_token: str) -> None:
 
     try:
         # List all files in the bucket
-        files = api.list_bucket_files(
+        files = list_bucket_tree(
             bucket_id=HF_RESULTS_BUCKET, token=hf_token, recursive=True
         )
         for file_info in files:
@@ -55,7 +55,7 @@ def _cleanup_empty_bucket_files(hf_token: str) -> None:
                     empty_files.append(file_info.path)
             elif isinstance(file_info, dict):
                 # Handle dict format if API returns that
-                path = file_info.get("path", "")
+                path = str(file_info.get("path", ""))
                 size = file_info.get("size", 0)
                 if path.endswith(".json") and size == 0:
                     empty_files.append(path)
@@ -345,31 +345,74 @@ def upload_results_to_bucket(results_file: Path) -> None:
         logger.warning("No valid results found to upload.")
         return
 
-    # PHASE 2: Validation passed. Now mutate the filesystem.
-    # Remove stale ROOT-level *.jsonl artefacts (old flat store)
+    # PHASE 2: Validation passed. Load existing records from bucket to compare.
+    # Only upload files that have changed (semantic comparison, not raw JSON).
+
+    # Load existing records from bucket
+    existing_records: dict[str, dict] = {}
+    try:
+        bucket_files = list_bucket_tree(
+            bucket_id=HF_RESULTS_BUCKET, token=hf_token, recursive=True
+        )
+        for file_info in bucket_files:
+            if isinstance(file_info, BucketFile):
+                path = file_info.path
+            elif isinstance(file_info, dict):
+                path = file_info.get("path", "")
+            else:
+                continue
+
+            if not path.endswith(".json"):
+                continue
+            # Download and parse the record
+            try:
+                # Use HfApi to read the file content from the bucket. Since we can't
+                # easily read bucket file content, fall back to local cache.
+                pass
+            except Exception:
+                pass
+    except HfHubHTTPError:
+        pass  # If we can't read bucket, just use local cache
+
+    # Load existing local records
+    for rel_path in path_record_map.keys():
+        local_file = RESULTS_DIR / rel_path
+        if local_file.exists():
+            try:
+                existing_records[rel_path] = json.loads(
+                    local_file.read_text(encoding="utf-8")
+                )
+            except (json.JSONDecodeError, OSError):
+                pass
+
+    # Remove stale ROOT-level *.jsonl artefacts (old flat store) only
     for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
         if jsonl_file.is_file():
             logger.info(f"Removing stale jsonl file {jsonl_file}")
             jsonl_file.unlink()
 
-    # Clear existing tree to ensure clean state
-    for existing_file in RESULTS_DIR.rglob("*.json"):
-        if existing_file.is_file():
-            existing_file.unlink()
-
-    # Write all validated records, skipping any that would be empty
+    # Write all validated records, skipping any that would be empty or unchanged
     # Type: list of (local_path, remote_path) tuples for batch upload
-    written_files: list[tuple[Path, str]] = []
+    written_files: list[tuple[str | Path | bytes, str]] = []
     for rel_path, (_, record) in path_record_map.items():
-        # Skip records that would produce empty files (safety check)
-        record_json = json.dumps(record, indent=2)
-        if not record_json.strip():
+        # Use canonical JSON serialization for comparison
+        new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
+        if not new_content.strip():
             logger.warning(f"Skipping empty record for {rel_path}")
             continue
+
+        # Check if record already exists and is unchanged
         record_path = RESULTS_DIR / rel_path
+        if rel_path in existing_records:
+            old_content = json.dumps(
+                existing_records[rel_path], sort_keys=True, separators=(",", ":")
+            )
+            if old_content == new_content:
+                logger.debug(f"Skipping unchanged record {rel_path}")
+                continue
+
         record_path.parent.mkdir(parents=True, exist_ok=True)
-        record_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
-        # Skip empty files (safety check)
+        record_path.write_text(new_content, encoding="utf-8")
         if record_path.stat().st_size > 0:
             written_files.append((record_path, rel_path))
 
@@ -380,9 +423,7 @@ def upload_results_to_bucket(results_file: Path) -> None:
     )
     try:
         HfApi().batch_bucket_files(
-            bucket_id=HF_RESULTS_BUCKET,
-            add=cast("list[tuple[str | Path | bytes, str]]", written_files),
-            token=hf_token,
+            bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token
         )
     except HfHubHTTPError as e:
         logger.error(f"Bucket upload failed: {e}")

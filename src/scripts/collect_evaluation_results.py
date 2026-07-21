@@ -471,7 +471,7 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
     # Upload only changed files to bucket using batch operation
     # Skip any files that are empty (0 bytes)
     api = HfApi()
-    add_list = [
+    add_list: list[tuple[str | Path | bytes, str]] = [
         (str(path), str(path.relative_to(RESULTS_DIR)))
         for path in written_paths
         if path.is_file() and path.stat().st_size > 0
