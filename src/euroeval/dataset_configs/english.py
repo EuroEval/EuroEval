@@ -106,6 +106,14 @@ VALEU_EN_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+ZEBRA_PUZZLE_EASY_EN_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-en",
+    pretty_name="ZebraPuzzlesEasy-en",
+    source="EuroEval/zebra-puzzles-easy-en",
+    task=LOGIC,
+    languages=[ENGLISH],
+)
+
 
 # Unofficial datasets ###
 
@@ -200,15 +208,6 @@ WIC_CONFIG = DatasetConfig(
     pretty_name="WiC",
     source="EuroEval/wic",
     task=WIC,
-    languages=[ENGLISH],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_EN_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-en",
-    pretty_name="ZebraPuzzlesEasy-en",
-    source="EuroEval/zebra-puzzles-easy-en",
-    task=LOGIC,
     languages=[ENGLISH],
     unofficial=True,
 )

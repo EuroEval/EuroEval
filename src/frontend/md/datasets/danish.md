@@ -1593,7 +1593,7 @@ euroeval --model <model-id> --dataset goldenswag-da
 
 ## Logical Reasoning
 
-### Unofficial: ZebraPuzzleEasy-da
+### ZebraPuzzleEasy-da
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
 and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),

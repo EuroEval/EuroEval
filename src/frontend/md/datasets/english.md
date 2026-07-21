@@ -1641,7 +1641,7 @@ euroeval --model <model-id> --dataset bfcl-v2
 
 ## Logical Reasoning
 
-### Unofficial: ZebraPuzzleEasy-en
+### ZebraPuzzleEasy-en
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
 and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
