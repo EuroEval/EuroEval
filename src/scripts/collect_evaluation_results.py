@@ -330,23 +330,47 @@ def scan_bucket_for_results() -> list[str]:
 
     logger.info(f"Found {len(all_bucket_files)} JSON file(s) in bucket.")
 
-    # Download all files to RESULTS_DIR
+    # Download files in batches of 500 to prevent resource exhaustion
+    BATCH_SIZE = 500
     api = HfApi()
     bucket_id = HF_RESULTS_BUCKET
 
-    files_spec: list[tuple[str | BucketFile, str | Path]] = [
-        (bucket_file.path, RESULTS_DIR / bucket_file.path)
-        for bucket_file in all_bucket_files
-    ]
+    for i in range(0, len(all_bucket_files), BATCH_SIZE):
+        batch = all_bucket_files[i : i + BATCH_SIZE]
+        batch_num = i // BATCH_SIZE + 1
+        total_batches = (len(all_bucket_files) + BATCH_SIZE - 1) // BATCH_SIZE
 
-    try:
-        api.download_bucket_files(
-            bucket_id=bucket_id, files=files_spec, raise_on_missing_files=False
+        # Filter to only files that need downloading (missing or empty)
+        files_to_download: list[tuple[str | BucketFile, str | Path]] = []
+        for bucket_file in batch:
+            local_path = RESULTS_DIR / bucket_file.path
+            if not local_path.exists() or local_path.stat().st_size == 0:
+                files_to_download.append((bucket_file.path, local_path))
+            else:
+                logger.debug(f"Skipping existing file: {bucket_file.path}")
+
+        if not files_to_download:
+            logger.info(
+                f"Batch {batch_num}/{total_batches}: all files already exist, skipping."
+            )
+            continue
+
+        logger.info(
+            f"Batch {batch_num}/{total_batches}: downloading {len(files_to_download)} "
+            f"file(s)..."
         )
-        logger.info(f"Downloaded {len(files_spec)} file(s) to {RESULTS_DIR}.")
-    except Exception as e:
-        logger.error(f"Failed to download bucket files: {e}")
-        return []
+
+        try:
+            api.download_bucket_files(
+                bucket_id=bucket_id, files=files_to_download, raise_on_missing_files=False
+            )
+            logger.info(
+                f"Batch {batch_num}/{total_batches}: downloaded "
+                f"{len(files_to_download)} file(s) to {RESULTS_DIR}."
+            )
+        except Exception as e:
+            logger.error(f"Failed to download batch {batch_num}: {e}")
+            # Continue with next batch instead of failing entirely
 
     # Load existing keys for deduplication
     existing_keys = load_existing_result_keys()
