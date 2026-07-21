@@ -74,14 +74,6 @@ DANISH_CITIZEN_TESTS_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
-HELLASWAG_DA_CONFIG = DatasetConfig(
-    name="hellaswag-da",
-    pretty_name="HellaSwag-da",
-    source="EuroEval/hellaswag-da-mini",
-    task=COMMON_SENSE,
-    languages=[DANISH],
-)
-
 IFEVAL_DA_CONFIG = DatasetConfig(
     name="ifeval-da",
     pretty_name="IFEval-da",
@@ -104,7 +96,25 @@ VALEU_DA_CONFIG = DatasetConfig(
 )
 
 
+WINOGRANDE_DA_CONFIG = DatasetConfig(
+    name="winogrande-da",
+    pretty_name="Winogrande-da",
+    source="EuroEval/winogrande-da",
+    task=COMMON_SENSE,
+    languages=[DANISH],
+    labels=["a", "b"],
+)
+
 # Unofficial datasets ###
+
+HELLASWAG_DA_CONFIG = DatasetConfig(
+    name="hellaswag-da",
+    pretty_name="HellaSwag-da",
+    source="EuroEval/hellaswag-da-mini",
+    task=COMMON_SENSE,
+    languages=[DANISH],
+    unofficial=True,
+)
 
 SCALA_DA_CONFIG = DatasetConfig(
     name="scala-da",
@@ -176,16 +186,6 @@ GOLDENSWAG_DA_CONFIG = DatasetConfig(
     source="EuroEval/goldenswag-da-mini",
     task=COMMON_SENSE,
     languages=[DANISH],
-    unofficial=True,
-)
-
-WINOGRANDE_DA_CONFIG = DatasetConfig(
-    name="winogrande-da",
-    pretty_name="Winogrande-da",
-    source="EuroEval/winogrande-da",
-    task=COMMON_SENSE,
-    languages=[DANISH],
-    labels=["a", "b"],
     unofficial=True,
 )
 

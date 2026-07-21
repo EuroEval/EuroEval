@@ -412,7 +412,12 @@ def resolve_languages(old_config: DatasetConfig, new_config: DatasetConfig) -> s
 
 
 def validate_gh_installed() -> None:
-    """Check that the GitHub CLI is installed."""
+    """Check that the GitHub CLI is installed.
+
+    Raises:
+        ClickException:
+            If the Github CLI wasn't found.
+    """
     try:
         subprocess.run(["gh", "version"], check=True, capture_output=True)
     except FileNotFoundError:
