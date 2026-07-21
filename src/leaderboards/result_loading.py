@@ -111,7 +111,7 @@ def _sync_results_from_bucket() -> None:
             If sync fails and no local files exist.
     """
     file_count = len(list(RESULTS_DIR.glob("*/*.json")))
-    if file_count < 100:
+    if file_count == 0:
         sync_bucket()
         file_count = len(list(RESULTS_DIR.glob("*/*.json")))
     else:

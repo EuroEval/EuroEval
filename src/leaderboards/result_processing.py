@@ -199,7 +199,10 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
                 # Parse and compare dicts for semantic equality
                 existing_record = json.loads(existing_content)
                 canonical_existing = json.dumps(
-                    existing_record, sort_keys=True, separators=(",", ":")
+                    existing_record,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
                 )
                 if canonical_existing == canonical_content:
                     continue  # Skip unchanged files
