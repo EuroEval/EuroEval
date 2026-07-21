@@ -69,10 +69,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
 - Added the `google-cloud-aiplatform` dependency, as it's required to run
   Gemini-3.1-pro.
-- Added the Danish zebra puzzle dataset
-  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The
-  split is given by 128 / 1,024 samples for train / test, respectively. It is marked as
-  `unofficial` for now. This was contributed by @sofiehb ✨
+- Added the Multi-Zebra-Logic datasets for 9 language variants: Danish (da), Dutch
+  (nl), English (en), Faroese (fo), German (de), Icelandic (is), Norwegian Bokmål (nb),
+  Norwegian Nynorsk (nn), and Swedish (sv). Each variant has an easy (2 objects × 3
+  attributes, easy variants now official) and hard (4 objects × 5 attributes,
+  unofficial) version. This was contributed by @sofiehb ✨
 
 ### Fixed
 
