@@ -56,14 +56,6 @@ LR_SUM_SQ_CONFIG = DatasetConfig(
     languages=[ALBANIAN],
 )
 
-GLOBAL_MMLU_LITE_SQ_CONFIG = DatasetConfig(
-    name="global-mmlu-lite-sq",
-    pretty_name="GlobalMMLULite-sq",
-    source="EuroEval/global-mmlu-lite-sq",
-    task=KNOW,
-    languages=[ALBANIAN],
-)
-
 WINOGRANDE_SQ_CONFIG = DatasetConfig(
     name="winogrande-sq",
     pretty_name="Winogrande-sq",
@@ -84,12 +76,20 @@ MULTI_IFEVAL_SQ_CONFIG = DatasetConfig(
 )
 
 
-# Unofficial datasets ###
-
 INCLUDE_SQ_CONFIG = DatasetConfig(
     name="include-sq",
     pretty_name="INCLUDE-sq",
     source="EuroEval/include-sq-mini",
+    task=KNOW,
+    languages=[ALBANIAN],
+)
+
+# Unofficial datasets ###
+
+GLOBAL_MMLU_LITE_SQ_CONFIG = DatasetConfig(
+    name="global-mmlu-lite-sq",
+    pretty_name="GlobalMMLULite-sq",
+    source="EuroEval/global-mmlu-lite-sq",
     task=KNOW,
     languages=[ALBANIAN],
     unofficial=True,
