@@ -119,6 +119,14 @@ MBBQ_NL_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+ZEBRA_PUZZLE_EASY_NL_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-nl",
+    pretty_name="ZebraPuzzlesEasy-nl",
+    source="EuroEval/zebra-puzzles-easy-nl",
+    task=LOGIC,
+    languages=[DUTCH],
+)
+
 
 # Unofficial datasets ###
 
@@ -242,14 +250,6 @@ SICK_NL_CONFIG = DatasetConfig(
     task=NLI,
     languages=[DUTCH],
     unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_NL_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-nl",
-    pretty_name="ZebraPuzzlesEasy-nl",
-    source="EuroEval/zebra-puzzles-easy-nl",
-    task=LOGIC,
-    languages=[DUTCH],
 )
 
 ZEBRA_PUZZLE_HARD_NL_CONFIG = DatasetConfig(

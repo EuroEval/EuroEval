@@ -135,6 +135,22 @@ MULTI_IFEVAL_NN_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+ZEBRA_PUZZLE_EASY_NB_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-nb",
+    pretty_name="ZebraPuzzlesEasy-nb",
+    source="EuroEval/zebra-puzzles-easy-nb",
+    task=LOGIC,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+)
+
+ZEBRA_PUZZLE_EASY_NN_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-nn",
+    pretty_name="ZebraPuzzlesEasy-nn",
+    source="EuroEval/zebra-puzzles-easy-nn",
+    task=LOGIC,
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+)
+
 
 # Unofficial datasets ###
 
@@ -340,14 +356,6 @@ GERLANGMOD_NN_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-ZEBRA_PUZZLE_EASY_NB_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-nb",
-    pretty_name="ZebraPuzzlesEasy-nb",
-    source="EuroEval/zebra-puzzles-easy-nb",
-    task=LOGIC,
-    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
-)
-
 ZEBRA_PUZZLE_HARD_NB_CONFIG = DatasetConfig(
     name="zebra-puzzles-hard-nb",
     pretty_name="ZebraPuzzlesHard-nb",
@@ -355,14 +363,6 @@ ZEBRA_PUZZLE_HARD_NB_CONFIG = DatasetConfig(
     task=LOGIC,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
     unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_NN_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-nn",
-    pretty_name="ZebraPuzzlesEasy-nn",
-    source="EuroEval/zebra-puzzles-easy-nn",
-    task=LOGIC,
-    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
 )
 
 ZEBRA_PUZZLE_HARD_NN_CONFIG = DatasetConfig(

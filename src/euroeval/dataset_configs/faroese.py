@@ -49,6 +49,14 @@ MULTI_IFEVAL_FO_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+ZEBRA_PUZZLE_EASY_FO_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-fo",
+    pretty_name="ZebraPuzzlesEasy-fo",
+    source="EuroEval/zebra-puzzles-easy-fo",
+    task=LOGIC,
+    languages=[FAROESE],
+)
+
 
 # Unofficial datasets ###
 
@@ -77,14 +85,6 @@ GERLANGMOD_FO_CONFIG = DatasetConfig(
     task=GED,
     languages=[FAROESE],
     unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_FO_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-fo",
-    pretty_name="ZebraPuzzlesEasy-fo",
-    source="EuroEval/zebra-puzzles-easy-fo",
-    task=LOGIC,
-    languages=[FAROESE],
 )
 
 ZEBRA_PUZZLE_HARD_FO_CONFIG = DatasetConfig(

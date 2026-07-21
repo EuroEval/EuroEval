@@ -99,6 +99,14 @@ VALEU_IS_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+ZEBRA_PUZZLE_EASY_IS_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-is",
+    pretty_name="ZebraPuzzlesEasy-is",
+    source="EuroEval/zebra-puzzles-easy-is",
+    task=LOGIC,
+    languages=[ICELANDIC],
+)
+
 
 # Unofficial datasets ###
 
@@ -210,14 +218,6 @@ GERLANGMOD_IS_CONFIG = DatasetConfig(
     task=GED,
     languages=[ICELANDIC],
     unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_IS_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-is",
-    pretty_name="ZebraPuzzlesEasy-is",
-    source="EuroEval/zebra-puzzles-easy-is",
-    task=LOGIC,
-    languages=[ICELANDIC],
 )
 
 ZEBRA_PUZZLE_HARD_IS_CONFIG = DatasetConfig(
