@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import TypedDict
+from typing import TypedDict, cast
 
 from dotenv import load_dotenv
 from huggingface_hub import BucketFile, HfApi
@@ -65,9 +65,8 @@ def _cleanup_empty_bucket_files(hf_token: str) -> None:
 
     if empty_files:
         logger.info(f"Found {len(empty_files)} empty file(s) in bucket, deleting...")
-        delete_list = [(f, f) for f in empty_files]
         try:
-            api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, delete=delete_list)
+            api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, delete=empty_files)
             logger.info(f"Deleted {len(empty_files)} empty file(s) from bucket.")
         except HfHubHTTPError as e:
             logger.error(f"Failed to delete empty bucket files: {e}")
@@ -359,7 +358,8 @@ def upload_results_to_bucket(results_file: Path) -> None:
             existing_file.unlink()
 
     # Write all validated records, skipping any that would be empty
-    records_written = 0
+    # Type: list of (local_path, remote_path) tuples for batch upload
+    written_files: list[tuple[Path, str]] = []
     for rel_path, (_, record) in path_record_map.items():
         # Skip records that would produce empty files (safety check)
         record_json = json.dumps(record, indent=2)
@@ -369,20 +369,23 @@ def upload_results_to_bucket(results_file: Path) -> None:
         record_path = RESULTS_DIR / rel_path
         record_path.parent.mkdir(parents=True, exist_ok=True)
         record_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
-        records_written += 1
+        # Skip empty files (safety check)
+        if record_path.stat().st_size > 0:
+            written_files.append((record_path, rel_path))
 
     logger.info(
-        f"Wrote {records_written} record files to {RESULTS_DIR}, syncing to bucket..."
+        "Wrote %d record files to %s, uploading to bucket...",
+        len(written_files),
+        RESULTS_DIR,
     )
     try:
-        HfApi().sync_bucket(
-            source=str(RESULTS_DIR),
-            dest=f"hf://buckets/{HF_RESULTS_BUCKET}/",
+        HfApi().batch_bucket_files(
+            bucket_id=HF_RESULTS_BUCKET,
+            add=cast("list[tuple[str | Path | bytes, str]]", written_files),
             token=hf_token,
-            ignore_times=True,  # Compare by size only
         )
     except HfHubHTTPError as e:
-        logger.error(f"Bucket sync failed: {e}")
+        logger.error(f"Bucket upload failed: {e}")
         raise
 
-    logger.info(f"Uploaded {records_written} results to bucket {HF_RESULTS_BUCKET}.")
+    logger.info(f"Uploaded {len(written_files)} results to bucket {HF_RESULTS_BUCKET}.")

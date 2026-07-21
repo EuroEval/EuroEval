@@ -102,14 +102,17 @@ def sync_results_from_bucket() -> None:
     """
     logger.info("Syncing results from HF bucket %s...", HF_RESULTS_BUCKET)
 
-    # Sync bucket files to local RESULTS_DIR
-    hf_api = HfApi(token=os.getenv("HF_TOKEN"))
-    hf_api.sync_bucket(
-        source=f"hf://buckets/{HF_RESULTS_BUCKET}",
-        dest=RESULTS_DIR.as_posix(),
-        verbose=True,
-        ignore_times=True,  # Compare by content hash, not mtime
-    )
+    # Sync bucket files to local RESULTS_DIR, skip if already present
+    if RESULTS_DIR.exists() and any(RESULTS_DIR.rglob("*.json")):
+        logger.info("RESULTS_DIR already contains files, skipping bucket sync.")
+    else:
+        hf_api = HfApi(token=os.getenv("HF_TOKEN"))
+        hf_api.sync_bucket(
+            source=f"hf://buckets/{HF_RESULTS_BUCKET}",
+            dest=RESULTS_DIR.as_posix(),
+            verbose=True,
+            ignore_times=True,  # Compare by content hash, not mtime
+        )
 
     # Merge per-record JSON tree into NEW_RESULTS_PATH
     # First read existing lines to avoid duplicates
