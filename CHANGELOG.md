@@ -48,6 +48,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed race condition in cache cleanup where `rmtree` would fail with
   `FileNotFoundError` when checkpoint directories were removed concurrently during model
   benchmarking. Now uses `ignore_errors=True` to handle concurrent deletions gracefully.
+- Fixed structured output error for the LOGIC task (zebra puzzle datasets). The vLLM
+  backend now dynamically creates a Pydantic schema from the dataset structure, enabling
+  evaluation of logical reasoning datasets with vLLM models.
 - The HF, vLLM and fresh model tokeniser loaders no longer pass `verbose=False` to
   `AutoTokenizer.from_pretrained`, since the `MistralCommonBackend` rejects this
   argument. The vLLM mistral tokeniser fallback is now gated on model identity (model ID
