@@ -116,17 +116,8 @@ def main(force: bool) -> None:
         logger.info(f"#{number}: found {len(lines)} result line(s).")
         harvested.append((number, lines))
 
-    # If no issues found, switch to bucket-scan mode
-    bucket_scan_results: list[str] = []
-    if len(issues) == 0:
-        logger.info("No open issues found; using bucket-scan mode.")
-        bucket_scan_results = scan_bucket_for_results()
-        if not bucket_scan_results:
-            logger.info("No new results found in bucket scan.")
-            if not force:
-                return
-            logger.info("Forcing leaderboard regeneration despite no new results.")
-        logger.info(f"Bucket-scan mode found {len(bucket_scan_results)} new result(s).")
+    # When there are 0 open issues, continue with empty harvested results.
+    # The bucket sync in upload_results_to_hf() handles incremental downloads.
 
     # Load any manually added results from new_results.jsonl
     manual_lines: list[str] = []
@@ -139,11 +130,10 @@ def main(force: bool) -> None:
         if manual_lines:
             logger.info(f"Found {len(manual_lines)} manually added result line(s).")
 
-    # Combine harvested results, bucket-scan results, and manual results
+    # Combine harvested results and manual results
     all_lines: list[str] = []
     for _, lines in harvested:
         all_lines.extend(lines)
-    all_lines.extend(bucket_scan_results)
     all_lines.extend(manual_lines)
 
     has_new_results = bool(all_lines)
@@ -155,15 +145,10 @@ def main(force: bool) -> None:
     else:
         NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
 
-        # Log which mode was used
-        if bucket_scan_results:
-            mode_str = f"bucket-scan ({len(bucket_scan_results)}), "
-        else:
-            mode_str = ""
         harvested_count = sum(len(lines) for _, lines in harvested)
         logger.info(
             f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
-            f"({mode_str}{harvested_count} harvested, {len(manual_lines)} manual)."
+            f"({harvested_count} harvested, {len(manual_lines)} manual)."
         )
 
         # Upload results to HF bucket BEFORE regenerating leaderboards
@@ -254,158 +239,6 @@ def build_dedup_key(result: dict) -> ResultIdentity | None:
     except (ValueError, KeyError) as e:
         logger.debug("Failed to extract identity from result: %s", e)
         return None
-
-
-def list_all_result_files() -> list[BucketFile]:
-    """List all JSON result files in the EuroEval/results bucket.
-
-    Returns:
-        List of BucketFile objects for ``<model>/<dataset>__<split>__<shot>.json``
-        files in the tree structure.
-    """
-    api = HfApi()
-    bucket_id = HF_RESULTS_BUCKET
-    try:
-        files = list(api.list_bucket_tree(bucket_id=bucket_id, recursive=True))
-        return [
-            f
-            for f in files
-            if isinstance(f, BucketFile)
-            and f.path.endswith(".json")
-            and "/" in f.path  # Must be in tree format: <model>/<filename>
-        ]
-    except Exception as e:
-        logger.error(f"Failed to list bucket files: {e}")
-        return []
-
-
-def load_existing_result_keys() -> set[ResultIdentity]:
-    """Load existing results and build a set of dedup keys.
-
-    Reads every JSON file in the tree structure
-    ``RESULTS_DIR/<model>/<dataset>__<split>__<shot>.json`` and builds a set
-    of identity keys.
-
-    Returns:
-        Set of identity tuples ``(model_id, dataset, validation_split, few_shot)``.
-    """
-    existing_keys: set[ResultIdentity] = set()
-
-    json_files = sorted(RESULTS_DIR.glob("*/*.json"))
-    if not json_files:
-        logger.info("No existing results found in RESULTS_DIR.")
-        return existing_keys
-
-    for json_file in json_files:
-        try:
-            content = json_file.read_text(encoding="utf-8")
-            result = json.loads(content)
-            key = build_dedup_key(result)
-            if key is not None:
-                existing_keys.add(key)
-        except (OSError, json.JSONDecodeError, ValueError) as e:
-            logger.warning(f"Failed to read {json_file}: {e}")
-
-    logger.info(f"Loaded {len(existing_keys)} existing result keys.")
-    return existing_keys
-
-
-def scan_bucket_for_results() -> list[str]:
-    """Scan the EuroEval/results bucket for results not yet in RESULTS_DIR.
-
-    Downloads all JSON files from the tree structure, parses them as single
-    JSON dicts, and collects results that are not already in the existing
-    results.
-
-    Returns:
-        List of new result JSON strings (empty if none found).
-    """
-    logger.info("Scanning bucket for new results...")
-
-    # Get all JSON files from the bucket tree
-    all_bucket_files = list_all_result_files()
-    if not all_bucket_files:
-        logger.info("No JSON files found in bucket.")
-        return []
-
-    logger.info(f"Found {len(all_bucket_files)} JSON file(s) in bucket.")
-
-    # Download files in batches of 500 to prevent resource exhaustion
-    BATCH_SIZE = 500
-    api = HfApi()
-    bucket_id = HF_RESULTS_BUCKET
-
-    for i in range(0, len(all_bucket_files), BATCH_SIZE):
-        batch = all_bucket_files[i : i + BATCH_SIZE]
-        batch_num = i // BATCH_SIZE + 1
-        total_batches = (len(all_bucket_files) + BATCH_SIZE - 1) // BATCH_SIZE
-
-        # Filter to only files that need downloading (missing or empty)
-        files_to_download: list[tuple[str | BucketFile, str | Path]] = []
-        for bucket_file in batch:
-            local_path = RESULTS_DIR / bucket_file.path
-            if not local_path.exists() or local_path.stat().st_size == 0:
-                files_to_download.append((bucket_file.path, local_path))
-            else:
-                logger.debug(f"Skipping existing file: {bucket_file.path}")
-
-        if not files_to_download:
-            logger.info(
-                f"Batch {batch_num}/{total_batches}: all files already exist, skipping."
-            )
-            continue
-
-        logger.info(
-            f"Batch {batch_num}/{total_batches}: downloading {len(files_to_download)} "
-            f"file(s)..."
-        )
-
-        try:
-            api.download_bucket_files(
-                bucket_id=bucket_id, files=files_to_download, raise_on_missing_files=False
-            )
-            logger.info(
-                f"Batch {batch_num}/{total_batches}: downloaded "
-                f"{len(files_to_download)} file(s) to {RESULTS_DIR}."
-            )
-        except Exception as e:
-            logger.error(f"Failed to download batch {batch_num}: {e}")
-            # Continue with next batch instead of failing entirely
-
-    # Load existing keys for deduplication
-    existing_keys = load_existing_result_keys()
-
-    # Parse all downloaded files and collect new results
-    new_results: list[str] = []
-    seen_keys: set[ResultIdentity] = set()
-
-    for bucket_file in all_bucket_files:
-        local_path = RESULTS_DIR / bucket_file.path
-        if not local_path.exists():
-            logger.warning(f"Downloaded file not found: {local_path}")
-            continue
-
-        try:
-            content = local_path.read_text(encoding="utf-8")
-            result = json.loads(content)
-            key = build_dedup_key(result)
-
-            if key is None:
-                logger.debug("Skipping result with no identity")
-                continue
-
-            if key in existing_keys or key in seen_keys:
-                logger.debug(f"Skipping duplicate result: {key}")
-                continue
-
-            new_results.append(json.dumps(result, ensure_ascii=False))
-            seen_keys.add(key)
-        except (json.JSONDecodeError, ValueError) as e:
-            logger.debug(f"Skipping invalid JSON in {bucket_file.path}: {e}")
-
-    logger.info(f"Found {len(new_results)} new result(s) from bucket scan.")
-
-    return new_results
 
 
 def list_open_request_issues() -> list[dict]:
@@ -521,10 +354,13 @@ def _extract_identity_key(result: dict) -> ResultIdentity | None:
 def upload_results_to_hf(new_results_path: Path) -> bool:
     """Upload results to Hugging Face bucket.
 
-    Reads the JSONL file, converts to per-record JSON tree layout
-    (one file per logical result at
-    ``results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json``),
-    deduplicates by identity (newer records win), then syncs to bucket.
+    Syncs the local results directory with the HF bucket (incremental download
+    of changed files only), merges new results from the JSONL file,
+    deduplicates by identity (newer records win), then syncs changed files
+    back to the bucket.
+
+    Handles both new harvested results and full bucket syncs when no new
+    results are provided.
 
     Args:
         new_results_path:
