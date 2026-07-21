@@ -210,7 +210,8 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     "--pr/--no-pr",
     is_flag=True,
     default=True,
-    help="After swapping, commit and push the branch and open a pull request. ",
+    help="After swapping, commit and push the branch and open a pull request. This "
+    "requires the `gh` CLI to be installed.",
 )
 @click.option(
     "--reviewer",
@@ -263,6 +264,8 @@ def main(
     if branch is None:
         branch = f"feat/replace-{old_dataset}-with-{new_dataset}"
     validate_branch(branch=branch)
+    if pr:
+        validate_gh_installed()
 
     target_codes = resolve_languages(old_config=old_config, new_config=new_config)
     logger.info(
@@ -406,6 +409,16 @@ def resolve_languages(old_config: DatasetConfig, new_config: DatasetConfig) -> s
     if not target:
         raise click.ClickException("The two datasets share no languages.")
     return target
+
+
+def validate_gh_installed() -> None:
+    """Check that the GitHub CLI is installed."""
+    try:
+        subprocess.run(["gh", "version"], check=True, capture_output=True)
+    except FileNotFoundError:
+        raise click.ClickException(
+            "GitHub CLI not found; install it from https://cli.github.com/"
+        )
 
 
 # --------------------------------------------------------------------------- #
