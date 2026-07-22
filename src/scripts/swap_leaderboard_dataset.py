@@ -1202,6 +1202,21 @@ def apply_swap(old_dataset: str, new_dataset: str, dry_run: bool) -> list[Path]:
         changed.append(changelog_path)
         logger.info(f"Edited {changelog_path.relative_to(REPO_ROOT)}.")
 
+        # Also track dataset_split_sizes.json if it has been modified
+        split_sizes_path = (
+            REPO_ROOT / "src" / "leaderboards" / "dataset_split_sizes.json"
+        )
+        if split_sizes_path.exists():
+            diff_result = _git(
+                "diff", "--quiet", "--", str(split_sizes_path), check=False
+            )
+            if diff_result.returncode != 0:
+                # File has modifications
+                changed.append(split_sizes_path)
+                logger.info(
+                    f"Tracked {split_sizes_path.relative_to(REPO_ROOT)} (modified)."
+                )
+
     return sorted({path for path in changed}, key=str)
 
 
