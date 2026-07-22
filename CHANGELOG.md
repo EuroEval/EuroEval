@@ -34,6 +34,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   the previous ScaLA-da, which has now been demoted to unofficial.
 - The DaLA dataset source was moved from `giannor/dala` to `EuroEval/dala` for
   stability.
+- Made the Albanian knowledge dataset INCLUDE-sq the new official such one, over the
+  previous Global-MMLU-lite-sq , which has now been demoted to unofficial.
 
 ### Fixed
 
