@@ -103,15 +103,22 @@ def _sync_results_from_bucket() -> None:
     """Sync the HF results bucket into RESULTS_DIR and back it up.
 
     Syncs the single EuroEval/results bucket to RESULTS_DIR and creates a
-    backup of the synced per-record JSON files.
+    backup of the synced per-record JSON files. Skips sync if local results
+    already exist to avoid unnecessary downloads.
 
     Raises:
         FileNotFoundError:
             If sync fails and no local files exist.
     """
-    sync_bucket()
-
     file_count = len(list(RESULTS_DIR.glob("*/*.json")))
+    if file_count == 0:
+        sync_bucket()
+        file_count = len(list(RESULTS_DIR.glob("*/*.json")))
+    else:
+        logger.info(
+            f"Skipping bucket sync; {file_count:,} files already exist locally."
+        )
+
     if file_count == 0:
         raise FileNotFoundError(
             "No results available. Sync failed and no local cache exists."

@@ -105,6 +105,14 @@ WINOGRANDE_DA_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
+ZEBRA_PUZZLE_EASY_DA_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-da",
+    pretty_name="ZebraPuzzlesEasy-da",
+    source="EuroEval/zebra-puzzles-easy-da",
+    task=LOGIC,
+    languages=[DANISH],
+)
+
 # Unofficial datasets ###
 
 HELLASWAG_DA_CONFIG = DatasetConfig(
@@ -246,15 +254,6 @@ GERLANGMOD_DA_CONFIG = DatasetConfig(
     pretty_name="GerLangMod-da",
     source="EuroEval/gerlangmod-da",
     task=GED,
-    languages=[DANISH],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_DA_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-da",
-    pretty_name="ZebraPuzzlesEasy-da",
-    source="EuroEval/zebra-puzzles-easy-da",
-    task=LOGIC,
     languages=[DANISH],
     unofficial=True,
 )

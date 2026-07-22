@@ -2,7 +2,6 @@
 
 import collections.abc as c
 import itertools
-import logging
 import typing as t
 from copy import deepcopy
 
@@ -16,8 +15,6 @@ if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
 
     from ..data_models import BenchmarkConfig, DatasetConfig
-
-logger: logging.Logger = logging.getLogger("euroeval")
 
 
 class LogicPuzzleMetric(Metric):
@@ -51,7 +48,7 @@ class LogicPuzzleMetric(Metric):
         Raises:
             InvalidBenchmark:
                 If the number of predictions doesn't match the number of references.
-        """  # noqa: D214, D405, D410, D411
+        """
         if not predictions or not references:
             return None
         elif len(predictions) != len(references):
@@ -71,24 +68,15 @@ class LogicPuzzleMetric(Metric):
         else:
             formatted_predictions: list[dict[str, list[str]]] = []
             for raw_prediction in raw_predictions:
-                if not isinstance(raw_prediction, str):
-                    logger.warning(
-                        "The prediction is not a string. Please ensure that the model "
-                        "outputs are parsed correctly."
-                    )
-                    raw_prediction = str(raw_prediction)
                 formatted_prediction = extract_json_dict_from_string(s=raw_prediction)
                 if formatted_prediction is None or not self._check_full_type(
                     formatted_prediction, dict[str, list[str]]
                 ):
-                    logger.warning(
-                        "The prediction string was not converted to a dictionary. "
-                        "Please ensure that the model outputs are parsed correctly."
-                    )
                     formatted_prediction = {
                         "object_1": [f"Invalid prediction: {raw_prediction}"]
                     }
                 formatted_predictions.append(formatted_prediction)
+
         # Parse the labels
         if self._check_full_type(raw_labels, list[dict[str, list[str]]]):
             labels: list[dict[str, list[str]]] = t.cast(
@@ -133,8 +121,11 @@ class LogicPuzzleMetric(Metric):
 
         Returns:
             True if the variable is of the expected type, False otherwise.
+
+        Raises:
+            ValueError:
+                If the expected type is invalid.
         """
-        # Handle list[dict[str, list[str]]] type
         if expected_type == list[dict[str, list[str]]]:
             if not isinstance(variable, list):
                 return False
@@ -145,14 +136,14 @@ class LogicPuzzleMetric(Metric):
                 )
                 for item in variable
             )
-        # Handle dict[str, list[str]] type
-        if expected_type == dict[str, list[str]]:
+        elif expected_type == dict[str, list[str]]:
             if not isinstance(variable, dict):
                 return False
             return all(
                 isinstance(k, str) and isinstance(v, list) for k, v in variable.items()
             )
-        return False
+        else:
+            raise ValueError(f"Invalid expected type: {expected_type}")
 
     def _compare_all_json_predictions_and_labels(
         self,
@@ -169,34 +160,11 @@ class LogicPuzzleMetric(Metric):
 
         Returns:
             An array with comparison results.
-
-        Raises:
-            InvalidBenchmark:
-                If the prediction or label is not a dictionary.
         """
         n_puzzles = len(labels)
-
-        # Initialize scores
         results: np.ndarray = np.zeros(n_puzzles)
-
-        # Compute the metrics
         for i, (prediction, label) in enumerate(zip(predictions, labels)):
-            if not isinstance(prediction, dict):
-                raise InvalidBenchmark(
-                    "The model output is not a dictionary. Please ensure that the "
-                    "model outputs are parsed correctly."
-                )
-            if not isinstance(label, dict):
-                raise InvalidBenchmark(
-                    "The label is not a dictionary. Please ensure that the labels are "
-                    "parsed correctly."
-                )
             results[i] = self._compare_prediction_and_label(prediction, label)
-
-        # Raise error if the metrics are invalid
-        if results is None:
-            raise InvalidBenchmark("The metric is invalid.")
-
         return results
 
     def _compare_prediction_and_label(
@@ -239,6 +207,7 @@ class LogicPuzzleMetric(Metric):
                 - n_elements_per_key: Number of elements per key in the label.
         """
         n_keys = len(label)
+
         # Get the first item to determine the number of elements per key
         first_key = next(iter(label))
         n_elements_per_key = len(label[first_key])
@@ -384,7 +353,6 @@ class CellWiseAccuracyMetric(LogicPuzzleMetric):
             return 1.0
 
         # Compare each cell
-        cell_score: float = 0.0
         n_correct_attributes: int = 0
         for attributes_pred, attributes_label in zip(
             prediction.values(), label.values()
@@ -396,9 +364,7 @@ class CellWiseAccuracyMetric(LogicPuzzleMetric):
             # Count the number of correct attributes
             n_correct_attributes += len(attributes_pred.intersection(attributes_label))
 
-        # Normalise the cell score
         cell_score = float(n_correct_attributes) / float(n_keys * n_elements_per_key)
-
         return cell_score
 
 
@@ -461,7 +427,6 @@ class BestPermutedCellWiseAccuracyMetric(LogicPuzzleMetric):
         objects = list(prediction.keys())
 
         # Create all permutations of the objects where each object appears exactly once
-
         object_permutations = list(itertools.permutations(objects))
 
         # Evaluate each permutation

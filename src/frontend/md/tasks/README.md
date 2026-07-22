@@ -47,3 +47,4 @@ this category are:
 6. [Instruction-following](instruction-following.md)
 7. [Bias Detection](bias-detection.md)
 8. [Hallucination Detection](hallucination-detection.md)
+9. [Logical Reasoning](logical-reasoning.md)

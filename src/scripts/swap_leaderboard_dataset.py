@@ -102,13 +102,17 @@ def sync_results_from_bucket() -> None:
     """
     logger.info("Syncing results from HF bucket %s...", HF_RESULTS_BUCKET)
 
-    # Sync bucket files to local RESULTS_DIR
-    hf_api = HfApi(token=os.getenv("HF_TOKEN"))
-    hf_api.sync_bucket(
-        source=f"hf://buckets/{HF_RESULTS_BUCKET}",
-        dest=RESULTS_DIR.as_posix(),
-        verbose=True,
-    )
+    # Sync bucket files to local RESULTS_DIR, skip if already present
+    if RESULTS_DIR.exists() and any(RESULTS_DIR.rglob("*.json")):
+        logger.info("RESULTS_DIR already contains files, skipping bucket sync.")
+    else:
+        hf_api = HfApi(token=os.getenv("HF_TOKEN"))
+        hf_api.sync_bucket(
+            source=f"hf://buckets/{HF_RESULTS_BUCKET}",
+            dest=RESULTS_DIR.as_posix(),
+            verbose=True,
+            ignore_times=True,  # Compare by content hash, not mtime
+        )
 
     # Merge per-record JSON tree into NEW_RESULTS_PATH
     # First read existing lines to avoid duplicates
@@ -1178,7 +1182,83 @@ def apply_swap(old_dataset: str, new_dataset: str, dry_run: bool) -> list[Path]:
     verb = "Would edit" if dry_run else "Edited"
     for path in unique:
         logger.info(f"{verb} {path.relative_to(REPO_ROOT)}.")
-    return unique
+
+    # Update CHANGELOG.md
+    if not dry_run:
+        changelog_path = REPO_ROOT / "CHANGELOG.md"
+        old_config = dataset_config(dataset_id=old_dataset)
+        new_config = dataset_config(dataset_id=new_dataset)
+        if old_config is None or new_config is None:
+            raise click.ClickException(
+                f"Could not fetch dataset configs for {old_dataset!r} or {new_dataset!r}."
+            )
+        _update_changelog(
+            changelog_path=changelog_path,
+            old_dataset=old_dataset,
+            new_dataset=new_dataset,
+            old_config=old_config,
+            new_config=new_config,
+        )
+        changed.append(changelog_path)
+        logger.info(f"Edited {changelog_path.relative_to(REPO_ROOT)}.")
+
+    return sorted({path for path in changed}, key=str)
+
+
+def _update_changelog(
+    changelog_path: Path,
+    old_dataset: str,
+    new_dataset: str,
+    old_config: DatasetConfig,
+    new_config: DatasetConfig,
+) -> None:
+    """Add a changelog entry for the dataset swap under [Unreleased] -> Changed.
+
+    Args:
+        changelog_path:
+            Path to CHANGELOG.md.
+        old_dataset:
+            The dataset being demoted to unofficial.
+        new_dataset:
+            The dataset being promoted to official.
+        old_config:
+            DatasetConfig for the old dataset.
+        new_config:
+            DatasetConfig for the new dataset.
+    """
+    lines = changelog_path.read_text(encoding="utf-8").split("\n")
+
+    # Find the "### Changed" section under "## [Unreleased]"
+    unreleased_idx: int | None = None
+    changed_idx: int | None = None
+    next_section_idx: int | None = None
+
+    for i, line in enumerate(lines):
+        if line.strip() == "## [Unreleased]":
+            unreleased_idx = i
+        elif unreleased_idx is not None and line.strip() == "### Changed":
+            changed_idx = i
+        elif changed_idx is not None and line.startswith("## "):
+            next_section_idx = i
+            break
+
+    if changed_idx is None or next_section_idx is None:
+        raise ValueError(
+            "Could not find '### Changed' section under '## [Unreleased]' in "
+            "CHANGELOG.md"
+        )
+
+    # Build the changelog entry
+    lang_list = ", ".join(sorted([lang.name for lang in old_config.languages]))
+    entry = (
+        f"- Swapped official dataset for {lang_list}: `{old_dataset}` → "
+        f"`{new_dataset}`. The script `swap_leaderboard_dataset.py` now "
+        "automatically updates CHANGELOG.md when performing dataset swaps."
+    )
+
+    # Insert the entry after "### Changed"
+    lines.insert(changed_idx + 1, entry)
+    changelog_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def find_config_file(dataset_id: str) -> Path:

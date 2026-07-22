@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import TypedDict
 
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
+from huggingface_hub import BucketFile, HfApi, list_bucket_tree
 from huggingface_hub.errors import HfHubHTTPError
 
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
@@ -30,7 +30,72 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def sync_bucket() -> None:
+def _cleanup_empty_bucket_files(hf_token: str) -> None:
+    """Delete 0-byte JSON files from the Hugging Face bucket.
+
+    Lists all files in the bucket, identifies empty JSON files by size,
+    and removes them via batch operation.
+
+    Args:
+        hf_token:
+            Hugging Face authentication token.
+    """
+    api = HfApi()
+    empty_files: list[str] = []
+
+    try:
+        # List all files in the bucket
+        files = list_bucket_tree(
+            bucket_id=HF_RESULTS_BUCKET, token=hf_token, recursive=True
+        )
+        for file_info in files:
+            # Check if it's a JSON file with size 0
+            if isinstance(file_info, BucketFile):
+                if file_info.path.endswith(".json") and file_info.size == 0:
+                    empty_files.append(file_info.path)
+            elif isinstance(file_info, dict):
+                # Handle dict format if API returns that
+                path = str(file_info.get("path", ""))
+                size = file_info.get("size", 0)
+                if path.endswith(".json") and size == 0:
+                    empty_files.append(path)
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to list bucket files: {e}")
+        return
+
+    if empty_files:
+        logger.info(f"Found {len(empty_files)} empty file(s) in bucket, deleting...")
+        try:
+            api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, delete=empty_files)
+            logger.info(f"Deleted {len(empty_files)} empty file(s) from bucket.")
+        except HfHubHTTPError as e:
+            logger.error(f"Failed to delete empty bucket files: {e}")
+
+
+def remove_empty_json_files(results_dir: Path) -> list[str]:
+    """Find and delete empty JSON files (0 bytes).
+
+    Scans recursively for all *.json files and removes any with zero size.
+
+    Args:
+        results_dir:
+            Directory to scan for empty JSON files.
+
+    Returns:
+        List of relative paths that were deleted.
+    """
+    deleted: list[str] = []
+    for json_file in results_dir.rglob("*.json"):
+        if json_file.is_file() and json_file.stat().st_size == 0:
+            logger.info(f"Removing empty file {json_file}")
+            json_file.unlink()
+            deleted.append(str(json_file.relative_to(results_dir)))
+    if deleted:
+        logger.info(f"Deleted {len(deleted)} empty JSON file(s).")
+    return deleted
+
+
+def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
     """Sync HF results bucket into the local results directory.
 
     Before sync, reads all local record files into memory keyed by relative path.
@@ -38,6 +103,15 @@ def sync_bucket() -> None:
     - Local-only files (missing after sync) are restored.
     - Files present in both are compared by identity; the newer record wins.
     - Path collisions between distinct identities raise an error.
+
+    Args:
+        ignore_sizes:
+            When True, skip file size comparison during sync. Works around
+            huggingface_hub bug reporting wrong sizes, making sync compare by
+            mtime only.
+        delete_empty:
+            When True, scan both local directory and bucket for 0-byte JSON
+            files and delete them. Defaults to True.
 
     Raises:
         RuntimeError:
@@ -78,6 +152,8 @@ def sync_bucket() -> None:
             source=f"hf://buckets/{HF_RESULTS_BUCKET}/",
             dest=str(RESULTS_DIR),
             token=hf_token,
+            ignore_times=True,  # Compare by size only
+            ignore_sizes=ignore_sizes,  # When True, compare by mtime only
         )
     except HfHubHTTPError as e:
         logger.error(f"Bucket sync failed: {e}")
@@ -120,6 +196,14 @@ def sync_bucket() -> None:
                 # Different identity at same path - collision!
                 raise_on_collision(local_identity, bucket_identity)
 
+    # Clean up empty JSON files locally
+    if delete_empty:
+        remove_empty_json_files(RESULTS_DIR)
+
+    # Optionally clean up empty files in the bucket
+    if delete_empty:
+        _cleanup_empty_bucket_files(hf_token)
+
     logger.info(f"Synced bucket {HF_RESULTS_BUCKET}.")
 
 
@@ -157,6 +241,9 @@ def merge_results(results_file: Path) -> int:
         Number of unique results written.
     """
     existing: dict[ResultIdentity, dict] = {}
+
+    # Remove empty JSON files before processing
+    remove_empty_json_files(RESULTS_DIR)
 
     # Read all record files from the tree
     if RESULTS_DIR.exists():
@@ -258,37 +345,39 @@ def upload_results_to_bucket(results_file: Path) -> None:
         logger.warning("No valid results found to upload.")
         return
 
-    # PHASE 2: Validation passed. Now mutate the filesystem.
-    # Remove stale ROOT-level *.jsonl artefacts (old flat store)
+    # Remove stale ROOT-level *.jsonl artefacts (old flat store) only
     for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
         if jsonl_file.is_file():
             logger.info(f"Removing stale jsonl file {jsonl_file}")
             jsonl_file.unlink()
 
-    # Clear existing tree to ensure clean state
-    for existing_file in RESULTS_DIR.rglob("*.json"):
-        if existing_file.is_file():
-            existing_file.unlink()
-
-    # Write all validated records
-    records_written = 0
+    # Write all validated records from path_record_map (source of truth from JSONL)
+    # Type: list of (local_path, remote_path) tuples for batch upload
+    written_files: list[tuple[str | Path | bytes, str]] = []
     for rel_path, (_, record) in path_record_map.items():
+        # Use canonical JSON serialization
+        new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
+        if not new_content.strip():
+            logger.warning(f"Skipping empty record for {rel_path}")
+            continue
+
         record_path = RESULTS_DIR / rel_path
         record_path.parent.mkdir(parents=True, exist_ok=True)
-        record_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
-        records_written += 1
+        record_path.write_text(new_content, encoding="utf-8")
+        if record_path.stat().st_size > 0:
+            written_files.append((record_path, rel_path))
 
     logger.info(
-        f"Wrote {records_written} record files to {RESULTS_DIR}, syncing to bucket..."
+        "Wrote %d record files to %s, uploading to bucket...",
+        len(written_files),
+        RESULTS_DIR,
     )
     try:
-        HfApi().sync_bucket(
-            source=str(RESULTS_DIR),
-            dest=f"hf://buckets/{HF_RESULTS_BUCKET}/",
-            token=hf_token,
+        HfApi().batch_bucket_files(
+            bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token
         )
     except HfHubHTTPError as e:
-        logger.error(f"Bucket sync failed: {e}")
+        logger.error(f"Bucket upload failed: {e}")
         raise
 
-    logger.info(f"Uploaded {records_written} results to bucket {HF_RESULTS_BUCKET}.")
+    logger.info(f"Uploaded {len(written_files)} results to bucket {HF_RESULTS_BUCKET}.")

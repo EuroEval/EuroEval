@@ -66,6 +66,7 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
+from ..tasks import LOGIC
 from ..tokenisation_utils import (
     apply_chat_template,
     get_bos_token,
@@ -624,7 +625,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 "FULL_LOG=1 to see what the error was. Skipping this evaluation."
             )
 
-        structured_generation_schema = None
         if (
             self.dataset_config.task.uses_structured_output
             or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
@@ -652,6 +652,38 @@ class VLLMModel(HuggingFaceEncoderModel):
                 structured_generation_schema = answer_format_class.model_json_schema()
                 log_once(
                     "Using structured generation with the JSON schema: "
+                    f"{json.dumps(structured_generation_schema, ensure_ascii=False)}",
+                    level=logging.DEBUG,
+                )
+                structured_outputs = StructuredOutputsParams(
+                    json=structured_generation_schema
+                )
+            elif self.dataset_config.task == LOGIC:
+                # Extract N (number of objects) and K (number of attributes) from the
+                # first sample to create a dynamic schema for LOGIC tasks.
+                # The target_text is a JSON string, so parse it first.
+                first_sample_raw = inputs["target_text"][0]
+                first_sample = (
+                    json.loads(first_sample_raw)
+                    if isinstance(first_sample_raw, str)
+                    else first_sample_raw
+                )
+                object_keys = [
+                    key for key in first_sample.keys() if key.startswith("object_")
+                ]
+                n = len(object_keys)
+                # Extract K from the first object's attribute list
+                k = len(first_sample[object_keys[0]]) if object_keys else 0
+                keys_and_their_types: dict[str, t.Any] = {
+                    f"object_{i}": (list[str], ...) for i in range(1, n + 1)
+                }
+                answer_format_class = create_model(
+                    "AnswerFormat", **keys_and_their_types
+                )
+                structured_generation_schema = answer_format_class.model_json_schema()
+                log_once(
+                    f"LOGIC task with {n} objects and {k} attributes per object. "
+                    f"Using structured generation with the JSON schema: "
                     f"{json.dumps(structured_generation_schema, ensure_ascii=False)}",
                     level=logging.DEBUG,
                 )

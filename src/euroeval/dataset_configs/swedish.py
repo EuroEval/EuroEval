@@ -98,6 +98,14 @@ VALEU_SV_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+ZEBRA_PUZZLE_EASY_SV_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-sv",
+    pretty_name="ZebraPuzzlesEasy-sv",
+    source="EuroEval/zebra-puzzles-easy-sv",
+    task=LOGIC,
+    languages=[SWEDISH],
+)
+
 
 # Unofficial datasets ###
 
@@ -215,15 +223,6 @@ GERLANGMOD_SV_CONFIG = DatasetConfig(
     pretty_name="GerLangMod-sv",
     source="EuroEval/gerlangmod-sv",
     task=GED,
-    languages=[SWEDISH],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_SV_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-sv",
-    pretty_name="ZebraPuzzlesEasy-sv",
-    source="EuroEval/zebra-puzzles-easy-sv",
-    task=LOGIC,
     languages=[SWEDISH],
     unofficial=True,
 )

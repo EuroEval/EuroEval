@@ -48,6 +48,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed race condition in cache cleanup where `rmtree` would fail with
   `FileNotFoundError` when checkpoint directories were removed concurrently during model
   benchmarking. Now uses `ignore_errors=True` to handle concurrent deletions gracefully.
+- Fixed structured output error for the LOGIC task (zebra puzzle datasets). The vLLM
+  backend now dynamically creates a Pydantic schema from the dataset structure, enabling
+  evaluation of logical reasoning datasets with vLLM models.
 - The HF, vLLM and fresh model tokeniser loaders no longer pass `verbose=False` to
   `AutoTokenizer.from_pretrained`, since the `MistralCommonBackend` rejects this
   argument. The vLLM mistral tokeniser fallback is now gated on model identity (model ID
@@ -66,10 +69,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
 - Added the `google-cloud-aiplatform` dependency, as it's required to run
   Gemini-3.1-pro.
-- Added the Danish zebra puzzle dataset
-  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The
-  split is given by 128 / 1,024 samples for train / test, respectively. It is marked as
-  `unofficial` for now. This was contributed by @sofiehb ✨
+- Added the Multi-Zebra-Logic datasets for 9 language variants: Danish (da), Dutch
+  (nl), English (en), Faroese (fo), German (de), Icelandic (is), Norwegian Bokmål (nb),
+  Norwegian Nynorsk (nn), and Swedish (sv). Each variant has an easy (2 objects × 3
+  attributes, easy variants now official) and hard (4 objects × 5 attributes,
+  unofficial) version. This was contributed by @sofiehb ✨
 
 ### Fixed
 

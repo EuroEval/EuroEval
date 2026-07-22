@@ -1692,7 +1692,7 @@ euroeval --model <model-id> --dataset gerlangmod-nl
 
 ## Logical Reasoning
 
-### Unofficial: ZebraPuzzleEasy-nl
+### ZebraPuzzleEasy-nl
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
 and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
