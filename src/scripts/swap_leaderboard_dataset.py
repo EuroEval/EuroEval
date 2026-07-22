@@ -1163,6 +1163,10 @@ def apply_swap(old_dataset: str, new_dataset: str, dry_run: bool) -> list[Path]:
 
     Returns:
         The paths that were (or would be) modified.
+
+    Raises:
+        click.ClickException:
+            When the dataset configs cannot be fetched.
     """
     changed: list[Path] = []
     for dataset_id, make_official in ((new_dataset, True), (old_dataset, False)):
@@ -1190,7 +1194,8 @@ def apply_swap(old_dataset: str, new_dataset: str, dry_run: bool) -> list[Path]:
         new_config = dataset_config(dataset_id=new_dataset)
         if old_config is None or new_config is None:
             raise click.ClickException(
-                f"Could not fetch dataset configs for {old_dataset!r} or {new_dataset!r}."
+                f"Could not fetch dataset configs for {old_dataset!r} or "
+                f"{new_dataset!r}."
             )
         _update_changelog(
             changelog_path=changelog_path,
@@ -1225,6 +1230,10 @@ def _update_changelog(
             DatasetConfig for the old dataset.
         new_config:
             DatasetConfig for the new dataset.
+
+    Raises:
+        ValueError:
+            When the '### Changed' section under '## [Unreleased]' is not found.
     """
     lines = changelog_path.read_text(encoding="utf-8").split("\n")
 
