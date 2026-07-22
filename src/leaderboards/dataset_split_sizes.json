@@ -501,6 +501,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/include-sq-mini": {
+    "test": 466,
+    "train": 24,
+    "val": 64
+  },
   "EuroEval/kpwr-ner": {
     "test": 2048,
     "train": 1024,
