@@ -301,7 +301,9 @@ def main(
         run_evaluations(
             old_dataset=old_dataset,
             new_datasets=new_datasets,
-            swapped_task=old_config.task.name if old_config else new_configs[0].task.name,
+            swapped_task=old_config.task.name
+            if old_config
+            else new_configs[0].task.name,
             target_codes=target_codes,
             include_api=include_api,
             api_providers_arg=api_providers,
@@ -363,7 +365,7 @@ def validate_datasets(
     """
     if not new_datasets:
         raise click.ClickException("At least one --new-dataset must be provided.")
-    
+
     old_config = dataset_config(dataset_id=old_dataset) if old_dataset else None
     new_configs = []
     for ds_id in new_datasets:
@@ -371,7 +373,7 @@ def validate_datasets(
         if config is None:
             raise click.ClickException(f"--new-dataset {ds_id!r} has no config.")
         new_configs.append(config)
-    
+
     if old_config is not None:
         if old_config.unofficial:
             raise click.ClickException(
@@ -401,7 +403,7 @@ def validate_datasets(
                     f"All new datasets must share a task; {new_configs[0].id!r} is "
                     f"{first_task!r} but {new_config.id!r} is {new_config.task.name!r}."
                 )
-    
+
     return old_config, new_configs
 
 
@@ -456,7 +458,7 @@ def resolve_languages(
         target = set()
         for new_config in new_configs:
             target |= {language.code for language in new_config.languages}
-    
+
     if not target:
         raise click.ClickException("The datasets share no languages.")
     return target
@@ -682,8 +684,8 @@ def load_corpus() -> _Corpus:
 
 
 def ranked_model_language_pairs(
-    old_dataset: str,
-    new_dataset: str,
+    old_dataset: str | None,
+    new_datasets: tuple[str, ...],
     swapped_task: str,
     language_codes: set[str],
     datasets_by_language: dict[str, dict[str, set[str]]],
@@ -699,9 +701,9 @@ def ranked_model_language_pairs(
 
     Args:
         old_dataset:
-            The outgoing dataset (kept in the required set).
-        new_dataset:
-            The incoming candidate (kept out of the required set).
+            The outgoing dataset (kept in the required set), or None when adding.
+        new_datasets:
+            The incoming candidates (kept out of the required set).
         swapped_task:
             The task both datasets belong to.
         language_codes:
@@ -751,8 +753,10 @@ def ranked_model_language_pairs(
                 and category_includes_task(category=category, task=task)
                 for dataset in task_datasets
             }
-        required.discard(new_dataset)
-        required.add(old_dataset)
+        for nds in new_datasets:
+            required.discard(nds)
+        if old_dataset:
+            required.add(old_dataset)
         if required:
             for model_id, datasets in models_in_language.items():
                 if required <= datasets:
@@ -762,8 +766,8 @@ def ranked_model_language_pairs(
 
 def build_eval_jobs(
     ranked: set[tuple[str, str]],
-    old_dataset: str,
-    new_dataset: str,
+    old_dataset: str | None,
+    new_datasets: tuple[str, ...],
     corpus: _Corpus,
     include_api: bool,
     selected_providers: set[str],
@@ -775,9 +779,10 @@ def build_eval_jobs(
         ranked:
             The ranked ``(model_id, language)`` pairs.
         old_dataset:
-            The outgoing dataset (whose recorded setup is mirrored).
-        new_dataset:
-            The dataset to evaluate on.
+            The outgoing dataset (whose recorded setup is mirrored), or None
+            when adding.
+        new_datasets:
+            The datasets to evaluate on.
         corpus:
             The parsed corpus.
         include_api:
@@ -807,7 +812,10 @@ def build_eval_jobs(
             if provider is not None and provider.name not in selected_providers:
                 skipped_api_set.add(model_id)
                 continue
-        if not force and (model_id, new_dataset, code) in corpus.observations:
+        # Skip if any new dataset already has a result for this (model, language)
+        if not force and any(
+            (model_id, nds, code) in corpus.observations for nds in new_datasets
+        ):
             skipped_existing_count += 1
             continue
         config = corpus.eval_configs.get((model_id, old_dataset, code))
@@ -821,6 +829,7 @@ def build_eval_jobs(
         jobs.append(
             Job(
                 model_id=model_id,
+                datasets=new_datasets,
                 languages=tuple(sorted(codes)),
                 is_api=is_api,
                 evaluate_test_split=evaluate_test_split,
@@ -915,15 +924,15 @@ def apply_size_filter(
 
 
 def execute_jobs(
-    jobs: list[Job], dataset: str, gpu_memory_utilization: float | None
+    jobs: list[Job], datasets: tuple[str, ...], gpu_memory_utilization: float | None
 ) -> tuple[list[str], list[str]]:
     """Run each evaluation in sequence via the shared euroeval runner.
 
     Args:
         jobs:
             The jobs to run.
-        dataset:
-            The new dataset id to evaluate on.
+        datasets:
+            The new dataset ids to evaluate on.
         gpu_memory_utilization:
             The utilization fraction to pass to euroeval, or None.
 
@@ -944,8 +953,8 @@ def execute_jobs(
         log_file.write("Evaluation Log\n")
         log_file.write("================\n")
         log_file.write(f"Timestamp (UTC): {timestamp}\n")
-        log_file.write(f"Dataset: {dataset}\n")
-        log_file.write(f"GPU Memory Utilization: {gpu_memory_utilization}\n")
+        log_file.write(f"Datasets: {', '.join(datasets)}\n")
+        log_file.write(f"GPU Memory UtilIZATION: {gpu_memory_utilization}\n")
         log_file.write(f"Total Jobs: {len(jobs)}\n")
         log_file.write("\n")
         log_file.write("Job Plan\n")
@@ -956,6 +965,7 @@ def execute_jobs(
             source = "API" if job.is_api else "open-weight"
             log_file.write(
                 f"[{idx}/{len(jobs)}] {job.model_id} | "
+                f"datasets: {', '.join(job.datasets)} | "
                 f"languages: {', '.join(job.languages)} | "
                 f"split: {split} | {shot} | {source}\n"
             )
@@ -986,7 +996,7 @@ def execute_jobs(
             returncode, output = run_euroeval(
                 model_id=job.model_id,
                 languages=job.languages,
-                datasets=[dataset],
+                datasets=list(job.datasets),
                 evaluate_test_split=job.evaluate_test_split,
                 zero_shot=job.zero_shot,
                 gpu_memory_utilization=gpu_memory_utilization,
@@ -1198,14 +1208,16 @@ def _record_languages(record: dict[str, object]) -> list[str]:
 # --------------------------------------------------------------------------- #
 # Config + documentation swap
 # --------------------------------------------------------------------------- #
-def apply_swap(old_dataset: str, new_dataset: str, dry_run: bool) -> list[Path]:
+def apply_swap(
+    old_dataset: str | None, new_datasets: tuple[str, ...], dry_run: bool
+) -> list[Path]:
     """Swap officiality in the dataset configs and the frontend docs.
 
     Args:
         old_dataset:
-            The dataset to demote to unofficial.
-        new_dataset:
-            The dataset to promote to official.
+            The dataset to demote to unofficial, or None if just adding.
+        new_datasets:
+            The datasets to promote to official.
         dry_run:
             When True, log the files that would change without editing them.
 
@@ -1217,18 +1229,31 @@ def apply_swap(old_dataset: str, new_dataset: str, dry_run: bool) -> list[Path]:
             When the dataset configs cannot be fetched.
     """
     changed: list[Path] = []
-    for dataset_id, make_official in ((new_dataset, True), (old_dataset, False)):
+    # Promote all new datasets to official
+    for dataset_id in new_datasets:
         config_path = find_config_file(dataset_id=dataset_id)
         changed.append(config_path)
         if not dry_run:
             set_config_officiality(
-                path=config_path, dataset_id=dataset_id, official=make_official
+                path=config_path, dataset_id=dataset_id, official=True
             )
         for doc_path in find_doc_files(dataset_id=dataset_id):
             changed.append(doc_path)
             if not dry_run:
+                set_doc_officiality(path=doc_path, dataset_id=dataset_id, official=True)
+    # Demote old dataset to unofficial if present
+    if old_dataset:
+        config_path = find_config_file(dataset_id=old_dataset)
+        changed.append(config_path)
+        if not dry_run:
+            set_config_officiality(
+                path=config_path, dataset_id=old_dataset, official=False
+            )
+        for doc_path in find_doc_files(dataset_id=old_dataset):
+            changed.append(doc_path)
+            if not dry_run:
                 set_doc_officiality(
-                    path=doc_path, dataset_id=dataset_id, official=make_official
+                    path=doc_path, dataset_id=old_dataset, official=False
                 )
     unique = sorted({path for path in changed}, key=str)
     verb = "Would edit" if dry_run else "Edited"
@@ -1238,19 +1263,21 @@ def apply_swap(old_dataset: str, new_dataset: str, dry_run: bool) -> list[Path]:
     # Update CHANGELOG.md
     if not dry_run:
         changelog_path = REPO_ROOT / "CHANGELOG.md"
-        old_config = dataset_config(dataset_id=old_dataset)
-        new_config = dataset_config(dataset_id=new_dataset)
-        if old_config is None or new_config is None:
-            raise click.ClickException(
-                f"Could not fetch dataset configs for {old_dataset!r} or "
-                f"{new_dataset!r}."
-            )
+        old_config = dataset_config(dataset_id=old_dataset) if old_dataset else None
+        new_configs = []
+        for ds_id in new_datasets:
+            config = dataset_config(dataset_id=ds_id)
+            if config is None:
+                raise click.ClickException(
+                    f"Could not fetch dataset config for {ds_id!r}."
+                )
+            new_configs.append(config)
         _update_changelog(
             changelog_path=changelog_path,
             old_dataset=old_dataset,
-            new_dataset=new_dataset,
+            new_datasets=new_datasets,
             old_config=old_config,
-            new_config=new_config,
+            new_configs=new_configs,
         )
         changed.append(changelog_path)
         logger.info(f"Edited {changelog_path.relative_to(REPO_ROOT)}.")
@@ -1275,10 +1302,10 @@ def apply_swap(old_dataset: str, new_dataset: str, dry_run: bool) -> list[Path]:
 
 def _update_changelog(
     changelog_path: Path,
-    old_dataset: str,
-    new_dataset: str,
-    old_config: DatasetConfig,
-    new_config: DatasetConfig,
+    old_dataset: str | None,
+    new_datasets: tuple[str, ...],
+    old_config: DatasetConfig | None,
+    new_configs: list[DatasetConfig],
 ) -> None:
     """Add a changelog entry for the dataset swap under [Unreleased] -> Changed.
 
@@ -1286,13 +1313,13 @@ def _update_changelog(
         changelog_path:
             Path to CHANGELOG.md.
         old_dataset:
-            The dataset being demoted to unofficial.
-        new_dataset:
-            The dataset being promoted to official.
+            The dataset being demoted to unofficial, or None if just adding.
+        new_datasets:
+            The datasets being promoted to official.
         old_config:
-            DatasetConfig for the old dataset.
-        new_config:
-            DatasetConfig for the new dataset.
+            DatasetConfig for the old dataset, or None if just adding.
+        new_configs:
+            DatasetConfigs for the new datasets.
 
     Raises:
         ValueError:
@@ -1321,12 +1348,30 @@ def _update_changelog(
         )
 
     # Build the changelog entry
-    lang_list = ", ".join(sorted([lang.name for lang in old_config.languages]))
-    entry = (
-        f"- Swapped official dataset for {lang_list}: `{old_dataset}` → "
-        f"`{new_dataset}`. The script `swap_leaderboard_dataset.py` now "
-        "automatically updates CHANGELOG.md when performing dataset swaps."
-    )
+    if old_config:
+        lang_list = ", ".join(sorted([lang.name for lang in old_config.languages]))
+        new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
+        entry = (
+            f"- Swapped official dataset for {lang_list}: `{old_dataset}` → "
+            f"{new_ds_str}. The script `swap_leaderboard_dataset.py` now "
+            "automatically updates CHANGELOG.md when performing dataset swaps."
+        )
+    else:
+        lang_list = ", ".join(
+            sorted(
+                set(
+                    lang.name
+                    for new_config in new_configs
+                    for lang in new_config.languages
+                )
+            )
+        )
+        new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
+        entry = (
+            f"- Added official datasets for {lang_list}: {new_ds_str}. The script "
+            "`swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md "
+            "when performing dataset swaps."
+        )
 
     # Insert the entry after "### Changed"
     lines.insert(changed_idx + 1, entry)
@@ -1657,8 +1702,8 @@ def checkout_branch(branch: str) -> None:
 
 
 def open_pull_request(
-    old_dataset: str,
-    new_dataset: str,
+    old_dataset: str | None,
+    new_datasets: tuple[str, ...],
     branch: str,
     changed_paths: list[Path],
     reviewer: str = "saattrupdan",
@@ -1670,9 +1715,9 @@ def open_pull_request(
 
     Args:
         old_dataset:
-            The demoted dataset id.
-        new_dataset:
-            The promoted dataset id.
+            The demoted dataset id, or None if just adding.
+        new_datasets:
+            The promoted dataset ids.
         branch:
             The branch to push.
         changed_paths:
@@ -1689,8 +1734,13 @@ def open_pull_request(
         logger.info("No changes to commit; skipping PR creation.")
         return
 
-    title = f"feat: swap official dataset {old_dataset} -> {new_dataset}"
-    body = _pr_body(old_dataset=old_dataset, new_dataset=new_dataset)
+    if old_dataset:
+        title = (
+            f"feat: swap official dataset {old_dataset} -> {', '.join(new_datasets)}"
+        )
+    else:
+        title = f"feat: add official datasets {', '.join(new_datasets)}"
+    body = _pr_body(old_dataset=old_dataset, new_datasets=new_datasets)
     _git("commit", "-m", title, "-m", body)
     _git("push", "--set-upstream", "origin", branch)
 
@@ -1710,30 +1760,45 @@ def open_pull_request(
     logger.info("Opened pull request.")
 
 
-def _pr_body(old_dataset: str, new_dataset: str) -> str:
+def _pr_body(old_dataset: str | None, new_datasets: tuple[str, ...]) -> str:
     """Return the standard PR description for a dataset swap.
 
     Args:
         old_dataset:
-            The demoted dataset id.
-        new_dataset:
-            The promoted dataset id.
+            The demoted dataset id, or None if just adding.
+        new_datasets:
+            The promoted dataset ids.
 
     Returns:
         The markdown PR body.
     """
-    return (
-        f"Swaps the official dataset `{old_dataset}` for `{new_dataset}`.\n\n"
-        "## What\n\n"
-        f"- Every model with a rank score on the affected leaderboard(s) was "
-        f"evaluated on `{new_dataset}`, mirroring how each appears on the "
-        "leaderboard (validation/test split and zero-/few-shot).\n"
-        f"- `{old_dataset}` is demoted to unofficial and `{new_dataset}` "
-        "promoted to official in the dataset configs and the dataset "
-        "documentation, keeping each file's official-first grouping.\n\n"
-        "The leaderboards will pick up the change on the next regeneration.\n\n"
-        "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
-    )
+    new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
+    if old_dataset:
+        return (
+            f"Swaps the official dataset `{old_dataset}` for {new_ds_str}.\n\n"
+            "## What\n\n"
+            f"- Every model with a rank score on the affected leaderboard(s) was "
+            f"evaluated on {new_ds_str}, mirroring how each appears on the "
+            "leaderboard (validation/test split and zero-/few-shot).\n"
+            f"- `{old_dataset}` is demoted to unofficial and {new_ds_str} "
+            "promoted to official in the dataset configs and the dataset "
+            "documentation, keeping each file's official-first grouping.\n\n"
+            "The leaderboards will pick up the change on the next regeneration.\n\n"
+            "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+        )
+    else:
+        return (
+            f"Adds {new_ds_str} as official dataset(s).\n\n"
+            "## What\n\n"
+            f"- Every model with a rank score on the affected leaderboard(s) was "
+            f"evaluated on {new_ds_str}, mirroring how each appears on the "
+            "leaderboard (validation/test split and zero-/few-shot).\n"
+            f"- {new_ds_str} promoted to official in the dataset configs "
+            "and the dataset documentation, keeping each file's official-first "
+            "grouping.\n\n"
+            "The leaderboards will pick up the change on the next regeneration.\n\n"
+            "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+        )
 
 
 def _request_copilot_review() -> None:
