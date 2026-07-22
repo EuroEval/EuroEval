@@ -3,9 +3,9 @@ r"""Replace an official leaderboard dataset with a new one, end to end.
 When a new dataset should take over a task slot on a language's leaderboard
 from the current official one, four things have to happen:
 
-1. **Sync results.** Download all results from the HF bucket and consolidate
-   into ``new_results.jsonl`` so already-completed evaluations are detected
-   and skipped. This is read-only for the bucket.
+1. **Sync results.** Download relevant result files from the HF bucket and
+   consolidate into ``new_results.jsonl`` so already-completed evaluations are
+   detected and skipped. This is read-only for the bucket.
 2. **Evaluate.** Every model that currently holds a full rank score on the
    affected leaderboard(s) must be evaluated on the new (still unofficial)
    dataset -- mirroring exactly how each model appears on the leaderboard
@@ -51,18 +51,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import click
-from huggingface_hub import HfApi
+from huggingface_hub import BucketFile, HfApi
 from tqdm.auto import tqdm
 
 from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
-from leaderboards.bucket_sync import (
-    download_missing_bucket_files,
-    merge_results,
-    upload_results_to_bucket,
-)
+from leaderboards.bucket_sync import merge_results, upload_results_to_bucket
 from leaderboards.constants import (
     DEFAULT_GPU_MEMORY_UTILIZATION,
     LEADERBOARD_CATEGORIES,
@@ -72,6 +68,7 @@ from leaderboards.constants import (
 from leaderboards.evaluation_common import (
     gpu_total_memory_bytes,
     model_fits_locally,
+    resolve_hf_token,
     run_euroeval,
 )
 from leaderboards.jsonl_io import (
@@ -96,18 +93,31 @@ HF_RESULTS_BUCKET = "EuroEval/results"
 EUROEVAL_BENCHMARK_RESULTS_PATH = REPO_ROOT / "euroeval_benchmark_results.jsonl"
 
 
-def sync_results_from_bucket() -> None:
-    """Sync results from the HF bucket and consolidate into NEW_RESULTS_PATH.
+def sync_results_from_bucket(
+    old_dataset: str | None,
+    new_datasets: tuple[str, ...],
+    swapped_task: str,
+    target_codes: set[str],
+) -> None:
+    """Sync relevant bucket results and consolidate into NEW_RESULTS_PATH.
 
-    Downloads missing result files from the EuroEval/results bucket to RESULTS_DIR
-    (incremental fetch, only new files), then merges the per-record JSON tree into
-    NEW_RESULTS_PATH (appending, not overwriting) so subsequent evaluations can
-    detect and skip already-completed runs.
+    Downloads missing result files for the datasets needed to plan this swap,
+    then merges the local per-record JSON tree into NEW_RESULTS_PATH (appending,
+    not overwriting) so subsequent evaluations can detect and skip
+    already-completed runs.
     """
-    logger.info("Syncing results from HF bucket %s...", HF_RESULTS_BUCKET)
-
-    # Incremental sync: download only files not already present locally
-    download_missing_bucket_files()
+    dataset_ids = result_sync_dataset_ids(
+        old_dataset=old_dataset,
+        new_datasets=new_datasets,
+        swapped_task=swapped_task,
+        target_codes=target_codes,
+    )
+    logger.info(
+        "Syncing result files for %s dataset(s) from HF bucket %s...",
+        len(dataset_ids),
+        HF_RESULTS_BUCKET,
+    )
+    download_bucket_files_for_datasets(dataset_ids=dataset_ids)
 
     # Merge per-record JSON tree into NEW_RESULTS_PATH
     # First read existing lines to avoid duplicates
@@ -155,6 +165,115 @@ DATASET_DOC_DIR = REPO_ROOT / "src" / "frontend" / "md" / "datasets"
 UNOFFICIAL_MARKER = "# Unofficial datasets ###"
 UNOFFICIAL_LINE_RE = re.compile(r"^\s*unofficial\s*=\s*True\s*,\s*$")
 DOC_UNOFFICIAL_PREFIX = "Unofficial: "
+
+
+def result_sync_dataset_ids(
+    old_dataset: str | None,
+    new_datasets: tuple[str, ...],
+    swapped_task: str,
+    target_codes: set[str],
+) -> set[str]:
+    """Return dataset ids whose result files are needed for this swap.
+
+    The swap planner needs all datasets that define whether a model is ranked on
+    the affected leaderboard category, plus the incoming datasets so existing
+    replacement results can be skipped.
+    """
+    affected = [
+        category
+        for category in LEADERBOARD_CATEGORIES
+        if category_includes_task(category=category, task=swapped_task)
+    ]
+    dataset_ids: set[str] = set(new_datasets)
+    if old_dataset:
+        dataset_ids.add(old_dataset)
+
+    languages = get_all_languages()
+    for code in sorted(target_codes):
+        language = languages.get(code)
+        if language is None:
+            logger.warning(f"Unknown language code {code!r}; skipping result sync.")
+            continue
+        name = language.name.lower()
+        if " " in name:
+            logger.warning(f"{code!r} ({name!r}) has no standalone leaderboard.")
+            continue
+        try:
+            by_task = official_datasets_for_language(name)
+        except ValueError:
+            logger.warning(f"No leaderboard datasets for {name!r}; skipping sync.")
+            continue
+
+        for category in affected:
+            dataset_ids.update(
+                dataset
+                for task, task_datasets in by_task.items()
+                if task not in ORTHOGONAL_TASKS
+                and category_includes_task(category=category, task=task)
+                for dataset in task_datasets
+            )
+
+    return dataset_ids
+
+
+def download_bucket_files_for_datasets(dataset_ids: set[str]) -> int:
+    """Download missing bucket files whose filenames match dataset ids.
+
+    Returns:
+        Number of files downloaded.
+
+    Raises:
+        RuntimeError:
+            If no Hugging Face token is available.
+    """
+    if not dataset_ids:
+        logger.warning("No dataset ids resolved for bucket sync; skipping download.")
+        return 0
+
+    hf_token = resolve_hf_token()
+    if not hf_token:
+        raise RuntimeError(
+            "HF_TOKEN not set. Cannot sync results from Hugging Face bucket. "
+            "Run 'hf auth login' or set the HF_TOKEN environment variable."
+        )
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    prefixes = tuple(f"{dataset_id}__" for dataset_id in sorted(dataset_ids))
+    api = HfApi()
+    to_download: list[tuple[str | BucketFile, str | Path]] = []
+
+    logger.info(
+        "Listing bucket %s for result files matching: %s",
+        HF_RESULTS_BUCKET,
+        ", ".join(sorted(dataset_ids)),
+    )
+    for entry in api.list_bucket_tree(
+        bucket_id=HF_RESULTS_BUCKET, recursive=True, token=hf_token
+    ):
+        if not isinstance(entry, BucketFile):
+            continue
+        filename = Path(entry.path).name
+        if not filename.endswith(".json") or not filename.startswith(prefixes):
+            continue
+        local_path = RESULTS_DIR / entry.path
+        if not local_path.exists():
+            local_path.parent.mkdir(parents=True, exist_ok=True)
+            to_download.append((entry, local_path))
+
+    if not to_download:
+        logger.info("Local result cache already contains the relevant bucket files.")
+        return 0
+
+    logger.info(
+        "Downloading %s relevant new file(s) from the bucket...", len(to_download)
+    )
+    api.download_bucket_files(
+        bucket_id=HF_RESULTS_BUCKET,
+        files=to_download,
+        token=hf_token,
+        raise_on_missing_files=False,
+    )
+    return len(to_download)
 
 
 @click.command()
@@ -307,7 +426,14 @@ def main(
     if not dry_run:
         checkout_branch(branch=branch)
         # Sync latest results from bucket to avoid re-running evaluations
-        sync_results_from_bucket()
+        sync_results_from_bucket(
+            old_dataset=old_dataset,
+            new_datasets=new_datasets,
+            swapped_task=old_config.task.name
+            if old_config
+            else new_configs[0].task.name,
+            target_codes=target_codes,
+        )
 
     if skip_eval:
         logger.info("--skip-eval set; skipping the evaluation phase.")

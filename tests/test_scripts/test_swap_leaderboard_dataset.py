@@ -192,13 +192,24 @@ class TestSyncResults:
         )
         monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
 
-        # Mock hf_api.sync_bucket to do nothing
         monkeypatch.setattr(
-            swap_leaderboard_dataset.HfApi, "sync_bucket", lambda *args, **kwargs: None
+            target=swap_leaderboard_dataset,
+            name="result_sync_dataset_ids",
+            value=lambda **kwargs: {"test-dataset"},
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="download_bucket_files_for_datasets",
+            value=lambda *, dataset_ids: 0,
         )
 
         with caplog.at_level(logging.WARNING):
-            swap_leaderboard_dataset.sync_results_from_bucket()
+            swap_leaderboard_dataset.sync_results_from_bucket(
+                old_dataset="old-dataset",
+                new_datasets=("new-dataset",),
+                swapped_task="knowledge",
+                target_codes={"da"},
+            )
 
         # Should warn about no results
         assert "No results found" in caplog.text
@@ -261,13 +272,24 @@ class TestSyncResults:
         )
         monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
 
-        # Mock hf_api.sync_bucket to do nothing
         monkeypatch.setattr(
-            swap_leaderboard_dataset.HfApi, "sync_bucket", lambda *args, **kwargs: None
+            target=swap_leaderboard_dataset,
+            name="result_sync_dataset_ids",
+            value=lambda **kwargs: {"test-dataset"},
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="download_bucket_files_for_datasets",
+            value=lambda *, dataset_ids: 0,
         )
 
         with caplog.at_level(logging.INFO):
-            swap_leaderboard_dataset.sync_results_from_bucket()
+            swap_leaderboard_dataset.sync_results_from_bucket(
+                old_dataset="old-dataset",
+                new_datasets=("new-dataset",),
+                swapped_task="knowledge",
+                target_codes={"da"},
+            )
 
         # Should log: "Consolidating 1 result records into ... (1 new)."
         # Total count should be 1 (from merge_results), new count should be 1
