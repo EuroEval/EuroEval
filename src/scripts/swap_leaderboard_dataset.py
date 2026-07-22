@@ -167,8 +167,8 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     "--old-dataset",
     "old_dataset",
     default=None,
-    help="The official dataset being replaced (demoted to unofficial). If not "
-    "provided, the new dataset(s) are simply added without replacing anything.",
+    help="The official dataset being replaced (demoted to unofficial). Required "
+    "for replacement scenarios; use --add-only to add without replacing.",
 )
 @click.option(
     "--new-dataset",
@@ -177,6 +177,14 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     required=True,
     help="Unofficial candidate dataset(s) being promoted to official. Can be "
     "specified multiple times to evaluate all models on multiple new datasets.",
+)
+@click.option(
+    "--add-only/--no-add-only",
+    "add_only",
+    is_flag=True,
+    default=False,
+    help="Add new dataset(s) without replacing an existing official dataset. "
+    "Mutually exclusive with --old-dataset.",
 )
 @click.option(
     "--branch",
@@ -252,27 +260,37 @@ def main(
     reviewer: str,
     force: bool,
     dry_run: bool,
+    add_only: bool,
 ) -> None:
     """Replace an official leaderboard dataset with one or more new ones.
 
     Raises:
         ClickException:
-            If --api-providers is set without --include-api, or if --pr is set without
-            --reviewer.
+            If --api-providers is set without --include-api, if --pr is set without
+            --reviewer, or if --old-dataset and --add-only are both set or both unset.
     """
     # Validation checks
     if api_providers and not include_api:
         raise click.ClickException(
             "--api-providers requires --include-api; pass both or neither."
         )
+    if add_only and old_dataset:
+        raise click.ClickException(
+            "--add-only and --old-dataset are mutually exclusive; use one or the other."
+        )
+    if not add_only and not old_dataset:
+        raise click.ClickException(
+            "Either --old-dataset (for replacement) or --add-only (for addition) "
+            "must be provided."
+        )
     old_config, new_configs = validate_datasets(
         old_dataset=old_dataset, new_datasets=new_datasets
     )
     if branch is None:
-        if old_dataset:
-            branch = f"feat/replace-{old_dataset}-with-{'-'.join(new_datasets)}"
-        else:
+        if add_only:
             branch = f"feat/add-{'-'.join(new_datasets)}"
+        else:
+            branch = f"feat/replace-{old_dataset}-with-{'-'.join(new_datasets)}"
     validate_branch(branch=branch)
     if pr:
         validate_gh_installed()
@@ -281,8 +299,9 @@ def main(
     new_dataset_ids = tuple(c.id for c in new_configs)
     if old_dataset:
         logger.info(
-            f"Swap {old_dataset!r} -> {new_dataset_ids!r} (task {old_config.task.name!r}) "
-            f"on language(s): {', '.join(sorted(target_codes))}."
+            f"Swap {old_dataset!r} -> {new_dataset_ids!r} "
+            f"(task {old_config.task.name!r}) on language(s): "
+            f"{', '.join(sorted(target_codes))}."
         )
     else:
         logger.info(
@@ -383,12 +402,14 @@ def validate_datasets(
         for new_config in new_configs:
             if not new_config.unofficial:
                 raise click.ClickException(
-                    f"--new-dataset {new_config.id!r} must be unofficial; it is official."
+                    f"--new-dataset {new_config.id!r} must be unofficial; "
+                    "it is official."
                 )
             if old_config.task.name != new_config.task.name:
                 raise click.ClickException(
                     f"All datasets must share a task; {old_dataset!r} is "
-                    f"{old_config.task.name!r} but {new_config.id!r} is {new_config.task.name!r}."
+                    f"{old_config.task.name!r} but {new_config.id!r} is "
+                    f"{new_config.task.name!r}."
                 )
     else:
         # When no old dataset, all new datasets must share the same task
@@ -396,12 +417,14 @@ def validate_datasets(
         for new_config in new_configs[1:]:
             if not new_config.unofficial:
                 raise click.ClickException(
-                    f"--new-dataset {new_config.id!r} must be unofficial; it is official."
+                    f"--new-dataset {new_config.id!r} must be unofficial; "
+                    "it is official."
                 )
             if new_config.task.name != first_task:
                 raise click.ClickException(
                     f"All new datasets must share a task; {new_configs[0].id!r} is "
-                    f"{first_task!r} but {new_config.id!r} is {new_config.task.name!r}."
+                    f"{first_task!r} but {new_config.id!r} is "
+                    f"{new_config.task.name!r}."
                 )
 
     return old_config, new_configs
