@@ -26,6 +26,7 @@ const FLAGS: Record<string, string> = {
   Italian: "🇮🇹",
   Latvian: "🇱🇻",
   Lithuanian: "🇱🇹",
+  Luxembourgish: "🇱🇺",
   Norwegian: "🇳🇴",
   Polish: "🇵🇱",
   Portuguese: "🇵🇹",
