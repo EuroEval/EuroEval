@@ -7,6 +7,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v17.7.0] - 2026-07-22
+
 ### Added
 
 - Added the unofficial European Portuguese ALBA-MCQ, PT Exams, CulturaVivaPT,
