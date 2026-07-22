@@ -1,7 +1,6 @@
 """Tests for the process_evaluation_queue script orchestration."""
 
 import json
-import typing as t
 from pathlib import Path
 
 import pytest
@@ -30,7 +29,7 @@ def test_sync_bucket_preserves_local_only_files(
             dest: str,
             token: str,
             ignore_times: bool = False,
-            **kwargs: t.Any,
+            **kwargs,
         ) -> None:
             # Tree sync doesn't remove files - local-only files persist
             pass
@@ -72,7 +71,7 @@ def test_sync_bucket_prefers_synced_content_for_existing_result_key(
             dest: str,
             token: str,
             ignore_times: bool = False,
-            **kwargs: t.Any,
+            **kwargs,
         ) -> None:
             # Tree sync preserves existing files - remote content merged via file paths
             pass
@@ -130,7 +129,7 @@ def test_sync_bucket_handles_separate_result_files(
             dest: str,
             token: str,
             ignore_times: bool = False,
-            **kwargs: t.Any,
+            **kwargs,
         ) -> None:
             # Tree sync preserves separate files
             pass

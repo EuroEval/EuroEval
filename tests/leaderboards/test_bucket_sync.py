@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import typing as t
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -58,7 +57,7 @@ class TestSyncBucket:
             dest: str,
             token: str | None = None,
             ignore_times: bool = False,
-            **kwargs: t.Any,
+            **kwargs,
         ) -> None:
             # Simulate sync removing the local file
             if local_file.exists():
@@ -430,7 +429,7 @@ class TestUploadResultsToBucket:
             dest: str,
             token: str | None = None,
             ignore_times: bool = False,
-            **kwargs: t.Any,
+            **kwargs,
         ) -> None:
             if local_file.exists():
                 local_file.unlink()
@@ -474,7 +473,7 @@ class TestUploadResultsToBucket:
             dest: str,
             token: str | None = None,
             ignore_times: bool = False,
-            **kwargs: t.Any,
+            **kwargs,
         ) -> None:
             # Create an older bucket record
             older_record = {
@@ -525,7 +524,7 @@ class TestUploadResultsToBucket:
             dest: str,
             token: str | None = None,
             ignore_times: bool = False,
-            **kwargs: t.Any,
+            **kwargs,
         ) -> None:
             # Record with different identity but same sanitised path
             # "model_a" also sanitises to "model_a" (no change)

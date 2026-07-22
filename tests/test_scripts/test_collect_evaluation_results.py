@@ -1,7 +1,6 @@
 """Tests for the collect_evaluation_results script, focusing on upload_results_to_hf."""
 
 import json
-import typing as t
 from pathlib import Path
 
 import pytest
@@ -19,7 +18,7 @@ class FakeHfApi:
         dest: str,
         token: str | None = None,
         ignore_times: bool = False,
-        **kwargs: t.Any,
+        **kwargs,
     ) -> None:
         """No-op sync for testing."""
         pass
@@ -29,7 +28,7 @@ class FakeHfApi:
         bucket_id: str,
         add: list[tuple[str | Path | bytes, str]] | None = None,
         delete: list[str] | None = None,
-        **kwargs: t.Any,
+        **kwargs,
     ) -> None:
         """No-op batch upload for testing."""
         pass
