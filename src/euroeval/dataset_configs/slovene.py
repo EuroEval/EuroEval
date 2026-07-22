@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SLOVENE
-from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT
 
 # Official datasets ###
 
@@ -54,6 +54,19 @@ WINOGRANDE_SL_CONFIG = DatasetConfig(
     languages=[SLOVENE],
     labels=["a", "b"],
 )
+
+MULTI_IFEVAL_SL_CONFIG = DatasetConfig(
+    name="multi-ifeval-sl",
+    pretty_name="MultiIFEval-sl",
+    source="EuroEval/multi-ifeval-sl",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[SLOVENE],
+    train_split=None,
+    val_split=None,
+)
+
+
+# Unofficial datasets ###
 
 RAGTRUTH_SL_CONFIG = DatasetConfig(
     name="ragtruth-sl",

@@ -2,26 +2,35 @@
 
 This module is the orchestrator: it loads raw records, deduplicates them,
 repairs and validates their metadata, and writes the processed results as one
-JSONL file per model, both locally in RESULTS_DIR and to the Hugging Face
-results bucket.
+JSON file per logical result, both locally in RESULTS_DIR and to the Hugging
+Face results bucket.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import typing as t
 from collections import Counter
+from pathlib import Path
 
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
 from .cache import Cache
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
-from .eee_validation import dump_jsonl_records
+from .evaluation_common import resolve_hf_token
 from .model_metadata import add_missing_entries, fix_metadata, record_is_valid
 from .record_fields import deduplicate_records
-from .records import get_model_name, plain_model_id
+from .records import get_model_name
+from .result_identity import (
+    ResultIdentity,
+    dedup_newer_record,
+    identity_from_eee_record,
+    raise_on_collision,
+    record_relative_path,
+)
 from .result_loading import load_raw_results
 
 logger = logging.getLogger(__name__)
@@ -52,10 +61,11 @@ def process_results(
         trained_from_scratch_patterns:
             A list of regex patterns for trained-from-scratch models.
     """
-    # Build the metadata cache from the per-model result files.
-    cache = Cache.from_results_dir(RESULTS_DIR)
-
+    # Load raw results first so per-model files in RESULTS_DIR are synced.
     records = load_raw_results()
+
+    # Build the metadata cache from the synced per-model result files.
+    cache = Cache.from_results_dir(RESULTS_DIR)
     num_raw_records = len(records)
 
     records = deduplicate_records(records=records)
@@ -103,37 +113,113 @@ def process_results(
 
     _upload_per_model_files(processed_records=processed_records)
 
+    # Clear the load_raw_results cache so subsequent calls in the same process
+    # (e.g. repeated leaderboard generation) pick up the enriched records.
+    load_raw_results.cache_clear()
+
 
 def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
-    """Group records into one per-model file and sync them to the HF bucket.
+    """Write one JSON file per logical result and sync to the HF bucket.
 
-    Files are named by the model id with slashes replaced by underscores
-    (dots preserved).
+    Each record is written to
+    ``results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json``.
+    If two records resolve to the same path, the newer one is kept (based on
+    version and timestamp). Records with unresolvable model identities are dropped
+    with a log line.
 
     Args:
         processed_records:
             The processed records to upload.
-    """
-    results_by_model: dict[str, list[dict]] = {}
+
+    Raises:
+        RuntimeError:
+            If HF_TOKEN is not set or bucket sync fails.
+        ValueError:
+            If distinct identities sanitise to the same relative path.
+    """  # noqa: DOC502
+    hf_token = resolve_hf_token()
+    if not hf_token:
+        raise RuntimeError(
+            "HF_TOKEN not set. Cannot upload results to Hugging Face bucket. "
+            "Run 'hf auth login' or set the HF_TOKEN environment variable."
+        )
+
+    # Group records by path, handling deduplication and collision detection.
+    # Store (record, identity) to detect when distinct identities map to same path.
+    records_by_path: dict[Path, tuple[dict[str, t.Any], ResultIdentity]] = {}
+    dropped_count = 0
+
     for record in processed_records:
-        model_id_str = plain_model_id(get_model_name(record))
-        filename = model_id_str.replace("/", "_") + ".jsonl"
-        results_by_model.setdefault(filename, []).append(record)
+        try:
+            identity = identity_from_eee_record(record)
+        except ValueError as e:
+            logger.warning(f"Dropping record with unresolvable identity: {e}")
+            dropped_count += 1
+            continue
+
+        relative_path = record_relative_path(
+            model_id=identity[0],
+            dataset=identity[1],
+            validation_split=identity[2],
+            few_shot=identity[3],
+        )
+
+        if relative_path in records_by_path:
+            # Path collision - check if identities match
+            existing_record, existing_identity = records_by_path[relative_path]
+            # raise_on_collision will raise ValueError if identities differ
+            raise_on_collision(existing_identity, identity)
+            # Identities match - keep the newer record based on version/timestamp
+            records_by_path[relative_path] = (
+                dedup_newer_record(existing_record, record),
+                identity,
+            )
+        else:
+            records_by_path[relative_path] = (record, identity)
 
     hf_results_bucket = f"hf://buckets/{HF_RESULTS_BUCKET}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    logger.info("Uploading results to HF bucket...")
-    for filename, model_records in results_by_model.items():
-        file_path = RESULTS_DIR / filename
-        content = dump_jsonl_records(records=model_records)
-        file_path.write_text(content, encoding="utf-8")
+    # Track which files were written to upload only these files
+    written_files: list[tuple[str | Path | bytes, str]] = []
 
-    try:
-        api = HfApi()
-        api.sync_bucket(source=str(RESULTS_DIR), dest=hf_results_bucket)
-        logger.info(
-            f"Uploaded {len(results_by_model):,} model files to {hf_results_bucket}."
+    logger.info("Writing result files...")
+    for relative_path, (record, _) in records_by_path.items():
+        file_path = RESULTS_DIR / relative_path
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        # Use canonical JSON serialization for consistent comparison
+        canonical_content = json.dumps(
+            record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
         )
-    except Exception as e:
-        logger.warning(f"Failed to sync results: {e}")
+
+        # Only write if file doesn't exist or content differs (semantic comparison)
+        if file_path.exists():
+            try:
+                existing_content = file_path.read_text(encoding="utf-8").strip()
+                # Parse and compare dicts for semantic equality
+                existing_record = json.loads(existing_content)
+                canonical_existing = json.dumps(
+                    existing_record,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                )
+                if canonical_existing == canonical_content:
+                    continue  # Skip unchanged files
+            except (json.JSONDecodeError, OSError):
+                pass  # If we can't parse existing, overwrite it
+
+        file_path.write_text(canonical_content + "\n", encoding="utf-8")
+        # Skip empty files
+        if file_path.stat().st_size > 0:
+            written_files.append((file_path, str(relative_path)))
+
+    api = HfApi()
+    # Upload only the written files to the bucket
+    api.batch_bucket_files(
+        bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token
+    )
+    logger.info(f"Uploaded {len(written_files):,} result files to {hf_results_bucket}.")
+
+    if dropped_count > 0:
+        logger.info(f"Dropped {dropped_count:,} records with unresolvable identities.")

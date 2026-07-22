@@ -76,10 +76,10 @@ HELLASWAG_DE_CONFIG = DatasetConfig(
     languages=[GERMAN],
 )
 
-IFEVAL_DE_CONFIG = DatasetConfig(
-    name="ifeval-de",
-    pretty_name="IFEval-de",
-    source="EuroEval/ifeval-de",
+MULTI_IFEVAL_DE_CONFIG = DatasetConfig(
+    name="multi-ifeval-de",
+    pretty_name="MultiIFEval-de",
+    source="EuroEval/multi-ifeval-de",
     task=INSTRUCTION_FOLLOWING,
     languages=[GERMAN],
     train_split=None,
@@ -98,8 +98,27 @@ VALEU_DE_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+ZEBRA_PUZZLE_EASY_DE_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-de",
+    pretty_name="ZebraPuzzlesEasy-de",
+    source="EuroEval/zebra-puzzles-easy-de",
+    task=LOGIC,
+    languages=[GERMAN],
+)
+
 
 # Unofficial datasets ###
+
+IFEVAL_DE_CONFIG = DatasetConfig(
+    name="ifeval-de",
+    pretty_name="IFEval-de",
+    source="EuroEval/ifeval-de",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[GERMAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
 
 XQUAD_DE_CONFIG = DatasetConfig(
     name="xquad-de",
@@ -180,15 +199,6 @@ GERLANGMOD_DE_CONFIG = DatasetConfig(
     pretty_name="GerLangMod-de",
     source="EuroEval/gerlangmod-de",
     task=GED,
-    languages=[GERMAN],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_DE_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-de",
-    pretty_name="ZebraPuzzlesEasy-de",
-    source="EuroEval/zebra-puzzles-easy-de",
-    task=LOGIC,
     languages=[GERMAN],
     unofficial=True,
 )

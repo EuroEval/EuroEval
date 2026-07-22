@@ -75,10 +75,10 @@ GOLDENSWAG_PT_CONFIG = DatasetConfig(
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
 )
 
-IFEVAL_PT_CONFIG = DatasetConfig(
-    name="ifeval-pt",
-    pretty_name="IFEval-pt",
-    source="EuroEval/ifeval-pt",
+MULTI_IFEVAL_PT_CONFIG = DatasetConfig(
+    name="multi-ifeval-pt",
+    pretty_name="MultiIFEval-pt",
+    source="EuroEval/multi-ifeval-pt",
     task=INSTRUCTION_FOLLOWING,
     languages=[PORTUGUESE],
     train_split=None,
@@ -99,6 +99,17 @@ VALEU_PT_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+IFEVAL_PT_CONFIG = DatasetConfig(
+    name="ifeval-pt",
+    pretty_name="IFEval-pt",
+    source="EuroEval/ifeval-pt",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[PORTUGUESE],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
 
 BOOLQ_PT_CONFIG = DatasetConfig(
     name="boolq-pt",

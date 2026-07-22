@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import type { LeaderboardTable } from "@/leaderboard";
+import { matchesQuery } from "@/filter";
 
 const props = defineProps<{
   table: LeaderboardTable;
@@ -168,6 +169,7 @@ const hasNonCommercial = computed(() =>
 const hiddenKinds = ref<Set<ModelKind>>(new Set());
 const hideCommercial = ref(false);
 const hideNonCommercial = ref(false);
+const searchQuery = ref("");
 
 const toggleKind = (k: ModelKind) => {
   if (hiddenKinds.value.has(k)) {
@@ -181,14 +183,16 @@ const toggleKind = (k: ModelKind) => {
 
 const isKindHidden = (k: ModelKind) => hiddenKinds.value.has(k);
 
-const visiblePoints = computed<Point[]>(() =>
-  allPoints.value.filter((p) => {
+const visiblePoints = computed<Point[]>(() => {
+  const query = searchQuery.value.trim();
+  return allPoints.value.filter((p) => {
     if (hiddenKinds.value.has(p.kind)) return false;
     if (p.commercial && hideCommercial.value) return false;
     if (!p.commercial && hideNonCommercial.value) return false;
+    if (query && !matchesQuery(p.label, query)) return false;
     return true;
-  }),
-);
+  });
+});
 
 // SVG plot geometry.
 const width = 800;
@@ -404,6 +408,13 @@ const tooltipStyle = computed(() => {
         X-axis: Parameters (log). Y-axis: Rank score (lower is better).
         Showing {{ visiblePoints.length }} of {{ allPoints.length }} models.
       </span>
+      <input
+        v-model="searchQuery"
+        type="search"
+        class="scatter-search"
+        placeholder="Search models..."
+        aria-label="Search models"
+      />
     </div>
 
     <div class="scatter-legend">
@@ -612,6 +623,22 @@ const tooltipStyle = computed(() => {
   padding: 0.2rem 0.4rem;
   margin-left: 0.4rem;
   font: inherit;
+}
+
+.scatter-search {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  padding: 0.2rem 0.4rem;
+  font: inherit;
+  font-size: 0.78rem;
+  min-width: 180px;
+}
+
+.scatter-search:focus {
+  outline: 1px solid var(--color-link);
+  outline-offset: -1px;
 }
 
 .scatter-help {

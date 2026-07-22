@@ -11,13 +11,13 @@ information about what these constitute.
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2208.13947)
 and features political news headlines.
 
-The original full dataset consists of 1,371 /  609 / 459 samples for training,
-validation, and testing, respectively. We use 861 /  256 / 1,024 samples for training,
+The original full dataset consists of 1,371 / 609 / 459 samples for training,
+validation, and testing, respectively. We use 861 / 256 / 1,024 samples for training,
 validation, and testing, respectively. All our splits are subsets of the original ones.
 The label distribution for the splits are as follows:
 
 | Split | positive | negative | neutral | Total |
-|-------|----------|----------|---------|-------|
+| ----- | -------- | -------- | ------- | ----- |
 | Train | 368      | 248      | 245     | 861   |
 | Val   | 88       | 90       | 78      | 256   |
 | Test  | 417      | 293      | 314     | 1,024 |
@@ -27,22 +27,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Mauricio Macri, en el cierre de campaña: “Esta marcha no termina hoy acá, sino en noviembre”",
-    "label": "neutral"
+  "text": "Mauricio Macri, en el cierre de campaña: “Esta marcha no termina hoy acá, sino en noviembre”",
+  "label": "neutral"
 }
 ```
 
 ```json
 {
-    "text": "Lavagna reforzó su discurso económico y pidió más consumo",
-    "label": "positive"
+  "text": "Lavagna reforzó su discurso económico y pidió más consumo",
+  "label": "positive"
 }
 ```
 
 ```json
 {
-    "text": "Sin la aprobación del Fondo, Macri quema reservas para la fuga",
-    "label": "negative"
+  "text": "Sin la aprobación del Fondo, Macri quema reservas para la fuga",
+  "label": "negative"
 }
 ```
 
@@ -155,13 +155,13 @@ euroeval --model <model-id> --dataset conll-es
 ### ScaLA-es
 
 This dataset was published in [this paper](https://aclanthology.org/L08-1222/) and was
-automatically created from the [Spanish Universal
-Dependencies](https://github.com/UniversalDependencies/UD_Spanish-AnCora) by assuming
-that the documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+automatically created from the
+[Spanish Universal Dependencies](https://github.com/UniversalDependencies/UD_Spanish-AnCora)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original dataset consists of 17,662 samples, from which we use 1,024 / 256 / 2,048
 samples for training, validation and testing, respectively (so 3,328 samples used in
@@ -171,22 +171,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "El fuego obligó al a el desalojo preventivo de algunas casas y del de el observatorio del de el Roque de los Muchachos, del de el Instituto de Astrofísica de Canarias.",
-    "label": "correct"
+  "text": "El fuego obligó al a el desalojo preventivo de algunas casas y del de el observatorio del de el Roque de los Muchachos, del de el Instituto de Astrofísica de Canarias.",
+  "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "El libro que leemos intenta explicarlo explicar, pero sin exagerar las posturas de tirios y troyanos.",
-    "label": "incorrect"
+  "text": "El libro que leemos intenta explicarlo explicar, pero sin exagerar las posturas de tirios y troyanos.",
+  "label": "incorrect"
 }
 ```
 
 ```json
 {
-    "text": "Por su parte, el Consejo de Ministros dio ayer otra vuelta de tuerca al a el control urbanístico de las ciudades autónomas de Ceuta y de Melilla para evitar la urbanística por parte del de el Grupo Independiente Liberal (GIL), que gobierna en Ceuta.",
-    "label": "incorrect"
+  "text": "Por su parte, el Consejo de Ministros dio ayer otra vuelta de tuerca al a el control urbanístico de las ciudades autónomas de Ceuta y de Melilla para evitar la urbanística por parte del de el Grupo Independiente Liberal (GIL), que gobierna en Ceuta.",
+  "label": "incorrect"
 }
 ```
 
@@ -239,33 +239,34 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "context": "En 1978, el Banco Estatal de Vietnam introdujo los primeros billetes de 5 hao, 1, 5, 10, 20 y 50 đồng fechados en 1976. En 1980 se añadieron los billetes de 2 y 10 đồng, seguidos de los de 30 y 100 đồng en 1981.",
-    "question": "¿Cuándo añadió el Banco Estatal de Vietnam los billetes de 2 y 10 đồng?",
-    "answers": {
-      "answer_start": [120],
-      "text": ["En 1980"]
-    }
+  "context": "En 1978, el Banco Estatal de Vietnam introdujo los primeros billetes de 5 hao, 1, 5, 10, 20 y 50 đồng fechados en 1976. En 1980 se añadieron los billetes de 2 y 10 đồng, seguidos de los de 30 y 100 đồng en 1981.",
+  "question": "¿Cuándo añadió el Banco Estatal de Vietnam los billetes de 2 y 10 đồng?",
+  "answers": {
+    "answer_start": [120],
+    "text": ["En 1980"]
+  }
 }
 ```
 
 ```json
 {
-    "context": "Como otros terópodos de la familia Dromaeosauridae, Saurornitholestes era un dinosaurio carnívoro bípedo, equipado con una garra retráctil con forma de oz en el segundo dedo de cada pie. Saurornitholestes era más ligero y tenía las patas más largas que otros dromaeosáuridos como Velociraptor o Dromaeosaurus. Se asemeja a Velociraptor en tener dientes grandes, parecidos a colmillos, en la parte frontal de las mandíbulas.",
-    "question": "¿Dónde se encuentra la garra de Saurornitholestes?",
-    "answers": {
-        "answer_start": [161],
-        "text": ["segundo dedo de cada pie"]
-    }
+  "context": "Como otros terópodos de la familia Dromaeosauridae, Saurornitholestes era un dinosaurio carnívoro bípedo, equipado con una garra retráctil con forma de oz en el segundo dedo de cada pie. Saurornitholestes era más ligero y tenía las patas más largas que otros dromaeosáuridos como Velociraptor o Dromaeosaurus. Se asemeja a Velociraptor en tener dientes grandes, parecidos a colmillos, en la parte frontal de las mandíbulas.",
+  "question": "¿Dónde se encuentra la garra de Saurornitholestes?",
+  "answers": {
+    "answer_start": [161],
+    "text": ["segundo dedo de cada pie"]
+  }
 }
 ```
 
 ```json
 {
-    "context": "En cinco ediciones (en las tres primeras, 1896, 1900 y 1904, así como en las de 1988 y 1992) fueron entregadas por prueba dos medallas de bronce (una a cada uno de los perdedores de las semifinales); en el resto de ediciones se ha disputado adicionalmente un partido por el tercer lugar para definir al ganador de la medalla de bronce.",
-    "question": "¿De qué material fueron las medallas entregadas a los semifinalistas en 1896?",
-    "answers": {
-        "answer_start": [138], "text": ["bronce"]
-        }
+  "context": "En cinco ediciones (en las tres primeras, 1896, 1900 y 1904, así como en las de 1988 y 1992) fueron entregadas por prueba dos medallas de bronce (una a cada uno de los perdedores de las semifinales); en el resto de ediciones se ha disputado adicionalmente un partido por el tercer lugar para definir al ganador de la medalla de bronce.",
+  "question": "¿De qué material fueron las medallas entregadas a los semifinalistas en 1896?",
+  "answers": {
+    "answer_start": [138],
+    "text": ["bronce"]
+  }
 }
 ```
 
@@ -306,9 +307,9 @@ euroeval --model <model-id> --dataset mlqa-es
 ### Unofficial: XQuAD-es
 
 This dataset was published in [this paper](https://aclanthology.org/2020.acl-main.421/)
-and contains 1190 question-answer pairs from [SQuAD
-v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages by
-professional translators.
+and contains 1190 question-answer pairs from
+[SQuAD v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages
+by professional translators.
 
 The dataset is split into 550 / 128 / 512 question-answer pairs for training,
 validation, and testing, respectively.
@@ -317,23 +318,23 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "context": "El Mercado del Grainger reemplazó a un mercado anterior construido originalmente en 1808 llamado el Mercado del Carnicero. El Mercado del Grainger en sí mismo, se abrió en 1835 y fue el primer mercado interior de Newcastle. En el momento de su apertura en 1835 se dijo que era uno de los mercados más grandes y hermosos de Europa. La inauguración se celebró con una gran cena a la que asistieron 2000 invitados, y la Galería de Arte Laing tiene un cuadro de este evento. Con la excepción del techo de madera, que fue destruido por un incendio en 1901 y sustituido por arcos de celosía de acero, el mercado se encuentra en su mayor parte en su estado original. La arquitectura del Mercado del Grainger, como la mayoría de las de Grainger Town, que están clasificadas en el grado I o II, fue clasificada en el grado I en 1954 por Patrimonio Inglés.",
-    "question": "¿Cuántos invitados asistieron a la cena de inauguración del Mercado del Grainger?",
-    "answer": {
-      "answer_start": [396],
-      "text": ["2000"]
-    }
+  "context": "El Mercado del Grainger reemplazó a un mercado anterior construido originalmente en 1808 llamado el Mercado del Carnicero. El Mercado del Grainger en sí mismo, se abrió en 1835 y fue el primer mercado interior de Newcastle. En el momento de su apertura en 1835 se dijo que era uno de los mercados más grandes y hermosos de Europa. La inauguración se celebró con una gran cena a la que asistieron 2000 invitados, y la Galería de Arte Laing tiene un cuadro de este evento. Con la excepción del techo de madera, que fue destruido por un incendio en 1901 y sustituido por arcos de celosía de acero, el mercado se encuentra en su mayor parte en su estado original. La arquitectura del Mercado del Grainger, como la mayoría de las de Grainger Town, que están clasificadas en el grado I o II, fue clasificada en el grado I en 1954 por Patrimonio Inglés.",
+  "question": "¿Cuántos invitados asistieron a la cena de inauguración del Mercado del Grainger?",
+  "answer": {
+    "answer_start": [396],
+    "text": ["2000"]
+  }
 }
 ```
 
 ```json
 {
-    "context": "Los avances realizados en Oriente Medio en botánica y química llevaron a la medicina en el Islam medieval a desarrollar sustancialmente la farmacología. Muhammad ibn Zakarīya Rāzi (Rhazes) (865-915), por ejemplo, actuó para promover los usos médicos de los compuestos químicos. Abu al-Qasim al-Zahrawi (Abulcasis) (936-1013) fue pionero en la preparación de medicamentos por sublimación y destilación. Su Liber servitoris es de particular interés, ya que proporciona al lector recetas y explica cómo preparar los 'simples' a partir de los cuales se componían los complejos medicamentos que se utilizaban entonces de forma generalizada. Sabur Ibn Sahl (d 869), fue, sin embargo, el primer médico en iniciar la farmacopedia, describiendo una gran variedad de medicamentos y remedios para las dolencias. Al-Biruni (973-1050) escribió una de las obras islámicas más valiosas sobre farmacología, titulada Kitab al-Saydalah (El libro de los medicamentos), en la que detallaba las propiedades de los medicamentos y esbozaba el papel de la farmacia, así como las atribuciones y los deberes de los farmacéuticos. Avicena también describió nada menos que 700 preparados, sus propiedades, modos de acción y sus indicaciones. De hecho, dedicó todo un volumen a los medicamentos simples en El canon de la medicina. De gran impacto fueron también las obras de al-Maridini de Bagdad y El Cairo, y de Ibn al-Wafid (1008-1074), ambas impresas en latín más de cincuenta veces, apareciendo como De Medicinis universalibus et particularibus de 'Mesue' el más joven, y el Medicamentis simplicibus de 'Abenguefit'. Pedro de Abano (1250-1316) tradujo y añadió un suplemento a la obra de al-Maridini bajo el título De Veneris. Las contribuciones de Al-Muwaffaq en este campo también son pioneras. En su vida en el siglo X, escribió Los fundamentos de las verdaderas propiedades de los remedios, describiendo, entre otras cosas, el óxido arsenioso, y conociendo el ácido silícico. Hizo una clara distinción entre carbonato de sodio y carbonato de potasio y llamó la atención sobre la naturaleza venenosa de los compuestos de cobre, especialmente el vitriolo de cobre, y también los compuestos de plomo. También describe la destilación de agua de mar para beber [se requiere verificación].",
-    "question": "¿Cuáles fueron los desarrollos en los que los científicos influyeron en la creación de la farmacología en el Islam medieval?",
-    "answer": {
-      "answer_start": [43],
-      "text": ["botánica y química"]
-    }
+  "context": "Los avances realizados en Oriente Medio en botánica y química llevaron a la medicina en el Islam medieval a desarrollar sustancialmente la farmacología. Muhammad ibn Zakarīya Rāzi (Rhazes) (865-915), por ejemplo, actuó para promover los usos médicos de los compuestos químicos. Abu al-Qasim al-Zahrawi (Abulcasis) (936-1013) fue pionero en la preparación de medicamentos por sublimación y destilación. Su Liber servitoris es de particular interés, ya que proporciona al lector recetas y explica cómo preparar los 'simples' a partir de los cuales se componían los complejos medicamentos que se utilizaban entonces de forma generalizada. Sabur Ibn Sahl (d 869), fue, sin embargo, el primer médico en iniciar la farmacopedia, describiendo una gran variedad de medicamentos y remedios para las dolencias. Al-Biruni (973-1050) escribió una de las obras islámicas más valiosas sobre farmacología, titulada Kitab al-Saydalah (El libro de los medicamentos), en la que detallaba las propiedades de los medicamentos y esbozaba el papel de la farmacia, así como las atribuciones y los deberes de los farmacéuticos. Avicena también describió nada menos que 700 preparados, sus propiedades, modos de acción y sus indicaciones. De hecho, dedicó todo un volumen a los medicamentos simples en El canon de la medicina. De gran impacto fueron también las obras de al-Maridini de Bagdad y El Cairo, y de Ibn al-Wafid (1008-1074), ambas impresas en latín más de cincuenta veces, apareciendo como De Medicinis universalibus et particularibus de 'Mesue' el más joven, y el Medicamentis simplicibus de 'Abenguefit'. Pedro de Abano (1250-1316) tradujo y añadió un suplemento a la obra de al-Maridini bajo el título De Veneris. Las contribuciones de Al-Muwaffaq en este campo también son pioneras. En su vida en el siglo X, escribió Los fundamentos de las verdaderas propiedades de los remedios, describiendo, entre otras cosas, el óxido arsenioso, y conociendo el ácido silícico. Hizo una clara distinción entre carbonato de sodio y carbonato de potasio y llamó la atención sobre la naturaleza venenosa de los compuestos de cobre, especialmente el vitriolo de cobre, y también los compuestos de plomo. También describe la destilación de agua de mar para beber [se requiere verificación].",
+  "question": "¿Cuáles fueron los desarrollos en los que los científicos influyeron en la creación de la farmacología en el Islam medieval?",
+  "answer": {
+    "answer_start": [43],
+    "text": ["botánica y química"]
+  }
 }
 ```
 
@@ -541,11 +542,11 @@ euroeval --model <model-id> --dataset multi-wiki-qa-es
 
 ### MMLU-es
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Spanish was done by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to Spanish was done by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 272 / 1,465 / 13,334 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
@@ -557,22 +558,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "¿Qué método de los siguientes utiliza el método de loci como ayuda para la memoria?\nOpciones:\na. Codificación semántica\nb. Imaginería visual\nc. Señales auditivas\nd. Memoria ecoica",
-    "label": "b",
+  "text": "¿Qué método de los siguientes utiliza el método de loci como ayuda para la memoria?\nOpciones:\na. Codificación semántica\nb. Imaginería visual\nc. Señales auditivas\nd. Memoria ecoica",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Cuando una medida realmente cuantifica lo que afirma medir, decimos que tiene buena\nOpciones:\na. precisión\nb. validez\nc. confiabilidad\nd. valor asociativo",
-    "label": "b",
+  "text": "Cuando una medida realmente cuantifica lo que afirma medir, decimos que tiene buena\nOpciones:\na. precisión\nb. validez\nc. confiabilidad\nd. valor asociativo",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Un ranchero, siendo el propietario en un simple título, transfirió la propiedad mediante una escritura de garantía a una mujer. La mujer opignoró la finca a favor de su sobrina para asegurar un préstamo de la sobrina a la mujer por la cantidad de $500,000. La hipoteca fue inmediatamente registrada. Dos años después, la mujer transfirió la finca a un granjero mediante una escritura de renuncia. La mujer, entonces, incumplió con la hipoteca, y la sobrina entabló una acción in personam contra el granjero para recuperar la cantidad adeudada por la hipoteca. Se presume que la escritura de renuncia de la mujer al granjero no hacía referencia a la hipoteca. Es probable que el acreedor hipotecario\nOpciones:\na. tenga éxito, porque la transferencia de la propiedad de la mujer al granjero resultó en una delegación implícita de responsabilidades.\nb. tenga éxito, porque la sobrina era una beneficiaria de tercera parte en la transferencia entre la mujer y el granjero.\nc. no tenga éxito, porque el granjero no prometió pagar la deuda hipotecaria.\nd. no tenga éxito, a menos que el granjero tuviera conocimiento constructivo de la existencia de la hipoteca.",
-    "label": "c",
+  "text": "Un ranchero, siendo el propietario en un simple título, transfirió la propiedad mediante una escritura de garantía a una mujer. La mujer opignoró la finca a favor de su sobrina para asegurar un préstamo de la sobrina a la mujer por la cantidad de $500,000. La hipoteca fue inmediatamente registrada. Dos años después, la mujer transfirió la finca a un granjero mediante una escritura de renuncia. La mujer, entonces, incumplió con la hipoteca, y la sobrina entabló una acción in personam contra el granjero para recuperar la cantidad adeudada por la hipoteca. Se presume que la escritura de renuncia de la mujer al granjero no hacía referencia a la hipoteca. Es probable que el acreedor hipotecario\nOpciones:\na. tenga éxito, porque la transferencia de la propiedad de la mujer al granjero resultó en una delegación implícita de responsabilidades.\nb. tenga éxito, porque la sobrina era una beneficiaria de tercera parte en la transferencia entre la mujer y el granjero.\nc. no tenga éxito, porque el granjero no prometió pagar la deuda hipotecaria.\nd. no tenga éxito, a menos que el granjero tuviera conocimiento constructivo de la existencia de la hipoteca.",
+  "label": "c"
 }
 ```
 
@@ -633,25 +634,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Hormona que actúa sobre el metabolismo de agua, sodio, potasio y cloruro de sodio:\nOpciones:\na. Aldosterona\nb. Cortisol\nc. Corticosterona\nd. Cortisona",
-    "label": "a",
-    "subject": "Medicine"
+  "text": "Hormona que actúa sobre el metabolismo de agua, sodio, potasio y cloruro de sodio:\nOpciones:\na. Aldosterona\nb. Cortisol\nc. Corticosterona\nd. Cortisona",
+  "label": "a",
+  "subject": "Medicine"
 }
 ```
 
 ```json
 {
-    "text": "Nervio que inerva a los músculos esternocleidomastoideo y trapecio:\nOpciones:\na. Hipogloso\nb. Espinal\nc. Vago\nd. Acústico",
-    "label": "b",
-    "subject": "Medicine"
+  "text": "Nervio que inerva a los músculos esternocleidomastoideo y trapecio:\nOpciones:\na. Hipogloso\nb. Espinal\nc. Vago\nd. Acústico",
+  "label": "b",
+  "subject": "Medicine"
 }
 ```
 
 ```json
 {
-    "text": "Si el precio del bien sustituto disminuye, la curva de la demanda se\nOpciones:\na. expandirá\nb. incrementará\nc. desplazará hacia la izquierda\nd. mantendrá constante",
-    "label": "c",
-    "subject": "Economics"
+  "text": "Si el precio del bien sustituto disminuye, la curva de la demanda se\nOpciones:\na. expandirá\nb. incrementará\nc. desplazará hacia la izquierda\nd. mantendrá constante",
+  "label": "c",
+  "subject": "Economics"
 }
 ```
 
@@ -689,35 +690,35 @@ euroeval --model <model-id> --dataset include-es
 ### Unofficial: MultiLoKo-es
 
 This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Spanish
-questions are separately sourced and designed to target locally relevant topics for
-Spanish-speaking populations.
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The
+Spanish questions are separately sourced and designed to target locally relevant topics
+for Spanish-speaking populations.
 
 We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
-questions with correct answers in the 'targets' column. We use the first target answer as
-the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
-question. We create a 16 / 234 split for training and testing, respectively.
+questions with correct answers in the 'targets' column. We use the first target answer
+as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
+per question. We create a 16 / 234 split for training and testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "¿En qué país fue patentado el \"birome\" antecesor del actual bolígrafo?\nOpciones:\na. Argentina\nb. España\nc. Estados Unidos\nd. México",
-    "label": "a"
+  "text": "¿En qué país fue patentado el \"birome\" antecesor del actual bolígrafo?\nOpciones:\na. Argentina\nb. España\nc. Estados Unidos\nd. México",
+  "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "¿En qué siglo viajó Isabel Zendal desde el puerto de La Coruña en La Real Expedición Filantrópica de la Vacuna, expedición que llevaría la vacuna de la viruela a América?\nOpciones:\na. Siglo XVIII\nb. Siglo XIX\nc. Siglo XVII\nd. Siglo XX",
-    "label": "b"
+  "text": "¿En qué siglo viajó Isabel Zendal desde el puerto de La Coruña en La Real Expedición Filantrópica de la Vacuna, expedición que llevaría la vacuna de la viruela a América?\nOpciones:\na. Siglo XVIII\nb. Siglo XIX\nc. Siglo XVII\nd. Siglo XX",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "¿Quién es la madre del primer hijo de Camilo Echeverri?\nOpciones:\na. Greeicy Rendón\nb. Tini Stoessel\nc. Evaluna Montaner\nd. Karol G",
-    "label": "c"
+  "text": "¿Quién es la madre del primer hijo de Camilo Echeverri?\nOpciones:\na. Greeicy Rendón\nb. Tini Stoessel\nc. Evaluna Montaner\nd. Karol G",
+  "label": "c"
 }
 ```
 
@@ -766,22 +767,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Estaba limpiando mi clóset y que me aparece una cajita allá escondida detrás de los suéteres. Con sorpresa vi que era una colección de timbres postales que empecé a juntar cuando era adolescente y ni me acordaba. Había unas estampillas emitidas a mediados de 1986 en México: 10 de color rojo oscuro, 8 de color verde oscuro y 5 de color azul marino. De acuerdo a los valores con que fueron emitidos, ¿cuántos centavos de antaño tengo en estampillas?\nOpciones:\na. 76 centavos.\nb. 82 centavos.\nc. 68 centavos.\nd. 91 centavos.",
-    "label": "a"
+  "text": "Estaba limpiando mi clóset y que me aparece una cajita allá escondida detrás de los suéteres. Con sorpresa vi que era una colección de timbres postales que empecé a juntar cuando era adolescente y ni me acordaba. Había unas estampillas emitidas a mediados de 1986 en México: 10 de color rojo oscuro, 8 de color verde oscuro y 5 de color azul marino. De acuerdo a los valores con que fueron emitidos, ¿cuántos centavos de antaño tengo en estampillas?\nOpciones:\na. 76 centavos.\nb. 82 centavos.\nc. 68 centavos.\nd. 91 centavos.",
+  "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Mi bisabuelo nació en 1910, un día después que cumplía año el que era presidente de Venezuela, cuando se disolvió el Gran Estado Falcón Zulia. ¿Podrías decirme que día era el cumpleaños de mi bisabuelo?\nOpciones:\na. 22 de enero\nb. 7 de febrero\nc. 15 de abril\nd. 3 de marzo",
-    "label": "b"
+  "text": "Mi bisabuelo nació en 1910, un día después que cumplía año el que era presidente de Venezuela, cuando se disolvió el Gran Estado Falcón Zulia. ¿Podrías decirme que día era el cumpleaños de mi bisabuelo?\nOpciones:\na. 22 de enero\nb. 7 de febrero\nc. 15 de abril\nd. 3 de marzo",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Lupita le pidió un paro a Manuel, que le prestará 3 000 baros. Él le dijo que andaba bruja, pero que vería si en la tienda de sus abuelos había algo de baro, que ya después vería como lo jineteaba. Manuel reviso y encontró 10 de los del ajolote, pero también 7 Sor Juanas y en morralla nada. Al final ¿Cuánto dinero le presto Manuel a Lupita?\nOpciones:\na. 1 700 pesos\nb. 2 000 pesos\nc. 1 900 pesos\nd. 1 300 pesos",
-    "label": "c"
+  "text": "Lupita le pidió un paro a Manuel, que le prestará 3 000 baros. Él le dijo que andaba bruja, pero que vería si en la tienda de sus abuelos había algo de baro, que ya después vería como lo jineteaba. Manuel reviso y encontró 10 de los del ajolote, pero también 7 Sor Juanas y en morralla nada. Al final ¿Cuánto dinero le presto Manuel a Lupita?\nOpciones:\na. 1 700 pesos\nb. 2 000 pesos\nc. 1 900 pesos\nd. 1 300 pesos",
+  "label": "c"
 }
 ```
 
@@ -820,11 +821,11 @@ euroeval --model <model-id> --dataset multinrc-es
 
 ### HellaSwag-es
 
-This dataset is a machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/). The original dataset was based on both
-video descriptions from ActivityNet as well as how-to articles from WikiHow. The dataset
-was translated by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
+on both video descriptions from ActivityNet as well as how-to articles from WikiHow. The
+dataset was translated by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 9,374 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).
@@ -833,22 +834,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "[header] Cómo crear tinta de tatuaje de prisión [title] Encuentra una lata o un contenedor de metal. [step] Debe poder contener de 4 a 6 onzas de aceite para bebés, junto con un poco de algodón apretado. Prueba usando una lata de pulimento para botas vacía y limpia.\nOpciones:\na. [title] Usa alcohol isopropílico como lubricante. [step] Mientras que algunos pulidores de escritorio tradicionalmente utilizados para tatuajes se manchan o amenazan, mezcla ¼ taza de agua tibia y ¼ taza de detergente regular para platos.\nb. Si no tienes acceso a un contenedor pre-hecho: usa una herramienta afilada para cortar una lata de aluminio de 12 onzas por la mitad, y usa la mitad inferior como tu contenedor. [substeps] Puede que puedas comprar una lata de pulimento para botas en la tienda de la cárcel.\nc. No se recomienda el vidrio ya que se piensa que es muy frágil y es probable que reaccione mal al metal. [title] Quita cualquier objeto extranjero o bordado del contenedor.\nd. [title] Vierte el pulimento blanco en un tubo de plástico como fluido sellante. [step] Un tubo ligero y bastante delgado funciona mejor como reservorio.",
-    "label": "b",
+  "text": "[header] Cómo crear tinta de tatuaje de prisión [title] Encuentra una lata o un contenedor de metal. [step] Debe poder contener de 4 a 6 onzas de aceite para bebés, junto con un poco de algodón apretado. Prueba usando una lata de pulimento para botas vacía y limpia.\nOpciones:\na. [title] Usa alcohol isopropílico como lubricante. [step] Mientras que algunos pulidores de escritorio tradicionalmente utilizados para tatuajes se manchan o amenazan, mezcla ¼ taza de agua tibia y ¼ taza de detergente regular para platos.\nb. Si no tienes acceso a un contenedor pre-hecho: usa una herramienta afilada para cortar una lata de aluminio de 12 onzas por la mitad, y usa la mitad inferior como tu contenedor. [substeps] Puede que puedas comprar una lata de pulimento para botas en la tienda de la cárcel.\nc. No se recomienda el vidrio ya que se piensa que es muy frágil y es probable que reaccione mal al metal. [title] Quita cualquier objeto extranjero o bordado del contenedor.\nd. [title] Vierte el pulimento blanco en un tubo de plástico como fluido sellante. [step] Un tubo ligero y bastante delgado funciona mejor como reservorio.",
+  "label": "b"
 }
 ```
 
 ```json
 {
   "text": "Entonces, la niña baja firmemente sus manos hacia su costado, junta sus pies y hace una reverencia, continuando con una rutina de varios movimientos de karate. la niña\nOpciones:\na. luego da una triunfante ola mientras levanta una mano derecha en el aire y continúa su rutina.\nb. cae en un tatami alto en el aire y un hombre se acerca y le ayuda mientras desmonta.\nc. finalmente desmonta y coloca su instrumento en su soporte, sin hacer una reverencia, su postura seria cambia a una de plena concentración mientras levanta sus manos en el aire y eleva sus brazos.\nd. termina su rutina un poco más lejos del punto donde comenzó, baja firmemente sus manos hacia su costado y hace una pequeña reverencia, luego abre sus piernas a la altura de los hombros y vuelve a la misma posición en la que estaba cuando empezó.",
-  "label": "d",
+  "label": "d"
 }
 ```
 
 ```json
 {
-"text": "[header] Cómo llevar tu peinado del día a la noche [title] Humedece tu cabello. [step] Crear ondas a partir de un moño es una gran opción para cabello largo. Cuando quieras usar un moño para crear ondas en tu cabello, lo mejor es comenzar con el cabello al menos parcialmente húmedo.\nOpciones:\na. Así que antes de comenzar, usa una toalla para secar en el lugar donde quieres poner el cabello. [substeps] Una buena regla es secar el cabello con una toalla antes de ponerlo en un moño.\nb. Si te lavas el cabello por la mañana, sécalo con secadora o al aire hasta la mitad antes de hacer el moño. Si no planeas lavar tu cabello, rocíalo ligeramente con una botella rociadora llena de agua.\nc. [substeps] El cabello rizado se verá sin esfuerzo y más esponjado con la cabeza húmeda porque es suave y brillante. Si tu cabello no está tan seco como quieres, no te vuelvas loca.\nd. Si quieres dejarlo suelto durante la noche, usa una secadora. [substeps] Una secadora de cabello normalmente funciona mejor.",
-"label": "b",
+  "text": "[header] Cómo llevar tu peinado del día a la noche [title] Humedece tu cabello. [step] Crear ondas a partir de un moño es una gran opción para cabello largo. Cuando quieras usar un moño para crear ondas en tu cabello, lo mejor es comenzar con el cabello al menos parcialmente húmedo.\nOpciones:\na. Así que antes de comenzar, usa una toalla para secar en el lugar donde quieres poner el cabello. [substeps] Una buena regla es secar el cabello con una toalla antes de ponerlo en un moño.\nb. Si te lavas el cabello por la mañana, sécalo con secadora o al aire hasta la mitad antes de hacer el moño. Si no planeas lavar tu cabello, rocíalo ligeramente con una botella rociadora llena de agua.\nc. [substeps] El cabello rizado se verá sin esfuerzo y más esponjado con la cabeza húmeda porque es suave y brillante. Si tu cabello no está tan seco como quieres, no te vuelvas loca.\nd. Si quieres dejarlo suelto durante la noche, usa una secadora. [substeps] Una secadora de cabello normalmente funciona mejor.",
+  "label": "b"
 }
 ```
 
@@ -895,13 +896,13 @@ euroeval --model <model-id> --dataset hellaswag-es
 
 ### Unofficial: GoldenSwag-es
 
-This dataset is a filtered and machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
-ActivityNet as well as how-to articles from WikiHow. The machine translated version was
-published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
-DeepL, and the filtering was published in [this
-paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
-samples.
+This dataset is a filtered and machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video
+descriptions from ActivityNet as well as how-to articles from WikiHow. The machine
+translated version was published in
+[this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and
+the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825),
+which resulted in higher quality samples.
 
 The original full dataset consists of 1530 / 1530 samples for training and validation,
 respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
@@ -974,8 +975,8 @@ euroeval --model <model-id> --dataset goldenswag-es
 ### Unofficial: Winogrande-es
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -1056,22 +1057,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "El todopoderoso secretario general de los populares bajo la presidencia de José María Aznar, Francisco Álvarez-Cascos, ha desencadenado en su partido una tormenta en un vaso de agua. Amparándose en una retórica de servicio a Asturias que apenas alcanza a disimular la frustración de sus ambiciones personales, Álvarez-Cascos ha anunciado su baja en el partido de Mariano Rajoy y ha insinuado la creación de una nueva fuerza política para concurrir como candidato a la presidencia de Asturias en las elecciones autonómicas de mayo. Nada tiene de extraño que quien fuera uno de los máximos adalides del 'todo vale' desde la oposición y también desde el Gobierno, aplique ahora esta máxima a su propio partido. Álvarez-Cascos, durante sus años de protagonismo, tensó la vida política española hasta bordear los límites de la estabilidad institucional, arremetiendo contra sus adversarios con instrumentos que despreciaban normas elementales del juego democrático. Su intento de regresar a la política activa, rechazado por la dirección nacional de su partido, no responde al deseo de ofrecer un programa diferente a los asturianos, sino al de saciar su sed de poder tras años de obligada abstinencia. En la comparecencia para explicar las razones de su marcha dejó entrever ajustes de cuentas y venganzas, pero ni una sola idea sobre la que articular el proyecto político que defiende. Es cierto que la democracia interna que Álvarez-Cascos reclama ahora en el PP fue abolida mientras fue él quien tuvo las riendas. Pero no porque sea Álvarez-Cascos su repentino y paradójico abanderado deja de ser una reclamación justa: el PP ha recurrido a la cooptación para decidir la candidatura a la presidencia de Asturias, reafirmándose en un método que aplica a todos los niveles, tanto municipal como autonómico. E, incluso, nacional, como lo atestigua la presidencia de Mariano Rajoy por una decisión personal de su antecesor en el cargo. La aventura de Álvarez-Cascos no solo tendrá dificultades para prosperar por las mezquinas razones que la impulsan, sino por el momento elegido para emprenderla. Un partido que se ve en la antesala del poder cierra filas con su dirección y no destruye sus expectativas desangrándose en luchas internas. Si el PP se encuentra en esta tesitura es por la forma de entender la política de Álvarez-Cascos, pero también por la fragilidad del liderazgo de Rajoy. Dirigentes regionales como la presidenta de la Comunidad de Madrid no dudan en aprovechar cualquier circunstancia para desafiarlo. Álvarez-Cascos ha conseguido mostrar con un único movimiento cuál es la realidad interna de un partido que se considera en vísperas de alcanzar el Gobierno. El vaso de agua donde se desarrolla la ruidosa tormenta que ha desencadenado tiene el valor de un síntoma. Estas son las fuerzas que conviven en el PP y estas son las formas con las que los populares dirimen sus diferencias. * Este artículo apareció en la edición impresa del Martes, 4 de enero de 2011",
-    "target_text": "El histórico dirigente del PP se revuelve contra Rajoy al ver frustrada su ambición en Asturias"
+  "text": "El todopoderoso secretario general de los populares bajo la presidencia de José María Aznar, Francisco Álvarez-Cascos, ha desencadenado en su partido una tormenta en un vaso de agua. Amparándose en una retórica de servicio a Asturias que apenas alcanza a disimular la frustración de sus ambiciones personales, Álvarez-Cascos ha anunciado su baja en el partido de Mariano Rajoy y ha insinuado la creación de una nueva fuerza política para concurrir como candidato a la presidencia de Asturias en las elecciones autonómicas de mayo. Nada tiene de extraño que quien fuera uno de los máximos adalides del 'todo vale' desde la oposición y también desde el Gobierno, aplique ahora esta máxima a su propio partido. Álvarez-Cascos, durante sus años de protagonismo, tensó la vida política española hasta bordear los límites de la estabilidad institucional, arremetiendo contra sus adversarios con instrumentos que despreciaban normas elementales del juego democrático. Su intento de regresar a la política activa, rechazado por la dirección nacional de su partido, no responde al deseo de ofrecer un programa diferente a los asturianos, sino al de saciar su sed de poder tras años de obligada abstinencia. En la comparecencia para explicar las razones de su marcha dejó entrever ajustes de cuentas y venganzas, pero ni una sola idea sobre la que articular el proyecto político que defiende. Es cierto que la democracia interna que Álvarez-Cascos reclama ahora en el PP fue abolida mientras fue él quien tuvo las riendas. Pero no porque sea Álvarez-Cascos su repentino y paradójico abanderado deja de ser una reclamación justa: el PP ha recurrido a la cooptación para decidir la candidatura a la presidencia de Asturias, reafirmándose en un método que aplica a todos los niveles, tanto municipal como autonómico. E, incluso, nacional, como lo atestigua la presidencia de Mariano Rajoy por una decisión personal de su antecesor en el cargo. La aventura de Álvarez-Cascos no solo tendrá dificultades para prosperar por las mezquinas razones que la impulsan, sino por el momento elegido para emprenderla. Un partido que se ve en la antesala del poder cierra filas con su dirección y no destruye sus expectativas desangrándose en luchas internas. Si el PP se encuentra en esta tesitura es por la forma de entender la política de Álvarez-Cascos, pero también por la fragilidad del liderazgo de Rajoy. Dirigentes regionales como la presidenta de la Comunidad de Madrid no dudan en aprovechar cualquier circunstancia para desafiarlo. Álvarez-Cascos ha conseguido mostrar con un único movimiento cuál es la realidad interna de un partido que se considera en vísperas de alcanzar el Gobierno. El vaso de agua donde se desarrolla la ruidosa tormenta que ha desencadenado tiene el valor de un síntoma. Estas son las fuerzas que conviven en el PP y estas son las formas con las que los populares dirimen sus diferencias. * Este artículo apareció en la edición impresa del Martes, 4 de enero de 2011",
+  "target_text": "El histórico dirigente del PP se revuelve contra Rajoy al ver frustrada su ambición en Asturias"
 }
 ```
 
 ```json
 {
-    "text": "Eladio Loizaga tiene un bigote fino y un hablar pausado. El Ministro de Relaciones Exteriores de Paraguay, de 66 años, ha estado en Madrid para preparar la visita del presidente de su país, Horacio Cartes, el próximo junio. Después de una charla en Casa de América, Loizaga reflexiona sobre las relaciones diplomáticas en América Latina, la actualidad en Venezuela y Cuba, y los lazos de la región con Estados Unidos, Europa y China. Pregunta. ¿Qué tipo de relación hay entre los países de América Latina? Respuesta. Las relaciones diplomáticas, comerciales y políticas son óptimas. Se basan en respetar el principio de pluralidad y no injerencia en los asuntos internos de cada Estado, a menos que sea una decisión tan grosera que choque con los principios democráticos y las normas constitucionales. En América Latina hemos aprendido a convivir dentro de esa pluralidad, sin que esa pluralidad se uniforme. Cada uno tiene su filosofía y eso tiene que ser respetado. No hay conflictos que pongan en peligro las relaciones entre nosotros. Hemos entendido que podemos convivir con esas diferencias ideológicas. La no inferencia es una piedra angular. P. ¿Incluso en Venezuela con la situación de los presos políticos? R. Paraguay tiene una consolidación democrática plena. En nuestro país ya no hay presos por expresar una idea política distinta a la del Gobierno. Somos miembro del Consejo de Derechos Humanos de Naciones Unidas. En ese sentido, pensamos que acallar voces no contribuye a la libertad de la nación. P. ¿Condena pues las decisiones de Nicolás Maduro? R. Tenemos una posición expresada a través de Unasur. Constituyó una decisión de tres cancilleres, Colombia, Brasil y Ecuador, para cooperar en el diálogo con todos los sectores políticos democráticos de Venezuela. Queremos que Venezuela encuentre una salida conforme a sus propias reglas constitucionales. Hay una línea muy fina en lo que es una injerencia interna, y nosotros somos muy celosos porque la hemos sufrido. Estados Unidos tuvo por mucho tiempo, no un abandono, sino una negligencia benigna hacia América Latina. Como Europa. P. ¿Por qué la mayoría de gobiernos latinoamericanos guardaron silencio? R. Varios gobiernos han mostrado su preocupación y ratificado su posición de que las partes dialoguen, que el Gobierno y la oposición se sienten para encontrar una salida democrática. Tenemos que evitar una salida traumática. Queremos apoyar al pueblo venezolano, porque sabemos las necesidades que están pasando. Estamos en contacto con el Gobierno para ayudar y proveer alimentos y otros productos que se necesitan. P. ¿Apoya la labor que pretende hacer Felipe González? R. No me puedo referir a eso. Hay situaciones en las que, sin desconocer los derechos fundamentales de la persona, hay que tener cierto respeto por el marco interno de cada país. P. ¿Cuál es la salud de los derechos humanos en América Latina? R. Los derechos humanos no se definen hoy solo como derechos políticos. América Latina estaba gobernada por dictaduras, por posiciones extremas, de izquierda y de derecha. Hoy tenemos un adelanto político en toda la región y también la necesidad de ir dando respuesta a los derechos humanos de cuarta generación, la vivienda, la salud, el agua potable... Avanzamos en la lucha contra la pobreza. Y en que los chicos vayan a la escuela. Sin educación no vamos a desarrollarnos. P. ¿Puede América Latina tener una voz única en cuanto a política exterior? R. Hoy no va a ser posible. Sabemos muy bien las posiciones ideológicas de cada uno. En lo posible tratamos de consensuar en la educación, el desarrollo social, pero tener una sola voz política es difícil. Tenemos visiones distintas de cómo vemos el mundo y las relaciones con otros Estados. P. Colombia está en un proceso de paz. ¿Qué es más importante, justicia o paz? R. No es fácil. Hay muchas aristas que deben tenerse en cuenta en el campo penal. El Gobierno busca las medidas jurídicas que den garantía al proceso. P. En otra mesa se sientan Cuba y EE UU. ¿Normalizarán plenamente sus relaciones? R. Era la última rémora de la guerra fría. Obama ha tomado una decisión de mucho coraje, en un momento político interno difícil, y con un sentido pragmático. Señaló que las conductas hacia Cuba no daban resultado y que había que buscar otro camino. La Cumbre de las Américas en Panamá fue histórica. El presidente Castro se expresó con mucha honestidad. Y Obama reconoció que no son perfectos, que tienen problemas. Ojalá se restablezcan las embajadas y el pueblo cubano camine por la senda de la democracia. P. ¿Cuál es el papel del papa Francisco en la política exterior en Latinoamérica? R. El Papa ha tenido un rol muy activo en asuntos de interés general en el mundo, como los problemas de la mujer, el cambio climático, Cuba y Estados Unidos... su presencia en el mundo social es importante. Nos recuerda que existe gente, gente marginada, necesitada. Los países más ricos tienen que contribuir a que tengamos un mundo más equilibrado. P. ¿Qué tipo de relación hay entre EE UU y América Latina? R. Estados Unidos tuvo por mucho tiempo, no un abandono, sino una negligencia benigna hacia América Latina. Como Europa. ¿Quién ocupó ese espacio? China. Con Europa tenemos valores compartidos, y la independencia paraguaya está inspirada en la revolución francesa. De España, como puente, necesitábamos más acompañamiento. China ocupó ese espacio. A Estados Unidos se le mira con diversos cristales. Para Paraguay es un país amigo. P. ¿La relación con Argentina? R. Es un socio comercial importante. Pero hay cuestiones del día a día que pueden enturbiar nuestras relaciones. Queremos hacer un Mercosur más abierto, sin trabas.",
-    "target_text": "El ministro paraguayo reflexiona sobre las relaciones diplomáticas en América Latina y la actualidad en Venezuela y Cuba"
+  "text": "Eladio Loizaga tiene un bigote fino y un hablar pausado. El Ministro de Relaciones Exteriores de Paraguay, de 66 años, ha estado en Madrid para preparar la visita del presidente de su país, Horacio Cartes, el próximo junio. Después de una charla en Casa de América, Loizaga reflexiona sobre las relaciones diplomáticas en América Latina, la actualidad en Venezuela y Cuba, y los lazos de la región con Estados Unidos, Europa y China. Pregunta. ¿Qué tipo de relación hay entre los países de América Latina? Respuesta. Las relaciones diplomáticas, comerciales y políticas son óptimas. Se basan en respetar el principio de pluralidad y no injerencia en los asuntos internos de cada Estado, a menos que sea una decisión tan grosera que choque con los principios democráticos y las normas constitucionales. En América Latina hemos aprendido a convivir dentro de esa pluralidad, sin que esa pluralidad se uniforme. Cada uno tiene su filosofía y eso tiene que ser respetado. No hay conflictos que pongan en peligro las relaciones entre nosotros. Hemos entendido que podemos convivir con esas diferencias ideológicas. La no inferencia es una piedra angular. P. ¿Incluso en Venezuela con la situación de los presos políticos? R. Paraguay tiene una consolidación democrática plena. En nuestro país ya no hay presos por expresar una idea política distinta a la del Gobierno. Somos miembro del Consejo de Derechos Humanos de Naciones Unidas. En ese sentido, pensamos que acallar voces no contribuye a la libertad de la nación. P. ¿Condena pues las decisiones de Nicolás Maduro? R. Tenemos una posición expresada a través de Unasur. Constituyó una decisión de tres cancilleres, Colombia, Brasil y Ecuador, para cooperar en el diálogo con todos los sectores políticos democráticos de Venezuela. Queremos que Venezuela encuentre una salida conforme a sus propias reglas constitucionales. Hay una línea muy fina en lo que es una injerencia interna, y nosotros somos muy celosos porque la hemos sufrido. Estados Unidos tuvo por mucho tiempo, no un abandono, sino una negligencia benigna hacia América Latina. Como Europa. P. ¿Por qué la mayoría de gobiernos latinoamericanos guardaron silencio? R. Varios gobiernos han mostrado su preocupación y ratificado su posición de que las partes dialoguen, que el Gobierno y la oposición se sienten para encontrar una salida democrática. Tenemos que evitar una salida traumática. Queremos apoyar al pueblo venezolano, porque sabemos las necesidades que están pasando. Estamos en contacto con el Gobierno para ayudar y proveer alimentos y otros productos que se necesitan. P. ¿Apoya la labor que pretende hacer Felipe González? R. No me puedo referir a eso. Hay situaciones en las que, sin desconocer los derechos fundamentales de la persona, hay que tener cierto respeto por el marco interno de cada país. P. ¿Cuál es la salud de los derechos humanos en América Latina? R. Los derechos humanos no se definen hoy solo como derechos políticos. América Latina estaba gobernada por dictaduras, por posiciones extremas, de izquierda y de derecha. Hoy tenemos un adelanto político en toda la región y también la necesidad de ir dando respuesta a los derechos humanos de cuarta generación, la vivienda, la salud, el agua potable... Avanzamos en la lucha contra la pobreza. Y en que los chicos vayan a la escuela. Sin educación no vamos a desarrollarnos. P. ¿Puede América Latina tener una voz única en cuanto a política exterior? R. Hoy no va a ser posible. Sabemos muy bien las posiciones ideológicas de cada uno. En lo posible tratamos de consensuar en la educación, el desarrollo social, pero tener una sola voz política es difícil. Tenemos visiones distintas de cómo vemos el mundo y las relaciones con otros Estados. P. Colombia está en un proceso de paz. ¿Qué es más importante, justicia o paz? R. No es fácil. Hay muchas aristas que deben tenerse en cuenta en el campo penal. El Gobierno busca las medidas jurídicas que den garantía al proceso. P. En otra mesa se sientan Cuba y EE UU. ¿Normalizarán plenamente sus relaciones? R. Era la última rémora de la guerra fría. Obama ha tomado una decisión de mucho coraje, en un momento político interno difícil, y con un sentido pragmático. Señaló que las conductas hacia Cuba no daban resultado y que había que buscar otro camino. La Cumbre de las Américas en Panamá fue histórica. El presidente Castro se expresó con mucha honestidad. Y Obama reconoció que no son perfectos, que tienen problemas. Ojalá se restablezcan las embajadas y el pueblo cubano camine por la senda de la democracia. P. ¿Cuál es el papel del papa Francisco en la política exterior en Latinoamérica? R. El Papa ha tenido un rol muy activo en asuntos de interés general en el mundo, como los problemas de la mujer, el cambio climático, Cuba y Estados Unidos... su presencia en el mundo social es importante. Nos recuerda que existe gente, gente marginada, necesitada. Los países más ricos tienen que contribuir a que tengamos un mundo más equilibrado. P. ¿Qué tipo de relación hay entre EE UU y América Latina? R. Estados Unidos tuvo por mucho tiempo, no un abandono, sino una negligencia benigna hacia América Latina. Como Europa. ¿Quién ocupó ese espacio? China. Con Europa tenemos valores compartidos, y la independencia paraguaya está inspirada en la revolución francesa. De España, como puente, necesitábamos más acompañamiento. China ocupó ese espacio. A Estados Unidos se le mira con diversos cristales. Para Paraguay es un país amigo. P. ¿La relación con Argentina? R. Es un socio comercial importante. Pero hay cuestiones del día a día que pueden enturbiar nuestras relaciones. Queremos hacer un Mercosur más abierto, sin trabas.",
+  "target_text": "El ministro paraguayo reflexiona sobre las relaciones diplomáticas en América Latina y la actualidad en Venezuela y Cuba"
 }
 ```
 
 ```json
 {
-    "text": "La Audiencia Nacional ha aprobado extraditar al empresario egipcio Husein Salem a Egipto, donde está siendo juzgado por su supuesta implicación en el caso de corrupción que se sigue contra el expresidente Hosni Mubarak, según informó el Ministerio de Exteriores egipcio. El tribunal también aprobó la entrega de Jaled, hijo de Salem, mientras se estudia si su hija Magda será extraditada. La fiscalía acusa a Salem de haber obtenido favores políticos a cambio de la donación a la familia Mubarak de cinco mansiones, camuflada como una venta ficticia. Esos favores se tradujeron en la asignación de terrenos a su favor y la adquisición fraudulenta de contratos públicos de venta y exportación de gas a Israel, en la localidad de Sharm El Sheik. Esta venta hizo perder al Estado egipcio 536 millones. El empresario, detenido en España el 16 junio de 2011, fue condenado el jueves a 15 años de cárcel por otro caso de corrupción. Y en octubre ya fue sentenciado a siete años, al igual que sus hijos Jaled y Magda, por blanquear 1,7 millones.",
-    "target_text": "La fiscalía acusa a Salem de haber obtenido favores políticos a cambio de la donación al exdictador de cinco mansiones, como una venta ficticia",
+  "text": "La Audiencia Nacional ha aprobado extraditar al empresario egipcio Husein Salem a Egipto, donde está siendo juzgado por su supuesta implicación en el caso de corrupción que se sigue contra el expresidente Hosni Mubarak, según informó el Ministerio de Exteriores egipcio. El tribunal también aprobó la entrega de Jaled, hijo de Salem, mientras se estudia si su hija Magda será extraditada. La fiscalía acusa a Salem de haber obtenido favores políticos a cambio de la donación a la familia Mubarak de cinco mansiones, camuflada como una venta ficticia. Esos favores se tradujeron en la asignación de terrenos a su favor y la adquisición fraudulenta de contratos públicos de venta y exportación de gas a Israel, en la localidad de Sharm El Sheik. Esta venta hizo perder al Estado egipcio 536 millones. El empresario, detenido en España el 16 junio de 2011, fue condenado el jueves a 15 años de cárcel por otro caso de corrupción. Y en octubre ya fue sentenciado a siete años, al igual que sus hijos Jaled y Magda, por blanquear 1,7 millones.",
+  "target_text": "La fiscalía acusa a Salem de haber obtenido favores políticos a cambio de la donación al exdictador de cinco mansiones, como una venta ficticia"
 }
 ```
 
@@ -1108,21 +1109,21 @@ euroeval --model <model-id> --dataset mlsum-es
 
 ### Unofficial: DACSA-es
 
-This dataset was published in [this
-paper](https://aclanthology.org/2022.naacl-main.434/). The original DACSA dataset
+This dataset was published in
+[this paper](https://aclanthology.org/2022.naacl-main.434/). The original DACSA dataset
 consists of Spanish and Catalan news articles, but this configuration (DACSA-es)
 contains only Spanish articles.
 
 The original full dataset consists of 636,596 / 35,376 samples for the training and
-validation splits, respectively. The dataset has two test splits with 35,376 and
-17,836 samples. The first test split contains samples present in the train and
-validation splits, while the second split only has samples that are not present in
-the training and validation splits.
+validation splits, respectively. The dataset has two test splits with 35,376 and 17,836
+samples. The first test split contains samples present in the train and validation
+splits, while the second split only has samples that are not present in the training and
+validation splits.
 
 We use a 1,024 / 256 / 2,048 split for training, validation, and testing, respectively
 (totaling 3,328 samples). All new splits are subsets of the original splits.
-Importantly, our new test split is exclusively derived from the original test split
-that does not overlap with the training and validation splits.
+Importantly, our new test split is exclusively derived from the original test split that
+does not overlap with the training and validation splits.
 
 Here are a few examples from the training split:
 
@@ -1182,10 +1183,10 @@ euroeval --model <model-id> --dataset dacsa-es
 
 ### IFEval-es
 
-This dataset was published [here](https://huggingface.co/datasets/BSC-LT/IFEval_es)
-and is a translation of the English IFEval dataset, which was published in [this
-paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
-combination of one or more of 25 different constraints. The dataset was manually
+This dataset was published [here](https://huggingface.co/datasets/BSC-LT/IFEval_es) and
+is a translation of the English IFEval dataset, which was published in
+[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each
+with a combination of one or more of 25 different constraints. The dataset was manually
 translated by a professional translator.
 
 We use the original dataset as the test split, and do not include the other splits, as
@@ -1196,71 +1197,61 @@ Here are a few examples from the test split:
 
 ```json
 {
-    "text": "He intentado que me devuelvan el dinero de un producto que compré por Internet, pero la empresa se niega a reembolsármelo. ¿Puedes ayudarme a escribirles una carta? Quiero que la carta incluya las palabras confianza, marca, cliente, ley, política e inutilizable.",
-    "target_text": {
-        "instruction_id_list": [
-            "es:keywords:existence"
-        ],
-        "kwargs": [
-            {
-                "keywords": [
-                    "confianza",
-                    "marca",
-                    "cliente",
-                    "ley",
-                    "política",
-                    "inutilizable"
-                ]
-            }
-        ]
-    }
+  "text": "He intentado que me devuelvan el dinero de un producto que compré por Internet, pero la empresa se niega a reembolsármelo. ¿Puedes ayudarme a escribirles una carta? Quiero que la carta incluya las palabras confianza, marca, cliente, ley, política e inutilizable.",
+  "target_text": {
+    "instruction_id_list": ["es:keywords:existence"],
+    "kwargs": [
+      {
+        "keywords": ["confianza", "marca", "cliente", "ley", "política", "inutilizable"]
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Escribe una historia sobre un hombre que está enamorado de una mujer que tiene Tourette. La historia debe tener al menos 4 secciones y cada sección debe empezar con Sección X (donde X es 1, 2, 3, 4) y toda la respuesta debe tener al menos 100 frases.",
-    "target_text": {
-        "instruction_id_list": [
-            "es:detectable_format:multiple_sections",
-            "es:length_constraints:number_sentences"
-        ],
-        "kwargs": [
-            {
-                "num_sections": 4,
-                "section_spliter": "Sección"
-            },
-            {
-                "num_sentences": 100,
-                "relation": "at least"
-            }
-        ]
-    }
+  "text": "Escribe una historia sobre un hombre que está enamorado de una mujer que tiene Tourette. La historia debe tener al menos 4 secciones y cada sección debe empezar con Sección X (donde X es 1, 2, 3, 4) y toda la respuesta debe tener al menos 100 frases.",
+  "target_text": {
+    "instruction_id_list": [
+      "es:detectable_format:multiple_sections",
+      "es:length_constraints:number_sentences"
+    ],
+    "kwargs": [
+      {
+        "num_sections": 4,
+        "section_spliter": "Sección"
+      },
+      {
+        "num_sentences": 100,
+        "relation": "at least"
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Escribe una entrada de blog sobre las últimas noticias de España, con un título entre paréntesis angulares dobles, es decir, <<título>>, y que tenga menos de 5 frases (excluyendo 5). Las frases deben ser largas para que el número total de palabras de tu respuesta sea de 250 o más.",
-    "target_text": {
-        "instruction_id_list": [
-            "es:detectable_format:title",
-            "es:length_constraints:number_sentences",
-            "es:length_constraints:number_words"
-        ],
-        "kwargs": [
-            {
-            },
-            {
-                "num_sentences": 5,
-                "relation": "less than"
-            },
-            {
-                "num_words": 250,
-                "relation": "at least"
-            }
-        ]
-    }
+  "text": "Escribe una entrada de blog sobre las últimas noticias de España, con un título entre paréntesis angulares dobles, es decir, <<título>>, y que tenga menos de 5 frases (excluyendo 5). Las frases deben ser largas para que el número total de palabras de tu respuesta sea de 250 o más.",
+  "target_text": {
+    "instruction_id_list": [
+      "es:detectable_format:title",
+      "es:length_constraints:number_sentences",
+      "es:length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      {
+        "num_sentences": 5,
+        "relation": "less than"
+      },
+      {
+        "num_words": 250,
+        "relation": "at least"
+      }
+    ]
+  }
 }
 ```
 
@@ -1284,14 +1275,90 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset ifeval-es
 ```
 
+### Unofficial: MultiIFEval-es
+
+This dataset is a translated and localised version of IFEval from the MultiIFEval
+benchmark, which covers 305 languages. It was generated using a structured LLM
+generation pipeline with target-language Wikipedia grounding to reduce hallucination and
+improve cultural localisation. Instruction IDs are preserved for traceability, and
+kwargs keys are retained (with values localised where appropriate), so constraints can
+still be checked programmatically. Outputs are schema-validated; malformed or empty
+outputs were excluded.
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Escribe un resumen de más de 300 palabras de la página de Wikipedia \"https://es.wikipedia.org/wiki/Raimundo_III_de_Trípoli\". No utilices ninguna coma y resalta al menos 3 secciones que tengan títulos en formato markdown, por ejemplo *sección resaltada parte 1*, *sección resaltada parte 2*, *sección resaltada parte 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Estoy planeando un viaje a Japón y desearía que vos escribierais un itinerario para mi travesía al estilo de Miguel de Cervantes. No tenéis permitido usar ninguna coma en vuestra respuesta.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Escribe un currículum para un recién graduado de secundaria que busca su primer empleo. Asegúrate de incluir al menos 12 marcadores de posición representados por corchetes, como [dirección] o [nombre].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-es
+```
+
 ## European Values
 
 ### ValEU-es
 
-This dataset is the official Spanish version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official Spanish version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU

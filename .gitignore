@@ -132,6 +132,9 @@ site/
 # Helper files for docs
 docs/datasets/dataset_example_commands.txt
 
+# Root-level generated plots
+/*.png
+
 # Various graphics
 gfx/euroeval-*.png
 gfx/euroeval-*.jpeg
@@ -161,3 +164,6 @@ PLAN.md
 
 # Generated data files
 data/
+
+# Pi agent
+.pi/

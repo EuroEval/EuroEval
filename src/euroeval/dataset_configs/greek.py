@@ -86,6 +86,17 @@ IFEVAL_EL_CONFIG = DatasetConfig(
 
 # Unofficial datasets ###
 
+MULTI_IFEVAL_EL_CONFIG = DatasetConfig(
+    name="multi-ifeval-el",
+    pretty_name="MultiIFEval-el",
+    source="EuroEval/multi-ifeval-el",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[GREEK],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
 INCLUDE_EL_CONFIG = DatasetConfig(
     name="include-el",
     pretty_name="INCLUDE-el",

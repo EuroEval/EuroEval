@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ROMANIAN
-from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -63,6 +73,19 @@ WINOGRANDE_RO_CONFIG = DatasetConfig(
     languages=[ROMANIAN],
     labels=["a", "b"],
 )
+
+MULTI_IFEVAL_RO_CONFIG = DatasetConfig(
+    name="multi-ifeval-ro",
+    pretty_name="MultiIFEval-ro",
+    source="EuroEval/multi-ifeval-ro",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ROMANIAN],
+    train_split=None,
+    val_split=None,
+)
+
+
+# Unofficial datasets ###
 
 RAGTRUTH_RO_CONFIG = DatasetConfig(
     name="ragtruth-ro",

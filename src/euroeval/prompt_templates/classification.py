@@ -19,6 +19,7 @@ from ..languages import (
     ITALIAN,
     LATVIAN,
     LITHUANIAN,
+    LUXEMBOURGISH,
     NORWEGIAN,
     NORWEGIAN_BOKMÅL,
     NORWEGIAN_NYNORSK,
@@ -201,6 +202,13 @@ CLASSIFICATION_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Текст: {text}\nПозначка: {label}",
         default_instruction_prompt="Ось текст:\n'{text}'.\n\nКласифікуйте текст у "
         "категорії {labels_str} і відповідайте лише позначкою.",
+        default_prompt_label_mapping="auto",
+    ),
+    LUXEMBOURGISH: PromptConfig(
+        default_prompt_prefix="Folgend sinn Texter an hir Etiketten.",
+        default_prompt_template="Text: {text}\nEtikett: {label}",
+        default_instruction_prompt="Hei ass en Text:\n'{text}'.\n\nKlassifizéiert "
+        "den Text an d'Kategorien {labels_str} an äntwert nëmme mat dem Etikett.",
         default_prompt_label_mapping="auto",
     ),
 }

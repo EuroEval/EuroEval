@@ -49,10 +49,20 @@
     "train": 512,
     "val": 256
   },
+  "EuroEval/be-wsc": {
+    "test": 720,
+    "train": 128,
+    "val": 64
+  },
   "EuroEval/belebele-da-mini": {
     "test": 580,
     "train": 256,
     "val": 64
+  },
+  "EuroEval/besls": {
+    "test": 1616,
+    "train": 256,
+    "val": 128
   },
   "EuroEval/bfcl-v2": {
     "test": 2001,
@@ -125,6 +135,12 @@
     "val": 256
   },
   "EuroEval/dacsa-ca-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/dala": {
+    "full_train": 5352,
     "test": 2048,
     "train": 1024,
     "val": 256
@@ -485,6 +501,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/include-sq-mini": {
+    "test": 466,
+    "train": 24,
+    "val": 64
+  },
   "EuroEval/kpwr-ner": {
     "test": 2048,
     "train": 1024,
@@ -675,6 +696,11 @@
     "val": 256
   },
   "EuroEval/mms-sr-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-be-mini": {
     "test": 2048,
     "train": 1024,
     "val": 256
@@ -871,6 +897,12 @@
   },
   "EuroEval/sb10k-mini": {
     "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-be": {
+    "full_train": 22408,
+    "test": 2048,
     "train": 1024,
     "val": 256
   },
@@ -1164,6 +1196,11 @@
   },
   "EuroEval/wiki-lingua-nl-mini": {
     "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/wikiann-be-mini": {
+    "test": 1000,
     "train": 1024,
     "val": 256
   },

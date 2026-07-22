@@ -1124,7 +1124,83 @@ euroeval --model <model-id> --dataset mlsum-de
 
 ## Instruction-following
 
-### IFEval-de
+### MultiIFEval-de
+
+This dataset is part of the MultiIFEval benchmark, which translates and localises IFEval
+prompts into 305 languages using a structured LLM generation pipeline. For each target
+language, a randomly chosen target-language Wikipedia article is included as grounding
+to reduce hallucination and improve cultural localisation. Instruction IDs are preserved
+for traceability, and kwargs keys are retained (with values localised where
+appropriate), so constraints can still be checked programmatically. Outputs are
+schema-validated; malformed or empty outputs were excluded.
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Schreibe eine Zusammenfassung der Wikipedia-Seite \"https://de.wikipedia.org/wiki/Raimund_III._(Tripolis)\" mit mindestens 300 Wörtern. Verwende dabei keinerlei Kommas und hebe mindestens 3 Abschnitte, die Titel haben, im Markdown-Format hervor, zum Beispiel *hervorgehobener Abschnitt Teil 1*, *hervorgehobener Abschnitt Teil 2*, *hervorgehobener Abschnitt Teil 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Ich plane eine Reise nach Japan und möchte, dass du mir einen Reiseplan für meine Reise in einem Shakespeare-Stil schreibst. Es ist dir nicht erlaubt, Kommas in deiner Antwort zu verwenden.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Erstellen Sie einen Lebenslauf für einen frischgebackenen Schulabgänger, der sich um seinen ersten Job bewirbt. Achten Sie darauf, mindestens 12 Platzhalter in eckigen Klammern einzufügen, wie zum Beispiel [Name] oder [Adresse].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-de
+```
+
+### Unofficial: IFEval-de
 
 This dataset was published [here](https://huggingface.co/datasets/jzhang86/de_ifeval)
 and is a translation of the English IFEval dataset, which was published in
@@ -1414,7 +1490,7 @@ euroeval --model <model-id> --dataset gerlangmod-de
 
 ## Logical Reasoning
 
-### Unofficial: ZebraPuzzleEasy-de
+### ZebraPuzzleEasy-de
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
 and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),

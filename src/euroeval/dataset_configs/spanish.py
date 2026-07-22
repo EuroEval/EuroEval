@@ -99,6 +99,17 @@ VALEU_ES_CONFIG = DatasetConfig(
 
 # Unofficial datasets ###
 
+MULTI_IFEVAL_ES_CONFIG = DatasetConfig(
+    name="multi-ifeval-es",
+    pretty_name="MultiIFEval-es",
+    source="EuroEval/multi-ifeval-es",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[SPANISH],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
 XQUAD_ES_CONFIG = DatasetConfig(
     name="xquad-es",
     pretty_name="XQuAD-es",

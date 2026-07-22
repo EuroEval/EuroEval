@@ -21,22 +21,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "ali kako mozete biti ovako trijezni u ovo doba ajde molim vas",
-    "label": "negative"
+  "text": "ali kako mozete biti ovako trijezni u ovo doba ajde molim vas",
+  "label": "negative"
 }
 ```
 
 ```json
 {
-    "text": "RT @bsimun: Thompson okupio 100 000 ljudi u Čavoglavama. Sad će valjda platiti porez. #domoljublje #DanPobjede",
-    "label": "neutral"
+  "text": "RT @bsimun: Thompson okupio 100 000 ljudi u Čavoglavama. Sad će valjda platiti porez. #domoljublje #DanPobjede",
+  "label": "neutral"
 }
 ```
 
 ```json
 {
-    "text": "\n Šesti \"El Clásico\" za\n \n  Luku Modrića\n \n bio je i najdraži. Real je dobio Barçu 3-1, a hrvatski veznjak bio je jedan od najboljih igrača \"kraljeva\".\n\n\n\n - Otkako sam u Madridu, meni je to djelovalo kao\n \n  najuvjerljivija demonstracija moći\n \n . Barça je izgledala manje moćno jer je Real odigrao impresivno. Meni ta pobjeda više govori o snazi naše momčadi, o potvrdi kako forma koju iskazujemo već osam-devet utakmica nije slučajna - rekao je Luka za\n \n  SN\n \n .\n\n\n - Imali su psihološku prednost zbog stanja na ljestvici i manjeg imperativa. Zato je\n \n  Realov uspjeh impresivan\n \n , tim prije što smo gubili 0-1 - dodao je.\n\n\n\n  Izvorni članak pročitajte u\n  \n   Sportskim novostima\n  \n  .\n \n\n\n Pohvalio suigrače\n  \n\n\n -\n \n  Čudesna utakmica\n \n cijele momčadi i pobjeda protiv Barcelone. Ajmo, halá Madrid! - napisao je Modrić na društvenim mrežama.\n  \n",
-    "label": "positive"
+  "text": "\n Šesti \"El Clásico\" za\n \n  Luku Modrića\n \n bio je i najdraži. Real je dobio Barçu 3-1, a hrvatski veznjak bio je jedan od najboljih igrača \"kraljeva\".\n\n\n\n - Otkako sam u Madridu, meni je to djelovalo kao\n \n  najuvjerljivija demonstracija moći\n \n . Barça je izgledala manje moćno jer je Real odigrao impresivno. Meni ta pobjeda više govori o snazi naše momčadi, o potvrdi kako forma koju iskazujemo već osam-devet utakmica nije slučajna - rekao je Luka za\n \n  SN\n \n .\n\n\n - Imali su psihološku prednost zbog stanja na ljestvici i manjeg imperativa. Zato je\n \n  Realov uspjeh impresivan\n \n , tim prije što smo gubili 0-1 - dodao je.\n\n\n\n  Izvorni članak pročitajte u\n  \n   Sportskim novostima\n  \n  .\n \n\n\n Pohvalio suigrače\n  \n\n\n -\n \n  Čudesna utakmica\n \n cijele momčadi i pobjeda protiv Barcelone. Ajmo, halá Madrid! - napisao je Modrić na društvenim mrežama.\n  \n",
+  "label": "positive"
 }
 ```
 
@@ -160,13 +160,13 @@ euroeval --model <model-id> --dataset wikiann-hr
 ### ScaLA-hr
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Croatian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Croatian-SET) by assuming that the
-documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Croatian Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Croatian-SET)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original full dataset consists of 1,024 / 256 / 2,048 samples for training,
 validation and testing, respectively (so 3,328 samples used in total). These splits are
@@ -176,22 +176,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Nakon kratke intervencije, tijekom koje sam saznala kada se taj osjećaj prvog puta pojavio i zbog čega, sve je nestalo i već mjesecima živim bez opterećenja koji me pratilo cijelog života.",
-    "label": "correct"
+  "text": "Nakon kratke intervencije, tijekom koje sam saznala kada se taj osjećaj prvog puta pojavio i zbog čega, sve je nestalo i već mjesecima živim bez opterećenja koji me pratilo cijelog života.",
+  "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Svaki od tih sklopova, i dijelova mora biti homologiran i sukladan s ostalima.",
-    "label": "incorrect"
+  "text": "Svaki od tih sklopova, i dijelova mora biti homologiran i sukladan s ostalima.",
+  "label": "incorrect"
 }
 ```
 
 ```json
 {
-    "text": "Prvi među njima je Laurent Blanc, koji drži Romu na čekanju, a s Parkom prinčeva povezivan je i Fabio Capello.",
-    "label": "correct"
+  "text": "Prvi među njima je Laurent Blanc, koji drži Romu na čekanju, a s Parkom prinčeva povezivan je i Fabio Capello.",
+  "label": "correct"
 }
 ```
 
@@ -256,12 +256,12 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "context": "Hans Emil Alexander Gaede (Kolberg, 19. veljače 1852. -  Freiburg im Breisgau, 16. rujna 1916.) je bio njemački general i vojni zapovjednik. Tijekom Prvog svjetskog rata zapovijedao je Armijskim odjelom B na Zapadnom bojištu.\n\nVojna karijera\nHans Gaede rođen je 19. veljače 1852. u Kolbergu (danas Kolobrzeg u Poljskoj). Sin je Alexandera Gaede i Emilie Franke. Gaede je u prusku vojsku stupio 1870. godine, te je sudjelovao u Prusko-francuskom ratu u kojem je i ranjen. Nakon rata pohađa Prusku vojnu akademiju, te nakon završetka iste služi u raznim vojnim jedinicama kao u i pruskom ministarstvu rata. Čin pukovnika dostigao 1897. godine kada postaje zapovjednikom i tvrđave Thorn. General bojnikom je postao 1900. godine, dok je 1904. godine promaknut u čin general poručnika kada dobiva zapovjedništvo nad 33. pješačkom divizijom smještenom u Metzu koji se tada nalazio u okviru Njemačkog Carstva. Godine 1907. Gaede je stavljen na raspolaganje.\n\nPrvi svjetski rat\nNa početku Prvog svjetskog rata Gaede je reaktiviran, te postaje zamjenikom zapovjednika XIV. korpusa koji je bio u sastavu 7. armije koja se nalazila pod zapovjedništvom Josiasa von Heeringena. U rujnu 1914. postaje zapovjednikom Armijskog odjela Gaede koji je kasnije preimenovan u Armijski odjel B koji je držao front u Gornjem Alzasu. Za zapovijedanje u borbama u Alzasu Gaede je 25. rujna 1915. godine odlikovan ordenom Pour le Mérite. U prosincu 1915. Gaedeu je na Sveučilištu u Freiburgu dodijeljen počasni doktorat.\n\nSmrt\nU rujnu 1916. godine Gaede se teško razbolio zbog čega je 3. rujna 1916. morao napustiti zapovjedništvo armijskog odjela. Umro je 16. rujna 1916. godine u 64. godini života u bolnici Freiburgu im Breisgau od posljedica operacije.\n\nVanjske poveznice\n     Hans Gaede na stranici Prussianmachine.com\n     Hans Gaede na stranici Deutschland14-18.de\n\nNjemački vojni zapovjednici u Prvom svjetskom ratu",
-    "question": "Koju nagradu je Gaede primio 25. rujna 1915.?",
-    "answers": {
-        "answer_start": [1395],
-        "text": ["Pour le Mérite"]
-    }
+  "context": "Hans Emil Alexander Gaede (Kolberg, 19. veljače 1852. -  Freiburg im Breisgau, 16. rujna 1916.) je bio njemački general i vojni zapovjednik. Tijekom Prvog svjetskog rata zapovijedao je Armijskim odjelom B na Zapadnom bojištu.\n\nVojna karijera\nHans Gaede rođen je 19. veljače 1852. u Kolbergu (danas Kolobrzeg u Poljskoj). Sin je Alexandera Gaede i Emilie Franke. Gaede je u prusku vojsku stupio 1870. godine, te je sudjelovao u Prusko-francuskom ratu u kojem je i ranjen. Nakon rata pohađa Prusku vojnu akademiju, te nakon završetka iste služi u raznim vojnim jedinicama kao u i pruskom ministarstvu rata. Čin pukovnika dostigao 1897. godine kada postaje zapovjednikom i tvrđave Thorn. General bojnikom je postao 1900. godine, dok je 1904. godine promaknut u čin general poručnika kada dobiva zapovjedništvo nad 33. pješačkom divizijom smještenom u Metzu koji se tada nalazio u okviru Njemačkog Carstva. Godine 1907. Gaede je stavljen na raspolaganje.\n\nPrvi svjetski rat\nNa početku Prvog svjetskog rata Gaede je reaktiviran, te postaje zamjenikom zapovjednika XIV. korpusa koji je bio u sastavu 7. armije koja se nalazila pod zapovjedništvom Josiasa von Heeringena. U rujnu 1914. postaje zapovjednikom Armijskog odjela Gaede koji je kasnije preimenovan u Armijski odjel B koji je držao front u Gornjem Alzasu. Za zapovijedanje u borbama u Alzasu Gaede je 25. rujna 1915. godine odlikovan ordenom Pour le Mérite. U prosincu 1915. Gaedeu je na Sveučilištu u Freiburgu dodijeljen počasni doktorat.\n\nSmrt\nU rujnu 1916. godine Gaede se teško razbolio zbog čega je 3. rujna 1916. morao napustiti zapovjedništvo armijskog odjela. Umro je 16. rujna 1916. godine u 64. godini života u bolnici Freiburgu im Breisgau od posljedica operacije.\n\nVanjske poveznice\n     Hans Gaede na stranici Prussianmachine.com\n     Hans Gaede na stranici Deutschland14-18.de\n\nNjemački vojni zapovjednici u Prvom svjetskom ratu",
+  "question": "Koju nagradu je Gaede primio 25. rujna 1915.?",
+  "answers": {
+    "answer_start": [1395],
+    "text": ["Pour le Mérite"]
+  }
 }
 ```
 
@@ -314,37 +314,36 @@ euroeval --model <model-id> --dataset multi-wiki-qa-hr
 
 ### MMLU-hr
 
-This dataset was published in
-[this paper](https://doi.org/10.48550/arXiv.2410.08928) and is a machine
-translated version of the English [MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ).
-It features questions within 57 different topics, such as elementary mathematics, US
-history, and law. DeepL was used to translate the dataset to Croatian.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928)
+and is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ). It features questions
+within 57 different topics, such as elementary mathematics, US history, and law. DeepL
+was used to translate the dataset to Croatian.
 
-The original full dataset consists of 254 / 12,338 samples for
-validation and testing. These splits were merged, duplicates removed, and
-new splits were created with 1,024 / 256 / 2048 samples for training, validation, and
-testing, respectively.
+The original full dataset consists of 254 / 12,338 samples for validation and testing.
+These splits were merged, duplicates removed, and new splits were created with 1,024 /
+256 / 2048 samples for training, validation, and testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Kako se odvija lateralna komunikacija u organizaciji?\nIzbori:\na. Informacije se prenose prema gore.\nb. Informacije se prenose prema dolje.\nc. Informacije su dvosmjerni proces.\nd. Informacije se prenose između različitih odjela i funkcija.",
-    "label": "d"
+  "text": "Kako se odvija lateralna komunikacija u organizaciji?\nIzbori:\na. Informacije se prenose prema gore.\nb. Informacije se prenose prema dolje.\nc. Informacije su dvosmjerni proces.\nd. Informacije se prenose između različitih odjela i funkcija.",
+  "label": "d"
 }
 ```
 
 ```json
 {
-    "text": "Kako astronomi misle da Jupiter generira svoju unutarnju toplinu?\nIzbori:\na. kroz egzotermne kemijske reakcije koje pretvaraju kemijsku potencijalnu energiju u toplinsku energiju\nb. nuklearna fuzija\nc. kontrakcijom koja mijenja gravitacijsku potencijalnu energiju u toplinsku energiju\nd. unutarnje trenje zbog njegove brze rotacije i diferencijalne rotacije",
-    "label": "c"
+  "text": "Kako astronomi misle da Jupiter generira svoju unutarnju toplinu?\nIzbori:\na. kroz egzotermne kemijske reakcije koje pretvaraju kemijsku potencijalnu energiju u toplinsku energiju\nb. nuklearna fuzija\nc. kontrakcijom koja mijenja gravitacijsku potencijalnu energiju u toplinsku energiju\nd. unutarnje trenje zbog njegove brze rotacije i diferencijalne rotacije",
+  "label": "c"
 }
 ```
 
 ```json
 {
-    "text": "Ako se parabola $y_1 = x^2 + 2x + 7$ i pravac $y_2 = 6x + b$ sijeku u samo jednoj točki, koja je vrijednost $b$?\nIzbori:\na. 7\nb. 3\nc. 12\nd. 4",
-    "label": "b"
+  "text": "Ako se parabola $y_1 = x^2 + 2x + 7$ i pravac $y_2 = 6x + b$ sijeku u samo jednoj točki, koja je vrijednost $b$?\nIzbori:\na. 7\nb. 3\nc. 12\nd. 4",
+  "label": "b"
 }
 ```
 
@@ -400,25 +399,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "U čemu se prema Ludwigu Wittgensteinu otkriva značenje riječi?\nIzbori:\na. u kritici metafizike\nb. u idealnome jeziku\nc. u upotrebi riječi\nd. u prinudnoj šutnji",
-    "label": "a",
-    "subject": "Philosophy"
+  "text": "U čemu se prema Ludwigu Wittgensteinu otkriva značenje riječi?\nIzbori:\na. u kritici metafizike\nb. u idealnome jeziku\nc. u upotrebi riječi\nd. u prinudnoj šutnji",
+  "label": "a",
+  "subject": "Philosophy"
 }
 ```
 
 ```json
 {
-    "text": "Na koji od navedenih uzročnika bolesti antibiotici neće djelovati?\nIzbori:\na. na Salmonella typhi\nb. na Herpes simplex\nc. na Streptococcus mutans\nd. na Escherichia coli",
-    "label": "b",
-    "subject": "Biology"
+  "text": "Na koji od navedenih uzročnika bolesti antibiotici neće djelovati?\nIzbori:\na. na Salmonella typhi\nb. na Herpes simplex\nc. na Streptococcus mutans\nd. na Escherichia coli",
+  "label": "b",
+  "subject": "Biology"
 }
 ```
 
 ```json
 {
-    "text": "Koje vrste veza prevladavaju između molekula metana?\nIzbori:\na. kovalentne\nb. vodikove\nc. van der Waalsove\nd. peptidne",
-    "label": "c",
-    "subject": "Chemistry"
+  "text": "Koje vrste veza prevladavaju između molekula metana?\nIzbori:\na. kovalentne\nb. vodikove\nc. van der Waalsove\nd. peptidne",
+  "label": "c",
+  "subject": "Chemistry"
 }
 ```
 
@@ -457,11 +456,10 @@ euroeval --model <model-id> --dataset include-hr
 
 ### Winogrande-hr
 
-This dataset was published in
-[this paper](https://doi.org/10.48550/arXiv.2506.19468) and is a translated
-and filtered version of the English
-[Winogrande dataset](https://doi.org/10.1145/3474381). DeepL was used to
-translate the dataset to Croatian.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381). DeepL was used to translate the
+dataset to Croatian.
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -471,22 +469,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Nisam mogao kontrolirati vlagu kao što sam kontrolirao kišu, jer je _ dolazila odasvud. Na što se odnosi praznina _?\nIzbori:\na. vlaga\nb. kiša",
-    "label": "a"
+  "text": "Nisam mogao kontrolirati vlagu kao što sam kontrolirao kišu, jer je _ dolazila odasvud. Na što se odnosi praznina _?\nIzbori:\na. vlaga\nb. kiša",
+  "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Jessica je mislila da je Sandstorm najbolja pjesma ikad napisana, ali Patricia ju je mrzila. _ je kupila kartu za jazz koncert. Na što se odnosi praznina _?\nIzbori:\na. Jessica\nb. Patricia",
-    "label": "b"
+  "text": "Jessica je mislila da je Sandstorm najbolja pjesma ikad napisana, ali Patricia ju je mrzila. _ je kupila kartu za jazz koncert. Na što se odnosi praznina _?\nIzbori:\na. Jessica\nb. Patricia",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Termostat je pokazivao da je dolje dvadeset stupnjeva hladnije nego gore, pa je Byron ostao u _ jer mu je bilo hladno. Na što se odnosi praznina _?\nIzbori:\na. dolje\nb. gore",
-    "label": "b"
+  "text": "Termostat je pokazivao da je dolje dvadeset stupnjeva hladnije nego gore, pa je Byron ostao u _ jer mu je bilo hladno. Na što se odnosi praznina _?\nIzbori:\na. dolje\nb. gore",
+  "label": "b"
 }
 ```
 
@@ -525,4 +523,83 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset winogrande-hr
+```
+
+## Instruction-following
+
+### MultiIFEval-hr
+
+MultiIFEval-hr is part of the MultiIFEval benchmark spanning 305 languages. It is
+generated by translating and localising the English IFEval dataset using a structured
+LLM generation pipeline. For each target language, a randomly selected Wikipedia article
+in that language provides contextual grounding to reduce hallucination and improve
+cultural localisation. The pipeline preserves instruction_id_list values for
+traceability to the original English samples, and retains kwargs keys with values
+localised where appropriate, enabling programmatic constraint verification. The dataset
+was published [here](https://huggingface.co/datasets/EuroEval/multi-ifeval-hr).
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Napišite sažetak Wikipedijske stranice \"https://hr.wikipedia.org/wiki/Hrvatski_jezik\" s najmanje 200 riječi. Nemojte koristiti nijednu zarez i istaknite najmanje 3 odjeljka koji imaju naslove u Markdown formatu, na primjer *istaknuti odjeljak Dio 1*, *istaknuti odjeljak Dio 2*, *istaknuti odjeljak Dio 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 200, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Planiram putovanje u Hrvatsku i želim da mi napišeš plan putovanja u Shakespeareovom stilu. Nije ti dopušteno koristiti zareze u svom odgovoru.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Napravite životopis za svježe diplomiranog studenta koji se prijavljuje za svoj prvi posao. Obavezno uključite najmanje 12 mjesta za popunjavanje u uglatim zagradama, kao što su [Ime] ili [Adresa].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-hr
 ```

@@ -27,6 +27,8 @@ import struct
 import subprocess
 import sys
 import termios
+import time
+import typing as t
 from functools import lru_cache
 from pathlib import Path
 
@@ -58,6 +60,8 @@ def run_euroeval(
     trust_remote_code: bool = True,
     clear_model_cache: bool = True,
     gpu_memory_utilization: float | None = None,
+    stream_output: bool = True,
+    log_file: Path | t.IO[bytes] | None = None,
 ) -> tuple[int, str]:
     """Run the euroeval CLI for the given model, languages, and datasets.
 
@@ -87,6 +91,17 @@ def run_euroeval(
             When set, pass ``--gpu-memory-utilization VALUE``. When None,
             omit the flag so the euroeval CLI's default applies. Defaults
             to None.
+        stream_output (optional):
+            When True, stream subprocess output live to stderr and force
+            ``FULL_LOG=1`` for maximum verbosity. When False, suppress
+            terminal output (subprocess writes go to /dev/null) and leave
+            verbosity at the CLI default. Defaults to True.
+        log_file (optional):
+            When provided, write subprocess output to this file (or file-like
+            object) as it arrives. Accepts a :class:`Path` (opened in append
+            binary mode) or a binary file-like object with a ``write()`` method.
+            Terminal output behaviour is still controlled by ``stream_output``.
+            Defaults to None.
 
     Returns:
         A ``(returncode, combined_output)`` pair. A returncode of 127
@@ -108,17 +123,25 @@ def run_euroeval(
         cmd += ["--dataset", dataset]
     if gpu_memory_utilization is not None:
         cmd += ["--gpu-memory-utilization", str(gpu_memory_utilization)]
-    logger.info(f"Running: {' '.join(cmd)}")
+    if stream_output:
+        logger.info(f"Running: {' '.join(cmd)}")
+    else:
+        logger.debug(f"Running: {' '.join(cmd)}")
 
     env = os.environ.copy()
-    env["FULL_LOG"] = "1"
+    if stream_output:
+        env["FULL_LOG"] = "1"
     token = resolve_hf_token()
     if token:
         env.setdefault("HF_TOKEN", token)
         env.setdefault("HUGGINGFACE_API_KEY", token)
 
+    # Import here to preserve deferred import pattern for lightweight callers
+    from euroeval.logging_utils import no_terminal_output  # noqa: PLC0415
+
     parent_fd, child_fd = pty.openpty()
     _set_pty_window_size(fd=child_fd)
+    spawned_pgid: int | None = None
     try:
         # Safe: ``cmd`` is a fixed argument list run without a shell; only the
         # known euroeval CLI flags and operator-controlled model/language ids
@@ -130,7 +153,9 @@ def run_euroeval(
             stderr=child_fd,
             close_fds=True,
             env=env,
+            preexec_fn=os.setsid,  # New process group for scoped cleanup
         )
+        spawned_pgid = os.getpgid(proc.pid)
     except FileNotFoundError:
         os.close(parent_fd)
         os.close(child_fd)
@@ -138,35 +163,63 @@ def run_euroeval(
         return 127, "`euroeval` CLI not found on PATH."
     os.close(child_fd)
 
+    # Open log file if a Path was provided
+    log_fh: t.IO[bytes] | None = None
+    if isinstance(log_file, Path):
+        log_fh = open(log_file, "ab")
+    elif log_file is not None:
+        # Assume it's already a file-like object
+        log_fh = log_file
+
     captured: list[bytes] = []
-    try:
-        while True:
-            ready, _, _ = select.select([parent_fd], [], [], 0.1)
-            if ready:
+    MAX_DRAIN_TIME_AFTER_EXIT = 2.0  # Fixed deadline after parent exit
+    with no_terminal_output(disable=stream_output):
+        parent_exit_time: float | None = None
+        try:
+            while True:
+                # Check deadline first: once parent exits, bound the drain time
+                # regardless of whether bytes are available. This prevents a
+                # chatty descendant from keeping the loop alive forever.
+                if parent_exit_time is not None:
+                    elapsed = time.monotonic() - parent_exit_time
+                    if elapsed > MAX_DRAIN_TIME_AFTER_EXIT:
+                        break
+
+                ready, _, _ = select.select([parent_fd], [], [], 0.1)
                 try:
-                    chunk = os.read(parent_fd, 4096)
+                    chunk = os.read(parent_fd, 4096) if ready else b""
                 except OSError:
                     break
-                if not chunk:
-                    break
-                sys.stderr.buffer.write(chunk)
-                sys.stderr.buffer.flush()
-                captured.append(chunk)
-            elif proc.poll() is not None:
-                try:
-                    while True:
-                        chunk = os.read(parent_fd, 4096)
-                        if not chunk:
-                            break
+
+                if chunk:
+                    if stream_output:
                         sys.stderr.buffer.write(chunk)
                         sys.stderr.buffer.flush()
-                        captured.append(chunk)
-                except OSError:
+                    if log_fh is not None:
+                        log_fh.write(chunk)
+                        log_fh.flush()
+                    captured.append(chunk)
+                    # Parent may have exited while we read; start deadline
+                    if proc.poll() is not None and parent_exit_time is None:
+                        parent_exit_time = time.monotonic()
+                elif proc.poll() is not None:
+                    # Parent exited and no more bytes immediately available.
+                    # Start deadline timer if not already set.
+                    if parent_exit_time is None:
+                        parent_exit_time = time.monotonic()
+                # else: process still running, continue waiting
+        finally:
+            os.close(parent_fd)
+            # Kill process group for scoped cleanup (no broad pkill/killall)
+            if spawned_pgid is not None:
+                try:
+                    os.killpg(spawned_pgid, signal.SIGTERM)
+                except (ProcessLookupError, OSError):
                     pass
-                break
-    finally:
-        os.close(parent_fd)
-    proc.wait()
+            if log_fh is not None and isinstance(log_file, Path):
+                # Only close if we opened it
+                log_fh.close()
+        proc.wait()
     output = b"".join(captured).decode("utf-8", errors="replace")
     note = _killed_by_signal_note(proc.returncode)
     if note:
@@ -264,7 +317,8 @@ def model_fits_locally(model_id: str, gpu_bytes: int | None) -> tuple[bool, int 
     needed = estimated_model_bytes(model_id=model_id)
     if needed is None:
         return True, None
-    return int(needed * GPU_FIT_OVERHEAD) <= gpu_bytes, needed
+    needed = int(needed * GPU_FIT_OVERHEAD)
+    return needed <= gpu_bytes, needed
 
 
 def estimated_model_bytes(model_id: str) -> int | None:
@@ -358,9 +412,12 @@ def gpu_total_memory_bytes() -> int | None:
 
     unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
     if torch.cuda.is_available() and not unified:
-        # Use free memory on the largest GPU, not total capacity.
-        free, _ = torch.cuda.mem_get_info(0)
-        return free
+        total_free: int = 0
+        for device_id in range(torch.cuda.device_count()):
+            free, _ = torch.cuda.mem_get_info(device_id)
+            total_free += free
+        return total_free
+
     # Use available (not total) system RAM for CPU-only or unified memory hosts.
     return int(psutil.virtual_memory().available)
 

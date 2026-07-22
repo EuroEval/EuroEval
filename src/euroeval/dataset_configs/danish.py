@@ -30,12 +30,8 @@ ANGRY_TWEETS_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
-SCALA_DA_CONFIG = DatasetConfig(
-    name="scala-da",
-    pretty_name="ScaLA-da",
-    source="EuroEval/scala-da",
-    task=LA,
-    languages=[DANISH],
+DALA_CONFIG = DatasetConfig(
+    name="dala", pretty_name="DaLA", source="EuroEval/dala", task=LA, languages=[DANISH]
 )
 
 DANSK_CONFIG = DatasetConfig(
@@ -78,14 +74,6 @@ DANISH_CITIZEN_TESTS_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
-HELLASWAG_DA_CONFIG = DatasetConfig(
-    name="hellaswag-da",
-    pretty_name="HellaSwag-da",
-    source="EuroEval/hellaswag-da-mini",
-    task=COMMON_SENSE,
-    languages=[DANISH],
-)
-
 IFEVAL_DA_CONFIG = DatasetConfig(
     name="ifeval-da",
     pretty_name="IFEval-da",
@@ -107,6 +95,44 @@ VALEU_DA_CONFIG = DatasetConfig(
     bootstrap_samples=False,
 )
 
+
+WINOGRANDE_DA_CONFIG = DatasetConfig(
+    name="winogrande-da",
+    pretty_name="Winogrande-da",
+    source="EuroEval/winogrande-da",
+    task=COMMON_SENSE,
+    languages=[DANISH],
+    labels=["a", "b"],
+)
+
+ZEBRA_PUZZLE_EASY_DA_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-da",
+    pretty_name="ZebraPuzzlesEasy-da",
+    source="EuroEval/zebra-puzzles-easy-da",
+    task=LOGIC,
+    languages=[DANISH],
+)
+
+# Unofficial datasets ###
+
+HELLASWAG_DA_CONFIG = DatasetConfig(
+    name="hellaswag-da",
+    pretty_name="HellaSwag-da",
+    source="EuroEval/hellaswag-da-mini",
+    task=COMMON_SENSE,
+    languages=[DANISH],
+    unofficial=True,
+)
+
+SCALA_DA_CONFIG = DatasetConfig(
+    name="scala-da",
+    pretty_name="ScaLA-da",
+    source="EuroEval/scala-da",
+    task=LA,
+    languages=[DANISH],
+    unofficial=True,
+)
+
 RAGTRUTH_DA_CONFIG = DatasetConfig(
     name="ragtruth-da",
     pretty_name="RAGTruth-da",
@@ -114,17 +140,6 @@ RAGTRUTH_DA_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[DANISH],
     train_split=None,
-    unofficial=True,
-)
-
-# Unofficial datasets ###
-
-DALA_CONFIG = DatasetConfig(
-    name="dala",
-    pretty_name="DaLA",
-    source="giannor/dala",
-    task=LA,
-    languages=[DANISH],
     unofficial=True,
 )
 
@@ -179,16 +194,6 @@ GOLDENSWAG_DA_CONFIG = DatasetConfig(
     source="EuroEval/goldenswag-da-mini",
     task=COMMON_SENSE,
     languages=[DANISH],
-    unofficial=True,
-)
-
-WINOGRANDE_DA_CONFIG = DatasetConfig(
-    name="winogrande-da",
-    pretty_name="Winogrande-da",
-    source="EuroEval/winogrande-da",
-    task=COMMON_SENSE,
-    languages=[DANISH],
-    labels=["a", "b"],
     unofficial=True,
 )
 
@@ -253,20 +258,22 @@ GERLANGMOD_DA_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-ZEBRA_PUZZLE_EASY_DA_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-da",
-    pretty_name="ZebraPuzzlesEasy-da",
-    source="EuroEval/zebra-puzzles-easy-da",
-    task=LOGIC,
-    languages=[DANISH],
-    unofficial=True,
-)
-
 ZEBRA_PUZZLE_HARD_DA_CONFIG = DatasetConfig(
     name="zebra-puzzles-hard-da",
     pretty_name="ZebraPuzzlesHard-da",
     source="EuroEval/zebra-puzzles-hard-da",
     task=LOGIC,
     languages=[DANISH],
+    unofficial=True,
+)
+
+MULTI_IFEVAL_DA_CONFIG = DatasetConfig(
+    name="multi-ifeval-da",
+    pretty_name="MultiIFEval-da",
+    source="EuroEval/multi-ifeval-da",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[DANISH],
+    train_split=None,
+    val_split=None,
     unofficial=True,
 )

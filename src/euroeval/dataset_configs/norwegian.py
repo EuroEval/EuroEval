@@ -7,6 +7,7 @@ from ..tasks import (
     EUROPEAN_VALUES,
     GED,
     HALLU,
+    INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
     LOGIC,
@@ -114,8 +115,66 @@ VALEU_NO_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+MULTI_IFEVAL_NB_CONFIG = DatasetConfig(
+    name="multi-ifeval-nb",
+    pretty_name="MultiIFEval-nb",
+    source="EuroEval/multi-ifeval-no",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    train_split=None,
+    val_split=None,
+)
+
+MULTI_IFEVAL_NN_CONFIG = DatasetConfig(
+    name="multi-ifeval-nn",
+    pretty_name="MultiIFEval-nn",
+    source="EuroEval/multi-ifeval-nn",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+    train_split=None,
+    val_split=None,
+)
+
+ZEBRA_PUZZLE_EASY_NB_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-nb",
+    pretty_name="ZebraPuzzlesEasy-nb",
+    source="EuroEval/zebra-puzzles-easy-nb",
+    task=LOGIC,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+)
+
+ZEBRA_PUZZLE_EASY_NN_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-nn",
+    pretty_name="ZebraPuzzlesEasy-nn",
+    source="EuroEval/zebra-puzzles-easy-nn",
+    task=LOGIC,
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+)
+
 
 # Unofficial datasets ###
+
+IFEVAL_NB_CONFIG = DatasetConfig(
+    name="ifeval-nb",
+    pretty_name="IFEval-nb",
+    source="EuroEval/ifeval-nb",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
+IFEVAL_NN_CONFIG = DatasetConfig(
+    name="ifeval-nn",
+    pretty_name="IFEval-nn",
+    source="EuroEval/ifeval-nn",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
 
 NO_COLA_CONFIG = DatasetConfig(
     name="no-cola",
@@ -297,30 +356,12 @@ GERLANGMOD_NN_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-ZEBRA_PUZZLE_EASY_NB_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-nb",
-    pretty_name="ZebraPuzzlesEasy-nb",
-    source="EuroEval/zebra-puzzles-easy-nb",
-    task=LOGIC,
-    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
-    unofficial=True,
-)
-
 ZEBRA_PUZZLE_HARD_NB_CONFIG = DatasetConfig(
     name="zebra-puzzles-hard-nb",
     pretty_name="ZebraPuzzlesHard-nb",
     source="EuroEval/zebra-puzzles-hard-nb",
     task=LOGIC,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_NN_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-nn",
-    pretty_name="ZebraPuzzlesEasy-nn",
-    source="EuroEval/zebra-puzzles-easy-nn",
-    task=LOGIC,
-    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
 )
 

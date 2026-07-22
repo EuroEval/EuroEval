@@ -58,6 +58,7 @@ REPO = "EuroEval/EuroEval"
 # still recognisable next to the country flags around it.
 _LANGUAGE_FLAG: dict[str, str] = {
     "albanian": "🇦🇱",
+    "belarusian": "🇧🇾",
     "bosnian": "🇧🇦",
     "bulgarian": "🇧🇬",
     "catalan": "🏴󠁥󠁳󠁣󠁴󠁿",
@@ -77,6 +78,7 @@ _LANGUAGE_FLAG: dict[str, str] = {
     "italian": "🇮🇹",
     "latvian": "🇱🇻",
     "lithuanian": "🇱🇹",
+    "luxembourgish": "🇱🇺",
     "norwegian": "🇳🇴",
     "polish": "🇵🇱",
     "portuguese": "🇵🇹",

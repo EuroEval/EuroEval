@@ -186,13 +186,13 @@ euroeval --model <model-id> --dataset harem
 
 ### ScaLA-pt
 
-This dataset is a Portuguese version of ScaLA, which was originally published in [this
-paper](https://aclanthology.org/2023.nodalida-1.20/), created by corrupting
-grammatically correct sentences from the [Universal Dependencies Portuguese-Bosque
-treebank](https://github.com/UniversalDependencies/UD_Portuguese-Bosque), filtered to
-only include samples from the European Portuguese source *CETEMPúblico*. The treebank is
-based on the Constraint Grammar conversion of the Bosque corpus, part of the Floresta
-Sintá(c)tica treebank.
+This dataset is a Portuguese version of ScaLA, which was originally published in
+[this paper](https://aclanthology.org/2023.nodalida-1.20/), created by corrupting
+grammatically correct sentences from the
+[Universal Dependencies Portuguese-Bosque treebank](https://github.com/UniversalDependencies/UD_Portuguese-Bosque),
+filtered to only include samples from the European Portuguese source _CETEMPúblico_. The
+treebank is based on the Constraint Grammar conversion of the Bosque corpus, part of the
+Floresta Sintá(c)tica treebank.
 
 Corruptions were applied by either **removing a word** from the sentence or **swapping
 two neighbouring words**. Rules based on part-of-speech tags were used to ensure that
@@ -210,22 +210,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Nos Em os mercados orientais, Tóquio foi a excepção e, ao o meio da de a manhã, a bolsa tendia para uma alta marginal, com o índice Nikkei a marcar 12,07 pontos no em o fim da de a sessão da de a manhã.",
-    "label": "incorrect"
+  "text": "Nos Em os mercados orientais, Tóquio foi a excepção e, ao o meio da de a manhã, a bolsa tendia para uma alta marginal, com o índice Nikkei a marcar 12,07 pontos no em o fim da de a sessão da de a manhã.",
+  "label": "incorrect"
 }
 ```
 
 ```json
 {
-    "text": "A equipa está a mostrar progressos, mas ainda há muito para fazer.",
-    "label": "correct"
+  "text": "A equipa está a mostrar progressos, mas ainda há muito para fazer.",
+  "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Vários estudos têm mostrado que estes linfomas regridem depois de tratamentos dirigidos à a HP a, o que sugere uma relação entre os dois.",
-    "label": "incorrect"
+  "text": "Vários estudos têm mostrado que estes linfomas regridem depois de tratamentos dirigidos à a HP a, o que sugere uma relação entre os dois.",
+  "label": "incorrect"
 }
 ```
 
@@ -273,10 +273,10 @@ and contains Wikipedia articles with LLM-generated questions and answers in 300+
 languages.
 
 As Portuguese Wikipedia is a mixture of both European Portuguese and Brazilian
-Portuguese, we filtered the Wikipedia articles with [this
-classifier](https://hf.co/liaad/PtVId), published in [this
-paper](https://doi.org/10.1609/aaai.v39i24.34705), keeping only the articles in European
-Portuguese.
+Portuguese, we filtered the Wikipedia articles with
+[this classifier](https://hf.co/liaad/PtVId), published in
+[this paper](https://doi.org/10.1609/aaai.v39i24.34705), keeping only the articles in
+European Portuguese.
 
 The original full dataset consists of 5,000 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
@@ -430,10 +430,10 @@ euroeval --model <model-id> --dataset boolq-pt
 ### MMLU-pt
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928)
-and is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Portuguese was done using DeepL.
+and is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to Portuguese was done using DeepL.
 
 The original full dataset consists of 270 / 1,439 / 14,774 samples for training,
 validation, and testing, respectively. These splits were merged, duplicates removed, and
@@ -520,25 +520,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Em 2014, num dado país, as famílias efetuaram uma poupança de 10% do seu rendimento disponível médio. No mesmo período, as famílias apresentaram como coeficientes orçamentais das despesas em alimentação e em transportes, respetivamente, 30% e 15%. Nestas condições, em 2014, por cada 100 euros do seu rendimento disponível, as famílias despenderam, em média,\nOpções:\na. 27 euros em alimentação e 13,5 euros em transportes\nb. 30 euros em alimentação e 15 euros em transportes\nc. 30 euros em alimentação e 13,5 euros em transportes\nd. 27 euros em alimentação e 15 euros em transportes",
-    "label": "a",
-    "subject": "Economics"
+  "text": "Em 2014, num dado país, as famílias efetuaram uma poupança de 10% do seu rendimento disponível médio. No mesmo período, as famílias apresentaram como coeficientes orçamentais das despesas em alimentação e em transportes, respetivamente, 30% e 15%. Nestas condições, em 2014, por cada 100 euros do seu rendimento disponível, as famílias despenderam, em média,\nOpções:\na. 27 euros em alimentação e 13,5 euros em transportes\nb. 30 euros em alimentação e 15 euros em transportes\nc. 30 euros em alimentação e 13,5 euros em transportes\nd. 27 euros em alimentação e 15 euros em transportes",
+  "label": "a",
+  "subject": "Economics"
 }
 ```
 
 ```json
 {
-    "text": "O combate às disparidades económicas e sociais nos países da UE foi assumido, pela primeira vez, no\nOpções:\na. Tratado de Maastricht, em 1957\nb. Tratado de Maastricht, em 1992\nc. Tratado de Roma, em 1957\nd. Tratado de Roma, em 1992",
-    "label": "b",
-    "subject": "Earth science"
+  "text": "O combate às disparidades económicas e sociais nos países da UE foi assumido, pela primeira vez, no\nOpções:\na. Tratado de Maastricht, em 1957\nb. Tratado de Maastricht, em 1992\nc. Tratado de Roma, em 1957\nd. Tratado de Roma, em 1992",
+  "label": "b",
+  "subject": "Earth science"
 }
 ```
 
 ```json
 {
-    "text": "Se o homem no estado de natureza é tão livre, conforme dissemos, se é senhor absoluto da sua própria pessoa e posses, igual ao maior e a ninguém sujeito, por que abrirá ele mão dessa liberdade, por que abandonará o seu império e sujeitar-se-á ao domínio e controle de qualquer outro poder? Ao que é óbvio responder que, embora no estado de natureza tenha tal direito, a fruição do mesmo é muito incerta e está constantemente exposta à invasão de terceiros porque, sendo todos reis tanto quanto ele, todo homem igual a ele, e na maior parte pouco observadores da equidade e da justiça, a fruição da propriedade que possui nesse estado é muito insegura, muito arriscada. Estas circunstâncias obrigam-no a abandonar uma condição que, embora livre, está cheia de temores e perigos constantes; e não é sem razão que procura de boa vontade juntar-se em sociedade com outros que estão já unidos, ou pretendem unir-se, para a mútua conservação da vida, da liberdade e dos bens a que chamo de “propriedade”.\\\nOpções:\na. A propriedade surge com a criação da sociedade.\nb. No estado de natureza, o homem é livre, mas desigual.\nc. O direito de propriedade é compatível com a sociedade.\nd. Devido à insegurança, os homens optam por viver sem direitos.",
-    "label": "c",
-    "subject": "Sociology"
+  "text": "Se o homem no estado de natureza é tão livre, conforme dissemos, se é senhor absoluto da sua própria pessoa e posses, igual ao maior e a ninguém sujeito, por que abrirá ele mão dessa liberdade, por que abandonará o seu império e sujeitar-se-á ao domínio e controle de qualquer outro poder? Ao que é óbvio responder que, embora no estado de natureza tenha tal direito, a fruição do mesmo é muito incerta e está constantemente exposta à invasão de terceiros porque, sendo todos reis tanto quanto ele, todo homem igual a ele, e na maior parte pouco observadores da equidade e da justiça, a fruição da propriedade que possui nesse estado é muito insegura, muito arriscada. Estas circunstâncias obrigam-no a abandonar uma condição que, embora livre, está cheia de temores e perigos constantes; e não é sem razão que procura de boa vontade juntar-se em sociedade com outros que estão já unidos, ou pretendem unir-se, para a mútua conservação da vida, da liberdade e dos bens a que chamo de “propriedade”.\\\nOpções:\na. A propriedade surge com a criação da sociedade.\nb. No estado de natureza, o homem é livre, mas desigual.\nc. O direito de propriedade é compatível com a sociedade.\nd. Devido à insegurança, os homens optam por viver sem direitos.",
+  "label": "c",
+  "subject": "Sociology"
 }
 ```
 
@@ -581,30 +581,30 @@ Portuguese questions are separately sourced and designed to target locally relev
 topics for Portuguese-speaking populations.
 
 We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
-questions with correct answers in the 'targets' column. We use the first target answer as
-the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
-question. We create a 16 / 234 split for training and testing, respectively.
+questions with correct answers in the 'targets' column. We use the first target answer
+as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
+per question. We create a 16 / 234 split for training and testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Qual foi a primeira faixa de telenovelas da Globo a ter produção em cores?\nOpções:\na. 10\nb. 13 horas\nc. 15 horas\nd. 18 horas",
-    "label": "a"
+  "text": "Qual foi a primeira faixa de telenovelas da Globo a ter produção em cores?\nOpções:\na. 10\nb. 13 horas\nc. 15 horas\nd. 18 horas",
+  "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Houve no Brasil alguma loteria anterior à Mega-Sena?\nOpções:\na. não existia jogo de loteria no Brasil antes da Mega-Sena\nb. sim\nc. não, a Mega-Sena foi a primeira loteria do Brasil\nd. não houve outras loterias além da Mega-Sena",
-    "label": "b"
+  "text": "Houve no Brasil alguma loteria anterior à Mega-Sena?\nOpções:\na. não existia jogo de loteria no Brasil antes da Mega-Sena\nb. sim\nc. não, a Mega-Sena foi a primeira loteria do Brasil\nd. não houve outras loterias além da Mega-Sena",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Qual foi o nome da primeira mulher de Jorge Fernando?\nOpções:\na. Sônia Regina\nb. Patrícia Soares\nc. Lúcia\nd. Maria Helena",
-    "label": "c"
+  "text": "Qual foi o nome da primeira mulher de Jorge Fernando?\nOpções:\na. Sônia Regina\nb. Patrícia Soares\nc. Lúcia\nd. Maria Helena",
+  "label": "c"
 }
 ```
 
@@ -643,13 +643,13 @@ euroeval --model <model-id> --dataset multiloko-pt
 
 ### GoldenSwag-pt
 
-This dataset is a filtered and machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
-ActivityNet as well as how-to articles from WikiHow. The machine translated version was
-published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
-DeepL, and the filtering was published in [this
-paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
-samples.
+This dataset is a filtered and machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video
+descriptions from ActivityNet as well as how-to articles from WikiHow. The machine
+translated version was published in
+[this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and
+the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825),
+which resulted in higher quality samples.
 
 The original full dataset consists of 1530 / 1530 samples for training and validation,
 respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
@@ -722,8 +722,8 @@ euroeval --model <model-id> --dataset goldenswag-pt
 ### Unofficial: Winogrande-pt
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -793,9 +793,9 @@ euroeval --model <model-id> --dataset winogrande-pt
 
 ### Publico
 
-This dataset contains 3,304 news articles from the Portuguese newspaper *Público* paired
-with extractive-style summaries. The samples all come from the [CCNews
-corpus](https://commoncrawl.org/blog/news-dataset-available).
+This dataset contains 3,304 news articles from the Portuguese newspaper _Público_ paired
+with extractive-style summaries. The samples all come from the
+[CCNews corpus](https://commoncrawl.org/blog/news-dataset-available).
 
 To create summary–document pairs, we extract the **first two sentences** of each article
 as the `target_text` (summary), and concatenate the **title and the remainder** of the
@@ -812,8 +812,8 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "As grandes transições, o risco de disrupção\nPor que razão se acumulam tantos riscos elevados e com tal perigosidade? A razão principal, quero crer, reside no afloramento dos impactos das grandes transições - climática, ecológica, energética, demográfica, digital, migratória, laboral, sociocultural e sociopolítica - e numa inusitada convergência de todos os seus efeitos, internos e externos, nas décadas mais próximas e, bem assim, na impotência da política, tal como a conhecemos, para lidar com tantos eventos de tal amplitude. Senão vejamos. A vertigem digital e as suas inúmeras provações Eis o vórtice em que estamos metidos: chips e sensores, drones e câmaras de vigilância, interfaces cérebro-computacionais e nano-implantes, máquinas inteligentes e mestres algoritmos, robots e veículos autónomos, torres e antenas. Neste ambiente congestionado e num campo eletromagnético 4G+5G cada vez mais preenchido, seria impossível não acontecerem interações fortuitas, incidentes imprevistos, impactos inusitados, descobertas acidentais. Estamos, assim, obrigados a multiplicar os ângulos de observação e as perspetivas de olhar para os problemas. A surpresa pode ser, deveras, surpreendente. Basta, apenas, que aconteçam alguns acidentes graves cuja responsabilidade seja atribuída, “afinal”, à utilização abusiva de sistemas de inteligência automáticos e veículos autónomos. Estou convencido de que neste novo ambiente de virtualidade real a descontextualização que a inteligência artificial e automática carrega consigo nos fará passar inúmeras provações. Velocidade e colisão Com a chegada das redes 4G e 5G chegam as tecnologias mais disruptivas, mas chega, também, o risco de mais imersão, invasão e intrusão, ou seja, o risco iminente de uma grande colisão. Dito de outro modo, com a chegada das redes distribuídas as tecnologias imersivas, intrusivas e invasivas irão colidir, tarde ou cedo, com os seus destinatários potenciais. O que importa sublinhar nesta altura, no preciso momento em que a alta velocidade da rede 5G está para chegar, é o risco muito elevado de uma “grande colisão por excesso de velocidade”. De facto, a pandemia da covid-19 mostra-nos que está iminente uma grande colisão entre o infinitamente grande dos macro-organismos, os seres humanos que nós somos, e o infinitamente pequeno dos microorganismos, como é o caso da covid-19. Efeitos assimétricos Os efeitos assimétricos destas grandes transições vão deixar muitos territórios para trás. Cada transição tem o seu ciclo de vida específico, com uma duração variável, e é completamente impossível abordar todas as suas consequências no âmbito limitado de uma escala de tempo ou geografia em concreto. Ou seja, cada território nacional ou regional acabará por sofrer, tarde ou cedo, os danos colaterais de medidas erradas tomadas pelos territórios seus vizinhos. É nesta altura, justamente, que organizações supranacionais como a União Europeia ou subnacionais como as comunidades intermunicipais poderão e deverão mostrar toda a sua relevância geoeconómica e geopolítica. As interações fortuitas e os imponderáveis do acaso As características principais da rede 5G são a hipervelocidade, baixa latência, alta conectividade, elevada densidade e intensidade, curto alcance. Se pensarmos, agora, no polígono digital que esta rede nos oferece – Big data e computação na nuvem, (BDCC), Internet dos objetos (IOT), Inteligência artificial (IA), Realidade aumentada e virtual (RAV), Computação periférica (EC) – e na interação intensa entre estes e outros dispositivos tecnológicos e digitais, estamos cada vez mais próximos das chamadas “propriedades emergentes” do “serendipismo” (do inglês serenpidity), a saber, interações fortuitas, incidentes imprevistos, impactos inusitados, descobertas acidentais. Ou seja, perante a interdependência máxima crescem extraordinariamente os imponderáveis do acaso. Dispositivos tecnológicos e assistentes inteligentes Na sociedade da informação e da comunicação a inteligência deixou de estar contida nos limites humanos originais. Com efeito, nos dias que correm, a inteligência está dispersa e difusa, manifesta-se sob múltiplas formas e interage com praticamente tudo o que nos envolve. Deste ponto de vista, a realidade não para de aumentar todos os dias à medida que a inteligência se transfere para ambientes inteligentes que são extensões da nossa própria inteligência. Hoje tudo é smart, desde a realidade virtual e aumentada aos interfaces cérebro-computacionais, desde a inteligência dos objetos até à inteligência das máquinas. De facto, a nossa inteligência e as faculdades humanas estão a transitar para fora do seu habitat biológico e o corpo humano instala-se em dispositivos tecnológicos transumanos e pós-humanos cuja configuração futura nem sequer imaginamos. Entre a distração e a alucinação Somos screeners muitas horas por dia, é impossível manter a atenção num ambiente completamente saturado de notificações e avisos. A multiplicação dos dispositivos tecnológicos e digitais – uma espécie de sexto continente - exige de nós uma atualização constante. Todos os dias mergulhamos num imenso oceano de informação, experimentamos uma vertigem permanente para separar o essencial do acessório e lutamos com imensas dificuldades para administrar a nossa economia da atenção. No final do dia estamos exaustos e no dia seguinte, ainda debilitados, tudo recomeça. Na vertigem o foco da atenção converte-se num turbilhão, talvez, mesmo, em delírio e alucinação. As mudanças paradigmáticas Entre tantas transições previsíveis e excecionais haverá, também, mudanças paradigmáticas, cujos sinais de longo alcance só alguns vislumbrarão. O drama das mudanças paradigmáticas é que elas não se compadecem com a duração dos ciclos políticos curtos e muito menos com programas de governo reativos. A redução dos passivos climáticos, tais como o sequestro e armazenamento de carbono, ou a mudança de alguns aspetos nucleares do modelo de desenvolvimento dominante, por exemplo, a revisão de algumas cadeias de valor no sentido da sua reterritorialização, ou, ainda, a mudança de aspetos fundamentais do nosso comportamento quotidiano, por exemplo, no que diz respeito ao cumprimento de regras base de economia circular. Quer dizer, temos de estar avisados, não podemos permitir que os efeitos contraproducentes ou paradoxais das várias transições acabem por absorver os pequenos/grandes sinais das mudanças paradigmáticas. Notas Finais Como se observa, o risco de disrupção está sempre presente, seja o carácter invasivo e intrusivo das tecnologias 5G, a histeria coletiva de informação e comunicação num ambiente totalmente saturado, a crença nos mestres-algoritmos e na metalinguagem normalizadora das plataformas digitais. Digamos que, doravante, crescerá bastante o risco sistémico da economia digital 4G e 5G e, nesse sentido, estamos obrigados a desenvolver treino específico e capacidades especiais para entender e antecipar como se forjam e desenvolvem as interações fortuitas, os incidentes imprevistos e, por via deles, também, as descobertas acidentais. Este é o grande paradoxo do nosso tempo. Mais liberdade, mais incerteza, mais episódios acidentais. Por outro lado, os sinais dessas interações acidentais podem ser de tal modo fortuitos e furtivos que dificilmente caberão no interior das nossas métricas conceptuais e instrumentais habituais. O nosso arsenal teórico e, muito em especial, o campo das ciências sociais e humanas, com origem no iluminismo moderno e na cultura analógica, estão definitivamente postos em causa e a academia deve preparar-se para rever o seu estatuto científico eminente se não quiser ser um ator secundário que corre pelo lado de fora da realidade da cultura tecnológica e digital.",
-    "target_text": "O nosso tempo não corre de feição. Desastres ambientais motivados por alterações climáticas, campos de refugiados em número crescente, pandemia da covid-19, elevado número de abalos de terra e erupções vulcânicas, adição digital e ódio nas redes sociais, polarização social e radicalização política, crise da transição energética, precariedade nos mercados de trabalho e baixos salários, dívidas públicas acumuladas gigantescas, crescente tensão geopolítica entre grandes potências."
+  "text": "As grandes transições, o risco de disrupção\nPor que razão se acumulam tantos riscos elevados e com tal perigosidade? A razão principal, quero crer, reside no afloramento dos impactos das grandes transições - climática, ecológica, energética, demográfica, digital, migratória, laboral, sociocultural e sociopolítica - e numa inusitada convergência de todos os seus efeitos, internos e externos, nas décadas mais próximas e, bem assim, na impotência da política, tal como a conhecemos, para lidar com tantos eventos de tal amplitude. Senão vejamos. A vertigem digital e as suas inúmeras provações Eis o vórtice em que estamos metidos: chips e sensores, drones e câmaras de vigilância, interfaces cérebro-computacionais e nano-implantes, máquinas inteligentes e mestres algoritmos, robots e veículos autónomos, torres e antenas. Neste ambiente congestionado e num campo eletromagnético 4G+5G cada vez mais preenchido, seria impossível não acontecerem interações fortuitas, incidentes imprevistos, impactos inusitados, descobertas acidentais. Estamos, assim, obrigados a multiplicar os ângulos de observação e as perspetivas de olhar para os problemas. A surpresa pode ser, deveras, surpreendente. Basta, apenas, que aconteçam alguns acidentes graves cuja responsabilidade seja atribuída, “afinal”, à utilização abusiva de sistemas de inteligência automáticos e veículos autónomos. Estou convencido de que neste novo ambiente de virtualidade real a descontextualização que a inteligência artificial e automática carrega consigo nos fará passar inúmeras provações. Velocidade e colisão Com a chegada das redes 4G e 5G chegam as tecnologias mais disruptivas, mas chega, também, o risco de mais imersão, invasão e intrusão, ou seja, o risco iminente de uma grande colisão. Dito de outro modo, com a chegada das redes distribuídas as tecnologias imersivas, intrusivas e invasivas irão colidir, tarde ou cedo, com os seus destinatários potenciais. O que importa sublinhar nesta altura, no preciso momento em que a alta velocidade da rede 5G está para chegar, é o risco muito elevado de uma “grande colisão por excesso de velocidade”. De facto, a pandemia da covid-19 mostra-nos que está iminente uma grande colisão entre o infinitamente grande dos macro-organismos, os seres humanos que nós somos, e o infinitamente pequeno dos microorganismos, como é o caso da covid-19. Efeitos assimétricos Os efeitos assimétricos destas grandes transições vão deixar muitos territórios para trás. Cada transição tem o seu ciclo de vida específico, com uma duração variável, e é completamente impossível abordar todas as suas consequências no âmbito limitado de uma escala de tempo ou geografia em concreto. Ou seja, cada território nacional ou regional acabará por sofrer, tarde ou cedo, os danos colaterais de medidas erradas tomadas pelos territórios seus vizinhos. É nesta altura, justamente, que organizações supranacionais como a União Europeia ou subnacionais como as comunidades intermunicipais poderão e deverão mostrar toda a sua relevância geoeconómica e geopolítica. As interações fortuitas e os imponderáveis do acaso As características principais da rede 5G são a hipervelocidade, baixa latência, alta conectividade, elevada densidade e intensidade, curto alcance. Se pensarmos, agora, no polígono digital que esta rede nos oferece – Big data e computação na nuvem, (BDCC), Internet dos objetos (IOT), Inteligência artificial (IA), Realidade aumentada e virtual (RAV), Computação periférica (EC) – e na interação intensa entre estes e outros dispositivos tecnológicos e digitais, estamos cada vez mais próximos das chamadas “propriedades emergentes” do “serendipismo” (do inglês serenpidity), a saber, interações fortuitas, incidentes imprevistos, impactos inusitados, descobertas acidentais. Ou seja, perante a interdependência máxima crescem extraordinariamente os imponderáveis do acaso. Dispositivos tecnológicos e assistentes inteligentes Na sociedade da informação e da comunicação a inteligência deixou de estar contida nos limites humanos originais. Com efeito, nos dias que correm, a inteligência está dispersa e difusa, manifesta-se sob múltiplas formas e interage com praticamente tudo o que nos envolve. Deste ponto de vista, a realidade não para de aumentar todos os dias à medida que a inteligência se transfere para ambientes inteligentes que são extensões da nossa própria inteligência. Hoje tudo é smart, desde a realidade virtual e aumentada aos interfaces cérebro-computacionais, desde a inteligência dos objetos até à inteligência das máquinas. De facto, a nossa inteligência e as faculdades humanas estão a transitar para fora do seu habitat biológico e o corpo humano instala-se em dispositivos tecnológicos transumanos e pós-humanos cuja configuração futura nem sequer imaginamos. Entre a distração e a alucinação Somos screeners muitas horas por dia, é impossível manter a atenção num ambiente completamente saturado de notificações e avisos. A multiplicação dos dispositivos tecnológicos e digitais – uma espécie de sexto continente - exige de nós uma atualização constante. Todos os dias mergulhamos num imenso oceano de informação, experimentamos uma vertigem permanente para separar o essencial do acessório e lutamos com imensas dificuldades para administrar a nossa economia da atenção. No final do dia estamos exaustos e no dia seguinte, ainda debilitados, tudo recomeça. Na vertigem o foco da atenção converte-se num turbilhão, talvez, mesmo, em delírio e alucinação. As mudanças paradigmáticas Entre tantas transições previsíveis e excecionais haverá, também, mudanças paradigmáticas, cujos sinais de longo alcance só alguns vislumbrarão. O drama das mudanças paradigmáticas é que elas não se compadecem com a duração dos ciclos políticos curtos e muito menos com programas de governo reativos. A redução dos passivos climáticos, tais como o sequestro e armazenamento de carbono, ou a mudança de alguns aspetos nucleares do modelo de desenvolvimento dominante, por exemplo, a revisão de algumas cadeias de valor no sentido da sua reterritorialização, ou, ainda, a mudança de aspetos fundamentais do nosso comportamento quotidiano, por exemplo, no que diz respeito ao cumprimento de regras base de economia circular. Quer dizer, temos de estar avisados, não podemos permitir que os efeitos contraproducentes ou paradoxais das várias transições acabem por absorver os pequenos/grandes sinais das mudanças paradigmáticas. Notas Finais Como se observa, o risco de disrupção está sempre presente, seja o carácter invasivo e intrusivo das tecnologias 5G, a histeria coletiva de informação e comunicação num ambiente totalmente saturado, a crença nos mestres-algoritmos e na metalinguagem normalizadora das plataformas digitais. Digamos que, doravante, crescerá bastante o risco sistémico da economia digital 4G e 5G e, nesse sentido, estamos obrigados a desenvolver treino específico e capacidades especiais para entender e antecipar como se forjam e desenvolvem as interações fortuitas, os incidentes imprevistos e, por via deles, também, as descobertas acidentais. Este é o grande paradoxo do nosso tempo. Mais liberdade, mais incerteza, mais episódios acidentais. Por outro lado, os sinais dessas interações acidentais podem ser de tal modo fortuitos e furtivos que dificilmente caberão no interior das nossas métricas conceptuais e instrumentais habituais. O nosso arsenal teórico e, muito em especial, o campo das ciências sociais e humanas, com origem no iluminismo moderno e na cultura analógica, estão definitivamente postos em causa e a academia deve preparar-se para rever o seu estatuto científico eminente se não quiser ser um ator secundário que corre pelo lado de fora da realidade da cultura tecnológica e digital.",
+  "target_text": "O nosso tempo não corre de feição. Desastres ambientais motivados por alterações climáticas, campos de refugiados em número crescente, pandemia da covid-19, elevado número de abalos de terra e erupções vulcânicas, adição digital e ódio nas redes sociais, polarização social e radicalização política, crise da transição energética, precariedade nos mercados de trabalho e baixos salários, dívidas públicas acumuladas gigantescas, crescente tensão geopolítica entre grandes potências."
 }
 ```
 
@@ -826,8 +826,8 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Praia algarvia entre as seis melhores do mundo, destaca TripAdvisor\nDesta vez, deixa a segunda metade da tabela para firmar-se entre os dez melhores areais do planeta, subindo seis lugares em relação a 2021. “É uma praia deslumbrante... o sol bate nos diferentes tons de areia laranja e amarela das falésias altas que reflectem uma cor quente”, lê-se no comentário de um utilizador, destacado pela TripAdvisor em comunicado. “A própria areia da praia é um amarelo dourado de grão fino. As ondas quebram na praia com uma ferocidade gentil que cria um surf branco para nadadores e surfistas.” Para criar a lista, renovada anualmente, a TripAdvisor revê “dezenas de milhões de avaliações enviadas por milhões de viajantes globais nos últimos 12 meses”, analisando “a qualidade e a quantidade das avaliações” para “determinar as praias favoritas dos viajantes” no ano anterior, antecipando tendências para os próximos meses. Este ano, as escapadelas para praias insulares surgem particularmente “populares”, “com quase três quartos das dez melhores do mundo a situarem-se em locais remotos”, destaca a empresa em comunicado. É o caso da praia vencedora de 2023, a brasileira Baía do Sancho, localizada na ilha Fernando de Noronha. É um regresso ao topo da lista, subindo seis posições relativamente ao ano passado. Outro destaque é uma “nova e empolgante entrada”: a “dramática” praia de Reynisfjara, em Vik, na Islândia. “É uma praia como nenhuma outra”, assegura a nota de imprensa. “Com as suas mundialmente famosas areias negras e imponentes formações rochosas que se elevam sobre a costa, alguns podem reconhecer o impressionante cenário de A Guerra dos Tronos.” Apesar de “popular entre os observadores de pássaros devido aos vários tipos de aves marinhas avistadas nas proximidades, principalmente os papagaios-do-mar”, as “águas geladas” e as ondas, que podem atingir os 40 metros de altitude, não convidam a banhos. “É uma praia mais bem admirada da segurança do litoral.” “Além das adoradas praias do Havai, das Caraíbas e da Europa continental, a nossa comunidade está mesmo à procura de melhorar as suas experiências ao abraçar as falésias de Cannon Beach, na costa de Oregon, no Oeste dos Estados Unidos, e destinos mais frios, como a praia de Reynisfjara, na Islândia”, nota Sarah Firshein, chefe editorial da TripAdvisor, em comunicado.",
-    "target_text": "As “exuberantes falésias de areia vermelha” que emolduram “uma praia de areia branca que parece estender-se infinitamente”, terminando num “oceano azul-esverdeado”, valeram à praia da Falésia, situada em Olhos de Água, no concelho de Albufeira, o sexto lugar do ranking das melhores praias do mundo, eleito anualmente pelos Traveler's Choice Awards, da TripAdvisor. Há anos que o areal algarvio surge entre as preferências dos utilizadores da plataforma internacional, mantendo-se a única praia portuguesa no top mundial.",
+  "text": "Praia algarvia entre as seis melhores do mundo, destaca TripAdvisor\nDesta vez, deixa a segunda metade da tabela para firmar-se entre os dez melhores areais do planeta, subindo seis lugares em relação a 2021. “É uma praia deslumbrante... o sol bate nos diferentes tons de areia laranja e amarela das falésias altas que reflectem uma cor quente”, lê-se no comentário de um utilizador, destacado pela TripAdvisor em comunicado. “A própria areia da praia é um amarelo dourado de grão fino. As ondas quebram na praia com uma ferocidade gentil que cria um surf branco para nadadores e surfistas.” Para criar a lista, renovada anualmente, a TripAdvisor revê “dezenas de milhões de avaliações enviadas por milhões de viajantes globais nos últimos 12 meses”, analisando “a qualidade e a quantidade das avaliações” para “determinar as praias favoritas dos viajantes” no ano anterior, antecipando tendências para os próximos meses. Este ano, as escapadelas para praias insulares surgem particularmente “populares”, “com quase três quartos das dez melhores do mundo a situarem-se em locais remotos”, destaca a empresa em comunicado. É o caso da praia vencedora de 2023, a brasileira Baía do Sancho, localizada na ilha Fernando de Noronha. É um regresso ao topo da lista, subindo seis posições relativamente ao ano passado. Outro destaque é uma “nova e empolgante entrada”: a “dramática” praia de Reynisfjara, em Vik, na Islândia. “É uma praia como nenhuma outra”, assegura a nota de imprensa. “Com as suas mundialmente famosas areias negras e imponentes formações rochosas que se elevam sobre a costa, alguns podem reconhecer o impressionante cenário de A Guerra dos Tronos.” Apesar de “popular entre os observadores de pássaros devido aos vários tipos de aves marinhas avistadas nas proximidades, principalmente os papagaios-do-mar”, as “águas geladas” e as ondas, que podem atingir os 40 metros de altitude, não convidam a banhos. “É uma praia mais bem admirada da segurança do litoral.” “Além das adoradas praias do Havai, das Caraíbas e da Europa continental, a nossa comunidade está mesmo à procura de melhorar as suas experiências ao abraçar as falésias de Cannon Beach, na costa de Oregon, no Oeste dos Estados Unidos, e destinos mais frios, como a praia de Reynisfjara, na Islândia”, nota Sarah Firshein, chefe editorial da TripAdvisor, em comunicado.",
+  "target_text": "As “exuberantes falésias de areia vermelha” que emolduram “uma praia de areia branca que parece estender-se infinitamente”, terminando num “oceano azul-esverdeado”, valeram à praia da Falésia, situada em Olhos de Água, no concelho de Albufeira, o sexto lugar do ranking das melhores praias do mundo, eleito anualmente pelos Traveler's Choice Awards, da TripAdvisor. Há anos que o areal algarvio surge entre as preferências dos utilizadores da plataforma internacional, mantendo-se a única praia portuguesa no top mundial."
 }
 ```
 
@@ -864,12 +864,88 @@ euroeval --model <model-id> --dataset publico
 
 ## Instruction-following
 
-### IFEval-pt
+### MultiIFEval-pt
+
+This dataset is part of the MultiIFEval benchmark, which translates and localises IFEval
+prompts into 305 languages using a structured LLM generation pipeline. For each target
+language, a randomly chosen target-language Wikipedia article is included as grounding
+to reduce hallucination and improve cultural localisation. Instruction IDs are preserved
+for traceability, and kwargs keys are retained (with values localised where
+appropriate), so constraints can still be checked programmatically. Outputs are
+schema-validated; malformed or empty outputs were excluded.
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Escreve um resumo com mais de 300 palavras da página da Wikipédia \"https://pt.wikipedia.org/wiki/Papa_Pio_VII\". Não utilizes nenhumas vírgulas e destaca pelo menos 3 secções que tenham títulos em formato markdown, por exemplo *secção destacada parte 1*, *secção destacada parte 2*, *secção destacada parte 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Estou a planear uma viagem ao Japão e gostaria que vós escrevêsseis um itinerário para a minha jornada num estilo shakespeariano. Não tendes permissão para utilizar quaisquer vírgulas na vossa resposta.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Escreve um currículo para um recém-licenciado do ensino secundário que esteja à procura do seu primeiro emprego. Certifica-te de incluir pelo menos 12 espaços reservados (placeholders) representados por parênteses retos, tais como [morada], [nome].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-pt
+```
+
+### Unofficial: IFEval-pt
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.15553)
-and is a translation of the English IFEval dataset, which was published in [this
-paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
-combination of one or more of 25 different constraints. The dataset was machine
+and is a translation of the English IFEval dataset, which was published in
+[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each
+with a combination of one or more of 25 different constraints. The dataset was machine
 translated using the Llama-3.1-405B model.
 
 We use the original dataset as the test split, and do not include the other splits, as
@@ -880,51 +956,39 @@ Here are a few examples from the test split:
 
 ```json
 {
-    "text": "Traduza a seguinte frase para alemão e depois critique-a: Werner era um bom amigo meu, mas não muito inteligente. Evite a palavra \"esperto\" em toda a sua resposta.",
-    "target_text": {
-        "instruction_id_list": [
-            "keywords:forbidden_words"
-        ],
-        "kwargs": [
-            {
-                "forbidden_words": [
-                    "esperto"
-                ]
-            }
-        ]
-    }
+  "text": "Traduza a seguinte frase para alemão e depois critique-a: Werner era um bom amigo meu, mas não muito inteligente. Evite a palavra \"esperto\" em toda a sua resposta.",
+  "target_text": {
+    "instruction_id_list": ["keywords:forbidden_words"],
+    "kwargs": [
+      {
+        "forbidden_words": ["esperto"]
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Escreva cartas de apresentação para uma candidatura a emprego. É para uma posição de professor assistente. Forneça exatamente duas versões e separe-as com seis símbolos de asterisco:\n\nVersão da carta de apresentação 1\n******\nVersão da carta de apresentação 2\n\nAlém disso, evite usar vírgulas na sua resposta.",
-    "target_text": {
-        "instruction_id_list": [
-            "combination:two_responses",
-            "punctuation:no_comma"
-        ],
-        "kwargs": [
-            {},
-            {}
-        ]
-    }
+  "text": "Escreva cartas de apresentação para uma candidatura a emprego. É para uma posição de professor assistente. Forneça exatamente duas versões e separe-as com seis símbolos de asterisco:\n\nVersão da carta de apresentação 1\n******\nVersão da carta de apresentação 2\n\nAlém disso, evite usar vírgulas na sua resposta.",
+  "target_text": {
+    "instruction_id_list": ["combination:two_responses", "punctuation:no_comma"],
+    "kwargs": [{}, {}]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Escreva um limerique sobre um cara chamado Dave que seja engraçado para mães. O limerique deve terminar com a frase \"Sim mãe, eu sou o Dave.\" Não diga nada após o limerique.",
-    "target_text": {
-        "instruction_id_list": [
-            "startend:end_checker"
-        ],
-        "kwargs": [
-            {
-                "end_phrase": "Sim mãe, eu sou o Dave."
-            }
-        ]
-    }
+  "text": "Escreva um limerique sobre um cara chamado Dave que seja engraçado para mães. O limerique deve terminar com a frase \"Sim mãe, eu sou o Dave.\" Não diga nada após o limerique.",
+  "target_text": {
+    "instruction_id_list": ["startend:end_checker"],
+    "kwargs": [
+      {
+        "end_phrase": "Sim mãe, eu sou o Dave."
+      }
+    ]
+  }
 }
 ```
 
@@ -952,10 +1016,10 @@ euroeval --model <model-id> --dataset ifeval-pt
 
 ### ValEU-pt
 
-This dataset is the official Portuguese version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official Portuguese version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU

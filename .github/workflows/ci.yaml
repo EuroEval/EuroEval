@@ -1,7 +1,7 @@
 name: CI
 
 on:
-  pull_request_target:
+  pull_request:
     types:
       - opened
       - synchronize
@@ -19,16 +19,9 @@ jobs:
     if: github.event.pull_request.draft == false
     permissions:
       contents: read
-      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-        with:
-          # `pull_request_target` checks out the base branch by default; check out
-          # the PR head so CI validates the proposed changes, not `main`. Combined
-          # with `persist-credentials: false` so the PR code never sees the token.
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
 
       - name: Install uv and set up Python
         uses: astral-sh/setup-uv@v6
@@ -43,19 +36,12 @@ jobs:
     if: github.event.pull_request.draft == false
     permissions:
       contents: read
-      pull-requests: write
     strategy:
         matrix:
             python-version: ["3.12", "3.13"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-        with:
-          # `pull_request_target` checks out the base branch by default; check out
-          # the PR head so CI validates the proposed changes, not `main`. Combined
-          # with `persist-credentials: false` so the PR code never sees the token.
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
 
       - name: Install uv and set up Python
         uses: astral-sh/setup-uv@v6
@@ -86,16 +72,9 @@ jobs:
     if: github.event.pull_request.draft == false && contains(github.event.pull_request.labels.*.name, 'macos')
     permissions:
       contents: read
-      pull-requests: write
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
-        with:
-          # `pull_request_target` checks out the base branch by default; check out
-          # the PR head so CI validates the proposed changes, not `main`. Combined
-          # with `persist-credentials: false` so the PR code never sees the token.
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
 
       - name: Install uv and set up Python
         uses: astral-sh/setup-uv@v6

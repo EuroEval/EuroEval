@@ -76,10 +76,10 @@ HELLASWAG_SV_CONFIG = DatasetConfig(
     languages=[SWEDISH],
 )
 
-IFEVAL_SV_CONFIG = DatasetConfig(
-    name="ifeval-sv",
-    pretty_name="IFEval-sv",
-    source="EuroEval/ifeval-sv",
+MULTI_IFEVAL_SV_CONFIG = DatasetConfig(
+    name="multi-ifeval-sv",
+    pretty_name="MultiIFEval-sv",
+    source="EuroEval/multi-ifeval-sv",
     task=INSTRUCTION_FOLLOWING,
     languages=[SWEDISH],
     train_split=None,
@@ -98,8 +98,27 @@ VALEU_SV_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+ZEBRA_PUZZLE_EASY_SV_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-sv",
+    pretty_name="ZebraPuzzlesEasy-sv",
+    source="EuroEval/zebra-puzzles-easy-sv",
+    task=LOGIC,
+    languages=[SWEDISH],
+)
+
 
 # Unofficial datasets ###
+
+IFEVAL_SV_CONFIG = DatasetConfig(
+    name="ifeval-sv",
+    pretty_name="IFEval-sv",
+    source="EuroEval/ifeval-sv",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[SWEDISH],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
 
 SCHIBSTED_SV_CONFIG = DatasetConfig(
     name="schibsted-sv",
@@ -204,15 +223,6 @@ GERLANGMOD_SV_CONFIG = DatasetConfig(
     pretty_name="GerLangMod-sv",
     source="EuroEval/gerlangmod-sv",
     task=GED,
-    languages=[SWEDISH],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_SV_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-sv",
-    pretty_name="ZebraPuzzlesEasy-sv",
-    source="EuroEval/zebra-puzzles-easy-sv",
-    task=LOGIC,
     languages=[SWEDISH],
     unofficial=True,
 )

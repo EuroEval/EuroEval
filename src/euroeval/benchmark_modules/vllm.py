@@ -66,6 +66,7 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
+from ..tasks import LOGIC
 from ..tokenisation_utils import (
     apply_chat_template,
     get_bos_token,
@@ -382,7 +383,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
     @property
     def generative_type(self) -> GenerativeType | None:
-        """Get the generative type of the model.
+        """The generative type of the model.
 
         Returns:
             The generative type of the model, or None if it has not been set yet.
@@ -624,7 +625,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 "FULL_LOG=1 to see what the error was. Skipping this evaluation."
             )
 
-        structured_generation_schema = None
         if (
             self.dataset_config.task.uses_structured_output
             or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
@@ -652,6 +652,38 @@ class VLLMModel(HuggingFaceEncoderModel):
                 structured_generation_schema = answer_format_class.model_json_schema()
                 log_once(
                     "Using structured generation with the JSON schema: "
+                    f"{json.dumps(structured_generation_schema, ensure_ascii=False)}",
+                    level=logging.DEBUG,
+                )
+                structured_outputs = StructuredOutputsParams(
+                    json=structured_generation_schema
+                )
+            elif self.dataset_config.task == LOGIC:
+                # Extract N (number of objects) and K (number of attributes) from the
+                # first sample to create a dynamic schema for LOGIC tasks.
+                # The target_text is a JSON string, so parse it first.
+                first_sample_raw = inputs["target_text"][0]
+                first_sample = (
+                    json.loads(first_sample_raw)
+                    if isinstance(first_sample_raw, str)
+                    else first_sample_raw
+                )
+                object_keys = [
+                    key for key in first_sample.keys() if key.startswith("object_")
+                ]
+                n = len(object_keys)
+                # Extract K from the first object's attribute list
+                k = len(first_sample[object_keys[0]]) if object_keys else 0
+                keys_and_their_types: dict[str, t.Any] = {
+                    f"object_{i}": (list[str], ...) for i in range(1, n + 1)
+                }
+                answer_format_class = create_model(
+                    "AnswerFormat", **keys_and_their_types
+                )
+                structured_generation_schema = answer_format_class.model_json_schema()
+                log_once(
+                    f"LOGIC task with {n} objects and {k} attributes per object. "
+                    f"Using structured generation with the JSON schema: "
                     f"{json.dumps(structured_generation_schema, ensure_ascii=False)}",
                     level=logging.DEBUG,
                 )
@@ -1514,34 +1546,37 @@ def load_model(
     )
 
     def _create_llm() -> "LLM":
-        return LLM(
-            model=model_location,
-            tokenizer=model_location,
-            gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
-            max_model_len=max_model_len,
-            max_num_batched_tokens=max_model_len,
-            download_dir=download_dir,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            revision=revision,
-            seed=4242,
-            distributed_executor_backend=distributed_executor_backend,
-            tensor_parallel_size=tensor_parallel_size,
-            pipeline_parallel_size=pipeline_parallel_size,
-            disable_custom_all_reduce=True,
-            quantization=quantization,
-            dtype=dtype,  # ty: ignore[invalid-argument-type]
-            enforce_eager=True,
+        llm_kwargs: dict[str, t.Any] = {
+            "model": model_location,
+            "tokenizer": model_location,
+            "gpu_memory_utilization": benchmark_config.gpu_memory_utilization,
+            "max_model_len": max_model_len,
+            "max_num_batched_tokens": max_model_len,
+            "download_dir": download_dir,
+            "trust_remote_code": benchmark_config.trust_remote_code,
+            "revision": revision,
+            "seed": 4242,
+            "distributed_executor_backend": distributed_executor_backend,
+            "tensor_parallel_size": tensor_parallel_size,
+            "pipeline_parallel_size": pipeline_parallel_size,
+            "disable_custom_all_reduce": True,
+            "quantization": quantization,
+            "dtype": dtype,  # ty: ignore[invalid-argument-type]
+            "enforce_eager": True,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
-            enable_prefix_caching=False,
-            enable_lora=model_config.adapter_base_model_id is not None,
-            max_lora_rank=256,
-            limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
+            "enable_prefix_caching": False,
+            # Disable FlashInfer autotuning to avoid CUDA kernel compilation overhead
+            "enable_flashinfer_autotune": False,
+            "enable_lora": model_config.adapter_base_model_id is not None,
+            "max_lora_rank": 256,
+            "limit_mm_per_prompt": {"image": 0, "video": 0, "audio": 0},
             # runner is required for LLM.generate() to work with generative models
-            runner="generate",
+            "runner": "generate",
             **({"hf_overrides": hf_overrides} if hf_overrides else {}),
             **vllm_params,
-        )
+        }
+        return LLM(**llm_kwargs)
 
     try:
         model = _create_llm()

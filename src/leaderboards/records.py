@@ -33,13 +33,19 @@ def plain_model_id(model_id: str) -> str:
     canonical ``org/repo`` slug — we don't want to list the same model
     several times.
 
+    Preserves ``#no-thinking``, ``#thinking`` and ``@revision`` suffixes
+    used for parameterised model IDs — these are meaningful for upload
+    filenames and core/per-model grouping.
+
     Args:
         model_id:
             The (possibly anchored, possibly variant-suffixed) identifier.
 
     Returns:
-        The canonical ``org/repo`` slug.
+        The canonical ``org/repo`` slug with variant suffix removed, but
+        ``#param`` and ``@revision`` preserved.
     """
+    # Strip HTML anchors and (val)/(zero-shot) variant suffixes only
     return VARIANT_SUFFIX_RE.sub("", strip_anchor(model_id))
 
 

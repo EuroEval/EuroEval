@@ -8,9 +8,9 @@ information about what these constitute.
 
 ### AlloCiné
 
-This dataset was published in [this Github
-repository](https://github.com/TheophileBlard/french-sentiment-analysis-with-bert) and
-features reviews from the French movie review website
+This dataset was published in
+[this Github repository](https://github.com/TheophileBlard/french-sentiment-analysis-with-bert)
+and features reviews from the French movie review website
 [AlloCiné](https://www.allocine.fr/). The reviews range from 0.5 to 5 (inclusive), with
 steps of 0.5. The negative samples are reviews with a rating of at most 2, and the
 positive ones are reviews with a rating of at least 4. The reviews in between were
@@ -167,11 +167,11 @@ euroeval --model <model-id> --dataset eltec
 ### ScaLA-fr
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [French Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_French-GSD/tree/master) by
-assuming that the documents in the treebank are correct, and corrupting the samples to
-create grammatically incorrect samples. The corruptions were done by either removing a
-word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+and was automatically created from the
+[French Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_French-GSD/tree/master)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
 that this does indeed break the grammaticality of the sentence, a set of rules were used
 on the part-of-speech tags of the words in the sentence.
 
@@ -241,9 +241,9 @@ euroeval --model <model-id> --dataset scala-fr
 
 ### FQuAD
 
-This dataset was published in [this
-paper](https://aclanthology.org/2020.findings-emnlp.107/), and is a manually annotated
-dataset of questions and answers from the French Wikipedia.
+This dataset was published in
+[this paper](https://aclanthology.org/2020.findings-emnlp.107/), and is a manually
+annotated dataset of questions and answers from the French Wikipedia.
 
 The original full dataset consists of 20,731 / 3,188 / 2,189 samples for training,
 validation and testing, respectively. Note that the testing split is not publicly
@@ -479,11 +479,11 @@ euroeval --model <model-id> --dataset multi-wiki-qa-fr
 
 ### MMLU-fr
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-French was done by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to French was done by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
@@ -571,25 +571,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Qui est le dernier Président de la IVème République ?\nChoix:\na. René Coty\nb. Félix Gaillard\nc. Charles de Gaulle\nd. Alain Poher",
-    "label": "a",
-    "subject": "History"
+  "text": "Qui est le dernier Président de la IVème République ?\nChoix:\na. René Coty\nb. Félix Gaillard\nc. Charles de Gaulle\nd. Alain Poher",
+  "label": "a",
+  "subject": "History"
 }
 ```
 
 ```json
 {
-    "text": "Qui a réalisé le film « Léon » ?\nChoix:\na. Costa-Gavras\nb. Luc Besson\nc. Martin Scorsese\nd. Steven Spielberg",
-    "label": "b",
-    "subject": "Culturology"
+  "text": "Qui a réalisé le film « Léon » ?\nChoix:\na. Costa-Gavras\nb. Luc Besson\nc. Martin Scorsese\nd. Steven Spielberg",
+  "label": "b",
+  "subject": "Culturology"
 }
 ```
 
 ```json
 {
-    "text": "Pour consulter mon solde de points, je me rends sur le site internet :\nChoix:\na. Allopoints.\nb. Info-point.\nc. Telepoint.\nd. Point-permis.",
-    "label": "c",
-    "subject": "Driving License"
+  "text": "Pour consulter mon solde de points, je me rends sur le site internet :\nChoix:\na. Allopoints.\nb. Info-point.\nc. Telepoint.\nd. Point-permis.",
+  "label": "c",
+  "subject": "Driving License"
 }
 ```
 
@@ -632,30 +632,30 @@ questions are separately sourced and designed to target locally relevant topics 
 French-speaking populations.
 
 We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
-questions with correct answers in the 'targets' column. We use the first target answer as
-the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
-question. We create a 16 / 234 split for training and testing, respectively.
+questions with correct answers in the 'targets' column. We use the first target answer
+as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
+per question. We create a 16 / 234 split for training and testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Quel est le métier de la seconde femme de Joseph Ferdinand Cheval?\nChoix:\na. tailleuse\nb. couturière\nc. institutrice\nd. boulangère",
-    "label": "a"
+  "text": "Quel est le métier de la seconde femme de Joseph Ferdinand Cheval?\nChoix:\na. tailleuse\nb. couturière\nc. institutrice\nd. boulangère",
+  "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Qui est le père des quatre enfants de Mercotte ?\nChoix:\na. Cyril Lignac\nb. Mercorelli\nc. Bernard Laurance\nd. Philippe Etchebest",
-    "label": "b"
+  "text": "Qui est le père des quatre enfants de Mercotte ?\nChoix:\na. Cyril Lignac\nb. Mercorelli\nc. Bernard Laurance\nd. Philippe Etchebest",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Dans le film de 2017120 Battements par minute, à quelle association sont rattachées les personnes qui répandent les cendres de Sean sur des petits-fours ?\nChoix:\na. AIDES\nb. SOS Homophobie\nc. Act Up– Paris\nd. Sidaction",
-    "label": "c"
+  "text": "Dans le film de 2017120 Battements par minute, à quelle association sont rattachées les personnes qui répandent les cendres de Sean sur des petits-fours ?\nChoix:\na. AIDES\nb. SOS Homophobie\nc. Act Up– Paris\nd. Sidaction",
+  "label": "c"
 }
 ```
 
@@ -704,22 +704,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Mon premier est la même première lettre de l'alphabet d'un fruit royal. Mon deuxième se prononce comme le liquide indispensable au corps humain. Mon troisième est une lettre qui se prononce comme le mot qui est l'inverse du mot amour. Mon tout est quelque chose qui nous réjouit.\nChoix:\na. Don.\nb. Jouet\nc. Rire\nd. Roi",
-    "label": "a"
+  "text": "Mon premier est la même première lettre de l'alphabet d'un fruit royal. Mon deuxième se prononce comme le liquide indispensable au corps humain. Mon troisième est une lettre qui se prononce comme le mot qui est l'inverse du mot amour. Mon tout est quelque chose qui nous réjouit.\nChoix:\na. Don.\nb. Jouet\nc. Rire\nd. Roi",
+  "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Mon frère souhaite célébrer la Saint Jean avec la famille de sa copine cette année. Il va passer son permis juste après la pentecôte et a 17 ans. Pourra-t-il conduire seul pour y aller?\nChoix:\na. Non, il doit attendre d'avoir 18 ans pour conduire seul.\nb. Oui, si il réussi l'examen du permis de conduire.\nc. Non, il doit obligatoirement être accompagné d'un adulte jusqu'à ses 21 ans.\nd. Oui, il pourra conduire seul, même sans passer l'examen du permis de conduire.",
-    "label": "b"
+  "text": "Mon frère souhaite célébrer la Saint Jean avec la famille de sa copine cette année. Il va passer son permis juste après la pentecôte et a 17 ans. Pourra-t-il conduire seul pour y aller?\nChoix:\na. Non, il doit attendre d'avoir 18 ans pour conduire seul.\nb. Oui, si il réussi l'examen du permis de conduire.\nc. Non, il doit obligatoirement être accompagné d'un adulte jusqu'à ses 21 ans.\nd. Oui, il pourra conduire seul, même sans passer l'examen du permis de conduire.",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Si mon premier, ambulant, fait peur, mon second est, lui, délicieux, et mon tout boira le vin nouveau. Qui suis-je ?\nChoix:\na. squelette vineux\nb. fantôme gourmand\nc. cadavre exquis\nd. zombie friand",
-    "label": "c"
+  "text": "Si mon premier, ambulant, fait peur, mon second est, lui, délicieux, et mon tout boira le vin nouveau. Qui suis-je ?\nChoix:\na. squelette vineux\nb. fantôme gourmand\nc. cadavre exquis\nd. zombie friand",
+  "label": "c"
 }
 ```
 
@@ -758,11 +758,11 @@ euroeval --model <model-id> --dataset multinrc-fr
 
 ### HellaSwag-fr
 
-This dataset is a machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/). The original dataset was based on both
-video descriptions from ActivityNet as well as how-to articles from WikiHow. The dataset
-was translated by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
+on both video descriptions from ActivityNet as well as how-to articles from WikiHow. The
+dataset was translated by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 9,310 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).
@@ -833,13 +833,13 @@ euroeval --model <model-id> --dataset hellaswag-fr
 
 ### Unofficial: GoldenSwag-fr
 
-This dataset is a filtered and machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
-ActivityNet as well as how-to articles from WikiHow. The machine translated version was
-published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
-DeepL, and the filtering was published in [this
-paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
-samples.
+This dataset is a filtered and machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video
+descriptions from ActivityNet as well as how-to articles from WikiHow. The machine
+translated version was published in
+[this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and
+the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825),
+which resulted in higher quality samples.
 
 The original full dataset consists of 1530 / 1530 samples for training and validation,
 respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
@@ -912,8 +912,8 @@ euroeval --model <model-id> --dataset goldenswag-fr
 ### Unofficial: Winogrande-fr
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -983,10 +983,10 @@ euroeval --model <model-id> --dataset winogrande-fr
 
 ### Orange Sum
 
-This dataset was published in [this
-paper](https://aclanthology.org/2021.emnlp-main.740/) and consists of news articles from
-[Orange Actu](https://actu.orange.fr/). The summaries were written by the journalists
-themselves (the "abstract" field in the original dataset).
+This dataset was published in
+[this paper](https://aclanthology.org/2021.emnlp-main.740/) and consists of news
+articles from [Orange Actu](https://actu.orange.fr/). The summaries were written by the
+journalists themselves (the "abstract" field in the original dataset).
 
 The original full dataset consists of 21,401 / 1,500 / 1,500 samples for training,
 validation and testing, respectively. We use 1,024 / 256 / 1,024 samples for training,
@@ -1050,11 +1050,11 @@ euroeval --model <model-id> --dataset orange-sum
 
 ### IFEval-fr
 
-This dataset was published in [this
-paper](https://doi.org/10.18653/v1/2025.findings-naacl.344) and is a manually curated
-French version of the English IFEval dataset, which was published in [this
-paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 235 prompts, each with a
-combination of one or more of different constraints.
+This dataset was published in
+[this paper](https://doi.org/10.18653/v1/2025.findings-naacl.344) and is a manually
+curated French version of the English IFEval dataset, which was published in
+[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 235 prompts, each
+with a combination of one or more of different constraints.
 
 We use the original dataset as the test split, and do not include the other splits, as
 we only evaluate models zero-shot and the size is too small to warrant an even smaller
@@ -1064,52 +1064,41 @@ Here are a few examples from the test split:
 
 ```json
 {
-    "text": "Narre une histoire d'amour contrariée se déroulant pendant la Seconde Guerre mondiale. Votre récit devrait inclure le mot \"guerre\" moins de deux fois.",
-    "target_text": {
-        "instruction_id_list": [
-            "fr:keywords:frequency"
-        ],
-        "kwargs": [
-            {
-                "frequency": 2,
-                "keyword": "guerre",
-                "relation": "moins de"
-            }
-        ]
-    }
+  "text": "Narre une histoire d'amour contrariée se déroulant pendant la Seconde Guerre mondiale. Votre récit devrait inclure le mot \"guerre\" moins de deux fois.",
+  "target_text": {
+    "instruction_id_list": ["fr:keywords:frequency"],
+    "kwargs": [
+      {
+        "frequency": 2,
+        "keyword": "guerre",
+        "relation": "moins de"
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Élaborez un discours sur les points positifs et négatifs de l'intelligence artificielle dans notre vie de tous les jours. Veuillez rédiger votre réponse en utilisant uniquement des lettres minuscules, sans aucun mot en majuscule.",
-    "target_text": {
-        "instruction_id_list": [
-            "fr:change_case:french_lowercase"
-        ],
-        "kwargs": [
-            {}
-        ]
-    }
+  "text": "Élaborez un discours sur les points positifs et négatifs de l'intelligence artificielle dans notre vie de tous les jours. Veuillez rédiger votre réponse en utilisant uniquement des lettres minuscules, sans aucun mot en majuscule.",
+  "target_text": {
+    "instruction_id_list": ["fr:change_case:french_lowercase"],
+    "kwargs": [{}]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Rédigez une lettre adressée à votre vous-même dans une décennie. Assurez-vous d'inclure les termes ['gouvernance', 'palais'] dans votre lettre.",
-    "target_text": {
-        "instruction_id_list": [
-            "fr:keywords:existence"
-        ],
-        "kwargs": [
-            {
-                "keywords": [
-                    "gouvernance",
-                    "palais"
-                ]
-            }
-        ]
-    }
+  "text": "Rédigez une lettre adressée à votre vous-même dans une décennie. Assurez-vous d'inclure les termes ['gouvernance', 'palais'] dans votre lettre.",
+  "target_text": {
+    "instruction_id_list": ["fr:keywords:existence"],
+    "kwargs": [
+      {
+        "keywords": ["gouvernance", "palais"]
+      }
+    ]
+  }
 }
 ```
 
@@ -1133,14 +1122,90 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset ifeval-fr
 ```
 
+### Unofficial: MultiIFEval-fr
+
+This dataset is a translated and localised version of IFEval from the MultiIFEval
+benchmark, which covers 305 languages. It was generated using a structured LLM
+generation pipeline with target-language Wikipedia grounding to reduce hallucination and
+improve cultural localisation. Instruction IDs are preserved for traceability, and
+kwargs keys are retained (with values localised where appropriate), so constraints can
+still be checked programmatically. Outputs are schema-validated; malformed or empty
+outputs were excluded.
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Rédigez un résumé de plus de 300 mots de la page Wikipédia \"https://fr.wikipedia.org/wiki/Raymond_III_de_Tripoli\". N'utilisez aucune virgule et mettez en évidence au moins 3 sections possédant des titres au format markdown, par exemple *partie mise en évidence 1*, *partie mise en évidence 2*, *partie mise en évidence 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Je prévois un voyage au Japon et j'aimerais que tu rédiges un itinéraire pour mon périple dans un style shakespearien. Tu n'as pas le droit d'utiliser de virgules dans ta réponse.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Rédigez un CV pour un jeune diplômé du baccalauréat qui recherche son premier emploi. Assurez-vous d'inclure au moins 12 espaces réservés représentés par des crochets, tels que [adresse], [nom].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-fr
+```
+
 ## European Values
 
 ### ValEU-fr
 
-This dataset is the official French version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official French version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU

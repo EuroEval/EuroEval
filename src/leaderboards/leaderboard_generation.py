@@ -16,7 +16,7 @@ from euroeval.constants import ORTHOGONAL_TASKS
 
 from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR
 from .link_generation import generate_task_link
-from .records import convert_to_float, drop_val_duplicates, get_dataset
+from .records import drop_val_duplicates, get_dataset, plain_model_id
 from .result_loading import load_raw_results
 from .score_computation import compute_ranks_bootstrap, compute_standard_ranks_bootstrap
 from .score_extraction import extract_model_metadata, group_results_by_model
@@ -36,7 +36,7 @@ def generate_leaderboard(
     Args:
         leaderboard_name:
             The slug used in output filenames (e.g. ``"danish"``,
-            ``"mainland_scandinavian"``).
+            ``"scandinavian"``).
         language_names:
             The languages the leaderboard covers. Each name must resolve via
             ``euroeval.languages``; the official leaderboard datasets are
@@ -112,6 +112,7 @@ def generate_leaderboard(
 
         # Check if anything got updated
         new_records: list[str] = []
+        schema_changed = False
         # Exclude columns that change even when a model's own performance does
         # not, so that adding one new model doesn't flag nearly every existing
         # model as "updated":
@@ -140,39 +141,95 @@ def generate_leaderboard(
                 re.sub(r"<a href=['\"].*?['\"]>(.*?)</a>", r"\1", col)
                 for col in old_df.columns
             ]
-            if any(col not in old_df.columns for col in comparison_columns):
-                new_records = df.Model.tolist()
-            else:
-                for model_id in set(df.Model.tolist() + old_df.Model.tolist()):
-                    model_is_new = (
-                        model_id in df.Model.values
-                        and model_id not in old_df.Model.values
-                    )
-                    model_is_removed = (
-                        model_id in old_df.Model.values
-                        and model_id not in df.Model.values
-                    )
-                    if model_is_new or model_is_removed:
-                        new_records.append(model_id)
-                        continue
+            # Identify new columns (in new df but not in old, excluding rank columns for
+            # schema change detection)
+            old_comparison_columns = [
+                col
+                for col in old_df.columns
+                if col.lower() != "rank"
+                and col not in rank_score_columns
+                and not col.endswith(("_version", "_failures", "_scored"))
+            ]
+            new_columns = set(comparison_columns) - set(old_comparison_columns)
+            removed_columns = set(old_comparison_columns) - set(comparison_columns)
+            schema_changed = bool(new_columns) or bool(removed_columns)
+            # Compute common columns for score comparison (intersection)
+            common_columns = [
+                col for col in comparison_columns if col in old_comparison_columns
+            ]
+            # Compare models on common columns
+            for model_id in set(df.Model.tolist() + old_df.Model.tolist()):
+                model_is_new = (
+                    model_id in df.Model.values and model_id not in old_df.Model.values
+                )
+                model_is_removed = (
+                    model_id in old_df.Model.values and model_id not in df.Model.values
+                )
+                if model_is_new or model_is_removed:
+                    new_records.append(model_id)
+                    continue
 
-                    old_model_row = old_df[comparison_columns].query(
-                        "Model == @model_id"
+                # Compare on common columns only
+                old_model_row = old_df[common_columns].query("Model == @model_id")
+                new_model_row = df[common_columns].query("Model == @model_id")
+                # Normalise placeholders to NaN for comparison ("-", "N/A", "?", "" all
+                # mean missing). Keep formatted scores like "60.17 ± 1.40" as-is.
+
+                def normalise_score(x: float | str) -> float | str:
+                    if pd.isna(x):
+                        return float("nan")
+                    s = str(x).strip()
+                    if s in {"-", "N/A", "?", ""}:
+                        return float("nan")
+                    return s
+
+                old_model_results = old_model_row.map(normalise_score).reset_index(
+                    drop=True
+                )
+                new_model_results = new_model_row.map(normalise_score).reset_index(
+                    drop=True
+                )
+                # Fill NaN with sentinel for comparison (missing = missing is equal)
+                model_has_changed_scores = not (
+                    old_model_results.fillna(-999).equals(
+                        new_model_results.fillna(-999)
                     )
-                    new_model_row = df[comparison_columns].query("Model == @model_id")
-                    # Convert to float where possible, keeping NaN for missing scores
-                    old_model_results = old_model_row.map(convert_to_float)
-                    new_model_results = new_model_row.map(convert_to_float)
-                    # Fill NaN with sentinel for comparison (missing = missing is equal)
-                    model_has_new_results = not (
-                        old_model_results.fillna(-999).equals(
-                            new_model_results.fillna(-999)
-                        )
-                    )
-                    if model_has_new_results:
-                        new_records.append(model_id)
+                )
+                if model_has_changed_scores:
+                    new_records.append(model_id)
+
+            # Additionally, check if any existing model has scores in new columns
+            if new_columns:
+                for model_id in df.Model.tolist():
+                    if model_id in old_df.Model.values:
+                        # Check if this model has real scores in any new column
+                        new_model_row = df.loc[
+                            df["Model"] == model_id, list(new_columns)
+                        ]
+                        # A real score is any non-placeholder value
+
+                        def is_not_placeholder(x: float | str) -> bool:
+                            if pd.isna(x):
+                                return False
+                            return str(x).strip() not in {"-", "N/A", "?", ""}
+
+                        has_new_scores = (
+                            new_model_row.map(is_not_placeholder).any().any()
+                        )  # type: ignore[attr-defined]
+                        if has_new_scores and model_id not in new_records:
+                            new_records.append(model_id)
         else:
             new_records = df.Model.tolist()
+
+        # Determine if file should be written: schema changed, models added/removed/
+        # modified, or force flag
+        should_write = bool(new_records) or schema_changed or force
+        if should_write and not new_records and schema_changed:
+            # Schema changed but no model scores changed; still a meaningful update
+            logger.info(
+                f"Updated the {category!r} category of the {leaderboard_title} "
+                "leaderboard with schema changes (new/removed columns)."
+            )
 
         # Remove anchor tags from model names
         new_records = [
@@ -180,7 +237,7 @@ def generate_leaderboard(
             for model in new_records
         ]
 
-        if new_records or force:
+        if should_write:
             top_header, second_header = create_leaderboard_headers(
                 df=df, leaderboard_configs=configs
             )
@@ -426,6 +483,22 @@ def generate_dataframe(
             seed=42,
         )
 
+        # Orthogonal-task results (e.g. European Values) are evaluated once per
+        # model, independent of the few-shot / validation-split configuration, so
+        # their records carry no variant suffix and live under the bare model id.
+        # Collect them keyed by the config-independent plain model id so that
+        # every variant row of a model (e.g. "model (zero-shot, val)") can display
+        # the score, not just the row whose config happens to match the bare id.
+        orthogonal_scores_by_plain: dict[str, dict[str, float]] = defaultdict(dict)
+        for other_model_id, other_results in model_results.items():
+            other_plain_id = plain_model_id(other_model_id)
+            for dataset in category_to_orthogonal_datasets[category]:
+                if dataset not in other_results:
+                    continue
+                main_score = other_results[dataset][0][1]
+                if not math.isnan(main_score):
+                    orthogonal_scores_by_plain[other_plain_id][dataset] = main_score
+
         data_dict: dict[str, list] = defaultdict(list)
         for model_id, results in model_results.items():
             has_all_datasets = model_id in eligible_model_results
@@ -475,9 +548,20 @@ def generate_dataframe(
                 for task in category_to_orthogonal_datasets[category].values()
             }
 
+            # Orthogonal scores are keyed by the config-independent plain model
+            # id, so a model's European Values score shows on every variant row
+            # (e.g. zero-shot / validation-split runs), regardless of which config
+            # the orthogonal evaluation itself was recorded under.
+            plain_id = plain_model_id(model_id)
+            orthogonal_scores = defaultdict(list)  # task -> list of scores
+            for dataset, orthogonal_main_score in orthogonal_scores_by_plain.get(
+                plain_id, {}
+            ).items():
+                orthogonal_task = category_to_orthogonal_datasets[category][dataset]
+                orthogonal_scores[orthogonal_task].append(orthogonal_main_score)
+
             # Get individual dataset scores for the model
             total_results = {}
-            orthogonal_scores = defaultdict(list)  # task -> list of scores
             for dataset in category_to_datasets[category]:
                 if dataset in results:
                     scores = results[dataset]
@@ -500,11 +584,6 @@ def generate_dataframe(
                         f"{total_score:,.2f} ± {std_err:,.2f}"
                         for _, total_score, std_err in scores
                     )
-                    if dataset in category_to_orthogonal_datasets[category]:
-                        orthogonal_task = category_to_orthogonal_datasets[category][
-                            dataset
-                        ]
-                        orthogonal_scores[orthogonal_task].append(main_score)
                 else:
                     score_str = "-"
                 total_results[dataset] = score_str

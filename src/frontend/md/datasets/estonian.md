@@ -8,9 +8,9 @@ information about what these constitute.
 
 ### Estonian Valence Corpus
 
-This dataset was published in [this
-paper](http://dx.doi.org/10.7592/FEJF2016.64.polarity). The dataset was compiled of
-articles of different rubrics of online dailies, weeklies, and reader comments, while
+This dataset was published in
+[this paper](http://dx.doi.org/10.7592/FEJF2016.64.polarity). The dataset was compiled
+of articles of different rubrics of online dailies, weeklies, and reader comments, while
 the polarity of each paragraph was determined by native Estonian readers.
 
 There are 4 labels in the original dataset instead of the usual 3. Examples with the
@@ -86,8 +86,8 @@ euroeval --model <model-id> --dataset estonian-valence
 
 ### EstNER
 
-This dataset was published in [this
-paper](https://aclanthology.org/2023.nodalida-1.76/). The dataset is a manually
+This dataset was published in
+[this paper](https://aclanthology.org/2023.nodalida-1.76/). The dataset is a manually
 annotated collection of Estonian news and social media texts.
 
 The original dataset contains 16,966 / 3,297 / 2,797 samples for the training,
@@ -99,22 +99,145 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Katse", "lõpuni", "jätkas", "34aastane", "tiitlijahtija", "kolmel", "rattal", "."],
+  "tokens": [
+    "Katse",
+    "lõpuni",
+    "jätkas",
+    "34aastane",
+    "tiitlijahtija",
+    "kolmel",
+    "rattal",
+    "."
+  ],
   "labels": ["O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-  "tokens": ["“", "Kui", "tegemist", "oleks", "olnud", "piletiga", "peoga", ",", "peaksime", "inimestele", "raha", "tagasi", "maksma", ",", "nüüd", "saame", "üksnes", "külalistelt", "vabandust", "paluda", ",”ütles", "Järvamaa", "omavalitsuste", "liidu", "tegevdirektor", "Krista", "Nurm", "ajalehele", "Järvamaa", "Teataja", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "B-MISC", "B-PER", "I-PER", "O", "B-MISC", "I-MISC", "O"]
+  "tokens": [
+    "“",
+    "Kui",
+    "tegemist",
+    "oleks",
+    "olnud",
+    "piletiga",
+    "peoga",
+    ",",
+    "peaksime",
+    "inimestele",
+    "raha",
+    "tagasi",
+    "maksma",
+    ",",
+    "nüüd",
+    "saame",
+    "üksnes",
+    "külalistelt",
+    "vabandust",
+    "paluda",
+    ",”ütles",
+    "Järvamaa",
+    "omavalitsuste",
+    "liidu",
+    "tegevdirektor",
+    "Krista",
+    "Nurm",
+    "ajalehele",
+    "Järvamaa",
+    "Teataja",
+    "."
+  ],
+  "labels": [
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "B-ORG",
+    "I-ORG",
+    "I-ORG",
+    "B-MISC",
+    "B-PER",
+    "I-PER",
+    "O",
+    "B-MISC",
+    "I-MISC",
+    "O"
+  ]
 }
 ```
 
 ```json
 {
-  "tokens": ["Makke", "lõpetas", "Quincy", "keskkooli", "Illinoisi", "osariigis", "ja", "plaanib", "sportlasstipendiumi", "abil", "edasi", "õppida", "Lääne-Illinoisi", "ülikoolis", ",", "mille", "korvpallimeeskond", "kuulub", "USA", "üliõpilasliiga", "NCAA", "esimesse", "divisjoni", "."],
-  "labels": ["B-PER", "O", "B-ORG", "I-ORG", "B-MISC", "I-MISC", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "O", "O", "O", "O", "B-ORG", "I-ORG", "B-ORG", "O", "O", "O"]
+  "tokens": [
+    "Makke",
+    "lõpetas",
+    "Quincy",
+    "keskkooli",
+    "Illinoisi",
+    "osariigis",
+    "ja",
+    "plaanib",
+    "sportlasstipendiumi",
+    "abil",
+    "edasi",
+    "õppida",
+    "Lääne-Illinoisi",
+    "ülikoolis",
+    ",",
+    "mille",
+    "korvpallimeeskond",
+    "kuulub",
+    "USA",
+    "üliõpilasliiga",
+    "NCAA",
+    "esimesse",
+    "divisjoni",
+    "."
+  ],
+  "labels": [
+    "B-PER",
+    "O",
+    "B-ORG",
+    "I-ORG",
+    "B-MISC",
+    "I-MISC",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "B-ORG",
+    "I-ORG",
+    "O",
+    "O",
+    "O",
+    "O",
+    "B-ORG",
+    "I-ORG",
+    "B-ORG",
+    "O",
+    "O",
+    "O"
+  ]
 }
 ```
 
@@ -164,9 +287,9 @@ euroeval --model <model-id> --dataset estner
 
 ### Grammar-et
 
-The dataset is a reorganized and simplified version of the [TartuNLP EstGEC
-dataset](https://github.com/TartuNLP/estgec). The dataset includes the original
-sentences and their corrected versions.
+The dataset is a reorganized and simplified version of the
+[TartuNLP EstGEC dataset](https://github.com/TartuNLP/estgec). The dataset includes the
+original sentences and their corrected versions.
 
 The original full dataset consists of 7,937 / 1,000 samples for training and testing,
 respectively. The original dataset consists of 8,937 samples, from which we use 1,024 /
@@ -231,13 +354,13 @@ euroeval --model <model-id> --dataset grammar-et
 ### Unofficial: ScaLA-et
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Estonian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Estonian-EDT) by assuming that the
-documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Estonian Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Estonian-EDT)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original dataset consists of 19,298 samples, from which we use 1,024 / 256 / 2,048
 samples for training, validation and testing, respectively (so 3,328 samples used in
@@ -460,9 +583,9 @@ euroeval --model <model-id> --dataset trivia-et
 
 ### Unofficial: Exam-et
 
-This dataset was released in [this
-repository](https://huggingface.co/datasets/TalTechNLP/exam_et) and contains questions
-with multiple-choice answers from Estonian high-school tests.
+This dataset was released in
+[this repository](https://huggingface.co/datasets/TalTechNLP/exam_et) and contains
+questions with multiple-choice answers from Estonian high-school tests.
 
 The original full dataset contains 1,614 samples in a single split, across eight
 different subjects. We use a 512 / 64 / 896 split for training, validation and testing,
@@ -535,11 +658,11 @@ euroeval --model <model-id> --dataset exam-et
 
 ### Unofficial: MMLU-et
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Estonian was done by [the Laboratory of Language Technology at Tallinn University of
-Technology](https://taltech.ee/en/laboratory-language-technology).
+This dataset is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to Estonian was done by
+[the Laboratory of Language Technology at Tallinn University of Technology](https://taltech.ee/en/laboratory-language-technology).
 
 The original full dataset consists of 14,042 samples in a single split. We use a 1,024 /
 256 / 2,048 split for training, validation and testing, respectively (so 3,328 samples
@@ -625,25 +748,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Mis ülesandeid täidavad taimeorganid?  Seob taimeorganid ühtseks tervikuks\nVastusevariandid:\na. Vars\nb. Juur\nc. Leht\nd. Õis",
-    "label": "a",
-    "subject": "Biology"
+  "text": "Mis ülesandeid täidavad taimeorganid?  Seob taimeorganid ühtseks tervikuks\nVastusevariandid:\na. Vars\nb. Juur\nc. Leht\nd. Õis",
+  "label": "a",
+  "subject": "Biology"
 }
 ```
 
 ```json
 {
-    "text": "Vabariigi Valitsuse liikmed nimetab ametisse:\nVastusevariandid:\na. Riigikogu\nb. Vabariigi President\nc. õiguskantsler\nd. Riigikohus",
-    "label": "b",
-    "subject": "Public Administration"
+  "text": "Vabariigi Valitsuse liikmed nimetab ametisse:\nVastusevariandid:\na. Riigikogu\nb. Vabariigi President\nc. õiguskantsler\nd. Riigikohus",
+  "label": "b",
+  "subject": "Public Administration"
 }
 ```
 
 ```json
 {
-    "text": "Vasta küsimustele.  Milline toodud väidetest iseloomustab kiltmaad?\nVastusevariandid:\na. Tasandik, kus madalikud vahelduvad kõrgustikega.\nb. Paikneb peamiselt mere või suure jõe ääres.\nc. Asub merepinnast kõrgemal kui 500 m.\nd. Tasandik, mille absoluutne kõrgus on kuni 200 m.",
-    "label": "c",
-    "subject": "Geography"
+  "text": "Vasta küsimustele.  Milline toodud väidetest iseloomustab kiltmaad?\nVastusevariandid:\na. Tasandik, kus madalikud vahelduvad kõrgustikega.\nb. Paikneb peamiselt mere või suure jõe ääres.\nc. Asub merepinnast kõrgemal kui 500 m.\nd. Tasandik, mille absoluutne kõrgus on kuni 200 m.",
+  "label": "c",
+  "subject": "Geography"
 }
 ```
 
@@ -757,9 +880,9 @@ euroeval --model <model-id> --dataset winogrande-et
 
 The dataset was released in [this paper](https://doi.org/10.22364/bjmc.2022.10.3.23).
 
-The dataset consists of news story transcripts of ERR News broadcasts scraped from
-the [ERR Archive](https://arhiiv.err.ee/err-audioarhiiv) News generated by an ASR
-pipeline paired with the human written summary from the archive.
+The dataset consists of news story transcripts of ERR News broadcasts scraped from the
+[ERR Archive](https://arhiiv.err.ee/err-audioarhiiv) News generated by an ASR pipeline
+paired with the human written summary from the archive.
 
 The original full dataset consists of 10,420 / 523 / 523 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
@@ -834,218 +957,210 @@ We use the original dataset as the test split, and do not include the other spli
 we only evaluate models zero-shot and the size is too small to warrant an even smaller
 validation set.
 
-Here are a few examples from the training split:
+Here are a few examples from the test split:
 
 ```json
 {
-    "text": "Kirjuta vähemalt 600 sõnaline sotsiaalmeediapostitus idufirmale, mis pakub realistlike füüsikaliste katsete simulaatorit. Vastus peab sisaldama mitmuse rajavas käändes märksõna „pomm“ vähemalt ühe korra.",
-    "target_text": {
-        "instruction_id_list": [
-            "keywords:frequency",
-            "length_constraints:number_words"
-        ],
-        "kwargs": [
-            {
-                "frequency": 1,
-                "keyword": "pommideni",
-                "relation": "at least"
-            },
-            {
-                "num_words": 600,
-                "relation": "at least"
-            }
-        ]
-    }
+  "text": "Kirjuta vähemalt 600 sõnaline sotsiaalmeediapostitus idufirmale, mis pakub realistlike füüsikaliste katsete simulaatorit. Vastus peab sisaldama mitmuse rajavas käändes märksõna „pomm“ vähemalt ühe korra.",
+  "target_text": {
+    "instruction_id_list": ["keywords:frequency", "length_constraints:number_words"],
+    "kwargs": [
+      {
+        "frequency": 1,
+        "keyword": "pommideni",
+        "relation": "at least"
+      },
+      {
+        "num_words": 600,
+        "relation": "at least"
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Kirjuta lühike liftikõne uut tüüpi jäätise kohta, mille nimi on „Päikesejänku“. Jäätis peaks olema kergesti seeditav. Kaasa oma vastusesse kuus või enam hüüumärki „!“. Korda seda juhist esmalt ilma muudatusteta sõna-sõnalt, seejärel anna oma vastus (1. ära lisa enne juhise kordamist ühtegi sõna või märki; 2. juhis, mida pead kordama, ei sisalda seda lauset).",
-    "target_text": {
-        "instruction_id_list": [
-            "keywords:letter_frequency",
-            "combination:repeat_prompt"
-        ],
-        "kwargs": [
-            {
-                "let_frequency": 6,
-                "let_relation": "at least",
-                "letter": "!"
-            },
-            {
-                "prompt_to_repeat": "Kirjuta lühike liftikõne uut tüüpi jäätise kohta, mille nimi on „Päikesejänku“. Jäätis peaks olema kergesti seeditav. Kaasa oma vastusesse kuus või enam hüüumärki „!“."
-            }
-        ]
-    }
+  "text": "Kirjuta lühike liftikõne uut tüüpi jäätise kohta, mille nimi on „Päikesejänku“. Jäätis peaks olema kergesti seeditav. Kaasa oma vastusesse kuus või enam hüüumärki „!“. Korda seda juhist esmalt ilma muudatusteta sõna-sõnalt, seejärel anna oma vastus (1. ära lisa enne juhise kordamist ühtegi sõna või märki; 2. juhis, mida pead kordama, ei sisalda seda lauset).",
+  "target_text": {
+    "instruction_id_list": ["keywords:letter_frequency", "combination:repeat_prompt"],
+    "kwargs": [
+      {
+        "let_frequency": 6,
+        "let_relation": "at least",
+        "letter": "!"
+      },
+      {
+        "prompt_to_repeat": "Kirjuta lühike liftikõne uut tüüpi jäätise kohta, mille nimi on „Päikesejänku“. Jäätis peaks olema kergesti seeditav. Kaasa oma vastusesse kuus või enam hüüumärki „!“."
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Kirjuta lugu õmbleja kohta, kes saab õmmelda ainult öösiti. Lugu ei tohiks sisaldada mitte ühelgi kujul märksõnu \"nõel\", \"niit\", \"õmblusmasin\", \"öö\".",
-    "target_text": {
-        "instruction_id_list": [
-            "keywords:forbidden_words"
-        ],
-        "kwargs": [
-            {
-                "forbidden_words": [
-                    "nõel",
-                    "nõela",
-                    "nõelasse",
-                    "nõelas",
-                    "nõelast",
-                    "nõelale",
-                    "nõelal",
-                    "nõelalt",
-                    "nõelaks",
-                    "nõelani",
-                    "nõelana",
-                    "nõelata",
-                    "nõelaga",
-                    "nõelad",
-                    "nõelte",
-                    "nõelu",
-                    "nõelasid",
-                    "nõeltesse",
-                    "nõelusse",
-                    "nõeltes",
-                    "nõelus",
-                    "nõeltest",
-                    "nõelust",
-                    "nõeltele",
-                    "nõelule",
-                    "nõeltel",
-                    "nõelul",
-                    "nõetelt",
-                    "nõelult",
-                    "nõelteks",
-                    "nõeluks",
-                    "nõelteni",
-                    "nõeltena",
-                    "nõelteta",
-                    "nõeltega",
-                    "nõelade",
-                    "nõeladesse",
-                    "nõelades",
-                    "nõeladest",
-                    "nõeladele",
-                    "nõeladel",
-                    "nõeladelt",
-                    "nõeladeks",
-                    "nõeladeni",
-                    "nõeladena",
-                    "nõeladeta",
-                    "nõeladega",
-                    "niit",
-                    "niidi",
-                    "niiti",
-                    "niidisse",
-                    "niidis",
-                    "niidist",
-                    "niidile",
-                    "niidil",
-                    "niidilt",
-                    "niidiks",
-                    "niidini",
-                    "niidina",
-                    "niidita",
-                    "niidiga",
-                    "niidid",
-                    "niitide",
-                    "niite",
-                    "niitisid",
-                    "niitidesse",
-                    "niidesse",
-                    "niitides",
-                    "niides",
-                    "niitidest",
-                    "niidest",
-                    "niitidele",
-                    "niidel",
-                    "niitidelt",
-                    "niidelt",
-                    "niitideks",
-                    "niideks",
-                    "niitideni",
-                    "niitidena",
-                    "niitideta",
-                    "niitidega",
-                    "õmblusmasin",
-                    "õmblusmasina",
-                    "õmblusmasinat",
-                    "õmblusmasinasse",
-                    "õmblusmasinas",
-                    "õmblusmasinast",
-                    "õmblusmasinale",
-                    "õmblusmasinal",
-                    "õmblusmasinalt",
-                    "õmblusmasinaks",
-                    "õmblusmasinani",
-                    "õmblusmasinana",
-                    "õmblusmasinata",
-                    "õmblusmasinaga",
-                    "õmblusmasinad",
-                    "õmblusmasinate",
-                    "õmblusmasinaid",
-                    "õmblusmasinatesse",
-                    "õmblusmasinaisse",
-                    "õmblusmasinates",
-                    "õmblusmasinais",
-                    "õmblusmasinatest",
-                    "õmblusmasinaist",
-                    "õmblusmasinatele",
-                    "õmblusmasinaile",
-                    "õmblusmasinatel",
-                    "õmblusmasinail",
-                    "õmblusmasinatelt",
-                    "õmblusmasinailt",
-                    "õmblusmasinateks",
-                    "õmblusmasinaiks",
-                    "õmblusmasinateni",
-                    "õmblusmasinatena",
-                    "õmblusmasinateta",
-                    "õmblusmasinatega",
-                    "öö",
-                    "ööd",
-                    "ööde",
-                    "öid",
-                    "öösid",
-                    "öhe",
-                    "öösse",
-                    "öös",
-                    "ööst",
-                    "ööle",
-                    "ööl",
-                    "öölt",
-                    "ööks",
-                    "ööni",
-                    "öön",
-                    "ööta",
-                    "öög",
-                    "öödesse",
-                    "öösse",
-                    "öödes",
-                    "öis",
-                    "öödest",
-                    "öist",
-                    "öödele",
-                    "öile",
-                    "ööldel",
-                    "ööl",
-                    "öödelt",
-                    "öilt",
-                    "öödeks",
-                    "öiks",
-                    "ööd",
-                    "öödeta",
-                    "öödena",
-                    "öödega"
-                ]
-            }
+  "text": "Kirjuta lugu õmbleja kohta, kes saab õmmelda ainult öösiti. Lugu ei tohiks sisaldada mitte ühelgi kujul märksõnu \"nõel\", \"niit\", \"õmblusmasin\", \"öö\".",
+  "target_text": {
+    "instruction_id_list": ["keywords:forbidden_words"],
+    "kwargs": [
+      {
+        "forbidden_words": [
+          "nõel",
+          "nõela",
+          "nõelasse",
+          "nõelas",
+          "nõelast",
+          "nõelale",
+          "nõelal",
+          "nõelalt",
+          "nõelaks",
+          "nõelani",
+          "nõelana",
+          "nõelata",
+          "nõelaga",
+          "nõelad",
+          "nõelte",
+          "nõelu",
+          "nõelasid",
+          "nõeltesse",
+          "nõelusse",
+          "nõeltes",
+          "nõelus",
+          "nõeltest",
+          "nõelust",
+          "nõeltele",
+          "nõelule",
+          "nõeltel",
+          "nõelul",
+          "nõetelt",
+          "nõelult",
+          "nõelteks",
+          "nõeluks",
+          "nõelteni",
+          "nõeltena",
+          "nõelteta",
+          "nõeltega",
+          "nõelade",
+          "nõeladesse",
+          "nõelades",
+          "nõeladest",
+          "nõeladele",
+          "nõeladel",
+          "nõeladelt",
+          "nõeladeks",
+          "nõeladeni",
+          "nõeladena",
+          "nõeladeta",
+          "nõeladega",
+          "niit",
+          "niidi",
+          "niiti",
+          "niidisse",
+          "niidis",
+          "niidist",
+          "niidile",
+          "niidil",
+          "niidilt",
+          "niidiks",
+          "niidini",
+          "niidina",
+          "niidita",
+          "niidiga",
+          "niidid",
+          "niitide",
+          "niite",
+          "niitisid",
+          "niitidesse",
+          "niidesse",
+          "niitides",
+          "niides",
+          "niitidest",
+          "niidest",
+          "niitidele",
+          "niidel",
+          "niitidelt",
+          "niidelt",
+          "niitideks",
+          "niideks",
+          "niitideni",
+          "niitidena",
+          "niitideta",
+          "niitidega",
+          "õmblusmasin",
+          "õmblusmasina",
+          "õmblusmasinat",
+          "õmblusmasinasse",
+          "õmblusmasinas",
+          "õmblusmasinast",
+          "õmblusmasinale",
+          "õmblusmasinal",
+          "õmblusmasinalt",
+          "õmblusmasinaks",
+          "õmblusmasinani",
+          "õmblusmasinana",
+          "õmblusmasinata",
+          "õmblusmasinaga",
+          "õmblusmasinad",
+          "õmblusmasinate",
+          "õmblusmasinaid",
+          "õmblusmasinatesse",
+          "õmblusmasinaisse",
+          "õmblusmasinates",
+          "õmblusmasinais",
+          "õmblusmasinatest",
+          "õmblusmasinaist",
+          "õmblusmasinatele",
+          "õmblusmasinaile",
+          "õmblusmasinatel",
+          "õmblusmasinail",
+          "õmblusmasinatelt",
+          "õmblusmasinailt",
+          "õmblusmasinateks",
+          "õmblusmasinaiks",
+          "õmblusmasinateni",
+          "õmblusmasinatena",
+          "õmblusmasinateta",
+          "õmblusmasinatega",
+          "öö",
+          "ööd",
+          "ööde",
+          "öid",
+          "öösid",
+          "öhe",
+          "öösse",
+          "öös",
+          "ööst",
+          "ööle",
+          "ööl",
+          "öölt",
+          "ööks",
+          "ööni",
+          "öön",
+          "ööta",
+          "öög",
+          "öödesse",
+          "öösse",
+          "öödes",
+          "öis",
+          "öödest",
+          "öist",
+          "öödele",
+          "öile",
+          "ööldel",
+          "ööl",
+          "öödelt",
+          "öilt",
+          "öödeks",
+          "öiks",
+          "ööd",
+          "öödeta",
+          "öödena",
+          "öödega"
         ]
-    }
+      }
+    ]
+  }
 }
 ```
 
@@ -1069,14 +1184,90 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset ifeval-et
 ```
 
+### Unofficial: MultiIFEval-et
+
+This dataset is a translated and localised version of IFEval from the MultiIFEval
+benchmark, which covers 305 languages. It was generated using a structured LLM
+generation pipeline with target-language Wikipedia grounding to reduce hallucination and
+improve cultural localisation. Instruction IDs are preserved for traceability, and
+kwargs keys are retained (with values localised where appropriate), so constraints can
+still be checked programmatically. Outputs are schema-validated; malformed or empty
+outputs were excluded.
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Kirjuta vähemalt 300-sõnaline kokkuvõte Vikipeedia leheküljest \"https://et.wikipedia.org/wiki/Oskar_Waldhauer\". Ära kasuta ühtegi koma ning tõsta esile vähemalt 3 pealkirjadega jaotist markdown-vormingus, näiteks *esiletõstetud jaotis 1*, *esiletõstetud jaotis 2*, *esiletõstetud jaotis 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Ma planeerin reisi Jaapanisse ja soovin, et sa koostaksid mulle minu teekonna jaoks reisiplaani Shakespeare'i stiilis. Sul on keelatud kasutada oma vastuses komasid.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Koosta CV värskele gümnaasiumilõpetajale, kes otsib oma esimest töökohta. Veendu, et lisad vähemalt 12 nurksulgudes esitatud kohatäidet, nagu näiteks [aadress], [nimi].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-et
+```
+
 ## European Values
 
 ### ValEU-et
 
-This dataset is the official Estonian version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official Estonian version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU

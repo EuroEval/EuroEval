@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FAROESE
-from ..tasks import GED, HALLU, LA, LOGIC, NER, RC, SENT
+from ..tasks import GED, HALLU, INSTRUCTION_FOLLOWING, LA, LOGIC, NER, RC, SENT
 
 # Official datasets ###
 
@@ -39,6 +39,24 @@ FOQA_CONFIG = DatasetConfig(
     languages=[FAROESE],
 )
 
+MULTI_IFEVAL_FO_CONFIG = DatasetConfig(
+    name="multi-ifeval-fo",
+    pretty_name="MultiIFEval-fo",
+    source="EuroEval/multi-ifeval-fo",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[FAROESE],
+    train_split=None,
+    val_split=None,
+)
+
+ZEBRA_PUZZLE_EASY_FO_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-fo",
+    pretty_name="ZebraPuzzlesEasy-fo",
+    source="EuroEval/zebra-puzzles-easy-fo",
+    task=LOGIC,
+    languages=[FAROESE],
+)
+
 
 # Unofficial datasets ###
 
@@ -65,15 +83,6 @@ GERLANGMOD_FO_CONFIG = DatasetConfig(
     pretty_name="GerLangMod-fo",
     source="EuroEval/gerlangmod-fo",
     task=GED,
-    languages=[FAROESE],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_FO_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-fo",
-    pretty_name="ZebraPuzzlesEasy-fo",
-    source="EuroEval/zebra-puzzles-easy-fo",
-    task=LOGIC,
     languages=[FAROESE],
     unofficial=True,
 )

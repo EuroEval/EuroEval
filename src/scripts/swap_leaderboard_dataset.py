@@ -43,16 +43,22 @@ import logging
 import os
 import re
 import subprocess
+import tempfile
+import typing as t
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 import click
+from huggingface_hub import HfApi
+from tqdm.auto import tqdm
 
 from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
+from leaderboards.bucket_sync import merge_results, upload_results_to_bucket
 from leaderboards.constants import (
     DEFAULT_GPU_MEMORY_UTILIZATION,
     LEADERBOARD_CATEGORIES,
@@ -63,6 +69,10 @@ from leaderboards.evaluation_common import (
     gpu_total_memory_bytes,
     model_fits_locally,
     run_euroeval,
+)
+from leaderboards.jsonl_io import (
+    load_records_from_jsonl_files,
+    load_records_from_result_tree,
 )
 from leaderboards.records import get_bool_field, get_dataset, plain_model_id
 from leaderboards.task_metadata import (
@@ -79,52 +89,70 @@ logger = logging.getLogger("swap_leaderboard_dataset")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HF_RESULTS_BUCKET = "EuroEval/results"
+EUROEVAL_BENCHMARK_RESULTS_PATH = REPO_ROOT / "euroeval_benchmark_results.jsonl"
 
 
 def sync_results_from_bucket() -> None:
     """Sync results from the HF bucket and consolidate into NEW_RESULTS_PATH.
 
-    Downloads all .jsonl files from the EuroEval/results bucket to RESULTS_DIR,
-    then merges them into NEW_RESULTS_PATH (appending, not overwriting) so
-    subsequent evaluations can detect and skip already-completed runs.
+    Downloads all result files from the EuroEval/results bucket to RESULTS_DIR,
+    then merges the per-record JSON tree into NEW_RESULTS_PATH (appending, not
+    overwriting) so subsequent evaluations can detect and skip already-completed
+    runs.
     """
     logger.info("Syncing results from HF bucket %s...", HF_RESULTS_BUCKET)
 
-    # Sync bucket files to local RESULTS_DIR
-    subprocess.run(
-        ["hf", "buckets", "sync", HF_RESULTS_BUCKET, str(RESULTS_DIR), "--verbose"],
-        check=True,
-    )
-
-    # Consolidate all results into NEW_RESULTS_PATH (append mode)
-    all_lines: list[str] = []
-    for model_file in sorted(RESULTS_DIR.glob("*.jsonl")):
-        all_lines.extend(model_file.read_text(encoding="utf-8").splitlines())
-
-    if all_lines:
-        # Read existing lines from NEW_RESULTS_PATH if it exists
-        existing_lines: set[str] = set()
-        if NEW_RESULTS_PATH.exists():
-            existing_lines = set(
-                NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines()
-            )
-
-        # Append only new lines
-        new_lines = [line for line in all_lines if line not in existing_lines]
-        if new_lines:
-            logger.info(
-                "Consolidating %s result lines into %s (%s new).",
-                len(all_lines),
-                NEW_RESULTS_PATH,
-                len(new_lines),
-            )
-            with NEW_RESULTS_PATH.open("a", encoding="utf-8") as f:
-                for line in new_lines:
-                    f.write(line + "\n")
-        else:
-            logger.info("No new result lines to consolidate.")
+    # Sync bucket files to local RESULTS_DIR, skip if already present
+    if RESULTS_DIR.exists() and any(RESULTS_DIR.rglob("*.json")):
+        logger.info("RESULTS_DIR already contains files, skipping bucket sync.")
     else:
-        logger.warning("No results found in bucket.")
+        hf_api = HfApi(token=os.getenv("HF_TOKEN"))
+        hf_api.sync_bucket(
+            source=f"hf://buckets/{HF_RESULTS_BUCKET}",
+            dest=RESULTS_DIR.as_posix(),
+            verbose=True,
+            ignore_times=True,  # Compare by content hash, not mtime
+        )
+
+    # Merge per-record JSON tree into NEW_RESULTS_PATH
+    # First read existing lines to avoid duplicates
+    existing_lines: set[str] = set()
+    if NEW_RESULTS_PATH.exists():
+        existing_lines = set(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
+
+    # Use merge_results to consolidate tree into a temp location, then append
+    # unique records to NEW_RESULTS_PATH
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".jsonl", delete=False, encoding="utf-8"
+    ) as tmp:
+        tmp_path = Path(tmp.name)
+
+    try:
+        record_count = merge_results(tmp_path)
+        if record_count > 0:
+            # Read merged records and append unique ones
+            new_lines: list[str] = []
+            for line in tmp_path.read_text(encoding="utf-8").splitlines():
+                if line and line not in existing_lines:
+                    new_lines.append(line)
+
+            if new_lines:
+                logger.info(
+                    "Consolidating %s result records into %s (%s new).",
+                    record_count,
+                    NEW_RESULTS_PATH,
+                    len(new_lines),
+                )
+                with NEW_RESULTS_PATH.open("a", encoding="utf-8") as f:
+                    for line in new_lines:
+                        f.write(line + "\n")
+            else:
+                logger.info("No new result records to consolidate.")
+        else:
+            logger.warning("No results found in bucket.")
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
 
 
 DATASET_CONFIG_DIR = REPO_ROOT / "src" / "euroeval" / "dataset_configs"
@@ -149,11 +177,13 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
 )
 @click.option(
     "--branch",
-    required=True,
-    help="Branch to do the work on. May not be the default branch (e.g. main).",
+    type=click.STRING,
+    default=None,
+    help="Branch to do the work on. May not be the default branch (e.g. main). "
+    "Defaults to 'feat/replace-<old-dataset>-with-<new-dataset>.'",
 )
 @click.option(
-    "--include-api",
+    "--include-api/--no-include-api",
     is_flag=True,
     default=False,
     help="Opt in to evaluating API models. Without it they are skipped, so a "
@@ -174,18 +204,18 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     f"against. When omitted, defaults to {DEFAULT_GPU_MEMORY_UTILIZATION}.",
 )
 @click.option(
-    "--skip-eval",
+    "--skip-eval/--no-skip-eval",
     is_flag=True,
     default=False,
     help="Skip the evaluation phase and only perform the config/doc swap (useful "
     "when the evaluations already ran).",
 )
 @click.option(
-    "--pr",
+    "--pr/--no-pr",
     is_flag=True,
     default=True,
-    help="After swapping, commit and push the branch and open a pull request. "
-    "Default is True; pass --no-pr to skip.",
+    help="After swapping, commit and push the branch and open a pull request. This "
+    "requires the `gh` CLI to be installed.",
 )
 @click.option(
     "--reviewer",
@@ -194,14 +224,14 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     help="GitHub username to request as reviewer. Default is saattrupdan.",
 )
 @click.option(
-    "--force",
+    "--force/--no-force",
     is_flag=True,
     default=False,
     help="Re-run even (model, language) pairs that already have a new-dataset "
     "result line.",
 )
 @click.option(
-    "--dry-run",
+    "--dry-run/--no-dry-run",
     is_flag=True,
     default=False,
     help="Print the planned evaluations and file edits without running or "
@@ -210,7 +240,7 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
 def main(
     old_dataset: str,
     new_dataset: str,
-    branch: str,
+    branch: str | None,
     include_api: bool,
     api_providers: str | None,
     gpu_memory_utilization: float | None,
@@ -222,35 +252,12 @@ def main(
 ) -> None:
     """Replace an official leaderboard dataset with a new one.
 
-    Args:
-        old_dataset:
-            The official dataset being replaced.
-        new_dataset:
-            The unofficial candidate being promoted.
-        branch:
-            The branch to do the work on; may not be the default branch.
-        include_api:
-            Whether to evaluate API models.
-        api_providers:
-            Optional comma-separated provider filter.
-        gpu_memory_utilization:
-            vLLM GPU memory utilization fraction, or None for the default.
-        skip_eval:
-            When True, only perform the config/doc swap.
-        pr:
-            When True (default), commit, push, and open a pull request after
-            swapping.
-        reviewer:
-            GitHub username to request as reviewer.
-        force:
-            When True, re-run pairs that already have a new-dataset result.
-        dry_run:
-            When True, print the plan and make no changes.
-
     Raises:
-        click.ClickException:
-            When the dataset pair or branch is invalid, or a git/gh step fails.
+        ClickException:
+            If --api-providers is set without --include-api, or if --pr is set without
+            --reviewer.
     """
+    # Validation checks
     if api_providers and not include_api:
         raise click.ClickException(
             "--api-providers requires --include-api; pass both or neither."
@@ -258,7 +265,11 @@ def main(
     old_config, new_config = validate_datasets(
         old_dataset=old_dataset, new_dataset=new_dataset
     )
+    if branch is None:
+        branch = f"feat/replace-{old_dataset}-with-{new_dataset}"
     validate_branch(branch=branch)
+    if pr:
+        validate_gh_installed()
 
     target_codes = resolve_languages(old_config=old_config, new_config=new_config)
     logger.info(
@@ -285,6 +296,8 @@ def main(
             force=force,
             dry_run=dry_run,
         )
+        if not dry_run:
+            upload_results_to_bucket(results_file=EUROEVAL_BENCHMARK_RESULTS_PATH)
 
     changed = apply_swap(
         old_dataset=old_dataset, new_dataset=new_dataset, dry_run=dry_run
@@ -402,6 +415,21 @@ def resolve_languages(old_config: DatasetConfig, new_config: DatasetConfig) -> s
     return target
 
 
+def validate_gh_installed() -> None:
+    """Check that the GitHub CLI is installed.
+
+    Raises:
+        ClickException:
+            If the Github CLI wasn't found.
+    """
+    try:
+        subprocess.run(["gh", "version"], check=True, capture_output=True)
+    except FileNotFoundError:
+        raise click.ClickException(
+            "GitHub CLI not found; install it from https://cli.github.com/"
+        )
+
+
 # --------------------------------------------------------------------------- #
 # Evaluation phase
 # --------------------------------------------------------------------------- #
@@ -476,7 +504,7 @@ def run_evaluations(
         language_codes=target_codes,
         datasets_by_language=corpus.datasets_by_language,
     )
-    logger.info(f"Found {len(ranked)} ranked (model, language) pair(s).")
+    logger.debug(f"Found {len(ranked)} ranked (model, language) pair(s).")
 
     ranked_api = sorted({m for m, _ in ranked if m in corpus.api_model_ids})
     present_providers = {
@@ -489,13 +517,8 @@ def run_evaluations(
         api_providers_arg=api_providers_arg,
         present_providers=present_providers,
     )
-    if ranked_api and not include_api:
-        logger.info(
-            f"Excluding {len(ranked_api)} ranked API model(s); pass --include-api "
-            "to evaluate them."
-        )
 
-    jobs = build_eval_jobs(
+    jobs, skipped_api, skipped_existing = build_eval_jobs(
         ranked=ranked,
         old_dataset=old_dataset,
         new_dataset=new_dataset,
@@ -504,9 +527,11 @@ def run_evaluations(
         selected_providers=selected_providers,
         force=force,
     )
-    logger.info(f"Planned {len(jobs)} evaluation(s) before the size check.")
-    jobs = apply_size_filter(jobs=jobs, gpu_memory_utilization=gpu_memory_utilization)
-    logger.info(f"{len(jobs)} evaluation(s) survive the size check.")
+    logger.debug(f"Planned {len(jobs)} evaluation(s) before the size check.")
+    jobs, skipped_too_large = apply_size_filter(
+        jobs=jobs, gpu_memory_utilization=gpu_memory_utilization
+    )
+    logger.debug(f"{len(jobs)} evaluation(s) survive the size check.")
 
     if dry_run:
         for job in jobs:
@@ -519,21 +544,28 @@ def run_evaluations(
             )
         return
 
-    execute_jobs(
+    evaluated, failed = execute_jobs(
         jobs=jobs, dataset=new_dataset, gpu_memory_utilization=gpu_memory_utilization
+    )
+    _log_summary(
+        evaluated=evaluated,
+        failed=failed,
+        skipped_api=skipped_api,
+        skipped_existing=skipped_existing,
+        skipped_too_large=skipped_too_large,
     )
 
 
 def load_corpus() -> _Corpus:
     """Load the recorded results, indexed for selection and mirroring.
 
-    Reads the per-model JSONL files in ``RESULTS_DIR`` plus the optional
-    ``new_results.jsonl`` without the destructive unlink the leaderboard
-    pipeline performs. A model counts as an API model when its record was
-    produced by the ``litellm`` engine or is flagged as not open-weight. Each
-    ``(model, dataset, language)`` triple records its leaderboard variant
-    (split + prompting), preferring the test-split record when both exist
-    (that is the row the leaderboard shows).
+    Reads the per-record JSON tree in ``RESULTS_DIR``, the optional
+    ``new_results.jsonl``, and the optional ``euroeval_benchmark_results.jsonl``
+    from local ``euroeval`` CLI runs. A model counts as an API model when its
+    record was produced by the ``litellm`` engine or is flagged as not
+    open-weight. Each ``(model, dataset, language)`` triple records its
+    leaderboard variant (split + prompting), preferring the test-split record
+    when both exist (that is the row the leaderboard shows).
 
     Returns:
         The parsed corpus.
@@ -542,12 +574,15 @@ def load_corpus() -> _Corpus:
         click.ClickException:
             When no results can be loaded.
     """
-    lines: list[str] = []
-    for model_file in sorted(RESULTS_DIR.glob("*.jsonl")):
-        lines.extend(model_file.read_text(encoding="utf-8").splitlines())
+    # Load from per-record JSON tree
+    records: list[dict[str, object]] = []
+    if RESULTS_DIR.exists() and any(RESULTS_DIR.rglob("*.json")):
+        records.extend(load_records_from_result_tree(RESULTS_DIR))
     if NEW_RESULTS_PATH.exists():
-        lines.extend(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
-    if not lines:
+        records.extend(load_records_from_jsonl_files([NEW_RESULTS_PATH]))
+    if EUROEVAL_BENCHMARK_RESULTS_PATH.exists():
+        records.extend(load_records_from_jsonl_files([EUROEVAL_BENCHMARK_RESULTS_PATH]))
+    if not records:
         raise click.ClickException(
             f"No results found under {RESULTS_DIR}; cannot find ranked models."
         )
@@ -558,46 +593,34 @@ def load_corpus() -> _Corpus:
     api_model_ids: set[str] = set()
     observations: set[tuple[str, str, str]] = set()
     eval_configs: dict[tuple[str, str, str], _ObsConfig] = {}
-    for line in lines:
-        line = line.strip()
-        if not line:
+    for record in records:
+        model_info = t.cast(dict[str, object], record.get("model_info", {}))
+        # Fall back to model_info.id when name is missing (valid for EEE records)
+        model = plain_model_id(str(model_info.get("name") or model_info.get("id", "")))
+        dataset = get_dataset(record=record)
+        if not model or not dataset:
             continue
-        for record_text in re.split(pattern=r"(?<=})(?={)", string=line):
-            if not record_text.strip():
-                continue
-            try:
-                record = json.loads(record_text)
-            except json.JSONDecodeError:
-                logger.warning(
-                    "Skipping malformed JSON record: %s...", record_text[:80]
-                )
-                continue
-            model = plain_model_id(str(record.get("model_info", {}).get("name", "")))
-            dataset = get_dataset(record=record)
-            if not model or not dataset:
-                continue
-            model_info = record.get("model_info", {})
-            if record_is_api(model_info=model_info):
-                api_model_ids.add(model)
-            config = _ObsConfig(
-                validation_split=get_bool_field(record, "validation_split", False),
-                few_shot=get_bool_field(record, "few_shot", True),
-                generative=str(
-                    model_info.get("additional_details", {}).get("generative")
-                ).lower()
-                == "true",
-            )
-            for language in _record_languages(record=record):
-                datasets_by_language[language][model].add(str(dataset))
-                key = (model, str(dataset), language)
-                observations.add(key)
-                existing = eval_configs.get(key)
-                # Prefer the test-split record: when a model has both, the
-                # leaderboard row shows the test-split variant.
-                if existing is None or (
-                    not config.validation_split and existing.validation_split
-                ):
-                    eval_configs[key] = config
+        if record_is_api(model_info=model_info):
+            api_model_ids.add(model)
+        config = _ObsConfig(
+            validation_split=get_bool_field(record, "validation_split", False),
+            few_shot=get_bool_field(record, "few_shot", True),
+            generative=str(
+                model_info.get("additional_details", {}).get("generative")
+            ).lower()
+            == "true",
+        )
+        for language in _record_languages(record=record):
+            datasets_by_language[language][model].add(str(dataset))
+            key = (model, str(dataset), language)
+            observations.add(key)
+            existing = eval_configs.get(key)
+            # Prefer the test-split record: when a model has both, the
+            # leaderboard row shows the test-split variant.
+            if existing is None or (
+                not config.validation_split and existing.validation_split
+            ):
+                eval_configs[key] = config
     logger.info(
         f"Loaded results for {len(datasets_by_language):,} language(s) "
         f"({len(api_model_ids):,} API model(s))."
@@ -668,18 +691,21 @@ def ranked_model_language_pairs(
             continue
 
         models_in_language = datasets_by_language.get(code, {})
+        # Compute the union of required datasets across all affected categories.
+        # A model must have all datasets that ANY affected category requires,
+        # ensuring it would have a rank score on the most restrictive leaderboard.
+        required: set[str] = set()
         for category in affected:
-            required = {
+            required |= {
                 dataset
                 for task, task_datasets in by_task.items()
                 if task not in ORTHOGONAL_TASKS
                 and category_includes_task(category=category, task=task)
                 for dataset in task_datasets
             }
-            required.discard(new_dataset)
-            required.add(old_dataset)
-            if not required:
-                continue
+        required.discard(new_dataset)
+        required.add(old_dataset)
+        if required:
             for model_id, datasets in models_in_language.items():
                 if required <= datasets:
                     ranked.add((model_id, code))
@@ -694,7 +720,7 @@ def build_eval_jobs(
     include_api: bool,
     selected_providers: set[str],
     force: bool,
-) -> list[Job]:
+) -> tuple[list[Job], list[str], int]:
     """Turn ranked pairs into evaluation jobs, mirroring each model's setup.
 
     Args:
@@ -715,21 +741,26 @@ def build_eval_jobs(
             When True, keep pairs already holding a new-dataset result.
 
     Returns:
-        One :class:`Job` per model, its languages grouped, so identical
-        split/prompting settings run together.
+        Tuple of jobs to run, sorted unique list of API model ids skipped, and
+        count of (model, language) pairs skipped due to existing results.
     """
     # Group languages per model when the mirrored settings match, so one
     # euroeval call covers them.
     by_model: dict[tuple[str, bool, bool, bool], list[str]] = defaultdict(list)
+    skipped_api_set: set[str] = set()
+    skipped_existing_count: int = 0
     for model_id, code in sorted(ranked):
         is_api = model_id in corpus.api_model_ids
         if is_api:
             if not include_api:
+                skipped_api_set.add(model_id)
                 continue
             provider = provider_for_model_id(model_id=model_id)
             if provider is not None and provider.name not in selected_providers:
+                skipped_api_set.add(model_id)
                 continue
         if not force and (model_id, new_dataset, code) in corpus.observations:
+            skipped_existing_count += 1
             continue
         config = corpus.eval_configs.get((model_id, old_dataset, code))
         evaluate_test_split, zero_shot = mirror_eval_config(
@@ -748,7 +779,7 @@ def build_eval_jobs(
                 zero_shot=zero_shot,
             )
         )
-    return jobs
+    return jobs, sorted(skipped_api_set), skipped_existing_count
 
 
 def mirror_eval_config(config: _ObsConfig | None, is_api: bool) -> tuple[bool, bool]:
@@ -778,7 +809,7 @@ def mirror_eval_config(config: _ObsConfig | None, is_api: bool) -> tuple[bool, b
 
 def apply_size_filter(
     jobs: list[Job], gpu_memory_utilization: float | None
-) -> list[Job]:
+) -> tuple[list[Job], list[str]]:
     """Drop open-weight jobs whose model can't fit the local GPU budget.
 
     Budgets against ``gpu_memory_utilization * total GPU memory`` (matching
@@ -793,25 +824,27 @@ def apply_size_filter(
             The utilization fraction, or None for the default.
 
     Returns:
-        The jobs that should still run.
+        Tuple of jobs that should still run and sorted unique list of model ids
+        dropped for exceeding the GPU budget.
     """
     gpu_bytes = gpu_total_memory_bytes()
     if gpu_bytes is None:
-        logger.info("Local memory budget unknown; skipping the size pre-check.")
-        return jobs
+        logger.debug("Local memory budget unknown; skipping the size pre-check.")
+        return jobs, []
     utilization = (
         gpu_memory_utilization
         if gpu_memory_utilization is not None
         else DEFAULT_GPU_MEMORY_UTILIZATION
     )
     usable_bytes = int(gpu_bytes * utilization)
-    logger.info(
+    logger.debug(
         f"Local memory budget: {gpu_bytes / (1024**3):.1f} GiB total, "
         f"{usable_bytes / (1024**3):.1f} GiB usable at "
         f"gpu_memory_utilization={utilization}."
     )
     sized: dict[str, bool] = {}
     kept: list[Job] = []
+    too_large: list[str] = []
     for job in jobs:
         if job.is_api:
             kept.append(job)
@@ -822,19 +855,20 @@ def apply_size_filter(
             )
             sized[job.model_id] = fits
             if not fits and needed is not None:
-                logger.info(
+                logger.debug(
                     f"{job.model_id}: skipping -- needs "
                     f"~{needed / (1024**3):.1f} GiB, exceeds the usable "
                     f"{usable_bytes / (1024**3):.1f} GiB budget."
                 )
+                too_large.append(job.model_id)
         if sized[job.model_id]:
             kept.append(job)
-    return kept
+    return kept, sorted(too_large)
 
 
 def execute_jobs(
     jobs: list[Job], dataset: str, gpu_memory_utilization: float | None
-) -> None:
+) -> tuple[list[str], list[str]]:
     """Run each evaluation in sequence via the shared euroeval runner.
 
     Args:
@@ -844,28 +878,138 @@ def execute_jobs(
             The new dataset id to evaluate on.
         gpu_memory_utilization:
             The utilization fraction to pass to euroeval, or None.
+
+    Returns:
+        Tuple of model ids evaluated successfully and model ids that failed
+        (with exit code descriptions).
     """
-    for index, job in enumerate(jobs, start=1):
-        split = "test" if job.evaluate_test_split else "val"
-        shots = "zero-shot" if job.zero_shot else "few-shot"
-        logger.info(
-            f"[{index}/{len(jobs)}] euroeval --model {job.model_id} "
-            f"--dataset {dataset} --language {' --language '.join(job.languages)} "
-            f"({split}, {shots})"
-        )
-        returncode, _ = run_euroeval(
-            model_id=job.model_id,
-            languages=job.languages,
-            datasets=[dataset],
-            evaluate_test_split=job.evaluate_test_split,
-            zero_shot=job.zero_shot,
-            gpu_memory_utilization=gpu_memory_utilization,
-        )
-        if returncode != 0:
-            logger.warning(
-                f"{job.model_id} / {dataset}: euroeval exited with code "
-                f"{returncode}; continuing."
+    evaluated: list[str] = []
+    failed: list[str] = []
+
+    # Create detailed evaluation log file before starting progress bar
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    log_filename = f"eval_log_{timestamp}.log"
+    log_path = REPO_ROOT / log_filename
+
+    # Log run-level metadata and job plans upfront
+    with open(log_path, "w", encoding="utf-8") as log_file:
+        log_file.write("Evaluation Log\n")
+        log_file.write("================\n")
+        log_file.write(f"Timestamp (UTC): {timestamp}\n")
+        log_file.write(f"Dataset: {dataset}\n")
+        log_file.write(f"GPU Memory Utilization: {gpu_memory_utilization}\n")
+        log_file.write(f"Total Jobs: {len(jobs)}\n")
+        log_file.write("\n")
+        log_file.write("Job Plan\n")
+        log_file.write("--------\n")
+        for idx, job in enumerate(jobs, start=1):
+            shot = "zero-shot" if job.zero_shot else "few-shot"
+            split = "test" if job.evaluate_test_split else "val"
+            source = "API" if job.is_api else "open-weight"
+            log_file.write(
+                f"[{idx}/{len(jobs)}] {job.model_id} | "
+                f"languages: {', '.join(job.languages)} | "
+                f"split: {split} | {shot} | {source}\n"
             )
+
+    logger.info(f"Evaluation log: {log_path}")
+
+    with tqdm(jobs, desc="Evaluating models", unit="model") as progress:
+        for idx, job in enumerate(progress, start=1):
+            progress.set_postfix_str(job.model_id)
+
+            # Write job header to log before starting evaluation
+            shot = "zero-shot" if job.zero_shot else "few-shot"
+            split = "test" if job.evaluate_test_split else "val"
+            source = "API" if job.is_api else "open-weight"
+            job_start = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+            with open(log_path, "a", encoding="utf-8") as log_file:
+                log_file.write("\n")
+                log_file.write(f"Job [{idx}/{len(jobs)}] Starting\n")
+                log_file.write(f"Started at: {job_start}\n")
+                log_file.write("-" * 40 + "\n")
+                log_file.write(f"Model: {job.model_id}\n")
+                log_file.write(f"Languages: {', '.join(job.languages)}\n")
+                log_file.write(f"Split: {split} | {shot} | {source}\n")
+                log_file.write("Output:\n")
+                log_file.flush()
+
+            # Run evaluation with log file for live output capture
+            returncode, output = run_euroeval(
+                model_id=job.model_id,
+                languages=job.languages,
+                datasets=[dataset],
+                evaluate_test_split=job.evaluate_test_split,
+                zero_shot=job.zero_shot,
+                gpu_memory_utilization=gpu_memory_utilization,
+                stream_output=False,
+                log_file=log_path,
+            )
+
+            # Append job completion status
+            job_end = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+            with open(log_path, "a", encoding="utf-8") as log_file:
+                log_file.write("\n")
+                log_file.write(f"Job [{idx}/{len(jobs)}] Completed\n")
+                log_file.write(f"Finished at: {job_end}\n")
+                log_file.write(f"Exit Code: {returncode}\n")
+                log_file.write("=" * 40 + "\n")
+
+            if returncode != 0:
+                output_tail = "\n".join(output.splitlines()[-40:])
+                logger.warning(
+                    f"{job.model_id}: euroeval exited with code {returncode}:\n"
+                    f"{output_tail}"
+                )
+                failed.append(f"{job.model_id} (exit {returncode})")
+            else:
+                evaluated.append(job.model_id)
+    return evaluated, failed
+
+
+def _log_summary(
+    evaluated: list[str],
+    failed: list[str],
+    skipped_api: list[str],
+    skipped_existing: int,
+    skipped_too_large: list[str],
+) -> None:
+    """Log a one-shot status summary after evaluation completes.
+
+    Args:
+        evaluated:
+            List of model ids evaluated successfully.
+        failed:
+            List of model ids that failed (with exit code descriptions).
+        skipped_api:
+            Sorted list of API model ids skipped.
+        skipped_existing:
+            Count of (model, language) pairs skipped due to existing results.
+        skipped_too_large:
+            Sorted list of model ids dropped for exceeding GPU budget.
+    """
+    total_skipped = len(skipped_api) + skipped_existing + len(skipped_too_large)
+    logger.info(
+        f"Evaluation summary: {len(evaluated)} evaluated, {len(failed)} failed, "
+        f"{total_skipped} skipped."
+    )
+    if failed:
+        logger.info(f"  Failed ({len(failed)}): {', '.join(failed)}.")
+    if skipped_api:
+        logger.info(
+            f"  Skipped {len(skipped_api)} API model(s) "
+            f"(pass --include-api to evaluate): {', '.join(skipped_api)}."
+        )
+    if skipped_existing:
+        logger.info(
+            f"  Skipped {skipped_existing} (model, language) pair(s) "
+            "already holding a result."
+        )
+    if skipped_too_large:
+        logger.info(
+            f"  Skipped {len(skipped_too_large)} model(s) "
+            f"too large for the local GPU budget: {', '.join(skipped_too_large)}."
+        )
 
 
 @dataclass(frozen=True)
@@ -1019,6 +1163,10 @@ def apply_swap(old_dataset: str, new_dataset: str, dry_run: bool) -> list[Path]:
 
     Returns:
         The paths that were (or would be) modified.
+
+    Raises:
+        click.ClickException:
+            When the dataset configs cannot be fetched.
     """
     changed: list[Path] = []
     for dataset_id, make_official in ((new_dataset, True), (old_dataset, False)):
@@ -1038,7 +1186,103 @@ def apply_swap(old_dataset: str, new_dataset: str, dry_run: bool) -> list[Path]:
     verb = "Would edit" if dry_run else "Edited"
     for path in unique:
         logger.info(f"{verb} {path.relative_to(REPO_ROOT)}.")
-    return unique
+
+    # Update CHANGELOG.md
+    if not dry_run:
+        changelog_path = REPO_ROOT / "CHANGELOG.md"
+        old_config = dataset_config(dataset_id=old_dataset)
+        new_config = dataset_config(dataset_id=new_dataset)
+        if old_config is None or new_config is None:
+            raise click.ClickException(
+                f"Could not fetch dataset configs for {old_dataset!r} or "
+                f"{new_dataset!r}."
+            )
+        _update_changelog(
+            changelog_path=changelog_path,
+            old_dataset=old_dataset,
+            new_dataset=new_dataset,
+            old_config=old_config,
+            new_config=new_config,
+        )
+        changed.append(changelog_path)
+        logger.info(f"Edited {changelog_path.relative_to(REPO_ROOT)}.")
+
+        # Also track dataset_split_sizes.json if it has been modified
+        split_sizes_path = (
+            REPO_ROOT / "src" / "leaderboards" / "dataset_split_sizes.json"
+        )
+        if split_sizes_path.exists():
+            diff_result = _git(
+                "diff", "--quiet", "--", str(split_sizes_path), check=False
+            )
+            if diff_result.returncode != 0:
+                # File has modifications
+                changed.append(split_sizes_path)
+                logger.info(
+                    f"Tracked {split_sizes_path.relative_to(REPO_ROOT)} (modified)."
+                )
+
+    return sorted({path for path in changed}, key=str)
+
+
+def _update_changelog(
+    changelog_path: Path,
+    old_dataset: str,
+    new_dataset: str,
+    old_config: DatasetConfig,
+    new_config: DatasetConfig,
+) -> None:
+    """Add a changelog entry for the dataset swap under [Unreleased] -> Changed.
+
+    Args:
+        changelog_path:
+            Path to CHANGELOG.md.
+        old_dataset:
+            The dataset being demoted to unofficial.
+        new_dataset:
+            The dataset being promoted to official.
+        old_config:
+            DatasetConfig for the old dataset.
+        new_config:
+            DatasetConfig for the new dataset.
+
+    Raises:
+        ValueError:
+            When the '### Changed' section under '## [Unreleased]' is not found.
+    """
+    lines = changelog_path.read_text(encoding="utf-8").split("\n")
+
+    # Find the "### Changed" section under "## [Unreleased]"
+    unreleased_idx: int | None = None
+    changed_idx: int | None = None
+    next_section_idx: int | None = None
+
+    for i, line in enumerate(lines):
+        if line.strip() == "## [Unreleased]":
+            unreleased_idx = i
+        elif unreleased_idx is not None and line.strip() == "### Changed":
+            changed_idx = i
+        elif changed_idx is not None and line.startswith("## "):
+            next_section_idx = i
+            break
+
+    if changed_idx is None or next_section_idx is None:
+        raise ValueError(
+            "Could not find '### Changed' section under '## [Unreleased]' in "
+            "CHANGELOG.md"
+        )
+
+    # Build the changelog entry
+    lang_list = ", ".join(sorted([lang.name for lang in old_config.languages]))
+    entry = (
+        f"- Swapped official dataset for {lang_list}: `{old_dataset}` → "
+        f"`{new_dataset}`. The script `swap_leaderboard_dataset.py` now "
+        "automatically updates CHANGELOG.md when performing dataset swaps."
+    )
+
+    # Insert the entry after "### Changed"
+    lines.insert(changed_idx + 1, entry)
+    changelog_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def find_config_file(dataset_id: str) -> Path:
@@ -1390,11 +1634,13 @@ def open_pull_request(
     """
     for path in changed_paths:
         _git("add", str(path))
+
     # Check if there are any actual changes to commit
     diff_result = _git("diff", "--cached", "--quiet", check=False)
     if diff_result.returncode == 0:
         logger.info("No changes to commit; skipping PR creation.")
         return
+
     title = f"feat: swap official dataset {old_dataset} -> {new_dataset}"
     body = _pr_body(old_dataset=old_dataset, new_dataset=new_dataset)
     _git("commit", "-m", title, "-m", body)

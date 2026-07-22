@@ -12,32 +12,31 @@ This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2306.0
 The corpus consists of 79 manually selected datasets from over 350 datasets reported in
 the scientific literature based on strict quality criteria.
 
-The original dataset contains a single split with 44,284 Albanian samples.
-We use 1,024 / 256 / 2,048 samples for our training, validation, and test splits,
-respectively.
-We have employed stratified sampling based on the label column from the original
-dataset to ensure balanced splits.
+The original dataset contains a single split with 44,284 Albanian samples. We use 1,024
+/ 256 / 2,048 samples for our training, validation, and test splits, respectively. We
+have employed stratified sampling based on the label column from the original dataset to
+ensure balanced splits.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Cirku politik në Nju Jork nga Frank SHKRELI",
-    "label": "positive"
+  "text": "Cirku politik në Nju Jork nga Frank SHKRELI",
+  "label": "positive"
 }
 ```
 
 ```json
 {
-    "text": "Balkanweb - Kulturë | \"Si manipuloheshin tekstet e këngëve polifonike para 1990-ës\" - http://t.co/hk0LNEGYah",
-    "label": "negative"
+  "text": "Balkanweb - Kulturë | \"Si manipuloheshin tekstet e këngëve polifonike para 1990-ës\" - http://t.co/hk0LNEGYah",
+  "label": "negative"
 }
 ```
 
 ```json
 {
-    "text": "RT @fislami3: Mos trokit në derën e dikujt që ia hap gjithkujt !!",
-    "label": "negative"
+  "text": "RT @fislami3: Mos trokit në derën e dikujt që ia hap gjithkujt !!",
+  "label": "negative"
 }
 ```
 
@@ -96,22 +95,36 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Enver", "Hoxha", ",", "politikan", ",", "ministër", ",", "kryeministër", ",", "burrë", "shteti", ",", "diktator"],
-  "labels": ["B-PER", "I-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"],
+  "tokens": [
+    "Enver",
+    "Hoxha",
+    ",",
+    "politikan",
+    ",",
+    "ministër",
+    ",",
+    "kryeministër",
+    ",",
+    "burrë",
+    "shteti",
+    ",",
+    "diktator"
+  ],
+  "labels": ["B-PER", "I-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
   "tokens": ["'", "''", "Meksika", "''", "'", "-"],
-  "labels": ["O", "O", "B-LOC", "O", "O", "O"],
+  "labels": ["O", "O", "B-LOC", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": ["Devil", "May", "Cry", "(", "anime", ")"],
-    "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG"],
+  "tokens": ["Devil", "May", "Cry", "(", "anime", ")"],
+  "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG"]
 }
 ```
 
@@ -161,19 +174,18 @@ euroeval --model <model-id> --dataset wikiann-sq
 ### ScaLA-sq
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Albanian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Albanian-STAF) and
-[Albanian TSA](https://github.com/UniversalDependencies/UD_Albanian-TSA/tree/master)
-by assuming that
-the documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Albanian Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Albanian-STAF)
+and [Albanian TSA](https://github.com/UniversalDependencies/UD_Albanian-TSA/tree/master)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
-The original full dataset consists of 160 / 20 / 80 samples for training,
-validation and testing, respectively.
-We use a 128 / 64 / 210 split for training, validation and testing, respectively.
+The original full dataset consists of 160 / 20 / 80 samples for training, validation and
+testing, respectively. We use a 128 / 64 / 210 split for training, validation and
+testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -315,74 +327,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-sq
 
 ## Knowledge
 
-### GlobalMMLU-lite-sq
-
-Global-MMLU is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Albanian was done by the [Cohere Labs Community](https://cohere.com/research).
-
-The original full dataset consists of 215 / 400 samples for
-validation and testing, respectively. We use a 128 / 64 / 404 split for training,
-validation and testing, respectively (so 596 samples used in total).
-The train set is sampled from the validation set. Remaining validation samples
-are used in the test set.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Projektimi ambiental që sjell bashkë kafshë shtëpiake dhe bimë në shtëpi kujdesi, si dhe të rinj e fëmijë si vizitorë të rregullt, njihet si\nOpsione:\na. Projektimi Instrumental i Jetesës\nb. Zgjedhja humaniste\nc. Harmonia njeri-ambient\nd. Alternativa e Edenit",
-  "label": "d",
-}
-```
-
-```json
-{
-  "text": "Cilën nga të mëposhtmet duhet të bëjë një përdorues kompjuteri për të parandaluar lodhjen e syve të shkaktuar nga ekrani?\nOpsione:\na. Të përdorë pika sysh rregullisht\nb. Të ndryshojë zgjedhjen e softuereve\nc. Të kufizojë rezolucionin në monitor\nd. Të bëjë pushime të rregullta për të parë dritën natyrore",
-  "label": "d",
-}
-```
-
-```json
-{
-  "text": "Cila nga alternativat vijuese është më e gjatë?\nOpsione:\na. Jetëgjatësia në lindje (LEAB)\nb. Kohëzgjatja e jetës\nc. Jetëgjatësia deri në një moshë të caktuar (LEASA)\nd. Nuk ka mënyrë për ta ditur",
-  "label": "b",
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Më poshtë janë pyetje me zgjedhje të shumëfishtë (me përgjigje).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Pyetje: {text}
-  Përgjigje: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Pyetje: {text}
-
-  Përgjigjuni pyetjes së mësipërme duke u përgjigjur me {labels_str}, dhe asgjë tjetër.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset global-mmlu-lite-sq
-```
-
-### Unofficial: INCLUDE-sq
+### INCLUDE-sq
 
 This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
 comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
@@ -398,25 +343,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Në cilë teori sociologjike pohohet se stratifikimi është i arsyeshëm dhe i pashmangshëm dhe se kontribuon për barazpeshë në shoqëri?\nOpsione:\na. Teorinë funksionaliste.\nb. Teorinë e konflikteve.\nc. Teorinë Marksiste.\nd. Teorinë e Maks Veberit.",
-    "label": "a",
-    "subject": "Sociology"
+  "text": "Në cilë teori sociologjike pohohet se stratifikimi është i arsyeshëm dhe i pashmangshëm dhe se kontribuon për barazpeshë në shoqëri?\nOpsione:\na. Teorinë funksionaliste.\nb. Teorinë e konflikteve.\nc. Teorinë Marksiste.\nd. Teorinë e Maks Veberit.",
+  "label": "a",
+  "subject": "Sociology"
 }
 ```
 
 ```json
 {
-    "text": "Cilët janë stilet kryesore të menaxhmentit?\nOpsione:\na. autoritar, demokratik dhe „qetësi në shtëpi“.\nb. autoritar, demokratik, fleksibil.\nc. Totalitar, demokratik, fleksibil.\nd. autoritar, fleksibil dhe „qetësi në shtëpi“.",
-    "label": "b",
-    "subject": "Business"
+  "text": "Cilët janë stilet kryesore të menaxhmentit?\nOpsione:\na. autoritar, demokratik dhe „qetësi në shtëpi“.\nb. autoritar, demokratik, fleksibil.\nc. Totalitar, demokratik, fleksibil.\nd. autoritar, fleksibil dhe „qetësi në shtëpi“.",
+  "label": "b",
+  "subject": "Business"
 }
 ```
 
 ```json
 {
-    "text": "Në cilën periudhë mbisundon kuptimi që bukuria ka prejardhje hyjnore?\nOpsione:\na. periudhën antike.\nb. post modernizëm.\nc. mesjetë.\nd. klasicizëm.",
-    "label": "c",
-    "subject": "Visual Arts"
+  "text": "Në cilën periudhë mbisundon kuptimi që bukuria ka prejardhje hyjnore?\nOpsione:\na. periudhën antike.\nb. post modernizëm.\nc. mesjetë.\nd. klasicizëm.",
+  "label": "c",
+  "subject": "Visual Arts"
 }
 ```
 
@@ -451,13 +396,80 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-sq
 ```
 
+### Unofficial: GlobalMMLU-lite-sq
+
+Global-MMLU is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to Albanian was done by the
+[Cohere Labs Community](https://cohere.com/research).
+
+The original full dataset consists of 215 / 400 samples for validation and testing,
+respectively. We use a 128 / 64 / 404 split for training, validation and testing,
+respectively (so 596 samples used in total). The train set is sampled from the
+validation set. Remaining validation samples are used in the test set.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Projektimi ambiental që sjell bashkë kafshë shtëpiake dhe bimë në shtëpi kujdesi, si dhe të rinj e fëmijë si vizitorë të rregullt, njihet si\nOpsione:\na. Projektimi Instrumental i Jetesës\nb. Zgjedhja humaniste\nc. Harmonia njeri-ambient\nd. Alternativa e Edenit",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Cilën nga të mëposhtmet duhet të bëjë një përdorues kompjuteri për të parandaluar lodhjen e syve të shkaktuar nga ekrani?\nOpsione:\na. Të përdorë pika sysh rregullisht\nb. Të ndryshojë zgjedhjen e softuereve\nc. Të kufizojë rezolucionin në monitor\nd. Të bëjë pushime të rregullta për të parë dritën natyrore",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Cila nga alternativat vijuese është më e gjatë?\nOpsione:\na. Jetëgjatësia në lindje (LEAB)\nb. Kohëzgjatja e jetës\nc. Jetëgjatësia deri në një moshë të caktuar (LEASA)\nd. Nuk ka mënyrë për ta ditur",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Më poshtë janë pyetje me zgjedhje të shumëfishtë (me përgjigje).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pyetje: {text}
+  Përgjigje: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pyetje: {text}
+
+  Përgjigjuni pyetjes së mësipërme duke u përgjigjur me {labels_str}, dhe asgjë tjetër.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset global-mmlu-lite-sq
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-sq
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -527,15 +539,16 @@ euroeval --model <model-id> --dataset winogrande-sq
 
 ### LR-Sum-sq
 
-This dataset was published in [this paper](https://aclanthology.org/2023.findings-acl.427/).
-The source data is public domain newswire collected from Voice of America websites,
-and the summaries are human-written.
+This dataset was published in
+[this paper](https://aclanthology.org/2023.findings-acl.427/). The source data is public
+domain newswire collected from Voice of America websites, and the summaries are
+human-written.
 
-The original dataset contains 18,312 / 2,289 / 2,289 samples for the training, validation,
-and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
-validation and test splits, respectively. The train and validation splits are subsets
-of the original splits. For the test split, we use all available test samples and
-supplement with additional samples from the training set to reach 2,048 samples in
+The original dataset contains 18,312 / 2,289 / 2,289 samples for the training,
+validation, and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
+training, validation and test splits, respectively. The train and validation splits are
+subsets of the original splits. For the test split, we use all available test samples
+and supplement with additional samples from the training set to reach 2,048 samples in
 total.
 
 Here are a few examples from the training split:
@@ -590,4 +603,83 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset lr-sum-sq
+```
+
+## Instruction-following
+
+### MultiIFEval-sq
+
+MultiIFEval-sq is part of the MultiIFEval benchmark spanning 305 languages. It is
+generated by translating and localising the English IFEval dataset using a structured
+LLM generation pipeline. For each target language, a randomly selected Wikipedia article
+in that language provides contextual grounding to reduce hallucination and improve
+cultural localisation. The pipeline preserves instruction_id_list values for
+traceability to the original English samples, and retains kwargs keys with values
+localised where appropriate, enabling programmatic constraint verification. The dataset
+was published [here](https://huggingface.co/datasets/EuroEval/multi-ifeval-sq).
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Shkruani një përmbledhje të faqes së Wikipedia-s \"https://sq.wikipedia.org/wiki/Gjuha_shqipe\" me të paktën 200 fjalë. Mos përdorni asnjë presje dhe theksoni të paktën 3 seksione që kanë tituj në formatin Markdown, për shembull *seksioni i theksuar Pjesa 1*, *seksioni i theksuar Pjesa 2*, *seksioni i theksuar Pjesa 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 200, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Dua të planifikoj një udhëtim në Shqipëri dhe dua që të më shkruash një itinerar udhëtimi në stilin e Shekspirit. Nuk të lejohet të përdorësh presje në përgjigjen tënde.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Krijo një CV për një të sapodiplomuar që aplikon për punën e parë. Sigurohu të përfshish të paktën 12 mbajtës vendi në kllapa katrore, si për shembull [Emri] ose [Adresa].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-sq
 ```

@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ALBANIAN
-from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -46,14 +56,6 @@ LR_SUM_SQ_CONFIG = DatasetConfig(
     languages=[ALBANIAN],
 )
 
-GLOBAL_MMLU_LITE_SQ_CONFIG = DatasetConfig(
-    name="global-mmlu-lite-sq",
-    pretty_name="GlobalMMLULite-sq",
-    source="EuroEval/global-mmlu-lite-sq",
-    task=KNOW,
-    languages=[ALBANIAN],
-)
-
 WINOGRANDE_SQ_CONFIG = DatasetConfig(
     name="winogrande-sq",
     pretty_name="Winogrande-sq",
@@ -63,13 +65,31 @@ WINOGRANDE_SQ_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
+MULTI_IFEVAL_SQ_CONFIG = DatasetConfig(
+    name="multi-ifeval-sq",
+    pretty_name="MultiIFEval-sq",
+    source="EuroEval/multi-ifeval-sq",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ALBANIAN],
+    train_split=None,
+    val_split=None,
+)
 
-# Unofficial datasets ###
 
 INCLUDE_SQ_CONFIG = DatasetConfig(
     name="include-sq",
     pretty_name="INCLUDE-sq",
     source="EuroEval/include-sq-mini",
+    task=KNOW,
+    languages=[ALBANIAN],
+)
+
+# Unofficial datasets ###
+
+GLOBAL_MMLU_LITE_SQ_CONFIG = DatasetConfig(
+    name="global-mmlu-lite-sq",
+    pretty_name="GlobalMMLULite-sq",
+    source="EuroEval/global-mmlu-lite-sq",
     task=KNOW,
     languages=[ALBANIAN],
     unofficial=True,

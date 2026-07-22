@@ -8,10 +8,13 @@ information about what these constitute.
 
 ### Cross-Domain UK Reviews
 
-The dataset can be found [here](https://huggingface.co/datasets/vkovenko/cross_domain_uk_reviews).
-The data is scraped from [Tripadvisor](https://www.tripadvisor.com/) and [Rozetka](https://rozetka.com.ua/).
+The dataset can be found
+[here](https://huggingface.co/datasets/vkovenko/cross_domain_uk_reviews). The data is
+scraped from [Tripadvisor](https://www.tripadvisor.com/) and
+[Rozetka](https://rozetka.com.ua/).
 
-The [original dataset](https://huggingface.co/datasets/vkovenko/cross_domain_uk_reviews/blob/main/processed_data.csv)
+The
+[original dataset](https://huggingface.co/datasets/vkovenko/cross_domain_uk_reviews/blob/main/processed_data.csv)
 contains 611,863 samples. We use 1,024 / 256 / 2,048 samples for our training,
 validation and test splits, respectively.
 
@@ -19,22 +22,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "як і всі Mc Donalds, якість дуже низька, але рахунок високий за те, що ви їсте. . шкода, але не доходить до достатності",
-    "label": "negative"
+  "text": "як і всі Mc Donalds, якість дуже низька, але рахунок високий за те, що ви їсте. . шкода, але не доходить до достатності",
+  "label": "negative"
 }
 ```
 
 ```json
 {
-    "text": "Посудомийною машиною користуюсь давно, роботою цілком заоволена. Працює дуже тихо і прекрасно справляється з забрудненим посудом. Вміщає в себе 12 комплектів посуду.",
-    "label": "positive"
+  "text": "Посудомийною машиною користуюсь давно, роботою цілком заоволена. Працює дуже тихо і прекрасно справляється з забрудненим посудом. Вміщає в себе 12 комплектів посуду.",
+  "label": "positive"
 }
 ```
 
 ```json
 {
-    "text": "Зупинилися в готелі в липні 2021 року з сім'єю ( 4 людини ) , номер був обраний за категоріями люкс . У номері просторо і чисто . При бронюванні вони попросили викласти диван , що і було зроблено . У ванній кімнаті були всі витратні матеріали та рушники , в достатній кількості . У номері є невеликий холодильник , сейф . Але розчарований СНІДАНОК . Оголошений сніданок шведський стіл був , але це було повне розчарування . Вибачте , але можна зробити більш різноманітним і корисним , без майонезу на овочах ? ? . мухи літали і було неприємно перебувати в приміщенні .",
-    "label": "neutral"
+  "text": "Зупинилися в готелі в липні 2021 року з сім'єю ( 4 людини ) , номер був обраний за категоріями люкс . У номері просторо і чисто . При бронюванні вони попросили викласти диван , що і було зроблено . У ванній кімнаті були всі витратні матеріали та рушники , в достатній кількості . У номері є невеликий холодильник , сейф . Але розчарований СНІДАНОК . Оголошений сніданок шведський стіл був , але це було повне розчарування . Вибачте , але можна зробити більш різноманітним і корисним , без майонезу на овочах ? ? . мухи літали і було неприємно перебувати в приміщенні .",
+  "label": "neutral"
 }
 ```
 
@@ -78,36 +81,225 @@ euroeval --model <model-id> --dataset cross-domain-uk-reviews
 
 ### NER-uk
 
-The dataset can be found [here](https://github.com/lang-uk/ner-uk).
-The dataset primarily consists of text from the
+The dataset can be found [here](https://github.com/lang-uk/ner-uk). The dataset
+primarily consists of text from the
 [Open Corpus of Ukrainian Texts](https://github.com/brown-uk/corpus).
 
-The original dataset consists of 10,833 / 668 / 1,307 samples for the
-training, validation, and test splits, respectively. We use 1,024 / 256 / 2,048
-samples for our training, validation and test splits, respectively. The train and
-validation splits are subsets of the original splits, while the test split is
-created using additional samples from the train split.
+The original dataset consists of 10,833 / 668 / 1,307 samples for the training,
+validation, and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
+training, validation and test splits, respectively. The train and validation splits are
+subsets of the original splits, while the test split is created using additional samples
+from the train split.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Хоча", "непросто", "про", "неї", "розповісти", "»", ".", "Ведмідь", "замовк", ",", "подивився", "на", "друзів", ",", "які", "уважно", "його", "слухали", ",", "і", "запитав", ":"],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "B-PER", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+  "tokens": [
+    "Хоча",
+    "непросто",
+    "про",
+    "неї",
+    "розповісти",
+    "»",
+    ".",
+    "Ведмідь",
+    "замовк",
+    ",",
+    "подивився",
+    "на",
+    "друзів",
+    ",",
+    "які",
+    "уважно",
+    "його",
+    "слухали",
+    ",",
+    "і",
+    "запитав",
+    ":"
+  ],
+  "labels": [
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "B-PER",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O"
+  ]
 }
 ```
 
 ```json
 {
-  "tokens": ["Експериментальний", "матеріал", "було", "оброблено", "статистично", ".", "Метою", "запропонованої", "статті", "є", "аналіз", "структурно-змістових", "особливостей", "перетворень", "у", "районній", "пресі", "Тернопільщини", "означеного", "періоду", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "O", "O"]
+  "tokens": [
+    "Експериментальний",
+    "матеріал",
+    "було",
+    "оброблено",
+    "статистично",
+    ".",
+    "Метою",
+    "запропонованої",
+    "статті",
+    "є",
+    "аналіз",
+    "структурно-змістових",
+    "особливостей",
+    "перетворень",
+    "у",
+    "районній",
+    "пресі",
+    "Тернопільщини",
+    "означеного",
+    "періоду",
+    "."
+  ],
+  "labels": [
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "B-LOC",
+    "O",
+    "O",
+    "O"
+  ]
 }
 ```
 
 ```json
 {
-  "tokens": ["Як", "відомо", ",", "рішення", "«", "Про", "вихід", "зі", "складу", "засновників", "редакції", "газети", "«", "Житомирщина", "»", "з", "ініціативи", "голови", "обласної", "ради", "було", "прийнято", "на", "другій", "сесії", "обласної", "ради", "24", "грудня", "минулого", "року", "—", "саме", "того", "дня", ",", "коли", "Верховна", "Рада", "ухвалила", "в", "остаточній", "редакції", "Закон", "про", "реформування", "преси", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+  "tokens": [
+    "Як",
+    "відомо",
+    ",",
+    "рішення",
+    "«",
+    "Про",
+    "вихід",
+    "зі",
+    "складу",
+    "засновників",
+    "редакції",
+    "газети",
+    "«",
+    "Житомирщина",
+    "»",
+    "з",
+    "ініціативи",
+    "голови",
+    "обласної",
+    "ради",
+    "було",
+    "прийнято",
+    "на",
+    "другій",
+    "сесії",
+    "обласної",
+    "ради",
+    "24",
+    "грудня",
+    "минулого",
+    "року",
+    "—",
+    "саме",
+    "того",
+    "дня",
+    ",",
+    "коли",
+    "Верховна",
+    "Рада",
+    "ухвалила",
+    "в",
+    "остаточній",
+    "редакції",
+    "Закон",
+    "про",
+    "реформування",
+    "преси",
+    "."
+  ],
+  "labels": [
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "B-ORG",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "B-ORG",
+    "I-ORG",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O"
+  ]
 }
 ```
 
@@ -157,13 +349,13 @@ euroeval --model <model-id> --dataset ner-uk
 ### ScaLA-uk
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Ukrainian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Ukrainian-ParlaMint) by assuming that
-the documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Ukrainian Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Ukrainian-ParlaMint)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original full dataset consists of 1,024 / 256 / 2,048 samples for training,
 validation and testing, respectively (so 3,328 samples used in total). These splits are
@@ -247,17 +439,18 @@ Here are a few examples from the training split:
   "answers": {
     "answer_start": [466],
     "text": ["дві"]
-    }
+  }
 }
 ```
 
 ```json
 {
-  "context": "Сезон 2007–08 в Серії A\xa0— футбольне змагання у найвищому дивізіоні чемпіонату Італії, що проходило між 26 серпня 2007 та 18 травня 2008 року. Став 76-м турніром з моменту заснування Серії A. Участь у змаганні брали 20 команд, у тому числі 3 команди, які попереднього сезону підвищилися у класі з Серії B. За результатами сезону 17 команд продовжили виступи в елітному дивізіоні, а три найгірших клуби вибули до Серії B.\n\nПереможцем турніру став міланський «Інтернаціонале», який здобув свій третій поспіль та 16-й в історії чемпіонський титул. Майбутні чемпіони захопили одноосібне лідерство у 6 турі турніру, після чого вже не залишали першого рядка турнірної таблиці. Хоча посеред змагання відрив основного переслідувача, «Роми», від лідера сягав 11 очок, перед останнім туром команди розділяв лише один заліковий пункт. «Інтер» забезпечив перемогу в сезоні, здолавши в цьому останньому турі одного з аутсайдерів сезону, «Парму», з рахунком 2:0.\n\nКоманди \n\nУчасть у турнірі Серії A сезону 2007–08 брали 20 команд:\n\nТурнірна таблиця\n\nРезультати\n\nБомбардири \nЗа результатами сезону таблицю найкращих бомбардирів Серії А очолила пара нападників туринського «Ювентуса»\xa0— Алессандро Дель П'єро та Давід Трезеге, які забили відповідно 21 та 20 голів в матчах турніру.\n\nПовний перелік гравців, що забили принаймні 10 голів в рамках Серії A сезону 2007—08:\n\n 21 гол\n  Алессандро Дель П'єро («Ювентус»)\n 20 голів\n  Давід Трезеге («Ювентус»)\n 19 голів\n  Марко Боррієлло («Дженоа»)\n 17 голів\n  Антоніо Ді Натале («Удінезе»)\n  Златан Ібрагімович («Інтернаціонале»)\n  Адріан Муту («Фіорентина»)\n 15 голів\n  Амаурі («Палермо»)\n  Кака («Мілан»)\n 14 голів\n  Горан Пандев («Лаціо»)\n  Томмазо Роккі («Лаціо»)\n  Франческо Тотті («Рома»)\n 13 голів\n  Хуліо Рікардо Крус («Інтернаціонале»)\n  Массімо Маккароне («Сієна»)\n 12 голів\n  Нікола Аморузо («Реджина»)\n  Клаудіо Белуччі («Сампдорія»)\n  Крістіано Доні («Аталанта»)\n  Фабіо Квальярелла («Удінезе»)\n 11 голів\n  Філіппо Індзагі («Мілан»)\n 10 голів\n  Роберт Аквафреска («Кальярі»)\n  Антоніо Кассано («Сампдорія»)\n  Франческо Тавано («Ліворно»)\n\nАльберто Джилардіно, Давід Трезеге і Нікола Аморузо забили по сто м'ячів у матчах Серії «А». По завершенні сезону, до десятки найвлучніших голеадорів ліги входять: Сільвіо Піола (275), Гуннар Нордаль (225), Джузеппе Меацца (216), Жозе Алтафіні (216), Роберто Баджо (205), Курт Хамрін (190), Джузеппе Сіньйорі (188), Габрієль Батістута (184), Джамп'єро Боніперті (178), Амедео Амадеї (174).\n\nПосилання \n Серія A 2007–08 на RSSSF  \n\n2007-2008\n2007 у футболі\n2008 у футболі\n2007 в італійському спорті\n2008 в італійському спорті", "question": "Яка кількість голів була забита Алессандро Дель П'єро протягом сезону Серії А 2007–2008 років?",
+  "context": "Сезон 2007–08 в Серії A\xa0— футбольне змагання у найвищому дивізіоні чемпіонату Італії, що проходило між 26 серпня 2007 та 18 травня 2008 року. Став 76-м турніром з моменту заснування Серії A. Участь у змаганні брали 20 команд, у тому числі 3 команди, які попереднього сезону підвищилися у класі з Серії B. За результатами сезону 17 команд продовжили виступи в елітному дивізіоні, а три найгірших клуби вибули до Серії B.\n\nПереможцем турніру став міланський «Інтернаціонале», який здобув свій третій поспіль та 16-й в історії чемпіонський титул. Майбутні чемпіони захопили одноосібне лідерство у 6 турі турніру, після чого вже не залишали першого рядка турнірної таблиці. Хоча посеред змагання відрив основного переслідувача, «Роми», від лідера сягав 11 очок, перед останнім туром команди розділяв лише один заліковий пункт. «Інтер» забезпечив перемогу в сезоні, здолавши в цьому останньому турі одного з аутсайдерів сезону, «Парму», з рахунком 2:0.\n\nКоманди \n\nУчасть у турнірі Серії A сезону 2007–08 брали 20 команд:\n\nТурнірна таблиця\n\nРезультати\n\nБомбардири \nЗа результатами сезону таблицю найкращих бомбардирів Серії А очолила пара нападників туринського «Ювентуса»\xa0— Алессандро Дель П'єро та Давід Трезеге, які забили відповідно 21 та 20 голів в матчах турніру.\n\nПовний перелік гравців, що забили принаймні 10 голів в рамках Серії A сезону 2007—08:\n\n 21 гол\n  Алессандро Дель П'єро («Ювентус»)\n 20 голів\n  Давід Трезеге («Ювентус»)\n 19 голів\n  Марко Боррієлло («Дженоа»)\n 17 голів\n  Антоніо Ді Натале («Удінезе»)\n  Златан Ібрагімович («Інтернаціонале»)\n  Адріан Муту («Фіорентина»)\n 15 голів\n  Амаурі («Палермо»)\n  Кака («Мілан»)\n 14 голів\n  Горан Пандев («Лаціо»)\n  Томмазо Роккі («Лаціо»)\n  Франческо Тотті («Рома»)\n 13 голів\n  Хуліо Рікардо Крус («Інтернаціонале»)\n  Массімо Маккароне («Сієна»)\n 12 голів\n  Нікола Аморузо («Реджина»)\n  Клаудіо Белуччі («Сампдорія»)\n  Крістіано Доні («Аталанта»)\n  Фабіо Квальярелла («Удінезе»)\n 11 голів\n  Філіппо Індзагі («Мілан»)\n 10 голів\n  Роберт Аквафреска («Кальярі»)\n  Антоніо Кассано («Сампдорія»)\n  Франческо Тавано («Ліворно»)\n\nАльберто Джилардіно, Давід Трезеге і Нікола Аморузо забили по сто м'ячів у матчах Серії «А». По завершенні сезону, до десятки найвлучніших голеадорів ліги входять: Сільвіо Піола (275), Гуннар Нордаль (225), Джузеппе Меацца (216), Жозе Алтафіні (216), Роберто Баджо (205), Курт Хамрін (190), Джузеппе Сіньйорі (188), Габрієль Батістута (184), Джамп'єро Боніперті (178), Амедео Амадеї (174).\n\nПосилання \n Серія A 2007–08 на RSSSF  \n\n2007-2008\n2007 у футболі\n2008 у футболі\n2007 в італійському спорті\n2008 в італійському спорті",
+  "question": "Яка кількість голів була забита Алессандро Дель П'єро протягом сезону Серії А 2007–2008 років?",
   "answers": {
     "answer_start": [1353],
-    "text": ['21 гол']
-    }
+    "text": ["21 гол"]
+  }
 }
 ```
 
@@ -268,7 +461,7 @@ Here are a few examples from the training split:
   "answers": {
     "answer_start": [629],
     "text": ["«Серкля»"]
-    }
+  }
 }
 ```
 
@@ -310,37 +503,37 @@ euroeval --model <model-id> --dataset multi-wiki-qa-uk
 
 ### Global-MMLU-uk
 
-Global-MMLU is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Ukrainian was done by the [Cohere Labs Community](https://cohere.com/research).
+Global-MMLU is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to Ukrainian was done by the
+[Cohere Labs Community](https://cohere.com/research).
 
-The original full dataset consists of 285 / 14,042 samples for
-validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively (so 3,328 samples used in total).
-The validation set is sampled from the dev set, and the new train and test
-sets are sampled from the test set.
+The original full dataset consists of 285 / 14,042 samples for validation and testing,
+respectively. We use a 1,024 / 256 / 2,048 split for training, validation and testing,
+respectively (so 3,328 samples used in total). The validation set is sampled from the
+dev set, and the new train and test sets are sampled from the test set.
 
 Here are a few examples from the training split:
 
 ```json
 {
   "text": "Після того, як призначену одиницю продукту крові було отримано з банку крові та вилучено з холодильника, протягом якого періоду часу слід розпочати переливання, перш ніж він почне псуватися (за медичними даними 2020 року)?\nВаріанти:\na. 30 хвилин.\nb. 90 хвилин.\nc. 4 години.\nd. 12 годин.",
-  "label": "a",
+  "label": "a"
 }
 ```
 
 ```json
 {
   "text": "У якому з цих двох сценаріїв головний герой (який використовує I/me/my) робить щось явно морально неправильне відповідно до звичайних моральних стандартів у США станом на 2020 рік? Сценарій 1 | Я взяв 1 мільйон доларів у друзів. Сценарій 2 | Я подав на роботі свій табель із зазначенням точного робочого часу.\nВаріанти:\na. Неправильно, Неправильно\nb. Помилка, не помилка\nc. Не неправильно, неправильно\nd. Не помилився, не помилився",
-  "label": "b",
+  "label": "b"
 }
 ```
 
 ```json
 {
   "text": "Яку з наведених нижче процедур бухгалтер найменше виконає під час перевірки фінансової звітності неемітента?\nВаріанти:\na. Запитувати керівництво про дії, прийняті на засіданнях ради директорів.\nb. Вивчіть взаємозв’язки елементів фінансової звітності, які, як очікується, мають відповідати передбачуваним моделям.\nc. Визначте заходи внутрішнього контролю, які можуть запобігти або виявити суттєві викривлення.\nd. Порівняйте фінансові звіти з очікуваними результатами в бюджетах і прогнозах.",
-  "label": "c",
+  "label": "c"
 }
 ```
 
@@ -396,25 +589,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Яким органом влади в Україні є Верховна Рада України?\nВаріанти:\na. єдиним органом законодавчої влади в Україні\nb. вищим органом законодавчої влади в Україні\nc. найвищим органом публічної влади в Україні\nd. єдиним органом установчої влади в Україні",
-    "label": "a",
-    "subject": "Law"
+  "text": "Яким органом влади в Україні є Верховна Рада України?\nВаріанти:\na. єдиним органом законодавчої влади в Україні\nb. вищим органом законодавчої влади в Україні\nc. найвищим органом публічної влади в Україні\nd. єдиним органом установчої влади в Україні",
+  "label": "a",
+  "subject": "Law"
 }
 ```
 
 ```json
 {
-    "text": "Метою здійснення психологічного аналізу уроку є\nВаріанти:\na. педагогічна атестація вчителя\nb. виявлення факторів ефективного розвитку і виховання учнів та рефлексія педагогічної майстерності вчителя\nc. висновок щодо рівня засвоєння учнями навчального матеріалу\nd. виявлення факторів оптимізації методології навчання",
-    "label": "b",
-    "subject": "Psychology"
+  "text": "Метою здійснення психологічного аналізу уроку є\nВаріанти:\na. педагогічна атестація вчителя\nb. виявлення факторів ефективного розвитку і виховання учнів та рефлексія педагогічної майстерності вчителя\nc. висновок щодо рівня засвоєння учнями навчального матеріалу\nd. виявлення факторів оптимізації методології навчання",
+  "label": "b",
+  "subject": "Psychology"
 }
 ```
 
 ```json
 {
-    "text": "За чиїм підписом опубліковується закон, прийнятий Верховною Радою України під час повторного розгляду, якщо Президент України не підписав такий закон?\nВаріанти:\na. Голови Верховного Суду України\nb. Голови Конституційного Суду України\nc. Голови Верховної Ради України\nd. Першого заступника Голови Верховної Ради України",
-    "label": "c",
-    "subject": "Law"
+  "text": "За чиїм підписом опубліковується закон, прийнятий Верховною Радою України під час повторного розгляду, якщо Президент України не підписав такий закон?\nВаріанти:\na. Голови Верховного Суду України\nb. Голови Конституційного Суду України\nc. Голови Верховної Ради України\nd. Першого заступника Голови Верховної Ради України",
+  "label": "c",
+  "subject": "Law"
 }
 ```
 
@@ -454,8 +647,8 @@ euroeval --model <model-id> --dataset include-uk
 ### Winogrande-uk
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -525,14 +718,15 @@ euroeval --model <model-id> --dataset winogrande-uk
 
 ### LR-Sum-uk
 
-This dataset was published in [this paper](https://aclanthology.org/2023.findings-acl.427/).
-The source data is public domain newswire collected from Voice of America websites,
-and the summaries are human-written.
+This dataset was published in
+[this paper](https://aclanthology.org/2023.findings-acl.427/). The source data is public
+domain newswire collected from Voice of America websites, and the summaries are
+human-written.
 
-The original dataset contains 5,784 / 722 / 723 samples for the training, validation, and
-test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
-validation and test splits, respectively. The train and validation splits are subsets
-of the original splits. For the test split, we use all available test samples and
+The original dataset contains 5,784 / 722 / 723 samples for the training, validation,
+and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
+validation and test splits, respectively. The train and validation splits are subsets of
+the original splits. For the test split, we use all available test samples and
 supplement with additional samples from the training set to reach 2,048 samples in
 total.
 
@@ -592,14 +786,90 @@ euroeval --model <model-id> --dataset lr-sum-uk
 
 ## Instruction-following
 
-### IFEval-uk
+### MultiIFEval-uk
+
+This dataset is part of the MultiIFEval benchmark, which translates and localises IFEval
+prompts into 305 languages using a structured LLM generation pipeline. For each target
+language, a randomly chosen target-language Wikipedia article is included as grounding
+to reduce hallucination and improve cultural localisation. Instruction IDs are preserved
+for traceability, and kwargs keys are retained (with values localised where
+appropriate), so constraints can still be checked programmatically. Outputs are
+schema-validated; malformed or empty outputs were excluded.
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Напишіть резюме обсягом понад 300 слів для сторінки Вікіпедії \"https://uk.wikipedia.org/wiki/Раймунд_III_(граф_Триполі)\". Не використовуйте жодної коми та виділіть щонайменше 3 розділи, які мають заголовки у форматі markdown, наприклад *виділена частина розділу 1*, *виділена частина розділу 2*, *виділена частина розділу 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Я планую подорож до Японії і хотів би, щоб ти написав мені маршрут моєї мандрівки у стилі Шекспіра. Тобі заборонено використовувати будь-які коми у твоїй відповіді.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Напишіть резюме для випускника середньої школи без досвіду роботи, який шукає свою першу роботу. Обов'язково додайте щонайменше 12 заповнювачів у квадратних дужках, наприклад [адреса], [ім'я].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-uk
+```
+
+### Unofficial: IFEval-uk
 
 This dataset was published
-[here](https://huggingface.co/datasets/INSAIT-Institute/ifeval_ukr) and is a
-translation of the English IFEval dataset, which was published in [this
-paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
-combination of one or more of 25 different constraints. It is unknown how the data was
-translated.
+[here](https://huggingface.co/datasets/INSAIT-Institute/ifeval_ukr) and is a translation
+of the English IFEval dataset, which was published in
+[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each
+with a combination of one or more of 25 different constraints. It is unknown how the
+data was translated.
 
 We use the original dataset as the test split, and do not include the other splits, as
 we only evaluate models zero-shot and the size is too small to warrant an even smaller
@@ -609,51 +879,41 @@ Here are a few examples from the test split:
 
 ```json
 {
-    "text": "Напишіть казку про принцесу і дракона, переконавшись, що слова 'відповіла' з'являється щонайменше двічі.",
-    "target_text": {
-        "instruction_id_list": [
-            "keywords:frequency"
-        ],
-        "kwargs": [
-            {
-                "frequency": 2,
-                "keyword": "відповіла",
-                "relation": "at least"
-            }
-        ]
-    }
+  "text": "Напишіть казку про принцесу і дракона, переконавшись, що слова 'відповіла' з'являється щонайменше двічі.",
+  "target_text": {
+    "instruction_id_list": ["keywords:frequency"],
+    "kwargs": [
+      {
+        "frequency": 2,
+        "keyword": "відповіла",
+        "relation": "at least"
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Чи можете ви надати переклад для \"今天天气很好\" німецькою мовою? Не використовуйте слово \"heute\". Будь ласка, використовуйте інше слово.",
-    "target_text": {
-        "instruction_id_list": [
-            "keywords:forbidden_words"
-        ],
-        "kwargs": [
-            {
-                "forbidden_words": [
-                    "heute"
-                ],
-            }
-        ]
-    }
+  "text": "Чи можете ви надати переклад для \"今天天气很好\" німецькою мовою? Не використовуйте слово \"heute\". Будь ласка, використовуйте інше слово.",
+  "target_text": {
+    "instruction_id_list": ["keywords:forbidden_words"],
+    "kwargs": [
+      {
+        "forbidden_words": ["heute"]
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Напишіть лимерик про написання лимерика. Не використовуйте жодної коми у всій своїй відповіді.",
-    "target_text": {
-        "instruction_id_list": [
-            "punctuation:no_comma"
-        ],
-        "kwargs": [
-            {}
-        ]
-    }
+  "text": "Напишіть лимерик про написання лимерика. Не використовуйте жодної коми у всій своїй відповіді.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
 }
 ```
 

@@ -15,11 +15,13 @@ sections:
       - { group: Multilingual, csv: baltic, slug: baltic, title: "🇱🇻🇱🇹 Baltic" }
       - { group: Multilingual, csv: finnic, slug: finnic, title: "🇫🇮🇪🇪 Finnic" }
       - { group: Multilingual, csv: germanic, slug: germanic, title: "🇩🇰🇳🇱🇬🇧🇫🇴🇩🇪🇮🇸🇳🇴🇸🇪 Germanic" }
-      - { group: Multilingual, csv: mainland_scandinavian, slug: mainland-scandinavian, title: "🇩🇰🇳🇴🇸🇪 Mainland Scandinavian" }
       - { group: Multilingual, csv: romance, slug: romance, title: "🇫🇷🇮🇹🇵🇹🇷🇴🇪🇸 Romance" }
+      - { group: Multilingual, csv: scandinavian, slug: scandinavian, title: "🇩🇰🇫🇴🇮🇸🇳🇴🇸🇪 Scandinavian" }
       - { group: Multilingual, csv: slavic, slug: slavic, title: "🇧🇦🇧🇬🇭🇷🇨🇿🇵🇱🇷🇸🇸🇰🇸🇮🇺🇦 Slavic" }
+      - { group: Multilingual, csv: west_germanic, slug: west-germanic, title: "🇳🇱🇬🇧🇩🇪 West Germanic" }
       # Monolingual
       - { group: Monolingual, csv: albanian, title: "🇦🇱 Albanian" }
+      - { group: Monolingual, csv: belarusian, title: "🇧🇾 Belarusian" }
       - { group: Monolingual, csv: bosnian, title: "🇧🇦 Bosnian" }
       - { group: Monolingual, csv: bulgarian, title: "🇧🇬 Bulgarian" }
       - { group: Monolingual, csv: catalan, title: "<img src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 27 18\"><path fill=\"%23FCDD09\" d=\"M0 0h27v18H0z\"/><path fill=\"%23DA121A\" d=\"M0 2h27v2H0zM0 6h27v2H0zM0 10h27v2H0zM0 14h27v2H0z\"/></svg>' alt='' style='height:0.9em;vertical-align:-0.05em;display:inline-block'> Catalan" }
@@ -37,6 +39,7 @@ sections:
       - { group: Monolingual, csv: hungarian, title: "🇭🇺 Hungarian" }
       - { group: Monolingual, csv: icelandic, title: "🇮🇸 Icelandic" }
       - { group: Monolingual, csv: italian, title: "🇮🇹 Italian" }
+      - { group: Monolingual, csv: luxembourgish, title: "🇱🇺 Luxembourgish" }
       - { group: Monolingual, csv: latvian, title: "🇱🇻 Latvian" }
       - { group: Monolingual, csv: lithuanian, title: "🇱🇹 Lithuanian" }
       - { group: Monolingual, csv: norwegian, title: "🇳🇴 Norwegian" }
@@ -99,6 +102,7 @@ sections:
       - { path: datasets/hungarian.md, title: "🇭🇺 Hungarian" }
       - { path: datasets/icelandic.md, title: "🇮🇸 Icelandic" }
       - { path: datasets/italian.md, title: "🇮🇹 Italian" }
+      - { path: datasets/luxembourgish.md, title: "🇱🇺 Luxembourgish" }
       - { path: datasets/latvian.md, title: "🇱🇻 Latvian" }
       - { path: datasets/lithuanian.md, title: "🇱🇹 Lithuanian" }
       - { path: datasets/norwegian.md, title: "🇳🇴 Norwegian" }

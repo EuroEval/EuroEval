@@ -23,21 +23,21 @@ Here are a few examples from the training split:
 ```json
 {
   "text": "Пры вельмі сціплым бюджэце ў 20 млн даляраў Стахельскі зняў эталонны экшэн.",
-  "label": "positive",
+  "label": "positive"
 }
 ```
 
 ```json
 {
-    "text": "Гэта лічба толькі пацвярджае, што фестываль з кожным годам набірае моцы, пашыраючы сваю геаграфію.",
-    "label": "positive",
+  "text": "Гэта лічба толькі пацвярджае, што фестываль з кожным годам набірае моцы, пашыраючы сваю геаграфію.",
+  "label": "positive"
 }
 ```
 
 ```json
 {
-    "text": "Яна цудоўна абудзіла апетыт, апетыт да падрабязнасцяў, да разгадвання, да спазнання.",
-    "label": "positive",
+  "text": "Яна цудоўна абудзіла апетыт, апетыт да падрабязнасцяў, да разгадвання, да спазнання.",
+  "label": "positive"
 }
 ```
 
@@ -97,21 +97,30 @@ Here are a few examples from the training split:
 ```json
 {
   "tokens": ["Сцюарт", "Бінэм", "(", "4", ")"],
-  "labels": ["B-PER", "I-PER", "O", "O", "O"],
+  "labels": ["B-PER", "I-PER", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-  "tokens": ["Пасля", "гуляў", "таксама", "за", "моладзевую", "зборную", "Беларусі", "."],
-  "labels": ["O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "O"],
+  "tokens": [
+    "Пасля",
+    "гуляў",
+    "таксама",
+    "за",
+    "моладзевую",
+    "зборную",
+    "Беларусі",
+    "."
+  ],
+  "labels": ["O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "O"]
 }
 ```
 
 ```json
 {
   "tokens": ["Горад", "Кампен", ",", "Нідэрланды"],
-  "labels": ["B-LOC", "I-LOC", "I-LOC", "I-LOC"],
+  "labels": ["B-LOC", "I-LOC", "I-LOC", "I-LOC"]
 }
 ```
 
@@ -161,13 +170,13 @@ euroeval --model <model-id> --dataset wikiann-be
 ### ScaLA-be
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Belarusian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Belarusian-HSE) by assuming that
-the documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Belarusian Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Belarusian-HSE)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original full dataset consists of 1,024 / 256 / 2,048 samples for training,
 validation and testing, respectively (so 3,328 samples used in total). These splits are
@@ -177,22 +186,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Скончыла Беларускую акадэмію мастацтваў (курс Міхаіла Жданоўскага) і курс дакументальнага кіно Doc Pro у Школе Вайды (Варшава).",
-    "label": "correct"
+  "text": "Скончыла Беларускую акадэмію мастацтваў (курс Міхаіла Жданоўскага) і курс дакументальнага кіно Doc Pro у Школе Вайды (Варшава).",
+  "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Дзяржаўныя СМІ не расказалі пра тыя рэкамэндацыі WHO, якіх Беларусь не выконвае",
-    "label": "correct"
+  "text": "Дзяржаўныя СМІ не расказалі пра тыя рэкамэндацыі WHO, якіх Беларусь не выконвае",
+  "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Але праз 19 гадоў Статут новы ВКЛ скасаваў большасьць палажэньняў Люблінскай уніі.",
-    "label": "incorrect"
+  "text": "Але праз 19 гадоў Статут новы ВКЛ скасаваў большасьць палажэньняў Люблінскай уніі.",
+  "label": "incorrect"
 }
 ```
 
@@ -315,14 +324,12 @@ euroeval --model <model-id> --dataset multi-wiki-qa-be
 
 ### BE-WSC
 
-This dataset was published in
-[this paper](https://aclanthology.org/2025.acl-long.25/) and is a Belarusian
-version of the Winograd schema challenge (WSC).
+This dataset was published in [this paper](https://aclanthology.org/2025.acl-long.25/)
+and is a Belarusian version of the Winograd schema challenge (WSC).
 
-The original full dataset consists of 570 / 200 / 200 samples for training,
-validation, and testing.
-We use 128 of the test samples for validation, resulting in a 128 / 64 / 720
-split for training, validation and testing, respectively.
+The original full dataset consists of 570 / 200 / 200 samples for training, validation,
+and testing. We use 128 of the test samples for validation, resulting in a 128 / 64 /
+720 split for training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -382,4 +389,83 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset be-wsc
+```
+
+## Instruction-following
+
+### MultiIFEval-be
+
+MultiIFEval-be is part of the MultiIFEval benchmark spanning 305 languages. It is
+generated by translating and localising the English IFEval dataset using a structured
+LLM generation pipeline. For each target language, a randomly selected Wikipedia article
+in that language provides contextual grounding to reduce hallucination and improve
+cultural localisation. The pipeline preserves instruction_id_list values for
+traceability to the original English samples, and retains kwargs keys with values
+localised where appropriate, enabling programmatic constraint verification. The dataset
+was published [here](https://huggingface.co/datasets/EuroEval/multi-ifeval-be).
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Напішыце зводку старонкі Wikipedia \"https://be.wikipedia.org/wiki/Беларуская_мова\" не менш за 250 слоў. Не выкарыстоўвайце ніякіх косак і вылучыце не менш за 3 раздзелы, якія маюць загалоўкі, у фарматаце Markdown, напрыклад *выдзелены раздзел Частка 1*, *выдзелены раздзел Частка 2*, *выдзелены раздзел Частка 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 250, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Я планую паездку ў Беларусь і хачу, каб ты напісаў мне план падарожжа ў стылі Шэкспіра. Табе не дазваляецца выкарыстоўваць коскі ў адказе.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Стварыце рэзюмэ для нядаўняга выпускніка школы, які падае заяўку на сваю першую працу. Пераканайцеся, што вы ўключылі не менш за 12 месцаў у квадратных дужках, такіх як [Імя] або [Адрас].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-be
 ```

@@ -1,16 +1,15 @@
 # 🇨🇿 Czech
 
-This is an overview of all the datasets used in the Czech part of EuroEval. The
-datasets are grouped by their task - see the [task overview](/tasks) for more
-information about what these constitute.
+This is an overview of all the datasets used in the Czech part of EuroEval. The datasets
+are grouped by their task - see the [task overview](/tasks) for more information about
+what these constitute.
 
 ## Sentiment Classification
 
 ### CSFD Sentiment
 
 This dataset was published in [this paper](https://aclanthology.org/R13-1016/) and
-consists of reviews from the Czech Movie
-Database (CSFD).
+consists of reviews from the Czech Movie Database (CSFD).
 
 The original dataset contains 85,948 / 894 / 1503 samples for the training, validation,
 and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
@@ -23,22 +22,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Stoprocentně nejlepší film všech dob... a tím samozřejmě zůstává a navždy zůstane. Tehdy ještě neznámý James Cameron dokázal obrovskou věc a jedním velkofilmem... ne, jedním zázrakem se dostal mezi špičku nejlepších režisérů filmové historie. A ano, jak už se někdo ptal, jak z toho někdo může být natšený - já z toho nadšený jsem a to se nezmění.",
-    "label": "positive"
+  "text": "Stoprocentně nejlepší film všech dob... a tím samozřejmě zůstává a navždy zůstane. Tehdy ještě neznámý James Cameron dokázal obrovskou věc a jedním velkofilmem... ne, jedním zázrakem se dostal mezi špičku nejlepších režisérů filmové historie. A ano, jak už se někdo ptal, jak z toho někdo může být natšený - já z toho nadšený jsem a to se nezmění.",
+  "label": "positive"
 }
 ```
 
 ```json
 {
-    "text": "První film Woodyho Allena? Jen tak na půl. Vzhledem k tomu, že vzal již natočený japonský brak, sestříhal ho a předaboval, tak bych mu dal spíše titul režisér anglického znění. Ani to se však příliš nepovedlo – je zde pár pokusů o typický allenovský humor, ovšem je to ještě takové nijaké – jeho pravé komediální období má teprve přijít! Takže doporučuji spíše jen jako zajímavost pro milovníky tvorby Woodyho Allena.",
-    "label": "neutral"
+  "text": "První film Woodyho Allena? Jen tak na půl. Vzhledem k tomu, že vzal již natočený japonský brak, sestříhal ho a předaboval, tak bych mu dal spíše titul režisér anglického znění. Ani to se však příliš nepovedlo – je zde pár pokusů o typický allenovský humor, ovšem je to ještě takové nijaké – jeho pravé komediální období má teprve přijít! Takže doporučuji spíše jen jako zajímavost pro milovníky tvorby Woodyho Allena.",
+  "label": "neutral"
 }
 ```
 
 ```json
 {
-    "text": "Tak jako písek v přesípacích hodinách, ubíhají dny našich životů, no já nevím, sledovat tenhle seriál, tak mi život neubíhá, ale pekelně se vleče...Je neuvěřitelné, kolik dokážou natočit dílů nesmyslného seriálu o ničem a je neuvěřitelné, kolik lidí se na to dokáže dívat, díky čemuž vznikají podobné katastrofy dodnes....",
-    "label": "negative"
+  "text": "Tak jako písek v přesípacích hodinách, ubíhají dny našich životů, no já nevím, sledovat tenhle seriál, tak mi život neubíhá, ale pekelně se vleče...Je neuvěřitelné, kolik dokážou natočit dílů nesmyslného seriálu o ničem a je neuvěřitelné, kolik lidí se na to dokáže dívat, díky čemuž vznikají podobné katastrofy dodnes....",
+  "label": "negative"
 }
 ```
 
@@ -83,13 +82,13 @@ euroeval --model <model-id> --dataset csfd-sentiment
 ### PONER
 
 This dataset was created [in this master thesis](https://hdl.handle.net/11012/213801).
-The dataset consists of 9,310 Czech sentences with 14,639 named entities.
-Source data are Czech historical chronicles mostly from the first half of the 20th century.
+The dataset consists of 9,310 Czech sentences with 14,639 named entities. Source data
+are Czech historical chronicles mostly from the first half of the 20th century.
 
-The original dataset consists of 4,188 / 465 / 4,655 samples for the training, validation
-and test splits, respectively.
-We use 1,024 / 256 / 2,048 samples for our training, validation and test splits, respectively.
-All the new splits are subsets of the original splits.
+The original dataset consists of 4,188 / 465 / 4,655 samples for the training,
+validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
+training, validation and test splits, respectively. All the new splits are subsets of
+the original splits.
 
 Here are a few examples from the training split:
 
@@ -103,14 +102,14 @@ Here are a few examples from the training split:
 ```json
 {
   "tokens": ["Fot", ".", "dok", ".", "SV.", "I", "f.", "č.", "6."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O"],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
   "tokens": ["Konala", "se", "valná", "hromada", "Čtenářského", "spolku"],
-  "labels": ["O", "O", "O", "O", "B-ORG", "I-ORG"],
+  "labels": ["O", "O", "O", "O", "B-ORG", "I-ORG"]
 }
 ```
 
@@ -160,15 +159,13 @@ euroeval --model <model-id> --dataset poner
 ### CS-GEC
 
 This dataset is extracted by postprocessing data from
-[this paper](https://aclanthology.org/D19-5545/). Specifically,
-grammatically incorrect sentences and their corresponding corrections
-were extracted.
+[this paper](https://aclanthology.org/D19-5545/). Specifically, grammatically incorrect
+sentences and their corresponding corrections were extracted.
 
-The original full dataset consists of 59,493 training and 4,668 test
-samples, respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation, and testing, respectively. The train and test splits are
-subsets of the original splits, and the validation split is created
-using examples from the train split.
+The original full dataset consists of 59,493 training and 4,668 test samples,
+respectively. We use a 1,024 / 256 / 2,048 split for training, validation, and testing,
+respectively. The train and test splits are subsets of the original splits, and the
+validation split is created using examples from the train split.
 
 Here are a few examples from the training split:
 
@@ -231,13 +228,13 @@ euroeval --model <model-id> --dataset cs-gec
 ### Unofficial: ScaLA-cs
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Czech Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Czech-CAC) by assuming that the
-documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Czech Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Czech-CAC)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original full dataset consists of 1,024 / 256 / 2,048 samples for training,
 validation and testing, respectively (so 3,328 samples used in total). These splits are
@@ -306,15 +303,13 @@ euroeval --model <model-id> --dataset scala-cs
 ### SQAD
 
 This dataset was published in
-[this paper](https://nlp.fi.muni.cz/raslan/2019/paper14-medved.pdf)
-and has been harvested from Czech Wikipedia articles by students and
-annotated with appropriate question, answer sentence, exact answer,
-question type and answer type.
+[this paper](https://nlp.fi.muni.cz/raslan/2019/paper14-medved.pdf) and has been
+harvested from Czech Wikipedia articles by students and annotated with appropriate
+question, answer sentence, exact answer, question type and answer type.
 
-The original full dataset has 11,569 / 2,819 train, test samples,
-respectively. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively. The train and test splits are
-subsets of the original splits, and the validation split is created
+The original full dataset has 11,569 / 2,819 train, test samples, respectively. We use a
+1,024 / 256 / 2,048 split for training, validation and testing, respectively. The train
+and test splits are subsets of the original splits, and the validation split is created
 using examples from the train split.
 
 Here are a few examples from the training split:
@@ -390,11 +385,12 @@ euroeval --model <model-id> --dataset sqad
 
 ### Umimeto-qa
 
-This dataset offers selected questions from the learning platform [Umimeto](https://www.umimeto.org)
-and has been curated by [the NLP Centre at Masaryk University](https://nlp.fi.muni.cz).
+This dataset offers selected questions from the learning platform
+[Umimeto](https://www.umimeto.org) and has been curated by
+[the NLP Centre at Masaryk University](https://nlp.fi.muni.cz).
 
-The original dataset consists of 700 samples, 100 samples for each of 7 different topics.
-We use a 32 / 32 / 636 split for training, validation and testing, respectively.
+The original dataset consists of 700 samples, 100 samples for each of 7 different
+topics. We use a 32 / 32 / 636 split for training, validation and testing, respectively.
 
 Each question in the dataset comes with only two options (a and b) for answers.
 
@@ -462,12 +458,13 @@ euroeval --model <model-id> --dataset umimeto-qa
 
 ### HellaSwag-cs
 
-This dataset is a machine translated version of the English [HellaSwag
-dataset](https://doi.org/10.18653/v1/P19-1472). The dataset was translated using
+This dataset is a machine translated version of the English
+[HellaSwag dataset](https://doi.org/10.18653/v1/P19-1472). The dataset was translated
+using
 [LINDAT Translation Service](https://lindat.mff.cuni.cz/services/translation/docs).
 
-The original dataset has 10,000 samples. We use a 1,024 / 256 / 2,048 split for training,
-validation and testing, respectively.
+The original dataset has 10,000 samples. We use a 1,024 / 256 / 2,048 split for
+training, validation and testing, respectively.
 
 Here are a few examples from the training split (which have _not_ been post-edited):
 
@@ -537,9 +534,8 @@ euroeval --model <model-id> --dataset hellaswag-cs
 
 ### Czech News
 
-This dataset was published in
-[this paper](https://doi.org/10.48550/arXiv.2307.10666) and contains news articles
-from major online news outlets collected from 2000-2022.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2307.10666)
+and contains news articles from major online news outlets collected from 2000-2022.
 
 The original dataset consists of 1,641,471 / 144,836 / 144,837 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
@@ -597,4 +593,83 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset czech-news
+```
+
+## Instruction-following
+
+### MultiIFEval-cs
+
+MultiIFEval-cs is part of the MultiIFEval benchmark spanning 305 languages. It is
+generated by translating and localising the English IFEval dataset using a structured
+LLM generation pipeline. For each target language, a randomly selected Wikipedia article
+in that language provides contextual grounding to reduce hallucination and improve
+cultural localisation. The pipeline preserves instruction_id_list values for
+traceability to the original English samples, and retains kwargs keys with values
+localised where appropriate, enabling programmatic constraint verification. The dataset
+was published [here](https://huggingface.co/datasets/EuroEval/multi-ifeval-cs).
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Napište shrnutí Wikipedie stránky \"https://cs.wikipedia.org/wiki/Čeština\" s alespoň 250 slovy. Nepoužívejte žádné čárky a zvýrazněte alespoň 3 sekce, které mají názvy, v Markdown formátu, například *zvýrazněná sekce Část 1*, *zvýrazněná sekce Část 2*, *zvýrazněná sekce Část 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 250, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Plánuji cestu do České republiky a chci, abyste mi napsali plán cesty ve stylu Shakespeara. Nemáte povoleno používat čárky ve své odpovědi.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Vytvořte životopis pro čerstvého absolventa školy, který žádá o svou první práci. Ujistěte se, že zahrnete alespoň 12 zástupných symbolů v hranatých závorkách, jako jsou [Jméno] nebo [Adresa].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-cs
 ```

@@ -9,21 +9,29 @@ from __future__ import annotations
 
 import logging
 import re
+import shutil
 import typing as t
 import warnings
 from copy import deepcopy
 
+import httpx
 from huggingface_hub import HfApi
-from huggingface_hub.errors import HFValidationError
+from huggingface_hub.errors import (
+    GatedRepoError,
+    HFValidationError,
+    LocalTokenNotFoundError,
+)
 from huggingface_hub.hf_api import RepositoryNotFoundError
+from requests.exceptions import RequestException
 
 from euroeval.string_utils import split_model_id
 
 from .cache import Cache
-from .constants import GENERATIVE_TYPE_KEYWORDS, RESULTS_DIR
+from .constants import GENERATIVE_TYPE_KEYWORDS, PERMISSIVE_LICENSES, RESULTS_DIR
 from .link_generation import ask_user_to_remove_model, generate_model_url
 from .record_fields import get_few_shot, get_task, get_version
 from .records import get_bool_field, get_model_name, plain_model_id
+from .result_identity import sanitise_model_dir_name
 
 logger = logging.getLogger(__name__)
 
@@ -114,19 +122,18 @@ def generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
 
 
 def _remove_model_results(model_id: str) -> None:
-    """Delete a model's result file from RESULTS_DIR.
+    """Delete a model's result directory from RESULTS_DIR.
 
     ``RESULTS_DIR`` is the source of truth for the leaderboard, so removing
-    the file drops the model from future builds.
+    the directory drops the model from future builds.
 
     Args:
         model_id:
-            The model id whose result file should be removed.
+            The model id whose result directory should be removed.
     """
-    result_file = RESULTS_DIR / f"{plain_model_id(model_id).replace('/', '_')}.jsonl"
-    if result_file.exists():
-        result_file.unlink()
-        logger.info(f"Removed result file {result_file.name} for {model_id}.")
+    model_dir = RESULTS_DIR / sanitise_model_dir_name(plain_model_id(model_id))
+    shutil.rmtree(model_dir, ignore_errors=True)
+    logger.info(f"Removed result directory {model_dir.name} for {model_id}.")
 
 
 def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any]:
@@ -221,17 +228,17 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
     Returns:
         The generative type of the model.
     """
-    model_id = _model_id_from_record(record=record)
+    raw_model_id = _model_id_from_record(record=record)
 
-    if "#thinking" in model_id:
-        cache.generative_type[model_id] = "reasoning"
+    if "#thinking" in raw_model_id:
+        cache.generative_type[raw_model_id] = "reasoning"
         return "reasoning"
-    elif "#no-thinking" in model_id:
-        cache.generative_type[model_id] = "instruction_tuned"
+    elif "#no-thinking" in raw_model_id:
+        cache.generative_type[raw_model_id] = "instruction_tuned"
         return "instruction_tuned"
 
-    # Remove revisions and parameters from the model ID.
-    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
+    # Remove revisions and parameters from the model ID, and strip variant suffixes.
+    model_id = split_model_id(model_id=plain_model_id(raw_model_id)).model_id
 
     while True:
         if model_id in cache.generative_type:
@@ -263,8 +270,69 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
             logger.error("Invalid input. Please try again.")
 
 
+def _infer_commercial_from_hf_licence(
+    model_id: str, licence_cache: dict[str, bool | None]
+) -> bool | None:
+    """Infer commercial licence status from HF model info.
+
+    Best-effort function that checks the Hugging Face model page for a
+    permissive licence tag. Returns ``True`` for permissive licences
+    (MIT, Apache-2.0, BSD, etc.), ``None`` for unknown/non-permissive
+    licences or on any HF/network/auth error. Never crashes.
+
+    Caches lookups per model_id to avoid repeated API calls.
+
+    Args:
+        model_id:
+            The Hugging Face model ID (e.g. ``BAAI/bge-m3``).
+        licence_cache:
+            Cache dict mapping model IDs to inferred licence status.
+
+    Returns:
+        ``True`` if licence is permissive, ``False`` if explicitly
+        non-permissive (not possible with current logic), or ``None``
+        if unknown or on error.
+    """
+    if model_id in licence_cache:
+        return licence_cache[model_id]
+
+    try:
+        api = HfApi()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            model_info = api.model_info(repo_id=model_id)
+    except (
+        GatedRepoError,
+        LocalTokenNotFoundError,
+        RepositoryNotFoundError,
+        HFValidationError,
+        RequestException,
+        OSError,
+        httpx.HTTPError,
+        httpx.TransportError,
+    ):
+        licence_cache[model_id] = None
+        return None
+
+    # Extract licence from tags (format: "license:apache-2.0")
+    licence: str | None = None
+    if model_info.tags:
+        for tag in model_info.tags:
+            if tag.startswith("license:"):
+                licence = tag.removeprefix("license:").lower()
+                break
+
+    result = licence in PERMISSIVE_LICENSES if licence else None
+    licence_cache[model_id] = result
+    return result
+
+
 def is_commercially_licensed(record: dict, cache: Cache) -> bool:
-    """Asks if a model is commercially licensed.
+    """Determine if a model is commercially licensed.
+
+    First checks the cache, then tries best-effort inference from the
+    Hugging Face model licence. Falls back to user prompt if licence
+    cannot be inferred.
 
     Args:
         record:
@@ -275,16 +343,31 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
     Returns:
         Whether the model is commercially licensed.
     """
-    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
 
     # Assume that non-generative models are always commercially licensed
     if not get_bool_field(record, "generative", True):
         cache.commercially_licensed[model_id] = True
+        return True
 
+    # Check cache first
+    if model_id in cache.commercially_licensed:
+        return cache.commercially_licensed[model_id]
+
+    # Best-effort inference from HF licence
+    # Use a separate cache dict since inference can return None on error
+    licence_cache: dict[str, bool | None] = {}
+    inferred = _infer_commercial_from_hf_licence(
+        model_id=model_id, licence_cache=licence_cache
+    )
+    if inferred is not None:
+        cache.commercially_licensed[model_id] = inferred
+        return inferred
+
+    # Fall back to user prompt
     while True:
-        if model_id in cache.commercially_licensed:
-            return cache.commercially_licensed[model_id]
-
         msg = f"Is {model_id!r} commercially licensed?"
         if "/" in model_id:
             msg += f" (https://hf.co/{model_id})"
@@ -292,10 +375,11 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
         user_input = input(msg)
         if user_input.lower() in {"y", "yes"}:
             cache.commercially_licensed[model_id] = True
-        elif user_input.lower() in {"n", "no"}:
+            return True
+        if user_input.lower() in {"n", "no"}:
             cache.commercially_licensed[model_id] = False
-        else:
-            logger.error("Invalid input. Please try again.")
+            return False
+        logger.error("Invalid input. Please try again.")
 
 
 def is_trained_from_scratch(
@@ -314,17 +398,12 @@ def is_trained_from_scratch(
     Returns:
         True if the model was trained from scratch.
     """
-    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
 
-    base_model_cache = {
-        _base_model_id(m): value for m, value in cache.trained_from_scratch.items()
-    }
-    base_model_id = _base_model_id(model_id)
-    if base_model_id in base_model_cache:
-        value = base_model_cache[base_model_id]
-        if model_id not in cache.trained_from_scratch:
-            cache.trained_from_scratch[model_id] = value
-        return value
+    if model_id in cache.trained_from_scratch:
+        return cache.trained_from_scratch[model_id]
 
     # Check if model is open or closed
     model_openness = cache.open.get(model_id)
@@ -368,7 +447,9 @@ def is_merge(record: dict, cache: Cache) -> bool:
     Returns:
         Whether the model is a merged model.
     """
-    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
 
     if model_id in cache.merge:
         return cache.merge[model_id]
@@ -409,17 +490,15 @@ def is_open(record: dict, cache: Cache) -> bool:
     Returns:
         Whether the model is open (open-weight). Closed models return False.
     """
-    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
 
-    base_model_cache = {_base_model_id(m): value for m, value in cache.open.items()}
-    base_model_id = _base_model_id(model_id)
-    if base_model_id in base_model_cache:
-        value = base_model_cache[base_model_id]
-        if model_id not in cache.open:
-            cache.open[model_id] = value
-        return value
+    # Use exact model-id cache only (no base-model broadening)
+    if model_id in cache.open:
+        return cache.open[model_id]
 
-    # Assume closed if not found on HF Hub
+    # Not in cache: check HF
     try:
         api = HfApi()
         with warnings.catch_warnings():
@@ -450,20 +529,3 @@ def _model_id_from_record(record: dict) -> str:
         if model_id_match:
             return model_id_match.group(1)
     return model_id
-
-
-def _base_model_id(model_id: str) -> str:
-    """Return the base-model slug (``org/repo-prefix``) for a model id.
-
-    Args:
-        model_id:
-            The full model id (e.g. ``org/repo-instruct``).
-
-    Returns:
-        The base-model slug (e.g. ``org/repo``), or the id unchanged if it
-        has no ``org/repo`` structure.
-    """
-    if "/" not in model_id:
-        return model_id
-    parts = model_id.split("/")
-    return f"{parts[0]}/{parts[1].split('-')[0]}"

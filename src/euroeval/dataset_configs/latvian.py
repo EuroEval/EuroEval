@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LATVIAN
-from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -62,6 +72,16 @@ COPA_LV_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[LATVIAN],
     labels=["a", "b"],
+)
+
+MULTI_IFEVAL_LV_CONFIG = DatasetConfig(
+    name="multi-ifeval-lv",
+    pretty_name="MultiIFEval-lv",
+    source="EuroEval/multi-ifeval-lv",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[LATVIAN],
+    train_split=None,
+    val_split=None,
 )
 
 

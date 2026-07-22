@@ -104,6 +104,17 @@ VALEU_ET_CONFIG = DatasetConfig(
 
 # Unofficial datasets ###
 
+MULTI_IFEVAL_ET_CONFIG = DatasetConfig(
+    name="multi-ifeval-et",
+    pretty_name="MultiIFEval-et",
+    source="EuroEval/multi-ifeval-et",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ESTONIAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
 SCALA_ET_CONFIG = DatasetConfig(
     name="scala-et",
     pretty_name="ScaLA-et",

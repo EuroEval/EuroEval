@@ -7,6 +7,7 @@ from ..tasks import (
     EUROPEAN_VALUES,
     GED,
     HALLU,
+    INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
     LOGIC,
@@ -99,6 +100,16 @@ VALEU_NL_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+MULTI_IFEVAL_NL_CONFIG = DatasetConfig(
+    name="multi-ifeval-nl",
+    pretty_name="MultiIFEval-nl",
+    source="EuroEval/multi-ifeval-nl",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[DUTCH],
+    train_split=None,
+    val_split=None,
+)
+
 MBBQ_NL_CONFIG = DatasetConfig(
     name="mbbq-nl",
     pretty_name="MBBQ-nl",
@@ -106,6 +117,14 @@ MBBQ_NL_CONFIG = DatasetConfig(
     task=MCSTEREO,
     languages=[DUTCH],
     train_split=None,
+)
+
+ZEBRA_PUZZLE_EASY_NL_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-nl",
+    pretty_name="ZebraPuzzlesEasy-nl",
+    source="EuroEval/zebra-puzzles-easy-nl",
+    task=LOGIC,
+    languages=[DUTCH],
 )
 
 
@@ -229,15 +248,6 @@ SICK_NL_CONFIG = DatasetConfig(
     pretty_name="The Dutch SICK-NL Entailment Dataset",
     source="EuroEval/sick-nl",
     task=NLI,
-    languages=[DUTCH],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_NL_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-nl",
-    pretty_name="ZebraPuzzlesEasy-nl",
-    source="EuroEval/zebra-puzzles-easy-nl",
-    task=LOGIC,
     languages=[DUTCH],
     unofficial=True,
 )

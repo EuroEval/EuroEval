@@ -7,6 +7,7 @@ import {
   VOCAB_BUCKETS,
 } from "@/leaderboard";
 import type { Column, LeaderboardTable, Row } from "@/leaderboard";
+import { matchesQuery } from "@/filter";
 import taskMetricsRaw from "@/generated/task-metrics.json";
 
 const props = withDefaults(
@@ -62,6 +63,10 @@ const passesColumnFilter = (cellText: string, filter: string, col: Column) => {
   if (col.kind === "icon") {
     // For icon columns, exact match against the filter value.
     return cellText === filter;
+  }
+  // Model column uses OR semantics for whitespace-separated terms.
+  if (col.key.toLowerCase() === "model") {
+    return matchesQuery(cellText, filter);
   }
   return cellText.toLowerCase().includes(filter.toLowerCase());
 };

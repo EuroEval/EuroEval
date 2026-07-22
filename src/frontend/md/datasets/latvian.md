@@ -89,8 +89,7 @@ spoken language transcripts, and 5% miscellaneous content from a balanced
 10-million-word corpus.
 
 The original full dataset consists of 11,425 samples. We use 1,024 / 256 / 2,048 samples
-for our
-training, validation and test splits, respectively.
+for our training, validation and test splits, respectively.
 
 Here are a few examples from the training split:
 
@@ -242,13 +241,13 @@ euroeval --model <model-id> --dataset wikiann-lv
 ### ScaLA-lv
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Latvian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Latvian-LVTB) by assuming that the
-documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Latvian Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Latvian-LVTB)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original full dataset consists of 1,024 / 256 / 2,048 samples for training,
 validation and testing, respectively (so 3,328 samples used in total). These splits are
@@ -258,22 +257,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Gultā viņam nav jādara pilnīgi nekas, lai es nonāktu līdz orgasmam.",
-    "label": "correct"
+  "text": "Gultā viņam nav jādara pilnīgi nekas, lai es nonāktu līdz orgasmam.",
+  "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "Ar savu puiku, kurš parasts.",
-    "label": "incorrect"
+  "text": "Ar savu puiku, kurš parasts.",
+  "label": "incorrect"
 }
 ```
 
 ```json
 {
-    "text": "1992. vēl gadā Latvijā atradās no 50 000 līdz 80 000 padomju militārpersonu.",
-    "label": "incorrect"
+  "text": "1992. vēl gadā Latvijā atradās no 50 000 līdz 80 000 padomju militārpersonu.",
+  "label": "incorrect"
 }
 ```
 
@@ -396,36 +395,36 @@ euroeval --model <model-id> --dataset multi-wiki-qa-lv
 
 ### MMLU-lv
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Latvian was done by the Latvian Language Technology Initiative and is available in the
-[VTI-Data
-repository](https://github.com/LUMII-AILab/VTI-Data/tree/refs/heads/main/mmlu).
+This dataset is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to Latvian was done by the Latvian Language Technology Initiative and is
+available in the
+[VTI-Data repository](https://github.com/LUMII-AILab/VTI-Data/tree/refs/heads/main/mmlu).
 
-The full Latvian MMLU dataset consists of 13,941 samples. We use a 1,024 /
-256 / 2,048 split for training, validation and testing, respectively, sampled randomly.
+The full Latvian MMLU dataset consists of 13,941 samples. We use a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively, sampled randomly.
 
 Here are a few examples from the training split:
 
 ```json
 {
   "text": "Atrodiet skaitli, kas padara apgalvojumu patiesu: 48 m = lodziņš mm.\nIzvēles:\na. 48,000\nb. 480\nc. 4,800\nd. 5",
-  "label": "a",
+  "label": "a"
 }
 ```
 
 ```json
 {
   "text": "Darbinieks sagaida lielāku konsekvenci sava priekšnieka uzvedībā, nekā tas ir pamatoti. Kurš no šiem faktoriem vislabāk izskaidro darbinieka gaidas?\nIzvēles:\na. pārmērīgas attaisnošanas hipotēze\nb. pašlabuma aizspriedumainība\nc. fundamentālais atribūcijas aizspriedums\nd. pašpārbaudes teorija",
-  "label": "c",
+  "label": "c"
 }
 ```
 
 ```json
 {
   "text": "Kurā no šiem diviem scenārijiem galvenais varonis (kurš lieto es/jē/man) dara kaut ko, kas ir acīmredzami morāli nepareizs, saskaņā ar parastajām morāles normām ASV no 2020. gada? scenārijs | Es atslēdzu automašīnas kruīza kontroli. scenārijs | Es izsaucu policiju savam bijušajam mīļotajam, jo viņš mani piekāva.\nIzvēles:\na. Nepareizi, nepareizi\nb. Nepareizi, nav nepareizi\nc. Nav nepareizi, nepareizi\nd. Nav nepareizi, nav nepareizi",
-  "label": "d",
+  "label": "d"
 }
 ```
 
@@ -474,12 +473,12 @@ euroeval --model <model-id> --dataset mmlu-lv
 
 ### COPA-lv
 
-This dataset was published in [this
-paper](https://aclanthology.org/2025.resourceful-1.22/) and is a translated version of
-the English [COPA dataset](https://aclanthology.org/S12-1052/), which was created from
-scratch by the authors. The dataset was machine translated using the [Tilde Translation
-service](https://tilde.ai/machine-translation/), and the test samples were manually
-post-edited.
+This dataset was published in
+[this paper](https://aclanthology.org/2025.resourceful-1.22/) and is a translated
+version of the English [COPA dataset](https://aclanthology.org/S12-1052/), which was
+created from scratch by the authors. The dataset was machine translated using the
+[Tilde Translation service](https://tilde.ai/machine-translation/), and the test samples
+were manually post-edited.
 
 The original full dataset consists of 214 / 57 / 132 samples, and we keep the splits
 as-is.
@@ -547,8 +546,8 @@ euroeval --model <model-id> --dataset copa-lv
 ### Unofficial: Winogrande-lv
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -635,17 +634,16 @@ Here are a few examples from the training split:
 ```
 
 ```json
-
 {
-"text": "Ukrainā tūkstošiem cilvēku protestē pret korupcijas apkarotāju vājināšanu; Zelenskis sola jaunu likumu\n\nCilvēki pauž neapmierinātību par\xa0korupcijas apkarotāju vājināšanu Trešdienas vakarā Kijivā\xa0bija pilns\xa0Ivana Franka laukums, kas ir tuvākā vieta pie prezidenta Volodimira Zelenska darba vietas, kur var brīvi piekļūt cilvēki. Pārsvarā gados jauni cilvēki bija sanākuši, lai paustu protestu, nožēlu un neapmierinātību ar Augstākās Radas pieņemto likumprojektu, kas paredz atcelt Ukrainas Korupcijas apkarošanas biroja un specializētās pretkorupcijas prokuratūras neatkarību, iestāžu pārraudzību nododot ģenerālprokuroram, kas ir politiski izraudzīts. Cilvēki skandēja visdažādākos saukļus – arī \"Rokas nost no NABU!\", \"Neklusē!\", \"Kauns!\", \"Slava Ukrainai!\", \"Varoņiem slava!\" un daudzus citus. Tā kā pamatā tie bija jaunieši, viņi bija ļoti skaļi un aktīvi. Rokās daudziem bija pašdarināti plakāti. Piemēram, \"Augstākā nodevība\" – spēlējoties ar Augstākās Radas jeb parlamenta nosaukumu. Kāds jaunietis arī bija izveidojis plakātu, kur puse sejas bija no prezidenta Zelenska, otra puse – no bēdīgi slavenā prokrieviskā eksprezidenta Viktora Janukoviča, kurš 2014.\xa0gadā pēc Eiromaidana jeb Pašcieņas revolūcijas asiņainajiem notikumiem aizbēga no Ukrainas un šobrīd slēpjas Krievijā. Aktīvisti Ukrainas protestā pret korupcijas apkarotāju vājināšanu 00:00 / 01:09 Lejuplādēt Indra Sprance Latvijas Radio parunājās ar dažiem no aktīvistiem. Marina: Esmu šeit, jo esmu ļoti sašutusi par pašreizējo situāciju ar likumprojektu. Ir pieņemts likums, kas pilnībā neatbilst Eiropas Savienības un tautas prasībām. Mēs atgriežamies pie tā stāvokļa, kāds bija 2013. gadā, kad mūsu tauta cīnījās par savu ceļu uz Eiropas Savienību. Mans brālis pašlaik karo Pokrovskas tuvumā. Visa šī situācija man šķiet kā spļāviens sejā visiem tiem karavīriem, kas mūs sargā, riskējot ar dzīvībām,\xa0– vara viņiem demonstrē, ka esam tuvāk nevis Eiropas Savienībai un mūsu Rietumu partneriem, bet Krievijai. Ihors: Man gandrīz visi vīriešu kārtas radinieki šobrīd karo, un man nav tiesību šobrīd stāvēt malā. Aleksa: Ukrainā šobrīd notiek ļoti briesmīgas lietas – kamēr daži cilvēki atdod savas dzīvības, lai mēs varētu šeit normāli dzīvot, kāds sagrauj valsti. Un tas nav labi. Mums šeit ir jābūt.\xa0 Tas ir svarīgi. Trešdienas vakarā protesta akcija notika arī Ukrainas otrā lielākajā pilsētā Harkivā, tur pēc \"Radio Brīvība\" aplēsēm bijis līdz pustūkstotim cilvēku. Protesti notikuši arī Černihivā, Zaporižjā, Ļvivā, Dņipro, Krivijrihā, Ivanofrankivskā, Ternopiļā, Odesā un citur. Šī ir jau otrā diena, kad cilvēki iziet ielās. Iepriekš tie bija spontāni protesti, reaģējot uz Augstākās Radas lēmumu, bet trešdien jau daudzviet cilvēkus ielās aicinājušas dažādas sabiedriskās organizācijas. Zelenskis sola jaunu likumu Prezidents Volodimirs Zelenskis trešdien bija noorganizējis tikšanos ar visu Ukrainas tiesību aizsardzības iestāžu vadītājiem, tajā skaitā abu pretkorupcijas iestāžu – NABU un specializētās prokuratūras vadītājiem. Saruna bijusi atklāta un vērtīga. Nākamnedēļ notikšot dziļāka darba tikšanās saistībā ar kopīgajiem darbiem. Pēcāk videouzrunā Zelenskis sacīja, ka ir sadzirdējis cilvēku bažas. Zelenskis piedāvās Augstākajai Radai savu – prezidenta likumprojektu, kas nodrošinās tiesību aizsardzības sistēmas spēku un to, ka nebūs nekāda Krievijas iejaukšanās iestāžu darbā. Jau vēlāk Zelenskis likumprojektu iesniedzis. Vēl gan nav skaidrs, kas tieši šajā likumprojektā ir un kad tieši par to balsos parlaments. Kā likumprojektu komentējis Zelenskis, tas paredz pilnīgas korupcijas apkarošanas iestāžu neatkarības garantijas. Tas arī paredzot reālas iespējas pārliecināties, ka iestāžu darbībā neiejaucas Krievija. Ikvienam, kam ir pieeja valsts noslēpumiem - ne tikai Nacionālajam pretkorupcijas birojam un Specializētajai pretkorupcijas prokuratūrai, bet arī Valsts izmeklēšanas birojam un Valsts policijai - ir jāveic melu detektora pārbaudes un tām jābūt regulārām, likumprojekta saturu komentēja Zelenskis. Likumprojektā ir iekļauti arī noteikumi, kas aizsargā pret dažādiem pārkāpumiem, piebilda prezidents. Pēc jaunā likumprojekta pārskatīšanas Nacionālais pretkorupcijas birojs paziņojumā norādīja, ka ierosinātais likumprojekts patiesi atjaunos visas procesuālās pilnvaras un neatkarības garantijas gan birojā, gan Specializētajā pretkorupcijas prokuratūrā. Arī Ukrainas Korupcijas apkarošanas rīcības centrs, kas ir uzraudzības iestāde, atbalstīja iniciatīvu, sakot, ka tā atjaunos principus, ko iepriekš bija nojaukusi Augstākā Rada. Centrs gan brīdināja, ka pat vienas nedēļas kavēšanās var būt pietiekama, lai iznīcinātu virkni abās pretkorupcijas iestādēs esošās tiesvedības pret augstākajām korumpētajām amatpersonām. KONTEKSTS: Ukrainas parlaments 22. jūlijā apstiprināja likuma grozījumus, kas mazina Ukrainas korupcijas apkarošanas iestāžu neatkarību. Ukrainas Nacionālais pretkorupcijas birojs (NABU) un specializētā prokuratūra turpmāk būs pakļauti Ukrainas ģenerālprokuroram, kas ir Ukrainas prezidenta Volodimira Zelenska izvirzīta amatpersona. Tas izraisījis bažas par korupcijas apkarošanas dienestu pakļaušanu Zelenska komandas interesēm. Ukrainas Drošības dienests iepriekš veicis plaša mēroga kratīšanas pie NABU un specializētās prokuratūras darbiniekiem. Šie soļi izraisījuši protestus Ukrainas iekšienē, kā arī kritiku no Ukrainas partneriem, kas raizējas par demokrātijas standartu vājināšanu un nepietiekamo aktivitāti korupcijas apkarošanā. Tas varētu apgrūtināt Ukrainas izredzes kļūt par Eiropas Savienības dalībvalsti.",
-"target_text": "Ukrainā trešdienas vakarā, reaģējot uz šonedēļ lielā steigā pieņemto likumu, kas atceļ pretkorupcijas iestāžu neatkarību, tūkstošiem cilvēku izgāja ielās. Latvijas Radio bija klāt Kijivā, kur pulcējās liels skaits cilvēku."
+  "text": "Ukrainā tūkstošiem cilvēku protestē pret korupcijas apkarotāju vājināšanu; Zelenskis sola jaunu likumu\n\nCilvēki pauž neapmierinātību par\xa0korupcijas apkarotāju vājināšanu Trešdienas vakarā Kijivā\xa0bija pilns\xa0Ivana Franka laukums, kas ir tuvākā vieta pie prezidenta Volodimira Zelenska darba vietas, kur var brīvi piekļūt cilvēki. Pārsvarā gados jauni cilvēki bija sanākuši, lai paustu protestu, nožēlu un neapmierinātību ar Augstākās Radas pieņemto likumprojektu, kas paredz atcelt Ukrainas Korupcijas apkarošanas biroja un specializētās pretkorupcijas prokuratūras neatkarību, iestāžu pārraudzību nododot ģenerālprokuroram, kas ir politiski izraudzīts. Cilvēki skandēja visdažādākos saukļus – arī \"Rokas nost no NABU!\", \"Neklusē!\", \"Kauns!\", \"Slava Ukrainai!\", \"Varoņiem slava!\" un daudzus citus. Tā kā pamatā tie bija jaunieši, viņi bija ļoti skaļi un aktīvi. Rokās daudziem bija pašdarināti plakāti. Piemēram, \"Augstākā nodevība\" – spēlējoties ar Augstākās Radas jeb parlamenta nosaukumu. Kāds jaunietis arī bija izveidojis plakātu, kur puse sejas bija no prezidenta Zelenska, otra puse – no bēdīgi slavenā prokrieviskā eksprezidenta Viktora Janukoviča, kurš 2014.\xa0gadā pēc Eiromaidana jeb Pašcieņas revolūcijas asiņainajiem notikumiem aizbēga no Ukrainas un šobrīd slēpjas Krievijā. Aktīvisti Ukrainas protestā pret korupcijas apkarotāju vājināšanu 00:00 / 01:09 Lejuplādēt Indra Sprance Latvijas Radio parunājās ar dažiem no aktīvistiem. Marina: Esmu šeit, jo esmu ļoti sašutusi par pašreizējo situāciju ar likumprojektu. Ir pieņemts likums, kas pilnībā neatbilst Eiropas Savienības un tautas prasībām. Mēs atgriežamies pie tā stāvokļa, kāds bija 2013. gadā, kad mūsu tauta cīnījās par savu ceļu uz Eiropas Savienību. Mans brālis pašlaik karo Pokrovskas tuvumā. Visa šī situācija man šķiet kā spļāviens sejā visiem tiem karavīriem, kas mūs sargā, riskējot ar dzīvībām,\xa0– vara viņiem demonstrē, ka esam tuvāk nevis Eiropas Savienībai un mūsu Rietumu partneriem, bet Krievijai. Ihors: Man gandrīz visi vīriešu kārtas radinieki šobrīd karo, un man nav tiesību šobrīd stāvēt malā. Aleksa: Ukrainā šobrīd notiek ļoti briesmīgas lietas – kamēr daži cilvēki atdod savas dzīvības, lai mēs varētu šeit normāli dzīvot, kāds sagrauj valsti. Un tas nav labi. Mums šeit ir jābūt.\xa0 Tas ir svarīgi. Trešdienas vakarā protesta akcija notika arī Ukrainas otrā lielākajā pilsētā Harkivā, tur pēc \"Radio Brīvība\" aplēsēm bijis līdz pustūkstotim cilvēku. Protesti notikuši arī Černihivā, Zaporižjā, Ļvivā, Dņipro, Krivijrihā, Ivanofrankivskā, Ternopiļā, Odesā un citur. Šī ir jau otrā diena, kad cilvēki iziet ielās. Iepriekš tie bija spontāni protesti, reaģējot uz Augstākās Radas lēmumu, bet trešdien jau daudzviet cilvēkus ielās aicinājušas dažādas sabiedriskās organizācijas. Zelenskis sola jaunu likumu Prezidents Volodimirs Zelenskis trešdien bija noorganizējis tikšanos ar visu Ukrainas tiesību aizsardzības iestāžu vadītājiem, tajā skaitā abu pretkorupcijas iestāžu – NABU un specializētās prokuratūras vadītājiem. Saruna bijusi atklāta un vērtīga. Nākamnedēļ notikšot dziļāka darba tikšanās saistībā ar kopīgajiem darbiem. Pēcāk videouzrunā Zelenskis sacīja, ka ir sadzirdējis cilvēku bažas. Zelenskis piedāvās Augstākajai Radai savu – prezidenta likumprojektu, kas nodrošinās tiesību aizsardzības sistēmas spēku un to, ka nebūs nekāda Krievijas iejaukšanās iestāžu darbā. Jau vēlāk Zelenskis likumprojektu iesniedzis. Vēl gan nav skaidrs, kas tieši šajā likumprojektā ir un kad tieši par to balsos parlaments. Kā likumprojektu komentējis Zelenskis, tas paredz pilnīgas korupcijas apkarošanas iestāžu neatkarības garantijas. Tas arī paredzot reālas iespējas pārliecināties, ka iestāžu darbībā neiejaucas Krievija. Ikvienam, kam ir pieeja valsts noslēpumiem - ne tikai Nacionālajam pretkorupcijas birojam un Specializētajai pretkorupcijas prokuratūrai, bet arī Valsts izmeklēšanas birojam un Valsts policijai - ir jāveic melu detektora pārbaudes un tām jābūt regulārām, likumprojekta saturu komentēja Zelenskis. Likumprojektā ir iekļauti arī noteikumi, kas aizsargā pret dažādiem pārkāpumiem, piebilda prezidents. Pēc jaunā likumprojekta pārskatīšanas Nacionālais pretkorupcijas birojs paziņojumā norādīja, ka ierosinātais likumprojekts patiesi atjaunos visas procesuālās pilnvaras un neatkarības garantijas gan birojā, gan Specializētajā pretkorupcijas prokuratūrā. Arī Ukrainas Korupcijas apkarošanas rīcības centrs, kas ir uzraudzības iestāde, atbalstīja iniciatīvu, sakot, ka tā atjaunos principus, ko iepriekš bija nojaukusi Augstākā Rada. Centrs gan brīdināja, ka pat vienas nedēļas kavēšanās var būt pietiekama, lai iznīcinātu virkni abās pretkorupcijas iestādēs esošās tiesvedības pret augstākajām korumpētajām amatpersonām. KONTEKSTS: Ukrainas parlaments 22. jūlijā apstiprināja likuma grozījumus, kas mazina Ukrainas korupcijas apkarošanas iestāžu neatkarību. Ukrainas Nacionālais pretkorupcijas birojs (NABU) un specializētā prokuratūra turpmāk būs pakļauti Ukrainas ģenerālprokuroram, kas ir Ukrainas prezidenta Volodimira Zelenska izvirzīta amatpersona. Tas izraisījis bažas par korupcijas apkarošanas dienestu pakļaušanu Zelenska komandas interesēm. Ukrainas Drošības dienests iepriekš veicis plaša mēroga kratīšanas pie NABU un specializētās prokuratūras darbiniekiem. Šie soļi izraisījuši protestus Ukrainas iekšienē, kā arī kritiku no Ukrainas partneriem, kas raizējas par demokrātijas standartu vājināšanu un nepietiekamo aktivitāti korupcijas apkarošanā. Tas varētu apgrūtināt Ukrainas izredzes kļūt par Eiropas Savienības dalībvalsti.",
+  "target_text": "Ukrainā trešdienas vakarā, reaģējot uz šonedēļ lielā steigā pieņemto likumu, kas atceļ pretkorupcijas iestāžu neatkarību, tūkstošiem cilvēku izgāja ielās. Latvijas Radio bija klāt Kijivā, kur pulcējās liels skaits cilvēku."
 }
 ```
 
 ```json
 {
-"text": "Norvēģijas dziesma Eirovīzijā – folkmūzikas, elektronikas un viduslaiku estētikas sintēze\n\nAlessandro ir spāņu izcelsmes, viņš runā četrās valodās, iedvesmojas no dažādu pasaules tautu mūzikas, kā arī ir labs dejotājs. Alessandro dziesma \"Lighter\" ieturēta popmūzikas stilistikā, kurā ievīti daudz dažādi elementi. Te var sadzirdēt gan norvēģu folkmūzikas, gan elektroniskās deju mūzikas notis, gan Balkānu popmūzikai raksturīgos ritmus un pat viduslaiku estētiku. Dziesma aicina noticēt sev un būt pašam savai dzirkstij. Dziesmas \"Lighter \" vārdi Golden girl dressed in ice A heart as dark as night You got me to dim my light No more, (no more) I really think I bought your lies Did anything to keep you mine You kept me hooked on your line No more, (no more) Somewhere along the way I lost my mind I had to walk a hundred thousand miles I’m not afraid to set it all on fire I won’t fall again, I’ll be my own lighter (Eh-Eh-Eh-Eh) Nothing can burn me now (Eh-Eh-Eh-Eh) I’ll be my own lighter I feel a spark inside me I don’t need saving (No way, no way) ‘Cause I’m my own, I’m my own lighter I’m tired of a million tries To fight, the signs And when everybody tried to tell me I should’ve known that it was time to break free Your reigns that kept me at your mercy I’ll burn them to the ground No more, no more Ignite the fire Somewhere along the way I lost my mind I had to walk a hundred thousand miles I’m not afraid to set it all on fire I won’t fall again, I’ll be my own lighter (Eh-Eh-Eh-Eh) Nothing can burn me now (Eh-Eh-Eh-Eh) I’ll be my own lighter I feel a spark inside me I don’t need saving (No way, no way) ‘Cause I’m my own, I’m my own lighter Silence fills the room And I’ve taken off my jewels I wish none of this was true But there’s a fire growing too Yeah! (Eh-Eh-Eh-Eh) Nothing can burn me now (Eh-Eh-Eh-Eh) I’ll be my own lighter I feel a spark inside me I don’t need saving (No way, no way) ‘Cause I’m my own, I’m my own lighter (Eh-Eh-Eh-Eh) Nothing can burn me down (Eh-Eh-Eh-Eh) I’m my own, I’m my own lighter Eirovīzija\xa02025 – dalībnieki Vairāk KONTEKSTS: 2025. gada Eirovīzijas dziesmu konkurss notiks Šveicē, Bāzelē, un savu dalību tajā apstiprinājušas 37 valstis. 31 no visām dalībvalstīm sacentīsies pusfinālos\xa013. maijā un 15. maijā. Desmit\xa0labākie no katra pusfināla kvalificēsies lielajam finālam 17. maijā, pievienojoties pērnā gada uzvarētājai Šveicei un \"lielajam piecniekam\" – Spānijai, Apvienotajai\xa0Karalistei, Vācijai, Itālijai un Francijai. Eirovīzijas konkursa pusfināli un fināli šogad sāksies pulksten 22.00 pēc Latvijas laika. Tiešraides būs skatāmas Latvijas Sabiedriskā medija portālā LSM.lv un satura atskaņotājā REplay.lv, kā arī LTV1. Šī gada Latvijas nacionālajā atlasē \"Supernova\" uzvarēja un uz Eirovīziju dosies grupa \"Tautumeitas\" . \"Tautumeitas\" kāps uz skatuves Eirovīzijas konkursa otrajā pusfinālā. Tajā kopā ar Latviju piedalīsies arī Armēnija, Austrālija, Austrija, Grieķija, Īrija, Lietuva, Melnkalne, Čehija, Dānija, Somija, Gruzija, Izraēla, Luksemburga, Malta un Serbija.",
-"target_text": "Norvēģiju Eirovīzijas dziesmu konkursā pārstāv jaunais dziedātājs Kails Alessandro ( Kyle Alessandro ). Plašāka auditorija dziedātāju iepazina jau 10 gadu vecumā, kad viņš veiksmīgi piedalījās\xa0TV šovā \"Norway’s Got Talent\"."
+  "text": "Norvēģijas dziesma Eirovīzijā – folkmūzikas, elektronikas un viduslaiku estētikas sintēze\n\nAlessandro ir spāņu izcelsmes, viņš runā četrās valodās, iedvesmojas no dažādu pasaules tautu mūzikas, kā arī ir labs dejotājs. Alessandro dziesma \"Lighter\" ieturēta popmūzikas stilistikā, kurā ievīti daudz dažādi elementi. Te var sadzirdēt gan norvēģu folkmūzikas, gan elektroniskās deju mūzikas notis, gan Balkānu popmūzikai raksturīgos ritmus un pat viduslaiku estētiku. Dziesma aicina noticēt sev un būt pašam savai dzirkstij. Dziesmas \"Lighter \" vārdi Golden girl dressed in ice A heart as dark as night You got me to dim my light No more, (no more) I really think I bought your lies Did anything to keep you mine You kept me hooked on your line No more, (no more) Somewhere along the way I lost my mind I had to walk a hundred thousand miles I’m not afraid to set it all on fire I won’t fall again, I’ll be my own lighter (Eh-Eh-Eh-Eh) Nothing can burn me now (Eh-Eh-Eh-Eh) I’ll be my own lighter I feel a spark inside me I don’t need saving (No way, no way) ‘Cause I’m my own, I’m my own lighter I’m tired of a million tries To fight, the signs And when everybody tried to tell me I should’ve known that it was time to break free Your reigns that kept me at your mercy I’ll burn them to the ground No more, no more Ignite the fire Somewhere along the way I lost my mind I had to walk a hundred thousand miles I’m not afraid to set it all on fire I won’t fall again, I’ll be my own lighter (Eh-Eh-Eh-Eh) Nothing can burn me now (Eh-Eh-Eh-Eh) I’ll be my own lighter I feel a spark inside me I don’t need saving (No way, no way) ‘Cause I’m my own, I’m my own lighter Silence fills the room And I’ve taken off my jewels I wish none of this was true But there’s a fire growing too Yeah! (Eh-Eh-Eh-Eh) Nothing can burn me now (Eh-Eh-Eh-Eh) I’ll be my own lighter I feel a spark inside me I don’t need saving (No way, no way) ‘Cause I’m my own, I’m my own lighter (Eh-Eh-Eh-Eh) Nothing can burn me down (Eh-Eh-Eh-Eh) I’m my own, I’m my own lighter Eirovīzija\xa02025 – dalībnieki Vairāk KONTEKSTS: 2025. gada Eirovīzijas dziesmu konkurss notiks Šveicē, Bāzelē, un savu dalību tajā apstiprinājušas 37 valstis. 31 no visām dalībvalstīm sacentīsies pusfinālos\xa013. maijā un 15. maijā. Desmit\xa0labākie no katra pusfināla kvalificēsies lielajam finālam 17. maijā, pievienojoties pērnā gada uzvarētājai Šveicei un \"lielajam piecniekam\" – Spānijai, Apvienotajai\xa0Karalistei, Vācijai, Itālijai un Francijai. Eirovīzijas konkursa pusfināli un fināli šogad sāksies pulksten 22.00 pēc Latvijas laika. Tiešraides būs skatāmas Latvijas Sabiedriskā medija portālā LSM.lv un satura atskaņotājā REplay.lv, kā arī LTV1. Šī gada Latvijas nacionālajā atlasē \"Supernova\" uzvarēja un uz Eirovīziju dosies grupa \"Tautumeitas\" . \"Tautumeitas\" kāps uz skatuves Eirovīzijas konkursa otrajā pusfinālā. Tajā kopā ar Latviju piedalīsies arī Armēnija, Austrālija, Austrija, Grieķija, Īrija, Lietuva, Melnkalne, Čehija, Dānija, Somija, Gruzija, Izraēla, Luksemburga, Malta un Serbija.",
+  "target_text": "Norvēģiju Eirovīzijas dziesmu konkursā pārstāv jaunais dziedātājs Kails Alessandro ( Kyle Alessandro ). Plašāka auditorija dziedātāju iepazina jau 10 gadu vecumā, kad viņš veiksmīgi piedalījās\xa0TV šovā \"Norway’s Got Talent\"."
 }
 ```
 
@@ -678,4 +676,83 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset lsm
+```
+
+## Instruction-following
+
+### MultiIFEval-lv
+
+MultiIFEval-lv is part of the MultiIFEval benchmark spanning 305 languages. It is
+generated by translating and localising the English IFEval dataset using a structured
+LLM generation pipeline. For each target language, a randomly selected Wikipedia article
+in that language provides contextual grounding to reduce hallucination and improve
+cultural localisation. The pipeline preserves instruction_id_list values for
+traceability to the original English samples, and retains kwargs keys with values
+localised where appropriate, enabling programmatic constraint verification. The dataset
+was published [here](https://huggingface.co/datasets/EuroEval/multi-ifeval-lv).
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Uzrakstiet kopsavilkumu par Vikipēdijas lapu \"https://lv.wikipedia.org/wiki/Latviešu_valoda\" ar vismaz 250 vārdiem. Neizmantojiet komatus un izceliet vismaz 3 sadaļas, kurām ir virsraksti Markdown formātā, piemēram, *izcelta sadaļa 1. daļa*, *izcelta sadaļa 2. daļa*, *izcelta sadaļa 3. daļa*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 250, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Es plānoju ceļojumu uz Latviju un vēlos, lai jūs man uzrakstītu ceļojuma plānu Šekspīra stilā. Jums nav atļauts izmantot komatus savā atbildē.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Izveidojiet CV nesenam absolventam, kurš piesakās uz savu pirmo darbu. Pārliecinieties, ka iekļaujat vismaz 12 vietturus kvadrātiekavās, piemēram, [Vārds] vai [Adrese].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-lv
 ```

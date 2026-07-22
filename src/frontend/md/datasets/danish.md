@@ -335,80 +335,7 @@ euroeval --model <model-id> --dataset dane
 
 ## Linguistic Acceptability
 
-### ScaLA-da
-
-This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the
-[Danish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master)
-by assuming that the documents in the treebank are correct, and corrupting the samples
-to create grammatically incorrect samples. The corruptions were done by either removing
-a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
-that this does indeed break the grammaticality of the sentence, a set of rules were used
-on the part-of-speech tags of the words in the sentence.
-
-The original dataset consists of 5,512 samples, from which we use 1,024 / 256 / 2,048
-samples for training, validation and testing, respectively (so 3,328 samples used in
-total). These splits are used as-is in the framework.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Samme dame dukkede netop nu op sammen med Odd-Catla's erklærede yndling, væbneren Aikin af Cantir.",
-  "label": "correct"
-}
-```
-
-```json
-{
-  "text": "Gebyrets størrelse afhænger nemlig af helt, i hvilken kategori den pågældende \"levnedsmiddelvirksomhed\" placeres.",
-  "label": "incorrect"
-}
-```
-
-```json
-{
-  "text": "Den statsansatte dyrlæge Kronfågels på slagteri i Kristiansstad, Karl Erik Bjørkman, understreger, belægningen hos producenten betyder meget for dyrenes trivsel:",
-  "label": "incorrect"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 12
-- Prefix prompt:
-
-  ```text
-  Følgende er sætninger og om de er grammatisk korrekte.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Sætning: {text}
-  Grammatisk korrekt: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Sætning: {text}
-
-  Bestem om sætningen er grammatisk korrekt eller ej. Svar med 'ja', hvis sætningen er korrekt, og 'nej', hvis den ikke er.
-  ```
-
-- Label mapping:
-  - `correct` ➡️ `ja`
-  - `incorrect` ➡️ `nej`
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset scala-da
-```
-
-### Unofficial: DaLA
+### DaLA
 
 This dataset was published in [this paper](https://arxiv.org/abs/2512.04799) and,
 similarly to ScaLA, was automatically created from the
@@ -487,6 +414,79 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset dala
+```
+
+### Unofficial: ScaLA-da
+
+This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
+and was automatically created from the
+[Danish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
+
+The original dataset consists of 5,512 samples, from which we use 1,024 / 256 / 2,048
+samples for training, validation and testing, respectively (so 3,328 samples used in
+total). These splits are used as-is in the framework.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Samme dame dukkede netop nu op sammen med Odd-Catla's erklærede yndling, væbneren Aikin af Cantir.",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Gebyrets størrelse afhænger nemlig af helt, i hvilken kategori den pågældende \"levnedsmiddelvirksomhed\" placeres.",
+  "label": "incorrect"
+}
+```
+
+```json
+{
+  "text": "Den statsansatte dyrlæge Kronfågels på slagteri i Kristiansstad, Karl Erik Bjørkman, understreger, belægningen hos producenten betyder meget for dyrenes trivsel:",
+  "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er sætninger og om de er grammatisk korrekte.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Sætning: {text}
+  Grammatisk korrekt: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Sætning: {text}
+
+  Bestem om sætningen er grammatisk korrekt eller ej. Svar med 'ja', hvis sætningen er korrekt, og 'nej', hvis den ikke er.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nej`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset scala-da
 ```
 
 ## Natural Language Inference
@@ -1368,7 +1368,77 @@ euroeval --model <model-id> --dataset dameta
 
 ## Common-sense Reasoning
 
-### HellaSwag-da
+### Winogrande-da
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
+training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Natalie synes, at smaragder er smukke ædelstene, men Betty gør ikke. _ købte en halskæde med en stor smaragd. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Natalie\nb. Betty",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Jeg kunne ikke kontrollere fugten, som jeg kontrollerede regnen, fordi _ kom ind overalt. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. fugt\nb. regn",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "At håndtere nødsituationer var aldrig særlig svært for Kevin, men det var det for Nelson, fordi _ ikke var i stand til at forblive rolig under pres. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Kevin\nb. Nelson",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Følgende er multiple choice spørgsmål (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+
+  Besvar ovenstående spørgsmål ved at svare med 'a' eller 'b', og intet andet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset winogrande-da
+```
+
+### Unofficial: HellaSwag-da
 
 This dataset is a machine translated version of the English
 [HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
@@ -1521,79 +1591,9 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset goldenswag-da
 ```
 
-### Unofficial: Winogrande-da
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English
-[Winogrande dataset](https://doi.org/10.1145/3474381).
-
-The original full dataset consists of 47 / 1,210 samples for training and testing, and
-we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
-training, validation and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Natalie synes, at smaragder er smukke ædelstene, men Betty gør ikke. _ købte en halskæde med en stor smaragd. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Natalie\nb. Betty",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Jeg kunne ikke kontrollere fugten, som jeg kontrollerede regnen, fordi _ kom ind overalt. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. fugt\nb. regn",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "At håndtere nødsituationer var aldrig særlig svært for Kevin, men det var det for Nelson, fordi _ ikke var i stand til at forblive rolig under pres. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Kevin\nb. Nelson",
-  "label": "b"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Følgende er multiple choice spørgsmål (med svar).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Spørgsmål: {text}
-  Svarmuligheder:
-  a. {option_a}
-  b. {option_b}
-  Svar: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Spørgsmål: {text}
-  Svarmuligheder:
-  a. {option_a}
-  b. {option_b}
-
-  Besvar ovenstående spørgsmål ved at svare med 'a' eller 'b', og intet andet.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset winogrande-da
-```
-
 ## Logical Reasoning
 
-### Unofficial: ZebraPuzzleEasy-da
+### ZebraPuzzleEasy-da
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
 and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
@@ -1876,6 +1876,82 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset ifeval-da
 ```
 
+### Unofficial: MultiIFEval-da
+
+This dataset is a translated and localised version of IFEval from the MultiIFEval
+benchmark, which covers 305 languages. It was generated using a structured LLM
+generation pipeline with target-language Wikipedia grounding to reduce hallucination and
+improve cultural localisation. Instruction IDs are preserved for traceability, and
+kwargs keys are retained (with values localised where appropriate), so constraints can
+still be checked programmatically. Outputs are schema-validated; malformed or empty
+outputs were excluded.
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Skriv en sammenfatning af Wikipedia-siden \"https://da.wikipedia.org/wiki/Dansk\" med mindst 300 ord. Brug ingen kommaer og fremhæv mindst 3 afsnit, der har titler, i Markdown-format, for eksempel *fremhævet afsnit Del 1*, *fremhævet afsnit Del 2*, *fremhævet afsnit Del 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Jeg planlægger en rejse til Danmark og vil gerne have, at du skriver en rejseplan til mig i Shakespeares stil. Det er ikke tilladt at bruge kommaer i dit svar.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Opret et CV for en nyuddannet, der ansøger om sit første job. Sørg for at inkludere mindst 12 pladsholdere i firkantede klammer, som f.eks. [Navn] eller [Adresse].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-da
+```
+
 ## European Values
 
 ### ValEU-da
@@ -2117,15 +2193,14 @@ This dataset is a Danish translation of the
 [RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
 contains retrieval-augmented generation (RAG) prompts together with model-generated
 answers annotated for hallucinations. Rather than evaluating the correctness of the
-generated answer, this task evaluates the degree to which the model hallucinates,
-i.e., generates tokens that are not grounded in the provided context.
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
 
 The hallucination detection is performed using the
 [LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
 [transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
-hallucination at the token level. The metric
-reported is the hallucination rate, computed as the ratio of hallucinated tokens to total
-tokens in the generated answers.
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
 
 Here are a few examples from the training split:
 

@@ -106,8 +106,27 @@ VALEU_EN_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+ZEBRA_PUZZLE_EASY_EN_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-en",
+    pretty_name="ZebraPuzzlesEasy-en",
+    source="EuroEval/zebra-puzzles-easy-en",
+    task=LOGIC,
+    languages=[ENGLISH],
+)
+
 
 # Unofficial datasets ###
+
+MULTI_IFEVAL_EN_CONFIG = DatasetConfig(
+    name="multi-ifeval-en",
+    pretty_name="MultiIFEval-en",
+    source="EuroEval/multi-ifeval-en",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ENGLISH],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
 
 XQUAD_EN_CONFIG = DatasetConfig(
     name="xquad-en",
@@ -189,15 +208,6 @@ WIC_CONFIG = DatasetConfig(
     pretty_name="WiC",
     source="EuroEval/wic",
     task=WIC,
-    languages=[ENGLISH],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_EN_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-en",
-    pretty_name="ZebraPuzzlesEasy-en",
-    source="EuroEval/zebra-puzzles-easy-en",
-    task=LOGIC,
     languages=[ENGLISH],
     unofficial=True,
 )

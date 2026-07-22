@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -11,9 +12,60 @@ from tqdm.auto import tqdm
 
 from euroeval.string_utils import split_model_id
 
-from .jsonl_io import load_records_from_jsonl_files
+from .jsonl_io import load_records_from_result_tree
+from .records import plain_model_id
 
 logger = logging.getLogger(__name__)
+
+
+def _normalise_model_id_for_hf_matching(model_id: str) -> str:
+    """Normalise a model ID for Hugging Face URL/repo matching.
+
+    Strips HTML anchor, variant suffixes, AND parameter/revision suffixes.
+    This is narrower than :func:`plain_model_id` which preserves #param and
+    @revision for meaningful model differentiation.
+
+    Args:
+        model_id:
+            The model ID to normalise.
+
+    Returns:
+        The base repo ID suitable for HF URL comparison (e.g. "org/repo").
+    """
+    # Strip anchor and variant suffix first
+    model_id = plain_model_id(model_id)
+    # Then strip #param and @revision for HF repo comparison
+    return split_model_id(model_id).model_id
+
+
+def _is_hf_url_for_model(model_url: str, model_id: str) -> bool:
+    """Check if a model URL is a Hugging Face URL for the given model.
+
+    Uses exact repo-path matching to avoid false positives from prefix
+    matching (e.g., https://hf.co/org/repo2 should not match org/repo).
+
+    Args:
+        model_url:
+            The model URL to check.
+        model_id:
+            The model ID (e.g., ``org/repo``). May contain anchors,
+            variant suffixes, or #param/@revision suffixes.
+
+    Returns:
+        True if the URL is an HF Hub URL for the model, False otherwise.
+    """
+    model_id = _normalise_model_id_for_hf_matching(model_id)
+    parsed = urllib.parse.urlparse(model_url)
+    if parsed.netloc not in (
+        "hf.co",
+        "huggingface.co",
+        "www.hf.co",
+        "www.huggingface.co",
+    ):
+        return False
+    # Path should be exactly /{model_id}
+    path = parsed.path.rstrip("/")
+    return path == f"/{model_id}"
 
 
 @dataclass
@@ -47,9 +99,14 @@ class Cache:
     def from_results_dir(cls, results_dir: Path) -> "Cache":
         """Create a cache from records in the results directory.
 
+        Walks the JSON tree structure (``results_dir/<model>/*.json``) and
+        loads all records. Preserves metadata fields in
+        ``model_info.additional_details`` (commercially_licensed, open,
+        trained_from_scratch, model_url, etc.).
+
         Args:
             results_dir:
-                The path to the directory containing per-model JSONL files
+                The path to the directory containing per-record JSON files
                 with metadata.
 
         Returns:
@@ -62,8 +119,7 @@ class Cache:
         if not results_dir.exists():
             raise FileNotFoundError(f"Results directory {results_dir} not found.")
 
-        jsonl_files = sorted(results_dir.glob("*.jsonl"))
-        records = load_records_from_jsonl_files(paths=jsonl_files)
+        records = load_records_from_result_tree(results_dir=results_dir)
 
         return cls._from_records(
             records=records, desc="Building caches from results dir"
@@ -91,7 +147,7 @@ class Cache:
             model_id: str = model_name
             if (match := re.search(r">(.+?)<", model_name)) is not None:
                 model_id = match.group(1)
-            model_id = split_model_id(model_id=model_id).model_id
+            model_id = _normalise_model_id_for_hf_matching(model_id)
 
             additional = record["model_info"]["additional_details"]
             if "generative_type" in additional:

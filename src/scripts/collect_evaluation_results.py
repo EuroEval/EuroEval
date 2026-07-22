@@ -47,10 +47,15 @@ from leaderboards.constants import (
     RESULTS_READY_LABEL,
 )
 from leaderboards.github_api import close_issue, comment_on_issue, gh_request
-from leaderboards.jsonl_io import parse_jsonl_lines
 from leaderboards.queue_parsing import extract_model_id
-from leaderboards.record_fields import get_few_shot, get_validation_split
-from leaderboards.records import get_dataset, get_model_name
+from leaderboards.result_identity import (
+    ResultIdentity,
+    dedup_newer_record,
+    identity_from_eee_record,
+    identity_to_path,
+    raise_on_collision,
+    sanitise_model_dir_name,
+)
 
 load_dotenv()
 
@@ -111,17 +116,8 @@ def main(force: bool) -> None:
         logger.info(f"#{number}: found {len(lines)} result line(s).")
         harvested.append((number, lines))
 
-    # If no issues found, switch to bucket-scan mode
-    bucket_scan_results: list[str] = []
-    if len(issues) == 0:
-        logger.info("No open issues found; using bucket-scan mode.")
-        bucket_scan_results = scan_bucket_for_results()
-        if not bucket_scan_results:
-            logger.info("No new results found in bucket scan.")
-            if not force:
-                return
-            logger.info("Forcing leaderboard regeneration despite no new results.")
-        logger.info(f"Bucket-scan mode found {len(bucket_scan_results)} new result(s).")
+    # When there are 0 open issues, continue with empty harvested results.
+    # The bucket sync in upload_results_to_hf() handles incremental downloads.
 
     # Load any manually added results from new_results.jsonl
     manual_lines: list[str] = []
@@ -134,11 +130,10 @@ def main(force: bool) -> None:
         if manual_lines:
             logger.info(f"Found {len(manual_lines)} manually added result line(s).")
 
-    # Combine harvested results, bucket-scan results, and manual results
+    # Combine harvested results and manual results
     all_lines: list[str] = []
     for _, lines in harvested:
         all_lines.extend(lines)
-    all_lines.extend(bucket_scan_results)
     all_lines.extend(manual_lines)
 
     has_new_results = bool(all_lines)
@@ -150,15 +145,10 @@ def main(force: bool) -> None:
     else:
         NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
 
-        # Log which mode was used
-        if bucket_scan_results:
-            mode_str = f"bucket-scan ({len(bucket_scan_results)}), "
-        else:
-            mode_str = ""
         harvested_count = sum(len(lines) for _, lines in harvested)
         logger.info(
             f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
-            f"({mode_str}{harvested_count} harvested, {len(manual_lines)} manual)."
+            f"({harvested_count} harvested, {len(manual_lines)} manual)."
         )
 
         # Upload results to HF bucket BEFORE regenerating leaderboards
@@ -231,173 +221,24 @@ def check_required_env_vars() -> None:
         sys.exit(1)
 
 
-def _model_id_to_filename(model_id: str) -> str:
-    """Convert a model ID to a safe filename.
-
-    Args:
-        model_id:
-            The model identifier (e.g., "meta-llama/Llama-3-8B").
-
-    Returns:
-        A safe filename with slashes and dots replaced by underscores.
-    """
-    return model_id.replace("/", "_") + ".jsonl"
-
-
-def build_dedup_key(result: dict) -> tuple[str, str, str, str] | None:
+def build_dedup_key(result: dict) -> ResultIdentity | None:
     """Build a deduplication key from an EEE result record.
 
-    Key consists of:
-    - model_id: the model identifier
-    - dataset: the dataset name
-    - validation_split: whether eval used validation split
-    - few_shot: whether eval used few-shot prompting
+    Delegates to the canonical ``identity_from_eee_record`` helper.
 
     Args:
         result:
             Parsed result dictionary in EEE format.
 
     Returns:
-        Tuple key for deduplication, or None if required fields are missing.
+        Identity tuple ``(model_id, dataset, validation_split, few_shot)``,
+        or None if required fields are missing.
     """
     try:
-        model_id = get_model_name(result)
-        dataset = get_dataset(result)
-        if not model_id or model_id == "unknown" or not dataset:
-            return None
-
-        validation_split = get_validation_split(result)
-        few_shot = get_few_shot(result)
-
-        return (model_id, dataset, str(validation_split), str(few_shot))
-    except Exception as e:
-        logger.debug("Failed to extract dedup key from result: %s", e)
+        return identity_from_eee_record(result)
+    except (ValueError, KeyError) as e:
+        logger.debug("Failed to extract identity from result: %s", e)
         return None
-
-
-def list_all_result_files() -> list[BucketFile]:
-    """List all .jsonl files in the EuroEval/results bucket.
-
-    Returns:
-        List of BucketFile objects for .jsonl files.
-    """
-    api = HfApi()
-    bucket_id = HF_RESULTS_BUCKET
-    try:
-        files = list(api.list_bucket_tree(bucket_id=bucket_id, recursive=True))
-        return [
-            f for f in files if isinstance(f, BucketFile) and f.path.endswith(".jsonl")
-        ]
-    except Exception as e:
-        logger.error(f"Failed to list bucket files: {e}")
-        return []
-
-
-def load_existing_result_keys() -> set[tuple[str, str, str, str]]:
-    """Load existing results and build a set of dedup keys.
-
-    Reads every per-model JSONL file in RESULTS_DIR and builds a set of dedup
-    keys.
-
-    Returns:
-        Set of dedup keys (model_id, dataset, validation_split, few_shot).
-    """
-    existing_keys: set[tuple[str, str, str, str]] = set()
-
-    model_files = sorted(RESULTS_DIR.glob("*.jsonl"))
-    if not model_files:
-        logger.info("No existing results found in RESULTS_DIR.")
-        return existing_keys
-
-    for model_file in model_files:
-        try:
-            lines = model_file.read_text(encoding="utf-8").splitlines()
-            for result in parse_jsonl_lines(
-                lines, source=model_file.name, strict=False
-            ):
-                key = build_dedup_key(result)
-                if key is not None:
-                    existing_keys.add(key)
-        except (OSError, ValueError) as e:
-            logger.warning(f"Failed to read {model_file.name}: {e}")
-
-    logger.info(f"Loaded {len(existing_keys)} existing result keys.")
-    return existing_keys
-
-
-def scan_bucket_for_results() -> list[str]:
-    """Scan the EuroEval/results bucket for results not yet in RESULTS_DIR.
-
-    Downloads all .jsonl files from the bucket, parses them, and collects
-    results that are not already in the existing results.
-
-    Returns:
-        List of new result JSON strings (empty if none found).
-    """
-    logger.info("Scanning bucket for new results...")
-
-    # Get all .jsonl files from the bucket
-    all_bucket_files = list_all_result_files()
-    if not all_bucket_files:
-        logger.info("No .jsonl files found in bucket.")
-        return []
-
-    logger.info(f"Found {len(all_bucket_files)} .jsonl file(s) in bucket.")
-
-    # Download all files to RESULTS_DIR
-    api = HfApi()
-    bucket_id = HF_RESULTS_BUCKET
-
-    files_spec: list[tuple[str | BucketFile, str | Path]] = [
-        (bucket_file.path, RESULTS_DIR / bucket_file.path)
-        for bucket_file in all_bucket_files
-    ]
-
-    try:
-        api.download_bucket_files(
-            bucket_id=bucket_id, files=files_spec, raise_on_missing_files=False
-        )
-        logger.info(f"Downloaded {len(files_spec)} file(s) to {RESULTS_DIR}.")
-    except Exception as e:
-        logger.error(f"Failed to download bucket files: {e}")
-        return []
-
-    # Load existing keys for deduplication
-    existing_keys = load_existing_result_keys()
-
-    # Parse all downloaded files and collect new results
-    new_results: list[str] = []
-    seen_keys: set[tuple[str, str, str, str]] = set()
-
-    for bucket_file in all_bucket_files:
-        local_path = RESULTS_DIR / bucket_file.path
-        if not local_path.exists():
-            logger.warning(f"Downloaded file not found: {local_path}")
-            continue
-
-        try:
-            lines = local_path.read_text(encoding="utf-8").splitlines()
-            for result in parse_jsonl_lines(
-                lines, source=bucket_file.path, strict=False
-            ):
-                key = build_dedup_key(result)
-
-                if key is None:
-                    logger.debug("Skipping result with no dedup key")
-                    continue
-
-                if key in existing_keys or key in seen_keys:
-                    logger.debug(f"Skipping duplicate result: {key}")
-                    continue
-
-                new_results.append(json.dumps(result, ensure_ascii=False))
-                seen_keys.add(key)
-        except ValueError as e:
-            logger.debug(f"Skipping invalid JSON line: {e}")
-
-    logger.info(f"Found {len(new_results)} new result(s) from bucket scan.")
-
-    return new_results
 
 
 def list_open_request_issues() -> list[dict]:
@@ -420,15 +261,18 @@ def list_open_request_issues() -> list[dict]:
 
 
 def find_results_for_issue(issue: dict) -> list[str] | None:
-    """Fetch the model's JSONL results from the HF bucket.
+    """Fetch the model's JSON results from the HF bucket tree.
+
+    Downloads all JSON files for the model's directory from the bucket
+    and returns them as JSON strings.
 
     Args:
         issue:
             The issue object containing the model evaluation request.
 
     Returns:
-        The non-empty lines of the model's JSONL file from the bucket,
-        or None if the file does not exist yet.
+        List of JSON strings for all results for this model,
+        or None if no results exist yet.
     """
     number = issue["number"]
     title = issue.get("title") or ""
@@ -439,100 +283,206 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
         logger.warning(f"#{number}: could not extract model_id from issue.")
         return None
 
-    filename = _model_id_to_filename(model_id)
-    local_path = RESULTS_DIR / filename
+    model_dir = sanitise_model_dir_name(model_id)
 
     try:
         api = HfApi()
+        # List all files in the model's directory
+        all_files = list(
+            api.list_bucket_tree(bucket_id=HF_RESULTS_BUCKET, recursive=True)
+        )
+        model_files = [
+            f
+            for f in all_files
+            if isinstance(f, BucketFile)
+            and f.path.startswith(model_dir + "/")
+            and f.path.endswith(".json")
+        ]
+
+        if not model_files:
+            logger.info(f"#{number}: no results found for model {model_id}.")
+            return None
+
+        # Download all files for this model
+        files_spec: list[tuple[str | BucketFile, str | Path]] = [
+            (f, RESULTS_DIR / f.path) for f in model_files
+        ]
         api.download_bucket_files(
-            bucket_id=HF_RESULTS_BUCKET,
-            files=[(filename, local_path)],
-            raise_on_missing_files=False,
+            bucket_id=HF_RESULTS_BUCKET, files=files_spec, raise_on_missing_files=False
         )
     except Exception as e:
-        logger.warning(f"#{number}: failed to download {filename} from bucket: {e}")
+        logger.warning(f"#{number}: failed to download results from bucket: {e}")
         return None
 
-    if not local_path.exists():
-        logger.info(f"#{number}: {filename} not found in bucket.")
-        return None
+    # Collect all JSON records
+    results: list[str] = []
+    for bucket_file in model_files:
+        local_path = RESULTS_DIR / bucket_file.path
+        if not local_path.exists():
+            logger.warning(f"Downloaded file not found: {local_path}")
+            continue
+        try:
+            content = local_path.read_text(encoding="utf-8")
+            record = json.loads(content)  # validates and parses
+            results.append(
+                json.dumps(record, separators=(",", ":"))
+            )  # compact to single line
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning(f"Failed to read {local_path}: {e}")
 
-    lines = [
-        line
-        for line in local_path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
-    if lines:
-        logger.info(f"#{number}: fetched {len(lines)} line(s) from bucket.")
-    return lines
+    if results:
+        logger.info(f"#{number}: fetched {len(results)} result(s) from bucket.")
+    return results
+
+
+def _extract_identity_key(result: dict) -> ResultIdentity | None:
+    """Extract the identity key from a result record.
+
+    Args:
+        result:
+            The parsed result record.
+
+    Returns:
+        Identity tuple or None if extraction fails.
+    """
+    try:
+        return identity_from_eee_record(result)
+    except (ValueError, KeyError):
+        return None
 
 
 def upload_results_to_hf(new_results_path: Path) -> bool:
     """Upload results to Hugging Face bucket.
 
-    This function splits results into per-model files and syncs to the
-    EuroEval/results bucket.
+    Loads existing results from local RESULTS_DIR, merges new results from the
+    JSONL file, deduplicates by identity (newer records win), then syncs
+    changed files back to the bucket.
 
     Args:
         new_results_path:
-            Path to the newly harvested results.jsonl file.
+            Path to the newly harvested results file (JSONL format).
 
     Returns:
         True if upload succeeded, False otherwise.
     """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    try:
-        # Sync existing results from EuroEval/results bucket
-        logger.info(f"Syncing existing results from {HF_RESULTS_BUCKET}...")
-        HfApi().sync_bucket(
-            source=f"hf://buckets/{HF_RESULTS_BUCKET}/", dest=str(RESULTS_DIR)
-        )
-        logger.info("Downloaded existing results from bucket.")
-    except HfHubHTTPError as e:
-        logger.warning(f"Could not sync from bucket: {e}. Starting fresh.")
+    # Load existing results as identity -> record dict
+    existing: dict[ResultIdentity, dict] = {}
+    for json_file in RESULTS_DIR.glob("*/*.json"):
+        if not json_file.is_file():
+            continue
+        try:
+            content = json_file.read_text(encoding="utf-8")
+            record = json.loads(content)
+            identity = _extract_identity_key(record)
+            if identity:
+                existing[identity] = record
+        except (OSError, json.JSONDecodeError, ValueError):
+            logger.debug(f"Skipping unreadable file {json_file}")
 
-    # Load existing results by model
-    existing_by_model: dict[str, set[str]] = {}
-    for model_file in RESULTS_DIR.glob("*.jsonl"):
-        lines = {
-            line
-            for line in model_file.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        }
-        existing_by_model[model_file.name] = lines
+    # Process new results from JSONL file
+    if not new_results_path.exists():
+        logger.warning(f"Results file {new_results_path} does not exist.")
+        return False
 
-    # Process new results and split into per-model files
     new_lines = new_results_path.read_text(encoding="utf-8").splitlines()
     logger.info(f"Processing {len(new_lines):,} new result lines...")
 
-    for line in new_lines:
+    for line_number, line in enumerate(new_lines, start=1):
         if not line.strip():
             continue
         try:
-            data = json.loads(line)
-            model_id = data.get("model", "unknown")
-            filename = _model_id_to_filename(model_id)
-            model_file = RESULTS_DIR / filename
-            # Append if not already present
-            if line not in existing_by_model.get(filename, set()):
-                with model_file.open("a", encoding="utf-8") as f:
-                    f.write(line + "\n")
+            record = json.loads(line)
+            identity = _extract_identity_key(record)
+            if not identity:
+                logger.debug(f"Skipping line {line_number}: no identity")
+                continue
+
+            # Dedup: keep newer record by euroeval_version, then retrieved_timestamp
+            if identity in existing:
+                existing[identity] = dedup_newer_record(existing[identity], record)
+            else:
+                existing[identity] = record
         except json.JSONDecodeError:
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
 
-    # Sync updated results to EuroEval/results bucket
-    logger.info(f"Syncing results to {HF_RESULTS_BUCKET}...")
-    try:
-        HfApi().sync_bucket(
-            source=str(RESULTS_DIR), dest=f"hf://buckets/{HF_RESULTS_BUCKET}/"
-        )
-        logger.info(f"Uploaded results to {HF_RESULTS_BUCKET}.")
-    except HfHubHTTPError as e:
-        logger.error(f"Failed to sync to bucket: {e}")
+    # === VALIDATE PHASE: build path->identity map before any mutation ===
+    path_to_identity: dict[Path, ResultIdentity] = {}
+    for identity in existing:
+        record_path = RESULTS_DIR / identity_to_path(identity)
+        if record_path in path_to_identity:
+            raise_on_collision(identity, path_to_identity[record_path])
+        path_to_identity[record_path] = identity
+
+    # === MUTATE PHASE: only after validation succeeds ===
+    # Only rewrite records whose content actually changed. RESULTS_DIR contains
+    # results from previous runs (already synced to the bucket), so comparing
+    # each desired record against the file already on disk tells us exactly
+    # which records changed. Rewriting only the changed files avoids touching
+    # every file's mtime and re-syncing the whole tree on every run. We never
+    # drop identities (existing is only merged into, never pruned), so there
+    # are no orphaned files to clear.
+    records_written = 0
+    records_unchanged = 0
+    written_paths: list[Path] = []
+    for identity, record in existing.items():
+        record_path = RESULTS_DIR / identity_to_path(identity)
+        desired = json.dumps(record, separators=(",", ":"))
+        try:
+            if record_path.exists():
+                try:
+                    existing_content = json.loads(
+                        record_path.read_text(encoding="utf-8")
+                    )
+                    if existing_content == record:
+                        records_unchanged += 1
+                        continue
+                except (json.JSONDecodeError, ValueError):
+                    pass
+            record_path.parent.mkdir(parents=True, exist_ok=True)
+            record_path.write_text(desired, encoding="utf-8")
+            records_written += 1
+            written_paths.append(record_path)
+        except (ValueError, OSError) as e:
+            logger.warning(f"Failed to write record for {identity}: {e}")
+
+    # Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts (not repo-root files)
+    for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
+        if jsonl_file.is_file():
+            jsonl_file.unlink()
+            logger.info(f"Removed stale artefact {jsonl_file}")
+
+    if not existing:
+        logger.warning("No valid results to upload.")
         return False
 
-    return True
+    if not records_written:
+        logger.info(
+            f"All {records_unchanged:,} records already up to date; nothing to sync."
+        )
+        return True
+
+    logger.info(
+        f"Wrote {records_written:,} changed record file(s) "
+        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
+    )
+
+    # Upload only changed files to bucket using batch operation
+    # Skip any files that are empty (0 bytes)
+    api = HfApi()
+    add_list: list[tuple[str | Path | bytes, str]] = [
+        (str(path), str(path.relative_to(RESULTS_DIR)))
+        for path in written_paths
+        if path.is_file() and path.stat().st_size > 0
+    ]
+    try:
+        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
+        logger.info(f"Uploaded {len(written_paths)} file(s) to {HF_RESULTS_BUCKET}.")
+        return True
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to upload to HF bucket: {e}")
+        return False
 
 
 def regenerate_leaderboards(force: bool = False) -> bool:
@@ -685,8 +635,8 @@ def deploy_to_vercel() -> bool:
         True if both ``vercel build`` and ``vercel deploy --yes`` exit cleanly.
     """
     for cmd in (
-        ["vercel", "build", "--prod"],
-        ["vercel", "deploy", "--prebuilt", "--prod", "--yes"],
+        ["vercel", "build", "--prod", "--non-interactive"],
+        ["vercel", "deploy", "--prebuilt", "--prod", "--yes", "--non-interactive"],
     ):
         logger.info(f"Running: {' '.join(cmd)}")
         try:

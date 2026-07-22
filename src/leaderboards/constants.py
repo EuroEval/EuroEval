@@ -48,6 +48,28 @@ from euroeval.languages import (
 )
 
 # ---------------------------------------------------------------------------
+# Permissive licences
+# ---------------------------------------------------------------------------
+
+# Licences that imply commercial use is allowed. Used for best-effort
+# inference of ``commercially_licensed`` metadata from Hugging Face model info.
+PERMISSIVE_LICENSES: frozenset[str] = frozenset(
+    {
+        "apache-2.0",
+        "mit",
+        "bsd-3-clause",
+        "bsd-2-clause",
+        "isc",
+        "cc-by-4.0",
+        "cc-by-3.0",
+        "cc0-1.0",
+        "unlicense",
+        "wtfpl",
+        "0bsd",
+    }
+)
+
+# ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 
@@ -453,6 +475,10 @@ BANNED_MODEL_PATTERNS: list[re.Pattern[str]] = [
     re.compile("^utter-project/EuroVLM-9B-Preview$"),  # Temporary ban
 ]
 TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern[str]] = [
+    # Explicit GLM-family models approved for trained_from_scratch inference
+    re.compile(r"zai-org/GLM.*"),
+    re.compile(r"GadflyII/GLM.*"),
+    # Pre-existing curated patterns (author/organisation-level matches)
     re.compile(r"Qwen/.*"),
     re.compile(r"google/.*"),
     re.compile(r"mistralai/.*"),

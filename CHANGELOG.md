@@ -23,13 +23,34 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   European languages (Danish, Albanian, Belarusian, Bosnian, Bulgarian, Catalan,
   Croatian, Czech, Dutch, Estonian, Faroese, Finnish, French, German, Greek, Hungarian,
   Icelandic, Italian, Latvian, Lithuanian, Norwegian, Polish, Portuguese, Romanian,
-  Serbian, Slovak, Slovene, Spanish, Swedish, Ukrainian). All are marked
-  `unofficial` as the published Hugging Face versions are placeholder
-  test-split-only snapshots awaiting full regeneration. This was contributed by
-  @FrejaThoresen ✨
+  Serbian, Slovak, Slovene, Spanish, Swedish, Ukrainian). All are marked `unofficial` as
+  the published Hugging Face versions are placeholder test-split-only snapshots awaiting
+  full regeneration. This was contributed by @FrejaThoresen ✨
+- Added the new MultiIFEval instruction-following datasets, translated and adapted from
+  the English IFEval dataset, changing several of the constraints to accomodate
+  non-English languages. This was in part contributed by @avalyset ✨
+- Added support for Luxembourgish 🇱🇺! This includes the ltzGLUE benchmark datasets for
+  headline classification, intent detection, linguistic acceptability (binary and
+  multi-class), named entity recognition, textual entailment, sentiment analysis, and
+  topic classification. The MultiWikiQA-lb reading comprehension dataset is also
+  included.
+- Added the `alx/` provider, being the Danish [ALX
+  Platform](https://platform.alexandra.dk/).
+
+### Changed
+
+- Made the Danish linguistic acceptability dataset DaLA the new official such one, over
+  the previous ScaLA-da, which has now been demoted to unofficial.
+- The DaLA dataset source was moved from `giannor/dala` to `EuroEval/dala` for
+  stability.
+- Made the Albanian knowledge dataset INCLUDE-sq the new official such one, over the
+  previous Global-MMLU-lite-sq , which has now been demoted to unofficial.
 
 ### Fixed
 
+- vLLM model loading now unconditionally disables FlashInfer autotuning by passing
+  `enable_flashinfer_autotune=False` to `vllm.LLM`. This avoids CUDA kernel compilation
+  overhead during model initialisation.
 - vLLM's own caches (compiled graphs and the model-info registry) are now stored under
   the euroeval cache directory (`<cache_dir>/vllm`) alongside the downloaded weights,
   instead of the shared `~/.cache/vllm`. This avoids `PermissionError`s on shared
@@ -38,10 +59,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed race condition in cache cleanup where `rmtree` would fail with
   `FileNotFoundError` when checkpoint directories were removed concurrently during model
   benchmarking. Now uses `ignore_errors=True` to handle concurrent deletions gracefully.
+- Fixed structured output error for the LOGIC task (zebra puzzle datasets). The vLLM
+  backend now dynamically creates a Pydantic schema from the dataset structure, enabling
+  evaluation of logical reasoning datasets with vLLM models.
 - The HF, vLLM and fresh model tokeniser loaders no longer pass `verbose=False` to
   `AutoTokenizer.from_pretrained`, since the `MistralCommonBackend` rejects this
-  argument. The vLLM mistral tokeniser fallback is now gated on model identity (model
-  ID and/or model config) rather than the error string, which previously matched the
+  argument. The vLLM mistral tokeniser fallback is now gated on model identity (model ID
+  and/or model config) rather than the error string, which previously matched the
   `MistralCommonBackend` message for unrelated models.
 
 ## [v17.6.0] - 2026-06-30
@@ -56,10 +80,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
 - Added the `google-cloud-aiplatform` dependency, as it's required to run
   Gemini-3.1-pro.
-- Added the Danish zebra puzzle dataset
-  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The
-  split is given by 128 / 1,024 samples for train / test, respectively. It is marked as
-  `unofficial` for now. This was contributed by @sofiehb ✨
+- Added the Multi-Zebra-Logic datasets for 9 language variants: Danish (da), Dutch
+  (nl), English (en), Faroese (fo), German (de), Icelandic (is), Norwegian Bokmål (nb),
+  Norwegian Nynorsk (nn), and Swedish (sv). Each variant has an easy (2 objects × 3
+  attributes, easy variants now official) and hard (4 objects × 5 attributes,
+  unofficial) version. This was contributed by @sofiehb ✨
 
 ### Fixed
 
@@ -71,17 +96,17 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   largest entry was used, undercounting models with weights split across multiple
   dtypes.
 - Fixed the finetuning NaN-retry not actually switching to fp32. When NaN values were
-  detected under mixed precision, the retry disabled autocast but reloaded the model
-  via `get_dtype`, which is hardware-driven and kept returning bf16/fp16 on CUDA — so
-  the weights stayed in the same NaN-producing dtype and the retry was a no-op (notably
-  for embedding-finetuned encoders like `intfloat/multilingual-e5-large-instruct`,
-  whose CUDA fused-attention backward NaNs in bf16). The retry now threads a
-  `dtype_override` down to model loading so the weights are genuinely reloaded in fp32.
+  detected under mixed precision, the retry disabled autocast but reloaded the model via
+  `get_dtype`, which is hardware-driven and kept returning bf16/fp16 on CUDA — so the
+  weights stayed in the same NaN-producing dtype and the retry was a no-op (notably for
+  embedding-finetuned encoders like `intfloat/multilingual-e5-large-instruct`, whose
+  CUDA fused-attention backward NaNs in bf16). The retry now threads a `dtype_override`
+  down to model loading so the weights are genuinely reloaded in fp32.
 - Added `download()` method to `PipelineMetric` class
   - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
     Values metric)
-  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and
-      caching the pipeline
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
+    the pipeline
 - Fixed `BenchmarkResult.from_dict()` failing to parse legacy results from Hugging Face
   bucket where `results.raw` contained nested dicts (e.g. `{"test": [{"mcc": 0.5}]}`)
   instead of flattened format (`{"test_mcc": 0.5}`)
@@ -529,8 +554,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Now ensures that the vLLM argument `max_num_batched_tokens` is at least as large as
   the maximum context length of the model, which gave errors with models that had a
   maximum context length of less than 8,192.
-
->>>>>>> main
 
 ## [v16.11.0] - 2026-01-21
 

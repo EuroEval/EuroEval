@@ -7,6 +7,7 @@ from ..tasks import (
     EUROPEAN_VALUES,
     GED,
     HALLU,
+    INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
     LOGIC,
@@ -76,6 +77,16 @@ WINOGRANDE_IS_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
+MULTI_IFEVAL_IS_CONFIG = DatasetConfig(
+    name="multi-ifeval-is",
+    pretty_name="MultiIFEval-is",
+    source="EuroEval/multi-ifeval-is",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ICELANDIC],
+    train_split=None,
+    val_split=None,
+)
+
 VALEU_IS_CONFIG = DatasetConfig(
     name="valeu-is",
     pretty_name="VaLEU-is",
@@ -86,6 +97,14 @@ VALEU_IS_CONFIG = DatasetConfig(
     val_split=None,
     bootstrap_samples=False,
     instruction_prompt="{text}",
+)
+
+ZEBRA_PUZZLE_EASY_IS_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-is",
+    pretty_name="ZebraPuzzlesEasy-is",
+    source="EuroEval/zebra-puzzles-easy-is",
+    task=LOGIC,
+    languages=[ICELANDIC],
 )
 
 
@@ -197,15 +216,6 @@ GERLANGMOD_IS_CONFIG = DatasetConfig(
     pretty_name="GerLangMod-is",
     source="EuroEval/gerlangmod-is",
     task=GED,
-    languages=[ICELANDIC],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_EASY_IS_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-is",
-    pretty_name="ZebraPuzzlesEasy-is",
-    source="EuroEval/zebra-puzzles-easy-is",
-    task=LOGIC,
     languages=[ICELANDIC],
     unofficial=True,
 )

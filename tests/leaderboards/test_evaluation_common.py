@@ -1,5 +1,12 @@
 """Tests for the `leaderboards.evaluation_common` module."""
 
+import collections.abc as c
+import os
+import subprocess
+import time
+import typing as t
+from contextlib import contextmanager
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -91,3 +98,87 @@ def test_killed_by_signal_note_describes_signal_death(
     assert note is not None
     for needle in must_contain:
         assert needle in note
+
+
+def test_pty_drain_handles_exited_parent_with_open_grandchild(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression test for the PTY drain hang.
+
+    When a subprocess spawns a grandchild that inherits the PTY slave fd,
+    the grandchild can keep the PTY open after the parent exits. The drain
+    loop must bound the post-parent-exit wait with a fixed deadline to avoid
+    hanging indefinitely on chatty grandchildren.
+
+    This test exercises ``run_euroeval()`` directly by monkeypatching
+    ``subprocess.Popen`` to spawn a shell script that creates a background
+    grandchild that keeps writing to the PTY after the parent exits.
+    """
+    parent_script = tmp_path / "parent.sh"
+    # Parent exits immediately, but grandchild keeps chattering for 60 seconds
+    # A correct implementation should stop draining after the deadline
+    parent_script.write_text(
+        "# Background grandchild inherits PTY and keeps writing\n"
+        "(while true; do echo 'chatty grandchild'; sleep 0.1; done) &\n"
+        "# Parent exits quickly\n"
+        "echo 'parent output'\n"
+        "exit 42\n"
+    )
+    parent_script.chmod(0o755)
+
+    # Mock slow/optional dependencies to avoid heavy imports
+    @contextmanager
+    def _mock_no_terminal_output(disable: bool = True) -> c.Generator[None, None, None]:
+        yield
+
+    def _mock_resolve_hf_token() -> None:
+        return None
+
+    # Patch before calling run_euroeval
+    monkeypatch.setattr(
+        "euroeval.logging_utils.no_terminal_output",
+        _mock_no_terminal_output,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "leaderboards.evaluation_common.resolve_hf_token", _mock_resolve_hf_token
+    )
+
+    original_popen = subprocess.Popen
+
+    def mock_popen(
+        cmd: list[str],
+        *args: t.Any,  # noqa: ANN002, ANN401
+        **kwargs: t.Any,  # noqa: ANN003, ANN401
+    ) -> subprocess.Popen:
+        if cmd and cmd[0] == "euroeval":
+            cmd = ["bash", str(parent_script)]
+            # Start in new process group for scoped cleanup
+            # Note: run_euroeval sets this internally; we preserve it here
+            if "preexec_fn" not in kwargs:
+                kwargs["preexec_fn"] = os.setsid
+        return original_popen(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "Popen", mock_popen)
+
+    start_time = time.time()
+
+    # Call run_euroeval directly - it handles process group cleanup in finally
+    returncode, output = evaluation_common.run_euroeval(
+        model_id="test-model", languages=["en"], stream_output=False
+    )
+
+    elapsed = time.time() - start_time
+
+    # Assertions
+    assert returncode == 42, "Should return the parent's exit code"
+    assert elapsed < 3.0, (
+        f"Drain should complete within deadline even with chatty grandchild, "
+        f"took {elapsed:.2f}s"
+    )
+    assert "parent output" in output, "Should capture parent's output"
+    # Should not have read all 60 seconds of chatter (would be 600+ lines)
+    line_count = output.count("\n")
+    assert line_count < 50, (
+        f"Should stop reading after deadline, got {line_count} lines"
+    )

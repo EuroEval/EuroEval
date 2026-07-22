@@ -21,6 +21,7 @@ from ..languages import (
     ITALIAN,
     LATVIAN,
     LITHUANIAN,
+    LUXEMBOURGISH,
     NORWEGIAN,
     NORWEGIAN_BOKMÅL,
     NORWEGIAN_NYNORSK,
@@ -237,6 +238,14 @@ SUMM_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Документ: {text}\nРезюме: {target_text}",
         default_instruction_prompt="Документ: {text}\n\nНапишіть резюме наведеного "
         "вище документа.",
+        default_prompt_label_mapping=dict(),
+    ),
+    LUXEMBOURGISH: PromptConfig(
+        default_prompt_prefix="Folgend sinn Dokumenter mat dozou gehéiereg "
+        "Zesummefaassungen.",
+        default_prompt_template="Dokument: {text}\nZesummefaassung: {target_text}",
+        default_instruction_prompt="Dokument: {text}\n\nSchreift eng "
+        "Zesummefaassung vum ieweschten Dokument.",
         default_prompt_label_mapping=dict(),
     ),
 }
