@@ -7,6 +7,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `ValueError` in `prepare_train_examples` when the CLS token ID is not present
+  in tokenised input IDs for certain tokenisers (e.g. Qwen3 embedding models,
+  codefuse-ai/F2LLM-v2-0.6B). Falls back to position 0 with a debug log message.
+
 ## [v17.7.0] - 2026-07-22
 
 ### Added
