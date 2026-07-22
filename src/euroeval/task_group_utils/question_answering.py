@@ -1,6 +1,7 @@
 """Utility functions related to the question-answering task group."""
 
 import collections.abc as c
+import logging
 import typing as t
 from collections import defaultdict
 
@@ -13,6 +14,7 @@ from transformers.trainer import Trainer
 from transformers.trainer_utils import EvalPrediction
 
 from ..exceptions import InvalidBenchmark
+from ..logging_utils import log_once
 from ..tokenisation_utils import get_special_token_metadata
 from ..types import Predictions
 from ..utils import raise_if_model_output_contains_nan_values
@@ -306,7 +308,15 @@ def prepare_train_examples(
         input_ids = tokenised_examples.input_ids[i]
 
         # We will label impossible answers with the index of the CLS token
-        cls_index = input_ids.index(cls_token_id)
+        try:
+            cls_index = input_ids.index(cls_token_id)
+        except ValueError:
+            log_once(
+                f"CLS token ID {cls_token_id} not found in input_ids; "
+                f"falling back to position 0",
+                level=logging.DEBUG,
+            )
+            cls_index = 0
 
         # Grab the sequence corresponding to that example (to know what is the context
         # and what is the question).
