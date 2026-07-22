@@ -186,7 +186,7 @@ class TestSyncResults:
         results_dir = tmp_path / "results"
         results_dir.mkdir()
 
-        # Patch RESULTS_DIR in both modules (merge_results reads from bucket_sync.RESULTS_DIR)
+        # Patch RESULTS_DIR in both modules (merge_results uses bucket_sync.RESULTS_DIR)
         monkeypatch.setattr(
             target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
         )
@@ -255,7 +255,7 @@ class TestSyncResults:
             name="HF_RESULTS_BUCKET",
             value="test/bucket",
         )
-        # Patch RESULTS_DIR in both modules (merge_results reads from bucket_sync.RESULTS_DIR)
+        # Patch RESULTS_DIR in both modules (merge_results uses bucket_sync.RESULTS_DIR)
         monkeypatch.setattr(
             target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
         )
