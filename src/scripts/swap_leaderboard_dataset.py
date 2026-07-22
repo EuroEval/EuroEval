@@ -1249,7 +1249,7 @@ def _update_changelog(
         )
 
     # Build the changelog entry
-    lang_list = ", ".join(sorted([lang.code for lang in old_config.languages]))
+    lang_list = ", ".join(sorted([lang.name for lang in old_config.languages]))
     entry = (
         f"- Swapped official dataset for {lang_list}: `{old_dataset}` → "
         f"`{new_dataset}`. The script `swap_leaderboard_dataset.py` now "
