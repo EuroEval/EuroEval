@@ -1,6 +1,7 @@
 """Tests for the process_evaluation_queue script orchestration."""
 
 import json
+import typing as t
 from pathlib import Path
 
 import pytest
@@ -23,7 +24,14 @@ def test_sync_bucket_preserves_local_only_files(
     )
 
     class FakeHfApi:
-        def sync_bucket(self, source: str, dest: str, token: str) -> None:
+        def sync_bucket(
+            self,
+            source: str,
+            dest: str,
+            token: str,
+            ignore_times: bool = False,
+            **kwargs: t.Any,
+        ) -> None:
             # Tree sync doesn't remove files - local-only files persist
             pass
 
@@ -58,7 +66,14 @@ def test_sync_bucket_prefers_synced_content_for_existing_result_key(
     record_file.write_text(json.dumps(local_content), encoding="utf-8")
 
     class FakeHfApi:
-        def sync_bucket(self, source: str, dest: str, token: str) -> None:
+        def sync_bucket(
+            self,
+            source: str,
+            dest: str,
+            token: str,
+            ignore_times: bool = False,
+            **kwargs: t.Any,
+        ) -> None:
             # Tree sync preserves existing files - remote content merged via file paths
             pass
 
@@ -109,7 +124,14 @@ def test_sync_bucket_handles_separate_result_files(
     )
 
     class FakeHfApi:
-        def sync_bucket(self, source: str, dest: str, token: str) -> None:
+        def sync_bucket(
+            self,
+            source: str,
+            dest: str,
+            token: str,
+            ignore_times: bool = False,
+            **kwargs: t.Any,
+        ) -> None:
             # Tree sync preserves separate files
             pass
 
