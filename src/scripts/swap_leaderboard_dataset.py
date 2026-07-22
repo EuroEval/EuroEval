@@ -296,7 +296,7 @@ def main(
         validate_gh_installed()
 
     target_codes = resolve_languages(old_config=old_config, new_configs=new_configs)
-    new_dataset_ids = tuple(c.id for c in new_configs)
+    new_dataset_ids = tuple(c.name for c in new_configs)
     if old_dataset:
         logger.info(
             f"Swap {old_dataset!r} -> {new_dataset_ids!r} "
@@ -402,13 +402,13 @@ def validate_datasets(
         for new_config in new_configs:
             if not new_config.unofficial:
                 raise click.ClickException(
-                    f"--new-dataset {new_config.id!r} must be unofficial; "
+                    f"--new-dataset {new_config.name!r} must be unofficial; "
                     "it is official."
                 )
             if old_config.task.name != new_config.task.name:
                 raise click.ClickException(
                     f"All datasets must share a task; {old_dataset!r} is "
-                    f"{old_config.task.name!r} but {new_config.id!r} is "
+                    f"{old_config.task.name!r} but {new_config.name!r} is "
                     f"{new_config.task.name!r}."
                 )
     else:
@@ -417,13 +417,13 @@ def validate_datasets(
         for new_config in new_configs[1:]:
             if not new_config.unofficial:
                 raise click.ClickException(
-                    f"--new-dataset {new_config.id!r} must be unofficial; "
+                    f"--new-dataset {new_config.name!r} must be unofficial; "
                     "it is official."
                 )
             if new_config.task.name != first_task:
                 raise click.ClickException(
-                    f"All new datasets must share a task; {new_configs[0].id!r} is "
-                    f"{first_task!r} but {new_config.id!r} is "
+                    f"All new datasets must share a task; {new_configs[0].name!r} is "
+                    f"{first_task!r} but {new_config.name!r} is "
                     f"{new_config.task.name!r}."
                 )
 
