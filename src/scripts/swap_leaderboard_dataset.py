@@ -58,7 +58,11 @@ from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
-from leaderboards.bucket_sync import merge_results, upload_results_to_bucket
+from leaderboards.bucket_sync import (
+    download_missing_bucket_files,
+    merge_results,
+    upload_results_to_bucket,
+)
 from leaderboards.constants import (
     DEFAULT_GPU_MEMORY_UTILIZATION,
     LEADERBOARD_CATEGORIES,
@@ -95,24 +99,15 @@ EUROEVAL_BENCHMARK_RESULTS_PATH = REPO_ROOT / "euroeval_benchmark_results.jsonl"
 def sync_results_from_bucket() -> None:
     """Sync results from the HF bucket and consolidate into NEW_RESULTS_PATH.
 
-    Downloads all result files from the EuroEval/results bucket to RESULTS_DIR,
-    then merges the per-record JSON tree into NEW_RESULTS_PATH (appending, not
-    overwriting) so subsequent evaluations can detect and skip already-completed
-    runs.
+    Downloads missing result files from the EuroEval/results bucket to RESULTS_DIR
+    (incremental fetch, only new files), then merges the per-record JSON tree into
+    NEW_RESULTS_PATH (appending, not overwriting) so subsequent evaluations can
+    detect and skip already-completed runs.
     """
     logger.info("Syncing results from HF bucket %s...", HF_RESULTS_BUCKET)
 
-    # Sync bucket files to local RESULTS_DIR, skip if already present
-    if RESULTS_DIR.exists() and any(RESULTS_DIR.rglob("*.json")):
-        logger.info("RESULTS_DIR already contains files, skipping bucket sync.")
-    else:
-        hf_api = HfApi(token=os.getenv("HF_TOKEN"))
-        hf_api.sync_bucket(
-            source=f"hf://buckets/{HF_RESULTS_BUCKET}",
-            dest=RESULTS_DIR.as_posix(),
-            verbose=True,
-            ignore_times=True,  # Compare by content hash, not mtime
-        )
+    # Incremental sync: download only files not already present locally
+    download_missing_bucket_files()
 
     # Merge per-record JSON tree into NEW_RESULTS_PATH
     # First read existing lines to avoid duplicates
