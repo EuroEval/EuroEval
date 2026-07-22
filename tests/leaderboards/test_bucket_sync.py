@@ -397,6 +397,9 @@ class TestUploadResultsToBucket:
         """Test that upload_results_to_bucket warns when results file doesn't exist."""
         results_file = tmp_path / "nonexistent.jsonl"
 
+        # Mock token resolution to avoid RuntimeError when HF_TOKEN is not set
+        monkeypatch.setattr(bucket_sync, "resolve_hf_token", lambda: "dummy_token")
+
         with caplog.at_level("WARNING"):
             bucket_sync.upload_results_to_bucket(results_file=results_file)
 
