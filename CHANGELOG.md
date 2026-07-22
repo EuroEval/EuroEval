@@ -9,6 +9,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added the unofficial European Portuguese ALBA-MCQ, PT Exams, CulturaVivaPT,
+  SAUDADE-PT, and PT-PT Completions datasets. This was contributed by @duarteocarmo ✨
 - Evaluation hallucination detection task, reporting a hallucination rate
   (hallucinated_tokens/total_tokens). This includes RAGTruth-based datasets for 30
   European languages (Danish, Albanian, Belarusian, Bosnian, Bulgarian, Catalan,
