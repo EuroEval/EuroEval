@@ -29,7 +29,7 @@ We report two accuracy metrics for the logical reasoning task:
   attribute assignments. A prediction is correct for each cell (object × attribute) if
   the predicted attribute matches the gold label. This gives credit for partially
   correct solutions.
-  
+
 - **Puzzle-level accuracy**: The strict accuracy where a puzzle is only counted as
   correct if all attribute assignments are correct. This measures the model's ability to
   solve the complete puzzle.

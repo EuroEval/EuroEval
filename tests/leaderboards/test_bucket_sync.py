@@ -52,7 +52,13 @@ class TestSyncBucket:
         local_file.write_text(json.dumps(local_record), encoding="utf-8")
 
         # Mock HfApi.sync_bucket to simulate bucket sync that removes the file
-        def mock_sync(source: str, dest: str, token: str | None = None) -> None:
+        def mock_sync(
+            source: str,
+            dest: str,
+            token: str | None = None,
+            ignore_times: bool = False,
+            **kwargs,
+        ) -> None:
             # Simulate sync removing the local file
             if local_file.exists():
                 local_file.unlink()
@@ -84,7 +90,11 @@ class TestSyncBucket:
             bucket_sync.sync_bucket()
 
         mock_sync.assert_called_once_with(
-            source="hf://buckets/test/results/", dest=str(tmp_path), token="token123"
+            source="hf://buckets/test/results/",
+            dest=str(tmp_path),
+            token="token123",
+            ignore_times=True,
+            ignore_sizes=False,
         )
 
     def test_sync_bucket_raises_on_sync_failure(
@@ -291,7 +301,7 @@ class TestUploadResultsToBucket:
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
-            with patch.object(HfApi, "sync_bucket", return_value=None):
+            with patch.object(HfApi, "batch_bucket_files", return_value=None):
                 bucket_sync.upload_results_to_bucket(results_file=results_file)
 
         # Verify tree layout was created
@@ -333,7 +343,7 @@ class TestUploadResultsToBucket:
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
-            with patch.object(HfApi, "sync_bucket", return_value=None):
+            with patch.object(HfApi, "batch_bucket_files", return_value=None):
                 bucket_sync.upload_results_to_bucket(results_file=results_file)
 
         # Only valid record should be uploaded
@@ -366,7 +376,7 @@ class TestUploadResultsToBucket:
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
             with patch.object(
                 HfApi,
-                "sync_bucket",
+                "batch_bucket_files",
                 side_effect=HfHubHTTPError(
                     "Upload failed", response=MagicMock(status_code=500)
                 ),
@@ -414,7 +424,13 @@ class TestUploadResultsToBucket:
         local_file.write_text(json.dumps(local_record), encoding="utf-8")
 
         # Mock sync that removes the local file
-        def mock_sync(source: str, dest: str, token: str | None = None) -> None:
+        def mock_sync(
+            source: str,
+            dest: str,
+            token: str | None = None,
+            ignore_times: bool = False,
+            **kwargs,
+        ) -> None:
             if local_file.exists():
                 local_file.unlink()
 
@@ -452,7 +468,13 @@ class TestUploadResultsToBucket:
         local_file.write_text(json.dumps(local_record), encoding="utf-8")
 
         # Mock sync that puts an older bucket record
-        def mock_sync(source: str, dest: str, token: str | None = None) -> None:
+        def mock_sync(
+            source: str,
+            dest: str,
+            token: str | None = None,
+            ignore_times: bool = False,
+            **kwargs,
+        ) -> None:
             # Create an older bucket record
             older_record = {
                 "model_info": {"id": "test/model"},
@@ -497,7 +519,13 @@ class TestUploadResultsToBucket:
         local_file.write_text(json.dumps(local_record), encoding="utf-8")
 
         # Mock sync that puts a record with different identity at same path
-        def mock_sync(source: str, dest: str, token: str | None = None) -> None:
+        def mock_sync(
+            source: str,
+            dest: str,
+            token: str | None = None,
+            ignore_times: bool = False,
+            **kwargs,
+        ) -> None:
             # Record with different identity but same sanitised path
             # "model_a" also sanitises to "model_a" (no change)
             bucket_record = {
@@ -545,7 +573,7 @@ class TestUploadResultsToBucket:
         monkeypatch.setattr(bucket_sync, "HF_RESULTS_BUCKET", "test/results")
 
         with patch("leaderboards.bucket_sync.resolve_hf_token", return_value="token"):
-            with patch.object(HfApi, "sync_bucket", return_value=None):
+            with patch.object(HfApi, "batch_bucket_files", return_value=None):
                 bucket_sync.upload_results_to_bucket(results_file=results_file)
 
         # Stale jsonl should be removed
