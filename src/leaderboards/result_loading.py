@@ -7,7 +7,7 @@ import typing as t
 from functools import cache
 
 from .backup import backup_results
-from .bucket_sync import sync_bucket
+from .bucket_sync import download_missing_bucket_files
 from .constants import NEW_RESULTS_PATH, RESULTS_DIR
 from .eee_validation import is_eee_record
 from .jsonl_io import load_records_from_jsonl_files, load_records_from_result_tree
@@ -102,23 +102,17 @@ def load_raw_results() -> list[dict[str, t.Any]]:
 def _sync_results_from_bucket() -> None:
     """Sync the HF results bucket into RESULTS_DIR and back it up.
 
-    Syncs the single EuroEval/results bucket to RESULTS_DIR and creates a
-    backup of the synced per-record JSON files. Skips sync if local results
-    already exist to avoid unnecessary downloads.
+    Performs an incremental fetch of the single EuroEval/results bucket into
+    RESULTS_DIR (downloading only files not already present locally) and creates
+    a backup of the synced per-record JSON files.
 
     Raises:
         FileNotFoundError:
             If sync fails and no local files exist.
     """
-    file_count = len(list(RESULTS_DIR.glob("*/*.json")))
-    if file_count == 0:
-        sync_bucket()
-        file_count = len(list(RESULTS_DIR.glob("*/*.json")))
-    else:
-        logger.info(
-            f"Skipping bucket sync; {file_count:,} files already exist locally."
-        )
+    download_missing_bucket_files()
 
+    file_count = len(list(RESULTS_DIR.glob("*/*.json")))
     if file_count == 0:
         raise FileNotFoundError(
             "No results available. Sync failed and no local cache exists."

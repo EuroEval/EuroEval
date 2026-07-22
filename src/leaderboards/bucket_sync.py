@@ -207,6 +207,60 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
     logger.info(f"Synced bucket {HF_RESULTS_BUCKET}.")
 
 
+def download_missing_bucket_files() -> int:
+    """Download bucket result files that are absent from the local directory.
+
+    Lists the bucket tree and downloads only the files whose relative path does
+    not already exist under ``RESULTS_DIR``. Existing local files are never
+    re-downloaded or deleted, so this is a safe union-style incremental fetch.
+    It deliberately avoids huggingface_hub's own ``sync_bucket``, whose size
+    comparison has historically re-fetched the entire bucket (a multi-hour
+    operation) even when the local copy was already up to date.
+
+    Because each logical result has a distinct storage path
+    (``<model>/<dataset>__<split>__<shot>.json``), presence-by-path is a
+    sufficient freshness test for newly added results.
+
+    Returns:
+        The number of files downloaded.
+
+    Raises:
+        RuntimeError:
+            If no Hugging Face token is available.
+    """
+    hf_token = resolve_hf_token()
+    if not hf_token:
+        raise RuntimeError(
+            "HF_TOKEN not set. Cannot sync results from Hugging Face bucket. "
+            "Run 'hf auth login' or set the HF_TOKEN environment variable."
+        )
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    api = HfApi()
+
+    logger.info(f"Listing bucket {HF_RESULTS_BUCKET} to find new files...")
+    to_download: list[tuple[str | BucketFile, str | Path]] = []
+    for entry in api.list_bucket_tree(
+        HF_RESULTS_BUCKET, recursive=True, token=hf_token
+    ):
+        if not isinstance(entry, BucketFile):
+            continue
+        local_path = RESULTS_DIR / entry.path
+        if not local_path.exists():
+            local_path.parent.mkdir(parents=True, exist_ok=True)
+            to_download.append((entry, local_path))
+
+    if not to_download:
+        logger.info("Local results already up to date with bucket.")
+        return 0
+
+    logger.info(f"Downloading {len(to_download):,} new file(s) from the bucket...")
+    api.download_bucket_files(
+        bucket_id=HF_RESULTS_BUCKET, files=to_download, token=hf_token
+    )
+    return len(to_download)
+
+
 def _sort_key(record: dict) -> tuple[str, str]:
     """Extract sort key from a record for deterministic ordering.
 
