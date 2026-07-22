@@ -7,7 +7,6 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from huggingface_hub import HfApi
 
 from euroeval.data_models import DatasetConfig
 from euroeval.languages import DANISH, SWEDISH
@@ -184,10 +183,19 @@ class TestSyncResults:
         )
 
         # Create empty results dir
-        (tmp_path / "results").mkdir()
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+
+        # Patch RESULTS_DIR in both modules (merge_results reads from bucket_sync.RESULTS_DIR)
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
+        )
+        monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
 
         # Mock hf_api.sync_bucket to do nothing
-        monkeypatch.setattr(HfApi, "sync_bucket", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            swap_leaderboard_dataset.HfApi, "sync_bucket", lambda *args, **kwargs: None
+        )
 
         with caplog.at_level(logging.WARNING):
             swap_leaderboard_dataset.sync_results_from_bucket()
@@ -247,9 +255,16 @@ class TestSyncResults:
             name="HF_RESULTS_BUCKET",
             value="test/bucket",
         )
+        # Patch RESULTS_DIR in both modules (merge_results reads from bucket_sync.RESULTS_DIR)
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
+        )
+        monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
 
         # Mock hf_api.sync_bucket to do nothing
-        monkeypatch.setattr(HfApi, "sync_bucket", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            swap_leaderboard_dataset.HfApi, "sync_bucket", lambda *args, **kwargs: None
+        )
 
         with caplog.at_level(logging.INFO):
             swap_leaderboard_dataset.sync_results_from_bucket()
