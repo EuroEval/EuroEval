@@ -252,6 +252,7 @@ def main(
     old_dataset: str | None,
     new_datasets: tuple[str, ...],
     branch: str | None,
+    add_only: bool,
     include_api: bool,
     api_providers: str | None,
     gpu_memory_utilization: float | None,
@@ -260,7 +261,6 @@ def main(
     reviewer: str,
     force: bool,
     dry_run: bool,
-    add_only: bool,
 ) -> None:
     """Replace an official leaderboard dataset with one or more new ones.
 
