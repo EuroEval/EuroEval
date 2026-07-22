@@ -14,7 +14,7 @@ from transformers.trainer import Trainer
 from transformers.trainer_utils import EvalPrediction
 
 from ..exceptions import InvalidBenchmark
-from ..logging_utils import log
+from ..logging_utils import log_once
 from ..tokenisation_utils import get_special_token_metadata
 from ..types import Predictions
 from ..utils import raise_if_model_output_contains_nan_values
@@ -311,7 +311,7 @@ def prepare_train_examples(
         try:
             cls_index = input_ids.index(cls_token_id)
         except ValueError:
-            log(
+            log_once(
                 f"CLS token ID {cls_token_id} not found in input_ids; "
                 f"falling back to position 0",
                 level=logging.DEBUG,
