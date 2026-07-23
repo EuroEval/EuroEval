@@ -83,6 +83,15 @@ IFEVAL_EL_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+RAGTRUTH_EL_CONFIG = DatasetConfig(
+    name="ragtruth-el",
+    pretty_name="RAGTruth-el",
+    source="EuroEval/ragtruth-translated-hallucinations-el-mini",
+    task=HALLU,
+    languages=[GREEK],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -115,12 +124,4 @@ GREEK_MMLU_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-RAGTRUTH_EL_CONFIG = DatasetConfig(
-    name="ragtruth-el",
-    pretty_name="RAGTruth-el",
-    source="EuroEval/ragtruth-translated-hallucinations-el-mini",
-    task=HALLU,
-    languages=[GREEK],
-    train_split=None,
-    unofficial=True,
-)
+
