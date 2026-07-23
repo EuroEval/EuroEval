@@ -102,5 +102,3 @@ SCALA_CS_CONFIG = DatasetConfig(
     languages=[CZECH],
     unofficial=True,
 )
-
-

@@ -103,5 +103,3 @@ GLOBAL_MMLU_LITE_SQ_CONFIG = DatasetConfig(
     languages=[ALBANIAN],
     unofficial=True,
 )
-
-

@@ -185,5 +185,3 @@ MULTINRC_FR_CONFIG = DatasetConfig(
     languages=[FRENCH],
     unofficial=True,
 )
-
-

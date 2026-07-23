@@ -104,5 +104,3 @@ ZEBRA_PUZZLE_HARD_FO_CONFIG = DatasetConfig(
     languages=[FAROESE],
     unofficial=True,
 )
-
-

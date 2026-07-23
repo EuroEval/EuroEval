@@ -193,5 +193,3 @@ WIC_ITA_CONFIG = DatasetConfig(
     languages=[ITALIAN],
     unofficial=True,
 )
-
-

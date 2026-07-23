@@ -269,5 +269,3 @@ ZEBRA_PUZZLE_HARD_NL_CONFIG = DatasetConfig(
     languages=[DUTCH],
     unofficial=True,
 )
-
-

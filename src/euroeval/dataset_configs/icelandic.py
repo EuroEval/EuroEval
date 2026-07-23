@@ -237,5 +237,3 @@ ZEBRA_PUZZLE_HARD_IS_CONFIG = DatasetConfig(
     languages=[ICELANDIC],
     unofficial=True,
 )
-
-

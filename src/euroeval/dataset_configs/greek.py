@@ -123,5 +123,3 @@ GREEK_MMLU_CONFIG = DatasetConfig(
     languages=[GREEK],
     unofficial=True,
 )
-
-

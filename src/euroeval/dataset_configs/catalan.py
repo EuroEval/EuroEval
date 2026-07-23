@@ -104,5 +104,3 @@ MULTI_IFEVAL_CA_CONFIG = DatasetConfig(
     val_split=None,
     unofficial=True,
 )
-
-
