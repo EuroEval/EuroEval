@@ -1782,3 +1782,46 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset zebra-puzzles-hard-en
 ```
+
+## Hallucination Detection
+
+### RAGTruth-en
+
+This dataset is an English version of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "prompt": "Summarize the following news within 86 words:\nThe FBI charged a Philadelphia woman on Thursday with trying to travel overseas to fight for ISIS. She's one of three women arrested this week on terror charges. Two New York women were also taken into custody. An FBI complaint cites numerous social media messages dating back to August 2013 that were sent by Keonna Thomas, 30, also known as \"Young Lioness\" and \"Fatayat Al Khilafah.\" One Twitter message said, \"If we truly knew the realities ... we all..."
+}
+```
+
+```json
+{
+  "prompt": "Briefly answer the following question:\nwhat is the difference between tartate and succinate\nBear in mind that your response should be strictly based on the following three passages:\npassage 1:9. Get help from a doctor now ›. Medication duration: Succinate (toprol) is the long acting form of metoprolol where as tartrate (lopressor) is the shorter acting form. Toprol can be taken once a day and Lopressor is usually taken at least twice a day....Read more.Great you're all set!. Get help from a doct..."
+}
+```
+
+```json
+{
+  "prompt": "Instruction:\nWrite an objective overview about the following local business based only on the provided structured data in the JSON format. You should include details and cover the information mentioned in the customers' review. The overview should be 100 - 200 words. Don't make up information. Structured data:\n{'name': 'Benchmark Eatery', 'address': '1201 State St', 'city': 'Santa Barbara', 'state': 'CA', 'categories': 'American (Traditional), American (New), Breakfast & Brunch, Restaurants, Sea..."
+}
+```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-en
+```
