@@ -620,31 +620,19 @@ Here are a few examples from the test split:
 
 ```json
 {
-  "prompt": "Zhrňte nasledujúce správy do 90 slov:\nZástupca Texasu verí, že migranti by mali zaplatiť 2 000 USD za vstup do krajiny\nZástupca Texasu Eddies Morales predložil administratíve zaujímavý návrh týkajúci sa migrantov prekračujúcich južnú hranicu. Jeho okres zahŕňa časti El Pasa, Del Ria a Eagle Pass, ktoré boli niektorými z miest s najväčším prechodom pre migrantov. V rozhovore Morales naznačil, že migranti by mali zaplatiť 2 000 USD za vstup do USA. Argumentoval tým, že by to mohlo vygenerovať významné príjmy a vytvoriť pracovné dohody medzi vládami. Myslíte si, že účtovanie 2 000 USD od migrantov je výhodné pre krajinu?",
-  "answer": "Tu je zhrnutie článku v 92 slovách:\n\nZástupca Morales z Texasu navrhol, aby migranti zaplatili 2 000 USD za vstup do USA. Verí, že to bude výhodná situácia pre všetkých, pretože poskytne pracovné príležitosti migrantom a vygeneruje príjmy pre vládu. Podľa neho, ak by sa implementovalo len v sektore Eagle Pass/Del Rio, plán by mohol vygenerovať 3,2 milióna USD denne a 1,2 miliardy USD ročne.",
-  "labels": []
+  "prompt": "Zhrňte nasledujúce správy do 90 slov:\nZástupca Texasu verí, že migranti by mali zaplatiť 2 000 USD za vstup do krajiny\nZástupca Texasu Eddies Morales predložil administratíve zaujímavý návrh týkajúci sa migrantov prekračujúcich južnú hranicu. Jeho okres zahŕňa časti El Pasa, Del Ria a Eagle Pass, ktoré boli niektorými z miest s najväčším prechodom pre migrantov. V rozhovore Morales naznačil, že migranti by mali zaplatiť 2 000 USD za vstup do USA. Argumentoval tým, že by to mohlo vygenerovať významné príjmy a vytvoriť pracovné dohody medzi vládami. Myslíte si, že účtovanie 2 000 USD od migrantov je výhodné pre krajinu?"
 }
 ```
 
 ```json
 {
-  "prompt": "Stručne odpovedzte na nasledujúcu otázku:\nškvrna od oleja na betónovom vchode\nMajte na pamäti, že vaša odpoveď by mala byť prísne založená na nasledujúcich troch úryvkoch:\núryvok 1: Ak máte škvrny od oleja z vášho auta na betónovom vchode, existuje niekoľko rôznych spôsobov, ako ich odstrániť. V tomto videu porovnávam použitie čističa rúry, čističa rúk Goop a čističa karburátora. Skúste to znova neskôr. Tu je návod, ako odstrániť škvrny od oleja z betónu.\n\núryvok 2: 5. Vyčistite oblasť so škvrnami od oleja vodou z hadice alebo vedra. Pred čistením dlažby umyte akúkoľvek nečistotu a odpadky, ktoré sú v ceste škvrne od oleja na vašom vchode. Avšak nepoužívajte vysokotlakovú hadicu na čistenie postihnutej oblasti, pretože môžete tlačiť olej hlbšie do dlažby.\n\núryvok 3: Bez ohľadu na to, ako veľmi sa snažíte, škvrny od oleja na vašom betónovom vchode sú takmer nemožné vyhnúť sa. Existuje niekoľko metód na čistenie týchto škvŕn, hoci veľkosť rozliatia oleja a čas, ktorý mala škvrna na fixáciu, určujú proces odstraňovania.\n\nAk úryvky neobsahujú potrebné informácie na odpoveď na otázku, prosím odpovedzte s: \"Nie je možné odpovedať na základe poskytnutých úryvkov.\"\noutput:",
-  "answer": "Na základe poskytnutých úryvkov je tu odpoveď na otázku \"Ako odstrániť škvrny od oleja z betónového vchodu?\"\n\nNa odstránenie škvŕn od oleja z betónového vchodu môžete použiť jednu z nasledujúcich metód:\n\n1. Čistič rúry, čistič rúk goop a čistič karburátora (ako je uvedené v Úryvku 1).\n2. Čistič komerčnej kvality aplikovaný štetcom alebo metlou, nasledovaný drhnutím vysokotlakovou umývačkou (ako je opísané v Úryvku 3).\n\nPred začatím čistiaceho procesu sa odporúča umyť akúkoľvek nečistotu alebo odpadky z postihnutej oblasti (Úryvok 2).",
-  "labels": []
+  "prompt": "Stručne odpovedzte na nasledujúcu otázku:\nškvrna od oleja na betónovom vchode\nMajte na pamäti, že vaša odpoveď by mala byť prísne založená na nasledujúcich troch úryvkoch:\núryvok 1: Ak máte škvrny od oleja z vášho auta na betónovom vchode, existuje niekoľko rôznych spôsobov, ako ich odstrániť. V tomto videu porovnávam použitie čističa rúry, čističa rúk Goop a čističa karburátora. Skúste to znova neskôr. Tu je návod, ako odstrániť škvrny od oleja z betónu.\n\núryvok 2: 5. Vyčistite oblasť so škvrnami od oleja vodou z hadice alebo vedra. Pred čistením dlažby umyte akúkoľvek nečistotu a odpadky, ktoré sú v ceste škvrne od oleja na vašom vchode. Avšak nepoužívajte vysokotlakovú hadicu na čistenie postihnutej oblasti, pretože môžete tlačiť olej hlbšie do dlažby.\n\núryvok 3: Bez ohľadu na to, ako veľmi sa snažíte, škvrny od oleja na vašom betónovom vchode sú takmer nemožné vyhnúť sa. Existuje niekoľko metód na čistenie týchto škvŕn, hoci veľkosť rozliatia oleja a čas, ktorý mala škvrna na fixáciu, určujú proces odstraňovania.\n\nAk úryvky neobsahujú potrebné informácie na odpoveď na otázku, prosím odpovedzte s: \"Nie je možné odpovedať na základe poskytnutých úryvkov.\"\noutput:"
 }
 ```
 
 ```json
 {
-  "prompt": "Pokyn:\nNapíšte objektívny prehľad o nasledujúcom miestnom podniku, založený výlučne na poskytnutých štrukturálnych údajoch vo formáte JSON. Mali by ste zahrnúť detaily a pokryť informácie uvedené v recenziách zákazníkov. Prehľad by mal mať 100-200 slov. Nevymýšľajte informácie. Štrukturálne údaje:\n{'názov': 'Vaše Miesto Thajská Reštaurácia', 'adresa': '22 N Milpas St, Ste A', 'mesto': 'Santa Barbara', 'štát': 'CA', 'kategórie': 'Thajská, Reštaurácie'...}\nPrehľad:",
-  "answer": "Samozrejme! Tu je objektívne zhrnutie reštaurácie Your Place Thai na základe poskytnutých štrukturálnych údajov vo formáte JSON:\n\nReštaurácia Your Place Thai je populárna thajská jedáleň situovaná v srdci Santa Barbary v Kalifornii. S hodnotením 4,0 hviezdičky z 5, táto reštaurácia dostala zmiešané recenzie od zákazníkov. Zatiaľ čo niektorí hostia mali negatívne skúsenosti, mnohí iní chválili chutné jedlá a spravodlivé ceny.\n\nJeden recenzent bol nespokojný s dodatočnými poplatkami za omáčky a považoval jedlo za hrozné, čo viedlo k recenzii s 1 hviezdičkou. Avšak iný klient si užil žluté curry a považoval ho za lepšie ako Penang curry, čím mu dal vynikajúcu recenziu s 5 hviezdičkami.",
-  "labels": [
-    {
-      "end": 540,
-      "label": "Evident Baseless Info",
-      "start": 470
-    }
-  ]
+  "prompt": "Pokyn:\nNapíšte objektívny prehľad o nasledujúcom miestnom podniku, založený výlučne na poskytnutých štrukturálnych údajoch vo formáte JSON. Mali by ste zahrnúť detaily a pokryť informácie uvedené v recenziách zákazníkov. Prehľad by mal mať 100-200 slov. Nevymýšľajte informácie. Štrukturálne údaje:\n{'názov': 'Vaše Miesto Thajská Reštaurácia', 'adresa': '22 N Milpas St, Ste A', 'mesto': 'Santa Barbara', 'štát': 'CA', 'kategórie': 'Thajská, Reštaurácie'...}\nPrehľad:"
 }
 ```
 
