@@ -83,6 +83,15 @@ MULTI_IFEVAL_SR_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+RAGTRUTH_SR_CONFIG = DatasetConfig(
+    name="ragtruth-sr",
+    pretty_name="RAGTruth-sr",
+    source="EuroEval/ragtruth-translated-hallucinations-sr-mini",
+    task=HALLU,
+    languages=[SERBIAN],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -92,15 +101,5 @@ INCLUDE_SR_CONFIG = DatasetConfig(
     source="EuroEval/include-sr-mini",
     task=KNOW,
     languages=[SERBIAN],
-    unofficial=True,
-)
-
-RAGTRUTH_SR_CONFIG = DatasetConfig(
-    name="ragtruth-sr",
-    pretty_name="RAGTruth-sr",
-    source="EuroEval/ragtruth-translated-hallucinations-sr-mini",
-    task=HALLU,
-    languages=[SERBIAN],
-    train_split=None,
     unofficial=True,
 )

@@ -84,9 +84,6 @@ MULTI_IFEVAL_RO_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-
-# Unofficial datasets ###
-
 RAGTRUTH_RO_CONFIG = DatasetConfig(
     name="ragtruth-ro",
     pretty_name="RAGTruth-ro",
@@ -94,5 +91,4 @@ RAGTRUTH_RO_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[ROMANIAN],
     train_split=None,
-    unofficial=True,
 )
