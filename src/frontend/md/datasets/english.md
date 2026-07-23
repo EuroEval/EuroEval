@@ -1800,9 +1800,25 @@ The hallucination detection is performed using the
 hallucination at the token level. The metric reported is the hallucination rate,
 computed as the ratio of hallucinated tokens to total tokens in the generated answers.
 
-**Note:** Example placeholders will be replaced with real examples from the
-`EuroEval/ragtruth-translated-hallucinations-en-mini` dataset once it is uploaded to
-Hugging Face.
+Here are a few examples (coming later):
+
+```json
+{
+  "prompt": "(coming later)"
+}
+```
+
+```json
+{
+  "prompt": "(coming later)"
+}
+```
+
+```json
+{
+  "prompt": "(coming later)"
+}
+```
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information):
