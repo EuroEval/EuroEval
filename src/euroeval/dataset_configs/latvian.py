@@ -84,6 +84,15 @@ MULTI_IFEVAL_LV_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+RAGTRUTH_LV_CONFIG = DatasetConfig(
+    name="ragtruth-lv",
+    pretty_name="RAGTruth-lv",
+    source="EuroEval/ragtruth-translated-hallucinations-lv-mini",
+    task=HALLU,
+    languages=[LATVIAN],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -103,15 +112,5 @@ WINOGRANDE_LV_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[LATVIAN],
     labels=["a", "b"],
-    unofficial=True,
-)
-
-RAGTRUTH_LV_CONFIG = DatasetConfig(
-    name="ragtruth-lv",
-    pretty_name="RAGTruth-lv",
-    source="EuroEval/ragtruth-translated-hallucinations-lv-mini",
-    task=HALLU,
-    languages=[LATVIAN],
-    train_split=None,
     unofficial=True,
 )

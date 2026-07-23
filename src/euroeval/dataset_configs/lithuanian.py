@@ -83,6 +83,15 @@ MULTI_IFEVAL_LT_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+RAGTRUTH_LT_CONFIG = DatasetConfig(
+    name="ragtruth-lt",
+    pretty_name="RAGTruth-lt",
+    source="EuroEval/ragtruth-translated-hallucinations-lt-mini",
+    task=HALLU,
+    languages=[LITHUANIAN],
+    train_split=None,
+)
+
 # Unofficial datasets ###
 
 LITHUANIAN_EMOTIONS_CONFIG = DatasetConfig(
@@ -100,15 +109,5 @@ INCLUDE_LT_CONFIG = DatasetConfig(
     source="EuroEval/include-lt-mini",
     task=KNOW,
     languages=[LITHUANIAN],
-    unofficial=True,
-)
-
-RAGTRUTH_LT_CONFIG = DatasetConfig(
-    name="ragtruth-lt",
-    pretty_name="RAGTruth-lt",
-    source="EuroEval/ragtruth-translated-hallucinations-lt-mini",
-    task=HALLU,
-    languages=[LITHUANIAN],
-    train_split=None,
     unofficial=True,
 )

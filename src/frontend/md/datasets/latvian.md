@@ -756,3 +756,58 @@ You can evaluate a model on this dataset as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-lv
 ```
+
+## Hallucination Detection
+
+### RAGTruth-lv
+
+This dataset is a Latvian translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Īsi atbildiet uz sekojošo jautājumu:\nkāpēc tiek izmantots dmso\nŅemiet vērā, ka jūsu atbilde jābalsta tikai uz šiem trim fragmentiem:\nfragments 1: DMSO ir dimetilsulfoksīds, blakusprodukts, pārvēršot kokus papīrā. Tam ir rūpnieciskas izmantošanas kā antifrīzam un kā šķīdinātājam plaša spektra ķīmiskām vielām. Tam ir arī plašs medicīnisko izmantošanas spektrs. Tam ir izcila spēja iekļūt ādā un audos un nonākt asinsritē.\n\nfragments 2: DMSO mazina sāpes, samazina pietūkumu, iekaisumu un daudz ko citu. Skatiet 30 DMSO izmantojumus, sākot no apdegumiem līdz sklerodermai, kā arī norādījumus, blakusparādības, drošību. DMSO sāpju mazināšana visbiežāk tiek izmantota muskuļiem un locītavām. Uzklājot uz ādas, DMSO ir lielisks pretiekaisuma līdzeklis un tam ir daudz izmantošanas iespēju kā vispārējam sāpju mazinātājam. Tas ir izmantots ar dažādu panākumu pakāpi dažādās medicīniskās slimībās. Iespējamās lietojumprogrammas ietver:\n\nfragments 3: DMSO jau sen tiek izmantots, lai veicinātu dziedināšanu. Cilvēki, kuriem tas ir pieejams, bieži to izmanto nelieliem griezumiem un apdegumiem un ziņo, ka atveseļošanās ir ātra. Daži pētījumi ir dokumentējuši DMSO izmantošanu mīksto audu bojājumu, vietējās audu nāves, ādas čūlu un apdegumu gadījumos.18-21.\n\nJa fragmenti nesatur nepieciešamo informāciju, lai atbildētu uz jautājumu, lūdzu, atbildiet ar: \"Nav iespējams atbildēt, pamatojoties uz dotajiem fragmentiem.\"\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Īsi atbildiet uz sekojošo jautājumu:\nkā izņemt plastmasu no drēbju žāvētāja\nŅemiet vērā, ka jūsu atbilde jābalsta tikai uz šiem trim fragmentiem:\nfragments 1:Instrukcijas. Darbiniet žāvētāju parastajā iestatījumā 20 minūtes, lai mīkstinātu plastmasu. Noberziet plastmasu ar koka vai plastmasas lāpstiņu vai krāsas skrāpi, uzmanoties, lai nesabojātu žāvētāja iekšpusi. Uzklājiet 1 līdz 2 tējkarotes nagu lakas noņēmēja uz tīras drānas un berzējiet plastmasu, lai to izšķīdinātu. Berzējiet šo vietu ar mitru drānu, lai noskalotu nagu lakas noņēmēju. Sajauciet 1 tējkaroti šķidrā veļas ziepju ar 1 tasi ūdens. Iemērciet tīru drānu šajā šķīdumā un atkal berzējiet šo vietu. Rūpīgi noskalojiet ar drānu, kas iemērkta tīrā ūdenī.ave. Jupiterimages/BananaStock/Getty Images. Plastmasas pārklāts bikses vai zip-top soma, kas noklīdusi, visticamāk, neizkusīs žāvētājā, ja jūs neizmantojat augsto siltuma iestatījumu, bet, ja tas notiks, tas nenodarīs nopietnu kaitējumu. Mūsdienu žāvētāji ir krāsoti ar sintētisku emaljas pārklājumu, kas labi iztur siltumu un nodilumu.\n\nfragments 2:1 Atbilde no šī dalībnieka: Šo plastmasu būs ārkārtīgi grūti noņemt. Jūs varat mēģināt sakarsēt plastmasu ar matu žāvētāju vai siltuma pistoli. Kad plastmasa ir sakarsēta, jūs varat mēģināt to nolobīt. Varbūt jums neizdosies noņemt visu plastmasu. Ja nē, jums būs jāaizstāj bumbu vai viss žāvētājs. Ja vēlaties nomainīt bumbu, iesaku piezvanīt servisa tehniķim, lai veiktu šāda veida remontu. Kad plastmasa ir sakarsēta, jūs varat mēģināt to nolobīt. Varbūt jums neizdosies noņemt visu plastmasu. Ja nē, jums būs jāaizstāj bumbu vai viss žāvētājs. Ja vēlaties nomainīt bumbu, iesaku piezvanīt servisa tehniķim, lai veiktu šāda veida remontu.\n\nfragments 3: Noņemiet ledu un, izmantojot plastmasas skrāpi, norakstiet sacietējušo plastmasu no spolēm. Iemērciet drānu acetona bāzes nagu lakas noņēmējā un atstājiet to uz elementa 5 minūtes. Izmantojiet šo drānu, lai skrubētu atlikušās plastmasas no elementa, pēc tam noslaukiet spolēs ar tīru, mitru drānu. Noņemiet jebkādu atlikušās nagu lakas noņēmēja paliekas ar drānu, kas iemērkta silta ūdens un trauku ziepju šķīdumā, pēc tam noskalojiet spolēs ar ūdeni. izmantojiet šo drānu, lai skrubētu atlikušās plastmasas no elementa, pēc tam noslaukiet spolēs ar tīru, mitru drānu. Noņemiet jebkādu atlikušās nagu lakas noņēmēja paliekas ar drānu, kas iemērkta silta ūdens un trauku ziepju šķīdumā, pēc tam noskalojiet spolēs ar ūdeni.\n\nJa fragmenti nesatur nepieciešamo informāciju, lai atbildētu uz jautājumu, lūdzu, atbildiet ar: \"Nav iespējams atbildēt, pamatojoties uz dotajiem fragmentiem.\"\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Norādījums:\nUzrakstiet objektīvu pārskatu par šādu vietējo uzņēmumu, balstoties tikai uz sniegtajiem strukturētajiem datiem JSON formātā. Jums jāiekļauj detaļas un jāaptver informācija, kas minēta klientu atsauksmēs. Pārskats jāveido 100 - 200 vārdu garumā. Neizdomājiet informāciju. Strukturētie dati:\n{'nosaukums': 'Three Pickles', 'adrese': '420 S Fairview Ave', 'pilsēta': 'Goleta', 'valsts': 'CA', 'kategorijas': 'Sviestmaizes, Restorāni, Delikatešu veikali', 'darba laiki': {'Pirmdiena': '10:30-15:0', 'Otrdiena': '10:30-15:0', 'Trešdiena': '10:30-15:0', 'Ceturtdiena': '10:30-15:0', 'Piektdiena': '10:30-15:0'}, 'īpašības': {'UzņēmumaStāvvieta': {'garāža': False, 'ielas': False, 'apstiprināta': False, 'stāvieta': True, 'valets': False}, 'RestorāniRezervācijas': False, 'ĀraSēdvietas': True, 'WiFi': 'nē', 'RestorāniLīdziŅemšanai': True, 'RestorāniLabiGrupām': True, 'Mūzika': None, 'Gaisotne': {'romantiska': False, 'intīma': False, 'tūristu': False, 'hipster': False, 'divey': False, 'klasiska': False, 'modernā': False, 'augstvērtīga': False, 'ikdienišķa': True}}, 'uzņēmuma_zvaigznes': 4.0, 'atsauksmju_informācija': [{'atsauksmju_zvaigznes': 5.0, 'atsauksmju_datums': '2021-07-08 22:47:35', 'atsauksmju_teksts': \"Three Pickles, nevainīgs nosaukums Goleta filiālei ar vietējo nodaļu Santa Barbaras centrā, piedāvā sviestmaizi ar nosaukumu The Goucho. Un tas, draugi, ir tikai sapņa sākums. \\n\\nŠī sviestmaize varētu būt pati augstākā no karstajām, netīrajām, sierīgajām, ceptajām liellopu gaļas radībām, ko esmu kādreiz nobaudījis. Grūti aprakstīt gaļas, siera un ļoti maz cita - ir izvēles paprika tiem, kas tās vēlas - kaudze uz plānas, kraukšķīgas un neaptverami garšīgas torpēdas maizes. \\n\\nŠeit ir jauki cilvēki, kas ļoti smagi strādā, lai apkalpotu lielu un acīmredzami pieredzējušu (bez vārdu spēles) atkārtotu vietējo apmeklētāju pūli. Un domāt, ka es to nekad nebūtu atradis bez draugu mudināšanas, kuru mājas kalpo kā patvērums no tuksneša karstuma. \\n\\nIzaicinājums: atturēties vismaz dažas dienas pirms atgriešanās vēl vienā iegrimtā sviestmaizes nirvānā.\"}, {'atsauksmju_zvaigznes': 4.0, 'atsauksmju_datums': '2021-06-03 19:26:23', 'atsauksmju_teksts': 'Mana sieva un es vienmēr ceram, ka Three Pickles sviestmaizes veikals būs atvērts, kad mēs lidojam uz Santa Barbaras lidostu. Šodien tas bija atvērts, un viņi vienmēr piegādā lielisku sviestmaizi! Ātra apkalpošana, daudz iespēju, noteikti ir vērts atrast. Atvērts tikai no plkst. 10:00 līdz 15:00 no pirmdienas līdz piektdienai.'}, {'atsauksmju_zvaigznes': 5.0, 'atsauksmju_datums': '2021-05-25 04:18:36', 'atsauksmju_teksts': \"MAN PATĪK ŠĪ VIETA. Es šeit nāku pusdienu pārtraukumos darbā ik pa laikam, un tas ir tāds prieks. Es pirmo reizi pasūtīju Goodland klubu, un tagad es nevaru pasūtīt neko citu, jo tas ir tik garšīgs!! Mans līgavainis ir ēdis gaļas bumbiņu sub, pastrami un kubiešu. Viņš tos visus mīl, bet kubiešu uzvara. Ļoti priecīga atmosfēra arī.\"}]\nPārskats:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-lv
+```

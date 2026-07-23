@@ -106,6 +106,15 @@ ZEBRA_PUZZLE_EASY_SV_CONFIG = DatasetConfig(
     languages=[SWEDISH],
 )
 
+RAGTRUTH_SV_CONFIG = DatasetConfig(
+    name="ragtruth-sv",
+    pretty_name="RAGTruth-sv",
+    source="EuroEval/ragtruth-translated-hallucinations-sv-mini",
+    task=HALLU,
+    languages=[SWEDISH],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -233,15 +242,5 @@ ZEBRA_PUZZLE_HARD_SV_CONFIG = DatasetConfig(
     source="EuroEval/zebra-puzzles-hard-sv",
     task=LOGIC,
     languages=[SWEDISH],
-    unofficial=True,
-)
-
-RAGTRUTH_SV_CONFIG = DatasetConfig(
-    name="ragtruth-sv",
-    pretty_name="RAGTruth-sv",
-    source="EuroEval/ragtruth-translated-hallucinations-sv-mini",
-    task=HALLU,
-    languages=[SWEDISH],
-    train_split=None,
     unofficial=True,
 )

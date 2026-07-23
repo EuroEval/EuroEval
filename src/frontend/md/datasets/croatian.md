@@ -603,3 +603,58 @@ You can evaluate a model on this dataset as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-hr
 ```
+
+## Hallucination Detection
+
+### RAGTruth-hr
+
+This dataset is a Croatian translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Upute:\nNapišite objektivan pregled o sljedećem lokalnom poslovanju temeljen isključivo na dostavljenim strukturiranim podacima u JSON formatu. Trebali biste uključiti detalje i obraditi informacije navedene u recenzijama kupaca. Pregled bi trebao biti dug 100 - 200 riječi. Ne izmišljajte informacije. Strukturirani podaci:\n{'ime': 'Crushcakes & Co', 'adresa': '1150 Coast Village Rd', 'grad': 'Montecito', 'država': 'CA', 'kategorije': 'Restorani, Kafići, Hrana, Pekarnice, Cupcakes, Kava i čaj, Deserti', 'radno vrijeme': {'Ponedjeljak': '7:30-17:0', 'Utorak': '7:30-17:0', 'Srijeda': '7:30-17:0', 'Četvrtak': '7:30-17:0', 'Petak': '7:30-17:0', 'Subota': '7:30-17:0', 'Nedjelja': '7:30-17:0'}, 'atributi': {'PoslovniParking': None, 'RestoraniRezervacije': False, 'VanjskoSjedenje': True, 'WiFi': 'besplatno', 'RestoraniZaPonijeti': True, 'RestoraniDobroZaGrupe': False, 'Glazba': None, 'Ambijent': None}, 'zvijezde_poslovanja': 4.5, 'informacije_o_recenzijama': [{'zvijezde_recenzije': 5.0, 'datum_recenzije': '2015-09-14 17:52:35', 'tekst_recenzije': 'Želite li vidjeti kako se moje unutarnje dijete ponaša kao budala pred svima, oči velike kao Marge? Pustite me u ovo mjesto! Ukusne slatke poslastice koje natjeraju moje malene okusne pupoljke da vrište! Hansel i Gretel bi riskirali svoje male živote za ove poslastice!!!!'}, {'zvijezde_recenzije': 4.0, 'datum_recenzije': '2015-09-08 02:17:26', 'tekst_recenzije': 'Latte su bili ukusni s zdravim mliječnim alternativama. šarmantno, ali malo mjesto za jelo i slatki cupcakes također'}, {'zvijezde_recenzije': 5.0, 'datum_recenzije': '2015-07-23 18:02:48', 'tekst_recenzije': 'Najbolji hamburger u gradu. Pretpostavljajući da ih volite onako kako ja: čokoladna torta, prekrivena kremom, bez mesnih peciva i povrća.'}]\nPregled:"
+}
+```
+
+```json
+{
+  "prompt": "Kratko odgovorite na sljedeće pitanje:\nšto je tranzistor i kako radi\nImajte na umu da vaš odgovor treba biti strogo temeljen na sljedeće tri odlomka:\nodlomak 1: Dizajn tranzistora omogućuje mu da funkcionira kao pojačalo ili prekidač. To se postiže korištenjem male količine električne energije za kontrolu vrata na mnogo većem izvoru električne energije, slično kao što se okrene ventil za kontrolu opskrbe vodom. Osnova privlači te elektrone iz emitera jer ima pozitivniji napon od emitera. Ovaj pokret elektrona stvara protok električne energije kroz tranzistor. Struja prolazi od emitera do kolektora kroz osnovu.\n\nodlomak 2: Tranzistor je minijaturna elektronička komponenta koja može raditi dva različita posla. Može raditi ili kao pojačalo ili kao prekidač: 1 Kada radi kao pojačalo, prima malu električnu struju na jednom kraju (ulazna struja) i proizvodi mnogo veću električnu struju (izlazna struja) na drugom. 2 Tranzistori također mogu raditi kao prekidači. Obično, rupe u bazi djeluju kao prepreka, sprječavajući bilo kakav značajan protok struje od emitera do kolektora dok je tranzistor u svom isključenom stanju. Tranzistor radi kada elektroni i rupe počnu kretati preko dva spoja između n-tipa i p-tipa silicija.\n\nodlomak 3: Tranzistor je poluvodički uređaj koji se koristi za pojačavanje i prebacivanje elektroničkih signala i električne energije. Sastoji se od poluvodičkog materijala s najmanje tri priključka za povezivanje s vanjskim krugom. Kolektorska struja je otprilike β (dobitak struje zajedničkog emitera) puta struja baze. Obično je veća od 100 za tranzistore malih signala, ali može biti manja kod tranzistora dizajniranih za visokonaponske primjene. Za razliku od tranzistora s poljima (vidi dolje), BJT je uređaj s niskim ulaznim otporom.\n\nU slučaju da odlomci ne sadrže potrebne informacije za odgovor na pitanje, molimo odgovorite s: \"Nemoguće je odgovoriti na temelju danih odlomaka.\"\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Kratko odgovorite na sljedeće pitanje:\nprednosti msm praha\nImajte na umu da vaš odgovor treba biti strogo temeljen na sljedeće tri odlomka:\nodlomak 1: MSM koristi tijelu pomažući da se kisik učinkovitije unese u krv uz istu količinu rada. 3. MSM prah pomaže povećati energiju. Još jedna prednost MSM-a je da razine energije rastu jer MSM pomaže da stanične membrane postanu propusnije.\n\nodlomak 2: 1. MSM prah koristi našim tijelima pomažući apsorbirati više hranjivih tvari (vitamina i minerala). Koenzim Q10 se spaja s MSM-om, što znači da je za tijelo potrebno imati MSM (sumpor) kako bi u potpunosti iskoristilo ovu hranjivu tvar.\n\nodlomak 3: MSM prah pomaže ublažiti mišićne bolove i nelagodu. 7. MSM prah koristi tijelu smanjujući upalu zbog ozljede ili upalnih bolesti kao što je artritis. Kada je tlak vode unutar stanice veći od tlaka vode izvan stanice, dolazi do upale i oticanja.\n\nU slučaju da odlomci ne sadrže potrebne informacije za odgovor na pitanje, molimo odgovorite s: \"Nemoguće je odgovoriti na temelju danih odlomaka.\"\noutput:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-hr
+```

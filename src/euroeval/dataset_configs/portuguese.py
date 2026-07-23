@@ -97,6 +97,15 @@ VALEU_PT_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+RAGTRUTH_PT_CONFIG = DatasetConfig(
+    name="ragtruth-pt",
+    pretty_name="RAGTruth-pt",
+    source="EuroEval/ragtruth-translated-hallucinations-pt-mini",
+    task=HALLU,
+    languages=[PORTUGUESE],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -146,16 +155,6 @@ MULTILOKO_PT_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     val_split=None,
-    unofficial=True,
-)
-
-RAGTRUTH_PT_CONFIG = DatasetConfig(
-    name="ragtruth-pt",
-    pretty_name="RAGTruth-pt",
-    source="EuroEval/ragtruth-translated-hallucinations-pt-mini",
-    task=HALLU,
-    languages=[PORTUGUESE],
-    train_split=None,
     unofficial=True,
 )
 

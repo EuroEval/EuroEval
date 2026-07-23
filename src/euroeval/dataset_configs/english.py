@@ -5,6 +5,7 @@ from ..languages import ENGLISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
+    HALLU,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -219,4 +220,13 @@ ZEBRA_PUZZLE_HARD_EN_CONFIG = DatasetConfig(
     task=LOGIC,
     languages=[ENGLISH],
     unofficial=True,
+)
+
+RAGTRUTH_EN_CONFIG = DatasetConfig(
+    name="ragtruth-en",
+    pretty_name="RAGTruth-en",
+    source="EuroEval/ragtruth-translated-hallucinations-en-mini",
+    task=HALLU,
+    languages=[ENGLISH],
+    train_split=None,
 )

@@ -1428,3 +1428,58 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-es
 ```
+
+## Hallucination Detection
+
+### RAGTruth-es
+
+This dataset is a Spanish translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Resume las siguientes noticias en 116 palabras:\nHace setenta años, Anne Frank murió de tifus en un campo de concentración nazi a la edad de 15 años. Solo dos semanas después de su supuesta muerte el 31 de marzo de 1945, el campo de concentración de Bergen-Belsen donde había estado prisionera fue liberado, un momento que mostró lo cerca que estuvo la diarista judía de sobrevivir al Holocausto. Pero una nueva investigación publicada por la Casa de Ana Frank muestra que Anne y su hermana mayor, Margot Frank, murieron al menos un mes antes de lo que se pensaba. Los investigadores reexaminaron archivos de la Cruz Roja, el Servicio Internacional de Capacitación y el Memorial de Bergen-Belsen, junto con testimonios de sobrevivientes. Concluyeron que Anne y Margot probablemente no sobrevivieron hasta marzo de 1945, contradiciendo la fecha de muerte que había sido determinada anteriormente por las autoridades holandesas. En 1944, Anne y otros siete que se escondían en el anexo secreto de Ámsterdam fueron arrestados y enviados al campo de concentración Auschwitz-Birkenau. La última entrada de Anne Frank. Ese mismo año, Anne y Margot fueron separadas de su madre y enviadas a trabajar como mano de obra esclava en el campo de Bergen-Belsen en Alemania. Los días en el campo estaban llenos de terror y miedo, dijeron testigos. Las hermanas permanecieron en una sección del campo superpoblado sin iluminación, con poca agua y sin letrinas. Dormían sobre paja infestada de piojos y tormentas violentas desgarraban las tiendas, según los investigadores. Al igual que los otros prisioneros, las hermanas soportaban largas horas en el pase de lista. Su compañera de clase, Nannette Blitz, recordó haber visto a Anne allí en diciembre de 1944: \"No era más que un esqueleto para entonces. Estaba envuelta en una manta; no podía soportar usar su ropa porque estaba llena de piojos.\" Escucha a los amigos de Anne Frank describir su experiencia en el campo de concentración. A medida que los rusos avanzaban, el campo de concentración de Bergen-Belsen se volvió aún más concurrido, trayendo más enfermedades. Un brote mortal de tifus causó miles de muertes cada día. El tifus es una enfermedad infecciosa causada por piojos que estalla en lugares con mala higiene. La enfermedad causa fiebre alta, escalofríos y erupciones en la piel. \"Debido a los piojos que infestaban la paja de la cama y su ropa, Anne estuvo expuesta al principal portador del tifus epidémico durante un período prolongado\", escribieron los investigadores del museo. Concluyeron que es poco probable que las hermanas sobrevivieran hasta marzo, porque testigos en el campo dijeron que ambas tenían síntomas antes del 7 de febrero. \"La mayoría de las muertes causadas por tifus ocurren alrededor de doce días después de que aparecen los primeros síntomas\", escribieron las autoras Erika Prins y Gertjan Broek. Las fechas exactas de la muerte de Anne y Margot siguen sin estar claras. Margot murió antes que Anne. \"Anne nunca perdió la esperanza\", dijo Blitz, su amiga. \"Estaba absolutamente convencida de que sobreviviría.\" Su diario perdura como uno de los libros más populares del mundo. Lee más sobre el primo de Anne Frank, un guardián de su legado.\n\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Resume las siguientes noticias en 116 palabras:\nHace setenta años, Anne Frank murió de tifus en un campo de concentración nazi a la edad de 15 años. Solo dos semanas después de su supuesta muerte el 31 de marzo de 1945, el campo de concentración de Bergen-Belsen, donde había estado encarcelada, fue liberado, un momento que mostró lo cerca que había estado la diarista judía de sobrevivir al Holocausto. Pero una nueva investigación publicada por la Casa de Ana Frank muestra que Anne y su hermana mayor, Margot Frank, murieron al menos un mes antes de lo que se pensaba anteriormente. Los investigadores reexaminaron archivos de la Cruz Roja, el Servicio Internacional de Capacitación y el Memorial de Bergen-Belsen, junto con testimonios de sobrevivientes. Concluyeron que Anne y Margot probablemente no sobrevivieron hasta marzo de 1945, contradiciendo la fecha de muerte que había sido determinada previamente por las autoridades holandesas. En 1944, Anne y otros siete que se ocultaban en el anexo secreto de Ámsterdam fueron arrestados y enviados al campo de concentración de Auschwitz-Birkenau. La última entrada de Anne Frank. Ese mismo año, Anne y Margot fueron separadas de su madre y enviadas a trabajar como mano de obra esclava en el campo de Bergen-Belsen en Alemania. Los días en el campo estaban llenos de terror y miedo, dijeron testigos. Las hermanas permanecieron en una sección del campo abarrotado sin iluminación, con poca agua y sin letrinas. Dormían sobre paja infestada de piojos y tormentas violentas desgarraban las tiendas, según los investigadores. Al igual que los otros prisioneros, las hermanas soportaron largas horas en el conteo. Su compañera de clase, Nannette Blitz, recordó haber visto a Anne allí en diciembre de 1944: \"No era más que un esqueleto para entonces. Estaba envuelta en una manta; no podía soportar usar su ropa porque estaba llena de piojos.\" Escucha a los amigos de Anne Frank describir su experiencia en el campo de concentración. A medida que los rusos avanzaban más, el campo de concentración de Bergen-Belsen se volvió aún más concurrido, trayendo más enfermedades. Un brote mortal de tifus causó miles de muertes cada día. El tifus es una enfermedad infecciosa causada por piojos que brota en lugares con mala higiene. La enfermedad causa fiebre alta, escalofríos y erupciones en la piel. \"Debido a los piojos que infestaban la paja de la cama y su ropa, Anne estuvo expuesta al principal portador del tifus epidémico durante un período prolongado\", escribieron los investigadores del museo. Concluyeron que es poco probable que las hermanas sobrevivieran hasta marzo, porque los testigos en el campo dijeron que ambas hermanas tenían síntomas antes del 7 de febrero. \"La mayoría de las muertes causadas por tifus ocurren alrededor de doce días después de que aparecen los primeros síntomas\", escribieron los autores Erika Prins y Gertjan Broek. Las fechas exactas de la muerte de Anne y Margot siguen sin estar claras. Margot murió antes que Anne. \"Anne nunca perdió la esperanza\", dijo Blitz, su amiga. \"Estaba absolutamente convencida de que sobreviviría.\" Su diario perdura como uno de los libros más populares del mundo. Lee más sobre el primo de Anne Frank, un guardián de su legado.\n\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Resume las siguientes noticias en 116 palabras:\nHace setenta años, Anne Frank murió de tifus en un campo de concentración nazi a la edad de 15 años. Solo dos semanas después de su supuesta muerte el 31 de marzo de 1945, el campo de concentración de Bergen-Belsen, donde había estado encarcelada, fue liberado, un momento que mostró cuán cerca había estado la diarista judía de sobrevivir al Holocausto. Pero una nueva investigación publicada por la Casa de Ana Frank muestra que Anne y su hermana mayor, Margot Frank, murieron al menos un mes antes de lo que se pensaba. Los investigadores reexaminaron archivos de la Cruz Roja, el Servicio Internacional de Capacitación y el Memorial de Bergen-Belsen, junto con testimonios de sobrevivientes. Concluyeron que Anne y Margot probablemente no sobrevivieron hasta marzo de 1945, contradiciendo la fecha de muerte que habían determinado anteriormente las autoridades holandesas. En 1944, Anne y siete personas más que se escondían en el anexo secreto de Ámsterdam fueron arrestadas y enviadas al campo de concentración de Auschwitz-Birkenau. La última entrada de Anne Frank. Ese mismo año, Anne y Margot fueron separadas de su madre y enviadas a trabajar como mano de obra esclava en el campo de Bergen-Belsen en Alemania. Los días en el campo estaban llenos de terror y miedo, dijeron testigos. Las hermanas permanecieron en una sección del campo abarrotado sin iluminación, con poca agua y sin letrinas. Dormían sobre paja infested de piojos y tormentas violentas destrozaban las tiendas, según los investigadores. Al igual que los otros prisioneros, las hermanas soportaron largas horas en el recuento. Su compañera de clase, Nannette Blitz, recordó haber visto a Anne allí en diciembre de 1944: \"No era más que un esqueleto para entonces. Estaba envuelta en una manta; no podía soportar usar su ropa porque estaba llena de piojos.\" Escucha a los amigos de Anne Frank describir su experiencia en el campo de concentración. A medida que los rusos avanzaban más, el campo de concentración de Bergen-Belsen se volvió aún más abarrotado, trayendo más enfermedades. Un brote mortal de tifus causó miles de muertes cada día. El tifus es una enfermedad infecciosa causada por piojos que se desata en lugares con mala higiene. La enfermedad causa fiebre alta, escalofríos y erupciones cutáneas. \"Debido a los piojos que infestaban la paja y su ropa, Anne estuvo expuesta al principal portador del tifus epidémico durante un período prolongado,\" escribieron los investigadores del museo. Concluyeron que es poco probable que las hermanas sobrevivieran hasta marzo, porque los testigos en el campo dijeron que ambas hermanas tenían síntomas antes del 7 de febrero. \"La mayoría de las muertes causadas por tifus ocurren alrededor de doce días después de que aparecen los primeros síntomas,\" escribieron las autoras Erika Prins y Gertjan Broek. Las fechas exactas de muerte de Anne y Margot siguen siendo inciertas. Margot murió antes que Anne. \"Anne nunca perdió la esperanza,\" dijo Blitz, su amiga. \"Estaba absolutamente convencida de que sobreviviría.\" Su diario perdura como uno de los libros más populares del mundo. Lee más sobre el primo de Anne Frank, un guardián de su legado.\n\noutput:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-es
+```

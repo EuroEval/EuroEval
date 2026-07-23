@@ -948,3 +948,58 @@ You can evaluate a model on this dataset as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-ro
 ```
+
+## Hallucination Detection
+
+### RAGTruth-ro
+
+This dataset is a Romanian translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Rezumați următoarea știre în 90 de cuvinte:\nReprezentantul Texasului crede că migranții ar trebui să plătească 2.000 USD pentru a intra în țară\nReprezentantul Texasului, Eddies Morales, a făcut o propunere interesantă administrației privind migranții care trec frontiera de sud. Districtul său cuprinde părți din El Paso, Del Rio și Eagle Pass, care au fost unele dintre punctele cu cea mai mare traversare pentru migranți. Într-un interviu, Morales a sugerat că migranții ar trebui să plătească 2.000 USD pentru a intra în SUA. El a argumentat că acest lucru ar putea genera venituri semnificative și crea acorduri de lucru între guverne. Credeți că taxarea migranților cu 2.000 USD este avantajoasă pentru țară?"
+}
+```
+
+```json
+{
+  "prompt": "Răspundeți scurt la următoarea întrebare:\npata de ulei pe intrarea de beton\nRețineți că răspunsul dvs. trebuie să se bazeze strict pe următoarele trei extrase:\nextras 1: Dacă aveți pete de ulei de la mașină pe o intrare de beton, există câteva moduri diferite de a le îndepărta. În acest videoclip, compar utilizarea curățitorului de cuptor, curățitorului de mâini Goop și curățitorului de carburator. Încercați din nou mai târziu. Iată cum să îndepărtați petele de ulei de pe beton.\n\nextras 2: 5. Curățați zona cu pete de ulei cu apă de la un furtun sau o găleată. Înainte de a curăța pavajul, spălați orice murdărie și resturi care sunt în calea petei de ulei de pe intrarea dvs. Cu toate acestea, nu utilizați un furtun de înaltă presiune pentru a curăța zona afectată, deoarece puteți împinge uleiul mai adânc în pavaj.\n\nextras 3: Nu contează cât de mult încercați, petele de ulei pe intrarea de beton sunt aproape imposibil de evitat. Există mai multe metode pentru a curăța aceste pete, deși dimensiunea vărsării de ulei și timpul pe care pata l-a avut să se fixeze determină procesul de îndepărtare.\n\nDacă extrasele nu conțin informațiile necesare pentru a răspunde la întrebare, vă rugăm să răspundeți cu: \"Nu se poate răspunde pe baza extraselor furnizate.\"\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Instrucțiune:\nScrieți o recenzie obiectivă despre următoarea afacere locală, bazându-vă exclusiv pe datele structurale furnizate în format JSON. Ar trebui să includeți detalii și să acoperiți informațiile menționate în recenziile clienților. Recenzia ar trebui să aibă 100-200 de cuvinte. Nu inventați informații. Date structurale:\n{'nume': 'Locul Tău Restaurant Thai', 'adresă': '22 N Milpas St, Ste A', 'oraș': 'Santa Barbara', 'stat': 'CA', 'categorii': 'Thai, Restaurante'...}\nRecenzie:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-ro
+```

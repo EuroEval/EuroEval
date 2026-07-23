@@ -1782,3 +1782,81 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset zebra-puzzles-hard-en
 ```
+
+## Hallucination Detection
+
+### RAGTruth-en
+
+This dataset is an English version of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Briefly answer the following question:
+how to fold a quilt
+Bear in mind that your response should be strictly based on the following three passages:
+passage 1:Begin Sewing Binding to the Quilt Use my step-by-step instructions to learn how to sew mitered binding to the edges of a quilt. Trim the quilt sandwich to remove excess batting and backing. If the quilt top is skewed, fold back the other two layers and use a rotary ruler to very carefully square up the quilt.
+
+passage 2:The Timepiece Quilt used in this tutorial measures 56 inches by 70 inches, but this method can be used on any size quilt. 1  Step 1: Lay your quilt on a bed, table or other flat surface. 2  Step 2: Fold the lower right corner up toward the center of the quilt making sure the fold is on the bias.
+
+passage 3:Step 3: Fold the lower left corner up toward the center of the quilt making sure the fold is on the bias. Step 4: Fold the top left corner down toward the center of the quilt making sure the fold is on the bias. Step 5: Making sure the fold is on the bias, fold the top right corner down toward the center of the quilt.
+
+In case the passages do not contain the necessary information to answer the question, please reply with: \"Unable to answer based on given passages.\"
+output:"
+}
+```
+
+```json
+{
+  "prompt": "Briefly answer the following question:
+how to do employee schedules
+Bear in mind that your response should be strictly based on the following three passages:
+passage 1:Talk to a lawyer about work laws. In general, you have to pay overtime if you schedule an employee more than 40 hours per week. There may be other laws that you have to follow, such as restrictions when your employees are younger than age 18.
+
+passage 2:You can make an employee schedule using scheduling software, a simple word processing program or a sheet of paper. Here's what to do: 1  Make a list of all your employees and the duties they can perform [source: Coleman 2  ]. Make a chart of the work days and the hours for each day.
+
+passage 3:Print out copies for employees or send schedules to employee email accounts. Keep a master schedule for to make any changes. Microsoft Excel allows you to create a work schedule for multiple employees so you can continue to use the schedule template as your business grows.
+
+In case the passages do not contain the necessary information to answer the question, please reply with: \"Unable to answer based on given passages.\"
+output:"
+}
+```
+
+```json
+{
+  "prompt": "Summarize the following news within 74 words:
+A longtime friend of Joni Mitchell has filed a legal petition seeking to be named the singer-songwriter's conservator. Mitchell, who was inducted into the Rock and Roll Hall of Fame in 1997, was taken to UCLA Medical Center a month ago after being found unconscious in her home. She remains at the hospital, according to Leslie Morris' court petition filed April 28. Morris is described as Mitchell's friend of more than 44 years in the legal documents. Whether the folk and jazz singer is conscious remains a matter of some confusion. In her April 28 petition, Morris says Mitchell is unconscious: \"At this time she (Mitchell) remains unconscious and unable to make any responses, and is therefore unable to provide for any of her personal needs.\" But on Mitchell's website, a statement posted the same day that says it was approved by Morris says Mitchell is alert. \"Contrary to rumors circulating on the Internet today, Joni is not in a coma. Joni is still in the hospital -- but she comprehends, she's alert, and she has her full senses. A full recovery is expected. The document obtained by a certain media outlet simply gives her longtime friend Leslie Morris the authority -- in the absence of 24-hour doctor care -- to make care decisions for Joni once she leaves the hospital.\" When asked about the discrepancy between statements about Mitchell's health on her website and in the legal filing, her publicist, Alisse Kingsley, responded that \"the website\" was accurate. A doctor's capacity declaration stated that Mitchell will likely be unable, due to her medical condition, to attend any court hearings for the next four to six months. Adoring fans are posting their tributes to Mitchell at WeLoveYouJoni.com. Sonya Hamasaki and Cheri Mossburg contributed to this report.
+
+output:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-en
+```

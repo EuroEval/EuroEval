@@ -98,6 +98,15 @@ VALEU_FR_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+RAGTRUTH_FR_CONFIG = DatasetConfig(
+    name="ragtruth-fr",
+    pretty_name="RAGTruth-fr",
+    source="EuroEval/ragtruth-translated-hallucinations-fr-mini",
+    task=HALLU,
+    languages=[FRENCH],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -174,15 +183,5 @@ MULTINRC_FR_CONFIG = DatasetConfig(
     source="EuroEval/multinrc-fr",
     task=KNOW,
     languages=[FRENCH],
-    unofficial=True,
-)
-
-RAGTRUTH_FR_CONFIG = DatasetConfig(
-    name="ragtruth-fr",
-    pretty_name="RAGTruth-fr",
-    source="EuroEval/ragtruth-translated-hallucinations-fr-mini",
-    task=HALLU,
-    languages=[FRENCH],
-    train_split=None,
     unofficial=True,
 )
