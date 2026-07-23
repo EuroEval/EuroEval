@@ -12,6 +12,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added full support for hallucination detection for all languages now, and now marked
   as official.
 
+### Changed
+
+- Swapped official dataset for Croatian: `mmlu-hr` → `include-hr`. The script
+  `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
+  dataset swaps.
+
 ### Fixed
 
 - Fixed `ValueError` in `prepare_train_examples` when the CLS token ID is not present
@@ -48,7 +54,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   Platform](https://platform.alexandra.dk/).
 
 ### Changed
-- Swapped official dataset for Croatian: `mmlu-hr` → `include-hr`. The script `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing dataset swaps.
 
 - Made the Danish linguistic acceptability dataset DaLA the new official such one, over
   the previous ScaLA-da, which has now been demoted to unofficial.
