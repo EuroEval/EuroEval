@@ -36,40 +36,7 @@ from lettucedetect.datasets.hallucination_dataset import (
     HallucinationSample,
 )
 
-from euroeval.languages import (
-    ALBANIAN,
-    BELARUSIAN,
-    BOSNIAN,
-    BULGARIAN,
-    CATALAN,
-    CROATIAN,
-    CZECH,
-    DANISH,
-    DUTCH,
-    ENGLISH,
-    ESTONIAN,
-    FAROESE,
-    FINNISH,
-    FRENCH,
-    GERMAN,
-    GREEK,
-    HUNGARIAN,
-    ICELANDIC,
-    ITALIAN,
-    LATVIAN,
-    LITHUANIAN,
-    NORWEGIAN,
-    POLISH,
-    PORTUGUESE,
-    ROMANIAN,
-    SERBIAN,
-    SLOVAK,
-    SLOVENE,
-    SPANISH,
-    SWEDISH,
-    UKRAINIAN,
-    Language,
-)
+# Language codes (removed euroeval dependency)
 
 # =============================================================================
 # Configuration constants
@@ -80,40 +47,43 @@ SOURCE_INFO_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs
 RESPONSE_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs/heads/main/dataset/response.jsonl"
 
 # Translation settings
-SOURCE_LANG: Language = ENGLISH
-
-TARGET_LANGS: list[Language] = [
-    ALBANIAN,
-    BELARUSIAN,
-    BOSNIAN,
-    BULGARIAN,
-    CATALAN,
-    CROATIAN,
-    CZECH,
-    DANISH,
-    DUTCH,
-    ESTONIAN,
-    FAROESE,
-    FINNISH,
-    FRENCH,
-    GERMAN,
-    GREEK,
-    HUNGARIAN,
-    ICELANDIC,
-    ITALIAN,
-    LATVIAN,
-    LITHUANIAN,
-    NORWEGIAN,
-    POLISH,
-    PORTUGUESE,
-    ROMANIAN,
-    SERBIAN,
-    SLOVAK,
-    SLOVENE,
-    SPANISH,
-    SWEDISH,
-    UKRAINIAN,
+SOURCE_LANG: str = "en"
+DANISH: str = "da"
+TARGET_LANGS: list[str] = [
+    "sq",  # Albanian
+    "be",  # Belarusian
+    "bs",  # Bosnian
+    "bg",  # Bulgarian
+    "ca",  # Catalan
+    "hr",  # Croatian
+    "cs",  # Czech
+    "da",  # Danish
+    "nl",  # Dutch
+    "en",  # English
+    "et",  # Estonian
+    "fo",  # Faroese
+    "fi",  # Finnish
+    "fr",  # French
+    "de",  # German
+    "el",  # Greek
+    "hu",  # Hungarian
+    "is",  # Icelandic
+    "it",  # Italian
+    "lv",  # Latvian
+    "lt",  # Lithuanian
+    "no",  # Norwegian
+    "pl",  # Polish
+    "pt",  # Portuguese
+    "ro",  # Romanian
+    "sr",  # Serbian
+    "sk",  # Slovak
+    "sl",  # Slovene
+    "es",  # Spanish
+    "sv",  # Swedish
+    "uk",  # Ukrainian
 ]
+TARGET_LANGS = ["en"]
+
 # MAX_WORKERS bounds the number of in-flight API requests (each sample issues two:
 # prompt + answer). BATCH_SIZE is kept well above MAX_WORKERS so the worker pool
 # stays saturated between the per-batch save points instead of draining to zero at
@@ -398,7 +368,7 @@ def main() -> None:
     # Translate to each target language
     for target_lang in target_langs:
         logger.info(f"\n{'=' * 60}")
-        logger.info(f"Translating to {target_lang.name} ({target_lang.code})")
+        logger.info(f"Translating to {target_lang}")
         logger.info(f"{'=' * 60}")
 
         _translate_to_language(
@@ -557,7 +527,7 @@ async def run_translation(
     remaining_samples: list[HallucinationSample],
     translated_data: HallucinationData,
     output_file: Path,
-    target_lang: Language,
+    target_lang: str,
     num_processed: int,
     client_config: ClientConfig,
     model: str,
@@ -668,8 +638,8 @@ async def process_batch(
     model: str,
     start_idx: int,
     log_file: Path,
-    source_lang: Language,
-    target_lang: Language,
+    source_lang: str,
+    target_lang: str,
     dataset: str,
 ) -> list[HallucinationSample]:
     """Process a batch of samples concurrently using asyncio.
@@ -726,8 +696,8 @@ async def translate_sample(
     model: str,
     sample_index: int,
     log_file: Path,
-    source_lang: Language,
-    target_lang: Language,
+    source_lang: str,
+    target_lang: str,
     dataset: str,
 ) -> HallucinationSample | None:
     """Translate a single sample.
@@ -813,7 +783,7 @@ async def translate_sample(
             split=sample.split,
             task_type=sample.task_type,
             dataset=t.cast(t.Literal["ragtruth", "ragbench"], dataset),
-            language=target_lang.code,  # ty:ignore[invalid-argument-type]
+            language=target_lang,  # ty:ignore[invalid-argument-type]
         )
     except TruncatedTranslationError as e:
         # Discard the sample. The batch watermark (last_processed_index advances by
@@ -1031,8 +1001,8 @@ async def translate_text(
     semaphore: asyncio.Semaphore,
     model: str,
     task_type: str,
-    source_lang: Language = ENGLISH,
-    target_lang: Language = DANISH,
+    source_lang: str = SOURCE_LANG,
+    target_lang: str = DANISH,
     prompt: bool = False,
 ) -> str:
     """Translate text using OpenAI-compatible HTTP API with automatic retries.
@@ -1067,7 +1037,7 @@ async def translate_text(
         else TRANSLATION_PROMPT
     )
     translation_prompt = translation_prompt.format(
-        source_lang=source_lang.name, target_lang=target_lang.name, text=text
+        source_lang=source_lang, target_lang=target_lang, text=text
     )
 
     # Cap output tokens to prevent runaway repetition loops.
@@ -1192,7 +1162,7 @@ async def translate_text(
 def save_progress(
     translated_data: HallucinationData,
     output_file: Path,
-    target_lang: Language,
+    target_lang: str,
     last_processed_index: int | None = None,
 ) -> None:
     """Save progress to file with backup handling.
@@ -1221,7 +1191,7 @@ def save_progress(
         # Try to save to a backup file
         backup_file = (
             OUTPUT_DIR
-            / f"{DATASET_NAME}_data_{target_lang.code}_backup_{int(time.time())}.json"
+            / f"{DATASET_NAME}_data_{target_lang}_backup_{int(time.time())}.json"
         )
         try:
             backup_file.write_text(json.dumps(data_dict))
@@ -1363,9 +1333,7 @@ def setup_logging(output_dir: Path) -> None:
     logger.addHandler(file_handler)
 
 
-def _push_if_no_samples(
-    translated_data: HallucinationData, target_lang: Language
-) -> None:
+def _push_if_no_samples(translated_data: HallucinationData, target_lang: str) -> None:
     """Push data to hub when there are no samples to translate.
 
     Args:
@@ -1379,17 +1347,17 @@ def _push_if_no_samples(
         push_translated_data_to_hub(
             translated_data=translated_data,
             repo_id=HUB_REPO_ID,
-            config_name=target_lang.code,
+            config_name=target_lang,
             private=HUB_REPO_PRIVATE,
         )
     if PUSH_TEST_SUBSET:
         resolved_test_repo_id = (
-            f"EuroEval/{DATASET_NAME}-translated-hallucinations-{target_lang.code}-mini"
+            f"EuroEval/{DATASET_NAME}-translated-hallucinations-{target_lang}-mini"
         )
         push_test_subset_to_hub(
             translated_data=translated_data,
             repo_id=resolved_test_repo_id,
-            config_name=target_lang.code,
+            config_name=target_lang,
             private=PRIVATE_UPLOAD,
             n=TEST_SUBSET_SIZE,
             validation_n=VALIDATION_SUBSET_SIZE,
@@ -1398,7 +1366,7 @@ def _push_if_no_samples(
 
 def _translate_to_language(
     source_data: HallucinationData | None,
-    target_lang: Language,
+    target_lang: str,
     client_config: ClientConfig,
     model: str,
     max_workers: int,
@@ -1433,10 +1401,9 @@ def _translate_to_language(
             If source data is not available and no cached translation exists.
     """
     # Set up files for this language
-    output_file = OUTPUT_DIR / f"{DATASET_NAME}_data_{target_lang.code}.json"
+    output_file = OUTPUT_DIR / f"{DATASET_NAME}_data_{target_lang}.json"
 
     # Load existing translated data if output file exists (cache)
-    last_processed_index: int | None = None
     if output_file.exists():
         translated_data, last_processed_index = load_check_existing_data(
             output_file=output_file
@@ -1487,40 +1454,56 @@ def _translate_to_language(
             _push_if_no_samples(translated_data, target_lang)
         return
 
-    logger.info(f"Using model: {model}")
-    logger.info(f"Total samples to process: {total_samples}")
-    logger.info(f"Batch size: {batch_size}, Max workers: {max_workers}")
-
-    try:
-        asyncio.run(
-            run_translation(
-                remaining_samples=remaining_samples,
-                translated_data=translated_data,
-                output_file=output_file,
-                target_lang=target_lang,
-                num_processed=num_processed,
-                client_config=client_config,
-                model=model,
-                max_workers=max_workers,
-                batch_size=batch_size,
-            )
-        )
-
-    except KeyboardInterrupt:
-        # run_translation's finally block already saved progress with the correct
-        # watermark; do not re-save here with this scope's stale index (which would
-        # reset the metadata and break discard-aware resume).
+    # English is the source language, so skip translation and just copy the data
+    if target_lang == SOURCE_LANG:
         logger.info(
-            f"Translation interrupted by user. Saved "
-            f"{len(translated_data.samples)} translated samples to {output_file}"
+            "Target language is English (same as source) - copying data without "
+            "translation"
         )
-        return
+        translated_data.samples = list(source_data.samples)
+        for sample in translated_data.samples:
+            sample.language = target_lang  # ty:ignore[invalid-assignment]
+        save_progress(
+            translated_data=translated_data,
+            output_file=output_file,
+            target_lang=target_lang,
+            last_processed_index=len(source_data.samples),
+        )
+        logger.info(f"Copied {len(translated_data.samples)} samples to {output_file}")
+    else:
+        logger.info(f"Using model: {model}")
+        logger.info(f"Total samples to process: {total_samples}")
+        logger.info(f"Batch size: {batch_size}, Max workers: {max_workers}")
 
-    except Exception as e:
-        # Progress was persisted by run_translation's finally block with the
-        # correct watermark; just surface the error.
-        logger.error(f"Unexpected error: {e!s}")
-        raise
+        try:
+            asyncio.run(
+                run_translation(
+                    remaining_samples=remaining_samples,
+                    translated_data=translated_data,
+                    output_file=output_file,
+                    target_lang=target_lang,
+                    num_processed=num_processed,
+                    client_config=client_config,
+                    model=model,
+                    max_workers=max_workers,
+                    batch_size=batch_size,
+                )
+            )
+        except KeyboardInterrupt:
+            # run_translation's finally block already saved progress with the correct
+            # watermark; do not re-save here with this scope's stale index (which would
+            # reset the metadata and break discard-aware resume).
+            logger.info(
+                f"Translation interrupted by user. Saved "
+                f"{len(translated_data.samples)} translated samples to {output_file}"
+            )
+            return
+
+        except Exception as e:
+            # Progress was persisted by run_translation's finally block with the
+            # correct watermark; just surface the error.
+            logger.error(f"Unexpected error: {e!s}")
+            raise
 
     logger.info(
         f"Translation complete. Translated {len(translated_data.samples)} samples."
@@ -1535,18 +1518,18 @@ def _translate_to_language(
         push_translated_data_to_hub(
             translated_data=translated_data,
             repo_id=HUB_REPO_ID,
-            config_name=target_lang.code,
+            config_name=target_lang,
             private=HUB_REPO_PRIVATE,
         )
 
     if PUSH_TEST_SUBSET:
         resolved_test_repo_id = (
-            f"EuroEval/{DATASET_NAME}-translated-hallucinations-{target_lang.code}-mini"
+            f"EuroEval/{DATASET_NAME}-translated-hallucinations-{target_lang}-mini"
         )
         push_test_subset_to_hub(
             translated_data=translated_data,
             repo_id=resolved_test_repo_id,
-            config_name=target_lang.code,
+            config_name=target_lang,
             private=PRIVATE_UPLOAD,
             n=TEST_SUBSET_SIZE,
             validation_n=VALIDATION_SUBSET_SIZE,
