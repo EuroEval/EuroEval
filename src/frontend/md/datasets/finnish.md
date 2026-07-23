@@ -1105,7 +1105,7 @@ The hallucination detection is performed using the
 hallucination at the token level. The metric reported is the hallucination rate,
 computed as the ratio of hallucinated tokens to total tokens in the generated answers.
 
-Here are a few examples from the validation split:
+Here are a few examples from the test split:
 
 ```json
 {
