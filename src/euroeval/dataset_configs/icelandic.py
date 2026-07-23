@@ -107,6 +107,15 @@ ZEBRA_PUZZLE_EASY_IS_CONFIG = DatasetConfig(
     languages=[ICELANDIC],
 )
 
+RAGTRUTH_IS_CONFIG = DatasetConfig(
+    name="ragtruth-is",
+    pretty_name="RAGTruth-is",
+    source="EuroEval/ragtruth-translated-hallucinations-is-mini",
+    task=HALLU,
+    languages=[ICELANDIC],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -229,12 +238,4 @@ ZEBRA_PUZZLE_HARD_IS_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-RAGTRUTH_IS_CONFIG = DatasetConfig(
-    name="ragtruth-is",
-    pretty_name="RAGTruth-is",
-    source="EuroEval/ragtruth-translated-hallucinations-is-mini",
-    task=HALLU,
-    languages=[ICELANDIC],
-    train_split=None,
-    unofficial=True,
-)
+
