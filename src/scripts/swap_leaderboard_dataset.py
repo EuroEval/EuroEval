@@ -1927,8 +1927,7 @@ def _pr_body(old_dataset: str | None, new_datasets: tuple[str, ...]) -> str:
             f"- `{old_dataset}` is demoted to unofficial and {new_ds_str} "
             "promoted to official in the dataset configs and the dataset "
             "documentation, keeping each file's official-first grouping.\n\n"
-            "The leaderboards will pick up the change on the next regeneration.\n\n"
-            "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+            "The leaderboards will pick up the change on the next regeneration."
         )
     else:
         return (
@@ -1940,8 +1939,7 @@ def _pr_body(old_dataset: str | None, new_datasets: tuple[str, ...]) -> str:
             f"- {new_ds_str} promoted to official in the dataset configs "
             "and the dataset documentation, keeping each file's official-first "
             "grouping.\n\n"
-            "The leaderboards will pick up the change on the next regeneration.\n\n"
-            "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+            "The leaderboards will pick up the change on the next regeneration."
         )
 
 
