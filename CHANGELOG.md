@@ -7,6 +7,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added full support for hallucination detection for all languages now, and now marked
+  as official.
+
 ### Fixed
 
 - Fixed `ValueError` in `prepare_train_examples` when the CLS token ID is not present
