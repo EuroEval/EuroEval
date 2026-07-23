@@ -281,12 +281,14 @@ contributing new datasets, your help makes this project better for everyone.
 If you want to cite the framework then feel free to use this:
 
 ```bibtex
-@article{smart2024encoder,
-  title={Encoder vs Decoder: Comparative Analysis of Encoder and Decoder Language Models on Multilingual NLU Tasks},
-  author={Smart, Dan Saattrup and Enevoldsen, Kenneth and Schneider-Kamp, Peter},
-  journal={arXiv preprint arXiv:2406.13469},
-  year={2024}
+@inproceedings{nielsen2025encoder,
+  title={Encoder vs decoder: Comparative analysis of encoder and decoder language models on multilingual NLU tasks},
+  author={Nielsen, Dan Saattrup and Enevoldsen, Kenneth and Schneider-Kamp, Peter},
+  booktitle={Proceedings of the Joint 25th Nordic Conference on Computational Linguistics and 11th Baltic Conference on Human Language Technologies (NoDaLiDa/Baltic-HLT 2025)},
+  pages={561--572},
+  year={2025}
 }
+
 @inproceedings{smart2023scandeval,
   author = {Smart, Dan Saattrup},
   booktitle = {Proceedings of the 24th Nordic Conference on Computational Linguistics (NoDaLiDa)},
