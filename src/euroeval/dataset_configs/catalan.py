@@ -83,6 +83,14 @@ IFEVAL_CA_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+RAGTRUTH_CA_CONFIG = DatasetConfig(
+    name="ragtruth-ca",
+    pretty_name="RAGTruth-ca",
+    source="EuroEval/ragtruth-translated-hallucinations-ca-mini",
+    task=HALLU,
+    languages=[CATALAN],
+    train_split=None,
+)
 
 # Unofficial datasets ###
 
@@ -97,12 +105,4 @@ MULTI_IFEVAL_CA_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-RAGTRUTH_CA_CONFIG = DatasetConfig(
-    name="ragtruth-ca",
-    pretty_name="RAGTruth-ca",
-    source="EuroEval/ragtruth-translated-hallucinations-ca-mini",
-    task=HALLU,
-    languages=[CATALAN],
-    train_split=None,
-    unofficial=True,
-)
+

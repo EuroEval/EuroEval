@@ -48,9 +48,6 @@ MULTI_IFEVAL_BS_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-
-# Unofficial datasets ###
-
 RAGTRUTH_BS_CONFIG = DatasetConfig(
     name="ragtruth-bs",
     pretty_name="RAGTruth-bs",
@@ -58,5 +55,6 @@ RAGTRUTH_BS_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[BOSNIAN],
     train_split=None,
-    unofficial=True,
 )
+
+
