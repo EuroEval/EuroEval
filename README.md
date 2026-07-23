@@ -281,9 +281,9 @@ contributing new datasets, your help makes this project better for everyone.
 If you want to cite the framework then feel free to use this:
 
 ```bibtex
-@inproceedings{nielsen2025encoder,
+@inproceedings{smart2025encoder,
   title={Encoder vs decoder: Comparative analysis of encoder and decoder language models on multilingual NLU tasks},
-  author={Nielsen, Dan Saattrup and Enevoldsen, Kenneth and Schneider-Kamp, Peter},
+  author={Smart, Dan Saattrup and Enevoldsen, Kenneth and Schneider-Kamp, Peter},
   booktitle={Proceedings of the Joint 25th Nordic Conference on Computational Linguistics and 11th Baltic Conference on Human Language Technologies (NoDaLiDa/Baltic-HLT 2025)},
   pages={561--572},
   year={2025}
