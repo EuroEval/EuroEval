@@ -105,8 +105,10 @@ def generate(
         (model_cache_dir / cache_name).unlink(missing_ok=True)
     elif benchmark_config.debug:
         cache_name = (
-            f"{model_config.model_id}-{dataset_config.name}{cache_suffix}"
-            "-model-outputs.json"
+            f"{model_config.model_id}"
+            + (f"-{model_config.param}" if model_config.param else "")
+            + f"-{dataset_config.name}{cache_suffix}"
+            + "-model-outputs.json"
         )
     else:
         cache_name = f"{dataset_config.name}{cache_suffix}-model-outputs.json"
