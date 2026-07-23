@@ -517,6 +517,8 @@ When evaluating generative models, we use the following setup (see the
   {prompt}
   ```
 
+  I.e., we just use the instruction directly as the prompt.
+
 You can evaluate this dataset directly as follows:
 
 ```bash
