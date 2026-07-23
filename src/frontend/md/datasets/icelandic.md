@@ -1722,3 +1722,52 @@ You can evaluate a model on this dataset as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-is
 ```
+
+## Hallucination Detection
+
+### RAGTruth-is
+
+This dataset is an Icelandic translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Leiðbeiningar:\nSkrifaðu hlutlausa yfirlit um eftirfarandi staðbundna fyrirtæki eingöngu byggt á veittum uppbyggðum gögnum í JSON sniði. Þú ættir að fela í sér smáatriði og taka mið af upplýsingunum sem nefndar eru í umsögnum viðskiptavina. Yfirlitið ætti að vera 100 - 200 orð. Ekki búa til upplýsingar. Uppbyggð gögn:\n{'nafn': 'Café Lido', 'heimilisfang': '1111 E Cabrillo Blvd', 'borg': 'Santa Barbara', 'ríki': 'CA', 'flokkar': 'Ítalskt, Kaffihús, Miðjarðarhafs, Veitingastaðir', 'opnunartímar': {'Mánudagur': '7:0-20:0', 'Þriðjudagur': '7:0-20:0', 'Miðvikudagur': '7:0-20:0', 'Fimmtudagur': '7:0-20:0', 'Föstudagur': '7:0-21:0', 'Laugardagur': '7:0-21:0', 'Sunnudagur': '7:0-20:0'}, 'einkenni': {'Fyrirtækj bílastæði': None, 'Veitingastaðir pöntun': None, 'Utandyra setur': True, 'WiFi': None, 'Veitingastaðir til að fara': True, 'Veitingastaðir góðir fyrir hópa': None, 'Tónlist': None, 'Andrúmsloft': None}, 'fyrirtækjastjörnur': 3.5, 'umsagnaupplýsingar': [{'umsagnastjörnur': 2.0, 'umsagnardagur': '2021-12-14 16:44:15', 'umsagnatexti': \"Kom hingað í morgunmat þar sem það var opið nokkuð snemma á morgnana. Staðurinn er fallegur, en nokkur vandamál með reikninginn og að einhverju leyti matinn.\\n\\nÉg fékk bæði Crispy Yukon grillaða kartöflur, og morgunmatssamloku Lido. Kartöflurnar voru dásamlegar, og ég fann þær vera meira dásamlegar en samlokuna. Kartöflurnar höfðu einnig mjög ríkulegt skammt.\\n\\nAðalvandamálið sem ég hef er 20% þjónustugjald sem er sjálfkrafa bætt við reikninginn þinn. Það er ekki tekið fram neins staðar á matseðlinum, né af þjónunum. Núna er ég ekki á móti því að borga 20% þjónustugjald ef ég væri meðvitaður um það, en þessi veitingastaður tilkynnir ekki um það. Ekki láta blekkjast. Bættu eftirgjöf við þetta, og þú hefur gjald sem er næstum 40-50% af máltíðinni þinni. Myndi ekki koma aftur.\"}, {'umsagnastjörnur': 5.0, 'umsagnardagur': '2021-09-10 01:53:26', 'umsagnatexti': \"Nýjir opnunartímar og kerfið frá 5. sept...nú er veitingastaðurinn opinn fyrir morgunmat frá 7am í stað 8. Einnig geturðu pantað hjá þjóninum ef þú ert að borða inni (í stað þess að standa í röð við barinn).\\n\\nHindrunin er...ef þú vilt borða utandyra, þarftu að bíða þar til 8am þegar sundlaugin opnar. Einnig skaltu vera meðvitaður um að það verður mjög mikið að gera milli 9am og 10:30 um helgar eins og venjulega.\\n\\nAllir þjónar eru stöðugt góðir, vingjarnlegir og duglegir!\\n\\nMáltíðir þeirra í hádeginu og kvöldmatnum eru einnig góðar. Ég ætlaði að borða kvöldmat @ Costa, en endaði á því að borða (musslur) hér eftir að hafa séð máltíð einhvers annars. ;)\"}, {'umsagnastjörnur': 2.0, 'umsagnardagur': '2021-08-18 17:19:00', 'umsagnatexti': \"Maturinn er í lagi. Granóla var ekki slæm. Dattaskakinn var líka svona svona. Það sem kom mér mest á óvart var að það tók eilífð fyrir þjóninn að koma að borðinu.\\n\\nAuk þess get ég ekki þolað fyrirtæki sem krefjast 20% þjórfé óháð þjónustu. Ég skil ef það er borð fyrir sex eða fleiri o.s.frv. eða jafnvel krafist 15 eða 18 prósenta. En sem einhver sem venjulega gefur meira en 25% þegar ég er krafinn, þá truflar það mig virkilega. Ef þetta hefur að gera með sanngjörn laun, þá hækkið verðin á vörunum. Þá skaltu láta markaðinn ákveða. En það er ekkert posted neins staðar sem segir að 20% þjórfé sé skylt. Það er annað vandamálið mitt. Ef þú ætlar að krafast þess að við þurfum að tilkynna það á framhliðinni.\"}]\nYfirlit:",
+  "answer": "Café Lido, staðsett á 1111 E Cabrillo Blvd í Santa Barbara, CA, er veitingastaður sem býður upp á ítalska, Miðjarðarhafs- og kaffihúsamat. Fyrirtækið er opið frá 7:00 AM til 8:00 PM mánudaga til fimmtudaga, og til 9:00 PM á föstudögum og laugardögum. Kaffihúsið hefur utandyra sæti og býður upp á takeout en veitir ekki upplýsingar um WiFi, tónlist, andrúmsloft, bókanir eða bílastæði. Fyrirtækið hefur meðaltal einkunnar upp á 3.5 stjörnur. Morgunverðarmiða Café Lido hefur verið lofað, sérstaklega fyrir hráskjaldar Yukon kartöflurnar. Hins vegar hafa sumir viðskiptavinir lýst áhyggjum vegna 20% þjónustugjalds sem ekki er tilgreint í matseðlinum eða miðlað af þjónustufólki, og biðtími fyrir þjónustu. Opnunartími kaffihússins hefur nýlega breyst til að opna klukkustund fyrr fyrir morgunverð, en utandyra sæti verður aðeins aðgengilegt frá 8:00 AM.",
+  "labels": []
+}
+```
+
+```json
+{
+  "prompt": "Svarið stuttlega við eftirfarandi spurningu:\nveður í Wellesley\nHafið í huga að svar ykkar ætti að byggjast stranglega á eftirfarandi þremur textum:\ntexti 1:1 Þriðjudagur: Veðurspá fyrir Wellesley þann 23. ágúst er 82 gráður og sólskin. Það er 39 prósent líkur á rigningu og 10 mph vindar frá Norður-Norðvestur.  Miðvikudagur: Veðurspá fyrir Wellesley þann 24. ágúst er 79 gráður og sólskin. Það er 28 prósent líkur á rigningu og 5 mph vindar frá Norður-Norðaustur.\n\ntexti 2:1 Fimmtudagur: Veðurspá fyrir Wellesley þann 18. ágúst er 83 gráður og sólskin. Það er 42 prósent líkur á rigningu og 8 mph vindar frá Vestur-Suðvestur.  Föstudagur: Veðurspá fyrir Wellesley þann 19. ágúst er 83 gráður og sólskin. Það er 42 prósent líkur á rigningu og 5 mph vindar frá Norðurvestur.\n\ntexti 3:1 Sunnudagur: Veðurspá fyrir Wellesley þann 21. ágúst er 81 gráður og sólskin. Það er 36 prósent líkur á rigningu og 10 mph vindar frá Suðri.  Mánudagur: Veðurspá fyrir Wellesley þann 22. ágúst er 77 gráður og miðlungs eða mikil rigning á svæðinu með þrumum. Það er 52 prósent líkur á rigningu og 8 mph vindar frá Suðri.\n\nEf textarnir innihalda ekki nauðsynlegar upplýsingar til að svara spurningunni, vinsamlegast svaraðu með: \"Ómögulegt að svara byggt á gefnum textum.\"\noutput:",
+  "answer": "Ófært að svara byggt á gefnum textum.",
+  "labels": []
+}
+```
+
+```json
+{
+  "prompt": "Samantekt á eftirfarandi frétt á innan við 90 orð:\nTonee Turner, 22: Listamaður frá Pittsburgh síðast séð í staðbundinni teherbergi árið 2019\nÁhyggjufull fjölskylda Tonee Turner hefur verið að leita að henni daglega síðan hún hvarf 30. desember 2019. Fjölskylda listamannsins frá Pittsburgh, Pennsylvania, hefur farið frá húsi til húss, dreift flugum í von um að einhver muni muna eftir að hafa séð 22 ára gamla konuna.\nSíðasta staðurinn sem hún sást á var Dobra Tea, teherbergi í borginni, en síðan þá hafa ástvinir hennar ekki getað haft samband við hana. Samkvæmt NamUs sagði systir Tonee að hún hefði talað við hana um klukkan 18:00 þann dag sem hún hvarf. Tonee vann sem málmverkfræðingur hjá Studebaker Metals, en hún var einnig starfandi sem hlutastarfandi keramikkennari við Braddock Carnegie bókasafnið, sem var aðeins fimm mílur frá Dobra Tea.\nEigur Tonee fundust, en ráðgátan stendur\nSamkvæmt skýrslum fann maður á hjóli veski Tonee nálægt brú. Innan í voru farsími hennar, veski og lyklar. Yfirvöld telja að það sé möguleiki á að hún hafi ferðast um Interstate 80 nálægt Homestead, Pennsylvania, þar sem eigurnar fundust.\n„Allar upplýsingar sem fólk er að gefa og allar flugurnar, ég finn mig svo heppna að Tonee hefur snert svo marga líf að fólk er svo ákafur að halda áfram að leita að henni og trúin á að Tonee muni koma í dag, hver dagur er svo áþreifanlegur og raunverulegur,“ deildi Sydnee Turner, systir Tonee, með KDKA.\nTonee Turner: Hvað á að vita\nTonee Turner er lýst sem 5 fet 3 tommur há og 130 pund. Hún er með svart eða dökkt brúnt hár sem er að hnakka lengd og brúna augun. Hún er með marga göt: eyru, nef og labret (undir neðri var). Tonee hefur einnig tattoo af snúningi á vinstri öxl. Hún var síðast séð í svörtum zip-up jakka, gráum bol með orðunum \"Habla Espanol\" skrifuðum í appelsínugulum stöfum á bakinu, gráum cargo buxum, og hugsanlega svörtu höfuðbandi.\nAllir sem hafa upplýsingar um þetta mál eru hvattir til að hafa samband við lögregluna í Pittsburgh í síma 412-323-7800 eða við staðbundin yfirvöld strax. Málaskráningin er 19-264396.\nVinsamlegast deilið þessari sögu til að hjálpa að sameina Tonee Turner við fjölskyldu sína. Hún er okkar systir, og líf hennar skiptir máli.\n[via][via][via][via]\noutput:",
+  "answer": "Tonee Turner, 22 ára listamaður frá Pittsburgh, hvarf 30. desember 2019, eftir að hafa síðast sést í staðbundnu teherbergi. Fjölskylda hennar hefur verið virk í að leita að henni, dreifa flugum og leita að aðstoð frá yfirvöldum. Veski Tonee fannst nálægt brú, sem innihélt síma hennar, veski og lykla, sem leiddi yfirvöld til að trúa að hún gæti hafa ferðast um Interstate 80. Tonee er lýst sem 5'3\" með svart eða dökkbrún hár og mörg göt, og var síðast sést í svörtu renndu jakka og gráum cargo buxum. Allir sem hafa upplýsingar eru hvattir til að hafa samband við lögregluna í Pittsburgh í síma 412-323-7800.",
+  "labels": []
+}
+```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-is
+```
