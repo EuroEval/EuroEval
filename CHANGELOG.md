@@ -48,6 +48,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   Platform](https://platform.alexandra.dk/).
 
 ### Changed
+- Swapped official dataset for European Portuguese, Portuguese: `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`. The script `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing dataset swaps.
 
 - Made the Danish linguistic acceptability dataset DaLA the new official such one, over
   the previous ScaLA-da, which has now been demoted to unofficial.
