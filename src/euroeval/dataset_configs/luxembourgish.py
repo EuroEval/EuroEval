@@ -2,7 +2,16 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LUXEMBOURGISH
-from ..tasks import INSTRUCTION_FOLLOWING, LA, NER, NLI, RC, SENT, TEXT_CLASSIFICATION
+from ..tasks import (
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    LA,
+    NER,
+    NLI,
+    RC,
+    SENT,
+    TEXT_CLASSIFICATION,
+)
 
 # Official datasets ###
 
@@ -119,7 +128,6 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-la-multi-mini",
     task=LA,
     languages=[LUXEMBOURGISH],
-    unofficial=True,
     labels=["correct", "word_order", "agreement", "morphology", "other"],
     prompt_prefix="Folgend sinn Sätz. Bestëmmt ob se grammatesch korrekt "
     "sinn, oder identifizéiert de Feeler Typ.",
@@ -129,4 +137,15 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     "Wuert-Reiefolleg), 'agreement' (Subject-Verb oder Determiner-Noun Stëmmung net "
     "korrekt), 'morphology' (falsch Wortform), oder 'other'. Äntwert nëmme mat engem "
     "vun dësen Etiketten: {labels_str}.",
+    unofficial=True,
+)
+
+RAGTRUTH_BE_CONFIG = DatasetConfig(
+    name="ragtruth-be",
+    pretty_name="RAGTruth-be",
+    source="EuroEval/ragtruth-translated-hallucinations-be-mini",
+    task=HALLU,
+    languages=[LUXEMBOURGISH],
+    train_split=None,
+    unofficial=True,
 )
