@@ -82,7 +82,6 @@ TARGET_LANGS: list[str] = [
     "sv",  # Swedish
     "uk",  # Ukrainian
 ]
-TARGET_LANGS = ["en"]
 
 # MAX_WORKERS bounds the number of in-flight API requests (each sample issues two:
 # prompt + answer). BATCH_SIZE is kept well above MAX_WORKERS so the worker pool
