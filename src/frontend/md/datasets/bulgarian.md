@@ -736,6 +736,16 @@ Here are a few examples from the test split:
 }
 ```
 
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
 You can evaluate this dataset directly as follows:
 
 ```bash

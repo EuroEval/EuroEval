@@ -1804,6 +1804,16 @@ computed as the ratio of hallucinated tokens to total tokens in the generated an
 `EuroEval/ragtruth-translated-hallucinations-en-mini` dataset once it is uploaded to
 Hugging Face.
 
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
 You can evaluate this dataset directly as follows:
 
 ```bash
