@@ -1087,3 +1087,64 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-fi
 ```
+
+## Hallucination Detection
+
+### RAGTruth-fi
+
+This dataset is a Finnish translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the validation split:
+
+```json
+{
+  "prompt": "Vastaa lyhyesti seuraavaan kysymykseen:\nmitä tapahtuu paksusuolen syövän diagnoosin jälkeen\nPidä mielessä, että vastauksesi tulee perustua tiukasti seuraaviin kolmeen kappaleeseen:\nkappale 1: Diagnoosisi ymmärtäminen. On tärkeää, että ymmärrät diagnoosisi, koska se määrää saamasi hoidon. Kun lääkärisi kertoo sinulle, että sinulla on paksusuolen tai peräsuolen syöpä, terveydenhuoltotiimisi työskentelee yhdessä selvittääkseen, mikä diagnoosivaihe sinulla on. Lisätietoja: hanki ilmainen kopio oppaastasi taistelussa. Kun lääkärisi kertoo sinulle, että sinulla on paksusuolen tai peräsuolen syöpä, terveydenhuoltotiimisi työskentelee yhdessä selvittääkseen, mikä diagnoosivaihe sinulla on. Lisätietoja: hanki ilmainen kopio oppaastasi taistelussa.\n\nkappale 2: Prosessia, jota käytetään selvittämään, onko syöpä levinnyt paksusuolessa tai muihin kehon osiin, kutsutaan vaiheistamiseksi. Vaiheistamisprosessista kerätty tieto määrää taudin vaiheen. On tärkeää tietää vaihe, jotta hoito voidaan suunnitella. Seuraavia testejä ja toimenpiteitä voidaan käyttää vaiheistamisprosessissa: 1 CT-kuvaus (CAT-kuvaus): Toimenpide, joka tekee sarjan yksityiskohtaisia kuvia kehon sisäisistä alueista, kuten vatsasta, lantion alueesta tai rinnasta, otettuna eri kulmista. Rintakehän röntgenkuva: Röntgenkuva rintakehän sisällä olevista elimistä ja luista. 2 Röntgenkuva on energiasäde, joka voi kulkea kehon läpi ja filmille, tehden kuvan kehon sisäisistä alueista. 3 Kirurgia: Toimenpide, jolla poistetaan kasvain ja nähdään, kuinka pitkälle se on levinnyt paksusuolessa.\n\nkappale 3: Kuinka syöpä kasvaa ja leviää. Syöpä on poikkeavien solujen kasvua kehossa. Nämä ylimääräiset solut kasvavat yhteen ja muodostavat massoja, joita kutsutaan kasvaimiksi. Paksusuolisyövässä nämä kasvaimet alkavat yleensä polyypeistä paksusuolessa (paksusuoli tai peräsuoli). Jos paksusuolen polyyppejä ei löydy ja poisteta, ne voivat muuttua syöväksi. Paksusuolen tai peräsuolen syövät kasvavat yleensä hyvin hitaasti. Useimmilta niistä kestää vuosia kasvaa tarpeeksi suuriksi aiheuttaakseen oireita. Jos syövän annetaan kasvaa, se tunkeutuu ja tuhoaa lähellä olevia kudoksia ja leviää sitten pidemmälle. Paksusuolisyöpä leviää ensin lähellä oleviin imusolmukkeisiin. paksusuolisyövässä nämä kasvaimet yleensä alkavat polyypeistä paksusuolessa (paksusuoli tai peräsuoli). Jos paksusuolen polyyppejä ei löydy ja poisteta, ne voivat muuttua syöväksi. Paksusuolen tai peräsuolen syövät kasvavat yleensä hyvin hitaasti. Useimmilta niistä kestää vuosia kasvaa tarpeeksi suuriksi aiheuttaakseen oireita.\n\nJos kappaleet eivät sisällä tarvittavia tietoja kysymykseen vastaamiseksi, vastaa: \"Ei voida vastata annettujen kappaleiden perusteella.\"\noutput:",
+  "answer": "Annetuista lainauksista päätellen, kun on diagnosoitu paksusuolen tai peräsuolen syöpä, seuraava askel on terveydenhuoltohenkilöstön määrittää taudin vaihe prosessin avulla, jota kutsutaan vaiheistamiseksi. Tämä sisältää erilaisia testejä ja toimenpiteitä, kuten CT-skannauksen, rintakehän röntgenkuvauksen ja leikkauksen. Näistä testeistä kerätty tieto auttaa suunnittelemaan sopivia hoitovaihtoehtoja.",
+  "labels": []
+}
+```
+
+```json
+{
+  "prompt": "Tiivistä seuraavat uutiset 42 sanalla: \nDuckie on edelleen liikuttava. Tiistai-illan \"Late Late Show'ssa\" CBS:llä näyttelijä Jon Cryer esitti hahmon levykaupan tanssin Otis Reddingin \"Try a Little Tenderness\" -kappaleen tahdissa, seinätanssista, tiskin hakkaamisesta ja tietenkin tavaramerkiksi muodostuneista valkoisista kengistä. Alkuperäisessä kohtauksessa, joka on yksi rakastetuimmista kohtauksista vuoden 1986 John Hughesin elokuvasta, Cryer tanssii levykaupassa, huulensynkronoiden kappaletta yrittäessään voittaa Molly Ringwaldin Andien sydämen. Tiistain uusinnassa hän tanssii yhdessä juontaja James Cordenin kanssa, joka twiittasi toteuttaneensa \"lapsuuden unelman\" toistaessaan kohtauksen Cryerin kanssa - joka täytti torstaina 50 vuotta. \"Katsoin tuota 'Try a Little Tenderness' -tanssirutiinia niin monta kertaa, että VHS-nauha kului loppuun\", Corden sanoi ohjelmassa. Kuten Cryer, joka on viimeksi esiintynyt \"Kaksi ja puoli miestä\" -sarjassa, monet elokuvan alkuperäiset fanit ovat jo keski-iässä. Mutta silti jotkut saattoivat kiljua kuin teini-ikäiset nähdessään rutiinin.\n\noutput:",
+  "answer": "Tiistain \"Late Late Show\" -ohjelmassa näyttelijä Jon Cryer, joka tunnetaan roolistaan \"Kaksi ja puoli miestä\", esitti uudelleen kuuluisan tanssirutiininsa vuoden 1986 John Hughesin elokuvasta \"Pretty in Pink\". Juontaja James Corden liittyi Cryerin seuraan rutiinissa, toteuttaen lapsuuden unelmansa.",
+  "labels": [
+    {
+      "start": 197,
+      "end": 213,
+      "label": "Subtle Baseless Info"
+    }
+  ]
+}
+```
+
+```json
+{
+  "prompt": "Ohje:\nKirjoita objektiivinen yleiskatsaus seuraavasta paikallisesta yrityksestä perustuen vain annettuihin jäsenneltyihin tietoihin JSON-muodossa. Sinun tulisi sisällyttää yksityiskohtia ja kattaa asiakkaiden arvosteluissa mainitut tiedot. Yleiskatsauksen tulisi olla 100 - 200 sanaa. Älä keksi tietoja. Jäsennelty tieto:\n{'nimi': 'Cajun Kitchen Cafe', 'osoite': '865 Linden Ave', 'kaupunki': 'Carpinteria', 'osavaltio': 'CA', 'kategoriat': 'Ravintolat, Cajun/Creole', 'aukioloajat': None, 'ominaisuudet': {'Liiketoimintapysäköinti': {'autotalli': False, 'katu': True, 'vahvistettu': False, 'pysäköintialue': False, 'vahti': False}, 'RavintolatVaraukset': False, 'Ulkoterassi': True, 'WiFi': 'ei', 'RavintolatTakeOut': True, 'RavintolatHyväRyhmiin': True, 'Musiikki': None, 'Tunnelma': {'romanttinen': False, 'intohimoinen': False, 'turistinen': False, 'hipster': False, 'divey': False, 'tyylikäs': False, 'trendi': False, 'ylellinen': False, 'rentoa': True}}, 'liiketoimintotähdet': 4.0, 'arvostelu_tiedot': [{'arvostelu_tähdet': 5.0, 'arvostelu_päivämäärä': '2016-04-06 03:58:29', 'arvostelu_teksti': 'Mustapippuri Cajun & pinaatti Eggs Benedict olivat mahtavia. Palvelu oli erinomaista ja tulemme takaisin monta kertaa uudelleen.'}, {'arvostelu_tähdet': 2.0, 'arvostelu_päivämäärä': '2015-10-18 07:33:42', 'arvostelu_teksti': \"Tämä paikka ei ole ystävällinen latinoille ja/tai POC:lle\n\nOlen käynyt Carpinteriassa lapsuudestani asti enkä ole koskaan kokenut minkäänlaista rotuennakkoluuloa. Henkilökunta oli tuomitsevaa, kylmää ja passiivista aggressiivista.\n\nPäätimme piipahtaa beignettien parissa ja tasapainottaa makeutta, tilasimme vettä. Tämä näytti olevan se, mikä avasi tulvaportit tarjoilijallemme, kun hän antoi meille tuomitsevan katseen kävellessään pois. Palatessaan veden kanssa emme olleet aivan valmiita siihen, mitä beignettejä halusimme tilata, joten pyysimme vähän lisää aikaa. Tämä on varmasti lisännyt bensaa hänen tuleensa, koska hän ei tahallaan vaivautunut palaamaan pöytäämme, vaikka teimme selväksi, että olimme valmiita. Katsoimme häntä useita kertoja silmiin, eikä tämä vieläkään rekisteröitynyt.\nÄitini joutui nousemaan, kävelemään baaritiskille, jossa nainen istui ja jutteli toisen tarjoilijan kanssa, vain tilatakseen. Onneksi äitini ei ota roskaa tai sarkasmia keneltäkään, joten hän antoi hänelle palautetta kunnioittavalla sävyllä, koska muita ruokailijoita oli syömässä.\nBeignetit olivat yllättävän hyviä, mutta lupasimme, ettemme koskaan tule takaisin huonon palvelun vuoksi, enkä ole yllättynyt, että tämä paikka on nyt suljettu. On vuosi 2015, kenelläkään ei ole aikaa tuollaiselle käytökselle.\"}, {'arvostelu_tähdet': 4.0, 'arvostelu_päivämäärä': '2015-07-03 15:23:07', 'arvostelu_teksti': 'Aina loistava ateria missä tahansa Cajun Kitchen -paikassa. Valitettavasti Carpinterian paikka suljettiin 14.6.15.'}]}\nYleiskatsaus:",
+  "answer": "Cajun Kitchen Cafe on nyt suljettu ravintola, joka sijaitsi Carpinteriassa, Kaliforniassa, ja erikoistui Cajun- ja kreoliruokaan. Kahvila tarjosi ulkotiloja, otti varauksia, ja sillä oli rento ilmapiiri. Vaikka ruoka sai positiivisia arvosteluja, kuten Blackened Cajun & Spinach Eggs Benedict, palvelu oli epätasaista, ja jotkut asiakkaat kokivat ystävällistä ja huomaavaista palvelua, kun taas toiset kohtasivat tuomitsevaa ja passiivis-aggressiivista käyttäytymistä henkilökunnalta. Yksi arvioija huomautti, että henkilökunnan vaikutti olevan epäystävällistä latinoita ja värillisiä ihmisiä kohtaan. Huolimatta näistä ongelmista kahvila säilytti 4,0 tähden arvostelun kokonaisuudessaan. Valitettavasti Carpinterian sijainti on sittemmin suljettu, vaikka muut Cajun Kitchen -paikat pysyvät avoimina.",
+  "labels": [
+    {
+      "start": 163,
+      "end": 178,
+      "label": "Evident Conflict"
+    }
+  ]
+}
+```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-fi
+```
