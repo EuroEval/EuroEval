@@ -94,9 +94,6 @@ def main(force: bool) -> None:
         force (optional):
             Whether to always regenerate leaderboards, even if no new results
             are found. Defaults to False.
-        non_interactive (optional):
-            Whether to skip the dev server preview and deploy directly.
-            Defaults to False.
     """
     check_required_env_vars()
 
