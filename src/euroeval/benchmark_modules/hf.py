@@ -701,6 +701,18 @@ def load_model_and_tokeniser(
                     "If you trust the suppliers of this model, then you can enable "
                     "this by setting the `--trust-remote-code` flag."
                 ) from e
+            # Check if the model architecture doesn't support this task type
+            # (e.g., AutoModelForMultipleChoice doesn't support certain configs)
+            if (
+                "Unrecognized configuration class" in str(e)
+                and "AutoModelFor" in str(e)
+            ):
+                raise InvalidBenchmark(
+                    f"The model {model_id!r} does not support the "
+                    f"task group {task_group.value!r} as its architecture is not "
+                    f"compatible with the required HuggingFace model class. "
+                    f"Error: {e}"
+                ) from e
             raise InvalidModel(
                 f"The model {model_id!r} could not be loaded. The error was {e!r}."
             ) from e
