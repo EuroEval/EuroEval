@@ -2440,8 +2440,6 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset zebra-puzzles-hard-nb
 ```
 
-## Logical Reasoning
-
 ### ZebraPuzzleEasy-nn
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
@@ -2732,146 +2730,57 @@ You can evaluate a model on this dataset as follows:
 euroeval --model <model-id> --dataset multi-ifeval-nn
 ```
 
-### Unofficial: IFEval-nb
+## Hallucination Detection
 
-This dataset is the Bokmål split of
-[MultiIFEval](https://huggingface.co/datasets/danish-foundation-models/multi-ifeval), an
-automatically translated version of the English IFEval dataset, which was published in
-[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains prompts each with a
-combination of one or more of 25 different constraints, verified programmatically rather
-than with a judge.
+### RAGTruth-no
 
-We use the dataset as the test split, and do not include other splits, as we only
-evaluate models zero-shot and the size is too small to warrant a validation set.
+This dataset is a Norwegian translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
 
-Here are a few examples from the test split:
-
-```json
-{
-  "text": "Jeg planlegger en reise til Japan og jeg vil at du skal skrive en reiseplan for turen min i en stil som minner om William Shakespeare. Du har ikke lov til å bruke komma i svaret ditt.",
-  "target_text": {
-    "instruction_id_list": ["punctuation:no_comma"],
-    "kwargs": [{}]
-  }
-}
-```
-
-```json
-{
-  "text": "Skriv en CV for en som nettopp er ferdig med videregående skole og som søker sin første jobb. Sørg for å inkludere minst 12 plassholdere representert med firkantparenteser, slik som [adresse], [navn].",
-  "target_text": {
-    "instruction_id_list": ["detectable_content:number_placeholders"],
-    "kwargs": [
-      {
-        "num_placeholders": 12
-      }
-    ]
-  }
-}
-```
-
-```json
-{
-  "text": "Skriv en mal for en chatbot som tar brukerens posisjon og gir dem værmeldingen. Bruk bokstaven o som et nøkkelord i syntaksen til malen. Bokstaven o må forekomme minst 6 ganger. Svaret ditt skal inneholde færre enn 6 setninger. Uthev minst 2 tekstseksjoner, f.eks. *uthevet seksjon*.",
-  "target_text": {
-    "instruction_id_list": [
-      "keywords:letter_frequency",
-      "length_constraints:number_sentences_with_language",
-      "detectable_format:number_highlighted_sections"
-    ],
-    "kwargs": [
-      {
-        "let_relation": "at least",
-        "letter": "o",
-        "let_frequency": 6
-      },
-      {
-        "relation": "less than",
-        "num_sentences": 6,
-        "language": "norwegian"
-      },
-      {
-        "num_highlights": 2
-      }
-    ]
-  }
-}
-```
-
-You can evaluate a model on this dataset as follows:
-
-```bash
-euroeval --model <model-id> --dataset ifeval-nb
-```
-
-### Unofficial: IFEval-nn
-
-This dataset is the Nynorsk split of
-[MultiIFEval](https://huggingface.co/datasets/danish-foundation-models/multi-ifeval), an
-automatically translated version of the English IFEval dataset, which was published in
-[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains prompts each with a
-combination of one or more of 25 different constraints, verified programmatically rather
-than with a judge.
-
-We use the dataset as the test split, and do not include other splits, as we only
-evaluate models zero-shot and the size is too small to warrant a validation set.
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
 
 Here are a few examples from the test split:
 
 ```json
 {
-  "text": "Eg planlegg ei reise til Japan og eg vil at du skal skrive ein reiseplan for ferda mi i ein stil som minner om Shakespeare. Du har ikkje lov til å bruke komma i svaret ditt.",
-  "target_text": {
-    "instruction_id_list": ["punctuation:no_comma"],
-    "kwargs": [{}]
-  }
+  "prompt": "Svar kort på følgende spørsmål:\nhvordan tilbakestille en htc one vx til fabrikkinnstillinger\nHusk at svaret ditt skal være strengt basert på de følgende tre avsnittene:\navsnitt 1:1 For å slå av enheten, hold nede Power-knappen en stund. 2  Trykk deretter og hold nede Volum Ned + Power-tasten i et par sekunder. 3  Når du ser Bootloader Mode-menyen, slipper du de holdte knappene. 4  Fra menyen velger du alternativet  GJENOPPRETTINGSMODUS  ved å bruke Volum-knappene til å bla og Power-tasten til å velge alternativer. Trykk deretter og hold nede Volum Ned + Power-tasten i et par sekunder. 2  Når du ser Bootloader Mode-menyen, slipper du de holdte knappene. 3  Fra menyen velger du alternativet  GJENOPPRETTINGSMODUS  ved å bruke Volum-knappene til å bla og Power-tasten til å velge alternativer. 4  Gratulerer! 5  Du bør nå være i den forventede modusen.\n\navsnitt 2:1 Først og fremst, slå av telefonen ved å bruke Power-knappen. 2  Deretter trykker og holder du Volum Ned og Power-knappene sammen i et par sekunder. 3  Du kan slippe alle knappene når Bootloader Mode vises på skjermen. 4  Velg Fabrikktilbakestilling ved å trykke på Volum Ned-knappen for å bla og Power-tasten for å velge. Trykk deretter og hold nede Volum Ned + Power-tasten i et par sekunder. 2  Når du ser Bootloader Mode-menyen, slipper du de holdte knappene. 3  Fra menyen velger du alternativet  GJENOPPRETTINGSMODUS  ved å bruke Volum-knappene til å bla og Power-tasten til å velge alternativer. 4  Gratulerer! 5  Du bør nå være i den forventede modusen.\n\navsnitt 3:Vær sikker på å sikkerhetskopiere eventuelle data og filer du ønsker å beholde før du gjør en fabrikkinnstilling. Hard tilbakestilling av HTC One VX som følger: 1  Skyv nedvarselspanelet åpent, og trykk deretter.2  Trykk på Lagring Fabrikkdata tilbakestilling. 3  Trykk på Tilbakestill telefon, og trykk deretter på Slett alt. Vær sikker på å sikkerhetskopiere eventuelle data og filer du ønsker å beholde før du gjør en fabrikkinnstilling. Hard tilbakestilling av HTC One VX som følger: 1  Skyv nedvarselspanelet åpent, og trykk deretter.\n\nHvis avsnittene ikke inneholder nødvendig informasjon for å svare på spørsmålet, vennligst svar med: \"Kan ikke svare basert på de gitte avsnittene.\"\noutput:"
 }
 ```
 
 ```json
 {
-  "text": "Skriv ein CV for ein som nettopp er ferdig på vidaregåande skule og som søkjer si første stelle. Pass på å inkludere minst 12 plasshaldarar representert ved firkantparentesar, slik som [adresse], [namn].",
-  "target_text": {
-    "instruction_id_list": ["detectable_content:number_placeholders"],
-    "kwargs": [
-      {
-        "num_placeholders": 12
-      }
-    ]
-  }
+  "prompt": "Svar kort på følgende spørsmål:\nhva er alvorlig osteoporose\nVær oppmerksom på at svaret ditt skal være strengt basert på de følgende tre avsnittene:\navsnitt 1: Osteoporose kan være en stille sykdom, men mange pasienter lider av symptomer som smerte og høyde tap. Les en kort beskrivelse av osteoporose symptomer. Kompresjonsbrudd i ryggen. Plutselig, alvorlig ryggsmerte, spesielt hos eldre kvinner, indikerer ofte et spinalt kompresjonsbrudd -- et tegn på svake bein. Osteoporose kan være en stille sykdom, men mange pasienter lider av symptomer som smerte og høyde tap. Les en kort beskrivelse av osteoporose symptomer. Kompresjonsbrudd i ryggen. Plutselig, alvorlig ryggsmerte, spesielt hos eldre kvinner, indikerer ofte et spinalt kompresjonsbrudd -- et tegn på svake bein.\n\navsnitt 2: Den vanligste årsaken til osteoporosesmerte er et spinalt kompresjonsbrudd. Hvis du har fått diagnosen osteoporose, eller hvis du har flere risikofaktorer for osteoporose, kan disse symptomene indikere et kompresjonsbrudd 1: Plutselig, alvorlig ryggsmerte som blir verre når du står eller går. 2: Noe smertelindring når du ligger ned. Medisin for å lindre osteoporosesmerte. Medisin er den mest populære måten å håndtere osteoporosesmerte på. Legemidler inkluderer: 1: Over-the-counter smertestillende midler som paracetamol, aspirin, ibuprofen og naproxen er trygge smertelindrere for de fleste. 2: Disse kan forårsake magesmerter og blødning eller leverproblemer.\n\navsnitt 3: Osteoporose er en tilstand som praktisk talt ikke har symptomer før alvorlig bein skade allerede har skjedd. Når beina har blitt svekket av tap av bentetthet, kan symptomene inkludere: 1: Ryggsmerte. 2: Tap av høyde over tid med bøyd holdning. 3: Brudd på ryggvirvlene, håndleddene, hoftene eller andre bein. Uten behandling er en person med osteoporose sannsynlig å få brudd, oftest i ryggraden eller hoftene (som støtter kroppens vekt) eller i håndleddene fra å støtte seg mot et fall. Brudd i ryggraden kan skje selv uten et fall eller en skade. Beina i ryggraden blir så svake at de begynner å komprimere.\n\nHvis avsnittene ikke inneholder nødvendig informasjon for å svare på spørsmålet, vennligst svar med: \"Kan ikke svare basert på gitte avsnitt.\"\noutput:"
 }
 ```
 
 ```json
 {
-  "text": "Skriv ein mal for ein pratebot som tek imot lokasjonen til ein brukar og gjev dei vêrvarsel. Bruk bokstaven o som eit nøkkelord i syntaksen til malen. Bokstaven o må førekome minst 6 gonger. Svaret ditt skal innehalde færre enn 6 setningar. Uthev minst 2 tekstseksjonar, til dømes *utheva seksjon*.",
-  "target_text": {
-    "instruction_id_list": [
-      "keywords:letter_frequency",
-      "length_constraints:number_sentences_with_language",
-      "detectable_format:number_highlighted_sections"
-    ],
-    "kwargs": [
-      {
-        "let_relation": "at least",
-        "letter": "o",
-        "let_frequency": 6
-      },
-      {
-        "relation": "less than",
-        "num_sentences": 6,
-        "language": "norwegian"
-      },
-      {
-        "num_highlights": 2
-      }
-    ]
-  }
+  "prompt": "Oppsummer følgende nyheter innen 190 ord: Etter å ha diskutert i mer enn 35 timer over deler av syv dager, lyttet intenst til vitnesbyrd fra mer enn 130 vitner og gjennomgått mer enn 400 bevis, omfavnet de tårevåte mennene og kvinnene i juryen hverandre. Siden slutten av januar hadde arbeidet deres i Massachusetts-mordrettssaken mot den tidligere NFL-stjernen Aaron Hernandez tatt over livene deres. Det var ingenting som \"Law & Order.\" Dagene var lange og kjedelige. Nå var det over. \"Det har vært en utrolig følelsesmessig belastning for oss alle,\" sa Lesa Strachan til CNNs Anderson Cooper torsdag i det første nasjonalt sendte intervjuet med juryens medlemmer. Dagen før kunngjorde Strachan, juryens leder, førstegrads drapsdommen i drapet på Hernandez' tidligere venn Odin Lloyd i 2013. Strachan sa hun ble slått av grusomheten i flere skudd. \"Du skjøt ham én gang, men du fortsatte og skjøt ham seks ganger. Det er ikke nødvendig, og det er ikke nødvendig å bruke en pistol. Punktum.\" Før rettssaken hadde minst én jurymedlem - Rosalie Oliver - ikke hørt om den 25 år gamle tiltalte som nå har gått fra en profesjonell fotballkontrakt på 40 millioner dollar til en livstidsdom uten mulighet for prøveløslatelse i et høysikkerhetsfengsel. Men Kelly Dorsey ser på Patriots hver søndag i fotballsæsonen. Det sa hun i sitt jury-spørreskjema. \"Jeg kjente ham som en fotballspiller, ikke som en person,\" sa hun. Det påvirket ikke stemmen hennes til å dømme, sa hun. Det spilte ingen rolle at han var en fotballspiller, sa hun. Det spilte heller ingen rolle om han faktisk trakk av avtrekkeren i drapet. \"Å la vennen din ligge på bakken, vel vitende om at han ikke er der lenger - han er enten død eller han kommer til å dø - det er likegyldighet,\" sa Dorsey om Hernandez. \"Han trengte ikke å trekke av avtrekkeren.\" Det ordet - \"likegyldighet\" - ble brukt flere ganger av medlemmene i juryen. Jon Carlson sa han ble slått av vitnesbyrd og video bevis som viste at Hernandez og to medtiltalte solte seg ved bassenget timer etter drapet, drakk smoothies. Hernandez lot til tider sin da 8 måneder gamle datter være med de to mennene. Den likegyldigheten \"overrasket mange av oss,\" sa Carlson. Han understreket at faktumet at Hernandez spilte fotball for å leve ikke påvirket juryens avgjørelse. \"Det spiller ingen rolle hvor mye penger du har eller hvor mye penger du tjener. Vi er alle mennesker, og vi er alle like, og vi fortjener alle den samme rettferdige rettssaken, og det var det vi ønsket å sørge for at vi ga ham,\" sa Carlson. Lloyd ble sett 17. juni 2013, rundt 02:30 med Hernandez og Hernandez' venner, Carlos Ortiz og Ernest Wallace, i en leid sølv Nissan Altima. Senere den dagen fant en jogger kroppen hans. Han hadde blitt skutt seks ganger, ifølge påtalemyndigheten. Wallace og Ortiz, som også ble tiltalt for mord, har erklært seg ikke skyldige og vil bli rettsforfulgt separat. Hva skjer videre for Aaron Hernandez? Rosalie Oliver - jurymedlemmet som ikke hadde hørt om Hernandez før rettssaken - sa at for henne var det første skuddet nok. \"Det var ikke behov for de andre fem,\" sa hun. \"Én skudd for meg er grusomhet.\" Oliver og andre jurymedlemmer sa de ble overrasket over å motta samtaler fra venner som gratulerte dem etter dommen. \"Hvem vant?\" spurte hun. \"Odin Lloyd vant ikke. (Hans mor) fikk ikke tilbake sønnen sin. Vant Mr. Hernandez? Nei, for han kommer til å tilbringe resten av livet sitt i fengsel og han er 25 år gammel. Den verste delen for meg er: Hva med den lille jenta som aldri kommer til å se faren sin igjen?\" Hvordan fengselslivet vil være for Aaron Hernandez. Oliver husket å ha fått øyekontakt med Hernandez på et tidspunkt under den månedlange rettssaken. \"Han nikket faktisk til meg én gang,\" sa hun. \"Du kommer inn i det rommet hver dag og ser denne personen, og det er vanskelig å komme til den avgjørelsen på slutten fordi - som tre måneder med dem - det er nesten som om de er en del av deg. Og så, helt plutselig, må du ta den avgjørelsen om å enten sette ham bort eller la ham gå.\" Jurymedlemmene ønsket ikke å snakke om dynamikken inne i juryrommet, men valgte i stedet å holde fokus på bevisene som ble presentert under rettssaken. De formidlet en følelse av alvor om oppgaven sin. \"Du ser, du vet, 'Law & Order' og alle disse forskjellige TV-showene, og det er bare ingenting som det i det hele tatt. Det er bare veldig alvorlig,\" sa Carlson. 5 ting å vite om juryen."
 }
 ```
 
-You can evaluate a model on this dataset as follows:
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset ifeval-nn
+euroeval --model <model-id> --dataset ragtruth-no
 ```

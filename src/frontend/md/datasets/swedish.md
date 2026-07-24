@@ -1787,3 +1787,58 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset zebra-puzzles-hard-sv
 ```
+
+## Hallucination Detection
+
+### RAGTruth-sv
+
+This dataset is a Swedish translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Sammanfatta följande nyheter på 116 ord:\nFör sjuttio år sedan dog Anne Frank av tyfus i ett nazistiskt koncentrationsläger vid 15 års ålder. Bara två veckor efter hennes påstådda död den 31 mars 1945 befriades Bergen-Belsen koncentrationsläger där hon hade varit fängslad - en tidpunkt som visade hur nära den judiska dagboksförfattaren hade varit att överleva förintelsen. Men ny forskning från Anne Franks hus visar att Anne och hennes äldre syster, Margot Frank, dog minst en månad tidigare än tidigare trott. Forskare granskade arkiv från Röda korset, International Training Service och Bergen-Belsen-minnesmärket, tillsammans med vittnesmål från överlevande. De kom fram till att Anne och Margot troligen inte överlevde till mars 1945 - vilket motsäger det dödsdatum som tidigare fastställts av nederländska myndigheter. År 1944 arresterades Anne och sju andra som gömde sig i den hemliga annexet i Amsterdam och skickades till Auschwitz-Birkenau koncentrationsläger. Anne Franks sista anteckning. Samma år separerades Anne och Margot från sin mor och skickades bort för att arbeta som slavarbetskraft i Bergen-Belsen-lägret i Tyskland. Dagarna i lägret var fyllda med skräck och fruktan, vittnen sa. Systrarna stannade i en del av det överfulla lägret utan belysning, lite vatten och ingen latrin. De sov på lusiga halm och våldsamma stormar slet sönder tälten, enligt forskarna. Liksom de andra fångarna uthärdade systrarna långa timmar vid räkningen. Hennes klasskamrat, Nannette Blitz, minns att hon såg Anne där i december 1944: \"Hon var inte mer än ett skelett vid det laget. Hon var insvept i en filt; hon kunde inte uthärda att bära sina kläder längre eftersom de kryllade av löss.\" Lyssna på Anne Franks vänner beskriva hennes koncentrationslägerupplevelse. När ryssarna avancerade ytterligare blev Bergen-Belsen koncentrationsläger ännu mer överfullt, vilket medförde fler sjukdomar. Ett dödligt tyfusepidemi orsakade att tusentals dog varje dag. Tyfus är en infektionssjukdom orsakad av löss som bryter ut på platser med dålig hygien. Sjukdomen orsakar hög feber, frossa och hudutslag. \"På grund av lössen som angrep bädden och hennes kläder, var Anne utsatt för den huvudsakliga bärare av epidemi tyfus under en längre tid,\" skrev museiforskare. De drog slutsatsen att det är osannolikt att systrarna överlevde till mars, eftersom vittnen i lägret sa att systrarna båda hade symptom före den 7 februari. \"De flesta dödsfall orsakade av tyfus inträffar omkring tolv dagar efter de första symptomen uppträder,\" skrev författarna Erika Prins och Gertjan Broek. De exakta dödsdatumen för Anne och Margot förblir oklara. Margot dog innan Anne. \"Anne gav aldrig upp hoppet,\" sa Blitz, hennes vän. \"Hon var absolut övertygad om att hon skulle överleva.\" Hennes dagbok består som en av världens mest populära böcker. Läs mer om Anne Franks kusin, en väktare av hennes arv.\n\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Sammanfatta följande nyheter på 116 ord:\nFör sjuttio år sedan dog Anne Frank av tyfus i ett nazistiskt koncentrationsläger vid 15 års ålder. Bara två veckor efter hennes påstådda död den 31 mars 1945 befriades Bergen-Belsen koncentrationsläger där hon hade varit fängslad - en tidpunkt som visade hur nära den judiska dagboksförfattaren var att överleva förintelsen. Men ny forskning från Anne Frank-huset visar att Anne och hennes äldre syster, Margot Frank, dog minst en månad tidigare än tidigare trott. Forskare granskade arkiv från Röda korset, International Training Service och Bergen-Belsen-minnesmärket, tillsammans med vittnesmål från överlevande. De drog slutsatsen att Anne och Margot troligen inte överlevde till mars 1945 - vilket motsäger det dödsdatum som tidigare fastställts av nederländska myndigheter. År 1944 arresterades Anne och sju andra som gömde sig i den hemliga annexet i Amsterdam och skickades till Auschwitz-Birkenau koncentrationsläger. Anne Franks sista inlägg. Samma år separerades Anne och Margot från sin mor och skickades bort för att arbeta som slavarbete i Bergen-Belsen-lägret i Tyskland. Dagarna i lägret var fyllda av skräck och fruktan, vittnen sa. Systrarna stannade i en del av det överfulla lägret utan belysning, lite vatten och ingen latrin. De sov på lössinfekterad halm och våldsamma stormar rev sönder tälten, enligt forskarna. Som de andra fångarna uthärdade systrarna långa timmar vid räkningen. Hennes klasskamrat, Nannette Blitz, mindes att hon såg Anne där i december 1944: \"Hon var inte mer än ett skelett vid det laget. Hon var insvept i en filt; hon kunde inte uthärda att bära sina kläder längre eftersom de kryllade av löss.\" Lyssna på Anne Franks vänner beskriva hennes koncentrationslägerupplevelse. När ryssarna avancerade ytterligare blev Bergen-Belsen koncentrationsläger ännu mer överfullt, vilket medförde mer sjukdom. Ett dödligt tyfusepidemi orsakade att tusentals dog varje dag. Tyfus är en smittsam sjukdom orsakad av löss som bryter ut på platser med dålig hygien. Sjukdomen orsakar hög feber, frossa och hudutslag. \"På grund av lössen som infekterade bäddhalmen och hennes kläder, var Anne utsatt för den huvudsakliga bäraren av epidemiisk tyfus under en längre tid,\" skrev museiforskarna. De drog slutsatsen att det är osannolikt att systrarna överlevde till mars, eftersom vittnen i lägret sa att systrarna båda hade symtom före den 7 februari. \"De flesta dödsfall orsakade av tyfus inträffar omkring tolv dagar efter att de första symtomen uppträder,\" skrev författarna Erika Prins och Gertjan Broek. De exakta dödsdatumen för Anne och Margot förblir oklara. Margot dog före Anne. \"Anne gav aldrig upp hoppet,\" sa Blitz, hennes vän. \"Hon var absolut övertygad om att hon skulle överleva.\" Hennes dagbok består som en av världens mest populära böcker. Läs mer om Anne Franks kusin, en väktare av hennes arv.\n\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Sammanfatta följande nyheter på 116 ord:\nFör sjuttio år sedan dog Anne Frank av tyfus i ett nazistiskt koncentrationsläger vid 15 års ålder. Bara två veckor efter hennes påstådda död den 31 mars 1945 befriades Bergen-Belsen koncentrationsläger där hon hade varit fängslad – ett tidsperspektiv som visade hur nära den judiska dagboksförfattaren hade varit att överleva förintelsen. Men ny forskning från Anne Frank-huset visar att Anne och hennes äldre syster, Margot Frank, dog minst en månad tidigare än tidigare trott. Forskare granskade arkiv från Röda korset, International Training Service och Bergen-Belsen-minnesmärket, tillsammans med vittnesmål från överlevande. De drog slutsatsen att Anne och Margot troligen inte överlevde till mars 1945 – vilket motsäger det dödsdatum som tidigare fastställts av nederländska myndigheter. År 1944 arresterades Anne och sju andra som gömde sig i den hemliga annexet i Amsterdam och skickades till Auschwitz-Birkenau koncentrationsläger. Anne Franks sista inlägg. Samma år separerades Anne och Margot från sin mor och skickades bort för att arbeta som slavarbetskraft i Bergen-Belsen-lägret i Tyskland. Dagarna i lägret var fyllda av skräck och fruktan, vittnen sade. Systrarna bodde i en del av det överfulla lägret utan belysning, lite vatten och utan latrin. De sov på lössmittat halm och våldsamma stormar rev sönder tälten, enligt forskarna. Precis som de andra fångarna uthärdade systrarna långa timmar vid räkning. Hennes klasskamrat, Nannette Blitz, minns att hon såg Anne där i december 1944: \"Hon var inte mer än ett skelett då. Hon var insvept i en filt; hon kunde inte längre bära sina kläder eftersom de kryllade av löss.\" Lyssna på Anne Franks vänner beskriva hennes koncentrationslägerupplevelse. När ryssarna avancerade ytterligare blev Bergen-Belsen koncentrationsläger ännu mer överfullt, vilket förde med sig fler sjukdomar. Ett dödligt tyfusutbrott orsakade att tusentals dog varje dag. Tyfus är en smittsam sjukdom orsakad av löss som bryter ut på platser med dålig hygien. Sjukdomen orsakar hög feber, frossa och hudutslag. \"På grund av lössen som infekterade bäddhalmen och hennes kläder, var Anne utsatt för den främsta bäraren av epidemiisk tyfus under en längre tid,\" skrev museiforskarna. De drog slutsatsen att det är osannolikt att systrarna överlevde till mars, eftersom vittnen i lägret sade att systrarna båda hade symptom före den 7 februari. \"De flesta dödsfall orsakade av tyfus inträffar omkring tolv dagar efter att de första symptomen uppträder,\" skrev författarna Erika Prins och Gertjan Broek. De exakta dödsdatumen för Anne och Margot förblir oklara. Margot dog före Anne. \"Anne gav aldrig upp hoppet,\" sade Blitz, hennes vän. \"Hon var absolut övertygad om att hon skulle överleva.\" Hennes dagbok består som en av världens mest populära böcker. Läs mer om Anne Franks kusin, en förvaltare av hennes arv.\n\noutput:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-sv
+```

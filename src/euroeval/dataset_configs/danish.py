@@ -95,6 +95,15 @@ VALEU_DA_CONFIG = DatasetConfig(
     bootstrap_samples=False,
 )
 
+RAGTRUTH_DA_CONFIG = DatasetConfig(
+    name="ragtruth-da",
+    pretty_name="RAGTruth-da",
+    source="EuroEval/ragtruth-translated-hallucinations-da-mini",
+    task=HALLU,
+    languages=[DANISH],
+    train_split=None,
+)
+
 
 WINOGRANDE_DA_CONFIG = DatasetConfig(
     name="winogrande-da",
@@ -130,16 +139,6 @@ SCALA_DA_CONFIG = DatasetConfig(
     source="EuroEval/scala-da",
     task=LA,
     languages=[DANISH],
-    unofficial=True,
-)
-
-RAGTRUTH_DA_CONFIG = DatasetConfig(
-    name="ragtruth-da",
-    pretty_name="RAGTruth-da",
-    source="EuroEval/ragtruth-translated-hallucinations-da-mini",
-    task=HALLU,
-    languages=[DANISH],
-    train_split=None,
     unofficial=True,
 )
 

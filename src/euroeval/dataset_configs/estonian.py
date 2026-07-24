@@ -102,6 +102,15 @@ VALEU_ET_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+RAGTRUTH_ET_CONFIG = DatasetConfig(
+    name="ragtruth-et",
+    pretty_name="RAGTruth-et",
+    source="EuroEval/ragtruth-translated-hallucinations-et-mini",
+    task=HALLU,
+    languages=[ESTONIAN],
+    train_split=None,
+)
+
 # Unofficial datasets ###
 
 MULTI_IFEVAL_ET_CONFIG = DatasetConfig(
@@ -149,15 +158,5 @@ INCLUDE_ET_CONFIG = DatasetConfig(
     source="EuroEval/include-et-mini",
     task=KNOW,
     languages=[ESTONIAN],
-    unofficial=True,
-)
-
-RAGTRUTH_ET_CONFIG = DatasetConfig(
-    name="ragtruth-et",
-    pretty_name="RAGTruth-et",
-    source="EuroEval/ragtruth-translated-hallucinations-et-mini",
-    task=HALLU,
-    languages=[ESTONIAN],
-    train_split=None,
     unofficial=True,
 )

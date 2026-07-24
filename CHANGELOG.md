@@ -21,11 +21,25 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added full support for hallucination detection for all languages now, and now marked
   as official.
 
+### Changed
+
+Swapped official datasets for four languages (all performed by the
+`swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
+
+- Croatian: `mmlu-hr` → `include-hr`
+- Dutch: `scala-nl` → `dutch-cola`
+- Dutch: `mmlu-nl` → `include-nl`, `multiloko-nl`
+- Dutch: `hellaswag-nl` → `winogrande-nl`
+
 ### Fixed
 
 - Fixed `ValueError` in `prepare_train_examples` when the CLS token ID is not present
   in tokenised input IDs for certain tokenisers (e.g. Qwen3 embedding models,
   codefuse-ai/F2LLM-v2-0.6B). Falls back to position 0 with a debug log message.
+- Fixed debug cache filename collision when running evaluations with different model
+  parameters (e.g. `#thinking` vs `#no-thinking`). The cache file now includes the
+  parameter in the filename, preventing incorrect cache reuse when using the `--debug`
+  flag.
 
 ## [v17.7.0] - 2026-07-22
 

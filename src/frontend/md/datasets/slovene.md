@@ -662,3 +662,58 @@ You can evaluate a model on this dataset as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-sl
 ```
+
+## Hallucination Detection
+
+### RAGTruth-sl
+
+This dataset is a Slovene translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Povzemite naslednje novice v 116 besedah:\nPred sedemdesetimi leti je Anne Frank umrla za tifusom v nacističnem koncentracijskem taborišču pri 15 letih. Le dva tedna po njeni domnevni smrti 31. marca 1945 je bilo osvobojeno koncentracijsko taborišče Bergen-Belsen, kjer je bila zaprta – časovni okvir, ki je pokazal, kako blizu je bila judovska diaristka preživetju holokavsta. Vendar nova raziskava, ki jo je objavil Muzej Anne Frank, kaže, da sta Anne in njena starejša sestra Margot Frank umrli vsaj mesec dni prej, kot se je doslej mislilo. Raziskovalci so ponovno pregledali arhive Rdečega križa, Mednarodne usposabljalne službe in spominskega centra Bergen-Belsen ter pričevanja preživelih. Ugotovili so, da Anne in Margot verjetno nista preživeli do marca 1945 – kar nasprotuje datumu smrti, ki so ga prej določile nizozemske oblasti. Leta 1944 so bili Anne in še sedem drugih, ki so se skrivali v amsterdamskem tajnem aneksu, aretirani in poslani v koncentracijsko taborišče Auschwitz-Birkenau. Zadnji vnos Anne Frank. Istega leta sta bili Anne in Margot ločeni od matere in poslani na prisilno delo v taborišče Bergen-Belsen v Nemčiji. Dnevi v taborišču so bili polni terorja in strahu, so povedali priče. Sestre so bile v delu prenatrpanega taborišča brez osvetlitve, z malo vode in brez latrina. Spali so na slami, okuženi z uši, in nasilne nevihte so trgale šotore, so ugotovili raziskovalci. Tako kot drugi zaporniki so sestre prenašale dolge ure na zboru. Njena sošolka, Nannette Blitz, se je spomnila, da je Anne tam videla decembra 1944: \"Do takrat ni bila več kot okostje. Bila je zavita v odejo; oblačil ni mogla nositi, ker so bila prepredena z ušmi.\" Prisluhnite prijateljem Anne Frank, ki opisujejo njeno izkušnjo v koncentracijskem taborišču. Ko so Rusi napredovali, je postalo taborišče Bergen-Belsen še bolj prenatrpano, kar je prineslo več bolezni. Smrtonosna epidemija tifusa je povzročila, da je vsak dan umrlo na tisoče ljudi. Tifus je nalezljiva bolezen, ki jo povzročajo uši in se pojavi na mestih s slabo higieno. Bolezen povzroča visoko vročino, mrzlico in kožne izpuščaje. \"Zaradi uši, ki so napadle njeno posteljnino in oblačila, je bila Anne dalj časa izpostavljena glavnemu prenašalcu epidemskega tifusa,\" so zapisali raziskovalci muzeja. Ugotovili so, da je malo verjetno, da bi sestre preživele do marca, saj so priče v taborišču povedale, da sta imeli obe simptome pred 7. februarjem. \"Večina smrti, ki jih povzroči tifus, se zgodi približno dvanajst dni po pojavu prvih simptomov,\" sta zapisala avtorja Erika Prins in Gertjan Broek. Natančni datumi smrti Anne in Margot ostajajo nejasni. Margot je umrla pred Anne. \"Anne nikoli ni obupala,\" je dejala Blitz, njena prijateljica. \"Bila je popolnoma prepričana, da bo preživela.\" Njen dnevnik ostaja ena najbolj priljubljenih knjig na svetu. Preberite več o Anne Frankinih bratrancih, skrbnikih njenega zapuščine."
+}
+```
+
+```json
+{
+  "prompt": "Povzemite naslednje novice v 116 besedah:\nPred sedemdesetimi leti je Anne Frank umrla za tifusom v nacističnem koncentracijskem taborišču pri petnajstih letih. Le dva tedna po njeni domnevni smrti 31. marca 1945 je bilo taborišče Bergen-Belsen, kjer je bila zaprta, osvobojeno -- časovno usklajeno, kar je pokazalo, kako blizu je bila judovska diaristka preživetju holokavsta. Toda nova raziskava, ki jo je objavil Muzej Anne Frank, kaže, da sta Anne in njena starejša sestra Margot Frank umrli vsaj mesec dni prej, kot se je doslej menilo. Raziskovalci so ponovno pregledali arhive Rdečega križa, Mednarodne usposabljalne službe in spominskega centra Bergen-Belsen, skupaj s pričevanji preživelih. Sklenili so, da Anne in Margot verjetno nista preživeli do marca 1945 -- kar nasprotuje datumu smrti, ki so ga prej določile nizozemske oblasti. Leta 1944 so bili Anne in še sedem drugih, ki so se skrivali v amsterdamskem tajnem annexu, aretirani in poslani v koncentracijsko taborišče Auschwitz-Birkenau. Zadnji vnos Anne Frank. Istega leta sta bili Anne in Margot ločeni od matere in poslani na prisilno delo v taborišče Bergen-Belsen v Nemčiji. Dnevi v taborišču so bili polni terorja in groze, so povedali priče. Sestre so ostale v delu prenatrpanega taborišča brez osvetlitve, z malo vode in brez latrina. Spali so na slami, okuženi z uši, in nasilne nevihte so raztrgale šotore, so ugotovili raziskovalci. Tako kot drugi zaporniki so sestre prenašale dolge ure pri pregledu. Njena sošolka, Nannette Blitz, se je spomnila, da je Anne tam videla decembra 1944: \"Do takrat je bila le še skelet. Bila je ovita v odejo; oblačil ni mogla nositi več, ker so bila polna uši.\" Poslušajte prijatelje Anne Frank, ki opisujejo njeno izkušnjo v koncentracijskem taborišču. Ko so Rusi napredovali, je postalo taborišče Bergen-Belsen še bolj prenatrpano, kar je prineslo več bolezni. Smrtonosna epidemija tifusa je povzročila, da je vsak dan umrlo na tisoče ljudi. Tifus je nalezljiva bolezen, ki jo prenašajo uši in izbruhne na mestih s slabo higieno. Bolezen povzroča visoko vročino, mrzlico in kožne izpuščaje. \"Zaradi uši, ki so napadle slamo in njena oblačila, je bila Anne dalj časa izpostavljena glavnemu prenašalcu epidemskega tifusa,\" so zapisali raziskovalci muzeja. Sklenili so, da je malo verjetno, da sta sestro preživeli do marca, saj so priče v taborišču povedale, da sta obe sestro imeli simptome pred 7. februarjem. \"Večina smrti zaradi tifusa se zgodi približno dvanajst dni po prvih simptomih,\" sta napisala avtorja Erika Prins in Gertjan Broek. Natančni datumi smrti za Anne in Margot ostajajo nejasni. Margot je umrla pred Anne. \"Anne nikoli ni obupala,\" je dejala Blitz, njena prijateljica. \"Bila je prepričana, da bo preživela.\" Njen dnevnik ostaja ena najbolj priljubljenih knjig na svetu. Preberite več o Anninem bratrancu, skrbniku njenega zapuščine.\n\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Povzemite naslednje novice v 116 besedah:\nPred sedemdesetimi leti je Anne Frank umrla za tifusom v nacističnem koncentracijskem taborišču pri 15 letih. Le dva tedna po njeni domnevni smrti 31. marca 1945 je bilo taborišče Bergen-Belsen, kjer je bila zaprta, osvobojeno -- časovni okvir, ki je pokazal, kako blizu je bila judovska dnevniška avtorica preživetju holokavsta. Vendar nove raziskave, ki jih je objavil Muzej Anne Frank, kažejo, da sta Anne in njena starejša sestra Margot Frank umrli vsaj mesec dni prej, kot se je prej mislilo. Raziskovalci so ponovno pregledali arhive Rdečega križa, Mednarodne usposabljalne službe in spomenika Bergen-Belsen ter priče preživelih. Sklenili so, da Anne in Margot verjetno nista preživeli do marca 1945 -- kar nasprotuje datumu smrti, ki so ga prej določile nizozemske oblasti. Leta 1944 so aretirali Anne in še sedem drugih, ki so se skrivali v amsterdamskem tajnem podstrešju, in jih poslali v koncentracijsko taborišče Auschwitz-Birkenau. Zadnji vnos Anne Frank. Istega leta sta bili Anne in Margot ločeni od matere in odpeljani na prisilno delo v taborišče Bergen-Belsen v Nemčiji. Dnevi v taborišču so bili polni terorja in strahu, so povedali priče. Sestre so ostale v delu prenatrpanega taborišča brez osvetlitve, z malo vode in brez latrina. Spali so na slami, prežeti z uši, in nasilne nevihte so raztrgale šotore, pravijo raziskovalci. Tako kot drugi zaporniki so sestre prenašale dolge ure na zboru. Njena sošolka, Nannette Blitz, se je spomnila, da je Anne tam videla decembra 1944: \"Takrat ni bila več kot okostnjak. Bila je zavita v odejo; oblačil ni mogla nositi več, ker so bila prežeta z ušmi.\" Poslušajte prijatelje Anne Frank, ki opisujejo njeno izkušnjo v koncentracijskem taborišču. Ko so Rusi napredovali, je postalo taborišče Bergen-Belsen še bolj prenatrpano, kar je prineslo več bolezni. Smrtonosna epidemija tifusa je povzročila smrt tisočev vsak dan. Tifus je nalezljiva bolezen, ki jo povzročajo uši in izbruhne na mestih s slabo higieno. Bolezen povzroča visoko vročino, mrzlico in kožne izpuščaje. \"Zaradi uši, ki so napadle posteljnino in njena oblačila, je bila Anne dalj časa izpostavljena glavnemu prenašalcu epidemskega tifusa,\" so zapisali raziskovalci muzeja. Sklenili so, da je malo verjetno, da bi sestre preživele do marca, ker so priče v taborišču povedale, da sta imeli sestre simptome pred 7. februarjem. \"Večina smrti zaradi tifusa se zgodi približno dvanajst dni po pojavu prvih simptomov,\" sta zapisala avtorja Erika Prins in Gertjan Broek. Natančni datumi smrti za Anne in Margot ostajajo nejasni. Margot je umrla pred Anne. \"Anne nikoli ni obupala,\" je rekla Blitz, njena prijateljica. \"Bila je prepričana, da bo preživela.\" Njen dnevnik ostaja ena najbolj priljubljenih knjig na svetu. Preberite več o Anne Frankinih bratrancih, ki ohranja njen dediščino.\n\noutput:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-sl
+```

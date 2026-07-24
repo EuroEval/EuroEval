@@ -761,3 +761,58 @@ You can evaluate a model on this dataset as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-fo
 ```
+
+## Hallucination Detection
+
+### RAGTruth-fo
+
+This dataset is a Faroese translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Leiðbeining:\nSkriv eina objektiva yvirlit um hesa lokale fyritøku, bert baserað á teimum givnu strukturerðu dátu í JSON-formatinum. Tú skalt inkludera upplýsingar og fevna um tær upplýsingar, ið eru nevndar í viðskiftafólkanna ummælum. Yvirlitið skal vera 100 - 200 orð. Ikki finna upp upplýsingar. Strukturerðar dátu:\n{'navn': \"Danny's Deli Bait & Tackle\", 'adressu': '4890 Carpinteria Ave', 'býur': 'Carpinteria', 'stat': 'CA', 'kategoriir': 'Restaurantar, Veiðu- & Fiskivørur, Deli, Ítróttavørur, Bilvøttur, Bilvasstur, Handil', 'tíðar': {'Mánadagur': '9:0-18:0', 'Týsdagur': '9:0-18:0', 'Mikudagur': '9:0-18:0', 'Hósdagur': '9:0-18:0', 'Fríggjadagur': '9:0-18:0', 'Leygardagur': '8:0-18:0', 'Sunnudagur': '9:0-17:0'}, 'eigenskaper': {'FyrisitingParkering': {'garasje': False, 'gøtug': None, 'valideraður': False, 'pláss': True, 'valet': False}, 'RestaurantarReservatiónir': False, 'UtandørSeting': True, 'WiFi': 'nei', 'RestaurantarTakaÚt': False, 'RestaurantarGottFyriBólkar': True, 'Musikk': None, 'Umhvørvi': {'romantiskt': False, 'intimt': False, 'turistiskt': False, 'hipster': False, 'divey': False, 'klassiskt': False, 'trendy': False, 'uppskalað': False, 'casual': True}}, 'fyritøku_stjørnur': 4.0, 'umráð_info': [{'umráð_stjørnur': 4.0, 'umráð_dato': '2022-01-18 03:05:40', 'umráð_tekstur': 'Fekk tveir sandvitsjar. Heitt pastrami á einum rullu. Eiginmaðurin elskaði tað. Eg fekk tað italienska, sum eisini var deiligt. Fer heilt sikkurt aftur. Stuðla lokale fyritøkum.'}, {'umráð_stjørnur': 5.0, 'umráð_dato': '2021-12-27 21:05:57', 'umráð_tekstur': \"Ó, mín. Um tú ikki hevur roynt pastrami ella kalkun ella tri tip á Danny's, so hevur tú ikki havt ein av bestu sandvitsjunum á jørðini enn! Teir eru fantað!!!!!\"}, {'umráð_stjørnur': 5.0, 'umráð_dato': '2021-09-12 02:53:51', 'umráð_tekstur': \"BESTU sandvitsjarnar uttan frills, gjørdar av frálíkum starvsfólki! Italienska sandvitsjan var góð MEN tunfiskurin er ÓHEIMSKUR! Allur hvítur kjøt Albacore og teir spara ikki á kjøtinum! A pluss vøtting!!\"}]}\nYvirlit:"
+}
+```
+
+```json
+{
+  "prompt": "Vegleiðing:\nSkriv eina objektiva yvirlit um hesa lokale fyritøku, bert baserað á teimum strukturerðu upplýsingunum í JSON-formati. Tú skalt innleiða upplýsingar og fevna um tær upplýsingar, sum eru nevndar í viðskiftafólkini' umrøðum. Yvirlitið skal vera 100 - 200 orð. Ikki finna upp upplýsingar. Strukturerðar upplýsingar:\n{'navn': 'Ming Dynasty Restaurant', 'adress': '290 Storke Rd, Ste G', 'býur': 'Goleta', 'stat': 'CA', 'kategorier': 'Restaurantar, Mongolsk, Kinesisk', 'tíðar': {'Mánadagur': '11:0-21:30', 'Týsdagur': '11:0-21:30', 'Hósdagur': '11:0-21:30', 'Fríggjadagur': '11:0-22:0', 'Leygardagur': '11:30-22:0', 'Sunnudagur': '11:30-21:30'}, 'eiginleikar': {'FyrisøgnParkering': {'garasje': True, 'gøtu': False, 'validerað': True, 'pláss': True, 'valet': False}, 'RestaurantarBókanir': True, 'UtanduraSetur': False, 'WiFi': 'nei', 'RestaurantarTakaÚt': True, 'RestaurantarGottFyrirGrupper': True, 'Músik': None, 'Umhvørvi': {'romantisk': False, 'intim': False, 'turistisk': False, 'hipster': False, 'divey': False, 'klassisk': False, 'trendy': False, 'upscale': False, 'casual': True}}, 'fyritøka_stjørnur': 3.0, 'umrøðum_upplýsingar': [{'umrøðu_stjørnur': 1.0, 'umrøðu_dato': '2019-09-24 04:12:09', 'umrøðu_tekstur': 'Havi verið her nakrar ferðir, tí tað eru ikki nógv kinesisk mat í býnum. Maturin var yvirhøvur saltur, men ikki so ringur sum mandarin palasið á la cumbre. Maturin var eisini nokkso oljufullur, men okay fyri einaferð í millum. Var við at passa á gomlu þjónustuna, sum roynir at fáa teg at bíleggja dýra rætt. Vit bleivum sviknir einaferð og endaðu við at bíleggja ristaðan anda, men vit vildu bara hava eina skál av nudlum í fyrstu atløgu. Aldri fara aftur!'}, {'umrøðu_stjørnur': 5.0, 'umrøðu_dato': '2019-08-31 21:47:01', 'umrøðu_tekstur': \"Besti kinesiski matur og buffet í býnum. Ein breiður valmøguleiki, allir sera góðir. Gott tænastu. At vera stuttligt, ein eting uppliving, eg havi ikki havt aðrastaðni. Teir verða saknað.\"}, {'umrøðu_stjørnur': 5.0, 'umrøðu_dato': '2019-08-27 02:38:00', 'umrøðu_tekstur': 'Bara havt døgurða her við nøkrum vinum og familju. Tænastan var frálík. Maturin var fantastiskt. Eg havi havt buffetina og eg hevði nógvar valmøguleikar. Mikið syrgilig, at hetta staðið er at loka skjótt. Havt elskað at hava nógv fleiri góðar tíðir her. Tú verður saknað.'}]}\nYvirlit:"
+}
+```
+
+```json
+{
+  "prompt": "Svar stutt við hesi spurning:\nmunurin millum ein adverbialsetning og ein adjektivsetning\nHugsa um, at svarið títt skal vera strengt grundað á hesar tríggjar tekstir:\ntekstur 1: Ein adverbialsetning er ein avhengilig setning, sum broytir ein sagn, adjektiv ella aðra adverb. Hon broytir vanliga sagnina. Adverbialsetningar verða settar í gongd við undirordnaðar samordningar, sum fevna um eftir, sjálvt um, sum, sum um, áðrenn, tí, um, síðani, so at, enn, sjálvt um, uttan, inntil, tá, har, og meðan.\n\ntekstur 2: Partar av Setninginum - Adjektiv, Adverb, og Noun Setningar. Adjektivsetningin verður brúkt til at broyta eitt nafn ella eitt fornafn. Hon byrjar við einum relatívum fornafn (hvor, hvat, hvønn, hvør, og tað) ella einari undirordnaðari samordning (tá og har). Tað eru einastu orðin, sum kunnu verða brúkt til at seta ein adjektivsetning í gongd.\n\ntekstur 3: Adjektivsetningar. Adjektivsetningar eru avhengiligar setningar, sum broyta nøvn ella fornavn. Líkandi sum adverbialsetningar, skulu næmingar, sum royna at finna adjektivsetningar, royna at avdúka, hvørjar spurningar setningurin í spurningum svarar.\n\nUm tekstirnir ikki innihalda neyðuga upplýsingarnar til at svara spurninginum, vinarliga svara við: \"Ómøguligt at svara út frá givna tekstinum.\"\noutput:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-fo
+```

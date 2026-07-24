@@ -1373,3 +1373,58 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset wic-ita
 ```
+
+## Hallucination Detection
+
+### RAGTruth-it
+
+This dataset is an Italian translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Istruzione:\nScrivi una panoramica obiettiva su questa attività locale basata solo sui dati strutturati forniti nel formato JSON. Dovresti includere dettagli e coprire le informazioni menzionate nelle recensioni dei clienti. La panoramica dovrebbe essere di 100 - 200 parole. Non inventare informazioni. Dati strutturati:\n{'nome': 'La Arcada Bistro', 'indirizzo': '1112 State St', 'città': 'Santa Barbara', 'stato': 'CA', 'categorie': 'Caffè e tè, Cibo, Americano (Tradizionale), Senza glutine, Ristoranti, Colazione e brunch, Panetterie', 'orari': {'Lunedì': '11:0-16:0', 'Martedì': '11:0-16:0', 'Mercoledì': '11:0-21:0', 'Giovedì': '11:0-21:0', 'Venerdì': '9:0-21:0', 'Sabato': '9:0-21:0', 'Domenica': '9:0-21:0'}, 'attributi': {'ParcheggioAziendale': {'garage': True, 'strada': True, 'validato': False, 'parcheggio': False, 'valet': False}, 'RistorantiPrenotazioni': True, 'PostiASedereAllAperto': True, 'WiFi': 'gratuito', 'RistorantiDaAsporto': True, 'RistorantiBuonoPerGruppi': True, 'Musica': None, 'Ambiente': {'turistico': False, 'hipster': False, 'romantico': False, 'divey': False, 'intimo': False, 'di tendenza': False, 'di lusso': False, 'elegante': False, 'informale': True}}, 'stelleAziendali': 3.5, 'informazioniRecensioni': [{'stelleRecensione': 1.0, 'dataRecensione': '2018-03-10 14:20:07', 'testoRecensione': 'Questo posto è semplicemente orribile. La nostra cameriera era quasi un’idiota e metà degli articoli nel menu non erano disponibili. Ho sentito che stanno chiudendo, non sono sorpreso.'}, {'stelleRecensione': 5.0, 'dataRecensione': '2018-02-23 21:48:43', 'testoRecensione': 'Cibo davvero buono, servizio gentile e decente e molto pulito - compresi i bagni.\\nPrezzo ragionevole.\\n\\nOttimo, grazie!'}, {'stelleRecensione': 5.0, 'dataRecensione': '2017-10-15 03:22:39', 'testoRecensione': \"Cibo delizioso, ottimo servizio, e siamo stati subito serviti!\\n\\nLa pasta con i gamberi era molto buona. Mio marito ha preso la pasta alfredo con pollo senza glutine e anche lui è rimasto colpito. \\n\\nCi torneremo sicuramente.\"}]}\nPanoramica:"
+}
+```
+
+```json
+{
+  "prompt": "Istruzione:\nScrivi una panoramica obiettiva riguardo il seguente business locale basata solo sui dati strutturati forniti nel formato JSON. Dovresti includere dettagli e coprire le informazioni menzionate nella recensione dei clienti. La panoramica dovrebbe essere di 100 - 200 parole. Non inventare informazioni. Dati strutturati:\n{'nome': 'Peebee & Jays', 'indirizzo': '1007 Casitas Pass Rd', 'città': 'Carpinteria', 'stato': 'CA', 'categorie': 'Panini, Ristoranti', 'orari': {'Lunedì': '10:30-16:0', 'Martedì': '10:30-16:0', 'Mercoledì': '10:30-16:0', 'Giovedì': '10:30-16:0', 'Venerdì': '10:30-16:0', 'Sabato': '10:30-16:0'}, 'attributi': {'ParcheggioAziendale': {'garage': False, 'strada': False, 'validato': False, 'parcheggio': True, 'valet': False}, 'RistorantiPrenotazioni': False, 'PostiAllAperto': True, 'WiFi': 'no', 'RistorantiDaAsporto': True, 'RistorantiBuoniPerGruppi': False, 'Musica': None, 'Ambiente': {'romantico': False, 'intimo': False, 'turistico': False, 'hipster': False, 'divey': False, 'elegante': False, 'alla moda': False, 'di lusso': False, 'informale': True}}, 'stelle_business': 4.0, 'info_recensione': [{'stelle_recensione': 4.0, 'data_recensione': '2021-10-21 19:40:04', 'testo_recensione': \"I loro panini sono fantastici, ma non optare per il flatbread di cavolfiore. Mettono così tanto in questi panini che il flatbread non riesce a reggerlo, quindi stai pagando di più per un panino più fragile. Ho anche avuto problemi a ottenere tutti i miei punti per i miei acquisti settimanali. Il loro sistema è confuso e non hanno risposto dopo diversi tentativi di risolverlo. Detto ciò, i loro panini sono tutti ottimi. Scegli i panini morbidi con il Bacon Went on a Date e aggiungi il tacchino. Così buono.\"}, {'stelle_recensione': 4.0, 'data_recensione': '2021-10-14 20:09:15', 'testo_recensione': 'Ho preso molto burro di arachidi con miele e un burro di arachidi con Nutella e fluff di marshmallow, erano abbastanza buoni, l'unico vero problema che ho avuto è stato che la crosta era gommoso e difficile da masticare, ma nel complesso era super delizioso'}, {'stelle_recensione': 1.0, 'data_recensione': '2021-10-13 20:20:58', 'testo_recensione': 'Non tornerò mai più in questo posto. I lavoratori in generale hanno un atteggiamento negativo e pensano che i clienti debbano loro una medaglia per essersi presentati al lavoro. Ho effettuato un ordine da asporto e ho messo nelle istruzioni speciali che la maionese e la senape dovevano essere a parte. Bene, ho ricevuto il mio panino ed era inzuppato di maionese, qualcosa che volevo evitare. Li ho chiamati e l'impiegato mi ha detto che potevano rifarlo. Ho buttato via il panino e circa 15 minuti dopo ho ricevuto una chiamata e mi hanno detto che dovevo riportare indietro il panino. Ho detto loro che l'avevo già gettato nella spazzatura, poi l'impiegato ha passato la chiamata al suo manager e lei è stata così SCORTESI e ha detto che dovevo riportarlo indietro (non avevo intenzione di frugare nella spazzatura) e ho detto che l'impiegato non aveva mai detto nulla riguardo a riportare indietro il panino nella prima conversazione e avrebbe dovuto dirlo e aspettarsi che io lo avessi ancora. E lei ha detto in modo molto poco professionale, \"beh, non lo sapeva.\" Le ho detto che è un fallimento della formazione e non del cliente. Poi ha detto che la prossima volta devo scrivere specificamente la parola \"tutto\" a parte invece di usare le virgole come ho fatto. Questo manager è assolutamente disgustoso e chiaramente non ha alcuna competenza di base nel servizio clienti. \\n\\nQuesta non è la prima volta che il mio ordine da asporto è stato distrutto. Ma il modo in cui quel \"manager\" mi ha parlato e gestito è il motivo per cui NON tornerò mai più lì e dirò a tutti i miei colleghi di stare alla larga. \\n\\nAl proprietario di questo locale: i buoni manager sono difficili da trovare, ma puoi assolutamente fare meglio di chi stava lavorando il 13/10/21 alle 12:30. È orribile nel suo lavoro e continuerà a allontanare i clienti con il suo terribile atteggiamento.'}]}\nPanoramica:"
+}
+```
+
+```json
+{
+  "prompt": "Riassumi la seguente notizia in 42 parole: Un sottomarino nucleare in riparazione in un cantiere navale russo ha preso fuoco, secondo una fonte delle forze dell'ordine che ha parlato all'agenzia di stampa statale russa ITAR-Tass. \"Il sottomarino è in un bacino di carenaggio,\" riporta Tass, citando la fonte, e non ci sono munizioni a bordo. \"L'isolamento in gomma tra lo scafo leggero e quello di pressione del sottomarino è in fiamme,\" ha riportato Tass. L'agenzia di stampa russa RIA Novosti afferma che l'isolamento ha preso fuoco mentre si svolgevano lavori di saldatura sul sottomarino. Tass ha riferito che il fuoco è scoppiato su un sottomarino nel cantiere navale Zvyozdochka nel nord-ovest della Russia. Il portavoce di Zvyozdochka, Yevgeny Gladyshev, ha detto all'agenzia di stampa che il sottomarino era in riparazione dal novembre 2013. \"Il combustibile nucleare dal reattore del sottomarino è stato scaricato,\" ha detto. \"Non ci sono armamenti o sostanze chimicamente attive, pericolose, materiali fissionabili su di esso,\" ha detto Gladyshev a Tass. \"Il personale dell'azienda ha lasciato i locali quando il sottomarino ha preso fuoco, nessuno è rimasto ferito. L'incendio non rappresenta una minaccia per le persone e il cantiere navale.\""
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-it
+```

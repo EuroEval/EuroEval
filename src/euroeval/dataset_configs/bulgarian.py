@@ -65,6 +65,14 @@ MULTI_IFEVAL_BG_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+RAGTRUTH_BG_CONFIG = DatasetConfig(
+    name="ragtruth-bg",
+    pretty_name="RAGTruth-bg",
+    source="EuroEval/ragtruth-translated-hallucinations-bg-mini",
+    task=HALLU,
+    languages=[BULGARIAN],
+    train_split=None,
+)
 
 # Unofficial datasets ###
 
@@ -74,15 +82,5 @@ INCLUDE_BG_CONFIG = DatasetConfig(
     source="EuroEval/include-bg-mini",
     task=KNOW,
     languages=[BULGARIAN],
-    unofficial=True,
-)
-
-RAGTRUTH_BG_CONFIG = DatasetConfig(
-    name="ragtruth-bg",
-    pretty_name="RAGTruth-bg",
-    source="EuroEval/ragtruth-translated-hallucinations-bg-mini",
-    task=HALLU,
-    languages=[BULGARIAN],
-    train_split=None,
     unofficial=True,
 )

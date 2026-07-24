@@ -113,10 +113,6 @@ def process_results(
 
     _upload_per_model_files(processed_records=processed_records)
 
-    # Clear the load_raw_results cache so subsequent calls in the same process
-    # (e.g. repeated leaderboard generation) pick up the enriched records.
-    load_raw_results.cache_clear()
-
 
 def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
     """Write one JSON file per logical result and sync to the HF bucket.

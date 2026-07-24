@@ -753,3 +753,58 @@ You can evaluate a model on this dataset as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-lt
 ```
+
+## Hallucination Detection
+
+### RAGTruth-lt
+
+This dataset is a Lithuanian translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Trumpai atsakykite į šį klausimą:\nkaip išvalyti džiovyklės ventiliaciją\nAtsiminkite, kad jūsų atsakymas turėtų būti griežtai pagrįstas šiais trimis tekstais:\ntekstas 1: Išvalykite džiovyklės ventiliacijos išorinę dalį. 1 žingsnis. Suraskite džiovyklės ventiliacijos dangtį namo išorėje. 2 žingsnis. Nuimkite dangtį; ventiliacijos vamzdis turėtų lengvai išslysti, jei jis nėra pritvirtintas ar užsandarinamas prie namo išorės. 3 žingsnis. Naudodami džiovyklės ventiliacijos šepetį, išimkite pūkus iš skylės viduje. 4 žingsnis. Nuimkite ventiliaciją nuo džiovyklės nugarėlės, atsukdami ventiliacijos spaustuką ir išslysdami ventiliaciją iš alkūnės formos jungties. 5 žingsnis. Vėl prijunkite ventiliaciją ir pastumkite džiovyklę atgal prie sienos.\n\ntekstas 2: 1 Valydami ventiliaciją, taip pat galite norėti nuimti džiovyklės apatinį priekinį skydelį ir ten taip pat išvalyti. 2 Atkreipkite dėmesį į sritį aplink pūkų filtrą. 3 Nuėmus pūkų filtro rėmą, lengviau pasiekiami pūkų nuosėdos, o dulkių siurblio antgalį galima įkišti, kad būtų išvalyta geriau. Tai taip pat padės jūsų džiovyklei veikti efektyviau. 2 Valydami ventiliaciją, taip pat galite norėti nuimti džiovyklės apatinį priekinį skydelį ir ten taip pat išvalyti. 3 Atkreipkite dėmesį į sritį aplink pūkų filtrą.\n\ntekstas 3: Tweet. Džiovyklės ventiliacija gali užsikimšti pūkais laikui bėgant, dėl to džiovyklė veikia mažiau efektyviai ir gali sukelti pavojingus namų gaisrus. Norėdami išvalyti džiovyklės ventiliaciją, nuimkite išorinį dangtį, o viduje vamzdžio išvalymui naudokite specialų pūkų šepetį su teleskopine rankena. Žiūrėkite šį vaizdo įrašą, kad sužinotumėte daugiau. Prašome palikti komentarą. Norime išgirsti iš jūsų! Norėdami išvalyti džiovyklės ventiliaciją, nuimkite išorinį dangtį, o viduje vamzdžio išvalymui naudokite specialų pūkų šepetį su teleskopine rankena. Žiūrėkite šį vaizdo įrašą, kad sužinotumėte daugiau. Prašome palikti komentarą. Norime išgirsti iš jūsų!\n\nJei tekstai neturi reikiamos informacijos, kad atsakytumėte į klausimą, prašome atsakyti: \"Negaliu atsakyti remiantis pateiktais tekstais.\"\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Instrukcija:\nParašykite objektyvų apžvalgą apie šią vietinę įmonę, remdamiesi tik pateiktais struktūrizuotais duomenimis JSON formatu. Turėtumėte įtraukti detales ir apžvelgti informaciją, paminėtą klientų atsiliepimuose. Apžvalga turėtų būti 100 - 200 žodžių. Nesukurkite informacijos. Struktūrizuoti duomenys:\n{'pavadinimas': 'Jūsų Vietos Tailando Restoranas', 'adresas': '22 N Milpas St, Ste A', 'miestas': 'Santa Barbara', 'valstija': 'CA', 'kategorijos': 'Tailandietiška, Restoranai', 'darbo valandos': {'Pirmadienis': '16:0-21:0', 'Antradienis': '11:30-21:0', 'Trečiadienis': '11:30-21:0', 'Ketvirtadienis': '11:30-21:0', 'Penktadienis': '11:30-21:30', 'Šeštadienis': '11:30-21:30', 'Sekmadienis': '11:30-21:0'}, 'atributai': {'VersloParkavimas': {'garažas': False, 'gatvė': True, 'patvirtintas': False, 'sklypas': True, 'valet': False}, 'RestoranaiRezervacijos': True, 'LaukoSėdėjimas': None, 'WiFi': 'ne', 'RestoranaiIšsinešimui': None, 'RestoranaiGeraGrupėms': True, 'Muzika': None, 'Atmosfera': {'romantiška': False, 'intymi': False, 'turistinė': False, 'hipsteriška': False, 'nardytoja': False, 'klasikinė': False, 'madinga': False, 'aukštos klasės': False, 'kasdienė': True}}, 'versloŽvaigždės': 4.0, 'atsiliepimų_informacija': [{'atsiliepimų_žvaigždės': 1.0, 'atsiliepimų_data': '2022-01-02 00:53:23', 'atsiliepimų_tekstas': 'Jei galėčiau duoti nulis žvaigždžių, tai padaryčiau, jie nori imti papildomai už kiekvieną smulkmeną, įskaitant padažus, pažiūrėkite, kiek jie pateikė. Mes niekada nebegrįšime čia. Valgykite savo rizika, maistas buvo baisus'}, {'atsiliepimų_žvaigždės': 5.0, 'atsiliepimų_data': '2021-12-28 08:41:46', 'atsiliepimų_tekstas': \"Puikus geltonas karis, geresnis nei jų Penango karis, kuris taip pat labai geras. Vieta neturi puikios atmosferos, tačiau maistas išsinešimui yra tikrai geras. Tofu ir vištiena visada geri, bet daržovės dar geresnės!\\nKokosų kariai yra mano mėgstamiausi. Salotoms galėtų būti daugiau prieskonių.\"}, {'atsiliepimų_žvaigždės': 5.0, 'atsiliepimų_data': '2021-12-16 02:34:23', 'atsiliepimų_tekstas': 'Gali būti, kad tai mano mėgstamiausias autentiškas Tailando restoranas Santa Barboje. Esu didelis visų jų sriubų ir Pad Thai gerbėjas. Kainos yra priimtinos, porcijos gausios, kurios ne tik padarys jūsų skrandį laimingą, bet ir jūsų piniginę. Manau, kad Jūsų Vietos restoranas yra vienas iš Top5 pasirinkimų, kai nenoriu gaminti vakarienės savaitės metu.'}]\nApžvalga:"
+}
+```
+
+```json
+{
+  "prompt": "Instrukcija:\nParašykite objektyvų apžvalgą apie šį vietinį verslą, remdamiesi tik pateiktais struktūrizuotais duomenimis JSON formatu. Turėtumėte įtraukti detales ir apžvelgti informaciją, paminėtą klientų atsiliepimuose. Apžvalga turėtų būti 100 - 200 žodžių. Neinventinkite informacijos. Struktūrizuoti duomenys:\n{'pavadinimas': 'Goodland Kitchen', 'adresas': '231 S Magnolia Ave', 'miestas': 'Goleta', 'valstija': 'CA', 'kategorijos': 'Maistas, Vietinės paslaugos, Ūkininkų turgus, Profesinės paslaugos, Amerikietiška (nauja), Restoranai, Prekyba', 'darbo valandos': {'Pirmadienis': '7:0-14:0', 'Antradienis': '7:0-14:0', 'Trečiadienis': '7:0-14:0', 'Ketvirtadienis': '7:0-14:0', 'Penktadienis': '7:0-14:0'}, 'atributai': {'VersloParkavimas': {'garažas': False, 'gatvė': True, 'patvirtintas': False, 'sklypas': False, 'valet': False}, 'RestoranaiRezervacijos': False, 'IšorinisSėdėjimas': True, 'WiFi': 'ne', 'RestoranaiIšsinešimui': True, 'RestoranaiTinkamiGrupėms': True, 'Muzika': None, 'Atmosfera': {'turistinis': False, 'hipsteriškas': False, 'romantiškas': False, 'divey': False, 'intymus': False, 'madingas': False, 'aukštos klasės': False, 'klasikinis': True, 'neformalus': True}}, 'verslo_reitingai': 3.5, 'atsiliepimų_informacija': [{'atsiliepimų_reitingai': 4.0, 'atsiliepimo_data': '2020-12-16 20:49:51', 'atsiliepimų_tekstas': 'Jie dirba išsinešimui, puikus pietų meniu, geras chorizo, geri traškučiai, milžiniškos salotos. Labai draugiška aptarnavimas!'}, {'atsiliepimų_reitingai': 5.0, 'atsiliepimo_data': '2020-10-21 18:00:38', 'atsiliepimų_tekstas': 'Jie ką tik vėl atsidarė!! Prašome ateiti čia ir į šalia esantį turgų, nes žinau, kad šiam mažam verslui to reikia! Nuostabus aptarnavimas ir nuostabus maistas :)'}, {'atsiliepimų_reitingai': 3.0, 'atsiliepimo_data': '2019-08-29 17:31:36', 'atsiliepimų_tekstas': \"Ši vieta anksčiau siūlė įdomų, gerai paruoštą maistą. Dabar nebe. Viskas yra nuobodu standartinis maistas, gausus mėsos, su mažai inovacijų. Puikūs pietų pasiūlymai, vis dar nurodyti svetainėje, dingo. Duona mano BLT atrodė sena ir tiesiog ištraukta iš viso kvietinio stebuklingo duonos maišo. Buvo tik vienas pasirinkimas sriubai ir ji buvo baigta dienai. Išties, nėra jokios priežasties vėl čia ateiti.\"}]}\nApžvalga:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-lt
+```

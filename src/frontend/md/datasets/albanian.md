@@ -683,3 +683,58 @@ You can evaluate a model on this dataset as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-sq
 ```
+
+## Hallucination Detection
+
+### RAGTruth-sq
+
+This dataset is an Albanian translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Udhëzim:\nShkruani një përmbledhje objektive rreth këtij biznesi lokal duke u bazuar vetëm në të dhënat e strukturuara të ofruara në formatin JSON. Duhet të përfshini detaje dhe të mbuloni informacionin e përmendur në rishikimet e klientëve. Përmbledhja duhet të jetë 100 - 200 fjalë. Mos shpikni informacion. Të dhëna të strukturuara:\n{'emri': 'Backyard Bowls', 'adresa': '331 Motor Way', 'qyteti': 'Santa Barbara', 'shteti': 'CA', 'kategoritë': 'Tregjet e Shëndetit, Kafe & Çaj, Akullore & Yogurt të ngrirë, Restorante, Bar & Smoothies, Mëngjes & Brunch, Ushqim, Amerikan (I Ri), Ushqim Special', 'oraret': {'E hënë': '8:0-17:0', 'E martë': '8:0-17:0', 'E mërkurë': '8:0-17:0', 'E enjte': '8:0-17:0', 'E premte': '8:0-17:0', 'E shtunë': '8:0-17:0', 'E diel': '8:0-17:0'}, 'atributet': {'ParkimiBiznesor': {'garazh': False, 'rrugë': True, 'i verifikuar': False, 'parcelë': True, 'valet': False}, 'RezervimetRestoranteve': False, 'UljeNëNatyrë': True, 'WiFi': 'jo', 'MarrjaEUshqimitNgaRestorantet': True, 'RestoranteTëMirëPërGrupet': True, 'Muzikë': None, 'Atmosfera': {'romantike': False, 'intime': False, 'turistike': False, 'hipster': False, 'divey': False, 'klasike': False, 'trendy': False, 'e lartë': False, 'casual': True}}, 'yjet_e_biznesit': 4.0, 'informacioni_i_rishikimeve': [{'yjet_e_rishikimeve': 4.0, 'data_e_rishikimit': '2021-12-29 18:50:25', 'teksti_i_rishikimit': 'Nga 3 zgjedhjet - të gjitha zgjedhjet ishin perfekte për fotografinë - tashti i avullit ishte më i miri - i ngrohtë dhe i shijshëm me mjaltë sipër dhe banane. Tashti Açaí ishte i mirë megjithatë pak i ftohtë - Avokado në tost - spërkatjet ishin pak të pa shije dhe tosti i ftohtë - atmosferë e mirë në këtë vend - shënim - ulëse të kufizuara kështu që shkoni aty herët.'}, {'yjet_e_rishikimeve': 5.0, 'data_e_rishikimit': '2021-12-18 12:30:27', 'teksti_i_rishikimit': \"Dyqani kryesor!!! Ky duhet të jetë një pikë referimi në SANTA BARBARA, vendi ku tashti i avullit filloi dominimin e tij Açaí. Thjesht, më i miri në klasë. Shijshëm, ushqyes, përbërës të cilësisë. Shkoni aty TANI, faleminderit më vonë!\"}, {'yjet_e_rishikimeve': 3.0, 'data_e_rishikimit': '2021-12-05 16:42:33', 'teksti_i_rishikimit': \"Kam pasur një tashti Açaí dhe ndava një tost avokado. Tashti ishte në rregull, sigurisht kam pasur më të mirë. Tosti ishte i mirë por jo mahnitës. Për ushqim të shëndetshëm në zonë, është një opsion i shkëlqyer.\"}]}\nPërmbledhje:"
+}
+```
+
+```json
+{
+  "prompt": "Përgjigjuni shkurtimisht pyetjes së mëposhtme:\ncili është efekti i gjurmës së karbonit\nMbani parasysh se përgjigjja juaj duhet të bazohet rreptësisht në tre pasazhet e mëposhtme:\npasazhi 1: Gjurma juaj e karbonit masin ndikimin mjedisor të stilit tuaj të jetesës. Çdo gjë që bëni ka një ndikim --- pozitiv ose negativ --- në mjedis. Ky është koncepti pas gjurmës suaj të karbonit, e cila është një metodë për të matur efektin mjedisor të stilit tuaj të jetesës. Një gjurmë karboni, e matur në ton, tregon sasinë e dioksidit të karbonit dhe gazrave të tjerë serë që prodhohen si rezultat i aktiviteteve tuaja të përditshme. Ju mund ta reduktoni gjurmën tuaj duke ndryshuar mënyrën se si jetoni. Edhe ndryshimet që duken të vogla mund të bëjnë një ndryshim të rëndësishëm.\n\npasazhi 2: Të gjitha kthehen te gjurma mesatare e karbonit. Gjurma mesatare për frymë e karbonit është 6 ton në vit. Në SHBA, mesatarja është 20 ton në vit, dhe një e treta e saj krijohet nga emetimet e automjeteve -- që do të thotë se vetura juaj mund të lëshojë më shumë se 6 ton CO2 në vit -- mjaftueshëm për dy persona.\n\npasazhi 3: Pra, çfarë është saktësisht një gjurmë karboni? Në terma më të thjeshtë, gjurma e karbonit është sasia totale e gazrave serë të prodhuar nga aktivitete të ndryshme njerëzore brenda një periudhe të caktuar kohore. Gjurma e karbonit zakonisht matet në ton dioksid karboni (CO2) të lëshuar në atmosferë. Shtëpia juaj ka një gjurmë karboni nëse përdorni naftë, qymyr ose gaz për ta ngrohur. Ai cheeseburger në restorantin tuaj të preferuar ka një gjurmë karboni: rritja e mishit dhe grurit dhe funksionimi i restorantit përfshin të gjitha gazra serë. Vetura juaj ka një gjurmë karboni, e cila varet nga konsumimi i karburantit të mjetit dhe distanca e drejtimit.\n\nNë rast se pasazhet nuk përmbajnë informacionin e nevojshëm për të përgjigjur pyetjes, ju lutemi përgjigjuni me: \"Nuk mund të përgjigjem bazuar në pasazhet e dhëna.\"\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Përgjigjuni shkurtimisht pyetjes së mëposhtme:\nçfarë e shkakton shpërthimin e shalqirit\nKujtoni se përgjigjja juaj duhet të bazohet vetëm në tre pasajet e mëposhtme:\npasazhi 1: Vendosni një grup elastikësh rreth mesit të shalqirit. Kini kujdes sepse gjithë ajo presion nga jashtë do të fillojë të shpërthejë shalqirin. Elastikët janë një shembull i shkëlqyer i energjisë potenciale. Energjia potenciale është energji që ruhet, nuk po përdoret, duke pritur të lirohet.\n\npasazhi 2: Është një ide e keqe të provosh të rikrijosh një shalqi që shpërthen. Është e mundur të rikrijosh një shpërthim me një procedurë kimike, por kjo përfshin gaze dhe lëngje të paqëndrueshme. Pyet mësuesin tuaj të kimisë ose shkencës - ata mund të dinë si ta bëjnë dhe të jenë të gatshëm të rikrijojnë shalqin që shpërthen për klasën tuaj!\n\npasazhi 3: Gazi do të përpiqet me të gjitha forcat të ikë nga shalqiri, por ndërsa ngadalë rritet për shkak të kalbjes në shalqi, presioni do të vazhdojë të rritet. Kur lëkura e shalqirit nuk është më e fortë mjaftueshëm për të mbajtur gazin brenda, ai do të shpërthejë, shpesh duke spërkatur të gjitha sipërfaqet përreth me shalqi të kalbur.\n\nNë rast se pasajet nuk përmbajnë informacionin e nevojshëm për të përgjigjur pyetjes, ju lutemi përgjigjuni me: \"Nuk mund të përgjigjem bazuar në pasajet e dhëna.\"\noutput:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-sq
+```

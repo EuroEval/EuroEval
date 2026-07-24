@@ -60,14 +60,6 @@ ORANGE_SUM_CONFIG = DatasetConfig(
     languages=[FRENCH],
 )
 
-MMLU_FR_CONFIG = DatasetConfig(
-    name="mmlu-fr",
-    pretty_name="MMLU-fr",
-    source="EuroEval/mmlu-fr-mini",
-    task=KNOW,
-    languages=[FRENCH],
-)
-
 HELLASWAG_FR_CONFIG = DatasetConfig(
     name="hellaswag-fr",
     pretty_name="HellaSwag-fr",
@@ -98,6 +90,25 @@ VALEU_FR_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+RAGTRUTH_FR_CONFIG = DatasetConfig(
+    name="ragtruth-fr",
+    pretty_name="RAGTruth-fr",
+    source="EuroEval/ragtruth-translated-hallucinations-fr-mini",
+    task=HALLU,
+    languages=[FRENCH],
+    train_split=None,
+)
+
+
+
+
+MMLU_FR_CONFIG = DatasetConfig(
+    name="mmlu-fr",
+    pretty_name="MMLU-fr",
+    source="EuroEval/mmlu-fr-mini",
+    task=KNOW,
+    languages=[FRENCH],
+)
 
 # Unofficial datasets ###
 
@@ -149,6 +160,15 @@ WINOGRANDE_FR_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+MULTINRC_FR_CONFIG = DatasetConfig(
+    name="multinrc-fr",
+    pretty_name="MultiNRC-fr",
+    source="EuroEval/multinrc-fr",
+    task=KNOW,
+    languages=[FRENCH],
+    unofficial=True,
+)
+
 INCLUDE_FR_CONFIG = DatasetConfig(
     name="include-fr",
     pretty_name="INCLUDE-fr",
@@ -165,24 +185,5 @@ MULTILOKO_FR_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[FRENCH],
     val_split=None,
-    unofficial=True,
-)
-
-MULTINRC_FR_CONFIG = DatasetConfig(
-    name="multinrc-fr",
-    pretty_name="MultiNRC-fr",
-    source="EuroEval/multinrc-fr",
-    task=KNOW,
-    languages=[FRENCH],
-    unofficial=True,
-)
-
-RAGTRUTH_FR_CONFIG = DatasetConfig(
-    name="ragtruth-fr",
-    pretty_name="RAGTruth-fr",
-    source="EuroEval/ragtruth-translated-hallucinations-fr-mini",
-    task=HALLU,
-    languages=[FRENCH],
-    train_split=None,
     unofficial=True,
 )

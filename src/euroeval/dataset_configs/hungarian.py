@@ -83,6 +83,15 @@ MULTI_IFEVAL_HU_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+RAGTRUTH_HU_CONFIG = DatasetConfig(
+    name="ragtruth-hu",
+    pretty_name="RAGTruth-hu",
+    source="EuroEval/ragtruth-translated-hallucinations-hu-mini",
+    task=HALLU,
+    languages=[HUNGARIAN],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -92,15 +101,5 @@ INCLUDE_HU_CONFIG = DatasetConfig(
     source="EuroEval/include-hu-mini",
     task=KNOW,
     languages=[HUNGARIAN],
-    unofficial=True,
-)
-
-RAGTRUTH_HU_CONFIG = DatasetConfig(
-    name="ragtruth-hu",
-    pretty_name="RAGTruth-hu",
-    source="EuroEval/ragtruth-translated-hallucinations-hu-mini",
-    task=HALLU,
-    languages=[HUNGARIAN],
-    train_split=None,
     unofficial=True,
 )

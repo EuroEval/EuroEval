@@ -65,9 +65,6 @@ MULTI_IFEVAL_SL_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-
-# Unofficial datasets ###
-
 RAGTRUTH_SL_CONFIG = DatasetConfig(
     name="ragtruth-sl",
     pretty_name="RAGTruth-sl",
@@ -75,5 +72,4 @@ RAGTRUTH_SL_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[SLOVENE],
     train_split=None,
-    unofficial=True,
 )

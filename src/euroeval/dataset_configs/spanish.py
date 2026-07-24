@@ -96,6 +96,15 @@ VALEU_ES_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+RAGTRUTH_ES_CONFIG = DatasetConfig(
+    name="ragtruth-es",
+    pretty_name="RAGTruth-es",
+    source="EuroEval/ragtruth-translated-hallucinations-es-mini",
+    task=HALLU,
+    languages=[SPANISH],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -190,15 +199,5 @@ MULTINRC_ES_CONFIG = DatasetConfig(
     source="EuroEval/multinrc-es",
     task=KNOW,
     languages=[SPANISH],
-    unofficial=True,
-)
-
-RAGTRUTH_ES_CONFIG = DatasetConfig(
-    name="ragtruth-es",
-    pretty_name="RAGTruth-es",
-    source="EuroEval/ragtruth-translated-hallucinations-es-mini",
-    task=HALLU,
-    languages=[SPANISH],
-    train_split=None,
     unofficial=True,
 )

@@ -2202,7 +2202,7 @@ The hallucination detection is performed using the
 hallucination at the token level. The metric reported is the hallucination rate,
 computed as the ratio of hallucinated tokens to total tokens in the generated answers.
 
-Here are a few examples from the training split:
+Here are a few examples from the test split:
 
 ```json
 {
@@ -2239,6 +2239,18 @@ Here are a few examples from the training split:
   ]
 }
 ```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
 
 You can evaluate this dataset directly as follows:
 

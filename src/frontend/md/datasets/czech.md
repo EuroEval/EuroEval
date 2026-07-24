@@ -673,3 +673,58 @@ You can evaluate a model on this dataset as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-cs
 ```
+
+## Hallucination Detection
+
+### RAGTruth-cs
+
+This dataset is a Czech translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Stručně odpovězte na následující otázku:\njaký je rozdíl mezi steakem z hovězí svíčkové a porterhouse steakem\nMějte na paměti, že vaše odpověď by měla být přísně založena na následujících třech pasážích:\npasáž 1: Rozdíl mezi těmito dvěma je v tom, že porterhouse steaky jsou krájeny dále vzadu na svíčkové a proto obsahují o něco více svíčkové nebo filé než T-bone steaky a existuje odpovídající cenový rozdíl. -Bone a porterhouse kusy steaků jsou připravovány podobným způsobem, zahrnujícím vertikální řez, který zahrnuje prvky jak filé, tak přední části svíčkové (což Američané nazývají krátkou svíčkovou) po obou stranách charakteristické T tvarované kosti.\n\npasáž 2: T-Bone versus Porterhouse steaky. T-Bone steaky a porterhouse steaky jsou stejné. Porterhouse je jen větší verzí T-Bone, protože je vyřezán z větší části svíčkové. Porterhouse je králem T-Bonů. Diagram ukazující kusy hovězího masa. Oba jsou krájeny z oblasti krátké svíčkové. -Bone versus Porterhouse steaky. T-Bone steaky a porterhouse steaky jsou stejné. Porterhouse je jen větší verzí T-Bone, protože je vyřezán z větší části svíčkové.\n\npasáž 3: Steak z hovězí svíčkové je steak krájený ze zadní části zvířete. V běžném americkém řeznictví je steak řezán ze zadní části zvířete, pokračující od krátké svíčkové, ze které jsou krájeny T-bone, porterhouse a klubové steaky. Svíčková je ve skutečnosti rozdělena na několik typů steaků. V běžném americkém řeznictví je steak řezán ze zadní části zvířete, pokračující od krátké svíčkové, ze které jsou krájeny T-bone, porterhouse a klubové steaky. Svíčková je ve skutečnosti rozdělena na několik typů steaků.\n\nPokud pasáže neobsahují potřebné informace k odpovědi na otázku, prosím odpovězte: \"Není možné odpovědět na základě daných pasáží.\"\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Shrňte následující zprávu do 106 slov:\nCíl výměny Dolphins: Chase Young\nMiami Dolphins přicházejí po kontroverzní prohře s Philadelphia Eagles v neděli večer, kdy se na národní televizi utkali dva kandidáti na Super Bowl. Obrana Eagles (a rozhodčí) byla silná a porazila Dolphins, kteří zaznamenali výrazné zlepšení hry v obraně. Jak se blíží termín pro výměny, všichni novináři NFL, sportovní podcasty a pořady na národní televizi a každé sportovní streamingové platformě se soustředí na to, kteří hráči změní týmy. Dolphins se v nadcházejících týdnech vrátí talent jako Xavien Howard, Jalen Ramsey, Connor Williams, Terron Armstead a De'Von Achane. Nicméně stále mají potřeby na ofenzivní linii a v oblastech obrany, které mohou být řešeny na termínu pro výměny. Chase Young pravděpodobně není první jméno, které vás napadne, když přemýšlíte o potřebách Dolphins, ale problémy obranné linie s konzistentním tlakem s jejich čtyřmi hráči byly celou sezónu diskutovány. Josina Anderson z CBS Sports hlásí, že \"několik identifikovatelných týmů\" je připraveno provést výměnu za Younga nebo Monteze Sweata z Commanders, a i když se může zdát nepravděpodobné, že Young skončí v Miami, rozhodně by to mělo být alespoň prozkoumáno. Nejprve, Emmanuel Ogbah byl letos neúčinný, nasbíral pouze 2,5 sacku, což je daleko od 9 sacků, které měl v sezónách 2020 a 2021 (před zraněním). Abych byl spravedlivý, Christian Wilkins nehrál na očekávané úrovni a linie jako celek měla problémy. Výměna za Younga, který je o pět let mladší a má 5 sacků v této sezóně, by byla obrovským vylepšením pro Dolphins. Je třeba zmínit, že výměna za Younga by vedla k okamžité potřebě podepsat s ním dlouhodobou smlouvu. Miami určitě bude mít vážné otázky a rozhodnutí ohledně své situace s platovým stropem v budoucnu, ale pokud byli ochotni podepsat běžce Indianapolis Colts Jonathana Taylora na lukrativní smlouvu, určitě by to mohli udělat i s Youngem, a možná by to bylo o něco levnější. Přivedení Younga do tlaku, který zahrnuje Wilkinse, Zacha Sielera, Jaelena Phillipse a Bradleyho Chubba, by určitě zvýšilo účinnost linie, když se připravují na postup do play-off. Miami mělo problémy s generováním sacků v této sezóně, takže přidání Younga by výrazně pomohlo zvýšit toto číslo a pomoci i dalším oblastem obrany.\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Pokyn:\nNapište objektivní přehled o následující místní firmě pouze na základě poskytnutých strukturovaných dat ve formátu JSON. Měli byste zahrnout detaily a pokrýt informace uvedené v recenzích zákazníků. Přehled by měl mít 100 - 200 slov. Nevymýšlejte informace. Strukturovaná data:\n{'název': \"Longboard's Grill\", 'adresa': '210 Stearns Wharf', 'město': 'Santa Barbara', 'stát': 'CA', 'kategorie': 'Noční život, Mořské plody, Americká (tradiční), Bar, Restaurace', 'otevírací_doba': {'Pondělí': '12:0-20:0', 'Úterý': '12:0-20:0', 'Středa': '12:0-20:0', 'Čtvrtek': '12:0-20:0', 'Pátek': '12:0-21:0', 'Sobota': '11:0-21:0', 'Neděle': '11:0-20:0'}, 'atributy': {'Parkování': {'garáž': False, 'ulice': False, 'ověřeno': False, 'parkoviště': False, 'valet': True}, 'RezervaceRestaurací': False, 'VenkovníSezení': True, 'WiFi': 'ne', 'JídloNaOdnesení': True, 'RestauraceVhodnéProSkupiny': True, 'Hudba': False, 'Atmosféra': {'turistická': True, 'hipster': False, 'romantická': False, 'divey': False, 'intimní': False, 'trendy': False, 'luxusní': False, 'stylová': True, 'neformální': True}}, 'hvězdy_firmy': 3.0, 'informace_o_recenzích': [{'hvězdy_recenze': 5.0, 'datum_recenze': '2021-12-29 21:30:43', 'text_recenze': \"Ústřice byly fascinující a místo samotné bylo také fantastické! Já, jako milovník ústřic, jsem si to zde potvrdil. Ústřice jsou velmi čerstvé a chutné, doporučil bych to každému, kdo je velkým fanouškem ústřic nebo mořských plodů. 5 hvězdiček ode mě pro toto místo.\"}, {'hvězdy_recenze': 1.0, 'datum_recenze': '2021-12-09 01:11:00', 'text_recenze': 'Dnes jsem sem vzal svou vnučku a hluboce toho lituji. Při prvním soustu jsem měl odmítnout a jít dál, ale nechtěl jsem rozrušit svou vnučku, která byla hladová. Oba jsme měli rybu a hranolky. Ryba byla tak špatná, že jsem se zeptal číšníka, jaký to byl druh. Řekl \"je to červený snapper, chutná to divně?\" Rád bych, aby restaurace dokázala, že to nebyla nejnižší kvalita tilapie na trhu. Chutnalo to jako kov a bláto. Manažer a majitel by si to měli vzít domů svým rodinám a vidět reakci. Je to odporné. Celé místo je zchátralé a měl jsem odejít okamžitě.'}, {'hvězdy_recenze': 1.0, 'datum_recenze': '2021-11-26 01:33:08', 'text_recenze': 'Večeře na Den díkůvzdání byla hrozná. Služba byla diskriminační a více se starala o ostatní. Dostali jsme plastové příbory a nikdo nám ani nedal menu. Musel jsem si vzít své vlastní menu, najít číšníka a nikdo nám neřekl o žádných speciálních nabídkách. Absolutně mi to zkazilo den a doporučuji vám jít někam jinam, pokud nechcete být zklamáni.'}]\nPřehled:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-cs
+```

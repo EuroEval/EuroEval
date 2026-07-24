@@ -97,6 +97,15 @@ VALEU_IT_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+RAGTRUTH_IT_CONFIG = DatasetConfig(
+    name="ragtruth-it",
+    pretty_name="RAGTruth-it",
+    source="EuroEval/ragtruth-translated-hallucinations-it-mini",
+    task=HALLU,
+    languages=[ITALIAN],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -182,15 +191,5 @@ WIC_ITA_CONFIG = DatasetConfig(
     source="EuroEval/wic-ita",
     task=WIC,
     languages=[ITALIAN],
-    unofficial=True,
-)
-
-RAGTRUTH_IT_CONFIG = DatasetConfig(
-    name="ragtruth-it",
-    pretty_name="RAGTruth-it",
-    source="EuroEval/ragtruth-translated-hallucinations-it-mini",
-    task=HALLU,
-    languages=[ITALIAN],
-    train_split=None,
     unofficial=True,
 )
