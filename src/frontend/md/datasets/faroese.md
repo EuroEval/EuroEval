@@ -546,6 +546,81 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset faroese-semantic-relations
 ```
 
+### Unofficial: Faroese Metaphorical Explanations
+
+This dataset was published in [this paper](https://doi.org/10.63317/4u4i99hc8co8)
+and tests comprehension of Faroese idioms. Each sample presents a Faroese
+idiomatic expression, and the model has to pick the correct explanation of its meaning
+from four options: the correct explanation and three distractors.
+
+The original full dataset consists of 457 samples. We use a 140 / 35 / 282 split for
+training, validation and testing, respectively (so 457 samples used in total),
+following the ratio of the standard 1,024 / 256 / 2,048 split.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hvat merkir orðafellið 'alt tað, ið lá og gruggaði teirra millum'?\nSvarmøguleikar:\na. tey aftastu í raðnum\nb. verður harðari av sær\nc. varð illa við, datt burtur í einki\nd. ið teir vóru ósamdir um",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Hvat merkir orðafellið 'sálmarnir eru ljósdæmdir'?\nSvarmøguleikar:\na. ljósir\nb. stórar\nc. lúgva\nd. liggur stutt",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Hvat merkir orðafellið 'seta ( koma) í botn'?\nSvarmøguleikar:\na. vera grimur á at líta, lúnast, gronast\nb. hevur rent seg fastan, er komin í kløtur\nc. verða fastur í botni; renna seg fastan og ikki koma longri; við snøri\nd. hálur um at halda, óálítandi, svikaligur",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hetta eru fleirvalsspurningar (við svarum).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spurningur: Hvat merkir orðafellið '{idiom}'?
+  Svarmøguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spurningur: Hvat merkir orðafellið '{idiom}'?
+  Svarmøguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Svara spurninginum omanfyri við 'a', 'b', 'c' ella 'd', og ongum øðrum.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset faroese-metaphorical-explanations
+```
+
 ## Grammatical Error Detection
 
 ### Unofficial: GerLangMod-fo

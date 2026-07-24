@@ -60,6 +60,10 @@ Swapped official datasets for four languages (all performed by the
   paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for Faroese LLM
   Understanding", where the model has to pick the antonym of a given Faroese word from
   six options.
+- Added the unofficial Faroese knowledge dataset `faroese-metaphorical-explanations`,
+  from the paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for
+  Faroese LLM Understanding", where the model has to pick the correct explanation of a
+  Faroese idiom from four options.
 - Added Faroese prompt templates for multiple-choice tasks, enabling Faroese datasets
   for all tasks in the multiple-choice classification task group (knowledge,
   common-sense reasoning, and more).
