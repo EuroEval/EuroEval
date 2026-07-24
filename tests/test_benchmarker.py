@@ -104,7 +104,7 @@ def test_benchmark_generative_adapter(
 
 
 @pytest.mark.skipif(
-    condition=os.getenv("OPENAI_API_KEY") is None,
+    condition=not os.getenv("OPENAI_API_KEY"),
     reason="OpenAI API key is not available.",
 )
 def test_benchmark_openai(
