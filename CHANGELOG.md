@@ -13,6 +13,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   as official.
 
 ### Changed
+
+- Swapped official dataset for French:
+`mmlu-fr` → `include-fr`, `multiloko-fr`.
 - Swapped official dataset for German:
 `mmlu-de` → `include-de`, `multiloko-de`.
 

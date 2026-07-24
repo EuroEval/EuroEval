@@ -477,7 +477,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-fr
 
 ## Knowledge
 
-### Unofficial: INCLUDE-fr
+### INCLUDE-fr
 
 > This dataset is **unofficial** — results do not count toward the French leaderboard.
 
@@ -543,7 +543,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-fr
 ```
 
-### Unofficial: MultiLoKo-fr
+### MultiLoKo-fr
 
 > This dataset is **unofficial** — results do not count toward the French leaderboard.
 
@@ -606,7 +606,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multiloko-fr
 ```
 
-### MMLU-fr
+### Unofficial: MMLU-fr
 
 This dataset is a machine translated version of the English
 [MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
