@@ -464,6 +464,88 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multi-wiki-qa-fo
 ```
 
+## Knowledge
+
+### Unofficial: Faroese Semantic Relations
+
+This dataset was published in [this paper](https://doi.org/10.63317/4u4i99hc8co8)
+and tests knowledge of Faroese semantic relations. Each sample presents a Faroese
+word, and the model has to pick the word's antonym from six options: the true antonym
+and five randomly sampled unrelated words. The dataset is currently not publicly
+available, pending permission from the creators.
+
+The original full dataset consists of 1,131 samples. We use a 348 / 87 / 696 split for
+training, validation and testing, respectively (so 1,131 samples used in total),
+following the ratio of the standard 1,024 / 256 / 2,048 split.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hvat er andheitið hjá orðinum 'binda'?\nSvarmøguleikar:\na. toppast\nb. ájátta\nc. korta\nd. loysa\ne. kopra\nf. upphugsa",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Hvat er andheitið hjá orðinum 'heiðinskapur'?\nSvarmøguleikar:\na. heilagleiki\nb. reyðrósin\nc. útstova\nd. jarðarhvalur\ne. siðaarvur\nf. illveðursfuglur",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Hvat er andheitið hjá orðinum 'heiðurligur'?\nSvarmøguleikar:\na. krossutur\nb. sipligur\nc. lakbleikur\nd. asiatiskur\ne. tjóvskur\nf. vatndruknaður",
+  "label": "e"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hetta eru fleirvalsspurningar (við svarum).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spurningur: Hvat er andheitið hjá orðinum '{word}'?
+  Svarmøguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  e. {option_e}
+  f. {option_f}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spurningur: Hvat er andheitið hjá orðinum '{word}'?
+  Svarmøguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  e. {option_e}
+  f. {option_f}
+
+  Svara spurninginum omanfyri við 'a', 'b', 'c', 'd', 'e' ella 'f', og ongum øðrum.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset faroese-semantic-relations
+```
+
 ## Grammatical Error Detection
 
 ### Unofficial: GerLangMod-fo
