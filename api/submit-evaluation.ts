@@ -15,7 +15,7 @@ const LANGUAGE_GROUPS = [
   "Romance languages (Catalan, French, Italian, Portuguese, Romanian, Spanish)",
   "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)",
   "Slavic languages (Belarusian, Bulgarian, Bosnian, Croatian, Czech, Polish, Serbian, Slovak, Slovenian, Ukrainian)",
-  "West Germanic languages (Dutch, English, German)",
+  "West Germanic languages (Dutch, English, German, Luxembourgish)",
   "Albanian",
   "Greek",
   "Hungarian",
