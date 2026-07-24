@@ -72,14 +72,6 @@ MMLU_NL_CONFIG = DatasetConfig(
     languages=[DUTCH],
 )
 
-HELLASWAG_NL_CONFIG = DatasetConfig(
-    name="hellaswag-nl",
-    pretty_name="HellaSwag-nl",
-    source="EuroEval/hellaswag-nl-mini",
-    task=COMMON_SENSE,
-    languages=[DUTCH],
-)
-
 DUIDELIJKE_TAAL_NL_CONFIG = DatasetConfig(
     name="duidelijke-taal",
     pretty_name="Duidelijke Taal",
@@ -137,7 +129,25 @@ RAGTRUTH_NL_CONFIG = DatasetConfig(
 )
 
 
+WINOGRANDE_NL_CONFIG = DatasetConfig(
+    name="winogrande-nl",
+    pretty_name="Winogrande-nl",
+    source="EuroEval/winogrande-nl",
+    task=COMMON_SENSE,
+    languages=[DUTCH],
+    labels=["a", "b"],
+)
+
 # Unofficial datasets ###
+
+HELLASWAG_NL_CONFIG = DatasetConfig(
+    name="hellaswag-nl",
+    pretty_name="HellaSwag-nl",
+    source="EuroEval/hellaswag-nl-mini",
+    task=COMMON_SENSE,
+    languages=[DUTCH],
+    unofficial=True,
+)
 
 DUTCH_COLA_CONFIG = DatasetConfig(
     name="dutch-cola",
@@ -211,16 +221,6 @@ GOLDENSWAG_NL_CONFIG = DatasetConfig(
     source="EuroEval/goldenswag-nl-mini",
     task=COMMON_SENSE,
     languages=[DUTCH],
-    unofficial=True,
-)
-
-WINOGRANDE_NL_CONFIG = DatasetConfig(
-    name="winogrande-nl",
-    pretty_name="Winogrande-nl",
-    source="EuroEval/winogrande-nl",
-    task=COMMON_SENSE,
-    languages=[DUTCH],
-    labels=["a", "b"],
     unofficial=True,
 )
 
