@@ -1529,7 +1529,7 @@ def load_model(
             hf_overrides["architectures"] = remapped
 
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
-        select_backend_and_parallelism()
+        select_backend_and_parallelism(force_single_gpu=False)
     )
 
     model_location = (
@@ -1545,7 +1545,28 @@ def load_model(
         else MAX_CONTEXT_LENGTH,
     )
 
-    def _create_llm() -> "LLM":
+    def _create_llm(force_single_gpu: bool = False) -> "LLM":
+        """Create a vLLM LLM instance.
+
+        Args:
+            force_single_gpu:
+                If True, forces tensor parallelism to 1 regardless of GPU count.
+
+        Returns:
+            The loaded vLLM LLM instance.
+        """
+        # Re-compute parallelism if forcing single GPU
+        if force_single_gpu:
+            backend, tp_size, pp_size = select_backend_and_parallelism(
+                force_single_gpu=True
+            )
+        else:
+            backend, tp_size, pp_size = (
+                distributed_executor_backend,
+                tensor_parallel_size,
+                pipeline_parallel_size,
+            )
+
         llm_kwargs: dict[str, t.Any] = {
             "model": model_location,
             "tokenizer": model_location,
@@ -1556,9 +1577,9 @@ def load_model(
             "trust_remote_code": benchmark_config.trust_remote_code,
             "revision": revision,
             "seed": 4242,
-            "distributed_executor_backend": distributed_executor_backend,
-            "tensor_parallel_size": tensor_parallel_size,
-            "pipeline_parallel_size": pipeline_parallel_size,
+            "distributed_executor_backend": backend,
+            "tensor_parallel_size": tp_size,
+            "pipeline_parallel_size": pp_size,
             "disable_custom_all_reduce": True,
             "quantization": quantization,
             "dtype": dtype,  # ty: ignore[invalid-argument-type]
@@ -1626,6 +1647,24 @@ def load_model(
                     f"The model {model_id!r} could not be loaded in text-only mode. "
                     f"The error was {retry_e!r}."
                 ) from retry_e
+        # Catch tensor parallel errors - attention heads not divisible by TP size
+        elif (
+            "attention heads" in error_str
+            and "divisible by tensor parallel" in error_str
+        ):
+            log(
+                f"Model {model_id!r} failed with tensor parallel error. "
+                "Retrying with single GPU.",
+                level=logging.DEBUG,
+            )
+            try:
+                model = _create_llm(force_single_gpu=True)
+            except (RuntimeError, ValueError, OSError) as retry_e:
+                raise InvalidModel(
+                    f"The model {model_id!r} could not be loaded even with "
+                    f"single GPU. The error was {retry_e!r}."
+                ) from retry_e
+
         elif "awaiting a review from the repo authors" in str(e):
             raise InvalidModel(
                 f"The model {model_id!r} is awaiting a review from the repository "
@@ -2131,15 +2170,17 @@ def _safe_batch_decode(
         ]
 
 
-def select_backend_and_parallelism() -> tuple[str, int, int]:
+def select_backend_and_parallelism(
+    force_single_gpu: bool = False,
+) -> tuple[str, int, int]:
     """Determine the distributed backend and parallelism for vLLM.
 
+    Args:
+        force_single_gpu:
+            If True, forces tensor parallelism to 1.
+
     Returns:
-        Tuple containing:
-        - backend (str): "ray" for multi-node Ray, "uni" for a single non-CUDA
-          device (e.g. Apple Metal, CPU), else "mp".
-        - tensor_parallel_size (int): Number of GPUs per node.
-        - pipeline_parallel_size (int): Number of stages across nodes.
+        Backend, tensor parallel size, and pipeline parallel size.
     """
     if not torch.cuda.is_available():
         # Non-CUDA backends (e.g. Apple Metal, CPU) only ever expose a single device
@@ -2153,6 +2194,10 @@ def select_backend_and_parallelism() -> tuple[str, int, int]:
         # Pin it to loopback (without clobbering an explicit user setting).
         os.environ.setdefault("VLLM_HOST_IP", "127.0.0.1")
         return "uni", 1, 1
+
+    # If forcing single GPU, skip multi-node setup entirely
+    if force_single_gpu:
+        return "mp", 1, 1
 
     if not ray.is_initialized():
         try:
