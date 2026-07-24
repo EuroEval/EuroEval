@@ -157,7 +157,78 @@ euroeval --model <model-id> --dataset conll-nl
 
 ## Linguistic Acceptability
 
-### ScaLA-nl
+### Dutch CoLA
+
+This dataset is published [here](https://huggingface.co/datasets/GroNLP/dutch-cola) and
+is a manually annotated linguistic acceptability dataset, with documents coming from
+descriptions of Dutch syntax.
+
+The original full dataset consists of 19,900 / 2,400 / 2,400 samples for training,
+validation and testing, respectively (so 24,700 samples used in total). We use a 1,024 /
+256 / 1,024 split for training, validation and testing, respectively. The original
+splits were imbalanced, so we ensure a 50/50 split of correct/incorrect samples in the
+new splits. All new splits are subsets of the original splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Tasman heeft geen Maori gezien.",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Jan is vrij bang voor honden en ik ben het zeer erg voor spinnen.",
+  "label": "incorrect"
+}
+```
+
+```json
+{
+  "text": "Wat is het duidelijk dat Jan zal krijgen?",
+  "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+
+- Prefix prompt:
+
+  ```text
+  Hieronder staan zinnen en of ze grammaticaal correct zijn.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Zin: {text}
+  Grammaticaal correct: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Zin: {text}
+
+  Bepaal of de zin grammaticaal correct is of niet. Antwoord met 'ja' als de zin correct is en 'nee' als dat niet het geval is.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nee`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dutch-cola
+```
+
+### Unofficial: ScaLA-nl
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
 and was automatically created from the
@@ -229,77 +300,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset scala-nl
-```
-
-### Unofficial: Dutch CoLA
-
-This dataset is published [here](https://huggingface.co/datasets/GroNLP/dutch-cola) and
-is a manually annotated linguistic acceptability dataset, with documents coming from
-descriptions of Dutch syntax.
-
-The original full dataset consists of 19,900 / 2,400 / 2,400 samples for training,
-validation and testing, respectively (so 24,700 samples used in total). We use a 1,024 /
-256 / 1,024 split for training, validation and testing, respectively. The original
-splits were imbalanced, so we ensure a 50/50 split of correct/incorrect samples in the
-new splits. All new splits are subsets of the original splits.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Tasman heeft geen Maori gezien.",
-  "label": "correct"
-}
-```
-
-```json
-{
-  "text": "Jan is vrij bang voor honden en ik ben het zeer erg voor spinnen.",
-  "label": "incorrect"
-}
-```
-
-```json
-{
-  "text": "Wat is het duidelijk dat Jan zal krijgen?",
-  "label": "incorrect"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 12
-
-- Prefix prompt:
-
-  ```text
-  Hieronder staan zinnen en of ze grammaticaal correct zijn.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Zin: {text}
-  Grammaticaal correct: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Zin: {text}
-
-  Bepaal of de zin grammaticaal correct is of niet. Antwoord met 'ja' als de zin correct is en 'nee' als dat niet het geval is.
-  ```
-
-- Label mapping:
-  - `correct` ➡️ `ja`
-  - `incorrect` ➡️ `nee`
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset dutch-cola
 ```
 
 ## Natural Language Inference
@@ -631,7 +631,142 @@ euroeval --model <model-id> --dataset multi-wiki-qa-nl
 
 ## Knowledge
 
-### MMLU-nl
+### INCLUDE-nl
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+  "text": "Je zit op kot (studentenkamer) met zes medestudenten. Omdat jullie de fietsen tegen de gevel van het huis plaatsen, zetten jullie de vuilniszakken tegen de gevel van de buurman, waar altijd plaats is. Op een morgen gebeurt dit weer. De buurman komt woedend naar buiten en hij scheldt jullie uit dat jullie grote egoïsten zijn. Welke reactie zal het conflict niet doen escaleren?\nAntwoordopties:\na. 'Sorry, we gingen er misschien te gemakkelijk van uit dat dit u niet hinderde.'\nb. 'Wie dat zegt? We hebben de voorbije maanden nooit een vriendelijk woord gekregen.'\nc. 'Wij egoïsten? Mochten er meer parkeerplaatsen zijn voor fietsen, dan was het opgelost.'\nd. 'Maak u toch niet zo druk. Het zijn maar vuilniszakken hoor, geen bompakketten.'",
+  "label": "a",
+  "subject": "Journalism, media studies, and communication"
+}
+```
+
+```json
+{
+  "text": "Bij de Vrede van Versailles werd besloten dat Duitsland moest demilitariseren. Welke reden voor deze demilitarisatie is juist?\nAntwoordopties:\na. Duitsland moest economisch sterker worden.\nb. Frankrijk wilde geen Duits leger aan zijn grens hebben.\nc. Het Duitse leger was na de Eerste Wereldoorlog te klein geworden.\nd. Het Franse leger moest even sterk zijn als het Duitse leger.",
+  "label": "b",
+  "subject": "History"
+}
+```
+
+```json
+{
+  "text": "In welke productiesector werkt een tandarts?\nAntwoordopties:\na. in de primaire sector\nb. in de secundaire sector\nc. in de tertiaire sector\nd. in de quartaire sector",
+  "label": "c",
+  "subject": "Economics"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+
+  Beantwoord de bovenstaande vraag met {labels_str}, en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-nl
+```
+
+### MultiLoKo-nl
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Dutch
+questions are separately sourced and designed to target locally relevant topics for
+Dutch-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer
+as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
+per question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Wanneer maakten Twan Huys en Mark Rutte een Nederlandse versie van het Correspondents' Dinner, in de Beurs van Berlage?\nAntwoordopties:\na. 10-02-2024\nb. 15 maart 2017\nc. 5 november 2018\nd. 22 januari 2015",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Bij welke zender maakte Patrick Martens het programma Supernick tussen 2007 en 2011?\nAntwoordopties:\na. AVROTROS\nb. Nickelodeon\nc. RTL 4\nd. SBS6",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Hoeveel doelpunten maakte Youri Mulder in zijn laatste seizoen voor FC Twente?\nAntwoordopties:\na. vier\nb. vijf\nc. Drie\nd. twee",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+
+  Beantwoord de bovenstaande vraag met 'a', 'b', 'c' of 'd', en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-nl
+```
+
+### Unofficial: MMLU-nl
 
 This dataset is a machine translated version of the English
 [MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
@@ -853,107 +988,38 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset dutch-proverbs
 ```
 
-### Unofficial: INCLUDE-nl
+## Common-sense Reasoning
 
-This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
-comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
-LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
-academic and professional exams, covering 57 topics including regional knowledge.
+### Winogrande-nl
 
-The original dataset consists of a 'validation' split used as training data and a 'test'
-split. We use the 'validation' split as the training split, which has 25 samples. We
-sample 64 samples from the 'test' split for the validation split, and use the remaining
-512 samples for the test split. The sampling is done stratified by the subject column.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
-Here are a few examples from the dataset:
-
-```json
-{
-  "text": "Je zit op kot (studentenkamer) met zes medestudenten. Omdat jullie de fietsen tegen de gevel van het huis plaatsen, zetten jullie de vuilniszakken tegen de gevel van de buurman, waar altijd plaats is. Op een morgen gebeurt dit weer. De buurman komt woedend naar buiten en hij scheldt jullie uit dat jullie grote egoïsten zijn. Welke reactie zal het conflict niet doen escaleren?\nAntwoordopties:\na. 'Sorry, we gingen er misschien te gemakkelijk van uit dat dit u niet hinderde.'\nb. 'Wie dat zegt? We hebben de voorbije maanden nooit een vriendelijk woord gekregen.'\nc. 'Wij egoïsten? Mochten er meer parkeerplaatsen zijn voor fietsen, dan was het opgelost.'\nd. 'Maak u toch niet zo druk. Het zijn maar vuilniszakken hoor, geen bompakketten.'",
-  "label": "a",
-  "subject": "Journalism, media studies, and communication"
-}
-```
-
-```json
-{
-  "text": "Bij de Vrede van Versailles werd besloten dat Duitsland moest demilitariseren. Welke reden voor deze demilitarisatie is juist?\nAntwoordopties:\na. Duitsland moest economisch sterker worden.\nb. Frankrijk wilde geen Duits leger aan zijn grens hebben.\nc. Het Duitse leger was na de Eerste Wereldoorlog te klein geworden.\nd. Het Franse leger moest even sterk zijn als het Duitse leger.",
-  "label": "b",
-  "subject": "History"
-}
-```
-
-```json
-{
-  "text": "In welke productiesector werkt een tandarts?\nAntwoordopties:\na. in de primaire sector\nb. in de secundaire sector\nc. in de tertiaire sector\nd. in de quartaire sector",
-  "label": "c",
-  "subject": "Economics"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Hieronder staan meerkeuzevragen (met antwoorden).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Vraag: {text}
-  Antwoord: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Vraag: {text}
-
-  Beantwoord de bovenstaande vraag met {labels_str}, en niets anders.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset include-nl
-```
-
-### Unofficial: MultiLoKo-nl
-
-This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Dutch
-questions are separately sourced and designed to target locally relevant topics for
-Dutch-speaking populations.
-
-We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
-questions with correct answers in the 'targets' column. We use the first target answer
-as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
-per question. We create a 16 / 234 split for training and testing, respectively.
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
+training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Wanneer maakten Twan Huys en Mark Rutte een Nederlandse versie van het Correspondents' Dinner, in de Beurs van Berlage?\nAntwoordopties:\na. 10-02-2024\nb. 15 maart 2017\nc. 5 november 2018\nd. 22 januari 2015",
+  "text": "Emily vroeg haar zus Sarah of ze tampons of maandverband nodig had uit de winkel, hoewel _ dat niet nodig had omdat ze was overgestapt op het gebruik van menstruatiecups. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Emily\nb. Sarah",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Bij welke zender maakte Patrick Martens het programma Supernick tussen 2007 en 2011?\nAntwoordopties:\na. AVROTROS\nb. Nickelodeon\nc. RTL 4\nd. SBS6",
-  "label": "b"
+  "text": "Bij het kopen van een huis heeft Patricia niet zoveel geld te besteden als Tanya, dus _ koopt een huis met 1 slaapkamer. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Patricia\nb. Tanya",
+  "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Hoeveel doelpunten maakte Youri Mulder in zijn laatste seizoen voor FC Twente?\nAntwoordopties:\na. vier\nb. vijf\nc. Drie\nd. twee",
-  "label": "c"
+  "text": "Eenmaal in Polen genoot Dennis meer van de reis dan Jason omdat _ een oppervlakkige kennis van de Poolse taal had. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Dennis\nb. Jason",
+  "label": "b"
 }
 ```
 
@@ -961,6 +1027,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -971,6 +1038,9 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
   Antwoord: {label}
   ```
 
@@ -978,19 +1048,20 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
 
-  Beantwoord de bovenstaande vraag met 'a', 'b', 'c' of 'd', en niets anders.
+  Beantwoord de bovenstaande vraag met 'a' of 'b', en niets anders.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multiloko-nl
+euroeval --model <model-id> --dataset winogrande-nl
 ```
 
-## Common-sense Reasoning
-
-### HellaSwag-nl
+### Unofficial: HellaSwag-nl
 
 This dataset is a machine translated version of the English
 [HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
@@ -1209,77 +1280,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset goldenswag-nl
-```
-
-### Unofficial: Winogrande-nl
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English
-[Winogrande dataset](https://doi.org/10.1145/3474381).
-
-The original full dataset consists of 47 / 1,210 samples for training and testing, and
-we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
-training, validation and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Emily vroeg haar zus Sarah of ze tampons of maandverband nodig had uit de winkel, hoewel _ dat niet nodig had omdat ze was overgestapt op het gebruik van menstruatiecups. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Emily\nb. Sarah",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Bij het kopen van een huis heeft Patricia niet zoveel geld te besteden als Tanya, dus _ koopt een huis met 1 slaapkamer. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Patricia\nb. Tanya",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Eenmaal in Polen genoot Dennis meer van de reis dan Jason omdat _ een oppervlakkige kennis van de Poolse taal had. Waar verwijst de lege _ naar?\nAntwoordopties:\na. Dennis\nb. Jason",
-  "label": "b"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-
-- Prefix prompt:
-
-  ```text
-  Hieronder staan meerkeuzevragen (met antwoorden).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Vraag: {text}
-  Antwoordopties:
-  a. {option_a}
-  b. {option_b}
-  Antwoord: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Vraag: {text}
-  Antwoordopties:
-  a. {option_a}
-  b. {option_b}
-
-  Beantwoord de bovenstaande vraag met 'a' of 'b', en niets anders.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset winogrande-nl
 ```
 
 ## Summarisation

@@ -12,6 +12,24 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added full support for hallucination detection for all languages now, and now marked
   as official.
 
+### Changed
+
+- Swapped official dataset for Croatian: `mmlu-hr` → `include-hr`. The script
+  `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
+  dataset swaps.
+- Swapped official dataset for Dutch: `scala-nl` → `dutch-cola`. The script
+  `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
+  dataset swaps.
+- Swapped official dataset for Dutch: `mmlu-nl` → `include-nl`, `multiloko-nl`. The script
+  `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
+  dataset swaps.
+- Swapped official dataset for Dutch: `hellaswag-nl` → `winogrande-nl`. The script
+  `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
+  dataset swaps.
+- Swapped official dataset for French: `mmlu-fr` → `include-fr`, `multiloko-fr`. The
+  script `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when
+  performing dataset swaps.
+
 ### Fixed
 
 - Fixed `ValueError` in `prepare_train_examples` when the CLS token ID is not present
