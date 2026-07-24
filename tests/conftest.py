@@ -31,7 +31,7 @@ def pytest_unconfigure() -> None:
     delattr(sys, "_called_from_test")
 
 
-if os.environ.get("CHECK_DATASET") is not None:
+if os.environ.get("CHECK_DATASET"):
     dataset_configs = [
         dataset_config
         for dataset_config in get_all_dataset_configs(
@@ -66,7 +66,11 @@ def auth() -> Generator[str | bool, None, None]:
         The authentication token to the Hugging Face Hub.
     """
     # Get the authentication token to the Hugging Face Hub
-    auth = os.environ.get("HUGGINGFACE_API_KEY", True)
+    auth = os.environ.get("HUGGINGFACE_API_KEY")
+
+    # Treat empty strings as missing token
+    if not auth:
+        auth = True
 
     # Ensure that the token does not contain quotes or whitespace
     if isinstance(auth, str):

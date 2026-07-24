@@ -1,5 +1,6 @@
 """Tests for the `tokenisation_utils` module."""
 
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -18,6 +19,10 @@ from euroeval.types import Tokeniser
 @pytest.mark.parametrize(
     argnames=["model_id", "expected"],
     argvalues=[("01-ai/Yi-6B", True), ("google-bert/bert-base-uncased", False)],
+)
+@pytest.mark.skipif(
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for loading tokenizers",
 )
 def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) -> None:
     """Test that a model ID is a generative model."""
@@ -45,6 +50,10 @@ def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) ->
 @pytest.mark.parametrize(
     argnames=["model_id", "expected"],
     argvalues=[("01-ai/Yi-6B", False), ("common-pile/comma-v0.1-2t", True)],
+)
+@pytest.mark.skipif(
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for loading tokenizers",
 )
 def test_should_prefix_space_be_added_to_labels(
     model_id: str, expected: bool, auth: str
@@ -94,6 +103,10 @@ def test_get_end_of_chat_token_ids(
         assert end_of_chat_string == expected_string
 
 
+@pytest.mark.skipif(
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for loading tokenizers",
+)
 def test_load_xlmr_tokeniser_with_fallback(
     auth: str, benchmark_config: BenchmarkConfig
 ) -> None:

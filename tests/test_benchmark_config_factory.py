@@ -226,6 +226,10 @@ def test_prepare_dataset_configs_invalid_task() -> None:
     assert exc_info.value.code == 1
 
 
+@pytest.mark.skipif(
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for dataset config loading",
+)
 def test_prepare_dataset_configs_invalid_dataset() -> None:
     """Test that an invalid dataset raises an error."""
     with pytest.raises(SystemExit) as exc_info:
