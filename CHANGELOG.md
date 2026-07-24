@@ -29,6 +29,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Swapped official dataset for French: `mmlu-fr` → `include-fr`, `multiloko-fr`. The
   script `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when
   performing dataset swaps.
+- Swapped official dataset for European Portuguese: `mmlu-pt` → `alba-mcq-pt`,
+  `cultura-viva-pt`. The script `swap_leaderboard_dataset.py` now automatically updates
+  CHANGELOG.md when performing dataset swaps.
 
 ### Fixed
 
