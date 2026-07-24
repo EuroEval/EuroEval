@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from datasets import Dataset
-from transformers import CPU
+from euroeval.enums import Device
 
 from euroeval.exceptions import InvalidBenchmark
 from euroeval.metrics.token_hallucination_classifier import (
@@ -277,6 +277,6 @@ def test_detector_uses_correct_model_id(
     mock_cls.assert_called_once_with(
         method="transformer",
         model_path=expected_model_id,
-        device=CPU,
+        device=Device.CPU,
         cache_dir=".euroeval_cache",
     )
