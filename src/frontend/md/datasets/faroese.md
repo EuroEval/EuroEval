@@ -467,6 +467,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-fo
 ## Knowledge
 
 ### Unofficial: Faroese Semantic Relations
+
 This dataset was published in [this paper](https://doi.org/10.63317/4u4i99hc8co8)
 and tests knowledge of Faroese semantic relations. Each sample presents a Faroese
 word, and the model has to pick the word's antonym from six options: the true antonym
