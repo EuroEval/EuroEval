@@ -13,8 +13,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   as official.
 
 ### Changed
-- Swapped official dataset for Dutch:
-`hellaswag-nl` → `winogrande-nl`.
+
+- Swapped official dataset for Dutch: `hellaswag-nl` → `winogrande-nl`.
 
 - Swapped official dataset for Croatian: `mmlu-hr` → `include-hr`. The script
   `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
