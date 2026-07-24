@@ -64,11 +64,11 @@ WIKI_LINGUA_NL_CONFIG = DatasetConfig(
     languages=[DUTCH],
 )
 
-HELLASWAG_NL_CONFIG = DatasetConfig(
-    name="hellaswag-nl",
-    pretty_name="HellaSwag-nl",
-    source="EuroEval/hellaswag-nl-mini",
-    task=COMMON_SENSE,
+MMLU_NL_CONFIG = DatasetConfig(
+    name="mmlu-nl",
+    pretty_name="MMLU-nl",
+    source="EuroEval/mmlu-nl-mini",
+    task=KNOW,
     languages=[DUTCH],
 )
 
@@ -129,30 +129,22 @@ RAGTRUTH_NL_CONFIG = DatasetConfig(
 )
 
 
-INCLUDE_NL_CONFIG = DatasetConfig(
-    name="include-nl",
-    pretty_name="INCLUDE-nl",
-    source="EuroEval/include-nl-mini",
-    task=KNOW,
+WINOGRANDE_NL_CONFIG = DatasetConfig(
+    name="winogrande-nl",
+    pretty_name="Winogrande-nl",
+    source="EuroEval/winogrande-nl",
+    task=COMMON_SENSE,
     languages=[DUTCH],
-)
-
-MULTILOKO_NL_CONFIG = DatasetConfig(
-    name="multiloko-nl",
-    pretty_name="MultiLoKo-nl",
-    source="EuroEval/multiloko-nl-mini",
-    task=KNOW,
-    languages=[DUTCH],
-    val_split=None,
+    labels=["a", "b"],
 )
 
 # Unofficial datasets ###
 
-MMLU_NL_CONFIG = DatasetConfig(
-    name="mmlu-nl",
-    pretty_name="MMLU-nl",
-    source="EuroEval/mmlu-nl-mini",
-    task=KNOW,
+HELLASWAG_NL_CONFIG = DatasetConfig(
+    name="hellaswag-nl",
+    pretty_name="HellaSwag-nl",
+    source="EuroEval/hellaswag-nl-mini",
+    task=COMMON_SENSE,
     languages=[DUTCH],
     unofficial=True,
 )
@@ -232,13 +224,22 @@ GOLDENSWAG_NL_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-WINOGRANDE_NL_CONFIG = DatasetConfig(
-    name="winogrande-nl",
-    pretty_name="Winogrande-nl",
-    source="EuroEval/winogrande-nl",
-    task=COMMON_SENSE,
+INCLUDE_NL_CONFIG = DatasetConfig(
+    name="include-nl",
+    pretty_name="INCLUDE-nl",
+    source="EuroEval/include-nl-mini",
+    task=KNOW,
     languages=[DUTCH],
-    labels=["a", "b"],
+    unofficial=True,
+)
+
+MULTILOKO_NL_CONFIG = DatasetConfig(
+    name="multiloko-nl",
+    pretty_name="MultiLoKo-nl",
+    source="EuroEval/multiloko-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+    val_split=None,
     unofficial=True,
 )
 
