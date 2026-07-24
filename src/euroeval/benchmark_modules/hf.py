@@ -703,9 +703,8 @@ def load_model_and_tokeniser(
                 ) from e
             # Check if the model architecture doesn't support this task type
             # (e.g., AutoModelForMultipleChoice doesn't support certain configs)
-            if (
-                "Unrecognized configuration class" in str(e)
-                and "AutoModelFor" in str(e)
+            if "Unrecognized configuration class" in str(e) and "AutoModelFor" in str(
+                e
             ):
                 raise InvalidBenchmark(
                     f"The model {model_id!r} does not support the "
