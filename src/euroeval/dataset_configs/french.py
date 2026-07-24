@@ -100,8 +100,6 @@ RAGTRUTH_FR_CONFIG = DatasetConfig(
 )
 
 
-
-
 MMLU_FR_CONFIG = DatasetConfig(
     name="mmlu-fr",
     pretty_name="MMLU-fr",
