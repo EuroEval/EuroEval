@@ -1496,9 +1496,8 @@ def _update_changelog(
         lang_list = ", ".join(sorted([lang.name for lang in old_config.languages]))
         new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
         entry = (
-            f"- Swapped official dataset for {lang_list}: `{old_dataset}` → "
-            f"{new_ds_str}. The script `swap_leaderboard_dataset.py` now "
-            "automatically updates CHANGELOG.md when performing dataset swaps."
+            f"- Swapped official dataset for {lang_list}:\n"
+            f"`{old_dataset}` → {new_ds_str}."
         )
     else:
         lang_list = ", ".join(
@@ -1517,8 +1516,9 @@ def _update_changelog(
             "when performing dataset swaps."
         )
 
-    # Insert the entry after "### Changed"
-    lines.insert(changed_idx + 1, entry)
+    # Insert a blank line after "### Changed", then the entry
+    lines.insert(changed_idx + 1, "")
+    lines.insert(changed_idx + 2, entry)
     changelog_path.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -1927,8 +1927,7 @@ def _pr_body(old_dataset: str | None, new_datasets: tuple[str, ...]) -> str:
             f"- `{old_dataset}` is demoted to unofficial and {new_ds_str} "
             "promoted to official in the dataset configs and the dataset "
             "documentation, keeping each file's official-first grouping.\n\n"
-            "The leaderboards will pick up the change on the next regeneration.\n\n"
-            "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+            "The leaderboards will pick up the change on the next regeneration."
         )
     else:
         return (
@@ -1940,8 +1939,7 @@ def _pr_body(old_dataset: str | None, new_datasets: tuple[str, ...]) -> str:
             f"- {new_ds_str} promoted to official in the dataset configs "
             "and the dataset documentation, keeping each file's official-first "
             "grouping.\n\n"
-            "The leaderboards will pick up the change on the next regeneration.\n\n"
-            "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+            "The leaderboards will pick up the change on the next regeneration."
         )
 
 

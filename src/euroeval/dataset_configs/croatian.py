@@ -38,14 +38,6 @@ MULTI_WIKI_QA_HR_CONFIG = DatasetConfig(
     languages=[CROATIAN],
 )
 
-MMLU_HR_CONFIG = DatasetConfig(
-    name="mmlu-hr",
-    pretty_name="MMLU-hr",
-    source="EuroEval/mmlu-hr-mini",
-    task=KNOW,
-    languages=[CROATIAN],
-)
-
 WINOGRANDE_HR_CONFIG = DatasetConfig(
     name="winogrande-hr",
     pretty_name="Winogrande-hr",
@@ -75,12 +67,20 @@ RAGTRUTH_HR_CONFIG = DatasetConfig(
 )
 
 
-# Unofficial datasets ###
-
 INCLUDE_HR_CONFIG = DatasetConfig(
     name="include-hr",
     pretty_name="INCLUDE-hr",
     source="EuroEval/include-hr-mini",
+    task=KNOW,
+    languages=[CROATIAN],
+)
+
+# Unofficial datasets ###
+
+MMLU_HR_CONFIG = DatasetConfig(
+    name="mmlu-hr",
+    pretty_name="MMLU-hr",
+    source="EuroEval/mmlu-hr-mini",
     task=KNOW,
     languages=[CROATIAN],
     unofficial=True,
