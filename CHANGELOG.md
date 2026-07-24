@@ -9,6 +9,35 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added full support for hallucination detection for all languages now, and now marked
+  as official.
+
+### Changed
+
+Swapped official datasets for four languages (all performed by the
+`swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
+
+- Croatian: `mmlu-hr` → `include-hr`
+- Dutch: `scala-nl` → `dutch-cola`
+- Dutch: `mmlu-nl` → `include-nl`, `multiloko-nl`
+- Dutch: `hellaswag-nl` → `winogrande-nl`
+
+### Fixed
+
+- Fixed `ValueError` in `prepare_train_examples` when the CLS token ID is not present
+  in tokenised input IDs for certain tokenisers (e.g. Qwen3 embedding models,
+  codefuse-ai/F2LLM-v2-0.6B). Falls back to position 0 with a debug log message.
+- Fixed debug cache filename collision when running evaluations with different model
+  parameters (e.g. `#thinking` vs `#no-thinking`). The cache file now includes the
+  parameter in the filename, preventing incorrect cache reuse when using the `--debug`
+  flag.
+
+## [v17.7.0] - 2026-07-22
+
+### Added
+
+- Added the unofficial European Portuguese ALBA-MCQ, PT Exams, CulturaVivaPT,
+  SAUDADE-PT, and PT-PT Completions datasets. This was contributed by @duarteocarmo ✨
 - Evaluation hallucination detection task, reporting a hallucination rate
   (hallucinated_tokens/total_tokens). This includes RAGTruth-based datasets for 30
   European languages (Danish, Albanian, Belarusian, Bosnian, Bulgarian, Catalan,
@@ -41,6 +70,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   the previous ScaLA-da, which has now been demoted to unofficial.
 - The DaLA dataset source was moved from `giannor/dala` to `EuroEval/dala` for
   stability.
+- Made the Albanian knowledge dataset INCLUDE-sq the new official such one, over the
+  previous Global-MMLU-lite-sq , which has now been demoted to unofficial.
 
 ### Fixed
 
@@ -55,6 +86,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed race condition in cache cleanup where `rmtree` would fail with
   `FileNotFoundError` when checkpoint directories were removed concurrently during model
   benchmarking. Now uses `ignore_errors=True` to handle concurrent deletions gracefully.
+- Fixed structured output error for the LOGIC task (zebra puzzle datasets). The vLLM
+  backend now dynamically creates a Pydantic schema from the dataset structure, enabling
+  evaluation of logical reasoning datasets with vLLM models.
 - The HF, vLLM and fresh model tokeniser loaders no longer pass `verbose=False` to
   `AutoTokenizer.from_pretrained`, since the `MistralCommonBackend` rejects this
   argument. The vLLM mistral tokeniser fallback is now gated on model identity (model ID
@@ -73,10 +107,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
 - Added the `google-cloud-aiplatform` dependency, as it's required to run
   Gemini-3.1-pro.
-- Added the Danish zebra puzzle dataset
-  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The
-  split is given by 128 / 1,024 samples for train / test, respectively. It is marked as
-  `unofficial` for now. This was contributed by @sofiehb ✨
+- Added the Multi-Zebra-Logic datasets for 9 language variants: Danish (da), Dutch
+  (nl), English (en), Faroese (fo), German (de), Icelandic (is), Norwegian Bokmål (nb),
+  Norwegian Nynorsk (nn), and Swedish (sv). Each variant has an easy (2 objects × 3
+  attributes, easy variants now official) and hard (4 objects × 5 attributes,
+  unofficial) version. This was contributed by @sofiehb ✨
 
 ### Fixed
 

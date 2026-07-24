@@ -1368,7 +1368,77 @@ euroeval --model <model-id> --dataset dameta
 
 ## Common-sense Reasoning
 
-### HellaSwag-da
+### Winogrande-da
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
+training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Natalie synes, at smaragder er smukke ædelstene, men Betty gør ikke. _ købte en halskæde med en stor smaragd. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Natalie\nb. Betty",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Jeg kunne ikke kontrollere fugten, som jeg kontrollerede regnen, fordi _ kom ind overalt. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. fugt\nb. regn",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "At håndtere nødsituationer var aldrig særlig svært for Kevin, men det var det for Nelson, fordi _ ikke var i stand til at forblive rolig under pres. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Kevin\nb. Nelson",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Følgende er multiple choice spørgsmål (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+
+  Besvar ovenstående spørgsmål ved at svare med 'a' eller 'b', og intet andet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset winogrande-da
+```
+
+### Unofficial: HellaSwag-da
 
 This dataset is a machine translated version of the English
 [HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
@@ -1521,79 +1591,9 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset goldenswag-da
 ```
 
-### Unofficial: Winogrande-da
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English
-[Winogrande dataset](https://doi.org/10.1145/3474381).
-
-The original full dataset consists of 47 / 1,210 samples for training and testing, and
-we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
-training, validation and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Natalie synes, at smaragder er smukke ædelstene, men Betty gør ikke. _ købte en halskæde med en stor smaragd. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Natalie\nb. Betty",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Jeg kunne ikke kontrollere fugten, som jeg kontrollerede regnen, fordi _ kom ind overalt. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. fugt\nb. regn",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "At håndtere nødsituationer var aldrig særlig svært for Kevin, men det var det for Nelson, fordi _ ikke var i stand til at forblive rolig under pres. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Kevin\nb. Nelson",
-  "label": "b"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Følgende er multiple choice spørgsmål (med svar).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Spørgsmål: {text}
-  Svarmuligheder:
-  a. {option_a}
-  b. {option_b}
-  Svar: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Spørgsmål: {text}
-  Svarmuligheder:
-  a. {option_a}
-  b. {option_b}
-
-  Besvar ovenstående spørgsmål ved at svare med 'a' eller 'b', og intet andet.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset winogrande-da
-```
-
 ## Logical Reasoning
 
-### Unofficial: ZebraPuzzleEasy-da
+### ZebraPuzzleEasy-da
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
 and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
@@ -2202,7 +2202,7 @@ The hallucination detection is performed using the
 hallucination at the token level. The metric reported is the hallucination rate,
 computed as the ratio of hallucinated tokens to total tokens in the generated answers.
 
-Here are a few examples from the training split:
+Here are a few examples from the test split:
 
 ```json
 {
@@ -2239,6 +2239,18 @@ Here are a few examples from the training split:
   ]
 }
 ```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
 
 You can evaluate this dataset directly as follows:
 

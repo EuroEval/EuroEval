@@ -706,39 +706,38 @@ Here are a few examples from the test split:
 
 ```json
 {
-  "text": "Schreift eng Zesummefaassung vun der Wikipedia Säit \"https://lb.wikipedia.org/wiki/Lëtzebuergesch\" mat op d'mannst 200 Wierder. Benotzt keng Kommaen a markéiert op d'mannst 3 Sektiounen déi Titelen hunn am Markdown Format, zum Beispill *markéiert Sektioun Deel 1*, *markéiert Sektioun Deel 2*, *markéiert Sektioun Deel 3*.",
-  "target_text": {
-    "instruction_id_list": [
-      "punctuation:no_comma",
-      "detectable_format:number_highlighted_sections",
-      "length_constraints:number_words"
-    ],
-    "kwargs": [
-      {},
-      { "num_highlights": 3 },
-      { "num_words": 200, "relation": "at least" }
-    ]
-  }
+  "prompt": "Äntwert kuerz d'folgend Fro:
+wat ass den Ënnerscheed tëscht raffinéierte an unraffinéierte Kokoosöl
+Huel am Kapp datt deng Äntwert strikt op déi folgend dräi Passagen baséiert:
+passage 1:• Raffinéierte Kokoosöl ass aus der gedréchent Kokoosfrucht gemaach, während unraffinéierte Kokoosöl, och genannt pur oder jung Kokoosöl, aus dem Fleesch vun de frësche Kokoosen gemaach gëtt. • Unraffinéierte Kokoosöl huet e charakteristesche Aroma an Geschmaach, deen während dem Raffinéieren verluer geet.
+
+passage 2:Allerdéngs huet raffinéierte Kokoosöl e Rauchpunkt vun 450 Grad F, während de Rauchpunkt vum unraffinéierte Kokoosöl 350 Grad F ass. Wéinst senger méi héijer Hëtztbeständegkeet kann raffinéierte Kokoosöl eng besser Optioun fir héich Temperatur Kachmethoden wéi Fëschfrittéieren sinn.
+
+passage 3:Eent vun de charakteristesche Ënnerscheeder tëscht raffinéierte an unraffinéierte Kokoosöl ass den Geschmaach. Wéinst der Deodoréierung verléiert raffinéierte Kokoosöl säin typesche Kokoosgeschmaach an huet keen erkennbaren Geschmaach oder Aroma. Wéi och ëmmer, unraffinéiert Öl huet e mëllen Kokoosgeschmaach an Aroma.
+
+Wann d'Passagen net déi néideg Informatiounen enthalen fir d'Fro ze beäntweren, äntwert w.e.g. mat: \"Net fäeg ze äntweren baséiert op de gegebene Passagen.\""
 }
 ```
 
 ```json
 {
-  "text": "Ech plangen eng Rees op Lëtzebuerg a wëll dDir mir e Reesplan am Shakespeare-Stil schreift. Dir dirft keng Kommaen an Ärer Äntwert benotzen.",
-  "target_text": {
-    "instruction_id_list": ["punctuation:no_comma"],
-    "kwargs": [{}]
-  }
+  "prompt": "Kuerz äntwerten d'Fro: Wéi laang dauert et fir Poulet z'artikelen am Crockpot?
+Huel am Kapp, datt d'Äntwert strikt op de folgende dräi Passagen baséiert:
+passage 1: Plaz all Wurzelgeméis wéi Zwiebel, Kartoffelen an Mëllchen am Crockpot an setz d'Poulet uewen op d'Geméis. Füügt eng hallef Téi vum Bouillon, Wäin oder Waasser an de Pot. Kacht op niddreg fir 6 - 8 Stonnen oder bis et fäerdeg ass. (Dir kënnt och op héich fir 1 Stonn kachen, dann op niddreg fir ongeféier 5 Stonnen oder bis et fäerdeg ass.).
+passage 2: Füügt eng hallef Téi vum Bouillon, Wäin oder Waasser an de Pot. Kacht op niddreg fir 6 - 8 Stonnen oder bis et fäerdeg ass. (Dir kënnt och op héich fir 1 Stonn kachen, dann op niddreg fir ongeféier 5 Stonnen oder bis et fäerdeg ass.).
+passage 3: Bewäertung Neisten Altesten. Bescht Äntwert: Dir géift 8 Pouletbréifstécker op niddreg fir 8 Stonnen an engem Slow Cooker kachen. Ech maachen oft Poulet Tacos, an esou maachen ech et. Dir kënnt et fir 4 Stonnen op héich kachen wann Dir Zäit dréngt. Et wäert nach ëmmer gutt ausgehen. Allgemeng wäert Pouletbréif ëmmer zart sinn, solang et genuch Feuchtigkeit gëtt. Et funktionéiert och fir Rëndfleesch, fir zerrasselt Rëndfleesch Tacos an Taquitos. Ech maachen oft Poulet Tacos, an esou maachen ech et. Dir kënnt et fir 4 Stonnen op héich kachen wann Dir Zäit dréngt. Et wäert nach ëmmer gutt ausgehen. Allgemeng wäert Pouletbréif ëmmer zart sinn, solang et genuch Feuchtigkeit gëtt. Et funktionéiert och fir Rëndfleesch, fir zerrasselt Rëndfleesch Tacos an Taquitos.
+
+Wann d'Passagen net d'néideg Informatioun enthalen fir d'Fro ze beäntweren, äntwert w.e.g. mat: \"Net fäeg ze beäntweren baséiert op de gegebene Passagen.\"
+output:"
 }
 ```
 
 ```json
 {
-  "text": "Maacht e CV fir e frësche Student deen sech fir säin éischte Job bewierft. Stellt sécher datt Dir op d'mannst 12 Plazhalter a quadratesche Klameren abaut, wéi zum Beispill [Numm] oder [Adress].",
-  "target_text": {
-    "instruction_id_list": ["detectable_content:number_placeholders"],
-    "kwargs": [{ "num_placeholders": 12 }]
-  }
+  "prompt": "Instruktioun:
+Schrei eng objektiv Iwwersiicht iwwer d'folgend lokal Geschäfter baséiert nëmme op den zur Verfügung gestellten strukturéierte Daten am JSON-Format. Dir sollt Detailer abegraff an d'Informatiounen abdecken, déi an den Rezensiounen vun de Clienten ernimmt ginn. D'Iwwersiicht sollt 100 - 200 Wierder hunn. Maacht keng Informatiounen aus. Strukturéiert Daten:
+{'Numm': 'La Casa De Maria', 'Adress': '800 El Bosque Rd', 'Stad': 'Santa Barbara', 'Staat': 'CA', 'Kategorien': 'Gesondheetsretreats, Plazen & Evenementer, Hoteller & Rees, Restauranten, Evenementplanung & Servicer', 'Stonnen': {'Méindeg': '8:0-23:0', 'Dënschdeg': '8:0-23:0', 'Mëttwoch': '8:0-23:0', 'Donneschdeg': '8:0-23:0', 'Freideg': '8:0-23:0', 'Samschdeg': '8:0-23:0', 'Sonndeg': '8:0-23:0'}, 'Attributer': {'Geschäftsparken': None, 'Restaurantenreservatiounen': None, 'Draussen Sëtzplazen': None, 'WiFi': None, 'Restauranten Nimm zu': None, 'Restauranten Gutt fir Gruppen': None, 'Musik': None, 'Ambiance': None}, 'Geschäftsstären': 4.5, 'Rezensiounsinformatioun': [{'Rezensiounsstären': 5.0, 'Rezensiounsdatum': '2018-01-10 17:43:18', 'Rezensiounstext': \"Ech hunn dëse Plaz gär. Ech géif hei fir ëmmer bleiwen, wann ech kéint. D'Ënnerkonft ass e bësse rustikal, awer dat ass Deel vum Charme. Schéin Plaz fir Selbstentdeckung an Kontemplatioun.\"}, {'Rezensiounsstären': 5.0, 'Rezensiounsdatum': '2017-08-05 01:28:13', 'Rezensiounstext': \"Wat eng schéi Plaz an entspaanten Atmosphär. D'Ënnerkonften sinn relativ bequem, awer et sinn d'Grondstécker, déi dës Juwel vun enger Plaz besonnesch maachen. (D'Iessen schadet och net.) Kritt eng Massage vun Vesalina wann et méiglech ass; et war déi bescht, déi ech jee hat. Och, vergiess net d'Gärten an d'Kapellen ze besichen.\"}, {'Rezensiounsstären': 1.0, 'Rezensiounsdatum': '2017-04-15 17:16:29', 'Rezensiounstext': 'Ech schreiwen dës Rezensioun fir zwou Grënn. 1) D'Wuel vum zukünftege Gäscht; 2) an well d'Probleem ni vun irgendjemandem an der Facilitéit ugeschwat gouf zënter ech meng Saachen gepackt hunn, eng Dag virum Enn vun mengem $piritual Retreat, an hunn de ganz deier Dag verbruecht fir alles wat ech hat ze desinfizéieren -- inklusiv mengem Auto ze detailléieren, alles meng Kleeder ze fumigéieren/wäschend/drockeren -- ier ech heem gaang sinn zu menger Frëndin an dem schéinen Bett, dat si e puer Méint virdrun kaaft huet..\n\nBettbugs. Widderhuelen. Bettbugs, an mengem Fall, Zëmmer 12. Befall. Ech hunn an der Duschstall geschlof déi lescht Nacht, well leider war dëst net meng éischt Ritt mat Bettbugs. Notiz: Ech sinn net dënn-häerzlech wann et ëm d'Natur geet. Ech hunn fir verschidde Summer an Alaska aus engem Zelt geleeft. Ech hunn d'Hiking gär, Campen, an sinn an engem ländleche Gebitt am Mënsch gewuess. Kuerz gesot, ech sinn net angscht virun engem Raccoon (oder engem Bear fir dat Thema) oder lafen fir Schutz wann ech vun engem Hornet gebuzz ginn. \n\nAwer Bettbugs?   (yeeeych) \n\nJo, dës wonnerbar kleng reesend Insekten -- vill wéi Fléien -- déi heem mat Iech kommen wëllen. D'Zort Bugs déi bissen an bissen -- an mengem Fall, mengem Hals an Been -- an anscheinend kënnen iwwer all Pestizid oder Wäsch liewen. \n\nEch géif léiwer Mëss an mengem Gesiicht hunn, wéi wësst ech an engem Bett(Zëmmer) geschlof mat Bettbugs. \n\nFir gerecht ze sinn, de jonke Mann, deen d'Desk de Nacht wou ech eng vun den gut-gréisst Kreaturen an engem Plastikbecher \"gefaangen\" hunn, war sympathesch an huet gesicht fir mir eng aner Zëmmer de nächste Moie ze kréien. Ech war esou juckend an enttäuscht, datt ech d'Noeffekter vum Bettbugged ze d'konfrontéieren, ech hunn all meng Kontaktinformatioun geliwwert an hunn direkt verlooss. Dat ass d'lescht wat ech vun Casa de la Maria héieren hunn trotz 3 E-Maile an 2 Uruff. (Ech hunn no Reinigungskompensatioun gefrot an d'zwei Nächte, déi ech an Zëmmer 12 war, fir mech kompenséiert an dat war alles.)\n\nD'Grondstécker? Hey, et ass Montecito/San Ysidro Ranch Land. Et ass schéin!  A mécht Santa Barbara wéi eng Virstad vu Bakersfield ausgesin...An d'Mitarbeiter waren frëndlech an haaptsächlech hëllefräich. D'Fakt, datt si eng relativ laut an fuerderend Grupp vun Gäscht an der Mëddeg duerch eng schëlleg Buddhist Retreat gebucht hunn? Eh, ech verstinn et.  Koexistéieren, Leit.  Just net mat Bettbugs.'}]}
+Iwwersiicht:"
 }
 ```
 
@@ -760,4 +759,78 @@ You can evaluate a model on this dataset as follows:
 
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-lb
+```
+
+## Hallucination Detection
+
+### RAGTruth-lb
+
+This dataset is a Luxembourgish version of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Äntwert kuerz d'folgend Fro:
+wat ass den Ënnerscheed tëscht raffinéierte an unraffinéierte Kokoosöl
+Huel am Kapp datt deng Äntwert strikt op déi folgend dräi Passagen baséiert:
+passage 1:• Raffinéierte Kokoosöl ass aus der gedréchent Kokoosfrucht gemaach, während unraffinéierte Kokoosöl, och genannt pur oder jung Kokoosöl, aus dem Fleesch vun de frësche Kokoosen gemaach gëtt. • Unraffinéierte Kokoosöl huet e charakteristesche Aroma an Geschmaach, deen während dem Raffinéieren verluer geet.
+
+passage 2:Allerdéngs huet raffinéierte Kokoosöl e Rauchpunkt vun 450 Grad F, während de Rauchpunkt vum unraffinéierte Kokoosöl 350 Grad F ass. Wéinst senger méi héijer Hëtztbeständegkeet kann raffinéierte Kokoosöl eng besser Optioun fir héich Temperatur Kachmethoden wéi Fëschfrittéieren sinn.
+
+passage 3:Eent vun de charakteristesche Ënnerscheeder tëscht raffinéierte an unraffinéierte Kokoosöl ass den Geschmaach. Wéinst der Deodoréierung verléiert raffinéierte Kokoosöl säin typesche Kokoosgeschmaach an huet keen erkennbaren Geschmaach oder Aroma. Wéi och ëmmer, unraffinéiert Öl huet e mëllen Kokoosgeschmaach an Aroma.
+
+Wann d'Passagen net déi néideg Informatiounen enthalen fir d'Fro ze beäntweren, äntwert w.e.g. mat: \"Net fäeg ze äntweren baséiert op de gegebene Passagen.\""
+}
+```
+
+```json
+{
+  "prompt": "Kuerz äntwerten d'Fro: Wéi laang dauert et fir Poulet z'artikelen am Crockpot?
+Huel am Kapp, datt d'Äntwert strikt op de folgende dräi Passagen baséiert:
+passage 1: Plaz all Wurzelgeméis wéi Zwiebel, Kartoffelen an Mëllchen am Crockpot an setz d'Poulet uewen op d'Geméis. Füügt eng hallef Téi vum Bouillon, Wäin oder Waasser an de Pot. Kacht op niddreg fir 6 - 8 Stonnen oder bis et fäerdeg ass. (Dir kënnt och op héich fir 1 Stonn kachen, dann op niddreg fir ongeféier 5 Stonnen oder bis et fäerdeg ass.).
+passage 2: Füügt eng hallef Téi vum Bouillon, Wäin oder Waasser an de Pot. Kacht op niddreg fir 6 - 8 Stonnen oder bis et fäerdeg ass. (Dir kënnt och op héich fir 1 Stonn kachen, dann op niddreg fir ongeféier 5 Stonnen oder bis et fäerdeg ass.).
+passage 3: Bewäertung Neisten Altesten. Bescht Äntwert: Dir géift 8 Pouletbréifstécker op niddreg fir 8 Stonnen an engem Slow Cooker kachen. Ech maachen oft Poulet Tacos, an esou maachen ech et. Dir kënnt et fir 4 Stonnen op héich kachen wann Dir Zäit dréngt. Et wäert nach ëmmer gutt ausgehen. Allgemeng wäert Pouletbréif ëmmer zart sinn, solang et genuch Feuchtigkeit gëtt. Et funktionéiert och fir Rëndfleesch, fir zerrasselt Rëndfleesch Tacos an Taquitos. Ech maachen oft Poulet Tacos, an esou maachen ech et. Dir kënnt et fir 4 Stonnen op héich kachen wann Dir Zäit dréngt. Et wäert nach ëmmer gutt ausgehen. Allgemeng wäert Pouletbréif ëmmer zart sinn, solang et genuch Feuchtigkeit gëtt. Et funktionéiert och fir Rëndfleesch, fir zerrasselt Rëndfleesch Tacos an Taquitos.
+
+Wann d'Passagen net d'néideg Informatioun enthalen fir d'Fro ze beäntweren, äntwert w.e.g. mat: \"Net fäeg ze beäntweren baséiert op de gegebene Passagen.\"
+output:"
+}
+```
+
+```json
+{
+  "prompt": "Instruktioun:
+Schrei eng objektiv Iwwersiicht iwwer d'folgend lokal Geschäfter baséiert nëmme op den zur Verfügung gestellten strukturéierte Daten am JSON-Format. Dir sollt Detailer abegraff an d'Informatiounen abdecken, déi an den Rezensiounen vun de Clienten ernimmt ginn. D'Iwwersiicht sollt 100 - 200 Wierder hunn. Maacht keng Informatiounen aus. Strukturéiert Daten:
+{'Numm': 'La Casa De Maria', 'Adress': '800 El Bosque Rd', 'Stad': 'Santa Barbara', 'Staat': 'CA', 'Kategorien': 'Gesondheetsretreats, Plazen & Evenementer, Hoteller & Rees, Restauranten, Evenementplanung & Servicer', 'Stonnen': {'Méindeg': '8:0-23:0', 'Dënschdeg': '8:0-23:0', 'Mëttwoch': '8:0-23:0', 'Donneschdeg': '8:0-23:0', 'Freideg': '8:0-23:0', 'Samschdeg': '8:0-23:0', 'Sonndeg': '8:0-23:0'}, 'Attributer': {'Geschäftsparken': None, 'Restaurantenreservatiounen': None, 'Draussen Sëtzplazen': None, 'WiFi': None, 'Restauranten Nimm zu': None, 'Restauranten Gutt fir Gruppen': None, 'Musik': None, 'Ambiance': None}, 'Geschäftsstären': 4.5, 'Rezensiounsinformatioun': [{'Rezensiounsstären': 5.0, 'Rezensiounsdatum': '2018-01-10 17:43:18', 'Rezensiounstext': \"Ech hunn dëse Plaz gär. Ech géif hei fir ëmmer bleiwen, wann ech kéint. D'Ënnerkonft ass e bësse rustikal, awer dat ass Deel vum Charme. Schéin Plaz fir Selbstentdeckung an Kontemplatioun.\"}, {'Rezensiounsstären': 5.0, 'Rezensiounsdatum': '2017-08-05 01:28:13', 'Rezensiounstext': \"Wat eng schéi Plaz an entspaanten Atmosphär. D'Ënnerkonften sinn relativ bequem, awer et sinn d'Grondstécker, déi dës Juwel vun enger Plaz besonnesch maachen. (D'Iessen schadet och net.) Kritt eng Massage vun Vesalina wann et méiglech ass; et war déi bescht, déi ech jee hat. Och, vergiess net d'Gärten an d'Kapellen ze besichen.\"}, {'Rezensiounsstären': 1.0, 'Rezensiounsdatum': '2017-04-15 17:16:29', 'Rezensiounstext': 'Ech schreiwen dës Rezensioun fir zwou Grënn. 1) D'Wuel vum zukünftege Gäscht; 2) an well d'Probleem ni vun irgendjemandem an der Facilitéit ugeschwat gouf zënter ech meng Saachen gepackt hunn, eng Dag virum Enn vun mengem $piritual Retreat, an hunn de ganz deier Dag verbruecht fir alles wat ech hat ze desinfizéieren -- inklusiv mengem Auto ze detailléieren, alles meng Kleeder ze fumigéieren/wäschend/drockeren -- ier ech heem gaang sinn zu menger Frëndin an dem schéinen Bett, dat si e puer Méint virdrun kaaft huet..\n\nBettbugs. Widderhuelen. Bettbugs, an mengem Fall, Zëmmer 12. Befall. Ech hunn an der Duschstall geschlof déi lescht Nacht, well leider war dëst net meng éischt Ritt mat Bettbugs. Notiz: Ech sinn net dënn-häerzlech wann et ëm d'Natur geet. Ech hunn fir verschidde Summer an Alaska aus engem Zelt geleeft. Ech hunn d'Hiking gär, Campen, an sinn an engem ländleche Gebitt am Mënsch gewuess. Kuerz gesot, ech sinn net angscht virun engem Raccoon (oder engem Bear fir dat Thema) oder lafen fir Schutz wann ech vun engem Hornet gebuzz ginn. \n\nAwer Bettbugs?   (yeeeych) \n\nJo, dës wonnerbar kleng reesend Insekten -- vill wéi Fléien -- déi heem mat Iech kommen wëllen. D'Zort Bugs déi bissen an bissen -- an mengem Fall, mengem Hals an Been -- an anscheinend kënnen iwwer all Pestizid oder Wäsch liewen. \n\nEch géif léiwer Mëss an mengem Gesiicht hunn, wéi wësst ech an engem Bett(Zëmmer) geschlof mat Bettbugs. \n\nFir gerecht ze sinn, de jonke Mann, deen d'Desk de Nacht wou ech eng vun den gut-gréisst Kreaturen an engem Plastikbecher \"gefaangen\" hunn, war sympathesch an huet gesicht fir mir eng aner Zëmmer de nächste Moie ze kréien. Ech war esou juckend an enttäuscht, datt ech d'Noeffekter vum Bettbugged ze d'konfrontéieren, ech hunn all meng Kontaktinformatioun geliwwert an hunn direkt verlooss. Dat ass d'lescht wat ech vun Casa de la Maria héieren hunn trotz 3 E-Maile an 2 Uruff. (Ech hunn no Reinigungskompensatioun gefrot an d'zwei Nächte, déi ech an Zëmmer 12 war, fir mech kompenséiert an dat war alles.)\n\nD'Grondstécker? Hey, et ass Montecito/San Ysidro Ranch Land. Et ass schéin!  A mécht Santa Barbara wéi eng Virstad vu Bakersfield ausgesin...An d'Mitarbeiter waren frëndlech an haaptsächlech hëllefräich. D'Fakt, datt si eng relativ laut an fuerderend Grupp vun Gäscht an der Mëddeg duerch eng schëlleg Buddhist Retreat gebucht hunn? Eh, ech verstinn et.  Koexistéieren, Leit.  Just net mat Bettbugs.'}]}
+Iwwersiicht:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-lb
 ```

@@ -831,3 +831,58 @@ You can evaluate a model on this dataset as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-hu
 ```
+
+## Hallucination Detection
+
+### RAGTruth-hu
+
+This dataset is a Hungarian translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Röviden válaszolj a következő kérdésre:\nkülönbség az UTV és az ATV között\nTartsd szem előtt, hogy a válaszod szigorúan az alábbi három szövegre kell, hogy alapozódjon:\nszöveg 1: Az ATV-k és UTV-k közötti különbségek[edit] Az UTV-k eltérnek a terepjáró járművektől (ATV-k), mivel az UTV-k általában oldalra ülő elrendezéssel rendelkeznek, soknak van biztonsági öve és felborulás elleni védelme, és a legtöbbnek van rakodótartálya a jármű hátsó részén. Az UTV-k általában nagyobb teherbírásúak, és hosszabbak és szélesebbek, mint az ATV-k. Míg a legtöbb ATV 125-200 fontnyi rakományt tud szállítani a kezelő súlyán kívül, az UTV teherbírása 800-1350 font között mozog a kezelő/utas súlya felett.\n\nszöveg 2: yeya blogja. Különbség a quad motor és az ATV között. Nos, mindkét kifejezés: quad és ATV általában ugyanarra utal – quad motorra vagy ATV gépre, egy terepjáró motorkerékpárra – olyan járműre, amely kormányrúddal és több mint 2 kerékkel rendelkezik. Az ATV bármilyen motor, amelynek több kereke van, mint például a 3 kerekű, 4 kerekű és még a 6 kerekű.\n\nszöveg 3: Az ATV vezetése fizikailag megterhelőbb, és a vezetőnek egyensúlyt kell használnia a jármű irányításához és kezeléséhez – mondja Kaiser. Szórakoztató, és elég kicsi ahhoz, hogy valóban mozgatható legyen, míg egy UTV elég nagy ahhoz, hogy csak be legyél kötve, és élvezd az utat.\n\nHa a szövegek nem tartalmazzák a szükséges információt a kérdés megválaszolásához, kérlek válaszolj: \"A megadott szövegek alapján nem tudom megválaszolni.\"\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Összefoglalni a következő híreket 116 szóban:\nJobb időjárás péntekig, mielőtt egy újabb esős hétvége következik, viharos rendszer tart az Egyesült Államok keleti részéhez\nTovábbra is lassú javulásban haladunk napról napra. Még mindig a felső mélyedés borítja a keleti partot északról délre. A felső mélyedés elkezd kelet felé tolódni, de még mindig napfényre kell számítanunk, ami bizonyos mértékig önmagát pusztítja, és felhők alakulnak ki. Tegnap szórványos záporokat láttunk. Ma lehet néhány véletlenszerű zápor, de ezek szétszórtan fognak megjelenni, és úgy gondolom, hogy a legtöbben nem fognak látni semmit. Amíg elegendő napfény van a keverékben, a csúcsok 50-es évek végén és 60-as évek elején fognak elérni.\nAz égnek ki kell tisztulnia Kelet-Pennsylvania és Dél-New England felett ma este, és hűvös lesz. A legtöbb minimum 40 fok körül lesz, néhány 30 fokos a leghidegebb helyeken a szárazföld belsejében. Szerdán szép napnak ígérkezik, részben vagy túlnyomórészt napos égbolttal. Szerdán a csúcsok az 60-as években lesznek az egész területen.\nCsütörtök a hét legjobb és legmelegebb napjának tűnik. A délkeleti magas nyomás melegebb délnyugati légáramot fog létrehozni. Elég távol kell lennünk a következő hideg fronttól, hogy csütörtökön túlnyomórészt napos égboltunk legyen. A csúcsok csütörtökön a 60-as évek közepén és végén lesznek, és néhány meleg hely akár 70 fokot is elérhet.\nMost péntekre fordulunk. A szél pénteken déli irányba fordul, ami nedvességet hoz. Nyugaton van a hideg frontunk, és egy fejlődő alacsony nyomású rendszer, amely a Karolinákban kezdődik és észak felé halad az Appalachek keleti oldalán. Ez pénteken növekvő felhőzethez vezet, és péntek délután és este záporok alakulhatnak ki egyes helyeken. Nem mindenki fog esőt látni péntek napján. Péntek éjszaka szombat délutánig záporokat fogunk látni, különösen szombaton a nap folyamán. Alacsony nyomás alakul ki és erősödik, ahogy észak felé halad New England felé. A szél szombat este és szombat éjszaka északnyugati irányba fordul. Néhány zápor a szombat este hátsó oldalán megmarad, de hosszú idő előtt el kell tűnnie vasárnap hajnal előtt. A hőmérsékletek szombaton az 60-as években lesznek, mielőtt a front áthalad. Vasárnap szeles és hűvös nap lesz, maradék felhőkkel és a hőmérsékletek többségében az 50-es években. Lehet, hogy néhány szórványos instabilitási zápor is előfordul, miközben várjuk a felső mélyedés áthaladását. Ez lesz a 7. hétvége egymás után, amikor legalább az egyik hétvégi napon esett. A következő hét hűvösen kezdődik, de a hét későbbi részében felmelegszik, és várhatóan egy újabb 4 vagy 5 napos száraz időszakot fogunk látni a munkahéten.\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Röviden válaszolj a következő kérdésre:\nhogyan tudok egy képet áthelyezni a Facebookra\nTartsd szem előtt, hogy a válaszod szigorúan az alábbi három szakaszra kell, hogy épüljön:\nszakasz 1: 5. lépés. Válaszd ki a képet, amelyet el szeretnél küldeni a Facebook profilodra, és kattints a Megnyitás gombra a feltöltéshez. 6. lépés. Válaszd a Magas minőség opciót az oldal alján, ha magas minőségű képet szeretnél közzétenni. 7. lépés. Kattints a Képek közzététele gombra, hogy közzé tedd a képet a profilodon. 5. lépés. Válaszd ki a képet, amelyet el szeretnél küldeni a Facebook profilodra, és kattints a Megnyitás gombra a feltöltéshez. 6. lépés. Válaszd a Magas minőség opciót az oldal alján, ha magas minőségű képet szeretnél közzétenni.\n\nszakasz 2: Feltöltés a Facebook mobilra. Lépj a Facebook.com/mobile/ oldalra, és jelentkezz be a fiókodba. Az oldal alján, az Email-en keresztüli feltöltés szakaszban találod a személyre szabott feltöltési email címedet. Válassz ki egy fényképet az eszközöd médiatáraiból. Lépj a Facebook.com/mobile/ oldalra, és jelentkezz be a fiókodba. Az oldal alján, az Email-en keresztüli feltöltés szakaszban találod a személyre szabott feltöltési email címedet. Válassz ki egy fényképet az eszközöd médiatáraiból.\n\nszakasz 3: Nem tudsz áthelyezni olyan fényképeket, amelyek a Borítókép vagy Profilkép albumokban vannak, de áthelyezheted a fényképeket a többi albumod között. Egy fénykép áthelyezéséhez egy másik albumba: 1. Lépj a profilodra, és kattints a Képek gombra. 2. Kattints az Albumok gombra. 3. Lépj arra az albumra, amelyben a fényképet szeretnéd áthelyezni. 4. Húzd az egeret a fénykép fölé, és kattints. 5. Válaszd az Áthelyezés másik albumba lehetőséget, és helyezd át a fényképet egy választott albumba a legördülő menüből. 6. Kattints a Fénykép áthelyezése gombra. Nem tudsz áthelyezni olyan fényképeket, amelyek a Borítókép vagy Profilkép albumokban vannak, de áthelyezheted a fényképeket a többi albumod között. Egy fénykép áthelyezéséhez egy másik albumba: 1. Lépj a profilodra, és kattints a Képek gombra. 2. Kattints az Albumok gombra.\n\nHa a szakaszok nem tartalmazzák a szükséges információt a kérdés megválaszolásához, kérlek válaszolj: \"A megadott szakaszok alapján nem tudok válaszolni.\"\noutput:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-hu
+```

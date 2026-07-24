@@ -7,7 +7,6 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from huggingface_hub import HfApi
 
 from euroeval.data_models import DatasetConfig
 from euroeval.languages import DANISH, SWEDISH
@@ -132,7 +131,7 @@ class TestValidation:
         # No overlap - should raise
         with pytest.raises(Exception):
             swap_leaderboard_dataset.resolve_languages(
-                old_config=old_config, new_config=new_config
+                old_config=old_config, new_configs=[new_config]
             )
 
         # With overlap - should return intersection
@@ -152,7 +151,7 @@ class TestValidation:
         )
 
         result = swap_leaderboard_dataset.resolve_languages(
-            old_config=old_config, new_config=new_config
+            old_config=old_config, new_configs=[new_config]
         )
         assert result == {"da"}
 
@@ -184,13 +183,33 @@ class TestSyncResults:
         )
 
         # Create empty results dir
-        (tmp_path / "results").mkdir()
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
 
-        # Mock hf_api.sync_bucket to do nothing
-        monkeypatch.setattr(HfApi, "sync_bucket", lambda *args, **kwargs: None)
+        # Patch RESULTS_DIR in both modules (merge_results uses bucket_sync.RESULTS_DIR)
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
+        )
+        monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="result_sync_dataset_ids",
+            value=lambda **kwargs: {"test-dataset"},
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="download_bucket_files_for_datasets",
+            value=lambda *, dataset_ids: 0,
+        )
 
         with caplog.at_level(logging.WARNING):
-            swap_leaderboard_dataset.sync_results_from_bucket()
+            swap_leaderboard_dataset.sync_results_from_bucket(
+                old_dataset="old-dataset",
+                new_datasets=("new-dataset",),
+                swapped_task="knowledge",
+                target_codes={"da"},
+            )
 
         # Should warn about no results
         assert "No results found" in caplog.text
@@ -247,12 +266,30 @@ class TestSyncResults:
             name="HF_RESULTS_BUCKET",
             value="test/bucket",
         )
+        # Patch RESULTS_DIR in both modules (merge_results uses bucket_sync.RESULTS_DIR)
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
+        )
+        monkeypatch.setattr(target=bucket_sync, name="RESULTS_DIR", value=results_dir)
 
-        # Mock hf_api.sync_bucket to do nothing
-        monkeypatch.setattr(HfApi, "sync_bucket", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="result_sync_dataset_ids",
+            value=lambda **kwargs: {"test-dataset"},
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="download_bucket_files_for_datasets",
+            value=lambda *, dataset_ids: 0,
+        )
 
         with caplog.at_level(logging.INFO):
-            swap_leaderboard_dataset.sync_results_from_bucket()
+            swap_leaderboard_dataset.sync_results_from_bucket(
+                old_dataset="old-dataset",
+                new_datasets=("new-dataset",),
+                swapped_task="knowledge",
+                target_codes={"da"},
+            )
 
         # Should log: "Consolidating 1 result records into ... (1 new)."
         # Total count should be 1 (from merge_results), new count should be 1
@@ -327,12 +364,13 @@ class TestExecuteJobsLogging:
                 is_api=False,
                 evaluate_test_split=True,
                 zero_shot=False,
+                datasets=("test-dataset",),
             )
         ]
 
         with caplog.at_level(logging.INFO):
             swap_leaderboard_dataset.execute_jobs(
-                jobs=jobs, dataset="test-dataset", gpu_memory_utilization=0.8
+                jobs=jobs, datasets=("test-dataset",), gpu_memory_utilization=0.8
             )
 
         # Verify log path was printed
@@ -346,8 +384,8 @@ class TestExecuteJobsLogging:
         # Verify log file contains expected metadata
         content = log_path.read_text(encoding="utf-8")
         assert "Evaluation Log" in content
-        assert "Dataset: test-dataset" in content
-        assert "GPU Memory Utilization: 0.8" in content
+        assert "Datasets: test-dataset" in content
+        assert "GPU Memory UtilIZATION: 0.8" in content
         assert "Total Jobs: 1" in content
         assert "test-model" in content
         assert "da" in content
@@ -389,11 +427,12 @@ class TestExecuteJobsLogging:
                 is_api=True,
                 evaluate_test_split=False,
                 zero_shot=True,
+                datasets=("test-dataset",),
             )
         ]
 
         swap_leaderboard_dataset.execute_jobs(
-            jobs=jobs, dataset="test-dataset", gpu_memory_utilization=None
+            jobs=jobs, datasets=("test-dataset",), gpu_memory_utilization=None
         )
 
         # Find the log file
@@ -433,6 +472,7 @@ class TestExecuteJobsLogging:
                 is_api=True,
                 evaluate_test_split=True,
                 zero_shot=False,
+                datasets=("test-dataset",),
             ),
             Job(
                 model_id="open-model",
@@ -440,11 +480,12 @@ class TestExecuteJobsLogging:
                 is_api=False,
                 evaluate_test_split=False,
                 zero_shot=True,
+                datasets=("nordic-dataset",),
             ),
         ]
 
         swap_leaderboard_dataset.execute_jobs(
-            jobs=jobs, dataset="nordic-dataset", gpu_memory_utilization=0.9
+            jobs=jobs, datasets=("nordic-dataset",), gpu_memory_utilization=0.9
         )
 
         log_files = list(tmp_path.glob("eval_log_*.log"))
@@ -490,12 +531,13 @@ class TestExecuteJobsLogging:
                 is_api=False,
                 evaluate_test_split=True,
                 zero_shot=False,
+                datasets=("test-dataset",),
             )
         ]
 
         with caplog.at_level(logging.INFO):
             swap_leaderboard_dataset.execute_jobs(
-                jobs=jobs, dataset="d", gpu_memory_utilization=None
+                jobs=jobs, datasets=("d",), gpu_memory_utilization=None
             )
 
         # Log path should contain timestamp pattern
@@ -545,11 +587,12 @@ class TestExecuteJobsLogging:
                 is_api=False,
                 evaluate_test_split=True,
                 zero_shot=False,
+                datasets=("test-dataset",),
             )
         ]
 
         swap_leaderboard_dataset.execute_jobs(
-            jobs=jobs, dataset="test-dataset", gpu_memory_utilization=None
+            jobs=jobs, datasets=("test-dataset",), gpu_memory_utilization=None
         )
 
         # Verify write order: header -> output lines -> return -> completion
@@ -712,7 +755,7 @@ class TestLoadCorpusAndBuildEvalJobs:
         jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
             ranked=ranked,
             old_dataset="old-dataset",
-            new_dataset="new-dataset",
+            new_datasets=("new-dataset",),
             corpus=corpus,
             include_api=True,
             selected_providers=set(),
@@ -747,7 +790,7 @@ class TestLoadCorpusAndBuildEvalJobs:
         jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
             ranked=ranked,
             old_dataset="old-dataset",
-            new_dataset="new-dataset",
+            new_datasets=("new-dataset",),
             corpus=corpus,
             include_api=True,
             selected_providers=set(),

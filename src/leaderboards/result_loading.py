@@ -7,7 +7,7 @@ import typing as t
 from functools import cache
 
 from .backup import backup_results
-from .bucket_sync import sync_bucket
+from .bucket_sync import download_missing_bucket_files
 from .constants import NEW_RESULTS_PATH, RESULTS_DIR
 from .eee_validation import is_eee_record
 from .jsonl_io import load_records_from_jsonl_files, load_records_from_result_tree
@@ -102,14 +102,15 @@ def load_raw_results() -> list[dict[str, t.Any]]:
 def _sync_results_from_bucket() -> None:
     """Sync the HF results bucket into RESULTS_DIR and back it up.
 
-    Syncs the single EuroEval/results bucket to RESULTS_DIR and creates a
-    backup of the synced per-record JSON files.
+    Performs an incremental fetch of the single EuroEval/results bucket into
+    RESULTS_DIR (downloading only files not already present locally) and creates
+    a backup of the synced per-record JSON files.
 
     Raises:
         FileNotFoundError:
             If sync fails and no local files exist.
     """
-    sync_bucket()
+    download_missing_bucket_files()
 
     file_count = len(list(RESULTS_DIR.glob("*/*.json")))
     if file_count == 0:

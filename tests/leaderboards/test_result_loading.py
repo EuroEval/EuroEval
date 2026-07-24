@@ -158,8 +158,10 @@ class TestLoadRawResults:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Should load records from the tree structure."""
-        # Mock sync_bucket to do nothing
-        monkeypatch.setattr("leaderboards.result_loading.sync_bucket", lambda: None)
+        # Mock download_missing_bucket_files to do nothing
+        monkeypatch.setattr(
+            "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
+        )
         monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
         monkeypatch.setattr("leaderboards.result_loading.RESULTS_DIR", tmp_path)
 
@@ -181,7 +183,9 @@ class TestLoadRawResults:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Should also load records from NEW_RESULTS_PATH staging file."""
-        monkeypatch.setattr("leaderboards.result_loading.sync_bucket", lambda: None)
+        monkeypatch.setattr(
+            "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
+        )
         monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
         monkeypatch.setattr("leaderboards.result_loading.RESULTS_DIR", tmp_path)
         monkeypatch.setattr(
@@ -219,7 +223,9 @@ class TestLoadRawResults:
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         """Should raise FileNotFoundError if sync produces no files."""
-        monkeypatch.setattr("leaderboards.result_loading.sync_bucket", lambda: None)
+        monkeypatch.setattr(
+            "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
+        )
         monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
         monkeypatch.setattr("leaderboards.result_loading.RESULTS_DIR", tmp_path)
 
@@ -230,7 +236,9 @@ class TestLoadRawResults:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Should deduplicate records with same identity, keeping newest."""
-        monkeypatch.setattr("leaderboards.result_loading.sync_bucket", lambda: None)
+        monkeypatch.setattr(
+            "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
+        )
         monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
         monkeypatch.setattr("leaderboards.result_loading.RESULTS_DIR", tmp_path)
         monkeypatch.setattr(

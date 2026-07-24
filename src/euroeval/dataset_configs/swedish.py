@@ -98,6 +98,23 @@ VALEU_SV_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+ZEBRA_PUZZLE_EASY_SV_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-sv",
+    pretty_name="ZebraPuzzlesEasy-sv",
+    source="EuroEval/zebra-puzzles-easy-sv",
+    task=LOGIC,
+    languages=[SWEDISH],
+)
+
+RAGTRUTH_SV_CONFIG = DatasetConfig(
+    name="ragtruth-sv",
+    pretty_name="RAGTruth-sv",
+    source="EuroEval/ragtruth-translated-hallucinations-sv-mini",
+    task=HALLU,
+    languages=[SWEDISH],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -219,30 +236,11 @@ GERLANGMOD_SV_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-ZEBRA_PUZZLE_EASY_SV_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-sv",
-    pretty_name="ZebraPuzzlesEasy-sv",
-    source="EuroEval/zebra-puzzles-easy-sv",
-    task=LOGIC,
-    languages=[SWEDISH],
-    unofficial=True,
-)
-
 ZEBRA_PUZZLE_HARD_SV_CONFIG = DatasetConfig(
     name="zebra-puzzles-hard-sv",
     pretty_name="ZebraPuzzlesHard-sv",
     source="EuroEval/zebra-puzzles-hard-sv",
     task=LOGIC,
     languages=[SWEDISH],
-    unofficial=True,
-)
-
-RAGTRUTH_SV_CONFIG = DatasetConfig(
-    name="ragtruth-sv",
-    pretty_name="RAGTruth-sv",
-    source="EuroEval/ragtruth-translated-hallucinations-sv-mini",
-    task=HALLU,
-    languages=[SWEDISH],
-    train_split=None,
     unofficial=True,
 )

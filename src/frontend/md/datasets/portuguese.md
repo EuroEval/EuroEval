@@ -427,6 +427,166 @@ euroeval --model <model-id> --dataset boolq-pt
 
 ## Knowledge
 
+### Unofficial: ALBA-MCQ
+
+> This dataset is **unofficial** — results do not count toward the Portuguese leaderboard.
+
+[ALBA-MCQ](https://huggingface.co/datasets/amalia-llm/alba_mcq) is the multiple-choice
+adaptation of ALBA, an expert-created benchmark introduced in the
+[ALBA paper](https://aclanthology.org/2026.propor-1.69/) for evaluating European
+Portuguese linguistic competence. Its 240 questions cover culture-bound semantics,
+discourse, language variety, lexicology, morphology, phonetics and phonology, syntax,
+and wordplay. Each question has three answers rated for quality and a designated correct
+choice.
+
+EuroEval combines the eight source configurations, reproducibly shuffles the answer
+choices, and creates splits with 32 training and 208 test samples. There is no
+validation split, so evaluation uses the full test split. Accuracy and Matthews
+correlation coefficient are reported through the Knowledge task.
+
+```json
+{
+  "text": "Em que região de Portugal é mais comum usar-se a palavra \"cruzeta\"?\nOpções:\na. A palavra \"cruzeta\" é usada no norte de Portugal. Este regionalismo tem como correspondente, no sul de Portugal, a palavra \"cabide\".\nb. A palavra \"cruzeta\" é usada no centro de Portugal. Este regionalismo tem como correspondente, no sul de Portugal, a palavra \"cabide\".\nc. A palavra \"cruzeta\" refere-se a uma pequena cruz e tem como correspondente, no sul de Portugal, a palavra \"cruzinha\".",
+  "label": "a",
+  "subject": "Language Variety"
+}
+```
+
+```json
+{
+  "text": "Completa esta piada seca: Qual o animal que anda com uma pata?\nOpções:\na. Quase todos... menos as cobras!\nb. O pato.\nc. O macho da pata.",
+  "label": "b",
+  "subject": "Culture-bound Semantics"
+}
+```
+
+```json
+{
+  "text": "Cria um acróstico com a palavra \"mar\".\nOpções:\na. Olha só um acróstico com a palavra \"mar\".\n\nMaresia\nAreia\nb. Olha só um acróstico com a palavra \"mar\".\n\nMaresia\nAreia\nRio\nc. Aqui está um acróstico com a palavra \"mar\".\n\nMaresia\nAreia\nRio",
+  "label": "c",
+  "subject": "Word Plays"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+
+  Responde à pergunta acima usando só 'a', 'b' ou 'c', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset alba-mcq-pt
+```
+
+### Unofficial: CulturaVivaPT
+
+> This dataset is **unofficial** — results do not count toward the Portuguese leaderboard.
+
+[CulturaVivaPT](https://huggingface.co/datasets/amalia-llm/cultura-viva-pt-mcq),
+released as part of the [AMALIA project](https://aclanthology.org/2026.propor-1.38/),
+contains 1,000 multiple-choice questions about Portuguese culture. Its ten balanced
+domains cover audiovisual culture, festivals, gastronomy, geography, heritage, holidays,
+literature, personalities, proverbs, and sports.
+
+The upstream repository exposes all 1,000 samples as a `train` split. EuroEval
+reproducibly shuffles the samples and answer choices, then allocates 32 samples to
+training, 128 to validation, and 840 to testing. Accuracy and Matthews correlation
+coefficient are reported.
+
+```json
+{
+  "text": "Em que local nasceu a artista e escritora Florbela Oliveira?\nOpções:\na. Coimbra\nb. Campolide\nc. Serra da Estrela\nd. Palmela",
+  "label": "b",
+  "subject": "personalities"
+}
+```
+
+```json
+{
+  "text": "Preenche o espaço em falta: «O tempo a tudo _ remédio.»\nOpções:\na. dá\nb. vê\nc. traz\nd. faz",
+  "label": "a",
+  "subject": "proverbs"
+}
+```
+
+```json
+{
+  "text": "Preenche o espaço em falta: «Em Abril cada pulga _ mil.»\nOpções:\na. faz\nb. vê\nc. tem\nd. dá",
+  "label": "d",
+  "subject": "proverbs"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Responde à pergunta acima usando só 'a', 'b', 'c' ou 'd', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset cultura-viva-pt
+```
+
 ### MMLU-pt
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928)
@@ -637,6 +797,228 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset multiloko-pt
+```
+
+### Unofficial: PT Exams
+
+[PT Exams](https://huggingface.co/datasets/amalia-llm/pt_exams), also known as PHEB or
+PT-E, was introduced in the [PHEB paper](https://lrec.elra.info/lrec2026-main-367). It
+contains 1,819 multiple-choice questions from Portuguese national secondary-school exams
+between 2006 and 2023. It covers Portuguese, Mathematics A, History A, Geography,
+Philosophy, and Biology and Geology.
+
+The complete source test split with 1,819 samples is retained, with answer choices
+shuffled reproducibly. EuroEval allocates 32 samples to training, 256 to validation, and
+1,531 to testing. Accuracy and Matthews correlation coefficient are reported.
+
+```json
+{
+  "text": "Qual é o valor de $\\lim_{x \\to 1} \\frac{f(x) - f(1)}{1 - x^2}$?\nOpções:\na. -2\nb. 2\nc. -1\nd. 0",
+  "label": "c",
+  "subject": "Mathematics A",
+  "year": 2020
+}
+```
+
+```json
+{
+  "text": "Sabemos que a relva é verde. Este conhecimento é\nOpções:\na. a posteriori.\nb. formal.\nc. inato.\nd. a priori.",
+  "label": "b",
+  "subject": "Philosophy",
+  "year": 2006
+}
+```
+
+```json
+{
+  "text": "A maior parte da precipitação que ocorre em Portugal continental é de tipo\nOpções:\na. convectivo.\nb. frontal.\nc. orográfico.\nd. convergente.",
+  "label": "b",
+  "subject": "Geography",
+  "year": 2013
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Responde à pergunta acima usando só 'a', 'b', 'c' ou 'd', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset pt-exams
+```
+
+### Unofficial: SAUDADE-PT
+
+[SAUDADE-PT](https://huggingface.co/datasets/amalia-llm/saudade-pt), released as part of
+the [AMALIA project](https://aclanthology.org/2026.propor-1.38/), evaluates reasoning
+about the chronological order of events related to Portugal. Its questions cover people,
+places, organisations, cultural works, politics, sports, and historical events.
+
+The source provides 8,573 test samples. EuroEval reproducibly selects 32 training, 256
+validation, and 2,048 test samples, shuffles the two answer choices, and retains the
+entity and category metadata. The Knowledge task reports accuracy and Matthews
+correlation coefficient.
+
+```json
+{
+  "text": "Em Moura, qual ocorreu primeiro:\nOpções:\na. Castelo de Moura classificado como Imóvel de Interesse Público\nb. Domínio cristão efetivado em Moura",
+  "label": "b",
+  "entity": "Moura",
+  "category": "Municipio_Portugal"
+}
+```
+
+```json
+{
+  "text": "O que ocorreu primeiro:\nOpções:\na. Treinador da seleção húngara\nb. Falecimento de Lajos Baróti",
+  "label": "a",
+  "entity": "Lajos Baróti",
+  "category": "Futebol"
+}
+```
+
+```json
+{
+  "text": "Em Teixeira (Seia), qual ocorreu primeiro:\nOpções:\na. Freguesia autónoma\nb. Anexação à freguesia de Vide",
+  "label": "a",
+  "entity": "Teixeira (Seia)",
+  "category": "Freguesia_Portugal"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+
+  Responde à pergunta acima usando só 'a' ou 'b', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset saudade-pt
+```
+
+### Unofficial: PT-PT Completions
+
+[PT-PT Completions](https://huggingface.co/datasets/amalia-llm/pt_text_completion),
+released as part of the [AMALIA project](https://aclanthology.org/2026.propor-1.38/),
+tests whether a model can select the correct European Portuguese completion instead of a
+Brazilian Portuguese alternative. The source contains 3 validation and 70 test examples,
+with no training split.
+
+EuroEval explicitly asks which option is in European Portuguese. It moves eight balanced
+test examples into a small training split and combines the remaining 62 with the three
+validation examples, resulting in 65 test examples and no validation split. Matthews
+correlation coefficient and accuracy are reported as part of the Knowledge task.
+
+```json
+{
+  "text": "Frase: Para longas distâncias, prefiro viajar de _______.\nOpções:\na. trem\nb. comboio",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Frase: Moro no _______.\nOpções:\na. térreo\nb. rés do chão",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Frase: _______ vamos ao cinema.\nOpções:\na. malta\nb. galera",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Variante em português europeu: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  Pergunta: Qual opção está em português europeu?
+
+  Responde à pergunta acima usando só 'a' ou 'b', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset pt-completions
 ```
 
 ## Common-sense Reasoning
@@ -1088,4 +1470,59 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset valeu-pt
+```
+
+## Hallucination Detection
+
+### RAGTruth-pt
+
+This dataset is a Portuguese translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Resuma a seguinte notícia em 90 palavras:\nRepresentante do Texas Acredita que Migrantes Devem Pagar $2.000 para Entrar no País\nO representante do Texas, Eddies Morales, fez uma proposta interessante para a administração sobre os migrantes que cruzam a fronteira sul. Seu distrito abrange parte de El Paso, Del Rio e Eagle Pass, que têm sido alguns dos pontos de maior travessia para migrantes. Em entrevista, Morales sugeriu que os migrantes deveriam pagar $2.000 para entrar nos EUA. Ele argumentou que isso poderia gerar receita significativa e criar acordos de trabalho entre governos. Você acha que cobrar $2.000 dos migrantes é vantajoso para o país?"
+}
+```
+
+```json
+{
+  "prompt": "Resuma a seguinte notícia em 114 palavras:\nO clássico videogame \"Space Invaders\" foi desenvolvido no Japão no final da década de 1970 -- e agora seus equivalentes da vida real são o tema de uma discussão política séria nos corredores de poder do Japão. Felizmente, os japoneses podem dormir tranquilos em suas camas esta noite, pois o principal oficial militar do governo revelou que a Força Aérea de Autodefesa do Japão (ASDF) nunca encontrou um objeto voador não identificado extraterrestre. Respondendo a uma pergunta do flamboyant ex-lutador e agora legislador Antonio Inoki, o Ministro da Defesa Gen Nakatani disse ao Diet, o parlamento do Japão, que seus jatos nunca encontraram OVNIs até o momento. \"Quando a Força Aérea de Autodefesa detecta indícios de um objeto voador não identificado que possa violar o espaço aéreo do nosso país, ela despacha caças se necessário e faz observação visual,\" disse Nakatani. Ele continuou: \"Às vezes encontram pássaros ou objetos voadores que não são aeronaves, mas não conheço nenhum caso de encontrar um objeto voador não identificado que se acredita ter vindo de qualquer lugar que não seja a Terra.\" Inoki já apareceu na WWE, baseada nos EUA -- que o descreve como \"um dos homens mais respeitados no entretenimento esportivo\" -- e é o fundador da organização New Japan Pro Wrestling. Ele entrou na Câmara Alta do Japão para um segundo mandato na política em 2013. Ele também lutou com Muhammad Ali em 1976, em uma das primeiras lutas de disciplinas mistas, que mais tarde abriria caminho para os populares concursos de Artes Marciais Mistas de hoje. Antes de seu retorno à política, ele era uma figura regular em programas de variedades da TV japonesa e promoveu uma série de produtos, de molho de pimenta a bancos. O político rebelde também viajou para o Iraque em 1990 para tentar garantir a liberação de reféns japoneses e, mais recentemente, tentou replicar a \"diplomacia do basquete\" do ex-astro da NBA Dennis Rodman, organizando um torneio de luta livre na Coreia do Norte. Ele supostamente se converteu ao Islã na década de 1990, embora diga que pratica tanto o Islã quanto o Budismo. O legislador, que é universalmente conhecido no Japão por seu queixo colossal e seu sempre presente lenço vermelho -- hoje muitas vezes substituído por uma gravata vermelha -- tanto quanto por suas conquistas políticas, havia perguntado em uma reunião do Comitê Orçamentário da Câmara Alta se aeronaves eram alguma vez despachadas para enfrentar ameaças extraterrestres e se pesquisas estavam sendo feitas sobre visitantes alienígenas, levando à resposta de Nakatani. Inoki também afirma ter visto um OVNI com seus próprios olhos, mas admitiu que não sabia pessoalmente se os alienígenas existiam. A troca não foi a primeira vez que políticos japoneses discutiram as implicações de visitantes de outro planeta. Em 2007, o então Ministro da Defesa Shigeru Ishiba ponderou as ramificações legais, sob a constituição pacifista do Japão, de uma defesa contra uma invasão do espaço exterior. LEIA MAIS: O Japão revela Izumo, seu maior navio de guerra desde a Segunda Guerra Mundial.\n\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Responda brevemente à seguinte pergunta:\nmancha de óleo na entrada de concreto\nTenha em mente que sua resposta deve ser estritamente baseada nos seguintes três trechos:\ntrecho 1: Se você tiver manchas de óleo do seu carro em uma entrada de concreto, existem algumas maneiras diferentes de removê-las. Neste vídeo, comparo o uso de limpador de forno, limpador de mãos Goop e limpador de carburador. Tente novamente mais tarde. Aqui está como remover manchas de óleo do concreto. Se você tiver manchas de óleo do seu carro em uma entrada de concreto, existem algumas maneiras diferentes de removê-las. Neste vídeo, comparo o uso de limpador de forno, limpador de mãos Goop e limpador de carburador.\n\ntrecho 2: 5. Limpe a área com manchas de óleo com água de uma mangueira ou balde. Antes de limpar o pavimento, lave qualquer sujeira e detritos que estejam no caminho da mancha de óleo na sua entrada. No entanto, não use uma mangueira de alta pressão para limpar a área afetada, pois você pode acabar empurrando o óleo mais fundo no pavimento. Dependendo do tipo de mancha que você tem, você usará diferentes métodos para limpar o óleo da sua entrada. 1 Se você tiver uma mancha de óleo que ainda está fresca ou se tiver uma mancha pequena e teimosa, pode querer usar o método de cataplasma para remover a mancha.\n\ntrecho 3: Não importa o quanto você tente, manchas de óleo na sua entrada de concreto são quase impossíveis de evitar. Existem vários métodos para limpar essas manchas, embora o tamanho do derramamento de óleo e o tempo que a mancha teve para se fixar determinem o processo de remoção. Primeiro, aplique um limpador de grau comercial na mancha de óleo e esfregue com uma escova ou vassoura. Em seguida, adicione detergente à sua lavadora de alta pressão e comece a pulverizar. Mova-se em um ritmo uniforme e mantenha o bico na mesma distância da superfície do concreto o tempo todo para garantir que não ocorram listras.\n\nCaso os trechos não contenham as informações necessárias para responder à pergunta, por favor, responda com: \"Incapaz de responder com base nos trechos fornecidos.\"\noutput:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-pt
 ```

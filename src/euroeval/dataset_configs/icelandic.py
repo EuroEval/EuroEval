@@ -99,6 +99,23 @@ VALEU_IS_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+ZEBRA_PUZZLE_EASY_IS_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-is",
+    pretty_name="ZebraPuzzlesEasy-is",
+    source="EuroEval/zebra-puzzles-easy-is",
+    task=LOGIC,
+    languages=[ICELANDIC],
+)
+
+RAGTRUTH_IS_CONFIG = DatasetConfig(
+    name="ragtruth-is",
+    pretty_name="RAGTruth-is",
+    source="EuroEval/ragtruth-translated-hallucinations-is-mini",
+    task=HALLU,
+    languages=[ICELANDIC],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -212,30 +229,11 @@ GERLANGMOD_IS_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-ZEBRA_PUZZLE_EASY_IS_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-is",
-    pretty_name="ZebraPuzzlesEasy-is",
-    source="EuroEval/zebra-puzzles-easy-is",
-    task=LOGIC,
-    languages=[ICELANDIC],
-    unofficial=True,
-)
-
 ZEBRA_PUZZLE_HARD_IS_CONFIG = DatasetConfig(
     name="zebra-puzzles-hard-is",
     pretty_name="ZebraPuzzlesHard-is",
     source="EuroEval/zebra-puzzles-hard-is",
     task=LOGIC,
     languages=[ICELANDIC],
-    unofficial=True,
-)
-
-RAGTRUTH_IS_CONFIG = DatasetConfig(
-    name="ragtruth-is",
-    pretty_name="RAGTruth-is",
-    source="EuroEval/ragtruth-translated-hallucinations-is-mini",
-    task=HALLU,
-    languages=[ICELANDIC],
-    train_split=None,
     unofficial=True,
 )

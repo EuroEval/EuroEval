@@ -224,6 +224,29 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/euroeval-amalia-alba-mcq-pt": {
+    "test": 208,
+    "train": 32
+  },
+  "EuroEval/euroeval-amalia-cultura-viva-pt": {
+    "test": 840,
+    "train": 32,
+    "val": 128
+  },
+  "EuroEval/euroeval-amalia-pt-completions": {
+    "test": 65,
+    "train": 8
+  },
+  "EuroEval/euroeval-amalia-pt-exams": {
+    "test": 1531,
+    "train": 32,
+    "val": 256
+  },
+  "EuroEval/euroeval-amalia-saudade-pt-mini": {
+    "test": 2048,
+    "train": 32,
+    "val": 256
+  },
   "EuroEval/european-values-da": {
     "test": 53
   },
@@ -500,6 +523,21 @@
     "test": 2048,
     "train": 1024,
     "val": 256
+  },
+  "EuroEval/include-fr-mini": {
+    "test": 318,
+    "train": 22,
+    "val": 64
+  },
+  "EuroEval/include-hr-mini": {
+    "test": 474,
+    "train": 15,
+    "val": 64
+  },
+  "EuroEval/include-sq-mini": {
+    "test": 466,
+    "train": 24,
+    "val": 64
   },
   "EuroEval/kpwr-ner": {
     "test": 2048,
@@ -789,6 +827,10 @@
     "test": 2048,
     "train": 1024,
     "val": 256
+  },
+  "EuroEval/multiloko-fr-mini": {
+    "test": 234,
+    "train": 16
   },
   "EuroEval/multinerd-mini-it": {
     "test": 2048,
@@ -1270,6 +1312,11 @@
     "val": 128
   },
   "EuroEval/winogrande-lt": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-nl": {
     "test": 1085,
     "train": 47,
     "val": 128

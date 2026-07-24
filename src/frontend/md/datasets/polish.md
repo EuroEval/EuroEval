@@ -923,3 +923,58 @@ You can evaluate a model on this dataset as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-pl
 ```
+
+## Hallucination Detection
+
+### RAGTruth-pl
+
+This dataset is a Polish translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Krótko odpowiedz na następujące pytanie:\njak zaplanować podróż do Niemiec\nPamiętaj, że twoja odpowiedź powinna być ściśle oparta na następujących trzech fragmentach:\nfragment 1:Podziel się. Budżet Niemcy: Podróżuj do Niemiec z budżetem dzięki naszym wskazówkom dotyczącym podróży budżetowych. Uzyskaj zniżki i oszczędzaj pieniądze w Niemczech, od tanich lotów do Niemiec, przez tanie hotele i hostele w Niemczech, po restauracje, transport publiczny i zwiedzanie niemieckich miast. Zanim wybierzesz się do Niemiec, zapoznaj się z tymi pomocnymi wskazówkami dotyczącymi podróży do Niemiec, od wymagań wizowych, przez to, kiedy i gdzie jechać do Niemiec, co zobaczyć w Niemczech, po poruszanie się po Niemczech i wskazówki dotyczące podróży budżetowych.\n\nfragment 2:Planuj z wyprzedzeniem: Mamy pomocne wskazówki, jak zaplanować podróż do Niemiec z twoim pupilem. Przeczytaj o podróżach lotniczych z zwierzętami, szczepieniach dla zwierząt i hotelach przyjaznych zwierzętom w Niemczech. Poznaj zasady dotyczące zwierząt na niemieckich pociągach i uzyskaj pomocne wskazówki dotyczące podróży do Niemiec dla twoich kotów i psów. Zanim wybierzesz się do Niemiec, zapoznaj się z tymi pomocnymi wskazówkami dotyczącymi podróży do Niemiec, od wymagań wizowych, przez to, kiedy i gdzie jechać do Niemiec, co zobaczyć w Niemczech, po poruszanie się po Niemczech i wskazówki dotyczące podróży budżetowych.\n\nfragment 3:Każdy kraj i każda kultura oferują unikalną okazję — a czasami wyzwanie — do poszerzenia osobistych doświadczeń i zrozumienia świata. Niemcy nie są wyjątkiem. Im więcej wiesz o życiu niemieckim i niemieckiej kulturze, tym bardziej przyjemna i satysfakcjonująca będzie twoja podróż do Niemiec. Każdy kraj i każda kultura oferują unikalną okazję — a czasami wyzwanie — do poszerzenia osobistych doświadczeń i zrozumienia świata. Niemcy nie są wyjątkiem.\n\nW przypadku, gdy fragmenty nie zawierają niezbędnych informacji do odpowiedzi na pytanie, odpowiedz: \"Nie mogę odpowiedzieć na podstawie podanych fragmentów.\"\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Instrukcja:\nNapisz obiektywny przegląd dotyczący następującego lokalnego biznesu, opierając się wyłącznie na dostarczonych danych strukturalnych w formacie JSON. Powinieneś uwzględnić szczegóły i omówić informacje wspomniane w recenzjach klientów. Przegląd powinien mieć od 100 do 200 słów. Nie wymyślaj informacji. Dane strukturalne:\n{'nazwa': 'Twoje Miejsce Tajska Restauracja', 'adres': '22 N Milpas St, Ste A', 'miasto': 'Santa Barbara', 'stan': 'CA', 'kategorie': 'Tajska, Restauracje', 'godziny': {'Poniedziałek': '16:0-21:0', 'Wtorek': '11:30-21:0', 'Środa': '11:30-21:0', 'Czwartek': '11:30-21:0', 'Piątek': '11:30-21:30', 'Sobota': '11:30-21:30', 'Niedziela': '11:30-21:0'}, 'atrybuty': {'ParkingBiznesowy': {'garaż': False, 'ulica': True, 'zweryfikowany': False, 'parking': True, 'valet': False}, 'RezerwacjeRestauracji': True, 'MiejscaNaZewnątrz': None, 'WiFi': 'nie', 'NaWynosRestauracje': None, 'RestauracjeDobreDlaGrup': True, 'Muzyka': None, 'Atmosfera': {'romantyczna': False, 'intymna': False, 'turystyczna': False, 'hipster': False, 'divey': False, 'klasyczna': False, 'modna': False, 'wyższa': False, 'casual': True}}, 'gwiazdkiBiznesowe': 4.0, 'informacjeORecenzjach': [{'gwiazdkiRecenzji': 1.0, 'dataRecenzji': '2022-01-02 00:53:23', 'tekstRecenzji': 'Gdybym mógł dać zero gwiazdek, to bym dał, chcą naliczać dodatkowe opłaty za każdy drobiazg, w tym sosy, spójrz na ilość, którą dostarczyli. Nigdy więcej tu nie wrócimy. Jedz na własne ryzyko, jedzenie było okropne'}, {'gwiazdkiRecenzji': 5.0, 'dataRecenzji': '2021-12-28 08:41:46', 'tekstRecenzji': \"Świetne żółte curry, lepsze niż ich curry Penang, które też jest naprawdę dobre. Miejsce nie ma świetnej atmosfery, ale jedzenie na wynos jest naprawdę dobre. Tofu i kurczak zawsze są dobre, ale warzywa są jeszcze lepsze!\\nKokosowe curry to naprawdę moje ulubione. Sałatka mogłaby mieć trochę więcej przypraw.\"}, {'gwiazdkiRecenzji': 5.0, 'dataRecenzji': '2021-12-16 02:34:23', 'tekstRecenzji': 'Można powiedzieć, że moja ulubiona autentyczna tajska restauracja w Santa Barbara. Jestem dużym fanem wszystkich ich zup i Pad Thai. W rozsądnej cenie z dużymi porcjami, które nie tylko zadowolą twój żołądek, ale także twój portfel. Uważam, że Twoje Miejsce to wybór w Top5, gdy nie chcę gotować przez tydzień.'}]}\nPrzegląd:"
+}
+```
+
+```json
+{
+  "prompt": "Krótko odpowiedz na następujące pytanie:\nczym jest DNA\nPamiętaj, że twoja odpowiedź powinna być ściśle oparta na następujących trzech fragmentach:\nfragment 1: Zgłoś nadużycie. Kwas deoksyrybonukleinowy (DNA) to kwas nukleinowy, który zawiera genetyczne instrukcje używane w rozwoju i funkcjonowaniu wszystkich znanych organizmów żywych oraz niektórych wirusów. Główną rolą cząsteczek DNA jest długoterminowe przechowywanie informacji. Zgłoś nadużycie. Kwas deoksyrybonukleinowy (DNA) to kwas nukleinowy, który zawiera genetyczne instrukcje używane w rozwoju i funkcjonowaniu wszystkich znanych organizmów żywych oraz niektórych wirusów. Główną rolą cząsteczek DNA jest długoterminowe przechowywanie informacji.\n\nfragment 2: Struktura DNA. DNA składa się z cząsteczek zwanych nukleotydami. Każdy nukleotyd zawiera grupę fosforanową, grupę cukrową i zasadę azotową. Cztery rodzaje zasad azotowych to adenina (A), tymina (T), guanina (G) i cytozyna (C). Kolejność tych zasad określa instrukcje DNA, czyli kod genetyczny. Podobnie jak kolejność liter w alfabecie może być używana do tworzenia słowa, kolejność zasad azotowych w sekwencji DNA tworzy geny, które w języku komórkowym mówią komórkom, jak produkować białka. Struktura DNA. DNA składa się z cząsteczek zwanych nukleotydami. Każdy nukleotyd zawiera grupę fosforanową, grupę cukrową i zasadę azotową. Cztery rodzaje zasad azotowych to adenina (A), tymina (T), guanina (G) i cytozyna (C).\n\nfragment 3: DNA to podwójna helisa utworzona przez pary zasad przymocowane do szkieletu cukrowo-fosforanowego. DNA, czyli kwas deoksyrybonukleinowy, jest materiałem dziedzicznym u ludzi i prawie wszystkich innych organizmów. Prawie każda komórka w ciele człowieka ma to samo DNA. Struktura podwójnej helisy przypomina nieco drabinę, z parami zasad tworzącymi szczeble drabiny, a cząsteczki cukru i fosforanu tworzącymi pionowe boki drabiny. Ważną cechą DNA jest to, że może się replikować, czyli tworzyć kopie samego siebie.\n\nJeśli fragmenty nie zawierają niezbędnych informacji do odpowiedzi na pytanie, proszę odpowiedzieć: \"Nie można odpowiedzieć na podstawie podanych fragmentów.\"\noutput:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-pl
+```

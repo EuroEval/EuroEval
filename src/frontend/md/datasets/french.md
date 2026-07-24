@@ -477,6 +477,135 @@ euroeval --model <model-id> --dataset multi-wiki-qa-fr
 
 ## Knowledge
 
+### Unofficial: INCLUDE-fr
+
+> This dataset is **unofficial** — results do not count toward the French leaderboard.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+  "text": "Qui est le dernier Président de la IVème République ?\nChoix:\na. René Coty\nb. Félix Gaillard\nc. Charles de Gaulle\nd. Alain Poher",
+  "label": "a",
+  "subject": "History"
+}
+```
+
+```json
+{
+  "text": "Qui a réalisé le film « Léon » ?\nChoix:\na. Costa-Gavras\nb. Luc Besson\nc. Martin Scorsese\nd. Steven Spielberg",
+  "label": "b",
+  "subject": "Culturology"
+}
+```
+
+```json
+{
+  "text": "Pour consulter mon solde de points, je me rends sur le site internet :\nChoix:\na. Allopoints.\nb. Info-point.\nc. Telepoint.\nd. Point-permis.",
+  "label": "c",
+  "subject": "Driving License"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Réponse: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+
+  Répondez à la question ci-dessus par {labels_str}, et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-fr
+```
+
+### Unofficial: MultiLoKo-fr
+
+> This dataset is **unofficial** — results do not count toward the French leaderboard.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer
+as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
+per question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Quel est le métier de la seconde femme de Joseph Ferdinand Cheval?\nChoix:\na. tailleuse\nb. couturière\nc. institutrice\nd. boulangère",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Qui est le père des quatre enfants de Mercotte ?\nChoix:\na. Cyril Lignac\nb. Mercorelli\nc. Bernard Laurance\nd. Philippe Etchebest",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Dans le film de 2017120 Battements par minute, à quelle association sont rattachées les personnes qui répandent les cendres de Sean sur des petits-fours ?\nChoix:\na. AIDES\nb. SOS Homophobie\nc. Act Up– Paris\nd. Sidaction",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Réponse: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+
+  Répondez à la question ci-dessus par 'a', 'b', 'c' ou 'd', et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-fr
+```
+
 ### MMLU-fr
 
 This dataset is a machine translated version of the English
@@ -553,141 +682,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset mmlu-fr
-```
-
-### Unofficial: INCLUDE-fr
-
-This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
-comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
-LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
-academic and professional exams, covering 57 topics including regional knowledge.
-
-The original dataset consists of a 'validation' split used as training data and a 'test'
-split. We use the 'validation' split as the training split, which has 25 samples. We
-sample 64 samples from the 'test' split for the validation split, and use the remaining
-512 samples for the test split. The sampling is done stratified by the subject column.
-
-Here are a few examples from the dataset:
-
-```json
-{
-  "text": "Qui est le dernier Président de la IVème République ?\nChoix:\na. René Coty\nb. Félix Gaillard\nc. Charles de Gaulle\nd. Alain Poher",
-  "label": "a",
-  "subject": "History"
-}
-```
-
-```json
-{
-  "text": "Qui a réalisé le film « Léon » ?\nChoix:\na. Costa-Gavras\nb. Luc Besson\nc. Martin Scorsese\nd. Steven Spielberg",
-  "label": "b",
-  "subject": "Culturology"
-}
-```
-
-```json
-{
-  "text": "Pour consulter mon solde de points, je me rends sur le site internet :\nChoix:\na. Allopoints.\nb. Info-point.\nc. Telepoint.\nd. Point-permis.",
-  "label": "c",
-  "subject": "Driving License"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Les questions suivantes sont des questions à choix multiples (avec réponses).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Question: {text}
-  Réponse: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Question: {text}
-
-  Répondez à la question ci-dessus par {labels_str}, et rien d'autre.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset include-fr
-```
-
-### Unofficial: MultiLoKo-fr
-
-This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The French
-questions are separately sourced and designed to target locally relevant topics for
-French-speaking populations.
-
-We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
-questions with correct answers in the 'targets' column. We use the first target answer
-as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
-per question. We create a 16 / 234 split for training and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Quel est le métier de la seconde femme de Joseph Ferdinand Cheval?\nChoix:\na. tailleuse\nb. couturière\nc. institutrice\nd. boulangère",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Qui est le père des quatre enfants de Mercotte ?\nChoix:\na. Cyril Lignac\nb. Mercorelli\nc. Bernard Laurance\nd. Philippe Etchebest",
-  "label": "b"
-}
-```
-
-```json
-{
-  "text": "Dans le film de 2017120 Battements par minute, à quelle association sont rattachées les personnes qui répandent les cendres de Sean sur des petits-fours ?\nChoix:\na. AIDES\nb. SOS Homophobie\nc. Act Up– Paris\nd. Sidaction",
-  "label": "c"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Les questions suivantes sont des questions à choix multiples (avec réponses).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Question: {text}
-  Réponse: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Question: {text}
-
-  Répondez à la question ci-dessus par 'a', 'b', 'c' ou 'd', et rien d'autre.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset multiloko-fr
 ```
 
 ### Unofficial: MultiNRC-fr
@@ -1274,4 +1268,59 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset valeu-fr
+```
+
+## Hallucination Detection
+
+### RAGTruth-fr
+
+This dataset is a French translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Résumez les nouvelles suivantes en 95 mots:\nDes manifestations ont eu lieu à travers les États-Unis en solidarité avec les manifestations de Baltimore concernant la mort de Freddie Gray. À Denver, neuf personnes ont été arrêtées avec des accusations comprenant l'agression d'un policier et le vol. À New York, plusieurs centaines de personnes ont assisté à un rassemblement \"NYC Rise Up & Shut It Down With Baltimore\". Des manifestations ont également eu lieu à Washington, Minneapolis, Boston, Houston, Ferguson, Los Angeles, Chicago et Oakland, avec d'autres manifestations prévues à Cincinnati et Philadelphie. À Ferguson, trois personnes ont été blessées par balle et un homme de 20 ans a été arrêté. À Los Angeles, six personnes ont été arrêtées pour ne pas s'être dispersées. À Chicago, une personne a été arrêtée pour conduite imprudente. Beaucoup de manifestations ont été organisées par le biais des réseaux sociaux, les manifestants scandant souvent \"Les vies noires comptent\" et \"Justice pour Freddie Gray.\"\n\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Annonce de la TVA pour Mercedes-Benz FCC. Le Société de recherche sur les technologies commerciales (BATEC) prévoit de lancer une division de services internes, spécialisée dans les TIC. Pour cette raison, la Generalitat de Catalunya a ouvert une ligne de subventions pour stimuler l'investissement et la création d'emplois. Pour la plupart, l'annonce de la TVA pour Mercedes-Benz FCC vise la production de nouveaux véhicules. La société a été modifiée hier lorsqu'il a été officiellement annoncé que Mercedes-Benz passerait de 7000 à près de 8600emples en Catalogne. Le projet dosé s'étend sur quatre ans et représente 180 millions d'euros.Dans ce cadre, la concession industrielle de la FCC investira également 12 millions d'euros dans le projet BATEC. La création de 200 nouveaux emplois techniques est prévue. Le sous-traitant principal de Mercedes-Benz dans la péninsule ibérique, FCC Fomento de Construcciones y Contratas, contribue à cette initiative. Le SAV Mercedes-Benz relève en premier lieu des entreprises de la FCC comme des autres entreprises. Joint-venture avec Bimatech pour l'activité de R&D de Mercedes-Benz. C'est dans cet esprit que FCC et Bimatech ont signé une joint-venture. Par conséquent, le BATEC pourrait bénéficier d'une subvention du ministère de l'Économie et de la Compétitivité concernant le programme INNCORPORA. Le projet BATEC est l'une des initiatives incluses dans le cadre du plan stratégique pour la créativité, la technologie et l'innovation de la Generalitat.\n\nRéponse:"
+}
+```
+
+```json
+{
+  "prompt": "Instruction:\nRédigez un aperçu objectif de l'entreprise locale suivante basée uniquement sur les données structurées fournies au format JSON. Vous devriez inclure des détails et couvrir les informations mentionnées dans les avis clients. L'aperçu devrait être de 100 à 200 mots. N'inventez pas d'informations. Données structurées:\n{'nom': 'Rose Cafe', 'adresse': '1816 Cliff Dr', 'ville': 'Santa Barbara', 'état': 'CA', 'catégories': 'Restaurants, Mexicain', 'heures': {'Mardi': '9:0-20:0', 'Mercredi': '9:0-20:0', 'Jeudi': '9:0-20:0', 'Vendredi': '9:0-20:30', 'Samedi': '8:0-20:30', 'Dimanche': '8:0-14:0'}, 'attributs': {'BusinessParking': {'garage': False, 'rue': True, 'validé': False, 'parking': False, 'voiturier': False}, 'RestaurantsReservations': False, 'OutdoorSeating': True, 'WiFi': 'non', 'RestaurantsTakeOut': True, 'RestaurantsGoodForGroups': True, 'Musique': None, 'Ambience': {'romantique': False, 'intime': False, 'touristique': False, 'hipster': False, 'divey': False, 'élégant': False, 'tendance': False, 'haut de gamme': False, 'décontractée': True}}, 'business_stars': 3.5, 'review_info': [{'review_stars': 5.0, 'review_date': '2021-10-07 21:48:38', 'review_text': 'Notre restaurant mexicain préféré. Nourriture, service et ambiance formidables. Les plats préférés sont la quesadilla aux crevettes et l'enchilada verte, mais tout est délicieux !'}, {'review_stars': 5.0, 'review_date': '2021-10-07 01:36:52', 'review_text': \"Sans conteste la meilleure cuisine mexicaine à Santa Barbara. La nourriture et le service sont toujours parfaits !\\n\\nMon mari mangerait ici tous les jours si nous y vivions. Les enchiladas sont fantastiques, assurez-vous de demander de la sauce supplémentaire car elle est bonne pour tremper les chips.\\n\\nC'est agréable de s'asseoir dehors et de regarder les gens passer.\\n\\nProfitez d'une margarita et d'une enchilada, et vous serez reconnaissant.\"}, {'review_stars': 5.0, 'review_date': '2021-10-03 17:19:58', 'review_text': \"Le Rose Café est l'un de mes endroits préférés en ville. Ils ont les meilleurs chilaquiles que j'ai jamais eus, et les enchiladas, et tout sur le menu est bon. Vous ne pouvez pas vous tromper avec ce que vous commandez sur le menu. Les margaritas sont vraiment bonnes, et le personnel est super sympa, et j'adore la zone extérieure.\"}]}\nAperçu:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-fr
 ```

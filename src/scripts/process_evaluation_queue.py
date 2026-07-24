@@ -553,8 +553,8 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     """Upload result lines to the HF results bucket.
 
     Writes one JSON file per logical result via result_identity paths
-    (results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json), then syncs
-    to the bucket. Never deletes existing files (additive only).
+    (results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json), then uploads
+    only those files to the bucket. Never deletes existing files (additive only).
 
     Args:
         lines:
@@ -567,7 +567,9 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
+    valid_records_seen = 0
     records_written = 0
+    written_paths: list[Path] = []
     for line in lines:
         if not line.strip():
             continue
@@ -576,21 +578,49 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
             identity = identity_from_eee_record(record)
             record_path = RESULTS_DIR / identity_to_path(identity)
             record_path.parent.mkdir(parents=True, exist_ok=True)
-            record_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
+            # Use canonical JSON for consistent comparison
+            new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
+
+            # Count as seen before checking if unchanged
+            valid_records_seen += 1
+
+            # Only write if file doesn't exist or content differs
+            if record_path.exists():
+                try:
+                    existing_content = record_path.read_text(encoding="utf-8").strip()
+                    existing_record = json.loads(existing_content)
+                    canonical_existing = json.dumps(
+                        existing_record, sort_keys=True, separators=(",", ":")
+                    )
+                    if canonical_existing == new_content:
+                        continue  # Skip unchanged files
+                except (json.JSONDecodeError, OSError):
+                    pass  # If we can't parse existing, overwrite it
+
+            record_path.write_text(new_content, encoding="utf-8")
             records_written += 1
+            written_paths.append(record_path)
         except (json.JSONDecodeError, ValueError, KeyError) as e:
             logger.debug(f"Skipping invalid record: {e}")
 
-    if not records_written:
-        logger.warning("No valid results found to upload.")
-        return False
+    if valid_records_seen == 0:
+        logger.info("No valid records to process.")
+        return True
+
+    if records_written == 0:
+        logger.info("All records unchanged.")
+        return True
 
     try:
         logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
+        # Skip any files that are empty (0 bytes)
         api = HfApi()
-        api.sync_bucket(
-            source=str(RESULTS_DIR), dest=f"hf://buckets/{HF_RESULTS_BUCKET}/"
-        )
+        add_list: list[tuple[str | Path | bytes, str]] = [
+            (str(path), str(path.relative_to(RESULTS_DIR)))
+            for path in written_paths
+            if path.is_file() and path.stat().st_size > 0
+        ]
+        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
         logger.info(
             f"Uploaded {records_written} result records for {model_id!r} to HF bucket."
         )

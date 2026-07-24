@@ -112,10 +112,8 @@ def process_results(
     ]
 
     _upload_per_model_files(processed_records=processed_records)
-
-    # Clear the load_raw_results cache so subsequent calls in the same process
-    # (e.g. repeated leaderboard generation) pick up the enriched records.
     load_raw_results.cache_clear()
+    logger.info("Cleared load_raw_results cache.")
 
 
 def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
@@ -180,18 +178,46 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
     hf_results_bucket = f"hf://buckets/{HF_RESULTS_BUCKET}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    logger.info("Uploading results to HF bucket...")
+    # Track which files were written to upload only these files
+    written_files: list[tuple[str | Path | bytes, str]] = []
+
+    logger.info("Writing result files...")
     for relative_path, (record, _) in records_by_path.items():
         file_path = RESULTS_DIR / relative_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        content = json.dumps(record, ensure_ascii=False) + "\n"
-        file_path.write_text(content, encoding="utf-8")
+        # Use canonical JSON serialization for consistent comparison
+        canonical_content = json.dumps(
+            record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
+
+        # Only write if file doesn't exist or content differs (semantic comparison)
+        if file_path.exists():
+            try:
+                existing_content = file_path.read_text(encoding="utf-8").strip()
+                # Parse and compare dicts for semantic equality
+                existing_record = json.loads(existing_content)
+                canonical_existing = json.dumps(
+                    existing_record,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                )
+                if canonical_existing == canonical_content:
+                    continue  # Skip unchanged files
+            except (json.JSONDecodeError, OSError):
+                pass  # If we can't parse existing, overwrite it
+
+        file_path.write_text(canonical_content + "\n", encoding="utf-8")
+        # Skip empty files
+        if file_path.stat().st_size > 0:
+            written_files.append((file_path, str(relative_path)))
 
     api = HfApi()
-    api.sync_bucket(source=str(RESULTS_DIR), dest=hf_results_bucket, token=hf_token)
-    logger.info(
-        f"Uploaded {len(records_by_path):,} result files to {hf_results_bucket}."
+    # Upload only the written files to the bucket
+    api.batch_bucket_files(
+        bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token
     )
+    logger.info(f"Uploaded {len(written_files):,} result files to {hf_results_bucket}.")
 
     if dropped_count > 0:
         logger.info(f"Dropped {dropped_count:,} records with unresolvable identities.")

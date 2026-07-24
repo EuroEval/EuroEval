@@ -98,6 +98,23 @@ VALEU_DE_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+ZEBRA_PUZZLE_EASY_DE_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-de",
+    pretty_name="ZebraPuzzlesEasy-de",
+    source="EuroEval/zebra-puzzles-easy-de",
+    task=LOGIC,
+    languages=[GERMAN],
+)
+
+RAGTRUTH_DE_CONFIG = DatasetConfig(
+    name="ragtruth-de",
+    pretty_name="RAGTruth-de",
+    source="EuroEval/ragtruth-translated-hallucinations-de-mini",
+    task=HALLU,
+    languages=[GERMAN],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -195,30 +212,11 @@ GERLANGMOD_DE_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-ZEBRA_PUZZLE_EASY_DE_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-de",
-    pretty_name="ZebraPuzzlesEasy-de",
-    source="EuroEval/zebra-puzzles-easy-de",
-    task=LOGIC,
-    languages=[GERMAN],
-    unofficial=True,
-)
-
 ZEBRA_PUZZLE_HARD_DE_CONFIG = DatasetConfig(
     name="zebra-puzzles-hard-de",
     pretty_name="ZebraPuzzlesHard-de",
     source="EuroEval/zebra-puzzles-hard-de",
     task=LOGIC,
     languages=[GERMAN],
-    unofficial=True,
-)
-
-RAGTRUTH_DE_CONFIG = DatasetConfig(
-    name="ragtruth-de",
-    pretty_name="RAGTruth-de",
-    source="EuroEval/ragtruth-translated-hallucinations-de-mini",
-    task=HALLU,
-    languages=[GERMAN],
-    train_split=None,
     unofficial=True,
 )

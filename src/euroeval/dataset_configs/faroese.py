@@ -49,6 +49,23 @@ MULTI_IFEVAL_FO_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+ZEBRA_PUZZLE_EASY_FO_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-fo",
+    pretty_name="ZebraPuzzlesEasy-fo",
+    source="EuroEval/zebra-puzzles-easy-fo",
+    task=LOGIC,
+    languages=[FAROESE],
+)
+
+RAGTRUTH_FO_CONFIG = DatasetConfig(
+    name="ragtruth-fo",
+    pretty_name="RAGTruth-fo",
+    source="EuroEval/ragtruth-translated-hallucinations-fo-mini",
+    task=HALLU,
+    languages=[FAROESE],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -89,30 +106,11 @@ GERLANGMOD_FO_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-ZEBRA_PUZZLE_EASY_FO_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-fo",
-    pretty_name="ZebraPuzzlesEasy-fo",
-    source="EuroEval/zebra-puzzles-easy-fo",
-    task=LOGIC,
-    languages=[FAROESE],
-    unofficial=True,
-)
-
 ZEBRA_PUZZLE_HARD_FO_CONFIG = DatasetConfig(
     name="zebra-puzzles-hard-fo",
     pretty_name="ZebraPuzzlesHard-fo",
     source="EuroEval/zebra-puzzles-hard-fo",
     task=LOGIC,
     languages=[FAROESE],
-    unofficial=True,
-)
-
-RAGTRUTH_FO_CONFIG = DatasetConfig(
-    name="ragtruth-fo",
-    pretty_name="RAGTruth-fo",
-    source="EuroEval/ragtruth-translated-hallucinations-fo-mini",
-    task=HALLU,
-    languages=[FAROESE],
-    train_split=None,
     unofficial=True,
 )

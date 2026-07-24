@@ -120,9 +120,10 @@ def test_upload_per_model_files_passes_hf_token(
         ):
             result_processing._upload_per_model_files(processed_records=[record])
 
-    mock_api.sync_bucket.assert_called_once_with(
-        source=str(tmp_path), dest="hf://buckets/EuroEval/results", token="test_token"
-    )
+    mock_api.batch_bucket_files.assert_called_once()
+    call_kwargs = mock_api.batch_bucket_files.call_args.kwargs
+    assert call_kwargs["bucket_id"] == "EuroEval/results"
+    assert call_kwargs["token"] == "test_token"
 
 
 def test_upload_per_model_files_raises_on_sync_failure(
@@ -132,7 +133,7 @@ def test_upload_per_model_files_raises_on_sync_failure(
     monkeypatch.setattr(result_processing, "RESULTS_DIR", tmp_path)
 
     mock_api = MagicMock()
-    mock_api.sync_bucket.side_effect = HfHubHTTPError(
+    mock_api.batch_bucket_files.side_effect = HfHubHTTPError(
         "Bucket sync failed", response=MagicMock(status_code=500)
     )
 
@@ -169,7 +170,11 @@ def test_sync_bucket_passes_hf_token(
             bucket_sync.sync_bucket()
 
     mock_api.sync_bucket.assert_called_once_with(
-        source="hf://buckets/EuroEval/results/", dest=str(tmp_path), token="test_token"
+        source="hf://buckets/EuroEval/results/",
+        dest=str(tmp_path),
+        token="test_token",
+        ignore_times=True,
+        ignore_sizes=False,
     )
 
 
@@ -210,11 +215,10 @@ def test_upload_results_to_bucket_passes_hf_token(
         ):
             bucket_sync.upload_results_to_bucket(results_file=results_file)
 
-    mock_api.sync_bucket.assert_called_once_with(
-        source=str(results_dir),
-        dest="hf://buckets/EuroEval/results/",
-        token="test_token",
-    )
+    mock_api.batch_bucket_files.assert_called_once()
+    call_kwargs = mock_api.batch_bucket_files.call_args.kwargs
+    assert call_kwargs["bucket_id"] == "EuroEval/results"
+    assert call_kwargs["token"] == "test_token"
 
 
 def test_upload_results_to_bucket_raises_on_sync_failure(
@@ -237,7 +241,7 @@ def test_upload_results_to_bucket_raises_on_sync_failure(
     monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
 
     mock_api = MagicMock()
-    mock_api.sync_bucket.side_effect = HfHubHTTPError(
+    mock_api.batch_bucket_files.side_effect = HfHubHTTPError(
         "Bucket sync failed", response=MagicMock(status_code=500)
     )
 

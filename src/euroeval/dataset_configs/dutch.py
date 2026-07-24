@@ -72,14 +72,6 @@ MMLU_NL_CONFIG = DatasetConfig(
     languages=[DUTCH],
 )
 
-HELLASWAG_NL_CONFIG = DatasetConfig(
-    name="hellaswag-nl",
-    pretty_name="HellaSwag-nl",
-    source="EuroEval/hellaswag-nl-mini",
-    task=COMMON_SENSE,
-    languages=[DUTCH],
-)
-
 DUIDELIJKE_TAAL_NL_CONFIG = DatasetConfig(
     name="duidelijke-taal",
     pretty_name="Duidelijke Taal",
@@ -119,8 +111,43 @@ MBBQ_NL_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+ZEBRA_PUZZLE_EASY_NL_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-nl",
+    pretty_name="ZebraPuzzlesEasy-nl",
+    source="EuroEval/zebra-puzzles-easy-nl",
+    task=LOGIC,
+    languages=[DUTCH],
+)
+
+RAGTRUTH_NL_CONFIG = DatasetConfig(
+    name="ragtruth-nl",
+    pretty_name="RAGTruth-nl",
+    source="EuroEval/ragtruth-translated-hallucinations-nl-mini",
+    task=HALLU,
+    languages=[DUTCH],
+    train_split=None,
+)
+
+
+WINOGRANDE_NL_CONFIG = DatasetConfig(
+    name="winogrande-nl",
+    pretty_name="Winogrande-nl",
+    source="EuroEval/winogrande-nl",
+    task=COMMON_SENSE,
+    languages=[DUTCH],
+    labels=["a", "b"],
+)
 
 # Unofficial datasets ###
+
+HELLASWAG_NL_CONFIG = DatasetConfig(
+    name="hellaswag-nl",
+    pretty_name="HellaSwag-nl",
+    source="EuroEval/hellaswag-nl-mini",
+    task=COMMON_SENSE,
+    languages=[DUTCH],
+    unofficial=True,
+)
 
 DUTCH_COLA_CONFIG = DatasetConfig(
     name="dutch-cola",
@@ -197,16 +224,6 @@ GOLDENSWAG_NL_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-WINOGRANDE_NL_CONFIG = DatasetConfig(
-    name="winogrande-nl",
-    pretty_name="Winogrande-nl",
-    source="EuroEval/winogrande-nl",
-    task=COMMON_SENSE,
-    languages=[DUTCH],
-    labels=["a", "b"],
-    unofficial=True,
-)
-
 INCLUDE_NL_CONFIG = DatasetConfig(
     name="include-nl",
     pretty_name="INCLUDE-nl",
@@ -244,30 +261,11 @@ SICK_NL_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-ZEBRA_PUZZLE_EASY_NL_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-nl",
-    pretty_name="ZebraPuzzlesEasy-nl",
-    source="EuroEval/zebra-puzzles-easy-nl",
-    task=LOGIC,
-    languages=[DUTCH],
-    unofficial=True,
-)
-
 ZEBRA_PUZZLE_HARD_NL_CONFIG = DatasetConfig(
     name="zebra-puzzles-hard-nl",
     pretty_name="ZebraPuzzlesHard-nl",
     source="EuroEval/zebra-puzzles-hard-nl",
     task=LOGIC,
     languages=[DUTCH],
-    unofficial=True,
-)
-
-RAGTRUTH_NL_CONFIG = DatasetConfig(
-    name="ragtruth-nl",
-    pretty_name="RAGTruth-nl",
-    source="EuroEval/ragtruth-translated-hallucinations-nl-mini",
-    task=HALLU,
-    languages=[DUTCH],
-    train_split=None,
     unofficial=True,
 )

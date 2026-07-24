@@ -598,3 +598,58 @@ You can evaluate a model on this dataset as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-ifeval-sk
 ```
+
+## Hallucination Detection
+
+### RAGTruth-sk
+
+This dataset is a Slovak translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates, i.e.,
+generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric reported is the hallucination rate,
+computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "prompt": "Zhrňte nasledujúce správy do 90 slov:\nZástupca Texasu verí, že migranti by mali zaplatiť 2 000 USD za vstup do krajiny\nZástupca Texasu Eddies Morales predložil administratíve zaujímavý návrh týkajúci sa migrantov prekračujúcich južnú hranicu. Jeho okres zahŕňa časti El Pasa, Del Ria a Eagle Pass, ktoré boli niektorými z miest s najväčším prechodom pre migrantov. V rozhovore Morales naznačil, že migranti by mali zaplatiť 2 000 USD za vstup do USA. Argumentoval tým, že by to mohlo vygenerovať významné príjmy a vytvoriť pracovné dohody medzi vládami. Myslíte si, že účtovanie 2 000 USD od migrantov je výhodné pre krajinu?"
+}
+```
+
+```json
+{
+  "prompt": "Stručne odpovedzte na nasledujúcu otázku:\nškvrna od oleja na betónovom vchode\nMajte na pamäti, že vaša odpoveď by mala byť prísne založená na nasledujúcich troch úryvkoch:\núryvok 1: Ak máte škvrny od oleja z vášho auta na betónovom vchode, existuje niekoľko rôznych spôsobov, ako ich odstrániť. V tomto videu porovnávam použitie čističa rúry, čističa rúk Goop a čističa karburátora. Skúste to znova neskôr. Tu je návod, ako odstrániť škvrny od oleja z betónu.\n\núryvok 2: 5. Vyčistite oblasť so škvrnami od oleja vodou z hadice alebo vedra. Pred čistením dlažby umyte akúkoľvek nečistotu a odpadky, ktoré sú v ceste škvrne od oleja na vašom vchode. Avšak nepoužívajte vysokotlakovú hadicu na čistenie postihnutej oblasti, pretože môžete tlačiť olej hlbšie do dlažby.\n\núryvok 3: Bez ohľadu na to, ako veľmi sa snažíte, škvrny od oleja na vašom betónovom vchode sú takmer nemožné vyhnúť sa. Existuje niekoľko metód na čistenie týchto škvŕn, hoci veľkosť rozliatia oleja a čas, ktorý mala škvrna na fixáciu, určujú proces odstraňovania.\n\nAk úryvky neobsahujú potrebné informácie na odpoveď na otázku, prosím odpovedzte s: \"Nie je možné odpovedať na základe poskytnutých úryvkov.\"\noutput:"
+}
+```
+
+```json
+{
+  "prompt": "Pokyn:\nNapíšte objektívny prehľad o nasledujúcom miestnom podniku, založený výlučne na poskytnutých štrukturálnych údajoch vo formáte JSON. Mali by ste zahrnúť detaily a pokryť informácie uvedené v recenziách zákazníkov. Prehľad by mal mať 100-200 slov. Nevymýšľajte informácie. Štrukturálne údaje:\n{'názov': 'Vaše Miesto Thajská Reštaurácia', 'adresa': '22 N Milpas St, Ste A', 'mesto': 'Santa Barbara', 'štát': 'CA', 'kategórie': 'Thajská, Reštaurácie'...}\nPrehľad:"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Instruction prompt:
+
+  ```text
+  {prompt}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-sk
+```

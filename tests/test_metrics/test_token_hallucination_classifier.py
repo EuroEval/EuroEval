@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from datasets import Dataset
 
+from euroeval.enums import Device
 from euroeval.exceptions import InvalidBenchmark
 from euroeval.metrics.token_hallucination_classifier import (
     TokenHallucinationMetric,
@@ -271,11 +272,12 @@ def test_detector_uses_correct_model_id(
         )
 
     expected_model_id = (
-        "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-da"
+        "alexandrainst/"
+        "mmbert-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-da"
     )
     mock_cls.assert_called_once_with(
         method="transformer",
         model_path=expected_model_id,
-        device="cpu",
+        device=Device.CPU,
         cache_dir=".euroeval_cache",
     )

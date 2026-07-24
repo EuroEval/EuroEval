@@ -8,9 +8,10 @@ been picked up by the compute server), it:
 2. Concatenates all results into ``new_results.jsonl`` at the repo root.
 3. Runs ``generate_leaderboards.py`` to merge the new results into the
    leaderboards.
-4. Builds the frontend and deploys it to Vercel as a prebuilt artifact
+4. Starts the Vercel dev server and prompts for user confirmation.
+5. Deploys the frontend to Vercel as a prebuilt artifact
    (so Vercel's CLI never has to upload the >100 MB ``.git`` packfile).
-5. Posts a comment and closes each processed issue.
+6. Posts a comment and closes each processed issue.
 
 To avoid race conditions, the script snapshots the list of results-ready
 issues at the start (for logging purposes) and only closes issues with
@@ -29,8 +30,11 @@ import csv
 import json
 import logging
 import os
+import signal
+import socket
 import subprocess
 import sys
+import time
 import urllib.error
 from pathlib import Path
 
@@ -116,17 +120,8 @@ def main(force: bool) -> None:
         logger.info(f"#{number}: found {len(lines)} result line(s).")
         harvested.append((number, lines))
 
-    # If no issues found, switch to bucket-scan mode
-    bucket_scan_results: list[str] = []
-    if len(issues) == 0:
-        logger.info("No open issues found; using bucket-scan mode.")
-        bucket_scan_results = scan_bucket_for_results()
-        if not bucket_scan_results:
-            logger.info("No new results found in bucket scan.")
-            if not force:
-                return
-            logger.info("Forcing leaderboard regeneration despite no new results.")
-        logger.info(f"Bucket-scan mode found {len(bucket_scan_results)} new result(s).")
+    # When there are 0 open issues, continue with empty harvested results.
+    # The bucket sync in upload_results_to_hf() handles incremental downloads.
 
     # Load any manually added results from new_results.jsonl
     manual_lines: list[str] = []
@@ -139,11 +134,10 @@ def main(force: bool) -> None:
         if manual_lines:
             logger.info(f"Found {len(manual_lines)} manually added result line(s).")
 
-    # Combine harvested results, bucket-scan results, and manual results
+    # Combine harvested results and manual results
     all_lines: list[str] = []
     for _, lines in harvested:
         all_lines.extend(lines)
-    all_lines.extend(bucket_scan_results)
     all_lines.extend(manual_lines)
 
     has_new_results = bool(all_lines)
@@ -155,15 +149,10 @@ def main(force: bool) -> None:
     else:
         NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
 
-        # Log which mode was used
-        if bucket_scan_results:
-            mode_str = f"bucket-scan ({len(bucket_scan_results)}), "
-        else:
-            mode_str = ""
         harvested_count = sum(len(lines) for _, lines in harvested)
         logger.info(
             f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
-            f"({mode_str}{harvested_count} harvested, {len(manual_lines)} manual)."
+            f"({harvested_count} harvested, {len(manual_lines)} manual)."
         )
 
         # Upload results to HF bucket BEFORE regenerating leaderboards
@@ -195,6 +184,11 @@ def main(force: bool) -> None:
             "Check the logs above, fix the issue, and redeploy manually."
         )
         sys.exit(1)
+
+    # Preview in dev server and get user confirmation before deploying
+    if not preview_in_dev_server():
+        logger.info("Deployment aborted by user.")
+        sys.exit(0)
 
     if not deploy_to_vercel():
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
@@ -254,134 +248,6 @@ def build_dedup_key(result: dict) -> ResultIdentity | None:
     except (ValueError, KeyError) as e:
         logger.debug("Failed to extract identity from result: %s", e)
         return None
-
-
-def list_all_result_files() -> list[BucketFile]:
-    """List all JSON result files in the EuroEval/results bucket.
-
-    Returns:
-        List of BucketFile objects for ``<model>/<dataset>__<split>__<shot>.json``
-        files in the tree structure.
-    """
-    api = HfApi()
-    bucket_id = HF_RESULTS_BUCKET
-    try:
-        files = list(api.list_bucket_tree(bucket_id=bucket_id, recursive=True))
-        return [
-            f
-            for f in files
-            if isinstance(f, BucketFile)
-            and f.path.endswith(".json")
-            and "/" in f.path  # Must be in tree format: <model>/<filename>
-        ]
-    except Exception as e:
-        logger.error(f"Failed to list bucket files: {e}")
-        return []
-
-
-def load_existing_result_keys() -> set[ResultIdentity]:
-    """Load existing results and build a set of dedup keys.
-
-    Reads every JSON file in the tree structure
-    ``RESULTS_DIR/<model>/<dataset>__<split>__<shot>.json`` and builds a set
-    of identity keys.
-
-    Returns:
-        Set of identity tuples ``(model_id, dataset, validation_split, few_shot)``.
-    """
-    existing_keys: set[ResultIdentity] = set()
-
-    json_files = sorted(RESULTS_DIR.glob("*/*.json"))
-    if not json_files:
-        logger.info("No existing results found in RESULTS_DIR.")
-        return existing_keys
-
-    for json_file in json_files:
-        try:
-            content = json_file.read_text(encoding="utf-8")
-            result = json.loads(content)
-            key = build_dedup_key(result)
-            if key is not None:
-                existing_keys.add(key)
-        except (OSError, json.JSONDecodeError, ValueError) as e:
-            logger.warning(f"Failed to read {json_file}: {e}")
-
-    logger.info(f"Loaded {len(existing_keys)} existing result keys.")
-    return existing_keys
-
-
-def scan_bucket_for_results() -> list[str]:
-    """Scan the EuroEval/results bucket for results not yet in RESULTS_DIR.
-
-    Downloads all JSON files from the tree structure, parses them as single
-    JSON dicts, and collects results that are not already in the existing
-    results.
-
-    Returns:
-        List of new result JSON strings (empty if none found).
-    """
-    logger.info("Scanning bucket for new results...")
-
-    # Get all JSON files from the bucket tree
-    all_bucket_files = list_all_result_files()
-    if not all_bucket_files:
-        logger.info("No JSON files found in bucket.")
-        return []
-
-    logger.info(f"Found {len(all_bucket_files)} JSON file(s) in bucket.")
-
-    # Download all files to RESULTS_DIR
-    api = HfApi()
-    bucket_id = HF_RESULTS_BUCKET
-
-    files_spec: list[tuple[str | BucketFile, str | Path]] = [
-        (bucket_file.path, RESULTS_DIR / bucket_file.path)
-        for bucket_file in all_bucket_files
-    ]
-
-    try:
-        api.download_bucket_files(
-            bucket_id=bucket_id, files=files_spec, raise_on_missing_files=False
-        )
-        logger.info(f"Downloaded {len(files_spec)} file(s) to {RESULTS_DIR}.")
-    except Exception as e:
-        logger.error(f"Failed to download bucket files: {e}")
-        return []
-
-    # Load existing keys for deduplication
-    existing_keys = load_existing_result_keys()
-
-    # Parse all downloaded files and collect new results
-    new_results: list[str] = []
-    seen_keys: set[ResultIdentity] = set()
-
-    for bucket_file in all_bucket_files:
-        local_path = RESULTS_DIR / bucket_file.path
-        if not local_path.exists():
-            logger.warning(f"Downloaded file not found: {local_path}")
-            continue
-
-        try:
-            content = local_path.read_text(encoding="utf-8")
-            result = json.loads(content)
-            key = build_dedup_key(result)
-
-            if key is None:
-                logger.debug("Skipping result with no identity")
-                continue
-
-            if key in existing_keys or key in seen_keys:
-                logger.debug(f"Skipping duplicate result: {key}")
-                continue
-
-            new_results.append(json.dumps(result, ensure_ascii=False))
-            seen_keys.add(key)
-        except (json.JSONDecodeError, ValueError) as e:
-            logger.debug(f"Skipping invalid JSON in {bucket_file.path}: {e}")
-
-    logger.info(f"Found {len(new_results)} new result(s) from bucket scan.")
-
-    return new_results
 
 
 def list_open_request_issues() -> list[dict]:
@@ -497,10 +363,9 @@ def _extract_identity_key(result: dict) -> ResultIdentity | None:
 def upload_results_to_hf(new_results_path: Path) -> bool:
     """Upload results to Hugging Face bucket.
 
-    Reads the JSONL file, converts to per-record JSON tree layout
-    (one file per logical result at
-    ``results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json``),
-    deduplicates by identity (newer records win), then syncs to bucket.
+    Loads existing results from local RESULTS_DIR, merges new results from the
+    JSONL file, deduplicates by identity (newer records win), then syncs
+    changed files back to the bucket.
 
     Args:
         new_results_path:
@@ -510,16 +375,6 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
         True if upload succeeded, False otherwise.
     """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    try:
-        # Sync existing results from EuroEval/results bucket
-        logger.info(f"Syncing existing results from {HF_RESULTS_BUCKET}...")
-        HfApi().sync_bucket(
-            source=f"hf://buckets/{HF_RESULTS_BUCKET}/", dest=str(RESULTS_DIR)
-        )
-        logger.info("Downloaded existing results from bucket.")
-    except HfHubHTTPError as e:
-        logger.warning(f"Could not sync from bucket: {e}. Starting fresh.")
 
     # Load existing results as identity -> record dict
     existing: dict[ResultIdentity, dict] = {}
@@ -570,10 +425,36 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
         path_to_identity[record_path] = identity
 
     # === MUTATE PHASE: only after validation succeeds ===
-    # Clear existing tree
-    for existing_file in RESULTS_DIR.rglob("*.json"):
-        if existing_file.is_file():
-            existing_file.unlink()
+    # Only rewrite records whose content actually changed. RESULTS_DIR contains
+    # results from previous runs (already synced to the bucket), so comparing
+    # each desired record against the file already on disk tells us exactly
+    # which records changed. Rewriting only the changed files avoids touching
+    # every file's mtime and re-syncing the whole tree on every run. We never
+    # drop identities (existing is only merged into, never pruned), so there
+    # are no orphaned files to clear.
+    records_written = 0
+    records_unchanged = 0
+    written_paths: list[Path] = []
+    for identity, record in existing.items():
+        record_path = RESULTS_DIR / identity_to_path(identity)
+        desired = json.dumps(record, separators=(",", ":"))
+        try:
+            if record_path.exists():
+                try:
+                    existing_content = json.loads(
+                        record_path.read_text(encoding="utf-8")
+                    )
+                    if existing_content == record:
+                        records_unchanged += 1
+                        continue
+                except (json.JSONDecodeError, ValueError):
+                    pass
+            record_path.parent.mkdir(parents=True, exist_ok=True)
+            record_path.write_text(desired, encoding="utf-8")
+            records_written += 1
+            written_paths.append(record_path)
+        except (ValueError, OSError) as e:
+            logger.warning(f"Failed to write record for {identity}: {e}")
 
     # Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts (not repo-root files)
     for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
@@ -581,39 +462,36 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
             jsonl_file.unlink()
             logger.info(f"Removed stale artefact {jsonl_file}")
 
-    # Write deduplicated results
-    records_written = 0
-    for identity, record in existing.items():
-        model_id, dataset, validation_split, few_shot = identity
-        try:
-            record_path = RESULTS_DIR / identity_to_path(identity)
-            record_path.parent.mkdir(parents=True, exist_ok=True)
-            record_path.write_text(
-                json.dumps(record, separators=(",", ":")), encoding="utf-8"
-            )
-            records_written += 1
-        except (ValueError, OSError) as e:
-            logger.warning(f"Failed to write record for {identity}: {e}")
-
-    if not records_written:
+    if not existing:
         logger.warning("No valid results to upload.")
         return False
 
+    if not records_written:
+        logger.info(
+            f"All {records_unchanged:,} records already up to date; nothing to sync."
+        )
+        return True
+
     logger.info(
-        f"Wrote {records_written} record files to {RESULTS_DIR}, syncing to bucket..."
+        f"Wrote {records_written:,} changed record file(s) "
+        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
     )
 
-    # Sync to bucket
+    # Upload only changed files to bucket using batch operation
+    # Skip any files that are empty (0 bytes)
+    api = HfApi()
+    add_list: list[tuple[str | Path | bytes, str]] = [
+        (str(path), str(path.relative_to(RESULTS_DIR)))
+        for path in written_paths
+        if path.is_file() and path.stat().st_size > 0
+    ]
     try:
-        HfApi().sync_bucket(
-            source=str(RESULTS_DIR), dest=f"hf://buckets/{HF_RESULTS_BUCKET}/"
-        )
-        logger.info(f"Uploaded results to {HF_RESULTS_BUCKET}.")
+        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
+        logger.info(f"Uploaded {len(written_paths)} file(s) to {HF_RESULTS_BUCKET}.")
+        return True
     except HfHubHTTPError as e:
-        logger.error(f"Failed to sync to bucket: {e}")
+        logger.error(f"Failed to upload to HF bucket: {e}")
         return False
-
-    return True
 
 
 def regenerate_leaderboards(force: bool = False) -> bool:
@@ -753,6 +631,109 @@ def verify_leaderboards() -> bool:
         logger.info(f"All {valid_count} leaderboard CSVs passed sanity checks.")
 
     return valid_count > 0
+
+
+def preview_in_dev_server() -> bool:
+    """Start Vercel dev server and prompt user to review before deployment.
+
+    Starts `vercel dev` in the background, waits for it to be ready,
+    prompts the user to check the preview, and waits for confirmation.
+
+    Returns:
+        True if user confirms deployment, False if they abort.
+    """
+    logger.info("Starting Vercel dev server for preview...")
+    logger.info("=" * 60)
+
+    # Start vercel dev as a subprocess
+    try:
+        dev_process = subprocess.Popen(
+            ["vercel", "dev", "--yes", "--non-interactive"],
+            cwd=REPO_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+    except FileNotFoundError:
+        logger.error("`vercel` CLI not found on PATH. Install with `npm i -g vercel`.")
+        return False
+
+    # Wait for dev server to start (watch for ready message or timeout)
+    ready = False
+    start_time = time.time()
+    timeout = 60  # seconds
+
+    print("\nWaiting for dev server to start...")
+    while time.time() - start_time < timeout:
+        if dev_process.poll() is not None:
+            # Process exited unexpectedly
+            output = dev_process.stdout.read()
+            logger.error(f"Dev server exited unexpectedly: {output}")
+            return False
+
+        # Give it a moment
+        time.sleep(2)
+
+        # Try to connect to localhost:3000 (default Vercel dev port)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            result = sock.connect_ex(("127.0.0.1", 3000))
+            sock.close()
+            if result == 0:
+                ready = True
+                break
+        except Exception:
+            pass
+
+    if not ready:
+        logger.error("Dev server failed to start within 60 seconds.")
+        try:
+            dev_process.terminate()
+            dev_process.wait(timeout=5)
+        except Exception:
+            dev_process.kill()
+        return False
+
+    logger.info("=" * 60)
+    logger.info("✓ Dev server is running at http://localhost:3000")
+    logger.info("=" * 60)
+    print(
+        "\nPlease open http://localhost:3000 in your browser and check the "
+        "leaderboards.\n"
+    )
+
+    # Prompt for confirmation
+    while True:
+        response = input("Does everything look alright? [Y/n]: ").strip().lower()
+        if response in ("", "y", "yes"):
+            confirmed = True
+            break
+        elif response in ("n", "no"):
+            confirmed = False
+            break
+        else:
+            print("Please answer 'y' or 'n'.")
+
+    # Shut down dev server
+    logger.info("Shutting down dev server...")
+    try:
+        dev_process.send_signal(signal.SIGTERM)
+        dev_process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        dev_process.kill()
+        dev_process.wait()
+    except Exception:
+        try:
+            dev_process.kill()
+        except Exception:
+            pass
+
+    if confirmed:
+        logger.info("User confirmed deployment.")
+        return True
+    else:
+        logger.info("User aborted deployment.")
+        return False
 
 
 def deploy_to_vercel() -> bool:
