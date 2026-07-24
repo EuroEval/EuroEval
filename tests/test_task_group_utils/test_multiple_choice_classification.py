@@ -88,7 +88,7 @@ class TestPrepareExamples:
 
         with pytest.raises(
             InvalidBenchmark,
-            match="A question has 3 choices but the dataset requires 2",
+            match="Multiple-choice example has 3 choices, but this dataset requires 2",
         ):
             multiple_choice_classification.prepare_examples(
                 examples=batch,  # ty: ignore[invalid-argument-type]
