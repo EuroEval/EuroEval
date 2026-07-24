@@ -384,7 +384,7 @@ class TestExecuteJobsLogging:
         # Verify log file contains expected metadata
         content = log_path.read_text(encoding="utf-8")
         assert "Evaluation Log" in content
-        assert "Dataset: test-dataset" in content
+        assert "Datasets: test-dataset" in content
         assert "GPU Memory Utilization: 0.8" in content
         assert "Total Jobs: 1" in content
         assert "test-model" in content

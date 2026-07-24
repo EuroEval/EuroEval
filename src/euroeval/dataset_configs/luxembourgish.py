@@ -140,10 +140,10 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-RAGTRUTH_BE_CONFIG = DatasetConfig(
-    name="ragtruth-be",
-    pretty_name="RAGTruth-be",
-    source="EuroEval/ragtruth-translated-hallucinations-be-mini",
+RAGTRUTH_LB_CONFIG = DatasetConfig(
+    name="ragtruth-lb",
+    pretty_name="RAGTruth-lb",
+    source="EuroEval/ragtruth-translated-hallucinations-lb-mini",
     task=HALLU,
     languages=[LUXEMBOURGISH],
     train_split=None,
