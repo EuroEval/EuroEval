@@ -112,6 +112,8 @@ def process_results(
     ]
 
     _upload_per_model_files(processed_records=processed_records)
+    load_raw_results.cache_clear()
+    logger.info("Cleared load_raw_results cache.")
 
 
 def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
