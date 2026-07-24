@@ -13,6 +13,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   as official.
 
 ### Changed
+- Swapped official dataset for German:
+`mmlu-de` → `include-de`, `multiloko-de`.
 
 Swapped official datasets for six languages (all performed by the
 `swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
