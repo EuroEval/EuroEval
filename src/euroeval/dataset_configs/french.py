@@ -60,14 +60,6 @@ ORANGE_SUM_CONFIG = DatasetConfig(
     languages=[FRENCH],
 )
 
-MMLU_FR_CONFIG = DatasetConfig(
-    name="mmlu-fr",
-    pretty_name="MMLU-fr",
-    source="EuroEval/mmlu-fr-mini",
-    task=KNOW,
-    languages=[FRENCH],
-)
-
 HELLASWAG_FR_CONFIG = DatasetConfig(
     name="hellaswag-fr",
     pretty_name="HellaSwag-fr",
@@ -108,7 +100,33 @@ RAGTRUTH_FR_CONFIG = DatasetConfig(
 )
 
 
+INCLUDE_FR_CONFIG = DatasetConfig(
+    name="include-fr",
+    pretty_name="INCLUDE-fr",
+    source="EuroEval/include-fr-mini",
+    task=KNOW,
+    languages=[FRENCH],
+)
+
+MULTILOKO_FR_CONFIG = DatasetConfig(
+    name="multiloko-fr",
+    pretty_name="MultiLoKo-fr",
+    source="EuroEval/multiloko-fr-mini",
+    task=KNOW,
+    languages=[FRENCH],
+    val_split=None,
+)
+
 # Unofficial datasets ###
+
+MMLU_FR_CONFIG = DatasetConfig(
+    name="mmlu-fr",
+    pretty_name="MMLU-fr",
+    source="EuroEval/mmlu-fr-mini",
+    task=KNOW,
+    languages=[FRENCH],
+    unofficial=True,
+)
 
 MULTI_IFEVAL_FR_CONFIG = DatasetConfig(
     name="multi-ifeval-fr",
@@ -155,25 +173,6 @@ WINOGRANDE_FR_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[FRENCH],
     labels=["a", "b"],
-    unofficial=True,
-)
-
-INCLUDE_FR_CONFIG = DatasetConfig(
-    name="include-fr",
-    pretty_name="INCLUDE-fr",
-    source="EuroEval/include-fr-mini",
-    task=KNOW,
-    languages=[FRENCH],
-    unofficial=True,
-)
-
-MULTILOKO_FR_CONFIG = DatasetConfig(
-    name="multiloko-fr",
-    pretty_name="MultiLoKo-fr",
-    source="EuroEval/multiloko-fr-mini",
-    task=KNOW,
-    languages=[FRENCH],
-    val_split=None,
     unofficial=True,
 )
 

@@ -14,25 +14,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-<<<<<<< HEAD
-- Swapped official dataset for Dutch: `mmlu-nl` → `include-nl`, `multiloko-nl`. The script
-  `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
-  dataset swaps.
-=======
-- Swapped official dataset for Dutch: `hellaswag-nl` → `winogrande-nl`.
->>>>>>> feat/replace-hellaswag-nl-with-winogrande-nl
+- Swapped official dataset for French: `mmlu-fr` → `include-fr`, `multiloko-fr`.
 - Swapped official dataset for Croatian: `mmlu-hr` → `include-hr`. The script
   `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
   dataset swaps.
-- Swapped official dataset for Dutch: `mmlu-nl` → `include-nl`, `multiloko-nl`. The script
-  `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
-  dataset swaps.
-- Swapped official dataset for Dutch: `hellaswag-nl` → `winogrande-nl`. The script
-  `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
-  dataset swaps.
-- Swapped official dataset for French: `mmlu-fr` → `include-fr`, `multiloko-fr`. The
-  script `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when
-  performing dataset swaps.
 
 ### Fixed
 
@@ -43,12 +28,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   parameters (e.g. `#thinking` vs `#no-thinking`). The cache file now includes the
   parameter in the filename, preventing incorrect cache reuse when using the `--debug`
   flag.
-
-### Changed
-
-- Swapped official dataset for Dutch: `scala-nl` → `dutch-cola`. The script
-  `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
-  dataset swaps.
 
 ## [v17.7.0] - 2026-07-22
 
