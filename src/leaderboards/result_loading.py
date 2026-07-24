@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import typing as t
-from functools import cache
 
 from .backup import backup_results
 from .bucket_sync import download_missing_bucket_files
@@ -48,7 +47,6 @@ def _dedup_by_storage_identity(
     return list(by_identity.values())
 
 
-@cache
 def load_raw_results() -> list[dict[str, t.Any]]:
     """Load all EEE-format results from the results directory.
 
