@@ -83,14 +83,7 @@ HF_RESULTS_BUCKET = "EuroEval/results"
     show_default=True,
     help="Always regenerate leaderboards, even if no new results are found.",
 )
-@click.option(
-    "--non-interactive",
-    "-n",
-    default=False,
-    is_flag=True,
-    help="Skip dev server preview and deploy directly.",
-)
-def main(force: bool, non_interactive: bool) -> None:
+def main(force: bool) -> None:
     """Harvest finished evaluations and regenerate leaderboards.
 
     Only issues with successfully harvested results are closed. Issues
@@ -196,12 +189,9 @@ def main(force: bool, non_interactive: bool) -> None:
         sys.exit(1)
 
     # Preview in dev server and get user confirmation before deploying
-    if not non_interactive:
-        if not preview_in_dev_server():
-            logger.info("Deployment aborted by user.")
-            sys.exit(0)
-    else:
-        logger.info("Non-interactive mode: skipping preview, deploying directly.")
+    if not preview_in_dev_server():
+        logger.info("Deployment aborted by user.")
+        sys.exit(0)
 
     if not deploy_to_vercel():
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
