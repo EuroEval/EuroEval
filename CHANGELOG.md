@@ -9,27 +9,24 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added support for evaluating encoder models on multiple-choice tasks. Encoder models
-  now use the native `AutoModelForMultipleChoice` head (with
-  `DataCollatorForMultipleChoice`) instead of the previous approach, which reframed each
-  choice as an independent binary classification and only combined them into a single
-  prediction across the `num_choices` options at evaluation time. Note that encoders
-  remain disabled on multiple-choice tasks by default (they are still restricted to
-  generative models, as decided in commit `7c10f14f` because encoders got near-random
-  performance); this change puts the improved machinery in place so the restriction can
-  be revisited in the future.
+- Added support for evaluating encoder models on multiple-choice tasks using the native
+  `AutoModelForMultipleChoice` head (with `DataCollatorForMultipleChoice`). Encoder
+  models are now enabled on knowledge, multiple-choice-reading-comprehension,
+  common-sense-reasoning, european-values, multiple-choice-stereotype-bias, and
+  multiple-choice tasks.
 - Added full support for hallucination detection for all languages now, and now marked
   as official.
 
 ### Changed
 
-Swapped official datasets for four languages (all performed by the
-`swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
-
-- Croatian: `mmlu-hr` → `include-hr`
-- Dutch: `scala-nl` → `dutch-cola`
-- Dutch: `mmlu-nl` → `include-nl`, `multiloko-nl`
-- Dutch: `hellaswag-nl` → `winogrande-nl`
+- Bumped minimum `transformers` version to 5.14.0 (required for XLMRoberta/Camembert
+  `ForMultipleChoice` heads; see huggingface/transformers#47147).
+- Swapped official datasets for four languages (all performed by the
+  `swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
+  - Croatian: `mmlu-hr` → `include-hr`
+  - Dutch: `scala-nl` → `dutch-cola`
+  - Dutch: `mmlu-nl` → `include-nl`, `multiloko-nl`
+  - Dutch: `hellaswag-nl` → `winogrande-nl`
 
 ### Fixed
 

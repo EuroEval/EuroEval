@@ -121,7 +121,7 @@ vllm = { git = "https://github.com/vllm-project/vllm.git", tag = "v0.22.0", mark
 
 [tool.uv]
 override-dependencies = [
-  "transformers[mistral-common]>=5.10.1",
+  "transformers[mistral-common]>=5.14.0",
 ]
 environments = [
   # Only support arm64 macos (dont try to resolve darwin + x86_64 or any other platforms)
