@@ -464,6 +464,163 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multi-wiki-qa-fo
 ```
 
+## Knowledge
+
+### Unofficial: Faroese Semantic Relations
+
+This dataset was published in [this paper](https://doi.org/10.63317/4u4i99hc8co8)
+and tests knowledge of Faroese semantic relations. Each sample presents a Faroese
+word, and the model has to pick the word's antonym from six options: the true antonym
+and five randomly sampled unrelated words. The dataset is currently not publicly
+available, pending permission from the creators.
+
+The original full dataset consists of 1,131 samples. We use a 348 / 87 / 696 split for
+training, validation and testing, respectively (so 1,131 samples used in total),
+following the ratio of the standard 1,024 / 256 / 2,048 split.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hvat er andheitið hjá orðinum 'binda'?\nSvarmøguleikar:\na. toppast\nb. ájátta\nc. korta\nd. loysa\ne. kopra\nf. upphugsa",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Hvat er andheitið hjá orðinum 'heiðinskapur'?\nSvarmøguleikar:\na. heilagleiki\nb. reyðrósin\nc. útstova\nd. jarðarhvalur\ne. siðaarvur\nf. illveðursfuglur",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Hvat er andheitið hjá orðinum 'heiðurligur'?\nSvarmøguleikar:\na. krossutur\nb. sipligur\nc. lakbleikur\nd. asiatiskur\ne. tjóvskur\nf. vatndruknaður",
+  "label": "e"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hetta eru fleirvalsspurningar (við svarum).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spurningur: Hvat er andheitið hjá orðinum '{word}'?
+  Svarmøguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  e. {option_e}
+  f. {option_f}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spurningur: Hvat er andheitið hjá orðinum '{word}'?
+  Svarmøguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  e. {option_e}
+  f. {option_f}
+
+  Svara spurninginum omanfyri við 'a', 'b', 'c', 'd', 'e' ella 'f', og ongum øðrum.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset faroese-semantic-relations
+```
+
+### Unofficial: Faroese Metaphorical Explanations
+
+This dataset was published in [this paper](https://doi.org/10.63317/4u4i99hc8co8)
+and tests comprehension of Faroese idioms. Each sample presents a Faroese
+idiomatic expression, and the model has to pick the correct explanation of its meaning
+from four options: the correct explanation and three distractors.
+
+The original full dataset consists of 457 samples. We use a 140 / 35 / 282 split for
+training, validation and testing, respectively (so 457 samples used in total),
+following the ratio of the standard 1,024 / 256 / 2,048 split.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hvat merkir orðafellið 'alt tað, ið lá og gruggaði teirra millum'?\nSvarmøguleikar:\na. tey aftastu í raðnum\nb. verður harðari av sær\nc. varð illa við, datt burtur í einki\nd. ið teir vóru ósamdir um",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Hvat merkir orðafellið 'sálmarnir eru ljósdæmdir'?\nSvarmøguleikar:\na. ljósir\nb. stórar\nc. lúgva\nd. liggur stutt",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Hvat merkir orðafellið 'seta ( koma) í botn'?\nSvarmøguleikar:\na. vera grimur á at líta, lúnast, gronast\nb. hevur rent seg fastan, er komin í kløtur\nc. verða fastur í botni; renna seg fastan og ikki koma longri; við snøri\nd. hálur um at halda, óálítandi, svikaligur",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hetta eru fleirvalsspurningar (við svarum).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spurningur: Hvat merkir orðafellið '{idiom}'?
+  Svarmøguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spurningur: Hvat merkir orðafellið '{idiom}'?
+  Svarmøguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Svara spurninginum omanfyri við 'a', 'b', 'c' ella 'd', og ongum øðrum.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset faroese-metaphorical-explanations
+```
+
 ## Grammatical Error Detection
 
 ### Unofficial: GerLangMod-fo
@@ -531,6 +688,68 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset gerlangmod-fo
+```
+
+## Grammatical Error Correction
+
+### Unofficial: Faroese Grammatical Correctness
+
+This dataset was published in [this paper](https://doi.org/10.63317/4u4i99hc8co8)
+and consists of minimal pairs of an ungrammatical Faroese sentence and its
+corrected version, compiled from high school essays. The model is given the
+ungrammatical sentence and has to generate the corrected version, which is evaluated
+against the reference correction.
+
+The original full dataset consists of 6,628 minimal pairs. We use a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively, and the samples left over
+after creating these splits are stored in a `full_train` split together with the
+training samples.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Suðurstatirnir høvdu 9 mió. Íbúgvar, harav vóru 3,5 mió. Trælir.",
+  "target_text": "Suðurstatirnir høvdu níggju mió. íbúgvar - harímillum 3,5 mió. trælir"
+}
+```
+
+```json
+{
+  "text": "Kvinnur ið gista sleppa at fáa gratis sálarfrøðing.",
+  "target_text": "Kvinnur, ið gista, sleppa ókeypis til sálarfrøðing."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hetta eru setningar við málvillum og teirra rættaðu útgávur.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Setningur: {text}
+  Rættaður setningur: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Setningur: {text}
+
+  Rætta málvillurnar í setninginum og skriva rættaða setningin, og einki annað.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset faroese-grammatical-correctness
 ```
 
 ## Logical Reasoning

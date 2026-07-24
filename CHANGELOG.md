@@ -56,6 +56,26 @@ Swapped official datasets for four languages (all performed by the
   included.
 - Added the `alx/` provider, being the Danish [ALX
   Platform](https://platform.alexandra.dk/).
+- Added the unofficial Faroese knowledge dataset `faroese-semantic-relations`, from the
+  paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for Faroese LLM
+  Understanding", where the model has to pick the antonym of a given Faroese word from
+  six options.
+- Added the unofficial Faroese knowledge dataset `faroese-metaphorical-explanations`,
+  from the paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for
+  Faroese LLM Understanding", where the model has to pick the correct explanation of a
+  Faroese idiom from four options.
+- Added a new grammatical error correction (GEC) task, where the model is given a
+  sentence containing grammatical errors and has to generate a corrected version of it,
+  evaluated with exact match. A corresponding exact match metric fitting the
+  text-to-text task group was added.
+- Added the unofficial Faroese grammatical error correction dataset
+  `faroese-grammatical-correctness`, from the paper "Of Words and Meaning: A
+  Grammatical and Semantic Benchmark for Faroese LLM Understanding", consisting of
+  minimal pairs of ungrammatical and corrected sentences compiled from high school
+  essays.
+- Added Faroese prompt templates for multiple-choice tasks, enabling Faroese datasets
+  for all tasks in the multiple-choice classification task group (knowledge,
+  common-sense reasoning, and more).
 
 ### Changed
 
