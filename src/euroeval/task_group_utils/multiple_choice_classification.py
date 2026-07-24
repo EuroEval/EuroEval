@@ -33,7 +33,10 @@ def prepare_examples(
         InvalidBenchmark:
             If a document has no choices, a number of choices that differs from the
             count required by the dataset, or a gold label that is not one of the
-            available choices.
+            available choices. Note that encoder models require a uniform number of
+            choices across all examples in a dataset (due to `DataCollatorForMultipleChoice`
+            reshaping requirements). If this dataset has variable choice counts, use a
+            generative model instead, which supports variable choices per sample.
     """
     # `datasets.map` hands us a batch of documents at a time, so we iterate over every
     # document and concatenate the rows they produce. Each document is a multiple-choice
@@ -55,8 +58,12 @@ def prepare_examples(
             expected_num_choices = len_choices
         elif len_choices != expected_num_choices:
             raise InvalidBenchmark(
-                f"A question has {len_choices} choices but the dataset requires "
-                f"{expected_num_choices}; a fixed count per dataset is required."
+                f"Multiple-choice example has {len_choices} choices, but this dataset "
+                f"requires {expected_num_choices} choices. Encoder models require a "
+                "uniform number of choices across all examples (due to "
+                "`DataCollatorForMultipleChoice` reshaping). Either:\n"
+                "  1. Use a generative model (supports variable choices per sample), or\n"
+                f"  2. Fix the dataset to have exactly {expected_num_choices} choices per question."
             )
 
         gold = gold_letter.lower()
