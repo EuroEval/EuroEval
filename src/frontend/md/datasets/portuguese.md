@@ -639,6 +639,386 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multiloko-pt
 ```
 
+### Unofficial: ALBA-MCQ
+
+[ALBA-MCQ](https://huggingface.co/datasets/amalia-llm/alba_mcq) is the
+multiple-choice adaptation of ALBA, an expert-created benchmark introduced in the
+[ALBA paper](https://aclanthology.org/2026.propor-1.69/) for evaluating European
+Portuguese linguistic competence. Its 240 questions cover culture-bound semantics,
+discourse, language variety, lexicology, morphology, phonetics and phonology, syntax,
+and wordplay. Each question has three answers rated for quality and a designated correct
+choice.
+
+EuroEval combines the eight source configurations, reproducibly shuffles the answer
+choices, and creates splits with 32 training and 208 test samples. There is no
+validation split, so evaluation uses the full test split. Accuracy and Matthews
+correlation coefficient are reported through the Knowledge task.
+
+```json
+{
+  "text": "Em que região de Portugal é mais comum usar-se a palavra \"cruzeta\"?\nOpções:\na. A palavra \"cruzeta\" é usada no norte de Portugal. Este regionalismo tem como correspondente, no sul de Portugal, a palavra \"cabide\".\nb. A palavra \"cruzeta\" é usada no centro de Portugal. Este regionalismo tem como correspondente, no sul de Portugal, a palavra \"cabide\".\nc. A palavra \"cruzeta\" refere-se a uma pequena cruz e tem como correspondente, no sul de Portugal, a palavra \"cruzinha\".",
+  "label": "a",
+  "subject": "Language Variety"
+}
+```
+
+```json
+{
+  "text": "Completa esta piada seca: Qual o animal que anda com uma pata?\nOpções:\na. Quase todos... menos as cobras!\nb. O pato.\nc. O macho da pata.",
+  "label": "b",
+  "subject": "Culture-bound Semantics"
+}
+```
+
+```json
+{
+  "text": "Cria um acróstico com a palavra \"mar\".\nOpções:\na. Olha só um acróstico com a palavra \"mar\".\n\nMaresia\nAreia\nb. Olha só um acróstico com a palavra \"mar\".\n\nMaresia\nAreia\nRio\nc. Aqui está um acróstico com a palavra \"mar\".\n\nMaresia\nAreia\nRio",
+  "label": "c",
+  "subject": "Word Plays"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+
+  Responde à pergunta acima usando só 'a', 'b' ou 'c', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset alba-mcq-pt
+```
+
+### Unofficial: PT Exams
+
+[PT Exams](https://huggingface.co/datasets/amalia-llm/pt_exams), also known as PHEB or
+PT-E, was introduced in the [PHEB paper](https://lrec.elra.info/lrec2026-main-367).
+It contains 1,819 multiple-choice questions from Portuguese national secondary-school
+exams between 2006 and 2023. It covers Portuguese, Mathematics A, History A, Geography,
+Philosophy, and Biology and Geology.
+
+The complete source test split with 1,819 samples is retained, with answer choices
+shuffled reproducibly. EuroEval allocates 32 samples to training, 256 to validation,
+and 1,531 to testing. Accuracy and Matthews correlation coefficient are reported.
+
+```json
+{
+  "text": "Qual é o valor de $\\lim_{x \\to 1} \\frac{f(x) - f(1)}{1 - x^2}$?\nOpções:\na. -2\nb. 2\nc. -1\nd. 0",
+  "label": "c",
+  "subject": "Mathematics A",
+  "year": 2020
+}
+```
+
+```json
+{
+  "text": "Sabemos que a relva é verde. Este conhecimento é\nOpções:\na. a posteriori.\nb. formal.\nc. inato.\nd. a priori.",
+  "label": "b",
+  "subject": "Philosophy",
+  "year": 2006
+}
+```
+
+```json
+{
+  "text": "A maior parte da precipitação que ocorre em Portugal continental é de tipo\nOpções:\na. convectivo.\nb. frontal.\nc. orográfico.\nd. convergente.",
+  "label": "b",
+  "subject": "Geography",
+  "year": 2013
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Responde à pergunta acima usando só 'a', 'b', 'c' ou 'd', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset pt-exams
+```
+
+### Unofficial: CulturaVivaPT
+
+[CulturaVivaPT](https://huggingface.co/datasets/amalia-llm/cultura-viva-pt-mcq),
+released as part of the [AMALIA project](https://aclanthology.org/2026.propor-1.38/),
+contains 1,000 multiple-choice questions about Portuguese culture. Its ten balanced
+domains cover audiovisual culture, festivals, gastronomy, geography, heritage,
+holidays, literature, personalities, proverbs, and sports.
+
+The upstream repository exposes all 1,000 samples as a `train` split. EuroEval
+reproducibly shuffles the samples and answer choices, then allocates 32 samples to
+training, 128 to validation, and 840 to testing. Accuracy and Matthews correlation
+coefficient are reported.
+
+```json
+{
+  "text": "Em que local nasceu a artista e escritora Florbela Oliveira?\nOpções:\na. Coimbra\nb. Campolide\nc. Serra da Estrela\nd. Palmela",
+  "label": "b",
+  "subject": "personalities"
+}
+```
+
+```json
+{
+  "text": "Preenche o espaço em falta: «O tempo a tudo _ remédio.»\nOpções:\na. dá\nb. vê\nc. traz\nd. faz",
+  "label": "a",
+  "subject": "proverbs"
+}
+```
+
+```json
+{
+  "text": "Preenche o espaço em falta: «Em Abril cada pulga _ mil.»\nOpções:\na. faz\nb. vê\nc. tem\nd. dá",
+  "label": "d",
+  "subject": "proverbs"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Responde à pergunta acima usando só 'a', 'b', 'c' ou 'd', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset cultura-viva-pt
+```
+
+### Unofficial: SAUDADE-PT
+
+[SAUDADE-PT](https://huggingface.co/datasets/amalia-llm/saudade-pt), released as
+part of the [AMALIA project](https://aclanthology.org/2026.propor-1.38/), evaluates
+reasoning about the chronological order of events related to Portugal. Its questions
+cover people, places, organisations, cultural works, politics, sports, and historical
+events.
+
+The source provides 8,573 test samples. EuroEval reproducibly selects 32 training, 256
+validation, and 2,048 test samples, shuffles the two answer choices, and retains the
+entity and category metadata. The Knowledge task reports accuracy and Matthews
+correlation coefficient.
+
+```json
+{
+  "text": "Em Moura, qual ocorreu primeiro:\nOpções:\na. Castelo de Moura classificado como Imóvel de Interesse Público\nb. Domínio cristão efetivado em Moura",
+  "label": "b",
+  "entity": "Moura",
+  "category": "Municipio_Portugal"
+}
+```
+
+```json
+{
+  "text": "O que ocorreu primeiro:\nOpções:\na. Treinador da seleção húngara\nb. Falecimento de Lajos Baróti",
+  "label": "a",
+  "entity": "Lajos Baróti",
+  "category": "Futebol"
+}
+```
+
+```json
+{
+  "text": "Em Teixeira (Seia), qual ocorreu primeiro:\nOpções:\na. Freguesia autónoma\nb. Anexação à freguesia de Vide",
+  "label": "a",
+  "entity": "Teixeira (Seia)",
+  "category": "Freguesia_Portugal"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+
+  Responde à pergunta acima usando só 'a' ou 'b', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset saudade-pt
+```
+
+### Unofficial: PT-PT Completions
+
+[PT-PT Completions](https://huggingface.co/datasets/amalia-llm/pt_text_completion),
+released as part of the [AMALIA project](https://aclanthology.org/2026.propor-1.38/),
+tests whether a model can select the correct European Portuguese completion instead of
+a Brazilian Portuguese alternative. The source contains 3 validation and 70 test
+examples, with no training split.
+
+EuroEval explicitly asks which option is in European Portuguese. It moves eight
+balanced test examples into a small training split and combines the remaining 62 with
+the three validation examples, resulting in 65 test examples and no validation split.
+Matthews correlation coefficient and accuracy are reported as part of the Knowledge
+task.
+
+```json
+{
+  "text": "Frase: Para longas distâncias, prefiro viajar de _______.\nOpções:\na. trem\nb. comboio",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Frase: Moro no _______.\nOpções:\na. térreo\nb. rés do chão",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Frase: _______ vamos ao cinema.\nOpções:\na. malta\nb. galera",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Variante em português europeu: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  Pergunta: Qual opção está em português europeu?
+
+  Responde à pergunta acima usando só 'a' ou 'b', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset pt-completions
+```
+
 ## Common-sense Reasoning
 
 ### GoldenSwag-pt

@@ -120,8 +120,8 @@ def _hallucination_model_id(dataset_config: "DatasetConfig") -> str:
         The Hugging Face Hub repository ID of the hallucination detection model.
     """
     return (
-        "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
-        f"{dataset_config.main_language.code}"
+        "alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-"
+        f"ragtruth-{dataset_config.main_language.code}"
     )
 
 

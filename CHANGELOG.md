@@ -18,6 +18,21 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   generative models, as decided in commit `7c10f14f` because encoders got near-random
   performance); this change puts the improved machinery in place so the restriction can
   be revisited in the future.
+- Added full support for hallucination detection for all languages now, and now marked
+  as official.
+
+### Fixed
+
+- Fixed `ValueError` in `prepare_train_examples` when the CLS token ID is not present
+  in tokenised input IDs for certain tokenisers (e.g. Qwen3 embedding models,
+  codefuse-ai/F2LLM-v2-0.6B). Falls back to position 0 with a debug log message.
+
+## [v17.7.0] - 2026-07-22
+
+### Added
+
+- Added the unofficial European Portuguese ALBA-MCQ, PT Exams, CulturaVivaPT,
+  SAUDADE-PT, and PT-PT Completions datasets. This was contributed by @duarteocarmo ✨
 - Evaluation hallucination detection task, reporting a hallucination rate
   (hallucinated_tokens/total_tokens). This includes RAGTruth-based datasets for 30
   European languages (Danish, Albanian, Belarusian, Bosnian, Bulgarian, Catalan,

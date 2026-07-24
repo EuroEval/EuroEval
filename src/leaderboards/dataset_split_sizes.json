@@ -1324,6 +1324,29 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/euroeval-amalia-alba-mcq-pt": {
+    "test": 208,
+    "train": 32
+  },
+  "EuroEval/euroeval-amalia-cultura-viva-pt": {
+    "test": 840,
+    "train": 32,
+    "val": 128
+  },
+  "EuroEval/euroeval-amalia-pt-completions": {
+    "test": 65,
+    "train": 8
+  },
+  "EuroEval/euroeval-amalia-pt-exams": {
+    "test": 1531,
+    "train": 32,
+    "val": 256
+  },
+  "EuroEval/euroeval-amalia-saudade-pt-mini": {
+    "test": 2048,
+    "train": 32,
+    "val": 256
+  },
   "giannor/dala": {
     "full_train": 5352,
     "test": 2048,
