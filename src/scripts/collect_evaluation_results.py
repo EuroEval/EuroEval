@@ -101,6 +101,9 @@ def main(force: bool, non_interactive: bool) -> None:
         force (optional):
             Whether to always regenerate leaderboards, even if no new results
             are found. Defaults to False.
+        non_interactive (optional):
+            Whether to skip the dev server preview and deploy directly.
+            Defaults to False.
     """
     check_required_env_vars()
 
@@ -665,9 +668,7 @@ def preview_in_dev_server() -> bool:
             text=True,
         )
     except FileNotFoundError:
-        logger.error(
-            "`vercel` CLI not found on PATH. Install with `npm i -g vercel`."
-        )
+        logger.error("`vercel` CLI not found on PATH. Install with `npm i -g vercel`.")
         return False
 
     # Wait for dev server to start (watch for ready message or timeout)
