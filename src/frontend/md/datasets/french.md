@@ -477,12 +477,9 @@ euroeval --model <model-id> --dataset multi-wiki-qa-fr
 
 ## Knowledge
 
-### INCLUDE-fr
+### Unofficial: INCLUDE-fr
 
-This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
-comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
-LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
-academic and professional exams, covering 57 topics including regional knowledge.
+> This dataset is **unofficial** — results do not count toward the French leaderboard.
 
 The original dataset consists of a 'validation' split used as training data and a 'test'
 split. We use the 'validation' split as the training split, which has 25 samples. We
@@ -546,12 +543,9 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-fr
 ```
 
-### MultiLoKo-fr
+### Unofficial: MultiLoKo-fr
 
-This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The French
-questions are separately sourced and designed to target locally relevant topics for
-French-speaking populations.
+> This dataset is **unofficial** — results do not count toward the French leaderboard.
 
 We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
 questions with correct answers in the 'targets' column. We use the first target answer
@@ -612,7 +606,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multiloko-fr
 ```
 
-### Unofficial: MMLU-fr
+### MMLU-fr
 
 This dataset is a machine translated version of the English
 [MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
