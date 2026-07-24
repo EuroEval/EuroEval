@@ -17,7 +17,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Swapped official dataset for Dutch: `mmlu-nl` → `include-nl`, `multiloko-nl`. The script
   `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
   dataset swaps.
-
 - Swapped official dataset for Croatian: `mmlu-hr` → `include-hr`. The script
   `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
   dataset swaps.
