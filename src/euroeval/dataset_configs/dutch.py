@@ -32,6 +32,14 @@ DBRD_CONFIG = DatasetConfig(
     labels=["negative", "positive"],
 )
 
+SCALA_NL_CONFIG = DatasetConfig(
+    name="scala-nl",
+    pretty_name="ScaLA-nl",
+    source="EuroEval/scala-nl",
+    task=LA,
+    languages=[DUTCH],
+)
+
 CONLL_NL_CONFIG = DatasetConfig(
     name="conll-nl",
     pretty_name="CoNLL-nl",
@@ -53,14 +61,6 @@ WIKI_LINGUA_NL_CONFIG = DatasetConfig(
     pretty_name="WikiLingua-nl",
     source="EuroEval/wiki-lingua-nl-mini",
     task=SUMM,
-    languages=[DUTCH],
-)
-
-MMLU_NL_CONFIG = DatasetConfig(
-    name="mmlu-nl",
-    pretty_name="MMLU-nl",
-    source="EuroEval/mmlu-nl-mini",
-    task=KNOW,
     languages=[DUTCH],
 )
 
@@ -129,20 +129,38 @@ RAGTRUTH_NL_CONFIG = DatasetConfig(
 )
 
 
-DUTCH_COLA_CONFIG = DatasetConfig(
-    name="dutch-cola",
-    pretty_name="Dutch CoLA",
-    source="EuroEval/dutch-cola",
-    task=LA,
+INCLUDE_NL_CONFIG = DatasetConfig(
+    name="include-nl",
+    pretty_name="INCLUDE-nl",
+    source="EuroEval/include-nl-mini",
+    task=KNOW,
     languages=[DUTCH],
+)
+
+MULTILOKO_NL_CONFIG = DatasetConfig(
+    name="multiloko-nl",
+    pretty_name="MultiLoKo-nl",
+    source="EuroEval/multiloko-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+    val_split=None,
 )
 
 # Unofficial datasets ###
 
-SCALA_NL_CONFIG = DatasetConfig(
-    name="scala-nl",
-    pretty_name="ScaLA-nl",
-    source="EuroEval/scala-nl",
+MMLU_NL_CONFIG = DatasetConfig(
+    name="mmlu-nl",
+    pretty_name="MMLU-nl",
+    source="EuroEval/mmlu-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+    unofficial=True,
+)
+
+DUTCH_COLA_CONFIG = DatasetConfig(
+    name="dutch-cola",
+    pretty_name="Dutch CoLA",
+    source="EuroEval/dutch-cola",
     task=LA,
     languages=[DUTCH],
     unofficial=True,
@@ -221,25 +239,6 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DUTCH],
     labels=["a", "b"],
-    unofficial=True,
-)
-
-INCLUDE_NL_CONFIG = DatasetConfig(
-    name="include-nl",
-    pretty_name="INCLUDE-nl",
-    source="EuroEval/include-nl-mini",
-    task=KNOW,
-    languages=[DUTCH],
-    unofficial=True,
-)
-
-MULTILOKO_NL_CONFIG = DatasetConfig(
-    name="multiloko-nl",
-    pretty_name="MultiLoKo-nl",
-    source="EuroEval/multiloko-nl-mini",
-    task=KNOW,
-    languages=[DUTCH],
-    val_split=None,
     unofficial=True,
 )
 
