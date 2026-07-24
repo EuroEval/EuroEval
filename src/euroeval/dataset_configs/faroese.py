@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FAROESE
-from ..tasks import GED, HALLU, INSTRUCTION_FOLLOWING, LA, LOGIC, NER, RC, SENT
+from ..tasks import GED, HALLU, INSTRUCTION_FOLLOWING, KNOW, LA, LOGIC, NER, RC, SENT
 
 # Official datasets ###
 
@@ -51,6 +51,16 @@ MULTI_IFEVAL_FO_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+FAROESE_SEMANTIC_RELATIONS_CONFIG = DatasetConfig(
+    name="faroese-semantic-relations",
+    pretty_name="Faroese Semantic Relations",
+    source="EuroEval/faroese-semantic-relations",
+    task=KNOW,
+    languages=[FAROESE],
+    labels=["a", "b", "c", "d", "e", "f"],
+    unofficial=True,
+)
 
 WIKIANN_FO_CONFIG = DatasetConfig(
     name="wikiann-fo",
