@@ -1712,7 +1712,7 @@ def load_tokeniser(
     model_max_length: int,
     model_config: "ModelConfig",
     hf_model_config: "PretrainedConfig",
-    token: str | bool,
+    token: str | None,
 ) -> Tokeniser:
     """Load the tokeniser.
 

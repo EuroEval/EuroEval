@@ -1,5 +1,7 @@
 """Tests for the `model_config` module."""
 
+import os
+
 import pytest
 
 from euroeval.data_models import BenchmarkConfig, ModelConfig
@@ -23,6 +25,10 @@ from euroeval.model_config import get_model_config
         "anthropic-model",
         "non-existent-model",
     ],
+)
+@pytest.mark.skipif(
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for model config resolution",
 )
 def test_get_model_config(
     benchmark_config: BenchmarkConfig, model_id: str, should_raise: bool
