@@ -14,6 +14,10 @@ from euroeval.model_config import get_model_config
 from euroeval.model_loading import load_model
 
 
+@pytest.mark.skipif(
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for model loading",
+)
 def test_load_non_generative_model(
     encoder_model_id: str, benchmark_config: BenchmarkConfig
 ) -> None:
@@ -63,6 +67,10 @@ def test_load_generative_model(
     rmtree(path=Path(benchmark_config.cache_dir, "model_cache"), ignore_errors=True)
 
 
+@pytest.mark.skipif(
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for model loading",
+)
 def test_load_non_generative_model_with_generative_data(
     encoder_model_id: str, benchmark_config: BenchmarkConfig
 ) -> None:

@@ -27,6 +27,7 @@ from requests.exceptions import RequestException
 from torch import nn
 from transformers import PretrainedConfig
 from transformers.data.data_collator import (
+    DataCollatorForMultipleChoice,
     DataCollatorForTokenClassification,
     DataCollatorWithPadding,
 )
@@ -148,6 +149,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             tokeniser=self._tokeniser,
             model_max_length=self.model_max_length,
             raise_errors=benchmark_config.raise_errors,
+            is_multiple_choice=(
+                dataset_config.task.task_group
+                == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+            ),
         )
 
         super().__init__(
@@ -284,9 +289,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 TaskGroup.SEQUENCE_CLASSIFICATION
                 | TaskGroup.TEXT_TO_TEXT
                 | TaskGroup.QUESTION_ANSWERING
-                | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
             ):
                 return DataCollatorWithPadding(self._tokeniser, padding="longest")
+            case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+                return DataCollatorForMultipleChoice(self._tokeniser, padding="longest")
             case TaskGroup.TOKEN_CLASSIFICATION:
                 return DataCollatorForTokenClassification(
                     tokenizer=self._tokeniser, label_pad_token_id=-100
@@ -329,12 +335,9 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 TaskGroup.SEQUENCE_CLASSIFICATION
                 | TaskGroup.TEXT_TO_TEXT
                 | TaskGroup.TOKEN_CLASSIFICATION
+                | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
             ):
                 return Trainer
-            case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                return (
-                    multiple_choice_classification.MultipleChoiceClassificationTrainer
-                )
             case TaskGroup.QUESTION_ANSWERING:
                 return question_answering.QuestionAnsweringTrainer
             case _:
@@ -395,6 +398,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                             partial(
                                 multiple_choice_classification.prepare_examples,
                                 tokeniser=self._tokeniser,
+                                num_choices=self.dataset_config.num_labels,
                             ),
                             batched=True,
                             batch_size=10,
@@ -604,12 +608,7 @@ def load_model_and_tokeniser(
     task_group = dataset_config.task.task_group
     ignore_mismatched_sizes = False
 
-    # Special case where there is a mismatch between the labels during training and
-    # testing
-    if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-        id2label = {0: "0", 1: "1"}
-    else:
-        id2label = dataset_config.id2label
+    id2label = dataset_config.id2label
 
     config = load_hf_model_config(
         model_id=model_id,
@@ -701,6 +700,17 @@ def load_model_and_tokeniser(
                     f"Loading the model {model_id!r} needs to trust remote code. "
                     "If you trust the suppliers of this model, then you can enable "
                     "this by setting the `--trust-remote-code` flag."
+                ) from e
+            # Check if the model architecture doesn't support this task type
+            # (e.g., AutoModelForMultipleChoice doesn't support certain configs)
+            if "Unrecognized configuration class" in str(e) and "AutoModelFor" in str(
+                e
+            ):
+                raise InvalidBenchmark(
+                    f"The model {model_id!r} does not support the "
+                    f"task group {task_group.value!r} as its architecture is not "
+                    f"compatible with the required HuggingFace model class. "
+                    f"Error: {e}"
                 ) from e
             raise InvalidModel(
                 f"The model {model_id!r} could not be loaded. The error was {e!r}."
@@ -1309,6 +1319,7 @@ def align_model_and_tokeniser(
     tokeniser: Tokeniser,
     model_max_length: int,
     raise_errors: bool = False,
+    is_multiple_choice: bool = False,
 ) -> tuple["PreTrainedModel", Tokeniser]:
     """Aligns the model and the tokeniser.
 
@@ -1321,6 +1332,9 @@ def align_model_and_tokeniser(
             The maximum length of the model.
         raise_errors:
             Whether to raise errors instead of trying to fix them silently.
+        is_multiple_choice:
+            Whether the model is being evaluated on a multiple-choice task, in which
+            case it expects a 3-D dummy input when probing the maximum length.
 
     Returns:
         The fixed model and tokeniser.
@@ -1348,8 +1362,10 @@ def align_model_and_tokeniser(
     initial_max_length = tokeniser.model_max_length
     for max_length in range(initial_max_length, 0, -1):
         tokeniser.model_max_length = max_length
+        # Multiple-choice models (`*ForMultipleChoice`) expect a 3-D input of shape
+        # (batch, num_choices, seq_len) rather than the (batch, seq_len) other heads use
         dummy_inputs = torch.full(
-            size=(1, max_length),
+            size=(1, 2, max_length) if is_multiple_choice else (1, max_length),
             fill_value=DUMMY_FILL_VALUE,
             dtype=torch.long,
             device=model.device,
@@ -1406,9 +1422,13 @@ def task_group_to_class_name(task_group: TaskGroup) -> str:
         The class name.
     """
     pascal_case = task_group.title().replace("_", "")
+
+    # Bridge task-group names that don't map 1:1 onto a Hugging Face AutoModel class:
+    # the multiple-choice group is internally named "..._classification" but the HF
+    # class is `AutoModelForMultipleChoice`, and `Speed` reuses the sequence
+    # classification head.
     special_case_mapping = dict(
-        MultipleChoiceClassification="SequenceClassification",
-        Speed="SequenceClassification",
+        MultipleChoiceClassification="MultipleChoice", Speed="SequenceClassification"
     )
     pascal_case = special_case_mapping.get(pascal_case, pascal_case)
     return f"AutoModelFor{pascal_case}"

@@ -31,7 +31,7 @@ def pytest_unconfigure() -> None:
     delattr(sys, "_called_from_test")
 
 
-if os.environ.get("CHECK_DATASET") is not None:
+if os.environ.get("CHECK_DATASET"):
     dataset_configs = [
         dataset_config
         for dataset_config in get_all_dataset_configs(
@@ -59,17 +59,21 @@ else:
 
 
 @pytest.fixture(scope="session")
-def auth() -> Generator[str | bool, None, None]:
+def auth() -> Generator[str | None, None, None]:
     """Yields the authentication token to the Hugging Face Hub.
 
     Yields:
-        The authentication token to the Hugging Face Hub.
+        The authentication token to the Hugging Face Hub, or None for unauthenticated
+        access.
     """
     # Get the authentication token to the Hugging Face Hub
-    auth = os.environ.get("HUGGINGFACE_API_KEY", True)
+    auth = os.environ.get("HUGGINGFACE_API_KEY")
 
-    # Ensure that the token does not contain quotes or whitespace
-    if isinstance(auth, str):
+    # Treat empty strings as missing token (use unauthenticated access)
+    if not auth:
+        auth = None
+    elif isinstance(auth, str):
+        # Ensure that the token does not contain quotes or whitespace
         auth = auth.strip(" \"'")
 
     yield auth
