@@ -14,14 +14,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-Swapped official datasets for six languages (all performed by the
+Swapped official datasets for five languages (all performed by the
 `swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
 
 - Croatian: `mmlu-hr` → `include-hr`
 - Dutch: `scala-nl` → `dutch-cola`
 - Dutch: `mmlu-nl` → `include-nl`, `multiloko-nl`
 - Dutch: `hellaswag-nl` → `winogrande-nl`
-- French: `mmlu-fr` → `include-fr`, `multiloko-fr`
 - European Portuguese: `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
 
 ### Fixed
