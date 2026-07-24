@@ -59,14 +59,6 @@ PUBLICO_CONFIG = DatasetConfig(
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
 )
 
-MMLU_PT_CONFIG = DatasetConfig(
-    name="mmlu-pt",
-    pretty_name="MMLU-pt",
-    source="EuroEval/mmlu-pt-mini",
-    task=KNOW,
-    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-)
-
 GOLDENSWAG_PT_CONFIG = DatasetConfig(
     name="goldenswag-pt",
     pretty_name="GoldenSwag-pt",
@@ -107,7 +99,34 @@ RAGTRUTH_PT_CONFIG = DatasetConfig(
 )
 
 
+ALBA_MCQ_PT_CONFIG = DatasetConfig(
+    name="alba-mcq-pt",
+    pretty_name="ALBA-MCQ",
+    source="EuroEval/euroeval-amalia-alba-mcq-pt",
+    task=KNOW,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    labels=["a", "b", "c"],
+    val_split=None,
+)
+
+CULTURA_VIVA_PT_CONFIG = DatasetConfig(
+    name="cultura-viva-pt",
+    pretty_name="CulturaVivaPT",
+    source="EuroEval/euroeval-amalia-cultura-viva-pt",
+    task=KNOW,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+)
+
 # Unofficial datasets ###
+
+MMLU_PT_CONFIG = DatasetConfig(
+    name="mmlu-pt",
+    pretty_name="MMLU-pt",
+    source="EuroEval/mmlu-pt-mini",
+    task=KNOW,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    unofficial=True,
+)
 
 IFEVAL_PT_CONFIG = DatasetConfig(
     name="ifeval-pt",
@@ -158,30 +177,10 @@ MULTILOKO_PT_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-ALBA_MCQ_PT_CONFIG = DatasetConfig(
-    name="alba-mcq-pt",
-    pretty_name="ALBA-MCQ",
-    source="EuroEval/euroeval-amalia-alba-mcq-pt",
-    task=KNOW,
-    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-    labels=["a", "b", "c"],
-    val_split=None,
-    unofficial=True,
-)
-
 PT_EXAMS_CONFIG = DatasetConfig(
     name="pt-exams",
     pretty_name="PT Exams",
     source="EuroEval/euroeval-amalia-pt-exams",
-    task=KNOW,
-    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-    unofficial=True,
-)
-
-CULTURA_VIVA_PT_CONFIG = DatasetConfig(
-    name="cultura-viva-pt",
-    pretty_name="CulturaVivaPT",
-    source="EuroEval/euroeval-amalia-cultura-viva-pt",
     task=KNOW,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     unofficial=True,
