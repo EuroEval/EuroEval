@@ -8,6 +8,7 @@ from .metrics.llm_as_a_judge import create_model_graded_fact_metric
 from .prompt_templates import (
     CLASSIFICATION_TEMPLATES,
     EMPTY_TEMPLATES,
+    GEC_TEMPLATES,
     GED_TEMPLATES,
     LA_TEMPLATES,
     LOGIC_TEMPLATES,
@@ -129,6 +130,18 @@ WIC = Task(
 )
 
 # Tasks that can be run for generative models only
+
+GEC = Task(
+    name="grammatical-error-correction",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=GEC_TEMPLATES,
+    metrics=[m.exact_match_metric],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=256,
+    default_labels=[],
+    default_allowed_model_types=[ModelType.GENERATIVE],
+)
+
 
 SIMPL = Task(
     name="simplification",

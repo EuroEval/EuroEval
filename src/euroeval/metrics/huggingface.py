@@ -277,6 +277,15 @@ em_metric = HuggingFaceMetric(
     postprocessing_fn=lambda x: (x, f"{x:.2f}%"),
 )
 
+# Unlike `em_metric` above, which requires SQuAD-format QA inputs and normalises
+# before comparing, this compares plain strings verbatim (used by text-to-text tasks)
+exact_match_metric = HuggingFaceMetric(
+    name="exact_match",
+    pretty_name="Exact Match",
+    huggingface_id="exact_match",
+    results_key="exact_match",
+)
+
 bert_score_metric = HuggingFaceMetric(
     name="bertscore",
     pretty_name="BERTScore",

@@ -690,6 +690,68 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset gerlangmod-fo
 ```
 
+## Grammatical Error Correction
+
+### Unofficial: Faroese Grammatical Correctness
+
+This dataset was published in [this paper](https://doi.org/10.63317/4u4i99hc8co8)
+and consists of minimal pairs of an ungrammatical Faroese sentence and its
+corrected version, compiled from high school essays. The model is given the
+ungrammatical sentence and has to generate the corrected version, which is evaluated
+against the reference correction.
+
+The original full dataset consists of 6,628 minimal pairs. We use a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively, and the samples left over
+after creating these splits are stored in a `full_train` split together with the
+training samples.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Suðurstatirnir høvdu 9 mió. Íbúgvar, harav vóru 3,5 mió. Trælir.",
+  "target_text": "Suðurstatirnir høvdu níggju mió. íbúgvar - harímillum 3,5 mió. trælir"
+}
+```
+
+```json
+{
+  "text": "Kvinnur ið gista sleppa at fáa gratis sálarfrøðing.",
+  "target_text": "Kvinnur, ið gista, sleppa ókeypis til sálarfrøðing."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hetta eru setningar við málvillum og teirra rættaðu útgávur.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Setningur: {text}
+  Rættaður setningur: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Setningur: {text}
+
+  Rætta málvillurnar í setninginum og skriva rættaða setningin, og einki annað.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset faroese-grammatical-correctness
+```
+
 ## Logical Reasoning
 
 ### ZebraPuzzleEasy-fo
