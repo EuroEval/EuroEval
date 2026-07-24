@@ -68,12 +68,11 @@ def auth() -> Generator[str | bool, None, None]:
     # Get the authentication token to the Hugging Face Hub
     auth = os.environ.get("HUGGINGFACE_API_KEY")
 
-    # Treat empty strings as missing token
+    # Treat empty strings as missing token (use unauthenticated access)
     if not auth:
         auth = True
-
-    # Ensure that the token does not contain quotes or whitespace
-    if isinstance(auth, str):
+    elif isinstance(auth, str):
+        # Ensure that the token does not contain quotes or whitespace
         auth = auth.strip(" \"'")
 
     yield auth

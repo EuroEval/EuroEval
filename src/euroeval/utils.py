@@ -9,13 +9,9 @@ import sys
 import typing as t
 from pathlib import Path
 
-import httpx
-import huggingface_hub as hf_hub
 import numpy as np
 import torch
-from huggingface_hub.errors import LocalTokenNotFoundError
 from langdetect import DetectorFactory
-from requests.exceptions import RequestException
 
 from .caching_utils import cache_arguments
 from .constants import LOCAL_MODELS_REQUIRED_FILES
@@ -191,7 +187,7 @@ def raise_if_model_output_contains_nan_values(model_output: "Predictions") -> No
 
 
 @cache_arguments()
-def get_hf_token(api_key: str | None) -> str | bool:
+def get_hf_token(api_key: str | None) -> str | None:
     """Get the Hugging Face token.
 
     Args:
@@ -200,40 +196,19 @@ def get_hf_token(api_key: str | None) -> str | bool:
             extract it in other ways.
 
     Returns:
-        The Hugging Face token, or True if no token is set but the user is logged in, or
-        False if no token is set and the user is not logged in.
+        The Hugging Face token, or None for unauthenticated access.
     """
-    if api_key is not None:
+    # Treat empty strings as missing token (unauthenticated access)
+    if api_key is not None and api_key:
         log_once(
             "Using the Hugging Face API key passed to the function.",
             level=logging.DEBUG,
         )
         return api_key
-    elif (token := os.getenv("HF_TOKEN")) is not None:
+    elif token := os.getenv("HF_TOKEN"):
         log_once(
             "Using the Hugging Face API key from the environment variable `HF_TOKEN`.",
             level=logging.DEBUG,
         )
         return token
-    try:
-        hf_hub.whoami()
-        log_once(
-            "No Hugging Face API key was set, but the user is logged in to Hugging "
-            "Face, so using the local token.",
-            level=logging.DEBUG,
-        )
-        return True
-    except LocalTokenNotFoundError:
-        log_once(
-            "No Hugging Face API key was set and the user is not logged in to Hugging "
-            "Face, so no token will be used.",
-            level=logging.DEBUG,
-        )
-        return False
-    except (RequestException, httpx.ConnectError):
-        log_once(
-            "No Hugging Face API key was set and the connection to Hugging Face "
-            "failed, so no token will be used.",
-            level=logging.DEBUG,
-        )
-        return False
+    return None
