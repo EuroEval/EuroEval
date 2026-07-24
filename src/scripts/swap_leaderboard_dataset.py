@@ -1516,8 +1516,9 @@ def _update_changelog(
             "when performing dataset swaps."
         )
 
-    # Insert the entry after "### Changed"
-    lines.insert(changed_idx + 1, entry)
+    # Insert a blank line after "### Changed", then the entry
+    lines.insert(changed_idx + 1, "")
+    lines.insert(changed_idx + 2, entry)
     changelog_path.write_text("\n".join(lines), encoding="utf-8")
 
 
