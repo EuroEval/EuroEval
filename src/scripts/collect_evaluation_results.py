@@ -8,9 +8,10 @@ been picked up by the compute server), it:
 2. Concatenates all results into ``new_results.jsonl`` at the repo root.
 3. Runs ``generate_leaderboards.py`` to merge the new results into the
    leaderboards.
-4. Builds the frontend and deploys it to Vercel as a prebuilt artifact
+4. Starts the Vercel dev server and prompts for user confirmation.
+5. Deploys the frontend to Vercel as a prebuilt artifact
    (so Vercel's CLI never has to upload the >100 MB ``.git`` packfile).
-5. Posts a comment and closes each processed issue.
+6. Posts a comment and closes each processed issue.
 
 To avoid race conditions, the script snapshots the list of results-ready
 issues at the start (for logging purposes) and only closes issues with
@@ -29,8 +30,11 @@ import csv
 import json
 import logging
 import os
+import signal
+import socket
 import subprocess
 import sys
+import time
 import urllib.error
 from pathlib import Path
 
@@ -79,7 +83,14 @@ HF_RESULTS_BUCKET = "EuroEval/results"
     show_default=True,
     help="Always regenerate leaderboards, even if no new results are found.",
 )
-def main(force: bool) -> None:
+@click.option(
+    "--non-interactive",
+    "-n",
+    default=False,
+    is_flag=True,
+    help="Skip dev server preview and deploy directly.",
+)
+def main(force: bool, non_interactive: bool) -> None:
     """Harvest finished evaluations and regenerate leaderboards.
 
     Only issues with successfully harvested results are closed. Issues
@@ -180,6 +191,14 @@ def main(force: bool) -> None:
             "Check the logs above, fix the issue, and redeploy manually."
         )
         sys.exit(1)
+
+    # Preview in dev server and get user confirmation before deploying
+    if not non_interactive:
+        if not preview_in_dev_server():
+            logger.info("Deployment aborted by user.")
+            sys.exit(0)
+    else:
+        logger.info("Non-interactive mode: skipping preview, deploying directly.")
 
     if not deploy_to_vercel():
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
@@ -622,6 +641,111 @@ def verify_leaderboards() -> bool:
         logger.info(f"All {valid_count} leaderboard CSVs passed sanity checks.")
 
     return valid_count > 0
+
+
+def preview_in_dev_server() -> bool:
+    """Start Vercel dev server and prompt user to review before deployment.
+
+    Starts `vercel dev` in the background, waits for it to be ready,
+    prompts the user to check the preview, and waits for confirmation.
+
+    Returns:
+        True if user confirms deployment, False if they abort.
+    """
+    logger.info("Starting Vercel dev server for preview...")
+    logger.info("=" * 60)
+
+    # Start vercel dev as a subprocess
+    try:
+        dev_process = subprocess.Popen(
+            ["vercel", "dev", "--yes", "--non-interactive"],
+            cwd=REPO_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+    except FileNotFoundError:
+        logger.error(
+            "`vercel` CLI not found on PATH. Install with `npm i -g vercel`."
+        )
+        return False
+
+    # Wait for dev server to start (watch for ready message or timeout)
+    ready = False
+    start_time = time.time()
+    timeout = 60  # seconds
+
+    print("\nWaiting for dev server to start...")
+    while time.time() - start_time < timeout:
+        if dev_process.poll() is not None:
+            # Process exited unexpectedly
+            output = dev_process.stdout.read()
+            logger.error(f"Dev server exited unexpectedly: {output}")
+            return False
+
+        # Give it a moment
+        time.sleep(2)
+
+        # Try to connect to localhost:3000 (default Vercel dev port)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            result = sock.connect_ex(("127.0.0.1", 3000))
+            sock.close()
+            if result == 0:
+                ready = True
+                break
+        except Exception:
+            pass
+
+    if not ready:
+        logger.error("Dev server failed to start within 60 seconds.")
+        try:
+            dev_process.terminate()
+            dev_process.wait(timeout=5)
+        except Exception:
+            dev_process.kill()
+        return False
+
+    logger.info("=" * 60)
+    logger.info("✓ Dev server is running at http://localhost:3000")
+    logger.info("=" * 60)
+    print(
+        "\nPlease open http://localhost:3000 in your browser and check the "
+        "leaderboards.\n"
+    )
+
+    # Prompt for confirmation
+    while True:
+        response = input("Does everything look alright? [Y/n]: ").strip().lower()
+        if response in ("", "y", "yes"):
+            confirmed = True
+            break
+        elif response in ("n", "no"):
+            confirmed = False
+            break
+        else:
+            print("Please answer 'y' or 'n'.")
+
+    # Shut down dev server
+    logger.info("Shutting down dev server...")
+    try:
+        dev_process.send_signal(signal.SIGTERM)
+        dev_process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        dev_process.kill()
+        dev_process.wait()
+    except Exception:
+        try:
+            dev_process.kill()
+        except Exception:
+            pass
+
+    if confirmed:
+        logger.info("User confirmed deployment.")
+        return True
+    else:
+        logger.info("User aborted deployment.")
+        return False
 
 
 def deploy_to_vercel() -> bool:
