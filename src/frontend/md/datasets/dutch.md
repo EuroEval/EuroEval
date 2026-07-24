@@ -157,7 +157,78 @@ euroeval --model <model-id> --dataset conll-nl
 
 ## Linguistic Acceptability
 
-### ScaLA-nl
+### Dutch CoLA
+
+This dataset is published [here](https://huggingface.co/datasets/GroNLP/dutch-cola) and
+is a manually annotated linguistic acceptability dataset, with documents coming from
+descriptions of Dutch syntax.
+
+The original full dataset consists of 19,900 / 2,400 / 2,400 samples for training,
+validation and testing, respectively (so 24,700 samples used in total). We use a 1,024 /
+256 / 1,024 split for training, validation and testing, respectively. The original
+splits were imbalanced, so we ensure a 50/50 split of correct/incorrect samples in the
+new splits. All new splits are subsets of the original splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Tasman heeft geen Maori gezien.",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Jan is vrij bang voor honden en ik ben het zeer erg voor spinnen.",
+  "label": "incorrect"
+}
+```
+
+```json
+{
+  "text": "Wat is het duidelijk dat Jan zal krijgen?",
+  "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+
+- Prefix prompt:
+
+  ```text
+  Hieronder staan zinnen en of ze grammaticaal correct zijn.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Zin: {text}
+  Grammaticaal correct: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Zin: {text}
+
+  Bepaal of de zin grammaticaal correct is of niet. Antwoord met 'ja' als de zin correct is en 'nee' als dat niet het geval is.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nee`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dutch-cola
+```
+
+### Unofficial: ScaLA-nl
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
 and was automatically created from the
@@ -229,77 +300,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset scala-nl
-```
-
-### Unofficial: Dutch CoLA
-
-This dataset is published [here](https://huggingface.co/datasets/GroNLP/dutch-cola) and
-is a manually annotated linguistic acceptability dataset, with documents coming from
-descriptions of Dutch syntax.
-
-The original full dataset consists of 19,900 / 2,400 / 2,400 samples for training,
-validation and testing, respectively (so 24,700 samples used in total). We use a 1,024 /
-256 / 1,024 split for training, validation and testing, respectively. The original
-splits were imbalanced, so we ensure a 50/50 split of correct/incorrect samples in the
-new splits. All new splits are subsets of the original splits.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Tasman heeft geen Maori gezien.",
-  "label": "correct"
-}
-```
-
-```json
-{
-  "text": "Jan is vrij bang voor honden en ik ben het zeer erg voor spinnen.",
-  "label": "incorrect"
-}
-```
-
-```json
-{
-  "text": "Wat is het duidelijk dat Jan zal krijgen?",
-  "label": "incorrect"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 12
-
-- Prefix prompt:
-
-  ```text
-  Hieronder staan zinnen en of ze grammaticaal correct zijn.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Zin: {text}
-  Grammaticaal correct: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Zin: {text}
-
-  Bepaal of de zin grammaticaal correct is of niet. Antwoord met 'ja' als de zin correct is en 'nee' als dat niet het geval is.
-  ```
-
-- Label mapping:
-  - `correct` ➡️ `ja`
-  - `incorrect` ➡️ `nee`
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset dutch-cola
 ```
 
 ## Natural Language Inference

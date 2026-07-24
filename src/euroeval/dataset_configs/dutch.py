@@ -32,14 +32,6 @@ DBRD_CONFIG = DatasetConfig(
     labels=["negative", "positive"],
 )
 
-SCALA_NL_CONFIG = DatasetConfig(
-    name="scala-nl",
-    pretty_name="ScaLA-nl",
-    source="EuroEval/scala-nl",
-    task=LA,
-    languages=[DUTCH],
-)
-
 CONLL_NL_CONFIG = DatasetConfig(
     name="conll-nl",
     pretty_name="CoNLL-nl",
@@ -137,12 +129,20 @@ RAGTRUTH_NL_CONFIG = DatasetConfig(
 )
 
 
-# Unofficial datasets ###
-
 DUTCH_COLA_CONFIG = DatasetConfig(
     name="dutch-cola",
     pretty_name="Dutch CoLA",
     source="EuroEval/dutch-cola",
+    task=LA,
+    languages=[DUTCH],
+)
+
+# Unofficial datasets ###
+
+SCALA_NL_CONFIG = DatasetConfig(
+    name="scala-nl",
+    pretty_name="ScaLA-nl",
+    source="EuroEval/scala-nl",
     task=LA,
     languages=[DUTCH],
     unofficial=True,

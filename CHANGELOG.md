@@ -28,6 +28,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   parameter in the filename, preventing incorrect cache reuse when using the `--debug`
   flag.
 
+### Changed
+
+- Swapped official dataset for Dutch: `scala-nl` → `dutch-cola`. The script
+  `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing
+  dataset swaps.
+
 ## [v17.7.0] - 2026-07-22
 
 ### Added
