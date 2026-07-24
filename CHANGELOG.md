@@ -13,7 +13,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `AutoModelForMultipleChoice` head (with `DataCollatorForMultipleChoice`). Encoder
   models are now enabled on knowledge, multiple-choice-reading-comprehension,
   common-sense-reasoning, european-values, multiple-choice-stereotype-bias, and
-  multiple-choice tasks.
+  multiple-choice tasks. This was contributed by @pariidanDKE ✨
 - Added full support for hallucination detection for all languages now, and now marked
   as official.
 
