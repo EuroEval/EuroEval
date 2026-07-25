@@ -390,9 +390,7 @@ def _compute_param_bucket(param_count: int) -> int:
         Bucket number.
     """
     return next(
-        bucket
-        for threshold, bucket in _BUCKET_THRESHOLDS
-        if param_count < threshold
+        bucket for threshold, bucket in _BUCKET_THRESHOLDS if param_count < threshold
     )
 
 
@@ -428,6 +426,8 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
             continue
         model_id, number, groups = parsed
 
+        if model_id is None:
+            continue
         summary = cached_model_summary(model_id=model_id)
         if summary is None:
             continue
@@ -443,10 +443,13 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
             for label in issue.get("labels", [])
             if isinstance(label, dict)
         }
-        status_priority = _compute_status_priority(summary=summary, label_names=label_names)
+        status_priority = _compute_status_priority(
+            summary=summary, label_names=label_names
+        )
         age = _parse_issue_age(issue=issue)
         param_bucket = _compute_param_bucket(param_count=summary["param_count"])
 
+        assert model_id is not None
         candidates.append(
             (
                 1 if "slow" in label_names else 0,
@@ -712,9 +715,7 @@ def _load_existing_results(model_id: str) -> list[str]:
 
 
 def _run_single_language(
-    model_id: str,
-    lang: str,
-    gpu_memory_utilization: float | None,
+    model_id: str, lang: str, gpu_memory_utilization: float | None
 ) -> tuple[int, str]:
     """Run EuroEval for a single language.
 
@@ -769,7 +770,6 @@ def _handle_language_result(
     gated_in_lang = GATED_OUTPUT_RE.search(output)
     num_errored = num_errored_benchmarks(output=output)
     num_skipped = num_skipped_benchmarks(output=output)
-    has_error = returncode != 0 or num_errored > 0
 
     # Handle gating
     if gated_in_lang:
@@ -804,9 +804,7 @@ def _handle_language_result(
 
 
 def _handle_skip_analysis(
-    accumulated: list[str],
-    pending: list[str],
-    total_skipped: int,
+    accumulated: list[str], pending: list[str], total_skipped: int
 ) -> tuple[list[str], str | None]:
     """Analyze and handle skipped languages.
 
@@ -1052,7 +1050,8 @@ def _process_pending_languages(
             Running count of skipped benchmarks.
 
     Returns:
-        Tuple of (gated_detected, failure_reason, failure_tail, last_output, total_skipped).
+        Tuple of (gated_detected, failure_reason, failure_tail, last_output,
+        total_skipped).
     """
     gated_detected = False
     failure_reason: str | None = None
@@ -1064,30 +1063,42 @@ def _process_pending_languages(
             f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
         )
         returncode, output = _run_single_language(
-            model_id=model_id,
-            lang=lang,
-            gpu_memory_utilization=gpu_memory_utilization,
+            model_id=model_id, lang=lang, gpu_memory_utilization=gpu_memory_utilization
         )
         last_output = output
 
-        success, lang_failure_reason, lang_failure_tail, skipped = _handle_language_result(
-            lang=lang,
-            returncode=returncode,
-            output=output,
-            results_path=results_path,
-            model_id=model_id,
-            accumulated=accumulated,
+        success, lang_failure_reason, lang_failure_tail, skipped = (
+            _handle_language_result(
+                lang=lang,
+                returncode=returncode,
+                output=output,
+                results_path=results_path,
+                model_id=model_id,
+                accumulated=accumulated,
+            )
         )
         total_skipped += skipped
 
         if lang_failure_reason == "gated":
             gated_detected = True
             failure_output_tail = lang_failure_tail or ""
-            return gated_detected, failure_reason, failure_output_tail, last_output, total_skipped
+            return (
+                gated_detected,
+                failure_reason,
+                failure_output_tail,
+                last_output,
+                total_skipped,
+            )
         if lang_failure_reason:
             failure_reason = lang_failure_reason
             failure_output_tail = lang_failure_tail or ""
-            return gated_detected, failure_reason, failure_output_tail, last_output, total_skipped
+            return (
+                gated_detected,
+                failure_reason,
+                failure_output_tail,
+                last_output,
+                total_skipped,
+            )
         if not success:
             logger.error(
                 f"#{number}: bucket upload failed after {lang}; "
@@ -1096,7 +1107,13 @@ def _process_pending_languages(
         else:
             logger.info(f"#{number}: uploaded results for {lang}.")
 
-    return gated_detected, failure_reason, failure_output_tail, last_output, total_skipped
+    return (
+        gated_detected,
+        failure_reason,
+        failure_output_tail,
+        last_output,
+        total_skipped,
+    )
 
 
 def _handle_pending_skips(
@@ -1130,9 +1147,7 @@ def _handle_pending_skips(
             Done languages list (modified in place).
     """
     skip_failed, skip_reason = _handle_skip_analysis(
-        accumulated=accumulated,
-        pending=pending,
-        total_skipped=total_skipped,
+        accumulated=accumulated, pending=pending, total_skipped=total_skipped
     )
     if skip_failed:
         failed.extend(skip_failed)

@@ -107,7 +107,7 @@ QUESTIONS_TO_INCLUDE = [
 
 
 def _process_question(
-    row: pd.DataFrame,
+    row: pd.Series,
     language: str,
     dataset_id: str,
     question_id: str,
@@ -158,9 +158,7 @@ def _process_question(
     letters = "abcdefghijklmnopqrstuvwxyz"
     idx_to_choice: dict[str, str] = {
         str(idx): choice
-        for idx, choice in zip(
-            range(len(choices)), sorted(choices.keys(), key=int)
-        )
+        for idx, choice in zip(range(len(choices)), sorted(choices.keys(), key=int))
         if choice is not None
     }
     choice_to_letter: dict[str, str] = {
@@ -171,8 +169,7 @@ def _process_question(
         [
             f"{choice_to_letter[choice]}. {value}"
             for choice, value in sorted(
-                choices.items(),
-                key=lambda x: int(x[0]) if x[0].isdigit() else x[0],
+                choices.items(), key=lambda x: int(x[0]) if x[0].isdigit() else x[0]
             )
         ]
     )
@@ -277,9 +274,7 @@ def _process_language(
     dataset = DatasetDict({"test": Dataset.from_pandas(new_df, split=Split.TEST)})
 
     api.delete_repo(
-        new_dataset_id.format(language=language),
-        repo_type="dataset",
-        missing_ok=True,
+        new_dataset_id.format(language=language), repo_type="dataset", missing_ok=True
     )
     dataset.push_to_hub(new_dataset_id.format(language=language), private=True)
     return True

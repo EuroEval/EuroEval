@@ -20,9 +20,7 @@ from leaderboards.constants import (
 
 
 def _validate_metadata(
-    result_dict: dict[str, t.Any],
-    model_id: str,
-    cache: dict[str, dict[str, bool]],
+    result_dict: dict[str, t.Any], model_id: str, cache: dict[str, dict[str, bool]]
 ) -> None:
     """Validate and fill in missing metadata fields.
 
@@ -40,9 +38,7 @@ def _validate_metadata(
             if model_id in cache and metadata_field in cache[model_id]:
                 value = cache[model_id][metadata_field]
             else:
-                input_prompt = (
-                    f"{metadata_field} for https://hf.co/{model_id} (y/n)? "
-                )
+                input_prompt = f"{metadata_field} for https://hf.co/{model_id} (y/n)? "
                 value = input(input_prompt)
                 while value not in ["y", "n"]:
                     value = input(input_prompt)

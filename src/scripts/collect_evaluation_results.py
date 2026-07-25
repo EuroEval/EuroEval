@@ -494,9 +494,6 @@ def _validate_identities(existing: dict[ResultIdentity, dict]) -> None:
     Args:
         existing:
             Dict of results to validate.
-
-    Raises:
-        ValueError: If identity collision detected.
     """
     path_to_identity: dict[Path, ResultIdentity] = {}
     for identity in existing:
@@ -507,7 +504,7 @@ def _validate_identities(existing: dict[ResultIdentity, dict]) -> None:
 
 
 def _write_changed_records(
-    existing: dict[ResultIdentity, dict]
+    existing: dict[ResultIdentity, dict],
 ) -> tuple[int, int, list[Path]]:
     """Write changed records to disk.
 
@@ -940,4 +937,4 @@ def deploy_to_vercel() -> bool:
 
 
 if __name__ == "__main__":
-    main()
+    main(force=False)

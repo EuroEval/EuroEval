@@ -9,6 +9,7 @@ Output is a PNG file.
 from __future__ import annotations
 
 import base64
+import collections.abc as c
 import json
 import logging
 import math
@@ -80,9 +81,6 @@ def _build_and_validate_score_matrix(
 
     Returns:
         Tuple of (score_matrix, used_languages).
-
-    Raises:
-        SystemExit: If no languages have scores for all models.
     """
     model_scores_matrix = _build_score_matrix(
         all_records=all_records,
@@ -111,11 +109,7 @@ def _build_and_validate_score_matrix(
     return model_scores_matrix, used_languages
 
 
-def _write_and_open_plot(
-    fig: c.Figure,
-    title: str | None,
-    filename: str | None,
-) -> int:
+def _write_and_open_plot(fig: c.Figure, title: str | None, filename: str | None) -> int:
     """Write plot to file and open in browser.
 
     Args:

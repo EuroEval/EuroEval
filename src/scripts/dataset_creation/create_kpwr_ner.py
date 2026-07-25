@@ -144,7 +144,9 @@ def create_label_mapping(label_names: list[str]) -> dict[int, str]:
     Returns:
         The mapping from KPWr labels to standard BIO labels.
     """
-    return {i: _map_single_label(label_name) for i, label_name in enumerate(label_names)}
+    return {
+        i: _map_single_label(label_name) for i, label_name in enumerate(label_names)
+    }
 
 
 if __name__ == "__main__":
