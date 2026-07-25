@@ -100,7 +100,10 @@ def generate_model_url(model_id: str) -> str | None:
         try:
             url = url_generator(model_id=model_id_without_extras)
         except Exception as e:
-            logger.error(f"Error generating URL for model {model_id}: {e}")
+            logger.error(
+                f"Error generating URL for model {model_id} with "
+                f"{url_generator.__name__}: {e}"
+            )
             continue
         if url is not None:
             return url
