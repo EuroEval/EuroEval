@@ -458,7 +458,7 @@ def main(
         if not dry_run:
             # Merge results from RESULTS_DIR tree into JSONL before upload
             logger.info(
-                "Merging evaluation results into %s...", EUROEVAL_BENCHMARK_RESULTS_PATH
+                f"Merging evaluation results into {EUROEVAL_BENCHMARK_RESULTS_PATH}..."
             )
             merge_results(results_file=EUROEVAL_BENCHMARK_RESULTS_PATH)
 
@@ -680,9 +680,8 @@ def check_new_datasets_have_records(
         )
 
     logger.info(
-        "All %s new dataset(s) produced records: %s.",
-        len(new_datasets),
-        ", ".join(new_datasets),
+        f"All {len(new_datasets)} new dataset(s) produced records: "
+        f"{', '.join(new_datasets)}."
     )
 
 
