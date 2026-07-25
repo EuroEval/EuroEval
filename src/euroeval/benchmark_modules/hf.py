@@ -711,124 +711,6 @@ def _load_model_from_pretrained(
     )
 
 
-def load_model_and_tokeniser(
-    model_config: "ModelConfig",
-    dataset_config: "DatasetConfig",
-    benchmark_config: "BenchmarkConfig",
-    dtype_override: "DataType | None" = None,
-) -> tuple["PreTrainedModel", Tokeniser]:
-    """Load the model and tokeniser.
-
-    Args:
-        model_config:
-            The model configuration.
-        dataset_config:
-            The dataset configuration.
-        benchmark_config:
-            The benchmark configuration
-        dtype_override (optional):
-            An explicit data type to load the model weights in, taking precedence
-            over the hardware-derived default. Used by the finetuning NaN-retry to
-            force a full fp32 reload. Defaults to None.
-
-    Returns:
-        A pair (model, tokeniser), with the loaded model and tokeniser
-
-    Raises:
-        InvalidModel:
-            If the model could not be loaded.
-        InvalidBenchmark:
-            If the model could not be loaded for this particular dataset.
-    """  # noqa: DOC502
-    block_terminal_output()
-
-    model_id = model_config.model_id
-    task_group = dataset_config.task.task_group
-
-    id2label = dataset_config.id2label
-    config = load_hf_model_config(
-        model_id=model_id,
-        num_labels=len(id2label),
-        id2label=HashableDict(id2label),
-        label2id=HashableDict({label: idx for idx, label in id2label.items()}),
-        revision=model_config.revision,
-        model_cache_dir=model_config.model_cache_dir,
-        api_key=benchmark_config.api_key,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        run_with_cli=benchmark_config.run_with_cli,
-    )
-
-    # If the model is a DeBERTaV2 model then ensure `pooler_hidden_size` matches
-    if config.model_type == "deberta-v2":
-        config.pooler_hidden_size = config.hidden_size
-
-    model_kwargs: dict[str, t.Any] = dict(
-        config=config,
-        ignore_mismatched_sizes=False,
-        revision=model_config.revision,
-        token=get_hf_token(api_key=benchmark_config.api_key),
-        cache_dir=model_config.model_cache_dir,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        dtype=get_dtype(
-            device=benchmark_config.device,
-            dtype_is_set=config.to_dict().get("dtype") is not None,
-            bf16_available=(
-                torch.cuda.is_available() and torch.cuda.is_bf16_supported()
-            ),
-            dtype_override=dtype_override,
-        ),
-    )
-
-    model_cls_or_none: t.Type[PreTrainedModel] | None = t.cast(
-        "t.Type[PreTrainedModel] | None",
-        get_class_by_name(
-            class_name=task_group_to_class_name(task_group=task_group),
-            module_name="transformers",
-        ),
-    )
-
-    if not model_cls_or_none:
-        raise InvalidBenchmark(
-            f"The task group {task_group.value!r} does not correspond to a "
-            "Hugging Face AutoModel type (such as "
-            "`AutoModelForSequenceClassification`)."
-        )
-
-    model_or_tuple = _load_model_from_pretrained(
-        model_cls=model_cls_or_none,
-        model_id=model_config.model_id,
-        model_kwargs=model_kwargs,
-        task_group=task_group,
-    )
-
-    if isinstance(model_or_tuple, tuple):
-        model = t.cast(PreTrainedModel, model_or_tuple[0])
-    else:
-        model = t.cast(PreTrainedModel, model_or_tuple)
-
-    assert model is not None, "The model should not be None."
-    model = t.cast("PreTrainedModel", model)  # ty: ignore[redundant-cast]
-
-    model.eval()
-    model.to(benchmark_config.device)  # ty: ignore[invalid-argument-type]
-
-    if (
-        isinstance(model, PreTrainedModel)
-        and task_group == TaskGroup.QUESTION_ANSWERING
-    ):
-        model = setup_model_for_question_answering(model=model)
-
-    tokeniser = load_tokeniser(
-        model=model,
-        model_id=model_id,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        model_config=model_config,
-    )
-
-    return model, tokeniser
-
-
-@cache_arguments("model_id")
 def _get_local_model_info(model_id: str) -> HfApiModelInfo | None:
     """Get model info for a local model directory.
 
@@ -974,61 +856,6 @@ def _get_tags_for_adapter_model(
     return tags, base_model_id
 
 
-def _infer_pipeline_tag(
-    model_id: str,
-    revision: str,
-    cache_dir: str,
-    api_key: str | None,
-    trust_remote_code: bool,
-    run_with_cli: bool,
-    base_model_id: str | None,
-) -> str:
-    """Infer pipeline tag from model architecture.
-
-    Args:
-        model_id:
-            The model ID.
-        revision:
-            The revision.
-        cache_dir:
-            Cache directory.
-        api_key:
-            API key.
-        trust_remote_code:
-            Whether to trust remote code.
-        run_with_cli:
-            Whether running with CLI.
-        base_model_id:
-            Base model ID if this is an adapter.
-
-    Returns:
-        The inferred pipeline tag.
-    """
-    hf_config = load_hf_model_config(
-        model_id=base_model_id or model_id,
-        num_labels=0,
-        id2label=HashableDict(),
-        label2id=HashableDict(),
-        revision=revision,
-        model_cache_dir=create_model_cache_dir(cache_dir=cache_dir, model_id=model_id),
-        api_key=api_key,
-        trust_remote_code=trust_remote_code,
-        run_with_cli=run_with_cli,
-    )
-    class_names = hf_config.architectures
-    generative_class_names = [
-        class_name
-        for tag in GENERATIVE_PIPELINE_TAGS
-        for class_name in TASK_MAPPING.get(tag, dict()).values()
-    ]
-    if class_names is not None and (
-        any(class_name in generative_class_names for class_name in class_names)
-        or any("ForCausalLM" in class_name for class_name in class_names)
-    ):
-        return "text-generation"
-    return "fill-mask"
-
-
 def _check_safetensors_available(
     hf_api: HfApi,
     model_id: str,
@@ -1084,99 +911,6 @@ def _check_safetensors_available(
             logging.warning(msg)
             return False
     return True
-
-
-def get_model_repo_info(
-    model_id: str,
-    revision: str,
-    api_key: str | None,
-    cache_dir: str,
-    trust_remote_code: bool,
-    requires_safetensors: bool,
-    run_with_cli: bool,
-) -> "HFModelInfo | None":
-    """Get the information about the model from the HF Hub or a local directory.
-
-    Args:
-        model_id:
-            The model ID.
-        revision:
-            The revision of the model.
-        api_key:
-            The Hugging Face API key.
-        cache_dir:
-            The directory to cache the model in.
-        trust_remote_code:
-            Whether to trust remote code.
-        requires_safetensors:
-            Whether the model requires safetensors.
-        run_with_cli:
-            Whether the script is being run with the CLI.
-
-    Returns:
-        The information about the model, or None if the model could not be found.
-    """
-    token = get_hf_token(api_key=api_key)
-    hf_api = HfApi(token=token)
-
-    # Try to get model info from local directory first
-    model_info: HfApiModelInfo | None = None
-    if Path(model_id).is_dir():
-        model_info = _get_local_model_info(model_id=model_id)
-        if model_info is None:
-            return None
-    elif not internet_connection_available():
-        model_info = HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
-
-    # Fetch from HF Hub if not found locally
-    if model_info is None:
-        model_info = _fetch_model_info_from_hub(
-            hf_api=hf_api, model_id=model_id, revision=revision, token=token
-        )
-        if model_info is None:
-            return None
-
-    # Handle adapter models - get base model tags
-    tags = model_info.tags or list()
-    base_model_id: str | None = None
-    has_adapter_config = model_info.siblings is not None and any(
-        sibling.rfilename == "adapter_config.json" for sibling in model_info.siblings
-    )
-    if has_adapter_config:
-        tags, base_model_id = _get_tags_for_adapter_model(
-            model_id=model_id,
-            revision=revision,
-            model_info=model_info,
-            hf_api=hf_api,
-            token=token,
-        )
-
-    # Infer pipeline tag if not specified
-    pipeline_tag = model_info.pipeline_tag
-    if pipeline_tag is None:
-        pipeline_tag = _infer_pipeline_tag(
-            model_id=model_id,
-            revision=revision,
-            cache_dir=cache_dir,
-            api_key=api_key,
-            trust_remote_code=trust_remote_code,
-            run_with_cli=run_with_cli,
-            base_model_id=base_model_id,
-        )
-
-    # Check safetensors requirement
-    if requires_safetensors and not _check_safetensors_available(
-        hf_api=hf_api,
-        model_id=model_id,
-        revision=revision,
-        base_model_id=base_model_id,
-        run_with_cli=run_with_cli,
-    ):
-        return None
-
-    return HFModelInfo(
-        pipeline_tag=pipeline_tag, tags=tags, adapter_base_model_id=base_model_id
-    )
 
 
 def load_tokeniser(
@@ -1411,6 +1145,189 @@ def _set_pad_token_id(config: PretrainedConfig) -> None:
 
 
 @cache_arguments("model_id", "revision", "num_labels", "id2label", "label2id")
+def get_children_of_module(
+    name: str, module: nn.Module
+) -> nn.Module | dict[str, t.Any] | None:
+    """Get the children of a module.
+
+    Args:
+        name:
+            The name of the module.
+        module:
+            The module to get the children of.
+
+    Returns:
+        The children of the module, or None if the module has no children.
+    """
+    if len(list(module.children())) == 0:
+        if name == "token_type_embeddings":
+            return module
+        else:
+            return None
+    else:
+        submodules = dict()
+        for subname, submodule in module.named_children():
+            children = get_children_of_module(name=subname, module=submodule)
+            if children:
+                submodules[subname] = children
+        return submodules
+
+
+def _find_valid_model_max_length(
+    model: "PreTrainedModel",
+    tokeniser: Tokeniser,
+    initial_max_length: int,
+    is_multiple_choice: bool,
+) -> int:
+    """Find the maximum valid sequence length for the model.
+
+    Args:
+        model:
+            The model to test.
+        tokeniser:
+            The tokeniser.
+        initial_max_length:
+            The initial maximum length to test.
+        is_multiple_choice:
+            Whether this is a multiple-choice model.
+
+    Returns:
+        The valid maximum length.
+
+    Raises:
+        ValueError:
+            If an unexpected error occurs during inference.
+    """
+    for max_length in range(initial_max_length, 0, -1):
+        tokeniser.model_max_length = max_length
+        dummy_inputs = torch.full(
+            size=(1, 2, max_length) if is_multiple_choice else (1, max_length),
+            fill_value=DUMMY_FILL_VALUE,
+            dtype=torch.long,
+            device=model.device,
+        )
+        with torch.inference_mode():
+            try:
+                model(dummy_inputs, attention_mask=torch.ones_like(dummy_inputs))
+                return max_length
+            except IndexError:
+                continue
+            except ValueError as e:
+                if "cpu tensor" in str(e):
+                    return max_length
+                raise
+    return 1
+
+
+def _adjust_vocab_size(
+    model: "PreTrainedModel", tokeniser: Tokeniser, raise_errors: bool
+) -> None:
+    """Adjust model vocab size if tokeniser is larger.
+
+    Args:
+        model:
+            The model to potentially resize.
+        tokeniser:
+            The tokeniser.
+        raise_errors:
+            Whether to raise errors instead of auto-adjusting.
+
+    Raises:
+        InvalidModel:
+            If vocab size mismatch and raise_errors is True.
+    """
+    if not hasattr(model.config, "vocab_size"):
+        return
+
+    if model.config.vocab_size >= len(tokeniser):
+        return
+
+    if raise_errors:
+        raise InvalidModel(
+            "The vocab size of the tokeniser is larger than the vocab size of "
+            "the model. As the --raise-errors option was specified, the "
+            "embeddings of the model will not be automatically adjusted."
+        )
+
+    if hasattr(model, "resize_token_embeddings"):
+        model.resize_token_embeddings(new_num_tokens=tokeniser.vocab_size + 1)
+
+
+def _set_bos_token(tokeniser: Tokeniser) -> None:
+    """Set BOS token from EOS token if BOS is not set.
+
+    Args:
+        tokeniser:
+            The tokeniser to update.
+    """
+    if tokeniser.bos_token is None and tokeniser.eos_token is not None:
+        tokeniser.bos_token = tokeniser.eos_token
+        tokeniser.bos_token_id = tokeniser.eos_token_id
+
+
+def task_group_to_class_name(task_group: TaskGroup) -> str:
+    """Convert a task group to a class name.
+
+    Args:
+        task_group:
+            The task group.
+
+    Returns:
+        The class name.
+    """
+    pascal_case = task_group.title().replace("_", "")
+
+    # Bridge task-group names that don't map 1:1 onto a Hugging Face AutoModel class:
+    # the multiple-choice group is internally named "..._classification" but the HF
+    # class is `AutoModelForMultipleChoice`, and `Speed` reuses the sequence
+    # classification head.
+    special_case_mapping = dict(
+        MultipleChoiceClassification="MultipleChoice", Speed="SequenceClassification"
+    )
+    pascal_case = special_case_mapping.get(pascal_case, pascal_case)
+    return f"AutoModelFor{pascal_case}"
+
+
+def get_class_by_name(
+    class_name: str | c.Sequence[str], module_name: str
+) -> t.Type | None:
+    """Get a class by its name.
+
+    Args:
+        class_name:
+            The name of the class, written in kebab-case. The corresponding class name
+            must be the same, but written in PascalCase, and lying in a module with the
+            same name, but written in snake_case. If a list of strings is passed, the
+            first class that is found is returned.
+        module_name:
+            The name of the module where the class is located.
+
+    Returns:
+        The class. If the class is not found, None is returned.
+    """
+    if isinstance(class_name, str):
+        class_name = [class_name]
+
+    error_messages = list()
+    for name in class_name:
+        try:
+            module = importlib.import_module(name=module_name)
+            class_: t.Type = getattr(module, name)
+            return class_
+        except (ModuleNotFoundError, AttributeError) as e:
+            error_messages.append(str(e))
+
+    if error_messages:
+        errors = "\n- " + "\n- ".join(error_messages)
+        log(
+            f"Could not find the class with the name(s) {', '.join(class_name)}. The "
+            f"following error messages were raised: {errors}",
+            level=logging.DEBUG,
+        )
+
+    return None
+
+
 def load_hf_model_config(
     model_id: str,
     num_labels: int,
@@ -1546,126 +1463,6 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
     return model
 
 
-def get_children_of_module(
-    name: str, module: nn.Module
-) -> nn.Module | dict[str, t.Any] | None:
-    """Get the children of a module.
-
-    Args:
-        name:
-            The name of the module.
-        module:
-            The module to get the children of.
-
-    Returns:
-        The children of the module, or None if the module has no children.
-    """
-    if len(list(module.children())) == 0:
-        if name == "token_type_embeddings":
-            return module
-        else:
-            return None
-    else:
-        submodules = dict()
-        for subname, submodule in module.named_children():
-            children = get_children_of_module(name=subname, module=submodule)
-            if children:
-                submodules[subname] = children
-        return submodules
-
-
-def _find_valid_model_max_length(
-    model: "PreTrainedModel",
-    tokeniser: Tokeniser,
-    initial_max_length: int,
-    is_multiple_choice: bool,
-) -> int:
-    """Find the maximum valid sequence length for the model.
-
-    Args:
-        model:
-            The model to test.
-        tokeniser:
-            The tokeniser.
-        initial_max_length:
-            The initial maximum length to test.
-        is_multiple_choice:
-            Whether this is a multiple-choice model.
-
-    Returns:
-        The valid maximum length.
-
-    Raises:
-        ValueError:
-            If an unexpected error occurs during inference.
-    """
-    for max_length in range(initial_max_length, 0, -1):
-        tokeniser.model_max_length = max_length
-        dummy_inputs = torch.full(
-            size=(1, 2, max_length) if is_multiple_choice else (1, max_length),
-            fill_value=DUMMY_FILL_VALUE,
-            dtype=torch.long,
-            device=model.device,
-        )
-        with torch.inference_mode():
-            try:
-                model(dummy_inputs, attention_mask=torch.ones_like(dummy_inputs))
-                return max_length
-            except IndexError:
-                continue
-            except ValueError as e:
-                if "cpu tensor" in str(e):
-                    return max_length
-                raise
-    return 1
-
-
-def _adjust_vocab_size(
-    model: "PreTrainedModel", tokeniser: Tokeniser, raise_errors: bool
-) -> None:
-    """Adjust model vocab size if tokeniser is larger.
-
-    Args:
-        model:
-            The model to potentially resize.
-        tokeniser:
-            The tokeniser.
-        raise_errors:
-            Whether to raise errors instead of auto-adjusting.
-
-    Raises:
-        InvalidModel:
-            If vocab size mismatch and raise_errors is True.
-    """
-    if not hasattr(model.config, "vocab_size"):
-        return
-
-    if model.config.vocab_size >= len(tokeniser):
-        return
-
-    if raise_errors:
-        raise InvalidModel(
-            "The vocab size of the tokeniser is larger than the vocab size of "
-            "the model. As the --raise-errors option was specified, the "
-            "embeddings of the model will not be automatically adjusted."
-        )
-
-    if hasattr(model, "resize_token_embeddings"):
-        model.resize_token_embeddings(new_num_tokens=tokeniser.vocab_size + 1)
-
-
-def _set_bos_token(tokeniser: Tokeniser) -> None:
-    """Set BOS token from EOS token if BOS is not set.
-
-    Args:
-        tokeniser:
-            The tokeniser to update.
-    """
-    if tokeniser.bos_token is None and tokeniser.eos_token is not None:
-        tokeniser.bos_token = tokeniser.eos_token
-        tokeniser.bos_token_id = tokeniser.eos_token_id
-
-
 def align_model_and_tokeniser(
     model: "PreTrainedModel",
     tokeniser: Tokeniser,
@@ -1720,64 +1517,267 @@ def align_model_and_tokeniser(
 
 
 @cache_arguments()
-def task_group_to_class_name(task_group: TaskGroup) -> str:
-    """Convert a task group to a class name.
+def load_model_and_tokeniser(
+    model_config: "ModelConfig",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+    dtype_override: "DataType | None" = None,
+) -> tuple["PreTrainedModel", Tokeniser]:
+    """Load the model and tokeniser.
 
     Args:
-        task_group:
-            The task group.
+        model_config:
+            The model configuration.
+        dataset_config:
+            The dataset configuration.
+        benchmark_config:
+            The benchmark configuration
+        dtype_override (optional):
+            An explicit data type to load the model weights in, taking precedence
+            over the hardware-derived default. Used by the finetuning NaN-retry to
+            force a full fp32 reload. Defaults to None.
 
     Returns:
-        The class name.
-    """
-    pascal_case = task_group.title().replace("_", "")
+        A pair (model, tokeniser), with the loaded model and tokeniser
 
-    # Bridge task-group names that don't map 1:1 onto a Hugging Face AutoModel class:
-    # the multiple-choice group is internally named "..._classification" but the HF
-    # class is `AutoModelForMultipleChoice`, and `Speed` reuses the sequence
-    # classification head.
-    special_case_mapping = dict(
-        MultipleChoiceClassification="MultipleChoice", Speed="SequenceClassification"
+    Raises:
+        InvalidModel:
+            If the model could not be loaded.
+        InvalidBenchmark:
+            If the model could not be loaded for this particular dataset.
+    """  # noqa: DOC502
+    block_terminal_output()
+
+    model_id = model_config.model_id
+    task_group = dataset_config.task.task_group
+
+    id2label = dataset_config.id2label
+    config = load_hf_model_config(
+        model_id=model_id,
+        num_labels=len(id2label),
+        id2label=HashableDict(id2label),
+        label2id=HashableDict({label: idx for idx, label in id2label.items()}),
+        revision=model_config.revision,
+        model_cache_dir=model_config.model_cache_dir,
+        api_key=benchmark_config.api_key,
+        trust_remote_code=benchmark_config.trust_remote_code,
+        run_with_cli=benchmark_config.run_with_cli,
     )
-    pascal_case = special_case_mapping.get(pascal_case, pascal_case)
-    return f"AutoModelFor{pascal_case}"
 
+    # If the model is a DeBERTaV2 model then ensure `pooler_hidden_size` matches
+    if config.model_type == "deberta-v2":
+        config.pooler_hidden_size = config.hidden_size
 
-def get_class_by_name(
-    class_name: str | c.Sequence[str], module_name: str
-) -> t.Type | None:
-    """Get a class by its name.
+    model_kwargs: dict[str, t.Any] = dict(
+        config=config,
+        ignore_mismatched_sizes=False,
+        revision=model_config.revision,
+        token=get_hf_token(api_key=benchmark_config.api_key),
+        cache_dir=model_config.model_cache_dir,
+        trust_remote_code=benchmark_config.trust_remote_code,
+        dtype=get_dtype(
+            device=benchmark_config.device,
+            dtype_is_set=config.to_dict().get("dtype") is not None,
+            bf16_available=(
+                torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+            ),
+            dtype_override=dtype_override,
+        ),
+    )
 
-    Args:
-        class_name:
-            The name of the class, written in kebab-case. The corresponding class name
-            must be the same, but written in PascalCase, and lying in a module with the
-            same name, but written in snake_case. If a list of strings is passed, the
-            first class that is found is returned.
-        module_name:
-            The name of the module where the class is located.
+    model_cls_or_none: t.Type[PreTrainedModel] | None = t.cast(
+        "t.Type[PreTrainedModel] | None",
+        get_class_by_name(
+            class_name=task_group_to_class_name(task_group=task_group),
+            module_name="transformers",
+        ),
+    )
 
-    Returns:
-        The class. If the class is not found, None is returned.
-    """
-    if isinstance(class_name, str):
-        class_name = [class_name]
-
-    error_messages = list()
-    for name in class_name:
-        try:
-            module = importlib.import_module(name=module_name)
-            class_: t.Type = getattr(module, name)
-            return class_
-        except (ModuleNotFoundError, AttributeError) as e:
-            error_messages.append(str(e))
-
-    if error_messages:
-        errors = "\n- " + "\n- ".join(error_messages)
-        log(
-            f"Could not find the class with the name(s) {', '.join(class_name)}. The "
-            f"following error messages were raised: {errors}",
-            level=logging.DEBUG,
+    if not model_cls_or_none:
+        raise InvalidBenchmark(
+            f"The task group {task_group.value!r} does not correspond to a "
+            "Hugging Face AutoModel type (such as "
+            "`AutoModelForSequenceClassification`)."
         )
 
-    return None
+    model_or_tuple = _load_model_from_pretrained(
+        model_cls=model_cls_or_none,
+        model_id=model_config.model_id,
+        model_kwargs=model_kwargs,
+        task_group=task_group,
+    )
+
+    if isinstance(model_or_tuple, tuple):
+        model = t.cast(PreTrainedModel, model_or_tuple[0])
+    else:
+        model = t.cast(PreTrainedModel, model_or_tuple)
+
+    assert model is not None, "The model should not be None."
+    model = t.cast("PreTrainedModel", model)  # ty: ignore[redundant-cast]
+
+    model.eval()
+    model.to(benchmark_config.device)  # ty: ignore[invalid-argument-type]
+
+    if (
+        isinstance(model, PreTrainedModel)
+        and task_group == TaskGroup.QUESTION_ANSWERING
+    ):
+        model = setup_model_for_question_answering(model=model)
+
+    tokeniser = load_tokeniser(
+        model=model,
+        model_id=model_id,
+        trust_remote_code=benchmark_config.trust_remote_code,
+        model_config=model_config,
+    )
+
+    return model, tokeniser
+
+
+@cache_arguments("model_id")
+def _infer_pipeline_tag(
+    model_id: str,
+    revision: str,
+    cache_dir: str,
+    api_key: str | None,
+    trust_remote_code: bool,
+    run_with_cli: bool,
+    base_model_id: str | None,
+) -> str:
+    """Infer pipeline tag from model architecture.
+
+    Args:
+        model_id:
+            The model ID.
+        revision:
+            The revision.
+        cache_dir:
+            Cache directory.
+        api_key:
+            API key.
+        trust_remote_code:
+            Whether to trust remote code.
+        run_with_cli:
+            Whether running with CLI.
+        base_model_id:
+            Base model ID if this is an adapter.
+
+    Returns:
+        The inferred pipeline tag.
+    """
+    hf_config = load_hf_model_config(
+        model_id=base_model_id or model_id,
+        num_labels=0,
+        id2label=HashableDict(),
+        label2id=HashableDict(),
+        revision=revision,
+        model_cache_dir=create_model_cache_dir(cache_dir=cache_dir, model_id=model_id),
+        api_key=api_key,
+        trust_remote_code=trust_remote_code,
+        run_with_cli=run_with_cli,
+    )
+    class_names = hf_config.architectures
+    generative_class_names = [
+        class_name
+        for tag in GENERATIVE_PIPELINE_TAGS
+        for class_name in TASK_MAPPING.get(tag, dict()).values()
+    ]
+    if class_names is not None and (
+        any(class_name in generative_class_names for class_name in class_names)
+        or any("ForCausalLM" in class_name for class_name in class_names)
+    ):
+        return "text-generation"
+    return "fill-mask"
+
+
+def get_model_repo_info(
+    model_id: str,
+    revision: str,
+    api_key: str | None,
+    cache_dir: str,
+    trust_remote_code: bool,
+    requires_safetensors: bool,
+    run_with_cli: bool,
+) -> "HFModelInfo | None":
+    """Get the information about the model from the HF Hub or a local directory.
+
+    Args:
+        model_id:
+            The model ID.
+        revision:
+            The revision of the model.
+        api_key:
+            The Hugging Face API key.
+        cache_dir:
+            The directory to cache the model in.
+        trust_remote_code:
+            Whether to trust remote code.
+        requires_safetensors:
+            Whether the model requires safetensors.
+        run_with_cli:
+            Whether the script is being run with the CLI.
+
+    Returns:
+        The information about the model, or None if the model could not be found.
+    """
+    token = get_hf_token(api_key=api_key)
+    hf_api = HfApi(token=token)
+
+    # Try to get model info from local directory first
+    model_info: HfApiModelInfo | None = None
+    if Path(model_id).is_dir():
+        model_info = _get_local_model_info(model_id=model_id)
+        if model_info is None:
+            return None
+    elif not internet_connection_available():
+        model_info = HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
+
+    # Fetch from HF Hub if not found locally
+    if model_info is None:
+        model_info = _fetch_model_info_from_hub(
+            hf_api=hf_api, model_id=model_id, revision=revision, token=token
+        )
+        if model_info is None:
+            return None
+
+    # Handle adapter models - get base model tags
+    tags = model_info.tags or list()
+    base_model_id: str | None = None
+    has_adapter_config = model_info.siblings is not None and any(
+        sibling.rfilename == "adapter_config.json" for sibling in model_info.siblings
+    )
+    if has_adapter_config:
+        tags, base_model_id = _get_tags_for_adapter_model(
+            model_id=model_id,
+            revision=revision,
+            model_info=model_info,
+            hf_api=hf_api,
+            token=token,
+        )
+
+    # Infer pipeline tag if not specified
+    pipeline_tag = model_info.pipeline_tag
+    if pipeline_tag is None:
+        pipeline_tag = _infer_pipeline_tag(
+            model_id=model_id,
+            revision=revision,
+            cache_dir=cache_dir,
+            api_key=api_key,
+            trust_remote_code=trust_remote_code,
+            run_with_cli=run_with_cli,
+            base_model_id=base_model_id,
+        )
+
+    # Check safetensors requirement
+    if requires_safetensors and not _check_safetensors_available(
+        hf_api=hf_api,
+        model_id=model_id,
+        revision=revision,
+        base_model_id=base_model_id,
+        run_with_cli=run_with_cli,
+    ):
+        return None
+
+    return HFModelInfo(
+        pipeline_tag=pipeline_tag, tags=tags, adapter_base_model_id=base_model_id
+    )
