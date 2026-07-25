@@ -71,16 +71,16 @@ def add_missing_entries(
             record=record, cache=cache
         )
     if "merge" not in model_additional:
-        model_additional["merge"] = _is_merge(record=record, cache=cache)
+        model_additional["merge"] = is_merge(record=record, cache=cache)
 
     if "commercially_licensed" not in model_additional:
         model_additional["commercially_licensed"] = is_commercially_licensed(
             record=record, cache=cache
         )
     if "open" not in model_additional:
-        model_additional["open"] = _is_open(record=record, cache=cache)
+        model_additional["open"] = is_open(record=record, cache=cache)
     if "trained_from_scratch" not in model_additional:
-        model_additional["trained_from_scratch"] = _is_trained_from_scratch(
+        model_additional["trained_from_scratch"] = is_trained_from_scratch(
             record=record,
             trained_from_scratch_patterns=trained_from_scratch_patterns,
             cache=cache,
@@ -424,7 +424,7 @@ def _infer_commercial_from_hf_licence(
     return result
 
 
-def _is_trained_from_scratch(
+def is_trained_from_scratch(
     record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
 ) -> bool:
     """Determine if a model was trained from scratch or fine-tuned.
@@ -477,7 +477,7 @@ def _is_trained_from_scratch(
         logger.error("Invalid input. Please try again.")
 
 
-def _is_merge(record: dict, cache: Cache) -> bool:
+def is_merge(record: dict, cache: Cache) -> bool:
     """Determines if a model is a merged model.
 
     Args:
@@ -520,7 +520,7 @@ def _is_merge(record: dict, cache: Cache) -> bool:
     return has_merge_tag
 
 
-def _is_open(record: dict, cache: Cache) -> bool:
+def is_open(record: dict, cache: Cache) -> bool:
     """Determine if a model is open (open-weight) or closed.
 
     Args:
