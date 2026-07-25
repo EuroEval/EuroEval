@@ -99,15 +99,34 @@ RAGTRUTH_PT_CONFIG = DatasetConfig(
 )
 
 
+ALBA_MCQ_PT_CONFIG = DatasetConfig(
+    name="alba-mcq-pt",
+    pretty_name="ALBA-MCQ",
+    source="EuroEval/euroeval-amalia-alba-mcq-pt",
+    task=KNOW,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    labels=["a", "b", "c"],
+    val_split=None,
+)
+
+CULTURA_VIVA_PT_CONFIG = DatasetConfig(
+    name="cultura-viva-pt",
+    pretty_name="CulturaVivaPT",
+    source="EuroEval/euroeval-amalia-cultura-viva-pt",
+    task=KNOW,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+)
+
+# Unofficial datasets ###
+
 MMLU_PT_CONFIG = DatasetConfig(
     name="mmlu-pt",
     pretty_name="MMLU-pt",
     source="EuroEval/mmlu-pt-mini",
     task=KNOW,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    unofficial=True,
 )
-
-# Unofficial datasets ###
 
 IFEVAL_PT_CONFIG = DatasetConfig(
     name="ifeval-pt",
@@ -190,25 +209,5 @@ PT_COMPLETIONS_CONFIG = DatasetConfig(
         "Responde à pergunta acima usando só {labels_str}, e nada mais."
     ),
     val_split=None,
-    unofficial=True,
-)
-
-ALBA_MCQ_PT_CONFIG = DatasetConfig(
-    name="alba-mcq-pt",
-    pretty_name="ALBA-MCQ",
-    source="EuroEval/euroeval-amalia-alba-mcq-pt",
-    task=KNOW,
-    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-    labels=["a", "b", "c"],
-    val_split=None,
-    unofficial=True,
-)
-
-CULTURA_VIVA_PT_CONFIG = DatasetConfig(
-    name="cultura-viva-pt",
-    pretty_name="CulturaVivaPT",
-    source="EuroEval/euroeval-amalia-cultura-viva-pt",
-    task=KNOW,
-    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     unofficial=True,
 )
