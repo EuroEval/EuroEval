@@ -184,8 +184,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             hasattr(self._model.config, "num_params")
             and self._model.config.num_params is not None
         ):
-            # ty: ignore[invalid-argument-type]
-            num_params = int(self._model.config.num_params)
+            num_params = int(self._model.config.num_params)  # ty: ignore[invalid-argument-type]
         elif hasattr(self._model, "parameters"):
             num_params = sum(p.numel() for p in self._model.parameters())
         else:
@@ -211,8 +210,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             hasattr(self._model.config, "vocab_size")
             and self._model.config.vocab_size is not None
         ):
-            # ty: ignore[invalid-argument-type]
-            vocab_size = int(self._model.config.vocab_size)
+            vocab_size = int(self._model.config.vocab_size)  # ty: ignore[invalid-argument-type]
         elif (
             hasattr(self._tokeniser, "vocab_size")
             and self._tokeniser.vocab_size is not None
@@ -366,8 +364,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             try:
                 label2id = self._model.config.label2id
                 examples["label"] = [
-                    # ty: ignore[not-subscriptable,invalid-argument-type]
-                    label2id[str(lbl).lower()] if label2id is not None else lbl
+                    label2id[str(lbl).lower()] if label2id is not None else lbl  # ty: ignore[not-subscriptable,invalid-argument-type]
                     for lbl in examples["label"]
                 ]
             except KeyError as e:
@@ -463,8 +460,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             partial(
                 token_classification.tokenize_and_align_labels,
                 tokeniser=self._tokeniser,
-                # ty: ignore[invalid-argument-type]
-                label2id=self._model.config.label2id,
+                label2id=self._model.config.label2id,  # ty: ignore[invalid-argument-type]
             ),
             batched=True,
             load_from_cache_file=False,
@@ -1229,10 +1225,9 @@ def load_tokeniser(
     num_retries = 5
     for attempt in range(num_retries):
         try:
-            # ty: ignore[invalid-assignment]
             tokeniser: Tokeniser = AutoTokenizer.from_pretrained(
                 pretrained_model_name_or_path=model_id, **loading_kwargs
-            )
+            )  # ty: ignore[invalid-assignment]
             break
         except TypeError as e:
             # XLM-RoBERTa variant models like 'EMBEDDIA/litlat-bert' raise TypeError
