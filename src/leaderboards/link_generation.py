@@ -21,7 +21,7 @@ from yaml import safe_dump, safe_load
 
 from euroeval.string_utils import split_model_id
 
-from .constants import MODELS_WITHOUT_URLS_CACHE
+from .constants import MODELS_WITHOUT_URLS_CACHE, REPO_ROOT
 from .records import plain_model_id
 
 # Matches the href of an anchored model name, e.g.
@@ -173,8 +173,23 @@ def get_openai_models() -> list[str]:
 
     Returns:
         A list of all OpenAI models.
+
+    Raises:
+        Exception if there was an error fetching the OpenAI models, and no cache file
+        exists.
     """
-    return [model_info.id for model_info in openai.models.list().data]
+    cache_path = REPO_ROOT / "src" / "leaderboards" / "openai_models.yaml"
+    try:
+        results: list[str] = [model_info.id for model_info in openai.models.list().data]
+        with cache_path.open("w") as f:
+            safe_dump(results, f)
+        return results
+    except Exception as e:
+        if cache_path.exists():
+            with cache_path.open("r") as f:
+                results = safe_load(f)
+            return results
+        raise e
 
 
 @cache
