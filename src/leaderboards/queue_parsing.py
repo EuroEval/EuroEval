@@ -132,6 +132,56 @@ def num_skipped_benchmarks(output: str) -> int:
     return last
 
 
+def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
+    """Extract the meaningful error from a euroeval subprocess's output.
+
+    The queue runs euroeval with ``FULL_LOG=1``, so the raw output is dominated
+    by serialised result records, training-progress dicts and giant parameter
+    lists. A blind tail of that output almost never shows the real error (and is
+    frequently identical across unrelated models), so this scans the whole
+    output for the informative error text: a Python traceback, a model-load or
+    gating error, and the ``errored N benchmarks`` summary line.
+
+    Args:
+        output:
+            The full captured combined-output of the euroeval subprocess.
+        max_chars (optional):
+            The maximum length of the returned summary. Defaults to 4000.
+
+    Returns:
+        A compact human-readable error summary, or ``"(no output captured)"``
+        when nothing usable is found.
+    """
+    text = _ANSI_ESCAPE_RE.sub("", output)
+    lines: list[str] = []
+    for raw_line in text.splitlines():
+        if not raw_line.strip() or _is_noise_line(raw_line):
+            continue
+        line = raw_line.rstrip()
+        if len(line) > _MAX_LINE_CHARS:
+            line = line[:_MAX_LINE_CHARS] + " …(truncated)"
+        lines.append(line)
+
+    if not lines:
+        return "(no output captured)"
+
+    worker_block = _worker_errors(lines=lines)
+    traceback = _last_traceback(lines=lines)
+    parts = _build_error_summary_parts(
+        lines=lines, worker_block=worker_block, traceback=traceback
+    )
+
+    # Fall back to tail when no marker found
+    if not parts:
+        parts = [line.strip() for line in lines[-20:]]
+
+    # De-duplicate while preserving order (a traceback may repeat the summary).
+    summary = "\n".join(dict.fromkeys(part for part in parts if part)).strip()
+    if len(summary) > max_chars:
+        summary = summary[-max_chars:].strip()
+    return summary or "(no output captured)"
+
+
 def _is_noise_line(line: str) -> bool:
     """Return True if a line is verbose ``FULL_LOG`` output rather than an error.
 
@@ -248,56 +298,6 @@ def _build_error_summary_parts(
             break
 
     return parts
-
-
-def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
-    """Extract the meaningful error from a euroeval subprocess's output.
-
-    The queue runs euroeval with ``FULL_LOG=1``, so the raw output is dominated
-    by serialised result records, training-progress dicts and giant parameter
-    lists. A blind tail of that output almost never shows the real error (and is
-    frequently identical across unrelated models), so this scans the whole
-    output for the informative error text: a Python traceback, a model-load or
-    gating error, and the ``errored N benchmarks`` summary line.
-
-    Args:
-        output:
-            The full captured combined-output of the euroeval subprocess.
-        max_chars (optional):
-            The maximum length of the returned summary. Defaults to 4000.
-
-    Returns:
-        A compact human-readable error summary, or ``"(no output captured)"``
-        when nothing usable is found.
-    """
-    text = _ANSI_ESCAPE_RE.sub("", output)
-    lines: list[str] = []
-    for raw_line in text.splitlines():
-        if not raw_line.strip() or _is_noise_line(raw_line):
-            continue
-        line = raw_line.rstrip()
-        if len(line) > _MAX_LINE_CHARS:
-            line = line[:_MAX_LINE_CHARS] + " …(truncated)"
-        lines.append(line)
-
-    if not lines:
-        return "(no output captured)"
-
-    worker_block = _worker_errors(lines=lines)
-    traceback = _last_traceback(lines=lines)
-    parts = _build_error_summary_parts(
-        lines=lines, worker_block=worker_block, traceback=traceback
-    )
-
-    # Fall back to tail when no marker found
-    if not parts:
-        parts = [line.strip() for line in lines[-20:]]
-
-    # De-duplicate while preserving order (a traceback may repeat the summary).
-    summary = "\n".join(dict.fromkeys(part for part in parts if part)).strip()
-    if len(summary) > max_chars:
-        summary = summary[-max_chars:].strip()
-    return summary or "(no output captured)"
 
 
 def format_dataset_language_pairs(dataset_language_pairs: set[tuple[str, str]]) -> str:

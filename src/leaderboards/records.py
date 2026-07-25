@@ -7,23 +7,6 @@ import re
 from .constants import ANCHOR_RE, VARIANT_SUFFIX_RE
 
 
-def strip_anchor(model_id: str) -> str:
-    """Strip any surrounding HTML anchor tag from a model id.
-
-    Unlike :func:`plain_model_id`, this preserves any ``(zero-shot)`` / ``(val)``
-    variant suffix - it only unwraps the ``<a href=...>...</a>`` tag.
-
-    Args:
-        model_id:
-            The (possibly anchored) identifier.
-
-    Returns:
-        The identifier with any anchor tag removed.
-    """
-    match = ANCHOR_RE.search(model_id)
-    return match.group("inner").strip() if match else model_id
-
-
 def plain_model_id(model_id: str) -> str:
     """Strip the HTML anchor and variant-suffix from a result-record model id.
 
@@ -243,3 +226,20 @@ def drop_val_duplicates(
                 continue
         filtered[model_id] = results
     return filtered
+
+
+def strip_anchor(model_id: str) -> str:
+    """Strip any surrounding HTML anchor tag from a model id.
+
+    Unlike :func:`plain_model_id`, this preserves any ``(zero-shot)`` / ``(val)``
+    variant suffix - it only unwraps the ``<a href=...>...</a>`` tag.
+
+    Args:
+        model_id:
+            The (possibly anchored) identifier.
+
+    Returns:
+        The identifier with any anchor tag removed.
+    """
+    match = ANCHOR_RE.search(model_id)
+    return match.group("inner").strip() if match else model_id
