@@ -7,14 +7,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Fixed
-
-- vLLM model loading now automatically falls back to single-GPU tensor parallelism when
-  loading models whose attention head count is not divisible by the default tensor
-  parallel size. This fixes evaluation failures for models like SmolLM series (9/15
-  heads) on multi-GPU setups, which previously raised errors like "Total number of
-  attention heads (X) must be divisible by tensor parallel size (Y)".
-
 ### Added
 
 - Added support for evaluating encoder models on multiple-choice tasks using the native
@@ -43,6 +35,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   parameters (e.g. `#thinking` vs `#no-thinking`). The cache file now includes the
   parameter in the filename, preventing incorrect cache reuse when using the `--debug`
   flag.
+- vLLM model loading now automatically falls back to single-GPU tensor parallelism when
+  loading models whose attention head count is not divisible by the default tensor
+  parallel size. This fixes evaluation failures for models like SmolLM series (9/15
+  heads) on multi-GPU setups, which previously raised errors like "Total number of
+  attention heads (X) must be divisible by tensor parallel size (Y)".
+
 
 ## [v17.7.0] - 2026-07-22
 
