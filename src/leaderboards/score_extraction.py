@@ -358,49 +358,6 @@ def _scored_count(record: dict[str, t.Any], dataset: str) -> int | None:
     return len(raw_results) * size
 
 
-def group_results_by_model(
-    results: list[dict[str, t.Any]],
-) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
-    """Group results by model ID.
-
-    Args:
-        results:
-            The processed results.
-
-    Returns:
-        The results grouped by model ID. The dict structure is
-        model_id -> dataset -> list of (raw_scores, total_score, std_err).
-    """
-    results = deduplicate_records(records=results)
-    model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
-        defaultdict(lambda: defaultdict(list))
-    )
-    for record in results:
-        model_ids = extract_model_ids_from_record(record=record)
-        dataset = get_dataset(record)
-        if not dataset:
-            continue
-
-        raw_results = get_raw_results(record)
-        if raw_results is None:
-            continue
-
-        total_scores = get_total_scores(record)
-        if total_scores is None:
-            continue
-
-        _process_record_scores(
-            record=record,
-            model_ids=model_ids,
-            dataset=dataset,
-            raw_results=raw_results,
-            total_scores=total_scores,
-            model_scores=model_scores,
-        )
-
-    return model_scores
-
-
 def _process_record_scores(
     record: dict[str, t.Any],
     model_ids: list[str],
@@ -744,53 +701,6 @@ def _update_model_url(
     else:
         existing["model_url"] = model_url
         model_url_explicit_map[model_id] = model_url_explicit
-
-
-def _is_better_metadata(
-    new_value: bool | str | float | None,
-    old_value: bool | str | float | None,
-    field: str,
-) -> bool:
-    """Check if new metadata value is "better" than the old one.
-
-    A value is "better" if it's more informative (non-null/non-default) when
-    the old value is null/default. Used to prevent stale records from
-    overwriting enriched metadata during extraction.
-
-    Args:
-        new_value:
-            The new metadata value from the current record.
-        old_value:
-            The existing metadata value already stored.
-        field:
-            The field name being compared.
-
-    Returns:
-        True if the new value should replace the old one.
-    """
-    # Prefer non-None over None (base case for all fields)
-    if old_value is None and new_value is not None:
-        return True
-    if old_value is not None and new_value is None:
-        return False
-
-    # Dispatch to field-specific comparison logic
-    float_fields = frozenset({"parameters", "vocabulary_size", "context"})
-    presence_fields = frozenset({"commercial", "merge", "open", "trained_from_scratch"})
-
-    if field in float_fields:
-        new_float = new_value if isinstance(new_value, float) else None
-        old_float = old_value if isinstance(old_value, float) else None
-        return _compare_float_metadata(new_value=new_float, old_value=old_float)
-    if field in presence_fields:
-        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
-    if field == "generative_type":
-        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
-    if field == "model_url":
-        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
-
-    # Default: prefer new value (preserves existing behaviour for equal values)
-    return True
 
 
 def _compare_float_metadata(new_value: float | None, old_value: float | None) -> bool:
