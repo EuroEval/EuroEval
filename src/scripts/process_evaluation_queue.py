@@ -982,16 +982,15 @@ def _run_claimed_issue(
 
     # Handle skips
     if not failed and pending:
-        _handle_pending_skips(
-            accumulated=accumulated,
-            pending=pending,
-            total_skipped=total_skipped,
-            last_output=last_output,
-            failed=failed,
-            failure_reason=failure_reason,
-            failure_output_tail=failure_output_tail,
-            done=done,
+        skip_failed, skip_reason = _handle_pending_skips(
+            accumulated=accumulated, pending=pending, total_skipped=total_skipped
         )
+        if skip_failed:
+            failed.extend(skip_failed)
+            failure_reason = skip_reason
+        else:
+            # Intentional skips - treat pending as done
+            done.extend(pending)
     elif not failed and not pending:
         logger.info(
             f"#{number}: all requested language(s) already present in the bucket "
@@ -1117,15 +1116,8 @@ def _process_pending_languages(
 
 
 def _handle_pending_skips(
-    accumulated: list[str],
-    pending: list[str],
-    total_skipped: int,
-    last_output: str,
-    failed: list[str],
-    failure_reason: str | None,
-    failure_output_tail: str,
-    done: list[str],
-) -> None:
+    accumulated: list[str], pending: list[str], total_skipped: int
+) -> tuple[list[str], str | None]:
     """Handle skip analysis for pending languages.
 
     Args:
@@ -1135,25 +1127,14 @@ def _handle_pending_skips(
             Pending language codes.
         total_skipped:
             Total skipped benchmark count.
-        last_output:
-            Last evaluation output.
-        failed:
-            Failed languages list (modified in place).
-        failure_reason:
-            Failure reason (modified in place).
-        failure_output_tail:
-            Failure output tail (modified in place).
-        done:
-            Done languages list (modified in place).
+
+    Returns:
+        Tuple of (failed_languages, failure_reason).
     """
     skip_failed, skip_reason = _handle_skip_analysis(
         accumulated=accumulated, pending=pending, total_skipped=total_skipped
     )
-    if skip_failed:
-        failed.extend(skip_failed)
-        # Note: failure_reason and failure_output_tail are modified via side effects
-        # since strings are immutable, we'd need to return them. For simplicity, handle
-        # this in the caller.
+    return skip_failed, skip_reason
 
 
 def _post_process_issue(

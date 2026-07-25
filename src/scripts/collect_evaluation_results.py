@@ -117,7 +117,7 @@ def main(force: bool) -> None:
         _write_new_results(harvested=harvested, manual_lines=manual_lines)
         _process_results_phase(all_lines=all_lines)
 
-    if not _deploy_and_close_issues(harvested=harvested):
+    if not _deploy_and_close_issues(harvested=harvested, force=force):
         sys.exit(1)
 
 
@@ -558,17 +558,21 @@ def _process_results_phase(all_lines: list[str]) -> bool:
     return True
 
 
-def _deploy_and_close_issues(harvested: list[tuple[int, list[str]]]) -> bool:
+def _deploy_and_close_issues(
+    harvested: list[tuple[int, list[str]]], force: bool
+) -> bool:
     """Run deployment pipeline and close harvested issues.
 
     Args:
         harvested:
             List of (issue_number, result_lines) tuples for issues to close.
+        force:
+            Whether to force leaderboard regeneration.
 
     Returns:
         True if deployment and closing succeeded, False otherwise.
     """
-    if not regenerate_leaderboards(force=False):
+    if not regenerate_leaderboards(force=force):
         logger.error(
             "Aborting: not closing issues because leaderboard regeneration failed."
         )
