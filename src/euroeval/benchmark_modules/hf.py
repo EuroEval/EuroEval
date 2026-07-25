@@ -289,9 +289,13 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 | TaskGroup.TEXT_TO_TEXT
                 | TaskGroup.QUESTION_ANSWERING
             ):
-                return DataCollatorWithPadding(self._tokeniser, padding="longest")
+                return DataCollatorWithPadding(
+                    tokenizer=self._tokeniser, padding="longest"
+                )
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                return DataCollatorForMultipleChoice(self._tokeniser, padding="longest")
+                return DataCollatorForMultipleChoice(
+                    tokenizer=self._tokeniser, padding="longest"
+                )
             case TaskGroup.TOKEN_CLASSIFICATION:
                 return DataCollatorForTokenClassification(
                     tokenizer=self._tokeniser, label_pad_token_id=-100
@@ -363,9 +367,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 label2id = self._model.config.label2id
                 examples["label"] = [
                     # ty: ignore[not-subscriptable,invalid-argument-type]
-                    label2id[str(lbl).lower()]
-                    if label2id is not None
-                    else lbl
+                    label2id[str(lbl).lower()] if label2id is not None else lbl
                     for lbl in examples["label"]
                 ]
             except KeyError as e:
@@ -661,7 +663,9 @@ def _load_model_from_pretrained(
     """
     for _ in range(num_attempts := 5):
         try:
-            return model_cls.from_pretrained(model_id, **model_kwargs)
+            return model_cls.from_pretrained(
+                pretrained_model_name_or_path=model_id, **model_kwargs
+            )
         except (KeyError, RuntimeError) as e:
             if not model_kwargs.get("ignore_mismatched_sizes", False):
                 log(
@@ -956,7 +960,9 @@ def _get_tags_for_adapter_model(
     Returns:
         Tuple of (tags, base_model_id).
     """
-    adapter_config = PeftConfig.from_pretrained(model_id, revision=revision)
+    adapter_config = PeftConfig.from_pretrained(
+        pretrained_model_name_or_path=model_id, revision=revision
+    )
     base_model_id = adapter_config.base_model_name_or_path
     log_once(
         f"Model {model_id!r} identified as an adapter model, with base model "
@@ -1225,7 +1231,7 @@ def load_tokeniser(
         try:
             # ty: ignore[invalid-assignment]
             tokeniser: Tokeniser = AutoTokenizer.from_pretrained(
-                model_id, **loading_kwargs
+                pretrained_model_name_or_path=model_id, **loading_kwargs
             )
             break
         except TypeError as e:
@@ -1452,7 +1458,7 @@ def load_hf_model_config(
     for _ in range(num_attempts := 5):
         try:
             config = AutoConfig.from_pretrained(
-                model_id,
+                pretrained_model_name_or_path=model_id,
                 num_labels=num_labels,
                 id2label=id2label,
                 label2id=label2id,
@@ -1529,9 +1535,9 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
                     "attribute, which is needed to modify the embeddings."
                 )
             token_type_embeddings.weight.data = torch.cat(
-                (
+                tensors=(
                     token_type_embedding_tensor,
-                    torch.rand_like(token_type_embedding_tensor),
+                    torch.rand_like(tensor=token_type_embedding_tensor),
                 ),
                 dim=0,
             )
