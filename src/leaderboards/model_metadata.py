@@ -67,33 +67,33 @@ def add_missing_entries(
     if "generative" not in model_additional:
         model_additional["generative"] = False
     if "generative_type" not in model_additional:
-        model_additional["generative_type"] = get_generative_type(
+        model_additional["generative_type"] = _get_generative_type(
             record=record, cache=cache
         )
     if "merge" not in model_additional:
-        model_additional["merge"] = is_merge(record=record, cache=cache)
+        model_additional["merge"] = _is_merge(record=record, cache=cache)
 
     if "commercially_licensed" not in model_additional:
-        model_additional["commercially_licensed"] = is_commercially_licensed(
+        model_additional["commercially_licensed"] = _is_commercially_licensed(
             record=record, cache=cache
         )
     if "open" not in model_additional:
-        model_additional["open"] = is_open(record=record, cache=cache)
+        model_additional["open"] = _is_open(record=record, cache=cache)
     if "trained_from_scratch" not in model_additional:
-        model_additional["trained_from_scratch"] = is_trained_from_scratch(
+        model_additional["trained_from_scratch"] = _is_trained_from_scratch(
             record=record,
             trained_from_scratch_patterns=trained_from_scratch_patterns,
             cache=cache,
         )
     if "model_url" not in model_additional or model_additional["model_url"] is None:
-        model_additional["model_url"] = generate_model_url_with_cache(
+        model_additional["model_url"] = _generate_model_url_with_cache(
             model_id=plain_model_id(get_model_name(record=record)), cache=cache
         )
 
     return record
 
 
-def generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
+def _generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
     """Generates a model URL using a cache.
 
     When no URL can be generated, the operator is asked whether to drop the
@@ -257,7 +257,7 @@ def _get_generative_type_from_keywords(model_id: str) -> str | None:
     return None
 
 
-def get_generative_type(record: dict, cache: Cache) -> str | None:
+def _get_generative_type(record: dict, cache: Cache) -> str | None:
     """Asks for the generative type of a model.
 
     Args:
@@ -363,7 +363,7 @@ def _infer_commercial_from_hf_licence(
     return result
 
 
-def is_commercially_licensed(record: dict, cache: Cache) -> bool:
+def _is_commercially_licensed(record: dict, cache: Cache) -> bool:
     """Determine if a model is commercially licensed.
 
     First checks the cache, then tries best-effort inference from the
@@ -418,7 +418,7 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
         logger.error("Invalid input. Please try again.")
 
 
-def is_trained_from_scratch(
+def _is_trained_from_scratch(
     record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
 ) -> bool:
     """Determine if a model was trained from scratch or fine-tuned.
@@ -471,7 +471,7 @@ def is_trained_from_scratch(
         logger.error("Invalid input. Please try again.")
 
 
-def is_merge(record: dict, cache: Cache) -> bool:
+def _is_merge(record: dict, cache: Cache) -> bool:
     """Determines if a model is a merged model.
 
     Args:
@@ -514,7 +514,7 @@ def is_merge(record: dict, cache: Cache) -> bool:
     return has_merge_tag
 
 
-def is_open(record: dict, cache: Cache) -> bool:
+def _is_open(record: dict, cache: Cache) -> bool:
     """Determine if a model is open (open-weight) or closed.
 
     Args:
