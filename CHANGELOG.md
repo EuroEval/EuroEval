@@ -42,7 +42,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   heads) on multi-GPU setups, which previously raised errors like "Total number of
   attention heads (X) must be divisible by tensor parallel size (Y)".
 
-
 ## [v17.7.0] - 2026-07-22
 
 ### Added

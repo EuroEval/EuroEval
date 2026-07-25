@@ -555,7 +555,6 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-fr
 ```
 
-
 ### Unofficial: INCLUDE-fr
 
 The original dataset consists of a 'validation' split used as training data and a 'test'
