@@ -906,7 +906,7 @@ def _generate_dataframe(
 
 
 def _format_rank_score(entry: object) -> str:
-    """Render a {"score", "ci_upper", ...} dict as "score ± margin", or "-".
+    """Render a {"score", "ci_upper", ...} dict as "score +/- margin", or "-".
 
     Args:
         entry:

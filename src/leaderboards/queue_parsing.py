@@ -263,7 +263,7 @@ def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
     Args:
         output:
             The full captured combined-output of the euroeval subprocess.
-        max_chars:
+        max_chars (optional):
             The maximum length of the returned summary. Defaults to 4000.
 
     Returns:
