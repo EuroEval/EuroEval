@@ -330,7 +330,7 @@ def _get_generative_type(record: dict, cache: Cache) -> str | None:
         logger.error("Invalid input. Please try again.")
 
 
-def _is_commercially_licensed(record: dict, cache: Cache) -> bool:
+def is_commercially_licensed(record: dict, cache: Cache) -> bool:
     """Determine if a model is commercially licensed.
 
     First checks the cache, then tries best-effort inference from the
@@ -554,7 +554,7 @@ def add_missing_entries(
         model_additional["merge"] = _is_merge(record=record, cache=cache)
 
     if "commercially_licensed" not in model_additional:
-        model_additional["commercially_licensed"] = _is_commercially_licensed(
+        model_additional["commercially_licensed"] = is_commercially_licensed(
             record=record, cache=cache
         )
     if "open" not in model_additional:
