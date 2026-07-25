@@ -184,7 +184,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             hasattr(self._model.config, "num_params")
             and self._model.config.num_params is not None
         ):
-            num_params = int(self._model.config.num_params)  # ty: ignore[invalid-argument-type]
+            # ty: ignore[invalid-argument-type]
+            num_params = int(self._model.config.num_params)
         elif hasattr(self._model, "parameters"):
             num_params = sum(p.numel() for p in self._model.parameters())
         else:
@@ -210,7 +211,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             hasattr(self._model.config, "vocab_size")
             and self._model.config.vocab_size is not None
         ):
-            vocab_size = int(self._model.config.vocab_size)  # ty: ignore[invalid-argument-type]
+            # ty: ignore[invalid-argument-type]
+            vocab_size = int(self._model.config.vocab_size)
         elif (
             hasattr(self._tokeniser, "vocab_size")
             and self._tokeniser.vocab_size is not None
@@ -363,7 +365,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             try:
                 label2id = self._model.config.label2id
                 examples["label"] = [
-                    label2id[str(lbl).lower()]  # ty: ignore[not-subscriptable,invalid-argument-type]
+                    # ty: ignore[not-subscriptable,invalid-argument-type]
+                    label2id[str(lbl).lower()]
                     if label2id is not None
                     else lbl
                     for lbl in examples["label"]
@@ -461,7 +464,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             partial(
                 token_classification.tokenize_and_align_labels,
                 tokeniser=self._tokeniser,
-                label2id=self._model.config.label2id,  # ty: ignore[invalid-argument-type]
+                # ty: ignore[invalid-argument-type]
+                label2id=self._model.config.label2id,
             ),
             batched=True,
             load_from_cache_file=False,
@@ -1225,7 +1229,8 @@ def load_tokeniser(
     num_retries = 5
     for attempt in range(num_retries):
         try:
-            tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
+            # ty: ignore[invalid-assignment]
+            tokeniser: Tokeniser = AutoTokenizer.from_pretrained(
                 model_id, **loading_kwargs
             )
             break
