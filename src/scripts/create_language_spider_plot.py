@@ -60,186 +60,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def _build_and_validate_score_matrix(
-    all_records: list[JsonDict],
-    model_list: list[str],
-    resolved_languages: list[str],
-    shot_value: bool | None,
-) -> tuple[dict[str, dict[str, float | None]], list[str]]:
-    """Build score matrix and compute language intersection.
-
-    Args:
-        all_records:
-            All result records as reference population.
-        model_list:
-            List of model IDs to include.
-        resolved_languages:
-            List of resolved language codes.
-        shot_value:
-            Shot setting: True for few-shot, False for zero-shot, None for any.
-
-    Returns:
-        Tuple of (score_matrix, used_languages).
-    """
-    model_scores_matrix = _build_score_matrix(
-        all_records=all_records,
-        models=model_list,
-        languages=resolved_languages,
-        shot_value=shot_value,
-    )
-
-    model_scores_matrix, used_languages = _compute_language_intersection(
-        model_scores_matrix, resolved_languages
-    )
-
-    if not used_languages:
-        missing_info = []
-        for model_id, lang_scores in model_scores_matrix.items():
-            missing = [lang for lang, score in lang_scores.items() if score is None]
-            if missing:
-                missing_info.append(f"{model_id}: {', '.join(missing[:5])}")
-        click.echo(
-            "Error: No languages have scores for all selected models. "
-            "Missing scores:\n  " + "\n  ".join(missing_info),
-            err=True,
-        )
-        sys.exit(1)
-
-    return model_scores_matrix, used_languages
-
-
-def _write_and_open_plot(
-    fig: go.Figure, title: str | None, filename: str | None
-) -> int:
-    """Write plot to file and open in browser.
-
-    Args:
-        fig:
-            The Plotly figure to write.
-        title:
-            Plot title (used for filename inference).
-        filename:
-            Output filename (without .png suffix).
-
-    Returns:
-        Exit code (0 for success, 1 for failure).
-    """
-    output_filename = _determine_output_filename(title=title, filename=filename)
-    output_path = Path(output_filename).resolve()
-    file_uri = output_path.as_uri()
-    try:
-        _write_image_silent(fig=fig, path=str(output_path))
-    except Exception as exc:
-        click.echo(f"Error writing PNG: {exc}", err=True)
-        return 1
-
-    try:
-        opened = webbrowser.open(file_uri)
-    except Exception as exc:
-        click.echo(f"Error opening PNG: {exc}", err=True)
-        return 1
-    if not opened:
-        click.echo(f"Error opening PNG: {file_uri}", err=True)
-        return 1
-
-    click.echo(f"Finished. The output plot can now be found at {file_uri}")
-    return 0
-
-
-def main(
-    models: tuple[str, ...],
-    languages: tuple[str, ...],
-    shots: str,
-    max_score: float | None,
-    title: str | None,
-    filename: str | None,
-) -> int:
-    """Create a language spider plot comparing models across languages.
-
-    Loads evaluation results from local JSONL files and generates a Plotly
-    polar chart comparing selected models across languages.
-    Only rank score is plotted (lower is better).
-    Output is a PNG file.
-
-    Args:
-        models:
-            Model IDs to include.
-        languages:
-            Language names or codes to include. Empty means official languages.
-        shots:
-            Shot setting: "auto", "zero", or "few".
-        max_score (optional):
-            Override maximum rank score for the radial axis. If omitted,
-            auto-computed from plotted rank scores (rounded up to nearest 0.5,
-            minimum 2.5; rank score of 1 is perfect).
-        title (optional):
-            Plot title. If omitted, uses default title.
-        filename (optional):
-            Output PNG filename (without .png suffix if desired, it will be
-            appended). If omitted and title is set, inferred from title using
-            snake_case. If both omitted, uses "language-spider-plot.png".
-
-    Returns:
-        Exit code (0 for success, 1 for failure).
-    """
-    model_list = list(models)
-    language_list = list(languages) if languages else None
-
-    try:
-        resolved_languages = _resolve_languages(language_list)
-    except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
-
-    all_records = _load_all_results()
-
-    requested_model_records = _load_results_for_models(model_list)
-    if not requested_model_records:
-        click.echo("Error: No results found for specified models", err=True)
-        sys.exit(1)
-
-    try:
-        filtered_records = _filter_by_shots(
-            requested_model_records, t.cast(t.Literal["auto", "zero", "few"], shots)
-        )
-    except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
-
-    if not filtered_records:
-        click.echo("Error: No records after shot filtering", err=True)
-        sys.exit(1)
-
-    shot_value = _resolve_shot_value(
-        filtered_records=filtered_records,
-        shots_setting=t.cast(t.Literal["auto", "zero", "few"], shots),
-    )
-
-    model_scores_matrix, used_languages = _build_and_validate_score_matrix(
-        all_records=all_records,
-        model_list=model_list,
-        resolved_languages=resolved_languages,
-        shot_value=shot_value,
-    )
-
-    try:
-        max_score_val = _compute_max_score(
-            model_scores=model_scores_matrix, max_score_override=max_score
-        )
-    except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
-
-    fig = _create_spider_plot(
-        model_scores=model_scores_matrix,
-        languages=used_languages,
-        max_score=max_score_val,
-        title=title or _default_plot_title(shot_value=shot_value),
-    )
-
-    return _write_and_open_plot(fig=fig, title=title, filename=filename)
-
-
 def _compute_language_intersection(
     model_scores: dict[str, dict[str, float | None]], languages: list[str]
 ) -> tuple[dict[str, dict[str, float | None]], list[str]]:
@@ -313,31 +133,6 @@ def _normalise_language_input(language_input: str) -> set[str]:
         f"Cannot resolve language {language_input!r} to any valid language code. "
         f"Use a language name (e.g., 'danish') or code (e.g., 'da')."
     )
-
-
-def _resolve_languages(language_inputs: list[str] | None) -> list[str]:
-    """Resolve language inputs to a list of language codes.
-
-    Args:
-        language_inputs (optional):
-            List of language names or codes. If None, uses official languages.
-
-    Returns:
-        List of language codes.
-    """
-    if language_inputs:
-        all_codes: set[str] = set()
-        for lang_input in language_inputs:
-            codes = _normalise_language_input(lang_input)
-            all_codes.update(codes)
-        return sorted(all_codes)
-    else:
-        lang_names = languages_with_official_datasets()
-        all_codes: set[str] = set()
-        for name in lang_names:
-            codes = language_name_to_codes(name)
-            all_codes.update(codes)
-        return sorted(all_codes)
 
 
 def _get_primary_metric_for_task(task: str) -> str:
@@ -514,30 +309,6 @@ def _load_all_results() -> list[JsonDict]:
         return []
 
 
-def _load_results_for_models(model_ids: list[str]) -> list[JsonDict]:
-    """Load results for the specified model IDs from local JSONL files.
-
-    Used to verify requested models have data. For rank score computation,
-    use _load_all_results() to get the full reference population.
-
-    Args:
-        model_ids:
-            List of model IDs to load results for.
-
-    Returns:
-        List of EEE-format result records for the specified models.
-    """
-    all_records = _load_all_results()
-    records: list[JsonDict] = []
-
-    for record in all_records:
-        model_name = _get_model_identifier(record)
-        if any(model_name == m or model_name.endswith("/" + m) for m in model_ids):
-            records.append(record)
-
-    return records
-
-
 def _resolve_shot_value(
     filtered_records: list[JsonDict], shots_setting: t.Literal["auto", "zero", "few"]
 ) -> bool:
@@ -616,66 +387,6 @@ def _filter_by_shots(
             "Auto-detection failed: no records with known shot setting. "
             "Records may be missing few_shot metadata."
         )
-
-
-def _collect_raw_scores(
-    all_records: list[JsonDict],
-    models: list[str],
-    languages: list[str],
-    shot_value: bool | None,
-) -> dict[str, dict[str, dict[str, list[float]]]]:
-    """Step 1: Collect raw per-iteration scores per (model, dataset, language).
-
-    Args:
-        all_records:
-            All result records.
-        models:
-            Model IDs to include.
-        languages:
-            Language codes to include.
-        shot_value:
-            Shot filter: None for any, True for few-shot, False for zero-shot.
-
-    Returns:
-        Nested dict: model -> dataset -> language -> list of raw scores.
-    """
-    model_dataset_lang_raw_scores: dict[str, dict[str, dict[str, list[float]]]] = (
-        defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    )
-
-    for record in all_records:
-        model_name = _get_model_identifier(record)
-
-        record_few_shot = get_few_shot(record)
-        if shot_value is not None and record_few_shot is not None:
-            if record_few_shot != shot_value:
-                continue
-
-        task_name = get_task(record)
-        if not task_name or task_name in ORTHOGONAL_TASKS:
-            continue
-
-        record_languages = _extract_languages_from_record(record)
-        dataset = get_dataset(record)
-
-        if not dataset or not record_languages:
-            continue
-
-        primary_metric, secondary_metric = task_metric_names(task_name)
-        raw_scores = _extract_raw_scores_from_record(
-            record, primary_metric, secondary_metric
-        )
-
-        if not raw_scores:
-            continue
-
-        for lang in record_languages:
-            if lang in languages:
-                model_dataset_lang_raw_scores[model_name][dataset][lang].extend(
-                    raw_scores
-                )
-
-    return model_dataset_lang_raw_scores
 
 
 def _compute_model_dataset_means(
@@ -875,74 +586,111 @@ def _aggregate_to_language_scores(
     return matrix
 
 
-def _build_score_matrix(
-    all_records: list[JsonDict],
-    models: list[str],
-    languages: list[str],
-    shot_value: bool | None,
-) -> dict[str, dict[str, float | None]]:
-    """Build a model x language mean rank score matrix from records.
+def _to_snake_case(text: str) -> str:
+    """Convert text to snake_case.
 
-    Computes per-language mean rank scores following the EuroEval methodology:
-    1. Extract raw per-iteration/bootstrap scores per (model, dataset, language)
-    2. Compute mean_score(m,d) = mean of all raw scores for model m on dataset d
-    3. Compute pooled_std(d) = std of ALL raw scores from all models on dataset d
-       (uses all_records as reference population, not just requested models)
-    4. Compute rank_score = 1 + (best_mean - model_mean) / pooled_std
-    5. Aggregate hierarchy: dataset -> task -> language (unweighted means)
-
-    Rank score of 1 is perfect (best on dataset). Lower is better.
-    Reference population is all available records; output matrix contains
-    only the requested models.
+    Converts spaces and special characters to underscores, lowercases,
+    and removes consecutive underscores.
 
     Args:
-        all_records:
-            All result records (reference population for rank scores).
-        models:
-            Model IDs to include in output matrix.
-        languages:
-            Language codes to include in output matrix.
-        shot_value:
-            None for any, True for few-shot, False for zero-shot.
+        text:
+            Text to convert.
 
     Returns:
-        Model x language mean rank score matrix (lower is better).
+        Snake-case string.
     """
-    raw_scores = _collect_raw_scores(
-        all_records=all_records,
-        models=models,
-        languages=languages,
-        shot_value=shot_value,
-    )
+    # Replace spaces and hyphens with underscores
+    result = text.replace(" ", "_").replace("-", "_")
+    # Remove non-alphanumeric except underscores
+    result = re.sub(r"[^a-z0-9_]", "", result.lower())
+    # Remove consecutive underscores
+    result = re.sub(r"_+", "_", result)
+    # Remove leading/trailing underscores
+    return result.strip("_")
 
-    if not raw_scores:
-        return {model: {lang: None for lang in languages} for model in models}
 
-    model_dataset_means = _compute_model_dataset_means(raw_scores=raw_scores)
+def _hex_to_rgba(hex_colour: str, alpha: float = 0.2) -> str:
+    """Convert hex colour to rgba string with specified alpha.
 
-    dataset_stats = _compute_dataset_stats(
-        raw_scores=raw_scores, model_dataset_means=model_dataset_means
-    )
+    Args:
+        hex_colour:
+            Hex colour string (e.g. "#1f77b4").
+        alpha (optional):
+            Alpha value (0.0 to 1.0). Defaults to 0.2.
 
-    rank_scores = _compute_rank_scores(
-        models=models, raw_scores=raw_scores, dataset_stats=dataset_stats
-    )
+    Returns:
+        RGBA colour string (e.g. "rgba(31, 119, 180, 0.2)").
+    """
+    hex_val = hex_colour.lstrip("#")
+    r = int(hex_val[0:2], 16)
+    g = int(hex_val[2:4], 16)
+    b = int(hex_val[4:6], 16)
+    return f"rgba({r}, {g}, {b}, {alpha})"
 
-    dataset_to_task, dataset_to_lang_name = _build_dataset_mappings()
 
-    model_lang_task_scores = _group_scores_by_task(
-        models=models,
-        languages=languages,
-        rank_scores=rank_scores,
-        dataset_to_task=dataset_to_task,
-        dataset_to_lang_name=dataset_to_lang_name,
-    )
+def _load_logo_data_uri() -> str:
+    """Load the EuroEval logo as a PNG data URI.
 
-    return _aggregate_to_language_scores(
-        models=models,
-        languages=languages,
-        model_lang_task_scores=model_lang_task_scores,
-    )
+    Returns:
+        Base64-encoded PNG data URI.
+    """
+    encoded_logo = base64.b64encode(EUROEVAL_LOGO_PATH.read_bytes()).decode("ascii")
+    return f"data:image/png;base64,{encoded_logo}"
+
+
+def _write_image_silent(fig: go.Figure, path: str) -> None:
+    """Write Plotly figure to image without leaking Kaleido cleanup output.
+
+    Kaleido/Chromium can write directly to stdout/stderr during interpreter
+    shutdown, after normal Python redirection has ended. Running export in a
+    child process lets this script capture all normal and shutdown output, then
+    print only the final PNG URI on success.
+
+    Args:
+        fig:
+            Plotly figure to write.
+        path:
+            Output file path.
+
+    Raises:
+        ClickException:
+            If image export fails, includes captured diagnostic output.
+    """
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        figure_path = Path(tmp_dir) / "figure.json"
+        fig.write_json(figure_path)
+        result = subprocess.run(
+            [sys.executable, "-c", _IMAGE_EXPORT_CODE, str(figure_path), path],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    if result.returncode == 0:
+        return
+
+    diagnostic_parts: list[str] = []
+    if result.stdout.strip():
+        diagnostic_parts.append(f"stdout: {result.stdout.strip()}")
+    if result.stderr.strip():
+        diagnostic_parts.append(f"stderr: {result.stderr.strip()}")
+    diagnostic = "\n".join(diagnostic_parts)
+    message = "Failed to write PNG image"
+    if diagnostic:
+        message = f"{message}\n{diagnostic}"
+    raise click.ClickException(message)
+
+
+_IMAGE_EXPORT_CODE = """
+import sys
+
+import kaleido
+import plotly.io as pio
+
+figure = pio.read_json(sys.argv[1])
+figure.write_image(sys.argv[2], scale=3)
+kaleido.stop_sync_server(silence_warnings=True)
+"""
 
 
 def _compute_max_score(
@@ -1050,27 +798,113 @@ def _normalise_model_name(model_id: str) -> str:
     return model_id
 
 
-def _to_snake_case(text: str) -> str:
-    """Convert text to snake_case.
-
-    Converts spaces and special characters to underscores, lowercases,
-    and removes consecutive underscores.
+def _resolve_languages(language_inputs: list[str] | None) -> list[str]:
+    """Resolve language inputs to a list of language codes.
 
     Args:
-        text:
-            Text to convert.
+        language_inputs (optional):
+            List of language names or codes. If None, uses official languages.
 
     Returns:
-        Snake-case string.
+        List of language codes.
     """
-    # Replace spaces and hyphens with underscores
-    result = text.replace(" ", "_").replace("-", "_")
-    # Remove non-alphanumeric except underscores
-    result = re.sub(r"[^a-z0-9_]", "", result.lower())
-    # Remove consecutive underscores
-    result = re.sub(r"_+", "_", result)
-    # Remove leading/trailing underscores
-    return result.strip("_")
+    if language_inputs:
+        all_codes: set[str] = set()
+        for lang_input in language_inputs:
+            codes = _normalise_language_input(lang_input)
+            all_codes.update(codes)
+        return sorted(all_codes)
+    else:
+        lang_names = languages_with_official_datasets()
+        all_codes: set[str] = set()
+        for name in lang_names:
+            codes = language_name_to_codes(name)
+            all_codes.update(codes)
+        return sorted(all_codes)
+
+
+def _load_results_for_models(model_ids: list[str]) -> list[JsonDict]:
+    """Load results for the specified model IDs from local JSONL files.
+
+    Used to verify requested models have data. For rank score computation,
+    use _load_all_results() to get the full reference population.
+
+    Args:
+        model_ids:
+            List of model IDs to load results for.
+
+    Returns:
+        List of EEE-format result records for the specified models.
+    """
+    all_records = _load_all_results()
+    records: list[JsonDict] = []
+
+    for record in all_records:
+        model_name = _get_model_identifier(record)
+        if any(model_name == m or model_name.endswith("/" + m) for m in model_ids):
+            records.append(record)
+
+    return records
+
+
+def _collect_raw_scores(
+    all_records: list[JsonDict],
+    models: list[str],
+    languages: list[str],
+    shot_value: bool | None,
+) -> dict[str, dict[str, dict[str, list[float]]]]:
+    """Step 1: Collect raw per-iteration scores per (model, dataset, language).
+
+    Args:
+        all_records:
+            All result records.
+        models:
+            Model IDs to include.
+        languages:
+            Language codes to include.
+        shot_value:
+            Shot filter: None for any, True for few-shot, False for zero-shot.
+
+    Returns:
+        Nested dict: model -> dataset -> language -> list of raw scores.
+    """
+    model_dataset_lang_raw_scores: dict[str, dict[str, dict[str, list[float]]]] = (
+        defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    )
+
+    for record in all_records:
+        model_name = _get_model_identifier(record)
+
+        record_few_shot = get_few_shot(record)
+        if shot_value is not None and record_few_shot is not None:
+            if record_few_shot != shot_value:
+                continue
+
+        task_name = get_task(record)
+        if not task_name or task_name in ORTHOGONAL_TASKS:
+            continue
+
+        record_languages = _extract_languages_from_record(record)
+        dataset = get_dataset(record)
+
+        if not dataset or not record_languages:
+            continue
+
+        primary_metric, secondary_metric = task_metric_names(task_name)
+        raw_scores = _extract_raw_scores_from_record(
+            record, primary_metric, secondary_metric
+        )
+
+        if not raw_scores:
+            continue
+
+        for lang in record_languages:
+            if lang in languages:
+                model_dataset_lang_raw_scores[model_name][dataset][lang].extend(
+                    raw_scores
+                )
+
+    return model_dataset_lang_raw_scores
 
 
 def _determine_output_filename(title: str | None, filename: str | None) -> str:
@@ -1103,25 +937,6 @@ def _determine_output_filename(title: str | None, filename: str | None) -> str:
 
     # Default filename
     return "language-spider-plot.png"
-
-
-def _hex_to_rgba(hex_colour: str, alpha: float = 0.2) -> str:
-    """Convert hex colour to rgba string with specified alpha.
-
-    Args:
-        hex_colour:
-            Hex colour string (e.g. "#1f77b4").
-        alpha (optional):
-            Alpha value (0.0 to 1.0). Defaults to 0.2.
-
-    Returns:
-        RGBA colour string (e.g. "rgba(31, 119, 180, 0.2)").
-    """
-    hex_val = hex_colour.lstrip("#")
-    r = int(hex_val[0:2], 16)
-    g = int(hex_val[2:4], 16)
-    b = int(hex_val[4:6], 16)
-    return f"rgba({r}, {g}, {b}, {alpha})"
 
 
 def _create_spider_plot(
@@ -1231,69 +1046,254 @@ def _create_spider_plot(
     return fig
 
 
-def _load_logo_data_uri() -> str:
-    """Load the EuroEval logo as a PNG data URI.
-
-    Returns:
-        Base64-encoded PNG data URI.
-    """
-    encoded_logo = base64.b64encode(EUROEVAL_LOGO_PATH.read_bytes()).decode("ascii")
-    return f"data:image/png;base64,{encoded_logo}"
-
-
-def _write_image_silent(fig: go.Figure, path: str) -> None:
-    """Write Plotly figure to image without leaking Kaleido cleanup output.
-
-    Kaleido/Chromium can write directly to stdout/stderr during interpreter
-    shutdown, after normal Python redirection has ended. Running export in a
-    child process lets this script capture all normal and shutdown output, then
-    print only the final PNG URI on success.
+def _write_and_open_plot(
+    fig: go.Figure, title: str | None, filename: str | None
+) -> int:
+    """Write plot to file and open in browser.
 
     Args:
         fig:
-            Plotly figure to write.
-        path:
-            Output file path.
+            The Plotly figure to write.
+        title:
+            Plot title (used for filename inference).
+        filename:
+            Output filename (without .png suffix).
 
-    Raises:
-        ClickException:
-            If image export fails, includes captured diagnostic output.
+    Returns:
+        Exit code (0 for success, 1 for failure).
     """
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        figure_path = Path(tmp_dir) / "figure.json"
-        fig.write_json(figure_path)
-        result = subprocess.run(
-            [sys.executable, "-c", _IMAGE_EXPORT_CODE, str(figure_path), path],
-            check=False,
-            capture_output=True,
-            text=True,
+    output_filename = _determine_output_filename(title=title, filename=filename)
+    output_path = Path(output_filename).resolve()
+    file_uri = output_path.as_uri()
+    try:
+        _write_image_silent(fig=fig, path=str(output_path))
+    except Exception as exc:
+        click.echo(f"Error writing PNG: {exc}", err=True)
+        return 1
+
+    try:
+        opened = webbrowser.open(file_uri)
+    except Exception as exc:
+        click.echo(f"Error opening PNG: {exc}", err=True)
+        return 1
+    if not opened:
+        click.echo(f"Error opening PNG: {file_uri}", err=True)
+        return 1
+
+    click.echo(f"Finished. The output plot can now be found at {file_uri}")
+    return 0
+
+
+def _build_score_matrix(
+    all_records: list[JsonDict],
+    models: list[str],
+    languages: list[str],
+    shot_value: bool | None,
+) -> dict[str, dict[str, float | None]]:
+    """Build a model x language mean rank score matrix from records.
+
+    Computes per-language mean rank scores following the EuroEval methodology:
+    1. Extract raw per-iteration/bootstrap scores per (model, dataset, language)
+    2. Compute mean_score(m,d) = mean of all raw scores for model m on dataset d
+    3. Compute pooled_std(d) = std of ALL raw scores from all models on dataset d
+       (uses all_records as reference population, not just requested models)
+    4. Compute rank_score = 1 + (best_mean - model_mean) / pooled_std
+    5. Aggregate hierarchy: dataset -> task -> language (unweighted means)
+
+    Rank score of 1 is perfect (best on dataset). Lower is better.
+    Reference population is all available records; output matrix contains
+    only the requested models.
+
+    Args:
+        all_records:
+            All result records (reference population for rank scores).
+        models:
+            Model IDs to include in output matrix.
+        languages:
+            Language codes to include in output matrix.
+        shot_value:
+            None for any, True for few-shot, False for zero-shot.
+
+    Returns:
+        Model x language mean rank score matrix (lower is better).
+    """
+    raw_scores = _collect_raw_scores(
+        all_records=all_records,
+        models=models,
+        languages=languages,
+        shot_value=shot_value,
+    )
+
+    if not raw_scores:
+        return {model: {lang: None for lang in languages} for model in models}
+
+    model_dataset_means = _compute_model_dataset_means(raw_scores=raw_scores)
+
+    dataset_stats = _compute_dataset_stats(
+        raw_scores=raw_scores, model_dataset_means=model_dataset_means
+    )
+
+    rank_scores = _compute_rank_scores(
+        models=models, raw_scores=raw_scores, dataset_stats=dataset_stats
+    )
+
+    dataset_to_task, dataset_to_lang_name = _build_dataset_mappings()
+
+    model_lang_task_scores = _group_scores_by_task(
+        models=models,
+        languages=languages,
+        rank_scores=rank_scores,
+        dataset_to_task=dataset_to_task,
+        dataset_to_lang_name=dataset_to_lang_name,
+    )
+
+    return _aggregate_to_language_scores(
+        models=models,
+        languages=languages,
+        model_lang_task_scores=model_lang_task_scores,
+    )
+
+
+def _build_and_validate_score_matrix(
+    all_records: list[JsonDict],
+    model_list: list[str],
+    resolved_languages: list[str],
+    shot_value: bool | None,
+) -> tuple[dict[str, dict[str, float | None]], list[str]]:
+    """Build score matrix and compute language intersection.
+
+    Args:
+        all_records:
+            All result records as reference population.
+        model_list:
+            List of model IDs to include.
+        resolved_languages:
+            List of resolved language codes.
+        shot_value:
+            Shot setting: True for few-shot, False for zero-shot, None for any.
+
+    Returns:
+        Tuple of (score_matrix, used_languages).
+    """
+    model_scores_matrix = _build_score_matrix(
+        all_records=all_records,
+        models=model_list,
+        languages=resolved_languages,
+        shot_value=shot_value,
+    )
+
+    model_scores_matrix, used_languages = _compute_language_intersection(
+        model_scores_matrix, resolved_languages
+    )
+
+    if not used_languages:
+        missing_info = []
+        for model_id, lang_scores in model_scores_matrix.items():
+            missing = [lang for lang, score in lang_scores.items() if score is None]
+            if missing:
+                missing_info.append(f"{model_id}: {', '.join(missing[:5])}")
+        click.echo(
+            "Error: No languages have scores for all selected models. "
+            "Missing scores:\n  " + "\n  ".join(missing_info),
+            err=True,
         )
+        sys.exit(1)
 
-    if result.returncode == 0:
-        return
-
-    diagnostic_parts: list[str] = []
-    if result.stdout.strip():
-        diagnostic_parts.append(f"stdout: {result.stdout.strip()}")
-    if result.stderr.strip():
-        diagnostic_parts.append(f"stderr: {result.stderr.strip()}")
-    diagnostic = "\n".join(diagnostic_parts)
-    message = "Failed to write PNG image"
-    if diagnostic:
-        message = f"{message}\n{diagnostic}"
-    raise click.ClickException(message)
+    return model_scores_matrix, used_languages
 
 
-_IMAGE_EXPORT_CODE = """
-import sys
+def main(
+    models: tuple[str, ...],
+    languages: tuple[str, ...],
+    shots: str,
+    max_score: float | None,
+    title: str | None,
+    filename: str | None,
+) -> int:
+    """Create a language spider plot comparing models across languages.
 
-import kaleido
-import plotly.io as pio
+    Loads evaluation results from local JSONL files and generates a Plotly
+    polar chart comparing selected models across languages.
+    Only rank score is plotted (lower is better).
+    Output is a PNG file.
 
-figure = pio.read_json(sys.argv[1])
-figure.write_image(sys.argv[2], scale=3)
-kaleido.stop_sync_server(silence_warnings=True)
-"""
+    Args:
+        models:
+            Model IDs to include.
+        languages:
+            Language names or codes to include. Empty means official languages.
+        shots:
+            Shot setting: "auto", "zero", or "few".
+        max_score (optional):
+            Override maximum rank score for the radial axis. If omitted,
+            auto-computed from plotted rank scores (rounded up to nearest 0.5,
+            minimum 2.5; rank score of 1 is perfect).
+        title (optional):
+            Plot title. If omitted, uses default title.
+        filename (optional):
+            Output PNG filename (without .png suffix if desired, it will be
+            appended). If omitted and title is set, inferred from title using
+            snake_case. If both omitted, uses "language-spider-plot.png".
+
+    Returns:
+        Exit code (0 for success, 1 for failure).
+    """
+    model_list = list(models)
+    language_list = list(languages) if languages else None
+
+    try:
+        resolved_languages = _resolve_languages(language_list)
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    all_records = _load_all_results()
+
+    requested_model_records = _load_results_for_models(model_list)
+    if not requested_model_records:
+        click.echo("Error: No results found for specified models", err=True)
+        sys.exit(1)
+
+    try:
+        filtered_records = _filter_by_shots(
+            requested_model_records, t.cast(t.Literal["auto", "zero", "few"], shots)
+        )
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    if not filtered_records:
+        click.echo("Error: No records after shot filtering", err=True)
+        sys.exit(1)
+
+    shot_value = _resolve_shot_value(
+        filtered_records=filtered_records,
+        shots_setting=t.cast(t.Literal["auto", "zero", "few"], shots),
+    )
+
+    model_scores_matrix, used_languages = _build_and_validate_score_matrix(
+        all_records=all_records,
+        model_list=model_list,
+        resolved_languages=resolved_languages,
+        shot_value=shot_value,
+    )
+
+    try:
+        max_score_val = _compute_max_score(
+            model_scores=model_scores_matrix, max_score_override=max_score
+        )
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    fig = _create_spider_plot(
+        model_scores=model_scores_matrix,
+        languages=used_languages,
+        max_score=max_score_val,
+        title=title or _default_plot_title(shot_value=shot_value),
+    )
+
+    return _write_and_open_plot(fig=fig, title=title, filename=filename)
 
 
 @click.command()

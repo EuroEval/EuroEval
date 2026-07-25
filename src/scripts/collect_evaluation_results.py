@@ -83,44 +83,6 @@ HF_RESULTS_BUCKET = "EuroEval/results"
     show_default=True,
     help="Always regenerate leaderboards, even if no new results are found.",
 )
-def main(force: bool) -> None:
-    """Harvest finished evaluations and regenerate leaderboards.
-
-    Only issues with successfully harvested results are closed. Issues
-    with the ``results-ready`` label may not yet have their results
-    synced to the bucket, so the label alone is not sufficient.
-
-    Args:
-        force (optional):
-            Whether to always regenerate leaderboards, even if no new results
-            are found. Defaults to False.
-    """
-    check_required_env_vars()
-
-    issues = _fetch_issues()
-    if issues is None:
-        sys.exit(1)
-
-    harvested = _harvest_results(issues=issues)
-    manual_lines = _load_manual_results()
-
-    all_lines: list[str] = []
-    for _, lines in harvested:
-        all_lines.extend(lines)
-    all_lines.extend(manual_lines)
-
-    if not all_lines:
-        if not force:
-            return
-        logger.info("Forcing leaderboard regeneration despite no new results.")
-    else:
-        _write_new_results(harvested=harvested, manual_lines=manual_lines)
-        _process_results_phase(all_lines=all_lines)
-
-    if not _deploy_and_close_issues(harvested=harvested, force=force):
-        sys.exit(1)
-
-
 def build_dedup_key(result: dict) -> ResultIdentity | None:
     """Build a deduplication key from an EEE result record.
 
@@ -235,53 +197,6 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
     return results
 
 
-def upload_results_to_hf(new_results_path: Path) -> bool:
-    """Upload results to Hugging Face bucket.
-
-    Loads existing results from local RESULTS_DIR, merges new results from the
-    JSONL file, deduplicates by identity (newer records win), then syncs
-    changed files back to the bucket.
-
-    Args:
-        new_results_path:
-            Path to the newly harvested results file (JSONL format).
-
-    Returns:
-        True if upload succeeded, False otherwise.
-    """
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    existing = _load_existing_results()
-
-    if not _merge_new_results(existing=existing, new_results_path=new_results_path):
-        return False
-
-    _validate_identities(existing=existing)
-
-    records_written, records_unchanged, written_paths = _write_changed_records(
-        existing=existing
-    )
-
-    _cleanup_stale_artifacts()
-
-    if not existing:
-        logger.warning("No valid results to upload.")
-        return False
-
-    if not records_written:
-        logger.info(
-            f"All {records_unchanged:,} records already up to date; nothing to sync."
-        )
-        return True
-
-    logger.info(
-        f"Wrote {records_written:,} changed record file(s) "
-        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
-    )
-
-    return _upload_to_bucket(written_paths=written_paths)
-
-
 def regenerate_leaderboards(force: bool = False) -> bool:
     """Run the existing leaderboard-generation script.
 
@@ -304,86 +219,6 @@ def regenerate_leaderboards(force: bool = False) -> bool:
     except subprocess.CalledProcessError as e:
         logger.error(f"generate_leaderboards failed (exit {e.returncode}).")
         return False
-
-
-def verify_leaderboards() -> bool:
-    """Verify that generated leaderboards look sane before deploying.
-
-    Checks:
-    - CSV files exist and are non-empty
-    - Row count is reasonable (>100 models)
-    - Required columns are present
-    - No obvious data corruption (e.g., NaN in critical fields)
-
-    Leaderboards with <50 rows are skipped (not published) instead of failing
-    the entire validation.
-
-    Returns:
-        True if validation completed (even if some leaderboards were skipped),
-        False if critical errors occurred.
-    """
-    output_dir = REPO_ROOT / "src" / "frontend" / "csv"
-
-    if not output_dir.exists():
-        logger.error(f"Leaderboard output directory {output_dir} not found.")
-        return False
-
-    csv_files = list(output_dir.glob("*.csv"))
-    if not csv_files:
-        logger.error("No CSV files found in output directory.")
-        return False
-
-    logger.info(f"Found {len(csv_files)} leaderboard CSV(s).")
-
-    skipped_count = 0
-    valid_count = 0
-    for csv_file in csv_files:
-        is_valid, is_skipped, _ = _validate_csv_file(csv_file=csv_file)
-        if not is_valid and not is_skipped:
-            return False
-        if is_skipped:
-            skipped_count += 1
-        elif is_valid:
-            valid_count += 1
-
-    if skipped_count > 0:
-        logger.info(
-            f"Published {valid_count} leaderboard(s), skipped {skipped_count} "
-            "(too few results)."
-        )
-    else:
-        logger.info(f"All {valid_count} leaderboard CSVs passed sanity checks.")
-
-    return valid_count > 0
-
-
-def preview_in_dev_server() -> bool:
-    """Start Vercel dev server and prompt user to review before deployment.
-
-    Starts `vercel dev` in the background, waits for it to be ready,
-    prompts the user to check the preview, and waits for confirmation.
-
-    Returns:
-        True if user confirms deployment, False if they abort.
-    """
-    dev_process = _start_dev_server()
-    if dev_process is None:
-        return False
-
-    if not _wait_for_dev_server(dev_process=dev_process):
-        logger.error("Dev server failed to start within 60 seconds.")
-        try:
-            dev_process.terminate()
-            dev_process.wait(timeout=5)
-        except Exception:
-            dev_process.kill()
-        return False
-
-    confirmed = _get_user_confirmation()
-
-    _stop_dev_server(dev_process=dev_process)
-
-    return confirmed
 
 
 def deploy_to_vercel() -> bool:
@@ -447,44 +282,6 @@ def check_required_env_vars() -> None:
         sys.exit(1)
 
 
-def _fetch_issues() -> list[dict] | None:
-    """Fetch open model evaluation request issues.
-
-    Returns:
-        List of issues, or None if fetching failed.
-    """
-    logger.info("Fetching open model evaluation request issues...")
-    try:
-        issues = list_open_request_issues()
-    except urllib.error.HTTPError as e:
-        logger.error(f"Failed to list issues: {e}")
-        return None
-    logger.info(f"Found {len(issues)} open issue(s); scanning for results.")
-    return issues
-
-
-def _harvest_results(issues: list[dict]) -> list[tuple[int, list[str]]]:
-    """Harvest results for each issue from the HF bucket.
-
-    Args:
-        issues:
-            List of issue dicts to process.
-
-    Returns:
-        List of (issue_number, result_lines) tuples.
-    """
-    harvested: list[tuple[int, list[str]]] = []
-    for issue in issues:
-        number = issue["number"]
-        lines = find_results_for_issue(issue=issue)
-        if not lines:
-            logger.info(f"#{number}: no results in bucket yet -- skipping.")
-            continue
-        logger.info(f"#{number}: found {len(lines)} result line(s).")
-        harvested.append((number, lines))
-    return harvested
-
-
 def _load_manual_results() -> list[str]:
     """Load manually added results from new_results.jsonl.
 
@@ -530,145 +327,6 @@ def _write_new_results(
         f"({harvested_count} harvested, {len(manual_lines)} manual)."
     )
     return all_lines
-
-
-def _process_results_phase(all_lines: list[str]) -> bool:
-    """Upload results and regenerate leaderboards.
-
-    Args:
-        all_lines:
-            Combined result lines to process.
-
-    Returns:
-        True if processing succeeded, False otherwise.
-    """
-    if not all_lines:
-        logger.info("Nothing to merge.")
-        return True
-
-    if upload_results_to_hf(new_results_path=NEW_RESULTS_PATH):
-        logger.info("Results uploaded to Hugging Face bucket.")
-    else:
-        logger.error(
-            "Failed to upload results to Hugging Face bucket. "
-            "The new results are staged locally, but the bucket is now out "
-            "of sync. Please run upload_results_to_hf() manually or check "
-            "your Hugging Face credentials and re-run this script."
-        )
-    return True
-
-
-def _deploy_and_close_issues(
-    harvested: list[tuple[int, list[str]]], force: bool
-) -> bool:
-    """Run deployment pipeline and close harvested issues.
-
-    Args:
-        harvested:
-            List of (issue_number, result_lines) tuples for issues to close.
-        force:
-            Whether to force leaderboard regeneration.
-
-    Returns:
-        True if deployment and closing succeeded, False otherwise.
-    """
-    if not regenerate_leaderboards(force=force):
-        logger.error(
-            "Aborting: not closing issues because leaderboard regeneration failed."
-        )
-        return False
-
-    if not verify_leaderboards():
-        logger.error(
-            "Aborting: leaderboard validation failed. "
-            "Check the logs above, fix the issue, and redeploy manually."
-        )
-        return False
-
-    if not preview_in_dev_server():
-        logger.info("Deployment aborted by user.")
-        return False
-
-    if not deploy_to_vercel():
-        logger.error("Aborting: not closing issues because the Vercel deploy failed.")
-        return False
-
-    backup_path = backup_results()
-    if backup_path:
-        logger.info(f"Created backup at {backup_path}.")
-
-    for number, _ in harvested:
-        try:
-            comment_on_issue(
-                number=number, body="Results now live on the leaderboards!"
-            )
-            close_issue(number=number)
-            logger.info(f"#{number}: closed.")
-        except urllib.error.HTTPError as e:
-            logger.error(f"#{number}: failed to close: {e}")
-
-    return True
-
-
-def _load_existing_results() -> dict[ResultIdentity, dict]:
-    """Load existing results from local RESULTS_DIR.
-
-    Returns:
-        Dict mapping result identity to record.
-    """
-    existing: dict[ResultIdentity, dict] = {}
-    for json_file in RESULTS_DIR.glob("*/*.json"):
-        if not json_file.is_file():
-            continue
-        try:
-            content = json_file.read_text(encoding="utf-8")
-            record = json.loads(content)
-            identity = _extract_identity_key(record)
-            if identity:
-                existing[identity] = record
-        except (OSError, json.JSONDecodeError, ValueError):
-            logger.debug(f"Skipping unreadable file {json_file}")
-    return existing
-
-
-def _merge_new_results(
-    existing: dict[ResultIdentity, dict], new_results_path: Path
-) -> bool:
-    """Merge new results from JSONL file into existing results.
-
-    Args:
-        existing:
-            Dict of existing results to update.
-        new_results_path:
-            Path to the new results JSONL file.
-
-    Returns:
-        True if merging succeeded, False if file not found.
-    """
-    if not new_results_path.exists():
-        logger.warning(f"Results file {new_results_path} does not exist.")
-        return False
-
-    new_lines = new_results_path.read_text(encoding="utf-8").splitlines()
-    logger.info(f"Processing {len(new_lines):,} new result lines...")
-
-    for line_number, line in enumerate(iterable=new_lines, start=1):
-        if not line.strip():
-            continue
-        try:
-            record = json.loads(line)
-            identity = _extract_identity_key(record)
-            if not identity:
-                logger.debug(f"Skipping line {line_number}: no identity")
-                continue
-
-            if identity in existing:
-                existing[identity] = dedup_newer_record(existing[identity], record)
-            else:
-                existing[identity] = record
-        except json.JSONDecodeError:
-            logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
-    return True
 
 
 def _validate_identities(existing: dict[ResultIdentity, dict]) -> None:
@@ -914,6 +572,348 @@ def _stop_dev_server(dev_process: subprocess.Popen) -> None:
             dev_process.kill()
         except Exception:
             pass
+
+
+def verify_leaderboards() -> bool:
+    """Verify that generated leaderboards look sane before deploying.
+
+    Checks:
+    - CSV files exist and are non-empty
+    - Row count is reasonable (>100 models)
+    - Required columns are present
+    - No obvious data corruption (e.g., NaN in critical fields)
+
+    Leaderboards with <50 rows are skipped (not published) instead of failing
+    the entire validation.
+
+    Returns:
+        True if validation completed (even if some leaderboards were skipped),
+        False if critical errors occurred.
+    """
+    output_dir = REPO_ROOT / "src" / "frontend" / "csv"
+
+    if not output_dir.exists():
+        logger.error(f"Leaderboard output directory {output_dir} not found.")
+        return False
+
+    csv_files = list(output_dir.glob("*.csv"))
+    if not csv_files:
+        logger.error("No CSV files found in output directory.")
+        return False
+
+    logger.info(f"Found {len(csv_files)} leaderboard CSV(s).")
+
+    skipped_count = 0
+    valid_count = 0
+    for csv_file in csv_files:
+        is_valid, is_skipped, _ = _validate_csv_file(csv_file=csv_file)
+        if not is_valid and not is_skipped:
+            return False
+        if is_skipped:
+            skipped_count += 1
+        elif is_valid:
+            valid_count += 1
+
+    if skipped_count > 0:
+        logger.info(
+            f"Published {valid_count} leaderboard(s), skipped {skipped_count} "
+            "(too few results)."
+        )
+    else:
+        logger.info(f"All {valid_count} leaderboard CSVs passed sanity checks.")
+
+    return valid_count > 0
+
+
+def _fetch_issues() -> list[dict] | None:
+    """Fetch open model evaluation request issues.
+
+    Returns:
+        List of issues, or None if fetching failed.
+    """
+    logger.info("Fetching open model evaluation request issues...")
+    try:
+        issues = list_open_request_issues()
+    except urllib.error.HTTPError as e:
+        logger.error(f"Failed to list issues: {e}")
+        return None
+    logger.info(f"Found {len(issues)} open issue(s); scanning for results.")
+    return issues
+
+
+def _harvest_results(issues: list[dict]) -> list[tuple[int, list[str]]]:
+    """Harvest results for each issue from the HF bucket.
+
+    Args:
+        issues:
+            List of issue dicts to process.
+
+    Returns:
+        List of (issue_number, result_lines) tuples.
+    """
+    harvested: list[tuple[int, list[str]]] = []
+    for issue in issues:
+        number = issue["number"]
+        lines = find_results_for_issue(issue=issue)
+        if not lines:
+            logger.info(f"#{number}: no results in bucket yet -- skipping.")
+            continue
+        logger.info(f"#{number}: found {len(lines)} result line(s).")
+        harvested.append((number, lines))
+    return harvested
+
+
+def _load_existing_results() -> dict[ResultIdentity, dict]:
+    """Load existing results from local RESULTS_DIR.
+
+    Returns:
+        Dict mapping result identity to record.
+    """
+    existing: dict[ResultIdentity, dict] = {}
+    for json_file in RESULTS_DIR.glob("*/*.json"):
+        if not json_file.is_file():
+            continue
+        try:
+            content = json_file.read_text(encoding="utf-8")
+            record = json.loads(content)
+            identity = _extract_identity_key(record)
+            if identity:
+                existing[identity] = record
+        except (OSError, json.JSONDecodeError, ValueError):
+            logger.debug(f"Skipping unreadable file {json_file}")
+    return existing
+
+
+def _merge_new_results(
+    existing: dict[ResultIdentity, dict], new_results_path: Path
+) -> bool:
+    """Merge new results from JSONL file into existing results.
+
+    Args:
+        existing:
+            Dict of existing results to update.
+        new_results_path:
+            Path to the new results JSONL file.
+
+    Returns:
+        True if merging succeeded, False if file not found.
+    """
+    if not new_results_path.exists():
+        logger.warning(f"Results file {new_results_path} does not exist.")
+        return False
+
+    new_lines = new_results_path.read_text(encoding="utf-8").splitlines()
+    logger.info(f"Processing {len(new_lines):,} new result lines...")
+
+    for line_number, line in enumerate(iterable=new_lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+            identity = _extract_identity_key(record)
+            if not identity:
+                logger.debug(f"Skipping line {line_number}: no identity")
+                continue
+
+            if identity in existing:
+                existing[identity] = dedup_newer_record(existing[identity], record)
+            else:
+                existing[identity] = record
+        except json.JSONDecodeError:
+            logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
+    return True
+
+
+def upload_results_to_hf(new_results_path: Path) -> bool:
+    """Upload results to Hugging Face bucket.
+
+    Loads existing results from local RESULTS_DIR, merges new results from the
+    JSONL file, deduplicates by identity (newer records win), then syncs
+    changed files back to the bucket.
+
+    Args:
+        new_results_path:
+            Path to the newly harvested results file (JSONL format).
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    existing = _load_existing_results()
+
+    if not _merge_new_results(existing=existing, new_results_path=new_results_path):
+        return False
+
+    _validate_identities(existing=existing)
+
+    records_written, records_unchanged, written_paths = _write_changed_records(
+        existing=existing
+    )
+
+    _cleanup_stale_artifacts()
+
+    if not existing:
+        logger.warning("No valid results to upload.")
+        return False
+
+    if not records_written:
+        logger.info(
+            f"All {records_unchanged:,} records already up to date; nothing to sync."
+        )
+        return True
+
+    logger.info(
+        f"Wrote {records_written:,} changed record file(s) "
+        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
+    )
+
+    return _upload_to_bucket(written_paths=written_paths)
+
+
+def _process_results_phase(all_lines: list[str]) -> bool:
+    """Upload results and regenerate leaderboards.
+
+    Args:
+        all_lines:
+            Combined result lines to process.
+
+    Returns:
+        True if processing succeeded, False otherwise.
+    """
+    if not all_lines:
+        logger.info("Nothing to merge.")
+        return True
+
+    if upload_results_to_hf(new_results_path=NEW_RESULTS_PATH):
+        logger.info("Results uploaded to Hugging Face bucket.")
+    else:
+        logger.error(
+            "Failed to upload results to Hugging Face bucket. "
+            "The new results are staged locally, but the bucket is now out "
+            "of sync. Please run upload_results_to_hf() manually or check "
+            "your Hugging Face credentials and re-run this script."
+        )
+    return True
+
+
+def main(force: bool) -> None:
+    """Harvest finished evaluations and regenerate leaderboards.
+
+    Only issues with successfully harvested results are closed. Issues
+    with the ``results-ready`` label may not yet have their results
+    synced to the bucket, so the label alone is not sufficient.
+
+    Args:
+        force (optional):
+            Whether to always regenerate leaderboards, even if no new results
+            are found. Defaults to False.
+    """
+    check_required_env_vars()
+
+    issues = _fetch_issues()
+    if issues is None:
+        sys.exit(1)
+
+    harvested = _harvest_results(issues=issues)
+    manual_lines = _load_manual_results()
+
+    all_lines: list[str] = []
+    for _, lines in harvested:
+        all_lines.extend(lines)
+    all_lines.extend(manual_lines)
+
+    if not all_lines:
+        if not force:
+            return
+        logger.info("Forcing leaderboard regeneration despite no new results.")
+    else:
+        _write_new_results(harvested=harvested, manual_lines=manual_lines)
+        _process_results_phase(all_lines=all_lines)
+
+    if not _deploy_and_close_issues(harvested=harvested, force=force):
+        sys.exit(1)
+
+
+def preview_in_dev_server() -> bool:
+    """Start Vercel dev server and prompt user to review before deployment.
+
+    Starts `vercel dev` in the background, waits for it to be ready,
+    prompts the user to check the preview, and waits for confirmation.
+
+    Returns:
+        True if user confirms deployment, False if they abort.
+    """
+    dev_process = _start_dev_server()
+    if dev_process is None:
+        return False
+
+    if not _wait_for_dev_server(dev_process=dev_process):
+        logger.error("Dev server failed to start within 60 seconds.")
+        try:
+            dev_process.terminate()
+            dev_process.wait(timeout=5)
+        except Exception:
+            dev_process.kill()
+        return False
+
+    confirmed = _get_user_confirmation()
+
+    _stop_dev_server(dev_process=dev_process)
+
+    return confirmed
+
+
+def _deploy_and_close_issues(
+    harvested: list[tuple[int, list[str]]], force: bool
+) -> bool:
+    """Run deployment pipeline and close harvested issues.
+
+    Args:
+        harvested:
+            List of (issue_number, result_lines) tuples for issues to close.
+        force:
+            Whether to force leaderboard regeneration.
+
+    Returns:
+        True if deployment and closing succeeded, False otherwise.
+    """
+    if not regenerate_leaderboards(force=force):
+        logger.error(
+            "Aborting: not closing issues because leaderboard regeneration failed."
+        )
+        return False
+
+    if not verify_leaderboards():
+        logger.error(
+            "Aborting: leaderboard validation failed. "
+            "Check the logs above, fix the issue, and redeploy manually."
+        )
+        return False
+
+    if not preview_in_dev_server():
+        logger.info("Deployment aborted by user.")
+        return False
+
+    if not deploy_to_vercel():
+        logger.error("Aborting: not closing issues because the Vercel deploy failed.")
+        return False
+
+    backup_path = backup_results()
+    if backup_path:
+        logger.info(f"Created backup at {backup_path}.")
+
+    for number, _ in harvested:
+        try:
+            comment_on_issue(
+                number=number, body="Results now live on the leaderboards!"
+            )
+            close_issue(number=number)
+            logger.info(f"#{number}: closed.")
+        except urllib.error.HTTPError as e:
+            logger.error(f"#{number}: failed to close: {e}")
+
+    return True
 
 
 def _get_user_confirmation() -> bool:
