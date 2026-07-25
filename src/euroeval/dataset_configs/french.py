@@ -99,6 +99,16 @@ RAGTRUTH_FR_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+MMLU_FR_CONFIG = DatasetConfig(
+    name="mmlu-fr",
+    pretty_name="MMLU-fr",
+    source="EuroEval/mmlu-fr-mini",
+    task=KNOW,
+    languages=[FRENCH],
+)
+
+
+# Unofficial datasets ###
 
 INCLUDE_FR_CONFIG = DatasetConfig(
     name="include-fr",
@@ -106,6 +116,7 @@ INCLUDE_FR_CONFIG = DatasetConfig(
     source="EuroEval/include-fr-mini",
     task=KNOW,
     languages=[FRENCH],
+    unofficial=True,
 )
 
 MULTILOKO_FR_CONFIG = DatasetConfig(
@@ -115,16 +126,6 @@ MULTILOKO_FR_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[FRENCH],
     val_split=None,
-)
-
-# Unofficial datasets ###
-
-MMLU_FR_CONFIG = DatasetConfig(
-    name="mmlu-fr",
-    pretty_name="MMLU-fr",
-    source="EuroEval/mmlu-fr-mini",
-    task=KNOW,
-    languages=[FRENCH],
     unofficial=True,
 )
 
