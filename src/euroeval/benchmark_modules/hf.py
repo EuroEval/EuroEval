@@ -361,18 +361,19 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 If a label is not found in the label2id dictionary.
         """
         if "label" in examples:
-            try:
-                label2id = self._model.config.label2id
-                examples["label"] = [
-                    label2id[str(lbl).lower()] if label2id is not None else lbl  # ty: ignore[not-subscriptable,invalid-argument-type]
-                    for lbl in examples["label"]
-                ]
-            except KeyError as e:
-                raise InvalidBenchmark(
-                    f"One of the labels in the dataset, "
-                    f"{examples['label'].lower()}, does not occur in the "
-                    f"label2id dictionary {self._model.config.label2id}."
-                ) from e
+            label2id: dict[str, int] | None = self._model.config.label2id  # ty: ignore[invalid-assignment]
+            if label2id is not None:
+                new_labels: list[int] = []
+                for lbl in examples["label"]:
+                    lbl_str = str(lbl).lower()
+                    if lbl_str not in label2id:
+                        raise InvalidBenchmark(
+                            f"One of the labels in the dataset, "
+                            f"{lbl_str}, does not occur in the "
+                            f"label2id dictionary {label2id}."
+                        )
+                    new_labels.append(label2id[lbl_str])
+                examples["label"] = new_labels
         return examples
 
     def _tokenise(self, examples: dict) -> "BatchEncoding":
@@ -827,7 +828,7 @@ def load_model_and_tokeniser(
     return model, tokeniser
 
 
-@cache_arguments("model_id", "revision")
+@cache_arguments("model_id")
 def _get_local_model_info(model_id: str) -> HfApiModelInfo | None:
     """Get model info for a local model directory.
 
@@ -1311,7 +1312,7 @@ def get_dtype(
     return torch.float32
 
 
-@cache_arguments("model_id", "revision", "num_labels", "id2label", "label2id")
+@cache_arguments("model_id", "run_with_cli")
 def _handle_model_config_error(
     error: Exception, model_id: str, run_with_cli: bool
 ) -> t.Literal["retry", "continue"] | PretrainedConfig | None:
@@ -1409,6 +1410,7 @@ def _set_pad_token_id(config: PretrainedConfig) -> None:
             config.pad_token_id = config.eos_token_id
 
 
+@cache_arguments("model_id", "revision", "num_labels", "id2label", "label2id")
 def load_hf_model_config(
     model_id: str,
     num_labels: int,
