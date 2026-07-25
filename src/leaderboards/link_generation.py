@@ -161,6 +161,16 @@ def generate_hf_hub_url(model_id: str) -> str | None:
 
 
 @cache
+def get_openai_models() -> list[str]:
+    """Get a list of all OpenAI models.
+
+    Returns:
+        A list of all OpenAI models.
+    """
+    return [model_info.id for model_info in openai.models.list().data]
+
+
+@cache
 def generate_openai_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on OpenAI.
 
@@ -173,9 +183,7 @@ def generate_openai_url(model_id: str) -> str | None:
     """
     model_id = model_id.replace("openai/", "")
 
-    available_openai_models = [
-        model_info.id for model_info in openai.models.list().data
-    ]
+    available_openai_models = get_openai_models()
 
     if model_id == "gpt-4-1106-preview":
         model_id_without_version_id = "gpt-4-turbo"
