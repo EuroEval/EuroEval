@@ -98,6 +98,16 @@ RAGTRUTH_PT_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+MMLU_PT_CONFIG = DatasetConfig(
+    name="mmlu-pt",
+    pretty_name="MMLU-pt",
+    source="EuroEval/mmlu-pt-mini",
+    task=KNOW,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+)
+
+
+# Unofficial datasets ###
 
 ALBA_MCQ_PT_CONFIG = DatasetConfig(
     name="alba-mcq-pt",
@@ -107,22 +117,13 @@ ALBA_MCQ_PT_CONFIG = DatasetConfig(
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     labels=["a", "b", "c"],
     val_split=None,
+    unofficial=True,
 )
 
 CULTURA_VIVA_PT_CONFIG = DatasetConfig(
     name="cultura-viva-pt",
     pretty_name="CulturaVivaPT",
     source="EuroEval/euroeval-amalia-cultura-viva-pt",
-    task=KNOW,
-    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-)
-
-# Unofficial datasets ###
-
-MMLU_PT_CONFIG = DatasetConfig(
-    name="mmlu-pt",
-    pretty_name="MMLU-pt",
-    source="EuroEval/mmlu-pt-mini",
     task=KNOW,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     unofficial=True,
