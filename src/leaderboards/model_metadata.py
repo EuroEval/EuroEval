@@ -270,6 +270,61 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
             logger.error("Invalid input. Please try again.")
 
 
+def is_commercially_licensed(record: dict, cache: Cache) -> bool:
+    """Determine if a model is commercially licensed.
+
+    First checks the cache, then tries best-effort inference from the
+    Hugging Face model licence. Falls back to user prompt if licence
+    cannot be inferred.
+
+    Args:
+        record:
+            A record from the JSONL file.
+        cache:
+            The cache.
+
+    Returns:
+        Whether the model is commercially licensed.
+    """
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
+
+    # Assume that non-generative models are always commercially licensed
+    if not get_bool_field(record, "generative", True):
+        cache.commercially_licensed[model_id] = True
+        return True
+
+    # Check cache first
+    if model_id in cache.commercially_licensed:
+        return cache.commercially_licensed[model_id]
+
+    # Best-effort inference from HF licence
+    # Use a separate cache dict since inference can return None on error
+    licence_cache: dict[str, bool | None] = {}
+    inferred = _infer_commercial_from_hf_licence(
+        model_id=model_id, licence_cache=licence_cache
+    )
+    if inferred is not None:
+        cache.commercially_licensed[model_id] = inferred
+        return inferred
+
+    # Fall back to user prompt
+    while True:
+        msg = f"Is {model_id!r} commercially licensed?"
+        if "/" in model_id:
+            msg += f" (https://hf.co/{model_id})"
+        msg += " [y/n] "
+        user_input = input(msg)
+        if user_input.lower() in {"y", "yes"}:
+            cache.commercially_licensed[model_id] = True
+            return True
+        if user_input.lower() in {"n", "no"}:
+            cache.commercially_licensed[model_id] = False
+            return False
+        logger.error("Invalid input. Please try again.")
+
+
 def _infer_commercial_from_hf_licence(
     model_id: str, licence_cache: dict[str, bool | None]
 ) -> bool | None:
@@ -325,61 +380,6 @@ def _infer_commercial_from_hf_licence(
     result = licence in PERMISSIVE_LICENSES if licence else None
     licence_cache[model_id] = result
     return result
-
-
-def is_commercially_licensed(record: dict, cache: Cache) -> bool:
-    """Determine if a model is commercially licensed.
-
-    First checks the cache, then tries best-effort inference from the
-    Hugging Face model licence. Falls back to user prompt if licence
-    cannot be inferred.
-
-    Args:
-        record:
-            A record from the JSONL file.
-        cache:
-            The cache.
-
-    Returns:
-        Whether the model is commercially licensed.
-    """
-    model_id = split_model_id(
-        model_id=plain_model_id(_model_id_from_record(record=record))
-    ).model_id
-
-    # Assume that non-generative models are always commercially licensed
-    if not get_bool_field(record, "generative", True):
-        cache.commercially_licensed[model_id] = True
-        return True
-
-    # Check cache first
-    if model_id in cache.commercially_licensed:
-        return cache.commercially_licensed[model_id]
-
-    # Best-effort inference from HF licence
-    # Use a separate cache dict since inference can return None on error
-    licence_cache: dict[str, bool | None] = {}
-    inferred = _infer_commercial_from_hf_licence(
-        model_id=model_id, licence_cache=licence_cache
-    )
-    if inferred is not None:
-        cache.commercially_licensed[model_id] = inferred
-        return inferred
-
-    # Fall back to user prompt
-    while True:
-        msg = f"Is {model_id!r} commercially licensed?"
-        if "/" in model_id:
-            msg += f" (https://hf.co/{model_id})"
-        msg += " [y/n] "
-        user_input = input(msg)
-        if user_input.lower() in {"y", "yes"}:
-            cache.commercially_licensed[model_id] = True
-            return True
-        if user_input.lower() in {"n", "no"}:
-            cache.commercially_licensed[model_id] = False
-            return False
-        logger.error("Invalid input. Please try again.")
 
 
 def is_trained_from_scratch(

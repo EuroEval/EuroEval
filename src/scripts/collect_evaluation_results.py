@@ -344,22 +344,6 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
     return results
 
 
-def _extract_identity_key(result: dict) -> ResultIdentity | None:
-    """Extract the identity key from a result record.
-
-    Args:
-        result:
-            The parsed result record.
-
-    Returns:
-        Identity tuple or None if extraction fails.
-    """
-    try:
-        return identity_from_eee_record(result)
-    except (ValueError, KeyError):
-        return None
-
-
 def upload_results_to_hf(new_results_path: Path) -> bool:
     """Upload results to Hugging Face bucket.
 
@@ -492,6 +476,22 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
     except HfHubHTTPError as e:
         logger.error(f"Failed to upload to HF bucket: {e}")
         return False
+
+
+def _extract_identity_key(result: dict) -> ResultIdentity | None:
+    """Extract the identity key from a result record.
+
+    Args:
+        result:
+            The parsed result record.
+
+    Returns:
+        Identity tuple or None if extraction fails.
+    """
+    try:
+        return identity_from_eee_record(result)
+    except (ValueError, KeyError):
+        return None
 
 
 def regenerate_leaderboards(force: bool = False) -> bool:

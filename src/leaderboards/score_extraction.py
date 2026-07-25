@@ -32,183 +32,6 @@ from .task_metadata import dataset_sources, task_metric_names
 logger = logging.getLogger(__name__)
 
 
-def _is_better_metadata(
-    new_value: bool | str | float | None,
-    old_value: bool | str | float | None,
-    field: str,
-) -> bool:
-    """Check if new metadata value is "better" than the old one.
-
-    A value is "better" if it's more informative (non-null/non-default) when
-    the old value is null/default. Used to prevent stale records from
-    overwriting enriched metadata during extraction.
-
-    Args:
-        new_value:
-            The new metadata value from the current record.
-        old_value:
-            The existing metadata value already stored.
-        field:
-            The field name being compared.
-
-    Returns:
-        True if the new value should replace the old one.
-    """
-    # Prefer non-None over None
-    if old_value is None and new_value is not None:
-        return True
-    if old_value is not None and new_value is None:
-        return False
-
-    # For float fields (parameters, vocabulary_size, context), prefer non-NaN
-    # over NaN
-    if field in ("parameters", "vocabulary_size", "context"):
-        if isinstance(old_value, float) and math.isnan(old_value):
-            if isinstance(new_value, float) and not math.isnan(new_value):
-                return True
-            return False
-        if isinstance(new_value, float) and math.isnan(new_value):
-            return False
-
-    # For boolean fields, prefer present (non-None) over missing (None).
-    # Explicit False is legitimate metadata (e.g. merge=False, open=False)
-    # and should be preserved against later stale/conflicting records.
-    # When both are present (even if different), neither is "better" -
-    # returning False means the new value won't overwrite the old one.
-    if field in ("commercial", "merge", "open", "trained_from_scratch"):
-        if old_value is None and new_value is not None:
-            return True
-        if old_value is not None and new_value is None:
-            return False
-        # Both present: don't overwrite (preserve existing)
-        return False
-
-    # For generative_type, prefer non-empty over empty
-    # When both are non-empty, preserve existing (don't overwrite)
-    if field == "generative_type":
-        if not old_value and new_value:
-            return True
-        if old_value and not new_value:
-            return False
-        # Both non-empty: preserve existing
-        return False
-
-    # For model_url, prefer non-empty over empty.
-    # Note: explicit vs generated fallback distinction is handled in
-    # extract_model_metadata, not here. This function only handles
-    # empty vs non-empty comparison.
-    if field == "model_url":
-        if not old_value and new_value:
-            return True
-        if old_value and not new_value:
-            return False
-        # Both non-empty: preserve existing
-        return False
-
-    # Default: prefer new value (preserves existing behaviour for equal values)
-    return True
-
-
-def group_results_by_model(
-    results: list[dict[str, t.Any]],
-) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
-    """Group results by model ID.
-
-    Args:
-        results:
-            The processed results.
-
-    Returns:
-        The results grouped by model ID. The dict structure is
-        model_id -> dataset -> list of (raw_scores, total_score, std_err).
-    """
-    # Deduplicate up front so each leaderboard row shows one score per metric.
-    # `load_raw_results` is cached and populated before `process_results`
-    # rewrites the per-model files, so the records reaching here can still
-    # contain the pre-dedup duplicates; collapse them by hash regardless.
-    results = deduplicate_records(records=results)
-    model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
-        defaultdict(lambda: defaultdict(list))
-    )
-    for record in results:
-        model_ids = extract_model_ids_from_record(record=record)
-        dataset = get_dataset(record)
-        if not dataset:
-            continue
-
-        task = get_task(record)
-        if not task:
-            continue
-        primary, secondary = task_metric_names(task)
-        metrics = [primary] + ([secondary] if secondary is not None else [])
-
-        for metric_type, metric in zip(("primary", "secondary"), metrics):
-            raw_results = get_raw_results(record)
-            if raw_results is None:
-                continue
-
-            # Raw per-iteration scores are keyed by the bare metric name (e.g.
-            # "mcc"), occasionally with a "test_" prefix.
-            raw_scores: list[float] = []
-            for result_dict in raw_results:
-                if isinstance(result_dict, dict):
-                    score = result_dict.get(
-                        f"test_{metric}", result_dict.get(metric, -1)
-                    )
-                    if score >= 0:
-                        raw_scores.append(score)
-
-            if not raw_scores:
-                continue
-
-            total_scores = get_total_scores(record)
-            if total_scores is None:
-                continue
-
-            # Total scores are keyed by evaluation name (e.g. "test_mcc"), but
-            # fall back to the bare metric name when the prefix is absent.
-            total_score_key = f"test_{metric}"
-            std_err_key = f"test_{metric}_se"
-
-            total_score_val = total_scores.get(total_score_key)
-            if total_score_val is None:
-                total_score_val = total_scores.get(metric)
-
-            if total_score_val is None:
-                log_once(
-                    f"Could not find {metric_type} metric for {dataset!r} "
-                    f"in {get_model_name(record)!r} ({total_score_key}). Only found "
-                    f"{list(total_scores.keys())}.",
-                    level=logging.WARNING,
-                )
-                continue
-
-            total_score: float = float(total_score_val)
-
-            # Sometimes the raw scores are normalised to [0, 1], so we need to scale
-            # them back to [0, 100]
-            scale_factor = 100.0 if max(raw_scores) <= 1 else 1.0
-            raw_scores = [score * scale_factor for score in raw_scores]
-
-            # EEE records don't carry a std err, so compute it from raw scores.
-            # Fallback computed after scaling so std_err matches the displayed scores.
-            std_err: float = total_scores.get(std_err_key, 0.0)
-            # Scale std_err to match the scaled raw scores
-            std_err = std_err * scale_factor
-            if std_err == 0.0 and len(raw_scores) > 1:
-                try:
-                    std_err = statistics.stdev(raw_scores) / (len(raw_scores) ** 0.5)
-                except statistics.StatisticsError:
-                    std_err = 0.0
-
-            for model_id in model_ids:
-                model_scores[model_id][dataset].append(
-                    (raw_scores, total_score, std_err)
-                )
-
-    return model_scores
-
-
 def extract_model_metadata(
     results: list[dict[str, t.Any]],
 ) -> dict[str, dict[str, t.Any]]:
@@ -432,6 +255,183 @@ def extract_model_metadata(
 
     logger.info("Extracted model metadata.")
     return metadata_dict
+
+
+def _is_better_metadata(
+    new_value: bool | str | float | None,
+    old_value: bool | str | float | None,
+    field: str,
+) -> bool:
+    """Check if new metadata value is "better" than the old one.
+
+    A value is "better" if it's more informative (non-null/non-default) when
+    the old value is null/default. Used to prevent stale records from
+    overwriting enriched metadata during extraction.
+
+    Args:
+        new_value:
+            The new metadata value from the current record.
+        old_value:
+            The existing metadata value already stored.
+        field:
+            The field name being compared.
+
+    Returns:
+        True if the new value should replace the old one.
+    """
+    # Prefer non-None over None
+    if old_value is None and new_value is not None:
+        return True
+    if old_value is not None and new_value is None:
+        return False
+
+    # For float fields (parameters, vocabulary_size, context), prefer non-NaN
+    # over NaN
+    if field in ("parameters", "vocabulary_size", "context"):
+        if isinstance(old_value, float) and math.isnan(old_value):
+            if isinstance(new_value, float) and not math.isnan(new_value):
+                return True
+            return False
+        if isinstance(new_value, float) and math.isnan(new_value):
+            return False
+
+    # For boolean fields, prefer present (non-None) over missing (None).
+    # Explicit False is legitimate metadata (e.g. merge=False, open=False)
+    # and should be preserved against later stale/conflicting records.
+    # When both are present (even if different), neither is "better" -
+    # returning False means the new value won't overwrite the old one.
+    if field in ("commercial", "merge", "open", "trained_from_scratch"):
+        if old_value is None and new_value is not None:
+            return True
+        if old_value is not None and new_value is None:
+            return False
+        # Both present: don't overwrite (preserve existing)
+        return False
+
+    # For generative_type, prefer non-empty over empty
+    # When both are non-empty, preserve existing (don't overwrite)
+    if field == "generative_type":
+        if not old_value and new_value:
+            return True
+        if old_value and not new_value:
+            return False
+        # Both non-empty: preserve existing
+        return False
+
+    # For model_url, prefer non-empty over empty.
+    # Note: explicit vs generated fallback distinction is handled in
+    # extract_model_metadata, not here. This function only handles
+    # empty vs non-empty comparison.
+    if field == "model_url":
+        if not old_value and new_value:
+            return True
+        if old_value and not new_value:
+            return False
+        # Both non-empty: preserve existing
+        return False
+
+    # Default: prefer new value (preserves existing behaviour for equal values)
+    return True
+
+
+def group_results_by_model(
+    results: list[dict[str, t.Any]],
+) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
+    """Group results by model ID.
+
+    Args:
+        results:
+            The processed results.
+
+    Returns:
+        The results grouped by model ID. The dict structure is
+        model_id -> dataset -> list of (raw_scores, total_score, std_err).
+    """
+    # Deduplicate up front so each leaderboard row shows one score per metric.
+    # `load_raw_results` is cached and populated before `process_results`
+    # rewrites the per-model files, so the records reaching here can still
+    # contain the pre-dedup duplicates; collapse them by hash regardless.
+    results = deduplicate_records(records=results)
+    model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
+        defaultdict(lambda: defaultdict(list))
+    )
+    for record in results:
+        model_ids = extract_model_ids_from_record(record=record)
+        dataset = get_dataset(record)
+        if not dataset:
+            continue
+
+        task = get_task(record)
+        if not task:
+            continue
+        primary, secondary = task_metric_names(task)
+        metrics = [primary] + ([secondary] if secondary is not None else [])
+
+        for metric_type, metric in zip(("primary", "secondary"), metrics):
+            raw_results = get_raw_results(record)
+            if raw_results is None:
+                continue
+
+            # Raw per-iteration scores are keyed by the bare metric name (e.g.
+            # "mcc"), occasionally with a "test_" prefix.
+            raw_scores: list[float] = []
+            for result_dict in raw_results:
+                if isinstance(result_dict, dict):
+                    score = result_dict.get(
+                        f"test_{metric}", result_dict.get(metric, -1)
+                    )
+                    if score >= 0:
+                        raw_scores.append(score)
+
+            if not raw_scores:
+                continue
+
+            total_scores = get_total_scores(record)
+            if total_scores is None:
+                continue
+
+            # Total scores are keyed by evaluation name (e.g. "test_mcc"), but
+            # fall back to the bare metric name when the prefix is absent.
+            total_score_key = f"test_{metric}"
+            std_err_key = f"test_{metric}_se"
+
+            total_score_val = total_scores.get(total_score_key)
+            if total_score_val is None:
+                total_score_val = total_scores.get(metric)
+
+            if total_score_val is None:
+                log_once(
+                    f"Could not find {metric_type} metric for {dataset!r} "
+                    f"in {get_model_name(record)!r} ({total_score_key}). Only found "
+                    f"{list(total_scores.keys())}.",
+                    level=logging.WARNING,
+                )
+                continue
+
+            total_score: float = float(total_score_val)
+
+            # Sometimes the raw scores are normalised to [0, 1], so we need to scale
+            # them back to [0, 100]
+            scale_factor = 100.0 if max(raw_scores) <= 1 else 1.0
+            raw_scores = [score * scale_factor for score in raw_scores]
+
+            # EEE records don't carry a std err, so compute it from raw scores.
+            # Fallback computed after scaling so std_err matches the displayed scores.
+            std_err: float = total_scores.get(std_err_key, 0.0)
+            # Scale std_err to match the scaled raw scores
+            std_err = std_err * scale_factor
+            if std_err == 0.0 and len(raw_scores) > 1:
+                try:
+                    std_err = statistics.stdev(raw_scores) / (len(raw_scores) ** 0.5)
+                except statistics.StatisticsError:
+                    std_err = 0.0
+
+            for model_id in model_ids:
+                model_scores[model_id][dataset].append(
+                    (raw_scores, total_score, std_err)
+                )
+
+    return model_scores
 
 
 def _scored_count(record: dict[str, t.Any], dataset: str) -> int | None:
