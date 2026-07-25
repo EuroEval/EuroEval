@@ -1467,11 +1467,12 @@ def _update_changelog(
 
     Raises:
         ValueError:
-            When the '### Changed' section under '## [Unreleased]' is not found.
+            When the '## [Unreleased]' header is not found.
     """
     lines = changelog_path.read_text(encoding="utf-8").split("\n")
 
-    # Find the "### Changed" section under "## [Unreleased]"
+    # Find the [Unreleased] section, the ### Changed subsection (if it exists),
+    # and the next version section
     unreleased_idx: int | None = None
     changed_idx: int | None = None
     next_section_idx: int | None = None
@@ -1479,17 +1480,48 @@ def _update_changelog(
     for i, line in enumerate(lines):
         if line.strip() == "## [Unreleased]":
             unreleased_idx = i
-        elif unreleased_idx is not None and line.strip() == "### Changed":
+        elif (
+            unreleased_idx is not None
+            and changed_idx is None
+            and line.strip() == "### Changed"
+        ):
             changed_idx = i
-        elif changed_idx is not None and line.startswith("## "):
+        elif unreleased_idx is not None and line.startswith("## "):
             next_section_idx = i
             break
 
-    if changed_idx is None or next_section_idx is None:
-        raise ValueError(
-            "Could not find '### Changed' section under '## [Unreleased]' in "
-            "CHANGELOG.md"
-        )
+    if unreleased_idx is None:
+        raise ValueError("Could not find '## [Unreleased]' header in CHANGELOG.md")
+
+    # Handle case where ### Changed subsection doesn't exist - create it
+    if changed_idx is None:
+        # Insert at next_section_idx: blank line, header, blank line, entry
+        lines.insert(next_section_idx, "")
+        lines.insert(next_section_idx + 1, "### Changed")
+        lines.insert(next_section_idx + 2, "")
+        build_start_idx = next_section_idx + 3
+    else:
+        # Find the end of the ### Changed subsection (after last non-blank line)
+        build_start_idx = changed_idx + 1
+
+        # Skip any blank lines immediately after the header
+        while build_start_idx < len(lines) and lines[build_start_idx].strip() == "":
+            build_start_idx += 1
+
+        # Find the start of the next subsection or version section
+        scan_idx = build_start_idx
+        while scan_idx < len(lines):
+            line = lines[scan_idx]
+            if line.startswith("### ") or line.startswith("## "):
+                break
+            scan_idx += 1
+
+        # Back up over any trailing blank lines to find last content
+        insert_idx = scan_idx
+        while insert_idx > build_start_idx and lines[insert_idx - 1].strip() == "":
+            insert_idx -= 1
+
+        build_start_idx = insert_idx
 
     # Build the changelog entry
     if old_config:
@@ -1516,9 +1548,11 @@ def _update_changelog(
             "when performing dataset swaps."
         )
 
-    # Insert a blank line after "### Changed", then the entry
-    lines.insert(changed_idx + 1, "")
-    lines.insert(changed_idx + 2, entry)
+    # Insert a blank line before the entry (if there's content above), then the entry
+    if build_start_idx > 0 and lines[build_start_idx - 1].strip() != "":
+        lines.insert(build_start_idx, "")
+        build_start_idx += 1
+    lines.insert(build_start_idx, entry)
     changelog_path.write_text("\n".join(lines), encoding="utf-8")
 
 
