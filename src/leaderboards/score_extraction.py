@@ -32,6 +32,139 @@ from .task_metadata import dataset_sources, task_metric_names
 logger = logging.getLogger(__name__)
 
 
+def group_results_by_model(
+    results: list[dict[str, t.Any]],
+) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
+    """Group results by model ID.
+
+    Args:
+        results:
+            The processed results.
+
+    Returns:
+        The results grouped by model ID. The dict structure is
+        model_id -> dataset -> list of (raw_scores, total_score, std_err).
+    """
+    results = deduplicate_records(records=results)
+    model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
+        defaultdict(lambda: defaultdict(list))
+    )
+    for record in results:
+        model_ids = extract_model_ids_from_record(record=record)
+        dataset = get_dataset(record)
+        if not dataset:
+            continue
+
+        raw_results = get_raw_results(record)
+        if raw_results is None:
+            continue
+
+        total_scores = get_total_scores(record)
+        if total_scores is None:
+            continue
+
+        _process_record_scores(
+            record=record,
+            model_ids=model_ids,
+            dataset=dataset,
+            raw_results=raw_results,
+            total_scores=total_scores,
+            model_scores=model_scores,
+        )
+
+    return model_scores
+
+
+def extract_model_metadata(
+    results: list[dict[str, t.Any]],
+) -> dict[str, dict[str, t.Any]]:
+    """Extract metadata from the results.
+
+    Args:
+        results:
+            The processed results.
+
+    Returns:
+        The metadata.
+    """
+    logger.info("Extracting model metadata...")
+    metadata_dict: dict[str, dict[str, t.Any]] = defaultdict(dict)
+    model_url_explicit: dict[str, bool] = {}
+
+    for record in results:
+        model_ids = extract_model_ids_from_record(record=record)
+        (
+            extracted,
+            presence_flags,
+            explicit_flags,
+            model_url,
+            model_url_explicit_rec,
+            version,
+            num_failed,
+        ) = _extract_metadata_from_record(record)
+        dataset = get_dataset(record)
+
+        for model_id in model_ids:
+            existing = metadata_dict[model_id]
+
+            # Update float fields
+            _update_metadata_field(
+                existing=existing,
+                new_value=extracted["parameters"],
+                field="parameters",
+                is_present=True,  # Always set (defaults to NaN)
+            )
+            _update_metadata_field(
+                existing=existing,
+                new_value=extracted["vocabulary_size"],
+                field="vocabulary_size",
+                is_present=True,
+            )
+            _update_metadata_field(
+                existing=existing,
+                new_value=extracted["context"],
+                field="context",
+                is_present=True,
+            )
+
+            # Update presence-checked fields
+            for field in (
+                "generative_type",
+                "commercial",
+                "merge",
+                "open",
+                "trained_from_scratch",
+            ):
+                _update_metadata_field(
+                    existing=existing,
+                    new_value=extracted[field],
+                    field=field,
+                    is_present=presence_flags[field],
+                )
+
+            # Handle model_url separately (special explicit vs generated logic)
+            _update_model_url(
+                existing=existing,
+                model_url=model_url,
+                model_url_explicit=model_url_explicit_rec,
+                model_url_explicit_map=model_url_explicit,
+                model_id=model_id,
+            )
+
+            # Add dataset-specific fields
+            if dataset:
+                existing[f"{dataset}_version"] = version
+                if num_failed is not None:
+                    existing[f"{dataset}_failures"] = num_failed
+                    scored = _scored_count(record=record, dataset=dataset)
+                    if scored is not None:
+                        existing[f"{dataset}_scored"] = scored
+
+    _ensure_standard_metadata_keys(metadata_dict=metadata_dict)
+    logger.info("Extracted model metadata.")
+    return metadata_dict
+
+
 def _compare_float_metadata(new_value: float | None, old_value: float | None) -> bool:
     """Compare float metadata fields, preferring non-NaN over NaN.
 
@@ -291,49 +424,6 @@ def _process_record_scores(
             model_scores[model_id][dataset].append((raw_scores, total_score, std_err))
 
 
-def group_results_by_model(
-    results: list[dict[str, t.Any]],
-) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
-    """Group results by model ID.
-
-    Args:
-        results:
-            The processed results.
-
-    Returns:
-        The results grouped by model ID. The dict structure is
-        model_id -> dataset -> list of (raw_scores, total_score, std_err).
-    """
-    results = deduplicate_records(records=results)
-    model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
-        defaultdict(lambda: defaultdict(list))
-    )
-    for record in results:
-        model_ids = extract_model_ids_from_record(record=record)
-        dataset = get_dataset(record)
-        if not dataset:
-            continue
-
-        raw_results = get_raw_results(record)
-        if raw_results is None:
-            continue
-
-        total_scores = get_total_scores(record)
-        if total_scores is None:
-            continue
-
-        _process_record_scores(
-            record=record,
-            model_ids=model_ids,
-            dataset=dataset,
-            raw_results=raw_results,
-            total_scores=total_scores,
-            model_scores=model_scores,
-        )
-
-    return model_scores
-
-
 def _extract_metadata_from_record(
     record: dict[str, t.Any],
 ) -> tuple[
@@ -502,96 +592,6 @@ def _ensure_standard_metadata_keys(metadata_dict: dict[str, dict[str, t.Any]]) -
         for key, default_value in standard_keys_defaults.items():
             if key not in metadata:
                 metadata[key] = default_value
-
-
-def extract_model_metadata(
-    results: list[dict[str, t.Any]],
-) -> dict[str, dict[str, t.Any]]:
-    """Extract metadata from the results.
-
-    Args:
-        results:
-            The processed results.
-
-    Returns:
-        The metadata.
-    """
-    logger.info("Extracting model metadata...")
-    metadata_dict: dict[str, dict[str, t.Any]] = defaultdict(dict)
-    model_url_explicit: dict[str, bool] = {}
-
-    for record in results:
-        model_ids = extract_model_ids_from_record(record=record)
-        (
-            extracted,
-            presence_flags,
-            explicit_flags,
-            model_url,
-            model_url_explicit_rec,
-            version,
-            num_failed,
-        ) = _extract_metadata_from_record(record)
-        dataset = get_dataset(record)
-
-        for model_id in model_ids:
-            existing = metadata_dict[model_id]
-
-            # Update float fields
-            _update_metadata_field(
-                existing=existing,
-                new_value=extracted["parameters"],
-                field="parameters",
-                is_present=True,  # Always set (defaults to NaN)
-            )
-            _update_metadata_field(
-                existing=existing,
-                new_value=extracted["vocabulary_size"],
-                field="vocabulary_size",
-                is_present=True,
-            )
-            _update_metadata_field(
-                existing=existing,
-                new_value=extracted["context"],
-                field="context",
-                is_present=True,
-            )
-
-            # Update presence-checked fields
-            for field in (
-                "generative_type",
-                "commercial",
-                "merge",
-                "open",
-                "trained_from_scratch",
-            ):
-                _update_metadata_field(
-                    existing=existing,
-                    new_value=extracted[field],
-                    field=field,
-                    is_present=presence_flags[field],
-                )
-
-            # Handle model_url separately (special explicit vs generated logic)
-            _update_model_url(
-                existing=existing,
-                model_url=model_url,
-                model_url_explicit=model_url_explicit_rec,
-                model_url_explicit_map=model_url_explicit,
-                model_id=model_id,
-            )
-
-            # Add dataset-specific fields
-            if dataset:
-                existing[f"{dataset}_version"] = version
-                if num_failed is not None:
-                    existing[f"{dataset}_failures"] = num_failed
-                    scored = _scored_count(record=record, dataset=dataset)
-                    if scored is not None:
-                        existing[f"{dataset}_scored"] = scored
-
-    _ensure_standard_metadata_keys(metadata_dict=metadata_dict)
-    logger.info("Extracted model metadata.")
-    return metadata_dict
 
 
 def _scored_count(record: dict[str, t.Any], dataset: str) -> int | None:
