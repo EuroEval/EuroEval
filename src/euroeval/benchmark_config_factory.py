@@ -125,6 +125,101 @@ def prepare_languages(
     return prepared_languages
 
 
+def prepare_dataset_configs(
+    task: "str | Task | c.Sequence[str | Task] | None",
+    languages: c.Sequence["Language"],
+    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
+    custom_datasets_file: Path,
+    api_key: str | None,
+    cache_dir: Path,
+    trust_remote_code: bool,
+    run_with_cli: bool,
+) -> list["DatasetConfig"]:
+    """Prepare dataset config(s) for benchmarking.
+
+    Args:
+        task:
+            The tasks to include for dataset. If None then datasets will not be
+            filtered based on their task.
+        languages:
+            The languages of the datasets in the benchmark.
+        dataset:
+            The datasets to include for task. If None then all datasets will be
+            included, limited by the `task` and `languages` parameters.
+        custom_datasets_file:
+            A path to a Python file containing custom dataset configurations.
+        api_key:
+            The API key to use for accessing the Hugging Face Hub.
+        cache_dir:
+            The directory to store the cache in.
+        trust_remote_code:
+            Whether to trust remote code.
+        run_with_cli:
+            Whether to run the benchmark with the CLI.
+
+    Returns:
+        The prepared dataset configs.
+    """
+    dataset_ids = _extract_dataset_ids(dataset=dataset)
+
+    all_dataset_configs = get_all_dataset_configs(
+        custom_datasets_file=custom_datasets_file,
+        dataset_ids=dataset_ids,
+        api_key=api_key,
+        cache_dir=cache_dir,
+        trust_remote_code=trust_remote_code,
+        run_with_cli=run_with_cli,
+    )
+    all_official_dataset_configs: c.Sequence[DatasetConfig] = [
+        dataset_config
+        for dataset_config in all_dataset_configs.values()
+        if not dataset_config.unofficial
+    ]
+
+    datasets = _get_datasets_list(
+        dataset=dataset,
+        all_dataset_configs=all_dataset_configs,
+        all_official_dataset_configs=all_official_dataset_configs,
+    )
+
+    task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
+    tasks = _get_tasks_list(task=task, task_mapping=task_mapping)
+
+    return [
+        ds
+        for ds in datasets
+        if (tasks is None or ds.task in tasks)
+        and any(lang in languages for lang in ds.languages)
+    ]
+
+
+def prepare_device(device: Device | None) -> torch.device:
+    """Prepare device for benchmarking.
+
+    Args:
+        device:
+            The device to use for running the models. If None then the device will be
+            set automatically.
+
+    Returns:
+        The prepared device.
+    """
+    device_mapping = {
+        Device.CPU: torch.device("cpu"),
+        Device.CUDA: torch.device("cuda"),
+        Device.MPS: torch.device("mps"),
+    }
+    if isinstance(device, Device):
+        return device_mapping[device]
+
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        return torch.device("mps")
+    else:
+        return torch.device("cpu")
+
+
 def _extract_dataset_ids(
     dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
 ) -> list[str]:
@@ -241,98 +336,3 @@ def _get_tasks_list(
         _handle_dataset_lookup_error(
             error=e, options=list(task_mapping.keys()), entity_type="task"
         )
-
-
-def prepare_dataset_configs(
-    task: "str | Task | c.Sequence[str | Task] | None",
-    languages: c.Sequence["Language"],
-    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
-    custom_datasets_file: Path,
-    api_key: str | None,
-    cache_dir: Path,
-    trust_remote_code: bool,
-    run_with_cli: bool,
-) -> list["DatasetConfig"]:
-    """Prepare dataset config(s) for benchmarking.
-
-    Args:
-        task:
-            The tasks to include for dataset. If None then datasets will not be
-            filtered based on their task.
-        languages:
-            The languages of the datasets in the benchmark.
-        dataset:
-            The datasets to include for task. If None then all datasets will be
-            included, limited by the `task` and `languages` parameters.
-        custom_datasets_file:
-            A path to a Python file containing custom dataset configurations.
-        api_key:
-            The API key to use for accessing the Hugging Face Hub.
-        cache_dir:
-            The directory to store the cache in.
-        trust_remote_code:
-            Whether to trust remote code.
-        run_with_cli:
-            Whether to run the benchmark with the CLI.
-
-    Returns:
-        The prepared dataset configs.
-    """
-    dataset_ids = _extract_dataset_ids(dataset=dataset)
-
-    all_dataset_configs = get_all_dataset_configs(
-        custom_datasets_file=custom_datasets_file,
-        dataset_ids=dataset_ids,
-        api_key=api_key,
-        cache_dir=cache_dir,
-        trust_remote_code=trust_remote_code,
-        run_with_cli=run_with_cli,
-    )
-    all_official_dataset_configs: c.Sequence[DatasetConfig] = [
-        dataset_config
-        for dataset_config in all_dataset_configs.values()
-        if not dataset_config.unofficial
-    ]
-
-    datasets = _get_datasets_list(
-        dataset=dataset,
-        all_dataset_configs=all_dataset_configs,
-        all_official_dataset_configs=all_official_dataset_configs,
-    )
-
-    task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
-    tasks = _get_tasks_list(task=task, task_mapping=task_mapping)
-
-    return [
-        ds
-        for ds in datasets
-        if (tasks is None or ds.task in tasks)
-        and any(lang in languages for lang in ds.languages)
-    ]
-
-
-def prepare_device(device: Device | None) -> torch.device:
-    """Prepare device for benchmarking.
-
-    Args:
-        device:
-            The device to use for running the models. If None then the device will be
-            set automatically.
-
-    Returns:
-        The prepared device.
-    """
-    device_mapping = {
-        Device.CPU: torch.device("cpu"),
-        Device.CUDA: torch.device("cuda"),
-        Device.MPS: torch.device("mps"),
-    }
-    if isinstance(device, Device):
-        return device_mapping[device]
-
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    elif torch.backends.mps.is_available():
-        return torch.device("mps")
-    else:
-        return torch.device("cpu")
