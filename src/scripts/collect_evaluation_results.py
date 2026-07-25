@@ -695,10 +695,10 @@ def preview_in_dev_server() -> bool:
         return False
 
     logger.info("=" * 60)
-    logger.info("✓ Dev server is running at http://localhost:3000")
+    logger.info("✓ Dev server is running at http://localhost:5174")
     logger.info("=" * 60)
     print(
-        "\nPlease open http://localhost:3000 in your browser and check the "
+        "\nPlease open http://localhost:5174 in your browser and check the "
         "leaderboards.\n"
     )
 
