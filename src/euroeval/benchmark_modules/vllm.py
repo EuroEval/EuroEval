@@ -1530,66 +1530,38 @@ def load_model(
 
     # TODO: Remove this block when we don't care about OLMo-3 anymore
     # OLMo-3 models have rope_theta/rope_scaling at top level, but vLLM expects
-    # them nested in rope_parameters. We need to modify the cached config.json
-    # on disk since vLLM workers load from there (separate processes).
+    # them nested in rope_parameters. Use hf_overrides to override the config.
     is_olmo3 = hf_model_config.model_type == "olmo3" or (
         hf_model_config.architectures
         and "Olmo3ForCausalLM" in hf_model_config.architectures
     )
-    if is_olmo3:
+    if is_olmo3 and "rope_parameters" not in getattr(
+        hf_model_config, "rope_parameters", {}
+    ):
+        rope_theta = getattr(hf_model_config, "rope_theta", 10000)
+        rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
+        rope_params: dict[str, str | int | float] = {
+            "rope_theta": rope_theta,
+            "rope_type": rope_scaling.get("rope_type", "default"),
+        }
+        for key in [
+            "factor",
+            "original_max_position_embeddings",
+            "attention_factor",
+            "beta_fast",
+            "beta_slow",
+            "short_factor",
+            "long_factor",
+        ]:
+            if key in rope_scaling:
+                rope_params[key] = rope_scaling[key]
+
+        hf_overrides["rope_parameters"] = rope_params
         log(
-            f"Detected OLMo-3 model {model_id!r}, "
-            f"checking config.json for rope_parameters...",
+            f"Added rope_parameters override for OLMo-3 model {model_id!r}: "
+            f"{rope_params!r}",
             level=logging.INFO,
         )
-        config_path = Path(download_dir) / "config.json"
-        log(
-            f"Config path: {config_path.resolve()} (exists={config_path.exists()})",
-            level=logging.INFO,
-        )
-        if config_path.exists():
-            with open(config_path) as f:
-                config_dict = json.load(f)
-
-            if "rope_parameters" not in config_dict:
-                rope_theta = getattr(hf_model_config, "rope_theta", 10000)
-                rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
-                rope_params: dict[str, str | int | float] = {
-                    "rope_theta": rope_theta,
-                    "rope_type": rope_scaling.get("rope_type", "default"),
-                }
-                for key in [
-                    "factor",
-                    "original_max_position_embeddings",
-                    "attention_factor",
-                    "beta_fast",
-                    "beta_slow",
-                    "short_factor",
-                    "long_factor",
-                ]:
-                    if key in rope_scaling:
-                        rope_params[key] = rope_scaling[key]
-
-                config_dict["rope_parameters"] = rope_params
-                with open(config_path, "w") as f:
-                    json.dump(config_dict, f, indent=2)
-
-                log(
-                    f"Added rope_parameters to OLMo-3 config at {config_path}: "
-                    f"{rope_params!r}",
-                    level=logging.INFO,
-                )
-            else:
-                log(
-                    f"Config already has rope_parameters: "
-                    f"{config_dict['rope_parameters']!r}",
-                    level=logging.INFO,
-                )
-        else:
-            log(
-                "Config file not found at config.json, cannot patch",
-                level=logging.WARNING,
-            )
 
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism(force_single_gpu=False)
