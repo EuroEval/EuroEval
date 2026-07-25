@@ -19,6 +19,7 @@ import logging
 import os
 import random
 import re
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -198,7 +199,7 @@ def main() -> None:
     """Create the MultiLoKo-mini datasets and upload them to the HF Hub."""
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-    if os.path.exists(CACHE_FILE):
+    if Path(CACHE_FILE).exists():
         with open(CACHE_FILE) as f:
             cache = json.load(f)
     else:
