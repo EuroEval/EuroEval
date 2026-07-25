@@ -180,6 +180,53 @@ def _download(url: str) -> str:
         return response.read().decode("iso-8859-1")
 
 
+def _process_token(
+    tok: str,
+    stack: list[str],
+    in_entity: bool,
+    previous_entity_type: str | None,
+    tokens: list[str],
+    labels: list[int],
+) -> tuple[bool, str | None]:
+    """Process a single token and update labels.
+
+    Args:
+        tok:
+            The token to process.
+        stack:
+            Stack of open entity tags.
+        in_entity:
+            Whether currently inside an entity.
+        previous_entity_type:
+            The previous entity type.
+        tokens:
+            List of tokens to append to.
+        labels:
+            List of labels to append to.
+
+    Returns:
+        Tuple of (new_in_entity, new_entity_type).
+    """
+    if not stack:
+        label = "O"
+        new_entity_type = None
+        new_in_entity = False
+    else:
+        current_type = TAG2LABEL.get(stack[-1], "MISC")
+        if not in_entity or current_type != previous_entity_type:
+            label = f"B-{current_type}"
+            new_in_entity = True
+        else:
+            label = f"I-{current_type}"
+            new_in_entity = in_entity
+        new_entity_type = current_type
+
+    tokens.append(tok)
+    labels.append(LABEL2ID[label])
+    SEEN_LABELS[label] += 1
+    return new_in_entity, new_entity_type
+
+
 def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
     """Parse a single HAREM document and return tokens and labels (BIO format).
 
@@ -208,22 +255,14 @@ def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
     for tag in TAG_RE.finditer(text):
         pre = text[pos : tag.start()]
         for tok in TOKEN_RE.findall(pre):
-            if not stack:
-                label = "O"
-                previous_entity_type = None
-                in_entity = False
-            else:
-                current_type = TAG2LABEL.get(stack[-1], "MISC")
-                if not in_entity or current_type != previous_entity_type:
-                    label = f"B-{current_type}"
-                    in_entity = True
-                else:
-                    label = f"I-{current_type}"
-                previous_entity_type = current_type
-
-            tokens.append(tok)
-            labels.append(LABEL2ID[label])
-            SEEN_LABELS[label] += 1
+            in_entity, previous_entity_type = _process_token(
+                tok=tok,
+                stack=stack,
+                in_entity=in_entity,
+                previous_entity_type=previous_entity_type,
+                tokens=tokens,
+                labels=labels,
+            )
 
         pos = tag.end()
         closing, name = tag.group(1), tag.group(2)
@@ -235,31 +274,22 @@ def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
         if closing:
             if stack and stack[-1] == name:
                 stack.pop()
-            # Reset entity tracking if closed
             in_entity = False
             previous_entity_type = None
         else:
             stack.append(name)
-            in_entity = False  # next token should be B-
+            in_entity = False
 
     tail = text[pos:]
     for tok in TOKEN_RE.findall(tail):
-        if not stack:
-            label = "O"
-            previous_entity_type = None
-            in_entity = False
-        else:
-            current_type = TAG2LABEL.get(stack[-1], "MISC")
-            if not in_entity or current_type != previous_entity_type:
-                label = f"B-{current_type}"
-                in_entity = True
-            else:
-                label = f"I-{current_type}"
-            previous_entity_type = current_type
-
-        tokens.append(tok)
-        labels.append(LABEL2ID[label])
-        SEEN_LABELS[label] += 1
+        in_entity, previous_entity_type = _process_token(
+            tok=tok,
+            stack=stack,
+            in_entity=in_entity,
+            previous_entity_type=previous_entity_type,
+            tokens=tokens,
+            labels=labels,
+        )
 
     return tokens, labels
 
