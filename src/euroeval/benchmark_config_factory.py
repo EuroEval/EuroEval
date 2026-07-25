@@ -1,7 +1,6 @@
 """Factory class for creating dataset configurations."""
 
 import collections.abc as c
-import importlib.util
 import logging
 import sys
 import typing as t
@@ -15,9 +14,6 @@ from .dataset_configs import get_all_dataset_configs
 from .enums import Device
 from .languages import get_all_languages, get_correct_language_codes
 from .logging_utils import log
-
-if importlib.util.find_spec("vllm") is not None:
-    pass
 
 if t.TYPE_CHECKING:
     from .data_models import Language

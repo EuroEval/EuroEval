@@ -232,6 +232,31 @@ def _compute_language_intersection(
     return filtered_matrix, sorted(languages_with_all_scores)
 
 
+def _resolve_languages(language_inputs: list[str] | None) -> list[str]:
+    """Resolve language inputs to a list of language codes.
+
+    Args:
+        language_inputs (optional):
+            List of language names or codes. If None, uses official languages.
+
+    Returns:
+        List of language codes.
+    """
+    if language_inputs:
+        all_codes: set[str] = set()
+        for lang_input in language_inputs:
+            codes = _normalise_language_input(lang_input)
+            all_codes.update(codes)
+        return sorted(all_codes)
+    else:
+        lang_names = languages_with_official_datasets()
+        all_codes: set[str] = set()
+        for name in lang_names:
+            codes = language_name_to_codes(name)
+            all_codes.update(codes)
+        return sorted(all_codes)
+
+
 def _normalise_language_input(language_input: str) -> set[str]:
     """Normalise a language input (name or code) to a set of language codes.
 
@@ -270,31 +295,6 @@ def _normalise_language_input(language_input: str) -> set[str]:
     )
 
 
-def _resolve_languages(language_inputs: list[str] | None) -> list[str]:
-    """Resolve language inputs to a list of language codes.
-
-    Args:
-        language_inputs (optional):
-            List of language names or codes. If None, uses official languages.
-
-    Returns:
-        List of language codes.
-    """
-    if language_inputs:
-        all_codes: set[str] = set()
-        for lang_input in language_inputs:
-            codes = _normalise_language_input(lang_input)
-            all_codes.update(codes)
-        return sorted(all_codes)
-    else:
-        lang_names = languages_with_official_datasets()
-        all_codes: set[str] = set()
-        for name in lang_names:
-            codes = language_name_to_codes(name)
-            all_codes.update(codes)
-        return sorted(all_codes)
-
-
 def _get_primary_metric_for_task(task: str) -> str:
     """Get the primary metric for a task.
 
@@ -307,270 +307,6 @@ def _get_primary_metric_for_task(task: str) -> str:
     """
     primary, _ = task_metric_names(task)
     return primary
-
-
-def _extract_languages_from_record(record: JsonDict) -> list[str]:
-    """Extract language codes from an EEE-format record.
-
-    Handles both modern EEE format (JSON-encoded string in eval_library) and
-    legacy formats.
-
-    Args:
-        record:
-            EEE-format result record.
-
-    Returns:
-        List of language codes.
-    """
-    eval_lib = record.get("eval_library", {})
-    if not isinstance(eval_lib, dict):
-        eval_lib = {}
-    additional = eval_lib.get("additional_details", {})
-    if not isinstance(additional, dict):
-        additional = {}
-    languages_json = additional.get("languages")
-
-    if languages_json:
-        try:
-            languages = json.loads(languages_json)
-            if isinstance(languages, list):
-                return [str(lang) for lang in languages]
-        except (json.JSONDecodeError, TypeError):
-            pass
-
-    legacy_languages_value = record.get("languages")
-    if isinstance(legacy_languages_value, str):
-        try:
-            languages = json.loads(legacy_languages_value)
-            if isinstance(languages, list):
-                return [str(lang) for lang in languages]
-        except (json.JSONDecodeError, TypeError):
-            return [legacy_languages_value]
-    elif isinstance(legacy_languages_value, list):
-        return [str(lang) for lang in legacy_languages_value]
-
-    return []
-
-
-def _extract_task_from_record(record: JsonDict) -> str | None:
-    """Extract task name from an EEE-format record.
-
-    Args:
-        record:
-            EEE-format result record.
-
-    Returns:
-        Task name, or None if not found.
-    """
-    eval_lib = record.get("eval_library", {})
-    if not isinstance(eval_lib, dict):
-        return None
-    additional = eval_lib.get("additional_details", {})
-    if not isinstance(additional, dict):
-        return None
-    return additional.get("task")
-
-
-def _extract_scores_from_record(record: JsonDict) -> dict[str, float]:
-    """Extract all scores from an EEE-format record.
-
-    Uses the robust get_total_scores helper which handles the
-    evaluation_results structure.
-
-    Args:
-        record:
-            EEE-format result record.
-
-    Returns:
-        Dict mapping metric names to scores. Empty dict if no scores found.
-    """
-    scores = get_total_scores(record)
-    return scores if scores is not None else {}
-
-
-def _extract_raw_scores_from_record(
-    record: JsonDict, primary_metric: str, secondary_metric: str | None
-) -> list[float]:
-    """Extract raw per-iteration scores from an EEE-format record.
-
-    Retrieves raw bootstrap/iteration scores for the primary metric (or
-    secondary if primary is unavailable) from the record's raw_results.
-
-    Args:
-        record:
-            EEE-format result record.
-        primary_metric:
-            Primary metric name (e.g. "mcc", "macro_f1").
-        secondary_metric:
-            Secondary metric name, or None if single-metric task.
-
-    Returns:
-        List of raw per-iteration scores. Empty list if no raw scores found.
-    """
-    raw_results = get_raw_results(record)
-    if raw_results is None:
-        return []
-
-    raw_scores: list[float] = []
-    metrics_to_try = [primary_metric]
-    if secondary_metric:
-        metrics_to_try.append(secondary_metric)
-
-    for result_dict in raw_results:
-        if not isinstance(result_dict, dict):
-            continue
-        score: float | None = None
-        for metric in metrics_to_try:
-            # Try with test_ prefix first, then bare metric name
-            if f"test_{metric}" in result_dict:
-                score = float(result_dict[f"test_{metric}"])
-                break
-            if metric in result_dict:
-                score = float(result_dict[metric])
-                break
-        if score is not None and math.isfinite(score):
-            raw_scores.append(score)
-
-    # Scale normalised scores [0, 1] back to [0, 100] if needed
-    if raw_scores and max(raw_scores) <= 1.0:
-        raw_scores = [s * 100.0 for s in raw_scores]
-
-    return raw_scores
-
-
-def _get_model_identifier(record: JsonDict) -> str:
-    """Extract model identifier from an EEE-format record.
-
-    Args:
-        record:
-            EEE-format result record.
-
-    Returns:
-        Model name/ID.
-    """
-    model_info = record.get("model_info", {})
-    if not isinstance(model_info, dict):
-        return ""
-    return model_info.get("name", "") or model_info.get("id", "")
-
-
-def _load_all_results() -> list[JsonDict]:
-    """Load all results from the local result tree (reference population).
-
-    Loads all JSON files in the results tree structure.
-
-    Returns:
-        List of EEE-format result records from all models.
-    """
-    try:
-        records = load_records_from_result_tree(RESULTS_DIR)
-        return [t.cast(JsonDict, rec) for rec in records]
-    except Exception:
-        return []
-
-
-def _load_results_for_models(model_ids: list[str]) -> list[JsonDict]:
-    """Load results for the specified model IDs from local JSONL files.
-
-    Used to verify requested models have data. For rank score computation,
-    use _load_all_results() to get the full reference population.
-
-    Args:
-        model_ids:
-            List of model IDs to load results for.
-
-    Returns:
-        List of EEE-format result records for the specified models.
-    """
-    all_records = _load_all_results()
-    records: list[JsonDict] = []
-
-    for record in all_records:
-        model_name = _get_model_identifier(record)
-        if any(model_name == m or model_name.endswith("/" + m) for m in model_ids):
-            records.append(record)
-
-    return records
-
-
-def _resolve_shot_value(
-    filtered_records: list[JsonDict], shots_setting: t.Literal["auto", "zero", "few"]
-) -> bool:
-    """Resolve the shot setting to a Boolean few-shot value.
-
-    Args:
-        filtered_records:
-            Records remaining after shot filtering.
-        shots_setting:
-            User-requested shot setting.
-
-    Returns:
-        True for few-shot, False for zero-shot.
-    """
-    if shots_setting == "zero":
-        return False
-    if shots_setting == "few":
-        return True
-    return get_few_shot(filtered_records[0]) is True
-
-
-def _default_plot_title(shot_value: bool) -> str:
-    """Create the default plot title for the resolved shot setting.
-
-    Args:
-        shot_value:
-            True for few-shot, False for zero-shot.
-
-    Returns:
-        Default plot title.
-    """
-    shot_label = "Few-shot" if shot_value else "Zero-shot"
-    return f"{shot_label} EuroEval Results"
-
-
-def _filter_by_shots(
-    records: list[JsonDict], shots_setting: t.Literal["auto", "zero", "few"]
-) -> list[JsonDict]:
-    """Filter records by shot setting.
-
-    Args:
-        records:
-            All result records.
-        shots_setting:
-            Shot setting: "auto", "zero", or "few".
-
-    Returns:
-        Filtered records.
-
-    Raises:
-        ValueError:
-            If auto-detection is ambiguous or fails.
-    """
-    if shots_setting == "zero":
-        return [r for r in records if get_few_shot(r) is False]
-    elif shots_setting == "few":
-        return [r for r in records if get_few_shot(r) is True]
-
-    zero_records = [r for r in records if get_few_shot(r) is False]
-    few_records = [r for r in records if get_few_shot(r) is True]
-
-    zero_count = len(zero_records)
-    few_count = len(few_records)
-
-    if zero_count > 0 and few_count == 0:
-        return zero_records
-    elif few_count > 0 and zero_count == 0:
-        return few_records
-    elif zero_count > 0 and few_count > 0:
-        raise ValueError(
-            f"Auto-detection ambiguous: found {zero_count} zero-shot and "
-            f"{few_count} few-shot records. Please specify --shots zero or --shots few."
-        )
-    else:
-        raise ValueError(
-            "Auto-detection failed: no records with known shot setting. "
-            "Records may be missing few_shot metadata."
-        )
 
 
 def _build_score_matrix(
@@ -759,6 +495,270 @@ def _build_score_matrix(
     return matrix
 
 
+def _extract_languages_from_record(record: JsonDict) -> list[str]:
+    """Extract language codes from an EEE-format record.
+
+    Handles both modern EEE format (JSON-encoded string in eval_library) and
+    legacy formats.
+
+    Args:
+        record:
+            EEE-format result record.
+
+    Returns:
+        List of language codes.
+    """
+    eval_lib = record.get("eval_library", {})
+    if not isinstance(eval_lib, dict):
+        eval_lib = {}
+    additional = eval_lib.get("additional_details", {})
+    if not isinstance(additional, dict):
+        additional = {}
+    languages_json = additional.get("languages")
+
+    if languages_json:
+        try:
+            languages = json.loads(languages_json)
+            if isinstance(languages, list):
+                return [str(lang) for lang in languages]
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    legacy_languages_value = record.get("languages")
+    if isinstance(legacy_languages_value, str):
+        try:
+            languages = json.loads(legacy_languages_value)
+            if isinstance(languages, list):
+                return [str(lang) for lang in languages]
+        except (json.JSONDecodeError, TypeError):
+            return [legacy_languages_value]
+    elif isinstance(legacy_languages_value, list):
+        return [str(lang) for lang in legacy_languages_value]
+
+    return []
+
+
+def _extract_task_from_record(record: JsonDict) -> str | None:
+    """Extract task name from an EEE-format record.
+
+    Args:
+        record:
+            EEE-format result record.
+
+    Returns:
+        Task name, or None if not found.
+    """
+    eval_lib = record.get("eval_library", {})
+    if not isinstance(eval_lib, dict):
+        return None
+    additional = eval_lib.get("additional_details", {})
+    if not isinstance(additional, dict):
+        return None
+    return additional.get("task")
+
+
+def _extract_scores_from_record(record: JsonDict) -> dict[str, float]:
+    """Extract all scores from an EEE-format record.
+
+    Uses the robust get_total_scores helper which handles the
+    evaluation_results structure.
+
+    Args:
+        record:
+            EEE-format result record.
+
+    Returns:
+        Dict mapping metric names to scores. Empty dict if no scores found.
+    """
+    scores = get_total_scores(record)
+    return scores if scores is not None else {}
+
+
+def _extract_raw_scores_from_record(
+    record: JsonDict, primary_metric: str, secondary_metric: str | None
+) -> list[float]:
+    """Extract raw per-iteration scores from an EEE-format record.
+
+    Retrieves raw bootstrap/iteration scores for the primary metric (or
+    secondary if primary is unavailable) from the record's raw_results.
+
+    Args:
+        record:
+            EEE-format result record.
+        primary_metric:
+            Primary metric name (e.g. "mcc", "macro_f1").
+        secondary_metric:
+            Secondary metric name, or None if single-metric task.
+
+    Returns:
+        List of raw per-iteration scores. Empty list if no raw scores found.
+    """
+    raw_results = get_raw_results(record)
+    if raw_results is None:
+        return []
+
+    raw_scores: list[float] = []
+    metrics_to_try = [primary_metric]
+    if secondary_metric:
+        metrics_to_try.append(secondary_metric)
+
+    for result_dict in raw_results:
+        if not isinstance(result_dict, dict):
+            continue
+        score: float | None = None
+        for metric in metrics_to_try:
+            # Try with test_ prefix first, then bare metric name
+            if f"test_{metric}" in result_dict:
+                score = float(result_dict[f"test_{metric}"])
+                break
+            if metric in result_dict:
+                score = float(result_dict[metric])
+                break
+        if score is not None and math.isfinite(score):
+            raw_scores.append(score)
+
+    # Scale normalised scores [0, 1] back to [0, 100] if needed
+    if raw_scores and max(raw_scores) <= 1.0:
+        raw_scores = [s * 100.0 for s in raw_scores]
+
+    return raw_scores
+
+
+def _load_results_for_models(model_ids: list[str]) -> list[JsonDict]:
+    """Load results for the specified model IDs from local JSONL files.
+
+    Used to verify requested models have data. For rank score computation,
+    use _load_all_results() to get the full reference population.
+
+    Args:
+        model_ids:
+            List of model IDs to load results for.
+
+    Returns:
+        List of EEE-format result records for the specified models.
+    """
+    all_records = _load_all_results()
+    records: list[JsonDict] = []
+
+    for record in all_records:
+        model_name = _get_model_identifier(record)
+        if any(model_name == m or model_name.endswith("/" + m) for m in model_ids):
+            records.append(record)
+
+    return records
+
+
+def _get_model_identifier(record: JsonDict) -> str:
+    """Extract model identifier from an EEE-format record.
+
+    Args:
+        record:
+            EEE-format result record.
+
+    Returns:
+        Model name/ID.
+    """
+    model_info = record.get("model_info", {})
+    if not isinstance(model_info, dict):
+        return ""
+    return model_info.get("name", "") or model_info.get("id", "")
+
+
+def _load_all_results() -> list[JsonDict]:
+    """Load all results from the local result tree (reference population).
+
+    Loads all JSON files in the results tree structure.
+
+    Returns:
+        List of EEE-format result records from all models.
+    """
+    try:
+        records = load_records_from_result_tree(RESULTS_DIR)
+        return [t.cast(JsonDict, rec) for rec in records]
+    except Exception:
+        return []
+
+
+def _resolve_shot_value(
+    filtered_records: list[JsonDict], shots_setting: t.Literal["auto", "zero", "few"]
+) -> bool:
+    """Resolve the shot setting to a Boolean few-shot value.
+
+    Args:
+        filtered_records:
+            Records remaining after shot filtering.
+        shots_setting:
+            User-requested shot setting.
+
+    Returns:
+        True for few-shot, False for zero-shot.
+    """
+    if shots_setting == "zero":
+        return False
+    if shots_setting == "few":
+        return True
+    return get_few_shot(filtered_records[0]) is True
+
+
+def _default_plot_title(shot_value: bool) -> str:
+    """Create the default plot title for the resolved shot setting.
+
+    Args:
+        shot_value:
+            True for few-shot, False for zero-shot.
+
+    Returns:
+        Default plot title.
+    """
+    shot_label = "Few-shot" if shot_value else "Zero-shot"
+    return f"{shot_label} EuroEval Results"
+
+
+def _filter_by_shots(
+    records: list[JsonDict], shots_setting: t.Literal["auto", "zero", "few"]
+) -> list[JsonDict]:
+    """Filter records by shot setting.
+
+    Args:
+        records:
+            All result records.
+        shots_setting:
+            Shot setting: "auto", "zero", or "few".
+
+    Returns:
+        Filtered records.
+
+    Raises:
+        ValueError:
+            If auto-detection is ambiguous or fails.
+    """
+    if shots_setting == "zero":
+        return [r for r in records if get_few_shot(r) is False]
+    elif shots_setting == "few":
+        return [r for r in records if get_few_shot(r) is True]
+
+    zero_records = [r for r in records if get_few_shot(r) is False]
+    few_records = [r for r in records if get_few_shot(r) is True]
+
+    zero_count = len(zero_records)
+    few_count = len(few_records)
+
+    if zero_count > 0 and few_count == 0:
+        return zero_records
+    elif few_count > 0 and zero_count == 0:
+        return few_records
+    elif zero_count > 0 and few_count > 0:
+        raise ValueError(
+            f"Auto-detection ambiguous: found {zero_count} zero-shot and "
+            f"{few_count} few-shot records. Please specify --shots zero or --shots few."
+        )
+    else:
+        raise ValueError(
+            "Auto-detection failed: no records with known shot setting. "
+            "Records may be missing few_shot metadata."
+        )
+
+
 def _compute_max_score(
     model_scores: dict[str, dict[str, float | None]], max_score_override: float | None
 ) -> float:
@@ -813,129 +813,6 @@ def _compute_max_score(
 
     rounded = math.ceil(max_found * 2) / 2
     return max(rounded, 2.5)
-
-
-def _normalise_model_name(model_id: str) -> str:
-    """Normalise model ID for display.
-
-    Args:
-        model_id:
-            Full model ID (e.g., "alexandra/square-7b").
-
-    Returns:
-        Shortened display name (e.g., "square-7b").
-    """
-    if "/" in model_id:
-        return model_id.split("/", 1)[1]
-    return model_id
-
-
-def _get_language_display_name(code: str) -> str:
-    """Get display name for a language code.
-
-    Args:
-        code:
-            Language code.
-
-    Returns:
-        Language name if known, otherwise the code itself.
-    """
-    all_languages = get_all_languages()
-    if code in all_languages:
-        return all_languages[code].name
-    return code
-
-
-def _normalise_model_name(model_id: str) -> str:
-    """Normalise model identifier for display.
-
-    Extracts the short model name from a full identifier like
-    "author/model-name" -> "model-name".
-
-    Args:
-        model_id:
-            Model identifier (may include author prefix).
-
-    Returns:
-        Normalised model name for display.
-    """
-    if "/" in model_id:
-        return model_id.split("/")[-1]
-    return model_id
-
-
-def _to_snake_case(text: str) -> str:
-    """Convert text to snake_case.
-
-    Converts spaces and special characters to underscores, lowercases,
-    and removes consecutive underscores.
-
-    Args:
-        text:
-            Text to convert.
-
-    Returns:
-        Snake-case string.
-    """
-    # Replace spaces and hyphens with underscores
-    result = text.replace(" ", "_").replace("-", "_")
-    # Remove non-alphanumeric except underscores
-    result = re.sub(r"[^a-z0-9_]", "", result.lower())
-    # Remove consecutive underscores
-    result = re.sub(r"_+", "_", result)
-    # Remove leading/trailing underscores
-    return result.strip("_")
-
-
-def _determine_output_filename(title: str | None, filename: str | None) -> str:
-    """Determine output PNG filename based on title and filename options.
-
-    Priority:
-    1. If filename is set, use it (append .png if missing).
-    2. If title is set (but filename not), infer from title using snake_case.
-    3. Otherwise, use default "language-spider-plot.png".
-
-    Args:
-        title:
-            Plot title (optional).
-        filename:
-            Explicit filename (optional).
-
-    Returns:
-        PNG filename with .png extension.
-    """
-    if filename:
-        # Ensure .png extension
-        if not filename.lower().endswith(".png"):
-            return filename + ".png"
-        return filename
-
-    if title:
-        # Infer filename from title
-        base_name = _to_snake_case(title)
-        return base_name + ".png"
-
-    # Default filename
-    return "language-spider-plot.png"
-
-
-def _hex_to_rgba(hex_colour: str, alpha: float = 0.2) -> str:
-    """Convert hex colour to rgba string with specified alpha.
-
-    Args:
-        hex_colour:
-            Hex colour string (e.g. "#1f77b4").
-        alpha (optional):
-            Alpha value (0.0 to 1.0). Defaults to 0.2.
-
-    Returns:
-        RGBA colour string (e.g. "rgba(31, 119, 180, 0.2)").
-    """
-    hex_val = hex_colour.lstrip("#")
-    r = int(hex_val[0:2], 16)
-    g = int(hex_val[2:4], 16)
-    b = int(hex_val[4:6], 16)
-    return f"rgba({r}, {g}, {b}, {alpha})"
 
 
 def _create_spider_plot(
@@ -1045,6 +922,129 @@ def _create_spider_plot(
     return fig
 
 
+def _get_language_display_name(code: str) -> str:
+    """Get display name for a language code.
+
+    Args:
+        code:
+            Language code.
+
+    Returns:
+        Language name if known, otherwise the code itself.
+    """
+    all_languages = get_all_languages()
+    if code in all_languages:
+        return all_languages[code].name
+    return code
+
+
+def _normalise_model_name(model_id: str) -> str:
+    """Normalise model identifier for display.
+
+    Extracts the short model name from a full identifier like
+    "author/model-name" -> "model-name".
+
+    Args:
+        model_id:
+            Model identifier (may include author prefix).
+
+    Returns:
+        Normalised model name for display.
+    """
+    if "/" in model_id:
+        return model_id.split("/")[-1]
+    return model_id
+
+
+def _normalise_model_name(model_id: str) -> str:
+    """Normalise model ID for display.
+
+    Args:
+        model_id:
+            Full model ID (e.g., "alexandra/square-7b").
+
+    Returns:
+        Shortened display name (e.g., "square-7b").
+    """
+    if "/" in model_id:
+        return model_id.split("/", 1)[1]
+    return model_id
+
+
+def _determine_output_filename(title: str | None, filename: str | None) -> str:
+    """Determine output PNG filename based on title and filename options.
+
+    Priority:
+    1. If filename is set, use it (append .png if missing).
+    2. If title is set (but filename not), infer from title using snake_case.
+    3. Otherwise, use default "language-spider-plot.png".
+
+    Args:
+        title:
+            Plot title (optional).
+        filename:
+            Explicit filename (optional).
+
+    Returns:
+        PNG filename with .png extension.
+    """
+    if filename:
+        # Ensure .png extension
+        if not filename.lower().endswith(".png"):
+            return filename + ".png"
+        return filename
+
+    if title:
+        # Infer filename from title
+        base_name = _to_snake_case(title)
+        return base_name + ".png"
+
+    # Default filename
+    return "language-spider-plot.png"
+
+
+def _to_snake_case(text: str) -> str:
+    """Convert text to snake_case.
+
+    Converts spaces and special characters to underscores, lowercases,
+    and removes consecutive underscores.
+
+    Args:
+        text:
+            Text to convert.
+
+    Returns:
+        Snake-case string.
+    """
+    # Replace spaces and hyphens with underscores
+    result = text.replace(" ", "_").replace("-", "_")
+    # Remove non-alphanumeric except underscores
+    result = re.sub(r"[^a-z0-9_]", "", result.lower())
+    # Remove consecutive underscores
+    result = re.sub(r"_+", "_", result)
+    # Remove leading/trailing underscores
+    return result.strip("_")
+
+
+def _hex_to_rgba(hex_colour: str, alpha: float = 0.2) -> str:
+    """Convert hex colour to rgba string with specified alpha.
+
+    Args:
+        hex_colour:
+            Hex colour string (e.g. "#1f77b4").
+        alpha (optional):
+            Alpha value (0.0 to 1.0). Defaults to 0.2.
+
+    Returns:
+        RGBA colour string (e.g. "rgba(31, 119, 180, 0.2)").
+    """
+    hex_val = hex_colour.lstrip("#")
+    r = int(hex_val[0:2], 16)
+    g = int(hex_val[2:4], 16)
+    b = int(hex_val[4:6], 16)
+    return f"rgba({r}, {g}, {b}, {alpha})"
+
+
 def _load_logo_data_uri() -> str:
     """Load the EuroEval logo as a PNG data URI.
 
@@ -1110,6 +1110,58 @@ kaleido.stop_sync_server(silence_warnings=True)
 """
 
 
+@click.command()
+@click.option(
+    "--model",
+    "-m",
+    "models",
+    multiple=True,
+    required=True,
+    metavar="MODEL",
+    help="Model ID to include (can be repeated).",
+)
+@click.option(
+    "--language",
+    "-l",
+    "languages",
+    multiple=True,
+    metavar="LANGUAGE",
+    help="Language name or code to include (can be repeated). "
+    "Defaults to official languages.",
+)
+@click.option(
+    "--shots",
+    type=click.Choice(["auto", "zero", "few"]),
+    default="auto",
+    show_default=True,
+    help="Shot setting: zero-shot, few-shot, or auto-detect.",
+)
+@click.option(
+    "--max-score",
+    type=float,
+    metavar="FLOAT",
+    help=(
+        "Optional override for maximum rank score on the radial axis. "
+        "When omitted, auto-computed from plotted rank scores (rounded up "
+        "to nearest 0.5, minimum 2.5; rank score of 1 is perfect)."
+    ),
+)
+@click.option(
+    "--title",
+    type=str,
+    metavar="TEXT",
+    help="Plot title. If omitted, uses default title.",
+)
+@click.option(
+    "--filename",
+    type=str,
+    metavar="PATH",
+    help=(
+        "Output PNG filename. If omitted and --title is set, "
+        "inferred from title using snake_case. If both omitted, "
+        "uses language-spider-plot.png. .png extension appended if missing."
+    ),
+)
 @click.command()
 @click.option(
     "--model",
