@@ -10,9 +10,7 @@
 
 """Create and upload the FullStack-LV-mini NER dataset from CoNLL-U format."""
 
-import glob
 import logging
-import os
 import shutil
 import subprocess
 from collections import defaultdict
@@ -167,7 +165,7 @@ def load_fullstack_data(repo_path: Path) -> list[dict[str, list[str] | str]]:
         )
 
     # Find all .conll2003 files in the directory
-    conll_files = glob.glob(os.path.join(data_dir, "*.conll2003"))
+    conll_files = list(data_dir.glob("*.conll2003"))
 
     all_records = []
 
