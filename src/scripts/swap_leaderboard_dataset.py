@@ -76,12 +76,16 @@ from leaderboards.jsonl_io import (
     load_records_from_result_tree,
 )
 from leaderboards.records import get_bool_field, get_dataset, plain_model_id
+from leaderboards.result_identity import identity_from_eee_record
 from leaderboards.task_metadata import (
     category_includes_task,
     official_datasets_for_language,
 )
 
 HF_RESULTS_BUCKET = "EuroEval/results"
+
+# Compiled regex for stripping ANSI colour escape sequences from euroeval output.
+_ANSI_ESCAPE_RE = re.compile(r"\x1b(?:\[[0-9;]*[A-Za-z]|\]\d+;[^\\]*\\)")
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -452,6 +456,18 @@ def main(
             dry_run=dry_run,
         )
         if not dry_run:
+            # Merge results from RESULTS_DIR tree into JSONL before upload
+            logger.info(
+                "Merging evaluation results into %s...", EUROEVAL_BENCHMARK_RESULTS_PATH
+            )
+            merge_results(results_file=EUROEVAL_BENCHMARK_RESULTS_PATH)
+
+            # Verify each new dataset produced at least one record
+            check_new_datasets_have_records(
+                new_datasets=new_dataset_ids,
+                results_file=EUROEVAL_BENCHMARK_RESULTS_PATH,
+            )
+
             upload_results_to_bucket(results_file=EUROEVAL_BENCHMARK_RESULTS_PATH)
 
     changed = apply_swap(
@@ -606,6 +622,68 @@ def resolve_languages(
     if not target:
         raise click.ClickException("The datasets share no languages.")
     return target
+
+
+def check_new_datasets_have_records(
+    new_datasets: tuple[str, ...], results_file: Path
+) -> None:
+    """Verify that each new dataset produced at least one result record.
+
+    Reads the merged results file and checks that every new dataset id
+    appears in at least one record. Aborts with an actionable error if
+    any new dataset is missing records.
+
+    Args:
+        new_datasets:
+            The dataset ids that should have produced records.
+        results_file:
+            Path to the merged JSONL results file.
+
+    Raises:
+        click.ClickException:
+            If any new dataset has zero records.
+    """
+    if not results_file.exists():
+        raise click.ClickException(
+            f"Results file {results_file} does not exist. "
+            "Evaluations may have failed to produce any output."
+        )
+
+    # Parse records and collect datasets that have at least one record
+    datasets_with_records: set[str] = set()
+    with results_file.open(encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+            try:
+                identity = identity_from_eee_record(record)
+                _, dataset, _, _ = identity
+                datasets_with_records.add(dataset)
+            except (ValueError, KeyError):
+                continue
+
+    # Find new datasets with zero records
+    missing: list[str] = []
+    for ds in new_datasets:
+        if ds not in datasets_with_records:
+            missing.append(ds)
+
+    if missing:
+        raise click.ClickException(
+            f"New dataset(s) produced zero result records: {', '.join(missing)}. "
+            "Evaluations may have failed silently. Check the evaluation logs."
+        )
+
+    logger.info(
+        "All %s new dataset(s) produced records: %s.",
+        len(new_datasets),
+        ", ".join(new_datasets),
+    )
 
 
 def validate_gh_installed() -> None:
@@ -1067,9 +1145,84 @@ def apply_size_filter(
     return kept, sorted(too_large)
 
 
+@dataclass
+class JobResult:
+    """Result of a single evaluation job.
+
+    Attributes:
+        model_id:
+            The model that was evaluated.
+        success:
+            Whether all benchmarks succeeded.
+        partial_success:
+            Whether some benchmarks succeeded but others errored (only meaningful
+            when success is False).
+        reason:
+            Human-readable failure reason, or empty string on success.
+    """
+
+    model_id: str
+    success: bool
+    partial_success: bool = False
+    reason: str = ""
+
+
+def _strip_ansi(text: str) -> str:
+    """Strip ANSI colour escape sequences from text.
+
+    Args:
+        text:
+            Text potentially containing ANSI escape codes.
+
+    Returns:
+        Text with all ANSI escape sequences removed.
+    """
+    return _ANSI_ESCAPE_RE.sub("", text)
+
+
+def _parse_errored_benchmarks(output: str) -> int | None:
+    """Parse the number of errored benchmarks from euroeval output.
+
+    Searches for the "Errored N benchmarks" line in the output and returns
+    N, or None if not found.
+
+    Args:
+        output:
+            The euroeval CLI output (may contain ANSI codes).
+
+    Returns:
+        The number of errored benchmarks, or None if the marker line is absent.
+    """
+    clean_output = _strip_ansi(output)
+    match = re.search(r"Errored\s+(\d+)\s+benchmarks", clean_output)
+    if match:
+        return int(match.group(1))
+    return None
+
+
+def _extract_first_error_line(output: str) -> str:
+    """Extract the first error line from euroeval output for a failure reason.
+
+    Args:
+        output:
+            The euroeval CLI output (may contain ANSI codes).
+
+    Returns:
+            The first line containing "Error" or "Failed" or "RuntimeError",
+            truncated to 200 characters, or a generic message if none found.
+    """
+    clean_output = _strip_ansi(output)
+    for line in clean_output.splitlines():
+        lower_line = line.lower()
+        if any(marker in lower_line for marker in ["error", "failed", "runtimeerror"]):
+            truncated = line[:200] + ("..." if len(line) > 200 else "")
+            return truncated
+    return "Benchmark errors detected (see log for details)"
+
+
 def execute_jobs(
     jobs: list[Job], datasets: tuple[str, ...], gpu_memory_utilization: float | None
-) -> tuple[list[str], list[str]]:
+) -> tuple[list[JobResult], list[JobResult]]:
     """Run each evaluation in sequence via the shared euroeval runner.
 
     Args:
@@ -1081,11 +1234,11 @@ def execute_jobs(
             The utilization fraction to pass to euroeval, or None.
 
     Returns:
-        Tuple of model ids evaluated successfully and model ids that failed
-        (with exit code descriptions).
+        Tuple of JobResult objects for successful jobs and failed jobs.
+        Failed jobs include a reason string and partial_success flag.
     """
-    evaluated: list[str] = []
-    failed: list[str] = []
+    evaluated: list[JobResult] = []
+    failed: list[JobResult] = []
 
     # Create detailed evaluation log file before starting progress bar
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -1157,21 +1310,70 @@ def execute_jobs(
                 log_file.write(f"Exit Code: {returncode}\n")
                 log_file.write("=" * 40 + "\n")
 
+            # Determine success based on exit code AND benchmark error count
+            clean_output = _strip_ansi(output)
+            errored_count = _parse_errored_benchmarks(output)
+
             if returncode != 0:
-                output_tail = "\n".join(output.splitlines()[-40:])
+                # Non-zero exit code is always a failure
+                output_tail = "\n".join(clean_output.splitlines()[-40:])
                 logger.warning(
                     f"{job.model_id}: euroeval exited with code {returncode}:\n"
                     f"{output_tail}"
                 )
-                failed.append(f"{job.model_id} (exit {returncode})")
+                reason = _extract_first_error_line(output)
+                failed.append(
+                    JobResult(
+                        model_id=job.model_id,
+                        success=False,
+                        partial_success=False,
+                        reason=f"exit code {returncode}: {reason}",
+                    )
+                )
+            elif errored_count is not None and errored_count > 0:
+                # Exit code 0 but benchmarks errored. Determine if it's partial
+                # or total failure by checking for success markers.
+                succeeded_match = re.search(
+                    r"Succeeded\s+(\d+)\s+benchmarks", clean_output
+                )
+                succeeded_count = (
+                    int(succeeded_match.group(1)) if succeeded_match else 0
+                )
+
+                partial_success = succeeded_count > 0
+                reason = _extract_first_error_line(output)
+
+                if partial_success:
+                    logger.warning(
+                        f"{job.model_id}: {succeeded_count} benchmarks succeeded, "
+                        f"{errored_count} errored. First error: {reason}"
+                    )
+                else:
+                    logger.warning(
+                        f"{job.model_id}: all {errored_count} benchmarks errored. "
+                        f"First error: {reason}"
+                    )
+
+                failed.append(
+                    JobResult(
+                        model_id=job.model_id,
+                        success=False,
+                        partial_success=partial_success,
+                        reason=f"{errored_count} benchmark(s) errored: {reason}",
+                    )
+                )
             else:
-                evaluated.append(job.model_id)
+                # Full success
+                evaluated.append(
+                    JobResult(model_id=job.model_id, success=True, reason="")
+                )
+
     return evaluated, failed
 
 
 def _log_summary(
-    evaluated: list[str],
-    failed: list[str],
+    evaluated: list[JobResult],
+    failed: list[JobResult],
     skipped_api: list[str],
     skipped_existing: int,
     skipped_too_large: list[str],
@@ -1180,9 +1382,10 @@ def _log_summary(
 
     Args:
         evaluated:
-            List of model ids evaluated successfully.
+            List of JobResult objects for successful evaluations.
         failed:
-            List of model ids that failed (with exit code descriptions).
+            List of JobResult objects for failed evaluations, including
+            partial successes and failure reasons.
         skipped_api:
             Sorted list of API model ids skipped.
         skipped_existing:
@@ -1191,12 +1394,37 @@ def _log_summary(
             Sorted list of model ids dropped for exceeding GPU budget.
     """
     total_skipped = len(skipped_api) + skipped_existing + len(skipped_too_large)
+
+    # Count benchmark-level failures (not just exit code failures)
+    total_evaluated = len(evaluated)
+    total_failed = len(failed)
+    partial_successes = sum(1 for r in failed if r.partial_success)
+    total_failures = total_failed  # All failed results, including partial
+
     logger.info(
-        f"Evaluation summary: {len(evaluated)} evaluated, {len(failed)} failed, "
-        f"{total_skipped} skipped."
+        f"Evaluation summary: {total_evaluated} evaluated, {total_failures} failed "
+        f"({partial_successes} partial), {total_skipped} skipped."
     )
+
     if failed:
-        logger.info(f"  Failed ({len(failed)}): {', '.join(failed)}.")
+        # Group failures by type for clearer reporting
+        exit_failures = [r for r in failed if "exit code" in r.reason]
+        benchmark_failures = [r for r in failed if "errored" in r.reason]
+
+        if exit_failures:
+            logger.info(
+                f"  Exit code failures ({len(exit_failures)}): "
+                f"{', '.join(r.model_id for r in exit_failures)}."
+            )
+        if benchmark_failures:
+            benchmark_failure_details = [
+                f"{r.model_id} ({r.reason})" for r in benchmark_failures
+            ]
+            logger.info(
+                f"  Benchmark failures ({len(benchmark_failures)}): "
+                f"{', '.join(benchmark_failure_details)}."
+            )
+
     if skipped_api:
         logger.info(
             f"  Skipped {len(skipped_api)} API model(s) "

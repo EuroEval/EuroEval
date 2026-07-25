@@ -6,6 +6,7 @@ import re
 import subprocess
 from pathlib import Path
 
+import click
 import pytest
 
 from euroeval.data_models import DatasetConfig
@@ -802,3 +803,338 @@ class TestLoadCorpusAndBuildEvalJobs:
         assert jobs[0].model_id == "test-model"
         assert jobs[0].languages == ("da",)
         assert skipped_count == 0
+
+
+class TestBenchmarkFailureDetection:
+    """Tests for benchmark-level failure detection in execute_jobs."""
+
+    def test_exit_code_zero_with_errored_benchmarks_is_failure(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Exit code 0 with 'Errored N benchmarks' should be classified as failure."""
+        Job = swap_leaderboard_dataset.Job
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+
+        # Mock run_euroeval to return exit code 0 but with benchmark
+        # errors.
+        def mock_run_euroeval(
+            log_file: Path | None = None, **kwargs
+        ) -> tuple[int, str]:
+            output = (
+                "Running evaluation...\n"
+                "The model 'test-model' could not be loaded.\n"
+                "Errored 2 benchmarks\n"
+            )
+            if log_file is not None:
+                with open(log_file, "ab") as fh:
+                    fh.write(output.encode("utf-8"))
+            return (0, output)
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="run_euroeval",
+            value=mock_run_euroeval,
+        )
+
+        jobs = [
+            Job(
+                model_id="test-model",
+                languages=("da",),
+                is_api=False,
+                evaluate_test_split=True,
+                zero_shot=False,
+                datasets=("test-dataset",),
+            )
+        ]
+
+        evaluated, failed = swap_leaderboard_dataset.execute_jobs(
+            jobs=jobs, datasets=("test-dataset",), gpu_memory_utilization=None
+        )
+
+        # Should be classified as failed despite exit code 0
+        assert len(evaluated) == 0
+        assert len(failed) == 1
+        assert failed[0].model_id == "test-model"
+        assert failed[0].success is False
+        assert "errored" in failed[0].reason.lower()
+
+    def test_ansi_coloured_output_is_matched_correctly(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """ANSI-coloured output should be correctly stripped and matched."""
+        Job = swap_leaderboard_dataset.Job
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+
+        # Mock output with ANSI colour codes.
+        def mock_run_euroeval(
+            log_file: Path | None = None, **kwargs
+        ) -> tuple[int, str]:
+            # ANSI codes: \x1b[31m = red, \x1b[0m = reset
+            output = (
+                "\x1b[31mError:\x1b[0m The model could not be loaded\n"
+                "\x1b[33mErrored 1 benchmarks\x1b[0m\n"
+            )
+            if log_file is not None:
+                with open(log_file, "ab") as fh:
+                    fh.write(output.encode("utf-8"))
+            return (0, output)
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="run_euroeval",
+            value=mock_run_euroeval,
+        )
+
+        jobs = [
+            Job(
+                model_id="test-model",
+                languages=("da",),
+                is_api=False,
+                evaluate_test_split=True,
+                zero_shot=False,
+                datasets=("test-dataset",),
+            )
+        ]
+
+        evaluated, failed = swap_leaderboard_dataset.execute_jobs(
+            jobs=jobs, datasets=("test-dataset",), gpu_memory_utilization=None
+        )
+
+        # Should detect failure despite ANSI codes
+        assert len(evaluated) == 0
+        assert len(failed) == 1
+        assert failed[0].success is False
+
+    def test_partial_failure_is_distinguished_from_total_failure(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Partial failure should be distinguished from total failure."""
+        Job = swap_leaderboard_dataset.Job
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+
+        # Mock output with partial success.
+        def mock_run_euroeval(
+            log_file: Path | None = None, **kwargs
+        ) -> tuple[int, str]:
+            output = (
+                "Running benchmark 1... Succeeded\n"
+                "Running benchmark 2... Error: model loading failed\n"
+                "Succeeded 1 benchmarks\n"
+                "Errored 1 benchmarks\n"
+            )
+            if log_file is not None:
+                with open(log_file, "ab") as fh:
+                    fh.write(output.encode("utf-8"))
+            return (0, output)
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="run_euroeval",
+            value=mock_run_euroeval,
+        )
+
+        jobs = [
+            Job(
+                model_id="partial-model",
+                languages=("da",),
+                is_api=False,
+                evaluate_test_split=True,
+                zero_shot=False,
+                datasets=("test-dataset",),
+            )
+        ]
+
+        evaluated, failed = swap_leaderboard_dataset.execute_jobs(
+            jobs=jobs, datasets=("test-dataset",), gpu_memory_utilization=None
+        )
+
+        # Should be classified as failed but with partial_success=True
+        assert len(evaluated) == 0
+        assert len(failed) == 1
+        assert failed[0].model_id == "partial-model"
+        assert failed[0].success is False
+        assert failed[0].partial_success is True
+        assert "1 benchmark(s) errored" in failed[0].reason
+
+    def test_total_success_has_no_partial_success_flag(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Total success should have success=True and not be in failed list."""
+        Job = swap_leaderboard_dataset.Job
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="run_euroeval",
+            value=lambda **kwargs: (0, "Succeeded 2 benchmarks\nEvaluation complete"),
+        )
+
+        jobs = [
+            Job(
+                model_id="success-model",
+                languages=("da",),
+                is_api=False,
+                evaluate_test_split=True,
+                zero_shot=False,
+                datasets=("test-dataset",),
+            )
+        ]
+
+        evaluated, failed = swap_leaderboard_dataset.execute_jobs(
+            jobs=jobs, datasets=("test-dataset",), gpu_memory_utilization=None
+        )
+
+        assert len(evaluated) == 1
+        assert len(failed) == 0
+        assert evaluated[0].model_id == "success-model"
+        assert evaluated[0].success is True
+        assert evaluated[0].partial_success is False
+
+    def test_non_zero_exit_code_is_failure(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Non-zero exit code should always be classified as failure."""
+        Job = swap_leaderboard_dataset.Job
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="run_euroeval",
+            value=lambda **kwargs: (1, "RuntimeError: CUDA out of memory"),
+        )
+
+        jobs = [
+            Job(
+                model_id="oom-model",
+                languages=("da",),
+                is_api=False,
+                evaluate_test_split=True,
+                zero_shot=False,
+                datasets=("test-dataset",),
+            )
+        ]
+
+        evaluated, failed = swap_leaderboard_dataset.execute_jobs(
+            jobs=jobs, datasets=("test-dataset",), gpu_memory_utilization=None
+        )
+
+        assert len(evaluated) == 0
+        assert len(failed) == 1
+        assert failed[0].model_id == "oom-model"
+        assert failed[0].success is False
+        assert "exit code 1" in failed[0].reason
+
+
+class TestRecordCountAssertion:
+    """Tests for check_new_datasets_have_records function."""
+
+    def test_check_passes_when_all_datasets_have_records(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Check should pass when every new dataset has at least one record."""
+        # Create a temp JSONL file with records for both datasets
+        results_file = tmp_path / "results.jsonl"
+        records = [
+            {
+                "model_info": {"id": "model1"},
+                "eval_library": {
+                    "additional_details": {
+                        "dataset": "dataset-a",
+                        "few_shot": True,
+                        "validation_split": False,
+                    }
+                },
+            },
+            {
+                "model_info": {"id": "model2"},
+                "eval_library": {
+                    "additional_details": {
+                        "dataset": "dataset-b",
+                        "few_shot": False,
+                        "validation_split": True,
+                    }
+                },
+            },
+        ]
+        with results_file.open("w", encoding="utf-8") as f:
+            for record in records:
+                f.write(json.dumps(record) + "\n")
+
+        # Should not raise
+        swap_leaderboard_dataset.check_new_datasets_have_records(
+            new_datasets=("dataset-a", "dataset-b"), results_file=results_file
+        )
+
+    def test_check_aborts_when_dataset_has_zero_records(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Check should abort with clear error when a new dataset has zero records."""
+        # Create a temp JSONL file with records for only one dataset
+        results_file = tmp_path / "results.jsonl"
+        records = [
+            {
+                "model_info": {"id": "model1"},
+                "eval_library": {
+                    "additional_details": {
+                        "dataset": "dataset-a",
+                        "few_shot": True,
+                        "validation_split": False,
+                    }
+                },
+            }
+        ]
+        with results_file.open("w", encoding="utf-8") as f:
+            for record in records:
+                f.write(json.dumps(record) + "\n")
+
+        # Should raise ClickException
+        with pytest.raises(click.ClickException) as exc_info:
+            swap_leaderboard_dataset.check_new_datasets_have_records(
+                new_datasets=("dataset-a", "dataset-b"), results_file=results_file
+            )
+
+        # Check the error message mentions the missing dataset
+        assert "dataset-b" in str(exc_info.value)
+        assert "zero result records" in str(exc_info.value).lower()
+
+    def test_check_aborts_when_results_file_missing(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Check should abort when results file doesn't exist."""
+        results_file = tmp_path / "nonexistent.jsonl"
+
+        with pytest.raises(click.ClickException) as exc_info:
+            swap_leaderboard_dataset.check_new_datasets_have_records(
+                new_datasets=("dataset-a",), results_file=results_file
+            )
+
+        assert "does not exist" in str(exc_info.value).lower()
+
+    def test_check_handles_empty_results_file(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Check should abort when results file is empty."""
+        results_file = tmp_path / "empty.jsonl"
+        results_file.write_text("", encoding="utf-8")
+
+        with pytest.raises(click.ClickException) as exc_info:
+            swap_leaderboard_dataset.check_new_datasets_have_records(
+                new_datasets=("dataset-a",), results_file=results_file
+            )
+
+        assert "zero result records" in str(exc_info.value).lower()
