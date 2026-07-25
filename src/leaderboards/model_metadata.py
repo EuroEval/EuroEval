@@ -91,6 +91,8 @@ def add_missing_entries(
         )
 
     return record
+
+
 def _generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
     """Generates a model URL using a cache.
 
@@ -569,5 +571,3 @@ def _model_id_from_record(record: dict) -> str:
         if model_id_match:
             return model_id_match.group(1)
     return model_id
-
-

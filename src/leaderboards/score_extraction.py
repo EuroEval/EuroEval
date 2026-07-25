@@ -120,6 +120,8 @@ def extract_model_metadata(
     _ensure_standard_metadata_keys(metadata_dict=metadata_dict)
     logger.info("Extracted model metadata.")
     return metadata_dict
+
+
 def _ensure_standard_metadata_keys(metadata_dict: dict[str, dict[str, t.Any]]) -> None:
     """Ensure every model has all standard metadata keys with defaults.
 
@@ -669,5 +671,3 @@ def _compare_presence_metadata(
         return False
     # Both present or both absent: don't overwrite (preserve existing)
     return False
-
-
