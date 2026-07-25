@@ -107,10 +107,8 @@ def prepare_languages(
     Returns:
         The prepared dataset languages.
     """
-    # Create a dictionary that maps languages to their associated language objects
     language_mapping = get_all_languages()
 
-    # Create the list `languages_str` of language codes to use for models or datasets
     languages_str: c.Sequence[str]
     if language_codes is None:
         languages_str = default_language_codes
@@ -119,7 +117,6 @@ def prepare_languages(
     else:
         languages_str = language_codes
 
-    # Convert the model languages to language objects
     if "all" in languages_str:
         prepared_languages = list(language_mapping.values())
     else:

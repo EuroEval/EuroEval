@@ -231,13 +231,11 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             return self.benchmark_config.max_context_length
         all_max_lengths: list[int] = list()
 
-        # Add the registered max length of the tokeniser
         if hasattr(
             self._tokeniser, "model_max_length"
         ) and self._tokeniser.model_max_length < int(1e30):
             all_max_lengths.append(self._tokeniser.model_max_length)
 
-        # Add the max length derived from the model's input sizes
         if hasattr(self._tokeniser, "max_model_input_sizes"):
             all_max_lengths.extend(
                 [
@@ -247,7 +245,6 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 ]
             )
 
-        # Add max length candidates from the model's configuration
         candidate_config_max_lengths = [
             "max_position_embeddings",
             "max_sequence_length",
@@ -306,7 +303,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
     @property
     def generative_type(self) -> GenerativeType | None:
-        """Get the generative type of the model.
+        """Generative type of the model.
 
         Returns:
             The generative type of the model, or None if it has not been set yet.
@@ -506,9 +503,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
         result: DatasetDict = DatasetDict(data_dict)
 
-        # The Trainer hides the columns that are not used by the model (here
-        # `id` and `offset_mapping` which we will need for our post-processing),
-        # so we put them back
+        # Restore columns hidden by Trainer (id, offset_mapping) for post-processing
         for split_name, split in result.items():
             result[split_name].set_format(
                 type=split.format["type"], columns=list(split.features.keys())
@@ -783,7 +778,6 @@ def load_model_and_tokeniser(
         ),
     )
 
-    # Get the model class associated with the task group
     model_cls_or_none: t.Type[PreTrainedModel] | None = t.cast(
         "t.Type[PreTrainedModel] | None",
         get_class_by_name(
@@ -1266,7 +1260,6 @@ def load_tokeniser(
             "attempts."
         )
 
-    # Ensure that BOS, EOS and PAD tokens are set
     tokeniser.bos_token, tokeniser.bos_token_id = get_bos_token(tokeniser=tokeniser)
     tokeniser.eos_token, tokeniser.eos_token_id = get_eos_token(tokeniser=tokeniser)
 
@@ -1505,13 +1498,10 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
         InvalidModel:
             If the model does not have token type embeddings.
     """
-    # Get the models' token type embedding children, if they exist
     children = get_children_of_module(name="model", module=model)
     assert isinstance(children, dict)
 
-    # If the model has token type embeddings then get them
     if children:
-        # Get the list of attributes that are token type embeddings
         attribute_list = list()
         done = False
         while not done:
@@ -1523,7 +1513,6 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
                     done = True
                 break
 
-        # Get the token type embeddings
         token_type_embeddings = model
         for attribute in attribute_list:
             token_type_embeddings = getattr(token_type_embeddings, attribute)
@@ -1548,7 +1537,6 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
             )
             token_type_embeddings.num_embeddings = 2  # ty: ignore[invalid-assignment]
 
-        # Set the model config to use the new type vocab size
         model.config.type_vocab_size = 2
 
     return model
@@ -1702,11 +1690,10 @@ def align_model_and_tokeniser(
     model_max_length = min(model_max_length, MAX_CONTEXT_LENGTH)
     tokeniser.model_max_length = model_max_length if model_max_length > 0 else 512
 
-    # Move to CPU for testing max length
+    # Test on CPU to avoid GPU memory issues
     model_device = model.device
     model.to(torch.device("cpu"))  # ty: ignore[invalid-argument-type]
 
-    # Find valid max length
     initial_max_length = tokeniser.model_max_length
     valid_max_length = _find_valid_model_max_length(
         model=model,
@@ -1716,13 +1703,11 @@ def align_model_and_tokeniser(
     )
     tokeniser.model_max_length = valid_max_length
 
-    # Move back to original device
     model.to(model_device)  # ty: ignore[invalid-argument-type]
 
-    # Adjust vocab size if needed
+    _adjust_vocab_size(model=model, tokeniser=tokeniser, raise_errors=raise_errors)
     _adjust_vocab_size(model=model, tokeniser=tokeniser, raise_errors=raise_errors)
 
-    # Set BOS token from EOS if needed
     _set_bos_token(tokeniser=tokeniser)
 
     return model, tokeniser
@@ -1789,5 +1774,4 @@ def get_class_by_name(
             level=logging.DEBUG,
         )
 
-    # If the class could not be found, return None
     return None
