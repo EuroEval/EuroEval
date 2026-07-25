@@ -32,6 +32,94 @@ from .task_metadata import dataset_sources, task_metric_names
 logger = logging.getLogger(__name__)
 
 
+def extract_model_metadata(
+    results: list[dict[str, t.Any]],
+) -> dict[str, dict[str, t.Any]]:
+    """Extract metadata from the results.
+
+    Args:
+        results:
+            The processed results.
+
+    Returns:
+        The metadata.
+    """
+    logger.info("Extracting model metadata...")
+    metadata_dict: dict[str, dict[str, t.Any]] = defaultdict(dict)
+    model_url_explicit: dict[str, bool] = {}
+
+    for record in results:
+        model_ids = extract_model_ids_from_record(record=record)
+        (
+            extracted,
+            presence_flags,
+            explicit_flags,  # noqa: F841
+            model_url,
+            model_url_explicit_rec,
+            version,
+            num_failed,
+        ) = _extract_metadata_from_record(record)
+        dataset = get_dataset(record)
+
+        for model_id in model_ids:
+            existing = metadata_dict[model_id]
+
+            # Update float fields
+            _update_metadata_field(
+                existing=existing,
+                new_value=extracted["parameters"],
+                field="parameters",
+                is_present=True,  # Always set (defaults to NaN)
+            )
+            _update_metadata_field(
+                existing=existing,
+                new_value=extracted["vocabulary_size"],
+                field="vocabulary_size",
+                is_present=True,
+            )
+            _update_metadata_field(
+                existing=existing,
+                new_value=extracted["context"],
+                field="context",
+                is_present=True,
+            )
+
+            # Update presence-checked fields
+            for field in (
+                "generative_type",
+                "commercial",
+                "merge",
+                "open",
+                "trained_from_scratch",
+            ):
+                _update_metadata_field(
+                    existing=existing,
+                    new_value=extracted[field],
+                    field=field,
+                    is_present=presence_flags[field],
+                )
+
+            # Handle model_url separately (special explicit vs generated logic)
+            _update_model_url(
+                existing=existing,
+                model_url=model_url,
+                model_url_explicit=model_url_explicit_rec,
+                model_url_explicit_map=model_url_explicit,
+                model_id=model_id,
+            )
+
+            # Add dataset-specific fields
+            if dataset:
+                existing[f"{dataset}_version"] = version
+                if num_failed is not None:
+                    existing[f"{dataset}_failures"] = num_failed
+                    scored = _scored_count(record=record, dataset=dataset)
+                    if scored is not None:
+                        existing[f"{dataset}_scored"] = scored
+
+    _ensure_standard_metadata_keys(metadata_dict=metadata_dict)
+    logger.info("Extracted model metadata.")
+    return metadata_dict
 def _ensure_standard_metadata_keys(metadata_dict: dict[str, dict[str, t.Any]]) -> None:
     """Ensure every model has all standard metadata keys with defaults.
 
@@ -89,6 +177,112 @@ def _scored_count(record: dict[str, t.Any], dataset: str) -> int | None:
     if size is None:
         return None
     return len(raw_results) * size
+
+
+def group_results_by_model(
+    results: list[dict[str, t.Any]],
+) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
+    """Group results by model ID.
+
+    Args:
+        results:
+            The processed results.
+
+    Returns:
+        The results grouped by model ID. The dict structure is
+        model_id -> dataset -> list of (raw_scores, total_score, std_err).
+    """
+    results = deduplicate_records(records=results)
+    model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
+        defaultdict(lambda: defaultdict(list))
+    )
+    for record in results:
+        model_ids = extract_model_ids_from_record(record=record)
+        dataset = get_dataset(record)
+        if not dataset:
+            continue
+
+        raw_results = get_raw_results(record)
+        if raw_results is None:
+            continue
+
+        total_scores = get_total_scores(record)
+        if total_scores is None:
+            continue
+
+        _process_record_scores(
+            record=record,
+            model_ids=model_ids,
+            dataset=dataset,
+            raw_results=raw_results,
+            total_scores=total_scores,
+            model_scores=model_scores,
+        )
+
+    return model_scores
+
+
+def _process_record_scores(
+    record: dict[str, t.Any],
+    model_ids: list[str],
+    dataset: str,
+    raw_results: list[t.Any],
+    total_scores: dict[str, t.Any],
+    model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+) -> None:
+    """Process scores for a single record and add to model_scores.
+
+    Args:
+        record:
+            The record being processed.
+        model_ids:
+            List of model IDs from the record.
+        dataset:
+            Dataset name.
+        raw_results:
+            Raw results list.
+        total_scores:
+            Total scores dict.
+        model_scores:
+            Accumulator dict to update.
+    """
+    task = get_task(record)
+    if not task:
+        return
+    primary, secondary = task_metric_names(task)
+    metrics: list[tuple[str, str]] = [("primary", primary)]
+    if secondary is not None:
+        metrics.append(("secondary", secondary))
+
+    model_name = get_model_name(record)
+    for metric_type, metric in metrics:
+        raw_scores = _extract_raw_scores(raw_results=raw_results, metric=metric)
+        if not raw_scores:
+            continue
+
+        total_score = _get_total_score_value(
+            total_scores=total_scores,
+            metric=metric,
+            dataset=dataset,
+            model_name=model_name,
+            metric_type=metric_type,
+        )
+        if total_score is None:
+            continue
+
+        # Scale raw scores to [0, 100] if normalised to [0, 1]
+        scale_factor = 100.0 if max(raw_scores) <= 1 else 1.0
+        raw_scores = [score * scale_factor for score in raw_scores]
+
+        std_err = _compute_std_err(
+            raw_scores=raw_scores,
+            total_scores=total_scores,
+            metric=metric,
+            scale_factor=scale_factor,
+        )
+
+        for model_id in model_ids:
+            model_scores[model_id][dataset].append((raw_scores, total_score, std_err))
 
 
 def _extract_raw_scores(raw_results: list[t.Any], metric: str) -> list[float]:
@@ -192,164 +386,6 @@ def _compute_std_err(
     return std_err
 
 
-def _to_float_or_nan(val: str | float | int | None) -> float:
-    """Coerce a metadata value to a non-negative float, else NaN.
-
-    Args:
-        val:
-            The raw value, which may be a number, numeric string, or None.
-
-    Returns:
-        The value as a float if it is non-negative, otherwise NaN.
-    """
-    if isinstance(val, int | float):
-        return val if val >= 0 else float("nan")
-    if isinstance(val, str):
-        try:
-            num = float(val)
-            return num if num >= 0 else float("nan")
-        except ValueError:
-            return float("nan")
-    return float("nan")
-
-
-def _to_bool(val: str | bool | None) -> bool:
-    """Coerce a metadata value to a boolean.
-
-    Args:
-        val:
-            The raw value, which may be a bool, "true"/"false" string, or None.
-
-    Returns:
-        The boolean value, defaulting to False.
-    """
-    if isinstance(val, bool):
-        return val
-    if isinstance(val, str):
-        return val.lower() == "true"
-    return False
-
-
-def _compare_float_metadata(new_value: float | None, old_value: float | None) -> bool:
-    """Compare float metadata fields, preferring non-NaN over NaN.
-
-    Args:
-        new_value:
-            The new float value.
-        old_value:
-            The existing float value.
-
-    Returns:
-        True if new_value is better (non-NaN when old is NaN).
-    """
-    if isinstance(old_value, float) and math.isnan(old_value):
-        if isinstance(new_value, float) and not math.isnan(new_value):
-            return True
-        return False
-    if isinstance(new_value, float) and math.isnan(new_value):
-        return False
-    return True
-
-
-def _compare_presence_metadata(
-    new_value: bool | str | float | int | None,
-    old_value: bool | str | float | int | None,
-) -> bool:
-    """Compare fields by presence.
-
-    Prefer present (non-None/non-empty) over missing (None/empty). For string
-    fields (generative_type, model_url), empty strings are treated as absent.
-    Explicit False is legitimate metadata and should be preserved.
-    When both are present, neither is "better" (return False to preserve).
-
-    Args:
-        new_value:
-            The new value.
-        old_value:
-            The existing value.
-
-    Returns:
-        True if new_value should replace old_value.
-    """
-    # Treat empty strings as absent for string fields
-    new_is_present = new_value is not None and (
-        not isinstance(new_value, str) or new_value != ""
-    )
-    old_is_present = old_value is not None and (
-        not isinstance(old_value, str) or old_value != ""
-    )
-
-    if not old_is_present and new_is_present:
-        return True
-    if old_is_present and not new_is_present:
-        return False
-    # Both present or both absent: don't overwrite (preserve existing)
-    return False
-
-
-def _process_record_scores(
-    record: dict[str, t.Any],
-    model_ids: list[str],
-    dataset: str,
-    raw_results: list[t.Any],
-    total_scores: dict[str, t.Any],
-    model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-) -> None:
-    """Process scores for a single record and add to model_scores.
-
-    Args:
-        record:
-            The record being processed.
-        model_ids:
-            List of model IDs from the record.
-        dataset:
-            Dataset name.
-        raw_results:
-            Raw results list.
-        total_scores:
-            Total scores dict.
-        model_scores:
-            Accumulator dict to update.
-    """
-    task = get_task(record)
-    if not task:
-        return
-    primary, secondary = task_metric_names(task)
-    metrics: list[tuple[str, str]] = [("primary", primary)]
-    if secondary is not None:
-        metrics.append(("secondary", secondary))
-
-    model_name = get_model_name(record)
-    for metric_type, metric in metrics:
-        raw_scores = _extract_raw_scores(raw_results=raw_results, metric=metric)
-        if not raw_scores:
-            continue
-
-        total_score = _get_total_score_value(
-            total_scores=total_scores,
-            metric=metric,
-            dataset=dataset,
-            model_name=model_name,
-            metric_type=metric_type,
-        )
-        if total_score is None:
-            continue
-
-        # Scale raw scores to [0, 100] if normalised to [0, 1]
-        scale_factor = 100.0 if max(raw_scores) <= 1 else 1.0
-        raw_scores = [score * scale_factor for score in raw_scores]
-
-        std_err = _compute_std_err(
-            raw_scores=raw_scores,
-            total_scores=total_scores,
-            metric=metric,
-            scale_factor=scale_factor,
-        )
-
-        for model_id in model_ids:
-            model_scores[model_id][dataset].append((raw_scores, total_score, std_err))
-
-
 def _extract_metadata_from_record(
     record: dict[str, t.Any],
 ) -> tuple[
@@ -424,94 +460,42 @@ def _extract_metadata_from_record(
     )
 
 
-def _is_better_metadata(
-    new_value: bool | str | float | None,
-    old_value: bool | str | float | None,
-    field: str,
-) -> bool:
-    """Check if new metadata value is "better" than the old one.
-
-    A value is "better" if it's more informative (non-null/non-default) when
-    the old value is null/default. Used to prevent stale records from
-    overwriting enriched metadata during extraction.
+def _to_float_or_nan(val: str | float | int | None) -> float:
+    """Coerce a metadata value to a non-negative float, else NaN.
 
     Args:
-        new_value:
-            The new metadata value from the current record.
-        old_value:
-            The existing metadata value already stored.
-        field:
-            The field name being compared.
+        val:
+            The raw value, which may be a number, numeric string, or None.
 
     Returns:
-        True if the new value should replace the old one.
+        The value as a float if it is non-negative, otherwise NaN.
     """
-    # Prefer non-None over None (base case for all fields)
-    if old_value is None and new_value is not None:
-        return True
-    if old_value is not None and new_value is None:
-        return False
-
-    # Dispatch to field-specific comparison logic
-    float_fields = frozenset({"parameters", "vocabulary_size", "context"})
-    presence_fields = frozenset({"commercial", "merge", "open", "trained_from_scratch"})
-
-    if field in float_fields:
-        new_float = new_value if isinstance(new_value, float) else None
-        old_float = old_value if isinstance(old_value, float) else None
-        return _compare_float_metadata(new_value=new_float, old_value=old_float)
-    if field in presence_fields:
-        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
-    if field == "generative_type":
-        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
-    if field == "model_url":
-        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
-
-    # Default: prefer new value (preserves existing behaviour for equal values)
-    return True
+    if isinstance(val, int | float):
+        return val if val >= 0 else float("nan")
+    if isinstance(val, str):
+        try:
+            num = float(val)
+            return num if num >= 0 else float("nan")
+        except ValueError:
+            return float("nan")
+    return float("nan")
 
 
-def group_results_by_model(
-    results: list[dict[str, t.Any]],
-) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
-    """Group results by model ID.
+def _to_bool(val: str | bool | None) -> bool:
+    """Coerce a metadata value to a boolean.
 
     Args:
-        results:
-            The processed results.
+        val:
+            The raw value, which may be a bool, "true"/"false" string, or None.
 
     Returns:
-        The results grouped by model ID. The dict structure is
-        model_id -> dataset -> list of (raw_scores, total_score, std_err).
+        The boolean value, defaulting to False.
     """
-    results = deduplicate_records(records=results)
-    model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
-        defaultdict(lambda: defaultdict(list))
-    )
-    for record in results:
-        model_ids = extract_model_ids_from_record(record=record)
-        dataset = get_dataset(record)
-        if not dataset:
-            continue
-
-        raw_results = get_raw_results(record)
-        if raw_results is None:
-            continue
-
-        total_scores = get_total_scores(record)
-        if total_scores is None:
-            continue
-
-        _process_record_scores(
-            record=record,
-            model_ids=model_ids,
-            dataset=dataset,
-            raw_results=raw_results,
-            total_scores=total_scores,
-            model_scores=model_scores,
-        )
-
-    return model_scores
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, str):
+        return val.lower() == "true"
+    return False
 
 
 def _update_metadata_field(
@@ -583,91 +567,107 @@ def _update_model_url(
         model_url_explicit_map[model_id] = model_url_explicit
 
 
-def extract_model_metadata(
-    results: list[dict[str, t.Any]],
-) -> dict[str, dict[str, t.Any]]:
-    """Extract metadata from the results.
+def _is_better_metadata(
+    new_value: bool | str | float | None,
+    old_value: bool | str | float | None,
+    field: str,
+) -> bool:
+    """Check if new metadata value is "better" than the old one.
+
+    A value is "better" if it's more informative (non-null/non-default) when
+    the old value is null/default. Used to prevent stale records from
+    overwriting enriched metadata during extraction.
 
     Args:
-        results:
-            The processed results.
+        new_value:
+            The new metadata value from the current record.
+        old_value:
+            The existing metadata value already stored.
+        field:
+            The field name being compared.
 
     Returns:
-        The metadata.
+        True if the new value should replace the old one.
     """
-    logger.info("Extracting model metadata...")
-    metadata_dict: dict[str, dict[str, t.Any]] = defaultdict(dict)
-    model_url_explicit: dict[str, bool] = {}
+    # Prefer non-None over None (base case for all fields)
+    if old_value is None and new_value is not None:
+        return True
+    if old_value is not None and new_value is None:
+        return False
 
-    for record in results:
-        model_ids = extract_model_ids_from_record(record=record)
-        (
-            extracted,
-            presence_flags,
-            explicit_flags,  # noqa: F841
-            model_url,
-            model_url_explicit_rec,
-            version,
-            num_failed,
-        ) = _extract_metadata_from_record(record)
-        dataset = get_dataset(record)
+    # Dispatch to field-specific comparison logic
+    float_fields = frozenset({"parameters", "vocabulary_size", "context"})
+    presence_fields = frozenset({"commercial", "merge", "open", "trained_from_scratch"})
 
-        for model_id in model_ids:
-            existing = metadata_dict[model_id]
+    if field in float_fields:
+        new_float = new_value if isinstance(new_value, float) else None
+        old_float = old_value if isinstance(old_value, float) else None
+        return _compare_float_metadata(new_value=new_float, old_value=old_float)
+    if field in presence_fields:
+        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
+    if field == "generative_type":
+        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
+    if field == "model_url":
+        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
 
-            # Update float fields
-            _update_metadata_field(
-                existing=existing,
-                new_value=extracted["parameters"],
-                field="parameters",
-                is_present=True,  # Always set (defaults to NaN)
-            )
-            _update_metadata_field(
-                existing=existing,
-                new_value=extracted["vocabulary_size"],
-                field="vocabulary_size",
-                is_present=True,
-            )
-            _update_metadata_field(
-                existing=existing,
-                new_value=extracted["context"],
-                field="context",
-                is_present=True,
-            )
+    # Default: prefer new value (preserves existing behaviour for equal values)
+    return True
 
-            # Update presence-checked fields
-            for field in (
-                "generative_type",
-                "commercial",
-                "merge",
-                "open",
-                "trained_from_scratch",
-            ):
-                _update_metadata_field(
-                    existing=existing,
-                    new_value=extracted[field],
-                    field=field,
-                    is_present=presence_flags[field],
-                )
 
-            # Handle model_url separately (special explicit vs generated logic)
-            _update_model_url(
-                existing=existing,
-                model_url=model_url,
-                model_url_explicit=model_url_explicit_rec,
-                model_url_explicit_map=model_url_explicit,
-                model_id=model_id,
-            )
+def _compare_float_metadata(new_value: float | None, old_value: float | None) -> bool:
+    """Compare float metadata fields, preferring non-NaN over NaN.
 
-            # Add dataset-specific fields
-            if dataset:
-                existing[f"{dataset}_version"] = version
-                if num_failed is not None:
-                    existing[f"{dataset}_failures"] = num_failed
-                    scored = _scored_count(record=record, dataset=dataset)
-                    if scored is not None:
-                        existing[f"{dataset}_scored"] = scored
+    Args:
+        new_value:
+            The new float value.
+        old_value:
+            The existing float value.
 
-    _ensure_standard_metadata_keys(metadata_dict=metadata_dict)
-    logger.info("Extracted model metadata.")
-    return metadata_dict
+    Returns:
+        True if new_value is better (non-NaN when old is NaN).
+    """
+    if isinstance(old_value, float) and math.isnan(old_value):
+        if isinstance(new_value, float) and not math.isnan(new_value):
+            return True
+        return False
+    if isinstance(new_value, float) and math.isnan(new_value):
+        return False
+    return True
+
+
+def _compare_presence_metadata(
+    new_value: bool | str | float | int | None,
+    old_value: bool | str | float | int | None,
+) -> bool:
+    """Compare fields by presence.
+
+    Prefer present (non-None/non-empty) over missing (None/empty). For string
+    fields (generative_type, model_url), empty strings are treated as absent.
+    Explicit False is legitimate metadata and should be preserved.
+    When both are present, neither is "better" (return False to preserve).
+
+    Args:
+        new_value:
+            The new value.
+        old_value:
+            The existing value.
+
+    Returns:
+        True if new_value should replace old_value.
+    """
+    # Treat empty strings as absent for string fields
+    new_is_present = new_value is not None and (
+        not isinstance(new_value, str) or new_value != ""
+    )
+    old_is_present = old_value is not None and (
+        not isinstance(old_value, str) or old_value != ""
+    )
+
+    if not old_is_present and new_is_present:
+        return True
+    if old_is_present and not new_is_present:
+        return False
+    # Both present or both absent: don't overwrite (preserve existing)
+    return False
+
+
