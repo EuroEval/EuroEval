@@ -1513,7 +1513,7 @@ def load_model(
 
     clear_vllm()
 
-    hf_overrides: dict[str, list[str]] = {}
+    hf_overrides: dict[str, t.Any] = {}
     if hf_model_config.architectures:
         remapped = [
             _ARCHITECTURE_ALIASES.get(arch, arch)
@@ -1527,6 +1527,39 @@ def load_model(
             )
             hf_model_config.architectures = remapped
             hf_overrides["architectures"] = remapped
+
+    # OLMo-3 models have rope_theta and rope_scaling at the top level of config.json,
+    # but vLLM's olmo2.py implementation expects them nested in rope_parameters.
+    # Construct the rope_parameters override for OLMo-3 models.
+    is_olmo3 = hf_model_config.model_type == "olmo3" or (
+        hf_model_config.architectures
+        and "Olmo3ForCausalLM" in hf_model_config.architectures
+    )
+    if is_olmo3 and not getattr(hf_model_config, "rope_parameters", None):
+        rope_theta = getattr(hf_model_config, "rope_theta", 10000)
+        rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
+        rope_parameters: dict[str, t.Any] = {
+            "rope_theta": rope_theta,
+            "rope_type": rope_scaling.get("rope_type", "default"),
+        }
+        # Add optional RoPE scaling parameters if present
+        for key in [
+            "factor",
+            "original_max_position_embeddings",
+            "attention_factor",
+            "beta_fast",
+            "beta_slow",
+            "short_factor",
+            "long_factor",
+        ]:
+            if key in rope_scaling:
+                rope_parameters[key] = rope_scaling[key]
+        log_once(
+            f"Adding rope_parameters override for OLMo-3 model {model_id!r}: "
+            f"{rope_parameters!r}",
+            level=logging.DEBUG,
+        )
+        hf_overrides["rope_parameters"] = rope_parameters
 
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism(force_single_gpu=False)
