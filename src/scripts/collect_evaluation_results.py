@@ -342,7 +342,7 @@ def regenerate_leaderboards(force: bool = False) -> bool:
         cmd.append("--force")
     logger.info(f"Running: {' '.join(cmd)}")
     try:
-        subprocess.run(command=cmd, check=True, cwd=REPO_ROOT)
+        subprocess.run(args=cmd, check=True, cwd=REPO_ROOT)
         return True
     except subprocess.CalledProcessError as e:
         logger.error(f"generate_leaderboards failed (exit {e.returncode}).")
@@ -365,7 +365,7 @@ def deploy_to_vercel() -> bool:
     ):
         logger.info(f"Running: {' '.join(cmd)}")
         try:
-            subprocess.run(command=cmd, check=True, cwd=REPO_ROOT)
+            subprocess.run(args=cmd, check=True, cwd=REPO_ROOT)
         except FileNotFoundError:
             logger.error(
                 "`vercel` CLI not found on PATH. Install with `npm i -g vercel`."
@@ -492,7 +492,7 @@ def _merge_new_results(
     new_lines = new_results_path.read_text(encoding="utf-8").splitlines()
     logger.info(f"Processing {len(new_lines):,} new result lines...")
 
-    for line_number, line in enumerate(iterable=new_lines, start=1):
+    for line_number, line in enumerate(new_lines, start=1):
         if not line.strip():
             continue
         try:

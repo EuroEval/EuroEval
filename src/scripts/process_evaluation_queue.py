@@ -745,7 +745,7 @@ def _process_pending_languages(
     failure_output_tail = ""
     last_output = ""
 
-    for i, lang in enumerate(iterable=pending):
+    for i, lang in enumerate(pending):
         logger.info(
             f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
         )

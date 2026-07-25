@@ -205,7 +205,7 @@ def _maybe_refresh_core_models() -> None:
     # updater reuses the same processed cache.
     script_path = Path(__file__).resolve().parent / "update_core_models.py"
     try:
-        subprocess.run(command=[sys.executable, str(script_path)], check=True)
+        subprocess.run(args=[sys.executable, str(script_path)], check=True)
     except subprocess.CalledProcessError as exc:
         logger.warning(f"update_core_models failed (exit {exc.returncode}).")
 

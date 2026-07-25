@@ -71,17 +71,17 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
 
     # Install newest project. check=True so a failed step aborts before we tag
     # and push a release.
-    subprocess.run(command=["make", "install"], check=True)
+    subprocess.run(args=["make", "install"], check=True)
 
     # Add to version control
-    subprocess.run(command=["git", "add", ".pre-commit-config.yaml"], check=True)
-    subprocess.run(command=["git", "add", "CHANGELOG.md"], check=True)
-    subprocess.run(command=["git", "add", "pyproject.toml"], check=True)
-    subprocess.run(command=["git", "add", "uv.lock"], check=True)
-    subprocess.run(command=["git", "commit", "-m", f"feat: v{version}"], check=True)
-    subprocess.run(command=["git", "tag", f"v{version}"], check=True)
-    subprocess.run(command=["git", "push"], check=True)
-    subprocess.run(command=["git", "push", "--tags"], check=True)
+    subprocess.run(args=["git", "add", ".pre-commit-config.yaml"], check=True)
+    subprocess.run(args=["git", "add", "CHANGELOG.md"], check=True)
+    subprocess.run(args=["git", "add", "pyproject.toml"], check=True)
+    subprocess.run(args=["git", "add", "uv.lock"], check=True)
+    subprocess.run(args=["git", "commit", "-m", f"feat: v{version}"], check=True)
+    subprocess.run(args=["git", "tag", f"v{version}"], check=True)
+    subprocess.run(args=["git", "push"], check=True)
+    subprocess.run(args=["git", "push", "--tags"], check=True)
 
 
 def get_current_version() -> tuple[int, int, int]:

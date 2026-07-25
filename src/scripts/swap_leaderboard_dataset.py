@@ -616,7 +616,7 @@ def validate_gh_installed() -> None:
             If the Github CLI wasn't found.
     """
     try:
-        subprocess.run(command=["gh", "version"], check=True, capture_output=True)
+        subprocess.run(args=["gh", "version"], check=True, capture_output=True)
     except FileNotFoundError:
         raise click.ClickException(
             "GitHub CLI not found; install it from https://cli.github.com/"
@@ -1103,7 +1103,7 @@ def execute_jobs(
         log_file.write("\n")
         log_file.write("Job Plan\n")
         log_file.write("--------\n")
-        for idx, job in enumerate(iterable=jobs, start=1):
+        for idx, job in enumerate(jobs, start=1):
             shot = "zero-shot" if job.zero_shot else "few-shot"
             split = "test" if job.evaluate_test_split else "val"
             source = "API" if job.is_api else "open-weight"
@@ -1117,7 +1117,7 @@ def execute_jobs(
     logger.info(f"Evaluation log: {log_path}")
 
     with tqdm(jobs, desc="Evaluating models", unit="model") as progress:
-        for idx, job in enumerate(iterable=progress, start=1):
+        for idx, job in enumerate(progress, start=1):
             progress.set_postfix_str(job.model_id)
 
             # Write job header to log before starting evaluation
@@ -1476,7 +1476,7 @@ def _update_changelog(
     changed_idx: int | None = None
     next_section_idx: int | None = None
 
-    for i, line in enumerate(iterable=lines):
+    for i, line in enumerate(lines):
         if line.strip() == "## [Unreleased]":
             unreleased_idx = i
         elif unreleased_idx is not None and line.strip() == "### Changed":
@@ -1693,7 +1693,7 @@ def _marker_index(lines: list[str], path: Path) -> int:
         click.ClickException:
             When the marker is absent.
     """
-    for i, line in enumerate(iterable=lines):
+    for i, line in enumerate(lines):
         if line.strip() == UNOFFICIAL_MARKER:
             return i
     raise click.ClickException(f"No {UNOFFICIAL_MARKER!r} marker in {path}.")

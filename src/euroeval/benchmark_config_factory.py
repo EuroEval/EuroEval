@@ -233,7 +233,7 @@ def _extract_dataset_ids(
         dataset_ids.append(dataset)
     elif isinstance(dataset, DatasetConfig):
         dataset_ids.append(dataset.name)
-    elif isinstance(dataset, list):
+    elif isinstance(dataset, (list, tuple)):
         for d in dataset:
             if isinstance(d, str):
                 dataset_ids.append(d)
