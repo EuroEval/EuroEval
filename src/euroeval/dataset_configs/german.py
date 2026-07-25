@@ -68,14 +68,6 @@ MMLU_DE_CONFIG = DatasetConfig(
     languages=[GERMAN],
 )
 
-HELLASWAG_DE_CONFIG = DatasetConfig(
-    name="hellaswag-de",
-    pretty_name="HellaSwag-de",
-    source="EuroEval/hellaswag-de-mini",
-    task=COMMON_SENSE,
-    languages=[GERMAN],
-)
-
 MULTI_IFEVAL_DE_CONFIG = DatasetConfig(
     name="multi-ifeval-de",
     pretty_name="MultiIFEval-de",
@@ -116,7 +108,25 @@ RAGTRUTH_DE_CONFIG = DatasetConfig(
 )
 
 
+WINOGRANDE_DE_CONFIG = DatasetConfig(
+    name="winogrande-de",
+    pretty_name="Winogrande-de",
+    source="EuroEval/winogrande-de",
+    task=COMMON_SENSE,
+    languages=[GERMAN],
+    labels=["a", "b"],
+)
+
 # Unofficial datasets ###
+
+HELLASWAG_DE_CONFIG = DatasetConfig(
+    name="hellaswag-de",
+    pretty_name="HellaSwag-de",
+    source="EuroEval/hellaswag-de-mini",
+    task=COMMON_SENSE,
+    languages=[GERMAN],
+    unofficial=True,
+)
 
 IFEVAL_DE_CONFIG = DatasetConfig(
     name="ifeval-de",
@@ -171,16 +181,6 @@ GOLDENSWAG_DE_CONFIG = DatasetConfig(
     source="EuroEval/goldenswag-de-mini",
     task=COMMON_SENSE,
     languages=[GERMAN],
-    unofficial=True,
-)
-
-WINOGRANDE_DE_CONFIG = DatasetConfig(
-    name="winogrande-de",
-    pretty_name="Winogrande-de",
-    source="EuroEval/winogrande-de",
-    task=COMMON_SENSE,
-    languages=[GERMAN],
-    labels=["a", "b"],
     unofficial=True,
 )
 
