@@ -19,15 +19,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Swapped official dataset for European Portuguese, Portuguese:
-`mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`.
-
 - Bumped minimum `transformers` version to 5.14.0 (required for XLMRoberta/Camembert
   `ForMultipleChoice` heads; see huggingface/transformers#47147).
 - Swapped official datasets for four languages (all performed by the
   `swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
   - Croatian: `mmlu-hr` → `include-hr`
   - German: `hellaswag-de` → `winogrande-de`
+  - Portuguese: `mmlu-pt` → `alba-mcq-pt` and `cultura-viva-pt`
 
 ### Fixed
 
