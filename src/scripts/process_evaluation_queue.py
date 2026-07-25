@@ -799,49 +799,6 @@ def _process_pending_languages(
     )
 
 
-@click.command()
-@click.option(
-    "--vm-id",
-    required=True,
-    help="Identifier for this VM/host while it is evaluating an issue.",
-)
-@click.option(
-    "--lock-path",
-    type=click.Path(dir_okay=False, path_type=Path),
-    default="/tmp/euroeval_queue.lock",
-    show_default=True,
-    help="Single-instance lock file for this queue processor.",
-)
-@click.option(
-    "--gpu-memory-utilization",
-    type=click.FloatRange(min=0.0, max=1.0),
-    default=None,
-    help=(
-        "vLLM GPU memory utilization fraction. When omitted, the euroeval "
-        "CLI's own default is used."
-    ),
-)
-@click.option(
-    "--inter-issue-sleep",
-    type=float,
-    default=30.0,
-    show_default=True,
-    help="Seconds to wait between issues regardless of thermal state.",
-)
-@click.option(
-    "--thermal-pause-temp",
-    type=float,
-    default=80.0,
-    show_default=True,
-    help=("GPU temperature in deg C at or above which to pause before the next issue."),
-)
-@click.option(
-    "--thermal-resume-temp",
-    type=float,
-    default=70.0,
-    show_default=True,
-    help="GPU temperature in deg C the GPU must cool to before resuming.",
-)
 def _handle_language_result(
     lang: str,
     returncode: int,
