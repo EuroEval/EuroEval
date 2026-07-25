@@ -75,14 +75,6 @@ NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
 HF_RESULTS_BUCKET = "EuroEval/results"
 
 
-@click.command()
-@click.option(
-    "--force/--no-force",
-    "-f",
-    default=False,
-    show_default=True,
-    help="Always regenerate leaderboards, even if no new results are found.",
-)
 def build_dedup_key(result: dict) -> ResultIdentity | None:
     """Build a deduplication key from an EEE result record.
 
@@ -103,6 +95,14 @@ def build_dedup_key(result: dict) -> ResultIdentity | None:
         return None
 
 
+@click.command()
+@click.option(
+    "--force/--no-force",
+    "-f",
+    default=False,
+    show_default=True,
+    help="Always regenerate leaderboards, even if no new results are found.",
+)
 def main(force: bool) -> None:
     """Harvest finished evaluations and regenerate leaderboards.
 
