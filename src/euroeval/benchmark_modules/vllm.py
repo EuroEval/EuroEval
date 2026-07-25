@@ -1382,8 +1382,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
 
 def _get_olmo3_rope_parameters(
-    model_id: str,
-    hf_model_config: "PretrainedConfig",
+    model_id: str, hf_model_config: "PretrainedConfig"
 ) -> dict[str, str | int | float] | None:
     """Build rope_parameters override for OLMo-3 models.
 
@@ -1580,6 +1579,7 @@ def load_model(
             hf_model_config.architectures = remapped
             hf_overrides["architectures"] = remapped
 
+    # TODO: Remove this block when we don't care about OLMo-3 anymore
     olmo3_rope_parameters = _get_olmo3_rope_parameters(
         model_id=model_id, hf_model_config=hf_model_config
     )
