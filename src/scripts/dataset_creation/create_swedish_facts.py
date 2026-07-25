@@ -20,6 +20,7 @@ import logging
 import os
 import random
 import re
+from pathlib import Path
 
 import pandas as pd
 from constants import CHOICES_MAPPING
@@ -152,8 +153,8 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
     assert isinstance(df, pd.DataFrame)
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-    cache_file = "swedish_facts_cache.json"
-    if os.path.exists(cache_file):
+    cache_file = Path("swedish_facts_cache.json")
+    if cache_file.exists():
         with open(cache_file, "r") as f:
             cache = json.load(f)
     else:

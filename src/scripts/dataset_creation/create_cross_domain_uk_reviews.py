@@ -21,7 +21,10 @@ from sklearn.utils import resample
 
 def main() -> None:
     """Create the Cross-Domain UK Reviews dataset and upload it to the HF Hub."""
-    url = "https://huggingface.co/datasets/vkovenko/cross_domain_uk_reviews/resolve/main/processed_data.csv"
+    url = (
+        "https://huggingface.co/datasets/vkovenko/"
+        "cross_domain_uk_reviews/resolve/main/processed_data.csv"
+    )
     file_path = Path("processed_data.csv")
     download_file(url=url, file_path=file_path)
 

@@ -59,7 +59,7 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     new_changelog = re.sub(
         r"\[Unreleased\].*", f"[Unreleased]\n\n## [v{version}] - {today}", changelog
     )
-    changelog_path.write_text(new_changelog, encoding="utf-8")
+    changelog_path.write_text(data=new_changelog, encoding="utf-8")
 
     # Update the version in the `pyproject.toml` file
     pyproject_path = Path("pyproject.toml")
@@ -67,21 +67,21 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     pyproject = re.sub(
         r'version = "[^"]+"', f'version = "{version}"', pyproject, count=1
     )
-    pyproject_path.write_text(pyproject, encoding="utf-8")
+    pyproject_path.write_text(data=pyproject, encoding="utf-8")
 
     # Install newest project. check=True so a failed step aborts before we tag
     # and push a release.
-    subprocess.run(["make", "install"], check=True)
+    subprocess.run(command=["make", "install"], check=True)
 
     # Add to version control
-    subprocess.run(["git", "add", ".pre-commit-config.yaml"], check=True)
-    subprocess.run(["git", "add", "CHANGELOG.md"], check=True)
-    subprocess.run(["git", "add", "pyproject.toml"], check=True)
-    subprocess.run(["git", "add", "uv.lock"], check=True)
-    subprocess.run(["git", "commit", "-m", f"feat: v{version}"], check=True)
-    subprocess.run(["git", "tag", f"v{version}"], check=True)
-    subprocess.run(["git", "push"], check=True)
-    subprocess.run(["git", "push", "--tags"], check=True)
+    subprocess.run(command=["git", "add", ".pre-commit-config.yaml"], check=True)
+    subprocess.run(command=["git", "add", "CHANGELOG.md"], check=True)
+    subprocess.run(command=["git", "add", "pyproject.toml"], check=True)
+    subprocess.run(command=["git", "add", "uv.lock"], check=True)
+    subprocess.run(command=["git", "commit", "-m", f"feat: v{version}"], check=True)
+    subprocess.run(command=["git", "tag", f"v{version}"], check=True)
+    subprocess.run(command=["git", "push"], check=True)
+    subprocess.run(command=["git", "push", "--tags"], check=True)
 
 
 def get_current_version() -> tuple[int, int, int]:

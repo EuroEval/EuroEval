@@ -324,7 +324,7 @@ def _write_yaml(
         text = text.rstrip() + "\n\n" + _format_models_yaml(models)
     else:
         text = text[: idx + 1] + _format_models_yaml(models)
-    config_path.write_text(text, encoding="utf-8")
+    config_path.write_text(data=text, encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------

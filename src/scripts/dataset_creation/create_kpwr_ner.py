@@ -98,48 +98,55 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
+def _map_single_label(label_name: str) -> str:
+    """Map a single KPWr label name to standard BIO label.
+
+    Args:
+        label_name:
+            The KPWr label name to map.
+
+    Returns:
+        The standard BIO label.
+    """
+    # Define entity type mappings: keyword -> (B-prefix, I-prefix)
+    entity_mappings: dict[str, tuple[str, str]] = {
+        "nam_liv": ("B-PER", "I-PER"),  # Living beings
+        "nam_loc": ("B-LOC", "I-LOC"),  # Locations
+        "nam_org": ("B-ORG", "I-ORG"),  # Organizations
+    }
+
+    if label_name == "O":
+        return "O"
+
+    # Check for specific entity types
+    for keyword, (b_label, i_label) in entity_mappings.items():
+        if keyword in label_name:
+            if label_name.startswith("B-"):
+                return b_label
+            elif label_name.startswith("I-"):
+                return i_label
+
+    # Fallback for everything else (events, products, etc.)
+    if label_name.startswith("B-"):
+        return "B-MISC"
+    elif label_name.startswith("I-"):
+        return "I-MISC"
+    return "O"
+
+
 def create_label_mapping(label_names: list[str]) -> dict[int, str]:
     """Create mapping from KPWr labels to standard BIO labels.
 
     Args:
-        label_names: The list of label names.
+        label_names:
+            The list of label names.
 
     Returns:
         The mapping from KPWr labels to standard BIO labels.
     """
-    mapping: dict[int, str] = {}
-
-    for i, label_name in enumerate(label_names):
-        if label_name == "O":
-            mapping[i] = "O"
-        elif "nam_liv" in label_name:
-            # Living beings (persons, characters, etc.)
-            if label_name.startswith("B-"):
-                mapping[i] = "B-PER"
-            elif label_name.startswith("I-"):
-                mapping[i] = "I-PER"
-        elif "nam_loc" in label_name:
-            # Locations (cities, countries, etc.)
-            if label_name.startswith("B-"):
-                mapping[i] = "B-LOC"
-            elif label_name.startswith("I-"):
-                mapping[i] = "I-LOC"
-        elif "nam_org" in label_name:
-            # Organizations (companies, institutions, etc.)
-            if label_name.startswith("B-"):
-                mapping[i] = "B-ORG"
-            elif label_name.startswith("I-"):
-                mapping[i] = "I-ORG"
-        else:
-            # Everything else (events, products, etc.)
-            if label_name.startswith("B-"):
-                mapping[i] = "B-MISC"
-            elif label_name.startswith("I-"):
-                mapping[i] = "I-MISC"
-            else:
-                mapping[i] = "O"  # Fallback
-
-    return mapping
+    return {
+        i: _map_single_label(label_name) for i, label_name in enumerate(label_names)
+    }
 
 
 if __name__ == "__main__":

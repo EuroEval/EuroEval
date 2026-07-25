@@ -34,7 +34,10 @@ def format_row(row: dict[str, str]) -> dict[str, str]:
 def main() -> None:
     """Create the Dutch SICK-NL Entailment dataset and upload it to the HF Hub."""
     raw = Dataset.from_csv(
-        "https://raw.githubusercontent.com/gijswijnholds/sick_nl/refs/heads/master/data/tasks/sick_nl/SICK_NL.txt",
+        (
+            "https://raw.githubusercontent.com/gijswijnholds/sick_nl/"
+            "refs/heads/master/data/tasks/sick_nl/SICK_NL.txt"
+        ),
         sep="\t",
     )
     processed = raw.map(format_row, remove_columns=raw.column_names)

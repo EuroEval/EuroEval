@@ -616,7 +616,7 @@ def validate_gh_installed() -> None:
             If the Github CLI wasn't found.
     """
     try:
-        subprocess.run(["gh", "version"], check=True, capture_output=True)
+        subprocess.run(command=["gh", "version"], check=True, capture_output=True)
     except FileNotFoundError:
         raise click.ClickException(
             "GitHub CLI not found; install it from https://cli.github.com/"
@@ -1103,7 +1103,7 @@ def execute_jobs(
         log_file.write("\n")
         log_file.write("Job Plan\n")
         log_file.write("--------\n")
-        for idx, job in enumerate(jobs, start=1):
+        for idx, job in enumerate(iterable=jobs, start=1):
             shot = "zero-shot" if job.zero_shot else "few-shot"
             split = "test" if job.evaluate_test_split else "val"
             source = "API" if job.is_api else "open-weight"
@@ -1117,7 +1117,7 @@ def execute_jobs(
     logger.info(f"Evaluation log: {log_path}")
 
     with tqdm(jobs, desc="Evaluating models", unit="model") as progress:
-        for idx, job in enumerate(progress, start=1):
+        for idx, job in enumerate(iterable=progress, start=1):
             progress.set_postfix_str(job.model_id)
 
             # Write job header to log before starting evaluation
@@ -1476,7 +1476,7 @@ def _update_changelog(
     changed_idx: int | None = None
     next_section_idx: int | None = None
 
-    for i, line in enumerate(lines):
+    for i, line in enumerate(iterable=lines):
         if line.strip() == "## [Unreleased]":
             unreleased_idx = i
         elif unreleased_idx is not None and line.strip() == "### Changed":
@@ -1519,7 +1519,7 @@ def _update_changelog(
     # Insert a blank line after "### Changed", then the entry
     lines.insert(changed_idx + 1, "")
     lines.insert(changed_idx + 2, entry)
-    changelog_path.write_text("\n".join(lines), encoding="utf-8")
+    changelog_path.write_text(data="\n".join(lines), encoding="utf-8")
 
 
 def find_config_file(dataset_id: str) -> Path:
@@ -1613,7 +1613,7 @@ def set_config_officiality(path: Path, dataset_id: str, official: bool) -> None:
         if insert_at < len(lines) and lines[insert_at].strip() == "":
             insert_at += 1
     lines[insert_at:insert_at] = block + [""]
-    path.write_text("\n".join(lines), encoding="utf-8")
+    path.write_text(data="\n".join(lines), encoding="utf-8")
 
 
 def set_doc_officiality(path: Path, dataset_id: str, official: bool) -> None:
@@ -1639,7 +1639,7 @@ def set_doc_officiality(path: Path, dataset_id: str, official: bool) -> None:
     task_start, task_end = _doc_task_span(lines=lines, heading_idx=heading_idx)
     reordered = _partition_doc_subsections(section=lines[task_start:task_end])
     lines[task_start:task_end] = reordered
-    path.write_text("\n".join(lines), encoding="utf-8")
+    path.write_text(data="\n".join(lines), encoding="utf-8")
 
 
 def _config_block_span(
@@ -1693,7 +1693,7 @@ def _marker_index(lines: list[str], path: Path) -> int:
         click.ClickException:
             When the marker is absent.
     """
-    for i, line in enumerate(lines):
+    for i, line in enumerate(iterable=lines):
         if line.strip() == UNOFFICIAL_MARKER:
             return i
     raise click.ClickException(f"No {UNOFFICIAL_MARKER!r} marker in {path}.")

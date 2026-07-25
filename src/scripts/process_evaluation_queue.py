@@ -341,18 +341,13 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
 
     candidates: list[tuple[int, int, int, int, float, dict, str, list[str]]] = []
     for issue in (issue for issue in issues if "pull_request" not in issue):
-        number = issue["number"]
-        body = issue.get("body") or ""
-        model_id = extract_model_id(title=issue.get("title", ""), body=body)
-        if not model_id:
-            logger.info(f"#{number}: skipping -- could not parse model id.")
+        parsed = _parse_issue(issue=issue)
+        if parsed is None:
             continue
+        model_id, number, groups = parsed
 
-        groups = extract_language_groups(body=body)
-        if not groups:
-            logger.info(f"#{number}: skipping -- no language groups selected.")
+        if model_id is None:
             continue
-
         summary = cached_model_summary(model_id=model_id)
         if summary is None:
             continue
@@ -368,34 +363,19 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
             for label in issue.get("labels", [])
             if isinstance(label, dict)
         }
-        if summary.get("gated"):
-            status_priority = 0
-        elif FAILED_LABEL in label_names:
-            status_priority = 1
-        else:
-            status_priority = 2
+        status_priority = _compute_status_priority(
+            summary=summary, label_names=label_names
+        )
+        age = _parse_issue_age(issue=issue)
+        param_bucket = _compute_param_bucket(param_count=summary["param_count"])
 
-        created_at = issue.get("created_at")
-        if isinstance(created_at, str):
-            try:
-                age = dt.datetime.fromisoformat(
-                    created_at.replace("Z", "+00:00")
-                ).timestamp()
-            except ValueError:
-                age = float("inf")
-        else:
-            age = float("inf")
-
+        assert model_id is not None
         candidates.append(
             (
                 1 if "slow" in label_names else 0,
                 0 if summary.get("generative", True) else 1,
                 status_priority,
-                next(
-                    bucket
-                    for threshold, bucket in _BUCKET_THRESHOLDS
-                    if summary["param_count"] < threshold
-                ),
+                param_bucket,
                 age,
                 issue,
                 model_id,
@@ -406,6 +386,86 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
     candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4]))
     logger.info(f"Found {len(candidates)} processable issue(s).")
     return candidates
+
+
+def _parse_issue(issue: dict) -> tuple[str | None, int, list[str]] | None:
+    """Parse an issue and extract model info.
+
+    Args:
+        issue:
+            The issue dict from GitHub.
+
+    Returns:
+        Tuple of (model_id, number, groups), or None if invalid.
+    """
+    number = issue["number"]
+    body = issue.get("body") or ""
+    model_id = extract_model_id(title=issue.get("title", ""), body=body)
+    if not model_id:
+        logger.info(f"#{number}: skipping -- could not parse model id.")
+        return None
+
+    groups = extract_language_groups(body=body)
+    if not groups:
+        logger.info(f"#{number}: skipping -- no language groups selected.")
+        return None
+
+    return model_id, number, groups
+
+
+def _compute_status_priority(summary: dict, label_names: set[str | None]) -> int:
+    """Compute status priority for an issue.
+
+    Args:
+        summary:
+            Model summary dict.
+        label_names:
+            Set of label names on the issue.
+
+    Returns:
+        Status priority (0 = gated, 1 = failed, 2 = normal).
+    """
+    if summary.get("gated"):
+        return 0
+    if FAILED_LABEL in label_names:
+        return 1
+    return 2
+
+
+def _parse_issue_age(issue: dict) -> float:
+    """Parse issue creation time to age timestamp.
+
+    Args:
+        issue:
+            The issue dict from GitHub.
+
+    Returns:
+        Age timestamp, or inf if not parseable.
+    """
+    created_at = issue.get("created_at")
+    if isinstance(created_at, str):
+        try:
+            return dt.datetime.fromisoformat(
+                created_at.replace("Z", "+00:00")
+            ).timestamp()
+        except ValueError:
+            pass
+    return float("inf")
+
+
+def _compute_param_bucket(param_count: int) -> int:
+    """Compute parameter count bucket.
+
+    Args:
+        param_count:
+            Model parameter count.
+
+    Returns:
+        Bucket number.
+    """
+    return next(
+        bucket for threshold, bucket in _BUCKET_THRESHOLDS if param_count < threshold
+    )
 
 
 def reclaim_orphaned_issues(assignee: str, vm_id: str) -> None:
@@ -577,22 +637,9 @@ def _run_claimed_issue(
             Optional vLLM memory fraction.
     """
     number = issue["number"]
-
     results_path = Path("euroeval_benchmark_results.jsonl")
-    # Read this model's already-uploaded results from its own subdirectory in
-    # the per-record JSON tree, plus the local euroeval output file. Reading
-    # only the model's subdirectory avoids loading the entire results tree.
-    existing_lines: list[str] = []
-    model_dir = RESULTS_DIR / sanitise_model_dir_name(model_id)
-    if model_dir.is_dir():
-        for record_path in sorted(model_dir.glob("*.json")):
-            try:
-                record = json.loads(record_path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError) as e:
-                logger.debug(f"Skipping unreadable record {record_path}: {e}")
-                continue
-            existing_lines.append(json.dumps(record))
-    existing_lines.extend(read_jsonl_lines(path=results_path))
+
+    existing_lines = _load_existing_results(model_id=model_id)
     accumulated = result_lines_for_model(lines=existing_lines, model_id=model_id)
     done = completed_languages(lines=accumulated, requested_languages=languages)
     pending = [lang for lang in languages if lang not in done]
@@ -604,108 +651,37 @@ def _run_claimed_issue(
     last_output = ""
     total_skipped = 0
 
-    # Run languages one at a time and upload after each completes.
-    # This restores crash resilience lost when removing gist-based uploads.
-    for i, lang in enumerate(pending):
-        logger.info(
-            f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
-        )
-        before = set(read_jsonl_lines(path=results_path))
-        # The queue always evaluates on the validation split; the test split
-        # is reserved for the dedicated core-model run in
-        # run_core_model_evaluations.py.
-        returncode, output = run_euroeval(
+    # Process pending languages
+    gated_detected, failure_reason, failure_output_tail, last_output, total_skipped = (
+        _process_pending_languages(
+            number=number,
             model_id=model_id,
-            languages=[lang],
-            evaluate_test_split=False,
-            clear_model_cache=True,
+            pending=pending,
             gpu_memory_utilization=gpu_memory_utilization,
+            results_path=results_path,
+            accumulated=accumulated,
+            total_skipped=total_skipped,
         )
-        last_output = output
+    )
 
-        # Check for gating / errors BEFORE uploading results.
-        # This prevents partial/broken results from being synced to the bucket.
-        gated_in_lang = GATED_OUTPUT_RE.search(output)
-        num_errored = num_errored_benchmarks(output=output)
-        num_skipped_lang = num_skipped_benchmarks(output=output)
-        total_skipped += num_skipped_lang
-        has_error = returncode != 0 or num_errored > 0
-
-        if not gated_in_lang and not has_error:
-            # Only upload if the language run succeeded.
-            after = read_jsonl_lines(path=results_path)
-            new_lines = [line for line in after if line not in before]
-            accumulated.extend(new_lines)
-
-            if new_lines:
-                upload_ok = upload_results_to_hf_bucket(
-                    lines=new_lines, model_id=model_id
-                )
-                if not upload_ok:
-                    logger.error(
-                        f"#{number}: bucket upload failed after {lang}; "
-                        "continuing with remaining languages."
-                    )
-                    failed.append(f"{lang} (upload-failed)")
-                    continue
-                done.append(lang)
-                logger.info(f"#{number}: uploaded results for {lang}.")
-
-        # Handle gating.
-        if gated_in_lang:
-            gated_detected = True
-            failure_output_tail = summarise_evaluation_error(output=output)
-            failed.append(lang)
-            break
-
-        # Handle errors.
-        if returncode != 0:
-            failure_reason = f"euroeval exited with code {returncode}"
-            failure_output_tail = summarise_evaluation_error(output=output)
-            failed.append(lang)
-            break
-        elif num_errored > 0:
-            failure_reason = f"euroeval reported {num_errored} errored benchmark(s)"
-            failure_output_tail = summarise_evaluation_error(output=output)
-            failed.append(lang)
-            break
-
-    # Handle skips for missing official pairs (only if no hard failures).
-    if not failed and not pending:
-        # Every requested language was already fully covered by results
-        # downloaded from the bucket, so no evaluation needed to run. This is a
-        # completed evaluation, not an error.
+    # Handle skips
+    if not failed and pending:
+        skip_failed, skip_reason = _handle_pending_skips(
+            accumulated=accumulated, pending=pending, total_skipped=total_skipped
+        )
+        if skip_failed:
+            failed.extend(skip_failed)
+            failure_reason = skip_reason
+        else:
+            # Intentional skips - treat pending as done
+            done.extend(pending)
+    elif not failed and not pending:
         logger.info(
             f"#{number}: all requested language(s) already present in the bucket "
             f"for {model_id!r}; nothing to evaluate."
         )
-    elif not failed:
-        missing = missing_official_dataset_language_pairs(
-            lines=accumulated, requested_languages=pending
-        )
-        # Pairs missing beyond what euroeval intentionally skipped (e.g. a
-        # dataset whose type the model can't run) are genuine failures. A run
-        # that produces no new lines is not itself a failure -- on a resume
-        # where the bucket already held the results, euroeval re-reports the
-        # same skips and ``total_skipped`` accounts for the missing pairs.
-        if len(missing) > total_skipped:
-            failure_reason = (
-                f"missing official dataset-language pair(s): "
-                f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
-            )
-            failure_output_tail = summarise_evaluation_error(output=last_output)
-            failed.extend([lang for lang in pending if lang not in done])
-        elif missing:
-            logger.info(
-                f"#{number}: euroeval skipped {total_skipped} benchmark(s); "
-                f"treating missing pair(s) as intentional skips: "
-                f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
-            )
-            done.extend([lang for lang in pending if lang not in done])
-        else:
-            done.extend([lang for lang in pending if lang not in done])
 
-    # Log completion status.
+    # Log completion
     if failed:
         logger.info(
             f"#{number}: evaluation failed for {model_id!r} "
@@ -716,43 +692,218 @@ def _run_claimed_issue(
             f"#{number}: completed all {len(done)} language(s) for {model_id!r}."
         )
 
-    if gated_detected:
-        add_gated_label(number=number)
-        add_failed_label(number=number)
-        release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
-        logger.info(
-            f"#{number}: euroeval reported a gated repo for {model_id!r}; "
-            f"added Gated and evaluation-failed labels to avoid retry loops."
-        )
-        return
+    # Post-process based on outcome
+    _post_process_issue(
+        number=number,
+        model_id=model_id,
+        gated_detected=gated_detected,
+        failed=failed,
+        failure_reason=failure_reason,
+        failure_output_tail=failure_output_tail,
+        vm_id=vm_id,
+        assignee=assignee,
+    )
 
-    if failed:
-        version = __version__
-        reason = failure_reason or f"failed languages: {', '.join(failed)}"
-        tail = failure_output_tail or "(no output captured)"
-        if issue_has_matching_error_comment(number=number, reason=reason):
-            release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
-            logger.info(
-                f"#{number}: identical error already posted; returned to queue."
+
+def _process_pending_languages(
+    number: int,
+    model_id: str,
+    pending: list[str],
+    gpu_memory_utilization: float | None,
+    results_path: Path,
+    accumulated: list[str],
+    total_skipped: int,
+) -> tuple[bool, str | None, str, str, int]:
+    """Process all pending languages for an issue.
+
+    Args:
+        number:
+            Issue number.
+        model_id:
+            Model identifier.
+        pending:
+            List of pending language codes.
+        gpu_memory_utilization:
+            GPU memory utilization setting.
+        results_path:
+            Path to results file.
+        accumulated:
+            Accumulated result lines (modified in place).
+        total_skipped:
+            Running count of skipped benchmarks.
+
+    Returns:
+        Tuple of (gated_detected, failure_reason, failure_tail, last_output,
+        total_skipped).
+    """
+    gated_detected = False
+    failure_reason: str | None = None
+    failure_output_tail = ""
+    last_output = ""
+
+    for i, lang in enumerate(iterable=pending):
+        logger.info(
+            f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
+        )
+        returncode, output = _run_single_language(
+            model_id=model_id, lang=lang, gpu_memory_utilization=gpu_memory_utilization
+        )
+        last_output = output
+
+        success, lang_failure_reason, lang_failure_tail, skipped = (
+            _handle_language_result(
+                lang=lang,
+                returncode=returncode,
+                output=output,
+                results_path=results_path,
+                model_id=model_id,
+                accumulated=accumulated,
             )
-            return
-        error_comment = (
-            f"Error encountered during evaluation ({reason}):\n\n"
-            f"```bash\n{tail}\n```\n\n"
-            f"EuroEval version: v{version}\n"
         )
-        comment_on_issue(number=number, body=error_comment)
-        add_failed_label(number=number)
-        release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
-        logger.info(
-            f"#{number}: marked errored on v{version} after {len(failed)} failed "
-            f"language(s) ({', '.join(failed)}); returned to queue."
-        )
-        return
+        total_skipped += skipped
 
-    remove_failed_label(number=number)
-    add_results_ready_label(number=number)
-    clear_vm_marker(number=number, vm_id=vm_id)
+        if lang_failure_reason == "gated":
+            gated_detected = True
+            failure_output_tail = lang_failure_tail or ""
+            return (
+                gated_detected,
+                failure_reason,
+                failure_output_tail,
+                last_output,
+                total_skipped,
+            )
+        if lang_failure_reason:
+            failure_reason = lang_failure_reason
+            failure_output_tail = lang_failure_tail or ""
+            return (
+                gated_detected,
+                failure_reason,
+                failure_output_tail,
+                last_output,
+                total_skipped,
+            )
+        if not success:
+            logger.error(
+                f"#{number}: bucket upload failed after {lang}; "
+                "continuing with remaining languages."
+            )
+        else:
+            logger.info(f"#{number}: uploaded results for {lang}.")
+
+    return (
+        gated_detected,
+        failure_reason,
+        failure_output_tail,
+        last_output,
+        total_skipped,
+    )
+
+
+@click.command()
+@click.option(
+    "--vm-id",
+    required=True,
+    help="Identifier for this VM/host while it is evaluating an issue.",
+)
+@click.option(
+    "--lock-path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default="/tmp/euroeval_queue.lock",
+    show_default=True,
+    help="Single-instance lock file for this queue processor.",
+)
+@click.option(
+    "--gpu-memory-utilization",
+    type=click.FloatRange(min=0.0, max=1.0),
+    default=None,
+    help=(
+        "vLLM GPU memory utilization fraction. When omitted, the euroeval "
+        "CLI's own default is used."
+    ),
+)
+@click.option(
+    "--inter-issue-sleep",
+    type=float,
+    default=30.0,
+    show_default=True,
+    help="Seconds to wait between issues regardless of thermal state.",
+)
+@click.option(
+    "--thermal-pause-temp",
+    type=float,
+    default=80.0,
+    show_default=True,
+    help=("GPU temperature in deg C at or above which to pause before the next issue."),
+)
+@click.option(
+    "--thermal-resume-temp",
+    type=float,
+    default=70.0,
+    show_default=True,
+    help="GPU temperature in deg C the GPU must cool to before resuming.",
+)
+def _handle_language_result(
+    lang: str,
+    returncode: int,
+    output: str,
+    results_path: Path,
+    model_id: str,
+    accumulated: list[str],
+) -> tuple[bool, str | None, str | None, int]:
+    """Handle the result of running a single language.
+
+    Args:
+        lang:
+            Language code that was evaluated.
+        returncode:
+            Return code from EuroEval.
+        output:
+            Output from EuroEval.
+        results_path:
+            Path to results file.
+        model_id:
+            Model identifier.
+        accumulated:
+            List of accumulated result lines (modified in place).
+
+    Returns:
+        Tuple of (success, failure_reason, failure_tail, skipped_count).
+    """
+    before = set(read_jsonl_lines(path=results_path))
+    gated_in_lang = GATED_OUTPUT_RE.search(output)
+    num_errored = num_errored_benchmarks(output=output)
+    num_skipped = num_skipped_benchmarks(output=output)
+
+    # Handle gating
+    if gated_in_lang:
+        return False, "gated", summarise_evaluation_error(output=output), num_skipped
+
+    # Handle errors
+    if returncode != 0:
+        return (
+            False,
+            f"euroeval exited with code {returncode}",
+            summarise_evaluation_error(output=output),
+            num_skipped,
+        )
+    if num_errored > 0:
+        return (
+            False,
+            f"euroeval reported {num_errored} errored benchmark(s)",
+            summarise_evaluation_error(output=output),
+            num_skipped,
+        )
+
+    # Success - upload results
+    after = read_jsonl_lines(path=results_path)
+    new_lines = [line for line in after if line not in before]
+    accumulated.extend(new_lines)
+
+    if new_lines:
+        if not upload_results_to_hf_bucket(lines=new_lines, model_id=model_id):
+            return False, "upload-failed", None, num_skipped
+
+    return True, None, None, num_skipped
 
 
 def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
@@ -803,7 +954,7 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
                 except (json.JSONDecodeError, OSError):
                     pass  # If we can't parse existing, overwrite it
 
-            record_path.write_text(new_content, encoding="utf-8")
+            record_path.write_text(data=new_content, encoding="utf-8")
             records_written += 1
             written_paths.append(record_path)
         except (json.JSONDecodeError, ValueError, KeyError) as e:
@@ -836,6 +987,200 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
         return False
 
 
+def _load_existing_results(model_id: str) -> list[str]:
+    """Load existing results for a model from disk and local file.
+
+    Args:
+        model_id:
+            The model identifier.
+
+    Returns:
+        List of existing result JSON lines.
+    """
+    results_path = Path("euroeval_benchmark_results.jsonl")
+    existing_lines: list[str] = []
+    model_dir = RESULTS_DIR / sanitise_model_dir_name(model_id)
+    if model_dir.is_dir():
+        for record_path in sorted(model_dir.glob("*.json")):
+            try:
+                record = json.loads(record_path.read_text(encoding="utf-8"))
+                existing_lines.append(json.dumps(obj=record))
+            except (json.JSONDecodeError, OSError):
+                logger.debug(f"Skipping unreadable record {record_path}")
+    existing_lines.extend(read_jsonl_lines(path=results_path))
+    return existing_lines
+
+
+def _run_single_language(
+    model_id: str, lang: str, gpu_memory_utilization: float | None
+) -> tuple[int, str]:
+    """Run EuroEval for a single language.
+
+    Args:
+        model_id:
+            The model identifier.
+        lang:
+            Language code to evaluate.
+        gpu_memory_utilization:
+            Optional vLLM memory fraction.
+
+    Returns:
+        Tuple of (returncode, output).
+    """
+    return run_euroeval(
+        model_id=model_id,
+        languages=[lang],
+        evaluate_test_split=False,
+        clear_model_cache=True,
+        gpu_memory_utilization=gpu_memory_utilization,
+    )
+
+
+def _handle_pending_skips(
+    accumulated: list[str], pending: list[str], total_skipped: int
+) -> tuple[list[str], str | None]:
+    """Handle skip analysis for pending languages.
+
+    Args:
+        accumulated:
+            Accumulated result lines.
+        pending:
+            Pending language codes.
+        total_skipped:
+            Total skipped benchmark count.
+
+    Returns:
+        Tuple of (failed_languages, failure_reason).
+    """
+    skip_failed, skip_reason = _handle_skip_analysis(
+        accumulated=accumulated, pending=pending, total_skipped=total_skipped
+    )
+    return skip_failed, skip_reason
+
+
+def _handle_skip_analysis(
+    accumulated: list[str], pending: list[str], total_skipped: int
+) -> tuple[list[str], str | None]:
+    """Analyze and handle skipped languages.
+
+    Args:
+        accumulated:
+            List of accumulated result lines.
+        pending:
+            List of pending language codes.
+        total_skipped:
+            Total number of skipped benchmarks.
+
+    Returns:
+        Tuple of (failed_languages, failure_reason).
+    """
+    missing = missing_official_dataset_language_pairs(
+        lines=accumulated, requested_languages=pending
+    )
+
+    if len(missing) > total_skipped:
+        failure_reason = (
+            f"missing official dataset-language pair(s): "
+            f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
+        )
+        return [lang for lang in pending], failure_reason
+
+    if missing:
+        logger.info(
+            f"euroeval skipped {total_skipped} benchmark(s); "
+            f"treating missing pair(s) as intentional skips: "
+            f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
+        )
+    return [], None
+
+
+def _post_process_issue(
+    number: int,
+    model_id: str,
+    gated_detected: bool,
+    failed: list[str],
+    failure_reason: str | None,
+    failure_output_tail: str,
+    vm_id: str,
+    assignee: str,
+) -> None:
+    """Post-process an issue based on evaluation outcome.
+
+    Args:
+        number:
+            Issue number.
+        model_id:
+            Model identifier.
+        gated_detected:
+            Whether the model was gated.
+        failed:
+            List of failed languages.
+        failure_reason:
+            Reason for failure.
+        failure_output_tail:
+            Tail of error output.
+        vm_id:
+            VM identifier.
+        assignee:
+            Assignee username.
+    """
+    if gated_detected:
+        _post_gated_issue(
+            number=number, model_id=model_id, vm_id=vm_id, assignee=assignee
+        )
+        return
+
+    if failed:
+        _post_failed_issue(
+            number=number,
+            model_id=model_id,
+            failure_reason=failure_reason,
+            failed=failed,
+            failure_output_tail=failure_output_tail,
+            vm_id=vm_id,
+            assignee=assignee,
+        )
+        return
+
+    _post_successful_issue(number=number, vm_id=vm_id)
+
+
+def _post_gated_issue(number: int, model_id: str, vm_id: str, assignee: str) -> None:
+    """Post-process a gated issue.
+
+    Args:
+        number:
+            Issue number.
+        model_id:
+            Model identifier.
+        vm_id:
+            VM identifier.
+        assignee:
+            Assignee username.
+    """
+    add_gated_label(number=number)
+    add_failed_label(number=number)
+    release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
+    logger.info(
+        f"#{number}: euroeval reported a gated repo for {model_id!r}; "
+        "added Gated and evaluation-failed labels to avoid retry loops."
+    )
+
+
+def _post_successful_issue(number: int, vm_id: str) -> None:
+    """Post-process a successful issue.
+
+    Args:
+        number:
+            Issue number.
+        vm_id:
+            VM identifier.
+    """
+    remove_failed_label(number=number)
+    add_results_ready_label(number=number)
+    clear_vm_marker(number=number, vm_id=vm_id)
+
+
 def issue_is_still_claimable(number: int) -> bool:
     """Return True if the issue is still open with no assignees.
 
@@ -861,6 +1206,56 @@ def issue_is_still_claimable(number: int) -> bool:
     if current.get("state") != "open":
         return False
     return not current.get("assignees")
+
+
+def _post_failed_issue(
+    number: int,
+    model_id: str,
+    failure_reason: str | None,
+    failed: list[str],
+    failure_output_tail: str,
+    vm_id: str,
+    assignee: str,
+) -> None:
+    """Post-process a failed issue.
+
+    Args:
+        number:
+            Issue number.
+        model_id:
+            Model identifier (for logging).
+        failure_reason:
+            Reason for failure.
+        failed:
+            List of failed languages.
+        failure_output_tail:
+            Tail of error output.
+        vm_id:
+            VM identifier.
+        assignee:
+            Assignee username.
+    """
+    version = __version__
+    reason = failure_reason or f"failed languages: {', '.join(failed)}"
+    tail = failure_output_tail or "(no output captured)"
+
+    if issue_has_matching_error_comment(number=number, reason=reason):
+        release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
+        logger.info(f"#{number}: identical error already posted; returned to queue.")
+        return
+
+    error_comment = (
+        f"Error encountered during evaluation ({reason}):\n\n"
+        f"```bash\n{tail}\n```\n\n"
+        f"EuroEval version: v{version}\n"
+    )
+    comment_on_issue(number=number, body=error_comment)
+    add_failed_label(number=number)
+    release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
+    logger.info(
+        f"#{number}: marked errored on v{version} after {len(failed)} failed "
+        f"language(s) ({', '.join(failed)}); returned to queue."
+    )
 
 
 def issue_has_matching_error_comment(number: int, reason: str) -> bool:

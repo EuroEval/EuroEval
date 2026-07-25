@@ -8,16 +8,11 @@
 
 """Create the DaLA dataset and upload it to the HF Hub."""
 
-import os
 import tempfile
 
-# Set cache before importing datasets to avoid Python 3.14 pickle issues
-_cache_dir = tempfile.mkdtemp()
-os.environ["HF_DATASETS_CACHE"] = _cache_dir
-
-from datasets.dataset_dict import DatasetDict  # noqa: E402
-from datasets.load import load_dataset  # noqa: E402
-from huggingface_hub.hf_api import HfApi  # noqa: E402
+from datasets.dataset_dict import DatasetDict
+from datasets.load import load_dataset
+from huggingface_hub.hf_api import HfApi
 
 
 def main() -> None:
@@ -30,7 +25,9 @@ def main() -> None:
     source = "giannor/dala"
     target = "EuroEval/dala"
 
-    dataset = load_dataset(path=source, token=True)
+    # Use temporary cache directory to avoid Python 3.14 pickle issues
+    cache_dir = tempfile.mkdtemp()
+    dataset = load_dataset(path=source, token=True, cache_dir=cache_dir)
     assert isinstance(dataset, DatasetDict)
 
     HfApi().delete_repo(repo_id=target, repo_type="dataset", missing_ok=True)

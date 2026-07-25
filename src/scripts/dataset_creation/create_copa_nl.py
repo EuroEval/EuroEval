@@ -11,11 +11,11 @@
 """Create a Dutch common sense reasoning dataset based on the English COPA."""
 
 import io
-import os
 import tarfile
 import tempfile
 import typing as t
 import urllib.request
+from pathlib import Path
 
 import datasets
 from huggingface_hub import HfApi
@@ -38,11 +38,11 @@ def main() -> None:
         with tarfile.open(fileobj=tar_bytes, mode="r:gz") as tar:
             tar.extractall(path=temp_dir)
 
-        target_dir = os.path.join(temp_dir, "NLP-NL-copa-nl-v1.0", "COPA-NL")
+        target_dir = Path(temp_dir) / "NLP-NL-copa-nl-v1.0" / "COPA-NL"
 
         # HuggingFace Datasets can directly load the jsonl
         # train, test and dev files from disk
-        dataset = datasets.load_dataset(target_dir)
+        dataset = datasets.load_dataset(target_dir)  # ty: ignore[invalid-argument-type]
         dataset["val"] = dataset.pop("validation")
         dataset = dataset.shuffle(4242)
 

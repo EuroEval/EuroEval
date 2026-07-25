@@ -105,10 +105,8 @@ def main(
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
 
-    # Load all records as reference population (for rank score computation)
     all_records = _load_all_results()
 
-    # Verify requested models have data
     requested_model_records = _load_results_for_models(model_list)
     if not requested_model_records:
         click.echo("Error: No results found for specified models", err=True)
@@ -131,7 +129,104 @@ def main(
         shots_setting=t.cast(t.Literal["auto", "zero", "few"], shots),
     )
 
-    # Build score matrix using all records as reference population
+    model_scores_matrix, used_languages = _build_and_validate_score_matrix(
+        all_records=all_records,
+        model_list=model_list,
+        resolved_languages=resolved_languages,
+        shot_value=shot_value,
+    )
+
+    try:
+        max_score_val = _compute_max_score(
+            model_scores=model_scores_matrix, max_score_override=max_score
+        )
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    fig = _create_spider_plot(
+        model_scores=model_scores_matrix,
+        languages=used_languages,
+        max_score=max_score_val,
+        title=title or _default_plot_title(shot_value=shot_value),
+    )
+
+    return _write_and_open_plot(fig=fig, title=title, filename=filename)
+
+
+@click.command()
+@click.option(
+    "--model",
+    "-m",
+    "models",
+    multiple=True,
+    required=True,
+    metavar="MODEL",
+    help="Model ID to include (can be repeated).",
+)
+@click.option(
+    "--language",
+    "-l",
+    "languages",
+    multiple=True,
+    metavar="LANGUAGE",
+    help="Language name or code to include (can be repeated). "
+    "Defaults to official languages.",
+)
+@click.option(
+    "--shots",
+    type=click.Choice(["auto", "zero", "few"]),
+    default="auto",
+    show_default=True,
+    help="Shot setting: zero-shot, few-shot, or auto-detect.",
+)
+@click.option(
+    "--max-score",
+    type=float,
+    metavar="FLOAT",
+    help=(
+        "Optional override for maximum rank score on the radial axis. "
+        "When omitted, auto-computed from plotted rank scores (rounded up "
+        "to nearest 0.5, minimum 2.5; rank score of 1 is perfect)."
+    ),
+)
+@click.option(
+    "--title",
+    type=str,
+    metavar="TEXT",
+    help="Plot title. If omitted, uses default title.",
+)
+@click.option(
+    "--filename",
+    type=str,
+    metavar="PATH",
+    help=(
+        "Output PNG filename. If omitted and --title is set, "
+        "inferred from title using snake_case. If both omitted, "
+        "uses language-spider-plot.png. .png extension appended if missing."
+    ),
+)
+def _build_and_validate_score_matrix(
+    all_records: list[JsonDict],
+    model_list: list[str],
+    resolved_languages: list[str],
+    shot_value: bool | None,
+) -> tuple[dict[str, dict[str, float | None]], list[str]]:
+    """Build score matrix and compute language intersection.
+
+    Args:
+        all_records:
+            All result records as reference population.
+        model_list:
+            List of model IDs to include.
+        resolved_languages:
+            List of resolved language codes.
+        shot_value:
+            Shot setting: True for few-shot, False for zero-shot, None for any.
+
+    Returns:
+        Tuple of (score_matrix, used_languages).
+    """
     model_scores_matrix = _build_score_matrix(
         all_records=all_records,
         models=model_list,
@@ -156,43 +251,7 @@ def main(
         )
         sys.exit(1)
 
-    # Language intersection applied silently (no output on success)
-
-    try:
-        max_score_val = _compute_max_score(model_scores_matrix, max_score)
-    except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
-
-    fig = _create_spider_plot(
-        model_scores=model_scores_matrix,
-        languages=used_languages,
-        max_score=max_score_val,
-        title=title or _default_plot_title(shot_value=shot_value),
-    )
-
-    # Determine output filename
-    output_filename = _determine_output_filename(title, filename)
-    output_path = Path(output_filename).resolve()
-    file_uri = output_path.as_uri()
-    try:
-        _write_image_silent(fig, str(output_path))
-    except Exception as exc:
-        click.echo(f"Error writing PNG: {exc}", err=True)
-        return 1
-
-    try:
-        opened = webbrowser.open(file_uri)
-    except Exception as exc:
-        click.echo(f"Error opening PNG: {exc}", err=True)
-        return 1
-    if not opened:
-        click.echo(f"Error opening PNG: {file_uri}", err=True)
-        return 1
-
-    click.echo(f"Finished. The output plot can now be found at {file_uri}")
-
-    return 0
+    return model_scores_matrix, used_languages
 
 
 def _compute_language_intersection(
@@ -342,9 +401,64 @@ def _build_score_matrix(
     Returns:
         Model x language mean rank score matrix (lower is better).
     """
-    # Step 1: Collect raw per-iteration scores per (model, dataset, language)
-    # from ALL records (reference population), not just requested models
-    # Structure: model -> dataset -> language -> list of raw scores
+    raw_scores = _collect_raw_scores(
+        all_records=all_records,
+        models=models,
+        languages=languages,
+        shot_value=shot_value,
+    )
+
+    if not raw_scores:
+        return {model: {lang: None for lang in languages} for model in models}
+
+    model_dataset_means = _compute_model_dataset_means(raw_scores=raw_scores)
+
+    dataset_stats = _compute_dataset_stats(
+        raw_scores=raw_scores, model_dataset_means=model_dataset_means
+    )
+
+    rank_scores = _compute_rank_scores(
+        models=models, raw_scores=raw_scores, dataset_stats=dataset_stats
+    )
+
+    dataset_to_task, dataset_to_lang_name = _build_dataset_mappings()
+
+    model_lang_task_scores = _group_scores_by_task(
+        models=models,
+        languages=languages,
+        rank_scores=rank_scores,
+        dataset_to_task=dataset_to_task,
+        dataset_to_lang_name=dataset_to_lang_name,
+    )
+
+    return _aggregate_to_language_scores(
+        models=models,
+        languages=languages,
+        model_lang_task_scores=model_lang_task_scores,
+    )
+
+
+def _collect_raw_scores(
+    all_records: list[JsonDict],
+    models: list[str],
+    languages: list[str],
+    shot_value: bool | None,
+) -> dict[str, dict[str, dict[str, list[float]]]]:
+    """Step 1: Collect raw per-iteration scores per (model, dataset, language).
+
+    Args:
+        all_records:
+            All result records.
+        models:
+            Model IDs to include.
+        languages:
+            Language codes to include.
+        shot_value:
+            Shot filter: None for any, True for few-shot, False for zero-shot.
+
+    Returns:
+        Nested dict: model -> dataset -> language -> list of raw scores.
+    """
     model_dataset_lang_raw_scores: dict[str, dict[str, dict[str, list[float]]]] = (
         defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     )
@@ -367,10 +481,7 @@ def _build_score_matrix(
         if not dataset or not record_languages:
             continue
 
-        # Get primary/secondary metric for this task
         primary_metric, secondary_metric = task_metric_names(task_name)
-
-        # Extract raw per-iteration scores (not aggregated)
         raw_scores = _extract_raw_scores_from_record(
             record, primary_metric, secondary_metric
         )
@@ -378,121 +489,13 @@ def _build_score_matrix(
         if not raw_scores:
             continue
 
-        # Collect raw scores from ALL models (reference population)
         for lang in record_languages:
             if lang in languages:
                 model_dataset_lang_raw_scores[model_name][dataset][lang].extend(
                     raw_scores
                 )
 
-    if not model_dataset_lang_raw_scores:
-        return {model: {lang: None for lang in languages} for model in models}
-
-    # Step 2: Compute mean score per (model, dataset) from raw scores
-    # mean_score(m,d) = mean of ALL raw scores for model m on dataset d
-    model_dataset_means: dict[str, dict[str, float]] = defaultdict(dict)
-    for model, datasets in model_dataset_lang_raw_scores.items():
-        for dataset, lang_raw_scores in datasets.items():
-            all_raw_scores: list[float] = []
-            for scores_list in lang_raw_scores.values():
-                all_raw_scores.extend(scores_list)
-            if all_raw_scores:
-                model_dataset_means[model][dataset] = float(np.mean(all_raw_scores))
-
-    # Step 3: Compute pooled_std per dataset from ALL raw scores across all models
-    dataset_all_raw_scores: dict[str, list[float]] = defaultdict(list)
-    for model, datasets in model_dataset_lang_raw_scores.items():
-        for dataset, lang_raw_scores in datasets.items():
-            for scores_list in lang_raw_scores.values():
-                dataset_all_raw_scores[dataset].extend(scores_list)
-
-    dataset_stats: dict[str, tuple[float, float]] = {}
-    for dataset, all_scores in dataset_all_raw_scores.items():
-        if not all_scores:
-            continue
-        # Check which models have this dataset
-        models_with_dataset = {
-            m for m, ds_means in model_dataset_means.items() if dataset in ds_means
-        }
-        if not models_with_dataset:
-            continue
-        best_mean = max(model_dataset_means[m][dataset] for m in models_with_dataset)
-        pooled_std = float(np.std(all_scores)) if len(all_scores) > 1 else 1.0
-        if pooled_std <= 0:
-            pooled_std = 1.0
-        dataset_stats[dataset] = (best_mean, pooled_std)
-
-    # Step 4: Compute rank score per (model, dataset, language)
-    # rank_score = 1 + (best_mean - model_mean) / pooled_std
-    model_dataset_lang_rank_scores: dict[str, dict[str, dict[str, float]]] = (
-        defaultdict(lambda: defaultdict(dict))
-    )
-    for model in models:
-        if model not in model_dataset_lang_raw_scores:
-            continue
-        for dataset, lang_raw_scores in model_dataset_lang_raw_scores[model].items():
-            if dataset not in dataset_stats:
-                continue
-            best_mean, pooled_std = dataset_stats[dataset]
-            for lang, raw_scores_list in lang_raw_scores.items():
-                if not raw_scores_list:
-                    continue
-                model_mean = float(np.mean(raw_scores_list))
-                rank_score = 1.0 + (best_mean - model_mean) / pooled_std
-                model_dataset_lang_rank_scores[model][dataset][lang] = rank_score
-
-    # Step 5: Aggregate rank scores: dataset -> task -> language
-    # Use official dataset configs to map datasets to tasks and languages
-    dataset_to_task: dict[str, str] = {}
-    dataset_to_lang_name: dict[str, str] = {}
-
-    # Official languages have configs; iterate all to build mappings
-    for lang_name in languages_with_official_datasets():
-        try:
-            lang_configs = official_datasets_for_language(lang_name)
-            for task_name, datasets_list in lang_configs.items():
-                for ds in datasets_list:
-                    if ds not in dataset_to_task:  # First match wins
-                        dataset_to_task[ds] = task_name
-                        dataset_to_lang_name[ds] = lang_name
-        except Exception:
-            continue
-
-    # Group rank scores by (language, task)
-    model_lang_task_scores: dict[str, dict[str, dict[str, list[float]]]] = defaultdict(
-        lambda: defaultdict(lambda: defaultdict(list))
-    )
-
-    for model in models:
-        model_rank_scores = model_dataset_lang_rank_scores.get(model, {})
-        for dataset, lang_rank_scores in model_rank_scores.items():
-            task = dataset_to_task.get(dataset)
-            lang_name = dataset_to_lang_name.get(dataset)
-            if not task or task in ORTHOGONAL_TASKS or not lang_name:
-                continue
-            for lang_code, rank_score in lang_rank_scores.items():
-                if lang_code in languages:
-                    model_lang_task_scores[model][lang_code][task].append(rank_score)
-
-    # Step 6: Aggregate to language mean rank scores (unweighted mean across tasks)
-    matrix: dict[str, dict[str, float | None]] = {}
-    for model in models:
-        matrix[model] = {}
-        lang_task_scores = model_lang_task_scores.get(model, {})
-
-        for lang in languages:
-            task_scores = lang_task_scores.get(lang, {})
-            if not task_scores:
-                matrix[model][lang] = None
-                continue
-            # Mean of each task's dataset scores, then mean across tasks
-            task_means = [np.mean(scores) for scores in task_scores.values() if scores]
-            if task_means:
-                matrix[model][lang] = float(np.mean(task_means))
-            else:
-                matrix[model][lang] = None
-
-    return matrix
+    return model_dataset_lang_raw_scores
 
 
 def _extract_languages_from_record(record: JsonDict) -> list[str]:
@@ -759,60 +762,294 @@ def _filter_by_shots(
         )
 
 
-def _compute_max_score(
-    model_scores: dict[str, dict[str, float | None]], max_score_override: float | None
-) -> float:
-    """Compute or validate maximum rank score for radial axis.
-
-    If max_score_override is None, automatically computes the maximum from
-    all plotted rank scores and rounds up to the nearest 0.5, with a minimum
-    of 2.5 (since rank score of 1 is perfect, typical values are 2.5–6).
-    If provided, validates that it is finite, > 1, and >= all plotted scores.
+def _compute_model_dataset_means(
+    raw_scores: dict[str, dict[str, dict[str, list[float]]]],
+) -> dict[str, dict[str, float]]:
+    """Step 2: Compute mean score per (model, dataset) from raw scores.
 
     Args:
-        model_scores:
-            Nested dict of model -> language -> rank score (or None).
-        max_score_override (optional):
-            User-provided maximum rank score override. If omitted, auto-computed
-            from the plotted rank scores.
+        raw_scores:
+            Nested dict of raw scores from step 1.
 
     Returns:
-        Maximum rank score value for the radial axis.
-
-    Raises:
-        ValueError:
-            If override is invalid (NaN, inf, <= 1, or too small).
+        Dict: model -> dataset -> mean score.
     """
-    all_scores: list[float] = []
-    for lang_scores in model_scores.values():
-        for score in lang_scores.values():
-            if score is not None and math.isfinite(score) and score > 0:
-                all_scores.append(score)
+    model_dataset_means: dict[str, dict[str, float]] = defaultdict(dict)
+    for model, datasets in raw_scores.items():
+        for dataset, lang_raw_scores in datasets.items():
+            all_raw_scores: list[float] = []
+            for scores_list in lang_raw_scores.values():
+                all_raw_scores.extend(scores_list)
+            if all_raw_scores:
+                model_dataset_means[model][dataset] = float(np.mean(all_raw_scores))
+    return model_dataset_means
 
-    if not all_scores:
-        return 2.5
 
-    max_found = max(all_scores)
+def _compute_dataset_stats(
+    raw_scores: dict[str, dict[str, dict[str, list[float]]]],
+    model_dataset_means: dict[str, dict[str, float]],
+) -> dict[str, tuple[float, float]]:
+    """Step 3: Compute pooled_std per dataset from ALL raw scores.
 
-    if max_score_override is not None:
-        if not math.isfinite(max_score_override):
-            raise ValueError(
-                f"max-score {max_score_override} is invalid (must be finite)."
-            )
-        if max_score_override <= 1:
-            raise ValueError(
-                f"max-score {max_score_override} is invalid (must be > 1, "
-                f"since rank score of 1 is perfect)."
-            )
-        if max_score_override < max_found:
-            raise ValueError(
-                f"max-score {max_score_override} is too small; "
-                f"found rank scores up to {max_found:.2f}"
-            )
-        return max_score_override
+    Args:
+        raw_scores:
+            Nested dict of raw scores from step 1.
+        model_dataset_means:
+            Dict of mean scores from step 2.
 
-    rounded = math.ceil(max_found * 2) / 2
-    return max(rounded, 2.5)
+    Returns:
+        Dict: dataset -> (best_mean, pooled_std).
+    """
+    dataset_all_raw_scores: dict[str, list[float]] = defaultdict(list)
+    for model, datasets in raw_scores.items():
+        for dataset, lang_raw_scores in datasets.items():
+            for scores_list in lang_raw_scores.values():
+                dataset_all_raw_scores[dataset].extend(scores_list)
+
+    dataset_stats: dict[str, tuple[float, float]] = {}
+    for dataset, all_scores in dataset_all_raw_scores.items():
+        if not all_scores:
+            continue
+        models_with_dataset = {
+            m for m, ds_means in model_dataset_means.items() if dataset in ds_means
+        }
+        if not models_with_dataset:
+            continue
+        best_mean = max(model_dataset_means[m][dataset] for m in models_with_dataset)
+        pooled_std = float(np.std(all_scores)) if len(all_scores) > 1 else 1.0
+        if pooled_std <= 0:
+            pooled_std = 1.0
+        dataset_stats[dataset] = (best_mean, pooled_std)
+    return dataset_stats
+
+
+def _compute_rank_scores(
+    models: list[str],
+    raw_scores: dict[str, dict[str, dict[str, list[float]]]],
+    dataset_stats: dict[str, tuple[float, float]],
+) -> dict[str, dict[str, dict[str, float]]]:
+    """Step 4: Compute rank score per (model, dataset, language).
+
+    Args:
+        models:
+            Model IDs to include.
+        raw_scores:
+            Nested dict of raw scores from step 1.
+        dataset_stats:
+            Dict of dataset stats from step 3.
+
+    Returns:
+        Nested dict: model -> dataset -> language -> rank score.
+    """
+    model_dataset_lang_rank_scores: dict[str, dict[str, dict[str, float]]] = (
+        defaultdict(lambda: defaultdict(dict))
+    )
+    for model in models:
+        if model not in raw_scores:
+            continue
+        for dataset, lang_raw_scores in raw_scores[model].items():
+            if dataset not in dataset_stats:
+                continue
+            best_mean, pooled_std = dataset_stats[dataset]
+            for lang, raw_scores_list in lang_raw_scores.items():
+                if not raw_scores_list:
+                    continue
+                model_mean = float(np.mean(raw_scores_list))
+                rank_score = 1.0 + (best_mean - model_mean) / pooled_std
+                model_dataset_lang_rank_scores[model][dataset][lang] = rank_score
+    return model_dataset_lang_rank_scores
+
+
+def _build_dataset_mappings() -> tuple[dict[str, str], dict[str, str]]:
+    """Step 5a: Build dataset to task and language name mappings.
+
+    Returns:
+        Tuple of (dataset_to_task, dataset_to_lang_name) dicts.
+    """
+    dataset_to_task: dict[str, str] = {}
+    dataset_to_lang_name: dict[str, str] = {}
+
+    for lang_name in languages_with_official_datasets():
+        try:
+            lang_configs = official_datasets_for_language(lang_name)
+            for task_name, datasets_list in lang_configs.items():
+                for ds in datasets_list:
+                    if ds not in dataset_to_task:
+                        dataset_to_task[ds] = task_name
+                        dataset_to_lang_name[ds] = lang_name
+        except Exception:
+            continue
+    return dataset_to_task, dataset_to_lang_name
+
+
+def _group_scores_by_task(
+    models: list[str],
+    languages: list[str],
+    rank_scores: dict[str, dict[str, dict[str, float]]],
+    dataset_to_task: dict[str, str],
+    dataset_to_lang_name: dict[str, str],
+) -> dict[str, dict[str, dict[str, list[float]]]]:
+    """Step 5b: Group rank scores by (language, task).
+
+    Args:
+        models:
+            Model IDs to include.
+        languages:
+            Language codes to include.
+        rank_scores:
+            Rank scores from step 4.
+        dataset_to_task:
+            Dataset to task mapping.
+        dataset_to_lang_name:
+            Dataset to language name mapping.
+
+    Returns:
+        Nested dict: model -> language -> task -> list of rank scores.
+    """
+    model_lang_task_scores: dict[str, dict[str, dict[str, list[float]]]] = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(list))
+    )
+
+    for model in models:
+        model_rank_scores = rank_scores.get(model, {})
+        for dataset, lang_rank_scores in model_rank_scores.items():
+            task = dataset_to_task.get(dataset)
+            lang_name = dataset_to_lang_name.get(dataset)
+            if not task or task in ORTHOGONAL_TASKS or not lang_name:
+                continue
+            for lang_code, rank_score in lang_rank_scores.items():
+                if lang_code in languages:
+                    model_lang_task_scores[model][lang_code][task].append(rank_score)
+    return model_lang_task_scores
+
+
+def _aggregate_to_language_scores(
+    models: list[str],
+    languages: list[str],
+    model_lang_task_scores: dict[str, dict[str, dict[str, list[float]]]],
+) -> dict[str, dict[str, float | None]]:
+    """Step 6: Aggregate to language mean rank scores.
+
+    Args:
+        models:
+            Model IDs to include.
+        languages:
+            Language codes to include.
+        model_lang_task_scores:
+            Grouped scores from step 5b.
+
+    Returns:
+        Model x language score matrix.
+    """
+    matrix: dict[str, dict[str, float | None]] = {}
+    for model in models:
+        matrix[model] = {}
+        lang_task_scores = model_lang_task_scores.get(model, {})
+
+        for lang in languages:
+            task_scores = lang_task_scores.get(lang, {})
+            if not task_scores:
+                matrix[model][lang] = None
+                continue
+            task_means = [np.mean(scores) for scores in task_scores.values() if scores]
+            if task_means:
+                matrix[model][lang] = float(np.mean(task_means))
+            else:
+                matrix[model][lang] = None
+    return matrix
+
+
+def _write_and_open_plot(
+    fig: go.Figure, title: str | None, filename: str | None
+) -> int:
+    """Write plot to file and open in browser.
+
+    Args:
+        fig:
+            The Plotly figure to write.
+        title:
+            Plot title (used for filename inference).
+        filename:
+            Output filename (without .png suffix).
+
+    Returns:
+        Exit code (0 for success, 1 for failure).
+    """
+    output_filename = _determine_output_filename(title=title, filename=filename)
+    output_path = Path(output_filename).resolve()
+    file_uri = output_path.as_uri()
+    try:
+        _write_image_silent(fig=fig, path=str(output_path))
+    except Exception as exc:
+        click.echo(f"Error writing PNG: {exc}", err=True)
+        return 1
+
+    try:
+        opened = webbrowser.open(file_uri)
+    except Exception as exc:
+        click.echo(f"Error opening PNG: {exc}", err=True)
+        return 1
+    if not opened:
+        click.echo(f"Error opening PNG: {file_uri}", err=True)
+        return 1
+
+    click.echo(f"Finished. The output plot can now be found at {file_uri}")
+    return 0
+
+
+def _determine_output_filename(title: str | None, filename: str | None) -> str:
+    """Determine output PNG filename based on title and filename options.
+
+    Priority:
+    1. If filename is set, use it (append .png if missing).
+    2. If title is set (but filename not), infer from title using snake_case.
+    3. Otherwise, use default "language-spider-plot.png".
+
+    Args:
+        title:
+            Plot title (optional).
+        filename:
+            Explicit filename (optional).
+
+    Returns:
+        PNG filename with .png extension.
+    """
+    if filename:
+        # Ensure .png extension
+        if not filename.lower().endswith(".png"):
+            return filename + ".png"
+        return filename
+
+    if title:
+        # Infer filename from title
+        base_name = _to_snake_case(title)
+        return base_name + ".png"
+
+    # Default filename
+    return "language-spider-plot.png"
+
+
+def _to_snake_case(text: str) -> str:
+    """Convert text to snake_case.
+
+    Converts spaces and special characters to underscores, lowercases,
+    and removes consecutive underscores.
+
+    Args:
+        text:
+            Text to convert.
+
+    Returns:
+        Snake-case string.
+    """
+    # Replace spaces and hyphens with underscores
+    result = text.replace(" ", "_").replace("-", "_")
+    # Remove non-alphanumeric except underscores
+    result = re.sub(r"[^a-z0-9_]", "", result.lower())
+    # Remove consecutive underscores
+    result = re.sub(r"_+", "_", result)
+    # Remove leading/trailing underscores
+    return result.strip("_")
 
 
 def _create_spider_plot(
@@ -922,110 +1159,6 @@ def _create_spider_plot(
     return fig
 
 
-def _get_language_display_name(code: str) -> str:
-    """Get display name for a language code.
-
-    Args:
-        code:
-            Language code.
-
-    Returns:
-        Language name if known, otherwise the code itself.
-    """
-    all_languages = get_all_languages()
-    if code in all_languages:
-        return all_languages[code].name
-    return code
-
-
-def _normalise_model_name(model_id: str) -> str:
-    """Normalise model identifier for display.
-
-    Extracts the short model name from a full identifier like
-    "author/model-name" -> "model-name".
-
-    Args:
-        model_id:
-            Model identifier (may include author prefix).
-
-    Returns:
-        Normalised model name for display.
-    """
-    if "/" in model_id:
-        return model_id.split("/")[-1]
-    return model_id
-
-
-def _normalise_model_name(model_id: str) -> str:
-    """Normalise model ID for display.
-
-    Args:
-        model_id:
-            Full model ID (e.g., "alexandra/square-7b").
-
-    Returns:
-        Shortened display name (e.g., "square-7b").
-    """
-    if "/" in model_id:
-        return model_id.split("/", 1)[1]
-    return model_id
-
-
-def _determine_output_filename(title: str | None, filename: str | None) -> str:
-    """Determine output PNG filename based on title and filename options.
-
-    Priority:
-    1. If filename is set, use it (append .png if missing).
-    2. If title is set (but filename not), infer from title using snake_case.
-    3. Otherwise, use default "language-spider-plot.png".
-
-    Args:
-        title:
-            Plot title (optional).
-        filename:
-            Explicit filename (optional).
-
-    Returns:
-        PNG filename with .png extension.
-    """
-    if filename:
-        # Ensure .png extension
-        if not filename.lower().endswith(".png"):
-            return filename + ".png"
-        return filename
-
-    if title:
-        # Infer filename from title
-        base_name = _to_snake_case(title)
-        return base_name + ".png"
-
-    # Default filename
-    return "language-spider-plot.png"
-
-
-def _to_snake_case(text: str) -> str:
-    """Convert text to snake_case.
-
-    Converts spaces and special characters to underscores, lowercases,
-    and removes consecutive underscores.
-
-    Args:
-        text:
-            Text to convert.
-
-    Returns:
-        Snake-case string.
-    """
-    # Replace spaces and hyphens with underscores
-    result = text.replace(" ", "_").replace("-", "_")
-    # Remove non-alphanumeric except underscores
-    result = re.sub(r"[^a-z0-9_]", "", result.lower())
-    # Remove consecutive underscores
-    result = re.sub(r"_+", "_", result)
-    # Remove leading/trailing underscores
-    return result.strip("_")
-
-
 def _hex_to_rgba(hex_colour: str, alpha: float = 0.2) -> str:
     """Convert hex colour to rgba string with specified alpha.
 
@@ -1110,58 +1243,111 @@ kaleido.stop_sync_server(silence_warnings=True)
 """
 
 
-@click.command()
-@click.option(
-    "--model",
-    "-m",
-    "models",
-    multiple=True,
-    required=True,
-    metavar="MODEL",
-    help="Model ID to include (can be repeated).",
-)
-@click.option(
-    "--language",
-    "-l",
-    "languages",
-    multiple=True,
-    metavar="LANGUAGE",
-    help="Language name or code to include (can be repeated). "
-    "Defaults to official languages.",
-)
-@click.option(
-    "--shots",
-    type=click.Choice(["auto", "zero", "few"]),
-    default="auto",
-    show_default=True,
-    help="Shot setting: zero-shot, few-shot, or auto-detect.",
-)
-@click.option(
-    "--max-score",
-    type=float,
-    metavar="FLOAT",
-    help=(
-        "Optional override for maximum rank score on the radial axis. "
-        "When omitted, auto-computed from plotted rank scores (rounded up "
-        "to nearest 0.5, minimum 2.5; rank score of 1 is perfect)."
-    ),
-)
-@click.option(
-    "--title",
-    type=str,
-    metavar="TEXT",
-    help="Plot title. If omitted, uses default title.",
-)
-@click.option(
-    "--filename",
-    type=str,
-    metavar="PATH",
-    help=(
-        "Output PNG filename. If omitted and --title is set, "
-        "inferred from title using snake_case. If both omitted, "
-        "uses language-spider-plot.png. .png extension appended if missing."
-    ),
-)
+def _compute_max_score(
+    model_scores: dict[str, dict[str, float | None]], max_score_override: float | None
+) -> float:
+    """Compute or validate maximum rank score for radial axis.
+
+    If max_score_override is None, automatically computes the maximum from
+    all plotted rank scores and rounds up to the nearest 0.5, with a minimum
+    of 2.5 (since rank score of 1 is perfect, typical values are 2.5–6).
+    If provided, validates that it is finite, > 1, and >= all plotted scores.
+
+    Args:
+        model_scores:
+            Nested dict of model -> language -> rank score (or None).
+        max_score_override (optional):
+            User-provided maximum rank score override. If omitted, auto-computed
+            from the plotted rank scores.
+
+    Returns:
+        Maximum rank score value for the radial axis.
+
+    Raises:
+        ValueError:
+            If override is invalid (NaN, inf, <= 1, or too small).
+    """
+    all_scores: list[float] = []
+    for lang_scores in model_scores.values():
+        for score in lang_scores.values():
+            if score is not None and math.isfinite(score) and score > 0:
+                all_scores.append(score)
+
+    if not all_scores:
+        return 2.5
+
+    max_found = max(all_scores)
+
+    if max_score_override is not None:
+        if not math.isfinite(max_score_override):
+            raise ValueError(
+                f"max-score {max_score_override} is invalid (must be finite)."
+            )
+        if max_score_override <= 1:
+            raise ValueError(
+                f"max-score {max_score_override} is invalid (must be > 1, "
+                f"since rank score of 1 is perfect)."
+            )
+        if max_score_override < max_found:
+            raise ValueError(
+                f"max-score {max_score_override} is too small; "
+                f"found rank scores up to {max_found:.2f}"
+            )
+        return max_score_override
+
+    rounded = math.ceil(max_found * 2) / 2
+    return max(rounded, 2.5)
+
+
+def _get_language_display_name(code: str) -> str:
+    """Get display name for a language code.
+
+    Args:
+        code:
+            Language code.
+
+    Returns:
+        Language name if known, otherwise the code itself.
+    """
+    all_languages = get_all_languages()
+    if code in all_languages:
+        return all_languages[code].name
+    return code
+
+
+def _normalise_model_name(model_id: str) -> str:
+    """Normalise model identifier for display.
+
+    Extracts the short model name from a full identifier like
+    "author/model-name" -> "model-name".
+
+    Args:
+        model_id:
+            Model identifier (may include author prefix).
+
+    Returns:
+        Normalised model name for display.
+    """
+    if "/" in model_id:
+        return model_id.split("/")[-1]
+    return model_id
+
+
+def _normalise_model_name(model_id: str) -> str:
+    """Normalise model ID for display.
+
+    Args:
+        model_id:
+            Full model ID (e.g., "alexandra/square-7b").
+
+    Returns:
+        Shortened display name (e.g., "square-7b").
+    """
+    if "/" in model_id:
+        return model_id.split("/", 1)[1]
+    return model_id
+
+
 @click.command()
 @click.option(
     "--model",
