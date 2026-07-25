@@ -36,91 +36,6 @@ from .result_identity import sanitise_model_dir_name
 logger = logging.getLogger(__name__)
 
 
-def add_missing_entries(
-    record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
-) -> dict:
-    """Adds missing entries to a record.
-
-    Fields are stored in their appropriate nested locations within the EEE
-    record (``model_info`` and ``eval_library``).
-
-    Args:
-        record:
-            A record from the JSONL file.
-        trained_from_scratch_patterns:
-            A list of regex patterns for trained-from-scratch models.
-        cache:
-            The cache.
-
-    Returns:
-        The record with missing entries added.
-    """
-    model_info = record.setdefault("model_info", {})
-    model_additional = model_info.setdefault("additional_details", {})
-    eval_lib = record.setdefault("eval_library", {})
-    eval_additional = eval_lib.setdefault("additional_details", {})
-
-    if "validation_split" not in eval_additional:
-        eval_additional["validation_split"] = False
-    if "few_shot" not in eval_additional:
-        eval_additional["few_shot"] = True
-    if "generative" not in model_additional:
-        model_additional["generative"] = False
-    if "generative_type" not in model_additional:
-        model_additional["generative_type"] = _get_generative_type(
-            record=record, cache=cache
-        )
-    if "merge" not in model_additional:
-        model_additional["merge"] = _is_merge(record=record, cache=cache)
-
-    if "commercially_licensed" not in model_additional:
-        model_additional["commercially_licensed"] = _is_commercially_licensed(
-            record=record, cache=cache
-        )
-    if "open" not in model_additional:
-        model_additional["open"] = _is_open(record=record, cache=cache)
-    if "trained_from_scratch" not in model_additional:
-        model_additional["trained_from_scratch"] = _is_trained_from_scratch(
-            record=record,
-            trained_from_scratch_patterns=trained_from_scratch_patterns,
-            cache=cache,
-        )
-    if "model_url" not in model_additional or model_additional["model_url"] is None:
-        model_additional["model_url"] = _generate_model_url_with_cache(
-            model_id=plain_model_id(get_model_name(record=record)), cache=cache
-        )
-
-    return record
-
-
-def _generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
-    """Generates a model URL using a cache.
-
-    When no URL can be generated, the operator is asked whether to drop the
-    model from the results. A "keep" decision is cached so the prompt isn't
-    repeated; a "remove" decision deletes the model's result file. Both
-    decisions are persisted by ``ask_user_to_remove_model``.
-
-    Args:
-        model_id:
-            The model ID.
-        cache:
-            The cache.
-
-    Returns:
-        The model URL, or None if no URL could be generated.
-    """
-    model_id = split_model_id(model_id=plain_model_id(model_id)).model_id
-    if model_id in cache.model_url and cache.model_url[model_id] is not None:
-        return cache.model_url[model_id]
-
-    model_url = generate_model_url(model_id=model_id)
-    if model_url is None and ask_user_to_remove_model(model_id=model_id):
-        _remove_model_results(model_id=model_id)
-    cache.model_url[model_id] = model_url
-    return model_url
-
-
 def _remove_model_results(model_id: str) -> None:
     """Delete a model's result directory from RESULTS_DIR.
 
@@ -260,58 +175,6 @@ def _get_generative_type_from_keywords(model_id: str) -> str | None:
     return None
 
 
-def _get_generative_type(record: dict, cache: Cache) -> str | None:
-    """Asks for the generative type of a model.
-
-    Args:
-        record:
-            A record from the JSONL file.
-        cache:
-            The cache.
-
-    Returns:
-        The generative type of the model.
-    """
-    raw_model_id = _model_id_from_record(record=record)
-
-    # Check special suffixes first
-    if "#thinking" in raw_model_id:
-        cache.generative_type[raw_model_id] = "reasoning"
-        return "reasoning"
-    if "#no-thinking" in raw_model_id:
-        cache.generative_type[raw_model_id] = "instruction_tuned"
-        return "instruction_tuned"
-
-    # Normalise model ID
-    model_id = split_model_id(model_id=plain_model_id(raw_model_id)).model_id
-
-    while True:
-        # Check cache
-        if model_id in cache.generative_type:
-            return cache.generative_type[model_id]
-
-        # Try keyword inference
-        inferred_type = _get_generative_type_from_keywords(model_id=model_id)
-        if inferred_type is not None:
-            cache.generative_type[model_id] = inferred_type
-            return inferred_type
-
-        # Ask user
-        msg = f"What is the generative type of {model_id!r}?"
-        if "/" in model_id:
-            msg += f" (https://hf.co/{model_id})"
-        msg += " [0=null, 1=base, 2=instruction_tuned, 3=reasoning] "
-        user_input = input(msg)
-        parsed = _parse_generative_type_input(user_input)
-        if parsed == "EXPLICIT_NULL":
-            cache.generative_type[model_id] = None
-            return None
-        if parsed is not None:
-            cache.generative_type[model_id] = parsed
-            return parsed
-        logger.error("Invalid input. Please try again.")
-
-
 def _infer_commercial_from_hf_licence(
     model_id: str, licence_cache: dict[str, bool | None]
 ) -> bool | None:
@@ -367,6 +230,104 @@ def _infer_commercial_from_hf_licence(
     result = licence in PERMISSIVE_LICENSES if licence else None
     licence_cache[model_id] = result
     return result
+
+
+def _model_id_from_record(record: dict) -> str:
+    """Return the model id from a record, unwrapping an HTML anchor tag.
+
+    Args:
+        record:
+            A record from the JSONL file.
+
+    Returns:
+        The model id, with any surrounding anchor tag stripped.
+    """
+    model_id = get_model_name(record)
+    if model_id.startswith("<a href="):
+        model_id_match = re.search(r">(.+?)<", model_id)
+        if model_id_match:
+            return model_id_match.group(1)
+    return model_id
+
+
+def _generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
+    """Generates a model URL using a cache.
+
+    When no URL can be generated, the operator is asked whether to drop the
+    model from the results. A "keep" decision is cached so the prompt isn't
+    repeated; a "remove" decision deletes the model's result file. Both
+    decisions are persisted by ``ask_user_to_remove_model``.
+
+    Args:
+        model_id:
+            The model ID.
+        cache:
+            The cache.
+
+    Returns:
+        The model URL, or None if no URL could be generated.
+    """
+    model_id = split_model_id(model_id=plain_model_id(model_id)).model_id
+    if model_id in cache.model_url and cache.model_url[model_id] is not None:
+        return cache.model_url[model_id]
+
+    model_url = generate_model_url(model_id=model_id)
+    if model_url is None and ask_user_to_remove_model(model_id=model_id):
+        _remove_model_results(model_id=model_id)
+    cache.model_url[model_id] = model_url
+    return model_url
+
+
+def _get_generative_type(record: dict, cache: Cache) -> str | None:
+    """Asks for the generative type of a model.
+
+    Args:
+        record:
+            A record from the JSONL file.
+        cache:
+            The cache.
+
+    Returns:
+        The generative type of the model.
+    """
+    raw_model_id = _model_id_from_record(record=record)
+
+    # Check special suffixes first
+    if "#thinking" in raw_model_id:
+        cache.generative_type[raw_model_id] = "reasoning"
+        return "reasoning"
+    if "#no-thinking" in raw_model_id:
+        cache.generative_type[raw_model_id] = "instruction_tuned"
+        return "instruction_tuned"
+
+    # Normalise model ID
+    model_id = split_model_id(model_id=plain_model_id(raw_model_id)).model_id
+
+    while True:
+        # Check cache
+        if model_id in cache.generative_type:
+            return cache.generative_type[model_id]
+
+        # Try keyword inference
+        inferred_type = _get_generative_type_from_keywords(model_id=model_id)
+        if inferred_type is not None:
+            cache.generative_type[model_id] = inferred_type
+            return inferred_type
+
+        # Ask user
+        msg = f"What is the generative type of {model_id!r}?"
+        if "/" in model_id:
+            msg += f" (https://hf.co/{model_id})"
+        msg += " [0=null, 1=base, 2=instruction_tuned, 3=reasoning] "
+        user_input = input(msg)
+        parsed = _parse_generative_type_input(user_input)
+        if parsed == "EXPLICIT_NULL":
+            cache.generative_type[model_id] = None
+            return None
+        if parsed is not None:
+            cache.generative_type[model_id] = parsed
+            return parsed
+        logger.error("Invalid input. Please try again.")
 
 
 def _is_commercially_licensed(record: dict, cache: Cache) -> bool:
@@ -555,19 +516,58 @@ def _is_open(record: dict, cache: Cache) -> bool:
     return True
 
 
-def _model_id_from_record(record: dict) -> str:
-    """Return the model id from a record, unwrapping an HTML anchor tag.
+def add_missing_entries(
+    record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
+) -> dict:
+    """Adds missing entries to a record.
+
+    Fields are stored in their appropriate nested locations within the EEE
+    record (``model_info`` and ``eval_library``).
 
     Args:
         record:
             A record from the JSONL file.
+        trained_from_scratch_patterns:
+            A list of regex patterns for trained-from-scratch models.
+        cache:
+            The cache.
 
     Returns:
-        The model id, with any surrounding anchor tag stripped.
+        The record with missing entries added.
     """
-    model_id = get_model_name(record)
-    if model_id.startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", model_id)
-        if model_id_match:
-            return model_id_match.group(1)
-    return model_id
+    model_info = record.setdefault("model_info", {})
+    model_additional = model_info.setdefault("additional_details", {})
+    eval_lib = record.setdefault("eval_library", {})
+    eval_additional = eval_lib.setdefault("additional_details", {})
+
+    if "validation_split" not in eval_additional:
+        eval_additional["validation_split"] = False
+    if "few_shot" not in eval_additional:
+        eval_additional["few_shot"] = True
+    if "generative" not in model_additional:
+        model_additional["generative"] = False
+    if "generative_type" not in model_additional:
+        model_additional["generative_type"] = _get_generative_type(
+            record=record, cache=cache
+        )
+    if "merge" not in model_additional:
+        model_additional["merge"] = _is_merge(record=record, cache=cache)
+
+    if "commercially_licensed" not in model_additional:
+        model_additional["commercially_licensed"] = _is_commercially_licensed(
+            record=record, cache=cache
+        )
+    if "open" not in model_additional:
+        model_additional["open"] = _is_open(record=record, cache=cache)
+    if "trained_from_scratch" not in model_additional:
+        model_additional["trained_from_scratch"] = _is_trained_from_scratch(
+            record=record,
+            trained_from_scratch_patterns=trained_from_scratch_patterns,
+            cache=cache,
+        )
+    if "model_url" not in model_additional or model_additional["model_url"] is None:
+        model_additional["model_url"] = _generate_model_url_with_cache(
+            model_id=plain_model_id(get_model_name(record=record)), cache=cache
+        )
+
+    return record
