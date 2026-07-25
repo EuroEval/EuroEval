@@ -664,6 +664,10 @@ def _run_claimed_issue(
         )
     )
 
+    # Populate failed list if a failure occurred
+    if failure_reason and not failed:
+        failed.extend(pending)
+
     # Handle skips
     if not failed and pending:
         skip_failed, skip_reason = _handle_pending_skips(
