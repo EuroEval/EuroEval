@@ -21,7 +21,7 @@ from yaml import safe_dump, safe_load
 
 from euroeval.string_utils import split_model_id
 
-from .constants import MODELS_WITHOUT_URLS_CACHE
+from .constants import MODELS_WITHOUT_URLS_CACHE, REPO_ROOT
 from .records import plain_model_id
 
 # Matches the href of an anchored model name, e.g.
@@ -97,7 +97,14 @@ def generate_model_url(model_id: str) -> str | None:
         generate_alx_url,
     )
     for url_generator in url_generators:
-        url = url_generator(model_id=model_id_without_extras)
+        try:
+            url = url_generator(model_id=model_id_without_extras)
+        except Exception as e:
+            logger.error(
+                f"Error generating URL for model {model_id} with "
+                f"{url_generator.__name__}: {e}"
+            )
+            continue
         if url is not None:
             return url
 
@@ -161,6 +168,31 @@ def generate_hf_hub_url(model_id: str) -> str | None:
 
 
 @cache
+def get_openai_models() -> list[str]:
+    """Get a list of all OpenAI models.
+
+    Returns:
+        A list of all OpenAI models.
+
+    Raises:
+        Exception if there was an error fetching the OpenAI models, and no cache file
+        exists.
+    """
+    cache_path = REPO_ROOT / "src" / "leaderboards" / "openai_models.yaml"
+    try:
+        results: list[str] = [model_info.id for model_info in openai.models.list().data]
+        with cache_path.open("w") as f:
+            safe_dump(results, f)
+        return results
+    except Exception as e:
+        if cache_path.exists():
+            with cache_path.open("r") as f:
+                results = safe_load(f)
+            return results
+        raise e
+
+
+@cache
 def generate_openai_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on OpenAI.
 
@@ -173,9 +205,7 @@ def generate_openai_url(model_id: str) -> str | None:
     """
     model_id = model_id.replace("openai/", "")
 
-    available_openai_models = [
-        model_info.id for model_info in openai.models.list().data
-    ]
+    available_openai_models = get_openai_models()
 
     if model_id == "gpt-4-1106-preview":
         model_id_without_version_id = "gpt-4-turbo"

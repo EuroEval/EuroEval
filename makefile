@@ -84,35 +84,9 @@ frontend:  ## Build and deploy the frontend
 
 leaderboards:  ## Collect finished evaluation results and regenerate leaderboards
 	@uv run python src/scripts/collect_evaluation_results.py
-	@echo "Starting Vercel dev server for preview..."
-	@vercel dev > /dev/null 2>&1 &
-	@DEV_PID=$$!; \
-		sleep 3; \
-		read -p "Everything looks alright? [Y/n] " confirm; \
-		kill $$DEV_PID 2>/dev/null || true; \
-		if [ -z "$$confirm" ] || [ "$$confirm" = "Y" ] || [ "$$confirm" = "y" ]; then \
-			echo "Deploying..."; \
-			vercel build --prod 2>&1 | grep -v "^WARNING!" && vercel deploy --prebuilt --prod; \
-		else \
-			echo "Aborting deployment."; \
-			exit 0; \
-		fi
 
 force-leaderboards:
 	@uv run python src/scripts/collect_evaluation_results.py --force
-	@echo "Starting Vercel dev server for preview..."
-	@vercel dev > /dev/null 2>&1 &
-	@DEV_PID=$$!; \
-		sleep 3; \
-		read -p "Everything looks alright? [Y/n] " confirm; \
-		kill $$DEV_PID 2>/dev/null || true; \
-		if [ -z "$$confirm" ] || [ "$$confirm" = "Y" ] || [ "$$confirm" = "y" ]; then \
-			echo "Deploying..."; \
-			vercel build --prod 2>&1 | grep -v "^WARNING!" && vercel deploy --prebuilt --prod; \
-		else \
-			echo "Aborting deployment."; \
-			exit 0; \
-		fi
 
 tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
