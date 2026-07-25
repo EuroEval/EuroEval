@@ -40,8 +40,8 @@ def restore_from_backup_if_missing(target: Path = RESULTS_DIR) -> bool:
     """Restore `target` from the newest backup if it's missing or empty.
 
     Args:
-        target:
-            The results directory to populate (defaults to RESULTS_DIR).
+        target (optional):
+            The results directory to populate. Defaults to RESULTS_DIR.
 
     Returns:
         True if a restore happened, False if `target` already held results or
@@ -71,8 +71,8 @@ def backup_results(source: Path = RESULTS_DIR) -> Path | None:
     so repeated runs without changes don't fill the backup directory.
 
     Args:
-        source:
-            The results directory to back up (defaults to RESULTS_DIR).
+        source (optional):
+            The results directory to back up. Defaults to RESULTS_DIR.
 
     Returns:
         The Path of the new backup, or None if nothing was written.

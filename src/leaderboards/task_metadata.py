@@ -113,7 +113,7 @@ def languages_with_official_datasets() -> list[str]:
     """List language names that have at least one official leaderboard dataset.
 
     Only single-token language names are returned, so dialect entries like
-    ``norwegian bokmål``/``norwegian nynorsk``/``european portuguese`` don't
+    ``norwegian bokmal``/``norwegian nynorsk``/``european portuguese`` don't
     produce duplicate leaderboards on top of their parent (``norwegian``,
     ``portuguese``). Names are lower-cased and sorted alphabetically.
 

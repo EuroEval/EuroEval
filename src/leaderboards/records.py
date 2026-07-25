@@ -11,7 +11,7 @@ def strip_anchor(model_id: str) -> str:
     """Strip any surrounding HTML anchor tag from a model id.
 
     Unlike :func:`plain_model_id`, this preserves any ``(zero-shot)`` / ``(val)``
-    variant suffix — it only unwraps the ``<a href=...>...</a>`` tag.
+    variant suffix - it only unwraps the ``<a href=...>...</a>`` tag.
 
     Args:
         model_id:
@@ -30,11 +30,11 @@ def plain_model_id(model_id: str) -> str:
     Records label few-shot vs zero-shot and test vs validation by appending
     ``(zero-shot)`` / ``(val)`` / ``(zero-shot, val)`` to the model id.
     For the core-model list we collapse all those variants down to the
-    canonical ``org/repo`` slug — we don't want to list the same model
+    canonical ``org/repo`` slug - we don't want to list the same model
     several times.
 
     Preserves ``#no-thinking``, ``#thinking`` and ``@revision`` suffixes
-    used for parameterised model IDs — these are meaningful for upload
+    used for parameterised model IDs - these are meaningful for upload
     filenames and core/per-model grouping.
 
     Args:

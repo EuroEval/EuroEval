@@ -395,7 +395,7 @@ def compute_standard_ranks_bootstrap(
     seed: int | None = None,
     alpha: float = 0.05,
 ) -> dict[str, dict[str, int]]:
-    """Compute ordinal ranks (1, 2, 3…) with ties via bootstrap CIs.
+    """Compute ordinal ranks (1, 2, 3...) with ties via bootstrap CIs.
 
     Sorts by overall mean rank score ascending (lower = better). Walks down
     the list; for each model, compares its CI against the current anchor's CI.
@@ -405,7 +405,7 @@ def compute_standard_ranks_bootstrap(
 
     CIs are computed from the bootstrap distributions themselves (percentile
     method), so the Rank column is consistent with the statistical uncertainty
-    captured by the bootstrap — rather than using a bootstrap hypothesis test
+    captured by the bootstrap - rather than using a bootstrap hypothesis test
     which operates on raw distributions and can disagree with the displayed CIs.
 
     Args:
@@ -413,7 +413,8 @@ def compute_standard_ranks_bootstrap(
         configs: Per-language task -> dataset mappings.
         n_bootstraps: Number of bootstrap replicates.
         seed: Random seed for reproducibility.
-        alpha: Significance level for the bootstrap CI.
+        alpha (optional): Significance level for the bootstrap CI. Defaults to
+            0.05.
 
     Returns:
         model_id -> category -> int rank.
