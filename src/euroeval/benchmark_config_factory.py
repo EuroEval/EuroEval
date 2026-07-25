@@ -208,15 +208,12 @@ def _get_datasets_list(
             ]
     except KeyError as e:
         _handle_dataset_lookup_error(
-            error=e,
-            options=list(all_dataset_configs.keys()),
-            entity_type="dataset",
+            error=e, options=list(all_dataset_configs.keys()), entity_type="dataset"
         )
 
 
 def _get_tasks_list(
-    task: "str | Task | c.Sequence[str | Task] | None",
-    task_mapping: dict[str, Task],
+    task: "str | Task | c.Sequence[str | Task] | None", task_mapping: dict[str, Task]
 ) -> list[Task] | None:
     """Get the list of tasks based on the task argument.
 

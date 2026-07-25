@@ -388,9 +388,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         """
         return self._tokeniser(text=examples["text"], truncation=True, padding=True)
 
-    def _prepare_sequence_classification(
-        self, dataset: DatasetDict
-    ) -> DatasetDict:
+    def _prepare_sequence_classification(self, dataset: DatasetDict) -> DatasetDict:
         """Prepare dataset for sequence classification.
 
         Args:
@@ -638,7 +636,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 def _load_model_from_pretrained(
     model_cls: t.Type[PreTrainedModel],
     model_id: str,
-    model_kwargs: dict[str, object],
+    model_kwargs: dict[str, t.Any],
     task_group: TaskGroup,
 ) -> PreTrainedModel | tuple[PreTrainedModel, ...]:
     """Load a model from pretrained with error handling.
@@ -695,7 +693,10 @@ def _load_model_from_pretrained(
                     "If you trust the suppliers of this model, then you can enable "
                     "this by setting the `--trust-remote-code` flag."
                 ) from e
-            if "Unrecognized configuration class" in error_str and "AutoModelFor" in error_str:
+            if (
+                "Unrecognized configuration class" in error_str
+                and "AutoModelFor" in error_str
+            ):
                 raise InvalidBenchmark(
                     f"The model {model_id!r} does not support the "
                     f"task group {task_group.value!r} as its architecture is not "
@@ -738,7 +739,7 @@ def load_model_and_tokeniser(
             If the model could not be loaded.
         InvalidBenchmark:
             If the model could not be loaded for this particular dataset.
-    """
+    """  # noqa: DOC502
     block_terminal_output()
 
     model_id = model_config.model_id
@@ -761,7 +762,7 @@ def load_model_and_tokeniser(
     if config.model_type == "deberta-v2":
         config.pooler_hidden_size = config.hidden_size
 
-    model_kwargs: dict[str, object] = dict(
+    model_kwargs: dict[str, t.Any] = dict(
         config=config,
         ignore_mismatched_sizes=False,
         revision=model_config.revision,
@@ -871,10 +872,7 @@ def _get_local_model_info(model_id: str) -> HfApiModelInfo | None:
 
 
 def _fetch_model_info_from_hub(
-    hf_api: HfApi,
-    model_id: str,
-    revision: str,
-    token: str | None,
+    hf_api: HfApi, model_id: str, revision: str, token: str | None
 ) -> HfApiModelInfo | None:
     """Fetch model info from HF Hub with retry logic.
 
@@ -1062,8 +1060,7 @@ def _check_safetensors_available(
             msg += "Skipping since the `--only-allow-safetensors` flag is set."
         else:
             msg += (
-                "Skipping since the `requires_safetensors` argument is set "
-                "to `True`."
+                "Skipping since the `requires_safetensors` argument is set to `True`."
             )
         log(msg, level=logging.WARNING)
         return False
@@ -1072,7 +1069,10 @@ def _check_safetensors_available(
         base_repo_files = hf_api.list_repo_files(repo_id=base_model_id)
         base_has_safetensors = any(f.endswith(".safetensors") for f in base_repo_files)
         if not base_has_safetensors:
-            msg = f"Base model {base_model_id} does not have safetensors weights available."
+            msg = (
+                f"Base model {base_model_id} does not have safetensors "
+                "weights available."
+            )
             if run_with_cli:
                 msg += " Skipping since the `--only-allow-safetensors` flag is set."
             else:
@@ -1130,10 +1130,7 @@ def get_model_repo_info(
     # Fetch from HF Hub if not found locally
     if model_info is None:
         model_info = _fetch_model_info_from_hub(
-            hf_api=hf_api,
-            model_id=model_id,
-            revision=revision,
-            token=token,
+            hf_api=hf_api, model_id=model_id, revision=revision, token=token
         )
         if model_info is None:
             return None
@@ -1316,9 +1313,7 @@ def get_dtype(
 
 @cache_arguments("model_id", "revision", "num_labels", "id2label", "label2id")
 def _handle_model_config_error(
-    error: Exception,
-    model_id: str,
-    run_with_cli: bool,
+    error: Exception, model_id: str, run_with_cli: bool
 ) -> t.Literal["retry", "continue"] | PretrainedConfig | None:
     """Handle an error during model config loading.
 
@@ -1455,7 +1450,7 @@ def load_hf_model_config(
             If an additional argument is required to load the model configuration.
         InvalidModel:
             If the model configuration could not be loaded.
-    """
+    """  # noqa: DOC502
     for _ in range(num_attempts := 5):
         try:
             config = AutoConfig.from_pretrained(
@@ -1629,9 +1624,7 @@ def _find_valid_model_max_length(
 
 
 def _adjust_vocab_size(
-    model: "PreTrainedModel",
-    tokeniser: Tokeniser,
-    raise_errors: bool,
+    model: "PreTrainedModel", tokeniser: Tokeniser, raise_errors: bool
 ) -> None:
     """Adjust model vocab size if tokeniser is larger.
 
@@ -1700,17 +1693,9 @@ def align_model_and_tokeniser(
 
     Returns:
         The fixed model and tokeniser.
-
-    Raises:
-        InvalidModel:
-            If the model's vocab size is not set correctly.
-        ValueError:
-            If an error appeared during inference.
     """
     model_max_length = min(model_max_length, MAX_CONTEXT_LENGTH)
-    tokeniser.model_max_length = (
-        model_max_length if model_max_length > 0 else 512
-    )
+    tokeniser.model_max_length = model_max_length if model_max_length > 0 else 512
 
     # Move to CPU for testing max length
     model_device = model.device
@@ -1730,9 +1715,7 @@ def align_model_and_tokeniser(
     model.to(model_device)  # ty: ignore[invalid-argument-type]
 
     # Adjust vocab size if needed
-    _adjust_vocab_size(
-        model=model, tokeniser=tokeniser, raise_errors=raise_errors
-    )
+    _adjust_vocab_size(model=model, tokeniser=tokeniser, raise_errors=raise_errors)
 
     # Set BOS token from EOS if needed
     _set_bos_token(tokeniser=tokeniser)
