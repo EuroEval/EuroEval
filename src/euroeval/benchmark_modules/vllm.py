@@ -1536,40 +1536,66 @@ def load_model(
         hf_model_config.architectures
         and "Olmo3ForCausalLM" in hf_model_config.architectures
     )
-    if is_olmo3 and not getattr(hf_model_config, "rope_parameters", None):
-        config_path = Path(download_dir) / "config.json"
-        if config_path.exists():
-            with open(config_path) as f:
-                config_dict = json.load(f)
+    if is_olmo3:
+        log(
+            f"Detected OLMo-3 model {model_id!r}, checking for rope_parameters...",
+            level=logging.INFO,
+        )
+        if not getattr(hf_model_config, "rope_parameters", None):
+            config_path = Path(download_dir) / "config.json"
+            log(
+                f"Looking for config at {config_path.resolve()} "
+                f"(exists={config_path.exists()})",
+                level=logging.INFO,
+            )
+            if config_path.exists():
+                with open(config_path) as f:
+                    config_dict = json.load(f)
 
-            if "rope_parameters" not in config_dict:
-                rope_theta = getattr(hf_model_config, "rope_theta", 10000)
-                rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
-                rope_params: dict[str, str | int | float] = {
-                    "rope_theta": rope_theta,
-                    "rope_type": rope_scaling.get("rope_type", "default"),
-                }
-                for key in [
-                    "factor",
-                    "original_max_position_embeddings",
-                    "attention_factor",
-                    "beta_fast",
-                    "beta_slow",
-                    "short_factor",
-                    "long_factor",
-                ]:
-                    if key in rope_scaling:
-                        rope_params[key] = rope_scaling[key]
+                if "rope_parameters" not in config_dict:
+                    rope_theta = getattr(hf_model_config, "rope_theta", 10000)
+                    rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
+                    rope_params: dict[str, str | int | float] = {
+                        "rope_theta": rope_theta,
+                        "rope_type": rope_scaling.get("rope_type", "default"),
+                    }
+                    for key in [
+                        "factor",
+                        "original_max_position_embeddings",
+                        "attention_factor",
+                        "beta_fast",
+                        "beta_slow",
+                        "short_factor",
+                        "long_factor",
+                    ]:
+                        if key in rope_scaling:
+                            rope_params[key] = rope_scaling[key]
 
-                config_dict["rope_parameters"] = rope_params
-                with open(config_path, "w") as f:
-                    json.dump(config_dict, f, indent=2)
+                    config_dict["rope_parameters"] = rope_params
+                    with open(config_path, "w") as f:
+                        json.dump(config_dict, f, indent=2)
 
-                log_once(
-                    f"Added rope_parameters to OLMo-3 config at {config_path}: "
-                    f"{rope_params!r}",
-                    level=logging.DEBUG,
+                    log(
+                        f"Added rope_parameters to OLMo-3 config at {config_path}: "
+                        f"{rope_params!r}",
+                        level=logging.INFO,
+                    )
+                else:
+                    log(
+                        f"Config already has rope_parameters: "
+                        f"{config_dict['rope_parameters']!r}",
+                        level=logging.INFO,
+                    )
+            else:
+                log(
+                    f"Config file not found at {config_path}, cannot patch",
+                    level=logging.WARNING,
                 )
+        else:
+            log(
+                "Model already has rope_parameters attribute, skipping patch",
+                level=logging.INFO,
+            )
 
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism(force_single_gpu=False)
