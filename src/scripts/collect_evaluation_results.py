@@ -121,23 +121,6 @@ def main(force: bool) -> None:
         sys.exit(1)
 
 
-def check_required_env_vars() -> None:
-    """Verify that the required tokens are set, exiting cleanly otherwise.
-
-    ``HUGGINGFACE_API_KEY`` is accepted as an alias for ``HF_TOKEN`` (it is
-    copied over when the ``leaderboards`` package is imported), so only
-    ``HF_TOKEN`` is checked here. A missing ``HF_TOKEN`` would otherwise
-    degrade silently into empty bucket reads and a failed upload.
-    """
-    missing = [var for var in ("GITHUB_TOKEN", "HF_TOKEN") if not os.environ.get(var)]
-    if missing:
-        logger.error(
-            f"Missing required env var(s): {', '.join(missing)}. "
-            "Set them (e.g. in a .env file) and re-run."
-        )
-        sys.exit(1)
-
-
 def build_dedup_key(result: dict) -> ResultIdentity | None:
     """Build a deduplication key from an EEE result record.
 
@@ -435,6 +418,39 @@ if __name__ == "__main__":
     main(force=False)
 
 
+def _extract_identity_key(result: dict) -> ResultIdentity | None:
+    """Extract the identity key from a result record.
+
+    Args:
+        result:
+            The parsed result record.
+
+    Returns:
+        Identity tuple or None if extraction fails.
+    """
+    try:
+        return identity_from_eee_record(result)
+    except (ValueError, KeyError):
+        return None
+
+
+def check_required_env_vars() -> None:
+    """Verify that the required tokens are set, exiting cleanly otherwise.
+
+    ``HUGGINGFACE_API_KEY`` is accepted as an alias for ``HF_TOKEN`` (it is
+    copied over when the ``leaderboards`` package is imported), so only
+    ``HF_TOKEN`` is checked here. A missing ``HF_TOKEN`` would otherwise
+    degrade silently into empty bucket reads and a failed upload.
+    """
+    missing = [var for var in ("GITHUB_TOKEN", "HF_TOKEN") if not os.environ.get(var)]
+    if missing:
+        logger.error(
+            f"Missing required env var(s): {', '.join(missing)}. "
+            "Set them (e.g. in a .env file) and re-run."
+        )
+        sys.exit(1)
+
+
 def _fetch_issues() -> list[dict] | None:
     """Fetch open model evaluation request issues.
 
@@ -592,22 +608,6 @@ def _deploy_and_close_issues(harvested: list[tuple[int, list[str]]]) -> bool:
             logger.error(f"#{number}: failed to close: {e}")
 
     return True
-
-
-def _extract_identity_key(result: dict) -> ResultIdentity | None:
-    """Extract the identity key from a result record.
-
-    Args:
-        result:
-            The parsed result record.
-
-    Returns:
-        Identity tuple or None if extraction fails.
-    """
-    try:
-        return identity_from_eee_record(result)
-    except (ValueError, KeyError):
-        return None
 
 
 def _load_existing_results() -> dict[ResultIdentity, dict]:
