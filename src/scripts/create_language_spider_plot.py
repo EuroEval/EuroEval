@@ -123,11 +123,11 @@ def _write_and_open_plot(fig: c.Figure, title: str | None, filename: str | None)
     Returns:
         Exit code (0 for success, 1 for failure).
     """
-    output_filename = _determine_output_filename(title, filename)
+    output_filename = _determine_output_filename(title=title, filename=filename)
     output_path = Path(output_filename).resolve()
     file_uri = output_path.as_uri()
     try:
-        _write_image_silent(fig, str(output_path))
+        _write_image_silent(fig=fig, path=str(output_path))
     except Exception as exc:
         click.echo(f"Error writing PNG: {exc}", err=True)
         return 1
@@ -222,7 +222,9 @@ def main(
     )
 
     try:
-        max_score_val = _compute_max_score(model_scores_matrix, max_score)
+        max_score_val = _compute_max_score(
+            model_scores=model_scores_matrix, max_score_override=max_score
+        )
     except ValueError as exc:
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)

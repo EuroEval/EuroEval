@@ -122,7 +122,9 @@ def main() -> None:
                 )
 
         for result_dict in model_results:
-            record_file.write_text(json.dumps(result_dict, indent=2), encoding="utf-8")
+            record_file.write_text(
+                data=json.dumps(obj=result_dict, indent=2), encoding="utf-8"
+            )
 
     for path in files_to_remove:
         path.unlink()

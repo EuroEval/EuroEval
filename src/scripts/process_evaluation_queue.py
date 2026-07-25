@@ -657,7 +657,7 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
                 except (json.JSONDecodeError, OSError):
                     pass  # If we can't parse existing, overwrite it
 
-            record_path.write_text(new_content, encoding="utf-8")
+            record_path.write_text(data=new_content, encoding="utf-8")
             records_written += 1
             written_paths.append(record_path)
         except (json.JSONDecodeError, ValueError, KeyError) as e:
@@ -707,7 +707,7 @@ def _load_existing_results(model_id: str) -> list[str]:
         for record_path in sorted(model_dir.glob("*.json")):
             try:
                 record = json.loads(record_path.read_text(encoding="utf-8"))
-                existing_lines.append(json.dumps(record))
+                existing_lines.append(json.dumps(obj=record))
             except (json.JSONDecodeError, OSError):
                 logger.debug(f"Skipping unreadable record {record_path}")
     existing_lines.extend(read_jsonl_lines(path=results_path))
@@ -1058,7 +1058,7 @@ def _process_pending_languages(
     failure_output_tail = ""
     last_output = ""
 
-    for i, lang in enumerate(pending):
+    for i, lang in enumerate(iterable=pending):
         logger.info(
             f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
         )

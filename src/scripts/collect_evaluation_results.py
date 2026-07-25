@@ -158,7 +158,7 @@ def _write_new_results(
         all_lines.extend(lines)
     all_lines.extend(manual_lines)
 
-    NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
+    NEW_RESULTS_PATH.write_text(data="\n".join(all_lines) + "\n", encoding="utf-8")
 
     harvested_count = sum(len(lines) for _, lines in harvested)
     logger.info(
@@ -401,7 +401,7 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
             content = local_path.read_text(encoding="utf-8")
             record = json.loads(content)  # validates and parses
             results.append(
-                json.dumps(record, separators=(",", ":"))
+                json.dumps(obj=record, separators=(",", ":"))
             )  # compact to single line
         except (json.JSONDecodeError, OSError) as e:
             logger.warning(f"Failed to read {local_path}: {e}")
@@ -469,7 +469,7 @@ def _merge_new_results(
     new_lines = new_results_path.read_text(encoding="utf-8").splitlines()
     logger.info(f"Processing {len(new_lines):,} new result lines...")
 
-    for line_number, line in enumerate(new_lines, start=1):
+    for line_number, line in enumerate(iterable=new_lines, start=1):
         if not line.strip():
             continue
         try:
@@ -499,7 +499,9 @@ def _validate_identities(existing: dict[ResultIdentity, dict]) -> None:
     for identity in existing:
         record_path = RESULTS_DIR / identity_to_path(identity)
         if record_path in path_to_identity:
-            raise_on_collision(identity, path_to_identity[record_path])
+            raise_on_collision(
+                identity_a=identity, identity_b=path_to_identity[record_path]
+            )
         path_to_identity[record_path] = identity
 
 
@@ -520,7 +522,7 @@ def _write_changed_records(
     written_paths: list[Path] = []
     for identity, record in existing.items():
         record_path = RESULTS_DIR / identity_to_path(identity)
-        desired = json.dumps(record, separators=(",", ":"))
+        desired = json.dumps(obj=record, separators=(",", ":"))
         try:
             if record_path.exists():
                 try:
@@ -533,7 +535,7 @@ def _write_changed_records(
                 except (json.JSONDecodeError, ValueError):
                     pass
             record_path.parent.mkdir(parents=True, exist_ok=True)
-            record_path.write_text(desired, encoding="utf-8")
+            record_path.write_text(data=desired, encoding="utf-8")
             records_written += 1
             written_paths.append(record_path)
         except (ValueError, OSError) as e:
@@ -638,7 +640,7 @@ def regenerate_leaderboards(force: bool = False) -> bool:
         cmd.append("--force")
     logger.info(f"Running: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, cwd=REPO_ROOT)
+        subprocess.run(command=cmd, check=True, cwd=REPO_ROOT)
         return True
     except subprocess.CalledProcessError as e:
         logger.error(f"generate_leaderboards failed (exit {e.returncode}).")
@@ -924,7 +926,7 @@ def deploy_to_vercel() -> bool:
     ):
         logger.info(f"Running: {' '.join(cmd)}")
         try:
-            subprocess.run(cmd, check=True, cwd=REPO_ROOT)
+            subprocess.run(command=cmd, check=True, cwd=REPO_ROOT)
         except FileNotFoundError:
             logger.error(
                 "`vercel` CLI not found on PATH. Install with `npm i -g vercel`."

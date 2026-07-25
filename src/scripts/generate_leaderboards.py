@@ -205,7 +205,7 @@ def _maybe_refresh_core_models() -> None:
     # updater reuses the same processed cache.
     script_path = Path(__file__).resolve().parent / "update_core_models.py"
     try:
-        subprocess.run([sys.executable, str(script_path)], check=True)
+        subprocess.run(command=[sys.executable, str(script_path)], check=True)
     except subprocess.CalledProcessError as exc:
         logger.warning(f"update_core_models failed (exit {exc.returncode}).")
 
@@ -222,7 +222,7 @@ def generate_task_metrics() -> None:
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open(mode="w") as f:
-        json.dump(payload, f, indent=2, sort_keys=True)
+        json.dump(obj=payload, fp=f, indent=2, sort_keys=True)
         f.write("\n")
     logger.info(f"Wrote {output_path.relative_to(REPO_ROOT)}")
 

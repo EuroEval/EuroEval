@@ -42,7 +42,7 @@ def main() -> None:
 
         # HuggingFace Datasets can directly load the jsonl
         # train, test and dev files from disk
-        dataset = datasets.load_dataset(target_dir)
+        dataset = datasets.load_dataset(target_dir)  # ty: ignore[invalid-argument-type]
         dataset["val"] = dataset.pop("validation")
         dataset = dataset.shuffle(4242)
 

@@ -142,7 +142,7 @@ def render_nested_subpackage(
         if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
         and is_public(name=n.name)
     ]
-    module_doc = ast.get_docstring(tree, clean=True)
+    module_doc = ast.get_docstring(node=tree, clean=True)
 
     mod_name = rel_to_module(rel=parent_rel)
     anchor = "api-" + mod_name.replace(".", "-")
@@ -199,7 +199,7 @@ def render_module(rel: Path, source: str, out: list[str]) -> None:
         if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
         and is_public(name=n.name)
     ]
-    module_doc = ast.get_docstring(tree, clean=True)
+    module_doc = ast.get_docstring(node=tree, clean=True)
 
     # Modules with no public API and no module-level docstring are almost
     # always internal glue, so skip them entirely.
@@ -259,7 +259,7 @@ def render_submodule_inline(rel: Path, source: str, out: list[str]) -> None:
         if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
         and is_public(name=n.name)
     ]
-    module_doc = ast.get_docstring(tree, clean=True)
+    module_doc = ast.get_docstring(node=tree, clean=True)
     if not classes and not funcs and not module_doc:
         return
 
@@ -312,7 +312,7 @@ def render_class(
         )
     )
     out.append("")
-    doc = ast.get_docstring(cls, clean=True)
+    doc = ast.get_docstring(node=cls, clean=True)
     if doc:
         out.append(indent_docstring(doc=doc))
         out.append("")
@@ -364,7 +364,7 @@ def render_function(
         )
     )
     out.append("")
-    doc = ast.get_docstring(node, clean=True)
+    doc = ast.get_docstring(node=node, clean=True)
     if doc:
         out.append(indent_docstring(doc=doc))
         out.append("")
@@ -416,7 +416,7 @@ def render_signature(func: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
 
     for idx, a in enumerate(flat_pos):
         default = pos_defaults.get(idx)
-        parts.append(_render_param(a, default))
+        parts.append(_render_param(arg=a, default=default))
         if posonly and idx == len(posonly) - 1:
             parts.append("/")
 
@@ -428,7 +428,7 @@ def render_signature(func: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
         parts.append("*")
 
     for kw, kd in zip(args.kwonlyargs, args.kw_defaults):
-        parts.append(_render_param(kw, kd))
+        parts.append(_render_param(arg=kw, default=kd))
 
     if args.kwarg is not None:
         k = _render_param(args.kwarg)
@@ -463,7 +463,7 @@ def heading_html(level: int, anchor: str, code: str, url: str) -> str:
     """
     return (
         f'<h{level} id="{anchor}" class="api-symbol">'
-        f"<code>{html.escape(code, quote=False)}</code>"
+        f"<code>{html.escape(s=code, quote=False)}</code>"
         f"{source_link(url=url)}</h{level}>"
     )
 
