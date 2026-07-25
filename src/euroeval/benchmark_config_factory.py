@@ -246,29 +246,6 @@ def _extract_dataset_ids(
     return dataset_ids
 
 
-def _handle_dataset_lookup_error(
-    error: KeyError, options: list[str], entity_type: str
-) -> None:
-    """Handle a KeyError during dataset or task lookup.
-
-    Args:
-        error:
-            The KeyError that was raised.
-        options:
-            List of valid options to search for closest match.
-        entity_type:
-            Type of entity ("dataset" or "task") for error message.
-    """
-    closest_match, closest_distance = get_closest_match(
-        string=error.args[0], options=options, case_sensitive=False
-    )
-    msg = f"The {entity_type} {error} was not found."
-    if closest_distance < 5:
-        msg += f" Maybe you meant to use {closest_match!r}?"
-    log(msg, level=logging.ERROR)
-    sys.exit(1)
-
-
 def _get_datasets_list(
     dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
     all_dataset_configs: dict[str, DatasetConfig],
@@ -336,3 +313,26 @@ def _get_tasks_list(
         _handle_dataset_lookup_error(
             error=e, options=list(task_mapping.keys()), entity_type="task"
         )
+
+
+def _handle_dataset_lookup_error(
+    error: KeyError, options: list[str], entity_type: str
+) -> None:
+    """Handle a KeyError during dataset or task lookup.
+
+    Args:
+        error:
+            The KeyError that was raised.
+        options:
+            List of valid options to search for closest match.
+        entity_type:
+            Type of entity ("dataset" or "task") for error message.
+    """
+    closest_match, closest_distance = get_closest_match(
+        string=error.args[0], options=options, case_sensitive=False
+    )
+    msg = f"The {entity_type} {error} was not found."
+    if closest_distance < 5:
+        msg += f" Maybe you meant to use {closest_match!r}?"
+    log(msg, level=logging.ERROR)
+    sys.exit(1)
