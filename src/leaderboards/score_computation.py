@@ -1,5 +1,6 @@
 """Functions related to computation of scores based on the model results."""
 
+import collections.abc as c
 import logging
 import math
 from collections import defaultdict
@@ -13,6 +14,125 @@ from .constants import LEADERBOARD_CATEGORIES, Z_SCORE_95
 from .task_metadata import category_includes_task
 
 logger = logging.getLogger(__name__)
+
+
+def _compute_margin(entries: list[dict[str, float]]) -> float:
+    """Compute confidence margin from a list of CI entries.
+
+    Args:
+        entries:
+            List of dicts with "ci_upper" and "ci_lower" keys.
+
+    Returns:
+        The computed margin.
+    """
+    vars_ = [((e["ci_upper"] - e["ci_lower"]) / (2 * Z_SCORE_95)) ** 2 for e in entries]
+    mean_var = np.sum(vars_) / (len(entries) ** 2)
+    return Z_SCORE_95 * math.sqrt(mean_var)
+
+
+def _aggregate_to_task_level(
+    model_id: str,
+    category: str,
+    language: str,
+    config: dict[str, list[str]],
+    model_dataset_ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
+    orthogonal_tasks: c.Container[str],
+) -> dict[str, dict[str, float]] | None:
+    """Aggregate dataset ranks to task level for a single language.
+
+    Args:
+        model_id:
+            The model ID.
+        category:
+            The category.
+        language:
+            The language.
+        config:
+            Task -> datasets mapping for this language.
+        model_dataset_ranks:
+            Dataset-level ranks.
+        orthogonal_tasks:
+            List of orthogonal task names to exclude.
+
+    Returns:
+        Dict of task -> {score, ci_lower, ci_upper} or None.
+    """
+    task_results: dict[str, dict[str, float]] = {}
+    for task, task_datasets in config.items():
+        if task in orthogonal_tasks:
+            continue
+        if not category_includes_task(category=category, task=task):
+            continue
+
+        entries = [
+            model_dataset_ranks[model_id][category][ds]
+            for ds in task_datasets
+            if ds in model_dataset_ranks[model_id][category]
+        ]
+        if not entries:
+            continue
+
+        mean_score = float(np.mean([e["score"] for e in entries]))
+        margin = _compute_margin(entries)
+
+        task_results[task] = {
+            "score": round(mean_score, 6),
+            "ci_lower": round(mean_score - margin, 6),
+            "ci_upper": round(mean_score + margin, 6),
+        }
+    return task_results if task_results else None
+
+
+def _aggregate_to_language_level(
+    model_id: str,
+    category: str,
+    configs: dict[str, dict[str, list[str]]],
+    model_task_ranks: dict,
+    orthogonal_tasks: c.Container[str],
+) -> tuple[dict[str, dict[str, float]], list[dict[str, float]]]:
+    """Aggregate task ranks to language level.
+
+    Args:
+        model_id:
+            The model ID.
+        category:
+            The category.
+        configs:
+            Per-language task -> dataset mappings.
+        model_task_ranks:
+            Task-level ranks.
+        orthogonal_tasks:
+            List of orthogonal task names.
+
+    Returns:
+        Tuple of (lang_scores dict, overall_entries list).
+    """
+    lang_scores: dict[str, dict[str, float]] = {}
+    overall_entries: list[dict[str, float]] = []
+
+    for language, config in configs.items():
+        task_entries = [
+            model_task_ranks[model_id][category][language].get(task)
+            for task in config
+            if task not in orthogonal_tasks
+            and category_includes_task(category=category, task=task)
+        ]
+        task_entries = [e for e in task_entries if e is not None]
+        if not task_entries:
+            continue
+
+        mean_score = float(np.mean([e["score"] for e in task_entries]))
+        margin = _compute_margin(task_entries)
+
+        lang_scores[language] = {
+            "score": round(mean_score, 6),
+            "ci_lower": round(mean_score - margin, 6),
+            "ci_upper": round(mean_score + margin, 6),
+        }
+        overall_entries.append(lang_scores[language])
+
+    return lang_scores, overall_entries
 
 
 def compute_ranks(
@@ -72,35 +192,18 @@ def compute_ranks(
         for category in categories:
             if category not in model_dataset_ranks[model_id]:
                 continue
-
             for language, config in configs.items():
-                for task, task_datasets in config.items():
-                    if task in orthogonal_tasks:
-                        continue
-                    if not category_includes_task(category=category, task=task):
-                        continue
-
-                    entries = [
-                        model_dataset_ranks[model_id][category][ds]
-                        for ds in task_datasets
-                        if ds in model_dataset_ranks[model_id][category]
-                    ]
-                    if not entries:
-                        continue
-
-                    mean_score = float(np.mean([e["score"] for e in entries]))
-                    vars_ = [
-                        ((e["ci_upper"] - e["ci_lower"]) / (2 * Z_SCORE_95)) ** 2
-                        for e in entries
-                    ]
-                    mean_var = np.sum(vars_) / (len(entries) ** 2)
-                    margin = Z_SCORE_95 * math.sqrt(mean_var)
-
-                    model_task_ranks[model_id][category][language][task] = {
-                        "score": round(mean_score, 6),
-                        "ci_lower": round(mean_score - margin, 6),
-                        "ci_upper": round(mean_score + margin, 6),
-                    }
+                task_results = _aggregate_to_task_level(
+                    model_id=model_id,
+                    category=category,
+                    language=language,
+                    config=config,
+                    model_dataset_ranks=model_dataset_ranks,
+                    orthogonal_tasks=orthogonal_tasks,
+                )
+                if task_results:
+                    for task, task_data in task_results.items():
+                        model_task_ranks[model_id][category][language][task] = task_data
 
     # Step 3: Aggregate task -> language -> overall.
     final: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
@@ -110,43 +213,17 @@ def compute_ranks(
             if category not in model_dataset_ranks[model_id]:
                 continue
 
-            lang_scores: dict[str, dict[str, float]] = {}
-            overall_entries: list[dict[str, float]] = []
-
-            for language, config in configs.items():
-                task_entries = [
-                    model_task_ranks[model_id][category][language].get(task)
-                    for task in config
-                    if task not in orthogonal_tasks
-                    and category_includes_task(category=category, task=task)
-                ]
-                task_entries = [e for e in task_entries if e is not None]
-                if not task_entries:
-                    continue
-
-                mean_score = float(np.mean([e["score"] for e in task_entries]))
-                vars_ = [
-                    ((e["ci_upper"] - e["ci_lower"]) / (2 * Z_SCORE_95)) ** 2
-                    for e in task_entries
-                ]
-                mean_var = np.sum(vars_) / (len(task_entries) ** 2)
-                margin = Z_SCORE_95 * math.sqrt(mean_var)
-
-                lang_scores[language] = {
-                    "score": round(mean_score, 6),
-                    "ci_lower": round(mean_score - margin, 6),
-                    "ci_upper": round(mean_score + margin, 6),
-                }
-                overall_entries.append(lang_scores[language])
+            lang_scores, overall_entries = _aggregate_to_language_level(
+                model_id=model_id,
+                category=category,
+                configs=configs,
+                model_task_ranks=model_task_ranks,
+                orthogonal_tasks=orthogonal_tasks,
+            )
 
             if overall_entries:
                 mean_score = float(np.mean([e["score"] for e in overall_entries]))
-                vars_ = [
-                    ((e["ci_upper"] - e["ci_lower"]) / (2 * Z_SCORE_95)) ** 2
-                    for e in overall_entries
-                ]
-                mean_var = np.sum(vars_) / (len(overall_entries) ** 2)
-                margin = Z_SCORE_95 * math.sqrt(mean_var)
+                margin = _compute_margin(overall_entries)
 
                 lang_scores["overall"] = {
                     "score": round(mean_score, 6),
@@ -157,6 +234,61 @@ def compute_ranks(
 
     logger.info("Finished computing ranks.")
     return final
+
+
+def _compute_bootstrap_dataset_ranks(
+    model_scores: dict[str, tuple[float, list[float]]],
+    dataset: str,
+    category: str,
+    n_bootstraps: int,
+    rng: np.random.Generator,
+) -> dict[str, dict[str, float]]:
+    """Compute bootstrap ranks for a single dataset.
+
+    Args:
+        model_scores:
+            Dict of model_id -> (mean_score, raw_scores).
+        dataset:
+            Dataset name.
+        category:
+            Category name.
+        n_bootstraps:
+            Number of bootstrap replicates.
+        rng:
+            Random number generator.
+
+    Returns:
+        Dict of model_id -> {score, ci_lower, ci_upper}.
+    """
+    # Sort by mean score descending, so the best model is first
+    sorted_models = sorted(model_scores.items(), key=lambda x: x[1][0], reverse=True)
+    mean_best = sorted_models[0][1][0]
+    all_raw = [score for _, raw_scores in model_scores.values() for score in raw_scores]
+    pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
+    if pooled_sd <= 0:
+        pooled_sd = 1.0
+
+    results: dict[str, dict[str, float]] = {}
+    for mid, (_, raw) in model_scores.items():
+        bootstrap_scores: list[float] = []
+        for _ in range(n_bootstraps):
+            resampled_raw = rng.choice(raw, size=len(raw), replace=True)
+            resampled_mean = float(np.mean(resampled_raw))
+            diff = float((mean_best - resampled_mean) / pooled_sd)
+            bootstrap_scores.append(1.0 + diff)
+
+        if not bootstrap_scores:
+            continue
+
+        score = float(np.median(bootstrap_scores))
+        ci_lower = float(np.percentile(bootstrap_scores, 2.5))
+        ci_upper = float(np.percentile(bootstrap_scores, 97.5))
+        results[mid] = {
+            "score": round(score, 6),
+            "ci_lower": round(ci_lower, 6),
+            "ci_upper": round(ci_upper, 6),
+        }
+    return results
 
 
 def compute_dataset_ranks_bootstrap(
@@ -209,39 +341,15 @@ def compute_dataset_ranks_bootstrap(
                 if not model_scores:
                     continue
 
-                # Sort by mean score descending, so the best model is first.
-                sorted_models = sorted(
-                    model_scores.items(), key=lambda x: x[1][0], reverse=True
+                dataset_results = _compute_bootstrap_dataset_ranks(
+                    model_scores=model_scores,
+                    dataset=dataset,
+                    category=category,
+                    n_bootstraps=n_bootstraps,
+                    rng=rng,
                 )
-                mean_best = sorted_models[0][1][0]
-                all_raw = [
-                    score
-                    for _, raw_scores in model_scores.values()
-                    for score in raw_scores
-                ]
-                pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
-                if pooled_sd <= 0:
-                    pooled_sd = 1.0
-
-                for mid, (_, raw) in model_scores.items():
-                    bootstrap_scores: list[float] = []
-                    for _ in range(n_bootstraps):
-                        resampled_raw = rng.choice(raw, size=len(raw), replace=True)
-                        resampled_mean = float(np.mean(resampled_raw))
-                        diff = float((mean_best - resampled_mean) / pooled_sd)
-                        bootstrap_scores.append(1.0 + diff)
-
-                    if not bootstrap_scores:
-                        continue
-
-                    score = float(np.median(bootstrap_scores))
-                    ci_lower = float(np.percentile(bootstrap_scores, 2.5))
-                    ci_upper = float(np.percentile(bootstrap_scores, 97.5))
-                    out[mid][category][dataset] = {
-                        "score": round(score, 6),
-                        "ci_lower": round(ci_lower, 6),
-                        "ci_upper": round(ci_upper, 6),
-                    }
+                for mid, result_data in dataset_results.items():
+                    out[mid][category][dataset] = result_data
 
     return out
 
