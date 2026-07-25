@@ -101,7 +101,9 @@ def main() -> None:
         train=Dataset.from_pandas(train_df, split=Split.TRAIN),
         val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
         test=Dataset.from_pandas(test_df, split=Split.TEST),
-        full_train=Dataset.from_pandas(full_train_df, split="full_train"),  # ty: ignore[invalid-argument-type]
+        full_train=Dataset.from_pandas(  # ty: ignore[invalid-argument-type]
+            full_train_df, split="full_train"
+        ),
     )
 
     # Create dataset ID

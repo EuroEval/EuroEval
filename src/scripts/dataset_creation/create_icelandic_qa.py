@@ -46,7 +46,8 @@ def main() -> None:
     assert isinstance(df, pd.DataFrame)
     df = df.rename(columns={"example_id": "id"})
 
-    # Change all the answers on format "Árið xxxx." to "xxxx", e.g. only keep the year.
+    # Change all the answers on format "Árið xxxx." to "xxxx", e.g. only keep
+    # the year.
     df["answer"] = df["answer"].apply(lambda x: re.sub(r"^Árið (\d{4}).?$", r"\1", x))
 
     # Only work with samples where the context is not very large or small
