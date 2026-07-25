@@ -1281,21 +1281,6 @@ def _normalise_model_name(model_id: str) -> str:
     return model_id
 
 
-def _normalise_model_name(model_id: str) -> str:
-    """Normalise model ID for display.
-
-    Args:
-        model_id:
-            Full model ID (e.g., "alexandra/square-7b").
-
-    Returns:
-        Shortened display name (e.g., "square-7b").
-    """
-    if "/" in model_id:
-        return model_id.split("/", 1)[1]
-    return model_id
-
-
 @click.command()
 @click.option(
     "--model",
