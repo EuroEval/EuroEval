@@ -128,6 +128,122 @@ def prepare_languages(
     return prepared_languages
 
 
+def _extract_dataset_ids(
+    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
+) -> list[str]:
+    """Extract dataset IDs from the dataset argument.
+
+    Args:
+        dataset:
+            The dataset argument to extract IDs from.
+
+    Returns:
+        List of dataset IDs.
+    """
+    dataset_ids: list[str] = list()
+    if isinstance(dataset, str):
+        dataset_ids.append(dataset)
+    elif isinstance(dataset, DatasetConfig):
+        dataset_ids.append(dataset.name)
+    elif isinstance(dataset, list):
+        for d in dataset:
+            if isinstance(d, str):
+                dataset_ids.append(d)
+            elif isinstance(d, DatasetConfig):
+                dataset_ids.append(d.name)
+    return dataset_ids
+
+
+def _handle_dataset_lookup_error(
+    error: KeyError, options: list[str], entity_type: str
+) -> t.NoReturn:
+    """Handle a KeyError during dataset or task lookup.
+
+    Args:
+        error:
+            The KeyError that was raised.
+        options:
+            List of valid options to search for closest match.
+        entity_type:
+            Type of entity ("dataset" or "task") for error message.
+    """
+    closest_match, closest_distance = get_closest_match(
+        string=error.args[0], options=options, case_sensitive=False
+    )
+    msg = f"The {entity_type} {error} was not found."
+    if closest_distance < 5:
+        msg += f" Maybe you meant to use {closest_match!r}?"
+    log(msg, level=logging.ERROR)
+    sys.exit(1)
+
+
+def _get_datasets_list(
+    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
+    all_dataset_configs: dict[str, DatasetConfig],
+    all_official_dataset_configs: c.Sequence[DatasetConfig],
+) -> c.Sequence[DatasetConfig]:
+    """Get the list of datasets based on the dataset argument.
+
+    Args:
+        dataset:
+            The dataset argument specifying which datasets to include.
+        all_dataset_configs:
+            Mapping of dataset IDs to DatasetConfig objects.
+        all_official_dataset_configs:
+            List of official dataset configs.
+
+    Returns:
+        List of dataset configs.
+    """
+    try:
+        if dataset is None:
+            return all_official_dataset_configs
+        elif isinstance(dataset, str):
+            return [all_dataset_configs[dataset]]
+        elif isinstance(dataset, DatasetConfig):
+            return [dataset]
+        else:
+            return [
+                all_dataset_configs[d] if isinstance(d, str) else d for d in dataset
+            ]
+    except KeyError as e:
+        _handle_dataset_lookup_error(
+            error=e,
+            options=list(all_dataset_configs.keys()),
+            entity_type="dataset",
+        )
+
+
+def _get_tasks_list(
+    task: "str | Task | c.Sequence[str | Task] | None",
+    task_mapping: dict[str, Task],
+) -> list[Task] | None:
+    """Get the list of tasks based on the task argument.
+
+    Args:
+        task:
+            The task argument specifying which tasks to include.
+        task_mapping:
+            Mapping of task names to Task objects.
+
+    Returns:
+        List of tasks, or None if no task filtering.
+    """
+    try:
+        if task is None:
+            return None
+        elif isinstance(task, str):
+            return [task_mapping[task]]
+        elif isinstance(task, Task):
+            return [task]
+        else:
+            return [task_mapping[t] if isinstance(t, str) else t for t in task]
+    except KeyError as e:
+        _handle_dataset_lookup_error(
+            error=e, options=list(task_mapping.keys()), entity_type="task"
+        )
+
+
 def prepare_dataset_configs(
     task: "str | Task | c.Sequence[str | Task] | None",
     languages: c.Sequence["Language"],
@@ -163,20 +279,8 @@ def prepare_dataset_configs(
     Returns:
         The prepared dataset configs.
     """
-    # Extract the dataset IDs from the `dataset` argument
-    dataset_ids: list[str] = list()
-    if isinstance(dataset, str):
-        dataset_ids.append(dataset)
-    elif isinstance(dataset, DatasetConfig):
-        dataset_ids.append(dataset.name)
-    elif isinstance(dataset, list):
-        for d in dataset:
-            if isinstance(d, str):
-                dataset_ids.append(d)
-            elif isinstance(d, DatasetConfig):
-                dataset_ids.append(d.name)
+    dataset_ids = _extract_dataset_ids(dataset=dataset)
 
-    # Create the list of dataset configs
     all_dataset_configs = get_all_dataset_configs(
         custom_datasets_file=custom_datasets_file,
         dataset_ids=dataset_ids,
@@ -190,60 +294,22 @@ def prepare_dataset_configs(
         for dataset_config in all_dataset_configs.values()
         if not dataset_config.unofficial
     ]
-    try:
-        if dataset is None:
-            datasets = all_official_dataset_configs
-        elif isinstance(dataset, str):
-            datasets = [all_dataset_configs[dataset]]
-        elif isinstance(dataset, DatasetConfig):
-            datasets = [dataset]
-        else:
-            datasets = [
-                all_dataset_configs[d] if isinstance(d, str) else d for d in dataset
-            ]
-    except KeyError as e:
-        closest_match, closest_distance = get_closest_match(
-            string=e.args[0],
-            options=list(all_dataset_configs.keys()),
-            case_sensitive=False,
-        )
-        msg = f"The dataset {e} was not found in the benchmark datasets."
-        if closest_distance < 5:
-            msg += f" Maybe you meant to use {closest_match!r}?"
-        log(msg, level=logging.ERROR)
-        sys.exit(1)
 
-    # Create the list of dataset tasks
+    datasets = _get_datasets_list(
+        dataset=dataset,
+        all_dataset_configs=all_dataset_configs,
+        all_official_dataset_configs=all_official_dataset_configs,
+    )
+
     task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
+    tasks = _get_tasks_list(task=task, task_mapping=task_mapping)
 
-    try:
-        if task is None:
-            tasks = None
-        elif isinstance(task, str):
-            tasks = [task_mapping[task]]
-        elif isinstance(task, Task):
-            tasks = [task]
-        else:
-            tasks = [task_mapping[t] if isinstance(t, str) else t for t in task]
-    except KeyError as e:
-        closest_match, closest_distance = get_closest_match(
-            string=e.args[0], options=list(task_mapping.keys()), case_sensitive=False
-        )
-        msg = f"Task {e} not found in the benchmark tasks."
-        if closest_distance < 5:
-            msg += f" Maybe you meant to use {closest_match!r}?"
-        log(msg, level=logging.ERROR)
-        sys.exit(1)
-
-    # Filter the dataset configs based on the specified tasks and languages
-    datasets = [
+    return [
         ds
         for ds in datasets
         if (tasks is None or ds.task in tasks)
         and any(lang in languages for lang in ds.languages)
     ]
-
-    return datasets
 
 
 def prepare_device(device: Device | None) -> torch.device:
