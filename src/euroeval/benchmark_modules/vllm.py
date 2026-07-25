@@ -1580,11 +1580,7 @@ def load_model(
             hf_overrides["architectures"] = remapped
 
     # TODO: Remove this block when we don't care about OLMo-3 anymore
-    olmo3_rope_parameters = _get_olmo3_rope_parameters(
-        model_id=model_id, hf_model_config=hf_model_config
-    )
-    if olmo3_rope_parameters is not None:
-        hf_overrides["rope_parameters"] = olmo3_rope_parameters
+    _get_olmo3_rope_parameters(model_id=model_id, hf_model_config=hf_model_config)
 
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism(force_single_gpu=False)
