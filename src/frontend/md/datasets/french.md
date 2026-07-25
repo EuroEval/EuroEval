@@ -555,7 +555,6 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-fr
 ```
 
-
 ### Unofficial: INCLUDE-fr
 
 > This dataset is **unofficial** — results do not count toward the French leaderboard.

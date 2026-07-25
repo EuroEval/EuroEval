@@ -1035,3 +1035,258 @@ class TestIsMistralTokeniserModel:
         assert not _is_mistral_tokeniser_model(
             model_id="gordicaleksa/SlovenianGPT", hf_model_config=config
         )
+
+
+class TestOlmo3RopeParameters:
+    """Tests for the OLMo-3 rope_parameters override fix."""
+
+    def test_olmo3_model_gets_rope_parameters_override(
+        self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """Test that OLMo-3 models receive a rope_parameters override.
+
+        OLMo-3 models have rope_theta and rope_scaling at the top level of
+        config.json, but vLLM's olmo2.py implementation expects them nested in
+        rope_parameters. This test verifies the fix in load_model() constructs
+        the correct override.
+        """
+        mock_llm_instance = MagicMock()
+        mock_hf_model_config = MagicMock(
+            spec=["dtype", "architectures", "model_type", "rope_theta", "rope_scaling"]
+        )
+        mock_hf_model_config.dtype = torch.bfloat16
+        mock_hf_model_config.model_type = "olmo3"
+        mock_hf_model_config.architectures = ["Olmo3ForCausalLM"]
+        mock_hf_model_config.rope_theta = 500000
+        mock_hf_model_config.rope_scaling = {
+            "rope_type": "yarn",
+            "factor": 8.0,
+            "original_max_position_embeddings": 8192,
+            "attention_factor": 1.2079441541679836,
+            "beta_fast": 32.0,
+            "beta_slow": 1.0,
+        }
+        mock_tokeniser = MagicMock()
+
+        mock_vllm_module = MagicMock()
+        mock_vllm_module.config = MagicMock(spec=[])
+
+        with (
+            patch(
+                "euroeval.benchmark_modules.vllm.LLM",
+                return_value=mock_llm_instance,
+                create=True,
+            ) as mock_llm_cls,
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
+            patch("euroeval.benchmark_modules.vllm.clear_vllm"),
+            patch(
+                "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
+                return_value=("mp", 1, 1),
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.internet_connection_available",
+                return_value=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params",
+                return_value={},
+            ),
+        ):
+            load_model(
+                model_config=model_config,
+                benchmark_config=benchmark_config,
+                attention_backend=None,
+                generative_type=GenerativeType.INSTRUCTION_TUNED,
+                true_max_model_len=65536,
+                tokeniser=mock_tokeniser,
+                hf_model_config=mock_hf_model_config,
+            )
+
+        mock_llm_cls.assert_called_once()
+        call_kwargs = mock_llm_cls.call_args.kwargs
+        assert "hf_overrides" in call_kwargs
+        assert "rope_parameters" in call_kwargs["hf_overrides"]
+        rope_params = call_kwargs["hf_overrides"]["rope_parameters"]
+        assert rope_params["rope_theta"] == 500000
+        assert rope_params["rope_type"] == "yarn"
+        assert rope_params["factor"] == 8.0
+        assert rope_params["original_max_position_embeddings"] == 8192
+        assert rope_params["attention_factor"] == 1.2079441541679836
+        assert rope_params["beta_fast"] == 32.0
+        assert rope_params["beta_slow"] == 1.0
+
+    def test_olmo3_model_by_architecture_only(
+        self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """Test OLMo-3 detection by architecture name alone."""
+        mock_llm_instance = MagicMock()
+        mock_hf_model_config = MagicMock(
+            spec=["dtype", "architectures", "model_type", "rope_theta", "rope_scaling"]
+        )
+        mock_hf_model_config.dtype = torch.bfloat16
+        mock_hf_model_config.model_type = "olmo3"
+        mock_hf_model_config.architectures = ["Olmo3ForCausalLM"]
+        mock_hf_model_config.rope_theta = 10000
+        mock_hf_model_config.rope_scaling = None
+        mock_tokeniser = MagicMock()
+
+        mock_vllm_module = MagicMock()
+        mock_vllm_module.config = MagicMock(spec=[])
+
+        with (
+            patch(
+                "euroeval.benchmark_modules.vllm.LLM",
+                return_value=mock_llm_instance,
+                create=True,
+            ) as mock_llm_cls,
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
+            patch("euroeval.benchmark_modules.vllm.clear_vllm"),
+            patch(
+                "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
+                return_value=("mp", 1, 1),
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.internet_connection_available",
+                return_value=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params",
+                return_value={},
+            ),
+        ):
+            load_model(
+                model_config=model_config,
+                benchmark_config=benchmark_config,
+                attention_backend=None,
+                generative_type=GenerativeType.INSTRUCTION_TUNED,
+                true_max_model_len=8192,
+                tokeniser=mock_tokeniser,
+                hf_model_config=mock_hf_model_config,
+            )
+
+        call_kwargs = mock_llm_cls.call_args.kwargs
+        rope_params = call_kwargs["hf_overrides"]["rope_parameters"]
+        assert rope_params["rope_theta"] == 10000
+        assert rope_params["rope_type"] == "default"
+
+    def test_non_olmo3_model_no_rope_parameters_override(
+        self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """Test that non-OLMo-3 models don't get rope_parameters override."""
+        mock_llm_instance = MagicMock()
+        mock_hf_model_config = MagicMock(spec=["dtype", "architectures", "model_type"])
+        mock_hf_model_config.dtype = torch.float16
+        mock_hf_model_config.model_type = "llama"
+        mock_hf_model_config.architectures = ["LlamaForCausalLM"]
+        mock_tokeniser = MagicMock()
+
+        mock_vllm_module = MagicMock()
+        mock_vllm_module.config = MagicMock(spec=[])
+
+        with (
+            patch(
+                "euroeval.benchmark_modules.vllm.LLM",
+                return_value=mock_llm_instance,
+                create=True,
+            ) as mock_llm_cls,
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
+            patch("euroeval.benchmark_modules.vllm.clear_vllm"),
+            patch(
+                "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
+                return_value=("mp", 1, 1),
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.internet_connection_available",
+                return_value=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params",
+                return_value={},
+            ),
+        ):
+            load_model(
+                model_config=model_config,
+                benchmark_config=benchmark_config,
+                attention_backend=None,
+                generative_type=GenerativeType.INSTRUCTION_TUNED,
+                true_max_model_len=4096,
+                tokeniser=mock_tokeniser,
+                hf_model_config=mock_hf_model_config,
+            )
+
+        call_kwargs = mock_llm_cls.call_args.kwargs
+        # hf_overrides should be empty or not contain rope_parameters
+        hf_overrides = call_kwargs.get("hf_overrides", {})
+        assert "rope_parameters" not in hf_overrides
+
+    def test_olmo3_with_existing_rope_parameters_not_overridden(
+        self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """Test that OLMo-3 models with existing rope_parameters are not overridden."""
+        mock_llm_instance = MagicMock()
+        mock_hf_model_config = MagicMock(
+            spec=["dtype", "architectures", "model_type", "rope_parameters"]
+        )
+        mock_hf_model_config.dtype = torch.bfloat16
+        mock_hf_model_config.model_type = "olmo3"
+        mock_hf_model_config.architectures = ["Olmo3ForCausalLM"]
+        mock_hf_model_config.rope_parameters = {
+            "rope_theta": 999999,
+            "rope_type": "custom",
+        }
+        mock_tokeniser = MagicMock()
+
+        mock_vllm_module = MagicMock()
+        mock_vllm_module.config = MagicMock(spec=[])
+
+        with (
+            patch(
+                "euroeval.benchmark_modules.vllm.LLM",
+                return_value=mock_llm_instance,
+                create=True,
+            ) as mock_llm_cls,
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
+            patch("euroeval.benchmark_modules.vllm.clear_vllm"),
+            patch(
+                "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
+                return_value=("mp", 1, 1),
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.internet_connection_available",
+                return_value=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params",
+                return_value={},
+            ),
+        ):
+            load_model(
+                model_config=model_config,
+                benchmark_config=benchmark_config,
+                attention_backend=None,
+                generative_type=GenerativeType.INSTRUCTION_TUNED,
+                true_max_model_len=8192,
+                tokeniser=mock_tokeniser,
+                hf_model_config=mock_hf_model_config,
+            )
+
+        call_kwargs = mock_llm_cls.call_args.kwargs
+        hf_overrides = call_kwargs.get("hf_overrides", {})
+        # Should not override if rope_parameters already exists
+        assert "rope_parameters" not in hf_overrides
