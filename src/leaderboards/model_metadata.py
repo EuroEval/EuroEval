@@ -216,6 +216,47 @@ def record_is_valid(
     return True
 
 
+def _parse_generative_type_input(user_input: str) -> str | None:
+    """Parse user input for generative type.
+
+    Args:
+        user_input:
+            The raw user input string.
+
+    Returns:
+        The parsed generative type or None if invalid.
+    """
+    input_lower = user_input.lower()
+    if input_lower in {"0", "null"}:
+        return None
+    if input_lower in {"1", "base"}:
+        return "base"
+    if input_lower in {"2", "instruction_tuned"}:
+        return "instruction_tuned"
+    if input_lower in {"3", "reasoning"}:
+        return "reasoning"
+    return None
+
+
+def _get_generative_type_from_keywords(model_id: str) -> str | None:
+    """Try to infer generative type from model ID keywords.
+
+    Args:
+        model_id:
+            The model ID to check.
+
+    Returns:
+        The inferred generative type or None.
+    """
+    for keywords, gen_type in GENERATIVE_TYPE_KEYWORDS:
+        if any(
+            re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
+            for keyword in keywords
+        ):
+            return gen_type
+    return None
+
+
 def get_generative_type(record: dict, cache: Cache) -> str | None:
     """Asks for the generative type of a model.
 
@@ -230,44 +271,39 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
     """
     raw_model_id = _model_id_from_record(record=record)
 
+    # Check special suffixes first
     if "#thinking" in raw_model_id:
         cache.generative_type[raw_model_id] = "reasoning"
         return "reasoning"
-    elif "#no-thinking" in raw_model_id:
+    if "#no-thinking" in raw_model_id:
         cache.generative_type[raw_model_id] = "instruction_tuned"
         return "instruction_tuned"
 
-    # Remove revisions and parameters from the model ID, and strip variant suffixes.
+    # Normalise model ID
     model_id = split_model_id(model_id=plain_model_id(raw_model_id)).model_id
 
     while True:
+        # Check cache
         if model_id in cache.generative_type:
             return cache.generative_type[model_id]
 
-        # Pre-fill the generative type from keyword matches in the model id.
-        for keywords, gen_type in GENERATIVE_TYPE_KEYWORDS:
-            if any(
-                re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
-                for keyword in keywords
-            ):
-                cache.generative_type[model_id] = gen_type
-                return gen_type
+        # Try keyword inference
+        inferred_type = _get_generative_type_from_keywords(model_id=model_id)
+        if inferred_type is not None:
+            cache.generative_type[model_id] = inferred_type
+            return inferred_type
 
+        # Ask user
         msg = f"What is the generative type of {model_id!r}?"
         if "/" in model_id:
             msg += f" (https://hf.co/{model_id})"
         msg += " [0=null, 1=base, 2=instruction_tuned, 3=reasoning] "
         user_input = input(msg)
-        if user_input.lower() in {"0", "null"}:
-            cache.generative_type[model_id] = None
-        elif user_input.lower() in {"1", "base"}:
-            cache.generative_type[model_id] = "base"
-        elif user_input.lower() in {"2", "instruction_tuned"}:
-            cache.generative_type[model_id] = "instruction_tuned"
-        elif user_input.lower() in {"3", "reasoning"}:
-            cache.generative_type[model_id] = "reasoning"
-        else:
-            logger.error("Invalid input. Please try again.")
+        parsed = _parse_generative_type_input(user_input)
+        if parsed is not None:
+            cache.generative_type[model_id] = parsed
+            return parsed
+        logger.error("Invalid input. Please try again.")
 
 
 def _infer_commercial_from_hf_licence(

@@ -210,6 +210,46 @@ def _worker_errors(lines: list[str]) -> str | None:
     return "\n".join(lines[start : end + 1]).strip()
 
 
+def _build_error_summary_parts(
+    lines: list[str], worker_block: str | None, traceback: str | None
+) -> list[str]:
+    """Build error summary parts from worker errors and traceback.
+
+    Args:
+        lines:
+            Cleaned output lines.
+        worker_block:
+            Worker error block from _worker_errors.
+        traceback:
+            Traceback from _last_traceback.
+
+    Returns:
+        List of summary parts.
+    """
+    parts: list[str] = []
+    # Prefer worker block unless a genuine traceback was captured
+    if worker_block and (traceback is None or _WORKERPROC_FAILED_RE.search(traceback)):
+        parts.append(worker_block)
+    elif traceback:
+        parts.append(traceback)
+
+    # Add load error (skip vLLM excuse line if traceback present)
+    for line in reversed(lines):
+        if _LOAD_ERROR_RE.search(line):
+            if traceback and "did not mention exactly what" in line:
+                break
+            parts.append(line.strip())
+            break
+
+    # Add summary line if found
+    for line in reversed(lines):
+        if _SUMMARY_LINE_RE.search(line):
+            parts.append(line.strip())
+            break
+
+    return parts
+
+
 def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
     """Extract the meaningful error from a euroeval subprocess's output.
 
@@ -245,30 +285,11 @@ def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
 
     worker_block = _worker_errors(lines=lines)
     traceback = _last_traceback(lines=lines)
-    parts: list[str] = []
-    # The main process only re-raises a generic "WorkerProc initialization
-    # failed" exception; the real cause is in the worker-prefixed ERROR lines,
-    # so prefer the worker block unless a genuine traceback was captured.
-    if worker_block and (traceback is None or _WORKERPROC_FAILED_RE.search(traceback)):
-        parts.append(worker_block)
-    elif traceback:
-        parts.append(traceback)
-    for line in reversed(lines):
-        if _LOAD_ERROR_RE.search(line):
-            # When a real traceback was already surfaced, the vLLM generic
-            # "could not be loaded, but vLLM did not mention exactly what
-            # happened" excuse line only buries the actual exception, so skip
-            # it rather than appending it on top of the traceback.
-            if traceback and "did not mention exactly what" in line:
-                break
-            parts.append(line.strip())
-            break
-    for line in reversed(lines):
-        if _SUMMARY_LINE_RE.search(line):
-            parts.append(line.strip())
-            break
+    parts = _build_error_summary_parts(
+        lines=lines, worker_block=worker_block, traceback=traceback
+    )
 
-    # Fall back to the tail of the cleaned output when no marker was found.
+    # Fall back to tail when no marker found
     if not parts:
         parts = [line.strip() for line in lines[-20:]]
 
