@@ -461,7 +461,9 @@ def _make_instruction(row: pd.Series) -> str:
     pronoun = str(row["span2_text"]).strip()
     pronoun_idx = int(row["span2_index"])
     masked = _mask_pronoun(text=text, pronoun=pronoun, word_index=pronoun_idx)
-    return f"{masked} Да каго або чаго адносіцца пропуск _?"
+    return (
+        f"{masked} Да каго або чаго адносіцца пропуск _?"
+    )
 
 
 if __name__ == "__main__":

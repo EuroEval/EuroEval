@@ -21,7 +21,10 @@ from huggingface_hub import HfApi
 
 def main() -> None:
     """Create the Danish Entailment dataset and upload it to the HF Hub."""
-    url = "https://raw.githubusercontent.com/kuhumcst/danish-semantic-reasoning-benchmark/main/entailment/entailment.zip"
+    url = (
+        "https://raw.githubusercontent.com/kuhumcst/"
+        "danish-semantic-reasoning-benchmark/main/entailment/entailment.zip"
+    )
     password = b"benchmark"
 
     # Download the ZIP archive

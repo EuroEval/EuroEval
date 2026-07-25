@@ -43,8 +43,14 @@ from lettucedetect.datasets.hallucination_dataset import (
 # =============================================================================
 
 # RAGTruth data source
-SOURCE_INFO_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs/heads/main/dataset/source_info.jsonl"
-RESPONSE_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs/heads/main/dataset/response.jsonl"
+SOURCE_INFO_URL = (
+    "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/"
+    "refs/heads/main/dataset/source_info.jsonl"
+)
+RESPONSE_URL = (
+    "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/"
+    "refs/heads/main/dataset/response.jsonl"
+)
 
 # Translation settings
 SOURCE_LANG: str = "en"

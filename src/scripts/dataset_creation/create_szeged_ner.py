@@ -82,8 +82,14 @@ def download_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         A tuple of DataFrames for the training, validation, and test splits.
     """
     base_urls = {
-        "business": "https://huggingface.co/datasets/ficsort/SzegedNER/resolve/main/data/business",
-        "criminal": "https://huggingface.co/datasets/ficsort/SzegedNER/resolve/main/data/criminal",
+        "business": (
+            "https://huggingface.co/datasets/ficsort/SzegedNER/"
+            "resolve/main/data/business"
+        ),
+        "criminal": (
+            "https://huggingface.co/datasets/ficsort/SzegedNER/"
+            "resolve/main/data/criminal"
+        ),
     }
     # Types of datasets to download
     splits = ["train", "validation", "test"]
