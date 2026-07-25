@@ -128,6 +128,16 @@ RAGTRUTH_NL_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+HELLASWAG_NL_CONFIG = DatasetConfig(
+    name="hellaswag-nl",
+    pretty_name="HellaSwag-nl",
+    source="EuroEval/hellaswag-nl-mini",
+    task=COMMON_SENSE,
+    languages=[DUTCH],
+)
+
+
+# Unofficial datasets ###
 
 WINOGRANDE_NL_CONFIG = DatasetConfig(
     name="winogrande-nl",
@@ -136,16 +146,6 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DUTCH],
     labels=["a", "b"],
-)
-
-# Unofficial datasets ###
-
-HELLASWAG_NL_CONFIG = DatasetConfig(
-    name="hellaswag-nl",
-    pretty_name="HellaSwag-nl",
-    source="EuroEval/hellaswag-nl-mini",
-    task=COMMON_SENSE,
-    languages=[DUTCH],
     unofficial=True,
 )
 
