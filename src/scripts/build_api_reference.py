@@ -370,6 +370,26 @@ def render_function(
         out.append("")
 
 
+def _render_param(arg: ast.arg, default: ast.expr | None = None) -> str:
+    """Render a single parameter with optional annotation and default.
+
+    Args:
+        arg:
+            The argument AST node.
+        default:
+            Optional default value AST node.
+
+    Returns:
+        The parameter as a string.
+    """
+    s = arg.arg
+    if arg.annotation is not None:
+        s += f": {ast.unparse(arg.annotation)}"
+    if default is not None:
+        s += f" = {ast.unparse(default)}"
+    return s
+
+
 def render_signature(func: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
     """Render a function's argument list and return type as Python source.
 
@@ -395,35 +415,24 @@ def render_signature(func: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
     }
 
     for idx, a in enumerate(flat_pos):
-        s = a.arg
-        if a.annotation is not None:
-            s += f": {ast.unparse(a.annotation)}"
-        if idx in pos_defaults:
-            s += f" = {ast.unparse(pos_defaults[idx])}"
-        parts.append(s)
+        default = pos_defaults.get(idx)
+        parts.append(_render_param(a, default))
         if posonly and idx == len(posonly) - 1:
             parts.append("/")
 
     if args.vararg is not None:
-        v = f"*{args.vararg.arg}"
-        if args.vararg.annotation is not None:
-            v += f": {ast.unparse(args.vararg.annotation)}"
+        v = _render_param(args.vararg)
+        v = f"*{v}"
         parts.append(v)
     elif args.kwonlyargs:
         parts.append("*")
 
     for kw, kd in zip(args.kwonlyargs, args.kw_defaults):
-        s = kw.arg
-        if kw.annotation is not None:
-            s += f": {ast.unparse(kw.annotation)}"
-        if kd is not None:
-            s += f" = {ast.unparse(kd)}"
-        parts.append(s)
+        parts.append(_render_param(kw, kd))
 
     if args.kwarg is not None:
-        k = f"**{args.kwarg.arg}"
-        if args.kwarg.annotation is not None:
-            k += f": {ast.unparse(args.kwarg.annotation)}"
+        k = _render_param(args.kwarg)
+        k = f"**{k}"
         parts.append(k)
 
     sig = "(" + ", ".join(parts) + ")"
