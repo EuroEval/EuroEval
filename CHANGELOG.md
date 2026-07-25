@@ -45,7 +45,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   the top-level `rope_theta` and `rope_scaling` fields into the nested structure
   expected by vLLM's `olmo2.py` implementation.
 
-
 ## [v17.7.0] - 2026-07-22
 
 ### Added
