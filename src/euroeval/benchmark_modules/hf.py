@@ -120,12 +120,12 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration.
-            log_metadata:
-                Whether to log the model metadata.
-            dtype_override:
+            log_metadata (optional):
+                Whether to log the model metadata. Defaults to True.
+            dtype_override (optional):
                 An explicit data type to load the model weights in, taking precedence
                 over the hardware-derived default. Used by the finetuning NaN-retry to
-                force a full fp32 reload.
+                force a full fp32 reload. Defaults to None.
         """
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
@@ -730,10 +730,10 @@ def load_model_and_tokeniser(
             The dataset configuration.
         benchmark_config:
             The benchmark configuration
-        dtype_override:
+        dtype_override (optional):
             An explicit data type to load the model weights in, taking precedence
             over the hardware-derived default. Used by the finetuning NaN-retry to
-            force a full fp32 reload.
+            force a full fp32 reload. Defaults to None.
 
     Returns:
         A pair (model, tokeniser), with the loaded model and tokeniser
@@ -1289,12 +1289,13 @@ def get_dtype(
             Whether the data type is set in the model configuration.
         bf16_available:
             Whether bfloat16 is available.
-        dtype_override:
+        dtype_override (optional):
             An explicit data type to load the model weights in, taking precedence
             over both the model configuration and the hardware-derived default. Used
             by the finetuning NaN-retry, which reloads the model in full fp32 after
             detecting NaN values under mixed precision; without honouring the
             override the model would be reloaded in the same (NaN-producing) dtype.
+            Defaults to None.
 
     Returns:
         The dtype.
@@ -1690,11 +1691,13 @@ def align_model_and_tokeniser(
             The tokeniser to fix.
         model_max_length:
             The maximum length of the model.
-        raise_errors:
+        raise_errors (optional):
             Whether to raise errors instead of trying to fix them silently.
-        is_multiple_choice:
+            Defaults to False.
+        is_multiple_choice (optional):
             Whether the model is being evaluated on a multiple-choice task, in which
             case it expects a 3-D dummy input when probing the maximum length.
+            Defaults to False.
 
     Returns:
         The fixed model and tokeniser.
