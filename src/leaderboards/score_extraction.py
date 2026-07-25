@@ -165,202 +165,6 @@ def extract_model_metadata(
     return metadata_dict
 
 
-def _compare_float_metadata(new_value: float | None, old_value: float | None) -> bool:
-    """Compare float metadata fields, preferring non-NaN over NaN.
-
-    Args:
-        new_value:
-            The new float value.
-        old_value:
-            The existing float value.
-
-    Returns:
-        True if new_value is better (non-NaN when old is NaN).
-    """
-    if isinstance(old_value, float) and math.isnan(old_value):
-        if isinstance(new_value, float) and not math.isnan(new_value):
-            return True
-        return False
-    if isinstance(new_value, float) and math.isnan(new_value):
-        return False
-    return True
-
-
-def _compare_presence_metadata(
-    new_value: bool | str | float | int | None,
-    old_value: bool | str | float | int | None,
-) -> bool:
-    """Compare fields by presence.
-
-    Prefer present (non-None) over missing (None). Explicit False/empty is
-    legitimate metadata and should be preserved against later stale records.
-    When both are present, neither is "better" (return False to preserve).
-
-    Args:
-        new_value:
-            The new value.
-        old_value:
-            The existing value.
-
-    Returns:
-        True if new_value should replace old_value.
-    """
-    if old_value is None and new_value is not None:
-        return True
-    if old_value is not None and new_value is None:
-        return False
-    # Both present: don't overwrite (preserve existing)
-    return False
-
-
-def _is_better_metadata(
-    new_value: bool | str | float | None,
-    old_value: bool | str | float | None,
-    field: str,
-) -> bool:
-    """Check if new metadata value is "better" than the old one.
-
-    A value is "better" if it's more informative (non-null/non-default) when
-    the old value is null/default. Used to prevent stale records from
-    overwriting enriched metadata during extraction.
-
-    Args:
-        new_value:
-            The new metadata value from the current record.
-        old_value:
-            The existing metadata value already stored.
-        field:
-            The field name being compared.
-
-    Returns:
-        True if the new value should replace the old one.
-    """
-    # Prefer non-None over None (base case for all fields)
-    if old_value is None and new_value is not None:
-        return True
-    if old_value is not None and new_value is None:
-        return False
-
-    # Dispatch to field-specific comparison logic
-    float_fields = frozenset({"parameters", "vocabulary_size", "context"})
-    presence_fields = frozenset({"commercial", "merge", "open", "trained_from_scratch"})
-
-    if field in float_fields:
-        new_float = new_value if isinstance(new_value, float) else None
-        old_float = old_value if isinstance(old_value, float) else None
-        return _compare_float_metadata(new_value=new_float, old_value=old_float)
-    if field in presence_fields:
-        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
-    if field == "generative_type":
-        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
-    if field == "model_url":
-        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
-
-    # Default: prefer new value (preserves existing behaviour for equal values)
-    return True
-
-
-def _extract_raw_scores(raw_results: list[t.Any], metric: str) -> list[float]:
-    """Extract raw scores from raw results for a given metric.
-
-    Raw per-iteration scores are keyed by the bare metric name (e.g. "mcc"),
-    occasionally with a "test_" prefix.
-
-    Args:
-        raw_results:
-            List of raw result dictionaries.
-        metric:
-            The metric name to extract.
-
-    Returns:
-        List of extracted scores (>=0).
-    """
-    raw_scores: list[float] = []
-    for result_dict in raw_results:
-        if isinstance(result_dict, dict):
-            score = result_dict.get(f"test_{metric}", result_dict.get(metric, -1))
-            if score >= 0:
-                raw_scores.append(score)
-    return raw_scores
-
-
-def _get_total_score_value(
-    total_scores: dict[str, t.Any],
-    metric: str,
-    dataset: str,
-    model_name: str,
-    metric_type: str,
-) -> float | None:
-    """Extract total score value from total scores dict.
-
-    Total scores are keyed by evaluation name (e.g. "test_mcc"), but fall back
-    to the bare metric name when the prefix is absent.
-
-    Args:
-        total_scores:
-            Dictionary of total scores.
-        metric:
-            The metric name.
-        dataset:
-            Dataset name for logging.
-        model_name:
-            Model name for logging.
-        metric_type:
-            Type of metric ("primary" or "secondary") for logging.
-
-    Returns:
-        The total score as float, or None if not found.
-    """
-    total_score_key = f"test_{metric}"
-    total_score_val = total_scores.get(total_score_key)
-    if total_score_val is None:
-        total_score_val = total_scores.get(metric)
-
-    if total_score_val is None:
-        log_once(
-            f"Could not find {metric_type} metric for {dataset!r} "
-            f"in {model_name!r} ({total_score_key}). Only found "
-            f"{list(total_scores.keys())}.",
-            level=logging.WARNING,
-        )
-        return None
-    return float(total_score_val)
-
-
-def _compute_std_err(
-    raw_scores: list[float],
-    total_scores: dict[str, t.Any],
-    metric: str,
-    scale_factor: float,
-) -> float:
-    """Compute standard error from raw scores.
-
-    EEE records don't carry a std err, so compute it from raw scores.
-    Fallback computed after scaling so std_err matches the displayed scores.
-
-    Args:
-        raw_scores:
-            List of raw scores (already scaled).
-        total_scores:
-            Dictionary of total scores.
-        metric:
-            The metric name.
-        scale_factor:
-            Factor to scale std_err by.
-
-    Returns:
-        The computed standard error.
-    """
-    std_err_key = f"test_{metric}_se"
-    std_err: float = total_scores.get(std_err_key, 0.0) * scale_factor
-    if std_err == 0.0 and len(raw_scores) > 1:
-        try:
-            std_err = statistics.stdev(raw_scores) / (len(raw_scores) ** 0.5)
-        except statistics.StatisticsError:
-            std_err = 0.0
-    return std_err
-
-
 def _process_record_scores(
     record: dict[str, t.Any],
     model_ids: list[str],
@@ -626,6 +430,154 @@ def _scored_count(record: dict[str, t.Any], dataset: str) -> int | None:
     return len(raw_results) * size
 
 
+def _is_better_metadata(
+    new_value: bool | str | float | None,
+    old_value: bool | str | float | None,
+    field: str,
+) -> bool:
+    """Check if new metadata value is "better" than the old one.
+
+    A value is "better" if it's more informative (non-null/non-default) when
+    the old value is null/default. Used to prevent stale records from
+    overwriting enriched metadata during extraction.
+
+    Args:
+        new_value:
+            The new metadata value from the current record.
+        old_value:
+            The existing metadata value already stored.
+        field:
+            The field name being compared.
+
+    Returns:
+        True if the new value should replace the old one.
+    """
+    # Prefer non-None over None (base case for all fields)
+    if old_value is None and new_value is not None:
+        return True
+    if old_value is not None and new_value is None:
+        return False
+
+    # Dispatch to field-specific comparison logic
+    float_fields = frozenset({"parameters", "vocabulary_size", "context"})
+    presence_fields = frozenset({"commercial", "merge", "open", "trained_from_scratch"})
+
+    if field in float_fields:
+        new_float = new_value if isinstance(new_value, float) else None
+        old_float = old_value if isinstance(old_value, float) else None
+        return _compare_float_metadata(new_value=new_float, old_value=old_float)
+    if field in presence_fields:
+        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
+    if field == "generative_type":
+        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
+    if field == "model_url":
+        return _compare_presence_metadata(new_value=new_value, old_value=old_value)
+
+    # Default: prefer new value (preserves existing behaviour for equal values)
+    return True
+
+
+def _extract_raw_scores(raw_results: list[t.Any], metric: str) -> list[float]:
+    """Extract raw scores from raw results for a given metric.
+
+    Raw per-iteration scores are keyed by the bare metric name (e.g. "mcc"),
+    occasionally with a "test_" prefix.
+
+    Args:
+        raw_results:
+            List of raw result dictionaries.
+        metric:
+            The metric name to extract.
+
+    Returns:
+        List of extracted scores (>=0).
+    """
+    raw_scores: list[float] = []
+    for result_dict in raw_results:
+        if isinstance(result_dict, dict):
+            score = result_dict.get(f"test_{metric}", result_dict.get(metric, -1))
+            if score >= 0:
+                raw_scores.append(score)
+    return raw_scores
+
+
+def _get_total_score_value(
+    total_scores: dict[str, t.Any],
+    metric: str,
+    dataset: str,
+    model_name: str,
+    metric_type: str,
+) -> float | None:
+    """Extract total score value from total scores dict.
+
+    Total scores are keyed by evaluation name (e.g. "test_mcc"), but fall back
+    to the bare metric name when the prefix is absent.
+
+    Args:
+        total_scores:
+            Dictionary of total scores.
+        metric:
+            The metric name.
+        dataset:
+            Dataset name for logging.
+        model_name:
+            Model name for logging.
+        metric_type:
+            Type of metric ("primary" or "secondary") for logging.
+
+    Returns:
+        The total score as float, or None if not found.
+    """
+    total_score_key = f"test_{metric}"
+    total_score_val = total_scores.get(total_score_key)
+    if total_score_val is None:
+        total_score_val = total_scores.get(metric)
+
+    if total_score_val is None:
+        log_once(
+            f"Could not find {metric_type} metric for {dataset!r} "
+            f"in {model_name!r} ({total_score_key}). Only found "
+            f"{list(total_scores.keys())}.",
+            level=logging.WARNING,
+        )
+        return None
+    return float(total_score_val)
+
+
+def _compute_std_err(
+    raw_scores: list[float],
+    total_scores: dict[str, t.Any],
+    metric: str,
+    scale_factor: float,
+) -> float:
+    """Compute standard error from raw scores.
+
+    EEE records don't carry a std err, so compute it from raw scores.
+    Fallback computed after scaling so std_err matches the displayed scores.
+
+    Args:
+        raw_scores:
+            List of raw scores (already scaled).
+        total_scores:
+            Dictionary of total scores.
+        metric:
+            The metric name.
+        scale_factor:
+            Factor to scale std_err by.
+
+    Returns:
+        The computed standard error.
+    """
+    std_err_key = f"test_{metric}_se"
+    std_err: float = total_scores.get(std_err_key, 0.0) * scale_factor
+    if std_err == 0.0 and len(raw_scores) > 1:
+        try:
+            std_err = statistics.stdev(raw_scores) / (len(raw_scores) ** 0.5)
+        except statistics.StatisticsError:
+            std_err = 0.0
+    return std_err
+
+
 def _to_float_or_nan(val: str | float | int | None) -> float:
     """Coerce a metadata value to a non-negative float, else NaN.
 
@@ -661,4 +613,52 @@ def _to_bool(val: str | bool | None) -> bool:
         return val
     if isinstance(val, str):
         return val.lower() == "true"
+    return False
+
+
+def _compare_float_metadata(new_value: float | None, old_value: float | None) -> bool:
+    """Compare float metadata fields, preferring non-NaN over NaN.
+
+    Args:
+        new_value:
+            The new float value.
+        old_value:
+            The existing float value.
+
+    Returns:
+        True if new_value is better (non-NaN when old is NaN).
+    """
+    if isinstance(old_value, float) and math.isnan(old_value):
+        if isinstance(new_value, float) and not math.isnan(new_value):
+            return True
+        return False
+    if isinstance(new_value, float) and math.isnan(new_value):
+        return False
+    return True
+
+
+def _compare_presence_metadata(
+    new_value: bool | str | float | int | None,
+    old_value: bool | str | float | int | None,
+) -> bool:
+    """Compare fields by presence.
+
+    Prefer present (non-None) over missing (None). Explicit False/empty is
+    legitimate metadata and should be preserved against later stale records.
+    When both are present, neither is "better" (return False to preserve).
+
+    Args:
+        new_value:
+            The new value.
+        old_value:
+            The existing value.
+
+    Returns:
+        True if new_value should replace old_value.
+    """
+    if old_value is None and new_value is not None:
+        return True
+    if old_value is not None and new_value is None:
+        return False
+    # Both present: don't overwrite (preserve existing)
     return False
