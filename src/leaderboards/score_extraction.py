@@ -96,7 +96,7 @@ def extract_model_metadata(
         (
             extracted,
             presence_flags,
-            explicit_flags,
+            explicit_flags,  # noqa: F841
             model_url,
             model_url_explicit_rec,
             version,
@@ -294,7 +294,7 @@ def _extract_metadata_from_record(
     return (
         metadata,
         presence_flags,
-        {"model_url": model_url_explicit},
+        {"model_url": model_url_explicit},  # Kept for API compatibility
         model_url,
         model_url_explicit,
         version,
@@ -643,8 +643,9 @@ def _compare_presence_metadata(
 ) -> bool:
     """Compare fields by presence.
 
-    Prefer present (non-None) over missing (None). Explicit False/empty is
-    legitimate metadata and should be preserved against later stale records.
+    Prefer present (non-None/non-empty) over missing (None/empty). For string
+    fields (generative_type, model_url), empty strings are treated as absent.
+    Explicit False is legitimate metadata and should be preserved.
     When both are present, neither is "better" (return False to preserve).
 
     Args:
@@ -656,9 +657,17 @@ def _compare_presence_metadata(
     Returns:
         True if new_value should replace old_value.
     """
-    if old_value is None and new_value is not None:
+    # Treat empty strings as absent for string fields
+    new_is_present = new_value is not None and (
+        not isinstance(new_value, str) or new_value != ""
+    )
+    old_is_present = old_value is not None and (
+        not isinstance(old_value, str) or old_value != ""
+    )
+
+    if not old_is_present and new_is_present:
         return True
-    if old_value is not None and new_value is None:
+    if old_is_present and not new_is_present:
         return False
-    # Both present: don't overwrite (preserve existing)
+    # Both present or both absent: don't overwrite (preserve existing)
     return False

@@ -216,7 +216,9 @@ def record_is_valid(
     return True
 
 
-def _parse_generative_type_input(user_input: str) -> str | None:
+def _parse_generative_type_input(
+    user_input: str,
+) -> str | None | t.Literal["EXPLICIT_NULL"]:
     """Parse user input for generative type.
 
     Args:
@@ -224,11 +226,12 @@ def _parse_generative_type_input(user_input: str) -> str | None:
             The raw user input string.
 
     Returns:
-        The parsed generative type or None if invalid.
+        The parsed generative type, "EXPLICIT_NULL" for 0/null input, or None if
+        invalid.
     """
     input_lower = user_input.lower()
     if input_lower in {"0", "null"}:
-        return None
+        return "EXPLICIT_NULL"
     if input_lower in {"1", "base"}:
         return "base"
     if input_lower in {"2", "instruction_tuned"}:
@@ -300,6 +303,9 @@ def _get_generative_type(record: dict, cache: Cache) -> str | None:
         msg += " [0=null, 1=base, 2=instruction_tuned, 3=reasoning] "
         user_input = input(msg)
         parsed = _parse_generative_type_input(user_input)
+        if parsed == "EXPLICIT_NULL":
+            cache.generative_type[model_id] = None
+            return None
         if parsed is not None:
             cache.generative_type[model_id] = parsed
             return parsed
