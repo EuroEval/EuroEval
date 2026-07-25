@@ -1381,6 +1381,57 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
 
 
+def _get_olmo3_rope_parameters(
+    model_id: str, hf_model_config: "PretrainedConfig"
+) -> dict[str, str | int | float] | None:
+    """Build rope_parameters override for OLMo-3 models.
+
+    OLMo-3 models store rope_theta and rope_scaling at the top level of config.json,
+    but vLLM's olmo2.py implementation expects them nested in rope_parameters.
+
+    Args:
+        model_id:
+            The model identifier.
+        hf_model_config:
+            The Hugging Face model configuration.
+
+    Returns:
+        A rope_parameters dict if the model is OLMo-3 and lacks existing
+        rope_parameters; otherwise None.
+    """
+    is_olmo3 = hf_model_config.model_type == "olmo3" or (
+        hf_model_config.architectures
+        and "Olmo3ForCausalLM" in hf_model_config.architectures
+    )
+    if not is_olmo3 or getattr(hf_model_config, "rope_parameters", None):
+        return None
+
+    rope_theta = getattr(hf_model_config, "rope_theta", 10000)
+    rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
+    rope_parameters: dict[str, str | int | float] = {
+        "rope_theta": rope_theta,
+        "rope_type": rope_scaling.get("rope_type", "default"),
+    }
+    for key in [
+        "factor",
+        "original_max_position_embeddings",
+        "attention_factor",
+        "beta_fast",
+        "beta_slow",
+        "short_factor",
+        "long_factor",
+    ]:
+        if key in rope_scaling:
+            rope_parameters[key] = rope_scaling[key]
+
+    log_once(
+        f"Adding rope_parameters override for OLMo-3 model {model_id!r}: "
+        f"{rope_parameters!r}",
+        level=logging.DEBUG,
+    )
+    return rope_parameters
+
+
 def load_model(
     model_config: "ModelConfig",
     benchmark_config: "BenchmarkConfig",
@@ -1513,7 +1564,7 @@ def load_model(
 
     clear_vllm()
 
-    hf_overrides: dict[str, list[str]] = {}
+    hf_overrides: dict[str, dict[str, str | int | float] | list[str]] = {}
     if hf_model_config.architectures:
         remapped = [
             _ARCHITECTURE_ALIASES.get(arch, arch)
@@ -1527,6 +1578,13 @@ def load_model(
             )
             hf_model_config.architectures = remapped
             hf_overrides["architectures"] = remapped
+
+    # TODO: Remove this block when we don't care about OLMo-3 anymore
+    olmo3_rope_parameters = _get_olmo3_rope_parameters(
+        model_id=model_id, hf_model_config=hf_model_config
+    )
+    if olmo3_rope_parameters is not None:
+        hf_overrides["rope_parameters"] = olmo3_rope_parameters
 
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism(force_single_gpu=False)

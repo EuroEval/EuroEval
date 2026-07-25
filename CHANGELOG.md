@@ -40,6 +40,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   parallel size. This fixes evaluation failures for models like SmolLM series (9/15
   heads) on multi-GPU setups, which previously raised errors like "Total number of
   attention heads (X) must be divisible by tensor parallel size (Y)".
+- Fixed `KeyError: 'rope_theta'` when loading OLMo-3 models (e.g.
+  `allenai/Olmo-3-1125-32B`) with vLLM. The model config now includes a
+  `rope_parameters` override that converts the top-level `rope_theta` and `rope_scaling`
+  fields into the nested structure expected by vLLM's `olmo2.py` implementation.
 
 ## [v17.7.0] - 2026-07-22
 
