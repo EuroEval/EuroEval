@@ -1875,8 +1875,8 @@ def open_pull_request(
 ) -> None:
     """Commit the swap, push the branch, and open a pull request.
 
-    Assigns the logged-in GitHub user, requests a reviewer, and best-effort
-    requests a Copilot review. CODEOWNERS are assigned automatically by GitHub.
+    Assigns the logged-in GitHub user, requests a reviewer. CODEOWNERS are assigned
+    automatically by GitHub.
 
     Args:
         old_dataset:
@@ -1921,7 +1921,6 @@ def open_pull_request(
         "--reviewer",
         reviewer,
     )
-    _request_copilot_review()
     logger.info("Opened pull request.")
 
 
@@ -1961,24 +1960,6 @@ def _pr_body(old_dataset: str | None, new_datasets: tuple[str, ...]) -> str:
             "and the dataset documentation, keeping each file's official-first "
             "grouping.\n\n"
             "The leaderboards will pick up the change on the next regeneration."
-        )
-
-
-def _request_copilot_review() -> None:
-    """Best-effort request a Copilot review on the current branch's PR."""
-    result = _gh(
-        "pr",
-        "edit",
-        "--add-reviewer",
-        "copilot-pull-request-reviewer[bot]",
-        check=False,
-        capture=True,
-    )
-    if result.returncode != 0:
-        logger.info(
-            "Could not explicitly request a Copilot review (it may still run "
-            "automatically): %s",
-            result.stderr.strip(),
         )
 
 
