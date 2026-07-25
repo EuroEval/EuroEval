@@ -414,10 +414,6 @@ def deploy_to_vercel() -> bool:
     return True
 
 
-if __name__ == "__main__":
-    main(force=False)
-
-
 def _extract_identity_key(result: dict) -> ResultIdentity | None:
     """Extract the identity key from a result record.
 
@@ -940,3 +936,7 @@ def _get_user_confirmation() -> bool:
             return False
         else:
             print("Please answer 'y' or 'n'.")
+
+
+if __name__ == "__main__":
+    main(force=False)
