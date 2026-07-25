@@ -156,7 +156,7 @@ def _extract_dataset_ids(
 
 def _handle_dataset_lookup_error(
     error: KeyError, options: list[str], entity_type: str
-) -> t.NoReturn:
+) -> None:
     """Handle a KeyError during dataset or task lookup.
 
     Args:
@@ -194,6 +194,9 @@ def _get_datasets_list(
 
     Returns:
         List of dataset configs.
+
+    Raises:
+        SystemExit: If dataset lookup fails.
     """
     try:
         if dataset is None:
@@ -210,6 +213,8 @@ def _get_datasets_list(
         _handle_dataset_lookup_error(
             error=e, options=list(all_dataset_configs.keys()), entity_type="dataset"
         )
+        # Unreachable: _handle_dataset_lookup_error calls sys.exit(1)
+        raise SystemExit(1)
 
 
 def _get_tasks_list(
