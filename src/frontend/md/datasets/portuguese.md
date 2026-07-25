@@ -429,8 +429,6 @@ euroeval --model <model-id> --dataset boolq-pt
 
 ### ALBA-MCQ
 
-> This dataset is **unofficial** — results do not count toward the Portuguese leaderboard.
-
 [ALBA-MCQ](https://huggingface.co/datasets/amalia-llm/alba_mcq) is the multiple-choice
 adaptation of ALBA, an expert-created benchmark introduced in the
 [ALBA paper](https://aclanthology.org/2026.propor-1.69/) for evaluating European
