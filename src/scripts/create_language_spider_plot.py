@@ -154,58 +154,6 @@ def main(
     return _write_and_open_plot(fig=fig, title=title, filename=filename)
 
 
-@click.command()
-@click.option(
-    "--model",
-    "-m",
-    "models",
-    multiple=True,
-    required=True,
-    metavar="MODEL",
-    help="Model ID to include (can be repeated).",
-)
-@click.option(
-    "--language",
-    "-l",
-    "languages",
-    multiple=True,
-    metavar="LANGUAGE",
-    help="Language name or code to include (can be repeated). "
-    "Defaults to official languages.",
-)
-@click.option(
-    "--shots",
-    type=click.Choice(["auto", "zero", "few"]),
-    default="auto",
-    show_default=True,
-    help="Shot setting: zero-shot, few-shot, or auto-detect.",
-)
-@click.option(
-    "--max-score",
-    type=float,
-    metavar="FLOAT",
-    help=(
-        "Optional override for maximum rank score on the radial axis. "
-        "When omitted, auto-computed from plotted rank scores (rounded up "
-        "to nearest 0.5, minimum 2.5; rank score of 1 is perfect)."
-    ),
-)
-@click.option(
-    "--title",
-    type=str,
-    metavar="TEXT",
-    help="Plot title. If omitted, uses default title.",
-)
-@click.option(
-    "--filename",
-    type=str,
-    metavar="PATH",
-    help=(
-        "Output PNG filename. If omitted and --title is set, "
-        "inferred from title using snake_case. If both omitted, "
-        "uses language-spider-plot.png. .png extension appended if missing."
-    ),
-)
 def _build_and_validate_score_matrix(
     all_records: list[JsonDict],
     model_list: list[str],
