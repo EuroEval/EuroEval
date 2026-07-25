@@ -1530,34 +1530,46 @@ def load_model(
 
     # TODO: Remove this block when we don't care about OLMo-3 anymore
     # OLMo-3 models have rope_theta/rope_scaling at top level, but vLLM expects
-    # them nested in rope_parameters. Add the nested structure directly.
+    # them nested in rope_parameters. We need to modify the cached config.json
+    # on disk since vLLM workers load from there (separate processes).
     is_olmo3 = hf_model_config.model_type == "olmo3" or (
         hf_model_config.architectures
         and "Olmo3ForCausalLM" in hf_model_config.architectures
     )
     if is_olmo3 and not getattr(hf_model_config, "rope_parameters", None):
-        rope_theta = getattr(hf_model_config, "rope_theta", 10000)
-        rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
-        rope_params: dict[str, str | int | float] = {
-            "rope_theta": rope_theta,
-            "rope_type": rope_scaling.get("rope_type", "default"),
-        }
-        for key in [
-            "factor",
-            "original_max_position_embeddings",
-            "attention_factor",
-            "beta_fast",
-            "beta_slow",
-            "short_factor",
-            "long_factor",
-        ]:
-            if key in rope_scaling:
-                rope_params[key] = rope_scaling[key]
-        setattr(hf_model_config, "rope_parameters", rope_params)
-        log_once(
-            f"Adding rope_parameters to OLMo-3 model {model_id!r}: {rope_params!r}",
-            level=logging.DEBUG,
-        )
+        config_path = Path(download_dir) / "config.json"
+        if config_path.exists():
+            with open(config_path) as f:
+                config_dict = json.load(f)
+
+            if "rope_parameters" not in config_dict:
+                rope_theta = getattr(hf_model_config, "rope_theta", 10000)
+                rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
+                rope_params: dict[str, str | int | float] = {
+                    "rope_theta": rope_theta,
+                    "rope_type": rope_scaling.get("rope_type", "default"),
+                }
+                for key in [
+                    "factor",
+                    "original_max_position_embeddings",
+                    "attention_factor",
+                    "beta_fast",
+                    "beta_slow",
+                    "short_factor",
+                    "long_factor",
+                ]:
+                    if key in rope_scaling:
+                        rope_params[key] = rope_scaling[key]
+
+                config_dict["rope_parameters"] = rope_params
+                with open(config_path, "w") as f:
+                    json.dump(config_dict, f, indent=2)
+
+                log_once(
+                    f"Added rope_parameters to OLMo-3 config at {config_path}: "
+                    f"{rope_params!r}",
+                    level=logging.DEBUG,
+                )
 
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism(force_single_gpu=False)
