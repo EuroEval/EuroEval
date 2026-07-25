@@ -133,7 +133,7 @@ def ask_user_to_remove_model(model_id: str) -> bool:
             "the results? (y/n): "
         )
         if user_input not in ["y", "n"]:
-            print("Invalid input. Please enter 'y' or 'n'.")
+            logger.error("Invalid input. Please enter 'y' or 'n'.")
             continue
         remove = user_input == "y"
         _remember_model_url_decision(model_id=model_id, remove=remove)
