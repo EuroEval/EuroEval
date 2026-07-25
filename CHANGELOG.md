@@ -19,9 +19,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Swapped official dataset for European Portuguese, Portuguese:
-`mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`.
-
 - Bumped minimum `transformers` version to 5.14.0 (required for XLMRoberta/Camembert
   `ForMultipleChoice` heads; see huggingface/transformers#47147).
 - Swapped official datasets for four languages (all performed by the
@@ -43,7 +40,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   parallel size. This fixes evaluation failures for models like SmolLM series (9/15
   heads) on multi-GPU setups, which previously raised errors like "Total number of
   attention heads (X) must be divisible by tensor parallel size (Y)".
-
 
 ## [v17.7.0] - 2026-07-22
 

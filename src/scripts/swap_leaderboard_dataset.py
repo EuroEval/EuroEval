@@ -1467,11 +1467,12 @@ def _update_changelog(
 
     Raises:
         ValueError:
-            When the '### Changed' section under '## [Unreleased]' is not found.
+            When the '## [Unreleased]' header is not found.
     """
     lines = changelog_path.read_text(encoding="utf-8").split("\n")
 
-    # Find the "### Changed" section under "## [Unreleased]"
+    # Find the [Unreleased] section, the ### Changed subsection (if it exists),
+    # and the next version section
     unreleased_idx: int | None = None
     changed_idx: int | None = None
     next_section_idx: int | None = None
@@ -1479,19 +1480,20 @@ def _update_changelog(
     for i, line in enumerate(lines):
         if line.strip() == "## [Unreleased]":
             unreleased_idx = i
-        elif unreleased_idx is not None and line.strip() == "### Changed":
+        elif (
+            unreleased_idx is not None
+            and changed_idx is None
+            and line.strip() == "### Changed"
+        ):
             changed_idx = i
-        elif changed_idx is not None and line.startswith("## "):
+        elif unreleased_idx is not None and line.startswith("## "):
             next_section_idx = i
             break
 
-    if changed_idx is None or next_section_idx is None:
-        raise ValueError(
-            "Could not find '### Changed' section under '## [Unreleased]' in "
-            "CHANGELOG.md"
-        )
+    if unreleased_idx is None:
+        raise ValueError("Could not find '## [Unreleased]' header in CHANGELOG.md")
 
-    # Build the changelog entry
+    # Build the changelog entry first
     if old_config:
         lang_list = ", ".join(sorted([lang.name for lang in old_config.languages]))
         new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
@@ -1516,9 +1518,28 @@ def _update_changelog(
             "when performing dataset swaps."
         )
 
-    # Insert a blank line after "### Changed", then the entry
-    lines.insert(changed_idx + 1, "")
-    lines.insert(changed_idx + 2, entry)
+    # Handle case where ### Changed subsection doesn't exist - create it
+    if changed_idx is None:
+        # Step back over blank lines before the version header
+        insert_idx = next_section_idx
+        while insert_idx > unreleased_idx + 1 and lines[insert_idx - 1].strip() == "":
+            insert_idx -= 1
+        # Insert: blank line, header, blank line, entry
+        lines[insert_idx:insert_idx] = ["", "### Changed", "", entry]
+    else:
+        # Find the end of the ### Changed subsection
+        scan_idx = changed_idx + 1
+        while scan_idx < len(lines):
+            line = lines[scan_idx]
+            if line.startswith("### ") or line.startswith("## "):
+                break
+            scan_idx += 1
+        # Step back over trailing blank lines to find last content
+        insert_idx = scan_idx
+        while insert_idx > changed_idx + 1 and lines[insert_idx - 1].strip() == "":
+            insert_idx -= 1
+        # Append entry directly (no blank line - keeps list tight)
+        lines.insert(insert_idx, entry)
     changelog_path.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -1854,8 +1875,8 @@ def open_pull_request(
 ) -> None:
     """Commit the swap, push the branch, and open a pull request.
 
-    Assigns the logged-in GitHub user, requests a reviewer, and best-effort
-    requests a Copilot review. CODEOWNERS are assigned automatically by GitHub.
+    Assigns the logged-in GitHub user, requests a reviewer. CODEOWNERS are assigned
+    automatically by GitHub.
 
     Args:
         old_dataset:
@@ -1900,7 +1921,6 @@ def open_pull_request(
         "--reviewer",
         reviewer,
     )
-    _request_copilot_review()
     logger.info("Opened pull request.")
 
 
@@ -1940,24 +1960,6 @@ def _pr_body(old_dataset: str | None, new_datasets: tuple[str, ...]) -> str:
             "and the dataset documentation, keeping each file's official-first "
             "grouping.\n\n"
             "The leaderboards will pick up the change on the next regeneration."
-        )
-
-
-def _request_copilot_review() -> None:
-    """Best-effort request a Copilot review on the current branch's PR."""
-    result = _gh(
-        "pr",
-        "edit",
-        "--add-reviewer",
-        "copilot-pull-request-reviewer[bot]",
-        check=False,
-        capture=True,
-    )
-    if result.returncode != 0:
-        logger.info(
-            "Could not explicitly request a Copilot review (it may still run "
-            "automatically): %s",
-            result.stderr.strip(),
         )
 
 

@@ -555,10 +555,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-fr
 ```
 
-
 ### Unofficial: INCLUDE-fr
-
-> This dataset is **unofficial** — results do not count toward the French leaderboard.
 
 The original dataset consists of a 'validation' split used as training data and a 'test'
 split. We use the 'validation' split as the training split, which has 25 samples. We

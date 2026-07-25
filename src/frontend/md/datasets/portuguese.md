@@ -427,9 +427,84 @@ euroeval --model <model-id> --dataset boolq-pt
 
 ## Knowledge
 
-### ALBA-MCQ
+### MMLU-pt
 
-> This dataset is **unofficial** — results do not count toward the Portuguese leaderboard.
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928)
+and is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to Portuguese was done using DeepL.
+
+The original full dataset consists of 270 / 1,439 / 14,774 samples for training,
+validation, and testing, respectively. These splits were merged, duplicates removed, and
+new splits were created with 1,024 / 256 / 2048 samples for training, validation, and
+testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "De que tipo de direitos gozam os Estados costeiros sobre a sua plataforma continental?\nOpções:\na. O Estado costeiro goza ipso facto e ab initio de direitos soberanos sobre a sua plataforma continental para efeitos de exploração e aproveitamento dos seus recursos naturais\nb. O Estado costeiro só pode exercer direitos soberanos sobre a sua plataforma continental mediante declaração\nc. O Estado costeiro exerce direitos soberanos sobre a sua plataforma continental para efeitos de exploração dos seus recursos haliêuticos\nd. O Estado costeiro só pode exercer direitos limitados sobre a sua plataforma continental e apenas com o consentimento dos Estados vizinhos",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Qual delas não é uma competência-chave reconhecida da gestão?\nOpções:\na. Competências conceptuais\nb. Competências humanas\nc. Competências técnicas\nd. Competências de redação",
+  "label": "d"
+}
+```
+
+```json
+{
+    "text": "O presidente executa um "veto de bolso" fazendo qual das seguintes opções?\nOpções:\na. Manifestando publicamente a rejeição de um projeto de lei\nb. Emitindo uma ordem executiva que invalida um projeto de lei recentemente aprovado\nc. Não assinando um projeto de lei após o encerramento do Congresso\nd. Retirando embaixadores de uma negociação de paz",
+    "label": "c",
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Responde à pergunta acima usando só 'a', 'b', 'c' ou 'd', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset mmlu-pt
+```
+
+### Unofficial: ALBA-MCQ
 
 [ALBA-MCQ](https://huggingface.co/datasets/amalia-llm/alba_mcq) is the multiple-choice
 adaptation of ALBA, an expert-created benchmark introduced in the
@@ -507,9 +582,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset alba-mcq-pt
 ```
 
-### CulturaVivaPT
-
-> This dataset is **unofficial** — results do not count toward the Portuguese leaderboard.
+### Unofficial: CulturaVivaPT
 
 [CulturaVivaPT](https://huggingface.co/datasets/amalia-llm/cultura-viva-pt-mcq),
 released as part of the [AMALIA project](https://aclanthology.org/2026.propor-1.38/),
@@ -585,83 +658,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset cultura-viva-pt
-```
-
-### Unofficial: MMLU-pt
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928)
-and is a machine translated version of the English
-[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
-within 57 different topics, such as elementary mathematics, US history and law. The
-translation to Portuguese was done using DeepL.
-
-The original full dataset consists of 270 / 1,439 / 14,774 samples for training,
-validation, and testing, respectively. These splits were merged, duplicates removed, and
-new splits were created with 1,024 / 256 / 2048 samples for training, validation, and
-testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "De que tipo de direitos gozam os Estados costeiros sobre a sua plataforma continental?\nOpções:\na. O Estado costeiro goza ipso facto e ab initio de direitos soberanos sobre a sua plataforma continental para efeitos de exploração e aproveitamento dos seus recursos naturais\nb. O Estado costeiro só pode exercer direitos soberanos sobre a sua plataforma continental mediante declaração\nc. O Estado costeiro exerce direitos soberanos sobre a sua plataforma continental para efeitos de exploração dos seus recursos haliêuticos\nd. O Estado costeiro só pode exercer direitos limitados sobre a sua plataforma continental e apenas com o consentimento dos Estados vizinhos",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Qual delas não é uma competência-chave reconhecida da gestão?\nOpções:\na. Competências conceptuais\nb. Competências humanas\nc. Competências técnicas\nd. Competências de redação",
-  "label": "d"
-}
-```
-
-```json
-{
-    "text": "O presidente executa um "veto de bolso" fazendo qual das seguintes opções?\nOpções:\na. Manifestando publicamente a rejeição de um projeto de lei\nb. Emitindo uma ordem executiva que invalida um projeto de lei recentemente aprovado\nc. Não assinando um projeto de lei após o encerramento do Congresso\nd. Retirando embaixadores de uma negociação de paz",
-    "label": "c",
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  As seguintes são perguntas de escolha múltipla (com respostas).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Pergunta: {text}
-  Opções:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-  Resposta: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Pergunta: {text}
-  Opções:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-
-  Responde à pergunta acima usando só 'a', 'b', 'c' ou 'd', e nada mais.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset mmlu-pt
 ```
 
 ### Unofficial: INCLUDE-pt
