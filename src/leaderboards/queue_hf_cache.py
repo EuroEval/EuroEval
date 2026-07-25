@@ -24,32 +24,6 @@ from .constants import HF_CACHE_PATH, HF_CACHE_TTL_SECONDS
 logger = logging.getLogger(__name__)
 
 
-def is_generative_model(info: ModelInfo) -> bool:
-    """Return whether a model_info result describes a generative model.
-
-    Mirrors euroeval's own classification (see ``get_model_repo_info`` in
-    ``euroeval.benchmark_modules.hf``): a model is generative when its pipeline
-    tag is one of :data:`GENERATIVE_PIPELINE_TAGS`, or -- when no pipeline tag is
-    set -- when its architecture is a causal or sequence-to-sequence LM. Anything
-    else (fill-mask, feature-extraction, sentence-similarity, ...) is an encoder.
-
-    Args:
-        info:
-            The model info returned by ``HfApi.model_info``.
-
-    Returns:
-        Whether the repo is a generative model.
-    """
-    pipeline_tag = getattr(info, "pipeline_tag", None)
-    if pipeline_tag is not None:
-        return pipeline_tag in GENERATIVE_PIPELINE_TAGS
-    architectures = (getattr(info, "config", None) or {}).get("architectures") or []
-    return any(
-        "ForCausalLM" in arch or "ForConditionalGeneration" in arch
-        for arch in architectures
-    )
-
-
 def cached_model_summary(model_id: str) -> dict | None:
     """Return a ``{param_count, gated, gguf, generative}`` summary for a model id.
 
@@ -127,6 +101,32 @@ def cached_model_summary(model_id: str) -> dict | None:
         "gguf": gguf,
         "generative": generative,
     }
+
+
+def is_generative_model(info: ModelInfo) -> bool:
+    """Return whether a model_info result describes a generative model.
+
+    Mirrors euroeval's own classification (see ``get_model_repo_info`` in
+    ``euroeval.benchmark_modules.hf``): a model is generative when its pipeline
+    tag is one of :data:`GENERATIVE_PIPELINE_TAGS`, or -- when no pipeline tag is
+    set -- when its architecture is a causal or sequence-to-sequence LM. Anything
+    else (fill-mask, feature-extraction, sentence-similarity, ...) is an encoder.
+
+    Args:
+        info:
+            The model info returned by ``HfApi.model_info``.
+
+    Returns:
+        Whether the repo is a generative model.
+    """
+    pipeline_tag = getattr(info, "pipeline_tag", None)
+    if pipeline_tag is not None:
+        return pipeline_tag in GENERATIVE_PIPELINE_TAGS
+    architectures = (getattr(info, "config", None) or {}).get("architectures") or []
+    return any(
+        "ForCausalLM" in arch or "ForConditionalGeneration" in arch
+        for arch in architectures
+    )
 
 
 def is_gguf_model(info: ModelInfo) -> bool:

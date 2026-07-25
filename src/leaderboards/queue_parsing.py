@@ -132,6 +132,56 @@ def num_skipped_benchmarks(output: str) -> int:
     return last
 
 
+def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
+    """Extract the meaningful error from a euroeval subprocess's output.
+
+    The queue runs euroeval with ``FULL_LOG=1``, so the raw output is dominated
+    by serialised result records, training-progress dicts and giant parameter
+    lists. A blind tail of that output almost never shows the real error (and is
+    frequently identical across unrelated models), so this scans the whole
+    output for the informative error text: a Python traceback, a model-load or
+    gating error, and the ``errored N benchmarks`` summary line.
+
+    Args:
+        output:
+            The full captured combined-output of the euroeval subprocess.
+        max_chars (optional):
+            The maximum length of the returned summary. Defaults to 4000.
+
+    Returns:
+        A compact human-readable error summary, or ``"(no output captured)"``
+        when nothing usable is found.
+    """
+    text = _ANSI_ESCAPE_RE.sub("", output)
+    lines: list[str] = []
+    for raw_line in text.splitlines():
+        if not raw_line.strip() or _is_noise_line(raw_line):
+            continue
+        line = raw_line.rstrip()
+        if len(line) > _MAX_LINE_CHARS:
+            line = line[:_MAX_LINE_CHARS] + " …(truncated)"
+        lines.append(line)
+
+    if not lines:
+        return "(no output captured)"
+
+    worker_block = _worker_errors(lines=lines)
+    traceback = _last_traceback(lines=lines)
+    parts = _build_error_summary_parts(
+        lines=lines, worker_block=worker_block, traceback=traceback
+    )
+
+    # Fall back to tail when no marker found
+    if not parts:
+        parts = [line.strip() for line in lines[-20:]]
+
+    # De-duplicate while preserving order (a traceback may repeat the summary).
+    summary = "\n".join(dict.fromkeys(part for part in parts if part)).strip()
+    if len(summary) > max_chars:
+        summary = summary[-max_chars:].strip()
+    return summary or "(no output captured)"
+
+
 def _is_noise_line(line: str) -> bool:
     """Return True if a line is verbose ``FULL_LOG`` output rather than an error.
 
@@ -210,73 +260,44 @@ def _worker_errors(lines: list[str]) -> str | None:
     return "\n".join(lines[start : end + 1]).strip()
 
 
-def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
-    """Extract the meaningful error from a euroeval subprocess's output.
-
-    The queue runs euroeval with ``FULL_LOG=1``, so the raw output is dominated
-    by serialised result records, training-progress dicts and giant parameter
-    lists. A blind tail of that output almost never shows the real error (and is
-    frequently identical across unrelated models), so this scans the whole
-    output for the informative error text: a Python traceback, a model-load or
-    gating error, and the ``errored N benchmarks`` summary line.
+def _build_error_summary_parts(
+    lines: list[str], worker_block: str | None, traceback: str | None
+) -> list[str]:
+    """Build error summary parts from worker errors and traceback.
 
     Args:
-        output:
-            The full captured combined-output of the euroeval subprocess.
-        max_chars:
-            The maximum length of the returned summary. Defaults to 4000.
+        lines:
+            Cleaned output lines.
+        worker_block:
+            Worker error block from _worker_errors.
+        traceback:
+            Traceback from _last_traceback.
 
     Returns:
-        A compact human-readable error summary, or ``"(no output captured)"``
-        when nothing usable is found.
+        List of summary parts.
     """
-    text = _ANSI_ESCAPE_RE.sub("", output)
-    lines: list[str] = []
-    for raw_line in text.splitlines():
-        if not raw_line.strip() or _is_noise_line(raw_line):
-            continue
-        line = raw_line.rstrip()
-        if len(line) > _MAX_LINE_CHARS:
-            line = line[:_MAX_LINE_CHARS] + " …(truncated)"
-        lines.append(line)
-
-    if not lines:
-        return "(no output captured)"
-
-    worker_block = _worker_errors(lines=lines)
-    traceback = _last_traceback(lines=lines)
     parts: list[str] = []
-    # The main process only re-raises a generic "WorkerProc initialization
-    # failed" exception; the real cause is in the worker-prefixed ERROR lines,
-    # so prefer the worker block unless a genuine traceback was captured.
+    # Prefer worker block unless a genuine traceback was captured
     if worker_block and (traceback is None or _WORKERPROC_FAILED_RE.search(traceback)):
         parts.append(worker_block)
     elif traceback:
         parts.append(traceback)
+
+    # Add load error (skip vLLM excuse line if traceback present)
     for line in reversed(lines):
         if _LOAD_ERROR_RE.search(line):
-            # When a real traceback was already surfaced, the vLLM generic
-            # "could not be loaded, but vLLM did not mention exactly what
-            # happened" excuse line only buries the actual exception, so skip
-            # it rather than appending it on top of the traceback.
             if traceback and "did not mention exactly what" in line:
                 break
             parts.append(line.strip())
             break
+
+    # Add summary line if found
     for line in reversed(lines):
         if _SUMMARY_LINE_RE.search(line):
             parts.append(line.strip())
             break
 
-    # Fall back to the tail of the cleaned output when no marker was found.
-    if not parts:
-        parts = [line.strip() for line in lines[-20:]]
-
-    # De-duplicate while preserving order (a traceback may repeat the summary).
-    summary = "\n".join(dict.fromkeys(part for part in parts if part)).strip()
-    if len(summary) > max_chars:
-        summary = summary[-max_chars:].strip()
-    return summary or "(no output captured)"
+    return parts
 
 
 def format_dataset_language_pairs(dataset_language_pairs: set[tuple[str, str]]) -> str:

@@ -7,34 +7,17 @@ import re
 from .constants import ANCHOR_RE, VARIANT_SUFFIX_RE
 
 
-def strip_anchor(model_id: str) -> str:
-    """Strip any surrounding HTML anchor tag from a model id.
-
-    Unlike :func:`plain_model_id`, this preserves any ``(zero-shot)`` / ``(val)``
-    variant suffix — it only unwraps the ``<a href=...>...</a>`` tag.
-
-    Args:
-        model_id:
-            The (possibly anchored) identifier.
-
-    Returns:
-        The identifier with any anchor tag removed.
-    """
-    match = ANCHOR_RE.search(model_id)
-    return match.group("inner").strip() if match else model_id
-
-
 def plain_model_id(model_id: str) -> str:
     """Strip the HTML anchor and variant-suffix from a result-record model id.
 
     Records label few-shot vs zero-shot and test vs validation by appending
     ``(zero-shot)`` / ``(val)`` / ``(zero-shot, val)`` to the model id.
     For the core-model list we collapse all those variants down to the
-    canonical ``org/repo`` slug — we don't want to list the same model
+    canonical ``org/repo`` slug - we don't want to list the same model
     several times.
 
     Preserves ``#no-thinking``, ``#thinking`` and ``@revision`` suffixes
-    used for parameterised model IDs — these are meaningful for upload
+    used for parameterised model IDs - these are meaningful for upload
     filenames and core/per-model grouping.
 
     Args:
@@ -243,3 +226,20 @@ def drop_val_duplicates(
                 continue
         filtered[model_id] = results
     return filtered
+
+
+def strip_anchor(model_id: str) -> str:
+    """Strip any surrounding HTML anchor tag from a model id.
+
+    Unlike :func:`plain_model_id`, this preserves any ``(zero-shot)`` / ``(val)``
+    variant suffix - it only unwraps the ``<a href=...>...</a>`` tag.
+
+    Args:
+        model_id:
+            The (possibly anchored) identifier.
+
+    Returns:
+        The identifier with any anchor tag removed.
+    """
+    match = ANCHOR_RE.search(model_id)
+    return match.group("inner").strip() if match else model_id

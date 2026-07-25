@@ -67,33 +67,33 @@ def add_missing_entries(
     if "generative" not in model_additional:
         model_additional["generative"] = False
     if "generative_type" not in model_additional:
-        model_additional["generative_type"] = get_generative_type(
+        model_additional["generative_type"] = _get_generative_type(
             record=record, cache=cache
         )
     if "merge" not in model_additional:
-        model_additional["merge"] = is_merge(record=record, cache=cache)
+        model_additional["merge"] = _is_merge(record=record, cache=cache)
 
     if "commercially_licensed" not in model_additional:
         model_additional["commercially_licensed"] = is_commercially_licensed(
             record=record, cache=cache
         )
     if "open" not in model_additional:
-        model_additional["open"] = is_open(record=record, cache=cache)
+        model_additional["open"] = _is_open(record=record, cache=cache)
     if "trained_from_scratch" not in model_additional:
-        model_additional["trained_from_scratch"] = is_trained_from_scratch(
+        model_additional["trained_from_scratch"] = _is_trained_from_scratch(
             record=record,
             trained_from_scratch_patterns=trained_from_scratch_patterns,
             cache=cache,
         )
     if "model_url" not in model_additional or model_additional["model_url"] is None:
-        model_additional["model_url"] = generate_model_url_with_cache(
+        model_additional["model_url"] = _generate_model_url_with_cache(
             model_id=plain_model_id(get_model_name(record=record)), cache=cache
         )
 
     return record
 
 
-def generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
+def _generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
     """Generates a model URL using a cache.
 
     When no URL can be generated, the operator is asked whether to drop the
@@ -216,7 +216,7 @@ def record_is_valid(
     return True
 
 
-def get_generative_type(record: dict, cache: Cache) -> str | None:
+def _get_generative_type(record: dict, cache: Cache) -> str | None:
     """Asks for the generative type of a model.
 
     Args:
@@ -230,44 +230,86 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
     """
     raw_model_id = _model_id_from_record(record=record)
 
+    # Check special suffixes first
     if "#thinking" in raw_model_id:
         cache.generative_type[raw_model_id] = "reasoning"
         return "reasoning"
-    elif "#no-thinking" in raw_model_id:
+    if "#no-thinking" in raw_model_id:
         cache.generative_type[raw_model_id] = "instruction_tuned"
         return "instruction_tuned"
 
-    # Remove revisions and parameters from the model ID, and strip variant suffixes.
+    # Normalise model ID
     model_id = split_model_id(model_id=plain_model_id(raw_model_id)).model_id
 
     while True:
+        # Check cache
         if model_id in cache.generative_type:
             return cache.generative_type[model_id]
 
-        # Pre-fill the generative type from keyword matches in the model id.
-        for keywords, gen_type in GENERATIVE_TYPE_KEYWORDS:
-            if any(
-                re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
-                for keyword in keywords
-            ):
-                cache.generative_type[model_id] = gen_type
-                return gen_type
+        # Try keyword inference
+        inferred_type = _get_generative_type_from_keywords(model_id=model_id)
+        if inferred_type is not None:
+            cache.generative_type[model_id] = inferred_type
+            return inferred_type
 
+        # Ask user
         msg = f"What is the generative type of {model_id!r}?"
         if "/" in model_id:
             msg += f" (https://hf.co/{model_id})"
         msg += " [0=null, 1=base, 2=instruction_tuned, 3=reasoning] "
         user_input = input(msg)
-        if user_input.lower() in {"0", "null"}:
+        parsed = _parse_generative_type_input(user_input)
+        if parsed == "EXPLICIT_NULL":
             cache.generative_type[model_id] = None
-        elif user_input.lower() in {"1", "base"}:
-            cache.generative_type[model_id] = "base"
-        elif user_input.lower() in {"2", "instruction_tuned"}:
-            cache.generative_type[model_id] = "instruction_tuned"
-        elif user_input.lower() in {"3", "reasoning"}:
-            cache.generative_type[model_id] = "reasoning"
-        else:
-            logger.error("Invalid input. Please try again.")
+            return None
+        if parsed is not None:
+            cache.generative_type[model_id] = parsed
+            return parsed
+        logger.error("Invalid input. Please try again.")
+
+
+def _parse_generative_type_input(
+    user_input: str,
+) -> str | None | t.Literal["EXPLICIT_NULL"]:
+    """Parse user input for generative type.
+
+    Args:
+        user_input:
+            The raw user input string.
+
+    Returns:
+        The parsed generative type, "EXPLICIT_NULL" for 0/null input, or None if
+        invalid.
+    """
+    input_lower = user_input.lower()
+    if input_lower in {"0", "null"}:
+        return "EXPLICIT_NULL"
+    if input_lower in {"1", "base"}:
+        return "base"
+    if input_lower in {"2", "instruction_tuned"}:
+        return "instruction_tuned"
+    if input_lower in {"3", "reasoning"}:
+        return "reasoning"
+    return None
+
+
+def _get_generative_type_from_keywords(model_id: str) -> str | None:
+    """Try to infer generative type from model ID keywords.
+
+    Args:
+        model_id:
+            The model ID to check.
+
+    Returns:
+        The inferred generative type or None.
+    """
+    for keywords, gen_type in GENERATIVE_TYPE_KEYWORDS:
+        if any(
+            re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
+            for keyword in keywords
+        ):
+            return gen_type
+    return None
 
 
 def is_commercially_licensed(record: dict, cache: Cache) -> bool:
@@ -382,7 +424,7 @@ def _infer_commercial_from_hf_licence(
     return result
 
 
-def is_trained_from_scratch(
+def _is_trained_from_scratch(
     record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
 ) -> bool:
     """Determine if a model was trained from scratch or fine-tuned.
@@ -435,7 +477,7 @@ def is_trained_from_scratch(
         logger.error("Invalid input. Please try again.")
 
 
-def is_merge(record: dict, cache: Cache) -> bool:
+def _is_merge(record: dict, cache: Cache) -> bool:
     """Determines if a model is a merged model.
 
     Args:
@@ -478,7 +520,7 @@ def is_merge(record: dict, cache: Cache) -> bool:
     return has_merge_tag
 
 
-def is_open(record: dict, cache: Cache) -> bool:
+def _is_open(record: dict, cache: Cache) -> bool:
     """Determine if a model is open (open-weight) or closed.
 
     Args:

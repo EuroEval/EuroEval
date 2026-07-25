@@ -79,7 +79,7 @@ def params_from_hf_safetensors(model_id: str) -> float:
     itself encodes the size (`yulan-team/YuLan-Mini` and friends).
 
     Network failures, missing repos, and missing safetensors data all
-    degrade to NaN — the caller will then bucket the model as ``xlarge``
+    degrade to NaN - the caller will then bucket the model as ``xlarge``
     which is the existing behaviour.
 
     Args:

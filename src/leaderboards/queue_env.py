@@ -107,7 +107,7 @@ def prompt_and_persist_env_var(
             logger.error(f"Aborted while reading {name}.")
             sys.exit(1)
         if not value:
-            print("Value cannot be empty; please try again.", file=sys.stderr)
+            logger.error("Value cannot be empty; please try again.")
     persist_env_var(env_path=env_path, name=name, value=value)
     return value
 

@@ -92,7 +92,7 @@ def generate_leaderboard(
     include_dataset_columns = len(configs) == 1
 
     # Generate the leaderboard and store it to disk
-    df_pairs = generate_dataframe(
+    df_pairs = _generate_dataframe(
         model_results=model_results,
         ranks=ranks,
         metadata_dict=metadata_dict,
@@ -238,7 +238,7 @@ def generate_leaderboard(
         ]
 
         if should_write:
-            top_header, second_header = create_leaderboard_headers(
+            top_header, second_header = _create_leaderboard_headers(
                 df=df, leaderboard_configs=configs
             )
 
@@ -280,7 +280,7 @@ def generate_leaderboard(
             )
 
 
-def create_leaderboard_headers(
+def _create_leaderboard_headers(
     df: pd.DataFrame | pd.Series, leaderboard_configs: dict[str, dict[str, list[str]]]
 ) -> tuple[list[str], list[str]]:
     """Create the leaderboard headers.
@@ -377,7 +377,7 @@ def create_leaderboard_headers(
     return top_header, second_header
 
 
-def generate_dataframe(
+def _generate_dataframe(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
     metadata_dict: dict[str, dict],
@@ -802,7 +802,7 @@ def generate_dataframe(
 
 
 def _format_rank_score(entry: object) -> str:
-    """Render a {"score", "ci_upper", ...} dict as "score ± margin", or "-".
+    """Render a {"score", "ci_upper", ...} dict as "score +/- margin", or "-".
 
     Args:
         entry:

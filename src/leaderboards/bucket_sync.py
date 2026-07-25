@@ -105,11 +105,11 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
     - Path collisions between distinct identities raise an error.
 
     Args:
-        ignore_sizes:
+        ignore_sizes (optional):
             When True, skip file size comparison during sync. Works around
             huggingface_hub bug reporting wrong sizes, making sync compare by
-            mtime only.
-        delete_empty:
+            mtime only. Defaults to False.
+        delete_empty (optional):
             When True, scan both local directory and bucket for 0-byte JSON
             files and delete them. Defaults to True.
 
