@@ -57,71 +57,6 @@ def main() -> None:
         dataset.push_to_hub(dataset_id, private=True)
 
 
-def download_dataset(url: str, temp_path: Path) -> Path:
-    """Download the dataset.
-
-    Args:
-        url: URL to the tar.gz file.
-        temp_path: Path to the temporary directory.
-
-    Returns:
-        Path to the data directory.
-
-    Raises:
-        FileNotFoundError: If the train.jsonl file is not found in the extracted files.
-    """
-    tar_path = temp_path / "cinexio.tar.gz"
-    response = requests.get(url)
-    response.raise_for_status()
-    with open(tar_path, "wb") as f:
-        f.write(response.content)
-
-    with tarfile.open(tar_path, "r:gz") as tar:
-        tar.extractall(temp_path)
-
-    train_file = list(temp_path.glob("**/train.jsonl"))
-    if not train_file:
-        raise FileNotFoundError("Could not find train.jsonl in extracted files")
-
-    data_dir = train_file[0].parent
-    return data_dir
-
-
-def load_split(file_path: Path) -> pd.DataFrame:
-    """Load a JSONL file into a pandas DataFrame.
-
-    Args:
-        file_path: Path to the JSONL file.
-
-    Returns:
-        A DataFrame with the data.
-    """
-    data = []
-    with open(file_path, "r", encoding="utf-8") as f:
-        for line in f:
-            data.append(json.loads(line))
-
-    df = pd.DataFrame(data)
-    return df
-
-
-def process_split(df: pd.DataFrame) -> pd.DataFrame:
-    """Process a split of the dataset.
-
-    Args:
-        df: The dataframe to process.
-
-    Returns:
-        The processed dataframe.
-    """
-    df = _map_ratings_to_labels(df=df)
-    df = df.rename(columns={"Comment": "text"})
-    df = df.loc[["text", "label"]]
-    df = _filter_by_length(df=df)
-    df = df.drop_duplicates().reset_index(drop=True)
-    return df
-
-
 def create_splits(
     train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -200,6 +135,88 @@ def _create_uniform_label_distribution(
     return balanced_df
 
 
+def download_dataset(url: str, temp_path: Path) -> Path:
+    """Download the dataset.
+
+    Args:
+        url: URL to the tar.gz file.
+        temp_path: Path to the temporary directory.
+
+    Returns:
+        Path to the data directory.
+
+    Raises:
+        FileNotFoundError: If the train.jsonl file is not found in the extracted files.
+    """
+    tar_path = temp_path / "cinexio.tar.gz"
+    response = requests.get(url)
+    response.raise_for_status()
+    with open(tar_path, "wb") as f:
+        f.write(response.content)
+
+    with tarfile.open(tar_path, "r:gz") as tar:
+        tar.extractall(temp_path)
+
+    train_file = list(temp_path.glob("**/train.jsonl"))
+    if not train_file:
+        raise FileNotFoundError("Could not find train.jsonl in extracted files")
+
+    data_dir = train_file[0].parent
+    return data_dir
+
+
+def load_split(file_path: Path) -> pd.DataFrame:
+    """Load a JSONL file into a pandas DataFrame.
+
+    Args:
+        file_path: Path to the JSONL file.
+
+    Returns:
+        A DataFrame with the data.
+    """
+    data = []
+    with open(file_path, "r", encoding="utf-8") as f:
+        for line in f:
+            data.append(json.loads(line))
+
+    df = pd.DataFrame(data)
+    return df
+
+
+def process_split(df: pd.DataFrame) -> pd.DataFrame:
+    """Process a split of the dataset.
+
+    Args:
+        df: The dataframe to process.
+
+    Returns:
+        The processed dataframe.
+    """
+    df = _map_ratings_to_labels(df=df)
+    df = df.rename(columns={"Comment": "text"})
+    df = df.loc[["text", "label"]]
+    df = _filter_by_length(df=df)
+    df = df.drop_duplicates().reset_index(drop=True)
+    return df
+
+
+def _filter_by_length(df: pd.DataFrame) -> pd.DataFrame:
+    """Filter dataframe by text length.
+
+    Args:
+        df: The dataframe to filter.
+
+    Returns:
+        The filtered dataframe.
+    """
+    new_df = df.copy()
+    new_df["text_len"] = new_df["text"].str.len()
+    filtered_df = new_df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
+        "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
+    )
+    return filtered_df.drop(columns=["text_len"]).reset_index(drop=True)
+
+
 def _map_ratings_to_labels(df: pd.DataFrame) -> pd.DataFrame:
     """Map User_Rating to sentiment labels.
 
@@ -230,23 +247,6 @@ def _map_ratings_to_labels(df: pd.DataFrame) -> pd.DataFrame:
 
     df["label"] = df["User_Rating"].apply(rating_to_label)
     return df
-
-
-def _filter_by_length(df: pd.DataFrame) -> pd.DataFrame:
-    """Filter dataframe by text length.
-
-    Args:
-        df: The dataframe to filter.
-
-    Returns:
-        The filtered dataframe.
-    """
-    new_df = df.copy()
-    new_df["text_len"] = new_df["text"].str.len()
-    filtered_df = new_df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
-        "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
-    )
-    return filtered_df.drop(columns=["text_len"]).reset_index(drop=True)
 
 
 if __name__ == "__main__":

@@ -24,15 +24,10 @@ from pydantic import BaseModel, Field
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
 
+load_dotenv()
+
 CACHE_FILE = "llm_sent_cache.json"
-
-
-class Sentiment(BaseModel):
-    """Sentiment classification."""
-
-    sentiment: t.Literal["negative", "positive"] = Field(
-        description="The sentiment of the text, either 'negative' or 'positive'"
-    )
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 def load_cache() -> dict:
@@ -48,17 +43,15 @@ def load_cache() -> dict:
         return {}
 
 
-def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE."""
-    with open(CACHE_FILE, "w") as cache_file:
-        json.dump(cache, cache_file, indent=4)
-
-
 label_cache = load_cache()
 
-load_dotenv()
 
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+class Sentiment(BaseModel):
+    """Sentiment classification."""
+
+    sentiment: t.Literal["negative", "positive"] = Field(
+        description="The sentiment of the text, either 'negative' or 'positive'"
+    )
 
 
 def main() -> None:
@@ -185,6 +178,12 @@ def _classify_text(text: str) -> str:
     label_cache[text] = label
     save_cache(cache=label_cache)
     return label
+
+
+def save_cache(cache: dict) -> None:
+    """Save cache to CACHE_FILE."""
+    with open(CACHE_FILE, "w") as cache_file:
+        json.dump(cache, cache_file, indent=4)
 
 
 def _compare_labels(row: pd.Series) -> bool:

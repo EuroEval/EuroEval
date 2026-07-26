@@ -8,7 +8,6 @@
 # ]
 # ///
 
-
 """Create the Hungarian NER dataset SzegedNER and upload it to the HF Hub."""
 
 import ast
@@ -117,24 +116,6 @@ def download_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     return train_df, val_df, test_df
 
 
-def _process_df(df: pd.DataFrame, dataset_name: str) -> pd.DataFrame:
-    """Process the dataframe.
-
-    Args:
-        df: The dataframe.
-        dataset_name: The name of the dataset.
-
-    Returns:
-        The processed dataframe.
-    """
-    df["original-dataset"] = dataset_name
-
-    df = df.rename(columns={"ner": "labels"})
-    df["labels"] = df["labels"].apply(ast.literal_eval)
-    df["tokens"] = df["tokens"].apply(ast.literal_eval)
-    return df
-
-
 def _create_uniform_dataset_distribution(
     df: pd.DataFrame, random_state: int = 4242
 ) -> pd.DataFrame:
@@ -176,6 +157,24 @@ def _create_uniform_dataset_distribution(
     )
 
     return balanced_df
+
+
+def _process_df(df: pd.DataFrame, dataset_name: str) -> pd.DataFrame:
+    """Process the dataframe.
+
+    Args:
+        df: The dataframe.
+        dataset_name: The name of the dataset.
+
+    Returns:
+        The processed dataframe.
+    """
+    df["original-dataset"] = dataset_name
+
+    df = df.rename(columns={"ner": "labels"})
+    df["labels"] = df["labels"].apply(ast.literal_eval)
+    df["tokens"] = df["tokens"].apply(ast.literal_eval)
+    return df
 
 
 if __name__ == "__main__":

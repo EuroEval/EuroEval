@@ -87,37 +87,6 @@ def convert_to_dataframe(
     return train_df, val_df, test_df
 
 
-def process(df: pd.DataFrame) -> pd.DataFrame:
-    """Process the dataframe.
-
-    Args:
-        df:
-            The dataframe to process.
-
-    Returns:
-        The processed dataframe.
-    """
-    # Sanity check that the number of tokens and named entity tags are equal
-    assert all(
-        len(ner_tags) == len(tokens)
-        for ner_tags, tokens in zip(df["ner_tags"], df["tokens"])
-    ), "The length of `ner_tags` and `tokens` are not equal in each row."
-
-    # Rename `ner_tags` to `labels`
-    df.rename(columns={"ner_tags": "labels"}, inplace=True)
-
-    # Convert the NER tags from IDs to strings
-    df["labels"] = df["labels"].map(
-        lambda ner_tags: [NER_CONVERSION_DICT.get(ner_tag, "O") for ner_tag in ner_tags]
-    )
-
-    # Keep only tokens and labels columns
-    keep_columns = ["tokens", "labels"]
-    df = df.loc[keep_columns]
-
-    return df
-
-
 def make_splits(
     train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -160,6 +129,37 @@ def make_splits(
     assert isinstance(test_df_final, pd.DataFrame)
 
     return train_df_final, val_df_final, test_df_final
+
+
+def process(df: pd.DataFrame) -> pd.DataFrame:
+    """Process the dataframe.
+
+    Args:
+        df:
+            The dataframe to process.
+
+    Returns:
+        The processed dataframe.
+    """
+    # Sanity check that the number of tokens and named entity tags are equal
+    assert all(
+        len(ner_tags) == len(tokens)
+        for ner_tags, tokens in zip(df["ner_tags"], df["tokens"])
+    ), "The length of `ner_tags` and `tokens` are not equal in each row."
+
+    # Rename `ner_tags` to `labels`
+    df.rename(columns={"ner_tags": "labels"}, inplace=True)
+
+    # Convert the NER tags from IDs to strings
+    df["labels"] = df["labels"].map(
+        lambda ner_tags: [NER_CONVERSION_DICT.get(ner_tag, "O") for ner_tag in ner_tags]
+    )
+
+    # Keep only tokens and labels columns
+    keep_columns = ["tokens", "labels"]
+    df = df.loc[keep_columns]
+
+    return df
 
 
 if __name__ == "__main__":

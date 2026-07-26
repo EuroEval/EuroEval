@@ -32,9 +32,13 @@ from pydantic import BaseModel
 from tqdm.auto import tqdm
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
-logger = logging.getLogger("create_multinrc")
 
 load_dotenv()
+
+logger = logging.getLogger("create_multinrc")
+LABELS = ["a", "b", "c", "d"]
+
+LANGUAGE_SUBSET_MAPPING = {"es": "spanish", "fr": "french"}
 
 
 class CandidateAnswers(BaseModel):
@@ -43,11 +47,6 @@ class CandidateAnswers(BaseModel):
     first: str
     second: str
     third: str
-
-
-LABELS = ["a", "b", "c", "d"]
-
-LANGUAGE_SUBSET_MAPPING = {"es": "spanish", "fr": "french"}
 
 
 def main() -> None:

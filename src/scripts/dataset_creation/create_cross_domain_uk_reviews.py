@@ -71,22 +71,6 @@ def main() -> None:
     file_path.unlink(missing_ok=True)
 
 
-def download_file(url: str, file_path: Path) -> None:
-    """Download a file from a URL and save it to a specified location.
-
-    Args:
-        url: The URL of the file to download.
-        file_path: The path to the file to save the downloaded file to.
-    """
-    if file_path.exists():
-        return
-    response = requests.get(url)
-    response.raise_for_status()
-
-    with open(file_path, "wb") as file:
-        file.write(response.content)
-
-
 def create_uniform_label_distribution(
     df: pd.DataFrame, random_state: int = 4242
 ) -> pd.DataFrame:
@@ -121,6 +105,22 @@ def create_uniform_label_distribution(
     )
 
     return balanced_df
+
+
+def download_file(url: str, file_path: Path) -> None:
+    """Download a file from a URL and save it to a specified location.
+
+    Args:
+        url: The URL of the file to download.
+        file_path: The path to the file to save the downloaded file to.
+    """
+    if file_path.exists():
+        return
+    response = requests.get(url)
+    response.raise_for_status()
+
+    with open(file_path, "wb") as file:
+        file.write(response.content)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,6 @@
 # ]
 # ///
 
-
 """Create a Swedish knowledge dataset based on liu-nlp/swedish-facts-v1."""
 
 import json
@@ -33,10 +32,11 @@ from pydantic import BaseModel
 from tqdm.auto import tqdm
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
-logger = logging.getLogger("create_swedish_knowledge")
-
 
 load_dotenv()
+
+logger = logging.getLogger("create_swedish_knowledge")
+LABELS = ["a", "b", "c", "d"]
 
 
 class CandidateAnswers(BaseModel):
@@ -45,9 +45,6 @@ class CandidateAnswers(BaseModel):
     first: str
     second: str
     third: str
-
-
-LABELS = ["a", "b", "c", "d"]
 
 
 def main() -> None:

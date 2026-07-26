@@ -106,6 +106,54 @@ def main() -> None:
     delete_fullstack_repository(repo_path=repo_path)
 
 
+def clone_fullstack_repository(repo_name: str = "FullStack") -> Path:
+    """Clone the FullStack repository if it doesn't already exist.
+
+    Args:
+        repo_name:
+            Name of the directory to clone into.
+
+    Returns:
+        Path to the cloned repository.
+
+    Raises:
+        RuntimeError: If the repository cloning fails.
+    """
+    if not Path(repo_name).exists():
+        logger.info("Cloning FullStack repository...")
+        try:
+            subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    "https://github.com/LUMII-AILab/FullStack.git",
+                    repo_name,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            logger.info("Successfully cloned repository")
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"Failed to clone repository: {e.stderr}") from e
+
+    else:
+        logger.info(f"Repository '{repo_name}' already exists, using existing copy")
+
+    return Path(repo_name)
+
+
+def delete_fullstack_repository(repo_path: Path) -> None:
+    """Delete the FullStack repository.
+
+    Args:
+        repo_path:
+            Path to the FullStack repository.
+    """
+    if repo_path.exists():
+        shutil.rmtree(repo_path)
+
+
 def load_fullstack_data(repo_path: Path) -> list[dict[str, list[str] | str]]:
     """Load and parse all FullStack NER data from the specified repository path.
 
@@ -142,17 +190,6 @@ def load_fullstack_data(repo_path: Path) -> list[dict[str, list[str] | str]]:
         all_records.extend(records)
 
     return all_records
-
-
-def delete_fullstack_repository(repo_path: Path) -> None:
-    """Delete the FullStack repository.
-
-    Args:
-        repo_path:
-            Path to the FullStack repository.
-    """
-    if repo_path.exists():
-        shutil.rmtree(repo_path)
 
 
 def parse_conllu_data(raw_data: str) -> list[dict[str, list[str] | str]]:
@@ -214,43 +251,6 @@ def parse_conllu_data(raw_data: str) -> list[dict[str, list[str] | str]]:
         records.append(record)
 
     return records
-
-
-def clone_fullstack_repository(repo_name: str = "FullStack") -> Path:
-    """Clone the FullStack repository if it doesn't already exist.
-
-    Args:
-        repo_name:
-            Name of the directory to clone into.
-
-    Returns:
-        Path to the cloned repository.
-
-    Raises:
-        RuntimeError: If the repository cloning fails.
-    """
-    if not Path(repo_name).exists():
-        logger.info("Cloning FullStack repository...")
-        try:
-            subprocess.run(
-                [
-                    "git",
-                    "clone",
-                    "https://github.com/LUMII-AILab/FullStack.git",
-                    repo_name,
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            logger.info("Successfully cloned repository")
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to clone repository: {e.stderr}") from e
-
-    else:
-        logger.info(f"Repository '{repo_name}' already exists, using existing copy")
-
-    return Path(repo_name)
 
 
 if __name__ == "__main__":

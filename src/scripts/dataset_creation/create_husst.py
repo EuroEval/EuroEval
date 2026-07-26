@@ -77,22 +77,6 @@ def main() -> None:
     dataset_dict.push_to_hub(dataset_id, private=True)
 
 
-def process(df: pd.DataFrame) -> pd.DataFrame:
-    """Process the dataframe to ensure required columns and rename.
-
-    Args:
-        df: The input dataframe.
-
-    Returns:
-        A dataframe with the required columns and renamed.
-    """
-    renames = {"sentence": "text"}
-    df = df.rename(columns=renames)
-    keep_columns = ["text", "label"]
-    df = df.loc[keep_columns]
-    return df
-
-
 def create_uniform_label_distribution(
     df: pd.DataFrame, random_state: int = 4242
 ) -> pd.DataFrame:
@@ -122,6 +106,22 @@ def create_uniform_label_distribution(
     balanced_df = pd.concat(resampled_dfs, ignore_index=False)
 
     return balanced_df
+
+
+def process(df: pd.DataFrame) -> pd.DataFrame:
+    """Process the dataframe to ensure required columns and rename.
+
+    Args:
+        df: The input dataframe.
+
+    Returns:
+        A dataframe with the required columns and renamed.
+    """
+    renames = {"sentence": "text"}
+    df = df.rename(columns=renames)
+    keep_columns = ["text", "label"]
+    df = df.loc[keep_columns]
+    return df
 
 
 if __name__ == "__main__":

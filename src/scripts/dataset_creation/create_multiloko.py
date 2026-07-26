@@ -33,11 +33,12 @@ from pydantic import BaseModel
 from tqdm.auto import tqdm
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
+
 logging.getLogger("httpx").setLevel(logging.WARNING)
-logger = logging.getLogger("create_multiloko")
 
 load_dotenv()
 
+logger = logging.getLogger("create_multiloko")
 # Mapping from ISO 2-letter language codes to config names used by facebook/multiloko
 LANGUAGE_CONFIG_NAMES = {
     "nl": "Dutch",

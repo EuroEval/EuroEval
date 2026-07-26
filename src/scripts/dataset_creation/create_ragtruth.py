@@ -36,12 +36,20 @@ from lettucedetect.datasets.hallucination_dataset import (
     HallucinationSample,
 )
 
-# Language codes (removed euroeval dependency)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
+)
 
+logging.getLogger("httpx").setLevel(logging.CRITICAL)
+
+load_dotenv()
+
+# Language codes (removed euroeval dependency)
 # =============================================================================
 # Configuration constants
 # =============================================================================
-
 # RAGTruth data source
 SOURCE_INFO_URL = (
     "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/"
@@ -221,46 +229,14 @@ TRANSLATION_PROMPT_DATA2TXT = (
     "\n"
     "Output in {target_lang}:\n"
 )
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()],
-)
 logger = logging.getLogger("translator")
-logging.getLogger("httpx").setLevel(logging.CRITICAL)
-
-load_dotenv()
 
 
-class TranslationError(Exception):
-    """Exception raised for errors during translation."""
+class ClientConfig(t.TypedDict):
+    """Configuration for OpenAI client."""
 
-    pass
-
-
-class TruncatedTranslationError(TranslationError):
-    """Raised when the model's output hit the token cap and was truncated.
-
-    Treated as non-retryable: the affected sample is discarded rather than saved
-    with an incomplete translation (which would corrupt its hallucination spans).
-    """
-
-    pass
-
-
-class TagMismatchError(TranslationError):
-    """Raised when translated <HAL> tags don't align with the annotated spans.
-
-    The translation model sometimes invents extra ``<HAL>...</HAL>`` pairs or
-    drops annotated ones. When the number of translated tag pairs differs from
-    the number of annotated spans (or the opening/closing tags are unbalanced),
-    the span alignment is unreliable, so the sample is discarded rather than
-    saved with fabricated or missing hallucination spans — either of which would
-    corrupt the benchmark's gold labels.
-    """
-
-    pass
+    url: str
+    headers: dict[str, str]
 
 
 class RetryableTranslationError(Exception):
@@ -279,11 +255,34 @@ class RetryableTranslationError(Exception):
         self.retry_after = retry_after
 
 
-class ClientConfig(t.TypedDict):
-    """Configuration for OpenAI client."""
+class TranslationError(Exception):
+    """Exception raised for errors during translation."""
 
-    url: str
-    headers: dict[str, str]
+    pass
+
+
+class TagMismatchError(TranslationError):
+    """Raised when translated <HAL> tags don't align with the annotated spans.
+
+    The translation model sometimes invents extra ``<HAL>...</HAL>`` pairs or
+    drops annotated ones. When the number of translated tag pairs differs from
+    the number of annotated spans (or the opening/closing tags are unbalanced),
+    the span alignment is unreliable, so the sample is discarded rather than
+    saved with fabricated or missing hallucination spans — either of which would
+    corrupt the benchmark's gold labels.
+    """
+
+    pass
+
+
+class TruncatedTranslationError(TranslationError):
+    """Raised when the model's output hit the token cap and was truncated.
+
+    Treated as non-retryable: the affected sample is discarded rather than saved
+    with an incomplete translation (which would corrupt its hallucination spans).
+    """
+
+    pass
 
 
 def main() -> None:
@@ -394,45 +393,6 @@ def main() -> None:
         _report_token_estimate(total_source_samples=len(data.samples), model=model)
 
 
-def setup_logging(output_dir: Path) -> None:
-    """Set up logging to file in the output directory.
-
-    Args:
-        output_dir: Directory to save log file.
-    """
-    log_file = output_dir / "translation.log"
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setFormatter(
-        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    )
-    logger.addHandler(file_handler)
-
-
-def get_openai_client() -> ClientConfig:
-    """Get HTTP client configuration from environment variables.
-
-    Returns:
-        Dict with `url` and `headers` for chat completion requests.
-
-    Raises:
-        ValueError: If API key is not set.
-    """
-    api_key = os.getenv("OPENAI_API_KEY")
-    base_url = os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1"
-    if not api_key:
-        raise ValueError(
-            "OPENAI_API_KEY is not set. Export it in your shell or load it from .env "
-            "before running translation."
-        )
-    return {
-        "url": f"{base_url.rstrip('/')}/chat/completions",
-        "headers": {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-    }
-
-
 def _report_token_estimate(total_source_samples: int, model: str) -> None:
     """Log measured token usage and extrapolate it to the full dataset.
 
@@ -486,51 +446,6 @@ def _report_token_estimate(total_source_samples: int, model: str) -> None:
     else:
         logger.info(f"  (no pricing configured for model '{model}'; cost omitted)")
     logger.info("=" * 60)
-
-
-def load_ragtruth_data() -> HallucinationData:
-    """Download and join RAGTruth dataset from GitHub.
-
-    Returns:
-        HallucinationData with joined samples.
-    """
-    source_info_list = download_jsonl(SOURCE_INFO_URL)
-    response_list = download_jsonl(RESPONSE_URL)
-
-    logger.info(f"Downloaded {len(source_info_list)} source records")
-    logger.info(f"Downloaded {len(response_list)} response records")
-
-    source_lookup: dict[str, dict[str, t.Any]] = {
-        src["source_id"]: src for src in source_info_list
-    }
-
-    samples: list[HallucinationSample] = []
-    for resp in response_list:
-        source_id = resp.get("source_id")
-        if source_id not in source_lookup:
-            logger.warning(f"No source info for response {resp.get('id')}")
-            continue
-
-        src = source_lookup[source_id]
-        labels = [
-            {"start": lbl["start"], "end": lbl["end"], "label": lbl["label_type"]}
-            for lbl in resp.get("labels", [])
-        ]
-
-        samples.append(
-            HallucinationSample(
-                prompt=src.get("prompt", ""),
-                answer=resp.get("response", ""),
-                labels=labels,
-                split=resp.get("split", "train"),
-                task_type=src.get("task_type", "unknown"),
-                dataset="ragtruth",
-                language="en",
-            )
-        )
-
-    logger.info(f"Created {len(samples)} samples from RAGTruth dataset")
-    return HallucinationData(samples=samples)
 
 
 def _translate_to_language(
@@ -736,95 +651,6 @@ def _push_if_no_samples(translated_data: HallucinationData, target_lang: str) ->
         )
 
 
-def load_check_existing_data(output_file: Path) -> tuple[HallucinationData, int | None]:
-    """Load existing data or create new data.
-
-    Args:
-        output_file: Path to the output file.
-
-    Returns:
-        Tuple of (HallucinationData, last_processed_index). last_processed_index
-        is None if the file doesn't exist or has no metadata.
-    """
-    if output_file.exists():
-        try:
-            saved = json.loads(output_file.read_text())
-            # save_progress writes {"samples": [...], "_metadata": {...}}, but
-            # HallucinationData.from_json expects the bare list of samples. Also
-            # tolerate an older bare-list format.
-            last_processed_index = None
-            if isinstance(saved, dict):
-                metadata = saved.get("_metadata") or {}
-                last_processed_index = metadata.get("last_processed_index")
-                samples_json = saved.get("samples", [])
-            else:
-                samples_json = saved
-            return HallucinationData.from_json(samples_json), last_processed_index
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.error(
-                f"Error loading existing data: {e!s}. Starting with empty dataset."
-            )
-            return HallucinationData(samples=[]), None
-    else:
-        return HallucinationData(samples=[]), None
-
-
-def push_translated_data_to_hub(
-    translated_data: HallucinationData, repo_id: str, config_name: str, private: bool
-) -> None:
-    """Push translated hallucination data to Hugging Face Hub.
-
-    Args:
-        translated_data: Translated samples to push.
-        repo_id: Target Hugging Face dataset repo id.
-        config_name: Dataset config/subset name (typically language code).
-        private: Whether to keep dataset private on Hub.
-    """
-    if not translated_data.samples:
-        logger.warning("No translated samples available; skipping Hub upload.")
-        return
-
-    rows = [
-        {
-            "prompt": sample.prompt,
-            "answer": sample.answer,
-            "labels": sample.labels,
-            "split": sample.split,
-            "task_type": sample.task_type,
-            "dataset": sample.dataset,
-            "language": sample.language,
-        }
-        for sample in translated_data.samples
-    ]
-
-    dataset = Dataset.from_list(rows)
-    dataset.push_to_hub(repo_id=repo_id, config_name=config_name, private=private)
-    logger.info(
-        "Pushed translated dataset to hub: %s (config=%s)", repo_id, config_name
-    )
-
-
-def download_jsonl(url: str) -> list[dict[str, t.Any]]:
-    """Download a JSONL file from a URL with streaming to reduce memory usage.
-
-    Args:
-        url: URL to the JSONL file.
-
-    Returns:
-        List of parsed JSON objects from each line.
-    """
-    logger.info(f"Downloading {url}...")
-    with httpx.Client(timeout=300.0) as client:
-        with client.stream("GET", url) as response:
-            response.raise_for_status()
-            lines = []
-            for line in response.iter_lines():
-                line = line.strip()
-                if line:
-                    lines.append(json.loads(line))
-            return lines
-
-
 def push_test_subset_to_hub(
     translated_data: HallucinationData,
     repo_id: str,
@@ -909,21 +735,72 @@ def push_test_subset_to_hub(
         )
 
 
-def _log_translation_progress(current_count: int, total: int, elapsed: float) -> None:
-    """Log translation progress.
+def push_translated_data_to_hub(
+    translated_data: HallucinationData, repo_id: str, config_name: str, private: bool
+) -> None:
+    """Push translated hallucination data to Hugging Face Hub.
 
     Args:
-        current_count:
-            Number of samples processed so far.
-        total:
-            Total number of samples.
-        elapsed:
-            Elapsed time in seconds.
+        translated_data: Translated samples to push.
+        repo_id: Target Hugging Face dataset repo id.
+        config_name: Dataset config/subset name (typically language code).
+        private: Whether to keep dataset private on Hub.
     """
-    samples_per_sec = current_count / elapsed if elapsed > 0 else 0
+    if not translated_data.samples:
+        logger.warning("No translated samples available; skipping Hub upload.")
+        return
+
+    rows = [
+        {
+            "prompt": sample.prompt,
+            "answer": sample.answer,
+            "labels": sample.labels,
+            "split": sample.split,
+            "task_type": sample.task_type,
+            "dataset": sample.dataset,
+            "language": sample.language,
+        }
+        for sample in translated_data.samples
+    ]
+
+    dataset = Dataset.from_list(rows)
+    dataset.push_to_hub(repo_id=repo_id, config_name=config_name, private=private)
     logger.info(
-        f"Processed {current_count}/{total} samples ({samples_per_sec:.2f} samples/sec)"
+        "Pushed translated dataset to hub: %s (config=%s)", repo_id, config_name
     )
+
+
+def load_check_existing_data(output_file: Path) -> tuple[HallucinationData, int | None]:
+    """Load existing data or create new data.
+
+    Args:
+        output_file: Path to the output file.
+
+    Returns:
+        Tuple of (HallucinationData, last_processed_index). last_processed_index
+        is None if the file doesn't exist or has no metadata.
+    """
+    if output_file.exists():
+        try:
+            saved = json.loads(output_file.read_text())
+            # save_progress writes {"samples": [...], "_metadata": {...}}, but
+            # HallucinationData.from_json expects the bare list of samples. Also
+            # tolerate an older bare-list format.
+            last_processed_index = None
+            if isinstance(saved, dict):
+                metadata = saved.get("_metadata") or {}
+                last_processed_index = metadata.get("last_processed_index")
+                samples_json = saved.get("samples", [])
+            else:
+                samples_json = saved
+            return HallucinationData.from_json(samples_json), last_processed_index
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(
+                f"Error loading existing data: {e!s}. Starting with empty dataset."
+            )
+            return HallucinationData(samples=[]), None
+    else:
+        return HallucinationData(samples=[]), None
 
 
 async def run_translation(
@@ -1031,6 +908,43 @@ async def run_translation(
             target_lang=target_lang,
             last_processed_index=last_processed_index,
         )
+
+
+def _log_translation_progress(current_count: int, total: int, elapsed: float) -> None:
+    """Log translation progress.
+
+    Args:
+        current_count:
+            Number of samples processed so far.
+        total:
+            Total number of samples.
+        elapsed:
+            Elapsed time in seconds.
+    """
+    samples_per_sec = current_count / elapsed if elapsed > 0 else 0
+    logger.info(
+        f"Processed {current_count}/{total} samples ({samples_per_sec:.2f} samples/sec)"
+    )
+
+
+def _setup_http_client(
+    max_workers: int,
+) -> tuple[httpx.Limits, httpx.Timeout, asyncio.Semaphore]:
+    """Set up HTTP client configuration.
+
+    Args:
+        max_workers:
+            Maximum number of concurrent workers.
+
+    Returns:
+        Tuple of (limits, timeout, semaphore).
+    """
+    limits = httpx.Limits(
+        max_connections=max_workers * 2, max_keepalive_connections=max_workers
+    )
+    timeout = httpx.Timeout(60.0)
+    semaphore = asyncio.Semaphore(max_workers)
+    return limits, timeout, semaphore
 
 
 async def process_batch(
@@ -1214,129 +1128,6 @@ async def translate_sample(
         return None
 
 
-def put_hallucination_tags(
-    sample: HallucinationSample, answer: str
-) -> tuple[str, list[dict[str, t.Any]]]:
-    """Add hallucination tags to the text.
-
-    Args:
-        sample: Sample containing labels.
-        answer: Text to add tags to.
-
-    Returns:
-        Tuple of (tagged text, merged labels).
-    """
-    # Skip the process if there are no labels
-    if not sample.labels:
-        return answer, []
-
-    labels = merge_overlapping_spans(sample.labels)
-    labels = sorted(labels, key=lambda x: (x["end"], x["start"]), reverse=True)
-    tagged_answer = answer
-
-    for label in labels:
-        start, end = label["start"], label["end"]
-        if start < 0 or end > len(tagged_answer) or start >= end:
-            logger.warning(
-                f"Invalid span: {start}-{end} for text of length "
-                f"{len(tagged_answer)}. Skipping."
-            )
-            continue
-
-        tagged_answer = tagged_answer[:end] + "</HAL>" + tagged_answer[end:]
-        tagged_answer = tagged_answer[:start] + "<HAL>" + tagged_answer[start:]
-
-    return tagged_answer, labels
-
-
-def save_progress(
-    translated_data: HallucinationData,
-    output_file: Path,
-    target_lang: str,
-    last_processed_index: int | None = None,
-) -> None:
-    """Save progress to file with backup handling.
-
-    Uses global configuration constants for dataset name and output directory.
-
-    Args:
-        translated_data:
-            Data to save.
-        output_file:
-            Primary output file.
-        target_lang:
-            Target language for backup file.
-        last_processed_index:
-            Index of last processed source sample (for caching).
-    """
-    # Wrap samples in dict structure expected by from_json
-    data_dict: dict[str, t.Any] = {"samples": translated_data.to_json()}
-    if last_processed_index is not None:
-        data_dict["_metadata"] = {"last_processed_index": last_processed_index}
-    try:
-        output_file.write_text(json.dumps(data_dict))
-    except Exception as e:
-        logger.error(f"Error saving progress: {e!s}")
-
-        # Try to save to a backup file
-        backup_file = (
-            OUTPUT_DIR
-            / f"{DATASET_NAME}_data_{target_lang}_backup_{int(time.time())}.json"
-        )
-        try:
-            backup_file.write_text(json.dumps(data_dict))
-            logger.info(f"Saved backup to {backup_file}")
-        except Exception as e2:
-            logger.error(f"Error saving backup: {e2!s}")
-
-
-def _setup_http_client(
-    max_workers: int,
-) -> tuple[httpx.Limits, httpx.Timeout, asyncio.Semaphore]:
-    """Set up HTTP client configuration.
-
-    Args:
-        max_workers:
-            Maximum number of concurrent workers.
-
-    Returns:
-        Tuple of (limits, timeout, semaphore).
-    """
-    limits = httpx.Limits(
-        max_connections=max_workers * 2, max_keepalive_connections=max_workers
-    )
-    timeout = httpx.Timeout(60.0)
-    semaphore = asyncio.Semaphore(max_workers)
-    return limits, timeout, semaphore
-
-
-def merge_overlapping_spans(labels: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
-    """Merge overlapping hallucination spans into a single span.
-
-    Args:
-        labels: List of label spans to merge.
-
-    Returns:
-        List of merged spans.
-    """
-    if not labels:
-        return []
-
-    labels_copy = sorted(labels, key=lambda x: x["start"])
-    new_labels = []
-    current_span = labels_copy[0].copy()
-
-    for span in labels_copy[1:]:
-        if span["start"] <= current_span["end"]:
-            current_span["end"] = max(current_span["end"], span["end"])
-        else:
-            new_labels.append(current_span)
-            current_span = span.copy()
-
-    new_labels.append(current_span)
-    return new_labels
-
-
 def find_hallucination_tags(
     text: str, labels: list[dict[str, t.Any]], sample_index: int
 ) -> tuple[list[tuple[int, int, str]], str]:
@@ -1404,6 +1195,120 @@ def find_hallucination_tags(
 
     # Return text with tags preserved
     return hal_spans, text
+
+
+def normalize_hallucination_tags(text: str) -> str:
+    """Repair malformed <HAL>/</HAL> tags emitted by the translation model.
+
+    The model occasionally duplicates, nests or glues tags together (e.g.
+    ``<HAL<HAL>>``, ``<HAL<HAL<HAL>>>``, ``<HAL><HAL>`` or ``</HAL></HAL>``).
+    This flattens any such structure to a single, well-formed, non-nested level
+    of tags: glued/nested tags are first un-glued into standalone tokens, then a
+    left-to-right scan keeps only the outermost ``<HAL>`` and its matching
+    ``</HAL>``, drops stray unbalanced tags, and closes any tag left open at the
+    end so the spans are always balanced.
+
+    Args:
+        text:
+            Translated text that may contain malformed <HAL>/</HAL> tags.
+
+    Returns:
+        Text with well-formed, non-nested, balanced <HAL>...</HAL> tags.
+    """
+    # Collapse glued/nested tag markers into a single canonical token. The model
+    # writes nested openings as "<HAL" repeated k times followed by k ">", e.g.
+    # "<HAL<HAL>>" or "<HAL<HAL<HAL>>>"; likewise for closings. A single regex
+    # pass handles arbitrary depth because the whole run is matched at once.
+    text = re.sub(r"(?:<HAL)+>+", "<HAL>", text)
+    text = re.sub(r"(?:</HAL)+>+", "</HAL>", text)
+
+    # Scan tokens, flattening nesting to a single level and dropping stray tags.
+    result: list[str] = []
+    depth = 0
+    pos = 0
+    for match in re.finditer(r"<HAL>|</HAL>", text):
+        result.append(text[pos : match.start()])
+        pos = match.end()
+        if match.group() == "<HAL>":
+            if depth == 0:
+                result.append("<HAL>")
+            depth += 1
+        else:  # "</HAL>"
+            if depth > 0:
+                depth -= 1
+                if depth == 0:
+                    result.append("</HAL>")
+            # A stray closing tag with no matching opening is dropped.
+    result.append(text[pos:])
+    normalized = "".join(result)
+
+    # Close any tag left open at the end so spans stay balanced.
+    if depth > 0:
+        normalized = normalized.rstrip() + "</HAL>"
+
+    return normalized
+
+
+def put_hallucination_tags(
+    sample: HallucinationSample, answer: str
+) -> tuple[str, list[dict[str, t.Any]]]:
+    """Add hallucination tags to the text.
+
+    Args:
+        sample: Sample containing labels.
+        answer: Text to add tags to.
+
+    Returns:
+        Tuple of (tagged text, merged labels).
+    """
+    # Skip the process if there are no labels
+    if not sample.labels:
+        return answer, []
+
+    labels = merge_overlapping_spans(sample.labels)
+    labels = sorted(labels, key=lambda x: (x["end"], x["start"]), reverse=True)
+    tagged_answer = answer
+
+    for label in labels:
+        start, end = label["start"], label["end"]
+        if start < 0 or end > len(tagged_answer) or start >= end:
+            logger.warning(
+                f"Invalid span: {start}-{end} for text of length "
+                f"{len(tagged_answer)}. Skipping."
+            )
+            continue
+
+        tagged_answer = tagged_answer[:end] + "</HAL>" + tagged_answer[end:]
+        tagged_answer = tagged_answer[:start] + "<HAL>" + tagged_answer[start:]
+
+    return tagged_answer, labels
+
+
+def merge_overlapping_spans(labels: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
+    """Merge overlapping hallucination spans into a single span.
+
+    Args:
+        labels: List of label spans to merge.
+
+    Returns:
+        List of merged spans.
+    """
+    if not labels:
+        return []
+
+    labels_copy = sorted(labels, key=lambda x: x["start"])
+    new_labels = []
+    current_span = labels_copy[0].copy()
+
+    for span in labels_copy[1:]:
+        if span["start"] <= current_span["end"]:
+            current_span["end"] = max(current_span["end"], span["end"])
+        else:
+            new_labels.append(current_span)
+            current_span = span.copy()
+
+    new_labels.append(current_span)
+    return new_labels
 
 
 async def translate_text(
@@ -1571,56 +1476,150 @@ async def translate_text(
     )
 
 
-def normalize_hallucination_tags(text: str) -> str:
-    """Repair malformed <HAL>/</HAL> tags emitted by the translation model.
+def save_progress(
+    translated_data: HallucinationData,
+    output_file: Path,
+    target_lang: str,
+    last_processed_index: int | None = None,
+) -> None:
+    """Save progress to file with backup handling.
 
-    The model occasionally duplicates, nests or glues tags together (e.g.
-    ``<HAL<HAL>>``, ``<HAL<HAL<HAL>>>``, ``<HAL><HAL>`` or ``</HAL></HAL>``).
-    This flattens any such structure to a single, well-formed, non-nested level
-    of tags: glued/nested tags are first un-glued into standalone tokens, then a
-    left-to-right scan keeps only the outermost ``<HAL>`` and its matching
-    ``</HAL>``, drops stray unbalanced tags, and closes any tag left open at the
-    end so the spans are always balanced.
+    Uses global configuration constants for dataset name and output directory.
 
     Args:
-        text:
-            Translated text that may contain malformed <HAL>/</HAL> tags.
+        translated_data:
+            Data to save.
+        output_file:
+            Primary output file.
+        target_lang:
+            Target language for backup file.
+        last_processed_index:
+            Index of last processed source sample (for caching).
+    """
+    # Wrap samples in dict structure expected by from_json
+    data_dict: dict[str, t.Any] = {"samples": translated_data.to_json()}
+    if last_processed_index is not None:
+        data_dict["_metadata"] = {"last_processed_index": last_processed_index}
+    try:
+        output_file.write_text(json.dumps(data_dict))
+    except Exception as e:
+        logger.error(f"Error saving progress: {e!s}")
+
+        # Try to save to a backup file
+        backup_file = (
+            OUTPUT_DIR
+            / f"{DATASET_NAME}_data_{target_lang}_backup_{int(time.time())}.json"
+        )
+        try:
+            backup_file.write_text(json.dumps(data_dict))
+            logger.info(f"Saved backup to {backup_file}")
+        except Exception as e2:
+            logger.error(f"Error saving backup: {e2!s}")
+
+
+def get_openai_client() -> ClientConfig:
+    """Get HTTP client configuration from environment variables.
 
     Returns:
-        Text with well-formed, non-nested, balanced <HAL>...</HAL> tags.
+        Dict with `url` and `headers` for chat completion requests.
+
+    Raises:
+        ValueError: If API key is not set.
     """
-    # Collapse glued/nested tag markers into a single canonical token. The model
-    # writes nested openings as "<HAL" repeated k times followed by k ">", e.g.
-    # "<HAL<HAL>>" or "<HAL<HAL<HAL>>>"; likewise for closings. A single regex
-    # pass handles arbitrary depth because the whole run is matched at once.
-    text = re.sub(r"(?:<HAL)+>+", "<HAL>", text)
-    text = re.sub(r"(?:</HAL)+>+", "</HAL>", text)
+    api_key = os.getenv("OPENAI_API_KEY")
+    base_url = os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1"
+    if not api_key:
+        raise ValueError(
+            "OPENAI_API_KEY is not set. Export it in your shell or load it from .env "
+            "before running translation."
+        )
+    return {
+        "url": f"{base_url.rstrip('/')}/chat/completions",
+        "headers": {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+    }
 
-    # Scan tokens, flattening nesting to a single level and dropping stray tags.
-    result: list[str] = []
-    depth = 0
-    pos = 0
-    for match in re.finditer(r"<HAL>|</HAL>", text):
-        result.append(text[pos : match.start()])
-        pos = match.end()
-        if match.group() == "<HAL>":
-            if depth == 0:
-                result.append("<HAL>")
-            depth += 1
-        else:  # "</HAL>"
-            if depth > 0:
-                depth -= 1
-                if depth == 0:
-                    result.append("</HAL>")
-            # A stray closing tag with no matching opening is dropped.
-    result.append(text[pos:])
-    normalized = "".join(result)
 
-    # Close any tag left open at the end so spans stay balanced.
-    if depth > 0:
-        normalized = normalized.rstrip() + "</HAL>"
+def load_ragtruth_data() -> HallucinationData:
+    """Download and join RAGTruth dataset from GitHub.
 
-    return normalized
+    Returns:
+        HallucinationData with joined samples.
+    """
+    source_info_list = download_jsonl(SOURCE_INFO_URL)
+    response_list = download_jsonl(RESPONSE_URL)
+
+    logger.info(f"Downloaded {len(source_info_list)} source records")
+    logger.info(f"Downloaded {len(response_list)} response records")
+
+    source_lookup: dict[str, dict[str, t.Any]] = {
+        src["source_id"]: src for src in source_info_list
+    }
+
+    samples: list[HallucinationSample] = []
+    for resp in response_list:
+        source_id = resp.get("source_id")
+        if source_id not in source_lookup:
+            logger.warning(f"No source info for response {resp.get('id')}")
+            continue
+
+        src = source_lookup[source_id]
+        labels = [
+            {"start": lbl["start"], "end": lbl["end"], "label": lbl["label_type"]}
+            for lbl in resp.get("labels", [])
+        ]
+
+        samples.append(
+            HallucinationSample(
+                prompt=src.get("prompt", ""),
+                answer=resp.get("response", ""),
+                labels=labels,
+                split=resp.get("split", "train"),
+                task_type=src.get("task_type", "unknown"),
+                dataset="ragtruth",
+                language="en",
+            )
+        )
+
+    logger.info(f"Created {len(samples)} samples from RAGTruth dataset")
+    return HallucinationData(samples=samples)
+
+
+def download_jsonl(url: str) -> list[dict[str, t.Any]]:
+    """Download a JSONL file from a URL with streaming to reduce memory usage.
+
+    Args:
+        url: URL to the JSONL file.
+
+    Returns:
+        List of parsed JSON objects from each line.
+    """
+    logger.info(f"Downloading {url}...")
+    with httpx.Client(timeout=300.0) as client:
+        with client.stream("GET", url) as response:
+            response.raise_for_status()
+            lines = []
+            for line in response.iter_lines():
+                line = line.strip()
+                if line:
+                    lines.append(json.loads(line))
+            return lines
+
+
+def setup_logging(output_dir: Path) -> None:
+    """Set up logging to file in the output directory.
+
+    Args:
+        output_dir: Directory to save log file.
+    """
+    log_file = output_dir / "translation.log"
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
+    logger.addHandler(file_handler)
 
 
 if __name__ == "__main__":

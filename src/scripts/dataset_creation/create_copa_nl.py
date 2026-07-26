@@ -7,7 +7,6 @@
 # ]
 # ///
 
-
 """Create a Dutch common sense reasoning dataset based on the English COPA."""
 
 import io

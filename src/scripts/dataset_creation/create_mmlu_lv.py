@@ -151,6 +151,26 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
+def download_subject_data(subject_info: dict[str, str]) -> list[dict[str, t.Any]]:
+    """Download and parse data for a specific MMLU subject.
+
+    Args:
+        subject_info: Dictionary with subject name and download URL
+
+    Returns:
+        List of question dictionaries
+    """
+    response = requests.get(subject_info["download_url"])
+    response.raise_for_status()
+    data = response.json()
+
+    # Add subject category to each question
+    for item in data:
+        item["category"] = subject_info["name"]
+
+    return data
+
+
 def get_mmlu_subjects_from_github() -> list[dict[str, str]]:
     """Get all MMLU subject files from the VTI-Data repository.
 
@@ -181,24 +201,19 @@ def get_mmlu_subjects_from_github() -> list[dict[str, str]]:
     return sorted(json_files, key=lambda x: x["name"])
 
 
-def download_subject_data(subject_info: dict[str, str]) -> list[dict[str, t.Any]]:
-    """Download and parse data for a specific MMLU subject.
+def is_repetitive(text: str) -> bool:
+    """Return True if the text is repetitive.
 
     Args:
-        subject_info: Dictionary with subject name and download URL
+        text (str): The text to check.
 
     Returns:
-        List of question dictionaries
+        bool: True if the text is repetitive, False otherwise.
     """
-    response = requests.get(subject_info["download_url"])
-    response.raise_for_status()
-    data = response.json()
-
-    # Add subject category to each question
-    for item in data:
-        item["category"] = subject_info["name"]
-
-    return data
+    if not isinstance(text, str):
+        return False
+    max_repetitions = max(Counter(text.split()).values()) if text.split() else 0
+    return max_repetitions > MAX_REPETITIONS
 
 
 def process_mmlu_data(data: list[dict[str, t.Any]]) -> pd.DataFrame:
@@ -249,21 +264,6 @@ def process_mmlu_data(data: list[dict[str, t.Any]]) -> pd.DataFrame:
         processed_data.append(processed_item)
 
     return pd.DataFrame(processed_data)
-
-
-def is_repetitive(text: str) -> bool:
-    """Return True if the text is repetitive.
-
-    Args:
-        text (str): The text to check.
-
-    Returns:
-        bool: True if the text is repetitive, False otherwise.
-    """
-    if not isinstance(text, str):
-        return False
-    max_repetitions = max(Counter(text.split()).values()) if text.split() else 0
-    return max_repetitions > MAX_REPETITIONS
 
 
 if __name__ == "__main__":

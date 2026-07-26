@@ -205,41 +205,125 @@ def main() -> None:
             dataset.push_to_hub(dataset_id, private=True)
 
 
-def join_tokens(tokens: list[str]) -> str:
-    """Joins a list of tokens into a string.
+def make_splits(
+    df: pd.DataFrame, train_size: int, val_size: int, test_size: int
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Make the splits.
+
+    Args:
+        df:
+            The dataframe to make the splits from.
+        train_size:
+            The size of the training split.
+        val_size:
+            The size of the validation split.
+        test_size:
+            The size of the test split.
+
+    Returns:
+        The train, validation, test, and full training splits.
+    """
+    val_df = df.sample(n=val_size, random_state=4242)
+    df_filtered = df[~df.index.isin(val_df.index)]
+    test_df = df_filtered.sample(n=test_size, random_state=4242)
+    full_train_df = df_filtered[~df_filtered.index.isin(test_df.index)]
+    assert isinstance(full_train_df, pd.DataFrame)
+    train_df = full_train_df.sample(n=train_size, random_state=4242)
+    return train_df, val_df, test_df, full_train_df
+
+
+def prepare_df(df: pd.DataFrame, split: str) -> Dataset:
+    """Prepare a dataframe by adding an equal number of corruptions to it.
+
+    Args:
+        df:
+            The dataframe to prepare.
+        split:
+            The split to prepare the dataframe for.
+
+    Returns:
+        The prepared dataset.
+    """
+    # Reset the index of the dataframe
+    df.reset_index(drop=True, inplace=True)
+
+    # Get the corrupted strings
+    corrupted_list = [
+        corrupt(tokens=tokens, pos_tags=pos_tags, num_corruptions=1)[0]
+        for tokens, pos_tags in zip(df.tokens, df.pos_tags)
+    ]
+
+    # Add the corrupted strings to the dataframe
+    with warnings.catch_warnings():
+        df["corrupted"] = [tup[0] for tup in corrupted_list]
+        df["corruption_type"] = [tup[1] for tup in corrupted_list]
+
+    # Restructure the dataframe to have columns `text`, `corruption_type` and `label`,
+    # with one sample per row
+    df = pd.concat(
+        [
+            pd.DataFrame(
+                dict(
+                    text=df.tokens.map(join_tokens).tolist(),
+                    corruption_type=[None for _ in range(len(df))],
+                    label=["correct" for _ in range(len(df))],
+                )
+            ),
+            pd.DataFrame(
+                dict(
+                    text=df.corrupted.explode().tolist(),
+                    corruption_type=df.corruption_type.explode().tolist(),
+                    label=["incorrect" for _ in range(len(df))],
+                )
+            ),
+        ]
+    )
+
+    # Shuffle the dataframe
+    df = df.sample(frac=1.0, random_state=4242).reset_index(drop=True)
+
+    # Convert the dataframe to a Hugging Face Dataset and return it. The
+    # ``datasets`` stubs type the ``split`` argument too narrowly; arbitrary
+    # split names are accepted at runtime, hence the false positive.
+    return Dataset.from_pandas(df, split=split)  # ty: ignore[invalid-argument-type]
+
+
+def corrupt(
+    tokens: list[str], pos_tags: list[str], num_corruptions: int = 1
+) -> list[tuple[str, str]]:
+    """Corrupt a list of tokens.
+
+    This randomly either flips two neighbouring tokens or deletes a random token.
 
     Args:
         tokens:
-            The list of tokens to join.
+            The list of tokens to corrupt.
+        pos_tags:
+            The list of POS tags for the tokens.
+        num_corruptions:
+            The number of corruptions to perform. Defaults to 1.
 
     Returns:
-        The joined string.
+        The list of (corrupted_string, corruption_type)
     """
-    # Form document
-    doc = " ".join(tokens)
+    # Define the list of corruptions
+    corruptions: list[tuple[str, str]] = list()
 
-    # Remove whitespace around punctuation
-    doc = (
-        doc.replace(" .", ".")
-        .replace(" ,", ",")
-        .replace(" ;", ";")
-        .replace(" :", ":")
-        .replace("( ", "(")
-        .replace(" )", ")")
-        .replace("[ ", "[")
-        .replace(" ]", "]")
-        .replace("{ ", "{")
-        .replace(" }", "}")
-        .replace(" ?", "?")
-        .replace(" !", "!")
-    )
+    # Continue until we have achieved the desired number of corruptions
+    while len(corruptions) < num_corruptions:
+        # Choose which corruption to perform, at random
+        corruption_fn = random.choice([flip_neighbours, delete])
 
-    # Remove whitespace around quotes
-    if doc.count('"') % 2 == 0:
-        doc = re.sub('" ([^"]*) "', '"\\1"', doc)
+        # Corrupt the tokens
+        corruption = corruption_fn(tokens, pos_tags)
 
-    # Return the document
-    return doc
+        # If the corruption succeeded, and that we haven't already performed the same
+        # corruption, then add the corruption to the list of corruptions
+        if corruption not in corruptions and corruption is not None:
+            corruptions.append((corruption, corruption_fn.__name__))
+
+    # Return the list of corruptions
+    return corruptions
 
 
 def delete(tokens: list[str], pos_tags: list[str]) -> str | None:
@@ -294,6 +378,43 @@ def delete(tokens: list[str], pos_tags: list[str]) -> str | None:
 
     # Join up the new tokens and return the string
     return join_tokens(new_tokens)
+
+
+def join_tokens(tokens: list[str]) -> str:
+    """Joins a list of tokens into a string.
+
+    Args:
+        tokens:
+            The list of tokens to join.
+
+    Returns:
+        The joined string.
+    """
+    # Form document
+    doc = " ".join(tokens)
+
+    # Remove whitespace around punctuation
+    doc = (
+        doc.replace(" .", ".")
+        .replace(" ,", ",")
+        .replace(" ;", ";")
+        .replace(" :", ":")
+        .replace("( ", "(")
+        .replace(" )", ")")
+        .replace("[ ", "[")
+        .replace(" ]", "]")
+        .replace("{ ", "{")
+        .replace(" }", "}")
+        .replace(" ?", "?")
+        .replace(" !", "!")
+    )
+
+    # Remove whitespace around quotes
+    if doc.count('"') % 2 == 0:
+        doc = re.sub('" ([^"]*) "', '"\\1"', doc)
+
+    # Return the document
+    return doc
 
 
 def flip_neighbours(tokens: list[str], pos_tags: list[str]) -> str | None:
@@ -370,127 +491,6 @@ def flip_neighbours(tokens: list[str], pos_tags: list[str]) -> str | None:
 
     # Join up the new tokens and return the string
     return join_tokens(new_tokens)
-
-
-def corrupt(
-    tokens: list[str], pos_tags: list[str], num_corruptions: int = 1
-) -> list[tuple[str, str]]:
-    """Corrupt a list of tokens.
-
-    This randomly either flips two neighbouring tokens or deletes a random token.
-
-    Args:
-        tokens:
-            The list of tokens to corrupt.
-        pos_tags:
-            The list of POS tags for the tokens.
-        num_corruptions:
-            The number of corruptions to perform. Defaults to 1.
-
-    Returns:
-        The list of (corrupted_string, corruption_type)
-    """
-    # Define the list of corruptions
-    corruptions: list[tuple[str, str]] = list()
-
-    # Continue until we have achieved the desired number of corruptions
-    while len(corruptions) < num_corruptions:
-        # Choose which corruption to perform, at random
-        corruption_fn = random.choice([flip_neighbours, delete])
-
-        # Corrupt the tokens
-        corruption = corruption_fn(tokens, pos_tags)
-
-        # If the corruption succeeded, and that we haven't already performed the same
-        # corruption, then add the corruption to the list of corruptions
-        if corruption not in corruptions and corruption is not None:
-            corruptions.append((corruption, corruption_fn.__name__))
-
-    # Return the list of corruptions
-    return corruptions
-
-
-def prepare_df(df: pd.DataFrame, split: str) -> Dataset:
-    """Prepare a dataframe by adding an equal number of corruptions to it.
-
-    Args:
-        df:
-            The dataframe to prepare.
-        split:
-            The split to prepare the dataframe for.
-
-    Returns:
-        The prepared dataset.
-    """
-    # Reset the index of the dataframe
-    df.reset_index(drop=True, inplace=True)
-
-    # Get the corrupted strings
-    corrupted_list = [
-        corrupt(tokens=tokens, pos_tags=pos_tags, num_corruptions=1)[0]
-        for tokens, pos_tags in zip(df.tokens, df.pos_tags)
-    ]
-
-    # Add the corrupted strings to the dataframe
-    with warnings.catch_warnings():
-        df["corrupted"] = [tup[0] for tup in corrupted_list]
-        df["corruption_type"] = [tup[1] for tup in corrupted_list]
-
-    # Restructure the dataframe to have columns `text`, `corruption_type` and `label`,
-    # with one sample per row
-    df = pd.concat(
-        [
-            pd.DataFrame(
-                dict(
-                    text=df.tokens.map(join_tokens).tolist(),
-                    corruption_type=[None for _ in range(len(df))],
-                    label=["correct" for _ in range(len(df))],
-                )
-            ),
-            pd.DataFrame(
-                dict(
-                    text=df.corrupted.explode().tolist(),
-                    corruption_type=df.corruption_type.explode().tolist(),
-                    label=["incorrect" for _ in range(len(df))],
-                )
-            ),
-        ]
-    )
-
-    # Shuffle the dataframe
-    df = df.sample(frac=1.0, random_state=4242).reset_index(drop=True)
-
-    # Convert the dataframe to a Hugging Face Dataset and return it. The
-    # ``datasets`` stubs type the ``split`` argument too narrowly; arbitrary
-    # split names are accepted at runtime, hence the false positive.
-    return Dataset.from_pandas(df, split=split)  # ty: ignore[invalid-argument-type]
-
-
-def make_splits(
-    df: pd.DataFrame, train_size: int, val_size: int, test_size: int
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Make the splits.
-
-    Args:
-        df:
-            The dataframe to make the splits from.
-        train_size:
-            The size of the training split.
-        val_size:
-            The size of the validation split.
-        test_size:
-            The size of the test split.
-
-    Returns:
-        The train, validation, test, and full training splits.
-    """
-    val_df = df.sample(n=val_size, random_state=4242)
-    df_filtered = df[~df.index.isin(val_df.index)]
-    test_df = df_filtered.sample(n=test_size, random_state=4242)
-    full_train_df = df_filtered[~df_filtered.index.isin(test_df.index)]
-    assert isinstance(full_train_df, pd.DataFrame)
-    train_df = full_train_df.sample(n=train_size, random_state=4242)
-    return train_df, val_df, test_df, full_train_df
 
 
 if __name__ == "__main__":

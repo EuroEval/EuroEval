@@ -99,31 +99,6 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _split_with_punctuation(text: str) -> list[str]:
-    """Tokenize text, splitting on spaces and treating punctuation as separate tokens.
-
-    Args:
-        text: The text to tokenize.
-
-    Returns:
-        The tokenized text.
-    """
-    return re.findall(r"\w+|[^\w\s]", text)
-
-
-def _parse_targets(target_str: str) -> list[dict]:
-    """Parse the targets string into a list of dictionaries.
-
-    Args:
-        target_str: The targets string to parse.
-
-    Returns:
-        The parsed targets.
-    """
-    targets_json = json.loads(f"{{{target_str}}}")
-    return targets_json.get("Results", [])
-
-
 def _assign_labels(
     tokens: list[str], results: list[dict], positions: list[int], text: str
 ) -> np.ndarray:
@@ -183,6 +158,31 @@ def _get_positions(text: str) -> list[int]:
             is_space_or_end = False
 
     return positions
+
+
+def _parse_targets(target_str: str) -> list[dict]:
+    """Parse the targets string into a list of dictionaries.
+
+    Args:
+        target_str: The targets string to parse.
+
+    Returns:
+        The parsed targets.
+    """
+    targets_json = json.loads(f"{{{target_str}}}")
+    return targets_json.get("Results", [])
+
+
+def _split_with_punctuation(text: str) -> list[str]:
+    """Tokenize text, splitting on spaces and treating punctuation as separate tokens.
+
+    Args:
+        text: The text to tokenize.
+
+    Returns:
+        The tokenized text.
+    """
+    return re.findall(r"\w+|[^\w\s]", text)
 
 
 if __name__ == "__main__":

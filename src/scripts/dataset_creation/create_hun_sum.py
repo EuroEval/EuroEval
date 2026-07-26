@@ -25,16 +25,7 @@ from pydantic import BaseModel
 load_dotenv()
 
 CACHE_FILE = "summary_cache.json"
-
-
-class SummaryValidation(BaseModel):
-    """Structured output for the summary validation.
-
-    Args:
-        is_valid_summary: True if the summary aligns with the text, False otherwise.
-    """
-
-    is_valid_summary: bool
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 def load_cache() -> dict:
@@ -50,15 +41,17 @@ def load_cache() -> dict:
         return {}
 
 
-def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE."""
-    with open(CACHE_FILE, "w") as cache_file:
-        json.dump(cache, cache_file, indent=4)
-
-
 summary_cache = load_cache()
 
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+class SummaryValidation(BaseModel):
+    """Structured output for the summary validation.
+
+    Args:
+        is_valid_summary: True if the summary aligns with the text, False otherwise.
+    """
+
+    is_valid_summary: bool
 
 
 def main() -> None:
@@ -120,6 +113,57 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     mini_dataset.push_to_hub(mini_dataset_id, private=True)
+
+
+def create_splits(
+    train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Create splits.
+
+    Args:
+        train_df: The training dataframe.
+        val_df: The validation dataframe.
+        test_df: The test dataframe.
+
+    Returns:
+        The final training, validation, and test dataframes.
+    """
+    # Split sizes
+    train_size = 1024
+    val_size = 256
+    test_size = 2048
+
+    # Create train split
+    train_df_final = train_df.sample(n=train_size, random_state=4242)
+    train_df_remaining = train_df[~train_df.index.isin(train_df_final.index)]
+
+    # Create validation split
+    n_missing_val_samples = val_size - len(val_df)
+    val_df_additional = train_df_remaining.sample(
+        n=n_missing_val_samples, random_state=4242
+    )
+    val_df_final = pd.concat([val_df, val_df_additional], ignore_index=True)
+    train_df_remaining = train_df_remaining.loc[
+        ~train_df_remaining.index.isin(val_df_additional.index)
+    ]
+
+    # Create test split
+    n_missing_test_samples = test_size - len(test_df)
+    test_df_additional = train_df_remaining.sample(
+        n=n_missing_test_samples, random_state=4242
+    )
+    test_df_final = pd.concat([test_df, test_df_additional], ignore_index=True)
+
+    # Reset indices
+    train_df_final = train_df_final.reset_index(drop=True)
+    val_df_final = val_df_final.reset_index(drop=True)
+    test_df_final = test_df_final.reset_index(drop=True)
+
+    assert isinstance(train_df_final, pd.DataFrame)
+    assert isinstance(val_df_final, pd.DataFrame)
+    assert isinstance(test_df_final, pd.DataFrame)
+
+    return train_df_final, val_df_final, test_df_final
 
 
 def process(df: pd.DataFrame) -> pd.DataFrame:
@@ -188,55 +232,10 @@ def _text_summary_alignment(row: pd.Series) -> bool:
     return is_valid_summary
 
 
-def create_splits(
-    train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create splits.
-
-    Args:
-        train_df: The training dataframe.
-        val_df: The validation dataframe.
-        test_df: The test dataframe.
-
-    Returns:
-        The final training, validation, and test dataframes.
-    """
-    # Split sizes
-    train_size = 1024
-    val_size = 256
-    test_size = 2048
-
-    # Create train split
-    train_df_final = train_df.sample(n=train_size, random_state=4242)
-    train_df_remaining = train_df[~train_df.index.isin(train_df_final.index)]
-
-    # Create validation split
-    n_missing_val_samples = val_size - len(val_df)
-    val_df_additional = train_df_remaining.sample(
-        n=n_missing_val_samples, random_state=4242
-    )
-    val_df_final = pd.concat([val_df, val_df_additional], ignore_index=True)
-    train_df_remaining = train_df_remaining.loc[
-        ~train_df_remaining.index.isin(val_df_additional.index)
-    ]
-
-    # Create test split
-    n_missing_test_samples = test_size - len(test_df)
-    test_df_additional = train_df_remaining.sample(
-        n=n_missing_test_samples, random_state=4242
-    )
-    test_df_final = pd.concat([test_df, test_df_additional], ignore_index=True)
-
-    # Reset indices
-    train_df_final = train_df_final.reset_index(drop=True)
-    val_df_final = val_df_final.reset_index(drop=True)
-    test_df_final = test_df_final.reset_index(drop=True)
-
-    assert isinstance(train_df_final, pd.DataFrame)
-    assert isinstance(val_df_final, pd.DataFrame)
-    assert isinstance(test_df_final, pd.DataFrame)
-
-    return train_df_final, val_df_final, test_df_final
+def save_cache(cache: dict) -> None:
+    """Save cache to CACHE_FILE."""
+    with open(CACHE_FILE, "w") as cache_file:
+        json.dump(cache, cache_file, indent=4)
 
 
 if __name__ == "__main__":

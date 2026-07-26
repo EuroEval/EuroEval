@@ -280,10 +280,6 @@ def _process_language(
     return True
 
 
-if __name__ == "__main__":
-    main()
-
-
 def _process_question(
     row: pd.Series,
     language: str,
@@ -360,3 +356,7 @@ def _process_question(
         )
 
     return question_id, choice_to_letter.get(choice_focus, ""), prompt, idx_to_choice
+
+
+if __name__ == "__main__":
+    main()

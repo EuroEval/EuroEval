@@ -284,44 +284,6 @@ def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
     return tokens, labels
 
 
-def _split_into_sentences(
-    tokens: list[str], labels: list[int]
-) -> list[tuple[list[str], list[int]]]:
-    """Split tokens and labels into sentences.
-
-    Args:
-        tokens: List of tokens.
-        labels: List of label IDs corresponding to tokens.
-
-    Returns:
-        List of (tokens, labels) tuples for each sentence.
-    """
-    sentences = []
-    i = 0
-    while i < len(tokens):
-        current_tokens = []
-        current_labels = []
-
-        while i < len(tokens):
-            current_tokens.append(tokens[i])
-            current_labels.append(labels[i])
-
-            if SENTENCE_RE.search(tokens[i]):
-                i += 1
-                # absorb following I-XXX tokens
-                while i < len(tokens) and ID2LABEL[labels[i]].startswith("I-"):
-                    current_tokens.append(tokens[i])
-                    current_labels.append(labels[i])
-                    i += 1
-                break  # break inner loop
-
-            i += 1
-
-        sentences.append((current_tokens, current_labels))
-
-    return sentences
-
-
 def _process_token(
     tok: str,
     stack: list[str],
@@ -394,6 +356,44 @@ def _reconstruct_text(tokens: list[str]) -> str:
             result.append(" " + token)
 
     return "".join(result)
+
+
+def _split_into_sentences(
+    tokens: list[str], labels: list[int]
+) -> list[tuple[list[str], list[int]]]:
+    """Split tokens and labels into sentences.
+
+    Args:
+        tokens: List of tokens.
+        labels: List of label IDs corresponding to tokens.
+
+    Returns:
+        List of (tokens, labels) tuples for each sentence.
+    """
+    sentences = []
+    i = 0
+    while i < len(tokens):
+        current_tokens = []
+        current_labels = []
+
+        while i < len(tokens):
+            current_tokens.append(tokens[i])
+            current_labels.append(labels[i])
+
+            if SENTENCE_RE.search(tokens[i]):
+                i += 1
+                # absorb following I-XXX tokens
+                while i < len(tokens) and ID2LABEL[labels[i]].startswith("I-"):
+                    current_tokens.append(tokens[i])
+                    current_labels.append(labels[i])
+                    i += 1
+                break  # break inner loop
+
+            i += 1
+
+        sentences.append((current_tokens, current_labels))
+
+    return sentences
 
 
 if __name__ == "__main__":

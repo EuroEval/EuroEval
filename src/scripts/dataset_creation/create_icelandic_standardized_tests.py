@@ -289,40 +289,6 @@ TEST_PDFS: list[tuple[str, str, list[str], str]] = [
 ]
 
 
-# Pydantic models for structured GPT output ---------------------------------
-
-
-class Option(BaseModel):
-    """A single multiple-choice question with four options."""
-
-    answer_key: AnswerKeyType
-    answer: str
-
-
-class McQuestion(BaseModel):
-    """A single multiple-choice question with four options."""
-
-    question: Annotated[str, Field(min_length=10)]
-    options: list[Option]
-    skip: bool = False
-
-
-class GeneralReadingPassage(BaseModel):
-    """A long general reading passage."""
-
-    id: int
-    text: Annotated[str, Field(min_length=100)]
-
-
-class McQuestionWithPassage(BaseModel):
-    """A single multiple-choice question with a passage and four options."""
-
-    passage_id: int
-    question: Annotated[str, Field(min_length=10)]
-    options: list[Option]
-    skip: bool = False
-
-
 class AnswerEntry(BaseModel):
     """A single answer-key entry."""
 
@@ -341,7 +307,35 @@ class AnswerKey(BaseModel):
     answers: list[AnswerEntry]
 
 
-# ---------------------------------------------------------------------------
+class GeneralReadingPassage(BaseModel):
+    """A long general reading passage."""
+
+    id: int
+    text: Annotated[str, Field(min_length=100)]
+
+
+class Option(BaseModel):
+    """A single multiple-choice question with four options."""
+
+    answer_key: AnswerKeyType
+    answer: str
+
+
+class McQuestion(BaseModel):
+    """A single multiple-choice question with four options."""
+
+    question: Annotated[str, Field(min_length=10)]
+    options: list[Option]
+    skip: bool = False
+
+
+class McQuestionWithPassage(BaseModel):
+    """A single multiple-choice question with a passage and four options."""
+
+    passage_id: int
+    question: Annotated[str, Field(min_length=10)]
+    options: list[Option]
+    skip: bool = False
 
 
 def main() -> None:
@@ -497,6 +491,69 @@ def download_pdf(url: str) -> bytes:
     return response.content
 
 
+def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, AnswerKeyType]:
+    """Use GPT-4.1 vision to extract the answer key from a marking guide PDF.
+
+    Args:
+        pdf_bytes:
+            The PDF bytes of the marking guide.
+        client:
+            An authenticated OpenAI client.
+
+    Returns:
+        A dict mapping question number (int) to the correct answer key.
+    """
+    images = pdf_to_images(pdf_bytes=pdf_bytes)
+
+    content: list[dict] = [
+        {
+            "type": "text",
+            "text": (
+                "These are pages from an Icelandic primary school exam marking guide "
+                "(matsreglur). Please extract the answer key for all multiple-choice "
+                "questions. These can be either upper case letters, or numerals. If "
+                "both are present, prefer the letter. For each question return its "
+                "ID key and the single correct answer key corresponding to the "
+                "correct answer."
+            ),
+        },
+        *_images_to_content(images),
+    ]
+
+    # The OpenAI SDK types ``messages`` with strict per-role TypedDicts, so a plain
+    # dict literal is rejected even though it is the documented runtime shape.
+    completion = client.beta.chat.completions.parse(
+        model=GPT_MODEL,
+        messages=[{"role": "user", "content": content}],  # ty: ignore[invalid-argument-type]
+        response_format=AnswerKey,
+        max_completion_tokens=128_000,
+        temperature=1.0,  # Required for gpt-5-mini
+    )
+    result = completion.choices[0].message.parsed
+    if result is None:
+        return {}
+    return {entry.question_id: entry.answer_key for entry in result.answers}
+
+
+def _images_to_content(images: list[str]) -> list[dict]:
+    """Build the image content blocks for an OpenAI vision message.
+
+    Args:
+        images:
+            Base64-encoded PNG strings (one per PDF page).
+
+    Returns:
+        A list of content dicts with type ``"image_url"``.
+    """
+    return [
+        {
+            "type": "image_url",
+            "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "high"},
+        }
+        for b64 in images
+    ]
+
+
 def pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[str]:
     """Render each page of a PDF as a base64-encoded PNG string.
 
@@ -518,25 +575,6 @@ def pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[str]:
             png_bytes = pix.tobytes("png")
             images.append(base64.b64encode(png_bytes).decode("utf-8"))
     return images
-
-
-def _images_to_content(images: list[str]) -> list[dict]:
-    """Build the image content blocks for an OpenAI vision message.
-
-    Args:
-        images:
-            Base64-encoded PNG strings (one per PDF page).
-
-    Returns:
-        A list of content dicts with type ``"image_url"``.
-    """
-    return [
-        {
-            "type": "image_url",
-            "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "high"},
-        }
-        for b64 in images
-    ]
 
 
 def extract_questions(
@@ -638,50 +676,6 @@ def extract_questions(
             del questions[question_id]
 
     return questions
-
-
-def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, AnswerKeyType]:
-    """Use GPT-4.1 vision to extract the answer key from a marking guide PDF.
-
-    Args:
-        pdf_bytes:
-            The PDF bytes of the marking guide.
-        client:
-            An authenticated OpenAI client.
-
-    Returns:
-        A dict mapping question number (int) to the correct answer key.
-    """
-    images = pdf_to_images(pdf_bytes=pdf_bytes)
-
-    content: list[dict] = [
-        {
-            "type": "text",
-            "text": (
-                "These are pages from an Icelandic primary school exam marking guide "
-                "(matsreglur). Please extract the answer key for all multiple-choice "
-                "questions. These can be either upper case letters, or numerals. If "
-                "both are present, prefer the letter. For each question return its "
-                "ID key and the single correct answer key corresponding to the "
-                "correct answer."
-            ),
-        },
-        *_images_to_content(images),
-    ]
-
-    # The OpenAI SDK types ``messages`` with strict per-role TypedDicts, so a plain
-    # dict literal is rejected even though it is the documented runtime shape.
-    completion = client.beta.chat.completions.parse(
-        model=GPT_MODEL,
-        messages=[{"role": "user", "content": content}],  # ty: ignore[invalid-argument-type]
-        response_format=AnswerKey,
-        max_completion_tokens=128_000,
-        temperature=1.0,  # Required for gpt-5-mini
-    )
-    result = completion.choices[0].message.parsed
-    if result is None:
-        return {}
-    return {entry.question_id: entry.answer_key for entry in result.answers}
 
 
 def format_question_text(question: str, options: dict[str, str]) -> str:

@@ -55,30 +55,6 @@ def main() -> None:
         mini_dataset.push_to_hub(mini_dataset_id, private=True)
 
 
-def process_df(df: pd.DataFrame) -> pd.DataFrame:
-    """Process the dataframe.
-
-    Args:
-        df: A dataframe to process.
-
-    Returns:
-        Processed dataframe.
-    """
-    # Renames
-    df = df.rename(columns={"article": "text", "summary": "target_text"})
-
-    # Keep only samples where the text is not very large or small
-    lengths = df.text.str.len()
-    lower_bound = MIN_NUM_CHARS_IN_ARTICLE
-    upper_bound = MAX_NUM_CHARS_IN_ARTICLE
-    df = df.loc[lengths.between(lower_bound, upper_bound)]
-
-    # Keep only the necessary columns
-    keep_columns = ["text", "target_text"]
-    df = df.loc[keep_columns]
-    return df
-
-
 def make_splits(
     train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -110,6 +86,30 @@ def make_splits(
     test_df_final = test_df_final.reset_index(drop=True)
 
     return train_df_final, val_df_final, test_df_final
+
+
+def process_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Process the dataframe.
+
+    Args:
+        df: A dataframe to process.
+
+    Returns:
+        Processed dataframe.
+    """
+    # Renames
+    df = df.rename(columns={"article": "text", "summary": "target_text"})
+
+    # Keep only samples where the text is not very large or small
+    lengths = df.text.str.len()
+    lower_bound = MIN_NUM_CHARS_IN_ARTICLE
+    upper_bound = MAX_NUM_CHARS_IN_ARTICLE
+    df = df.loc[lengths.between(lower_bound, upper_bound)]
+
+    # Keep only the necessary columns
+    keep_columns = ["text", "target_text"]
+    df = df.loc[keep_columns]
+    return df
 
 
 if __name__ == "__main__":
