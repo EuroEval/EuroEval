@@ -333,6 +333,196 @@ class Benchmarker:
             )
             del metric
 
+    def _build_benchmark_config(self, **params) -> "BenchmarkConfig":
+        """Build benchmark configuration from parameters."""
+        return build_benchmark_config(
+            benchmark_config_params=BenchmarkConfigParams(
+                task=params.get("task", self.benchmark_config_default_params.task),
+                dataset=params.get("dataset", self.benchmark_config_default_params.dataset),
+                progress_bar=params.get("progress_bar", self.benchmark_config_default_params.progress_bar),
+                save_results=params.get("save_results", self.benchmark_config_default_params.save_results),
+                language=params.get("language", self.benchmark_config_default_params.language),
+                device=params.get("device", self.benchmark_config_default_params.device),
+                finetuning_batch_size=params.get("finetuning_batch_size", self.benchmark_config_default_params.finetuning_batch_size),
+                raise_errors=params.get("raise_errors", self.benchmark_config_default_params.raise_errors),
+                cache_dir=params.get("cache_dir", self.benchmark_config_default_params.cache_dir),
+                api_key=params.get("api_key", self.benchmark_config_default_params.api_key),
+                api_base=params.get("api_base", self.benchmark_config_default_params.api_base),
+                api_version=params.get("api_version", self.benchmark_config_default_params.api_version),
+                trust_remote_code=params.get("trust_remote_code", self.benchmark_config_default_params.trust_remote_code),
+                clear_model_cache=params.get("clear_model_cache", self.benchmark_config_default_params.clear_model_cache),
+                evaluate_test_split=params.get("evaluate_test_split", self.benchmark_config_default_params.evaluate_test_split),
+                few_shot=params.get("few_shot", self.benchmark_config_default_params.few_shot),
+                num_iterations=params.get("num_iterations", self.benchmark_config_default_params.num_iterations),
+                requires_safetensors=params.get("requires_safetensors", self.benchmark_config_default_params.requires_safetensors),
+                download_only=params.get("download_only", self.benchmark_config_default_params.download_only),
+                gpu_memory_utilization=params.get("gpu_memory_utilization", self.benchmark_config_default_params.gpu_memory_utilization),
+                generative_type=params.get("generative_type", self.benchmark_config_default_params.generative_type),
+                use_bits_per_character=params.get("use_bits_per_character", self.benchmark_config_default_params.use_bits_per_character),
+                attention_backend=params.get("attention_backend", self.benchmark_config_default_params.attention_backend),
+                custom_datasets_file=Path(params["custom_datasets_file"]) if params.get("custom_datasets_file") else self.benchmark_config_default_params.custom_datasets_file,
+                force=params.get("force", self.benchmark_config_default_params.force),
+                verbose=params.get("verbose", self.benchmark_config_default_params.verbose),
+                debug=params.get("debug", self.benchmark_config_default_params.debug),
+                run_with_cli=self.benchmark_config_default_params.run_with_cli,
+                max_context_length=params.get("max_context_length", self.benchmark_config_default_params.max_context_length),
+                vocabulary_size=params.get("vocabulary_size", self.benchmark_config_default_params.vocabulary_size),
+            )
+        )
+
+    def _fetch_model_configs(
+        self, model_ids: c.Sequence[str], benchmark_config: "BenchmarkConfig"
+    ) -> list["ModelConfig"]:
+        """Fetch model configurations."""
+        configs: list["ModelConfig"] = []
+        for model_id in get_pbar(
+            iterable=model_ids,
+            desc="Fetching model configurations",
+            disable=not benchmark_config.verbose or not benchmark_config.progress_bar,
+        ):
+            try:
+                configs.append(get_model_config(model_id=model_id, benchmark_config=benchmark_config))
+            except InvalidModel as e:
+                log(e.message, level=logging.ERROR)
+        return configs
+
+    def _create_model_dataset_mapping(
+        self, model_configs: list["ModelConfig"], dataset_configs: c.Sequence["DatasetConfig"]
+    ) -> dict["ModelConfig", list["DatasetConfig"]]:
+        """Create mapping from model configs to dataset configs."""
+        return {
+            model_config: [
+                ds_config for ds_config in dataset_configs
+                if model_config.model_type in ds_config.allowed_model_types
+            ]
+            for model_config in model_configs
+        }
+
+    def _filter_existing_benchmarks(
+        self,
+        model_mapping: dict["ModelConfig", list["DatasetConfig"]],
+        benchmark_config: "BenchmarkConfig",
+        existing_results: c.Sequence[BenchmarkResult],
+    ) -> tuple[dict["ModelConfig", list["DatasetConfig"]], list[BenchmarkResult]]:
+        """Filter out already-benchmarked model-dataset pairs."""
+        current_results: list[BenchmarkResult] = []
+        for model_config, ds_configs in model_mapping.items():
+            new_ds_configs: list["DatasetConfig"] = []
+            for ds_config in ds_configs:
+                record = get_record(
+                    model_config=model_config,
+                    dataset_config=ds_config,
+                    benchmark_config=benchmark_config,
+                    benchmark_results=existing_results,
+                )
+                if record is not None and not benchmark_config.force:
+                    current_results.append(record)
+                else:
+                    new_ds_configs.append(ds_config)
+            model_mapping[model_config] = new_ds_configs
+        return model_mapping, current_results
+
+    def _check_adapter_requirements(
+        self, model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
+    ) -> None:
+        """Check adapter model requirements."""
+        if not model_config.adapter_base_model_id:
+            return
+        msg = "If offline support is important to you, please consider opening an issue at https://github.com/EuroEval/EuroEval/issues."
+        if not internet_connection_available():
+            raise InvalidModel(
+                "Offline benchmarking of models with adapters is not currently supported. "
+                "An active internet connection is required. " + msg
+            )
+        if benchmark_config.download_only:
+            log_once(
+                "You are using download only mode with a model that includes an adapter. "
+                "Please note that offline benchmarking of adapter models is not currently supported - "
+                "an internet connection will be required during evaluation in this case. " + msg,
+                level=logging.WARNING,
+            )
+
+    def _update_benchmark_config_for_dataset(
+        self,
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> dict[str, t.Any]:
+        """Update benchmark config for dataset. Returns params to revert."""
+        params_to_revert: dict[str, t.Any] = {}
+        if dataset_config.val_split is None and not benchmark_config.evaluate_test_split:
+            log(
+                "The dataset does not have a validation split, so even though "
+                "you requested evaluating the validation split (the default), "
+                "we will evaluate on the test split.",
+                level=logging.DEBUG,
+            )
+            params_to_revert["evaluate_test_split"] = False
+            benchmark_config.evaluate_test_split = True
+        if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
+            log(
+                "The task requires zero-shot evaluation, so even though you "
+                "requested few-shot evaluation (the default), we will evaluate "
+                "zero-shot.",
+                level=logging.DEBUG,
+            )
+            params_to_revert["few_shot"] = True
+            benchmark_config.few_shot = False
+        return params_to_revert
+
+    def _handle_benchmark_result(
+        self,
+        result_or_error: t.Any,
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
+        num_finished: int,
+        num_skipped: int,
+        num_errored: int,
+        model_config: "ModelConfig",
+        model_mapping: dict["ModelConfig", list["DatasetConfig"]],
+        current_results: list[BenchmarkResult],
+    ) -> tuple[int, int, int, bool]:
+        """Handle benchmark result. Returns updated counters and break flag."""
+        if isinstance(result_or_error, Exception) and benchmark_config.raise_errors:
+            raise result_or_error
+        if isinstance(result_or_error, InvalidBenchmark):
+            log(result_or_error.message, level=logging.WARNING)
+            if dataset_config.task.name in ORTHOGONAL_TASKS:
+                num_skipped += 1
+            else:
+                num_errored += 1
+            return num_finished, num_skipped, num_errored, False
+        if isinstance(result_or_error, InvalidModel):
+            log(result_or_error.message, level=logging.WARNING)
+            remaining = model_mapping[model_config][
+                model_mapping[model_config].index(dataset_config) + 1:
+            ]
+            num_errored += 1 + len(remaining)
+            return num_finished, num_skipped, num_errored, True
+        record: BenchmarkResult = result_or_error
+        current_results.append(record)
+        if benchmark_config.save_results:
+            record.append_to_results(results_path=self.results_path)
+        num_finished += 1
+        return num_finished, num_skipped, num_errored, False
+
+    def _generate_summary_message(
+        self, finished: int, skipped: int, errored: int
+    ) -> str | None:
+        """Generate summary message."""
+        parts: list[str] = []
+        if finished:
+            parts.append(f"completed {finished:,} benchmarks")
+        if skipped:
+            parts.append(f"skipped {skipped:,} benchmarks")
+        if errored:
+            parts.append(f"errored {errored:,} benchmarks")
+        if not parts:
+            return None
+        parts[0] = parts[0].capitalize()
+        if len(parts) > 1:
+            parts[-1] = "and " + parts[-1]
+        return "\n" + ", ".join(parts)
+
     def benchmark(
         self,
         model: c.Sequence[str] | str,
@@ -497,30 +687,23 @@ class Benchmarker:
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
 
-        # Determine if verbose mode is active (either from parameter, FULL_LOG env var,
-        # or stored config from __init__)
+        # Determine verbose mode
         is_verbose = (
             verbose
             if verbose is not None
             else self.benchmark_config_default_params.verbose
         )
-
-        # FULL_LOG env var or debug mode always forces verbose mode
         if os.getenv("FULL_LOG", "0") == "1" or debug:
             is_verbose = True
 
         log_once(
-            (
-                "Started EuroEval run."
-                if is_verbose
-                else "Started EuroEval run. Run with `--verbose` for more information."
-            ),
+            "Started EuroEval run."
+            if is_verbose
+            else "Started EuroEval run. Run with `--verbose` for more information.",
             level=logging.INFO,
         )
 
-        # Resolve BPC mode up front (it holds for every evaluation in the run) and
-        # announce it once, so it is clear the run is scoring bits-per-character rather
-        # than the usual task metrics.
+        # Announce BPC mode if active
         is_bpc = (
             use_bits_per_character
             if use_bits_per_character is not None
@@ -534,156 +717,19 @@ class Benchmarker:
                 level=logging.INFO,
             )
 
-        # Get a new updated benchmark configuration, based on any changes to the
-        # parameters
-        benchmark_config_params = BenchmarkConfigParams(
-            task=(
-                task if task is not None else self.benchmark_config_default_params.task
-            ),
-            dataset=(
-                dataset
-                if dataset is not None
-                else self.benchmark_config_default_params.dataset
-            ),
-            progress_bar=(
-                progress_bar
-                if progress_bar is not None
-                else self.benchmark_config_default_params.progress_bar
-            ),
-            save_results=(
-                save_results
-                if save_results is not None
-                else self.benchmark_config_default_params.save_results
-            ),
-            language=(
-                language
-                if language is not None
-                else self.benchmark_config_default_params.language
-            ),
-            device=(
-                device
-                if device is not None
-                else self.benchmark_config_default_params.device
-            ),
-            finetuning_batch_size=(
-                finetuning_batch_size
-                if finetuning_batch_size is not None
-                else self.benchmark_config_default_params.finetuning_batch_size
-            ),
-            raise_errors=(
-                raise_errors
-                if raise_errors is not None
-                else self.benchmark_config_default_params.raise_errors
-            ),
-            cache_dir=(
-                cache_dir
-                if cache_dir is not None
-                else self.benchmark_config_default_params.cache_dir
-            ),
-            api_key=(
-                api_key
-                if api_key is not None
-                else self.benchmark_config_default_params.api_key
-            ),
-            api_base=(
-                api_base
-                if api_base is not None
-                else self.benchmark_config_default_params.api_base
-            ),
-            api_version=(
-                api_version
-                if api_version is not None
-                else self.benchmark_config_default_params.api_version
-            ),
-            trust_remote_code=(
-                trust_remote_code
-                if trust_remote_code is not None
-                else self.benchmark_config_default_params.trust_remote_code
-            ),
-            clear_model_cache=(
-                clear_model_cache
-                if clear_model_cache is not None
-                else self.benchmark_config_default_params.clear_model_cache
-            ),
-            evaluate_test_split=(
-                evaluate_test_split
-                if evaluate_test_split is not None
-                else self.benchmark_config_default_params.evaluate_test_split
-            ),
-            few_shot=(
-                few_shot
-                if few_shot is not None
-                else self.benchmark_config_default_params.few_shot
-            ),
-            num_iterations=(
-                num_iterations
-                if num_iterations is not None
-                else self.benchmark_config_default_params.num_iterations
-            ),
-            requires_safetensors=(
-                requires_safetensors
-                if requires_safetensors is not None
-                else self.benchmark_config_default_params.requires_safetensors
-            ),
-            download_only=(
-                download_only
-                if download_only is not None
-                else self.benchmark_config_default_params.download_only
-            ),
-            gpu_memory_utilization=(
-                gpu_memory_utilization
-                if gpu_memory_utilization is not None
-                else self.benchmark_config_default_params.gpu_memory_utilization
-            ),
-            generative_type=(
-                generative_type
-                if generative_type is not None
-                else self.benchmark_config_default_params.generative_type
-            ),
-            use_bits_per_character=(
-                use_bits_per_character
-                if use_bits_per_character is not None
-                else self.benchmark_config_default_params.use_bits_per_character
-            ),
-            attention_backend=(
-                attention_backend
-                if attention_backend is not None
-                else self.benchmark_config_default_params.attention_backend
-            ),
-            custom_datasets_file=(
-                Path(custom_datasets_file)
-                if custom_datasets_file is not None
-                else self.benchmark_config_default_params.custom_datasets_file
-            ),
-            force=(
-                force
-                if force is not None
-                else self.benchmark_config_default_params.force
-            ),
-            verbose=(
-                verbose
-                if verbose is not None
-                else self.benchmark_config_default_params.verbose
-            ),
-            debug=(
-                debug
-                if debug is not None
-                else self.benchmark_config_default_params.debug
-            ),
-            run_with_cli=self.benchmark_config_default_params.run_with_cli,
-            max_context_length=(
-                max_context_length
-                if max_context_length is not None
-                else self.benchmark_config_default_params.max_context_length
-            ),
-            vocabulary_size=(
-                vocabulary_size
-                if vocabulary_size is not None
-                else self.benchmark_config_default_params.vocabulary_size
-            ),
-        )
-        benchmark_config = build_benchmark_config(
-            benchmark_config_params=benchmark_config_params
+        # Build benchmark config
+        benchmark_config = self._build_benchmark_config(
+            task=task, dataset=dataset, progress_bar=progress_bar, save_results=save_results,
+            language=language, device=device, finetuning_batch_size=finetuning_batch_size,
+            raise_errors=raise_errors, cache_dir=cache_dir, api_key=api_key, api_base=api_base,
+            api_version=api_version, trust_remote_code=trust_remote_code,
+            clear_model_cache=clear_model_cache, evaluate_test_split=evaluate_test_split,
+            few_shot=few_shot, num_iterations=num_iterations, requires_safetensors=requires_safetensors,
+            download_only=download_only, gpu_memory_utilization=gpu_memory_utilization,
+            generative_type=generative_type, use_bits_per_character=use_bits_per_character,
+            attention_backend=attention_backend, custom_datasets_file=custom_datasets_file,
+            force=force, verbose=verbose, debug=debug,
+            max_context_length=max_context_length, vocabulary_size=vocabulary_size,
         )
 
         adjust_logging_level(verbose=benchmark_config.verbose)
@@ -694,79 +740,31 @@ class Benchmarker:
         model_ids = self._prepare_model_ids(model_id=model)
         dataset_configs = benchmark_config.datasets
 
-        # Get all the model configs
-        model_configs: list["ModelConfig"] = list()
-        for model_id in get_pbar(
-            iterable=model_ids,
-            desc="Fetching model configurations",
-            disable=not benchmark_config.verbose or not benchmark_config.progress_bar,
-        ):
-            try:
-                model_config = get_model_config(
-                    model_id=model_id, benchmark_config=benchmark_config
-                )
-                model_configs.append(model_config)
-            except InvalidModel as e:
-                log(e.message, level=logging.ERROR)
+        # Fetch model configs and create mapping
+        model_configs = self._fetch_model_configs(model_ids, benchmark_config)
+        model_mapping = self._create_model_dataset_mapping(model_configs, dataset_configs)
 
-        # Create a dictionary that takes each model config to the dataset configs that
-        # we need to benchmark the model on. We initially include all the relevant
-        # datasets for each model.
-        model_config_to_dataset_configs: dict[
-            "ModelConfig", c.Sequence["DatasetConfig"]
-        ] = {
-            model_config: [
-                dataset_config
-                for dataset_config in dataset_configs
-                if model_config.model_type in dataset_config.allowed_model_types
-            ]
-            for model_config in model_configs
-        }
-
-        # Initialise the current benchmark results with all the ones that we have cached
-        # on disk already (can be none), and remove those datasets from the mapping.
-        # Read the cached results once: `self.benchmark_results` re-reads and
-        # re-parses the entire results file on every access, and no new results are
-        # written during this partitioning loop, so reading it per-dataset would
-        # needlessly re-parse the whole file once per dataset.
-        existing_benchmark_results = self.benchmark_results
-        current_benchmark_results: list[BenchmarkResult] = list()
-        for (
-            model_config,
-            model_dataset_configs,
-        ) in model_config_to_dataset_configs.items():
-            new_model_dataset_configs: list["DatasetConfig"] = list()
-            for dataset_config in model_dataset_configs:
-                benchmark_record = get_record(
-                    model_config=model_config,
-                    dataset_config=dataset_config,
-                    benchmark_config=benchmark_config,
-                    benchmark_results=existing_benchmark_results,
-                )
-                if benchmark_record is not None and not benchmark_config.force:
-                    current_benchmark_results.append(benchmark_record)
-                else:
-                    new_model_dataset_configs.append(dataset_config)
-            model_config_to_dataset_configs[model_config] = new_model_dataset_configs
-
-        total_benchmarks = sum(
-            len(dataset_configs)
-            for dataset_configs in model_config_to_dataset_configs.values()
+        # Filter out existing benchmarks
+        existing_results = self.benchmark_results
+        model_mapping, current_results = self._filter_existing_benchmarks(
+            model_mapping, benchmark_config, existing_results
         )
+
+        total_benchmarks = sum(len(ds) for ds in model_mapping.values())
         if total_benchmarks == 0:
             log(
                 "No benchmarks to run, as all the selected models have already been "
                 "benchmarked on all the selected datasets.",
                 level=logging.INFO,
             )
-            return current_benchmark_results
+            return current_results
 
-        num_finished_benchmarks = 0
-        num_skipped_benchmarks = 0
-        num_errored_benchmarks = 0
-        benchmark_params_to_revert: dict[str, t.Any] = dict()
+        num_finished = 0
+        num_skipped = 0
+        num_errored = 0
+
         for model_config in model_configs:
-            if not model_config_to_dataset_configs[model_config]:
+            if not model_mapping[model_config]:
                 log(
                     f"Skipping model {model_config.model_id!r} because it has "
                     "already been benchmarked on all valid datasets.",
@@ -774,69 +772,20 @@ class Benchmarker:
                 )
                 continue
 
-            if model_config.adapter_base_model_id:
-                open_issue_msg = (
-                    "If offline support is important to you, please consider opening "
-                    "an issue at https://github.com/EuroEval/EuroEval/issues."
-                )
-                if not internet_connection_available():
-                    raise InvalidModel(
-                        "Offline benchmarking of models with adapters is not currently "
-                        "supported. An active internet connection is required. "
-                        f"{open_issue_msg}"
-                    )
-                elif benchmark_config.download_only:
-                    log_once(
-                        "You are using download only mode with a model that includes "
-                        "an adapter. Please note that offline benchmarking of "
-                        "adapter models is not currently supported - an internet "
-                        "connection will be required during evaluation in this case. "
-                        f"{open_issue_msg}",
-                        level=logging.WARNING,
-                    )
+            self._check_adapter_requirements(model_config, benchmark_config)
 
             loaded_model: "BenchmarkModule | None" = None
-            for dataset_config in model_config_to_dataset_configs[model_config]:
-                # Revert any changes to the benchmark configuration made for the
-                # previous dataset
-                for param, value in benchmark_params_to_revert.items():
-                    setattr(benchmark_config, param, value)
-                benchmark_params_to_revert = dict()
-
-                # Update the benchmark config if the dataset requires it
-                if (
-                    dataset_config.val_split is None
-                    and not benchmark_config.evaluate_test_split
-                ):
-                    log(
-                        "The dataset does not have a validation split, so even though "
-                        "you requested evaluating the validation split (the default), "
-                        "we will evaluate on the test split.",
-                        level=logging.DEBUG,
-                    )
-                    benchmark_params_to_revert["evaluate_test_split"] = False
-                    benchmark_config.evaluate_test_split = True
-                if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
-                    log(
-                        "The task requires zero-shot evaluation, so even though you "
-                        "requested few-shot evaluation (the default), we will evaluate "
-                        "zero-shot.",
-                        level=logging.DEBUG,
-                    )
-                    benchmark_params_to_revert["few_shot"] = True
-                    benchmark_config.few_shot = False
+            for dataset_config in model_mapping[model_config]:
+                params_to_revert = self._update_benchmark_config_for_dataset(
+                    dataset_config, benchmark_config
+                )
 
                 if benchmark_config.download_only:
-                    self._download(
-                        dataset_config=dataset_config,
-                        model_config=model_config,
-                        benchmark_config=benchmark_config,
-                    )
-                    num_finished_benchmarks += 1
+                    self._download(dataset_config, model_config, benchmark_config)
+                    num_finished += 1
                     continue
 
-                # We do not re-initialise generative models as their architecture is not
-                # customised to specific datasets
+                # Load generative model if needed
                 if model_config.model_type == ModelType.GENERATIVE:
                     if loaded_model is None:
                         try:
@@ -849,116 +798,66 @@ class Benchmarker:
                             if benchmark_config.raise_errors:
                                 raise e
                             log(e.message, level=logging.ERROR)
-
-                            # Add the remaining number of benchmarks for the model to
-                            # our benchmark counter, since we're erroring on the rest of
-                            # them
-                            model_dataset_configs = model_config_to_dataset_configs[
-                                model_config
+                            remaining = model_mapping[model_config][
+                                model_mapping[model_config].index(dataset_config) + 1:
                             ]
-                            remaining_configs = model_dataset_configs[
-                                model_dataset_configs.index(dataset_config) + 1 :
-                            ]
-                            num_errored_benchmarks += 1 + len(remaining_configs)
+                            num_errored += 1 + len(remaining)
                             break
 
-                    # Skip the benchmark if the model is not of the correct
-                    # generative type
-                    if (
-                        loaded_model.generative_type
-                        not in dataset_config.allowed_generative_types
-                    ):
+                    if loaded_model.generative_type not in dataset_config.allowed_generative_types:
                         log(
                             f"Skipping the benchmark of model "
-                            f"{model_config.model_id!r}on dataset "
+                            f"{model_config.model_id!r} on dataset "
                             f"{dataset_config.name!r} because the model has generative "
                             f"type {loaded_model.generative_type} and the dataset "
                             f"only allows {dataset_config.allowed_generative_types}.",
                             level=logging.DEBUG,
                         )
-                        num_skipped_benchmarks += 1
+                        num_skipped += 1
                         continue
 
-                # Benchmark a single model on a single dataset
-                benchmark_output_or_err = self._benchmark_single(
+                # Run benchmark and handle result
+                output_or_err = self._benchmark_single(
                     model=loaded_model,
                     model_config=model_config,
                     dataset_config=dataset_config,
                     benchmark_config=benchmark_config,
-                    num_finished_benchmarks=(
-                        num_finished_benchmarks
-                        + num_skipped_benchmarks
-                        + num_errored_benchmarks
-                    ),
+                    num_finished_benchmarks=num_finished + num_skipped + num_errored,
                     num_total_benchmarks=total_benchmarks,
                 )
 
-                if (
-                    isinstance(benchmark_output_or_err, Exception)
-                    and benchmark_config.raise_errors
-                ):
-                    raise benchmark_output_or_err
-
-                elif isinstance(benchmark_output_or_err, InvalidBenchmark):
-                    log(benchmark_output_or_err.message, level=logging.WARNING)
-                    # Orthogonal task failures count as skipped, not errored
-                    if dataset_config.task.name in ORTHOGONAL_TASKS:
-                        num_skipped_benchmarks += 1
-                    else:
-                        num_errored_benchmarks += 1
-                    continue
-
-                elif isinstance(benchmark_output_or_err, InvalidModel):
-                    log(benchmark_output_or_err.message, level=logging.WARNING)
-
-                    # Add the remaining number of benchmarks for the model to our
-                    # benchmark counter, since we're erroring on the rest of them
-                    model_dataset_configs = model_config_to_dataset_configs[
-                        model_config
-                    ]
-                    remaining_configs = model_dataset_configs[
-                        model_dataset_configs.index(dataset_config) + 1 :
-                    ]
-                    num_errored_benchmarks += 1 + len(remaining_configs)
+                num_finished, num_skipped, num_errored, should_break = self._handle_benchmark_result(
+                    result_or_error=output_or_err,
+                    dataset_config=dataset_config,
+                    benchmark_config=benchmark_config,
+                    num_finished=num_finished,
+                    num_skipped=num_skipped,
+                    num_errored=num_errored,
+                    model_config=model_config,
+                    model_mapping=model_mapping,
+                    current_results=current_results,
+                )
+                if should_break:
                     break
 
-                else:
-                    record: BenchmarkResult = benchmark_output_or_err
-                    current_benchmark_results.append(record)
-                    if benchmark_config.save_results:
-                        record.append_to_results(results_path=self.results_path)
-                    num_finished_benchmarks += 1
+                # Revert config changes
+                for param, value in params_to_revert.items():
+                    setattr(benchmark_config, param, value)
 
             del loaded_model
             if benchmark_config.clear_model_cache:
                 clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
 
-        msg_components: list[str] = list()
-        if num_finished_benchmarks:
-            msg_components.append(f"completed {num_finished_benchmarks:,} benchmarks")
-        if num_skipped_benchmarks:
-            msg_components.append(f"skipped {num_skipped_benchmarks:,} benchmarks")
-        if num_errored_benchmarks:
-            msg_components.append(f"errored {num_errored_benchmarks:,} benchmarks")
-        if msg_components:
-            msg_components[0] = msg_components[0].capitalize()
-            if len(msg_components) > 1:
-                msg_components[-1] = "and " + msg_components[-1]
-            msg = "\n" + ", ".join(msg_components)
-            log(msg, level=logging.INFO)
+        # Log summary
+        summary = self._generate_summary_message(num_finished, num_skipped, num_errored)
+        if summary:
+            log(summary, level=logging.INFO)
 
-        # This avoids the following warning at the end of the benchmarking:
-        #   Warning: WARNING: process group has NOT been destroyed before we destruct
-        #   ProcessGroupNCCL. On normal program exit, the application should call
-        #   destroy_process_group to ensure that any pending NCCL operations have
-        #   finished in this process. In rare cases this process can exit before this
-        #   point and block the progress of another member of the process group. This
-        #   constraint has always been present,  but this warning has only been added
-        #   since PyTorch 2.4 (function operator())
+        # Clean up process group
         with contextlib.suppress(Exception):
             destroy_process_group()
 
-        return current_benchmark_results
+        return current_results
 
     def _prepare_model_ids(self, model_id: c.Sequence[str] | str) -> c.Sequence[str]:
         """Prepare the model ID(s) to be benchmarked.

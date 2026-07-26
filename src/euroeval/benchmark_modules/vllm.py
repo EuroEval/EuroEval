@@ -555,31 +555,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         return self
 
-    def _run_vllm_core(
-        self, inputs: dict, prompt_key: str, sampling_params: "SamplingParams"
-    ) -> tuple[list[str], list]:
-        """Run vLLM generation with given parameters.
-
-        Shared implementation used by both generate() and score().
-
-        Args:
-            inputs:
-                A batch of inputs to pass through the model.
-            prompt_key:
-                Key to extract prompts from inputs ("text" or "bpc_prompt").
-            sampling_params:
-                Sampling parameters for vLLM generation.
-
-        Returns:
-            Tuple of (completions, raw_outputs).
-
-        Raises:
-            InvalidBenchmark:
-                If generation fails or prompts are too long.
-            InvalidTask:
-                If structured output is misconfigured.
-        """
-        # Get stopping tokens
+    def _setup_stop_tokens(self) -> list[str]:
+        """Set up stopping tokens for generation."""
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
         if self.generative_type == GenerativeType.BASE:
             stop_tokens.append("\n\n")
@@ -604,9 +581,431 @@ class VLLMModel(HuggingFaceEncoderModel):
             ).strip()
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
+        return stop_tokens
 
-        # Get the mapping from labels to the first token in the label. We call this each
-        # time we generate a new dataset since the dataset config can change
+    def _setup_structured_outputs(
+        self, inputs: dict[str, t.Any]
+    ) -> "StructuredOutputsParams | None":
+        """Set up structured outputs parameters."""
+        if (
+            self.dataset_config.task.uses_structured_output
+            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
+        ) and self.generative_type == GenerativeType.REASONING:
+            log_once(
+                "The dataset uses structured output, but we are not using it as the "
+                f"model {self.model_config.model_id!r} is a reasoning model.",
+                level=logging.DEBUG,
+            )
+            return None
+        if self.dataset_config.task.uses_structured_output:
+            return self._structured_output_for_task(inputs)
+        if (
+            self.dataset_config.task.uses_logprobs
+            and self.dataset_config.labels
+            and self.buffer.get("first_label_token_mapping", False)
+        ):
+            return self._structured_output_for_logprobs()
+        log_once(
+            "Not using structured generation as the dataset does not require it.",
+            level=logging.DEBUG,
+        )
+        return None
+
+    def _structured_output_for_task(
+        self, inputs: dict[str, t.Any]
+    ) -> "StructuredOutputsParams":
+        """Handle structured output for task-based generation."""
+        if self.dataset_config.task.structured_output_format is not None:
+            return StructuredOutputsParams(
+                json=self.dataset_config.task.structured_output_format.model_json_schema()
+            )
+        if self.dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+            return self._so_token_classification()
+        if self.dataset_config.task == LOGIC:
+            return self._so_logic(inputs)
+        raise InvalidTask(
+            message=(
+                "Task set to use structured output, but it neither defines "
+                "an output structure nor is a token classification task "
+                "- at least one of these must be true."
+            )
+        )
+
+    def _so_token_classification(self) -> "StructuredOutputsParams":
+        """Handle structured output for token classification."""
+        tag_names = list(self.dataset_config.prompt_label_mapping.values())
+        keys_and_their_types: dict[str, t.Any] = {
+            tag_name: (conlist(str, max_length=5), ...) for tag_name in tag_names
+        }
+        answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
+        schema = answer_format_class.model_json_schema()
+        log_once(
+            "Using structured generation with the JSON schema: "
+            f"{json.dumps(schema, ensure_ascii=False)}",
+            level=logging.DEBUG,
+        )
+        return StructuredOutputsParams(json=schema)
+
+    def _so_logic(self, inputs: dict[str, t.Any]) -> "StructuredOutputsParams":
+        """Handle structured output for LOGIC tasks."""
+        first_sample_raw = inputs["target_text"][0]
+        first_sample = (
+            json.loads(first_sample_raw)
+            if isinstance(first_sample_raw, str)
+            else first_sample_raw
+        )
+        object_keys = [k for k in first_sample.keys() if k.startswith("object_")]
+        n = len(object_keys)
+        k = len(first_sample[object_keys[0]]) if object_keys else 0
+        keys_and_their_types: dict[str, t.Any] = {
+            f"object_{i}": (list[str], ...) for i in range(1, n + 1)
+        }
+        answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
+        schema = answer_format_class.model_json_schema()
+        log_once(
+            f"LOGIC task with {n} objects and {k} attributes per object. "
+            f"Using structured generation with the JSON schema: "
+            f"{json.dumps(schema, ensure_ascii=False)}",
+            level=logging.DEBUG,
+        )
+        return StructuredOutputsParams(json=schema)
+
+    def _structured_output_for_logprobs(
+        self,
+    ) -> "StructuredOutputsParams":
+        """Handle structured output for logprobs-based tasks."""
+        choice_labels = [
+            self.dataset_config.prompt_label_mapping[label]
+            for label in self.dataset_config.labels
+        ]
+        if isinstance(self.buffer["first_label_token_mapping"], dict):
+            choice_labels = [
+                self.buffer["first_label_token Mapping"][label]
+                for label in choice_labels
+            ]
+        struct_output = StructuredOutputsParams(choice=choice_labels)
+        log_once(
+            "Using structured generation with the choices: "
+            f"{struct_output.choice!r}.",
+            level=logging.DEBUG,
+        )
+        return struct_output
+
+    def _setup_generation_kwargs(self) -> dict[str, t.Any]:
+        """Set up generation kwargs from model config."""
+        generation_kwargs = GENERATION_KWARGS.copy()
+        if (generation_config := self.model_config.generation_config) is not None:
+            changed_params = generation_config.to_diff_dict()
+            for param_name in ["temperature", "top_p", "top_k", "repetition_penalty"]:
+                if param_name in changed_params:
+                    generation_kwargs[param_name] = changed_params[param_name]
+                    log_once(
+                        f"Using {param_name}={changed_params[param_name]} with the "
+                        f"model {self.model_config.model_id!r} as specified in its "
+                        "generation configuration.",
+                        level=logging.DEBUG,
+                    )
+        return generation_kwargs
+
+    def _apply_token_budget(
+        self, sampling_params: "SamplingParams", max_context_length: int
+    ) -> int:
+        """Apply token budget and return max tokens per prompt."""
+        if sampling_params.prompt_logprobs is not None:
+            return max_context_length - sampling_params.max_tokens
+        generation_budget, max_tokens_per_prompt = compute_token_budget(
+            model_max_length=self._tokeniser.model_max_length,
+            max_generated_tokens=self.dataset_config.max_generated_tokens,
+        )
+        if generation_budget < self.dataset_config.max_generated_tokens:
+            log_once(
+                f"The model {self.model_config.model_id!r} has a context length of "
+                f"{max_context_length:,} tokens, which is too small to fit both "
+                "the prompt and the dataset's full generation budget of "
+                f"{self.dataset_config.max_generated_tokens:,} tokens. Reserving "
+                f"{generation_budget:,} tokens for generation when budgeting "
+                "prompt lengths instead.",
+                level=logging.WARNING,
+            )
+            if self.generative_type != GenerativeType.REASONING:
+                sampling_params.max_tokens = generation_budget
+        return max_tokens_per_prompt
+
+    def _prepare_prompts(
+        self,
+        inputs: dict,
+        prompt_key: str,
+        max_tokens_per_prompt: int,
+        sampling_params: "SamplingParams",
+    ) -> list[str]:
+        """Prepare and truncate prompts."""
+        prompts: c.Sequence[str] = list(inputs[prompt_key])
+        prompts = self._clean_empty_prompts(prompts)
+        prompts = self._strip_prompts_if_needed(prompts)
+        prompts = self._truncate_prompts_if_needed(
+            prompts, max_tokens_per_prompt, sampling_params
+        )
+        return list(prompts)
+
+    def _clean_empty_prompts(self, prompts: c.Sequence[str]) -> list[str]:
+        """Replace empty prompts with BOS token."""
+        if any(len(prompt.strip()) == 0 for prompt in prompts):
+            log("Found empty prompts, replacing with BOS token.", level=logging.DEBUG)
+            return [
+                prompt if len(prompt.strip()) > 0 else str(self._tokeniser.bos_token or "x")
+                for prompt in prompts
+            ]
+        return list(prompts)
+
+    def _strip_prompts_if_needed(self, prompts: c.Sequence[str]) -> list[str]:
+        """Strip prompts if the model's tokeniser requires it."""
+        labels = list(self.dataset_config.prompt_label_mapping.values()) or ["negative", "positive"]
+        if self.generative_type == GenerativeType.BASE and should_prompts_be_stripped(
+            labels_to_be_generated=labels, tokeniser=self._tokeniser
+        ):
+            log_once(
+                f"Stripping prompts for model {self.model_config.model_id!r}.",
+                level=logging.DEBUG,
+            )
+            return [p.strip() for p in prompts]
+        return list(prompts)
+
+    def _truncate_prompts_if_needed(
+        self,
+        prompts: c.Sequence[str],
+        max_tokens_per_prompt: int,
+        sampling_params: "SamplingParams",
+    ) -> c.Sequence[str]:
+        """Truncate prompts if they exceed the token budget."""
+        tokenized = self._tokeniser(text=prompts, max_length=max_tokens_per_prompt)
+        if all(len(ids) < max_tokens_per_prompt for ids in tokenized.input_ids):
+            log_once(
+                f"Truncation of prompts for model {self.model_config.model_id!r} is "
+                "not needed, so skipping truncation.",
+                level=logging.DEBUG,
+            )
+            return prompts
+        log(
+            f"Truncating prompts for the model {self.model_config.model_id!r} "
+            f"to a maximum of {max_tokens_per_prompt:,} tokens.",
+            level=logging.DEBUG,
+        )
+        if self.generative_type == GenerativeType.BASE:
+            return self._truncate_base_prompts(prompts, max_tokens_per_prompt, sampling_params)
+        if self.generative_type in (GenerativeType.INSTRUCTION_TUNED, GenerativeType.REASONING):
+            return self._truncate_instruction_prompts(prompts, max_tokens_per_prompt)
+        raise InvalidBenchmark("The model type is not set!")
+
+    def _truncate_base_prompts(
+        self,
+        prompts: c.Sequence[str],
+        max_tokens_per_prompt: int,
+        sampling_params: "SamplingParams",
+    ) -> c.Sequence[str]:
+        """Truncate base model prompts from the left."""
+        original_side = self._tokeniser.truncation_side
+        if sampling_params.prompt_logprobs is not None:
+            self._tokeniser.truncation_side = "left"
+        try:
+            truncated = self._tokeniser(
+                text=prompts, max_length=max_tokens_per_prompt, truncation=True
+            )
+        finally:
+            self._tokeniser.truncation_side = original_side
+        return _safe_batch_decode(self._tokeniser, truncated.input_ids, skip_special_tokens=True)
+
+    def _truncate_instruction_prompts(
+        self, prompts: c.Sequence[str], max_tokens_per_prompt: int
+    ) -> c.Sequence[str]:
+        """Truncate instruction-tuned prompts by removing few-shot examples."""
+        assert self.end_of_chat_token_ids is not None
+        eoc_token = self._tokeniser.decode(list(self.end_of_chat_token_ids))
+        segments = [
+            (p.replace(self._tokeniser.bos_token, "") if self._tokeniser.bos_token else p).split(eoc_token)
+            for p in prompts
+        ]
+        for remove_count in range(1, self.dataset_config.num_few_shot_examples + 1):
+            new_prompts = [eoc_token.join(seg[2 * remove_count:]) for seg in segments]
+            tok = self._tokeniser(text=new_prompts, max_length=max_tokens_per_prompt)
+            if all(len(ids) < max_tokens_per_prompt for ids in tok.input_ids):
+                return new_prompts
+        no_few_shot = [eoc_token.join(seg[2 * self.dataset_config.num_few_shot_examples:]) for seg in segments]
+        log_once(
+            "Could not fit the prompts for the model "
+            f"{self.model_config.model_id!r} within {max_tokens_per_prompt:,} tokens by removing few-shot "
+            "examples, so hard-truncating them instead.",
+            level=logging.WARNING,
+        )
+        truncated = self._tokeniser(text=no_few_shot, max_length=max_tokens_per_prompt, truncation=True)
+        return _safe_batch_decode(self._tokeniser, truncated.input_ids, skip_special_tokens=True)
+
+    def _generate_with_retries(
+        self,
+        prompts: list[str],
+        sampling_params: "SamplingParams",
+        max_context_length: int,
+    ) -> tuple[list[str], list]:
+        """Generate sequences with retry logic."""
+        input_is_test = len(prompts) == 1 and len(set(prompts[0])) == 1
+        num_attempts = 3
+        truncation_attempts = 1
+        oom_messages = ["out of memory", "outofmemory", "insufficient memory", "command buffer execution failed"]
+
+        def check_oom(error: Exception) -> None:
+            if any(m in str(error).lower() for m in oom_messages):
+                raise InvalidModel(
+                    "vLLM ran out of device memory during generation. On "
+                    "shared-memory devices (e.g. Apple Metal) the default GPU memory "
+                    "utilization is often too high, since the reserved KV cache "
+                    "leaves no room for the per-step allocations. Re-run with a lower "
+                    "value, e.g. `--gpu-memory-utilization 0.3` (or lower). "
+                    f"Underlying error: {str(error)}"
+                ) from error
+
+        for _ in range(num_attempts):
+            try:
+                bos = str(self._tokeniser.bos_token or "x")
+                prompts = [p if p.strip() else bos for p in prompts]
+                raw_outputs = self._model.generate(
+                    prompts=prompts,
+                    sampling_params=sampling_params,
+                    use_tqdm=False if input_is_test else get_pbar,
+                    lora_request=self.buffer.get("lora_request"),
+                )
+                break
+            except TypeError as e:
+                log(f"Encountered error during vLLM generation: {str(e)}. Retrying...", level=logging.DEBUG)
+                sleep(1)
+            except (ValueError, RuntimeError) as e:
+                check_oom(e)
+                trunc_msgs = [
+                    r"prompt \(length [0-9]+\) is longer than the maximum model length",
+                    "Sampled token IDs exceed the max model length",
+                ]
+                if any(re.search(pat, str(e), flags=re.IGNORECASE) for pat in trunc_msgs):
+                    log("Prompts are too long, so truncating them and trying again...", level=logging.WARNING)
+                    log(f"The error message was: {str(e)}", level=logging.DEBUG)
+                    extra = 50 * truncation_attempts
+                    truncation_attempts += 1
+                    tok = self._tokeniser(
+                        text=prompts,
+                        truncation=True,
+                        max_length=max(max_context_length - sampling_params.max_tokens - extra, 0),
+                    )
+                    prompts = _safe_batch_decode(self._tokeniser, tok.input_ids, skip_special_tokens=True)
+                else:
+                    raise InvalidBenchmark(f"An error occurred during vLLM generation: {str(e)}") from e
+            except Exception as e:
+                check_oom(e)
+                if type(e).__name__ == "EngineDeadError" or "RPC call" in str(e):
+                    raise InvalidBenchmark(
+                        "The vLLM engine died during generation, likely due to a "
+                        "worker RPC timeout. Consider raising "
+                        "`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` or reducing the "
+                        f"batch size. Underlying error: {str(e)}"
+                    ) from e
+                raise
+        else:
+            raise InvalidBenchmark(f"Could not generate sequences after {num_attempts} attempts.")
+        return self._filter_and_parse_outputs(
+            prompts=prompts, raw_outputs=raw_outputs, sampling_params=sampling_params
+        )
+
+    def _filter_and_parse_outputs(
+        self,
+        prompts: list[str],
+        raw_outputs: list,
+        sampling_params: "SamplingParams",
+    ) -> tuple[list[str], list]:
+        """Filter extra outputs and parse completions."""
+        extra = len(raw_outputs) - len(prompts)
+        if extra > 0:
+            raw_outputs = raw_outputs[extra:]
+            if not all(out.prompt == p for out, p in zip(raw_outputs, prompts)):
+                raise InvalidBenchmark(
+                    f"The prompts and the model outputs do not match. There were {extra!r} extra outputs."
+                )
+            log(
+                f"Filtered out {extra:,} extra outputs from the model, "
+                "which occured as we interupted the generation when we truncated "
+                "the prompts.",
+                level=logging.DEBUG,
+            )
+        return self._parse_completions(raw_outputs, sampling_params)
+
+    def _parse_completions(
+        self, raw_outputs: list, sampling_params: "SamplingParams"
+    ) -> tuple[list[str], list]:
+        """Parse raw outputs into completions."""
+        if sampling_params.prompt_logprobs is not None:
+            return [""] * len(raw_outputs), raw_outputs
+        completion_ids = [list(out.outputs[0].token_ids) for out in raw_outputs]
+        completions = _safe_batch_decode(self._tokeniser, completion_ids, skip_special_tokens=False)
+        completions = self._remove_reasoning_content(completions)
+        completions = self._remove_stop_tokens(completions)
+        comp_ids = self._tokeniser(text=completions).input_ids
+        completions = _safe_batch_decode(self._tokeniser, comp_ids, skip_special_tokens=True)
+        if len(completions) != len(raw_outputs):
+            raise InvalidBenchmark(
+                f"Expected {len(raw_outputs):,} completions, but got {len(completions):,}."
+            )
+        return completions, raw_outputs
+
+    def _remove_reasoning_content(self, completions: list[str]) -> list[str]:
+        """Remove reasoning content from completions for reasoning models."""
+        if self.end_of_reasoning_token is None or self.generative_type != GenerativeType.REASONING:
+            return completions
+        count = 0
+        for idx, comp in enumerate(completions):
+            if isinstance(self.end_of_reasoning_token, str) and self.end_of_reasoning_token in comp:
+                completions[idx] = comp.split(self.end_of_reasoning_token)[-1]
+            elif isinstance(self.end_of_reasoning_token, re.Pattern) and self.end_of_reasoning_token.search(comp):
+                completions[idx] = self.end_of_reasoning_token.split(comp)[-1]
+            else:
+                count += 1
+                completions[idx] = ""
+        if count > 0:
+            log_once(
+                f"The model {self.model_config.model_id!r} is a reasoning "
+                "model, but the generated output did not contain the end of "
+                f"reasoning token ({self.end_of_reasoning_token!r}) in "
+                f"{count:,}/{len(completions):,} of the samples. Using an empty string for all these samples "
+                "instead.",
+                level=logging.WARNING if count / len(completions) > 0.5 else logging.DEBUG,
+            )
+        return completions
+
+    def _remove_stop_tokens(self, completions: list[str]) -> list[str]:
+        """Remove stop tokens from completions."""
+        stop_tokens = self._setup_stop_tokens()
+        pattern = re.compile("|".join(re.escape(t) for t in stop_tokens))
+        return [re.split(pattern=pattern, string=c)[0].strip() for c in completions]
+
+    def _run_vllm_core(
+        self, inputs: dict, prompt_key: str, sampling_params: "SamplingParams"
+    ) -> tuple[list[str], list]:
+        """Run vLLM generation with given parameters.
+
+        Shared implementation used by both generate() and score().
+
+        Args:
+            inputs:
+                A batch of inputs to pass through the model.
+            prompt_key:
+                Key to extract prompts from inputs ("text" or "bpc_prompt").
+            sampling_params:
+                Sampling parameters for vLLM generation.
+
+        Returns:
+            Tuple of (completions, raw_outputs).
+
+        Raises:
+            InvalidBenchmark:
+                If generation fails or prompts are too long.
+            InvalidTask:
+                If structured output is misconfigured.
+        """
+        # Set up label token mapping first (required for most tasks)
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
@@ -625,549 +1024,32 @@ class VLLMModel(HuggingFaceEncoderModel):
                 "FULL_LOG=1 to see what the error was. Skipping this evaluation."
             )
 
-        if (
-            self.dataset_config.task.uses_structured_output
-            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
-        ) and self.generative_type == GenerativeType.REASONING:
-            structured_outputs = None
-            log_once(
-                "The dataset uses structured output, but we are not using it as the "
-                f"model {self.model_config.model_id!r} is a reasoning model.",
-                level=logging.DEBUG,
-            )
-        elif self.dataset_config.task.uses_structured_output:
-            if self.dataset_config.task.structured_output_format is not None:
-                structured_outputs = StructuredOutputsParams(
-                    json=self.dataset_config.task.structured_output_format.model_json_schema()
-                )
-            elif self.dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
-                tag_names = list(self.dataset_config.prompt_label_mapping.values())
-                keys_and_their_types: dict[str, t.Any] = {
-                    tag_name: (conlist(str, max_length=5), ...)
-                    for tag_name in tag_names
-                }
-                answer_format_class = create_model(
-                    "AnswerFormat", **keys_and_their_types
-                )
-                structured_generation_schema = answer_format_class.model_json_schema()
-                log_once(
-                    "Using structured generation with the JSON schema: "
-                    f"{json.dumps(structured_generation_schema, ensure_ascii=False)}",
-                    level=logging.DEBUG,
-                )
-                structured_outputs = StructuredOutputsParams(
-                    json=structured_generation_schema
-                )
-            elif self.dataset_config.task == LOGIC:
-                # Extract N (number of objects) and K (number of attributes) from the
-                # first sample to create a dynamic schema for LOGIC tasks.
-                # The target_text is a JSON string, so parse it first.
-                first_sample_raw = inputs["target_text"][0]
-                first_sample = (
-                    json.loads(first_sample_raw)
-                    if isinstance(first_sample_raw, str)
-                    else first_sample_raw
-                )
-                object_keys = [
-                    key for key in first_sample.keys() if key.startswith("object_")
-                ]
-                n = len(object_keys)
-                # Extract K from the first object's attribute list
-                k = len(first_sample[object_keys[0]]) if object_keys else 0
-                keys_and_their_types: dict[str, t.Any] = {
-                    f"object_{i}": (list[str], ...) for i in range(1, n + 1)
-                }
-                answer_format_class = create_model(
-                    "AnswerFormat", **keys_and_their_types
-                )
-                structured_generation_schema = answer_format_class.model_json_schema()
-                log_once(
-                    f"LOGIC task with {n} objects and {k} attributes per object. "
-                    f"Using structured generation with the JSON schema: "
-                    f"{json.dumps(structured_generation_schema, ensure_ascii=False)}",
-                    level=logging.DEBUG,
-                )
-                structured_outputs = StructuredOutputsParams(
-                    json=structured_generation_schema
-                )
-            else:
-                raise InvalidTask(
-                    message=(
-                        "Task set to use structured output, but it neither defines "
-                        "an output structure nor is a token classification task "
-                        "- at least one of these must be true."
-                    )
-                )
-        elif (
-            self.dataset_config.task.uses_logprobs
-            and self.dataset_config.labels
-            and self.buffer.get("first_label_token_mapping", False)
-        ):
-            choice_labels = [
-                self.dataset_config.prompt_label_mapping[label]
-                for label in self.dataset_config.labels
-            ]
-            if isinstance(self.buffer["first_label_token_mapping"], dict):
-                choice_labels = [
-                    self.buffer["first_label_token_mapping"][label]
-                    for label in choice_labels
-                ]
-            structured_outputs = StructuredOutputsParams(choice=choice_labels)
-            log_once(
-                "Using structured generation with the choices: "
-                f"{structured_outputs.choice!r}.",
-                level=logging.DEBUG,
-            )
-        else:
-            structured_outputs = None
-            log_once(
-                "Not using structured generation as the dataset does not require it.",
-                level=logging.DEBUG,
-            )
+        # Set up structured outputs
+        structured_outputs = self._setup_structured_outputs(inputs)
 
-        # Define the parameters used for vLLM generation
-        generation_kwargs = GENERATION_KWARGS.copy()
-        if (generation_config := self.model_config.generation_config) is not None:
-            changed_params = generation_config.to_diff_dict()
-            if "temperature" in changed_params:
-                temperature = changed_params["temperature"]
-                generation_kwargs["temperature"] = temperature
-                log_once(
-                    f"Using temperature={temperature} with the model "
-                    f"{self.model_config.model_id!r} as specified in its "
-                    "generation configuration.",
-                    level=logging.DEBUG,
-                )
-            if "top_p" in changed_params:
-                top_p = changed_params["top_p"]
-                generation_kwargs["top_p"] = top_p
-                log_once(
-                    f"Using top_p={top_p} with the model "
-                    f"{self.model_config.model_id!r} as specified in its "
-                    "generation configuration.",
-                    level=logging.DEBUG,
-                )
-            if "top_k" in changed_params:
-                top_k = changed_params["top_k"]
-                generation_kwargs["top_k"] = top_k
-                log_once(
-                    f"Using top_k={top_k} with the model "
-                    f"{self.model_config.model_id!r} as specified in its "
-                    "generation configuration.",
-                    level=logging.DEBUG,
-                )
-            if "repetition_penalty" in changed_params:
-                repetition_penalty = changed_params["repetition_penalty"]
-                generation_kwargs["repetition_penalty"] = repetition_penalty
-                log_once(
-                    f"Using repetition_penalty={repetition_penalty} with the model "
-                    f"{self.model_config.model_id!r} as specified in its "
-                    "generation configuration.",
-                    level=logging.DEBUG,
-                )
-
-        # The sampling parameters are constructed by the caller (`generate()` or
-        # `score()`); here we fill in the stop tokens, structured outputs and any
-        # per-model generation-config overrides that depend on this method's local
-        # state.
-        sampling_params.stop = [stop_token for stop_token in stop_tokens if stop_token]
+        # Set up generation kwargs and sampling params
+        generation_kwargs = self._setup_generation_kwargs()
+        stop_tokens = self._setup_stop_tokens()
+        sampling_params.stop = [t for t in stop_tokens if t]
         sampling_params.structured_outputs = structured_outputs
         sampling_params.temperature = generation_kwargs["temperature"]
         sampling_params.top_p = generation_kwargs["top_p"]
         sampling_params.top_k = int(generation_kwargs["top_k"])
         sampling_params.repetition_penalty = generation_kwargs["repetition_penalty"]
 
-        # Token-level logprobs are only needed for generation tasks that score labels
-        # via logprobs; this depends on `first_label_token_mapping`, which is only
-        # computed above. BPC scoring (which sets `prompt_logprobs`) never uses them.
+        # Set up logprobs if needed
         if sampling_params.prompt_logprobs is None:
             sampling_params.logprobs = (
                 MAX_VLLM_LOGPROBS if self.buffer["first_label_token_mapping"] else None
             )
 
-        # Compute how many tokens to reserve for generation and, correspondingly, how
-        # long prompts may be. For models whose context is too small to fit both the
-        # prompt and the dataset's full generation budget, the reserved generation
-        # budget is shrunk so the prompt retains room (see `compute_token_budget`). BPC
-        # scoring (signalled by `prompt_logprobs`) generates only a single throwaway
-        # token, so prompts may use almost the full context.
+        # Compute token budget and prepare prompts
         max_context_length = min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
-        if sampling_params.prompt_logprobs is not None:
-            max_tokens_per_prompt = max_context_length - sampling_params.max_tokens
-        else:
-            generation_budget, max_tokens_per_prompt = compute_token_budget(
-                model_max_length=self._tokeniser.model_max_length,
-                max_generated_tokens=self.dataset_config.max_generated_tokens,
-            )
-            if generation_budget < self.dataset_config.max_generated_tokens:
-                log_once(
-                    f"The model {self.model_config.model_id!r} has a context length of "
-                    f"{max_context_length:,} tokens, which is too small to fit both "
-                    "the prompt and the dataset's full generation budget of "
-                    f"{self.dataset_config.max_generated_tokens:,} tokens. Reserving "
-                    f"{generation_budget:,} tokens for generation when budgeting "
-                    "prompt lengths instead.",
-                    level=logging.WARNING,
-                )
-                # Reasoning models govern their own budget via REASONING_MAX_TOKENS, so
-                # we only shrink the generation budget for non-reasoning models.
-                if self.generative_type != GenerativeType.REASONING:
-                    sampling_params.max_tokens = generation_budget
+        max_tokens_per_prompt = self._apply_token_budget(sampling_params, max_context_length)
+        prompts = self._prepare_prompts(inputs, prompt_key, max_tokens_per_prompt, sampling_params)
 
-        # Extract prompts using the provided key
-        prompts: c.Sequence[str] = inputs[prompt_key]
-        if any(len(prompt.strip()) == 0 for prompt in prompts):
-            log("Found empty prompts, replacing with BOS token.", level=logging.DEBUG)
-            prompts = [
-                prompt
-                if len(prompt.strip()) > 0
-                else str(self._tokeniser.bos_token or "x")
-                for prompt in prompts
-            ]
-
-        # Strip the prompts if the model's tokeniser requires it
-        labels_to_be_generated = list(self.dataset_config.prompt_label_mapping.values())
-        if len(labels_to_be_generated) == 0:
-            labels_to_be_generated = ["negative", "positive"]
-        if self.generative_type == GenerativeType.BASE and should_prompts_be_stripped(
-            labels_to_be_generated=labels_to_be_generated, tokeniser=self._tokeniser
-        ):
-            log_once(
-                f"Stripping prompts for model {self.model_config.model_id!r}.",
-                level=logging.DEBUG,
-            )
-            prompts = [prompt.strip() for prompt in prompts]
-
-        # Truncate the prompts if needed, using the per-prompt token budget computed
-        # above.
-        tokenized_prompts = self._tokeniser(
-            text=prompts, max_length=max_tokens_per_prompt
-        )
-        if any(
-            len(input_ids) >= max_tokens_per_prompt
-            for input_ids in tokenized_prompts.input_ids
-        ):
-            log(
-                f"Truncating prompts for the model {self.model_config.model_id!r} "
-                f"to a maximum of {max_tokens_per_prompt:,} tokens.",
-                level=logging.DEBUG,
-            )
-            match self.generative_type:
-                case GenerativeType.BASE:
-                    # For BPC scoring (signalled by `prompt_logprobs`) the gold answer
-                    # is appended to the end of the prompt, so truncate from the left —
-                    # dropping leading prompt prefix / few-shot context — to keep the
-                    # answer intact. Default right-truncation would silently cut the
-                    # answer off, leaving no answer tokens to score (infinite BPC).
-                    original_truncation_side = self._tokeniser.truncation_side
-                    if sampling_params.prompt_logprobs is not None:
-                        self._tokeniser.truncation_side = "left"
-                    try:
-                        truncated_tokenized_prompts = self._tokeniser(
-                            text=prompts,
-                            max_length=max_tokens_per_prompt,
-                            truncation=True,
-                        )
-                    finally:
-                        self._tokeniser.truncation_side = original_truncation_side
-                    prompts = _safe_batch_decode(
-                        self._tokeniser,
-                        truncated_tokenized_prompts.input_ids,
-                        skip_special_tokens=True,
-                    )
-                case GenerativeType.INSTRUCTION_TUNED | GenerativeType.REASONING:
-                    assert self.end_of_chat_token_ids is not None, (
-                        "The end-of-chat token IDs should be set for instruction-tuned "
-                        "and reasoning models."
-                    )
-                    end_of_chat_token = self._tokeniser.decode(
-                        list(self.end_of_chat_token_ids)
-                    )
-                    prompt_segments: list[list[str]] = [
-                        (
-                            prompt.replace(self._tokeniser.bos_token, "")
-                            if self._tokeniser.bos_token is not None
-                            else prompt
-                        ).split(end_of_chat_token)
-                        for prompt in prompts
-                    ]
-                    for num_few_shots_to_remove in range(
-                        1, self.dataset_config.num_few_shot_examples + 1
-                    ):
-                        new_prompts = [
-                            end_of_chat_token.join(
-                                prompt_segment[2 * num_few_shots_to_remove :]
-                            )
-                            for prompt_segment in prompt_segments
-                        ]
-                        tokenized_prompts = self._tokeniser(
-                            text=new_prompts, max_length=max_tokens_per_prompt
-                        )
-                        if all(
-                            len(input_ids) < max_tokens_per_prompt
-                            for input_ids in tokenized_prompts.input_ids
-                        ):
-                            prompts = new_prompts
-                            break
-                    else:
-                        # Removing few-shot examples was not enough (or there were
-                        # none to remove, as in zero-shot tasks), so hard-truncate the
-                        # prompts as a last resort rather than failing the benchmark.
-                        # We truncate the prompts with *all* few-shot examples removed,
-                        # to avoid keeping partial few-shot context while cutting away
-                        # the actual query.
-                        prompts_without_few_shots = [
-                            end_of_chat_token.join(
-                                prompt_segment[
-                                    2 * self.dataset_config.num_few_shot_examples :
-                                ]
-                            )
-                            for prompt_segment in prompt_segments
-                        ]
-                        log_once(
-                            "Could not fit the prompts for the model "
-                            f"{self.model_config.model_id!r} within "
-                            f"{max_tokens_per_prompt:,} tokens by removing few-shot "
-                            "examples, so hard-truncating them instead.",
-                            level=logging.WARNING,
-                        )
-                        truncated_tokenized_prompts = self._tokeniser(
-                            text=prompts_without_few_shots,
-                            max_length=max_tokens_per_prompt,
-                            truncation=True,
-                        )
-                        prompts = _safe_batch_decode(
-                            self._tokeniser,
-                            truncated_tokenized_prompts.input_ids,
-                            skip_special_tokens=True,
-                        )
-                case _:
-                    raise InvalidBenchmark("The model type is not set!")
-        else:
-            log_once(
-                f"Truncation of prompts for model {self.model_config.model_id!r} is "
-                "not needed, so skipping truncation.",
-                level=logging.DEBUG,
-            )
-
-        # Generate sequences using vLLM
-        input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
-        num_attempts = 3
-        truncation_attempts = 1
-
-        # Device out-of-memory signatures. On shared-memory devices (e.g. Apple
-        # Metal) these typically surface during generation rather than at load time,
-        # either as a `RuntimeError` or by killing the engine subprocess.
-        out_of_memory_messages = [
-            "out of memory",
-            "outofmemory",
-            "insufficient memory",
-            "command buffer execution failed",
-        ]
-
-        def _raise_if_out_of_memory(error: Exception) -> None:
-            """Raise a clear, actionable error if `error` is a device OOM.
-
-            Args:
-                error:
-                    The exception raised during vLLM generation.
-
-            Raises:
-                InvalidModel:
-                    If `error` is a device out-of-memory error.
-            """
-            if any(message in str(error).lower() for message in out_of_memory_messages):
-                raise InvalidModel(
-                    "vLLM ran out of device memory during generation. On "
-                    "shared-memory devices (e.g. Apple Metal) the default GPU memory "
-                    "utilization is often too high, since the reserved KV cache "
-                    "leaves no room for the per-step allocations. Re-run with a lower "
-                    "value, e.g. `--gpu-memory-utilization 0.3` (or lower). "
-                    f"Underlying error: {str(error)}"
-                ) from error
-
-        for _ in range(num_attempts):
-            try:
-                # Replace any empty prompts with the BOS token to avoid vLLM
-                # errors. Empty prompts can occur after truncation or other
-                # processing steps.
-                bos_token = str(self._tokeniser.bos_token or "x")
-                prompts = [
-                    prompt if prompt.strip() else bos_token for prompt in prompts
-                ]
-                raw_outputs = self._model.generate(  # ty: ignore[call-non-callable]
-                    prompts=prompts,
-                    sampling_params=sampling_params,
-                    use_tqdm=False if input_is_a_test else get_pbar,
-                    lora_request=self.buffer.get("lora_request"),
-                )
-                break
-            except TypeError as e:
-                log(
-                    f"Encountered error during vLLM generation: {str(e)}. Retrying...",
-                    level=logging.DEBUG,
-                )
-                sleep(1)
-            except (ValueError, RuntimeError) as e:
-                # A device out-of-memory error is not recoverable by retrying, so
-                # surface clear guidance to lower the GPU memory utilization.
-                _raise_if_out_of_memory(e)
-
-                # Truncate the prompts if they are too long for the model
-                truncate_error_messages = [
-                    r"prompt \(length [0-9]+\) is longer than the maximum model length",
-                    "Sampled token IDs exceed the max model length",
-                ]
-                if any(
-                    re.search(pattern, str(e), flags=re.IGNORECASE) is not None
-                    for pattern in truncate_error_messages
-                ):
-                    log(
-                        "Prompts are too long, so truncating them and trying again...",
-                        level=logging.WARNING,
-                    )
-                    log(f"The error message was: {str(e)}", level=logging.DEBUG)
-
-                    # If we have already tried truncating the prompts a few times, then
-                    # we truncate a bit more aggressively
-                    extra_truncation = 50 * truncation_attempts
-                    truncation_attempts += 1
-
-                    tokenized_prompts = self._tokeniser(
-                        text=prompts,
-                        truncation=True,
-                        max_length=max(
-                            max_context_length
-                            - sampling_params.max_tokens
-                            - extra_truncation,
-                            0,
-                        ),
-                    )
-                    prompts = _safe_batch_decode(
-                        self._tokeniser,
-                        tokenized_prompts.input_ids,
-                        skip_special_tokens=True,
-                    )
-                else:
-                    raise InvalidBenchmark(
-                        f"An error occurred during vLLM generation: {str(e)}"
-                    ) from e
-            except Exception as e:
-                # A device out-of-memory error can also manifest as the engine
-                # subprocess dying, so check for it before the generic handling.
-                _raise_if_out_of_memory(e)
-
-                # The vLLM v1 engine raises `EngineDeadError` when a worker RPC
-                # times out. The engine cannot be reused once dead, so surface a
-                # clean benchmark error instead of an opaque crash.
-                if type(e).__name__ == "EngineDeadError" or "RPC call" in str(e):
-                    raise InvalidBenchmark(
-                        "The vLLM engine died during generation, likely due to a "
-                        "worker RPC timeout. Consider raising "
-                        "`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` or reducing the "
-                        f"batch size. Underlying error: {str(e)}"
-                    ) from e
-                raise
-        else:
-            raise InvalidBenchmark(
-                f"Could not generate sequences after {num_attempts} attempts."
-            )
-
-        # When we shorten the prompts then some residual model outputs persist, so we
-        # need to filter these out
-        num_extra_outputs = len(raw_outputs) - len(prompts)
-        if num_extra_outputs > 0:
-            raw_outputs = raw_outputs[num_extra_outputs:]
-            if not all(
-                raw_output.prompt == prompt
-                for raw_output, prompt in zip(raw_outputs, prompts)
-            ):
-                raise InvalidBenchmark(
-                    f"The prompts and the model outputs do not match. There were "
-                    f"{num_extra_outputs!r} extra outputs."
-                )
-            else:
-                log(
-                    f"Filtered out {num_extra_outputs:,} extra outputs from the model, "
-                    "which occured as we interupted the generation when we truncated "
-                    "the prompts.",
-                    level=logging.DEBUG,
-                )
-
-        # Parse the raw model outputs. We keep the special tokens for now, as we need
-        # them to potentially remove reasoning content and stop tokens
-        if sampling_params.prompt_logprobs is not None:
-            # BPC mode: the single generated token is discarded; only prompt_logprobs
-            # are used for scoring.
-            completions = [""] * len(raw_outputs)
-        else:
-            completion_ids: c.Sequence[c.Sequence[int]] = [
-                list(output.outputs[0].token_ids) for output in raw_outputs
-            ]
-            completions = _safe_batch_decode(
-                self._tokeniser,
-                [list(completion_id) for completion_id in completion_ids],
-                skip_special_tokens=False,
-            )
-            if (
-                self.end_of_reasoning_token is not None
-                and self.generative_type == GenerativeType.REASONING
-            ):
-                num_samples_without_eor_token = 0
-                for idx in range(len(completions)):
-                    if (
-                        isinstance(self.end_of_reasoning_token, str)
-                        and self.end_of_reasoning_token in completions[idx]
-                    ):
-                        completions[idx] = completions[idx].split(
-                            self.end_of_reasoning_token
-                        )[-1]
-                    elif isinstance(
-                        self.end_of_reasoning_token, re.Pattern
-                    ) and self.end_of_reasoning_token.search(completions[idx]):
-                        completions[idx] = self.end_of_reasoning_token.split(
-                            completions[idx]
-                        )[-1]
-                    else:
-                        num_samples_without_eor_token += 1
-                        completions[idx] = ""
-                if num_samples_without_eor_token > 0:
-                    log_once(
-                        f"The model {self.model_config.model_id!r} is a reasoning "
-                        "model, but the generated output did not contain the end of "
-                        f"reasoning token ({self.end_of_reasoning_token!r}) in "
-                        f"{num_samples_without_eor_token:,}/{len(completions):,} of "
-                        "the samples. Using an empty string for all these samples "
-                        "instead.",
-                        level=(
-                            logging.WARNING
-                            if num_samples_without_eor_token / len(completions) > 0.5
-                            else logging.DEBUG
-                        ),
-                    )
-            stop_token_pattern = re.compile(
-                "|".join(re.escape(stop_token) for stop_token in stop_tokens)
-            )
-            completions = [
-                re.split(pattern=stop_token_pattern, string=completion)[0].strip()
-                for completion in completions
-            ]
-
-            # Remove all the special tokens from the completions, if any are present
-            completion_ids = self._tokeniser(text=completions).input_ids
-            completions = _safe_batch_decode(
-                self._tokeniser, completion_ids, skip_special_tokens=True
-            )
-
-            # Sanity check
-            if len(completions) != len(prompts):
-                raise InvalidBenchmark(
-                    f"Expected {len(prompts):,} completions, but got "
-                    f"{len(completions):,}."
-                )
-
-        # Return completions and raw outputs for caller to handle scoring
-        return completions, raw_outputs
+        # Generate and parse outputs
+        return self._generate_with_retries(prompts, sampling_params, max_context_length)
 
     def generate(self, inputs: dict) -> "GenerativeModelOutput":
         """Generate outputs from the model.
@@ -1432,6 +1314,317 @@ def _get_olmo3_rope_parameters(
     return rope_parameters
 
 
+def _determine_dtype(
+    hf_model_config: "PretrainedConfig",
+) -> tuple[str | torch.dtype, str | None]:
+    """Determine the dtype and quantization for loading.
+
+    Args:
+        hf_model_config:
+            The Hugging Face model configuration.
+
+    Returns:
+        Tuple of (dtype, quantization).
+
+    Raises:
+        NeedsExtraInstalled:
+            If quantized model requires missing packages.
+    """
+    dtype: str | torch.dtype = "auto"
+
+    if hf_model_config.dtype == torch.float32:
+        if torch.cuda.is_bf16_supported():
+            log(
+                "You are loading a model with dtype FP32, which we will convert to "
+                "BF16 as FP32 is not supported by vLLM and BF16 is supported by your "
+                "GPU.",
+                level=logging.WARNING,
+            )
+            dtype = torch.bfloat16
+        else:
+            log(
+                "You are loading a model with dtype FP32, which we will convert to "
+                "FP16 as FP32 is not supported by vLLM and BF16 is not supported by "
+                "your GPU.",
+                level=logging.WARNING,
+            )
+            dtype = torch.float16
+
+    if hf_model_config.dtype == torch.bfloat16:
+        min_cuda_compute_capability = get_min_cuda_compute_capability()
+        required_capability = VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY
+
+        if min_cuda_compute_capability is not None:
+            if min_cuda_compute_capability < required_capability:
+                log(
+                    f"You are loading a model with dtype {hf_model_config.dtype}, "
+                    "which vLLM only supports for CUDA devices with CUDA compute "
+                    f"capability >={required_capability}. You are using one or more "
+                    f"devices with compute capability {min_cuda_compute_capability}. "
+                    "Setting dtype to float16 instead.",
+                    level=logging.WARNING,
+                )
+                dtype = torch.float16
+
+    quantization: str | None = None
+    if hasattr(hf_model_config, "quantization_config"):
+        quantization = hf_model_config.quantization_config.get("quant_method")
+
+    if quantization == "gptq" and (
+        importlib.util.find_spec("auto_gptq") is None
+        or importlib.util.find_spec("optimum") is None
+    ):
+        raise NeedsExtraInstalled(extra="quantization")
+    if quantization == "awq" and importlib.util.find_spec("awq") is None:
+        raise NeedsExtraInstalled(extra="quantization")
+
+    if quantization is not None:
+        log(
+            f"You are loading a quantized model with quantization {quantization}. "
+            "Forcing the vLLM dtype to 'auto'",
+            level=logging.WARNING,
+        )
+        dtype = "auto"
+
+    return dtype, quantization
+
+
+def _prepare_hf_overrides(
+    hf_model_config: "PretrainedConfig",
+    model_id: str,
+) -> dict[str, dict[str, str | int | float] | list[str]]:
+    """Prepare Hugging Face overrides for vLLM.
+
+    Args:
+        hf_model_config:
+            The Hugging Face model configuration.
+        model_id:
+            The model ID.
+
+    Returns:
+        Dictionary of HF overrides.
+    """
+    hf_overrides: dict[str, dict[str, str | int | float] | list[str]] = {}
+
+    if hf_model_config.architectures:
+        remapped = [
+            _ARCHITECTURE_ALIASES.get(arch, arch)
+            for arch in hf_model_config.architectures
+        ]
+        if remapped != hf_model_config.architectures:
+            log(
+                f"Remapping model architectures {hf_model_config.architectures} -> "
+                f"{remapped} for vLLM compatibility.",
+                level=logging.INFO,
+            )
+            hf_model_config.architectures = remapped
+            hf_overrides["architectures"] = remapped
+
+    olmo3_rope_parameters = _get_olmo3_rope_parameters(
+        model_id=model_id, hf_model_config=hf_model_config
+    )
+    if olmo3_rope_parameters is not None:
+        hf_overrides["rope_parameters"] = olmo3_rope_parameters
+
+    return hf_overrides
+
+
+def _create_llm_instance(
+    model_location: str,
+    download_dir: str,
+    benchmark_config: "BenchmarkConfig",
+    max_model_len: int,
+    revision: str,
+    quantization: str | None,
+    dtype: str | torch.dtype,
+    hf_overrides: dict[str, t.Any],
+    vllm_params: dict[str, t.Any],
+    model_config: "ModelConfig",
+    force_single_gpu: bool = False,
+) -> "LLM":
+    """Create a vLLM LLM instance.
+
+    Args:
+        model_location:
+            Path or ID of the model.
+        download_dir:
+            Directory for downloading model weights.
+        benchmark_config:
+            Benchmark configuration.
+        max_model_len:
+            Maximum model length.
+        revision:
+            Model revision.
+        quantization:
+            Quantization method.
+        dtype:
+            Data type.
+        hf_overrides:
+            Hugging Face overrides.
+        vllm_params:
+            vLLM parameters.
+        model_config:
+            Model configuration.
+        force_single_gpu:
+            If True, forces tensor parallelism to 1.
+
+    Returns:
+        The loaded vLLM LLM instance.
+    """
+    backend, tp_size, pp_size = select_backend_and_parallelism(
+        force_single_gpu=force_single_gpu
+    )
+
+    llm_kwargs: dict[str, t.Any] = {
+        "model": model_location,
+        "tokenizer": model_location,
+        "gpu_memory_utilization": benchmark_config.gpu_memory_utilization,
+        "max_model_len": max_model_len,
+        "max_num_batched_tokens": max_model_len,
+        "download_dir": download_dir,
+        "trust_remote_code": benchmark_config.trust_remote_code,
+        "revision": revision,
+        "seed": 4242,
+        "distributed_executor_backend": backend,
+        "tensor_parallel_size": tp_size,
+        "pipeline_parallel_size": pp_size,
+        "disable_custom_all_reduce": True,
+        "quantization": quantization,
+        "dtype": dtype,  # ty: ignore[invalid-argument-type]
+        "enforce_eager": True,
+        "enable_prefix_caching": False,
+        "enable_flashinfer_autotune": False,
+        "enable_lora": model_config.adapter_base_model_id is not None,
+        "max_lora_rank": 256,
+        "limit_mm_per_prompt": {"image": 0, "video": 0, "audio": 0},
+        "runner": "generate",
+        **({"hf_overrides": hf_overrides} if hf_overrides else {}),
+        **vllm_params,
+    }
+    return LLM(**llm_kwargs)
+
+
+def _handle_model_load_error(
+    error: Exception,
+    model_id: str,
+    benchmark_config: "BenchmarkConfig",
+    create_llm_fn: c.Callable[[bool], "LLM"],
+) -> "LLM":
+    """Handle model loading errors with retries.
+
+    Args:
+        error:
+            The exception raised during model loading.
+        model_id:
+            The model ID.
+        benchmark_config:
+            Benchmark configuration.
+        create_llm_fn:
+            Function to create LLM instance.
+
+    Returns:
+        Loaded LLM instance.
+
+    Raises:
+        InvalidModel:
+            If model cannot be loaded.
+    """
+    error_str = str(error)
+
+    has_missing_processor = (
+        "Can't load image processor" in error_str
+        and "preprocessor_config.json" in error_str
+    )
+    if has_missing_processor:
+        log(
+            f"Model {model_id!r} is missing an image processor config. Retrying "
+            "without image processing since EuroEval only does text inference.",
+            level=logging.DEBUG,
+        )
+        try:
+            with _skip_image_processor_context():
+                return create_llm_fn(False)
+        except (RuntimeError, ValueError, OSError) as retry_e:
+            raise InvalidModel(
+                f"The model {model_id!r} could not be loaded. The error was "
+                f"{retry_e!r}."
+            ) from retry_e
+
+    multimodal_patterns = [
+        "multimodal budget",
+        "MM input",
+        "image input",
+        "vision model",
+    ]
+    if any(pattern in error_str for pattern in multimodal_patterns):
+        log(
+            f"Model {model_id!r} triggered multimodal error during initialisation. "
+            "Retrying with multimodal inputs disabled since EuroEval only does "
+            "text inference.",
+            level=logging.DEBUG,
+        )
+        try:
+            with _skip_image_processor_context():
+                return create_llm_fn(False)
+        except (RuntimeError, ValueError, OSError) as retry_e:
+            raise InvalidModel(
+                f"The model {model_id!r} could not be loaded in text-only mode. "
+                f"The error was {retry_e!r}."
+            ) from retry_e
+
+    if "attention heads" in error_str and "divisible by tensor parallel" in error_str:
+        log(
+            f"Model {model_id!r} failed with tensor parallel error. "
+            "Retrying with single GPU.",
+            level=logging.DEBUG,
+        )
+        try:
+            return create_llm_fn(True)
+        except (RuntimeError, ValueError, OSError) as retry_e:
+            raise InvalidModel(
+                f"The model {model_id!r} could not be loaded even with "
+                f"single GPU. The error was {retry_e!r}."
+            ) from retry_e
+
+    if "awaiting a review from the repo authors" in str(error):
+        raise InvalidModel(
+            f"The model {model_id!r} is awaiting a review from the repository "
+            "authors. Please try again later."
+        ) from error
+
+    if "trust_remote_code" in str(error):
+        raise InvalidModel(
+            f"Loading the model {model_id!r} needs to trust remote code. "
+            "If you trust the suppliers of this model, then you can enable "
+            "this by setting the `--trust-remote-code` flag."
+        ) from error
+
+    if "See stack trace for root cause." in str(error) or "See root cause above." in str(error):
+        msg = f"The model {model_id!r} could not be loaded, but vLLM did not mention exactly what happened. "
+        if benchmark_config.verbose:
+            msg += (
+                "Since you're running in verbose mode, you might see a descriptive "
+                "error above already. Note however that if the error message urges "
+                "you to use the attention backend 'FLEX_ATTENTION', please try "
+                "setting it to 'TRITON_ATTN' instead using the "
+                "`--attention-backend` CLI argument, as that often solves the "
+                "issue, whereas 'FLEX_ATTENTION' usually doesn't. If you don't "
+                "see any descriptive error above, then you can try "
+            )
+        else:
+            msg += "Try "
+        msg += (
+            "re-running the benchmark with the environment variable `FULL_LOG` "
+            "set to `1` to see the full stack trace. E.g., "
+            f"`FULL_LOG=1 euroeval --model {model_id}`."
+        )
+        raise InvalidModel(msg) from error
+
+    raise InvalidModel(
+        f"The model {model_id!r} could not be loaded. The error was {error!r}."
+    ) from error
+
+
 def load_model(
     model_config: "ModelConfig",
     benchmark_config: "BenchmarkConfig",
@@ -1469,86 +1662,19 @@ def load_model(
         InvalidModel:
             If the model could not be loaded.
     """
-    # Prefer base model ID if the model is an adapter - the adapter will be added on
-    # during inference in this case
     model_id = model_config.adapter_base_model_id or model_config.model_id
     revision = (
         model_config.revision if model_config.adapter_base_model_id is None else "main"
     )
 
-    # Start with dtype being the "auto" vLLM dtype
-    dtype: str | torch.dtype = "auto"
+    dtype, quantization = _determine_dtype(hf_model_config)
 
-    # Choose bf16 over fp16 if the model is a fp32 model and the GPU supports it
-    if hf_model_config.dtype == torch.float32:
-        if torch.cuda.is_bf16_supported():
-            log(
-                "You are loading a model with dtype FP32, which we will convert to "
-                "BF16 as FP32 is not supported by vLLM and BF16 is supported by your "
-                "GPU.",
-                level=logging.WARNING,
-            )
-            dtype = torch.bfloat16
-        else:
-            log(
-                "You are loading a model with dtype FP32, which we will convert to "
-                "FP16 as FP32 is not supported by vLLM and BF16 is not supported by "
-                "your GPU.",
-                level=logging.WARNING,
-            )
-            dtype = torch.float16
+    download_dir = (
+        str(Path(model_config.model_cache_dir) / "base_model")
+        if model_config.adapter_base_model_id is not None
+        else str(model_config.model_cache_dir)
+    )
 
-    # If the model is a bf16 model, we need to check the CUDA compute capability
-    if hf_model_config.dtype == torch.bfloat16:
-        min_cuda_compute_capability = get_min_cuda_compute_capability()
-        required_capability = VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY
-
-        if min_cuda_compute_capability is not None:
-            if min_cuda_compute_capability < required_capability:
-                log(
-                    f"You are loading a model with dtype {hf_model_config.dtype}, "
-                    "which vLLM only supports for CUDA devices with CUDA compute "
-                    f"capability >={required_capability}. You are using one or more "
-                    f"devices with compute capability {min_cuda_compute_capability}. "
-                    "Setting dtype to float16 instead.",
-                    level=logging.WARNING,
-                )
-                dtype = torch.float16
-
-    quantization = None
-    if hasattr(hf_model_config, "quantization_config"):
-        quantization = hf_model_config.quantization_config.get("quant_method")
-
-    # The quantised models require extra dependencies
-    if quantization == "gptq" and (
-        importlib.util.find_spec("auto_gptq") is None
-        or importlib.util.find_spec("optimum") is None
-    ):
-        raise NeedsExtraInstalled(extra="quantization")
-    if quantization == "awq" and importlib.util.find_spec("awq") is None:
-        raise NeedsExtraInstalled(extra="quantization")
-
-    # If the model is a quantized model, let vLLM decide the dtype
-    if quantization is not None:
-        log(
-            f"You are loading a quantized model with quantization {quantization}. "
-            "Forcing the vLLM dtype to 'auto'",
-            level=logging.WARNING,
-        )
-        dtype = "auto"
-
-    if model_config.adapter_base_model_id is not None:
-        download_dir = str(Path(model_config.model_cache_dir) / "base_model")
-    else:
-        download_dir = str(model_config.model_cache_dir)
-
-    # Keep vLLM's own caches (compiled graphs, model-info registry) under the
-    # euroeval cache directory alongside the downloaded weights, rather than the
-    # shared ``~/.cache/vllm`` default. On shared machines the latter can end up
-    # owned by another user (e.g. from a past ``sudo`` run), which makes vLLM fail
-    # with a ``PermissionError`` when it tries to write there. ``setdefault`` so an
-    # explicit ``VLLM_CACHE_ROOT`` from the environment still wins. vLLM reads this
-    # variable lazily, so setting it before the engine is created is sufficient.
     os.environ.setdefault(
         "VLLM_CACHE_ROOT", str((Path(benchmark_config.cache_dir) / "vllm").resolve())
     )
@@ -1557,34 +1683,14 @@ def load_model(
         tokeniser=tokeniser, model_config=model_config
     )
 
-    # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
-    # config
     if hasattr(vllm.config, "attention") and attention_backend is not None:
         vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)  # ty: ignore[invalid-argument-type]
 
     clear_vllm()
 
-    hf_overrides: dict[str, dict[str, str | int | float] | list[str]] = {}
-    if hf_model_config.architectures:
-        remapped = [
-            _ARCHITECTURE_ALIASES.get(arch, arch)
-            for arch in hf_model_config.architectures
-        ]
-        if remapped != hf_model_config.architectures:
-            log(
-                f"Remapping model architectures {hf_model_config.architectures} -> "
-                f"{remapped} for vLLM compatibility.",
-                level=logging.INFO,
-            )
-            hf_model_config.architectures = remapped
-            hf_overrides["architectures"] = remapped
-
-    # TODO: Remove this block when we don't care about OLMo-3 anymore
-    olmo3_rope_parameters = _get_olmo3_rope_parameters(
-        model_id=model_id, hf_model_config=hf_model_config
+    hf_overrides = _prepare_hf_overrides(
+        hf_model_config=hf_model_config, model_id=model_id
     )
-    if olmo3_rope_parameters is not None:
-        hf_overrides["rope_parameters"] = olmo3_rope_parameters
 
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism(force_single_gpu=False)
@@ -1603,170 +1709,32 @@ def load_model(
         else MAX_CONTEXT_LENGTH,
     )
 
-    def _create_llm(force_single_gpu: bool = False) -> "LLM":
-        """Create a vLLM LLM instance.
-
-        Args:
-            force_single_gpu:
-                If True, forces tensor parallelism to 1 regardless of GPU count.
-
-        Returns:
-            The loaded vLLM LLM instance.
-        """
-        # Re-compute parallelism if forcing single GPU
-        if force_single_gpu:
-            backend, tp_size, pp_size = select_backend_and_parallelism(
-                force_single_gpu=True
-            )
-        else:
-            backend, tp_size, pp_size = (
-                distributed_executor_backend,
-                tensor_parallel_size,
-                pipeline_parallel_size,
-            )
-
-        llm_kwargs: dict[str, t.Any] = {
-            "model": model_location,
-            "tokenizer": model_location,
-            "gpu_memory_utilization": benchmark_config.gpu_memory_utilization,
-            "max_model_len": max_model_len,
-            "max_num_batched_tokens": max_model_len,
-            "download_dir": download_dir,
-            "trust_remote_code": benchmark_config.trust_remote_code,
-            "revision": revision,
-            "seed": 4242,
-            "distributed_executor_backend": backend,
-            "tensor_parallel_size": tp_size,
-            "pipeline_parallel_size": pp_size,
-            "disable_custom_all_reduce": True,
-            "quantization": quantization,
-            "dtype": dtype,  # ty: ignore[invalid-argument-type]
-            "enforce_eager": True,
-            # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
-            # so we disable it for now
-            "enable_prefix_caching": False,
-            # Disable FlashInfer autotuning to avoid CUDA kernel compilation overhead
-            "enable_flashinfer_autotune": False,
-            "enable_lora": model_config.adapter_base_model_id is not None,
-            "max_lora_rank": 256,
-            "limit_mm_per_prompt": {"image": 0, "video": 0, "audio": 0},
-            # runner is required for LLM.generate() to work with generative models
-            "runner": "generate",
-            **({"hf_overrides": hf_overrides} if hf_overrides else {}),
-            **vllm_params,
-        }
-        return LLM(**llm_kwargs)
+    def _create_wrapped(force_single_gpu: bool = False) -> "LLM":
+        return _create_llm_instance(
+            model_location=model_location,
+            download_dir=download_dir,
+            benchmark_config=benchmark_config,
+            max_model_len=max_model_len,
+            revision=revision,
+            quantization=quantization,
+            dtype=dtype,
+            hf_overrides=hf_overrides,
+            vllm_params=vllm_params,
+            model_config=model_config,
+            force_single_gpu=force_single_gpu,
+        )
 
     try:
-        model = _create_llm()
+        model = _create_wrapped(False)
     except (RuntimeError, ValueError, OSError) as e:
-        error_str = str(e)
-        # Catch missing image processor config
-        has_missing_processor = (
-            "Can't load image processor" in error_str
-            and "preprocessor_config.json" in error_str
+        model = _handle_model_load_error(
+            error=e,
+            model_id=model_id,
+            benchmark_config=benchmark_config,
+            create_llm_fn=_create_wrapped,
         )
-        if has_missing_processor:
-            log(
-                f"Model {model_id!r} is missing an image processor config. Retrying "
-                "without image processing since EuroEval only does text inference.",
-                level=logging.DEBUG,
-            )
-            try:
-                with _skip_image_processor_context():
-                    model = _create_llm()
-            except (RuntimeError, ValueError, OSError) as retry_e:
-                raise InvalidModel(
-                    f"The model {model_id!r} could not be loaded. The error was "
-                    f"{retry_e!r}."
-                ) from retry_e
-        # Catch multimodal budget errors for text-only inference on multimodal models.
-        # Note: These patterns may need updating as vLLM evolves its error messages.
-        elif any(
-            pattern in error_str
-            for pattern in [
-                "multimodal budget",
-                "MM input",
-                "image input",
-                "vision model",
-            ]
-        ):
-            log(
-                f"Model {model_id!r} triggered multimodal error during initialisation. "
-                "Retrying with multimodal inputs disabled since EuroEval only does "
-                "text inference.",
-                level=logging.DEBUG,
-            )
-            try:
-                with _skip_image_processor_context():
-                    model = _create_llm()
-            except (RuntimeError, ValueError, OSError) as retry_e:
-                raise InvalidModel(
-                    f"The model {model_id!r} could not be loaded in text-only mode. "
-                    f"The error was {retry_e!r}."
-                ) from retry_e
-        # Catch tensor parallel errors - attention heads not divisible by TP size
-        elif (
-            "attention heads" in error_str
-            and "divisible by tensor parallel" in error_str
-        ):
-            log(
-                f"Model {model_id!r} failed with tensor parallel error. "
-                "Retrying with single GPU.",
-                level=logging.DEBUG,
-            )
-            try:
-                model = _create_llm(force_single_gpu=True)
-            except (RuntimeError, ValueError, OSError) as retry_e:
-                raise InvalidModel(
-                    f"The model {model_id!r} could not be loaded even with "
-                    f"single GPU. The error was {retry_e!r}."
-                ) from retry_e
-
-        elif "awaiting a review from the repo authors" in str(e):
-            raise InvalidModel(
-                f"The model {model_id!r} is awaiting a review from the repository "
-                "authors. Please try again later."
-            ) from e
-        elif "trust_remote_code" in str(e):
-            raise InvalidModel(
-                f"Loading the model {model_id!r} needs to trust remote code. "
-                "If you trust the suppliers of this model, then you can enable "
-                "this by setting the `--trust-remote-code` flag."
-            ) from e
-        elif "See stack trace for root cause." in str(
-            e
-        ) or "See root cause above." in str(e):
-            msg = (
-                f"The model {model_id!r} could not be loaded, but vLLM did not "
-                "mention exactly what happened. "
-            )
-            msg += (
-                (
-                    "Since you're running in verbose mode, you might see a descriptive "
-                    "error above already. Note however that if the error message urges "
-                    "you to use the attention backend 'FLEX_ATTENTION', please try "
-                    "setting it to 'TRITON_ATTN' instead using the "
-                    "`--attention-backend` CLI argument, as that often solves the "
-                    "issue, whereas 'FLEX_ATTENTION' usually doesn't. If you don't "
-                    "see any descriptive error above, then you can try "
-                )
-                if benchmark_config.verbose
-                else "Try "
-            )
-            msg += (
-                "re-running the benchmark with the environment variable `FULL_LOG` "
-                "set to `1` to see the full stack trace. E.g., "
-                f"`FULL_LOG=1 euroeval --model {model_id}`."
-            )
-            raise InvalidModel(msg) from e
-        else:
-            raise InvalidModel(
-                f"The model {model_id!r} could not be loaded. The error was {e!r}."
-            ) from e
 
     model.config = hf_model_config
-
     return model
 
 
