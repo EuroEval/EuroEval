@@ -50,57 +50,6 @@ LABELS = ["a", "b", "c", "d"]
 LANGUAGE_SUBSET_MAPPING = {"es": "spanish", "fr": "french"}
 
 
-def main() -> None:
-    """Create the MultiNRC datasets and upload them to the HF Hub."""
-    repo_id = "ScaleAI/MultiNRC"
-
-    # The dataset has a single subset; load it once and filter per language
-    full_dataset = load_dataset(path=repo_id, split="test", token=True)
-    assert isinstance(full_dataset, Dataset)
-
-    for language in LANGUAGE_SUBSET_MAPPING.keys():
-        language_name = LANGUAGE_SUBSET_MAPPING[language].capitalize()
-
-        # Filter by the 'language' column (values are e.g. 'Spanish', 'French')
-        dataset = full_dataset.filter(
-            lambda row, lang=language_name: row["language"] == lang
-        )
-        assert isinstance(dataset, Dataset)
-
-        # Build the multiple choice dataset using a language model
-        df = build_dataset_with_llm(dataset=dataset, language=language)
-
-        # Create splits: 64 train, 128 val, rest test
-        train_df = df.sample(64, random_state=4242)
-        df = df.drop(train_df.index.tolist())
-
-        val_df = df.sample(128, random_state=4242)
-        test_df = df.drop(val_df.index.tolist())
-
-        # Reset the index
-        train_df = train_df.reset_index(drop=True)
-        val_df = val_df.reset_index(drop=True)
-        test_df = test_df.reset_index(drop=True)
-
-        # Collect datasets in a dataset dictionary
-        dataset = DatasetDict(
-            {
-                "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
-                "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
-                "test": Dataset.from_pandas(test_df, split=Split.TEST),
-            }
-        )
-
-        # Create dataset ID
-        dataset_id = f"EuroEval/multinrc-{language}"
-
-        # Remove the dataset from Hugging Face Hub if it already exists
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
-        # Push the dataset to the Hugging Face Hub
-        dataset.push_to_hub(dataset_id, private=True)
-
-
 def build_dataset_with_llm(dataset: Dataset, language: str) -> pd.DataFrame:
     """Build the multiple choice dataset using a language model.
 
@@ -215,6 +164,57 @@ def build_dataset_with_llm(dataset: Dataset, language: str) -> pd.DataFrame:
         correct_labels.append(correct_label)
 
     return pd.DataFrame({"text": texts, "label": correct_labels})
+
+
+def main() -> None:
+    """Create the MultiNRC datasets and upload them to the HF Hub."""
+    repo_id = "ScaleAI/MultiNRC"
+
+    # The dataset has a single subset; load it once and filter per language
+    full_dataset = load_dataset(path=repo_id, split="test", token=True)
+    assert isinstance(full_dataset, Dataset)
+
+    for language in LANGUAGE_SUBSET_MAPPING.keys():
+        language_name = LANGUAGE_SUBSET_MAPPING[language].capitalize()
+
+        # Filter by the 'language' column (values are e.g. 'Spanish', 'French')
+        dataset = full_dataset.filter(
+            lambda row, lang=language_name: row["language"] == lang
+        )
+        assert isinstance(dataset, Dataset)
+
+        # Build the multiple choice dataset using a language model
+        df = build_dataset_with_llm(dataset=dataset, language=language)
+
+        # Create splits: 64 train, 128 val, rest test
+        train_df = df.sample(64, random_state=4242)
+        df = df.drop(train_df.index.tolist())
+
+        val_df = df.sample(128, random_state=4242)
+        test_df = df.drop(val_df.index.tolist())
+
+        # Reset the index
+        train_df = train_df.reset_index(drop=True)
+        val_df = val_df.reset_index(drop=True)
+        test_df = test_df.reset_index(drop=True)
+
+        # Collect datasets in a dataset dictionary
+        dataset = DatasetDict(
+            {
+                "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+                "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+                "test": Dataset.from_pandas(test_df, split=Split.TEST),
+            }
+        )
+
+        # Create dataset ID
+        dataset_id = f"EuroEval/multinrc-{language}"
+
+        # Remove the dataset from Hugging Face Hub if it already exists
+        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+
+        # Push the dataset to the Hugging Face Hub
+        dataset.push_to_hub(dataset_id, private=True)
 
 
 if __name__ == "__main__":

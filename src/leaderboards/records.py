@@ -7,6 +7,23 @@ import re
 from .constants import ANCHOR_RE, VARIANT_SUFFIX_RE
 
 
+def strip_anchor(model_id: str) -> str:
+    """Strip any surrounding HTML anchor tag from a model id.
+
+    Unlike :func:`plain_model_id`, this preserves any ``(zero-shot)`` / ``(val)``
+    variant suffix - it only unwraps the ``<a href=...>...</a>`` tag.
+
+    Args:
+        model_id:
+            The (possibly anchored) identifier.
+
+    Returns:
+        The identifier with any anchor tag removed.
+    """
+    match = ANCHOR_RE.search(model_id)
+    return match.group("inner").strip() if match else model_id
+
+
 def plain_model_id(model_id: str) -> str:
     """Strip the HTML anchor and variant-suffix from a result-record model id.
 
@@ -59,6 +76,33 @@ def get_model_name(record: dict) -> str:
         The model name, or ``"unknown"`` if absent.
     """
     return record.get("model_info", {}).get("name", "unknown")
+
+
+def get_bool_field(record: dict, field: str, default: bool) -> bool:
+    """Get a boolean field from an EEE record.
+
+    The value lives in ``eval_library.additional_details`` and may be stored as
+    a bool or a ``"true"``/``"false"`` string.
+
+    Args:
+        record:
+            A result record in EEE format.
+        field:
+            The field name to extract (e.g., "validation_split", "few_shot").
+        default:
+            Default value if field not found.
+
+    Returns:
+        The boolean value, or the default if not found.
+    """
+    additional = record.get("eval_library", {}).get("additional_details", {})
+    if field in additional:
+        val = additional[field]
+        if isinstance(val, bool):
+            return val
+        if isinstance(val, str):
+            return val.lower() == "true"
+    return default
 
 
 def extract_model_ids_from_record(record: dict) -> list[str]:
@@ -146,33 +190,6 @@ def get_record_hash(record: dict) -> str:
     return f"{model}{dataset}{int(validation_split)}{int(few_shot)}"
 
 
-def get_bool_field(record: dict, field: str, default: bool) -> bool:
-    """Get a boolean field from an EEE record.
-
-    The value lives in ``eval_library.additional_details`` and may be stored as
-    a bool or a ``"true"``/``"false"`` string.
-
-    Args:
-        record:
-            A result record in EEE format.
-        field:
-            The field name to extract (e.g., "validation_split", "few_shot").
-        default:
-            Default value if field not found.
-
-    Returns:
-        The boolean value, or the default if not found.
-    """
-    additional = record.get("eval_library", {}).get("additional_details", {})
-    if field in additional:
-        val = additional[field]
-        if isinstance(val, bool):
-            return val
-        if isinstance(val, str):
-            return val.lower() == "true"
-    return default
-
-
 def strip_val_suffix(model_id: str) -> str | None:
     """Return the model ID with the 'val' note removed, or None if absent.
 
@@ -226,20 +243,3 @@ def drop_val_duplicates(
                 continue
         filtered[model_id] = results
     return filtered
-
-
-def strip_anchor(model_id: str) -> str:
-    """Strip any surrounding HTML anchor tag from a model id.
-
-    Unlike :func:`plain_model_id`, this preserves any ``(zero-shot)`` / ``(val)``
-    variant suffix - it only unwraps the ``<a href=...>...</a>`` tag.
-
-    Args:
-        model_id:
-            The (possibly anchored) identifier.
-
-    Returns:
-        The identifier with any anchor tag removed.
-    """
-    match = ANCHOR_RE.search(model_id)
-    return match.group("inner").strip() if match else model_id

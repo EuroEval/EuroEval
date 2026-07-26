@@ -19,37 +19,32 @@ from leaderboards.constants import (
 )
 
 
-def main() -> None:
-    """Validate the results in the results/ directory."""
-    files_to_remove: list[Path] = []
-    cache: dict[str, dict[str, bool]] = defaultdict(dict)
+def _validate_metadata(
+    result_dict: dict[str, t.Any], model_id: str, cache: dict[str, dict[str, bool]]
+) -> None:
+    """Validate and fill in missing metadata fields.
 
-    for record_file in tqdm(
-        list(RESULTS_DIR.rglob("*/*.json")), desc="Validating results"
-    ):
-        if not record_file.is_file():
-            continue
-
-        model_results, should_remove = _validate_record(record_file=record_file)
-        if should_remove:
-            files_to_remove.append(record_file)
-            continue
-
-        model_info = model_results[0].get("model_info", {})
-        model_id = model_info.get("id") or model_info.get("name")
-        if model_id:
-            for result_dict in model_results:
-                _validate_metadata(
-                    result_dict=result_dict, model_id=model_id, cache=cache
-                )
-
-        for result_dict in model_results:
-            record_file.write_text(
-                data=json.dumps(obj=result_dict, indent=2), encoding="utf-8"
-            )
-
-    for path in files_to_remove:
-        path.unlink()
+    Args:
+        result_dict:
+            The result dictionary to update.
+        model_id:
+            The model identifier.
+        cache:
+            Cache of previously entered metadata values.
+    """
+    model_info = t.cast(dict[str, t.Any], result_dict["model_info"])
+    for metadata_field in REQUIRED_METADATA_FIELDS:
+        if metadata_field not in model_info["additional_details"]:
+            if model_id in cache and metadata_field in cache[model_id]:
+                value = cache[model_id][metadata_field]
+            else:
+                input_prompt = f"{metadata_field} for https://hf.co/{model_id} (y/n)? "
+                value = input(input_prompt)
+                while value not in ["y", "n"]:
+                    value = input(input_prompt)
+                value = value == "y"
+                cache[model_id][metadata_field] = value
+            model_info["additional_details"][metadata_field] = value
 
 
 def _validate_record(record_file: Path) -> tuple[list[dict[str, t.Any]], bool]:
@@ -102,32 +97,37 @@ def _validate_record(record_file: Path) -> tuple[list[dict[str, t.Any]], bool]:
     return model_results, False
 
 
-def _validate_metadata(
-    result_dict: dict[str, t.Any], model_id: str, cache: dict[str, dict[str, bool]]
-) -> None:
-    """Validate and fill in missing metadata fields.
+def main() -> None:
+    """Validate the results in the results/ directory."""
+    files_to_remove: list[Path] = []
+    cache: dict[str, dict[str, bool]] = defaultdict(dict)
 
-    Args:
-        result_dict:
-            The result dictionary to update.
-        model_id:
-            The model identifier.
-        cache:
-            Cache of previously entered metadata values.
-    """
-    model_info = t.cast(dict[str, t.Any], result_dict["model_info"])
-    for metadata_field in REQUIRED_METADATA_FIELDS:
-        if metadata_field not in model_info["additional_details"]:
-            if model_id in cache and metadata_field in cache[model_id]:
-                value = cache[model_id][metadata_field]
-            else:
-                input_prompt = f"{metadata_field} for https://hf.co/{model_id} (y/n)? "
-                value = input(input_prompt)
-                while value not in ["y", "n"]:
-                    value = input(input_prompt)
-                value = value == "y"
-                cache[model_id][metadata_field] = value
-            model_info["additional_details"][metadata_field] = value
+    for record_file in tqdm(
+        list(RESULTS_DIR.rglob("*/*.json")), desc="Validating results"
+    ):
+        if not record_file.is_file():
+            continue
+
+        model_results, should_remove = _validate_record(record_file=record_file)
+        if should_remove:
+            files_to_remove.append(record_file)
+            continue
+
+        model_info = model_results[0].get("model_info", {})
+        model_id = model_info.get("id") or model_info.get("name")
+        if model_id:
+            for result_dict in model_results:
+                _validate_metadata(
+                    result_dict=result_dict, model_id=model_id, cache=cache
+                )
+
+        for result_dict in model_results:
+            record_file.write_text(
+                data=json.dumps(obj=result_dict, indent=2), encoding="utf-8"
+            )
+
+    for path in files_to_remove:
+        path.unlink()
 
 
 if __name__ == "__main__":

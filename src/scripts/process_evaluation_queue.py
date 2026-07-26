@@ -110,6 +110,1020 @@ _BUCKET_THRESHOLDS = [
 ]
 
 
+def issue_is_still_claimable(number: int) -> bool:
+    """Return True if the issue is still open with no assignees.
+
+    Re-fetches the issue at claim time so that issues which were closed
+    or assigned between the initial snapshot and now are not
+    double-processed.
+
+    Args:
+        number:
+            The issue number to verify.
+
+    Returns:
+        True if the issue is currently open and has no assignees; False
+        otherwise (including when the lookup fails).
+    """
+    try:
+        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not re-check issue state: {e}")
+        return False
+    if not isinstance(current, dict):
+        return False
+    if current.get("state") != "open":
+        return False
+    return not current.get("assignees")
+
+
+def issue_has_matching_error_comment(number: int, reason: str) -> bool:
+    """Return True if an error comment with the same ``reason`` already exists.
+
+    The tail of subprocess output varies run-to-run (timestamps, ANSI),
+    so we match on the stable error-reason phrase rendered in the comment
+    header instead of doing an exact-body comparison.
+
+    Args:
+        number:
+            The issue number to inspect.
+        reason:
+            The reason string that would be used in a new error comment.
+
+    Returns:
+        True if any existing comment on the issue contains the same
+        ``Error encountered during evaluation (<reason>):`` header.
+    """
+    try:
+        comments = gh_request(
+            path=f"/repos/{REPO}/issues/{number}/comments", params={"per_page": "100"}
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not list comments: {e}")
+        return False
+    if not isinstance(comments, list):
+        return False
+    marker = f"Error encountered during evaluation ({reason}):"
+    return any(
+        isinstance(c, dict) and marker in (c.get("body") or "") for c in comments
+    )
+
+
+def _post_failed_issue(
+    number: int,
+    model_id: str,
+    failure_reason: str | None,
+    failed: list[str],
+    failure_output_tail: str,
+    vm_id: str,
+    assignee: str,
+) -> None:
+    """Post-process a failed issue.
+
+    Args:
+        number:
+            Issue number.
+        model_id:
+            Model identifier (for logging).
+        failure_reason:
+            Reason for failure.
+        failed:
+            List of failed languages.
+        failure_output_tail:
+            Tail of error output.
+        vm_id:
+            VM identifier.
+        assignee:
+            Assignee username.
+    """
+    version = __version__
+    reason = failure_reason or f"failed languages: {', '.join(failed)}"
+    tail = failure_output_tail or "(no output captured)"
+
+    if issue_has_matching_error_comment(number=number, reason=reason):
+        release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
+        logger.info(f"#{number}: identical error already posted; returned to queue.")
+        return
+
+    error_comment = (
+        f"Error encountered during evaluation ({reason}):\n\n"
+        f"```bash\n{tail}\n```\n\n"
+        f"EuroEval version: v{version}\n"
+    )
+    comment_on_issue(number=number, body=error_comment)
+    add_failed_label(number=number)
+    release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
+    logger.info(
+        f"#{number}: marked errored on v{version} after {len(failed)} failed "
+        f"language(s) ({', '.join(failed)}); returned to queue."
+    )
+
+
+def _post_successful_issue(number: int, vm_id: str) -> None:
+    """Post-process a successful issue.
+
+    Args:
+        number:
+            Issue number.
+        vm_id:
+            VM identifier.
+    """
+    remove_failed_label(number=number)
+    add_results_ready_label(number=number)
+    clear_vm_marker(number=number, vm_id=vm_id)
+
+
+def _post_gated_issue(number: int, model_id: str, vm_id: str, assignee: str) -> None:
+    """Post-process a gated issue.
+
+    Args:
+        number:
+            Issue number.
+        model_id:
+            Model identifier.
+        vm_id:
+            VM identifier.
+        assignee:
+            Assignee username.
+    """
+    add_gated_label(number=number)
+    add_failed_label(number=number)
+    release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
+    logger.info(
+        f"#{number}: euroeval reported a gated repo for {model_id!r}; "
+        "added Gated and evaluation-failed labels to avoid retry loops."
+    )
+
+
+def _post_process_issue(
+    number: int,
+    model_id: str,
+    gated_detected: bool,
+    failed: list[str],
+    failure_reason: str | None,
+    failure_output_tail: str,
+    vm_id: str,
+    assignee: str,
+) -> None:
+    """Post-process an issue based on evaluation outcome.
+
+    Args:
+        number:
+            Issue number.
+        model_id:
+            Model identifier.
+        gated_detected:
+            Whether the model was gated.
+        failed:
+            List of failed languages.
+        failure_reason:
+            Reason for failure.
+        failure_output_tail:
+            Tail of error output.
+        vm_id:
+            VM identifier.
+        assignee:
+            Assignee username.
+    """
+    if gated_detected:
+        _post_gated_issue(
+            number=number, model_id=model_id, vm_id=vm_id, assignee=assignee
+        )
+        return
+
+    if failed:
+        _post_failed_issue(
+            number=number,
+            model_id=model_id,
+            failure_reason=failure_reason,
+            failed=failed,
+            failure_output_tail=failure_output_tail,
+            vm_id=vm_id,
+            assignee=assignee,
+        )
+        return
+
+    _post_successful_issue(number=number, vm_id=vm_id)
+
+
+def _load_existing_results(model_id: str) -> list[str]:
+    """Load existing results for a model from disk and local file.
+
+    Args:
+        model_id:
+            The model identifier.
+
+    Returns:
+        List of existing result JSON lines.
+    """
+    results_path = Path("euroeval_benchmark_results.jsonl")
+    existing_lines: list[str] = []
+    model_dir = RESULTS_DIR / sanitise_model_dir_name(model_id)
+    if model_dir.is_dir():
+        for record_path in sorted(model_dir.glob("*.json")):
+            try:
+                record = json.loads(record_path.read_text(encoding="utf-8"))
+                existing_lines.append(json.dumps(obj=record))
+            except (json.JSONDecodeError, OSError):
+                logger.debug(f"Skipping unreadable record {record_path}")
+    existing_lines.extend(read_jsonl_lines(path=results_path))
+    return existing_lines
+
+
+def _handle_skip_analysis(
+    accumulated: list[str], pending: list[str], total_skipped: int
+) -> tuple[list[str], str | None]:
+    """Analyze and handle skipped languages.
+
+    Args:
+        accumulated:
+            List of accumulated result lines.
+        pending:
+            List of pending language codes.
+        total_skipped:
+            Total number of skipped benchmarks.
+
+    Returns:
+        Tuple of (failed_languages, failure_reason).
+    """
+    missing = missing_official_dataset_language_pairs(
+        lines=accumulated, requested_languages=pending
+    )
+
+    if len(missing) > total_skipped:
+        failure_reason = (
+            f"missing official dataset-language pair(s): "
+            f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
+        )
+        return [lang for lang in pending], failure_reason
+
+    if missing:
+        logger.info(
+            f"euroeval skipped {total_skipped} benchmark(s); "
+            f"treating missing pair(s) as intentional skips: "
+            f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
+        )
+    return [], None
+
+
+def _handle_pending_skips(
+    accumulated: list[str], pending: list[str], total_skipped: int
+) -> tuple[list[str], str | None]:
+    """Handle skip analysis for pending languages.
+
+    Args:
+        accumulated:
+            Accumulated result lines.
+        pending:
+            Pending language codes.
+        total_skipped:
+            Total skipped benchmark count.
+
+    Returns:
+        Tuple of (failed_languages, failure_reason).
+    """
+    skip_failed, skip_reason = _handle_skip_analysis(
+        accumulated=accumulated, pending=pending, total_skipped=total_skipped
+    )
+    return skip_failed, skip_reason
+
+
+def _run_single_language(
+    model_id: str, lang: str, gpu_memory_utilization: float | None
+) -> tuple[int, str]:
+    """Run EuroEval for a single language.
+
+    Args:
+        model_id:
+            The model identifier.
+        lang:
+            Language code to evaluate.
+        gpu_memory_utilization:
+            Optional vLLM memory fraction.
+
+    Returns:
+        Tuple of (returncode, output).
+    """
+    return run_euroeval(
+        model_id=model_id,
+        languages=[lang],
+        evaluate_test_split=False,
+        clear_model_cache=True,
+        gpu_memory_utilization=gpu_memory_utilization,
+    )
+
+
+def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
+    """Upload result lines to the HF results bucket.
+
+    Writes one JSON file per logical result via result_identity paths
+    (results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json), then uploads
+    only those files to the bucket. Never deletes existing files (additive only).
+
+    Args:
+        lines:
+            The JSONL result lines to upload.
+        model_id:
+            The HuggingFace model ID.
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    valid_records_seen = 0
+    records_written = 0
+    written_paths: list[Path] = []
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+            identity = identity_from_eee_record(record)
+            record_path = RESULTS_DIR / identity_to_path(identity)
+            record_path.parent.mkdir(parents=True, exist_ok=True)
+            # Use canonical JSON for consistent comparison
+            new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
+
+            # Count as seen before checking if unchanged
+            valid_records_seen += 1
+
+            # Only write if file doesn't exist or content differs
+            if record_path.exists():
+                try:
+                    existing_content = record_path.read_text(encoding="utf-8").strip()
+                    existing_record = json.loads(existing_content)
+                    canonical_existing = json.dumps(
+                        existing_record, sort_keys=True, separators=(",", ":")
+                    )
+                    if canonical_existing == new_content:
+                        continue  # Skip unchanged files
+                except (json.JSONDecodeError, OSError):
+                    pass  # If we can't parse existing, overwrite it
+
+            record_path.write_text(data=new_content, encoding="utf-8")
+            records_written += 1
+            written_paths.append(record_path)
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            logger.debug(f"Skipping invalid record: {e}")
+
+    if valid_records_seen == 0:
+        logger.info("No valid records to process.")
+        return True
+
+    if records_written == 0:
+        logger.info("All records unchanged.")
+        return True
+
+    try:
+        logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
+        # Skip any files that are empty (0 bytes)
+        api = HfApi()
+        add_list: list[tuple[str | Path | bytes, str]] = [
+            (str(path), str(path.relative_to(RESULTS_DIR)))
+            for path in written_paths
+            if path.is_file() and path.stat().st_size > 0
+        ]
+        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
+        logger.info(
+            f"Uploaded {records_written} result records for {model_id!r} to HF bucket."
+        )
+        return True
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to upload to HF bucket: {e}")
+        return False
+
+
+def _handle_language_result(
+    lang: str,
+    returncode: int,
+    output: str,
+    results_path: Path,
+    model_id: str,
+    accumulated: list[str],
+) -> tuple[bool, str | None, str | None, int]:
+    """Handle the result of running a single language.
+
+    Args:
+        lang:
+            Language code that was evaluated.
+        returncode:
+            Return code from EuroEval.
+        output:
+            Output from EuroEval.
+        results_path:
+            Path to results file.
+        model_id:
+            Model identifier.
+        accumulated:
+            List of accumulated result lines (modified in place).
+
+    Returns:
+        Tuple of (success, failure_reason, failure_tail, skipped_count).
+    """
+    before = set(read_jsonl_lines(path=results_path))
+    gated_in_lang = GATED_OUTPUT_RE.search(output)
+    num_errored = num_errored_benchmarks(output=output)
+    num_skipped = num_skipped_benchmarks(output=output)
+
+    # Handle gating
+    if gated_in_lang:
+        return False, "gated", summarise_evaluation_error(output=output), num_skipped
+
+    # Handle errors
+    if returncode != 0:
+        return (
+            False,
+            f"euroeval exited with code {returncode}",
+            summarise_evaluation_error(output=output),
+            num_skipped,
+        )
+    if num_errored > 0:
+        return (
+            False,
+            f"euroeval reported {num_errored} errored benchmark(s)",
+            summarise_evaluation_error(output=output),
+            num_skipped,
+        )
+
+    # Success - upload results
+    after = read_jsonl_lines(path=results_path)
+    new_lines = [line for line in after if line not in before]
+    accumulated.extend(new_lines)
+
+    if new_lines:
+        if not upload_results_to_hf_bucket(lines=new_lines, model_id=model_id):
+            return False, "upload-failed", None, num_skipped
+
+    return True, None, None, num_skipped
+
+
+def _process_pending_languages(
+    number: int,
+    model_id: str,
+    pending: list[str],
+    gpu_memory_utilization: float | None,
+    results_path: Path,
+    accumulated: list[str],
+    total_skipped: int,
+) -> tuple[bool, str | None, str, str, int]:
+    """Process all pending languages for an issue.
+
+    Args:
+        number:
+            Issue number.
+        model_id:
+            Model identifier.
+        pending:
+            List of pending language codes.
+        gpu_memory_utilization:
+            GPU memory utilization setting.
+        results_path:
+            Path to results file.
+        accumulated:
+            Accumulated result lines (modified in place).
+        total_skipped:
+            Running count of skipped benchmarks.
+
+    Returns:
+        Tuple of (gated_detected, failure_reason, failure_tail, last_output,
+        total_skipped).
+    """
+    gated_detected = False
+    failure_reason: str | None = None
+    failure_output_tail = ""
+    last_output = ""
+
+    for i, lang in enumerate(pending):
+        logger.info(
+            f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
+        )
+        returncode, output = _run_single_language(
+            model_id=model_id, lang=lang, gpu_memory_utilization=gpu_memory_utilization
+        )
+        last_output = output
+
+        success, lang_failure_reason, lang_failure_tail, skipped = (
+            _handle_language_result(
+                lang=lang,
+                returncode=returncode,
+                output=output,
+                results_path=results_path,
+                model_id=model_id,
+                accumulated=accumulated,
+            )
+        )
+        total_skipped += skipped
+
+        if lang_failure_reason == "gated":
+            gated_detected = True
+            failure_output_tail = lang_failure_tail or ""
+            return (
+                gated_detected,
+                failure_reason,
+                failure_output_tail,
+                last_output,
+                total_skipped,
+            )
+        if lang_failure_reason:
+            failure_reason = lang_failure_reason
+            failure_output_tail = lang_failure_tail or ""
+            return (
+                gated_detected,
+                failure_reason,
+                failure_output_tail,
+                last_output,
+                total_skipped,
+            )
+        if not success:
+            logger.error(
+                f"#{number}: bucket upload failed after {lang}; "
+                "continuing with remaining languages."
+            )
+        else:
+            logger.info(f"#{number}: uploaded results for {lang}.")
+
+    return (
+        gated_detected,
+        failure_reason,
+        failure_output_tail,
+        last_output,
+        total_skipped,
+    )
+
+
+def _run_claimed_issue(
+    issue: dict,
+    model_id: str,
+    languages: list[str],
+    assignee: str,
+    vm_id: str,
+    gpu_memory_utilization: float | None,
+) -> None:
+    """Run euroeval for all languages, uploading to HF bucket after each.
+
+    Results are uploaded incrementally to the Hugging Face results bucket
+    after each language completes, enabling crash recovery with minimal loss.
+
+    Args:
+        issue:
+            The GitHub issue object returned by the API.
+        model_id:
+            The Hugging Face model id to evaluate.
+        languages:
+            The flattened list of language codes for this evaluation.
+        assignee:
+            The GitHub user assigned while evaluating.
+        vm_id:
+            The VM marker written to the issue body.
+        gpu_memory_utilization:
+            Optional vLLM memory fraction.
+    """
+    number = issue["number"]
+    results_path = Path("euroeval_benchmark_results.jsonl")
+
+    existing_lines = _load_existing_results(model_id=model_id)
+    accumulated = result_lines_for_model(lines=existing_lines, model_id=model_id)
+    done = completed_languages(lines=accumulated, requested_languages=languages)
+    pending = [lang for lang in languages if lang not in done]
+    failed: list[str] = []
+
+    gated_detected = False
+    failure_reason: str | None = None
+    failure_output_tail = ""
+    last_output = ""
+    total_skipped = 0
+
+    # Process pending languages
+    gated_detected, failure_reason, failure_output_tail, last_output, total_skipped = (
+        _process_pending_languages(
+            number=number,
+            model_id=model_id,
+            pending=pending,
+            gpu_memory_utilization=gpu_memory_utilization,
+            results_path=results_path,
+            accumulated=accumulated,
+            total_skipped=total_skipped,
+        )
+    )
+
+    # Populate failed list if a failure occurred
+    if failure_reason and not failed:
+        failed.extend(pending)
+
+    # Handle skips
+    if not failed and pending:
+        skip_failed, skip_reason = _handle_pending_skips(
+            accumulated=accumulated, pending=pending, total_skipped=total_skipped
+        )
+        if skip_failed:
+            failed.extend(skip_failed)
+            failure_reason = skip_reason
+        else:
+            # Intentional skips - treat pending as done
+            done.extend(pending)
+    elif not failed and not pending:
+        logger.info(
+            f"#{number}: all requested language(s) already present in the bucket "
+            f"for {model_id!r}; nothing to evaluate."
+        )
+
+    # Log completion
+    if failed:
+        logger.info(
+            f"#{number}: evaluation failed for {model_id!r} "
+            f"after {len(done)} completed language(s)."
+        )
+    else:
+        logger.info(
+            f"#{number}: completed all {len(done)} language(s) for {model_id!r}."
+        )
+
+    # Post-process based on outcome
+    _post_process_issue(
+        number=number,
+        model_id=model_id,
+        gated_detected=gated_detected,
+        failed=failed,
+        failure_reason=failure_reason,
+        failure_output_tail=failure_output_tail,
+        vm_id=vm_id,
+        assignee=assignee,
+    )
+
+
+def process_issue(
+    issue: dict,
+    model_id: str,
+    groups: list[str],
+    assignee: str,
+    vm_id: str,
+    gpu_memory_utilization: float | None,
+) -> None:
+    """Claim, evaluate, and report back on a single queue issue.
+
+    Args:
+        issue:
+            The GitHub issue object returned by the API.
+        model_id:
+            The Hugging Face model id to evaluate.
+        groups:
+            The selected language-group labels for this issue.
+        assignee:
+            The GitHub user to assign while evaluating.
+        vm_id:
+            The VM marker written to the issue body.
+        gpu_memory_utilization:
+            Optional vLLM memory fraction.
+    """
+    number = issue["number"]
+    languages: list[str] = []
+    for g in groups:
+        languages.extend(LANGUAGE_GROUP_CODES[g])
+    languages = sorted(set(languages))
+
+    if not issue_is_still_claimable(number=number):
+        logger.info(
+            f"#{number}: skipping -- no longer open and unassigned at claim time."
+        )
+        return
+
+    # Re-check gated status here so a stale snapshot from main() doesn't make
+    # us run a doomed evaluation, and so we can also pick up newly granted
+    # access when the label says gated but HF now says otherwise.
+    live_summary = cached_model_summary(model_id=model_id)
+    is_gated = live_summary is not None and live_summary.get("gated")
+    label_names = {
+        label.get("name")
+        for label in issue.get("labels", [])
+        if isinstance(label, dict)
+    }
+    has_gated_label = GATED_LABEL in label_names
+    if is_gated:
+        if not has_gated_label:
+            add_gated_label(number=number)
+            logger.info(f"#{number}: marked gated -- {assignee} lacks read access.")
+        else:
+            logger.info(f"#{number}: still gated -- leaving label in place.")
+        return
+    if has_gated_label:
+        remove_gated_label(number=number)
+        logger.info(f"#{number}: access granted, removed gated label.")
+
+    logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
+
+    # Set the VM marker BEFORE assigning so a crash between the two leaves
+    # the issue unassigned (harmless) rather than assigned-but-unowned.
+    if not set_vm_marker(number=number, vm_id=vm_id):
+        logger.info(f"#{number}: another VM already owns this issue; aborting.")
+        return
+    assign_issue(number=number, assignee=assignee)
+
+    # Two VMs sharing a PAT cannot be told apart by the assignee, so another
+    # VM that raced through the same set_vm_marker + assign_issue window will
+    # have overwritten our marker. Verify ownership before proceeding so the
+    # losing VM doesn't both duplicate work and later strip the assignment
+    # out from under the winning VM's still-running evaluation.
+    if not vm_marker_matches(number=number, vm_id=vm_id):
+        logger.info(
+            f"#{number}: another VM won the claim race; aborting without "
+            "touching the assignee."
+        )
+        return
+    try:
+        _run_claimed_issue(
+            issue=issue,
+            model_id=model_id,
+            languages=languages,
+            assignee=assignee,
+            vm_id=vm_id,
+            gpu_memory_utilization=gpu_memory_utilization,
+        )
+    except BaseException:
+        release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
+        raise
+
+
+def _compute_status_priority(summary: dict, label_names: set[str | None]) -> int:
+    """Compute status priority for an issue.
+
+    Args:
+        summary:
+            Model summary dict.
+        label_names:
+            Set of label names on the issue.
+
+    Returns:
+        Status priority (0 = gated, 1 = failed, 2 = normal).
+    """
+    if summary.get("gated"):
+        return 0
+    if FAILED_LABEL in label_names:
+        return 1
+    return 2
+
+
+def _compute_param_bucket(param_count: int) -> int:
+    """Compute parameter count bucket.
+
+    Args:
+        param_count:
+            Model parameter count.
+
+    Returns:
+        Bucket number.
+    """
+    return next(
+        bucket for threshold, bucket in _BUCKET_THRESHOLDS if param_count < threshold
+    )
+
+
+def _parse_issue(issue: dict) -> tuple[str | None, int, list[str]] | None:
+    """Parse an issue and extract model info.
+
+    Args:
+        issue:
+            The issue dict from GitHub.
+
+    Returns:
+        Tuple of (model_id, number, groups), or None if invalid.
+    """
+    number = issue["number"]
+    body = issue.get("body") or ""
+    model_id = extract_model_id(title=issue.get("title", ""), body=body)
+    if not model_id:
+        logger.info(f"#{number}: skipping -- could not parse model id.")
+        return None
+
+    groups = extract_language_groups(body=body)
+    if not groups:
+        logger.info(f"#{number}: skipping -- no language groups selected.")
+        return None
+
+    return model_id, number, groups
+
+
+def _parse_issue_age(issue: dict) -> float:
+    """Parse issue creation time to age timestamp.
+
+    Args:
+        issue:
+            The issue dict from GitHub.
+
+    Returns:
+        Age timestamp, or inf if not parseable.
+    """
+    created_at = issue.get("created_at")
+    if isinstance(created_at, str):
+        try:
+            return dt.datetime.fromisoformat(
+                created_at.replace("Z", "+00:00")
+            ).timestamp()
+        except ValueError:
+            pass
+    return float("inf")
+
+
+def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list[str]]]:
+    """Return processable issues sorted by priority.
+
+    Returns:
+        Queue candidates as sortable tuples followed by issue, model id and
+        language groups.
+    """
+    try:
+        issues = gh_request(
+            path=f"/repos/{REPO}/issues",
+            params={
+                "state": "open",
+                "labels": MODEL_REQUEST_LABEL,
+                "per_page": "100",
+                "assignee": "none",
+            },
+        )
+    except urllib.error.HTTPError as e:
+        logger.error(f"Failed to list issues: {e}")
+        return []
+
+    if not isinstance(issues, list):
+        logger.error("Failed to list issues: GitHub returned a non-list response.")
+        return []
+
+    candidates: list[tuple[int, int, int, int, float, dict, str, list[str]]] = []
+    for issue in (issue for issue in issues if "pull_request" not in issue):
+        parsed = _parse_issue(issue=issue)
+        if parsed is None:
+            continue
+        model_id, number, groups = parsed
+
+        if model_id is None:
+            continue
+        summary = cached_model_summary(model_id=model_id)
+        if summary is None:
+            continue
+        if summary.get("gguf"):
+            logger.info(
+                f"#{number}: skipping -- {model_id!r} is a GGUF model, which the "
+                "evaluation queue cannot run."
+            )
+            continue
+
+        label_names = {
+            label.get("name")
+            for label in issue.get("labels", [])
+            if isinstance(label, dict)
+        }
+        status_priority = _compute_status_priority(
+            summary=summary, label_names=label_names
+        )
+        age = _parse_issue_age(issue=issue)
+        param_bucket = _compute_param_bucket(param_count=summary["param_count"])
+
+        assert model_id is not None
+        candidates.append(
+            (
+                1 if "slow" in label_names else 0,
+                0 if summary.get("generative", True) else 1,
+                status_priority,
+                param_bucket,
+                age,
+                issue,
+                model_id,
+                groups,
+            )
+        )
+
+    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4]))
+    logger.info(f"Found {len(candidates)} processable issue(s).")
+    return candidates
+
+
+def process_queue_once(
+    assignee: str,
+    vm_id: str,
+    gpu_memory_utilization: float | None,
+    thermal_config: ThermalConfig,
+) -> None:
+    """Process every unassigned model-evaluation-request issue once."""
+    candidates = _queue_candidates()
+    gpu_bytes = gpu_total_memory_bytes()
+
+    # vLLM can only allocate `gpu_memory_utilization * total GPU memory`, so the
+    # fit pre-check must budget against that fraction rather than the whole card;
+    # otherwise a model whose weights fit but whose KV cache does not still slips
+    # through and OOMs at runtime.
+    usable_bytes: int | None = None
+    if gpu_bytes is None:
+        logger.info(
+            "Could not determine local memory budget; skipping the fit pre-check."
+        )
+    else:
+        utilization = (
+            gpu_memory_utilization
+            if gpu_memory_utilization is not None
+            else DEFAULT_GPU_MEMORY_UTILIZATION
+        )
+        usable_bytes = int(gpu_bytes * utilization)
+        logger.info(
+            f"Local memory budget: {gpu_bytes / (1024**3):.1f} GiB total, "
+            f"{usable_bytes / (1024**3):.1f} GiB usable at "
+            f"gpu_memory_utilization={utilization}."
+        )
+
+    for (
+        slow_priority,
+        type_priority,
+        status_priority,
+        param_count,
+        _age,
+        issue,
+        model_id,
+        groups,
+    ) in candidates:
+        status = {0: "gated", 1: "retry of errored eval", 2: "fresh"}[status_priority]
+        model_type = "generative" if type_priority == 0 else "encoder"
+        slow_tag = ", slow" if slow_priority else ""
+        logger.info(
+            f"#{issue['number']}: queueing {model_id!r} ({param_count} params, "
+            f"{model_type}, {status}{slow_tag})."
+        )
+        if usable_bytes is not None:
+            needed = estimated_model_bytes(model_id=model_id)
+            if needed is not None and int(needed * GPU_FIT_OVERHEAD) > usable_bytes:
+                logger.info(
+                    f"#{issue['number']}: skipping -- model {model_id!r} needs "
+                    f"~{needed / (1024**3):.1f} GiB of weights "
+                    f"(x {GPU_FIT_OVERHEAD} overhead), which exceeds the usable "
+                    f"vLLM budget of {usable_bytes / (1024**3):.1f} GiB. Leaving "
+                    "the issue unassigned so a larger or multi-GPU machine can "
+                    "pick it up."
+                )
+                continue
+        try:
+            process_issue(
+                issue=issue,
+                model_id=model_id,
+                groups=groups,
+                assignee=assignee,
+                vm_id=vm_id,
+                gpu_memory_utilization=gpu_memory_utilization,
+            )
+        except Exception as e:  # noqa: BLE001
+            # Top-level per-issue guard: one failing issue must not abort the
+            # whole queue loop, so log it and move on to the next issue.
+            logger.exception(f"Error while processing issue #{issue['number']}: {e}")
+        cool_down_between_issues(config=thermal_config)
+
+
+def reclaim_orphaned_issues(assignee: str, vm_id: str) -> None:
+    """Return this VM's orphaned issues to the queue.
+
+    Args:
+        assignee:
+            GitHub user assigned to issues owned by this runner.
+        vm_id:
+            VM marker used to distinguish this runner from other VMs.
+    """
+    try:
+        issues = gh_request(
+            path=f"/repos/{REPO}/issues",
+            params={
+                "state": "open",
+                "labels": MODEL_REQUEST_LABEL,
+                "per_page": "100",
+                "assignee": assignee,
+            },
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"Could not list assigned issues for reclaim: {e}")
+        return
+
+    if not isinstance(issues, list):
+        return
+
+    reclaimed = 0
+    for issue in issues:
+        if not isinstance(issue, dict) or "pull_request" in issue:
+            continue
+        labels = issue.get("labels") or []
+        label_names = {label.get("name") for label in labels if isinstance(label, dict)}
+        if RESULTS_READY_LABEL in label_names:
+            continue
+        body = issue.get("body") or ""
+        m = VM_MARKER_RE.search(body)
+        if not m or m.group(1) != vm_id:
+            continue
+        number = issue["number"]
+        try:
+            clear_vm_marker(number=number, vm_id=vm_id)
+            unassign_issue(number=number, assignee=assignee)
+        except urllib.error.HTTPError as e:
+            logger.warning(f"#{number}: failed to reclaim: {e}")
+            continue
+        reclaimed += 1
+        logger.info(f"#{number}: reclaimed orphaned issue (vm-id {vm_id}).")
+
+
 @click.command()
 @click.option(
     "--vm-id",
@@ -235,1020 +1249,6 @@ def main(
         sys.exit(130)
     finally:
         os.close(lock_fd)
-
-
-def process_queue_once(
-    assignee: str,
-    vm_id: str,
-    gpu_memory_utilization: float | None,
-    thermal_config: ThermalConfig,
-) -> None:
-    """Process every unassigned model-evaluation-request issue once."""
-    candidates = _queue_candidates()
-    gpu_bytes = gpu_total_memory_bytes()
-
-    # vLLM can only allocate `gpu_memory_utilization * total GPU memory`, so the
-    # fit pre-check must budget against that fraction rather than the whole card;
-    # otherwise a model whose weights fit but whose KV cache does not still slips
-    # through and OOMs at runtime.
-    usable_bytes: int | None = None
-    if gpu_bytes is None:
-        logger.info(
-            "Could not determine local memory budget; skipping the fit pre-check."
-        )
-    else:
-        utilization = (
-            gpu_memory_utilization
-            if gpu_memory_utilization is not None
-            else DEFAULT_GPU_MEMORY_UTILIZATION
-        )
-        usable_bytes = int(gpu_bytes * utilization)
-        logger.info(
-            f"Local memory budget: {gpu_bytes / (1024**3):.1f} GiB total, "
-            f"{usable_bytes / (1024**3):.1f} GiB usable at "
-            f"gpu_memory_utilization={utilization}."
-        )
-
-    for (
-        slow_priority,
-        type_priority,
-        status_priority,
-        param_count,
-        _age,
-        issue,
-        model_id,
-        groups,
-    ) in candidates:
-        status = {0: "gated", 1: "retry of errored eval", 2: "fresh"}[status_priority]
-        model_type = "generative" if type_priority == 0 else "encoder"
-        slow_tag = ", slow" if slow_priority else ""
-        logger.info(
-            f"#{issue['number']}: queueing {model_id!r} ({param_count} params, "
-            f"{model_type}, {status}{slow_tag})."
-        )
-        if usable_bytes is not None:
-            needed = estimated_model_bytes(model_id=model_id)
-            if needed is not None and int(needed * GPU_FIT_OVERHEAD) > usable_bytes:
-                logger.info(
-                    f"#{issue['number']}: skipping -- model {model_id!r} needs "
-                    f"~{needed / (1024**3):.1f} GiB of weights "
-                    f"(x {GPU_FIT_OVERHEAD} overhead), which exceeds the usable "
-                    f"vLLM budget of {usable_bytes / (1024**3):.1f} GiB. Leaving "
-                    "the issue unassigned so a larger or multi-GPU machine can "
-                    "pick it up."
-                )
-                continue
-        try:
-            process_issue(
-                issue=issue,
-                model_id=model_id,
-                groups=groups,
-                assignee=assignee,
-                vm_id=vm_id,
-                gpu_memory_utilization=gpu_memory_utilization,
-            )
-        except Exception as e:  # noqa: BLE001
-            # Top-level per-issue guard: one failing issue must not abort the
-            # whole queue loop, so log it and move on to the next issue.
-            logger.exception(f"Error while processing issue #{issue['number']}: {e}")
-        cool_down_between_issues(config=thermal_config)
-
-
-def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list[str]]]:
-    """Return processable issues sorted by priority.
-
-    Returns:
-        Queue candidates as sortable tuples followed by issue, model id and
-        language groups.
-    """
-    try:
-        issues = gh_request(
-            path=f"/repos/{REPO}/issues",
-            params={
-                "state": "open",
-                "labels": MODEL_REQUEST_LABEL,
-                "per_page": "100",
-                "assignee": "none",
-            },
-        )
-    except urllib.error.HTTPError as e:
-        logger.error(f"Failed to list issues: {e}")
-        return []
-
-    if not isinstance(issues, list):
-        logger.error("Failed to list issues: GitHub returned a non-list response.")
-        return []
-
-    candidates: list[tuple[int, int, int, int, float, dict, str, list[str]]] = []
-    for issue in (issue for issue in issues if "pull_request" not in issue):
-        parsed = _parse_issue(issue=issue)
-        if parsed is None:
-            continue
-        model_id, number, groups = parsed
-
-        if model_id is None:
-            continue
-        summary = cached_model_summary(model_id=model_id)
-        if summary is None:
-            continue
-        if summary.get("gguf"):
-            logger.info(
-                f"#{number}: skipping -- {model_id!r} is a GGUF model, which the "
-                "evaluation queue cannot run."
-            )
-            continue
-
-        label_names = {
-            label.get("name")
-            for label in issue.get("labels", [])
-            if isinstance(label, dict)
-        }
-        status_priority = _compute_status_priority(
-            summary=summary, label_names=label_names
-        )
-        age = _parse_issue_age(issue=issue)
-        param_bucket = _compute_param_bucket(param_count=summary["param_count"])
-
-        assert model_id is not None
-        candidates.append(
-            (
-                1 if "slow" in label_names else 0,
-                0 if summary.get("generative", True) else 1,
-                status_priority,
-                param_bucket,
-                age,
-                issue,
-                model_id,
-                groups,
-            )
-        )
-
-    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4]))
-    logger.info(f"Found {len(candidates)} processable issue(s).")
-    return candidates
-
-
-def _parse_issue(issue: dict) -> tuple[str | None, int, list[str]] | None:
-    """Parse an issue and extract model info.
-
-    Args:
-        issue:
-            The issue dict from GitHub.
-
-    Returns:
-        Tuple of (model_id, number, groups), or None if invalid.
-    """
-    number = issue["number"]
-    body = issue.get("body") or ""
-    model_id = extract_model_id(title=issue.get("title", ""), body=body)
-    if not model_id:
-        logger.info(f"#{number}: skipping -- could not parse model id.")
-        return None
-
-    groups = extract_language_groups(body=body)
-    if not groups:
-        logger.info(f"#{number}: skipping -- no language groups selected.")
-        return None
-
-    return model_id, number, groups
-
-
-def _compute_status_priority(summary: dict, label_names: set[str | None]) -> int:
-    """Compute status priority for an issue.
-
-    Args:
-        summary:
-            Model summary dict.
-        label_names:
-            Set of label names on the issue.
-
-    Returns:
-        Status priority (0 = gated, 1 = failed, 2 = normal).
-    """
-    if summary.get("gated"):
-        return 0
-    if FAILED_LABEL in label_names:
-        return 1
-    return 2
-
-
-def _parse_issue_age(issue: dict) -> float:
-    """Parse issue creation time to age timestamp.
-
-    Args:
-        issue:
-            The issue dict from GitHub.
-
-    Returns:
-        Age timestamp, or inf if not parseable.
-    """
-    created_at = issue.get("created_at")
-    if isinstance(created_at, str):
-        try:
-            return dt.datetime.fromisoformat(
-                created_at.replace("Z", "+00:00")
-            ).timestamp()
-        except ValueError:
-            pass
-    return float("inf")
-
-
-def _compute_param_bucket(param_count: int) -> int:
-    """Compute parameter count bucket.
-
-    Args:
-        param_count:
-            Model parameter count.
-
-    Returns:
-        Bucket number.
-    """
-    return next(
-        bucket for threshold, bucket in _BUCKET_THRESHOLDS if param_count < threshold
-    )
-
-
-def reclaim_orphaned_issues(assignee: str, vm_id: str) -> None:
-    """Return this VM's orphaned issues to the queue.
-
-    Args:
-        assignee:
-            GitHub user assigned to issues owned by this runner.
-        vm_id:
-            VM marker used to distinguish this runner from other VMs.
-    """
-    try:
-        issues = gh_request(
-            path=f"/repos/{REPO}/issues",
-            params={
-                "state": "open",
-                "labels": MODEL_REQUEST_LABEL,
-                "per_page": "100",
-                "assignee": assignee,
-            },
-        )
-    except urllib.error.HTTPError as e:
-        logger.warning(f"Could not list assigned issues for reclaim: {e}")
-        return
-
-    if not isinstance(issues, list):
-        return
-
-    reclaimed = 0
-    for issue in issues:
-        if not isinstance(issue, dict) or "pull_request" in issue:
-            continue
-        labels = issue.get("labels") or []
-        label_names = {label.get("name") for label in labels if isinstance(label, dict)}
-        if RESULTS_READY_LABEL in label_names:
-            continue
-        body = issue.get("body") or ""
-        m = VM_MARKER_RE.search(body)
-        if not m or m.group(1) != vm_id:
-            continue
-        number = issue["number"]
-        try:
-            clear_vm_marker(number=number, vm_id=vm_id)
-            unassign_issue(number=number, assignee=assignee)
-        except urllib.error.HTTPError as e:
-            logger.warning(f"#{number}: failed to reclaim: {e}")
-            continue
-        reclaimed += 1
-        logger.info(f"#{number}: reclaimed orphaned issue (vm-id {vm_id}).")
-
-
-def process_issue(
-    issue: dict,
-    model_id: str,
-    groups: list[str],
-    assignee: str,
-    vm_id: str,
-    gpu_memory_utilization: float | None,
-) -> None:
-    """Claim, evaluate, and report back on a single queue issue.
-
-    Args:
-        issue:
-            The GitHub issue object returned by the API.
-        model_id:
-            The Hugging Face model id to evaluate.
-        groups:
-            The selected language-group labels for this issue.
-        assignee:
-            The GitHub user to assign while evaluating.
-        vm_id:
-            The VM marker written to the issue body.
-        gpu_memory_utilization:
-            Optional vLLM memory fraction.
-    """
-    number = issue["number"]
-    languages: list[str] = []
-    for g in groups:
-        languages.extend(LANGUAGE_GROUP_CODES[g])
-    languages = sorted(set(languages))
-
-    if not issue_is_still_claimable(number=number):
-        logger.info(
-            f"#{number}: skipping -- no longer open and unassigned at claim time."
-        )
-        return
-
-    # Re-check gated status here so a stale snapshot from main() doesn't make
-    # us run a doomed evaluation, and so we can also pick up newly granted
-    # access when the label says gated but HF now says otherwise.
-    live_summary = cached_model_summary(model_id=model_id)
-    is_gated = live_summary is not None and live_summary.get("gated")
-    label_names = {
-        label.get("name")
-        for label in issue.get("labels", [])
-        if isinstance(label, dict)
-    }
-    has_gated_label = GATED_LABEL in label_names
-    if is_gated:
-        if not has_gated_label:
-            add_gated_label(number=number)
-            logger.info(f"#{number}: marked gated -- {assignee} lacks read access.")
-        else:
-            logger.info(f"#{number}: still gated -- leaving label in place.")
-        return
-    if has_gated_label:
-        remove_gated_label(number=number)
-        logger.info(f"#{number}: access granted, removed gated label.")
-
-    logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
-
-    # Set the VM marker BEFORE assigning so a crash between the two leaves
-    # the issue unassigned (harmless) rather than assigned-but-unowned.
-    if not set_vm_marker(number=number, vm_id=vm_id):
-        logger.info(f"#{number}: another VM already owns this issue; aborting.")
-        return
-    assign_issue(number=number, assignee=assignee)
-
-    # Two VMs sharing a PAT cannot be told apart by the assignee, so another
-    # VM that raced through the same set_vm_marker + assign_issue window will
-    # have overwritten our marker. Verify ownership before proceeding so the
-    # losing VM doesn't both duplicate work and later strip the assignment
-    # out from under the winning VM's still-running evaluation.
-    if not vm_marker_matches(number=number, vm_id=vm_id):
-        logger.info(
-            f"#{number}: another VM won the claim race; aborting without "
-            "touching the assignee."
-        )
-        return
-    try:
-        _run_claimed_issue(
-            issue=issue,
-            model_id=model_id,
-            languages=languages,
-            assignee=assignee,
-            vm_id=vm_id,
-            gpu_memory_utilization=gpu_memory_utilization,
-        )
-    except BaseException:
-        release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
-        raise
-
-
-def _run_claimed_issue(
-    issue: dict,
-    model_id: str,
-    languages: list[str],
-    assignee: str,
-    vm_id: str,
-    gpu_memory_utilization: float | None,
-) -> None:
-    """Run euroeval for all languages, uploading to HF bucket after each.
-
-    Results are uploaded incrementally to the Hugging Face results bucket
-    after each language completes, enabling crash recovery with minimal loss.
-
-    Args:
-        issue:
-            The GitHub issue object returned by the API.
-        model_id:
-            The Hugging Face model id to evaluate.
-        languages:
-            The flattened list of language codes for this evaluation.
-        assignee:
-            The GitHub user assigned while evaluating.
-        vm_id:
-            The VM marker written to the issue body.
-        gpu_memory_utilization:
-            Optional vLLM memory fraction.
-    """
-    number = issue["number"]
-    results_path = Path("euroeval_benchmark_results.jsonl")
-
-    existing_lines = _load_existing_results(model_id=model_id)
-    accumulated = result_lines_for_model(lines=existing_lines, model_id=model_id)
-    done = completed_languages(lines=accumulated, requested_languages=languages)
-    pending = [lang for lang in languages if lang not in done]
-    failed: list[str] = []
-
-    gated_detected = False
-    failure_reason: str | None = None
-    failure_output_tail = ""
-    last_output = ""
-    total_skipped = 0
-
-    # Process pending languages
-    gated_detected, failure_reason, failure_output_tail, last_output, total_skipped = (
-        _process_pending_languages(
-            number=number,
-            model_id=model_id,
-            pending=pending,
-            gpu_memory_utilization=gpu_memory_utilization,
-            results_path=results_path,
-            accumulated=accumulated,
-            total_skipped=total_skipped,
-        )
-    )
-
-    # Populate failed list if a failure occurred
-    if failure_reason and not failed:
-        failed.extend(pending)
-
-    # Handle skips
-    if not failed and pending:
-        skip_failed, skip_reason = _handle_pending_skips(
-            accumulated=accumulated, pending=pending, total_skipped=total_skipped
-        )
-        if skip_failed:
-            failed.extend(skip_failed)
-            failure_reason = skip_reason
-        else:
-            # Intentional skips - treat pending as done
-            done.extend(pending)
-    elif not failed and not pending:
-        logger.info(
-            f"#{number}: all requested language(s) already present in the bucket "
-            f"for {model_id!r}; nothing to evaluate."
-        )
-
-    # Log completion
-    if failed:
-        logger.info(
-            f"#{number}: evaluation failed for {model_id!r} "
-            f"after {len(done)} completed language(s)."
-        )
-    else:
-        logger.info(
-            f"#{number}: completed all {len(done)} language(s) for {model_id!r}."
-        )
-
-    # Post-process based on outcome
-    _post_process_issue(
-        number=number,
-        model_id=model_id,
-        gated_detected=gated_detected,
-        failed=failed,
-        failure_reason=failure_reason,
-        failure_output_tail=failure_output_tail,
-        vm_id=vm_id,
-        assignee=assignee,
-    )
-
-
-def _process_pending_languages(
-    number: int,
-    model_id: str,
-    pending: list[str],
-    gpu_memory_utilization: float | None,
-    results_path: Path,
-    accumulated: list[str],
-    total_skipped: int,
-) -> tuple[bool, str | None, str, str, int]:
-    """Process all pending languages for an issue.
-
-    Args:
-        number:
-            Issue number.
-        model_id:
-            Model identifier.
-        pending:
-            List of pending language codes.
-        gpu_memory_utilization:
-            GPU memory utilization setting.
-        results_path:
-            Path to results file.
-        accumulated:
-            Accumulated result lines (modified in place).
-        total_skipped:
-            Running count of skipped benchmarks.
-
-    Returns:
-        Tuple of (gated_detected, failure_reason, failure_tail, last_output,
-        total_skipped).
-    """
-    gated_detected = False
-    failure_reason: str | None = None
-    failure_output_tail = ""
-    last_output = ""
-
-    for i, lang in enumerate(pending):
-        logger.info(
-            f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
-        )
-        returncode, output = _run_single_language(
-            model_id=model_id, lang=lang, gpu_memory_utilization=gpu_memory_utilization
-        )
-        last_output = output
-
-        success, lang_failure_reason, lang_failure_tail, skipped = (
-            _handle_language_result(
-                lang=lang,
-                returncode=returncode,
-                output=output,
-                results_path=results_path,
-                model_id=model_id,
-                accumulated=accumulated,
-            )
-        )
-        total_skipped += skipped
-
-        if lang_failure_reason == "gated":
-            gated_detected = True
-            failure_output_tail = lang_failure_tail or ""
-            return (
-                gated_detected,
-                failure_reason,
-                failure_output_tail,
-                last_output,
-                total_skipped,
-            )
-        if lang_failure_reason:
-            failure_reason = lang_failure_reason
-            failure_output_tail = lang_failure_tail or ""
-            return (
-                gated_detected,
-                failure_reason,
-                failure_output_tail,
-                last_output,
-                total_skipped,
-            )
-        if not success:
-            logger.error(
-                f"#{number}: bucket upload failed after {lang}; "
-                "continuing with remaining languages."
-            )
-        else:
-            logger.info(f"#{number}: uploaded results for {lang}.")
-
-    return (
-        gated_detected,
-        failure_reason,
-        failure_output_tail,
-        last_output,
-        total_skipped,
-    )
-
-
-def _handle_language_result(
-    lang: str,
-    returncode: int,
-    output: str,
-    results_path: Path,
-    model_id: str,
-    accumulated: list[str],
-) -> tuple[bool, str | None, str | None, int]:
-    """Handle the result of running a single language.
-
-    Args:
-        lang:
-            Language code that was evaluated.
-        returncode:
-            Return code from EuroEval.
-        output:
-            Output from EuroEval.
-        results_path:
-            Path to results file.
-        model_id:
-            Model identifier.
-        accumulated:
-            List of accumulated result lines (modified in place).
-
-    Returns:
-        Tuple of (success, failure_reason, failure_tail, skipped_count).
-    """
-    before = set(read_jsonl_lines(path=results_path))
-    gated_in_lang = GATED_OUTPUT_RE.search(output)
-    num_errored = num_errored_benchmarks(output=output)
-    num_skipped = num_skipped_benchmarks(output=output)
-
-    # Handle gating
-    if gated_in_lang:
-        return False, "gated", summarise_evaluation_error(output=output), num_skipped
-
-    # Handle errors
-    if returncode != 0:
-        return (
-            False,
-            f"euroeval exited with code {returncode}",
-            summarise_evaluation_error(output=output),
-            num_skipped,
-        )
-    if num_errored > 0:
-        return (
-            False,
-            f"euroeval reported {num_errored} errored benchmark(s)",
-            summarise_evaluation_error(output=output),
-            num_skipped,
-        )
-
-    # Success - upload results
-    after = read_jsonl_lines(path=results_path)
-    new_lines = [line for line in after if line not in before]
-    accumulated.extend(new_lines)
-
-    if new_lines:
-        if not upload_results_to_hf_bucket(lines=new_lines, model_id=model_id):
-            return False, "upload-failed", None, num_skipped
-
-    return True, None, None, num_skipped
-
-
-def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
-    """Upload result lines to the HF results bucket.
-
-    Writes one JSON file per logical result via result_identity paths
-    (results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json), then uploads
-    only those files to the bucket. Never deletes existing files (additive only).
-
-    Args:
-        lines:
-            The JSONL result lines to upload.
-        model_id:
-            The HuggingFace model ID.
-
-    Returns:
-        True if upload succeeded, False otherwise.
-    """
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    valid_records_seen = 0
-    records_written = 0
-    written_paths: list[Path] = []
-    for line in lines:
-        if not line.strip():
-            continue
-        try:
-            record = json.loads(line)
-            identity = identity_from_eee_record(record)
-            record_path = RESULTS_DIR / identity_to_path(identity)
-            record_path.parent.mkdir(parents=True, exist_ok=True)
-            # Use canonical JSON for consistent comparison
-            new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
-
-            # Count as seen before checking if unchanged
-            valid_records_seen += 1
-
-            # Only write if file doesn't exist or content differs
-            if record_path.exists():
-                try:
-                    existing_content = record_path.read_text(encoding="utf-8").strip()
-                    existing_record = json.loads(existing_content)
-                    canonical_existing = json.dumps(
-                        existing_record, sort_keys=True, separators=(",", ":")
-                    )
-                    if canonical_existing == new_content:
-                        continue  # Skip unchanged files
-                except (json.JSONDecodeError, OSError):
-                    pass  # If we can't parse existing, overwrite it
-
-            record_path.write_text(data=new_content, encoding="utf-8")
-            records_written += 1
-            written_paths.append(record_path)
-        except (json.JSONDecodeError, ValueError, KeyError) as e:
-            logger.debug(f"Skipping invalid record: {e}")
-
-    if valid_records_seen == 0:
-        logger.info("No valid records to process.")
-        return True
-
-    if records_written == 0:
-        logger.info("All records unchanged.")
-        return True
-
-    try:
-        logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
-        # Skip any files that are empty (0 bytes)
-        api = HfApi()
-        add_list: list[tuple[str | Path | bytes, str]] = [
-            (str(path), str(path.relative_to(RESULTS_DIR)))
-            for path in written_paths
-            if path.is_file() and path.stat().st_size > 0
-        ]
-        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
-        logger.info(
-            f"Uploaded {records_written} result records for {model_id!r} to HF bucket."
-        )
-        return True
-    except HfHubHTTPError as e:
-        logger.error(f"Failed to upload to HF bucket: {e}")
-        return False
-
-
-def _load_existing_results(model_id: str) -> list[str]:
-    """Load existing results for a model from disk and local file.
-
-    Args:
-        model_id:
-            The model identifier.
-
-    Returns:
-        List of existing result JSON lines.
-    """
-    results_path = Path("euroeval_benchmark_results.jsonl")
-    existing_lines: list[str] = []
-    model_dir = RESULTS_DIR / sanitise_model_dir_name(model_id)
-    if model_dir.is_dir():
-        for record_path in sorted(model_dir.glob("*.json")):
-            try:
-                record = json.loads(record_path.read_text(encoding="utf-8"))
-                existing_lines.append(json.dumps(obj=record))
-            except (json.JSONDecodeError, OSError):
-                logger.debug(f"Skipping unreadable record {record_path}")
-    existing_lines.extend(read_jsonl_lines(path=results_path))
-    return existing_lines
-
-
-def _run_single_language(
-    model_id: str, lang: str, gpu_memory_utilization: float | None
-) -> tuple[int, str]:
-    """Run EuroEval for a single language.
-
-    Args:
-        model_id:
-            The model identifier.
-        lang:
-            Language code to evaluate.
-        gpu_memory_utilization:
-            Optional vLLM memory fraction.
-
-    Returns:
-        Tuple of (returncode, output).
-    """
-    return run_euroeval(
-        model_id=model_id,
-        languages=[lang],
-        evaluate_test_split=False,
-        clear_model_cache=True,
-        gpu_memory_utilization=gpu_memory_utilization,
-    )
-
-
-def _handle_pending_skips(
-    accumulated: list[str], pending: list[str], total_skipped: int
-) -> tuple[list[str], str | None]:
-    """Handle skip analysis for pending languages.
-
-    Args:
-        accumulated:
-            Accumulated result lines.
-        pending:
-            Pending language codes.
-        total_skipped:
-            Total skipped benchmark count.
-
-    Returns:
-        Tuple of (failed_languages, failure_reason).
-    """
-    skip_failed, skip_reason = _handle_skip_analysis(
-        accumulated=accumulated, pending=pending, total_skipped=total_skipped
-    )
-    return skip_failed, skip_reason
-
-
-def _handle_skip_analysis(
-    accumulated: list[str], pending: list[str], total_skipped: int
-) -> tuple[list[str], str | None]:
-    """Analyze and handle skipped languages.
-
-    Args:
-        accumulated:
-            List of accumulated result lines.
-        pending:
-            List of pending language codes.
-        total_skipped:
-            Total number of skipped benchmarks.
-
-    Returns:
-        Tuple of (failed_languages, failure_reason).
-    """
-    missing = missing_official_dataset_language_pairs(
-        lines=accumulated, requested_languages=pending
-    )
-
-    if len(missing) > total_skipped:
-        failure_reason = (
-            f"missing official dataset-language pair(s): "
-            f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
-        )
-        return [lang for lang in pending], failure_reason
-
-    if missing:
-        logger.info(
-            f"euroeval skipped {total_skipped} benchmark(s); "
-            f"treating missing pair(s) as intentional skips: "
-            f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
-        )
-    return [], None
-
-
-def _post_process_issue(
-    number: int,
-    model_id: str,
-    gated_detected: bool,
-    failed: list[str],
-    failure_reason: str | None,
-    failure_output_tail: str,
-    vm_id: str,
-    assignee: str,
-) -> None:
-    """Post-process an issue based on evaluation outcome.
-
-    Args:
-        number:
-            Issue number.
-        model_id:
-            Model identifier.
-        gated_detected:
-            Whether the model was gated.
-        failed:
-            List of failed languages.
-        failure_reason:
-            Reason for failure.
-        failure_output_tail:
-            Tail of error output.
-        vm_id:
-            VM identifier.
-        assignee:
-            Assignee username.
-    """
-    if gated_detected:
-        _post_gated_issue(
-            number=number, model_id=model_id, vm_id=vm_id, assignee=assignee
-        )
-        return
-
-    if failed:
-        _post_failed_issue(
-            number=number,
-            model_id=model_id,
-            failure_reason=failure_reason,
-            failed=failed,
-            failure_output_tail=failure_output_tail,
-            vm_id=vm_id,
-            assignee=assignee,
-        )
-        return
-
-    _post_successful_issue(number=number, vm_id=vm_id)
-
-
-def _post_gated_issue(number: int, model_id: str, vm_id: str, assignee: str) -> None:
-    """Post-process a gated issue.
-
-    Args:
-        number:
-            Issue number.
-        model_id:
-            Model identifier.
-        vm_id:
-            VM identifier.
-        assignee:
-            Assignee username.
-    """
-    add_gated_label(number=number)
-    add_failed_label(number=number)
-    release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
-    logger.info(
-        f"#{number}: euroeval reported a gated repo for {model_id!r}; "
-        "added Gated and evaluation-failed labels to avoid retry loops."
-    )
-
-
-def _post_successful_issue(number: int, vm_id: str) -> None:
-    """Post-process a successful issue.
-
-    Args:
-        number:
-            Issue number.
-        vm_id:
-            VM identifier.
-    """
-    remove_failed_label(number=number)
-    add_results_ready_label(number=number)
-    clear_vm_marker(number=number, vm_id=vm_id)
-
-
-def issue_is_still_claimable(number: int) -> bool:
-    """Return True if the issue is still open with no assignees.
-
-    Re-fetches the issue at claim time so that issues which were closed
-    or assigned between the initial snapshot and now are not
-    double-processed.
-
-    Args:
-        number:
-            The issue number to verify.
-
-    Returns:
-        True if the issue is currently open and has no assignees; False
-        otherwise (including when the lookup fails).
-    """
-    try:
-        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
-    except urllib.error.HTTPError as e:
-        logger.warning(f"#{number}: could not re-check issue state: {e}")
-        return False
-    if not isinstance(current, dict):
-        return False
-    if current.get("state") != "open":
-        return False
-    return not current.get("assignees")
-
-
-def _post_failed_issue(
-    number: int,
-    model_id: str,
-    failure_reason: str | None,
-    failed: list[str],
-    failure_output_tail: str,
-    vm_id: str,
-    assignee: str,
-) -> None:
-    """Post-process a failed issue.
-
-    Args:
-        number:
-            Issue number.
-        model_id:
-            Model identifier (for logging).
-        failure_reason:
-            Reason for failure.
-        failed:
-            List of failed languages.
-        failure_output_tail:
-            Tail of error output.
-        vm_id:
-            VM identifier.
-        assignee:
-            Assignee username.
-    """
-    version = __version__
-    reason = failure_reason or f"failed languages: {', '.join(failed)}"
-    tail = failure_output_tail or "(no output captured)"
-
-    if issue_has_matching_error_comment(number=number, reason=reason):
-        release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
-        logger.info(f"#{number}: identical error already posted; returned to queue.")
-        return
-
-    error_comment = (
-        f"Error encountered during evaluation ({reason}):\n\n"
-        f"```bash\n{tail}\n```\n\n"
-        f"EuroEval version: v{version}\n"
-    )
-    comment_on_issue(number=number, body=error_comment)
-    add_failed_label(number=number)
-    release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
-    logger.info(
-        f"#{number}: marked errored on v{version} after {len(failed)} failed "
-        f"language(s) ({', '.join(failed)}); returned to queue."
-    )
-
-
-def issue_has_matching_error_comment(number: int, reason: str) -> bool:
-    """Return True if an error comment with the same ``reason`` already exists.
-
-    The tail of subprocess output varies run-to-run (timestamps, ANSI),
-    so we match on the stable error-reason phrase rendered in the comment
-    header instead of doing an exact-body comparison.
-
-    Args:
-        number:
-            The issue number to inspect.
-        reason:
-            The reason string that would be used in a new error comment.
-
-    Returns:
-        True if any existing comment on the issue contains the same
-        ``Error encountered during evaluation (<reason>):`` header.
-    """
-    try:
-        comments = gh_request(
-            path=f"/repos/{REPO}/issues/{number}/comments", params={"per_page": "100"}
-        )
-    except urllib.error.HTTPError as e:
-        logger.warning(f"#{number}: could not list comments: {e}")
-        return False
-    if not isinstance(comments, list):
-        return False
-    marker = f"Error encountered during evaluation ({reason}):"
-    return any(
-        isinstance(c, dict) and marker in (c.get("body") or "") for c in comments
-    )
 
 
 if __name__ == "__main__":

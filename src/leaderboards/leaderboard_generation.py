@@ -25,356 +25,28 @@ from .task_metadata import category_includes_task, official_datasets_for_languag
 logger = logging.getLogger(__name__)
 
 
-def generate_leaderboard(
-    leaderboard_name: str,
-    language_names: list[str],
-    categories: list[t.Literal["generative", "all_models"]],
-    force: bool,
-) -> None:
-    """Generate leaderboard CSV files from the EuroEval results.
+def _format_rank_score(entry: object) -> str:
+    """Render a {"score", "ci_upper", ...} dict as "score +/- margin", or "-".
 
     Args:
-        leaderboard_name:
-            The slug used in output filenames (e.g. ``"danish"``,
-            ``"scandinavian"``).
-        language_names:
-            The languages the leaderboard covers. Each name must resolve via
-            ``euroeval.languages``; the official leaderboard datasets are
-            derived from the lib for each.
-        categories:
-            The categories of leaderboards to generate. Should be a list containing
-            "generative" and/or "all_models".
-        force:
-            Force the generation of the leaderboard, even if no updates are found.
-    """
-    leaderboard_title = leaderboard_name.replace("_", " ").title()
-
-    logger.info(f"Generating {leaderboard_title} leaderboard...")
-
-    # Derive per-language task→dataset configs from `euroeval`. The canonical
-    # task/dataset/metric metadata lives in the library.
-    configs: dict[str, dict[str, list[str]]] = {
-        language: dict(official_datasets_for_language(language))
-        for language in language_names
-    }
-
-    datasets = [
-        dataset
-        for config in configs.values()
-        for task_datasets in config.values()
-        for dataset in task_datasets
-    ]
-
-    # Load results and set them up for the leaderboard
-    results = load_raw_results()
-    results = [record for record in results if get_dataset(record) in datasets]
-    # Filter out BPC runs - only standard accuracy scores go on leaderboards
-    results = [
-        record for record in results if not record.get("use_bits_per_character", False)
-    ]
-    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
-        group_results_by_model(results=results)
-    )
-    model_results = drop_val_duplicates(model_results=model_results)
-
-    # Use bootstrap-based CIs for the displayed "Rank score ± margin" column.
-    # Bootstrap resamples datasets with replacement (stratified by task),
-    # recomputes the full hierarchy, and returns percentile CIs.
-    ranks = compute_ranks_bootstrap(
-        model_results=model_results,
-        configs=configs,
-        n_bootstraps=NUM_BOOTSTRAPS,
-        seed=42,
-    )
-    metadata_dict = extract_model_metadata(results=results)
-
-    # Only include dataset columns in monolingual leaderboards
-    include_dataset_columns = len(configs) == 1
-
-    # Generate the leaderboard and store it to disk
-    df_pairs = _generate_dataframe(
-        model_results=model_results,
-        ranks=ranks,
-        metadata_dict=metadata_dict,
-        categories=categories,
-        leaderboard_configs=configs,
-        include_dataset_columns=include_dataset_columns,
-    )
-
-    for category, df_pair in zip(categories, df_pairs):
-        df, df_simplified = df_pair
-
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        leaderboard_path = OUTPUT_DIR / f"{leaderboard_name}_{category}.csv"
-        simplified_leaderboard_path = (
-            OUTPUT_DIR / f"{leaderboard_name}_{category}_simplified.csv"
-        )
-
-        # Check if anything got updated
-        new_records: list[str] = []
-        schema_changed = False
-        # Exclude columns that change even when a model's own performance does
-        # not, so that adding one new model doesn't flag nearly every existing
-        # model as "updated":
-        #   * the ordinal "Rank" column (a position relative to the pool);
-        #   * the "Rank score" column and the per-language rank columns
-        #     (bootstrap scores computed over the whole pool, so they shift for
-        #     everyone when the set of models changes);
-        #   * the per-dataset "_version"/"_failures"/"_scored" companion columns.
-        # The remaining columns are the per-dataset scores, which only change
-        # when the model itself is re-evaluated — and additions/removals are
-        # still caught by the membership check below, so the CSV is always
-        # rewritten when it genuinely needs to be.
-        rank_score_columns = {"Rank score"}
-        if len(configs) > 1:
-            rank_score_columns |= {language.title() for language in configs}
-        comparison_columns = [
-            col
-            for col in df.columns
-            if col.lower() != "rank"
-            and col not in rank_score_columns
-            and not col.endswith(("_version", "_failures", "_scored"))
-        ]
-        if leaderboard_path.exists():
-            old_df = pd.read_csv(leaderboard_path, header=0, skiprows=1)
-            old_df.columns = [
-                re.sub(r"<a href=['\"].*?['\"]>(.*?)</a>", r"\1", col)
-                for col in old_df.columns
-            ]
-            # Identify new columns (in new df but not in old, excluding rank columns for
-            # schema change detection)
-            old_comparison_columns = [
-                col
-                for col in old_df.columns
-                if col.lower() != "rank"
-                and col not in rank_score_columns
-                and not col.endswith(("_version", "_failures", "_scored"))
-            ]
-            new_columns = set(comparison_columns) - set(old_comparison_columns)
-            removed_columns = set(old_comparison_columns) - set(comparison_columns)
-            schema_changed = bool(new_columns) or bool(removed_columns)
-            # Compute common columns for score comparison (intersection)
-            common_columns = [
-                col for col in comparison_columns if col in old_comparison_columns
-            ]
-            # Compare models on common columns
-            for model_id in set(df.Model.tolist() + old_df.Model.tolist()):
-                model_is_new = (
-                    model_id in df.Model.values and model_id not in old_df.Model.values
-                )
-                model_is_removed = (
-                    model_id in old_df.Model.values and model_id not in df.Model.values
-                )
-                if model_is_new or model_is_removed:
-                    new_records.append(model_id)
-                    continue
-
-                # Compare on common columns only
-                old_model_row = old_df[common_columns].query("Model == @model_id")
-                new_model_row = df[common_columns].query("Model == @model_id")
-                # Normalise placeholders to NaN for comparison ("-", "N/A", "?", "" all
-                # mean missing). Keep formatted scores like "60.17 ± 1.40" as-is.
-
-                def normalise_score(x: float | str) -> float | str:
-                    if pd.isna(x):
-                        return float("nan")
-                    s = str(x).strip()
-                    if s in {"-", "N/A", "?", ""}:
-                        return float("nan")
-                    return s
-
-                old_model_results = old_model_row.map(normalise_score).reset_index(
-                    drop=True
-                )
-                new_model_results = new_model_row.map(normalise_score).reset_index(
-                    drop=True
-                )
-                # Fill NaN with sentinel for comparison (missing = missing is equal)
-                model_has_changed_scores = not (
-                    old_model_results.fillna(-999).equals(
-                        new_model_results.fillna(-999)
-                    )
-                )
-                if model_has_changed_scores:
-                    new_records.append(model_id)
-
-            # Additionally, check if any existing model has scores in new columns
-            if new_columns:
-                for model_id in df.Model.tolist():
-                    if model_id in old_df.Model.values:
-                        # Check if this model has real scores in any new column
-                        new_model_row = df.loc[
-                            df["Model"] == model_id, list(new_columns)
-                        ]
-                        # A real score is any non-placeholder value
-
-                        def is_not_placeholder(x: float | str) -> bool:
-                            if pd.isna(x):
-                                return False
-                            return str(x).strip() not in {"-", "N/A", "?", ""}
-
-                        has_new_scores = (
-                            new_model_row.map(is_not_placeholder).any().any()
-                        )  # type: ignore[attr-defined]
-                        if has_new_scores and model_id not in new_records:
-                            new_records.append(model_id)
-        else:
-            new_records = df.Model.tolist()
-
-        # Determine if file should be written: schema changed, models added/removed/
-        # modified, or force flag
-        should_write = bool(new_records) or schema_changed or force
-        if should_write and not new_records and schema_changed:
-            # Schema changed but no model scores changed; still a meaningful update
-            logger.info(
-                f"Updated the {category!r} category of the {leaderboard_title} "
-                "leaderboard with schema changes (new/removed columns)."
-            )
-
-        # Remove anchor tags from model names
-        new_records = [
-            re.sub(r"<a href=['\"].*?['\"]>(.*?)</a>", r"\1", model)
-            for model in new_records
-        ]
-
-        if should_write:
-            top_header, second_header = _create_leaderboard_headers(
-                df=df, leaderboard_configs=configs
-            )
-
-            df.columns = top_header
-
-            # Add second header as the first row
-            df.loc[-1] = second_header
-            df.index = df.index + 1
-            df.sort_index(inplace=True)
-            df = df.fillna("?")
-
-            df.to_csv(leaderboard_path, index=False)
-            df_simplified.to_csv(simplified_leaderboard_path, index=False)
-            timestamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            notes = dict(annotate=dict(notes=f"Last updated: {timestamp} CET"))
-            with leaderboard_path.with_suffix(".json").open(mode="w") as f:
-                json.dump(notes, f, indent=2)
-                f.write("\n")
-            if not new_records and force:
-                logger.info(
-                    f"Updated the {category!r} category of the {leaderboard_title} "
-                    "leaderboard with no changes."
-                )
-            elif include_dataset_columns:
-                logger.info(
-                    f"Updated the following {len(new_records):,} models in the "
-                    f"{category!r} category of the {leaderboard_title} leaderboard: "
-                    f"{', '.join(new_records)}"
-                )
-            else:
-                logger.info(
-                    f"Updated the {leaderboard_title} leaderboard with "
-                    f"{len(new_records):,} new or modified models."
-                )
-        else:
-            logger.info(
-                f"No updates to the {category!r} category of the {leaderboard_title} "
-                "leaderboard."
-            )
-
-
-def _create_leaderboard_headers(
-    df: pd.DataFrame | pd.Series, leaderboard_configs: dict[str, dict[str, list[str]]]
-) -> tuple[list[str], list[str]]:
-    """Create the leaderboard headers.
-
-    The first header includes the task types (with links), and the second header
-    contains the 'original' header but with html links to the datasets.
-
-    Args:
-        df:
-            The dataframe.
-        leaderboard_configs:
-            The leaderboard configurations.
+        entry:
+            The dict to format.
 
     Returns:
-        The first and second header.
+        The formatted string.
     """
-    # Extract information from each dataset, and set up an anchor tag template which
-    # will replace the dataset column name with a link
-    all_datasets = []
-    dataset_to_language = {}
-    dataset_to_task_info = {}
-    for language, tasks in leaderboard_configs.items():
-        dataset_link_tag = (
-            f"<a href='https://euroeval.com/datasets/{language}#"
-            + "{anchor}'>{dataset}</a>"
-        )
-
-        language_datasets = list(chain.from_iterable(tasks.values()))
-        all_datasets.extend(language_datasets)
-
-        for dataset in language_datasets:
-            dataset_to_language[dataset] = (language, dataset_link_tag)
-
-        for task, datasets in tasks.items():
-            for dataset in datasets:
-                dataset_to_task_info[dataset] = (task, len(datasets))
-
-    top_header = []
-    second_header = []
-    processed_tasks_per_language: dict[str, set[str]] = {}
-    seen_version_col = False
-    for id_, col in enumerate(df.columns):
-        if (task := col.replace(" ", "-").lower()) in ORTHOGONAL_TASKS:
-            top_header.append("")
-            second_header.append(
-                f'<a href="https://euroeval.com/tasks/{task}">{col}</a>'
-            )
-
-        # Replace dataset columns with task links in the first header, and dataset links
-        # in the second header
-        elif (leaderboard_col := col.replace("_", "-")) in all_datasets:
-            language, dataset_link_tag = dataset_to_language[leaderboard_col]
-            task, num_datasets = dataset_to_task_info[leaderboard_col]
-
-            if language not in processed_tasks_per_language:
-                processed_tasks_per_language[language] = set()
-
-            if task in processed_tasks_per_language[language]:
-                top_header.append("")
-                second_header.append(
-                    dataset_link_tag.format(anchor=leaderboard_col, dataset=col)
-                )
-                continue
-
-            task_link = generate_task_link(id_, task)
-            if num_datasets > 1:
-                task_link = f"~~~{task_link}~~~"
-
-            top_header.append(task_link)
-            second_header.append(
-                dataset_link_tag.format(anchor=leaderboard_col, dataset=col)
-            )
-            processed_tasks_per_language[language].add(task)
-
-        # Special case if it's a dataset version column
-        else:
-            if "version" in col and not seen_version_col:
-                top_header.append("<span style='visibility: hidden;'>hidden</span>")
-                seen_version_col = True
-            else:
-                top_header.append("")
-
-            second_header.append(col)
-
-    # Add "Task Type" label to the top-left cell, and make cell (0, 1) invisible to
-    # ensure proper alignment
-    top_header[0] = (
-        "<span style='font-size: 12px; font-weight: normal; opacity: 0.6;'>"
-        "Task Type"
-        "</span>"
+    if not isinstance(entry, dict):
+        return "-"
+    score = entry.get("score", float("nan"))
+    ci_upper = entry.get("ci_upper", float("nan"))
+    if not (isinstance(score, (int, float)) and math.isfinite(score)):
+        return "-"
+    margin = (
+        (ci_upper - score)
+        if isinstance(ci_upper, int | float) and math.isfinite(ci_upper)
+        else 0.0
     )
-    top_header[1] = "<span style='visibility: hidden;'>dummy</span>"
-
-    return top_header, second_header
+    return f"{score:.2f} \u00b1 {margin:.2f}"
 
 
 def _generate_dataframe(
@@ -801,25 +473,353 @@ def _generate_dataframe(
     return dfs
 
 
-def _format_rank_score(entry: object) -> str:
-    """Render a {"score", "ci_upper", ...} dict as "score +/- margin", or "-".
+def _create_leaderboard_headers(
+    df: pd.DataFrame | pd.Series, leaderboard_configs: dict[str, dict[str, list[str]]]
+) -> tuple[list[str], list[str]]:
+    """Create the leaderboard headers.
+
+    The first header includes the task types (with links), and the second header
+    contains the 'original' header but with html links to the datasets.
 
     Args:
-        entry:
-            The dict to format.
+        df:
+            The dataframe.
+        leaderboard_configs:
+            The leaderboard configurations.
 
     Returns:
-        The formatted string.
+        The first and second header.
     """
-    if not isinstance(entry, dict):
-        return "-"
-    score = entry.get("score", float("nan"))
-    ci_upper = entry.get("ci_upper", float("nan"))
-    if not (isinstance(score, (int, float)) and math.isfinite(score)):
-        return "-"
-    margin = (
-        (ci_upper - score)
-        if isinstance(ci_upper, int | float) and math.isfinite(ci_upper)
-        else 0.0
+    # Extract information from each dataset, and set up an anchor tag template which
+    # will replace the dataset column name with a link
+    all_datasets = []
+    dataset_to_language = {}
+    dataset_to_task_info = {}
+    for language, tasks in leaderboard_configs.items():
+        dataset_link_tag = (
+            f"<a href='https://euroeval.com/datasets/{language}#"
+            + "{anchor}'>{dataset}</a>"
+        )
+
+        language_datasets = list(chain.from_iterable(tasks.values()))
+        all_datasets.extend(language_datasets)
+
+        for dataset in language_datasets:
+            dataset_to_language[dataset] = (language, dataset_link_tag)
+
+        for task, datasets in tasks.items():
+            for dataset in datasets:
+                dataset_to_task_info[dataset] = (task, len(datasets))
+
+    top_header = []
+    second_header = []
+    processed_tasks_per_language: dict[str, set[str]] = {}
+    seen_version_col = False
+    for id_, col in enumerate(df.columns):
+        if (task := col.replace(" ", "-").lower()) in ORTHOGONAL_TASKS:
+            top_header.append("")
+            second_header.append(
+                f'<a href="https://euroeval.com/tasks/{task}">{col}</a>'
+            )
+
+        # Replace dataset columns with task links in the first header, and dataset links
+        # in the second header
+        elif (leaderboard_col := col.replace("_", "-")) in all_datasets:
+            language, dataset_link_tag = dataset_to_language[leaderboard_col]
+            task, num_datasets = dataset_to_task_info[leaderboard_col]
+
+            if language not in processed_tasks_per_language:
+                processed_tasks_per_language[language] = set()
+
+            if task in processed_tasks_per_language[language]:
+                top_header.append("")
+                second_header.append(
+                    dataset_link_tag.format(anchor=leaderboard_col, dataset=col)
+                )
+                continue
+
+            task_link = generate_task_link(id_, task)
+            if num_datasets > 1:
+                task_link = f"~~~{task_link}~~~"
+
+            top_header.append(task_link)
+            second_header.append(
+                dataset_link_tag.format(anchor=leaderboard_col, dataset=col)
+            )
+            processed_tasks_per_language[language].add(task)
+
+        # Special case if it's a dataset version column
+        else:
+            if "version" in col and not seen_version_col:
+                top_header.append("<span style='visibility: hidden;'>hidden</span>")
+                seen_version_col = True
+            else:
+                top_header.append("")
+
+            second_header.append(col)
+
+    # Add "Task Type" label to the top-left cell, and make cell (0, 1) invisible to
+    # ensure proper alignment
+    top_header[0] = (
+        "<span style='font-size: 12px; font-weight: normal; opacity: 0.6;'>"
+        "Task Type"
+        "</span>"
     )
-    return f"{score:.2f} \u00b1 {margin:.2f}"
+    top_header[1] = "<span style='visibility: hidden;'>dummy</span>"
+
+    return top_header, second_header
+
+
+def generate_leaderboard(
+    leaderboard_name: str,
+    language_names: list[str],
+    categories: list[t.Literal["generative", "all_models"]],
+    force: bool,
+) -> None:
+    """Generate leaderboard CSV files from the EuroEval results.
+
+    Args:
+        leaderboard_name:
+            The slug used in output filenames (e.g. ``"danish"``,
+            ``"scandinavian"``).
+        language_names:
+            The languages the leaderboard covers. Each name must resolve via
+            ``euroeval.languages``; the official leaderboard datasets are
+            derived from the lib for each.
+        categories:
+            The categories of leaderboards to generate. Should be a list containing
+            "generative" and/or "all_models".
+        force:
+            Force the generation of the leaderboard, even if no updates are found.
+    """
+    leaderboard_title = leaderboard_name.replace("_", " ").title()
+
+    logger.info(f"Generating {leaderboard_title} leaderboard...")
+
+    # Derive per-language task→dataset configs from `euroeval`. The canonical
+    # task/dataset/metric metadata lives in the library.
+    configs: dict[str, dict[str, list[str]]] = {
+        language: dict(official_datasets_for_language(language))
+        for language in language_names
+    }
+
+    datasets = [
+        dataset
+        for config in configs.values()
+        for task_datasets in config.values()
+        for dataset in task_datasets
+    ]
+
+    # Load results and set them up for the leaderboard
+    results = load_raw_results()
+    results = [record for record in results if get_dataset(record) in datasets]
+    # Filter out BPC runs - only standard accuracy scores go on leaderboards
+    results = [
+        record for record in results if not record.get("use_bits_per_character", False)
+    ]
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
+        group_results_by_model(results=results)
+    )
+    model_results = drop_val_duplicates(model_results=model_results)
+
+    # Use bootstrap-based CIs for the displayed "Rank score ± margin" column.
+    # Bootstrap resamples datasets with replacement (stratified by task),
+    # recomputes the full hierarchy, and returns percentile CIs.
+    ranks = compute_ranks_bootstrap(
+        model_results=model_results,
+        configs=configs,
+        n_bootstraps=NUM_BOOTSTRAPS,
+        seed=42,
+    )
+    metadata_dict = extract_model_metadata(results=results)
+
+    # Only include dataset columns in monolingual leaderboards
+    include_dataset_columns = len(configs) == 1
+
+    # Generate the leaderboard and store it to disk
+    df_pairs = _generate_dataframe(
+        model_results=model_results,
+        ranks=ranks,
+        metadata_dict=metadata_dict,
+        categories=categories,
+        leaderboard_configs=configs,
+        include_dataset_columns=include_dataset_columns,
+    )
+
+    for category, df_pair in zip(categories, df_pairs):
+        df, df_simplified = df_pair
+
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        leaderboard_path = OUTPUT_DIR / f"{leaderboard_name}_{category}.csv"
+        simplified_leaderboard_path = (
+            OUTPUT_DIR / f"{leaderboard_name}_{category}_simplified.csv"
+        )
+
+        # Check if anything got updated
+        new_records: list[str] = []
+        schema_changed = False
+        # Exclude columns that change even when a model's own performance does
+        # not, so that adding one new model doesn't flag nearly every existing
+        # model as "updated":
+        #   * the ordinal "Rank" column (a position relative to the pool);
+        #   * the "Rank score" column and the per-language rank columns
+        #     (bootstrap scores computed over the whole pool, so they shift for
+        #     everyone when the set of models changes);
+        #   * the per-dataset "_version"/"_failures"/"_scored" companion columns.
+        # The remaining columns are the per-dataset scores, which only change
+        # when the model itself is re-evaluated — and additions/removals are
+        # still caught by the membership check below, so the CSV is always
+        # rewritten when it genuinely needs to be.
+        rank_score_columns = {"Rank score"}
+        if len(configs) > 1:
+            rank_score_columns |= {language.title() for language in configs}
+        comparison_columns = [
+            col
+            for col in df.columns
+            if col.lower() != "rank"
+            and col not in rank_score_columns
+            and not col.endswith(("_version", "_failures", "_scored"))
+        ]
+        if leaderboard_path.exists():
+            old_df = pd.read_csv(leaderboard_path, header=0, skiprows=1)
+            old_df.columns = [
+                re.sub(r"<a href=['\"].*?['\"]>(.*?)</a>", r"\1", col)
+                for col in old_df.columns
+            ]
+            # Identify new columns (in new df but not in old, excluding rank columns for
+            # schema change detection)
+            old_comparison_columns = [
+                col
+                for col in old_df.columns
+                if col.lower() != "rank"
+                and col not in rank_score_columns
+                and not col.endswith(("_version", "_failures", "_scored"))
+            ]
+            new_columns = set(comparison_columns) - set(old_comparison_columns)
+            removed_columns = set(old_comparison_columns) - set(comparison_columns)
+            schema_changed = bool(new_columns) or bool(removed_columns)
+            # Compute common columns for score comparison (intersection)
+            common_columns = [
+                col for col in comparison_columns if col in old_comparison_columns
+            ]
+            # Compare models on common columns
+            for model_id in set(df.Model.tolist() + old_df.Model.tolist()):
+                model_is_new = (
+                    model_id in df.Model.values and model_id not in old_df.Model.values
+                )
+                model_is_removed = (
+                    model_id in old_df.Model.values and model_id not in df.Model.values
+                )
+                if model_is_new or model_is_removed:
+                    new_records.append(model_id)
+                    continue
+
+                # Compare on common columns only
+                old_model_row = old_df[common_columns].query("Model == @model_id")
+                new_model_row = df[common_columns].query("Model == @model_id")
+                # Normalise placeholders to NaN for comparison ("-", "N/A", "?", "" all
+                # mean missing). Keep formatted scores like "60.17 ± 1.40" as-is.
+
+                def normalise_score(x: float | str) -> float | str:
+                    if pd.isna(x):
+                        return float("nan")
+                    s = str(x).strip()
+                    if s in {"-", "N/A", "?", ""}:
+                        return float("nan")
+                    return s
+
+                old_model_results = old_model_row.map(normalise_score).reset_index(
+                    drop=True
+                )
+                new_model_results = new_model_row.map(normalise_score).reset_index(
+                    drop=True
+                )
+                # Fill NaN with sentinel for comparison (missing = missing is equal)
+                model_has_changed_scores = not (
+                    old_model_results.fillna(-999).equals(
+                        new_model_results.fillna(-999)
+                    )
+                )
+                if model_has_changed_scores:
+                    new_records.append(model_id)
+
+            # Additionally, check if any existing model has scores in new columns
+            if new_columns:
+                for model_id in df.Model.tolist():
+                    if model_id in old_df.Model.values:
+                        # Check if this model has real scores in any new column
+                        new_model_row = df.loc[
+                            df["Model"] == model_id, list(new_columns)
+                        ]
+                        # A real score is any non-placeholder value
+
+                        def is_not_placeholder(x: float | str) -> bool:
+                            if pd.isna(x):
+                                return False
+                            return str(x).strip() not in {"-", "N/A", "?", ""}
+
+                        has_new_scores = (
+                            new_model_row.map(is_not_placeholder).any().any()
+                        )  # type: ignore[attr-defined]
+                        if has_new_scores and model_id not in new_records:
+                            new_records.append(model_id)
+        else:
+            new_records = df.Model.tolist()
+
+        # Determine if file should be written: schema changed, models added/removed/
+        # modified, or force flag
+        should_write = bool(new_records) or schema_changed or force
+        if should_write and not new_records and schema_changed:
+            # Schema changed but no model scores changed; still a meaningful update
+            logger.info(
+                f"Updated the {category!r} category of the {leaderboard_title} "
+                "leaderboard with schema changes (new/removed columns)."
+            )
+
+        # Remove anchor tags from model names
+        new_records = [
+            re.sub(r"<a href=['\"].*?['\"]>(.*?)</a>", r"\1", model)
+            for model in new_records
+        ]
+
+        if should_write:
+            top_header, second_header = _create_leaderboard_headers(
+                df=df, leaderboard_configs=configs
+            )
+
+            df.columns = top_header
+
+            # Add second header as the first row
+            df.loc[-1] = second_header
+            df.index = df.index + 1
+            df.sort_index(inplace=True)
+            df = df.fillna("?")
+
+            df.to_csv(leaderboard_path, index=False)
+            df_simplified.to_csv(simplified_leaderboard_path, index=False)
+            timestamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            notes = dict(annotate=dict(notes=f"Last updated: {timestamp} CET"))
+            with leaderboard_path.with_suffix(".json").open(mode="w") as f:
+                json.dump(notes, f, indent=2)
+                f.write("\n")
+            if not new_records and force:
+                logger.info(
+                    f"Updated the {category!r} category of the {leaderboard_title} "
+                    "leaderboard with no changes."
+                )
+            elif include_dataset_columns:
+                logger.info(
+                    f"Updated the following {len(new_records):,} models in the "
+                    f"{category!r} category of the {leaderboard_title} leaderboard: "
+                    f"{', '.join(new_records)}"
+                )
+            else:
+                logger.info(
+                    f"Updated the {leaderboard_title} leaderboard with "
+                    f"{len(new_records):,} new or modified models."
+                )
+        else:
+            logger.info(
+                f"No updates to the {category!r} category of the {leaderboard_title} "
+                "leaderboard."
+            )

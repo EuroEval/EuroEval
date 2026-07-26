@@ -59,6 +59,41 @@ def generate_task_link(task_id: int, label: str) -> str:
     )
 
 
+@cache
+def _load_model_url_decisions() -> dict[str, bool]:
+    """Load cached model URL decisions (remove or keep).
+
+    Returns:
+        A dict mapping model IDs to whether they should be removed (True)
+        or kept without a URL (False). Returns an empty dict if the cache
+        file does not exist.
+    """
+    if not MODELS_WITHOUT_URLS_CACHE.exists():
+        return {}
+    with MODELS_WITHOUT_URLS_CACHE.open("r") as f:
+        data = safe_load(f) or {}
+    # Backwards compatibility: old format was a list of model IDs to keep
+    if isinstance(data, list):
+        return {model_id: False for model_id in data}
+    return data
+
+
+def _load_model_url_decision(model_id: str) -> bool | None:
+    """Load a cached decision for a specific model.
+
+    Args:
+        model_id:
+            The model ID to look up.
+
+    Returns:
+        True if the model should be removed, False if it should be kept
+        without a URL, or None if no cached decision exists.
+    """
+    decisions = _load_model_url_decisions()
+    return decisions.get(model_id)
+
+
+@cache
 def generate_model_url(model_id: str) -> str | None:
     """Generate a URL for a model.
 
@@ -112,6 +147,26 @@ def generate_model_url(model_id: str) -> str | None:
 
 
 @cache
+def _remember_model_url_decision(model_id: str, remove: bool) -> None:
+    """Persist a model URL decision to the cache.
+
+    Args:
+        model_id:
+            The model ID.
+        remove:
+            True if the model should be removed, False if it should be
+            kept without a URL.
+    """
+    decisions = _load_model_url_decisions()
+    if model_id in decisions:
+        return
+    decisions[model_id] = remove
+    with MODELS_WITHOUT_URLS_CACHE.open("w") as f:
+        safe_dump(dict(sorted(decisions.items())), f)
+    _load_model_url_decisions.cache_clear()
+
+
+@cache
 def ask_user_to_remove_model(model_id: str) -> bool:
     """Ask the user if they want to remove a model from the results.
 
@@ -141,204 +196,6 @@ def ask_user_to_remove_model(model_id: str) -> bool:
 
 
 @cache
-def generate_hf_hub_url(model_id: str) -> str | None:
-    """Generate a model URL for a model hosted on the Hugging Face Hub.
-
-    Args:
-        model_id:
-            The Hugging Face model ID.
-
-    Returns:
-        The URL for the model on the Hugging Face Hub, or None if the model does not
-        exist on the Hugging Face Hub.
-    """
-    hf_api = HfApi()
-    try:
-        _check_model_exists_with_retry(model_id=model_id, hf_api=hf_api)
-        return f"https://hf.co/{model_id}"
-    except (
-        GatedRepoError,
-        LocalTokenNotFoundError,
-        RepositoryNotFoundError,
-        HFValidationError,
-        RequestException,
-        OSError,
-    ):
-        return None
-
-
-@cache
-def get_openai_models() -> list[str]:
-    """Get a list of all OpenAI models.
-
-    Returns:
-        A list of all OpenAI models.
-
-    Raises:
-        Exception if there was an error fetching the OpenAI models, and no cache file
-        exists.
-    """
-    cache_path = REPO_ROOT / "src" / "leaderboards" / "openai_models.yaml"
-    try:
-        results: list[str] = [model_info.id for model_info in openai.models.list().data]
-        with cache_path.open("w") as f:
-            safe_dump(results, f)
-        return results
-    except Exception as e:
-        if cache_path.exists():
-            with cache_path.open("r") as f:
-                results = safe_load(f)
-            return results
-        raise e
-
-
-@cache
-def generate_openai_url(model_id: str) -> str | None:
-    """Generate a model URL for a model hosted on OpenAI.
-
-    Args:
-        model_id:
-            The OpenAI model ID.
-
-    Returns:
-        The URL for the model on OpenAI, or None if the model does not exist on OpenAI.
-    """
-    model_id = model_id.replace("openai/", "")
-
-    available_openai_models = get_openai_models()
-
-    if model_id == "gpt-4-1106-preview":
-        model_id_without_version_id = "gpt-4-turbo"
-    else:
-        model_id_without_version_id_parts: list[str] = []
-        for part in model_id.split("-"):
-            if re.match(r"^\d{2,}$", part):
-                break
-            model_id_without_version_id_parts.append(part)
-        model_id_without_version_id = "-".join(model_id_without_version_id_parts)
-
-    if (
-        model_id in available_openai_models
-        or model_id_without_version_id in available_openai_models
-    ):
-        return f"https://platform.openai.com/docs/models/{model_id_without_version_id}"
-    return None
-
-
-@cache
-def generate_anthropic_url(model_id: str) -> str | None:
-    """Generate a model URL for a model hosted on Anthropic.
-
-    Checks if the model ID matches Anthropic's naming patterns (claude-*).
-    Does not validate against the API list, as older models may not appear there
-    even though they're still valid.
-
-    Args:
-        model_id:
-            The Anthropic model ID.
-
-    Returns:
-        The URL for the model on Anthropic, or None if the model does not match
-        Anthropic's naming pattern.
-    """
-    model_id = model_id.replace("anthropic/", "")
-
-    # Match Anthropic model naming patterns:
-    # - claude-3-7-sonnet-20250219
-    # - claude-sonnet-4-5-20250929
-    # - claude-opus-4-20250514
-    # - claude-haiku-4-5-20251001
-    if model_id.startswith("claude-"):
-        return "https://docs.anthropic.com/en/docs/about-claude"
-    return None
-
-
-@cache
-def generate_ollama_url(model_id: str) -> str | None:
-    """Generate a model URL for a model hosted on Ollama.
-
-    Args:
-        model_id:
-            The Ollama model ID.
-
-    Returns:
-        The URL for the model on Ollama, or None if the model does not exist on Ollama.
-    """
-    if not model_id.startswith("ollama/") and not model_id.startswith("ollama_chat/"):
-        return None
-    model_id = model_id.replace("ollama/", "").replace("ollama_chat/", "")
-    return f"https://ollama.com/library/{model_id}"
-
-
-@cache
-def generate_google_url(model_id: str) -> str | None:
-    """Generate a model URL for a model hosted on Google.
-
-    Args:
-        model_id:
-            The Google model ID.
-
-    Returns:
-        The URL for the model on Google, or None if the model does not exist on Google.
-    """
-    if not model_id.startswith("gemini/"):
-        return None
-    model_id = model_id.replace("gemini/", "")
-    return f"https://ai.google.dev/gemini-api/docs/models#{model_id}"
-
-
-@cache
-def generate_xai_url(model_id: str) -> str | None:
-    """Generate a model URL for a model hosted on xAI.
-
-    Args:
-        model_id:
-            The xAI model ID.
-
-    Returns:
-        The URL for the model on xAI, or None if the model does not exist on xAI.
-    """
-    if not model_id.startswith("xai/"):
-        return None
-    model_id = model_id.replace("xai/", "")
-    return f"https://docs.x.ai/developers/models/{model_id}"
-
-
-@cache
-def generate_ordbogen_url(model_id: str) -> str | None:
-    """Generate a model URL for a model hosted on Ordbogen.
-
-    Args:
-        model_id:
-            The Ordbogen model ID.
-
-    Returns:
-        The URL for the model on Ordbogen, or None if the model does not exist on
-        Ordbogen.
-    """
-    if not model_id.startswith("ordbogen/"):
-        return None
-    model_id = model_id.replace("ordbogen/", "")
-    return f"https://www.ordbogen.ai/docs/models/{model_id}"
-
-
-@cache
-def generate_alx_url(model_id: str) -> str | None:
-    """Generate a model URL for a model hosted on ALX.
-
-    Args:
-        model_id:
-            The ALX model ID.
-
-    Returns:
-        The ALX platform URL for the provider, or None if the model ID is not an ALX
-        model.
-    """
-    if not model_id.startswith("alx/"):
-        return None
-    return "https://platform.alexandra.dk/pricing/"
-
-
 def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
     """Check if a model exists on the Hugging Face Hub with retry logic.
 
@@ -380,54 +237,208 @@ def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
             raise  # Don't retry these errors
 
 
-def _remember_model_url_decision(model_id: str, remove: bool) -> None:
-    """Persist a model URL decision to the cache.
+@cache
+def generate_hf_hub_url(model_id: str) -> str | None:
+    """Generate a model URL for a model hosted on the Hugging Face Hub.
 
     Args:
         model_id:
-            The model ID.
-        remove:
-            True if the model should be removed, False if it should be
-            kept without a URL.
-    """
-    decisions = _load_model_url_decisions()
-    if model_id in decisions:
-        return
-    decisions[model_id] = remove
-    with MODELS_WITHOUT_URLS_CACHE.open("w") as f:
-        safe_dump(dict(sorted(decisions.items())), f)
-    _load_model_url_decisions.cache_clear()
-
-
-def _load_model_url_decision(model_id: str) -> bool | None:
-    """Load a cached decision for a specific model.
-
-    Args:
-        model_id:
-            The model ID to look up.
+            The Hugging Face model ID.
 
     Returns:
-        True if the model should be removed, False if it should be kept
-        without a URL, or None if no cached decision exists.
+        The URL for the model on the Hugging Face Hub, or None if the model does not
+        exist on the Hugging Face Hub.
     """
-    decisions = _load_model_url_decisions()
-    return decisions.get(model_id)
+    hf_api = HfApi()
+    try:
+        _check_model_exists_with_retry(model_id=model_id, hf_api=hf_api)
+        return f"https://hf.co/{model_id}"
+    except (
+        GatedRepoError,
+        LocalTokenNotFoundError,
+        RepositoryNotFoundError,
+        HFValidationError,
+        RequestException,
+        OSError,
+    ):
+        return None
 
 
 @cache
-def _load_model_url_decisions() -> dict[str, bool]:
-    """Load cached model URL decisions (remove or keep).
+@cache
+def get_openai_models() -> list[str]:
+    """Get a list of all OpenAI models.
 
     Returns:
-        A dict mapping model IDs to whether they should be removed (True)
-        or kept without a URL (False). Returns an empty dict if the cache
-        file does not exist.
+        A list of all OpenAI models.
+
+    Raises:
+        Exception if there was an error fetching the OpenAI models, and no cache file
+        exists.
     """
-    if not MODELS_WITHOUT_URLS_CACHE.exists():
-        return {}
-    with MODELS_WITHOUT_URLS_CACHE.open("r") as f:
-        data = safe_load(f) or {}
-    # Backwards compatibility: old format was a list of model IDs to keep
-    if isinstance(data, list):
-        return {model_id: False for model_id in data}
-    return data
+    cache_path = REPO_ROOT / "src" / "leaderboards" / "openai_models.yaml"
+    try:
+        results: list[str] = [model_info.id for model_info in openai.models.list().data]
+        with cache_path.open("w") as f:
+            safe_dump(results, f)
+        return results
+    except Exception as e:
+        if cache_path.exists():
+            with cache_path.open("r") as f:
+                results = safe_load(f)
+            return results
+        raise e
+
+
+@cache
+@cache
+def generate_openai_url(model_id: str) -> str | None:
+    """Generate a model URL for a model hosted on OpenAI.
+
+    Args:
+        model_id:
+            The OpenAI model ID.
+
+    Returns:
+        The URL for the model on OpenAI, or None if the model does not exist on OpenAI.
+    """
+    model_id = model_id.replace("openai/", "")
+
+    available_openai_models = get_openai_models()
+
+    if model_id == "gpt-4-1106-preview":
+        model_id_without_version_id = "gpt-4-turbo"
+    else:
+        model_id_without_version_id_parts: list[str] = []
+        for part in model_id.split("-"):
+            if re.match(r"^\d{2,}$", part):
+                break
+            model_id_without_version_id_parts.append(part)
+        model_id_without_version_id = "-".join(model_id_without_version_id_parts)
+
+    if (
+        model_id in available_openai_models
+        or model_id_without_version_id in available_openai_models
+    ):
+        return f"https://platform.openai.com/docs/models/{model_id_without_version_id}"
+    return None
+
+
+@cache
+@cache
+def generate_anthropic_url(model_id: str) -> str | None:
+    """Generate a model URL for a model hosted on Anthropic.
+
+    Checks if the model ID matches Anthropic's naming patterns (claude-*).
+    Does not validate against the API list, as older models may not appear there
+    even though they're still valid.
+
+    Args:
+        model_id:
+            The Anthropic model ID.
+
+    Returns:
+        The URL for the model on Anthropic, or None if the model does not match
+        Anthropic's naming pattern.
+    """
+    model_id = model_id.replace("anthropic/", "")
+
+    # Match Anthropic model naming patterns:
+    # - claude-3-7-sonnet-20250219
+    # - claude-sonnet-4-5-20250929
+    # - claude-opus-4-20250514
+    # - claude-haiku-4-5-20251001
+    if model_id.startswith("claude-"):
+        return "https://docs.anthropic.com/en/docs/about-claude"
+    return None
+
+
+@cache
+@cache
+def generate_ollama_url(model_id: str) -> str | None:
+    """Generate a model URL for a model hosted on Ollama.
+
+    Args:
+        model_id:
+            The Ollama model ID.
+
+    Returns:
+        The URL for the model on Ollama, or None if the model does not exist on Ollama.
+    """
+    if not model_id.startswith("ollama/") and not model_id.startswith("ollama_chat/"):
+        return None
+    model_id = model_id.replace("ollama/", "").replace("ollama_chat/", "")
+    return f"https://ollama.com/library/{model_id}"
+
+
+@cache
+@cache
+def generate_google_url(model_id: str) -> str | None:
+    """Generate a model URL for a model hosted on Google.
+
+    Args:
+        model_id:
+            The Google model ID.
+
+    Returns:
+        The URL for the model on Google, or None if the model does not exist on Google.
+    """
+    if not model_id.startswith("gemini/"):
+        return None
+    model_id = model_id.replace("gemini/", "")
+    return f"https://ai.google.dev/gemini-api/docs/models#{model_id}"
+
+
+@cache
+@cache
+def generate_xai_url(model_id: str) -> str | None:
+    """Generate a model URL for a model hosted on xAI.
+
+    Args:
+        model_id:
+            The xAI model ID.
+
+    Returns:
+        The URL for the model on xAI, or None if the model does not exist on xAI.
+    """
+    if not model_id.startswith("xai/"):
+        return None
+    model_id = model_id.replace("xai/", "")
+    return f"https://docs.x.ai/developers/models/{model_id}"
+
+
+@cache
+@cache
+def generate_ordbogen_url(model_id: str) -> str | None:
+    """Generate a model URL for a model hosted on Ordbogen.
+
+    Args:
+        model_id:
+            The Ordbogen model ID.
+
+    Returns:
+        The URL for the model on Ordbogen, or None if the model does not exist on
+        Ordbogen.
+    """
+    if not model_id.startswith("ordbogen/"):
+        return None
+    model_id = model_id.replace("ordbogen/", "")
+    return f"https://www.ordbogen.ai/docs/models/{model_id}"
+
+
+@cache
+@cache
+def generate_alx_url(model_id: str) -> str | None:
+    """Generate a model URL for a model hosted on ALX.
+
+    Args:
+        model_id:
+            The ALX model ID.
+
+    Returns:
+        The ALX platform URL for the provider, or None if the model ID is not an ALX
+        model.
+    """
+    if not model_id.startswith("alx/"):
+        return None
+    return "https://platform.alexandra.dk/pricing/"

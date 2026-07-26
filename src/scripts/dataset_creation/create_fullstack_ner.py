@@ -24,6 +24,153 @@ logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def clone_fullstack_repository(repo_name: str = "FullStack") -> Path:
+    """Clone the FullStack repository if it doesn't already exist.
+
+    Args:
+        repo_name:
+            Name of the directory to clone into.
+
+    Returns:
+        Path to the cloned repository.
+
+    Raises:
+        RuntimeError: If the repository cloning fails.
+    """
+    if not Path(repo_name).exists():
+        logger.info("Cloning FullStack repository...")
+        try:
+            subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    "https://github.com/LUMII-AILab/FullStack.git",
+                    repo_name,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            logger.info("Successfully cloned repository")
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"Failed to clone repository: {e.stderr}") from e
+
+    else:
+        logger.info(f"Repository '{repo_name}' already exists, using existing copy")
+
+    return Path(repo_name)
+
+
+def delete_fullstack_repository(repo_path: Path) -> None:
+    """Delete the FullStack repository.
+
+    Args:
+        repo_path:
+            Path to the FullStack repository.
+    """
+    if repo_path.exists():
+        shutil.rmtree(repo_path)
+
+
+def parse_conllu_data(raw_data: str) -> list[dict[str, list[str] | str]]:
+    """Parse CoNLL-U format data and return a list of sentence records.
+
+    Args:
+        raw_data: The raw data in CoNLL-U format.
+
+    Returns:
+        A list of sentence records.
+    """
+    records = []
+    lines = raw_data.strip().split("\n")
+
+    # Initialize data dictionary for current sentence
+    data_dict: dict[str, list[str]] = defaultdict(list)
+
+    for line in lines:
+        line = line.strip()
+
+        # Skip comments (lines starting with #)
+        if line.startswith("#"):
+            continue
+
+        # Empty line indicates end of sentence
+        elif line == "":
+            if len(data_dict["tokens"]) > 0:
+                # Create record with tokens, labels, and text
+                record = {
+                    "tokens": data_dict["tokens"],
+                    "labels": data_dict["labels"],
+                    "text": " ".join(data_dict["tokens"]),
+                }
+                records.append(record)
+            # Reset for next sentence
+            data_dict = defaultdict(list)
+
+        # Parse token line
+        else:
+            columns = line.split("\t")
+            if len(columns) >= 7:  # Ensure we have enough columns
+                token_id = columns[0]
+                token = columns[1]
+                # Use column 6 for NER tags (0-indexed, so columns[6] is column 7)
+                ner_tag = columns[6] if len(columns) > 6 else "O"
+
+                # Skip multi-word tokens (those with "-" in ID)
+                if "-" not in token_id and "." not in token_id:
+                    data_dict["tokens"].append(token)
+                    data_dict["labels"].append(ner_tag)
+
+    # Handle last sentence if data doesn't end with empty line
+    if len(data_dict["tokens"]) > 0:
+        record = {
+            "tokens": data_dict["tokens"],
+            "labels": data_dict["labels"],
+            "text": " ".join(data_dict["tokens"]),
+        }
+        records.append(record)
+
+    return records
+
+
+def load_fullstack_data(repo_path: Path) -> list[dict[str, list[str] | str]]:
+    """Load and parse all FullStack NER data from the specified repository path.
+
+    Args:
+        repo_path:
+            Path to the FullStack repository directory.
+
+    Returns:
+        A list of sentence records.
+
+    Raises:
+        FileNotFoundError: If the data directory is not found in the repository.
+    """
+    # Path to the data directory within the repository
+    data_dir = repo_path / "NamedEntities" / "data"
+
+    if not data_dir.exists():
+        raise FileNotFoundError(
+            f"Data directory '{data_dir}' not found in the repository."
+        )
+
+    # Find all .conll2003 files in the directory
+    conll_files = list(data_dir.glob("*.conll2003"))
+
+    all_records = []
+
+    for file_path in sorted(conll_files):
+        # Read the file
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Parse the CoNLL-U data
+        records = parse_conllu_data(content)
+        all_records.extend(records)
+
+    return all_records
+
+
 def main() -> None:
     """Create the FullStack-LV-mini NER dataset and upload it to the HF Hub."""
     # Clone the FullStack repository
@@ -104,153 +251,6 @@ def main() -> None:
 
     # Delete the repository
     delete_fullstack_repository(repo_path=repo_path)
-
-
-def clone_fullstack_repository(repo_name: str = "FullStack") -> Path:
-    """Clone the FullStack repository if it doesn't already exist.
-
-    Args:
-        repo_name:
-            Name of the directory to clone into.
-
-    Returns:
-        Path to the cloned repository.
-
-    Raises:
-        RuntimeError: If the repository cloning fails.
-    """
-    if not Path(repo_name).exists():
-        logger.info("Cloning FullStack repository...")
-        try:
-            subprocess.run(
-                [
-                    "git",
-                    "clone",
-                    "https://github.com/LUMII-AILab/FullStack.git",
-                    repo_name,
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            logger.info("Successfully cloned repository")
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to clone repository: {e.stderr}") from e
-
-    else:
-        logger.info(f"Repository '{repo_name}' already exists, using existing copy")
-
-    return Path(repo_name)
-
-
-def load_fullstack_data(repo_path: Path) -> list[dict[str, list[str] | str]]:
-    """Load and parse all FullStack NER data from the specified repository path.
-
-    Args:
-        repo_path:
-            Path to the FullStack repository directory.
-
-    Returns:
-        A list of sentence records.
-
-    Raises:
-        FileNotFoundError: If the data directory is not found in the repository.
-    """
-    # Path to the data directory within the repository
-    data_dir = repo_path / "NamedEntities" / "data"
-
-    if not data_dir.exists():
-        raise FileNotFoundError(
-            f"Data directory '{data_dir}' not found in the repository."
-        )
-
-    # Find all .conll2003 files in the directory
-    conll_files = list(data_dir.glob("*.conll2003"))
-
-    all_records = []
-
-    for file_path in sorted(conll_files):
-        # Read the file
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-
-        # Parse the CoNLL-U data
-        records = parse_conllu_data(content)
-        all_records.extend(records)
-
-    return all_records
-
-
-def parse_conllu_data(raw_data: str) -> list[dict[str, list[str] | str]]:
-    """Parse CoNLL-U format data and return a list of sentence records.
-
-    Args:
-        raw_data: The raw data in CoNLL-U format.
-
-    Returns:
-        A list of sentence records.
-    """
-    records = []
-    lines = raw_data.strip().split("\n")
-
-    # Initialize data dictionary for current sentence
-    data_dict: dict[str, list[str]] = defaultdict(list)
-
-    for line in lines:
-        line = line.strip()
-
-        # Skip comments (lines starting with #)
-        if line.startswith("#"):
-            continue
-
-        # Empty line indicates end of sentence
-        elif line == "":
-            if len(data_dict["tokens"]) > 0:
-                # Create record with tokens, labels, and text
-                record = {
-                    "tokens": data_dict["tokens"],
-                    "labels": data_dict["labels"],
-                    "text": " ".join(data_dict["tokens"]),
-                }
-                records.append(record)
-            # Reset for next sentence
-            data_dict = defaultdict(list)
-
-        # Parse token line
-        else:
-            columns = line.split("\t")
-            if len(columns) >= 7:  # Ensure we have enough columns
-                token_id = columns[0]
-                token = columns[1]
-                # Use column 6 for NER tags (0-indexed, so columns[6] is column 7)
-                ner_tag = columns[6] if len(columns) > 6 else "O"
-
-                # Skip multi-word tokens (those with "-" in ID)
-                if "-" not in token_id and "." not in token_id:
-                    data_dict["tokens"].append(token)
-                    data_dict["labels"].append(ner_tag)
-
-    # Handle last sentence if data doesn't end with empty line
-    if len(data_dict["tokens"]) > 0:
-        record = {
-            "tokens": data_dict["tokens"],
-            "labels": data_dict["labels"],
-            "text": " ".join(data_dict["tokens"]),
-        }
-        records.append(record)
-
-    return records
-
-
-def delete_fullstack_repository(repo_path: Path) -> None:
-    """Delete the FullStack repository.
-
-    Args:
-        repo_path:
-            Path to the FullStack repository.
-    """
-    if repo_path.exists():
-        shutil.rmtree(repo_path)
 
 
 if __name__ == "__main__":

@@ -11,22 +11,32 @@ import subprocess
 from pathlib import Path
 
 
+def get_current_version() -> tuple[int, int, int]:
+    """Fetch the current version of the package.
+
+    Returns:
+        The current version, separated into major, minor and patch versions.
+
+    Raises:
+        RuntimeError:
+            If no version can be found in the `pyproject.toml` file.
+    """
+    version_candidates = re.search(
+        r'(?<=version = ")[^"]+(?=")',
+        Path("pyproject.toml").read_text(encoding="utf-8"),
+    )
+    if version_candidates is None:
+        raise RuntimeError("No version found in pyproject.toml.")
+
+    version_str = version_candidates.group(0).replace(".dev", "")
+    major, minor, patch = map(int, version_str.split("."))
+    return major, minor, patch
+
+
 def bump_major() -> None:
     """Add one to the major version."""
     major, _, _ = get_current_version()
     set_new_version(major + 1, 0, 0)
-
-
-def bump_minor() -> None:
-    """Add one to the minor version."""
-    major, minor, _ = get_current_version()
-    set_new_version(major, minor + 1, 0)
-
-
-def bump_patch() -> None:
-    """Add one to the patch version."""
-    major, minor, patch = get_current_version()
-    set_new_version(major, minor, patch + 1)
 
 
 def set_new_version(major: int, minor: int, patch: int) -> None:
@@ -84,26 +94,16 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     subprocess.run(args=["git", "push", "--tags"], check=True)
 
 
-def get_current_version() -> tuple[int, int, int]:
-    """Fetch the current version of the package.
+def bump_minor() -> None:
+    """Add one to the minor version."""
+    major, minor, _ = get_current_version()
+    set_new_version(major, minor + 1, 0)
 
-    Returns:
-        The current version, separated into major, minor and patch versions.
 
-    Raises:
-        RuntimeError:
-            If no version can be found in the `pyproject.toml` file.
-    """
-    version_candidates = re.search(
-        r'(?<=version = ")[^"]+(?=")',
-        Path("pyproject.toml").read_text(encoding="utf-8"),
-    )
-    if version_candidates is None:
-        raise RuntimeError("No version found in pyproject.toml.")
-
-    version_str = version_candidates.group(0).replace(".dev", "")
-    major, minor, patch = map(int, version_str.split("."))
-    return major, minor, patch
+def bump_patch() -> None:
+    """Add one to the patch version."""
+    major, minor, patch = get_current_version()
+    set_new_version(major, minor, patch + 1)
 
 
 if __name__ == "__main__":
