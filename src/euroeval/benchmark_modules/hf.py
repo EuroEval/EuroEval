@@ -971,7 +971,6 @@ def _check_safetensors_available(
     return True
 
 
-@cache_arguments("model_id", "run_with_cli")
 def load_model_and_tokeniser(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
