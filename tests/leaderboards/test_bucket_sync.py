@@ -265,12 +265,7 @@ class TestMergeResults:
     def test_merge_results_preserves_existing_jsonl(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test that merge_results preserves existing JSONL records.
-
-        This tests the fix for a bug where merge_results would overwrite the JSONL
-        file with only tree records, losing results that hadn't been synced to the
-        tree yet.
-        """
+        """Test that merge_results preserves existing JSONL records."""
         results_dir = tmp_path / "results"
         results_dir.mkdir()
         results_file = tmp_path / "merged.jsonl"
@@ -282,7 +277,7 @@ class TestMergeResults:
                 "additional_details": {"dataset": "existing_ds"},
                 "version": "1.0.0",
             },
-            "retrieved_timestamp": "1704067200",  # Unix timestamp as string
+            "retrieved_timestamp": "1704067200",
         }
         results_file.write_text(json.dumps(existing_record) + "\n", encoding="utf-8")
 
@@ -295,7 +290,7 @@ class TestMergeResults:
                 "additional_details": {"dataset": "tree_ds"},
                 "version": "1.0.0",
             },
-            "retrieved_timestamp": "1704153600",  # Unix timestamp as string (newer)
+            "retrieved_timestamp": "1704153600",
         }
         (model_dir / "tree_ds__test__test.json").write_text(
             json.dumps(tree_record), encoding="utf-8"
@@ -330,8 +325,7 @@ class TestMergeResults:
                 "additional_details": {"dataset": "same_ds"},
                 "version": "1.0.0",
             },
-            "retrieved_timestamp": "2024-01-01T00:00:00Z",
-            "source": "jsonl",
+            "retrieved_timestamp": "1704067200",
         }
         results_file.write_text(json.dumps(old_record) + "\n", encoding="utf-8")
 
@@ -344,8 +338,7 @@ class TestMergeResults:
                 "additional_details": {"dataset": "same_ds"},
                 "version": "2.0.0",
             },
-            "retrieved_timestamp": "2024-01-02T00:00:00Z",
-            "source": "tree",
+            "retrieved_timestamp": "1704153600",
         }
         (model_dir / "same_ds__test__test.json").write_text(
             json.dumps(new_record), encoding="utf-8"
@@ -361,7 +354,7 @@ class TestMergeResults:
         merged_record = json.loads(lines[0])
         # Tree record (newer version) should win
         assert merged_record["eval_library"]["version"] == "2.0.0"
-        assert merged_record["source"] == "tree"
+        assert merged_record["retrieved_timestamp"] == "1704153600"
 
 
 class TestUploadResultsToBucket:

@@ -185,7 +185,9 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
 
             if local_identity == bucket_identity:
                 # Same identity - keep the newer record
-                winner = dedup_newer_record(local_record, bucket_record)
+                winner = dedup_newer_record(
+                    record_a=local_record, record_b=bucket_record
+                )
                 if winner is local_record:
                     logger.debug(f"Local record newer for {rel_path}, restoring")
                     file_path.write_bytes(local_raw)
@@ -314,10 +316,12 @@ def merge_results(results_file: Path) -> int:
                         # Deduplicate: keep newer record (tree records in Phase 2
                         # will override via dedup_newer_record)
                         existing[identity] = dedup_newer_record(
-                            existing[identity], record
+                            record_a=existing[identity], record_b=record
                         )
-                except (json.JSONDecodeError, ValueError, KeyError, TypeError):
-                    pass  # Skip invalid lines (TypeError from normalise_bool_value)
+                except (json.JSONDecodeError, ValueError, KeyError, TypeError) as e:
+                    logger.debug(
+                        f"Skipping invalid JSONL line in {results_file}: {e}"
+                    )
 
     # Remove empty JSON files before processing
     remove_empty_json_files(RESULTS_DIR)
@@ -331,7 +335,9 @@ def merge_results(results_file: Path) -> int:
                 record = json.loads(record_file.read_text(encoding="utf-8"))
                 identity = identity_from_eee_record(record)
                 if identity in existing:
-                    existing[identity] = dedup_newer_record(existing[identity], record)
+                    existing[identity] = dedup_newer_record(
+                        record_a=existing[identity], record_b=record
+                    )
                 else:
                     existing[identity] = record
             except (json.JSONDecodeError, ValueError, KeyError) as e:
