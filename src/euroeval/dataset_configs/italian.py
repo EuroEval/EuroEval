@@ -193,3 +193,12 @@ WIC_ITA_CONFIG = DatasetConfig(
     languages=[ITALIAN],
     unofficial=True,
 )
+
+EU_MMLU_IT_CONFIG = DatasetConfig(
+    name="eu-mmlu-it",
+    pretty_name="EU-MMLU-it",
+    source="AIStudioDelta/eu-mmlu-it",
+    task=KNOW,
+    languages=[ITALIAN],
+    unofficial=True,
+)

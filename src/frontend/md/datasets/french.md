@@ -746,6 +746,78 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multinrc-fr
 ```
 
+### Unofficial: EU-MMLU-fr
+
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 8 of the original
+57 subjects: college biology, college chemistry, college physics, global facts, high
+school European history, international law, management and sociology. Unlike the other
+MMLU variants in EuroEval it was not machine translated - the translation was carried
+out by professional translators at the European Commission's Directorate-General for
+Translation, together with master's students from the European Master's in Translation
+network, as described in [this paper](https://arxiv.org/abs/2607.18432).
+
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 39 / 109 / 1,025 samples for training,
+validation and testing, respectively (so 1,173 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "En 2019, environ quel pourcentage de Russes affirmait qu'il était très important d'avoir des médias libres et indépendants dans notre pays, sans censure gouvernementale ou étatique ?\nChoix:\na. 38 %\nb. 53 %\nc. 68 %\nd. 83 %",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Comment des structures organisationnelles caractérisées par des styles de management démocratiques et inclusifs peuvent-elles être décrites ?\nChoix:\na. Hiérarchique\nb. Bureaucratique\nc. Plate\nd. Fonctionnelle",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Le muon se détériore avec un temps de vie charactéristique d'à peu près 10^-6 seconde en un électron, un muon neutrino, et un électron antineutrino. Le muon ne peut pas se détériorer en un électron et juste un seul neutrino de par la loi de conservation\nChoix:\na. de charge\nb. de masse\nc. d'énergie et de momentum\nd. du nombre leptonique",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Réponse: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+
+  Répondez à la question ci-dessus par {labels_str}, et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset eu-mmlu-fr
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-fr

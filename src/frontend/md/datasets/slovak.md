@@ -448,6 +448,78 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-sk
 ```
 
+### Unofficial: EU-MMLU-sk
+
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 7 of the original
+57 subjects: college biology, college chemistry, college physics, global facts,
+international law, management and sociology. Unlike the other MMLU variants in EuroEval
+it was not machine translated - the translation was carried out by professional
+translators at the European Commission's Directorate-General for Translation, together
+with master's students from the European Master's in Translation network, as described
+in [this paper](https://arxiv.org/abs/2607.18432).
+
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 34 / 91 / 859 samples for training,
+validation and testing, respectively (so 984 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Zhruba aký percentuálny podiel Rusov podľa údajov z roku 2019 tvrdí, že je veľmi dôležité mať v krajine slobodné médiá bez vládnej/štátnej cenzúry?\nMožnosti:\na. 38 %\nb. 53 %\nc. 68 %\nd. 83 %",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Ktorá z týchto možností obsahuje sekvencie DNA potrebné na segregáciu chromozómov pri mitóze a meióze?\nMožnosti:\na. teloméry\nb. centroméry\nc. nukleozómy\nd. spliceozómy",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Čo Berger (1963) opisuje ako metaforu spoločenskej reality?\nMožnosti:\na. jazdu na kolotoči\nb. cirkus\nc. bábkové divadlo\nd. balet",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Nasledujú otázky s viacerými možnosťami (s odpoveďami).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Otázka: {text}
+  Odpoveď: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Otázka: {text}
+
+  Odpovedzte na nasledujúcu otázku použitím {labels_str}, a nič iné.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset eu-mmlu-sk
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-sk

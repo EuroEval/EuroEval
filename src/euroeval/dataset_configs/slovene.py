@@ -73,3 +73,15 @@ RAGTRUTH_SL_CONFIG = DatasetConfig(
     languages=[SLOVENE],
     train_split=None,
 )
+
+
+# Unofficial datasets ###
+
+EU_MMLU_SL_CONFIG = DatasetConfig(
+    name="eu-mmlu-sl",
+    pretty_name="EU-MMLU-sl",
+    source="AIStudioDelta/eu-mmlu-sl",
+    task=KNOW,
+    languages=[SLOVENE],
+    unofficial=True,
+)

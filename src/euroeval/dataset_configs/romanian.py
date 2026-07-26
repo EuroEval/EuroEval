@@ -92,3 +92,15 @@ RAGTRUTH_RO_CONFIG = DatasetConfig(
     languages=[ROMANIAN],
     train_split=None,
 )
+
+
+# Unofficial datasets ###
+
+EU_MMLU_RO_CONFIG = DatasetConfig(
+    name="eu-mmlu-ro",
+    pretty_name="EU-MMLU-ro",
+    source="AIStudioDelta/eu-mmlu-ro",
+    task=KNOW,
+    languages=[ROMANIAN],
+    unofficial=True,
+)

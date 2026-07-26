@@ -547,6 +547,78 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-pl
 ```
 
+### Unofficial: EU-MMLU-pl
+
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 8 of the original
+57 subjects: college biology, college chemistry, college physics, global facts, high
+school European history, international law, management and sociology. Unlike the other
+MMLU variants in EuroEval it was not machine translated - the translation was carried
+out by professional translators at the European Commission's Directorate-General for
+Translation, together with master's students from the European Master's in Translation
+network, as described in [this paper](https://arxiv.org/abs/2607.18432).
+
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 39 / 109 / 1,032 samples for training,
+validation and testing, respectively (so 1,180 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Według stanu na rok 2019, jaki odsetek Rosjan uważa dostęp do wolnych mediów bez cenzury za bardzo istotny?\nOpcje:\na. 38%\nb. 53%\nc. 68%\nd. 83%",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Jakie słowo trafnie opisuje struktury organizacyjne charakteryzujące się demokratycznym i inkluzywnym stylem zarządzania?\nOpcje:\na. Hierarchiczne\nb. Biurokratyczne\nc. Płaskie\nd. Funkcjonalne",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Mion ze średnim czasem życia wynoszącym około 10^-6 sekundy rozpada się na elektron, neutrino mionowe i antyneutrino elektronowe. Mion nie może rozpaść się na elektron i tylko jedno neutrino zgodnie z zasadą zachowania\nOpcje:\na. ładunku\nb. masy\nc. energii i pędu\nd. liczby leptonowej",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Poniżej znajdują się pytania wielokrotnego wyboru (z odpowiedziami).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pytanie: {text}
+  Odpowiedź: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pytanie: {text}
+
+  Odpowiedz na powyższe pytanie, używając {labels_str} i niczego więcej.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset eu-mmlu-pl
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-pl

@@ -269,3 +269,12 @@ ZEBRA_PUZZLE_HARD_NL_CONFIG = DatasetConfig(
     languages=[DUTCH],
     unofficial=True,
 )
+
+EU_MMLU_NL_CONFIG = DatasetConfig(
+    name="eu-mmlu-nl",
+    pretty_name="EU-MMLU-nl",
+    source="AIStudioDelta/eu-mmlu-nl",
+    task=KNOW,
+    languages=[DUTCH],
+    unofficial=True,
+)
