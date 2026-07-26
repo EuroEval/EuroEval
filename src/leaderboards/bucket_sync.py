@@ -282,10 +282,11 @@ def _sort_key(record: dict) -> tuple[str, str]:
 def merge_results(results_file: Path) -> int:
     """Merge per-record JSON tree into a single JSONL file.
 
-    Reads all ``results/*/*.json`` files and writes a deduplicated JSONL file.
-    Deduplication uses canonical result identity
-    ``(model_id, dataset, validation_split, few_shot)`` with newer records
-    winning based on ``eval_library.version`` and ``retrieved_timestamp``.
+    Reads all ``results/*/*.json`` files and existing records from the JSONL
+    file itself, then writes a deduplicated JSONL file. Deduplication uses
+    canonical result identity ``(model_id, dataset, validation_split, few_shot)``
+    with newer records winning based on ``eval_library.version`` and
+    ``retrieved_timestamp``.
 
     Args:
         results_file:
@@ -296,10 +297,31 @@ def merge_results(results_file: Path) -> int:
     """
     existing: dict[ResultIdentity, dict] = {}
 
+    # PHASE 1: Read existing records from the JSONL file (if it exists)
+    # This preserves results that haven't been synced to the tree yet
+    if results_file.exists():
+        logger.info("Reading existing records from %s...", results_file)
+        try:
+            with results_file.open("r", encoding="utf-8") as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    try:
+                        record = json.loads(line)
+                        identity = identity_from_eee_record(record)
+                        if identity not in existing:
+                            existing[identity] = record
+                        # Note: we keep the existing record, tree records will
+                        # override if newer (Phase 2)
+                    except (json.JSONDecodeError, ValueError, KeyError):
+                        pass  # Skip invalid lines
+        except Exception as e:
+            logger.warning("Could not read existing JSONL file: %s", e)
+
     # Remove empty JSON files before processing
     remove_empty_json_files(RESULTS_DIR)
 
-    # Read all record files from the tree
+    # PHASE 2: Read all record files from the tree (these override existing)
     if RESULTS_DIR.exists():
         for record_file in RESULTS_DIR.rglob("*.json"):
             if not record_file.is_file():

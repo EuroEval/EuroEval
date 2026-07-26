@@ -262,6 +262,107 @@ class TestMergeResults:
 
         assert count == 1
 
+    def test_merge_results_preserves_existing_jsonl(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that merge_results preserves existing JSONL records.
+
+        This tests the fix for a bug where merge_results would overwrite the JSONL
+        file with only tree records, losing results that hadn't been synced to the
+        tree yet.
+        """
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+        results_file = tmp_path / "merged.jsonl"
+
+        # Write existing records to the JSONL file
+        existing_record = {
+            "model_info": {"id": "existing/model"},
+            "eval_library": {
+                "additional_details": {"dataset": "existing_ds"},
+                "version": "1.0.0",
+            },
+            "retrieved_timestamp": "2024-01-01T00:00:00Z",
+        }
+        results_file.write_text(json.dumps(existing_record) + "\n", encoding="utf-8")
+
+        # Create a different record in the tree
+        model_dir = results_dir / "tree_model"
+        model_dir.mkdir()
+        tree_record = {
+            "model_info": {"id": "tree/model"},
+            "eval_library": {
+                "additional_details": {"dataset": "tree_ds"},
+                "version": "1.0.0",
+            },
+            "retrieved_timestamp": "2024-01-02T00:00:00Z",
+        }
+        (model_dir / "tree_ds__test__test.json").write_text(
+            json.dumps(tree_record), encoding="utf-8"
+        )
+
+        monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
+
+        count = bucket_sync.merge_results(results_file=results_file)
+
+        # Should have both records (1 from JSONL + 1 from tree)
+        assert count == 2
+        lines = results_file.read_text(encoding="utf-8").splitlines()
+        assert len(lines) == 2
+
+        # Verify both records are present
+        models = {json.loads(line)["model_info"]["id"] for line in lines}
+        assert "existing/model" in models
+        assert "tree/model" in models
+
+    def test_merge_results_tree_overrides_jsonl(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that tree records override JSONL records with same identity."""
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+        results_file = tmp_path / "merged.jsonl"
+
+        # Write older record to JSONL
+        old_record = {
+            "model_info": {"id": "same/model"},
+            "eval_library": {
+                "additional_details": {"dataset": "same_ds"},
+                "version": "1.0.0",
+            },
+            "retrieved_timestamp": "2024-01-01T00:00:00Z",
+            "source": "jsonl",
+        }
+        results_file.write_text(json.dumps(old_record) + "\n", encoding="utf-8")
+
+        # Write newer record with same identity to tree
+        model_dir = results_dir / "same_model"
+        model_dir.mkdir()
+        new_record = {
+            "model_info": {"id": "same/model"},
+            "eval_library": {
+                "additional_details": {"dataset": "same_ds"},
+                "version": "2.0.0",
+            },
+            "retrieved_timestamp": "2024-01-02T00:00:00Z",
+            "source": "tree",
+        }
+        (model_dir / "same_ds__test__test.json").write_text(
+            json.dumps(new_record), encoding="utf-8"
+        )
+
+        monkeypatch.setattr(bucket_sync, "RESULTS_DIR", results_dir)
+
+        count = bucket_sync.merge_results(results_file=results_file)
+
+        # Should deduplicate to 1 record
+        assert count == 1
+        lines = results_file.read_text(encoding="utf-8").splitlines()
+        merged_record = json.loads(lines[0])
+        # Tree record (newer version) should win
+        assert merged_record["eval_library"]["version"] == "2.0.0"
+        assert merged_record["source"] == "tree"
+
 
 class TestUploadResultsToBucket:
     """Tests for ``upload_results_to_bucket``."""
