@@ -334,7 +334,15 @@ class Benchmarker:
             del metric
 
     def _build_benchmark_config(self, **params) -> "BenchmarkConfig":
-        """Build benchmark configuration from parameters."""
+        """Build benchmark configuration from parameters.
+
+        Args:
+            **params:
+                Override parameters for the benchmark configuration.
+
+        Returns:
+            The benchmark configuration.
+        """
         return build_benchmark_config(
             benchmark_config_params=BenchmarkConfigParams(
                 task=params.get("task", self.benchmark_config_default_params.task),
@@ -437,7 +445,17 @@ class Benchmarker:
     def _fetch_model_configs(
         self, model_ids: c.Sequence[str], benchmark_config: "BenchmarkConfig"
     ) -> list["ModelConfig"]:
-        """Fetch model configurations."""
+        """Fetch model configurations.
+
+        Args:
+            model_ids:
+                The model IDs to fetch.
+            benchmark_config:
+                The benchmark configuration.
+
+        Returns:
+            A list of model configurations.
+        """
         configs: list["ModelConfig"] = []
         for model_id in get_pbar(
             iterable=model_ids,
@@ -459,7 +477,17 @@ class Benchmarker:
         model_configs: list["ModelConfig"],
         dataset_configs: c.Sequence["DatasetConfig"],
     ) -> dict["ModelConfig", list["DatasetConfig"]]:
-        """Create mapping from model configs to dataset configs."""
+        """Create mapping from model configs to dataset configs.
+
+        Args:
+            model_configs:
+                The model configurations.
+            dataset_configs:
+                The dataset configurations.
+
+        Returns:
+            A mapping from model configs to dataset configs.
+        """
         return {
             model_config: [
                 ds_config
@@ -475,7 +503,19 @@ class Benchmarker:
         benchmark_config: "BenchmarkConfig",
         existing_results: c.Sequence[BenchmarkResult],
     ) -> tuple[dict["ModelConfig", list["DatasetConfig"]], list[BenchmarkResult]]:
-        """Filter out already-benchmarked model-dataset pairs."""
+        """Filter out already-benchmarked model-dataset pairs.
+
+        Args:
+            model_mapping:
+                The model to dataset mapping.
+            benchmark_config:
+                The benchmark configuration.
+            existing_results:
+                The existing benchmark results.
+
+        Returns:
+            A tuple of (updated model mapping, current results).
+        """
         current_results: list[BenchmarkResult] = []
         for model_config, ds_configs in model_mapping.items():
             new_ds_configs: list["DatasetConfig"] = []
@@ -496,28 +536,52 @@ class Benchmarker:
     def _check_adapter_requirements(
         self, model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
     ) -> None:
-        """Check adapter model requirements."""
+        """Check adapter model requirements.
+
+        Args:
+            model_config:
+                The model configuration.
+            benchmark_config:
+                The benchmark configuration.
+
+        Raises:
+            InvalidModel:
+                If offline benchmarking of adapter models is attempted.
+        """
         if not model_config.adapter_base_model_id:
             return
-        msg = "If offline support is important to you, please consider opening an issue at https://github.com/EuroEval/EuroEval/issues."
+        msg = (
+            "If offline support is important to you, please consider opening an issue "
+            "at https://github.com/EuroEval/EuroEval/issues."
+        )
         if not internet_connection_available():
             raise InvalidModel(
-                "Offline benchmarking of models with adapters is not currently supported. "
-                "An active internet connection is required. " + msg
+                "Offline benchmarking of models with adapters is not currently "
+                "supported. An active internet connection is required. " + msg
             )
         if benchmark_config.download_only:
-            log_once(
-                "You are using download only mode with a model that includes an adapter. "
-                "Please note that offline benchmarking of adapter models is not currently supported - "
-                "an internet connection will be required during evaluation in this case. "
-                + msg,
-                level=logging.WARNING,
+            msg_full = (
+                "You are using download-only mode with a model that includes an "
+                "adapter. Please note that offline benchmarking of adapter models "
+                "is not currently supported - an internet connection will be required "
+                "during evaluation in this case. " + msg
             )
+            log_once(msg_full, level=logging.WARNING)
 
     def _update_benchmark_config_for_dataset(
         self, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"
     ) -> dict[str, t.Any]:
-        """Update benchmark config for dataset. Returns params to revert."""
+        """Update benchmark config for dataset.
+
+        Args:
+            dataset_config:
+                The dataset configuration.
+            benchmark_config:
+                The benchmark configuration.
+
+        Returns:
+            A dictionary of parameters to revert.
+        """
         params_to_revert: dict[str, t.Any] = {}
         if (
             dataset_config.val_split is None
@@ -544,7 +608,7 @@ class Benchmarker:
 
     def _handle_benchmark_result(
         self,
-        result_or_error: t.Any,
+        result_or_error: BenchmarkResult | Exception,
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
         num_finished: int,
@@ -554,7 +618,31 @@ class Benchmarker:
         model_mapping: dict["ModelConfig", list["DatasetConfig"]],
         current_results: list[BenchmarkResult],
     ) -> tuple[int, int, int, bool]:
-        """Handle benchmark result. Returns updated counters and break flag."""
+        """Handle benchmark result.
+
+        Args:
+            result_or_error:
+                The benchmark result or exception.
+            dataset_config:
+                The dataset configuration.
+            benchmark_config:
+                The benchmark configuration.
+            num_finished:
+                The number of finished benchmarks.
+            num_skipped:
+                The number of skipped benchmarks.
+            num_errored:
+                The number of errored benchmarks.
+            model_config:
+                The model configuration.
+            model_mapping:
+                The model to dataset mapping.
+            current_results:
+                The current benchmark results.
+
+        Returns:
+            A tuple of (updated finished, skipped, errored counters, break flag).
+        """
         if isinstance(result_or_error, Exception) and benchmark_config.raise_errors:
             raise result_or_error
         if isinstance(result_or_error, InvalidBenchmark):
@@ -571,6 +659,7 @@ class Benchmarker:
             ]
             num_errored += 1 + len(remaining)
             return num_finished, num_skipped, num_errored, True
+        assert isinstance(result_or_error, BenchmarkResult)
         record: BenchmarkResult = result_or_error
         current_results.append(record)
         if benchmark_config.save_results:
@@ -581,7 +670,19 @@ class Benchmarker:
     def _generate_summary_message(
         self, finished: int, skipped: int, errored: int
     ) -> str | None:
-        """Generate summary message."""
+        """Generate summary message.
+
+        Args:
+            finished:
+                The number of finished benchmarks.
+            skipped:
+                The number of skipped benchmarks.
+            errored:
+                The number of errored benchmarks.
+
+        Returns:
+            The summary message, or None if no benchmarks were run.
+        """
         parts: list[str] = []
         if finished:
             parts.append(f"completed {finished:,} benchmarks")

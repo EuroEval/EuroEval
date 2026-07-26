@@ -75,7 +75,7 @@ def _extract_predictions_and_labels(
     else:
         predictions = list(model_outputs)  # ty: ignore[invalid-assignment]
 
-    return predictions, labels  # ty: ignore[invalid-assignment]
+    return predictions, labels  # ty: ignore[invalid-assignment,invalid-return-type]
 
 
 def _replace_ner_tags_with_misc_or_o(
@@ -166,6 +166,10 @@ def _compute_single_metric(
 
     Returns:
         The metric value.
+
+    Raises:
+        InvalidBenchmark:
+            If the predictions and labels are not of the same length.
     """
     all_zero = all(
         all(tag == "o" for tag in pred_list) for pred_list in predictions
