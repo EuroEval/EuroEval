@@ -180,6 +180,9 @@ select = [
     "ANN",
     # Pyflakes
     "F",
+    # Enforce simple structure
+    "C901",
+    "PLR0912",
 ]
 ignore = [
     # Type annotations for *args
@@ -206,6 +209,12 @@ ignore = [
 
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false
+
+[tool.ruff.lint.mccabe]
+max-complexity = 25
+
+[tool.ruff.lint.pylint]
+max-branches = 20
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
