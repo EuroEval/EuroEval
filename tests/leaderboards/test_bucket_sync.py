@@ -282,7 +282,7 @@ class TestMergeResults:
                 "additional_details": {"dataset": "existing_ds"},
                 "version": "1.0.0",
             },
-            "retrieved_timestamp": "2024-01-01T00:00:00Z",
+            "retrieved_timestamp": "1704067200",  # Unix timestamp as string
         }
         results_file.write_text(json.dumps(existing_record) + "\n", encoding="utf-8")
 
@@ -295,7 +295,7 @@ class TestMergeResults:
                 "additional_details": {"dataset": "tree_ds"},
                 "version": "1.0.0",
             },
-            "retrieved_timestamp": "2024-01-02T00:00:00Z",
+            "retrieved_timestamp": "1704153600",  # Unix timestamp as string (newer)
         }
         (model_dir / "tree_ds__test__test.json").write_text(
             json.dumps(tree_record), encoding="utf-8"

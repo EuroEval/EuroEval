@@ -300,29 +300,24 @@ def merge_results(results_file: Path) -> int:
     # PHASE 1: Read existing records from the JSONL file (if it exists)
     # This preserves results that haven't been synced to the tree yet
     if results_file.exists():
-        logger.info("Reading existing records from %s...", results_file)
-        try:
-            with results_file.open("r", encoding="utf-8") as f:
-                for line in f:
-                    if not line.strip():
-                        continue
-                    try:
-                        record = json.loads(line)
-                        identity = identity_from_eee_record(record)
-                        if identity not in existing:
-                            existing[identity] = record
-                        else:
-                            # Deduplicate: keep newer record (tree records in Phase 2
-                            # will override via dedup_newer_record)
-                            existing[identity] = dedup_newer_record(
-                                existing[identity], record
-                            )
-                    except (json.JSONDecodeError, ValueError, KeyError, TypeError):
-                        pass  # Skip invalid lines (TypeError from normalise_bool_value)
-        except Exception as e:
-            # Fail fast: don't overwrite JSONL if we can't read existing records
-            logger.error("Could not read existing JSONL file: %s", e)
-            return 0
+        logger.info(f"Reading existing records from {results_file}...")
+        with results_file.open("r", encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    record = json.loads(line)
+                    identity = identity_from_eee_record(record)
+                    if identity not in existing:
+                        existing[identity] = record
+                    else:
+                        # Deduplicate: keep newer record (tree records in Phase 2
+                        # will override via dedup_newer_record)
+                        existing[identity] = dedup_newer_record(
+                            existing[identity], record
+                        )
+                except (json.JSONDecodeError, ValueError, KeyError, TypeError):
+                    pass  # Skip invalid lines (TypeError from normalise_bool_value)
 
     # Remove empty JSON files before processing
     remove_empty_json_files(RESULTS_DIR)
