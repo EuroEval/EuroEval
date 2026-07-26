@@ -1115,7 +1115,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             raw_outputs = raw_outputs[extra:]
             if not all(out.prompt == p for out, p in zip(raw_outputs, prompts)):
                 raise InvalidBenchmark(
-                    f"The prompts and the model outputs do not match. There were {extra!r} extra outputs."
+                    "The prompts and the model outputs do not match. "
+                    f"There were {extra!r} extra outputs."
                 )
             log(
                 f"Filtered out {extra:,} extra outputs from the model, "
@@ -1157,7 +1158,8 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
         if len(completions) != len(raw_outputs):
             raise InvalidBenchmark(
-                f"Expected {len(raw_outputs):,} completions, but got {len(completions):,}."
+                f"Expected {len(raw_outputs):,} completions, "
+                f"but got {len(completions):,}."
             )
         return completions, raw_outputs
 
@@ -1192,11 +1194,10 @@ class VLLMModel(HuggingFaceEncoderModel):
                 completions[idx] = ""
         if count > 0:
             log_once(
-                f"The model {self.model_config.model_id!r} is a reasoning "
-                "model, but the generated output did not contain the end of "
-                f"reasoning token ({self.end_of_reasoning_token!r}) in "
-                f"{count:,}/{len(completions):,} of the samples. Using an empty string for all these samples "
-                "instead.",
+                f"The model {self.model_config.model_id!r} is a reasoning model, "
+                f"but the generated output did not contain the end of reasoning token "
+                f"({self.end_of_reasoning_token!r}) in {count:,}/{len(completions):,} "
+                "of the samples. Using an empty string for all these samples instead.",
                 level=logging.WARNING
                 if count / len(completions) > 0.5
                 else logging.DEBUG,
@@ -1839,7 +1840,10 @@ def _handle_model_load_error(
     if "See stack trace for root cause." in str(
         error
     ) or "See root cause above." in str(error):
-        msg = f"The model {model_id!r} could not be loaded, but vLLM did not mention exactly what happened. "
+        msg = (
+            f"The model {model_id!r} could not be loaded, but vLLM did not mention "
+            f"exactly what happened. "
+        )
         if benchmark_config.verbose:
             msg += (
                 "Since you're running in verbose mode, you might see a descriptive "

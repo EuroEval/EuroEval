@@ -550,20 +550,23 @@ class Benchmarker:
         """
         if not model_config.adapter_base_model_id:
             return
-        msg = "If offline support is important to you, please consider opening an issue at https://github.com/EuroEval/EuroEval/issues."
+        msg = (
+            "If offline support is important to you, please consider opening an issue "
+            "at https://github.com/EuroEval/EuroEval/issues."
+        )
         if not internet_connection_available():
             raise InvalidModel(
-                "Offline benchmarking of models with adapters is not currently supported. "
-                "An active internet connection is required. " + msg
+                "Offline benchmarking of models with adapters is not currently "
+                "supported. An active internet connection is required. " + msg
             )
         if benchmark_config.download_only:
-            log_once(
-                "You are using download only mode with a model that includes an adapter. "
-                "Please note that offline benchmarking of adapter models is not currently supported - "
-                "an internet connection will be required during evaluation in this case. "
-                + msg,
-                level=logging.WARNING,
+            msg_full = (
+                "You are using download-only mode with a model that includes an "
+                "adapter. Please note that offline benchmarking of adapter models "
+                "is not currently supported - an internet connection will be required "
+                "during evaluation in this case. " + msg
             )
+            log_once(msg_full, level=logging.WARNING)
 
     def _update_benchmark_config_for_dataset(
         self, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"
