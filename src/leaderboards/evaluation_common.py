@@ -61,7 +61,29 @@ def _build_euroeval_cmd(
     clear_model_cache: bool,
     trust_remote_code: bool,
 ) -> list[str]:
-    """Build the euroeval CLI command list."""
+    """Build the euroeval CLI command list.
+
+    Args:
+        model_id:
+            The model ID.
+        languages:
+            The languages to evaluate.
+        datasets:
+            The datasets to evaluate, or None for all.
+        evaluate_test_split:
+            Whether to evaluate the test split.
+        zero_shot:
+            Whether to use zero-shot evaluation.
+        gpu_memory_utilization:
+            The GPU memory utilization.
+        clear_model_cache:
+            Whether to clear the model cache.
+        trust_remote_code:
+            Whether to trust remote code.
+
+    Returns:
+        The command list.
+    """
     cmd: list[str] = ["euroeval", "--model", model_id]
     if clear_model_cache:
         cmd.append("--clear-model-cache")
@@ -82,7 +104,15 @@ def _build_euroeval_cmd(
 
 
 def _build_euroeval_env(stream_output: bool) -> dict[str, str]:
-    """Build the environment for the euroeval CLI subprocess."""
+    """Build the environment for the euroeval CLI subprocess.
+
+    Args:
+        stream_output:
+            Whether to stream output.
+
+    Returns:
+        The environment dictionary.
+    """
     env = os.environ.copy()
     if stream_output:
         env["FULL_LOG"] = "1"
@@ -99,7 +129,21 @@ def _run_pty_loop(
     stream_output: bool,
     log_fh: t.IO[bytes] | None,
 ) -> list[bytes]:
-    """Read from PTY until subprocess exits, with drain timeout."""
+    """Read from PTY until subprocess exits, with drain timeout.
+
+    Args:
+        parent_fd:
+            The parent file descriptor.
+        proc:
+            The subprocess.
+        stream_output:
+            Whether to stream output.
+        log_fh:
+            The log file handle.
+
+    Returns:
+        The captured output as bytes.
+    """
     captured: list[bytes] = []
     MAX_DRAIN_TIME_AFTER_EXIT = 2.0
     parent_exit_time: float | None = None

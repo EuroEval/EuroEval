@@ -755,7 +755,17 @@ def _build_question_answering_sections(
 def _create_prompt_creator(
     dataset_config: "DatasetConfig", generative_type: GenerativeType | None
 ) -> c.Callable[..., tuple[str, str]]:
-    """Create a function that builds prompts from keyword arguments."""
+    """Create a function that builds prompts from keyword arguments.
+
+    Args:
+        dataset_config:
+            The dataset configuration.
+        generative_type:
+            The generative type of the model.
+
+    Returns:
+        A function that builds prompts from keyword arguments.
+    """
 
     def create_prompt(**kwargs: str) -> tuple[str, str]:
         """Create a prompt from the given keyword arguments.
@@ -816,7 +826,27 @@ def _build_instruction_tuned_outputs(
     tokeniser: "PreTrainedTokenizer",
     always_populate_text_field: bool,
 ) -> dict[str, t.Any]:
-    """Build outputs for instruction-tuned/reasoning models."""
+    """Build outputs for instruction-tuned/reasoning models.
+
+    Args:
+        few_shot_sections:
+            The few-shot sections.
+        new_sections:
+            The new sections.
+        model_config:
+            The model configuration.
+        dataset_config:
+            The dataset configuration.
+        generative_type:
+            The generative type of the model.
+        tokeniser:
+            The tokeniser.
+        always_populate_text_field:
+            Whether to always populate the text field.
+
+    Returns:
+        A dictionary of outputs.
+    """
     few_shot_messages = [
         dict(role=role, content=content)
         for prompt, label in few_shot_sections
@@ -857,7 +887,19 @@ def _select_chat_template(
     dataset_config: "DatasetConfig",
     model_config: "ModelConfig",
 ) -> str | None:
-    """Select chat template matching dataset language if available."""
+    """Select chat template matching dataset language if available.
+
+    Args:
+        tokeniser:
+            The tokeniser.
+        dataset_config:
+            The dataset configuration.
+        model_config:
+            The model configuration.
+
+    Returns:
+        The chat template, or None if no matching template is found.
+    """
     if not (
         hasattr(tokeniser, "chat_template")
         and isinstance(tokeniser.chat_template, dict)
@@ -877,7 +919,15 @@ def _select_chat_template(
 
 
 def _build_chat_template_kwargs(model_config: "ModelConfig") -> dict[str, t.Any]:
-    """Build chat template kwargs for reasoning effort."""
+    """Build chat template kwargs for reasoning effort.
+
+    Args:
+        model_config:
+            The model configuration.
+
+    Returns:
+        A dictionary of chat template kwargs.
+    """
     if model_config.param in {"low", "medium", "high"}:
         log_once(f"Set reasoning mode to {model_config.param!r}.", level=logging.DEBUG)
         return {"reasoning_effort": model_config.param}
@@ -889,7 +939,19 @@ def _build_standard_outputs(
     new_sections: list[tuple[str, str]],
     dataset_config: "DatasetConfig",
 ) -> dict[str, t.Any]:
-    """Build outputs for non-instruction-tuned models."""
+    """Build outputs for non-instruction-tuned models.
+
+    Args:
+        few_shot_sections:
+            The few-shot sections.
+        new_sections:
+            The new sections.
+        dataset_config:
+            The dataset configuration.
+
+    Returns:
+        A dictionary of outputs.
+    """
     prompt_prefix = ""
     if dataset_config.prompt_prefix:
         labels_str = dataset_config.get_labels_str()
@@ -915,7 +977,21 @@ def _build_bpc_outputs(
     tokeniser: "PreTrainedTokenizer",
     num_examples: int,
 ) -> dict[str, t.Any]:
-    """Build BPC prompt and answer_start columns."""
+    """Build BPC prompt and answer_start columns.
+
+    Args:
+        dataset_config:
+            The dataset configuration.
+        examples:
+            The examples to evaluate.
+        tokeniser:
+            The tokeniser.
+        num_examples:
+            The number of examples.
+
+    Returns:
+        A dictionary of BPC outputs.
+    """
     labels_for_spacing = list(dataset_config.prompt_label_mapping.values()) or [
         "negative",
         "positive",
