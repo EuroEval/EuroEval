@@ -13,7 +13,7 @@ repos:
     - id: debug-statements
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.15.13
+  rev: v0.16.0
   hooks:
     - id: ruff
       args:
@@ -34,7 +34,7 @@ repos:
         - jupyter
 
 - repo: https://github.com/saattrupdan/funcsort
-  rev: 0.1.0
+  rev: v0.1.0
   hooks:
     - id: funcsort
       args:
@@ -55,7 +55,7 @@ repos:
       types: [python]
 
 - repo: https://github.com/DavidAnson/markdownlint-cli2
-  rev: v0.22.1
+  rev: v0.23.1
   hooks:
   -   id: markdownlint-cli2
       args:
