@@ -296,9 +296,7 @@ def merge_results(results_file: Path) -> int:
                             record_a=existing[identity], record_b=record
                         )
                 except (json.JSONDecodeError, ValueError, KeyError, TypeError) as e:
-                    logger.debug(
-                        f"Skipping invalid JSONL line in {results_file}: {e}"
-                    )
+                    logger.debug(f"Skipping invalid JSONL line in {results_file}: {e}")
 
     # Remove empty JSON files before processing
     remove_empty_json_files(RESULTS_DIR)
