@@ -308,37 +308,6 @@ def _size_bucket(model_type: ModelType, parameters: float) -> SizeBucket:
 # ---------------------------------------------------------------------------
 
 
-def _is_on_pareto_frontier(
-    model_id: str,
-    params: float,
-    rank: float,
-    sized_ranked: list[tuple[str, float, float]],
-) -> bool:
-    """Check if a model is on the Pareto frontier.
-
-    A model is on the Pareto frontier if no other model with <= parameters
-    has a strictly better (lower) rank score.
-
-    Args:
-        model_id:
-            The model ID to check.
-        params:
-            The model's parameter count.
-        rank:
-            The model's rank score.
-        sized_ranked:
-            List of (model_id, params, rank) tuples for all comparable models.
-
-    Returns:
-        True if the model is on the Pareto frontier.
-    """
-    return not any(
-        other_params <= params and other_rank < rank
-        for other_id, other_params, other_rank in sized_ranked
-        if other_id != model_id
-    )
-
-
 def _pareto_languages_per_model(
     ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
     metadata: dict[str, dict],
@@ -448,3 +417,34 @@ def _process_pareto_for_category(
                 model_id=model_id, params=params, rank=rank, sized_ranked=sized_ranked
             ):
                 pareto[model_id].add(language)
+
+
+def _is_on_pareto_frontier(
+    model_id: str,
+    params: float,
+    rank: float,
+    sized_ranked: list[tuple[str, float, float]],
+) -> bool:
+    """Check if a model is on the Pareto frontier.
+
+    A model is on the Pareto frontier if no other model with <= parameters
+    has a strictly better (lower) rank score.
+
+    Args:
+        model_id:
+            The model ID to check.
+        params:
+            The model's parameter count.
+        rank:
+            The model's rank score.
+        sized_ranked:
+            List of (model_id, params, rank) tuples for all comparable models.
+
+    Returns:
+        True if the model is on the Pareto frontier.
+    """
+    return not any(
+        other_params <= params and other_rank < rank
+        for other_id, other_params, other_rank in sized_ranked
+        if other_id != model_id
+    )

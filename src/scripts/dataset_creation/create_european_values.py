@@ -106,84 +106,6 @@ QUESTIONS_TO_INCLUDE = [
 ]
 
 
-def _process_question(
-    row: pd.Series,
-    language: str,
-    dataset_id: str,
-    question_id: str,
-    choice_focus: str,
-    choices_str: str,
-    no_yes_mapping: dict[str, dict[str, str]],
-    sentence_completion_mapping: dict[str, str],
-) -> tuple[str, str, str, dict[str, str]] | None:
-    """Process a single question and return prompt data.
-
-    Args:
-        row:
-            DataFrame row with question data.
-        language:
-            Language code.
-        dataset_id:
-            Source dataset ID.
-        question_id:
-            Question identifier.
-        choice_focus:
-            Choice focus string.
-        choices_str:
-            Choices header string.
-        no_yes_mapping:
-            Mapping for binary choices.
-        sentence_completion_mapping:
-            Mapping for sentence completion prompts.
-
-    Returns:
-        Tuple of (question_id, choice, prompt, idx_to_choice), or None if skipped.
-    """
-    question = row["question"]
-    if dataset_id == "EuropeanValuesProject/za7505-completions":
-        question += "..."
-
-    choices = {
-        key: value[0].upper() + value[1:]
-        for key, value in row.choices.items()
-        if value is not None
-    }
-
-    if (
-        sorted(choices.keys()) == ["0", "1"]
-        and dataset_id == "EuropeanValuesProject/za7505"
-    ):
-        choices = no_yes_mapping[language]
-
-    letters = "abcdefghijklmnopqrstuvwxyz"
-    idx_to_choice: dict[str, str] = {
-        str(idx): choice
-        for idx, choice in zip(range(len(choices)), sorted(choices.keys(), key=int))
-        if choice is not None
-    }
-    choice_to_letter: dict[str, str] = {
-        choice: letters[int(idx)] for idx, choice in idx_to_choice.items()
-    }
-
-    prompt = f"{question}\n{choices_str}:\n" + "\n".join(
-        [
-            f"{choice_to_letter[choice]}. {value}"
-            for choice, value in sorted(
-                choices.items(), key=lambda x: int(x[0]) if x[0].isdigit() else x[0]
-            )
-        ]
-    )
-
-    if dataset_id == "EuropeanValuesProject/za7505-completions":
-        prompt = (
-            sentence_completion_mapping[language]
-            + ": "
-            + prompt.split(": ", 1)[-1].strip()
-        )
-
-    return question_id, choice_to_letter.get(choice_focus, ""), prompt, idx_to_choice
-
-
 def _process_language(
     language: str,
     dataset_id: str,
@@ -360,3 +282,81 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def _process_question(
+    row: pd.Series,
+    language: str,
+    dataset_id: str,
+    question_id: str,
+    choice_focus: str,
+    choices_str: str,
+    no_yes_mapping: dict[str, dict[str, str]],
+    sentence_completion_mapping: dict[str, str],
+) -> tuple[str, str, str, dict[str, str]] | None:
+    """Process a single question and return prompt data.
+
+    Args:
+        row:
+            DataFrame row with question data.
+        language:
+            Language code.
+        dataset_id:
+            Source dataset ID.
+        question_id:
+            Question identifier.
+        choice_focus:
+            Choice focus string.
+        choices_str:
+            Choices header string.
+        no_yes_mapping:
+            Mapping for binary choices.
+        sentence_completion_mapping:
+            Mapping for sentence completion prompts.
+
+    Returns:
+        Tuple of (question_id, choice, prompt, idx_to_choice), or None if skipped.
+    """
+    question = row["question"]
+    if dataset_id == "EuropeanValuesProject/za7505-completions":
+        question += "..."
+
+    choices = {
+        key: value[0].upper() + value[1:]
+        for key, value in row.choices.items()
+        if value is not None
+    }
+
+    if (
+        sorted(choices.keys()) == ["0", "1"]
+        and dataset_id == "EuropeanValuesProject/za7505"
+    ):
+        choices = no_yes_mapping[language]
+
+    letters = "abcdefghijklmnopqrstuvwxyz"
+    idx_to_choice: dict[str, str] = {
+        str(idx): choice
+        for idx, choice in zip(range(len(choices)), sorted(choices.keys(), key=int))
+        if choice is not None
+    }
+    choice_to_letter: dict[str, str] = {
+        choice: letters[int(idx)] for idx, choice in idx_to_choice.items()
+    }
+
+    prompt = f"{question}\n{choices_str}:\n" + "\n".join(
+        [
+            f"{choice_to_letter[choice]}. {value}"
+            for choice, value in sorted(
+                choices.items(), key=lambda x: int(x[0]) if x[0].isdigit() else x[0]
+            )
+        ]
+    )
+
+    if dataset_id == "EuropeanValuesProject/za7505-completions":
+        prompt = (
+            sentence_completion_mapping[language]
+            + ": "
+            + prompt.split(": ", 1)[-1].strip()
+        )
+
+    return question_id, choice_to_letter.get(choice_focus, ""), prompt, idx_to_choice
