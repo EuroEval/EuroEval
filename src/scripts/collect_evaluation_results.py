@@ -360,23 +360,12 @@ def _extract_identity_key(result: dict) -> ResultIdentity | None:
         return None
 
 
-def upload_results_to_hf(new_results_path: Path) -> bool:
-    """Upload results to Hugging Face bucket.
-
-    Loads existing results from local RESULTS_DIR, merges new results from the
-    JSONL file, deduplicates by identity (newer records win), then syncs
-    changed files back to the bucket.
-
-    Args:
-        new_results_path:
-            Path to the newly harvested results file (JSONL format).
+def _load_existing_results() -> dict[ResultIdentity, dict]:
+    """Load existing results from local RESULTS_DIR.
 
     Returns:
-        True if upload succeeded, False otherwise.
+        Dictionary mapping identity to record.
     """
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Load existing results as identity -> record dict
     existing: dict[ResultIdentity, dict] = {}
     for json_file in RESULTS_DIR.glob("*/*.json"):
         if not json_file.is_file():
@@ -389,11 +378,23 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
                 existing[identity] = record
         except (OSError, json.JSONDecodeError, ValueError):
             logger.debug(f"Skipping unreadable file {json_file}")
+    return existing
 
-    # Process new results from JSONL file
+
+def _process_new_results(
+    new_results_path: Path, existing: dict[ResultIdentity, dict]
+) -> None:
+    """Process new results from JSONL file and merge into existing.
+
+    Args:
+        new_results_path:
+            Path to the JSONL file with new results.
+        existing:
+            Existing results dictionary (modified in-place).
+    """
     if not new_results_path.exists():
         logger.warning(f"Results file {new_results_path} does not exist.")
-        return False
+        return
 
     new_lines = new_results_path.read_text(encoding="utf-8").splitlines()
     logger.info(f"Processing {len(new_lines):,} new result lines...")
@@ -416,22 +417,38 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
         except json.JSONDecodeError:
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
 
-    # === VALIDATE PHASE: build path->identity map before any mutation ===
+
+def _validate_paths(existing: dict[ResultIdentity, dict]) -> dict[Path, ResultIdentity]:
+    """Validate path->identity mapping before mutation.
+
+    Args:
+        existing:
+            Dictionary mapping identity to record.
+
+    Returns:
+        Dictionary mapping path to identity.
+    """
     path_to_identity: dict[Path, ResultIdentity] = {}
     for identity in existing:
         record_path = RESULTS_DIR / identity_to_path(identity)
         if record_path in path_to_identity:
             raise_on_collision(identity, path_to_identity[record_path])
         path_to_identity[record_path] = identity
+    return path_to_identity
 
-    # === MUTATE PHASE: only after validation succeeds ===
-    # Only rewrite records whose content actually changed. RESULTS_DIR contains
-    # results from previous runs (already synced to the bucket), so comparing
-    # each desired record against the file already on disk tells us exactly
-    # which records changed. Rewriting only the changed files avoids touching
-    # every file's mtime and re-syncing the whole tree on every run. We never
-    # drop identities (existing is only merged into, never pruned), so there
-    # are no orphaned files to clear.
+
+def _write_changed_records(
+    existing: dict[ResultIdentity, dict],
+) -> "tuple[int, int, list[Path]]":
+    """Write only records whose content changed.
+
+    Args:
+        existing:
+            Dictionary mapping identity to record.
+
+    Returns:
+        Tuple of (records_written, records_unchanged, written_paths).
+    """
     records_written = 0
     records_unchanged = 0
     written_paths: list[Path] = []
@@ -455,30 +472,27 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
             written_paths.append(record_path)
         except (ValueError, OSError) as e:
             logger.warning(f"Failed to write record for {identity}: {e}")
+    return records_written, records_unchanged, written_paths
 
-    # Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts (not repo-root files)
+
+def _cleanup_stale_artefacts() -> None:
+    """Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts."""
     for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
         if jsonl_file.is_file():
             jsonl_file.unlink()
             logger.info(f"Removed stale artefact {jsonl_file}")
 
-    if not existing:
-        logger.warning("No valid results to upload.")
-        return False
 
-    if not records_written:
-        logger.info(
-            f"All {records_unchanged:,} records already up to date; nothing to sync."
-        )
-        return True
+def _upload_to_bucket(written_paths: list[Path]) -> bool:
+    """Upload changed files to HF bucket using batch operation.
 
-    logger.info(
-        f"Wrote {records_written:,} changed record file(s) "
-        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
-    )
+    Args:
+        written_paths:
+            List of paths to upload.
 
-    # Upload only changed files to bucket using batch operation
-    # Skip any files that are empty (0 bytes)
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
     api = HfApi()
     add_list: list[tuple[str | Path | bytes, str]] = [
         (str(path), str(path.relative_to(RESULTS_DIR)))
@@ -492,6 +506,58 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
     except HfHubHTTPError as e:
         logger.error(f"Failed to upload to HF bucket: {e}")
         return False
+
+
+def upload_results_to_hf(new_results_path: Path) -> bool:
+    """Upload results to Hugging Face bucket.
+
+    Loads existing results from local RESULTS_DIR, merges new results from the
+    JSONL file, deduplicates by identity (newer records win), then syncs
+    changed files back to the bucket.
+
+    Args:
+        new_results_path:
+            Path to the newly harvested results file (JSONL format).
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Load existing results as identity -> record dict
+    existing: dict[ResultIdentity, dict] = _load_existing_results()
+
+    # Process new results from JSONL file
+    _process_new_results(new_results_path, existing)
+
+    # Check if we got any results
+    if not existing:
+        logger.warning("No valid results to upload.")
+        return False
+
+    # === VALIDATE PHASE: build path->identity map before any mutation ===
+    _validate_paths(existing)
+
+    # === MUTATE PHASE: only after validation succeeds ===
+    records_written, records_unchanged, written_paths = _write_changed_records(
+        existing=existing
+    )
+
+    # Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts
+    _cleanup_stale_artefacts()
+
+    if not records_written:
+        logger.info(
+            f"All {records_unchanged:,} records already up to date; nothing to sync."
+        )
+        return True
+
+    logger.info(
+        f"Wrote {records_written:,} changed record file(s) "
+        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
+    )
+
+    return _upload_to_bucket(written_paths)
 
 
 def regenerate_leaderboards(force: bool = False) -> bool:

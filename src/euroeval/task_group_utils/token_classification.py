@@ -15,12 +15,177 @@ from ..string_utils import extract_json_dict_from_string
 from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
+    import numpy as np
     from datasets.arrow_dataset import Dataset
     from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.tokenization_utils_base import BatchEncoding
 
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
+
+
+def _extract_predictions_and_labels(
+    model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
+    dataset_config: "DatasetConfig",
+) -> "tuple[list[list[str]], list[list[str]]]":
+    """Extract predictions and labels from model outputs.
+
+    Args:
+        model_outputs_and_labels:
+            The model outputs and labels tuple or EvalPrediction.
+        dataset_config:
+            The dataset configuration.
+
+    Returns:
+        Tuple of (predictions, labels) as lists of string lists.
+    """
+    model_outputs, labels = model_outputs_and_labels
+
+    # If the model outputs is a pair, then the first element corresponds to the model
+    # predictions
+    if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
+        model_outputs = model_outputs[0]
+
+    predictions: list[list[str]]
+
+    if not isinstance(model_outputs[0][0], str):
+        raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()
+
+        # Remove ignored index (special tokens)
+        predictions = [
+            [
+                dataset_config.id2label[pred_id]
+                for pred_id, lbl_id in zip(pred, label)
+                if lbl_id != -100
+            ]
+            for pred, label in zip(raw_predictions, labels)
+        ]
+        labels = [
+            [
+                (
+                    dataset_config.id2label[int(lbl_id)]
+                    if isinstance(lbl_id, int) or isinstance(lbl_id, np.int_)
+                    else lbl_id
+                )
+                for lbl_id in label
+                if lbl_id != -100
+            ]
+            for label in labels
+        ]
+    else:
+        predictions = list(model_outputs)  # ty: ignore[invalid-assignment]
+
+    return predictions, labels  # ty: ignore[invalid-assignment]
+
+
+def _replace_ner_tags_with_misc_or_o(
+    predictions: list[list[str]],
+    has_misc_tags: bool,
+    labels_without_misc: set[str],
+) -> None:
+    """Replace predicted tags with MISC or O based on dataset tags.
+
+    Modifies predictions in-place.
+
+    Args:
+        predictions:
+            The predictions to modify.
+        has_misc_tags:
+            Whether the dataset has MISC tags.
+        labels_without_misc:
+            Set of valid NER tags excluding MISC.
+    """
+    for i, prediction_list in enumerate(predictions):
+        for j, ner_tag in enumerate(prediction_list):
+            if ner_tag not in labels_without_misc:
+                if has_misc_tags and ner_tag[:2] == "b-":
+                    predictions[i][j] = "b-misc"
+                elif has_misc_tags and ner_tag[:2] == "i-":
+                    predictions[i][j] = "i-misc"
+                else:
+                    predictions[i][j] = "o"
+
+
+def _build_no_misc_variants(
+    predictions: list[list[str]], labels: list[list[str]]
+) -> "tuple[list[list[str]], list[list[str]]]":
+    """Build no-MISC variants of predictions and labels.
+
+    Args:
+        predictions:
+            The predictions to process.
+        labels:
+            The labels to process.
+
+    Returns:
+        Tuple of (predictions_no_misc, labels_no_misc).
+    """
+    predictions_no_misc = deepcopy(predictions)
+    for i, prediction_list in enumerate(predictions_no_misc):
+        for j, ner_tag in enumerate(prediction_list):
+            if ner_tag[-4:] == "misc":
+                predictions_no_misc[i][j] = "o"
+
+    labels_no_misc = deepcopy(labels)  # ty: ignore[invalid-assignment]
+    for i, label_list in enumerate(labels_no_misc):
+        for j, ner_tag in enumerate(label_list):
+            if (
+                isinstance(ner_tag, str)
+                and len(ner_tag) >= 4
+                and ner_tag[-4:] == "misc"
+            ):
+                labels_no_misc[i][j] = "o"
+
+    return predictions_no_misc, labels_no_misc
+
+
+def _compute_single_metric(
+    metric: t.Callable,
+    metric_name: str,
+    predictions: list[list[str]],
+    labels: list[list[str]],
+    dataset: "Dataset",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+) -> float:
+    """Compute a single metric value.
+
+    Args:
+        metric:
+            The metric function to call.
+        metric_name:
+            The name of the metric.
+        predictions:
+            The predictions to evaluate.
+        labels:
+            The labels to evaluate.
+        dataset:
+            The dataset.
+        dataset_config:
+            The dataset configuration.
+        benchmark_config:
+            The benchmark configuration.
+
+    Returns:
+        The metric value.
+    """
+    all_zero = all(
+        all(tag == "o" for tag in pred_list) for pred_list in predictions
+    ) and all(all(tag == "o" for tag in ref_list) for ref_list in labels)
+
+    if all_zero:
+        return 1.0
+
+    score: float | None = metric(
+        predictions=predictions,
+        references=labels,
+        dataset=dataset,
+        dataset_config=dataset_config,
+        benchmark_config=benchmark_config,
+    )
+    if score is None:
+        raise InvalidBenchmark("The predictions and labels are not of the same length.")
+    return score
 
 
 def serialise_ner_tags(
@@ -110,48 +275,11 @@ def compute_metrics(
     Returns:
         A dictionary with the names of the metrics as keys and the metric values as
         values.
-
-    Raises:
-        InvalidBenchmark:
-            If the tokeniser is not of a "fast" variant and the word IDs cannot be
-            extracted.
     """
-    model_outputs, labels = model_outputs_and_labels
-
-    # If the model outputs is a pair, then the first element corresponds to the model
-    # predictions
-    if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
-        model_outputs = model_outputs[0]
-
-    predictions: list[list[str]]
-
-    if not isinstance(model_outputs[0][0], str):
-        raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()
-
-        # Remove ignored index (special tokens)
-        predictions = [
-            [
-                dataset_config.id2label[pred_id]
-                for pred_id, lbl_id in zip(pred, label)
-                if lbl_id != -100
-            ]
-            for pred, label in zip(raw_predictions, labels)
-        ]
-        labels = [
-            [
-                (
-                    dataset_config.id2label[int(lbl_id)]
-                    if isinstance(lbl_id, int) or isinstance(lbl_id, np.int_)
-                    else lbl_id
-                )
-                for lbl_id in label
-                if lbl_id != -100
-            ]
-            for label in labels
-        ]
-
-    else:
-        predictions = list(model_outputs)  # ty: ignore[invalid-assignment]
+    predictions, labels = _extract_predictions_and_labels(
+        model_outputs_and_labels=model_outputs_and_labels,
+        dataset_config=dataset_config,
+    )
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
 
@@ -162,16 +290,11 @@ def compute_metrics(
         for label in dataset_config.id2label.values()
         if label not in {"b-misc", "i-misc"}
     }
-    ner_tag: str
-    for i, prediction_list in enumerate(predictions):
-        for j, ner_tag in enumerate(prediction_list):
-            if ner_tag not in labels_without_misc:
-                if has_misc_tags and ner_tag[:2] == "b-":
-                    predictions[i][j] = "b-misc"
-                elif has_misc_tags and ner_tag[:2] == "i-":
-                    predictions[i][j] = "i-misc"
-                else:
-                    predictions[i][j] = "o"
+    _replace_ner_tags_with_misc_or_o(
+        predictions=predictions,
+        has_misc_tags=has_misc_tags,
+        labels_without_misc=labels_without_misc,
+    )
 
     # Build no-misc variants only when needed by any metric
     needs_no_misc = any(
@@ -180,21 +303,9 @@ def compute_metrics(
     predictions_no_misc: list[list[str]] = []
     labels_no_misc: list[list[str]] = []
     if needs_no_misc:
-        predictions_no_misc = deepcopy(predictions)
-        for i, prediction_list in enumerate(predictions_no_misc):
-            for j, ner_tag in enumerate(prediction_list):
-                if ner_tag[-4:] == "misc":
-                    predictions_no_misc[i][j] = "o"
-
-        labels_no_misc = deepcopy(labels)  # ty: ignore[invalid-assignment]
-        for i, label_list in enumerate(labels_no_misc):
-            for j, ner_tag in enumerate(label_list):
-                if (
-                    isinstance(ner_tag, str)
-                    and len(ner_tag) >= 4
-                    and ner_tag[-4:] == "misc"
-                ):
-                    labels_no_misc[i][j] = "o"
+        predictions_no_misc, labels_no_misc = _build_no_misc_variants(
+            predictions=predictions, labels=labels
+        )
 
     # Compute each metric defined on the task
     result: dict[str, float] = {}
@@ -207,28 +318,15 @@ def compute_metrics(
             preds = predictions
             refs = list(labels)
 
-        # We manually set the F1 metric to be 100% if both the labels and the
-        # predictions have no NER tags in them, since this causes an error with
-        # the `compute` method otherwise
-        all_zero = all(
-            all(tag == "o" for tag in pred_list) for pred_list in preds
-        ) and all(all(tag == "o" for tag in ref_list) for ref_list in refs)
-
-        if all_zero:
-            result[metric.name] = 1.0
-        else:
-            score: float | None = metric(
-                predictions=preds,
-                references=refs,
-                dataset=dataset,
-                dataset_config=dataset_config,
-                benchmark_config=benchmark_config,
-            )
-            if score is None:
-                raise InvalidBenchmark(
-                    "The predictions and labels are not of the same length."
-                )
-            result[metric.name] = score
+        result[metric.name] = _compute_single_metric(
+            metric=metric,
+            metric_name=metric.name,
+            predictions=preds,
+            labels=refs,
+            dataset=dataset,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+        )
 
     return result
 
