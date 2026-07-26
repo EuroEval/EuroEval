@@ -33,13 +33,6 @@ repos:
         - pyi
         - jupyter
 
-- repo: https://github.com/saattrupdan/funcsort
-  rev: v0.1.0
-  hooks:
-    - id: funcsort
-      args:
-        - --fix
-
 - repo: https://github.com/kynan/nbstripout
   rev: 0.9.1
   hooks:
