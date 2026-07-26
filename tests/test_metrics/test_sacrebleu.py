@@ -46,7 +46,7 @@ class DummyDatasetConfig:
 
     @property
     def main_language(self) -> Language:
-        """Return the main language for the dataset."""
+        """The main language for the dataset."""
         return self.languages[0]
 
 

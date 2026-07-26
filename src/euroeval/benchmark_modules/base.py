@@ -140,7 +140,7 @@ class BenchmarkModule(ABC):
     @property
     @abstractmethod
     def generative_type(self) -> "GenerativeType | None":
-        """Get the generative type of the model.
+        """The generative type of the model.
 
         Returns:
             The generative type of the model, or None if the model is not generative.
