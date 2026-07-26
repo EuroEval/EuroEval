@@ -15,7 +15,6 @@ from ..string_utils import extract_json_dict_from_string
 from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
-    import numpy as np
     from datasets.arrow_dataset import Dataset
     from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.tokenization_utils_base import BatchEncoding
