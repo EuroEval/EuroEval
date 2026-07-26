@@ -1,14 +1,17 @@
 repos:
+
 -   repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.10.0
     hooks:
       - id: python-use-type-annotations
+
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: debug-statements
+
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.13
     hooks:
@@ -29,10 +32,18 @@ repos:
           - python
           - pyi
           - jupyter
+
+- repo: https://github.com/saattrupdan/funcsort
+  hooks:
+    - id: funcsort
+      args:
+        - --fix
+
 -   repo: https://github.com/kynan/nbstripout
     rev: 0.9.1
     hooks:
     -   id: nbstripout
+
 -   repo: local
     hooks:
     -   id: ty-check
@@ -41,6 +52,7 @@ repos:
         language: system
         pass_filenames: false
         types: [python]
+
 -   repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.22.1
     hooks:
