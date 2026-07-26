@@ -1327,7 +1327,6 @@ def load_tokeniser(
 
 
 @cache_arguments()
-@cache_arguments()
 def get_dtype(
     device: torch.device,
     dtype_is_set: bool,
@@ -1620,7 +1619,6 @@ def get_children_of_module(
         return submodules
 
 
-@cache_arguments("model_id", "revision", "num_labels", "id2label", "label2id")
 @cache_arguments("model_id", "revision", "num_labels", "id2label", "label2id")
 def load_hf_model_config(
     model_id: str,
