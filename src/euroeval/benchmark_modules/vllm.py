@@ -1513,7 +1513,7 @@ def load_model(
 
     clear_vllm()
 
-    hf_overrides: dict[str, list[str]] = {}
+    hf_overrides: dict[str, dict[str, str | int | float] | list[str]] = {}
     if hf_model_config.architectures:
         remapped = [
             _ARCHITECTURE_ALIASES.get(arch, arch)
@@ -1527,6 +1527,41 @@ def load_model(
             )
             hf_model_config.architectures = remapped
             hf_overrides["architectures"] = remapped
+
+    # TODO: Remove this block when we don't care about OLMo-3 anymore
+    # OLMo-3 models have rope_theta/rope_scaling at top level, but vLLM expects
+    # them nested in rope_parameters. Use hf_overrides to override the config.
+    is_olmo3 = hf_model_config.model_type == "olmo3" or (
+        hf_model_config.architectures
+        and "Olmo3ForCausalLM" in hf_model_config.architectures
+    )
+    if is_olmo3 and "rope_parameters" not in getattr(
+        hf_model_config, "rope_parameters", {}
+    ):
+        rope_theta = getattr(hf_model_config, "rope_theta", 10000)
+        rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
+        rope_params: dict[str, str | int | float] = {
+            "rope_theta": rope_theta,
+            "rope_type": rope_scaling.get("rope_type", "default"),
+        }
+        for key in [
+            "factor",
+            "original_max_position_embeddings",
+            "attention_factor",
+            "beta_fast",
+            "beta_slow",
+            "short_factor",
+            "long_factor",
+        ]:
+            if key in rope_scaling:
+                rope_params[key] = rope_scaling[key]
+
+        hf_overrides["rope_parameters"] = rope_params
+        log(
+            f"Added rope_parameters override for OLMo-3 model {model_id!r}: "
+            f"{rope_params!r}",
+            level=logging.INFO,
+        )
 
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism(force_single_gpu=False)
