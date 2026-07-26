@@ -338,35 +338,99 @@ class Benchmarker:
         return build_benchmark_config(
             benchmark_config_params=BenchmarkConfigParams(
                 task=params.get("task", self.benchmark_config_default_params.task),
-                dataset=params.get("dataset", self.benchmark_config_default_params.dataset),
-                progress_bar=params.get("progress_bar", self.benchmark_config_default_params.progress_bar),
-                save_results=params.get("save_results", self.benchmark_config_default_params.save_results),
-                language=params.get("language", self.benchmark_config_default_params.language),
-                device=params.get("device", self.benchmark_config_default_params.device),
-                finetuning_batch_size=params.get("finetuning_batch_size", self.benchmark_config_default_params.finetuning_batch_size),
-                raise_errors=params.get("raise_errors", self.benchmark_config_default_params.raise_errors),
-                cache_dir=params.get("cache_dir", self.benchmark_config_default_params.cache_dir),
-                api_key=params.get("api_key", self.benchmark_config_default_params.api_key),
-                api_base=params.get("api_base", self.benchmark_config_default_params.api_base),
-                api_version=params.get("api_version", self.benchmark_config_default_params.api_version),
-                trust_remote_code=params.get("trust_remote_code", self.benchmark_config_default_params.trust_remote_code),
-                clear_model_cache=params.get("clear_model_cache", self.benchmark_config_default_params.clear_model_cache),
-                evaluate_test_split=params.get("evaluate_test_split", self.benchmark_config_default_params.evaluate_test_split),
-                few_shot=params.get("few_shot", self.benchmark_config_default_params.few_shot),
-                num_iterations=params.get("num_iterations", self.benchmark_config_default_params.num_iterations),
-                requires_safetensors=params.get("requires_safetensors", self.benchmark_config_default_params.requires_safetensors),
-                download_only=params.get("download_only", self.benchmark_config_default_params.download_only),
-                gpu_memory_utilization=params.get("gpu_memory_utilization", self.benchmark_config_default_params.gpu_memory_utilization),
-                generative_type=params.get("generative_type", self.benchmark_config_default_params.generative_type),
-                use_bits_per_character=params.get("use_bits_per_character", self.benchmark_config_default_params.use_bits_per_character),
-                attention_backend=params.get("attention_backend", self.benchmark_config_default_params.attention_backend),
-                custom_datasets_file=Path(params["custom_datasets_file"]) if params.get("custom_datasets_file") else self.benchmark_config_default_params.custom_datasets_file,
+                dataset=params.get(
+                    "dataset", self.benchmark_config_default_params.dataset
+                ),
+                progress_bar=params.get(
+                    "progress_bar", self.benchmark_config_default_params.progress_bar
+                ),
+                save_results=params.get(
+                    "save_results", self.benchmark_config_default_params.save_results
+                ),
+                language=params.get(
+                    "language", self.benchmark_config_default_params.language
+                ),
+                device=params.get(
+                    "device", self.benchmark_config_default_params.device
+                ),
+                finetuning_batch_size=params.get(
+                    "finetuning_batch_size",
+                    self.benchmark_config_default_params.finetuning_batch_size,
+                ),
+                raise_errors=params.get(
+                    "raise_errors", self.benchmark_config_default_params.raise_errors
+                ),
+                cache_dir=params.get(
+                    "cache_dir", self.benchmark_config_default_params.cache_dir
+                ),
+                api_key=params.get(
+                    "api_key", self.benchmark_config_default_params.api_key
+                ),
+                api_base=params.get(
+                    "api_base", self.benchmark_config_default_params.api_base
+                ),
+                api_version=params.get(
+                    "api_version", self.benchmark_config_default_params.api_version
+                ),
+                trust_remote_code=params.get(
+                    "trust_remote_code",
+                    self.benchmark_config_default_params.trust_remote_code,
+                ),
+                clear_model_cache=params.get(
+                    "clear_model_cache",
+                    self.benchmark_config_default_params.clear_model_cache,
+                ),
+                evaluate_test_split=params.get(
+                    "evaluate_test_split",
+                    self.benchmark_config_default_params.evaluate_test_split,
+                ),
+                few_shot=params.get(
+                    "few_shot", self.benchmark_config_default_params.few_shot
+                ),
+                num_iterations=params.get(
+                    "num_iterations",
+                    self.benchmark_config_default_params.num_iterations,
+                ),
+                requires_safetensors=params.get(
+                    "requires_safetensors",
+                    self.benchmark_config_default_params.requires_safetensors,
+                ),
+                download_only=params.get(
+                    "download_only", self.benchmark_config_default_params.download_only
+                ),
+                gpu_memory_utilization=params.get(
+                    "gpu_memory_utilization",
+                    self.benchmark_config_default_params.gpu_memory_utilization,
+                ),
+                generative_type=params.get(
+                    "generative_type",
+                    self.benchmark_config_default_params.generative_type,
+                ),
+                use_bits_per_character=params.get(
+                    "use_bits_per_character",
+                    self.benchmark_config_default_params.use_bits_per_character,
+                ),
+                attention_backend=params.get(
+                    "attention_backend",
+                    self.benchmark_config_default_params.attention_backend,
+                ),
+                custom_datasets_file=Path(params["custom_datasets_file"])
+                if params.get("custom_datasets_file")
+                else self.benchmark_config_default_params.custom_datasets_file,
                 force=params.get("force", self.benchmark_config_default_params.force),
-                verbose=params.get("verbose", self.benchmark_config_default_params.verbose),
+                verbose=params.get(
+                    "verbose", self.benchmark_config_default_params.verbose
+                ),
                 debug=params.get("debug", self.benchmark_config_default_params.debug),
                 run_with_cli=self.benchmark_config_default_params.run_with_cli,
-                max_context_length=params.get("max_context_length", self.benchmark_config_default_params.max_context_length),
-                vocabulary_size=params.get("vocabulary_size", self.benchmark_config_default_params.vocabulary_size),
+                max_context_length=params.get(
+                    "max_context_length",
+                    self.benchmark_config_default_params.max_context_length,
+                ),
+                vocabulary_size=params.get(
+                    "vocabulary_size",
+                    self.benchmark_config_default_params.vocabulary_size,
+                ),
             )
         )
 
@@ -381,18 +445,25 @@ class Benchmarker:
             disable=not benchmark_config.verbose or not benchmark_config.progress_bar,
         ):
             try:
-                configs.append(get_model_config(model_id=model_id, benchmark_config=benchmark_config))
+                configs.append(
+                    get_model_config(
+                        model_id=model_id, benchmark_config=benchmark_config
+                    )
+                )
             except InvalidModel as e:
                 log(e.message, level=logging.ERROR)
         return configs
 
     def _create_model_dataset_mapping(
-        self, model_configs: list["ModelConfig"], dataset_configs: c.Sequence["DatasetConfig"]
+        self,
+        model_configs: list["ModelConfig"],
+        dataset_configs: c.Sequence["DatasetConfig"],
     ) -> dict["ModelConfig", list["DatasetConfig"]]:
         """Create mapping from model configs to dataset configs."""
         return {
             model_config: [
-                ds_config for ds_config in dataset_configs
+                ds_config
+                for ds_config in dataset_configs
                 if model_config.model_type in ds_config.allowed_model_types
             ]
             for model_config in model_configs
@@ -438,18 +509,20 @@ class Benchmarker:
             log_once(
                 "You are using download only mode with a model that includes an adapter. "
                 "Please note that offline benchmarking of adapter models is not currently supported - "
-                "an internet connection will be required during evaluation in this case. " + msg,
+                "an internet connection will be required during evaluation in this case. "
+                + msg,
                 level=logging.WARNING,
             )
 
     def _update_benchmark_config_for_dataset(
-        self,
-        dataset_config: "DatasetConfig",
-        benchmark_config: "BenchmarkConfig",
+        self, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"
     ) -> dict[str, t.Any]:
         """Update benchmark config for dataset. Returns params to revert."""
         params_to_revert: dict[str, t.Any] = {}
-        if dataset_config.val_split is None and not benchmark_config.evaluate_test_split:
+        if (
+            dataset_config.val_split is None
+            and not benchmark_config.evaluate_test_split
+        ):
             log(
                 "The dataset does not have a validation split, so even though "
                 "you requested evaluating the validation split (the default), "
@@ -494,7 +567,7 @@ class Benchmarker:
         if isinstance(result_or_error, InvalidModel):
             log(result_or_error.message, level=logging.WARNING)
             remaining = model_mapping[model_config][
-                model_mapping[model_config].index(dataset_config) + 1:
+                model_mapping[model_config].index(dataset_config) + 1 :
             ]
             num_errored += 1 + len(remaining)
             return num_finished, num_skipped, num_errored, True
@@ -719,17 +792,35 @@ class Benchmarker:
 
         # Build benchmark config
         benchmark_config = self._build_benchmark_config(
-            task=task, dataset=dataset, progress_bar=progress_bar, save_results=save_results,
-            language=language, device=device, finetuning_batch_size=finetuning_batch_size,
-            raise_errors=raise_errors, cache_dir=cache_dir, api_key=api_key, api_base=api_base,
-            api_version=api_version, trust_remote_code=trust_remote_code,
-            clear_model_cache=clear_model_cache, evaluate_test_split=evaluate_test_split,
-            few_shot=few_shot, num_iterations=num_iterations, requires_safetensors=requires_safetensors,
-            download_only=download_only, gpu_memory_utilization=gpu_memory_utilization,
-            generative_type=generative_type, use_bits_per_character=use_bits_per_character,
-            attention_backend=attention_backend, custom_datasets_file=custom_datasets_file,
-            force=force, verbose=verbose, debug=debug,
-            max_context_length=max_context_length, vocabulary_size=vocabulary_size,
+            task=task,
+            dataset=dataset,
+            progress_bar=progress_bar,
+            save_results=save_results,
+            language=language,
+            device=device,
+            finetuning_batch_size=finetuning_batch_size,
+            raise_errors=raise_errors,
+            cache_dir=cache_dir,
+            api_key=api_key,
+            api_base=api_base,
+            api_version=api_version,
+            trust_remote_code=trust_remote_code,
+            clear_model_cache=clear_model_cache,
+            evaluate_test_split=evaluate_test_split,
+            few_shot=few_shot,
+            num_iterations=num_iterations,
+            requires_safetensors=requires_safetensors,
+            download_only=download_only,
+            gpu_memory_utilization=gpu_memory_utilization,
+            generative_type=generative_type,
+            use_bits_per_character=use_bits_per_character,
+            attention_backend=attention_backend,
+            custom_datasets_file=custom_datasets_file,
+            force=force,
+            verbose=verbose,
+            debug=debug,
+            max_context_length=max_context_length,
+            vocabulary_size=vocabulary_size,
         )
 
         adjust_logging_level(verbose=benchmark_config.verbose)
@@ -742,7 +833,9 @@ class Benchmarker:
 
         # Fetch model configs and create mapping
         model_configs = self._fetch_model_configs(model_ids, benchmark_config)
-        model_mapping = self._create_model_dataset_mapping(model_configs, dataset_configs)
+        model_mapping = self._create_model_dataset_mapping(
+            model_configs, dataset_configs
+        )
 
         # Filter out existing benchmarks
         existing_results = self.benchmark_results
@@ -799,12 +892,15 @@ class Benchmarker:
                                 raise e
                             log(e.message, level=logging.ERROR)
                             remaining = model_mapping[model_config][
-                                model_mapping[model_config].index(dataset_config) + 1:
+                                model_mapping[model_config].index(dataset_config) + 1 :
                             ]
                             num_errored += 1 + len(remaining)
                             break
 
-                    if loaded_model.generative_type not in dataset_config.allowed_generative_types:
+                    if (
+                        loaded_model.generative_type
+                        not in dataset_config.allowed_generative_types
+                    ):
                         log(
                             f"Skipping the benchmark of model "
                             f"{model_config.model_id!r} on dataset "
@@ -826,16 +922,18 @@ class Benchmarker:
                     num_total_benchmarks=total_benchmarks,
                 )
 
-                num_finished, num_skipped, num_errored, should_break = self._handle_benchmark_result(
-                    result_or_error=output_or_err,
-                    dataset_config=dataset_config,
-                    benchmark_config=benchmark_config,
-                    num_finished=num_finished,
-                    num_skipped=num_skipped,
-                    num_errored=num_errored,
-                    model_config=model_config,
-                    model_mapping=model_mapping,
-                    current_results=current_results,
+                num_finished, num_skipped, num_errored, should_break = (
+                    self._handle_benchmark_result(
+                        result_or_error=output_or_err,
+                        dataset_config=dataset_config,
+                        benchmark_config=benchmark_config,
+                        num_finished=num_finished,
+                        num_skipped=num_skipped,
+                        num_errored=num_errored,
+                        model_config=model_config,
+                        model_mapping=model_mapping,
+                        current_results=current_results,
+                    )
                 )
                 if should_break:
                     break

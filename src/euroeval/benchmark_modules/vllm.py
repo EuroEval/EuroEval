@@ -670,9 +670,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
         return StructuredOutputsParams(json=schema)
 
-    def _structured_output_for_logprobs(
-        self,
-    ) -> "StructuredOutputsParams":
+    def _structured_output_for_logprobs(self) -> "StructuredOutputsParams":
         """Handle structured output for logprobs-based tasks."""
         choice_labels = [
             self.dataset_config.prompt_label_mapping[label]
@@ -685,8 +683,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             ]
         struct_output = StructuredOutputsParams(choice=choice_labels)
         log_once(
-            "Using structured generation with the choices: "
-            f"{struct_output.choice!r}.",
+            f"Using structured generation with the choices: {struct_output.choice!r}.",
             level=logging.DEBUG,
         )
         return struct_output
@@ -752,14 +749,19 @@ class VLLMModel(HuggingFaceEncoderModel):
         if any(len(prompt.strip()) == 0 for prompt in prompts):
             log("Found empty prompts, replacing with BOS token.", level=logging.DEBUG)
             return [
-                prompt if len(prompt.strip()) > 0 else str(self._tokeniser.bos_token or "x")
+                prompt
+                if len(prompt.strip()) > 0
+                else str(self._tokeniser.bos_token or "x")
                 for prompt in prompts
             ]
         return list(prompts)
 
     def _strip_prompts_if_needed(self, prompts: c.Sequence[str]) -> list[str]:
         """Strip prompts if the model's tokeniser requires it."""
-        labels = list(self.dataset_config.prompt_label_mapping.values()) or ["negative", "positive"]
+        labels = list(self.dataset_config.prompt_label_mapping.values()) or [
+            "negative",
+            "positive",
+        ]
         if self.generative_type == GenerativeType.BASE and should_prompts_be_stripped(
             labels_to_be_generated=labels, tokeniser=self._tokeniser
         ):
@@ -791,8 +793,13 @@ class VLLMModel(HuggingFaceEncoderModel):
             level=logging.DEBUG,
         )
         if self.generative_type == GenerativeType.BASE:
-            return self._truncate_base_prompts(prompts, max_tokens_per_prompt, sampling_params)
-        if self.generative_type in (GenerativeType.INSTRUCTION_TUNED, GenerativeType.REASONING):
+            return self._truncate_base_prompts(
+                prompts, max_tokens_per_prompt, sampling_params
+            )
+        if self.generative_type in (
+            GenerativeType.INSTRUCTION_TUNED,
+            GenerativeType.REASONING,
+        ):
             return self._truncate_instruction_prompts(prompts, max_tokens_per_prompt)
         raise InvalidBenchmark("The model type is not set!")
 
@@ -812,7 +819,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         finally:
             self._tokeniser.truncation_side = original_side
-        return _safe_batch_decode(self._tokeniser, truncated.input_ids, skip_special_tokens=True)
+        return _safe_batch_decode(
+            self._tokeniser, truncated.input_ids, skip_special_tokens=True
+        )
 
     def _truncate_instruction_prompts(
         self, prompts: c.Sequence[str], max_tokens_per_prompt: int
@@ -821,23 +830,34 @@ class VLLMModel(HuggingFaceEncoderModel):
         assert self.end_of_chat_token_ids is not None
         eoc_token = self._tokeniser.decode(list(self.end_of_chat_token_ids))
         segments = [
-            (p.replace(self._tokeniser.bos_token, "") if self._tokeniser.bos_token else p).split(eoc_token)
+            (
+                p.replace(self._tokeniser.bos_token, "")
+                if self._tokeniser.bos_token
+                else p
+            ).split(eoc_token)
             for p in prompts
         ]
         for remove_count in range(1, self.dataset_config.num_few_shot_examples + 1):
-            new_prompts = [eoc_token.join(seg[2 * remove_count:]) for seg in segments]
+            new_prompts = [eoc_token.join(seg[2 * remove_count :]) for seg in segments]
             tok = self._tokeniser(text=new_prompts, max_length=max_tokens_per_prompt)
             if all(len(ids) < max_tokens_per_prompt for ids in tok.input_ids):
                 return new_prompts
-        no_few_shot = [eoc_token.join(seg[2 * self.dataset_config.num_few_shot_examples:]) for seg in segments]
+        no_few_shot = [
+            eoc_token.join(seg[2 * self.dataset_config.num_few_shot_examples :])
+            for seg in segments
+        ]
         log_once(
             "Could not fit the prompts for the model "
             f"{self.model_config.model_id!r} within {max_tokens_per_prompt:,} tokens by removing few-shot "
             "examples, so hard-truncating them instead.",
             level=logging.WARNING,
         )
-        truncated = self._tokeniser(text=no_few_shot, max_length=max_tokens_per_prompt, truncation=True)
-        return _safe_batch_decode(self._tokeniser, truncated.input_ids, skip_special_tokens=True)
+        truncated = self._tokeniser(
+            text=no_few_shot, max_length=max_tokens_per_prompt, truncation=True
+        )
+        return _safe_batch_decode(
+            self._tokeniser, truncated.input_ids, skip_special_tokens=True
+        )
 
     def _generate_with_retries(
         self,
@@ -849,7 +869,12 @@ class VLLMModel(HuggingFaceEncoderModel):
         input_is_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         num_attempts = 3
         truncation_attempts = 1
-        oom_messages = ["out of memory", "outofmemory", "insufficient memory", "command buffer execution failed"]
+        oom_messages = [
+            "out of memory",
+            "outofmemory",
+            "insufficient memory",
+            "command buffer execution failed",
+        ]
 
         def check_oom(error: Exception) -> None:
             if any(m in str(error).lower() for m in oom_messages):
@@ -874,7 +899,10 @@ class VLLMModel(HuggingFaceEncoderModel):
                 )
                 break
             except TypeError as e:
-                log(f"Encountered error during vLLM generation: {str(e)}. Retrying...", level=logging.DEBUG)
+                log(
+                    f"Encountered error during vLLM generation: {str(e)}. Retrying...",
+                    level=logging.DEBUG,
+                )
                 sleep(1)
             except (ValueError, RuntimeError) as e:
                 check_oom(e)
@@ -882,19 +910,30 @@ class VLLMModel(HuggingFaceEncoderModel):
                     r"prompt \(length [0-9]+\) is longer than the maximum model length",
                     "Sampled token IDs exceed the max model length",
                 ]
-                if any(re.search(pat, str(e), flags=re.IGNORECASE) for pat in trunc_msgs):
-                    log("Prompts are too long, so truncating them and trying again...", level=logging.WARNING)
+                if any(
+                    re.search(pat, str(e), flags=re.IGNORECASE) for pat in trunc_msgs
+                ):
+                    log(
+                        "Prompts are too long, so truncating them and trying again...",
+                        level=logging.WARNING,
+                    )
                     log(f"The error message was: {str(e)}", level=logging.DEBUG)
                     extra = 50 * truncation_attempts
                     truncation_attempts += 1
                     tok = self._tokeniser(
                         text=prompts,
                         truncation=True,
-                        max_length=max(max_context_length - sampling_params.max_tokens - extra, 0),
+                        max_length=max(
+                            max_context_length - sampling_params.max_tokens - extra, 0
+                        ),
                     )
-                    prompts = _safe_batch_decode(self._tokeniser, tok.input_ids, skip_special_tokens=True)
+                    prompts = _safe_batch_decode(
+                        self._tokeniser, tok.input_ids, skip_special_tokens=True
+                    )
                 else:
-                    raise InvalidBenchmark(f"An error occurred during vLLM generation: {str(e)}") from e
+                    raise InvalidBenchmark(
+                        f"An error occurred during vLLM generation: {str(e)}"
+                    ) from e
             except Exception as e:
                 check_oom(e)
                 if type(e).__name__ == "EngineDeadError" or "RPC call" in str(e):
@@ -906,16 +945,15 @@ class VLLMModel(HuggingFaceEncoderModel):
                     ) from e
                 raise
         else:
-            raise InvalidBenchmark(f"Could not generate sequences after {num_attempts} attempts.")
+            raise InvalidBenchmark(
+                f"Could not generate sequences after {num_attempts} attempts."
+            )
         return self._filter_and_parse_outputs(
             prompts=prompts, raw_outputs=raw_outputs, sampling_params=sampling_params
         )
 
     def _filter_and_parse_outputs(
-        self,
-        prompts: list[str],
-        raw_outputs: list,
-        sampling_params: "SamplingParams",
+        self, prompts: list[str], raw_outputs: list, sampling_params: "SamplingParams"
     ) -> tuple[list[str], list]:
         """Filter extra outputs and parse completions."""
         extra = len(raw_outputs) - len(prompts)
@@ -940,11 +978,15 @@ class VLLMModel(HuggingFaceEncoderModel):
         if sampling_params.prompt_logprobs is not None:
             return [""] * len(raw_outputs), raw_outputs
         completion_ids = [list(out.outputs[0].token_ids) for out in raw_outputs]
-        completions = _safe_batch_decode(self._tokeniser, completion_ids, skip_special_tokens=False)
+        completions = _safe_batch_decode(
+            self._tokeniser, completion_ids, skip_special_tokens=False
+        )
         completions = self._remove_reasoning_content(completions)
         completions = self._remove_stop_tokens(completions)
         comp_ids = self._tokeniser(text=completions).input_ids
-        completions = _safe_batch_decode(self._tokeniser, comp_ids, skip_special_tokens=True)
+        completions = _safe_batch_decode(
+            self._tokeniser, comp_ids, skip_special_tokens=True
+        )
         if len(completions) != len(raw_outputs):
             raise InvalidBenchmark(
                 f"Expected {len(raw_outputs):,} completions, but got {len(completions):,}."
@@ -953,13 +995,21 @@ class VLLMModel(HuggingFaceEncoderModel):
 
     def _remove_reasoning_content(self, completions: list[str]) -> list[str]:
         """Remove reasoning content from completions for reasoning models."""
-        if self.end_of_reasoning_token is None or self.generative_type != GenerativeType.REASONING:
+        if (
+            self.end_of_reasoning_token is None
+            or self.generative_type != GenerativeType.REASONING
+        ):
             return completions
         count = 0
         for idx, comp in enumerate(completions):
-            if isinstance(self.end_of_reasoning_token, str) and self.end_of_reasoning_token in comp:
+            if (
+                isinstance(self.end_of_reasoning_token, str)
+                and self.end_of_reasoning_token in comp
+            ):
                 completions[idx] = comp.split(self.end_of_reasoning_token)[-1]
-            elif isinstance(self.end_of_reasoning_token, re.Pattern) and self.end_of_reasoning_token.search(comp):
+            elif isinstance(
+                self.end_of_reasoning_token, re.Pattern
+            ) and self.end_of_reasoning_token.search(comp):
                 completions[idx] = self.end_of_reasoning_token.split(comp)[-1]
             else:
                 count += 1
@@ -971,7 +1021,9 @@ class VLLMModel(HuggingFaceEncoderModel):
                 f"reasoning token ({self.end_of_reasoning_token!r}) in "
                 f"{count:,}/{len(completions):,} of the samples. Using an empty string for all these samples "
                 "instead.",
-                level=logging.WARNING if count / len(completions) > 0.5 else logging.DEBUG,
+                level=logging.WARNING
+                if count / len(completions) > 0.5
+                else logging.DEBUG,
             )
         return completions
 
@@ -1045,8 +1097,12 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Compute token budget and prepare prompts
         max_context_length = min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
-        max_tokens_per_prompt = self._apply_token_budget(sampling_params, max_context_length)
-        prompts = self._prepare_prompts(inputs, prompt_key, max_tokens_per_prompt, sampling_params)
+        max_tokens_per_prompt = self._apply_token_budget(
+            sampling_params, max_context_length
+        )
+        prompts = self._prepare_prompts(
+            inputs, prompt_key, max_tokens_per_prompt, sampling_params
+        )
 
         # Generate and parse outputs
         return self._generate_with_retries(prompts, sampling_params, max_context_length)
@@ -1390,8 +1446,7 @@ def _determine_dtype(
 
 
 def _prepare_hf_overrides(
-    hf_model_config: "PretrainedConfig",
-    model_id: str,
+    hf_model_config: "PretrainedConfig", model_id: str
 ) -> dict[str, dict[str, str | int | float] | list[str]]:
     """Prepare Hugging Face overrides for vLLM.
 
@@ -1599,7 +1654,9 @@ def _handle_model_load_error(
             "this by setting the `--trust-remote-code` flag."
         ) from error
 
-    if "See stack trace for root cause." in str(error) or "See root cause above." in str(error):
+    if "See stack trace for root cause." in str(
+        error
+    ) or "See root cause above." in str(error):
         msg = f"The model {model_id!r} could not be loaded, but vLLM did not mention exactly what happened. "
         if benchmark_config.verbose:
             msg += (
