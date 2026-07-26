@@ -11,7 +11,6 @@
 """Create the SST5-mini sentiment dataset and upload it to the HF Hub."""
 
 import pandas as pd
-
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
@@ -39,11 +38,6 @@ def main() -> None:
     # Remove samples ending with "…"
     train_df = train_df[train_df.text.map(lambda x: not x.endswith("…"))]
     test_df = test_df[test_df.text.map(lambda x: not x.endswith("…"))]
-
-    # We impose stricter maximum sizes of documents, as many of them are too long.
-    # This is used only inside the pandas .query() string below, so the linter cannot
-    # see the use.
-    max_num_chars = min(MAX_NUM_CHARS_IN_DOCUMENT, 3_500)  # noqa: F841
 
     # Only work with samples where the document is not very large or small
     train_df = train_df.copy()
