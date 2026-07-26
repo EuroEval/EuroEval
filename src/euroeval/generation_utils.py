@@ -275,9 +275,7 @@ def extract_few_shot_examples(
 
 
 def _get_sections_builder(
-    task_group: TaskGroup,
-    dataset_config: "DatasetConfig",
-    use_bits_per_character: bool,
+    task_group: TaskGroup, dataset_config: "DatasetConfig", use_bits_per_character: bool
 ) -> c.Callable[
     [list[dict[str, t.Any]], dict[str, t.Any], c.Callable],
     tuple[list[tuple[str, str]], list[tuple[str, str]]],
@@ -297,11 +295,13 @@ def _get_sections_builder(
         and returns (few_shot_sections, new_sections).
     """
     if task_group == TaskGroup.SEQUENCE_CLASSIFICATION:
-        return lambda few_shot_examples, examples, create_prompt: _build_sequence_classification_sections(
-            few_shot_examples=few_shot_examples,
-            examples=examples,
-            create_prompt=create_prompt,
-            dataset_config=dataset_config,
+        return lambda few_shot_examples, examples, create_prompt: (
+            _build_sequence_classification_sections(
+                few_shot_examples=few_shot_examples,
+                examples=examples,
+                create_prompt=create_prompt,
+                dataset_config=dataset_config,
+            )
         )
     elif task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
         return lambda few_shot_examples, examples, create_prompt: _build_mcq_sections(
@@ -314,11 +314,13 @@ def _get_sections_builder(
     elif task_group == TaskGroup.TEXT_TO_TEXT:
         return _build_text_to_text_sections
     elif task_group == TaskGroup.TOKEN_CLASSIFICATION:
-        return lambda few_shot_examples, examples, create_prompt: _build_token_classification_sections(
-            few_shot_examples=few_shot_examples,
-            examples=examples,
-            create_prompt=create_prompt,
-            dataset_config=dataset_config,
+        return lambda few_shot_examples, examples, create_prompt: (
+            _build_token_classification_sections(
+                few_shot_examples=few_shot_examples,
+                examples=examples,
+                create_prompt=create_prompt,
+                dataset_config=dataset_config,
+            )
         )
     elif task_group == TaskGroup.QUESTION_ANSWERING:
         return _build_question_answering_sections
@@ -344,9 +346,7 @@ def _build_sequence_classification_sections(
     ]
     new_sections = [
         create_prompt(
-            text=text.replace("\n", " ").strip(),
-            label="",
-            labels_str=labels_str,
+            text=text.replace("\n", " ").strip(), label="", labels_str=labels_str
         )
         for text in examples["text"]
     ]
@@ -376,8 +376,7 @@ def _build_mcq_sections(
         ]
         new_sections = [
             create_prompt(
-                text=examples["bare_input"][i].replace("\n", " ").strip(),
-                label="",
+                text=examples["bare_input"][i].replace("\n", " ").strip(), label=""
             )
             for i in range(len(examples["text"]))
         ]
@@ -388,8 +387,7 @@ def _build_mcq_sections(
                 label=str(example["label"]).replace("\n", " ").strip(),
                 labels_str=dataset_config.get_labels_str(
                     labels=extract_multiple_choice_labels(
-                        prompt=example["text"],
-                        candidate_labels=dataset_config.labels,
+                        prompt=example["text"], candidate_labels=dataset_config.labels
                     )
                 ),
             )
@@ -424,9 +422,7 @@ def _build_text_to_text_sections(
         for example in few_shot_examples
     ]
     new_sections = [
-        create_prompt(
-            text=re.sub(r"\n{2,}", "\n", text).strip(), target_text=""
-        )
+        create_prompt(text=re.sub(r"\n{2,}", "\n", text).strip(), target_text="")
         for text in examples["text"]
     ]
     return few_shot_sections, new_sections
@@ -621,8 +617,7 @@ def _build_question_answering_sections(
 
 
 def _create_prompt_creator(
-    dataset_config: "DatasetConfig",
-    generative_type: GenerativeType | None,
+    dataset_config: "DatasetConfig", generative_type: GenerativeType | None
 ) -> c.Callable[..., tuple[str, str]]:
     """Create a function that builds prompts from keyword arguments."""
 
@@ -658,8 +653,7 @@ def _create_prompt_creator(
 
 
 def _add_bare_inputs_for_bpc(
-    examples: dict[str, t.Any],
-    few_shot_examples: list[dict[str, t.Any]],
+    examples: dict[str, t.Any], few_shot_examples: list[dict[str, t.Any]]
 ) -> None:
     """Add bare_input and raw_choices for BPC scoring on MCQ tasks."""
     bare_inputs: list[str] = []
@@ -728,9 +722,10 @@ def _select_chat_template(
     model_config: "ModelConfig",
 ) -> str | None:
     """Select chat template matching dataset language if available."""
-    if not (hasattr(tokeniser, "chat_template") and isinstance(
-        tokeniser.chat_template, dict
-    )):
+    if not (
+        hasattr(tokeniser, "chat_template")
+        and isinstance(tokeniser.chat_template, dict)
+    ):
         return None
 
     language_codes = [language.code for language in dataset_config.languages]
@@ -748,10 +743,7 @@ def _select_chat_template(
 def _build_chat_template_kwargs(model_config: "ModelConfig") -> dict[str, t.Any]:
     """Build chat template kwargs for reasoning effort."""
     if model_config.param in {"low", "medium", "high"}:
-        log_once(
-            f"Set reasoning mode to {model_config.param!r}.",
-            level=logging.DEBUG,
-        )
+        log_once(f"Set reasoning mode to {model_config.param!r}.", level=logging.DEBUG)
         return {"reasoning_effort": model_config.param}
     return {}
 

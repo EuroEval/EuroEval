@@ -875,7 +875,7 @@ def _build_score_matrix(
 
     # Step 2: Compute model-dataset means
     model_dataset_means = _compute_model_dataset_means(
-        model_dataset_lang_raw_scores=model_dataset_lang_raw_scores,
+        model_dataset_lang_raw_scores=model_dataset_lang_raw_scores
     )
 
     # Step 3: Compute dataset statistics

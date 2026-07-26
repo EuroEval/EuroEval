@@ -174,9 +174,7 @@ def generate(
 
 
 def _get_iteration_iterator(
-    dataset: Dataset,
-    batching_preference: BatchingPreference,
-    progress_bar: bool,
+    dataset: Dataset, batching_preference: BatchingPreference, progress_bar: bool
 ) -> c.Iterable:
     """Get the iteration iterator based on batching preference.
 
@@ -240,9 +238,9 @@ def _process_batch(
             The model output cache.
     """
     # Ensure batch is in list format
-    single_sample_batch = (
-        "text" in batch and isinstance(batch["text"], str)
-    ) or ("messages" in batch and isinstance(batch["messages"][0], dict))
+    single_sample_batch = ("text" in batch and isinstance(batch["text"], str)) or (
+        "messages" in batch and isinstance(batch["messages"][0], dict)
+    )
     if single_sample_batch:
         batch = {key: [value] for key, value in batch.items()}
 
@@ -259,15 +257,12 @@ def _process_batch(
         )
         if pred2extracted := dataset_config.prompt_label_mapping:
             extracted_to_predicted = {
-                extracted: predicted
-                for predicted, extracted in pred2extracted.items()
+                extracted: predicted for predicted, extracted in pred2extracted.items()
             }
             model_output.predicted_labels = [
                 extracted_to_predicted.get(label, label).lower()
                 if isinstance(label, str)
-                else [
-                    extracted_to_predicted.get(lbl, lbl).lower() for lbl in label
-                ]
+                else [extracted_to_predicted.get(lbl, lbl).lower() for lbl in label]
                 for label in extracted_labels
             ]
         else:
@@ -282,11 +277,7 @@ def _process_batch(
 
     # Extended logging in debug mode
     if benchmark_config.debug:
-        debug_log(
-            batch=batch,
-            model_output=model_output,
-            dataset_config=dataset_config,
-        )
+        debug_log(batch=batch, model_output=model_output, dataset_config=dataset_config)
 
     cache.add_to_cache(model_inputs=batch, model_output=model_output)
 
@@ -332,9 +323,7 @@ def _process_cached_dataset(
         failed_instances:
             Accumulator for failed instances.
     """
-    model_output = load_cached_model_outputs(
-        cached_dataset=cached_dataset, cache=cache
-    )
+    model_output = load_cached_model_outputs(cached_dataset=cached_dataset, cache=cache)
     if not benchmark_config.use_bits_per_character:
         extracted_labels = model.extract_labels_from_generation(
             input_batch=cached_dataset[:], model_output=model_output
@@ -348,9 +337,7 @@ def _process_cached_dataset(
                 model_output.predicted_labels = [
                     extracted_to_predicted.get(label, label).lower()
                     if isinstance(label, str)
-                    else [
-                        extracted_to_predicted.get(lbl, lbl).lower() for lbl in label
-                    ]
+                    else [extracted_to_predicted.get(lbl, lbl).lower() for lbl in label]
                     for label in extracted_labels
                 ]
             else:
@@ -574,8 +561,7 @@ def generate_single_iteration(
 
     # Extract ground truth labels
     ground_truth = _extract_ground_truth(
-        non_cached_dataset=non_cached_dataset,
-        cached_dataset=cached_dataset,
+        non_cached_dataset=non_cached_dataset, cached_dataset=cached_dataset
     )
 
     # Compute and return final scores

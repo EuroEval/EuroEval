@@ -208,9 +208,7 @@ def _build_euroeval_command(
     return cmd
 
 
-def _setup_euroeval_env(
-    stream_output: bool, token: str | None
-) -> dict[str, str]:
+def _setup_euroeval_env(stream_output: bool, token: str | None) -> dict[str, str]:
     """Set up environment for euroeval subprocess.
 
     Args:
