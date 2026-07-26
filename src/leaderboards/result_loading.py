@@ -99,7 +99,6 @@ def _dedup_by_storage_identity(
     return list(by_identity.values())
 
 
-@cache
 def _sync_results_from_bucket() -> None:
     """Sync the HF results bucket into RESULTS_DIR and back it up.
 
