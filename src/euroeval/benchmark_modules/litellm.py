@@ -525,9 +525,7 @@ class LiteLLMModel(BenchmarkModule):
             return result
 
         # Try error-raising handlers
-        self._handle_fatal_error(
-            error=error, error_msg=error_msg, model_id=model_id
-        )
+        self._handle_fatal_error(error=error, error_msg=error_msg, model_id=model_id)
 
         # Default: raise InvalidBenchmark
         raise InvalidBenchmark(
@@ -535,11 +533,7 @@ class LiteLLMModel(BenchmarkModule):
         ) from error
 
     def _handle_parameter_error(
-        self,
-        error: Exception,
-        error_msg: str,
-        model_id: str,
-        generation_kwargs: dict,
+        self, error: Exception, error_msg: str, model_id: str, generation_kwargs: dict
     ) -> tuple[dict, int] | None:
         """Handle parameter-related errors. Returns (kwargs, wait_time) or None."""
         stop_pattern = re.compile(r"does not support parameters: \[.*'stop'.*\]")
@@ -801,11 +795,7 @@ class LiteLLMModel(BenchmarkModule):
         return None
 
     def _handle_service_error(
-        self,
-        error: Exception,
-        error_msg: str,
-        model_id: str,
-        generation_kwargs: dict,
+        self, error: Exception, error_msg: str, model_id: str, generation_kwargs: dict
     ) -> tuple[dict, int] | None:
         """Handle service-related errors. Returns (kwargs, wait_time) or None."""
         # Service temporarily unavailable
@@ -1719,9 +1709,8 @@ class LiteLLMModel(BenchmarkModule):
             )
             return generation_kwargs
 
-        if (
-            self.benchmark_config.api_base is not None
-            or supports_response_schema(model=self.model_config.model_id)
+        if self.benchmark_config.api_base is not None or supports_response_schema(
+            model=self.model_config.model_id
         ):
             if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
                 tag_names = list(dataset_config.prompt_label_mapping.values())
@@ -1834,10 +1823,7 @@ class LiteLLMModel(BenchmarkModule):
                 for label in self.dataset_config.labels
             ]
             keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (
-                    t.Literal[*localised_labels],
-                    ...,
-                )
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
@@ -1856,7 +1842,9 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["include_reasoning"] = False
 
         # Model-specific parameters
-        generation_kwargs = self._setup_model_params(generation_kwargs=generation_kwargs)
+        generation_kwargs = self._setup_model_params(
+            generation_kwargs=generation_kwargs
+        )
 
         # Test run with retries
         test_input: c.Sequence[litellm.AllMessageValues] | str

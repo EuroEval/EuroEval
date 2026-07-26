@@ -75,8 +75,7 @@ def _extract_classification_examples(
                 continue
             example = possible_examples.select(range(1))[0]
             assert isinstance(example, dict), (
-                f"Expected `example` to be a dict, but got "
-                f"{type(example)} instead."
+                f"Expected `example` to be a dict, but got {type(example)} instead."
             )
             few_shot_examples.append(example)
             shuffled_train = shuffled_train.filter(
@@ -88,8 +87,7 @@ def _extract_classification_examples(
         while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
             example = shuffled_train.select(range(1))[0]
             assert isinstance(example, dict), (
-                f"Expected `example` to be a dict, but got "
-                f"{type(example)} instead."
+                f"Expected `example` to be a dict, but got {type(example)} instead."
             )
             few_shot_examples.append(example)
             shuffled_train = shuffled_train.filter(
@@ -110,16 +108,12 @@ def _extract_text_to_text_examples(
             f"Expected `example` to be a dict, but got {type(example)} instead."
         )
         few_shot_examples.append(example)
-        shuffled_train = shuffled_train.filter(
-            lambda x: x["text"] != example["text"]
-        )
+        shuffled_train = shuffled_train.filter(lambda x: x["text"] != example["text"])
     return few_shot_examples
 
 
 def _extract_token_classification_examples(
-    shuffled_train: Dataset,
-    num_few_shots: int,
-    dataset_config: "DatasetConfig",
+    shuffled_train: Dataset, num_few_shots: int, dataset_config: "DatasetConfig"
 ) -> list[dict[str, t.Any]]:
     """Extract few-shot examples for token classification task group."""
     few_shot_examples: list[dict[str, t.Any]] = list()
@@ -153,9 +147,7 @@ def _extract_token_classification_examples(
 
 
 def _extract_question_answering_examples(
-    shuffled_train: Dataset,
-    num_few_shots: int,
-    random_seed: int,
+    shuffled_train: Dataset, num_few_shots: int, random_seed: int
 ) -> list[dict[str, t.Any]]:
     """Extract few-shot examples for question answering task group."""
     # Locate the maximum number of tokens that constitutes a short example
