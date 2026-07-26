@@ -148,6 +148,58 @@ def _compute_rank_scores(
     return all_rank_scores
 
 
+def _aggregate_scores_to_categories(
+    dataset_scores: dict[str, float], configs: dict[str, dict[str, list[str]]]
+) -> tuple[dict[str, float], float | None]:
+    """Aggregate per-dataset scores up to language and overall mean rank scores.
+
+    Hierarchy: dataset -> task -> language -> overall.
+
+    Args:
+        dataset_scores:
+            dataset -> score mapping for this model.
+        configs:
+            Per-language task -> dataset mappings.
+
+    Returns:
+        A tuple of (language_scores, overall_score). Language scores is a dict
+        mapping language name to mean rank score. Overall score is the mean
+        across languages. Returns ({}, None) if there is no data.
+    """
+    lang_task_scores: dict[str, dict[str, list[float]]] = {}
+
+    for ds, score in dataset_scores.items():
+        task = None
+        found_lang = None
+        for lang_name, config in configs.items():
+            for task_name, task_ds in config.items():
+                if ds in task_ds:
+                    task = task_name
+                    found_lang = lang_name
+                    break
+            if task:
+                break
+        if task and task not in ORTHOGONAL_TASKS and found_lang:
+            lang_task_scores.setdefault(found_lang, {}).setdefault(task, []).append(
+                score
+            )
+
+    if not lang_task_scores:
+        return {}, None
+
+    language_scores: dict[str, float] = {}
+    lang_means = []
+    for lang, task_scores in lang_task_scores.items():
+        task_means = [np.mean(scores) for scores in task_scores.values()]
+        if task_means:
+            lang_mean = float(np.mean(task_means))
+            language_scores[lang] = lang_mean
+            lang_means.append(lang_mean)
+
+    overall = float(np.mean(lang_means)) if lang_means else None
+    return language_scores, overall
+
+
 def _aggregate_bootstrap_sample(
     model_id: str,
     categories: tuple[str, ...],
@@ -340,58 +392,6 @@ def bootstrap_rank_scores(
                     bootstrap_scores[model_id][category][key].append(score)
 
     return _convert_bootstrap_scores_to_arrays(bootstrap_scores)
-
-
-def _aggregate_scores_to_categories(
-    dataset_scores: dict[str, float], configs: dict[str, dict[str, list[str]]]
-) -> tuple[dict[str, float], float | None]:
-    """Aggregate per-dataset scores up to language and overall mean rank scores.
-
-    Hierarchy: dataset -> task -> language -> overall.
-
-    Args:
-        dataset_scores:
-            dataset -> score mapping for this model.
-        configs:
-            Per-language task -> dataset mappings.
-
-    Returns:
-        A tuple of (language_scores, overall_score). Language scores is a dict
-        mapping language name to mean rank score. Overall score is the mean
-        across languages. Returns ({}, None) if there is no data.
-    """
-    lang_task_scores: dict[str, dict[str, list[float]]] = {}
-
-    for ds, score in dataset_scores.items():
-        task = None
-        found_lang = None
-        for lang_name, config in configs.items():
-            for task_name, task_ds in config.items():
-                if ds in task_ds:
-                    task = task_name
-                    found_lang = lang_name
-                    break
-            if task:
-                break
-        if task and task not in ORTHOGONAL_TASKS and found_lang:
-            lang_task_scores.setdefault(found_lang, {}).setdefault(task, []).append(
-                score
-            )
-
-    if not lang_task_scores:
-        return {}, None
-
-    language_scores: dict[str, float] = {}
-    lang_means = []
-    for lang, task_scores in lang_task_scores.items():
-        task_means = [np.mean(scores) for scores in task_scores.values()]
-        if task_means:
-            lang_mean = float(np.mean(task_means))
-            language_scores[lang] = lang_mean
-            lang_means.append(lang_mean)
-
-    overall = float(np.mean(lang_means)) if lang_means else None
-    return language_scores, overall
 
 
 def bootstrap_confidence_intervals(
