@@ -311,12 +311,18 @@ def merge_results(results_file: Path) -> int:
                         identity = identity_from_eee_record(record)
                         if identity not in existing:
                             existing[identity] = record
-                        # Note: we keep the existing record, tree records will
-                        # override if newer (Phase 2)
-                    except (json.JSONDecodeError, ValueError, KeyError):
-                        pass  # Skip invalid lines
+                        else:
+                            # Deduplicate: keep newer record (tree records in Phase 2
+                            # will override via dedup_newer_record)
+                            existing[identity] = dedup_newer_record(
+                                existing[identity], record
+                            )
+                    except (json.JSONDecodeError, ValueError, KeyError, TypeError):
+                        pass  # Skip invalid lines (TypeError from normalise_bool_value)
         except Exception as e:
-            logger.warning("Could not read existing JSONL file: %s", e)
+            # Fail fast: don't overwrite JSONL if we can't read existing records
+            logger.error("Could not read existing JSONL file: %s", e)
+            return 0
 
     # Remove empty JSON files before processing
     remove_empty_json_files(RESULTS_DIR)
