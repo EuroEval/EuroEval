@@ -19,6 +19,104 @@ from huggingface_hub import HfApi
 from sklearn.utils import resample
 
 
+def main() -> None:
+    """Create the Hungarian NER dataset SzegedNER and upload it."""
+    train_df, val_df, test_df = download_dataset()
+
+    column_to_keep = ["tokens", "labels"]
+    train_df = train_df[column_to_keep]
+    val_df = val_df[column_to_keep]
+    test_df = test_df[column_to_keep]
+
+    # Make splits
+    train_size = 1024
+    val_size = 256
+    test_size = 2048
+
+    final_train_df = train_df.sample(n=train_size, random_state=4242)
+    remaining_train_df = train_df[~train_df.index.isin(final_train_df.index)]
+    assert isinstance(remaining_train_df, pd.DataFrame)
+
+    final_val_df = val_df.sample(n=val_size, random_state=4242)
+
+    n_missing_test_samples = test_size - len(test_df)
+    additional_test_samples = remaining_train_df.sample(
+        n=n_missing_test_samples, random_state=4242
+    )
+    final_test_df = pd.concat([test_df, additional_test_samples], ignore_index=True)
+
+    # Reset the index
+    final_train_df = final_train_df.reset_index(drop=True)
+    final_val_df = final_val_df.reset_index(drop=True)
+    final_test_df = final_test_df.reset_index(drop=True)
+
+    assert isinstance(final_train_df, pd.DataFrame)
+    assert isinstance(final_val_df, pd.DataFrame)
+    assert isinstance(final_test_df, pd.DataFrame)
+
+    # Create dataset dictionary
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_pandas(final_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(final_test_df, split=Split.TEST),
+        }
+    )
+
+    # Create dataset ID
+    dataset_id = "EuroEval/szeged-ner-mini"
+
+    # Remove the dataset from Hugging Face Hub if it already exists
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+
+    # Push the dataset to the Hugging Face Hub
+    dataset.push_to_hub(dataset_id, private=True)
+
+
+def download_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Download the SzegedNER dataset.
+
+    Download both business and criminal subsets and concatenate them by split.
+
+    Returns:
+        A tuple of DataFrames for the training, validation, and test splits.
+    """
+    base_urls = {
+        "business": (
+            "https://huggingface.co/datasets/ficsort/SzegedNER/"
+            "resolve/main/data/business"
+        ),
+        "criminal": (
+            "https://huggingface.co/datasets/ficsort/SzegedNER/"
+            "resolve/main/data/criminal"
+        ),
+    }
+    # Types of datasets to download
+    splits = ["train", "validation", "test"]
+
+    # Iterate through base URLs and dataset types to download data
+    datasets = {}
+    for dataset_name, base_url in base_urls.items():
+        dataset = {}
+        for split in splits:
+            df = pd.read_csv(f"{base_url}/{split}.csv")
+            dataset[split] = _process_df(df=df, dataset_name=dataset_name)
+        datasets[dataset_name] = dataset
+
+    # Merge splits into a single dataset
+    train_df = pd.concat([datasets["business"]["train"], datasets["criminal"]["train"]])
+    val_df = pd.concat(
+        [datasets["business"]["validation"], datasets["criminal"]["validation"]]
+    )
+    test_df = pd.concat([datasets["business"]["test"], datasets["criminal"]["test"]])
+
+    train_df = _create_uniform_dataset_distribution(df=train_df)
+    val_df = _create_uniform_dataset_distribution(df=val_df)
+    test_df = _create_uniform_dataset_distribution(df=test_df)
+
+    return train_df, val_df, test_df
+
+
 def _process_df(df: pd.DataFrame, dataset_name: str) -> pd.DataFrame:
     """Process the dataframe.
 
@@ -78,104 +176,6 @@ def _create_uniform_dataset_distribution(
     )
 
     return balanced_df
-
-
-def download_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Download the SzegedNER dataset.
-
-    Download both business and criminal subsets and concatenate them by split.
-
-    Returns:
-        A tuple of DataFrames for the training, validation, and test splits.
-    """
-    base_urls = {
-        "business": (
-            "https://huggingface.co/datasets/ficsort/SzegedNER/"
-            "resolve/main/data/business"
-        ),
-        "criminal": (
-            "https://huggingface.co/datasets/ficsort/SzegedNER/"
-            "resolve/main/data/criminal"
-        ),
-    }
-    # Types of datasets to download
-    splits = ["train", "validation", "test"]
-
-    # Iterate through base URLs and dataset types to download data
-    datasets = {}
-    for dataset_name, base_url in base_urls.items():
-        dataset = {}
-        for split in splits:
-            df = pd.read_csv(f"{base_url}/{split}.csv")
-            dataset[split] = _process_df(df=df, dataset_name=dataset_name)
-        datasets[dataset_name] = dataset
-
-    # Merge splits into a single dataset
-    train_df = pd.concat([datasets["business"]["train"], datasets["criminal"]["train"]])
-    val_df = pd.concat(
-        [datasets["business"]["validation"], datasets["criminal"]["validation"]]
-    )
-    test_df = pd.concat([datasets["business"]["test"], datasets["criminal"]["test"]])
-
-    train_df = _create_uniform_dataset_distribution(df=train_df)
-    val_df = _create_uniform_dataset_distribution(df=val_df)
-    test_df = _create_uniform_dataset_distribution(df=test_df)
-
-    return train_df, val_df, test_df
-
-
-def main() -> None:
-    """Create the Hungarian NER dataset SzegedNER and upload it."""
-    train_df, val_df, test_df = download_dataset()
-
-    column_to_keep = ["tokens", "labels"]
-    train_df = train_df[column_to_keep]
-    val_df = val_df[column_to_keep]
-    test_df = test_df[column_to_keep]
-
-    # Make splits
-    train_size = 1024
-    val_size = 256
-    test_size = 2048
-
-    final_train_df = train_df.sample(n=train_size, random_state=4242)
-    remaining_train_df = train_df[~train_df.index.isin(final_train_df.index)]
-    assert isinstance(remaining_train_df, pd.DataFrame)
-
-    final_val_df = val_df.sample(n=val_size, random_state=4242)
-
-    n_missing_test_samples = test_size - len(test_df)
-    additional_test_samples = remaining_train_df.sample(
-        n=n_missing_test_samples, random_state=4242
-    )
-    final_test_df = pd.concat([test_df, additional_test_samples], ignore_index=True)
-
-    # Reset the index
-    final_train_df = final_train_df.reset_index(drop=True)
-    final_val_df = final_val_df.reset_index(drop=True)
-    final_test_df = final_test_df.reset_index(drop=True)
-
-    assert isinstance(final_train_df, pd.DataFrame)
-    assert isinstance(final_val_df, pd.DataFrame)
-    assert isinstance(final_test_df, pd.DataFrame)
-
-    # Create dataset dictionary
-    dataset = DatasetDict(
-        {
-            "train": Dataset.from_pandas(final_train_df, split=Split.TRAIN),
-            "val": Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
-            "test": Dataset.from_pandas(final_test_df, split=Split.TEST),
-        }
-    )
-
-    # Create dataset ID
-    dataset_id = "EuroEval/szeged-ner-mini"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
-    # Push the dataset to the Hugging Face Hub
-    dataset.push_to_hub(dataset_id, private=True)
 
 
 if __name__ == "__main__":

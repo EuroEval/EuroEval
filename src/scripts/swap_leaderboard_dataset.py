@@ -616,7 +616,7 @@ def validate_gh_installed() -> None:
             If the Github CLI wasn't found.
     """
     try:
-        subprocess.run(args=["gh", "version"], check=True, capture_output=True)
+        subprocess.run(["gh", "version"], check=True, capture_output=True)
     except FileNotFoundError:
         raise click.ClickException(
             "GitHub CLI not found; install it from https://cli.github.com/"
@@ -1519,7 +1519,7 @@ def _update_changelog(
     # Insert a blank line after "### Changed", then the entry
     lines.insert(changed_idx + 1, "")
     lines.insert(changed_idx + 2, entry)
-    changelog_path.write_text(data="\n".join(lines), encoding="utf-8")
+    changelog_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def find_config_file(dataset_id: str) -> Path:
@@ -1613,7 +1613,7 @@ def set_config_officiality(path: Path, dataset_id: str, official: bool) -> None:
         if insert_at < len(lines) and lines[insert_at].strip() == "":
             insert_at += 1
     lines[insert_at:insert_at] = block + [""]
-    path.write_text(data="\n".join(lines), encoding="utf-8")
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def set_doc_officiality(path: Path, dataset_id: str, official: bool) -> None:
@@ -1639,7 +1639,7 @@ def set_doc_officiality(path: Path, dataset_id: str, official: bool) -> None:
     task_start, task_end = _doc_task_span(lines=lines, heading_idx=heading_idx)
     reordered = _partition_doc_subsections(section=lines[task_start:task_end])
     lines[task_start:task_end] = reordered
-    path.write_text(data="\n".join(lines), encoding="utf-8")
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def _config_block_span(

@@ -49,75 +49,6 @@ load_dotenv()
 # Constants for leaderboard generation
 
 
-def _maybe_refresh_core_models() -> None:
-    """Prompt the user to refresh the core-model list if it's stale.
-
-    Reads `last_updated` from `core_models.yaml`. If it's missing or older
-    than `CORE_MODELS_STALE_DAYS`, asks the user whether to invoke the
-    updater now. Skipped silently when stdin isn't a TTY (CI, piped
-    invocations).
-    """
-    if not sys.stdin.isatty():
-        return
-    try:
-        with CORE_MODELS_CONFIG.open("r") as f:
-            config = safe_load(f) or {}
-    except OSError as exc:
-        logger.warning(f"Core models config unreadable: {exc}")
-        return
-
-    last_updated_raw = config.get("last_updated")
-    if last_updated_raw is None:
-        prompt = "Core model list has never been generated. Refresh now?"
-    else:
-        if isinstance(last_updated_raw, dt.date):
-            last = last_updated_raw
-        else:
-            try:
-                last = dt.date.fromisoformat(str(last_updated_raw))
-            except ValueError:
-                logger.warning(
-                    f"Cannot parse last_updated={last_updated_raw!r}; "
-                    "treating as stale."
-                )
-                last = None
-        if last is not None:
-            age_days = (dt.date.today() - last).days
-            if age_days < CORE_MODELS_STALE_DAYS:
-                return
-            prompt = f"Core model list is {age_days} days old. Refresh now?"
-        else:
-            prompt = "Core model list timestamp is unparseable. Refresh now?"
-
-    if not click.confirm(prompt, default=False):
-        return
-
-    # Spawn as a script. `process_results` already ran above, and the
-    # updater reuses the same processed cache.
-    script_path = Path(__file__).resolve().parent / "update_core_models.py"
-    try:
-        subprocess.run(args=[sys.executable, str(script_path)], check=True)
-    except subprocess.CalledProcessError as exc:
-        logger.warning(f"update_core_models failed (exit {exc.returncode}).")
-
-
-def generate_task_metrics() -> None:
-    """Generate the task-metrics JSON file."""
-    output_path: Path = (
-        REPO_ROOT / "src" / "frontend" / "generated" / "task-metrics.json"
-    )
-    payload: dict[str, list[str]] = {}
-    for task in LEADERBOARD_TASKS:
-        primary, secondary = task_metric_pretty_names(task)
-        payload[task] = [primary] + ([secondary] if secondary is not None else [])
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_path.open(mode="w") as f:
-        json.dump(obj=payload, fp=f, indent=2, sort_keys=True)
-        f.write("\n")
-    logger.info(f"Wrote {output_path.relative_to(REPO_ROOT)}")
-
-
 @click.command()
 @click.option(
     "--categories",
@@ -225,6 +156,75 @@ def main(
         backup_results()
     except OSError as exc:  # pCloud unavailable / disk full / etc.
         logger.warning(f"Results backup failed: {exc}")
+
+
+def _maybe_refresh_core_models() -> None:
+    """Prompt the user to refresh the core-model list if it's stale.
+
+    Reads `last_updated` from `core_models.yaml`. If it's missing or older
+    than `CORE_MODELS_STALE_DAYS`, asks the user whether to invoke the
+    updater now. Skipped silently when stdin isn't a TTY (CI, piped
+    invocations).
+    """
+    if not sys.stdin.isatty():
+        return
+    try:
+        with CORE_MODELS_CONFIG.open("r") as f:
+            config = safe_load(f) or {}
+    except OSError as exc:
+        logger.warning(f"Core models config unreadable: {exc}")
+        return
+
+    last_updated_raw = config.get("last_updated")
+    if last_updated_raw is None:
+        prompt = "Core model list has never been generated. Refresh now?"
+    else:
+        if isinstance(last_updated_raw, dt.date):
+            last = last_updated_raw
+        else:
+            try:
+                last = dt.date.fromisoformat(str(last_updated_raw))
+            except ValueError:
+                logger.warning(
+                    f"Cannot parse last_updated={last_updated_raw!r}; "
+                    "treating as stale."
+                )
+                last = None
+        if last is not None:
+            age_days = (dt.date.today() - last).days
+            if age_days < CORE_MODELS_STALE_DAYS:
+                return
+            prompt = f"Core model list is {age_days} days old. Refresh now?"
+        else:
+            prompt = "Core model list timestamp is unparseable. Refresh now?"
+
+    if not click.confirm(prompt, default=False):
+        return
+
+    # Spawn as a script. `process_results` already ran above, and the
+    # updater reuses the same processed cache.
+    script_path = Path(__file__).resolve().parent / "update_core_models.py"
+    try:
+        subprocess.run([sys.executable, str(script_path)], check=True)
+    except subprocess.CalledProcessError as exc:
+        logger.warning(f"update_core_models failed (exit {exc.returncode}).")
+
+
+def generate_task_metrics() -> None:
+    """Generate the task-metrics JSON file."""
+    output_path: Path = (
+        REPO_ROOT / "src" / "frontend" / "generated" / "task-metrics.json"
+    )
+    payload: dict[str, list[str]] = {}
+    for task in LEADERBOARD_TASKS:
+        primary, secondary = task_metric_pretty_names(task)
+        payload[task] = [primary] + ([secondary] if secondary is not None else [])
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open(mode="w") as f:
+        json.dump(payload, f, indent=2, sort_keys=True)
+        f.write("\n")
+    logger.info(f"Wrote {output_path.relative_to(REPO_ROOT)}")
 
 
 if __name__ == "__main__":

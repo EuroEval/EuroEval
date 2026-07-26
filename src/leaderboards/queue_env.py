@@ -55,40 +55,6 @@ def load_dotenv_into_environ(env_path: Path) -> None:
         logger.warning(f"Could not read {env_path}: {e}")
 
 
-def persist_env_var(env_path: Path, name: str, value: str) -> None:
-    """Write ``NAME=VALUE`` to ``env_path``, replacing any prior entry.
-
-    Args:
-        env_path:
-            The dotenv file to update.
-        name:
-            The env var name to persist.
-        value:
-            The value to associate with ``name``.
-    """
-    try:
-        existing = ""
-        if env_path.is_file():
-            existing = env_path.read_text(encoding="utf-8")
-        lines = existing.splitlines()
-        replaced = False
-        for i, raw_line in enumerate(lines):
-            stripped = raw_line.strip()
-            if not stripped or stripped.startswith("#") or "=" not in stripped:
-                continue
-            key, _, _ = stripped.partition("=")
-            if key.strip() == name:
-                lines[i] = f"{name}={value}"
-                replaced = True
-                break
-        if not replaced:
-            lines.append(f"{name}={value}")
-        env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        logger.info(f"Saved {name} to {env_path}.")
-    except OSError as e:
-        logger.warning(f"Could not persist {name} to {env_path}: {e}")
-
-
 def prompt_and_persist_env_var(
     env_path: Path, name: str, prompt_text: str, secret: bool = False
 ) -> str:
@@ -198,6 +164,40 @@ def resolve_vm_id(env_path: Path) -> str:
             f"Using ephemeral vm-id {generated!r}."
         )
     return generated
+
+
+def persist_env_var(env_path: Path, name: str, value: str) -> None:
+    """Write ``NAME=VALUE`` to ``env_path``, replacing any prior entry.
+
+    Args:
+        env_path:
+            The dotenv file to update.
+        name:
+            The env var name to persist.
+        value:
+            The value to associate with ``name``.
+    """
+    try:
+        existing = ""
+        if env_path.is_file():
+            existing = env_path.read_text(encoding="utf-8")
+        lines = existing.splitlines()
+        replaced = False
+        for i, raw_line in enumerate(lines):
+            stripped = raw_line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+            key, _, _ = stripped.partition("=")
+            if key.strip() == name:
+                lines[i] = f"{name}={value}"
+                replaced = True
+                break
+        if not replaced:
+            lines.append(f"{name}={value}")
+        env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        logger.info(f"Saved {name} to {env_path}.")
+    except OSError as e:
+        logger.warning(f"Could not persist {name} to {env_path}: {e}")
 
 
 def resolve_assignee_from_token() -> str:

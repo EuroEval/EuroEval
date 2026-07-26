@@ -49,26 +49,60 @@ class CandidateAnswers(BaseModel):
 LABELS = ["a", "b", "c", "d"]
 
 
-def drop_duplicate_idioms(dataset: Dataset) -> Dataset:
-    """Drop duplicate idioms from the dataset.
+def main() -> None:
+    """Create the Idioms-no knowledge dataset."""
+    # Define the base download URL
+    repo_id = "Sprakbanken/Norwegian_idioms"
 
-    Args:
-        dataset:
-            The dataset to drop duplicates from.
+    # Download the dataset (only the test split is available)
+    dataset = load_dataset(path=repo_id, split="test")
+    assert isinstance(dataset, Dataset)
 
-    Returns:
-        The dataset without duplicates.
-    """
-    df = dataset.to_pandas()
-    assert isinstance(df, pd.DataFrame)
+    dataset = drop_duplicate_idioms(dataset=dataset)
+    assert isinstance(dataset, Dataset)
 
-    # Strip all leading and trailing whitespace
-    df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
+    # Build the knowledge dataset using a language model
+    df = build_dataset_with_llm(dataset=dataset)
 
-    # Drop duplicates based on idiom_start
-    df = df.drop_duplicates(subset="idiom_start")
+    # Create splits
+    val_size = 256
+    test_size = 2048
 
-    return Dataset.from_pandas(df)
+    val_df = df.sample(val_size, random_state=42)
+    df = df.drop(val_df.index.tolist())
+
+    test_df = df.sample(test_size, random_state=42)
+    df = df.drop(test_df.index.tolist())
+
+    train_df = df
+    assert len(train_df) > 800, "The training set should have at least 800 samples."
+
+    # Reset the index
+    train_df = train_df.reset_index(drop=True)
+    val_df = val_df.reset_index(drop=True)
+    test_df = test_df.reset_index(drop=True)
+
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+
+    # Collect datasets in a dataset dictionary
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
+    )
+
+    # Create dataset ID
+    dataset_id = "EuroEval/idioms-no"
+
+    # Remove the dataset from Hugging Face Hub if it already exists
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+
+    # Push the dataset to the Hugging Face Hub
+    dataset.push_to_hub(dataset_id, private=True)
 
 
 def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
@@ -197,60 +231,26 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
     return df_llm
 
 
-def main() -> None:
-    """Create the Idioms-no knowledge dataset."""
-    # Define the base download URL
-    repo_id = "Sprakbanken/Norwegian_idioms"
+def drop_duplicate_idioms(dataset: Dataset) -> Dataset:
+    """Drop duplicate idioms from the dataset.
 
-    # Download the dataset (only the test split is available)
-    dataset = load_dataset(path=repo_id, split="test")
-    assert isinstance(dataset, Dataset)
+    Args:
+        dataset:
+            The dataset to drop duplicates from.
 
-    dataset = drop_duplicate_idioms(dataset=dataset)
-    assert isinstance(dataset, Dataset)
+    Returns:
+        The dataset without duplicates.
+    """
+    df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
 
-    # Build the knowledge dataset using a language model
-    df = build_dataset_with_llm(dataset=dataset)
+    # Strip all leading and trailing whitespace
+    df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
 
-    # Create splits
-    val_size = 256
-    test_size = 2048
+    # Drop duplicates based on idiom_start
+    df = df.drop_duplicates(subset="idiom_start")
 
-    val_df = df.sample(val_size, random_state=42)
-    df = df.drop(val_df.index.tolist())
-
-    test_df = df.sample(test_size, random_state=42)
-    df = df.drop(test_df.index.tolist())
-
-    train_df = df
-    assert len(train_df) > 800, "The training set should have at least 800 samples."
-
-    # Reset the index
-    train_df = train_df.reset_index(drop=True)
-    val_df = val_df.reset_index(drop=True)
-    test_df = test_df.reset_index(drop=True)
-
-    assert isinstance(train_df, pd.DataFrame)
-    assert isinstance(val_df, pd.DataFrame)
-    assert isinstance(test_df, pd.DataFrame)
-
-    # Collect datasets in a dataset dictionary
-    dataset = DatasetDict(
-        {
-            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
-            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            "test": Dataset.from_pandas(test_df, split=Split.TEST),
-        }
-    )
-
-    # Create dataset ID
-    dataset_id = "EuroEval/idioms-no"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
-    # Push the dataset to the Hugging Face Hub
-    dataset.push_to_hub(dataset_id, private=True)
+    return Dataset.from_pandas(df)
 
 
 if __name__ == "__main__":

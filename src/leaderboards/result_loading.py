@@ -16,63 +16,6 @@ from .result_identity import dedup_newer_record, identity_from_eee_record
 logger = logging.getLogger(__name__)
 
 
-def _sync_results_from_bucket() -> None:
-    """Sync the HF results bucket into RESULTS_DIR and back it up.
-
-    Performs an incremental fetch of the single EuroEval/results bucket into
-    RESULTS_DIR (downloading only files not already present locally) and creates
-    a backup of the synced per-record JSON files.
-
-    Raises:
-        FileNotFoundError:
-            If sync fails and no local files exist.
-    """
-    download_missing_bucket_files()
-
-    file_count = len(list(RESULTS_DIR.glob("*/*.json")))
-    if file_count == 0:
-        raise FileNotFoundError(
-            "No results available. Sync failed and no local cache exists."
-        )
-    logger.info(f"Synced {file_count:,} result files to {RESULTS_DIR}.")
-
-    backup_path = backup_results()
-    if backup_path:
-        logger.info(f"Backup created at {backup_path}.")
-
-
-def _dedup_by_storage_identity(
-    records: list[dict[str, t.Any]],
-) -> list[dict[str, t.Any]]:
-    """Deduplicate records by canonical storage identity.
-
-    Groups records by ``(model_id, dataset, validation_split, few_shot)`` and
-    keeps only the newest record per identity using
-    :func:`.result_identity.dedup_newer_record`.
-
-    Args:
-        records:
-            List of EEE-format records, potentially with duplicates.
-
-    Returns:
-        Deduplicated list with one record per unique storage identity.
-    """
-    # Group by identity
-    by_identity: dict[tuple[str, str, bool | None, bool | None], dict[str, t.Any]] = {}
-
-    for record in records:
-        identity = identity_from_eee_record(record=record)
-        existing = by_identity.get(identity)
-        if existing is None:
-            by_identity[identity] = record
-        else:
-            by_identity[identity] = dedup_newer_record(
-                record_a=existing, record_b=record
-            )
-
-    return list(by_identity.values())
-
-
 @cache
 def load_raw_results() -> list[dict[str, t.Any]]:
     """Load all EEE-format results from the results directory.
@@ -122,3 +65,61 @@ def load_raw_results() -> list[dict[str, t.Any]]:
             raise ValueError(f"raw results record {idx:,} is not an EEE-format record.")
 
     return records
+
+
+def _dedup_by_storage_identity(
+    records: list[dict[str, t.Any]],
+) -> list[dict[str, t.Any]]:
+    """Deduplicate records by canonical storage identity.
+
+    Groups records by ``(model_id, dataset, validation_split, few_shot)`` and
+    keeps only the newest record per identity using
+    :func:`.result_identity.dedup_newer_record`.
+
+    Args:
+        records:
+            List of EEE-format records, potentially with duplicates.
+
+    Returns:
+        Deduplicated list with one record per unique storage identity.
+    """
+    # Group by identity
+    by_identity: dict[tuple[str, str, bool | None, bool | None], dict[str, t.Any]] = {}
+
+    for record in records:
+        identity = identity_from_eee_record(record=record)
+        existing = by_identity.get(identity)
+        if existing is None:
+            by_identity[identity] = record
+        else:
+            by_identity[identity] = dedup_newer_record(
+                record_a=existing, record_b=record
+            )
+
+    return list(by_identity.values())
+
+
+@cache
+def _sync_results_from_bucket() -> None:
+    """Sync the HF results bucket into RESULTS_DIR and back it up.
+
+    Performs an incremental fetch of the single EuroEval/results bucket into
+    RESULTS_DIR (downloading only files not already present locally) and creates
+    a backup of the synced per-record JSON files.
+
+    Raises:
+        FileNotFoundError:
+            If sync fails and no local files exist.
+    """
+    download_missing_bucket_files()
+
+    file_count = len(list(RESULTS_DIR.glob("*/*.json")))
+    if file_count == 0:
+        raise FileNotFoundError(
+            "No results available. Sync failed and no local cache exists."
+        )
+    logger.info(f"Synced {file_count:,} result files to {RESULTS_DIR}.")
+
+    backup_path = backup_results()
+    if backup_path:
+        logger.info(f"Backup created at {backup_path}.")

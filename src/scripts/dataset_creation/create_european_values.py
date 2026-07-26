@@ -106,6 +106,84 @@ QUESTIONS_TO_INCLUDE = [
 ]
 
 
+def main() -> None:
+    """Create the European values dataset and upload it to the HF Hub."""
+    disable_progress_bars()
+    disable_caching()
+
+    api = HfApi()
+    vanilla_dataset_id = "EuropeanValuesProject/za7505"
+    situational_dataset_id = "EuropeanValuesProject/za7505-situational"
+    completions_dataset_id = "EuropeanValuesProject/za7505-completions"
+
+    subset_mapping: dict[str, str] = {
+        "da": "da-dk",
+        "no": "no-no",
+        "sv": "sv-se",
+        "is": "is-is",
+        "de": "de-de",
+        "nl": "nl-nl",
+        "en": "en-raw",
+        "fr": "fr-fr",
+        "it": "it-it",
+        "es": "es-es",
+        "pl": "pl-pl",
+        "pt": "pt-pt",
+        "fi": "fi-fi",
+        "et": "et-ee",
+    }
+    no_yes_mapping: dict[str, dict[str, str]] = {
+        "da": {"0": "Nej", "1": "Ja"},
+        "no": {"0": "Nei", "1": "Ja"},
+        "sv": {"0": "Nej", "1": "Ja"},
+        "is": {"0": "Nei", "1": "Já"},
+        "de": {"0": "Nein", "1": "Ja"},
+        "nl": {"0": "Nee", "1": "Ja"},
+        "en": {"0": "No", "1": "Yes"},
+        "fr": {"0": "Non", "1": "Oui"},
+        "it": {"0": "No", "1": "Sì"},
+        "es": {"0": "No", "1": "Sí"},
+        "pl": {"0": "Nie", "1": "Tak"},
+        "pt": {"0": "Não", "1": "Sim"},
+        "fi": {"0": "Ei", "1": "Kyllä"},
+        "et": {"0": "Ei", "1": "Jah"},
+    }
+    sentence_completion_mapping: dict[str, str] = {
+        "da": "Færdiggør følgende sætning",
+        "no": "Fullfør følgende setning",
+        "sv": "Fyll i följande mening",
+        "is": "Ljúktu við eftirfarandi setningu",
+        "de": "Vervollständige den folgenden Satz",
+        "nl": "Voltooi de volgende zin",
+        "en": "Complete the following sentence",
+        "fr": "Complétez la phrase suivante",
+        "it": "Completa la seguente frase",
+        "es": "Completa la siguiente frase",
+        "pl": "Uzupełnij następujące zdanie",
+        "pt": "Complete a seguinte frase",
+        "fi": "Täydennä seuraava lause",
+        "et": "Täiendage järgmine lause",
+    }
+
+    dataset_configs = [
+        (vanilla_dataset_id, "EuroEval/european-values-{language}"),
+        (situational_dataset_id, "EuroEval/european-values-situational-{language}"),
+        (completions_dataset_id, "EuroEval/european-values-completions-{language}"),
+    ]
+
+    for dataset_id, new_dataset_id in dataset_configs:
+        for language in tqdm(iterable=LANGUAGES, desc="Generating datasets"):
+            _process_language(
+                language=language,
+                dataset_id=dataset_id,
+                new_dataset_id=new_dataset_id,
+                subset_mapping=subset_mapping,
+                no_yes_mapping=no_yes_mapping,
+                sentence_completion_mapping=sentence_completion_mapping,
+                api=api,
+            )
+
+
 def _process_language(
     language: str,
     dataset_id: str,
@@ -200,84 +278,6 @@ def _process_language(
     )
     dataset.push_to_hub(new_dataset_id.format(language=language), private=True)
     return True
-
-
-def main() -> None:
-    """Create the European values dataset and upload it to the HF Hub."""
-    disable_progress_bars()
-    disable_caching()
-
-    api = HfApi()
-    vanilla_dataset_id = "EuropeanValuesProject/za7505"
-    situational_dataset_id = "EuropeanValuesProject/za7505-situational"
-    completions_dataset_id = "EuropeanValuesProject/za7505-completions"
-
-    subset_mapping: dict[str, str] = {
-        "da": "da-dk",
-        "no": "no-no",
-        "sv": "sv-se",
-        "is": "is-is",
-        "de": "de-de",
-        "nl": "nl-nl",
-        "en": "en-raw",
-        "fr": "fr-fr",
-        "it": "it-it",
-        "es": "es-es",
-        "pl": "pl-pl",
-        "pt": "pt-pt",
-        "fi": "fi-fi",
-        "et": "et-ee",
-    }
-    no_yes_mapping: dict[str, dict[str, str]] = {
-        "da": {"0": "Nej", "1": "Ja"},
-        "no": {"0": "Nei", "1": "Ja"},
-        "sv": {"0": "Nej", "1": "Ja"},
-        "is": {"0": "Nei", "1": "Já"},
-        "de": {"0": "Nein", "1": "Ja"},
-        "nl": {"0": "Nee", "1": "Ja"},
-        "en": {"0": "No", "1": "Yes"},
-        "fr": {"0": "Non", "1": "Oui"},
-        "it": {"0": "No", "1": "Sì"},
-        "es": {"0": "No", "1": "Sí"},
-        "pl": {"0": "Nie", "1": "Tak"},
-        "pt": {"0": "Não", "1": "Sim"},
-        "fi": {"0": "Ei", "1": "Kyllä"},
-        "et": {"0": "Ei", "1": "Jah"},
-    }
-    sentence_completion_mapping: dict[str, str] = {
-        "da": "Færdiggør følgende sætning",
-        "no": "Fullfør følgende setning",
-        "sv": "Fyll i följande mening",
-        "is": "Ljúktu við eftirfarandi setningu",
-        "de": "Vervollständige den folgenden Satz",
-        "nl": "Voltooi de volgende zin",
-        "en": "Complete the following sentence",
-        "fr": "Complétez la phrase suivante",
-        "it": "Completa la seguente frase",
-        "es": "Completa la siguiente frase",
-        "pl": "Uzupełnij następujące zdanie",
-        "pt": "Complete a seguinte frase",
-        "fi": "Täydennä seuraava lause",
-        "et": "Täiendage järgmine lause",
-    }
-
-    dataset_configs = [
-        (vanilla_dataset_id, "EuroEval/european-values-{language}"),
-        (situational_dataset_id, "EuroEval/european-values-situational-{language}"),
-        (completions_dataset_id, "EuroEval/european-values-completions-{language}"),
-    ]
-
-    for dataset_id, new_dataset_id in dataset_configs:
-        for language in tqdm(iterable=LANGUAGES, desc="Generating datasets"):
-            _process_language(
-                language=language,
-                dataset_id=dataset_id,
-                new_dataset_id=new_dataset_id,
-                subset_mapping=subset_mapping,
-                no_yes_mapping=no_yes_mapping,
-                sentence_completion_mapping=sentence_completion_mapping,
-                api=api,
-            )
 
 
 if __name__ == "__main__":

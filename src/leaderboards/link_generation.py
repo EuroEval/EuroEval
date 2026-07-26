@@ -60,39 +60,6 @@ def generate_task_link(task_id: int, label: str) -> str:
 
 
 @cache
-def _load_model_url_decisions() -> dict[str, bool]:
-    """Load cached model URL decisions (remove or keep).
-
-    Returns:
-        A dict mapping model IDs to whether they should be removed (True)
-        or kept without a URL (False). Returns an empty dict if the cache
-        file does not exist.
-    """
-    if not MODELS_WITHOUT_URLS_CACHE.exists():
-        return {}
-    with MODELS_WITHOUT_URLS_CACHE.open("r") as f:
-        data = safe_load(f) or {}
-    # Backwards compatibility: old format was a list of model IDs to keep
-    if isinstance(data, list):
-        return {model_id: False for model_id in data}
-    return data
-
-
-def _load_model_url_decision(model_id: str) -> bool | None:
-    """Load a cached decision for a specific model.
-
-    Args:
-        model_id:
-            The model ID to look up.
-
-    Returns:
-        True if the model should be removed, False if it should be kept
-        without a URL, or None if no cached decision exists.
-    """
-    decisions = _load_model_url_decisions()
-    return decisions.get(model_id)
-
-
 @cache
 def generate_model_url(model_id: str) -> str | None:
     """Generate a URL for a model.
@@ -147,25 +114,6 @@ def generate_model_url(model_id: str) -> str | None:
 
 
 @cache
-def _remember_model_url_decision(model_id: str, remove: bool) -> None:
-    """Persist a model URL decision to the cache.
-
-    Args:
-        model_id:
-            The model ID.
-        remove:
-            True if the model should be removed, False if it should be
-            kept without a URL.
-    """
-    decisions = _load_model_url_decisions()
-    if model_id in decisions:
-        return
-    decisions[model_id] = remove
-    with MODELS_WITHOUT_URLS_CACHE.open("w") as f:
-        safe_dump(dict(sorted(decisions.items())), f)
-    _load_model_url_decisions.cache_clear()
-
-
 @cache
 def ask_user_to_remove_model(model_id: str) -> bool:
     """Ask the user if they want to remove a model from the results.
@@ -195,6 +143,92 @@ def ask_user_to_remove_model(model_id: str) -> bool:
         return remove
 
 
+@cache
+@cache
+def _remember_model_url_decision(model_id: str, remove: bool) -> None:
+    """Persist a model URL decision to the cache.
+
+    Args:
+        model_id:
+            The model ID.
+        remove:
+            True if the model should be removed, False if it should be
+            kept without a URL.
+    """
+    decisions = _load_model_url_decisions()
+    if model_id in decisions:
+        return
+    decisions[model_id] = remove
+    with MODELS_WITHOUT_URLS_CACHE.open("w") as f:
+        safe_dump(dict(sorted(decisions.items())), f)
+    _load_model_url_decisions.cache_clear()
+
+
+@cache
+def _load_model_url_decision(model_id: str) -> bool | None:
+    """Load a cached decision for a specific model.
+
+    Args:
+        model_id:
+            The model ID to look up.
+
+    Returns:
+        True if the model should be removed, False if it should be kept
+        without a URL, or None if no cached decision exists.
+    """
+    decisions = _load_model_url_decisions()
+    return decisions.get(model_id)
+
+
+@cache
+@cache
+def _load_model_url_decisions() -> dict[str, bool]:
+    """Load cached model URL decisions (remove or keep).
+
+    Returns:
+        A dict mapping model IDs to whether they should be removed (True)
+        or kept without a URL (False). Returns an empty dict if the cache
+        file does not exist.
+    """
+    if not MODELS_WITHOUT_URLS_CACHE.exists():
+        return {}
+    with MODELS_WITHOUT_URLS_CACHE.open("r") as f:
+        data = safe_load(f) or {}
+    # Backwards compatibility: old format was a list of model IDs to keep
+    if isinstance(data, list):
+        return {model_id: False for model_id in data}
+    return data
+
+
+@cache
+def generate_hf_hub_url(model_id: str) -> str | None:
+    """Generate a model URL for a model hosted on the Hugging Face Hub.
+
+    Args:
+        model_id:
+            The Hugging Face model ID.
+
+    Returns:
+        The URL for the model on the Hugging Face Hub, or None if the model does not
+        exist on the Hugging Face Hub.
+    """
+    hf_api = HfApi()
+    try:
+        _check_model_exists_with_retry(model_id=model_id, hf_api=hf_api)
+        return f"https://hf.co/{model_id}"
+    except (
+        GatedRepoError,
+        LocalTokenNotFoundError,
+        RepositoryNotFoundError,
+        HFValidationError,
+        RequestException,
+        OSError,
+    ):
+        return None
+
+
+@cache
+@cache
 @cache
 def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
     """Check if a model exists on the Hugging Face Hub with retry logic.
@@ -238,58 +272,6 @@ def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
 
 
 @cache
-def generate_hf_hub_url(model_id: str) -> str | None:
-    """Generate a model URL for a model hosted on the Hugging Face Hub.
-
-    Args:
-        model_id:
-            The Hugging Face model ID.
-
-    Returns:
-        The URL for the model on the Hugging Face Hub, or None if the model does not
-        exist on the Hugging Face Hub.
-    """
-    hf_api = HfApi()
-    try:
-        _check_model_exists_with_retry(model_id=model_id, hf_api=hf_api)
-        return f"https://hf.co/{model_id}"
-    except (
-        GatedRepoError,
-        LocalTokenNotFoundError,
-        RepositoryNotFoundError,
-        HFValidationError,
-        RequestException,
-        OSError,
-    ):
-        return None
-
-
-@cache
-@cache
-def get_openai_models() -> list[str]:
-    """Get a list of all OpenAI models.
-
-    Returns:
-        A list of all OpenAI models.
-
-    Raises:
-        Exception if there was an error fetching the OpenAI models, and no cache file
-        exists.
-    """
-    cache_path = REPO_ROOT / "src" / "leaderboards" / "openai_models.yaml"
-    try:
-        results: list[str] = [model_info.id for model_info in openai.models.list().data]
-        with cache_path.open("w") as f:
-            safe_dump(results, f)
-        return results
-    except Exception as e:
-        if cache_path.exists():
-            with cache_path.open("r") as f:
-                results = safe_load(f)
-            return results
-        raise e
-
-
 @cache
 @cache
 def generate_openai_url(model_id: str) -> str | None:
@@ -326,6 +308,8 @@ def generate_openai_url(model_id: str) -> str | None:
 
 @cache
 @cache
+@cache
+@cache
 def generate_anthropic_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on Anthropic.
 
@@ -355,6 +339,36 @@ def generate_anthropic_url(model_id: str) -> str | None:
 
 @cache
 @cache
+@cache
+@cache
+def get_openai_models() -> list[str]:
+    """Get a list of all OpenAI models.
+
+    Returns:
+        A list of all OpenAI models.
+
+    Raises:
+        Exception if there was an error fetching the OpenAI models, and no cache file
+        exists.
+    """
+    cache_path = REPO_ROOT / "src" / "leaderboards" / "openai_models.yaml"
+    try:
+        results: list[str] = [model_info.id for model_info in openai.models.list().data]
+        with cache_path.open("w") as f:
+            safe_dump(results, f)
+        return results
+    except Exception as e:
+        if cache_path.exists():
+            with cache_path.open("r") as f:
+                results = safe_load(f)
+            return results
+        raise e
+
+
+@cache
+@cache
+@cache
+@cache
 def generate_ollama_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on Ollama.
 
@@ -371,6 +385,8 @@ def generate_ollama_url(model_id: str) -> str | None:
     return f"https://ollama.com/library/{model_id}"
 
 
+@cache
+@cache
 @cache
 @cache
 def generate_google_url(model_id: str) -> str | None:
@@ -391,6 +407,8 @@ def generate_google_url(model_id: str) -> str | None:
 
 @cache
 @cache
+@cache
+@cache
 def generate_xai_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on xAI.
 
@@ -407,6 +425,8 @@ def generate_xai_url(model_id: str) -> str | None:
     return f"https://docs.x.ai/developers/models/{model_id}"
 
 
+@cache
+@cache
 @cache
 @cache
 def generate_ordbogen_url(model_id: str) -> str | None:
@@ -426,6 +446,8 @@ def generate_ordbogen_url(model_id: str) -> str | None:
     return f"https://www.ordbogen.ai/docs/models/{model_id}"
 
 
+@cache
+@cache
 @cache
 @cache
 def generate_alx_url(model_id: str) -> str | None:

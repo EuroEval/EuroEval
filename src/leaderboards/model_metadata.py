@@ -36,406 +36,6 @@ from .result_identity import sanitise_model_dir_name
 logger = logging.getLogger(__name__)
 
 
-def _model_id_from_record(record: dict) -> str:
-    """Return the model id from a record, unwrapping an HTML anchor tag.
-
-    Args:
-        record:
-            A record from the JSONL file.
-
-    Returns:
-        The model id, with any surrounding anchor tag stripped.
-    """
-    model_id = get_model_name(record)
-    if model_id.startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", model_id)
-        if model_id_match:
-            return model_id_match.group(1)
-    return model_id
-
-
-def _infer_commercial_from_hf_licence(
-    model_id: str, licence_cache: dict[str, bool | None]
-) -> bool | None:
-    """Infer commercial licence status from HF model info.
-
-    Best-effort function that checks the Hugging Face model page for a
-    permissive licence tag. Returns ``True`` for permissive licences
-    (MIT, Apache-2.0, BSD, etc.), ``None`` for unknown/non-permissive
-    licences or on any HF/network/auth error. Never crashes.
-
-    Caches lookups per model_id to avoid repeated API calls.
-
-    Args:
-        model_id:
-            The Hugging Face model ID (e.g. ``BAAI/bge-m3``).
-        licence_cache:
-            Cache dict mapping model IDs to inferred licence status.
-
-    Returns:
-        ``True`` if licence is permissive, ``False`` if explicitly
-        non-permissive (not possible with current logic), or ``None``
-        if unknown or on error.
-    """
-    if model_id in licence_cache:
-        return licence_cache[model_id]
-
-    try:
-        api = HfApi()
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UserWarning)
-            model_info = api.model_info(repo_id=model_id)
-    except (
-        GatedRepoError,
-        LocalTokenNotFoundError,
-        RepositoryNotFoundError,
-        HFValidationError,
-        RequestException,
-        OSError,
-        httpx.HTTPError,
-        httpx.TransportError,
-    ):
-        licence_cache[model_id] = None
-        return None
-
-    # Extract licence from tags (format: "license:apache-2.0")
-    licence: str | None = None
-    if model_info.tags:
-        for tag in model_info.tags:
-            if tag.startswith("license:"):
-                licence = tag.removeprefix("license:").lower()
-                break
-
-    result = licence in PERMISSIVE_LICENSES if licence else None
-    licence_cache[model_id] = result
-    return result
-
-
-def is_commercially_licensed(record: dict, cache: Cache) -> bool:
-    """Determine if a model is commercially licensed.
-
-    First checks the cache, then tries best-effort inference from the
-    Hugging Face model licence. Falls back to user prompt if licence
-    cannot be inferred.
-
-    Args:
-        record:
-            A record from the JSONL file.
-        cache:
-            The cache.
-
-    Returns:
-        Whether the model is commercially licensed.
-    """
-    model_id = split_model_id(
-        model_id=plain_model_id(_model_id_from_record(record=record))
-    ).model_id
-
-    # Assume that non-generative models are always commercially licensed
-    if not get_bool_field(record, "generative", True):
-        cache.commercially_licensed[model_id] = True
-        return True
-
-    # Check cache first
-    if model_id in cache.commercially_licensed:
-        return cache.commercially_licensed[model_id]
-
-    # Best-effort inference from HF licence
-    # Use a separate cache dict since inference can return None on error
-    licence_cache: dict[str, bool | None] = {}
-    inferred = _infer_commercial_from_hf_licence(
-        model_id=model_id, licence_cache=licence_cache
-    )
-    if inferred is not None:
-        cache.commercially_licensed[model_id] = inferred
-        return inferred
-
-    # Fall back to user prompt
-    while True:
-        msg = f"Is {model_id!r} commercially licensed?"
-        if "/" in model_id:
-            msg += f" (https://hf.co/{model_id})"
-        msg += " [y/n] "
-        user_input = input(msg)
-        if user_input.lower() in {"y", "yes"}:
-            cache.commercially_licensed[model_id] = True
-            return True
-        if user_input.lower() in {"n", "no"}:
-            cache.commercially_licensed[model_id] = False
-            return False
-        logger.error("Invalid input. Please try again.")
-
-
-def _remove_model_results(model_id: str) -> None:
-    """Delete a model's result directory from RESULTS_DIR.
-
-    ``RESULTS_DIR`` is the source of truth for the leaderboard, so removing
-    the directory drops the model from future builds.
-
-    Args:
-        model_id:
-            The model id whose result directory should be removed.
-    """
-    model_dir = RESULTS_DIR / sanitise_model_dir_name(plain_model_id(model_id))
-    shutil.rmtree(model_dir, ignore_errors=True)
-    logger.info(f"Removed result directory {model_dir.name} for {model_id}.")
-
-
-def _generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
-    """Generates a model URL using a cache.
-
-    When no URL can be generated, the operator is asked whether to drop the
-    model from the results. A "keep" decision is cached so the prompt isn't
-    repeated; a "remove" decision deletes the model's result file. Both
-    decisions are persisted by ``ask_user_to_remove_model``.
-
-    Args:
-        model_id:
-            The model ID.
-        cache:
-            The cache.
-
-    Returns:
-        The model URL, or None if no URL could be generated.
-    """
-    model_id = split_model_id(model_id=plain_model_id(model_id)).model_id
-    if model_id in cache.model_url and cache.model_url[model_id] is not None:
-        return cache.model_url[model_id]
-
-    model_url = generate_model_url(model_id=model_id)
-    if model_url is None and ask_user_to_remove_model(model_id=model_id):
-        _remove_model_results(model_id=model_id)
-    cache.model_url[model_id] = model_url
-    return model_url
-
-
-def is_trained_from_scratch(
-    record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
-) -> bool:
-    """Determine if a model was trained from scratch or fine-tuned.
-
-    Args:
-        record:
-            A record from the JSONL file.
-        trained_from_scratch_patterns:
-            A list of regex patterns for trained-from-scratch models.
-        cache:
-            The cache.
-
-    Returns:
-        True if the model was trained from scratch.
-    """
-    model_id = split_model_id(
-        model_id=plain_model_id(_model_id_from_record(record=record))
-    ).model_id
-
-    if model_id in cache.trained_from_scratch:
-        return cache.trained_from_scratch[model_id]
-
-    # Check if model is open or closed
-    model_openness = cache.open.get(model_id)
-
-    # For closed models, auto-return "scratch" without prompting
-    if model_openness is False:
-        cache.trained_from_scratch[model_id] = True
-        return True
-
-    # If it matches any of the trained-from-scratch patterns, set it automatically
-    if any(
-        pattern.match(model_id) is not None for pattern in trained_from_scratch_patterns
-    ):
-        return True
-
-    # For open models, prompt user
-    while True:
-        msg = f"Was {model_id!r} trained from scratch? "
-        if "/" in model_id:
-            msg += f" (https://hf.co/{model_id})"
-        msg += " [y/n] "
-        user_input = input(msg)
-        if user_input.lower() in {"y", "yes"}:
-            cache.trained_from_scratch[model_id] = True
-            return True
-        if user_input.lower() in {"n", "no"}:
-            cache.trained_from_scratch[model_id] = False
-            return False
-        logger.error("Invalid input. Please try again.")
-
-
-def is_merge(record: dict, cache: Cache) -> bool:
-    """Determines if a model is a merged model.
-
-    Args:
-        record:
-            A record from the JSONL file.
-        cache:
-            The cache.
-
-    Returns:
-        Whether the model is a merged model.
-    """
-    model_id = split_model_id(
-        model_id=plain_model_id(_model_id_from_record(record=record))
-    ).model_id
-
-    if model_id in cache.merge:
-        return cache.merge[model_id]
-
-    # Fresh models do not appear on the model hub, so we assume they are not merge
-    # models
-    if model_id.startswith("fresh"):
-        cache.merge[model_id] = False
-        return False
-
-    # Fetch model info from the model hub, and assume that it is not a merged model if
-    # the model is not found
-    api = HfApi()
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UserWarning)
-            model_info = api.model_info(repo_id=model_id)
-    except (RepositoryNotFoundError, HFValidationError):
-        cache.merge[model_id] = False
-        return False
-
-    # A model is a merge model if it has merge-related tags
-    merge_tags = ["merge", "mergekit"]
-    has_merge_tag = any(tag in (model_info.tags or []) for tag in merge_tags)
-    cache.merge[model_id] = has_merge_tag
-    return has_merge_tag
-
-
-def is_open(record: dict, cache: Cache) -> bool:
-    """Determine if a model is open (open-weight) or closed.
-
-    Args:
-        record:
-            A record from the JSONL file.
-        cache:
-            The cache.
-
-    Returns:
-        Whether the model is open (open-weight). Closed models return False.
-    """
-    model_id = split_model_id(
-        model_id=plain_model_id(_model_id_from_record(record=record))
-    ).model_id
-
-    # Use exact model-id cache only (no base-model broadening)
-    if model_id in cache.open:
-        return cache.open[model_id]
-
-    # Not in cache: check HF
-    try:
-        api = HfApi()
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UserWarning)
-            api.model_info(repo_id=model_id)
-    except (RepositoryNotFoundError, HFValidationError):
-        cache.open[model_id] = False
-        return False
-
-    # Models found on the HF Hub are open-weight
-    cache.open[model_id] = True
-    return True
-
-
-def _parse_generative_type_input(
-    user_input: str,
-) -> str | None | t.Literal["EXPLICIT_NULL"]:
-    """Parse user input for generative type.
-
-    Args:
-        user_input:
-            The raw user input string.
-
-    Returns:
-        The parsed generative type, "EXPLICIT_NULL" for 0/null input, or None if
-        invalid.
-    """
-    input_lower = user_input.lower()
-    if input_lower in {"0", "null"}:
-        return "EXPLICIT_NULL"
-    if input_lower in {"1", "base"}:
-        return "base"
-    if input_lower in {"2", "instruction_tuned"}:
-        return "instruction_tuned"
-    if input_lower in {"3", "reasoning"}:
-        return "reasoning"
-    return None
-
-
-def _get_generative_type_from_keywords(model_id: str) -> str | None:
-    """Try to infer generative type from model ID keywords.
-
-    Args:
-        model_id:
-            The model ID to check.
-
-    Returns:
-        The inferred generative type or None.
-    """
-    for keywords, gen_type in GENERATIVE_TYPE_KEYWORDS:
-        if any(
-            re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
-            for keyword in keywords
-        ):
-            return gen_type
-    return None
-
-
-def _get_generative_type(record: dict, cache: Cache) -> str | None:
-    """Asks for the generative type of a model.
-
-    Args:
-        record:
-            A record from the JSONL file.
-        cache:
-            The cache.
-
-    Returns:
-        The generative type of the model.
-    """
-    raw_model_id = _model_id_from_record(record=record)
-
-    # Check special suffixes first
-    if "#thinking" in raw_model_id:
-        cache.generative_type[raw_model_id] = "reasoning"
-        return "reasoning"
-    if "#no-thinking" in raw_model_id:
-        cache.generative_type[raw_model_id] = "instruction_tuned"
-        return "instruction_tuned"
-
-    # Normalise model ID
-    model_id = split_model_id(model_id=plain_model_id(raw_model_id)).model_id
-
-    while True:
-        # Check cache
-        if model_id in cache.generative_type:
-            return cache.generative_type[model_id]
-
-        # Try keyword inference
-        inferred_type = _get_generative_type_from_keywords(model_id=model_id)
-        if inferred_type is not None:
-            cache.generative_type[model_id] = inferred_type
-            return inferred_type
-
-        # Ask user
-        msg = f"What is the generative type of {model_id!r}?"
-        if "/" in model_id:
-            msg += f" (https://hf.co/{model_id})"
-        msg += " [0=null, 1=base, 2=instruction_tuned, 3=reasoning] "
-        user_input = input(msg)
-        parsed = _parse_generative_type_input(user_input)
-        if parsed == "EXPLICIT_NULL":
-            cache.generative_type[model_id] = None
-            return None
-        if parsed is not None:
-            cache.generative_type[model_id] = parsed
-            return parsed
-        logger.error("Invalid input. Please try again.")
-
-
 def add_missing_entries(
     record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
 ) -> dict:
@@ -516,6 +116,344 @@ def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any]:
     return record
 
 
+def is_open(record: dict, cache: Cache) -> bool:
+    """Determine if a model is open (open-weight) or closed.
+
+    Args:
+        record:
+            A record from the JSONL file.
+        cache:
+            The cache.
+
+    Returns:
+        Whether the model is open (open-weight). Closed models return False.
+    """
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
+
+    # Use exact model-id cache only (no base-model broadening)
+    if model_id in cache.open:
+        return cache.open[model_id]
+
+    # Not in cache: check HF
+    try:
+        api = HfApi()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            api.model_info(repo_id=model_id)
+    except (RepositoryNotFoundError, HFValidationError):
+        cache.open[model_id] = False
+        return False
+
+    # Models found on the HF Hub are open-weight
+    cache.open[model_id] = True
+    return True
+
+
+def is_merge(record: dict, cache: Cache) -> bool:
+    """Determines if a model is a merged model.
+
+    Args:
+        record:
+            A record from the JSONL file.
+        cache:
+            The cache.
+
+    Returns:
+        Whether the model is a merged model.
+    """
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
+
+    if model_id in cache.merge:
+        return cache.merge[model_id]
+
+    # Fresh models do not appear on the model hub, so we assume they are not merge
+    # models
+    if model_id.startswith("fresh"):
+        cache.merge[model_id] = False
+        return False
+
+    # Fetch model info from the model hub, and assume that it is not a merged model if
+    # the model is not found
+    api = HfApi()
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            model_info = api.model_info(repo_id=model_id)
+    except (RepositoryNotFoundError, HFValidationError):
+        cache.merge[model_id] = False
+        return False
+
+    # A model is a merge model if it has merge-related tags
+    merge_tags = ["merge", "mergekit"]
+    has_merge_tag = any(tag in (model_info.tags or []) for tag in merge_tags)
+    cache.merge[model_id] = has_merge_tag
+    return has_merge_tag
+
+
+def _generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
+    """Generates a model URL using a cache.
+
+    When no URL can be generated, the operator is asked whether to drop the
+    model from the results. A "keep" decision is cached so the prompt isn't
+    repeated; a "remove" decision deletes the model's result file. Both
+    decisions are persisted by ``ask_user_to_remove_model``.
+
+    Args:
+        model_id:
+            The model ID.
+        cache:
+            The cache.
+
+    Returns:
+        The model URL, or None if no URL could be generated.
+    """
+    model_id = split_model_id(model_id=plain_model_id(model_id)).model_id
+    if model_id in cache.model_url and cache.model_url[model_id] is not None:
+        return cache.model_url[model_id]
+
+    model_url = generate_model_url(model_id=model_id)
+    if model_url is None and ask_user_to_remove_model(model_id=model_id):
+        _remove_model_results(model_id=model_id)
+    cache.model_url[model_id] = model_url
+    return model_url
+
+
+def is_commercially_licensed(record: dict, cache: Cache) -> bool:
+    """Determine if a model is commercially licensed.
+
+    First checks the cache, then tries best-effort inference from the
+    Hugging Face model licence. Falls back to user prompt if licence
+    cannot be inferred.
+
+    Args:
+        record:
+            A record from the JSONL file.
+        cache:
+            The cache.
+
+    Returns:
+        Whether the model is commercially licensed.
+    """
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
+
+    # Assume that non-generative models are always commercially licensed
+    if not get_bool_field(record, "generative", True):
+        cache.commercially_licensed[model_id] = True
+        return True
+
+    # Check cache first
+    if model_id in cache.commercially_licensed:
+        return cache.commercially_licensed[model_id]
+
+    # Best-effort inference from HF licence
+    # Use a separate cache dict since inference can return None on error
+    licence_cache: dict[str, bool | None] = {}
+    inferred = _infer_commercial_from_hf_licence(
+        model_id=model_id, licence_cache=licence_cache
+    )
+    if inferred is not None:
+        cache.commercially_licensed[model_id] = inferred
+        return inferred
+
+    # Fall back to user prompt
+    while True:
+        msg = f"Is {model_id!r} commercially licensed?"
+        if "/" in model_id:
+            msg += f" (https://hf.co/{model_id})"
+        msg += " [y/n] "
+        user_input = input(msg)
+        if user_input.lower() in {"y", "yes"}:
+            cache.commercially_licensed[model_id] = True
+            return True
+        if user_input.lower() in {"n", "no"}:
+            cache.commercially_licensed[model_id] = False
+            return False
+        logger.error("Invalid input. Please try again.")
+
+
+def is_trained_from_scratch(
+    record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
+) -> bool:
+    """Determine if a model was trained from scratch or fine-tuned.
+
+    Args:
+        record:
+            A record from the JSONL file.
+        trained_from_scratch_patterns:
+            A list of regex patterns for trained-from-scratch models.
+        cache:
+            The cache.
+
+    Returns:
+        True if the model was trained from scratch.
+    """
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
+
+    if model_id in cache.trained_from_scratch:
+        return cache.trained_from_scratch[model_id]
+
+    # Check if model is open or closed
+    model_openness = cache.open.get(model_id)
+
+    # For closed models, auto-return "scratch" without prompting
+    if model_openness is False:
+        cache.trained_from_scratch[model_id] = True
+        return True
+
+    # If it matches any of the trained-from-scratch patterns, set it automatically
+    if any(
+        pattern.match(model_id) is not None for pattern in trained_from_scratch_patterns
+    ):
+        return True
+
+    # For open models, prompt user
+    while True:
+        msg = f"Was {model_id!r} trained from scratch? "
+        if "/" in model_id:
+            msg += f" (https://hf.co/{model_id})"
+        msg += " [y/n] "
+        user_input = input(msg)
+        if user_input.lower() in {"y", "yes"}:
+            cache.trained_from_scratch[model_id] = True
+            return True
+        if user_input.lower() in {"n", "no"}:
+            cache.trained_from_scratch[model_id] = False
+            return False
+        logger.error("Invalid input. Please try again.")
+
+
+def _infer_commercial_from_hf_licence(
+    model_id: str, licence_cache: dict[str, bool | None]
+) -> bool | None:
+    """Infer commercial licence status from HF model info.
+
+    Best-effort function that checks the Hugging Face model page for a
+    permissive licence tag. Returns ``True`` for permissive licences
+    (MIT, Apache-2.0, BSD, etc.), ``None`` for unknown/non-permissive
+    licences or on any HF/network/auth error. Never crashes.
+
+    Caches lookups per model_id to avoid repeated API calls.
+
+    Args:
+        model_id:
+            The Hugging Face model ID (e.g. ``BAAI/bge-m3``).
+        licence_cache:
+            Cache dict mapping model IDs to inferred licence status.
+
+    Returns:
+        ``True`` if licence is permissive, ``False`` if explicitly
+        non-permissive (not possible with current logic), or ``None``
+        if unknown or on error.
+    """
+    if model_id in licence_cache:
+        return licence_cache[model_id]
+
+    try:
+        api = HfApi()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            model_info = api.model_info(repo_id=model_id)
+    except (
+        GatedRepoError,
+        LocalTokenNotFoundError,
+        RepositoryNotFoundError,
+        HFValidationError,
+        RequestException,
+        OSError,
+        httpx.HTTPError,
+        httpx.TransportError,
+    ):
+        licence_cache[model_id] = None
+        return None
+
+    # Extract licence from tags (format: "license:apache-2.0")
+    licence: str | None = None
+    if model_info.tags:
+        for tag in model_info.tags:
+            if tag.startswith("license:"):
+                licence = tag.removeprefix("license:").lower()
+                break
+
+    result = licence in PERMISSIVE_LICENSES if licence else None
+    licence_cache[model_id] = result
+    return result
+
+
+def _remove_model_results(model_id: str) -> None:
+    """Delete a model's result directory from RESULTS_DIR.
+
+    ``RESULTS_DIR`` is the source of truth for the leaderboard, so removing
+    the directory drops the model from future builds.
+
+    Args:
+        model_id:
+            The model id whose result directory should be removed.
+    """
+    model_dir = RESULTS_DIR / sanitise_model_dir_name(plain_model_id(model_id))
+    shutil.rmtree(model_dir, ignore_errors=True)
+    logger.info(f"Removed result directory {model_dir.name} for {model_id}.")
+
+
+def _get_generative_type(record: dict, cache: Cache) -> str | None:
+    """Asks for the generative type of a model.
+
+    Args:
+        record:
+            A record from the JSONL file.
+        cache:
+            The cache.
+
+    Returns:
+        The generative type of the model.
+    """
+    raw_model_id = _model_id_from_record(record=record)
+
+    # Check special suffixes first
+    if "#thinking" in raw_model_id:
+        cache.generative_type[raw_model_id] = "reasoning"
+        return "reasoning"
+    if "#no-thinking" in raw_model_id:
+        cache.generative_type[raw_model_id] = "instruction_tuned"
+        return "instruction_tuned"
+
+    # Normalise model ID
+    model_id = split_model_id(model_id=plain_model_id(raw_model_id)).model_id
+
+    while True:
+        # Check cache
+        if model_id in cache.generative_type:
+            return cache.generative_type[model_id]
+
+        # Try keyword inference
+        inferred_type = _get_generative_type_from_keywords(model_id=model_id)
+        if inferred_type is not None:
+            cache.generative_type[model_id] = inferred_type
+            return inferred_type
+
+        # Ask user
+        msg = f"What is the generative type of {model_id!r}?"
+        if "/" in model_id:
+            msg += f" (https://hf.co/{model_id})"
+        msg += " [0=null, 1=base, 2=instruction_tuned, 3=reasoning] "
+        user_input = input(msg)
+        parsed = _parse_generative_type_input(user_input)
+        if parsed == "EXPLICIT_NULL":
+            cache.generative_type[model_id] = None
+            return None
+        if parsed is not None:
+            cache.generative_type[model_id] = parsed
+            return parsed
+        logger.error("Invalid input. Please try again.")
+
+
 def record_is_valid(
     record: dict,
     min_version: str,
@@ -571,3 +509,65 @@ def record_is_valid(
 
     # Otherwise, the record is valid
     return True
+
+
+def _model_id_from_record(record: dict) -> str:
+    """Return the model id from a record, unwrapping an HTML anchor tag.
+
+    Args:
+        record:
+            A record from the JSONL file.
+
+    Returns:
+        The model id, with any surrounding anchor tag stripped.
+    """
+    model_id = get_model_name(record)
+    if model_id.startswith("<a href="):
+        model_id_match = re.search(r">(.+?)<", model_id)
+        if model_id_match:
+            return model_id_match.group(1)
+    return model_id
+
+
+def _get_generative_type_from_keywords(model_id: str) -> str | None:
+    """Try to infer generative type from model ID keywords.
+
+    Args:
+        model_id:
+            The model ID to check.
+
+    Returns:
+        The inferred generative type or None.
+    """
+    for keywords, gen_type in GENERATIVE_TYPE_KEYWORDS:
+        if any(
+            re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
+            for keyword in keywords
+        ):
+            return gen_type
+    return None
+
+
+def _parse_generative_type_input(
+    user_input: str,
+) -> str | None | t.Literal["EXPLICIT_NULL"]:
+    """Parse user input for generative type.
+
+    Args:
+        user_input:
+            The raw user input string.
+
+    Returns:
+        The parsed generative type, "EXPLICIT_NULL" for 0/null input, or None if
+        invalid.
+    """
+    input_lower = user_input.lower()
+    if input_lower in {"0", "null"}:
+        return "EXPLICIT_NULL"
+    if input_lower in {"1", "base"}:
+        return "base"
+    if input_lower in {"2", "instruction_tuned"}:
+        return "instruction_tuned"
+    if input_lower in {"3", "reasoning"}:
+        return "reasoning"
+    return None

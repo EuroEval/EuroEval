@@ -49,6 +49,62 @@ class CandidateAnswers(BaseModel):
 LABELS = ["a", "b", "c", "d"]
 
 
+def main() -> None:
+    """Create the icelandic knowledge dataset."""
+    # Define the base download URL
+    repo_id = "mideind/icelandic_qa_scandeval"
+
+    # Download the dataset
+    dataset = load_dataset(path=repo_id, split="train")
+    assert isinstance(dataset, Dataset)
+
+    dataset = drop_duplicate_questions(dataset=dataset)
+    assert isinstance(dataset, Dataset)
+
+    # Build the knowledge dataset using a language model
+    df = build_dataset_with_llm(dataset=dataset)
+
+    # Create splits
+    val_size = 128
+    test_size = 1024
+
+    val_df = df.sample(val_size, random_state=42)
+    df = df.drop(val_df.index.tolist())
+
+    test_df = df.sample(test_size, random_state=42)
+    df = df.drop(test_df.index.tolist())
+
+    train_df = df
+    assert len(train_df) > 800, "The training set should have at least 800 samples."
+
+    # Reset the index
+    train_df = train_df.reset_index(drop=True)
+    val_df = val_df.reset_index(drop=True)
+    test_df = test_df.reset_index(drop=True)
+
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+
+    # Collect datasets in a dataset dictionary
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
+    )
+
+    # Create dataset ID
+    dataset_id = "EuroEval/icelandic-knowledge"
+
+    # Remove the dataset from Hugging Face Hub if it already exists
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+
+    # Push the dataset to the Hugging Face Hub
+    dataset.push_to_hub(dataset_id, private=True)
+
+
 def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
     """Build the knowledge dataset using a language model.
 
@@ -179,62 +235,6 @@ def drop_duplicate_questions(dataset: Dataset) -> Dataset:
     df = df.drop_duplicates(subset="question")
 
     return Dataset.from_pandas(df)
-
-
-def main() -> None:
-    """Create the icelandic knowledge dataset."""
-    # Define the base download URL
-    repo_id = "mideind/icelandic_qa_scandeval"
-
-    # Download the dataset
-    dataset = load_dataset(path=repo_id, split="train")
-    assert isinstance(dataset, Dataset)
-
-    dataset = drop_duplicate_questions(dataset=dataset)
-    assert isinstance(dataset, Dataset)
-
-    # Build the knowledge dataset using a language model
-    df = build_dataset_with_llm(dataset=dataset)
-
-    # Create splits
-    val_size = 128
-    test_size = 1024
-
-    val_df = df.sample(val_size, random_state=42)
-    df = df.drop(val_df.index.tolist())
-
-    test_df = df.sample(test_size, random_state=42)
-    df = df.drop(test_df.index.tolist())
-
-    train_df = df
-    assert len(train_df) > 800, "The training set should have at least 800 samples."
-
-    # Reset the index
-    train_df = train_df.reset_index(drop=True)
-    val_df = val_df.reset_index(drop=True)
-    test_df = test_df.reset_index(drop=True)
-
-    assert isinstance(train_df, pd.DataFrame)
-    assert isinstance(val_df, pd.DataFrame)
-    assert isinstance(test_df, pd.DataFrame)
-
-    # Collect datasets in a dataset dictionary
-    dataset = DatasetDict(
-        {
-            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
-            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            "test": Dataset.from_pandas(test_df, split=Split.TEST),
-        }
-    )
-
-    # Create dataset ID
-    dataset_id = "EuroEval/icelandic-knowledge"
-
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
-    # Push the dataset to the Hugging Face Hub
-    dataset.push_to_hub(dataset_id, private=True)
 
 
 if __name__ == "__main__":

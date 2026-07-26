@@ -76,235 +76,6 @@ SEEN_TAGS: Counter = Counter()
 SEEN_LABELS: Counter = Counter()
 
 
-def _split_into_sentences(
-    tokens: list[str], labels: list[int]
-) -> list[tuple[list[str], list[int]]]:
-    """Split tokens and labels into sentences.
-
-    Args:
-        tokens: List of tokens.
-        labels: List of label IDs corresponding to tokens.
-
-    Returns:
-        List of (tokens, labels) tuples for each sentence.
-    """
-    sentences = []
-    i = 0
-    while i < len(tokens):
-        current_tokens = []
-        current_labels = []
-
-        while i < len(tokens):
-            current_tokens.append(tokens[i])
-            current_labels.append(labels[i])
-
-            if SENTENCE_RE.search(tokens[i]):
-                i += 1
-                # absorb following I-XXX tokens
-                while i < len(tokens) and ID2LABEL[labels[i]].startswith("I-"):
-                    current_tokens.append(tokens[i])
-                    current_labels.append(labels[i])
-                    i += 1
-                break  # break inner loop
-
-            i += 1
-
-        sentences.append((current_tokens, current_labels))
-
-    return sentences
-
-
-def _process_token(
-    tok: str,
-    stack: list[str],
-    in_entity: bool,
-    previous_entity_type: str | None,
-    tokens: list[str],
-    labels: list[int],
-) -> tuple[bool, str | None]:
-    """Process a single token and update labels.
-
-    Args:
-        tok:
-            The token to process.
-        stack:
-            Stack of open entity tags.
-        in_entity:
-            Whether currently inside an entity.
-        previous_entity_type:
-            The previous entity type.
-        tokens:
-            List of tokens to append to.
-        labels:
-            List of labels to append to.
-
-    Returns:
-        Tuple of (new_in_entity, new_entity_type).
-    """
-    if not stack:
-        label = "O"
-        new_entity_type = None
-        new_in_entity = False
-    else:
-        current_type = TAG2LABEL.get(stack[-1], "MISC")
-        if not in_entity or current_type != previous_entity_type:
-            label = f"B-{current_type}"
-            new_in_entity = True
-        else:
-            label = f"I-{current_type}"
-            new_in_entity = in_entity
-        new_entity_type = current_type
-
-    tokens.append(tok)
-    labels.append(LABEL2ID[label])
-    SEEN_LABELS[label] += 1
-    return new_in_entity, new_entity_type
-
-
-def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
-    """Parse a single HAREM document and return tokens and labels (BIO format).
-
-    Args:
-        doc: The document string to parse.
-
-    Returns:
-        A tuple of (tokens, labels) if the document is valid, otherwise None.
-    """
-    origem_match = re.search(r"<ORIGEM>\s*(\w+)\s*</ORIGEM>", doc)
-    if not origem_match or origem_match.group(1).upper() != "PT":
-        return None
-
-    text_match = re.search(r"<TEXTO>(.*?)</TEXTO>", doc, flags=re.S)
-    if not text_match:
-        return None
-    text = text_match.group(1)
-
-    tokens: list[str] = []
-    labels: list[int] = []
-    stack: list[str] = []
-    previous_entity_type: str | None = None
-    in_entity = False
-
-    pos = 0
-    for tag in TAG_RE.finditer(text):
-        pre = text[pos : tag.start()]
-        for tok in TOKEN_RE.findall(pre):
-            in_entity, previous_entity_type = _process_token(
-                tok=tok,
-                stack=stack,
-                in_entity=in_entity,
-                previous_entity_type=previous_entity_type,
-                tokens=tokens,
-                labels=labels,
-            )
-
-        pos = tag.end()
-        closing, name = tag.group(1), tag.group(2)
-        SEEN_TAGS[name] += 1
-
-        if name not in TAG2LABEL:
-            logger.info(f"Warning: Unknown tag <{name}>")
-
-        if closing:
-            if stack and stack[-1] == name:
-                stack.pop()
-            in_entity = False
-            previous_entity_type = None
-        else:
-            stack.append(name)
-            in_entity = False
-
-    tail = text[pos:]
-    for tok in TOKEN_RE.findall(tail):
-        in_entity, previous_entity_type = _process_token(
-            tok=tok,
-            stack=stack,
-            in_entity=in_entity,
-            previous_entity_type=previous_entity_type,
-            tokens=tokens,
-            labels=labels,
-        )
-
-    return tokens, labels
-
-
-def _reconstruct_text(tokens: list[str]) -> str:
-    """Reconstruct text from tokens, preserving original spacing.
-
-    Args:
-        tokens: List of tokens.
-
-    Returns:
-        The reconstructed text as a string.
-    """
-    if not tokens:
-        return ""
-
-    result: list[str] = []
-    for i, token in enumerate(tokens):
-        if i == 0:
-            # First token always gets added as-is
-            result.append(token)
-        elif re.match(r"[^\w\s]", token):
-            # Punctuation - attach to previous token without space
-            result.append(token)
-        else:
-            # Regular word - add space before
-            result.append(" " + token)
-
-    return "".join(result)
-
-
-def _process_harem_data(raw: str) -> list[dict]:
-    """Process raw HAREM data into structured format.
-
-    Args:
-        raw: Raw string containing HAREM data.
-
-    Returns:
-        List of dicts, each with 'tokens', 'labels', and 'text' for a sentence.
-    """
-    docs = raw.split("<DOC>")
-    examples = []
-
-    for doc in docs:
-        parsed = _parse_doc(doc)
-        if parsed:
-            tokens, labels = parsed
-
-            # Split into sentences
-            sentences = _split_into_sentences(tokens, labels)
-
-            # Create examples for each sentence
-            for sent_tokens, sent_labels in sentences:
-                if len(sent_tokens) > 0:  # Only add non-empty sentences
-                    # Convert labels back to strings
-                    label_strings = [ID2LABEL[label] for label in sent_labels]
-
-                    examples.append(
-                        {
-                            "tokens": sent_tokens,
-                            "labels": label_strings,
-                            "text": _reconstruct_text(sent_tokens),
-                        }
-                    )
-
-    return examples
-
-
-def _download(url: str) -> str:
-    """Download content from URL with proper encoding.
-
-    Args:
-        url: The URL to download from.
-
-    Returns:
-        The decoded content as a string.
-    """
-    with urllib.request.urlopen(url) as response:
-        return response.read().decode("iso-8859-1")
-
-
 def main() -> None:
     """Create the HAREM NER dataset and upload it to the HF Hub."""
     # Download the HAREM dataset
@@ -394,6 +165,235 @@ def main() -> None:
     logger.info(f"\nUploading dataset to {dataset_id}...")
     dataset.push_to_hub(dataset_id, private=True)
     logger.info("Dataset uploaded successfully!")
+
+
+def _download(url: str) -> str:
+    """Download content from URL with proper encoding.
+
+    Args:
+        url: The URL to download from.
+
+    Returns:
+        The decoded content as a string.
+    """
+    with urllib.request.urlopen(url) as response:
+        return response.read().decode("iso-8859-1")
+
+
+def _process_harem_data(raw: str) -> list[dict]:
+    """Process raw HAREM data into structured format.
+
+    Args:
+        raw: Raw string containing HAREM data.
+
+    Returns:
+        List of dicts, each with 'tokens', 'labels', and 'text' for a sentence.
+    """
+    docs = raw.split("<DOC>")
+    examples = []
+
+    for doc in docs:
+        parsed = _parse_doc(doc)
+        if parsed:
+            tokens, labels = parsed
+
+            # Split into sentences
+            sentences = _split_into_sentences(tokens, labels)
+
+            # Create examples for each sentence
+            for sent_tokens, sent_labels in sentences:
+                if len(sent_tokens) > 0:  # Only add non-empty sentences
+                    # Convert labels back to strings
+                    label_strings = [ID2LABEL[label] for label in sent_labels]
+
+                    examples.append(
+                        {
+                            "tokens": sent_tokens,
+                            "labels": label_strings,
+                            "text": _reconstruct_text(sent_tokens),
+                        }
+                    )
+
+    return examples
+
+
+def _parse_doc(doc: str) -> tuple[list[str], list[int]] | None:
+    """Parse a single HAREM document and return tokens and labels (BIO format).
+
+    Args:
+        doc: The document string to parse.
+
+    Returns:
+        A tuple of (tokens, labels) if the document is valid, otherwise None.
+    """
+    origem_match = re.search(r"<ORIGEM>\s*(\w+)\s*</ORIGEM>", doc)
+    if not origem_match or origem_match.group(1).upper() != "PT":
+        return None
+
+    text_match = re.search(r"<TEXTO>(.*?)</TEXTO>", doc, flags=re.S)
+    if not text_match:
+        return None
+    text = text_match.group(1)
+
+    tokens: list[str] = []
+    labels: list[int] = []
+    stack: list[str] = []
+    previous_entity_type: str | None = None
+    in_entity = False
+
+    pos = 0
+    for tag in TAG_RE.finditer(text):
+        pre = text[pos : tag.start()]
+        for tok in TOKEN_RE.findall(pre):
+            in_entity, previous_entity_type = _process_token(
+                tok=tok,
+                stack=stack,
+                in_entity=in_entity,
+                previous_entity_type=previous_entity_type,
+                tokens=tokens,
+                labels=labels,
+            )
+
+        pos = tag.end()
+        closing, name = tag.group(1), tag.group(2)
+        SEEN_TAGS[name] += 1
+
+        if name not in TAG2LABEL:
+            logger.info(f"Warning: Unknown tag <{name}>")
+
+        if closing:
+            if stack and stack[-1] == name:
+                stack.pop()
+            in_entity = False
+            previous_entity_type = None
+        else:
+            stack.append(name)
+            in_entity = False
+
+    tail = text[pos:]
+    for tok in TOKEN_RE.findall(tail):
+        in_entity, previous_entity_type = _process_token(
+            tok=tok,
+            stack=stack,
+            in_entity=in_entity,
+            previous_entity_type=previous_entity_type,
+            tokens=tokens,
+            labels=labels,
+        )
+
+    return tokens, labels
+
+
+def _split_into_sentences(
+    tokens: list[str], labels: list[int]
+) -> list[tuple[list[str], list[int]]]:
+    """Split tokens and labels into sentences.
+
+    Args:
+        tokens: List of tokens.
+        labels: List of label IDs corresponding to tokens.
+
+    Returns:
+        List of (tokens, labels) tuples for each sentence.
+    """
+    sentences = []
+    i = 0
+    while i < len(tokens):
+        current_tokens = []
+        current_labels = []
+
+        while i < len(tokens):
+            current_tokens.append(tokens[i])
+            current_labels.append(labels[i])
+
+            if SENTENCE_RE.search(tokens[i]):
+                i += 1
+                # absorb following I-XXX tokens
+                while i < len(tokens) and ID2LABEL[labels[i]].startswith("I-"):
+                    current_tokens.append(tokens[i])
+                    current_labels.append(labels[i])
+                    i += 1
+                break  # break inner loop
+
+            i += 1
+
+        sentences.append((current_tokens, current_labels))
+
+    return sentences
+
+
+def _process_token(
+    tok: str,
+    stack: list[str],
+    in_entity: bool,
+    previous_entity_type: str | None,
+    tokens: list[str],
+    labels: list[int],
+) -> tuple[bool, str | None]:
+    """Process a single token and update labels.
+
+    Args:
+        tok:
+            The token to process.
+        stack:
+            Stack of open entity tags.
+        in_entity:
+            Whether currently inside an entity.
+        previous_entity_type:
+            The previous entity type.
+        tokens:
+            List of tokens to append to.
+        labels:
+            List of labels to append to.
+
+    Returns:
+        Tuple of (new_in_entity, new_entity_type).
+    """
+    if not stack:
+        label = "O"
+        new_entity_type = None
+        new_in_entity = False
+    else:
+        current_type = TAG2LABEL.get(stack[-1], "MISC")
+        if not in_entity or current_type != previous_entity_type:
+            label = f"B-{current_type}"
+            new_in_entity = True
+        else:
+            label = f"I-{current_type}"
+            new_in_entity = in_entity
+        new_entity_type = current_type
+
+    tokens.append(tok)
+    labels.append(LABEL2ID[label])
+    SEEN_LABELS[label] += 1
+    return new_in_entity, new_entity_type
+
+
+def _reconstruct_text(tokens: list[str]) -> str:
+    """Reconstruct text from tokens, preserving original spacing.
+
+    Args:
+        tokens: List of tokens.
+
+    Returns:
+        The reconstructed text as a string.
+    """
+    if not tokens:
+        return ""
+
+    result: list[str] = []
+    for i, token in enumerate(tokens):
+        if i == 0:
+            # First token always gets added as-is
+            result.append(token)
+        elif re.match(r"[^\w\s]", token):
+            # Punctuation - attach to previous token without space
+            result.append(token)
+        else:
+            # Regular word - add space before
+            result.append(" " + token)
+
+    return "".join(result)
 
 
 if __name__ == "__main__":
