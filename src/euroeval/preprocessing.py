@@ -136,9 +136,7 @@ def _validate_columns(
 
 
 def _fix_mc_label_column(
-    example: dict,
-    choices_column: "str | list[str]",
-    target_column: str,
+    example: dict, choices_column: "str | list[str]", target_column: str
 ) -> dict:
     """Ensure multiple choice labels are lowercase letters.
 

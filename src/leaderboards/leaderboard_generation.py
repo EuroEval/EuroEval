@@ -155,7 +155,9 @@ def _collect_orthogonal_scores(
 def _build_model_row_data(
     model_id: str,
     results: dict[str, list[tuple[list[float], float, float]]],
-    eligible_model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    eligible_model_results: dict[
+        str, dict[str, list[tuple[list[float], float, float]]]
+    ],
     all_standard_ranks: dict,
     ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
     category: str,
@@ -202,9 +204,7 @@ def _build_model_row_data(
     rank = all_standard_ranks.get(model_id, {}).get(category, math.nan)
     cat_ranks = ranks.get(model_id, {}).get(category, {})
     rank_data = cat_ranks.get("overall", {})
-    mean_rank_score_str = (
-        _format_rank_score(rank_data) if has_all_datasets else "-"
-    )
+    mean_rank_score_str = _format_rank_score(rank_data) if has_all_datasets else "-"
     if mean_rank_score_str == "-":
         rank = math.nan
     language_ranks = cat_ranks.copy()
@@ -216,9 +216,7 @@ def _build_model_row_data(
 
     language_ranks_scores = {
         lang: _format_rank_score(entry)
-        if all(
-            ds in results for ds in language_to_required_datasets.get(lang, [])
-        )
+        if all(ds in results for ds in language_to_required_datasets.get(lang, []))
         else "-"
         for lang, entry in language_ranks.items()
     }
@@ -266,9 +264,7 @@ def _build_model_row_data(
         total_results[dataset] = score_str
 
     orthogonal_task_scores = {
-        task: np.mean(score_list).item()
-        if len(score_list) > 0
-        else float("nan")
+        task: np.mean(score_list).item() if len(score_list) > 0 else float("nan")
         for task, score_list in orthogonal_scores.items()
     }
 
@@ -286,9 +282,7 @@ def _build_model_row_data(
     display_model = f"<a href='{model_url}'>{model_id}</a>" if model_url else model_id
 
     model_values = (
-        dict(
-            model=display_model, rank=rank, mean_rank_score=mean_rank_score_str
-        )
+        dict(model=display_model, rank=rank, mean_rank_score=mean_rank_score_str)
         | default_orthogonal_values
         | default_dataset_values
         | orthogonal_task_scores
@@ -303,9 +297,7 @@ def _build_model_row_data(
     return model_values
 
 
-def _format_ordinal_rank_column(
-    df: pd.DataFrame, rank_cols: list[str]
-) -> pd.DataFrame:
+def _format_ordinal_rank_column(df: pd.DataFrame, rank_cols: list[str]) -> pd.DataFrame:
     """Format the ordinal rank column with sentinel for NaN.
 
     Args:
@@ -358,9 +350,7 @@ def _reorder_columns(
     orthogonal_cols = list(
         {
             orthogonal_task.replace("-", "_")
-            for orthogonal_task in category_to_orthogonal_datasets[
-                category
-            ].values()
+            for orthogonal_task in category_to_orthogonal_datasets[category].values()
         }
     )
     dataset_cols = [
@@ -535,12 +525,8 @@ def _create_simplified_and_rename(
         | {"mean_rank_score": "Rank score"}
         | {rank_col: rank_col.title() for rank_col in rank_cols[2:]}
         | {
-            orthogonal_task.replace("-", "_"): orthogonal_task.replace(
-                "-", " "
-            ).title()
-            for orthogonal_task in category_to_orthogonal_datasets[
-                category
-            ].values()
+            orthogonal_task.replace("-", "_"): orthogonal_task.replace("-", " ").title()
+            for orthogonal_task in category_to_orthogonal_datasets[category].values()
         }
     )
     df = df.rename(renaming_dict, axis="columns")
@@ -938,16 +924,14 @@ def _generate_dataframe(
 
     dfs: list[tuple[pd.DataFrame, pd.DataFrame]] = []
     for category in categories:
-        (
-            eligible_model_results,
-            language_to_required_datasets,
-            all_standard_ranks,
-        ) = _compute_eligible_models_and_ranks(
-            model_results=model_results,
-            category=category,
-            category_to_datasets=category_to_datasets,
-            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
-            leaderboard_configs=leaderboard_configs,
+        (eligible_model_results, language_to_required_datasets, all_standard_ranks) = (
+            _compute_eligible_models_and_ranks(
+                model_results=model_results,
+                category=category,
+                category_to_datasets=category_to_datasets,
+                category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+                leaderboard_configs=leaderboard_configs,
+            )
         )
 
         orthogonal_scores_by_plain = _collect_orthogonal_scores(

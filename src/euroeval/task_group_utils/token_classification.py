@@ -79,9 +79,7 @@ def _extract_predictions_and_labels(
 
 
 def _replace_ner_tags_with_misc_or_o(
-    predictions: list[list[str]],
-    has_misc_tags: bool,
-    labels_without_misc: set[str],
+    predictions: list[list[str]], has_misc_tags: bool, labels_without_misc: set[str]
 ) -> None:
     """Replace predicted tags with MISC or O based on dataset tags.
 
@@ -277,8 +275,7 @@ def compute_metrics(
         values.
     """
     predictions, labels = _extract_predictions_and_labels(
-        model_outputs_and_labels=model_outputs_and_labels,
-        dataset_config=dataset_config,
+        model_outputs_and_labels=model_outputs_and_labels, dataset_config=dataset_config
     )
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
