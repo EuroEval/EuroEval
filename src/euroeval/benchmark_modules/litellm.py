@@ -504,64 +504,69 @@ class LiteLLMModel(BenchmarkModule):
         error_msg = str(error).lower()
         model_id = self.model_config.model_id
 
-        # Error messages that we want to catch and handle
-        stop_messages = [
-            "stop_sequences",
-            "'stop' is not supported with this model",
-            "'$.stop' is invalid",
-        ]
+        # Try parameter-specific handlers first
+        result = self._handle_parameter_error(
+            error=error,
+            error_msg=error_msg,
+            model_id=model_id,
+            generation_kwargs=generation_kwargs,
+        )
+        if result is not None:
+            return result
+
+        # Try service/retry handlers
+        result = self._handle_service_error(
+            error=error,
+            error_msg=error_msg,
+            model_id=model_id,
+            generation_kwargs=generation_kwargs,
+        )
+        if result is not None:
+            return result
+
+        # Try error-raising handlers
+        self._handle_fatal_error(
+            error=error, error_msg=error_msg, model_id=model_id
+        )
+
+        # Default: raise InvalidBenchmark
+        raise InvalidBenchmark(
+            f"Failed to generate text. The error message was: {error}"
+        ) from error
+
+    def _handle_parameter_error(
+        self,
+        error: Exception,
+        error_msg: str,
+        model_id: str,
+        generation_kwargs: dict,
+    ) -> tuple[dict, int] | None:
+        """Handle parameter-related errors. Returns (kwargs, wait_time) or None."""
         stop_pattern = re.compile(r"does not support parameters: \[.*'stop'.*\]")
-        logprobs_messages = [
-            "you are not allowed to request logprobs",
-            "you've reached the maximum number of requests with logprobs",
-            "logprobs is not supported",
-            "logprobs is not enabled",
-        ]
         logprobs_pattern = re.compile(
             r"does not support parameters: \[.*'logprobs'.*\]"
         )
-        logprobs_argument_should_be_bool_messages = [
-            "Invalid value at 'generation_config.response_logprobs' (TYPE_BOOL)"
-        ]
-        top_logprobs_messages = ["got an unexpected keyword argument 'top_logprobs'"]
         top_logprobs_pattern = re.compile(
             r"does not support parameters: \[.*'top_logprobs'.*\]"
         )
         max_completion_tokens_pattern = re.compile(
             r"does not support parameters: \[.*'max_completion_tokens'.*\]"
         )
-        temperature_messages = [
-            "'temperature' is not supported with this model.",
-            "temperature is not supported with this model",
-            r"does not support parameters: \[.*'temperature'.*\]",
-            "`temperature` is deprecated for this model.",
-        ]
-        temperature_must_be_one_messages = [
-            "`temperature` may only be set to 1",
-            "'temperature' does not support 0.0 with this model. Only the default "
-            "(1) value is supported",
-            "'temperature' does not support 0 with this model. Only the default "
-            "(1) value is supported",
-            "Only temperature=1 is supported",
-        ]
-        max_items_messages = ["'maxItems' is not permitted."]
-        no_json_schema_messages = [
-            "Property keys should match pattern",
-            "'json_schema' is not supported",
-        ]
+        temperature_pattern = re.compile(
+            r"does not support parameters: \[.*'temperature'.*\]"
+        )
+        seed_pattern = re.compile(r"does not support parameters: \[.*'seed'.*\]")
         thinking_budget_pattern = re.compile(
             r"the thinking budget [0-9]+ is invalid. please choose a value between "
             r"[0-9]+ and ([0-9]+)\."
         )
-        requires_thinking_disabled_messages = ["thinking.type: Field required"]
-        seed_pattern = re.compile(r"does not support parameters: \[.*'seed'.*\]")
-        response_format_messages = [
-            "got an unexpected keyword argument 'response_format'",
-            "the model returned empty outputs",
-            "'maxitems' is not supported",
-            "must contain the word 'json'",
-        ]
 
+        # Stop sequences
+        stop_messages = [
+            "stop_sequences",
+            "'stop' is not supported with this model",
+            "'$.stop' is invalid",
+        ]
         if (
             any(msg.lower() in error_msg for msg in stop_messages)
             or stop_pattern.search(string=error_msg) is not None
@@ -573,12 +578,17 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs["stop"] = None
             return generation_kwargs, 0
-        elif (
+
+        # Logprobs
+        logprobs_messages = [
+            "you are not allowed to request logprobs",
+            "you've reached the maximum number of requests with logprobs",
+            "logprobs is not supported",
+            "logprobs is not enabled",
+        ]
+        if (
             any(msg.lower() in error_msg for msg in logprobs_messages)
             or logprobs_pattern.search(string=error_msg) is not None
-            # Special case for Vertex AI models, since they have strict rate
-            # limits on using logprobs. They also have a cap of 5 logprobs, but
-            # we ignore this since the rate limiting makes it unusable anyway.
             or (isinstance(error, VertexAIError) and "logprobs" in error_msg)
         ):
             log_once(
@@ -590,9 +600,11 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs.pop("top_logprobs", None)
             generation_kwargs.pop("response_format", None)
             return generation_kwargs, 0
-        elif any(
-            msg.lower() in error_msg
-            for msg in logprobs_argument_should_be_bool_messages
+
+        # Logprobs must be boolean
+        if (
+            "invalid value at 'generation_config.response_logprobs' (type_bool)"
+            in error_msg
         ):
             log_once(
                 f"The model {model_id!r} requires the `logprobs` argument to be a "
@@ -601,8 +613,10 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs["logprobs"] = True
             return generation_kwargs, 0
-        elif (
-            any(msg.lower() in error_msg for msg in top_logprobs_messages)
+
+        # Top logprobs
+        if (
+            "got an unexpected keyword argument 'top_logprobs'" in error_msg
             or top_logprobs_pattern.search(string=error_msg) is not None
         ):
             log_once(
@@ -612,7 +626,9 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs["logprobs"] = generation_kwargs.pop("top_logprobs", None)
             return generation_kwargs, 0
-        elif max_completion_tokens_pattern.search(string=error_msg):
+
+        # Max completion tokens
+        if max_completion_tokens_pattern.search(string=error_msg):
             log_once(
                 f"The model {model_id!r} does not support max_completion_tokens, so "
                 "disabling it.",
@@ -622,7 +638,17 @@ class LiteLLMModel(BenchmarkModule):
                 "max_completion_tokens", None
             )
             return generation_kwargs, 0
-        elif any(msg.lower() in error_msg for msg in temperature_messages):
+
+        # Temperature not supported
+        temperature_messages = [
+            "'temperature' is not supported with this model.",
+            "temperature is not supported with this model",
+            "`temperature` is deprecated for this model.",
+        ]
+        if (
+            any(msg.lower() in error_msg for msg in temperature_messages)
+            or temperature_pattern.search(string=error_msg) is not None
+        ):
             log_once(
                 f"The model {model_id!r} does not support "
                 "temperature, so disabling it.",
@@ -630,7 +656,17 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs.pop("temperature", None)
             return generation_kwargs, 0
-        elif any(msg.lower() in error_msg for msg in temperature_must_be_one_messages):
+
+        # Temperature must be 1
+        temperature_must_be_one_messages = [
+            "`temperature` may only be set to 1",
+            "'temperature' does not support 0.0 with this model. Only the default "
+            "(1) value is supported",
+            "'temperature' does not support 0 with this model. Only the default "
+            "(1) value is supported",
+            "Only temperature=1 is supported",
+        ]
+        if any(msg.lower() in error_msg for msg in temperature_must_be_one_messages):
             log_once(
                 f"The model {model_id!r} requires "
                 "temperature to be set to 1, so setting it.",
@@ -638,8 +674,10 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs["temperature"] = 1.0
             return generation_kwargs, 0
-        elif (
-            any(msg.lower() in error_msg for msg in max_items_messages)
+
+        # Max items (token classification)
+        if (
+            "'maxitems' is not permitted." in error_msg
             and self.dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION
         ):
             log_once(
@@ -651,11 +689,16 @@ class LiteLLMModel(BenchmarkModule):
             keys_and_their_types = {
                 tag_name: (c.Sequence[str], ...) for tag_name in tag_names
             }
-
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
             return generation_kwargs, 0
-        elif any(msg.lower() in error_msg for msg in no_json_schema_messages):
+
+        # No JSON schema
+        no_json_schema_messages = [
+            "Property keys should match pattern",
+            "'json_schema' is not supported",
+        ]
+        if any(msg.lower() in error_msg for msg in no_json_schema_messages):
             log_once(
                 f"The model {self.model_config.model_id!r} does not support "
                 "JSON schemas, so using the vanilla JSON format.",
@@ -663,7 +706,9 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs["response_format"] = dict(type="json_object")
             return generation_kwargs, 0
-        elif thinking_match := thinking_budget_pattern.search(string=error_msg):
+
+        # Thinking budget
+        if thinking_match := thinking_budget_pattern.search(string=error_msg):
             thinking_budget = int(thinking_match.group(1))
             if thinking_budget >= REASONING_MAX_TOKENS:
                 raise InvalidBenchmark(
@@ -683,8 +728,10 @@ class LiteLLMModel(BenchmarkModule):
                 type="enabled", budget_tokens=thinking_budget - 1
             )
             return generation_kwargs, 0
-        elif (
-            any(msg.lower() in error_msg for msg in requires_thinking_disabled_messages)
+
+        # Thinking disabled required
+        if (
+            "thinking.type: field required" in error_msg
             and self.generative_type != GenerativeType.REASONING
         ):
             log_once(
@@ -695,7 +742,9 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs["thinking"] = dict(type="disabled")
             return generation_kwargs, 0
-        elif re.search(pattern=seed_pattern, string=error_msg):
+
+        # Seed
+        if seed_pattern.search(string=error_msg):
             log_once(
                 f"The model {model_id!r} does not support the `seed` parameter, so "
                 "disabling it.",
@@ -703,7 +752,15 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs.pop("seed", None)
             return generation_kwargs, 0
-        elif any(msg.lower() in error_msg for msg in response_format_messages):
+
+        # Response format
+        response_format_messages = [
+            "got an unexpected keyword argument 'response_format'",
+            "the model returned empty outputs",
+            "'maxitems' is not supported",
+            "must contain the word 'json'",
+        ]
+        if any(msg.lower() in error_msg for msg in response_format_messages):
             log_once(
                 f"The model {model_id!r} does not support the `response_format` "
                 "parameter, so disabling it.",
@@ -711,15 +768,48 @@ class LiteLLMModel(BenchmarkModule):
             )
             generation_kwargs.pop("response_format", None)
             return generation_kwargs, 0
-        # If there are too many I/O connections, we increase the number of allowed file
-        # descriptors
-        elif "too many open files" in error_msg:
+
+        # Too many open files
+        if "too many open files" in error_msg:
             raise InvalidBenchmark(
                 "There are too many file descriptors running. See the current "
                 "value by running `ulimit -n`. Try increasing it by running "
                 "`ulimit -n <new-value>` and try again."
             ) from error
-        elif isinstance(
+
+        # Unsupported params
+        if isinstance(error, UnsupportedParamsError):
+            unsupported_param_match = re.search(
+                pattern=r"(?<=does not support parameters: \[')([^ ']+)(?='\])",
+                string=error.message,
+            )
+            if unsupported_param_match is None:
+                raise InvalidModel(error.message) from error
+            unsupported_param = unsupported_param_match.group(0)
+            raise InvalidModel(
+                f"The model {model_id!r} does not support the parameter "
+                f"{unsupported_param!r}. Try again without this parameter. "
+                "Skipping this model."
+            ) from error
+
+        # API connection errors
+        if isinstance(error, (APIConnectionError, OSError)):
+            raise InvalidBenchmark(
+                f"Encountered {type(error)} during generation: {error}."
+            ) from error
+
+        return None
+
+    def _handle_service_error(
+        self,
+        error: Exception,
+        error_msg: str,
+        model_id: str,
+        generation_kwargs: dict,
+    ) -> tuple[dict, int] | None:
+        """Handle service-related errors. Returns (kwargs, wait_time) or None."""
+        # Service temporarily unavailable
+        if isinstance(
             error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)
         ):
             log(
@@ -728,64 +818,33 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.INFO,
             )
             return generation_kwargs, 10
-        elif isinstance(error, UnsupportedParamsError):
-            unsupported_param_match = re.search(
-                pattern=r"(?<=does not support parameters\: \[')([^ ']+)(?='\])",
-                string=error.message,
+
+        # Rate limit with retry info
+        if isinstance(error, (RateLimitError, RouterRateLimitError, BadRequestError)):
+            retry_match = re.search(
+                pattern=(
+                    r"\b(try( again)?|retry) in ([0-9]+(\.[0-9]+)?) ?(s|seconds?)\b"
+                ),
+                string=error_msg,
+                flags=re.IGNORECASE,
             )
-            if unsupported_param_match is None:
-                raise InvalidModel(error.message) from error
-            else:
-                unsupported_param = unsupported_param_match.group(0)
-                raise InvalidModel(
-                    f"The model {model_id!r} does not support the parameter "
-                    f"{unsupported_param!r}. Try again without this parameter. "
-                    "Skipping this model."
-                ) from error
-        elif isinstance(error, (APIConnectionError, OSError)):
-            raise InvalidBenchmark(
-                f"Encountered {type(error)} during generation: {error}."
-            ) from error
-
-        if isinstance(error, NotFoundError):
-            raise InvalidModel(
-                f"The model {model_id!r} was not found. Please check the model ID "
-                "and try again."
-            ) from error
-
-        if (
-            isinstance(error, (RateLimitError, RouterRateLimitError, BadRequestError))
-            and (
-                retry_match := re.search(
-                    pattern=(
-                        r"\b(try( again)?|retry) in ([0-9]+(\.[0-9]+)?) ?(s|seconds?)\b"
-                    ),
-                    string=error_msg,
-                    flags=re.IGNORECASE,
+            if retry_match is not None:
+                retry_seconds = float(retry_match.group(3))
+                log_once(
+                    f"You have encountered your rate limit for model {model_id!r}.",
+                    level=logging.DEBUG,
                 )
-            )
-            is not None
-        ):
-            retry_seconds = float(retry_match.group(3))
-            log_once(
-                f"You have encountered your rate limit for model {model_id!r}.",
-                level=logging.DEBUG,
-            )
-            return generation_kwargs, int(retry_seconds)
-        elif isinstance(error, (RateLimitError, RouterRateLimitError)):
+                return generation_kwargs, int(retry_seconds)
+
+        # Rate limit without retry info
+        if isinstance(error, (RateLimitError, RouterRateLimitError)):
             log_once(
                 f"You have encountered your rate limit for model {model_id!r}.",
                 level=logging.DEBUG,
             )
             return generation_kwargs, 10
 
-        if isinstance(error, AuthenticationError):
-            raise NeedsAdditionalArgument(
-                cli_argument="--api-key",
-                script_argument="api_key=<your-api-key>",
-                run_with_cli=self.benchmark_config.run_with_cli,
-            ) from error
-
+        # API base needs /v1 suffix
         if (
             isinstance(error, (BadRequestError, NotFoundError))
             and self.benchmark_config.api_base is not None
@@ -800,9 +859,24 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["api_base"] = self.benchmark_config.api_base
             return generation_kwargs, 0
 
-        raise InvalidBenchmark(
-            f"Failed to generate text. The error message was: {error}"
-        ) from error
+        return None
+
+    def _handle_fatal_error(
+        self, error: Exception, error_msg: str, model_id: str
+    ) -> None:
+        """Handle fatal errors that should raise exceptions."""
+        if isinstance(error, NotFoundError):
+            raise InvalidModel(
+                f"The model {model_id!r} was not found. Please check the model ID "
+                "and try again."
+            ) from error
+
+        if isinstance(error, AuthenticationError):
+            raise NeedsAdditionalArgument(
+                cli_argument="--api-key",
+                script_argument="api_key=<your-api-key>",
+                run_with_cli=self.benchmark_config.run_with_cli,
+            ) from error
 
     async def _generate_async(
         self,
@@ -1624,27 +1698,106 @@ class LiteLLMModel(BenchmarkModule):
 
         return dataset
 
+    def _setup_response_format(
+        self, dataset_config: DatasetConfig, generation_kwargs: dict[str, t.Any]
+    ) -> dict[str, t.Any]:
+        """Set up response_format for structured generation."""
+        if dataset_config.task.structured_output_format is not None:
+            pydantic_class = dataset_config.task.structured_output_format
+            generation_kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": pydantic_class.__class__.__name__,
+                    "schema": pydantic_class.model_json_schema(),
+                },
+            }
+            log_once(
+                "Enabling structured generation for model "
+                f"{self.model_config.model_id!r} with response_format "
+                f"{pydantic_class.model_json_schema()}.",
+                level=logging.DEBUG,
+            )
+            return generation_kwargs
+
+        if (
+            self.benchmark_config.api_base is not None
+            or supports_response_schema(model=self.model_config.model_id)
+        ):
+            if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+                tag_names = list(dataset_config.prompt_label_mapping.values())
+                keys_and_their_types: dict[str, t.Any] = {
+                    tag_name: (conlist(str, max_length=5), ...)
+                    for tag_name in tag_names
+                }
+                pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
+                generation_kwargs["response_format"] = pydantic_class
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with the JSON schema "
+                    f"{pydantic_class.model_json_schema()}",
+                    level=logging.DEBUG,
+                )
+                return generation_kwargs
+            elif dataset_config.task == LOGIC:
+                generation_kwargs["response_format"] = dict(type="json_object")
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with a generic JSON schema",
+                    level=logging.DEBUG,
+                )
+                return generation_kwargs
+            else:
+                raise InvalidBenchmark(
+                    "This task requires structured generation, but it has not "
+                    "been implemented for this task yet. Please open an issue "
+                    "at https://github.com/EuroEval/EuroEval/issues."
+                )
+
+        generation_kwargs["response_format"] = dict(type="json_object")
+        log_once(
+            "Enabling structured JSON generation for model "
+            f"{self.model_config.model_id!r} with no custom JSON schema, as "
+            "the model does not support schemas.",
+            level=logging.DEBUG,
+        )
+        return generation_kwargs
+
+    def _setup_model_params(
+        self, generation_kwargs: dict[str, t.Any]
+    ) -> dict[str, t.Any]:
+        """Set up model-specific parameters."""
+        if self.buffer["first_label_token_mapping"]:
+            generation_kwargs["logprobs"] = True
+            generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
+
+        param = self.model_config.param
+        if param == "thinking":
+            generation_kwargs["thinking"] = dict(
+                type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
+            )
+            log_once(
+                f"Enabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+        elif param == "no-thinking":
+            generation_kwargs["thinking"] = dict(budget_tokens=0)
+            log_once(
+                f"Disabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+        elif param in {"none", "minimal", "low", "medium", "high", "xhigh"}:
+            generation_kwargs["reasoning_effort"] = param
+            log_once(
+                f"Enabling reasoning effort {param!r} for model "
+                f"{self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+
+        return generation_kwargs
+
     def get_generation_kwargs(self, dataset_config: DatasetConfig) -> dict[str, t.Any]:
-        """Get the generation arguments for the model.
-
-        Args:
-            dataset_config:
-                The dataset configuration, which is used to determine the generative
-                type of the model. We use this as an argument here rather than using
-                `self.dataset_config` to ensure that that the cache is updated when the
-                dataset configuration changes.
-
-        Returns:
-            The generation arguments for the model.
-
-        Raises:
-            InvalidModel:
-                If the model did not respond.
-            InvalidBenchmark:
-                If the dataset requires structured generation, but it hasn't been
-                implemented yet.
-        """
-        # Set the core generation arguments
+        """Get the generation arguments for the model."""
+        # Set core generation arguments
         generation_kwargs: dict[str, t.Any] = dict(
             max_completion_tokens=(
                 REASONING_MAX_TOKENS
@@ -1660,8 +1813,7 @@ class LiteLLMModel(BenchmarkModule):
             max_retries=3,
         )
 
-        # Set up the `response_format` generation argument if we are dealing with a task
-        # using structured generation and the model isn't a reasoning model
+        # Set up response_format for structured generation
         if self.generative_type == GenerativeType.REASONING and (
             dataset_config.task.uses_structured_output
             or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
@@ -1673,70 +1825,9 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
         elif dataset_config.task.uses_structured_output:
-            if dataset_config.task.structured_output_format is not None:
-                pydantic_class = dataset_config.task.structured_output_format
-                # TODO: here it would be nice to just input the pydantic class
-                # directly instead. However this caused problems with e.g.
-                # gpt-4o-mini (error: "additional_properties not defined")
-                generation_kwargs["response_format"] = {
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": pydantic_class.__class__.__name__,
-                        "schema": pydantic_class.model_json_schema(),
-                    },
-                }
-                log_once(
-                    "Enabling structured generation for model "
-                    f"{self.model_config.model_id!r} with response_format "
-                    f"{pydantic_class.model_json_schema()}.",
-                    level=logging.DEBUG,
-                )
-
-            # Skip LiteLLM's support check when using a custom base_api URL, as litellm
-            # can only reliably verify support for their official API providers, not
-            # custom endpoints. We assume custom endpoint models support structured
-            # generation.
-            elif self.benchmark_config.api_base is not None or supports_response_schema(
-                model=self.model_config.model_id
-            ):
-                if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
-                    tag_names = list(dataset_config.prompt_label_mapping.values())
-                    keys_and_their_types: dict[str, t.Any] = {
-                        tag_name: (conlist(str, max_length=5), ...)
-                        for tag_name in tag_names
-                    }
-                    pydantic_class = create_model(
-                        "AnswerFormat", **keys_and_their_types
-                    )
-                    generation_kwargs["response_format"] = pydantic_class
-                    log_once(
-                        "Enabling structured generation for model "
-                        f"{self.model_config.model_id!r} with the JSON schema "
-                        f"{pydantic_class.model_json_schema()}",
-                        level=logging.DEBUG,
-                    )
-                elif dataset_config.task == LOGIC:
-                    generation_kwargs["response_format"] = dict(type="json_object")
-                    log_once(
-                        "Enabling structured generation for model "
-                        f"{self.model_config.model_id!r} with a generic JSON schema",
-                        level=logging.DEBUG,
-                    )
-                else:
-                    raise InvalidBenchmark(
-                        "This task requires structured generation, but it has not "
-                        "been implemented for this task yet. Please open an issue "
-                        "at https://github.com/EuroEval/EuroEval/issues."
-                    )
-            else:
-                generation_kwargs["response_format"] = dict(type="json_object")
-                log_once(
-                    "Enabling structured JSON generation for model "
-                    f"{self.model_config.model_id!r} with no custom JSON schema, as "
-                    "the model does not support schemas.",
-                    level=logging.DEBUG,
-                )
-
+            generation_kwargs = self._setup_response_format(
+                dataset_config=dataset_config, generation_kwargs=generation_kwargs
+            )
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
             localised_labels = [
                 self.dataset_config.prompt_label_mapping[label]
@@ -1744,14 +1835,14 @@ class LiteLLMModel(BenchmarkModule):
             ]
             keys_and_their_types = {
                 LITELLM_CLASSIFICATION_OUTPUT_KEY: (
-                    t.Literal[*localised_labels],  # ty: ignore[invalid-type-form]
+                    t.Literal[*localised_labels],
                     ...,
                 )
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
 
-        # If the model is an Ollama reasoning model, we ensure that thinking is enabled
+        # Ollama reasoning model
         if self.is_ollama and self.generative_type == GenerativeType.REASONING:
             generation_kwargs["think"] = True
             log_once(
@@ -1760,49 +1851,14 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
 
-        # If the model is an Ordbogen model, we make sure reasoning traces are not
-        # included in the output
+        # Ordbogen model
         if self.model_config.model_id.startswith("ordbogen/"):
             generation_kwargs["include_reasoning"] = False
 
-        # Handle manually set parameters
-        if self.buffer["first_label_token_mapping"]:
-            generation_kwargs["logprobs"] = True
-            generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
-        if self.model_config.param == "thinking":
-            generation_kwargs["thinking"] = dict(
-                type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
-            )
-            log_once(
-                f"Enabling thinking mode for model {self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
-        elif self.model_config.param == "no-thinking":
-            generation_kwargs["thinking"] = dict(budget_tokens=0)
-            log_once(
-                f"Disabling thinking mode for model {self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
-        elif self.model_config.param in {
-            "none",
-            "minimal",
-            "low",
-            "medium",
-            "high",
-            "xhigh",
-        }:
-            generation_kwargs["reasoning_effort"] = self.model_config.param
-            log_once(
-                f"Enabling reasoning effort {self.model_config.param!r} for model "
-                f"{self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
+        # Model-specific parameters
+        generation_kwargs = self._setup_model_params(generation_kwargs=generation_kwargs)
 
-        # First attempt is a test run with a single conversation to handle errors
-        # quickly. We repeat this multiple times to deal with different types of
-        # errors, and stop if we get a successful response.
-        # The text message must include the word "json" in case of openai models that
-        # should create json responses
+        # Test run with retries
         test_input: c.Sequence[litellm.AllMessageValues] | str
         if self.generative_type == GenerativeType.BASE:
             test_input = "Test message json"
@@ -1812,6 +1868,7 @@ class LiteLLMModel(BenchmarkModule):
                     role="user", content="Test message json"
                 )
             ]
+
         for _ in range(num_attempts := 10):
             successes, failures = safe_run(
                 self._generate_async(
@@ -1822,8 +1879,6 @@ class LiteLLMModel(BenchmarkModule):
                 )
             )
 
-            # Check if the model is using the `reasoning_content` attribute, in which
-            # case we want to mark the model as a reasoning model.
             if successes and self.generative_type != GenerativeType.REASONING:
                 _, successful_content = successes[0]
                 successful_message = successful_content.choices[0].message

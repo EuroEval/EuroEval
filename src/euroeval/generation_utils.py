@@ -30,6 +30,161 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 
 
+def _extract_classification_examples(
+    shuffled_train: Dataset,
+    num_few_shots: int,
+    dataset_config: "DatasetConfig",
+    random_seed: int,
+) -> list[dict[str, t.Any]]:
+    """Extract few-shot examples for classification task groups."""
+    # Locate the maximum number of tokens that constitutes a short example
+    for max_num_tokens in [512, 1024, 2048, 4096, 8192]:
+        train_with_short_examples = shuffled_train.filter(
+            lambda example: len(example["text"]) < max_num_tokens
+        )
+        num_short_examples = len(train_with_short_examples)
+        if num_short_examples >= num_few_shots:
+            break
+    else:
+        raise InvalidBenchmark(
+            "Could not find enough short examples for few-shot learning."
+        )
+
+    shuffled_train = train_with_short_examples.shuffle(seed=random_seed)
+    few_shot_examples: list[dict[str, t.Any]] = list()
+
+    if dataset_config.labels:
+        labels = it.cycle(dataset_config.labels)
+        labels_with_no_samples: set[str] = set()
+        while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+            if len(labels_with_no_samples) == len(dataset_config.labels):
+                raise InvalidBenchmark(
+                    "Could not find enough examples for few-shot learning. "
+                    "Please check the dataset and the labels."
+                )
+            label = next(labels)
+            possible_examples = shuffled_train.filter(
+                lambda x: str(x["label"]).lower() == label.lower()
+            )
+            assert isinstance(possible_examples, Dataset), (
+                f"Expected `possible_examples` to be a Dataset, but got "
+                f"{type(possible_examples)} instead."
+            )
+            if len(possible_examples) == 0:
+                labels_with_no_samples.add(label)
+                continue
+            example = possible_examples.select(range(1))[0]
+            assert isinstance(example, dict), (
+                f"Expected `example` to be a dict, but got "
+                f"{type(example)} instead."
+            )
+            few_shot_examples.append(example)
+            shuffled_train = shuffled_train.filter(
+                lambda x: x["text"] != example["text"]
+            )
+    else:
+        # No labels defined (e.g. community datasets with variable number of
+        # choices) — fall back to random sampling.
+        while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+            example = shuffled_train.select(range(1))[0]
+            assert isinstance(example, dict), (
+                f"Expected `example` to be a dict, but got "
+                f"{type(example)} instead."
+            )
+            few_shot_examples.append(example)
+            shuffled_train = shuffled_train.filter(
+                lambda x: x["text"] != example["text"]
+            )
+
+    return few_shot_examples
+
+
+def _extract_text_to_text_examples(
+    shuffled_train: Dataset, num_few_shots: int
+) -> list[dict[str, t.Any]]:
+    """Extract few-shot examples for text-to-text task group."""
+    few_shot_examples: list[dict[str, t.Any]] = list()
+    while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+        example = shuffled_train.select(range(1))[0]
+        assert isinstance(example, dict), (
+            f"Expected `example` to be a dict, but got {type(example)} instead."
+        )
+        few_shot_examples.append(example)
+        shuffled_train = shuffled_train.filter(
+            lambda x: x["text"] != example["text"]
+        )
+    return few_shot_examples
+
+
+def _extract_token_classification_examples(
+    shuffled_train: Dataset,
+    num_few_shots: int,
+    dataset_config: "DatasetConfig",
+) -> list[dict[str, t.Any]]:
+    """Extract few-shot examples for token classification task group."""
+    few_shot_examples: list[dict[str, t.Any]] = list()
+    labels = it.cycle(
+        [
+            label.lower()
+            for label in dataset_config.labels
+            if label.lower().startswith("b-")
+        ]
+    )
+    while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+        label = next(labels)
+        possible_examples = shuffled_train.filter(
+            lambda x: label in [str(tag).lower() for tag in x["labels"]]
+        )
+        assert isinstance(possible_examples, Dataset), (
+            f"Expected `possible_examples` to be a Dataset, but got "
+            f"{type(possible_examples)} instead."
+        )
+        if len(possible_examples) == 0:
+            continue
+        example = possible_examples.select(range(1))[0]
+        assert isinstance(example, dict), (
+            f"Expected `example` to be a dict, but got {type(example)} instead."
+        )
+        few_shot_examples.append(example)
+        shuffled_train = shuffled_train.filter(
+            lambda x: x["tokens"] != example["tokens"]
+        )
+    return few_shot_examples
+
+
+def _extract_question_answering_examples(
+    shuffled_train: Dataset,
+    num_few_shots: int,
+    random_seed: int,
+) -> list[dict[str, t.Any]]:
+    """Extract few-shot examples for question answering task group."""
+    # Locate the maximum number of tokens that constitutes a short example
+    for max_num_tokens in [512, 1024, 2048, 4096, 8192]:
+        train_with_short_examples = shuffled_train.filter(
+            lambda example: len(example["context"]) < max_num_tokens
+        )
+        num_short_examples = len(train_with_short_examples)
+        if num_short_examples >= num_few_shots:
+            break
+    else:
+        raise InvalidBenchmark(
+            "Could not find enough short examples for few-shot learning."
+        )
+
+    shuffled_train = train_with_short_examples.shuffle(seed=random_seed)
+    few_shot_examples: list[dict[str, t.Any]] = list()
+    while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+        example = shuffled_train.select(range(1))[0]
+        assert isinstance(example, dict), (
+            f"Expected `example` to be a dict, but got {type(example)} instead."
+        )
+        few_shot_examples.append(example)
+        shuffled_train = shuffled_train.filter(
+            lambda x: x["context"] != example["context"]
+        )
+    return few_shot_examples
+
+
 def extract_few_shot_examples(
     dataset: "DatasetDict",
     dataset_config: "DatasetConfig",
@@ -84,145 +239,39 @@ def extract_few_shot_examples(
 
     random_seed = 4242 + itr_idx
     num_few_shots = dataset_config.num_few_shot_examples
-    few_shot_examples: list[dict[str, t.Any]] = list()
     shuffled_train = dataset["train"].shuffle(seed=random_seed)
     assert isinstance(shuffled_train, Dataset), (
         f"Expected `shuffled_train` to be a Dataset, but got {type(shuffled_train)} "
         "instead."
     )
 
+    few_shot_examples: list[dict[str, t.Any]]
     match dataset_config.task.task_group:
         case (
             TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         ):
-            # Locate the maximum number of tokens that constitutes a short example
-            for max_num_tokens in [512, 1024, 2048, 4096, 8192]:
-                train_with_short_examples = dataset["train"].filter(
-                    lambda example: len(example["text"]) < max_num_tokens
-                )
-                num_short_examples = len(train_with_short_examples)
-                if num_short_examples >= num_few_shots:
-                    break
-            else:
-                raise InvalidBenchmark(
-                    "Could not find enough short examples for few-shot learning."
-                )
-
-            if dataset_config.labels:
-                labels = it.cycle(dataset_config.labels)
-                labels_with_no_samples: set[str] = set()
-                while (
-                    len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0
-                ):
-                    if len(labels_with_no_samples) == len(dataset_config.labels):
-                        raise InvalidBenchmark(
-                            "Could not find enough examples for few-shot learning. "
-                            "Please check the dataset and the labels."
-                        )
-                    label = next(labels)
-                    possible_examples = shuffled_train.filter(
-                        lambda x: str(x["label"]).lower() == label.lower()
-                    )
-                    assert isinstance(possible_examples, Dataset), (
-                        f"Expected `possible_examples` to be a Dataset, but got "
-                        f"{type(possible_examples)} instead."
-                    )
-                    if len(possible_examples) == 0:
-                        labels_with_no_samples.add(label)
-                        continue
-                    example = possible_examples.select(range(1))[0]
-                    assert isinstance(example, dict), (
-                        f"Expected `example` to be a dict, but got "
-                        f"{type(example)} instead."
-                    )
-                    few_shot_examples.append(example)
-                    shuffled_train = shuffled_train.filter(
-                        lambda x: x["text"] != example["text"]
-                    )
-            else:
-                # No labels defined (e.g. community datasets with variable number of
-                # choices) — fall back to random sampling.
-                while (
-                    len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0
-                ):
-                    example = shuffled_train.select(range(1))[0]
-                    assert isinstance(example, dict), (
-                        f"Expected `example` to be a dict, but got "
-                        f"{type(example)} instead."
-                    )
-                    few_shot_examples.append(example)
-                    shuffled_train = shuffled_train.filter(
-                        lambda x: x["text"] != example["text"]
-                    )
-
+            few_shot_examples = _extract_classification_examples(
+                shuffled_train=shuffled_train,
+                num_few_shots=num_few_shots,
+                dataset_config=dataset_config,
+                random_seed=random_seed,
+            )
         case TaskGroup.TEXT_TO_TEXT:
-            while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
-                example = shuffled_train.select(range(1))[0]
-                assert isinstance(example, dict), (
-                    f"Expected `example` to be a dict, but got {type(example)} instead."
-                )
-                few_shot_examples.append(example)
-                shuffled_train = shuffled_train.filter(
-                    lambda x: x["text"] != example["text"]
-                )
-
+            few_shot_examples = _extract_text_to_text_examples(
+                shuffled_train=shuffled_train, num_few_shots=num_few_shots
+            )
         case TaskGroup.TOKEN_CLASSIFICATION:
-            labels = it.cycle(
-                [
-                    label.lower()
-                    for label in dataset_config.labels
-                    if label.lower().startswith("b-")
-                ]
+            few_shot_examples = _extract_token_classification_examples(
+                shuffled_train=shuffled_train,
+                num_few_shots=num_few_shots,
+                dataset_config=dataset_config,
             )
-            while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
-                label = next(labels)
-                possible_examples = shuffled_train.filter(
-                    lambda x: label in [str(tag).lower() for tag in x["labels"]]
-                )
-                assert isinstance(possible_examples, Dataset), (
-                    f"Expected `possible_examples` to be a Dataset, but got "
-                    f"{type(possible_examples)} instead."
-                )
-                if len(possible_examples) == 0:
-                    continue
-                example = possible_examples.select(range(1))[0]
-                assert isinstance(example, dict), (
-                    f"Expected `example` to be a dict, but got {type(example)} instead."
-                )
-                few_shot_examples.append(example)
-                shuffled_train = shuffled_train.filter(
-                    lambda x: x["tokens"] != example["tokens"]
-                )
-
         case TaskGroup.QUESTION_ANSWERING:
-            # Locate the maximum number of tokens that constitutes a short example
-            for max_num_tokens in [512, 1024, 2048, 4096, 8192]:
-                train_with_short_examples = dataset["train"].filter(
-                    lambda example: len(example["context"]) < max_num_tokens
-                )
-                num_short_examples = len(train_with_short_examples)
-                if num_short_examples >= num_few_shots:
-                    break
-            else:
-                raise InvalidBenchmark(
-                    "Could not find enough short examples for few-shot learning."
-                )
-
-            shuffled_train = train_with_short_examples.shuffle(seed=random_seed)
-            assert isinstance(shuffled_train, Dataset), (
-                f"Expected `shuffled_train` to be a Dataset, but got "
-                f"{type(shuffled_train)} instead."
+            few_shot_examples = _extract_question_answering_examples(
+                shuffled_train=shuffled_train,
+                num_few_shots=num_few_shots,
+                random_seed=random_seed,
             )
-            while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
-                example = shuffled_train.select(range(1))[0]
-                assert isinstance(example, dict), (
-                    f"Expected `example` to be a dict, but got {type(example)} instead."
-                )
-                few_shot_examples.append(example)
-                shuffled_train = shuffled_train.filter(
-                    lambda x: x["context"] != example["context"]
-                )
-
         case _:
             raise NotImplementedError(
                 f"Unsupported task group: {dataset_config.task.task_group}."
