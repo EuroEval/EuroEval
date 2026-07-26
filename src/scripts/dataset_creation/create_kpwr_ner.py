@@ -98,6 +98,21 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
+def create_label_mapping(label_names: list[str]) -> dict[int, str]:
+    """Create mapping from KPWr labels to standard BIO labels.
+
+    Args:
+        label_names:
+            The list of label names.
+
+    Returns:
+        The mapping from KPWr labels to standard BIO labels.
+    """
+    return {
+        i: _map_single_label(label_name) for i, label_name in enumerate(label_names)
+    }
+
+
 def _map_single_label(label_name: str) -> str:
     """Map a single KPWr label name to standard BIO label.
 
@@ -132,21 +147,6 @@ def _map_single_label(label_name: str) -> str:
     elif label_name.startswith("I-"):
         return "I-MISC"
     return "O"
-
-
-def create_label_mapping(label_names: list[str]) -> dict[int, str]:
-    """Create mapping from KPWr labels to standard BIO labels.
-
-    Args:
-        label_names:
-            The list of label names.
-
-    Returns:
-        The mapping from KPWr labels to standard BIO labels.
-    """
-    return {
-        i: _map_single_label(label_name) for i, label_name in enumerate(label_names)
-    }
 
 
 if __name__ == "__main__":

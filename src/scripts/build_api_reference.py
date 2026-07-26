@@ -370,26 +370,6 @@ def render_function(
         out.append("")
 
 
-def _render_param(arg: ast.arg, default: ast.expr | None = None) -> str:
-    """Render a single parameter with optional annotation and default.
-
-    Args:
-        arg:
-            The argument AST node.
-        default:
-            Optional default value AST node.
-
-    Returns:
-        The parameter as a string.
-    """
-    s = arg.arg
-    if arg.annotation is not None:
-        s += f": {ast.unparse(arg.annotation)}"
-    if default is not None:
-        s += f" = {ast.unparse(default)}"
-    return s
-
-
 def render_signature(func: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
     """Render a function's argument list and return type as Python source.
 
@@ -439,6 +419,26 @@ def render_signature(func: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
     if func.returns is not None:
         sig += f" -> {ast.unparse(func.returns)}"
     return sig
+
+
+def _render_param(arg: ast.arg, default: ast.expr | None = None) -> str:
+    """Render a single parameter with optional annotation and default.
+
+    Args:
+        arg:
+            The argument AST node.
+        default:
+            Optional default value AST node.
+
+    Returns:
+        The parameter as a string.
+    """
+    s = arg.arg
+    if arg.annotation is not None:
+        s += f": {ast.unparse(arg.annotation)}"
+    if default is not None:
+        s += f" = {ast.unparse(default)}"
+    return s
 
 
 def heading_html(level: int, anchor: str, code: str, url: str) -> str:
