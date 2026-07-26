@@ -494,10 +494,6 @@ class LiteLLMModel(BenchmarkModule):
             `retry_delay_seconds` is the number of seconds to wait before retrying.
 
         Raises:
-            NeedsAdditionalArgument:
-                If the API key is not specified, but required.
-            InvalidModel:
-                If the model was not found, or does not specify a given parameter.
             InvalidBenchmark:
                 If the model's reasoning budget is not specified correctly.
         """
@@ -535,7 +531,28 @@ class LiteLLMModel(BenchmarkModule):
     def _handle_parameter_error(
         self, error: Exception, error_msg: str, model_id: str, generation_kwargs: dict
     ) -> tuple[dict, int] | None:
-        """Handle parameter-related errors. Returns (kwargs, wait_time) or None."""
+        """Handle parameter-related errors.
+
+        Args:
+            error:
+                The exception to handle.
+            error_msg:
+                The error message string.
+            model_id:
+                The model identifier.
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+
+        Returns:
+            A tuple of (updated_kwargs, wait_time) if the error was handled, or None
+            if the error was not handled.
+
+        Raises:
+            InvalidBenchmark:
+                If there are too many open files.
+            InvalidModel:
+                If the model does not support a given parameter.
+        """
         stop_pattern = re.compile(r"does not support parameters: \[.*'stop'.*\]")
         logprobs_pattern = re.compile(
             r"does not support parameters: \[.*'logprobs'.*\]"
@@ -797,7 +814,22 @@ class LiteLLMModel(BenchmarkModule):
     def _handle_service_error(
         self, error: Exception, error_msg: str, model_id: str, generation_kwargs: dict
     ) -> tuple[dict, int] | None:
-        """Handle service-related errors. Returns (kwargs, wait_time) or None."""
+        """Handle service-related errors.
+
+        Args:
+            error:
+                The exception to handle.
+            error_msg:
+                The error message string.
+            model_id:
+                The model identifier.
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+
+        Returns:
+            A tuple of (updated_kwargs, wait_time) if the error was handled, or None
+            if the error was not handled.
+        """
         # Service temporarily unavailable
         if isinstance(
             error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)
@@ -854,7 +886,22 @@ class LiteLLMModel(BenchmarkModule):
     def _handle_fatal_error(
         self, error: Exception, error_msg: str, model_id: str
     ) -> None:
-        """Handle fatal errors that should raise exceptions."""
+        """Handle fatal errors that should raise exceptions.
+
+        Args:
+            error:
+                The exception to handle.
+            error_msg:
+                The error message string.
+            model_id:
+                The model identifier.
+
+        Raises:
+            InvalidModel:
+                If the model was not found.
+            NeedsAdditionalArgument:
+                If an API key is required but not provided.
+        """
         if isinstance(error, NotFoundError):
             raise InvalidModel(
                 f"The model {model_id!r} was not found. Please check the model ID "
@@ -1691,7 +1738,21 @@ class LiteLLMModel(BenchmarkModule):
     def _setup_response_format(
         self, dataset_config: DatasetConfig, generation_kwargs: dict[str, t.Any]
     ) -> dict[str, t.Any]:
-        """Set up response_format for structured generation."""
+        """Set up response_format for structured generation.
+
+        Args:
+            dataset_config:
+                The dataset configuration.
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+
+        Returns:
+            The updated generation kwargs with response_format configured.
+
+        Raises:
+            InvalidBenchmark:
+                If structured generation is required but not implemented for the task.
+        """
         if dataset_config.task.structured_output_format is not None:
             pydantic_class = dataset_config.task.structured_output_format
             generation_kwargs["response_format"] = {
@@ -1754,7 +1815,15 @@ class LiteLLMModel(BenchmarkModule):
     def _setup_model_params(
         self, generation_kwargs: dict[str, t.Any]
     ) -> dict[str, t.Any]:
-        """Set up model-specific parameters."""
+        """Set up model-specific parameters.
+
+        Args:
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+
+        Returns:
+            The updated generation kwargs with model-specific parameters configured.
+        """
         if self.buffer["first_label_token_mapping"]:
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
@@ -1785,7 +1854,19 @@ class LiteLLMModel(BenchmarkModule):
         return generation_kwargs
 
     def get_generation_kwargs(self, dataset_config: DatasetConfig) -> dict[str, t.Any]:
-        """Get the generation arguments for the model."""
+        """Get the generation arguments for the model.
+
+        Args:
+            dataset_config:
+                The dataset configuration.
+
+        Returns:
+            A dictionary of generation kwargs configured for the model.
+
+        Raises:
+            InvalidModel:
+                If the model fails to respond after multiple attempts.
+        """
         # Set core generation arguments
         generation_kwargs: dict[str, t.Any] = dict(
             max_completion_tokens=(
@@ -1818,12 +1899,12 @@ class LiteLLMModel(BenchmarkModule):
                 dataset_config=dataset_config, generation_kwargs=generation_kwargs
             )
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            localised_labels = [
+            [
                 self.dataset_config.prompt_label_mapping[label]
                 for label in self.dataset_config.labels
             ]
             keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (c.Sequence[str], ...)
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class

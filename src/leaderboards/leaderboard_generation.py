@@ -63,7 +63,10 @@ def _build_category_dataset_maps(
         for category in categories
     }
 
-    return category_to_datasets, category_to_orthogonal_datasets
+    return (  # ty: ignore[invalid-return-type]
+        category_to_datasets,
+        category_to_orthogonal_datasets,
+    )
 
 
 def _compute_eligible_models_and_ranks(
@@ -72,7 +75,7 @@ def _compute_eligible_models_and_ranks(
     category_to_datasets: dict[str, list[str]],
     category_to_orthogonal_datasets: dict[str, dict[str, str]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
-) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, dict[str, list[str]]], dict]":
+) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, list[str]], dict]":
     """Compute eligible models and bootstrap ranks for a category.
 
     Args:
@@ -198,6 +201,10 @@ def _build_model_row_data(
 
     Returns:
         Dictionary with all values for this model row.
+
+    Raises:
+        ValueError:
+            If duplicate records are found for a dataset.
     """
     has_all_datasets = model_id in eligible_model_results
 

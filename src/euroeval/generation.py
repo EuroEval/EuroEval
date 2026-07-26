@@ -452,7 +452,10 @@ def _compute_final_scores(
                 dataset_config=dataset_config,
                 benchmark_config=benchmark_config,
             )
-            return {bpc_metric.name: bpc_score, "failed_instances": failed_instances}
+            return {
+                bpc_metric.name: bpc_score if bpc_score is not None else float("inf"),
+                "failed_instances": failed_instances,
+            }
         else:
             log_once(
                 "BPC evaluation requested but no BPC scores were computed. "

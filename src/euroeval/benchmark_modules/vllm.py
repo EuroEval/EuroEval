@@ -556,7 +556,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         return self
 
     def _setup_stop_tokens(self) -> list[str]:
-        """Set up stopping tokens for generation."""
+        """Set up stopping tokens for generation.
+
+        Returns:
+            A list of stop tokens for generation.
+        """
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
         if self.generative_type == GenerativeType.BASE:
             stop_tokens.append("\n\n")
@@ -586,7 +590,15 @@ class VLLMModel(HuggingFaceEncoderModel):
     def _setup_structured_outputs(
         self, inputs: dict[str, t.Any]
     ) -> "StructuredOutputsParams | None":
-        """Set up structured outputs parameters."""
+        """Set up structured outputs parameters.
+
+        Args:
+            inputs:
+                The input dictionary for generation.
+
+        Returns:
+            StructuredOutputsParams if structured output is enabled, or None otherwise.
+        """
         if (
             self.dataset_config.task.uses_structured_output
             or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
@@ -614,7 +626,19 @@ class VLLMModel(HuggingFaceEncoderModel):
     def _structured_output_for_task(
         self, inputs: dict[str, t.Any]
     ) -> "StructuredOutputsParams":
-        """Handle structured output for task-based generation."""
+        """Handle structured output for task-based generation.
+
+        Args:
+            inputs:
+                The input dictionary for generation.
+
+        Returns:
+            StructuredOutputsParams for the task.
+
+        Raises:
+            InvalidTask:
+                If the task requires structured output but doesn't define it.
+        """
         if self.dataset_config.task.structured_output_format is not None:
             return StructuredOutputsParams(
                 json=self.dataset_config.task.structured_output_format.model_json_schema()
@@ -632,7 +656,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
 
     def _so_token_classification(self) -> "StructuredOutputsParams":
-        """Handle structured output for token classification."""
+        """Handle structured output for token classification.
+
+        Returns:
+            StructuredOutputsParams for token classification.
+        """
         tag_names = list(self.dataset_config.prompt_label_mapping.values())
         keys_and_their_types: dict[str, t.Any] = {
             tag_name: (conlist(str, max_length=5), ...) for tag_name in tag_names
@@ -647,7 +675,15 @@ class VLLMModel(HuggingFaceEncoderModel):
         return StructuredOutputsParams(json=schema)
 
     def _so_logic(self, inputs: dict[str, t.Any]) -> "StructuredOutputsParams":
-        """Handle structured output for LOGIC tasks."""
+        """Handle structured output for LOGIC tasks.
+
+        Args:
+            inputs:
+                The input dictionary for generation.
+
+        Returns:
+            StructuredOutputsParams for LOGIC tasks.
+        """
         first_sample_raw = inputs["target_text"][0]
         first_sample = (
             json.loads(first_sample_raw)
@@ -671,7 +707,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         return StructuredOutputsParams(json=schema)
 
     def _structured_output_for_logprobs(self) -> "StructuredOutputsParams":
-        """Handle structured output for logprobs-based tasks."""
+        """Handle structured output for logprobs-based tasks.
+
+        Returns:
+            StructuredOutputsParams for logprobs-based tasks.
+        """
         choice_labels = [
             self.dataset_config.prompt_label_mapping[label]
             for label in self.dataset_config.labels
@@ -689,7 +729,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         return struct_output
 
     def _setup_generation_kwargs(self) -> dict[str, t.Any]:
-        """Set up generation kwargs from model config."""
+        """Set up generation kwargs from model config.
+
+        Returns:
+            A dictionary of generation kwargs configured from the model.
+        """
         generation_kwargs = GENERATION_KWARGS.copy()
         if (generation_config := self.model_config.generation_config) is not None:
             changed_params = generation_config.to_diff_dict()
@@ -707,7 +751,17 @@ class VLLMModel(HuggingFaceEncoderModel):
     def _apply_token_budget(
         self, sampling_params: "SamplingParams", max_context_length: int
     ) -> int:
-        """Apply token budget and return max tokens per prompt."""
+        """Apply token budget and return max tokens per prompt.
+
+        Args:
+            sampling_params:
+                The sampling parameters.
+            max_context_length:
+                The maximum context length.
+
+        Returns:
+            The maximum number of tokens per prompt.
+        """
         if sampling_params.prompt_logprobs is not None:
             return max_context_length - sampling_params.max_tokens
         generation_budget, max_tokens_per_prompt = compute_token_budget(
@@ -735,7 +789,21 @@ class VLLMModel(HuggingFaceEncoderModel):
         max_tokens_per_prompt: int,
         sampling_params: "SamplingParams",
     ) -> list[str]:
-        """Prepare and truncate prompts."""
+        """Prepare and truncate prompts.
+
+        Args:
+            inputs:
+                The input dictionary.
+            prompt_key:
+                The key for prompts in the inputs.
+            max_tokens_per_prompt:
+                Maximum tokens per prompt.
+            sampling_params:
+                The sampling parameters.
+
+        Returns:
+            A list of prepared and truncated prompts.
+        """
         prompts: c.Sequence[str] = list(inputs[prompt_key])
         prompts = self._clean_empty_prompts(prompts)
         prompts = self._strip_prompts_if_needed(prompts)
@@ -745,7 +813,15 @@ class VLLMModel(HuggingFaceEncoderModel):
         return list(prompts)
 
     def _clean_empty_prompts(self, prompts: c.Sequence[str]) -> list[str]:
-        """Replace empty prompts with BOS token."""
+        """Replace empty prompts with BOS token.
+
+        Args:
+            prompts:
+                The sequence of prompts.
+
+        Returns:
+            A list of prompts with empty prompts replaced by BOS token.
+        """
         if any(len(prompt.strip()) == 0 for prompt in prompts):
             log("Found empty prompts, replacing with BOS token.", level=logging.DEBUG)
             return [
@@ -757,7 +833,15 @@ class VLLMModel(HuggingFaceEncoderModel):
         return list(prompts)
 
     def _strip_prompts_if_needed(self, prompts: c.Sequence[str]) -> list[str]:
-        """Strip prompts if the model's tokeniser requires it."""
+        """Strip prompts if the model's tokeniser requires it.
+
+        Args:
+            prompts:
+                The sequence of prompts.
+
+        Returns:
+            A list of stripped prompts.
+        """
         labels = list(self.dataset_config.prompt_label_mapping.values()) or [
             "negative",
             "positive",
@@ -778,7 +862,23 @@ class VLLMModel(HuggingFaceEncoderModel):
         max_tokens_per_prompt: int,
         sampling_params: "SamplingParams",
     ) -> c.Sequence[str]:
-        """Truncate prompts if they exceed the token budget."""
+        """Truncate prompts if they exceed the token budget.
+
+        Args:
+            prompts:
+                The sequence of prompts.
+            max_tokens_per_prompt:
+                Maximum tokens per prompt.
+            sampling_params:
+                The sampling parameters.
+
+        Returns:
+            The truncated prompts.
+
+        Raises:
+            InvalidBenchmark:
+                If the model type is not set.
+        """
         tokenized = self._tokeniser(text=prompts, max_length=max_tokens_per_prompt)
         if all(len(ids) < max_tokens_per_prompt for ids in tokenized.input_ids):
             log_once(
@@ -809,7 +909,19 @@ class VLLMModel(HuggingFaceEncoderModel):
         max_tokens_per_prompt: int,
         sampling_params: "SamplingParams",
     ) -> c.Sequence[str]:
-        """Truncate base model prompts from the left."""
+        """Truncate base model prompts from the left.
+
+        Args:
+            prompts:
+                The sequence of prompts.
+            max_tokens_per_prompt:
+                Maximum tokens per prompt.
+            sampling_params:
+                The sampling parameters.
+
+        Returns:
+            The truncated prompts.
+        """
         original_side = self._tokeniser.truncation_side
         if sampling_params.prompt_logprobs is not None:
             self._tokeniser.truncation_side = "left"
@@ -826,7 +938,17 @@ class VLLMModel(HuggingFaceEncoderModel):
     def _truncate_instruction_prompts(
         self, prompts: c.Sequence[str], max_tokens_per_prompt: int
     ) -> c.Sequence[str]:
-        """Truncate instruction-tuned prompts by removing few-shot examples."""
+        """Truncate instruction-tuned prompts by removing few-shot examples.
+
+        Args:
+            prompts:
+                The sequence of prompts.
+            max_tokens_per_prompt:
+                Maximum tokens per prompt.
+
+        Returns:
+            The truncated prompts.
+        """
         assert self.end_of_chat_token_ids is not None
         eoc_token = self._tokeniser.decode(list(self.end_of_chat_token_ids))
         segments = [
@@ -847,9 +969,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             for seg in segments
         ]
         log_once(
-            "Could not fit the prompts for the model "
-            f"{self.model_config.model_id!r} within {max_tokens_per_prompt:,} tokens by removing few-shot "
-            "examples, so hard-truncating them instead.",
+            f"Could not fit the prompts for the model {self.model_config.model_id!r} "
+            f"within {max_tokens_per_prompt:,} tokens by removing few-shot examples, "
+            "so hard-truncating them instead.",
             level=logging.WARNING,
         )
         truncated = self._tokeniser(
@@ -865,7 +987,23 @@ class VLLMModel(HuggingFaceEncoderModel):
         sampling_params: "SamplingParams",
         max_context_length: int,
     ) -> tuple[list[str], list]:
-        """Generate sequences with retry logic."""
+        """Generate sequences with retry logic.
+
+        Args:
+            prompts:
+                The list of prompts to generate from.
+            sampling_params:
+                The sampling parameters.
+            max_context_length:
+                The maximum context length.
+
+        Returns:
+            A tuple of (completions, raw_outputs).
+
+        Raises:
+            InvalidBenchmark:
+                If generation fails after retries or outputs are invalid.
+        """
         input_is_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         num_attempts = 3
         truncation_attempts = 1
@@ -891,7 +1029,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             try:
                 bos = str(self._tokeniser.bos_token or "x")
                 prompts = [p if p.strip() else bos for p in prompts]
-                raw_outputs = self._model.generate(
+                raw_outputs = self._model.generate(  # ty: ignore[call-non-callable]
                     prompts=prompts,
                     sampling_params=sampling_params,
                     use_tqdm=False if input_is_test else get_pbar,
@@ -955,7 +1093,23 @@ class VLLMModel(HuggingFaceEncoderModel):
     def _filter_and_parse_outputs(
         self, prompts: list[str], raw_outputs: list, sampling_params: "SamplingParams"
     ) -> tuple[list[str], list]:
-        """Filter extra outputs and parse completions."""
+        """Filter extra outputs and parse completions.
+
+        Args:
+            prompts:
+                The list of prompts.
+            raw_outputs:
+                The raw model outputs.
+            sampling_params:
+                The sampling parameters.
+
+        Returns:
+            A tuple of (completions, raw_outputs).
+
+        Raises:
+            InvalidBenchmark:
+                If the prompts and outputs do not match.
+        """
         extra = len(raw_outputs) - len(prompts)
         if extra > 0:
             raw_outputs = raw_outputs[extra:]
@@ -974,7 +1128,21 @@ class VLLMModel(HuggingFaceEncoderModel):
     def _parse_completions(
         self, raw_outputs: list, sampling_params: "SamplingParams"
     ) -> tuple[list[str], list]:
-        """Parse raw outputs into completions."""
+        """Parse raw outputs into completions.
+
+        Args:
+            raw_outputs:
+                The raw model outputs.
+            sampling_params:
+                The sampling parameters.
+
+        Returns:
+            A tuple of (completions, raw_outputs).
+
+        Raises:
+            InvalidBenchmark:
+                If the number of completions doesn't match the outputs.
+        """
         if sampling_params.prompt_logprobs is not None:
             return [""] * len(raw_outputs), raw_outputs
         completion_ids = [list(out.outputs[0].token_ids) for out in raw_outputs]
@@ -994,7 +1162,15 @@ class VLLMModel(HuggingFaceEncoderModel):
         return completions, raw_outputs
 
     def _remove_reasoning_content(self, completions: list[str]) -> list[str]:
-        """Remove reasoning content from completions for reasoning models."""
+        """Remove reasoning content from completions for reasoning models.
+
+        Args:
+            completions:
+                The list of completion strings.
+
+        Returns:
+            The completions with reasoning content removed.
+        """
         if (
             self.end_of_reasoning_token is None
             or self.generative_type != GenerativeType.REASONING
@@ -1028,7 +1204,15 @@ class VLLMModel(HuggingFaceEncoderModel):
         return completions
 
     def _remove_stop_tokens(self, completions: list[str]) -> list[str]:
-        """Remove stop tokens from completions."""
+        """Remove stop tokens from completions.
+
+        Args:
+            completions:
+                The list of completion strings.
+
+        Returns:
+            The completions with stop tokens removed.
+        """
         stop_tokens = self._setup_stop_tokens()
         pattern = re.compile("|".join(re.escape(t) for t in stop_tokens))
         return [re.split(pattern=pattern, string=c)[0].strip() for c in completions]
@@ -1054,8 +1238,6 @@ class VLLMModel(HuggingFaceEncoderModel):
         Raises:
             InvalidBenchmark:
                 If generation fails or prompts are too long.
-            InvalidTask:
-                If structured output is misconfigured.
         """
         # Set up label token mapping first (required for most tasks)
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
@@ -1711,13 +1893,6 @@ def load_model(
 
     Returns:
         The loaded model.
-
-    Raises:
-        NeedsExtraInstalled:
-            If a quantised model is being loaded and the required extra packages are not
-            installed.
-        InvalidModel:
-            If the model could not be loaded.
     """
     model_id = model_config.adapter_base_model_id or model_config.model_id
     revision = (

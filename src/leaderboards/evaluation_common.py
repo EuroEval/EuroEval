@@ -256,6 +256,8 @@ def _stream_pty_output(
     Returns:
         Captured output as string.
     """
+    from euroeval.logging_utils import no_terminal_output  # noqa: PLC0415
+
     captured: list[bytes] = []
     MAX_DRAIN_TIME_AFTER_EXIT = 2.0
     with no_terminal_output(disable=stream_output):
