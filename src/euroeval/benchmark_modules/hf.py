@@ -581,8 +581,6 @@ def load_hf_model_config(
         The Hugging Face model configuration.
 
     Raises:
-        NeedsAdditionalArgument:
-            If an additional argument is required to load the model configuration.
         InvalidModel:
             If the model configuration could not be loaded.
     """
@@ -1155,8 +1153,6 @@ def load_model_and_tokeniser(
         A pair (model, tokeniser), with the loaded model and tokeniser
 
     Raises:
-        InvalidModel:
-            If the model could not be loaded.
         InvalidBenchmark:
             If the model could not be loaded for this particular dataset.
     """

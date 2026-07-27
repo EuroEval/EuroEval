@@ -99,8 +99,6 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
     Raises:
         RuntimeError:
             If HF_TOKEN is not set or bucket sync fails.
-        ValueError:
-            If distinct identities sanitise to the same relative path.
     """
     hf_token = resolve_hf_token()
     if not hf_token:
