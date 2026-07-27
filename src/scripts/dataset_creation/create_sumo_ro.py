@@ -59,36 +59,6 @@ def main() -> None:
     mini_dataset.push_to_hub(mini_dataset_id, private=True)
 
 
-def process_df(df: pd.DataFrame) -> pd.DataFrame:
-    """Process the dataframe to have the text and target_text columns.
-
-    Args:
-        df: The dataframe to process.
-
-    Returns:
-        The processed dataframe.
-    """
-    # Only keep rows where column "input_text" starts with <SUMMARY>
-    df = df.loc[df["input_text"].str.startswith("<SUMMARY>")]
-
-    # Make text column which is the input_text column without the <SUMMARY> prefix
-    df["text"] = df["input_text"].str.replace("<SUMMARY>", "", regex=False)
-
-    # Strip leading and trailing whitespace
-    df["text"] = df["text"].str.strip()
-
-    # Only keep rows where the text is not very large or small
-    lengths = df.text.str.len()
-    lower_bound = MIN_NUM_CHARS_IN_ARTICLE
-    upper_bound = MAX_NUM_CHARS_IN_ARTICLE
-    df = df.loc[lengths.between(lower_bound, upper_bound)]
-
-    # Only keep the text and target_text columns
-    keep_columns = ["text", "target_text"]
-    df = df.loc[keep_columns]
-    return df
-
-
 def make_splits(
     train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -131,6 +101,36 @@ def make_splits(
     assert isinstance(test_df_final, pd.DataFrame)
 
     return train_df_final, val_df_final, test_df_final
+
+
+def process_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Process the dataframe to have the text and target_text columns.
+
+    Args:
+        df: The dataframe to process.
+
+    Returns:
+        The processed dataframe.
+    """
+    # Only keep rows where column "input_text" starts with <SUMMARY>
+    df = df.loc[df["input_text"].str.startswith("<SUMMARY>")]
+
+    # Make text column which is the input_text column without the <SUMMARY> prefix
+    df["text"] = df["input_text"].str.replace("<SUMMARY>", "", regex=False)
+
+    # Strip leading and trailing whitespace
+    df["text"] = df["text"].str.strip()
+
+    # Only keep rows where the text is not very large or small
+    lengths = df.text.str.len()
+    lower_bound = MIN_NUM_CHARS_IN_ARTICLE
+    upper_bound = MAX_NUM_CHARS_IN_ARTICLE
+    df = df.loc[lengths.between(lower_bound, upper_bound)]
+
+    # Only keep the text and target_text columns
+    keep_columns = ["text", "target_text"]
+    df = df.loc[keep_columns]
+    return df
 
 
 if __name__ == "__main__":

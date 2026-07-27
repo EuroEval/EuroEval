@@ -69,11 +69,10 @@ PERMISSIVE_LICENSES: frozenset[str] = frozenset(
     }
 )
 
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-
-
 def _env_path(name: str, default: Path) -> Path:
     """Return the path from environment variable ``name``, or ``default``.
 

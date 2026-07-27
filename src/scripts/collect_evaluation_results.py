@@ -230,43 +230,32 @@ def check_required_env_vars() -> None:
         sys.exit(1)
 
 
-def build_dedup_key(result: dict) -> ResultIdentity | None:
-    """Build a deduplication key from an EEE result record.
+def deploy_to_vercel() -> bool:
+    """Build the frontend locally and ship it to Vercel as a prebuilt deploy.
 
-    Delegates to the canonical ``identity_from_eee_record`` helper.
-
-    Args:
-        result:
-            Parsed result dictionary in EEE format.
+    Using ``--prebuilt`` keeps the upload limited to ``.vercel/output/``
+    so Vercel never sees the multi-hundred-MB ``.git`` packfile or local
+    caches.
 
     Returns:
-        Identity tuple ``(model_id, dataset, validation_split, few_shot)``,
-        or None if required fields are missing.
+        True if both ``vercel build`` and ``vercel deploy --yes`` exit cleanly.
     """
-    try:
-        return identity_from_eee_record(result)
-    except (ValueError, KeyError) as e:
-        logger.debug("Failed to extract identity from result: %s", e)
-        return None
-
-
-def list_open_request_issues() -> list[dict]:
-    """Return open model-evaluation-request issues that have results ready.
-
-    Returns:
-        The list of open issues carrying both the queue label and the
-        ``results-ready`` label, with pull requests filtered out.
-    """
-    issues = gh_request(
-        path=f"/repos/{REPO}/issues",
-        params={
-            "state": "open",
-            "labels": f"{MODEL_REQUEST_LABEL},{RESULTS_READY_LABEL}",
-            "per_page": "100",
-        },
-    )
-    assert isinstance(issues, list)
-    return [i for i in issues if "pull_request" not in i]
+    for cmd in (
+        ["vercel", "build", "--prod", "--non-interactive"],
+        ["vercel", "deploy", "--prebuilt", "--prod", "--yes", "--non-interactive"],
+    ):
+        logger.info(f"Running: {' '.join(cmd)}")
+        try:
+            subprocess.run(cmd, check=True, cwd=REPO_ROOT)
+        except FileNotFoundError:
+            logger.error(
+                "`vercel` CLI not found on PATH. Install with `npm i -g vercel`."
+            )
+            return False
+        except subprocess.CalledProcessError as e:
+            logger.error(f"{cmd[0]} {cmd[1]} failed (exit {e.returncode}).")
+            return False
+    return True
 
 
 def find_results_for_issue(issue: dict) -> list[str] | None:
@@ -344,153 +333,125 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
     return results
 
 
-def _extract_identity_key(result: dict) -> ResultIdentity | None:
-    """Extract the identity key from a result record.
-
-    Args:
-        result:
-            The parsed result record.
+def list_open_request_issues() -> list[dict]:
+    """Return open model-evaluation-request issues that have results ready.
 
     Returns:
-        Identity tuple or None if extraction fails.
+        The list of open issues carrying both the queue label and the
+        ``results-ready`` label, with pull requests filtered out.
     """
+    issues = gh_request(
+        path=f"/repos/{REPO}/issues",
+        params={
+            "state": "open",
+            "labels": f"{MODEL_REQUEST_LABEL},{RESULTS_READY_LABEL}",
+            "per_page": "100",
+        },
+    )
+    assert isinstance(issues, list)
+    return [i for i in issues if "pull_request" not in i]
+
+
+def preview_in_dev_server() -> bool:
+    """Start Vercel dev server and prompt user to review before deployment.
+
+    Starts `vercel dev` in the background, waits for it to be ready,
+    prompts the user to check the preview, and waits for confirmation.
+
+    Returns:
+        True if user confirms deployment, False if they abort.
+    """
+    logger.info("Starting Vercel dev server for preview...")
+    logger.info("=" * 60)
+
+    # Start vercel dev as a subprocess
     try:
-        return identity_from_eee_record(result)
-    except (ValueError, KeyError):
-        return None
-
-
-def upload_results_to_hf(new_results_path: Path) -> bool:
-    """Upload results to Hugging Face bucket.
-
-    Loads existing results from local RESULTS_DIR, merges new results from the
-    JSONL file, deduplicates by identity (newer records win), then syncs
-    changed files back to the bucket.
-
-    Args:
-        new_results_path:
-            Path to the newly harvested results file (JSONL format).
-
-    Returns:
-        True if upload succeeded, False otherwise.
-    """
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Load existing results as identity -> record dict
-    existing: dict[ResultIdentity, dict] = {}
-    for json_file in RESULTS_DIR.glob("*/*.json"):
-        if not json_file.is_file():
-            continue
-        try:
-            content = json_file.read_text(encoding="utf-8")
-            record = json.loads(content)
-            identity = _extract_identity_key(record)
-            if identity:
-                existing[identity] = record
-        except (OSError, json.JSONDecodeError, ValueError):
-            logger.debug(f"Skipping unreadable file {json_file}")
-
-    # Process new results from JSONL file
-    if not new_results_path.exists():
-        logger.warning(f"Results file {new_results_path} does not exist.")
-        return False
-
-    new_lines = new_results_path.read_text(encoding="utf-8").splitlines()
-    logger.info(f"Processing {len(new_lines):,} new result lines...")
-
-    for line_number, line in enumerate(new_lines, start=1):
-        if not line.strip():
-            continue
-        try:
-            record = json.loads(line)
-            identity = _extract_identity_key(record)
-            if not identity:
-                logger.debug(f"Skipping line {line_number}: no identity")
-                continue
-
-            # Dedup: keep newer record by euroeval_version, then retrieved_timestamp
-            if identity in existing:
-                existing[identity] = dedup_newer_record(existing[identity], record)
-            else:
-                existing[identity] = record
-        except json.JSONDecodeError:
-            logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
-
-    # === VALIDATE PHASE: build path->identity map before any mutation ===
-    path_to_identity: dict[Path, ResultIdentity] = {}
-    for identity in existing:
-        record_path = RESULTS_DIR / identity_to_path(identity)
-        if record_path in path_to_identity:
-            raise_on_collision(identity, path_to_identity[record_path])
-        path_to_identity[record_path] = identity
-
-    # === MUTATE PHASE: only after validation succeeds ===
-    # Only rewrite records whose content actually changed. RESULTS_DIR contains
-    # results from previous runs (already synced to the bucket), so comparing
-    # each desired record against the file already on disk tells us exactly
-    # which records changed. Rewriting only the changed files avoids touching
-    # every file's mtime and re-syncing the whole tree on every run. We never
-    # drop identities (existing is only merged into, never pruned), so there
-    # are no orphaned files to clear.
-    records_written = 0
-    records_unchanged = 0
-    written_paths: list[Path] = []
-    for identity, record in existing.items():
-        record_path = RESULTS_DIR / identity_to_path(identity)
-        desired = json.dumps(record, separators=(",", ":"))
-        try:
-            if record_path.exists():
-                try:
-                    existing_content = json.loads(
-                        record_path.read_text(encoding="utf-8")
-                    )
-                    if existing_content == record:
-                        records_unchanged += 1
-                        continue
-                except (json.JSONDecodeError, ValueError):
-                    pass
-            record_path.parent.mkdir(parents=True, exist_ok=True)
-            record_path.write_text(desired, encoding="utf-8")
-            records_written += 1
-            written_paths.append(record_path)
-        except (ValueError, OSError) as e:
-            logger.warning(f"Failed to write record for {identity}: {e}")
-
-    # Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts (not repo-root files)
-    for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
-        if jsonl_file.is_file():
-            jsonl_file.unlink()
-            logger.info(f"Removed stale artefact {jsonl_file}")
-
-    if not existing:
-        logger.warning("No valid results to upload.")
-        return False
-
-    if not records_written:
-        logger.info(
-            f"All {records_unchanged:,} records already up to date; nothing to sync."
+        dev_process = subprocess.Popen(
+            ["vercel", "dev", "--yes", "--non-interactive"],
+            cwd=REPO_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
-        return True
+    except FileNotFoundError:
+        logger.error("`vercel` CLI not found on PATH. Install with `npm i -g vercel`.")
+        return False
 
-    logger.info(
-        f"Wrote {records_written:,} changed record file(s) "
-        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
+    # Wait for dev server to start (watch for ready message or timeout)
+    ready = False
+    start_time = time.time()
+    timeout = 60  # seconds
+
+    print("\nWaiting for dev server to start...")
+    while time.time() - start_time < timeout:
+        if dev_process.poll() is not None:
+            # Process exited unexpectedly
+            output = dev_process.stdout.read()
+            logger.error(f"Dev server exited unexpectedly: {output}")
+            return False
+
+        # Give it a moment
+        time.sleep(2)
+
+        # Try to connect to localhost:3000 (default Vercel dev port)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            result = sock.connect_ex(("127.0.0.1", 3000))
+            sock.close()
+            if result == 0:
+                ready = True
+                break
+        except Exception:
+            pass
+
+    if not ready:
+        logger.error("Dev server failed to start within 60 seconds.")
+        try:
+            dev_process.terminate()
+            dev_process.wait(timeout=5)
+        except Exception:
+            dev_process.kill()
+        return False
+
+    logger.info("=" * 60)
+    logger.info("✓ Dev server is running at http://localhost:5174")
+    logger.info("=" * 60)
+    print(
+        "\nPlease open http://localhost:5174 in your browser and check the "
+        "leaderboards.\n"
     )
 
-    # Upload only changed files to bucket using batch operation
-    # Skip any files that are empty (0 bytes)
-    api = HfApi()
-    add_list: list[tuple[str | Path | bytes, str]] = [
-        (str(path), str(path.relative_to(RESULTS_DIR)))
-        for path in written_paths
-        if path.is_file() and path.stat().st_size > 0
-    ]
+    # Prompt for confirmation
+    while True:
+        response = input("Does everything look alright? [Y/n]: ").strip().lower()
+        if response in ("", "y", "yes"):
+            confirmed = True
+            break
+        elif response in ("n", "no"):
+            confirmed = False
+            break
+        else:
+            print("Please answer 'y' or 'n'.")
+
+    # Shut down dev server
+    logger.info("Shutting down dev server...")
     try:
-        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
-        logger.info(f"Uploaded {len(written_paths)} file(s) to {HF_RESULTS_BUCKET}.")
+        dev_process.send_signal(signal.SIGTERM)
+        dev_process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        dev_process.kill()
+        dev_process.wait()
+    except Exception:
+        try:
+            dev_process.kill()
+        except Exception:
+            pass
+
+    if confirmed:
+        logger.info("User confirmed deployment.")
         return True
-    except HfHubHTTPError as e:
-        logger.error(f"Failed to upload to HF bucket: {e}")
+    else:
+        logger.info("User aborted deployment.")
         return False
 
 
@@ -516,6 +477,222 @@ def regenerate_leaderboards(force: bool = False) -> bool:
     except subprocess.CalledProcessError as e:
         logger.error(f"generate_leaderboards failed (exit {e.returncode}).")
         return False
+
+
+def upload_results_to_hf(new_results_path: Path) -> bool:
+    """Upload results to Hugging Face bucket.
+
+    Loads existing results from local RESULTS_DIR, merges new results from the
+    JSONL file, deduplicates by identity (newer records win), then syncs
+    changed files back to the bucket.
+
+    Args:
+        new_results_path:
+            Path to the newly harvested results file (JSONL format).
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Load existing results as identity -> record dict
+    existing: dict[ResultIdentity, dict] = _load_existing_results()
+
+    # Process new results from JSONL file
+    _process_new_results(new_results_path, existing)
+
+    # Check if we got any results
+    if not existing:
+        logger.warning("No valid results to upload.")
+        return False
+
+    # === VALIDATE PHASE: build path->identity map before any mutation ===
+    _validate_paths(existing)
+
+    # === MUTATE PHASE: only after validation succeeds ===
+    records_written, records_unchanged, written_paths = _write_changed_records(
+        existing=existing
+    )
+
+    # Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts
+    _cleanup_stale_artefacts()
+
+    if not records_written:
+        logger.info(
+            f"All {records_unchanged:,} records already up to date; nothing to sync."
+        )
+        return True
+
+    logger.info(
+        f"Wrote {records_written:,} changed record file(s) "
+        f"({records_unchanged:,} unchanged) to {RESULTS_DIR}, uploading to bucket..."
+    )
+
+    return _upload_to_bucket(written_paths)
+
+
+def _cleanup_stale_artefacts() -> None:
+    """Remove stale ROOT-level RESULTS_DIR/*.jsonl artefacts."""
+    for jsonl_file in RESULTS_DIR.glob("*.jsonl"):
+        if jsonl_file.is_file():
+            jsonl_file.unlink()
+            logger.info(f"Removed stale artefact {jsonl_file}")
+
+
+def _load_existing_results() -> dict[ResultIdentity, dict]:
+    """Load existing results from local RESULTS_DIR.
+
+    Returns:
+        Dictionary mapping identity to record.
+    """
+    existing: dict[ResultIdentity, dict] = {}
+    for json_file in RESULTS_DIR.glob("*/*.json"):
+        if not json_file.is_file():
+            continue
+        try:
+            content = json_file.read_text(encoding="utf-8")
+            record = json.loads(content)
+            identity = _extract_identity_key(record)
+            if identity:
+                existing[identity] = record
+        except (OSError, json.JSONDecodeError, ValueError):
+            logger.debug(f"Skipping unreadable file {json_file}")
+    return existing
+
+
+def _extract_identity_key(result: dict) -> ResultIdentity | None:
+    """Extract the identity key from a result record.
+
+    Args:
+        result:
+            The parsed result record.
+
+    Returns:
+        Identity tuple or None if extraction fails.
+    """
+    try:
+        return identity_from_eee_record(result)
+    except (ValueError, KeyError):
+        return None
+
+
+def _process_new_results(
+    new_results_path: Path, existing: dict[ResultIdentity, dict]
+) -> None:
+    """Process new results from JSONL file and merge into existing.
+
+    Args:
+        new_results_path:
+            Path to the JSONL file with new results.
+        existing:
+            Existing results dictionary (modified in-place).
+    """
+    if not new_results_path.exists():
+        logger.warning(f"Results file {new_results_path} does not exist.")
+        return
+
+    new_lines = new_results_path.read_text(encoding="utf-8").splitlines()
+    logger.info(f"Processing {len(new_lines):,} new result lines...")
+
+    for line_number, line in enumerate(new_lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+            identity = _extract_identity_key(record)
+            if not identity:
+                logger.debug(f"Skipping line {line_number}: no identity")
+                continue
+
+            # Dedup: keep newer record by euroeval_version, then retrieved_timestamp
+            if identity in existing:
+                existing[identity] = dedup_newer_record(existing[identity], record)
+            else:
+                existing[identity] = record
+        except json.JSONDecodeError:
+            logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
+
+
+def _upload_to_bucket(written_paths: list[Path]) -> bool:
+    """Upload changed files to HF bucket using batch operation.
+
+    Args:
+        written_paths:
+            List of paths to upload.
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    api = HfApi()
+    add_list: list[tuple[str | Path | bytes, str]] = [
+        (str(path), str(path.relative_to(RESULTS_DIR)))
+        for path in written_paths
+        if path.is_file() and path.stat().st_size > 0
+    ]
+    try:
+        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
+        logger.info(f"Uploaded {len(written_paths)} file(s) to {HF_RESULTS_BUCKET}.")
+        return True
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to upload to HF bucket: {e}")
+        return False
+
+
+def _validate_paths(existing: dict[ResultIdentity, dict]) -> dict[Path, ResultIdentity]:
+    """Validate path->identity mapping before mutation.
+
+    Args:
+        existing:
+            Dictionary mapping identity to record.
+
+    Returns:
+        Dictionary mapping path to identity.
+    """
+    path_to_identity: dict[Path, ResultIdentity] = {}
+    for identity in existing:
+        record_path = RESULTS_DIR / identity_to_path(identity)
+        if record_path in path_to_identity:
+            raise_on_collision(identity, path_to_identity[record_path])
+        path_to_identity[record_path] = identity
+    return path_to_identity
+
+
+def _write_changed_records(
+    existing: dict[ResultIdentity, dict],
+) -> "tuple[int, int, list[Path]]":
+    """Write only records whose content changed.
+
+    Args:
+        existing:
+            Dictionary mapping identity to record.
+
+    Returns:
+        Tuple of (records_written, records_unchanged, written_paths).
+    """
+    records_written = 0
+    records_unchanged = 0
+    written_paths: list[Path] = []
+    for identity, record in existing.items():
+        record_path = RESULTS_DIR / identity_to_path(identity)
+        desired = json.dumps(record, separators=(",", ":"))
+        try:
+            if record_path.exists():
+                try:
+                    existing_content = json.loads(
+                        record_path.read_text(encoding="utf-8")
+                    )
+                    if existing_content == record:
+                        records_unchanged += 1
+                        continue
+                except (json.JSONDecodeError, ValueError):
+                    pass
+            record_path.parent.mkdir(parents=True, exist_ok=True)
+            record_path.write_text(desired, encoding="utf-8")
+            records_written += 1
+            written_paths.append(record_path)
+        except (ValueError, OSError) as e:
+            logger.warning(f"Failed to write record for {identity}: {e}")
+    return records_written, records_unchanged, written_paths
 
 
 def verify_leaderboards() -> bool:
@@ -633,135 +810,24 @@ def verify_leaderboards() -> bool:
     return valid_count > 0
 
 
-def preview_in_dev_server() -> bool:
-    """Start Vercel dev server and prompt user to review before deployment.
+def build_dedup_key(result: dict) -> ResultIdentity | None:
+    """Build a deduplication key from an EEE result record.
 
-    Starts `vercel dev` in the background, waits for it to be ready,
-    prompts the user to check the preview, and waits for confirmation.
+    Delegates to the canonical ``identity_from_eee_record`` helper.
 
-    Returns:
-        True if user confirms deployment, False if they abort.
-    """
-    logger.info("Starting Vercel dev server for preview...")
-    logger.info("=" * 60)
-
-    # Start vercel dev as a subprocess
-    try:
-        dev_process = subprocess.Popen(
-            ["vercel", "dev", "--yes", "--non-interactive"],
-            cwd=REPO_ROOT,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
-    except FileNotFoundError:
-        logger.error("`vercel` CLI not found on PATH. Install with `npm i -g vercel`.")
-        return False
-
-    # Wait for dev server to start (watch for ready message or timeout)
-    ready = False
-    start_time = time.time()
-    timeout = 60  # seconds
-
-    print("\nWaiting for dev server to start...")
-    while time.time() - start_time < timeout:
-        if dev_process.poll() is not None:
-            # Process exited unexpectedly
-            output = dev_process.stdout.read()
-            logger.error(f"Dev server exited unexpectedly: {output}")
-            return False
-
-        # Give it a moment
-        time.sleep(2)
-
-        # Try to connect to localhost:3000 (default Vercel dev port)
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            result = sock.connect_ex(("127.0.0.1", 3000))
-            sock.close()
-            if result == 0:
-                ready = True
-                break
-        except Exception:
-            pass
-
-    if not ready:
-        logger.error("Dev server failed to start within 60 seconds.")
-        try:
-            dev_process.terminate()
-            dev_process.wait(timeout=5)
-        except Exception:
-            dev_process.kill()
-        return False
-
-    logger.info("=" * 60)
-    logger.info("✓ Dev server is running at http://localhost:5174")
-    logger.info("=" * 60)
-    print(
-        "\nPlease open http://localhost:5174 in your browser and check the "
-        "leaderboards.\n"
-    )
-
-    # Prompt for confirmation
-    while True:
-        response = input("Does everything look alright? [Y/n]: ").strip().lower()
-        if response in ("", "y", "yes"):
-            confirmed = True
-            break
-        elif response in ("n", "no"):
-            confirmed = False
-            break
-        else:
-            print("Please answer 'y' or 'n'.")
-
-    # Shut down dev server
-    logger.info("Shutting down dev server...")
-    try:
-        dev_process.send_signal(signal.SIGTERM)
-        dev_process.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        dev_process.kill()
-        dev_process.wait()
-    except Exception:
-        try:
-            dev_process.kill()
-        except Exception:
-            pass
-
-    if confirmed:
-        logger.info("User confirmed deployment.")
-        return True
-    else:
-        logger.info("User aborted deployment.")
-        return False
-
-
-def deploy_to_vercel() -> bool:
-    """Build the frontend locally and ship it to Vercel as a prebuilt deploy.
-
-    Using ``--prebuilt`` keeps the upload limited to ``.vercel/output/``
-    so Vercel never sees the multi-hundred-MB ``.git`` packfile or local
-    caches.
+    Args:
+        result:
+            Parsed result dictionary in EEE format.
 
     Returns:
-        True if both ``vercel build`` and ``vercel deploy --yes`` exit cleanly.
+        Identity tuple ``(model_id, dataset, validation_split, few_shot)``,
+        or None if required fields are missing.
     """
-    for cmd in (
-        ["vercel", "build", "--prod", "--non-interactive"],
-        ["vercel", "deploy", "--prebuilt", "--prod", "--yes", "--non-interactive"],
-    ):
-        logger.info(f"Running: {' '.join(cmd)}")
-        try:
-            subprocess.run(cmd, check=True, cwd=REPO_ROOT)
-        except FileNotFoundError:
-            logger.error(
-                "`vercel` CLI not found on PATH. Install with `npm i -g vercel`."
-            )
-            return False
-        except subprocess.CalledProcessError as e:
-            logger.error(f"{cmd[0]} {cmd[1]} failed (exit {e.returncode}).")
-            return False
-    return True
+    try:
+        return identity_from_eee_record(result)
+    except (ValueError, KeyError) as e:
+        logger.debug("Failed to extract identity from result: %s", e)
+        return None
 
 
 if __name__ == "__main__":

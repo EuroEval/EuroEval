@@ -167,115 +167,6 @@ UNOFFICIAL_LINE_RE = re.compile(r"^\s*unofficial\s*=\s*True\s*,\s*$")
 DOC_UNOFFICIAL_PREFIX = "Unofficial: "
 
 
-def result_sync_dataset_ids(
-    old_dataset: str | None,
-    new_datasets: tuple[str, ...],
-    swapped_task: str,
-    target_codes: set[str],
-) -> set[str]:
-    """Return dataset ids whose result files are needed for this swap.
-
-    The swap planner needs all datasets that define whether a model is ranked on
-    the affected leaderboard category, plus the incoming datasets so existing
-    replacement results can be skipped.
-    """
-    affected = [
-        category
-        for category in LEADERBOARD_CATEGORIES
-        if category_includes_task(category=category, task=swapped_task)
-    ]
-    dataset_ids: set[str] = set(new_datasets)
-    if old_dataset:
-        dataset_ids.add(old_dataset)
-
-    languages = get_all_languages()
-    for code in sorted(target_codes):
-        language = languages.get(code)
-        if language is None:
-            logger.warning(f"Unknown language code {code!r}; skipping result sync.")
-            continue
-        name = language.name.lower()
-        if " " in name:
-            logger.warning(f"{code!r} ({name!r}) has no standalone leaderboard.")
-            continue
-        try:
-            by_task = official_datasets_for_language(name)
-        except ValueError:
-            logger.warning(f"No leaderboard datasets for {name!r}; skipping sync.")
-            continue
-
-        for category in affected:
-            dataset_ids.update(
-                dataset
-                for task, task_datasets in by_task.items()
-                if task not in ORTHOGONAL_TASKS
-                and category_includes_task(category=category, task=task)
-                for dataset in task_datasets
-            )
-
-    return dataset_ids
-
-
-def download_bucket_files_for_datasets(dataset_ids: set[str]) -> int:
-    """Download missing bucket files whose filenames match dataset ids.
-
-    Returns:
-        Number of files downloaded.
-
-    Raises:
-        RuntimeError:
-            If no Hugging Face token is available.
-    """
-    if not dataset_ids:
-        logger.warning("No dataset ids resolved for bucket sync; skipping download.")
-        return 0
-
-    hf_token = resolve_hf_token()
-    if not hf_token:
-        raise RuntimeError(
-            "HF_TOKEN not set. Cannot sync results from Hugging Face bucket. "
-            "Run 'hf auth login' or set the HF_TOKEN environment variable."
-        )
-
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    prefixes = tuple(f"{dataset_id}__" for dataset_id in sorted(dataset_ids))
-    api = HfApi()
-    to_download: list[tuple[str | BucketFile, str | Path]] = []
-
-    logger.info(
-        "Listing bucket %s for result files matching: %s",
-        HF_RESULTS_BUCKET,
-        ", ".join(sorted(dataset_ids)),
-    )
-    for entry in api.list_bucket_tree(
-        bucket_id=HF_RESULTS_BUCKET, recursive=True, token=hf_token
-    ):
-        if not isinstance(entry, BucketFile):
-            continue
-        filename = Path(entry.path).name
-        if not filename.endswith(".json") or not filename.startswith(prefixes):
-            continue
-        local_path = RESULTS_DIR / entry.path
-        if not local_path.exists():
-            local_path.parent.mkdir(parents=True, exist_ok=True)
-            to_download.append((entry, local_path))
-
-    if not to_download:
-        logger.info("Local result cache already contains the relevant bucket files.")
-        return 0
-
-    logger.info(
-        "Downloading %s relevant new file(s) from the bucket...", len(to_download)
-    )
-    api.download_bucket_files(
-        bucket_id=HF_RESULTS_BUCKET,
-        files=to_download,
-        token=hf_token,
-        raise_on_missing_files=False,
-    )
-    return len(to_download)
-
-
 @click.command()
 @click.option(
     "--old-dataset",
@@ -478,100 +369,6 @@ def main(
         )
 
 
-# --------------------------------------------------------------------------- #
-# Validation
-# --------------------------------------------------------------------------- #
-def validate_datasets(
-    old_dataset: str | None, new_datasets: tuple[str, ...]
-) -> tuple[DatasetConfig | None, list[DatasetConfig]]:
-    """Validate the dataset pair(s) and return their configs.
-
-    When old_dataset is provided, it must be official and all new candidates
-    must be unofficial. All datasets must belong to the same task.
-
-    Args:
-        old_dataset:
-            The outgoing dataset id (expected official), or None when adding.
-        new_datasets:
-            The incoming candidate ids (expected unofficial).
-
-    Returns:
-        The ``(old_config, new_configs)`` pair.
-
-    Raises:
-        click.ClickException:
-            When a dataset is unknown, mis-flagged, the tasks differ, or no
-            new datasets are provided.
-    """
-    if not new_datasets:
-        raise click.ClickException("At least one --new-dataset must be provided.")
-
-    old_config = dataset_config(dataset_id=old_dataset) if old_dataset else None
-    new_configs = []
-    for ds_id in new_datasets:
-        config = dataset_config(dataset_id=ds_id)
-        if config is None:
-            raise click.ClickException(f"--new-dataset {ds_id!r} has no config.")
-        new_configs.append(config)
-
-    if old_config is not None:
-        if old_config.unofficial:
-            raise click.ClickException(
-                f"--old-dataset {old_dataset!r} must be official; it is unofficial."
-            )
-        # All new datasets must share the same task as the old one
-        for new_config in new_configs:
-            if not new_config.unofficial:
-                raise click.ClickException(
-                    f"--new-dataset {new_config.name!r} must be unofficial; "
-                    "it is official."
-                )
-            if old_config.task.name != new_config.task.name:
-                raise click.ClickException(
-                    f"All datasets must share a task; {old_dataset!r} is "
-                    f"{old_config.task.name!r} but {new_config.name!r} is "
-                    f"{new_config.task.name!r}."
-                )
-    else:
-        # When no old dataset, all new datasets must share the same task
-        first_task = new_configs[0].task.name
-        for new_config in new_configs[1:]:
-            if not new_config.unofficial:
-                raise click.ClickException(
-                    f"--new-dataset {new_config.name!r} must be unofficial; "
-                    "it is official."
-                )
-            if new_config.task.name != first_task:
-                raise click.ClickException(
-                    f"All new datasets must share a task; {new_configs[0].name!r} is "
-                    f"{first_task!r} but {new_config.name!r} is "
-                    f"{new_config.task.name!r}."
-                )
-
-    return old_config, new_configs
-
-
-def validate_branch(branch: str) -> None:
-    """Reject an empty branch name or the default branch.
-
-    Args:
-        branch:
-            The requested branch name.
-
-    Raises:
-        click.ClickException:
-            When the branch is empty or is the repo's default branch.
-    """
-    if not branch.strip():
-        raise click.ClickException("--branch must be a non-empty branch name.")
-    default = default_branch()
-    if branch in {"main", "master", default}:
-        raise click.ClickException(
-            f"--branch may not be the default branch ({default!r}); pick a new "
-            "branch name for the swap."
-        )
-
-
 def resolve_languages(
     old_config: DatasetConfig | None, new_configs: list[DatasetConfig]
 ) -> set[str]:
@@ -606,55 +403,6 @@ def resolve_languages(
     if not target:
         raise click.ClickException("The datasets share no languages.")
     return target
-
-
-def validate_gh_installed() -> None:
-    """Check that the GitHub CLI is installed.
-
-    Raises:
-        ClickException:
-            If the Github CLI wasn't found.
-    """
-    try:
-        subprocess.run(["gh", "version"], check=True, capture_output=True)
-    except FileNotFoundError:
-        raise click.ClickException(
-            "GitHub CLI not found; install it from https://cli.github.com/"
-        )
-
-
-# --------------------------------------------------------------------------- #
-# Evaluation phase
-# --------------------------------------------------------------------------- #
-@dataclass(frozen=True)
-class Job:
-    """A single evaluation of one model on one or more new datasets in one language."""
-
-    model_id: str
-    datasets: tuple[str, ...]
-    languages: tuple[str, ...]
-    is_api: bool
-    evaluate_test_split: bool
-    zero_shot: bool
-
-
-@dataclass(frozen=True)
-class _ObsConfig:
-    """How a model was evaluated on a (dataset, language), for mirroring."""
-
-    validation_split: bool
-    few_shot: bool
-    generative: bool
-
-
-@dataclass(frozen=True)
-class _Corpus:
-    """Parsed results indexed for ranked-model selection and mirroring."""
-
-    datasets_by_language: dict[str, dict[str, set[str]]]
-    api_model_ids: set[str]
-    observations: set[tuple[str, str, str]]
-    eval_configs: dict[tuple[str, str, str], _ObsConfig]
 
 
 def run_evaluations(
@@ -750,262 +498,64 @@ def run_evaluations(
     )
 
 
-def load_corpus() -> _Corpus:
-    """Load the recorded results, indexed for selection and mirroring.
+def _log_summary(
+    evaluated: list[str],
+    failed: list[str],
+    skipped_api: list[str],
+    skipped_existing: int,
+    skipped_too_large: list[str],
+) -> None:
+    """Log a one-shot status summary after evaluation completes.
 
-    Reads the per-record JSON tree in ``RESULTS_DIR``, the optional
-    ``new_results.jsonl``, and the optional ``euroeval_benchmark_results.jsonl``
-    from local ``euroeval`` CLI runs. A model counts as an API model when its
-    record was produced by the ``litellm`` engine or is flagged as not
-    open-weight. Each ``(model, dataset, language)`` triple records its
-    leaderboard variant (split + prompting), preferring the test-split record
-    when both exist (that is the row the leaderboard shows).
-
-    Returns:
-        The parsed corpus.
-
-    Raises:
-        click.ClickException:
-            When no results can be loaded.
+    Args:
+        evaluated:
+            List of model ids evaluated successfully.
+        failed:
+            List of model ids that failed (with exit code descriptions).
+        skipped_api:
+            Sorted list of API model ids skipped.
+        skipped_existing:
+            Count of (model, language) pairs skipped due to existing results.
+        skipped_too_large:
+            Sorted list of model ids dropped for exceeding GPU budget.
     """
-    # Load from per-record JSON tree
-    records: list[dict[str, object]] = []
-    if RESULTS_DIR.exists() and any(RESULTS_DIR.rglob("*.json")):
-        records.extend(load_records_from_result_tree(RESULTS_DIR))
-    if NEW_RESULTS_PATH.exists():
-        records.extend(load_records_from_jsonl_files([NEW_RESULTS_PATH]))
-    if EUROEVAL_BENCHMARK_RESULTS_PATH.exists():
-        records.extend(load_records_from_jsonl_files([EUROEVAL_BENCHMARK_RESULTS_PATH]))
-    if not records:
-        raise click.ClickException(
-            f"No results found under {RESULTS_DIR}; cannot find ranked models."
-        )
-
-    datasets_by_language: dict[str, dict[str, set[str]]] = defaultdict(
-        lambda: defaultdict(set)
-    )
-    api_model_ids: set[str] = set()
-    observations: set[tuple[str, str, str]] = set()
-    eval_configs: dict[tuple[str, str, str], _ObsConfig] = {}
-    for record in records:
-        model_info = t.cast(dict[str, object], record.get("model_info", {}))
-        # Fall back to model_info.id when name is missing (valid for EEE records)
-        model = plain_model_id(str(model_info.get("name") or model_info.get("id", "")))
-        dataset = get_dataset(record=record)
-        if not model or not dataset:
-            continue
-        if record_is_api(model_info=model_info):
-            api_model_ids.add(model)
-        config = _ObsConfig(
-            validation_split=get_bool_field(record, "validation_split", False),
-            few_shot=get_bool_field(record, "few_shot", True),
-            generative=str(
-                model_info.get("additional_details", {}).get("generative")
-            ).lower()
-            == "true",
-        )
-        for language in _record_languages(record=record):
-            datasets_by_language[language][model].add(str(dataset))
-            key = (model, str(dataset), language)
-            observations.add(key)
-            existing = eval_configs.get(key)
-            # Prefer the test-split record: when a model has both, the
-            # leaderboard row shows the test-split variant.
-            if existing is None or (
-                not config.validation_split and existing.validation_split
-            ):
-                eval_configs[key] = config
+    total_skipped = len(skipped_api) + skipped_existing + len(skipped_too_large)
     logger.info(
-        f"Loaded results for {len(datasets_by_language):,} language(s) "
-        f"({len(api_model_ids):,} API model(s))."
+        f"Evaluation summary: {len(evaluated)} evaluated, {len(failed)} failed, "
+        f"{total_skipped} skipped."
     )
-    return _Corpus(
-        datasets_by_language=datasets_by_language,
-        api_model_ids=api_model_ids,
-        observations=observations,
-        eval_configs=eval_configs,
-    )
-
-
-def ranked_model_language_pairs(
-    old_dataset: str | None,
-    new_datasets: tuple[str, ...],
-    swapped_task: str,
-    language_codes: set[str],
-    datasets_by_language: dict[str, dict[str, set[str]]],
-) -> set[tuple[str, str]]:
-    """Return ``(model_id, language)`` pairs ranked on the affected leaderboards.
-
-    A model is ranked in a language when it holds a result for every required
-    (non-orthogonal) dataset of that language's single-language leaderboard, in
-    any leaderboard category the swapped task belongs to. The ``generative``
-    category scores all tasks; ``all_models`` scores only NLU tasks so encoder
-    models can be compared. A model ranked in *either* category is selected, so
-    encoder models are included whenever the swapped task is one they can run.
-
-    Args:
-        old_dataset:
-            The outgoing dataset (kept in the required set), or None when adding.
-        new_datasets:
-            The incoming candidates (kept out of the required set).
-        swapped_task:
-            The task both datasets belong to.
-        language_codes:
-            The affected language codes.
-        datasets_by_language:
-            ``{language: {model: {dataset, ...}}}`` from the corpus.
-
-    Returns:
-        The ranked ``(model_id, language)`` pairs.
-    """
-    languages = get_all_languages()
-    affected = [
-        category
-        for category in LEADERBOARD_CATEGORIES
-        if category_includes_task(category=category, task=swapped_task)
-    ]
-    if not affected:
-        logger.warning(f"Task {swapped_task!r} is in no leaderboard category.")
-        return set()
-
-    ranked: set[tuple[str, str]] = set()
-    for code in sorted(language_codes):
-        language = languages.get(code)
-        if language is None:
-            logger.warning(f"Unknown language code {code!r}; skipping.")
-            continue
-        name = language.name.lower()
-        if " " in name:
-            logger.warning(f"{code!r} ({name!r}) has no standalone leaderboard.")
-            continue
-        try:
-            by_task = official_datasets_for_language(name)
-        except ValueError:
-            logger.warning(f"No leaderboard datasets for {name!r}; skipping.")
-            continue
-
-        models_in_language = datasets_by_language.get(code, {})
-        # Compute the union of required datasets across all affected categories.
-        # A model must have all datasets that ANY affected category requires,
-        # ensuring it would have a rank score on the most restrictive leaderboard.
-        required: set[str] = set()
-        for category in affected:
-            required |= {
-                dataset
-                for task, task_datasets in by_task.items()
-                if task not in ORTHOGONAL_TASKS
-                and category_includes_task(category=category, task=task)
-                for dataset in task_datasets
-            }
-        for nds in new_datasets:
-            required.discard(nds)
-        if old_dataset:
-            required.add(old_dataset)
-        if required:
-            for model_id, datasets in models_in_language.items():
-                if required <= datasets:
-                    ranked.add((model_id, code))
-    return ranked
-
-
-def build_eval_jobs(
-    ranked: set[tuple[str, str]],
-    old_dataset: str | None,
-    new_datasets: tuple[str, ...],
-    corpus: _Corpus,
-    include_api: bool,
-    selected_providers: set[str],
-    force: bool,
-) -> tuple[list[Job], list[str], int]:
-    """Turn ranked pairs into evaluation jobs, mirroring each model's setup.
-
-    Args:
-        ranked:
-            The ranked ``(model_id, language)`` pairs.
-        old_dataset:
-            The outgoing dataset (whose recorded setup is mirrored), or None
-            when adding.
-        new_datasets:
-            The datasets to evaluate on.
-        corpus:
-            The parsed corpus.
-        include_api:
-            Whether API models are evaluated.
-        selected_providers:
-            Provider names whose env vars are set; a known-provider API model
-            from another provider is skipped.
-        force:
-            When True, keep pairs already holding a new-dataset result.
-
-    Returns:
-        Tuple of jobs to run, sorted unique list of API model ids skipped, and
-        count of (model, language) pairs skipped due to existing results.
-    """
-    # Group languages per model when the mirrored settings match, so one
-    # euroeval call covers them.
-    by_model: dict[tuple[str, bool, bool, bool], list[str]] = defaultdict(list)
-    skipped_api_set: set[str] = set()
-    skipped_existing_count: int = 0
-    for model_id, code in sorted(ranked):
-        is_api = model_id in corpus.api_model_ids
-        if is_api:
-            if not include_api:
-                skipped_api_set.add(model_id)
-                continue
-            provider = provider_for_model_id(model_id=model_id)
-            if provider is not None and provider.name not in selected_providers:
-                skipped_api_set.add(model_id)
-                continue
-        # Skip if any new dataset already has a result for this (model, language)
-        if not force and any(
-            (model_id, nds, code) in corpus.observations for nds in new_datasets
-        ):
-            skipped_existing_count += 1
-            continue
-        config = corpus.eval_configs.get((model_id, old_dataset, code))
-        evaluate_test_split, zero_shot = mirror_eval_config(
-            config=config, is_api=is_api
+    if failed:
+        logger.info(f"  Failed ({len(failed)}): {', '.join(failed)}.")
+    if skipped_api:
+        logger.info(
+            f"  Skipped {len(skipped_api)} API model(s) "
+            f"(pass --include-api to evaluate): {', '.join(skipped_api)}."
         )
-        by_model[(model_id, is_api, evaluate_test_split, zero_shot)].append(code)
-
-    jobs: list[Job] = []
-    for (model_id, is_api, evaluate_test_split, zero_shot), codes in by_model.items():
-        jobs.append(
-            Job(
-                model_id=model_id,
-                datasets=new_datasets,
-                languages=tuple(sorted(codes)),
-                is_api=is_api,
-                evaluate_test_split=evaluate_test_split,
-                zero_shot=zero_shot,
-            )
+    if skipped_existing:
+        logger.info(
+            f"  Skipped {skipped_existing} (model, language) pair(s) "
+            "already holding a result."
         )
-    return jobs, sorted(skipped_api_set), skipped_existing_count
+    if skipped_too_large:
+        logger.info(
+            f"  Skipped {len(skipped_too_large)} model(s) "
+            f"too large for the local GPU budget: {', '.join(skipped_too_large)}."
+        )
 
 
-def mirror_eval_config(config: _ObsConfig | None, is_api: bool) -> tuple[bool, bool]:
-    """Return ``(evaluate_test_split, zero_shot)`` matching the leaderboard row.
+# --------------------------------------------------------------------------- #
+# Evaluation phase
+# --------------------------------------------------------------------------- #
+@dataclass(frozen=True)
+class Job:
+    """A single evaluation of one model on one or more new datasets in one language."""
 
-    Mirrors how the model appears on the leaderboard for the outgoing dataset:
-    the ``(val)`` variant means the validation split, otherwise the test split;
-    the ``(zero-shot)`` variant means zero-shot, and only generative models are
-    ever run zero-shot. When no record is available, fall back to the model-type
-    default (API: validation split, zero-shot; open-weight: test, few-shot).
-
-    Args:
-        config:
-            The recorded setup for the outgoing dataset, or None.
-        is_api:
-            Whether the model is an API model (fallback only).
-
-    Returns:
-        The ``(evaluate_test_split, zero_shot)`` flags.
-    """
-    if config is None:
-        return (not is_api), is_api
-    evaluate_test_split = not config.validation_split
-    zero_shot = config.generative and not config.few_shot
-    return evaluate_test_split, zero_shot
+    model_id: str
+    datasets: tuple[str, ...]
+    languages: tuple[str, ...]
+    is_api: bool
+    evaluate_test_split: bool
+    zero_shot: bool
 
 
 def apply_size_filter(
@@ -1169,48 +719,389 @@ def execute_jobs(
     return evaluated, failed
 
 
-def _log_summary(
-    evaluated: list[str],
-    failed: list[str],
-    skipped_api: list[str],
-    skipped_existing: int,
-    skipped_too_large: list[str],
-) -> None:
-    """Log a one-shot status summary after evaluation completes.
+@dataclass(frozen=True)
+class _ObsConfig:
+    """How a model was evaluated on a (dataset, language), for mirroring."""
+
+    validation_split: bool
+    few_shot: bool
+    generative: bool
+
+
+def mirror_eval_config(config: _ObsConfig | None, is_api: bool) -> tuple[bool, bool]:
+    """Return ``(evaluate_test_split, zero_shot)`` matching the leaderboard row.
+
+    Mirrors how the model appears on the leaderboard for the outgoing dataset:
+    the ``(val)`` variant means the validation split, otherwise the test split;
+    the ``(zero-shot)`` variant means zero-shot, and only generative models are
+    ever run zero-shot. When no record is available, fall back to the model-type
+    default (API: validation split, zero-shot; open-weight: test, few-shot).
 
     Args:
-        evaluated:
-            List of model ids evaluated successfully.
-        failed:
-            List of model ids that failed (with exit code descriptions).
-        skipped_api:
-            Sorted list of API model ids skipped.
-        skipped_existing:
-            Count of (model, language) pairs skipped due to existing results.
-        skipped_too_large:
-            Sorted list of model ids dropped for exceeding GPU budget.
+        config:
+            The recorded setup for the outgoing dataset, or None.
+        is_api:
+            Whether the model is an API model (fallback only).
+
+    Returns:
+        The ``(evaluate_test_split, zero_shot)`` flags.
     """
-    total_skipped = len(skipped_api) + skipped_existing + len(skipped_too_large)
-    logger.info(
-        f"Evaluation summary: {len(evaluated)} evaluated, {len(failed)} failed, "
-        f"{total_skipped} skipped."
+    if config is None:
+        return (not is_api), is_api
+    evaluate_test_split = not config.validation_split
+    zero_shot = config.generative and not config.few_shot
+    return evaluate_test_split, zero_shot
+
+
+@dataclass(frozen=True)
+class _Corpus:
+    """Parsed results indexed for ranked-model selection and mirroring."""
+
+    datasets_by_language: dict[str, dict[str, set[str]]]
+    api_model_ids: set[str]
+    observations: set[tuple[str, str, str]]
+    eval_configs: dict[tuple[str, str, str], _ObsConfig]
+
+
+def build_eval_jobs(
+    ranked: set[tuple[str, str]],
+    old_dataset: str | None,
+    new_datasets: tuple[str, ...],
+    corpus: _Corpus,
+    include_api: bool,
+    selected_providers: set[str],
+    force: bool,
+) -> tuple[list[Job], list[str], int]:
+    """Turn ranked pairs into evaluation jobs, mirroring each model's setup.
+
+    Args:
+        ranked:
+            The ranked ``(model_id, language)`` pairs.
+        old_dataset:
+            The outgoing dataset (whose recorded setup is mirrored), or None
+            when adding.
+        new_datasets:
+            The datasets to evaluate on.
+        corpus:
+            The parsed corpus.
+        include_api:
+            Whether API models are evaluated.
+        selected_providers:
+            Provider names whose env vars are set; a known-provider API model
+            from another provider is skipped.
+        force:
+            When True, keep pairs already holding a new-dataset result.
+
+    Returns:
+        Tuple of jobs to run, sorted unique list of API model ids skipped, and
+        count of (model, language) pairs skipped due to existing results.
+    """
+    # Group languages per model when the mirrored settings match, so one
+    # euroeval call covers them.
+    by_model: dict[tuple[str, bool, bool, bool], list[str]] = defaultdict(list)
+    skipped_api_set: set[str] = set()
+    skipped_existing_count: int = 0
+    for model_id, code in sorted(ranked):
+        is_api = model_id in corpus.api_model_ids
+        if is_api:
+            if not include_api:
+                skipped_api_set.add(model_id)
+                continue
+            provider = provider_for_model_id(model_id=model_id)
+            if provider is not None and provider.name not in selected_providers:
+                skipped_api_set.add(model_id)
+                continue
+        # Skip if any new dataset already has a result for this (model, language)
+        if not force and any(
+            (model_id, nds, code) in corpus.observations for nds in new_datasets
+        ):
+            skipped_existing_count += 1
+            continue
+        config = corpus.eval_configs.get((model_id, old_dataset, code))
+        evaluate_test_split, zero_shot = mirror_eval_config(
+            config=config, is_api=is_api
+        )
+        by_model[(model_id, is_api, evaluate_test_split, zero_shot)].append(code)
+
+    jobs: list[Job] = []
+    for (model_id, is_api, evaluate_test_split, zero_shot), codes in by_model.items():
+        jobs.append(
+            Job(
+                model_id=model_id,
+                datasets=new_datasets,
+                languages=tuple(sorted(codes)),
+                is_api=is_api,
+                evaluate_test_split=evaluate_test_split,
+                zero_shot=zero_shot,
+            )
+        )
+    return jobs, sorted(skipped_api_set), skipped_existing_count
+
+
+def load_corpus() -> _Corpus:
+    """Load the recorded results, indexed for selection and mirroring.
+
+    Reads the per-record JSON tree in ``RESULTS_DIR``, the optional
+    ``new_results.jsonl``, and the optional ``euroeval_benchmark_results.jsonl``
+    from local ``euroeval`` CLI runs. A model counts as an API model when its
+    record was produced by the ``litellm`` engine or is flagged as not
+    open-weight. Each ``(model, dataset, language)`` triple records its
+    leaderboard variant (split + prompting), preferring the test-split record
+    when both exist (that is the row the leaderboard shows).
+
+    Returns:
+        The parsed corpus.
+
+    Raises:
+        click.ClickException:
+            When no results can be loaded.
+    """
+    # Load from per-record JSON tree
+    records: list[dict[str, object]] = []
+    if RESULTS_DIR.exists() and any(RESULTS_DIR.rglob("*.json")):
+        records.extend(load_records_from_result_tree(RESULTS_DIR))
+    if NEW_RESULTS_PATH.exists():
+        records.extend(load_records_from_jsonl_files([NEW_RESULTS_PATH]))
+    if EUROEVAL_BENCHMARK_RESULTS_PATH.exists():
+        records.extend(load_records_from_jsonl_files([EUROEVAL_BENCHMARK_RESULTS_PATH]))
+    if not records:
+        raise click.ClickException(
+            f"No results found under {RESULTS_DIR}; cannot find ranked models."
+        )
+
+    datasets_by_language: dict[str, dict[str, set[str]]] = defaultdict(
+        lambda: defaultdict(set)
     )
-    if failed:
-        logger.info(f"  Failed ({len(failed)}): {', '.join(failed)}.")
-    if skipped_api:
-        logger.info(
-            f"  Skipped {len(skipped_api)} API model(s) "
-            f"(pass --include-api to evaluate): {', '.join(skipped_api)}."
+    api_model_ids: set[str] = set()
+    observations: set[tuple[str, str, str]] = set()
+    eval_configs: dict[tuple[str, str, str], _ObsConfig] = {}
+    for record in records:
+        model_info = t.cast(dict[str, object], record.get("model_info", {}))
+        # Fall back to model_info.id when name is missing (valid for EEE records)
+        model = plain_model_id(str(model_info.get("name") or model_info.get("id", "")))
+        dataset = get_dataset(record=record)
+        if not model or not dataset:
+            continue
+        if record_is_api(model_info=model_info):
+            api_model_ids.add(model)
+        config = _ObsConfig(
+            validation_split=get_bool_field(record, "validation_split", False),
+            few_shot=get_bool_field(record, "few_shot", True),
+            generative=str(
+                model_info.get("additional_details", {}).get("generative")
+            ).lower()
+            == "true",
         )
-    if skipped_existing:
-        logger.info(
-            f"  Skipped {skipped_existing} (model, language) pair(s) "
-            "already holding a result."
+        for language in _record_languages(record=record):
+            datasets_by_language[language][model].add(str(dataset))
+            key = (model, str(dataset), language)
+            observations.add(key)
+            existing = eval_configs.get(key)
+            # Prefer the test-split record: when a model has both, the
+            # leaderboard row shows the test-split variant.
+            if existing is None or (
+                not config.validation_split and existing.validation_split
+            ):
+                eval_configs[key] = config
+    logger.info(
+        f"Loaded results for {len(datasets_by_language):,} language(s) "
+        f"({len(api_model_ids):,} API model(s))."
+    )
+    return _Corpus(
+        datasets_by_language=datasets_by_language,
+        api_model_ids=api_model_ids,
+        observations=observations,
+        eval_configs=eval_configs,
+    )
+
+
+def ranked_model_language_pairs(
+    old_dataset: str | None,
+    new_datasets: tuple[str, ...],
+    swapped_task: str,
+    language_codes: set[str],
+    datasets_by_language: dict[str, dict[str, set[str]]],
+) -> set[tuple[str, str]]:
+    """Return ``(model_id, language)`` pairs ranked on the affected leaderboards.
+
+    A model is ranked in a language when it holds a result for every required
+    (non-orthogonal) dataset of that language's single-language leaderboard, in
+    any leaderboard category the swapped task belongs to. The ``generative``
+    category scores all tasks; ``all_models`` scores only NLU tasks so encoder
+    models can be compared. A model ranked in *either* category is selected, so
+    encoder models are included whenever the swapped task is one they can run.
+
+    Args:
+        old_dataset:
+            The outgoing dataset (kept in the required set), or None when adding.
+        new_datasets:
+            The incoming candidates (kept out of the required set).
+        swapped_task:
+            The task both datasets belong to.
+        language_codes:
+            The affected language codes.
+        datasets_by_language:
+            ``{language: {model: {dataset, ...}}}`` from the corpus.
+
+    Returns:
+        The ranked ``(model_id, language)`` pairs.
+    """
+    languages = get_all_languages()
+    affected = [
+        category
+        for category in LEADERBOARD_CATEGORIES
+        if category_includes_task(category=category, task=swapped_task)
+    ]
+    if not affected:
+        logger.warning(f"Task {swapped_task!r} is in no leaderboard category.")
+        return set()
+
+    ranked: set[tuple[str, str]] = set()
+    for code in sorted(language_codes):
+        language = languages.get(code)
+        if language is None:
+            logger.warning(f"Unknown language code {code!r}; skipping.")
+            continue
+        name = language.name.lower()
+        if " " in name:
+            logger.warning(f"{code!r} ({name!r}) has no standalone leaderboard.")
+            continue
+        try:
+            by_task = official_datasets_for_language(name)
+        except ValueError:
+            logger.warning(f"No leaderboard datasets for {name!r}; skipping.")
+            continue
+
+        models_in_language = datasets_by_language.get(code, {})
+        # Compute the union of required datasets across all affected categories.
+        # A model must have all datasets that ANY affected category requires,
+        # ensuring it would have a rank score on the most restrictive leaderboard.
+        required: set[str] = set()
+        for category in affected:
+            required |= {
+                dataset
+                for task, task_datasets in by_task.items()
+                if task not in ORTHOGONAL_TASKS
+                and category_includes_task(category=category, task=task)
+                for dataset in task_datasets
+            }
+        for nds in new_datasets:
+            required.discard(nds)
+        if old_dataset:
+            required.add(old_dataset)
+        if required:
+            for model_id, datasets in models_in_language.items():
+                if required <= datasets:
+                    ranked.add((model_id, code))
+    return ranked
+
+
+def validate_branch(branch: str) -> None:
+    """Reject an empty branch name or the default branch.
+
+    Args:
+        branch:
+            The requested branch name.
+
+    Raises:
+        click.ClickException:
+            When the branch is empty or is the repo's default branch.
+    """
+    if not branch.strip():
+        raise click.ClickException("--branch must be a non-empty branch name.")
+    default = default_branch()
+    if branch in {"main", "master", default}:
+        raise click.ClickException(
+            f"--branch may not be the default branch ({default!r}); pick a new "
+            "branch name for the swap."
         )
-    if skipped_too_large:
-        logger.info(
-            f"  Skipped {len(skipped_too_large)} model(s) "
-            f"too large for the local GPU budget: {', '.join(skipped_too_large)}."
+
+
+# --------------------------------------------------------------------------- #
+# Validation
+# --------------------------------------------------------------------------- #
+def validate_datasets(
+    old_dataset: str | None, new_datasets: tuple[str, ...]
+) -> tuple[DatasetConfig | None, list[DatasetConfig]]:
+    """Validate the dataset pair(s) and return their configs.
+
+    When old_dataset is provided, it must be official and all new candidates
+    must be unofficial. All datasets must belong to the same task.
+
+    Args:
+        old_dataset:
+            The outgoing dataset id (expected official), or None when adding.
+        new_datasets:
+            The incoming candidate ids (expected unofficial).
+
+    Returns:
+        The ``(old_config, new_configs)`` pair.
+
+    Raises:
+        click.ClickException:
+            When a dataset is unknown, mis-flagged, the tasks differ, or no
+            new datasets are provided.
+    """
+    if not new_datasets:
+        raise click.ClickException("At least one --new-dataset must be provided.")
+
+    old_config = dataset_config(dataset_id=old_dataset) if old_dataset else None
+    new_configs = []
+    for ds_id in new_datasets:
+        config = dataset_config(dataset_id=ds_id)
+        if config is None:
+            raise click.ClickException(f"--new-dataset {ds_id!r} has no config.")
+        new_configs.append(config)
+
+    if old_config is not None:
+        if old_config.unofficial:
+            raise click.ClickException(
+                f"--old-dataset {old_dataset!r} must be official; it is unofficial."
+            )
+        # All new datasets must share the same task as the old one
+        for new_config in new_configs:
+            if not new_config.unofficial:
+                raise click.ClickException(
+                    f"--new-dataset {new_config.name!r} must be unofficial; "
+                    "it is official."
+                )
+            if old_config.task.name != new_config.task.name:
+                raise click.ClickException(
+                    f"All datasets must share a task; {old_dataset!r} is "
+                    f"{old_config.task.name!r} but {new_config.name!r} is "
+                    f"{new_config.task.name!r}."
+                )
+    else:
+        # When no old dataset, all new datasets must share the same task
+        first_task = new_configs[0].task.name
+        for new_config in new_configs[1:]:
+            if not new_config.unofficial:
+                raise click.ClickException(
+                    f"--new-dataset {new_config.name!r} must be unofficial; "
+                    "it is official."
+                )
+            if new_config.task.name != first_task:
+                raise click.ClickException(
+                    f"All new datasets must share a task; {new_configs[0].name!r} is "
+                    f"{first_task!r} but {new_config.name!r} is "
+                    f"{new_config.task.name!r}."
+                )
+
+    return old_config, new_configs
+
+
+def validate_gh_installed() -> None:
+    """Check that the GitHub CLI is installed.
+
+    Raises:
+        ClickException:
+            If the Github CLI wasn't found.
+    """
+    try:
+        subprocess.run(["gh", "version"], check=True, capture_output=True)
+    except FileNotFoundError:
+        raise click.ClickException(
+            "GitHub CLI not found; install it from https://cli.github.com/"
         )
 
 
@@ -1221,6 +1112,115 @@ class _Provider:
     name: str
     env_var: str
     matches: c.Callable[[str], bool]
+
+
+def download_bucket_files_for_datasets(dataset_ids: set[str]) -> int:
+    """Download missing bucket files whose filenames match dataset ids.
+
+    Returns:
+        Number of files downloaded.
+
+    Raises:
+        RuntimeError:
+            If no Hugging Face token is available.
+    """
+    if not dataset_ids:
+        logger.warning("No dataset ids resolved for bucket sync; skipping download.")
+        return 0
+
+    hf_token = resolve_hf_token()
+    if not hf_token:
+        raise RuntimeError(
+            "HF_TOKEN not set. Cannot sync results from Hugging Face bucket. "
+            "Run 'hf auth login' or set the HF_TOKEN environment variable."
+        )
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    prefixes = tuple(f"{dataset_id}__" for dataset_id in sorted(dataset_ids))
+    api = HfApi()
+    to_download: list[tuple[str | BucketFile, str | Path]] = []
+
+    logger.info(
+        "Listing bucket %s for result files matching: %s",
+        HF_RESULTS_BUCKET,
+        ", ".join(sorted(dataset_ids)),
+    )
+    for entry in api.list_bucket_tree(
+        bucket_id=HF_RESULTS_BUCKET, recursive=True, token=hf_token
+    ):
+        if not isinstance(entry, BucketFile):
+            continue
+        filename = Path(entry.path).name
+        if not filename.endswith(".json") or not filename.startswith(prefixes):
+            continue
+        local_path = RESULTS_DIR / entry.path
+        if not local_path.exists():
+            local_path.parent.mkdir(parents=True, exist_ok=True)
+            to_download.append((entry, local_path))
+
+    if not to_download:
+        logger.info("Local result cache already contains the relevant bucket files.")
+        return 0
+
+    logger.info(
+        "Downloading %s relevant new file(s) from the bucket...", len(to_download)
+    )
+    api.download_bucket_files(
+        bucket_id=HF_RESULTS_BUCKET,
+        files=to_download,
+        token=hf_token,
+        raise_on_missing_files=False,
+    )
+    return len(to_download)
+
+
+def result_sync_dataset_ids(
+    old_dataset: str | None,
+    new_datasets: tuple[str, ...],
+    swapped_task: str,
+    target_codes: set[str],
+) -> set[str]:
+    """Return dataset ids whose result files are needed for this swap.
+
+    The swap planner needs all datasets that define whether a model is ranked on
+    the affected leaderboard category, plus the incoming datasets so existing
+    replacement results can be skipped.
+    """
+    affected = [
+        category
+        for category in LEADERBOARD_CATEGORIES
+        if category_includes_task(category=category, task=swapped_task)
+    ]
+    dataset_ids: set[str] = set(new_datasets)
+    if old_dataset:
+        dataset_ids.add(old_dataset)
+
+    languages = get_all_languages()
+    for code in sorted(target_codes):
+        language = languages.get(code)
+        if language is None:
+            logger.warning(f"Unknown language code {code!r}; skipping result sync.")
+            continue
+        name = language.name.lower()
+        if " " in name:
+            logger.warning(f"{code!r} ({name!r}) has no standalone leaderboard.")
+            continue
+        try:
+            by_task = official_datasets_for_language(name)
+        except ValueError:
+            logger.warning(f"No leaderboard datasets for {name!r}; skipping sync.")
+            continue
+
+        for category in affected:
+            dataset_ids.update(
+                dataset
+                for task, task_datasets in by_task.items()
+                if task not in ORTHOGONAL_TASKS
+                and category_includes_task(category=category, task=task)
+                for dataset in task_datasets
+            )
+
+    return dataset_ids
 
 
 PROVIDERS: list[_Provider] = [
@@ -1240,89 +1240,284 @@ PROVIDERS_BY_NAME: dict[str, _Provider] = {
 }
 
 
-def provider_for_model_id(model_id: str) -> _Provider | None:
-    """Return the API provider that owns a model id, or None.
+def _config_block_span(
+    lines: list[str], dataset_id: str, path: Path
+) -> tuple[int, int]:
+    """Return the inclusive ``(start, end)`` line span of a config block.
 
     Args:
-        model_id:
-            The model id to classify.
+        lines:
+            The config file's lines.
+        dataset_id:
+            The dataset id whose block to find.
+        path:
+            The file (for error messages).
 
     Returns:
-        The matching provider, or None when no provider claims the id.
-    """
-    for provider in PROVIDERS:
-        if provider.matches(model_id):
-            return provider
-    return None
-
-
-def resolve_api_providers(
-    include_api: bool, api_providers_arg: str | None, present_providers: set[str]
-) -> set[str]:
-    """Resolve which API providers to run and verify their env vars.
-
-    Args:
-        include_api:
-            Whether the user opted in to API evaluation.
-        api_providers_arg:
-            Comma-separated provider names, or None to run every provider
-            present among the ranked API models.
-        present_providers:
-            Provider names actually present among the ranked API models.
-
-    Returns:
-        The provider names to run.
+        The start (``NAME = DatasetConfig(``) and end (``)``) indices.
 
     Raises:
         click.ClickException:
-            When an unknown provider is named or a selected provider's env var
-            is missing.
+            When the block can't be delimited.
     """
-    if not include_api or not present_providers:
-        return set()
-    if api_providers_arg is None:
-        selected = set(present_providers)
-    else:
-        names = {n.strip().lower() for n in api_providers_arg.split(",") if n.strip()}
-        unknown = sorted(names - PROVIDERS_BY_NAME.keys())
-        if unknown:
-            raise click.ClickException(
-                f"Unknown API provider(s): {', '.join(unknown)}. "
-                f"Valid: {', '.join(PROVIDERS_BY_NAME)}."
-            )
-        selected = names & present_providers
-    missing = [
-        PROVIDERS_BY_NAME[name].env_var
-        for name in sorted(selected)
-        if not os.environ.get(PROVIDERS_BY_NAME[name].env_var)
-    ]
-    if missing:
-        raise click.ClickException(
-            f"Selected API provider(s) require: {', '.join(missing)} -- set the "
-            "variable(s) and re-run."
-        )
-    if selected:
-        logger.info(f"API providers enabled: {', '.join(sorted(selected))}.")
-    return selected
+    name_re = re.compile(rf'name\s*=\s*"{re.escape(dataset_id)}"')
+    name_idx = next((i for i, line in enumerate(lines) if name_re.search(line)), None)
+    if name_idx is None:
+        raise click.ClickException(f"{dataset_id!r} not found in {path}.")
+    start = name_idx
+    while start >= 0 and not lines[start].rstrip().endswith("DatasetConfig("):
+        start -= 1
+    end = name_idx
+    while end < len(lines) and lines[end].strip() != ")":
+        end += 1
+    if start < 0 or end >= len(lines):
+        raise click.ClickException(f"Could not delimit {dataset_id!r} block in {path}.")
+    return start, end
 
 
-def record_is_api(model_info: dict[str, object]) -> bool:
-    """Return whether a record's model was evaluated via an API.
+def _doc_heading_index(lines: list[str], dataset_id: str, path: Path) -> int:
+    """Return the ``### ...`` heading index for a dataset's doc section.
+
+    The section is the one whose body contains ``--dataset <id>``.
 
     Args:
-        model_info:
-            The ``model_info`` object of an EEE result record.
+        lines:
+            The doc file's lines.
+        dataset_id:
+            The dataset id to find.
+        path:
+            The file (for error messages).
 
     Returns:
-        True when produced by ``litellm`` or flagged as not open-weight.
+        The heading line index.
+
+    Raises:
+        click.ClickException:
+            When the section can't be found.
     """
-    engine = model_info.get("inference_engine", {})
-    engine_name = engine.get("name", "") if isinstance(engine, dict) else ""
-    if str(engine_name).lower() == "litellm":
-        return True
-    details = model_info.get("additional_details", {})
-    open_flag = details.get("open") if isinstance(details, dict) else None
-    return str(open_flag).lower() == "false"
+    anchor = re.compile(rf"--dataset {re.escape(dataset_id)}\b")
+    anchor_idx = next((i for i, line in enumerate(lines) if anchor.search(line)), None)
+    if anchor_idx is None:
+        raise click.ClickException(f"{dataset_id!r} not documented in {path}.")
+    for i in range(anchor_idx, -1, -1):
+        if lines[i].startswith("### "):
+            return i
+    raise click.ClickException(f"No '### ' heading above {dataset_id!r} in {path}.")
+
+
+def _doc_task_span(lines: list[str], heading_idx: int) -> tuple[int, int]:
+    """Return the ``[start, end)`` line span of the enclosing ``## Task`` section.
+
+    The span starts at the first ``### `` subsection under the task heading and
+    ends before the next ``## `` heading (or end of file), so the task's intro
+    lines are left in place.
+
+    Args:
+        lines:
+            The doc file's lines.
+        heading_idx:
+            The ``### `` heading index of the dataset's subsection.
+
+    Returns:
+        The ``(start, end)`` span covering the task's ``### `` subsections.
+    """
+    task_idx = heading_idx
+    while task_idx >= 0 and not lines[task_idx].startswith("## "):
+        task_idx -= 1
+    start = task_idx + 1
+    while start < len(lines) and not lines[start].startswith("### "):
+        start += 1
+    end = start
+    while end < len(lines) and not lines[end].startswith("## "):
+        end += 1
+    return start, end
+
+
+def _flip_heading(heading: str, official: bool) -> str:
+    """Add or remove the ``Unofficial:`` prefix on a ``### `` heading.
+
+    Args:
+        heading:
+            The heading line (``### Title`` or ``### Unofficial: Title``).
+        official:
+            True to drop the prefix, False to add it.
+
+    Returns:
+        The updated heading line.
+    """
+    title = heading[len("### ") :]
+    has_prefix = title.startswith(DOC_UNOFFICIAL_PREFIX)
+    if official and has_prefix:
+        title = title[len(DOC_UNOFFICIAL_PREFIX) :]
+    elif not official and not has_prefix:
+        title = f"{DOC_UNOFFICIAL_PREFIX}{title}"
+    return f"### {title}"
+
+
+def _run(
+    cmd: list[str], check: bool, capture: bool
+) -> subprocess.CompletedProcess[str]:
+    """Run a subprocess in the repo root.
+
+    Args:
+        cmd:
+            The command and arguments.
+        check:
+            Whether to raise on a non-zero exit.
+        capture:
+            Whether to capture stdout/stderr.
+
+    Returns:
+        The completed process.
+
+    Raises:
+        click.ClickException:
+            When ``check`` is True and the command fails.
+    """
+    result = subprocess.run(
+        cmd, cwd=REPO_ROOT, capture_output=capture, text=True, check=False
+    )
+    if check and result.returncode != 0:
+        detail = result.stderr.strip() if capture and result.stderr else ""
+        raise click.ClickException(
+            f"Command failed ({' '.join(cmd)}): exit {result.returncode}. {detail}"
+        )
+    return result
+
+
+def _gh(
+    *args: str, check: bool = True, capture: bool = False
+) -> subprocess.CompletedProcess[str]:
+    """Run a ``gh`` command in the repo root.
+
+    Args:
+        args:
+            The gh subcommand and arguments.
+        check:
+            Whether to raise on a non-zero exit.
+        capture:
+            Whether to capture stdout/stderr.
+
+    Returns:
+        The completed process.
+    """
+    return _run(["gh", *args], check=check, capture=capture)
+
+
+def _git(
+    *args: str, check: bool = True, capture: bool = False
+) -> subprocess.CompletedProcess[str]:
+    """Run a git command in the repo root.
+
+    Args:
+        args:
+            The git subcommand and arguments.
+        check:
+            Whether to raise on a non-zero exit.
+        capture:
+            Whether to capture stdout/stderr.
+
+    Returns:
+        The completed process.
+    """
+    return _run(["git", *args], check=check, capture=capture)
+
+
+def _marker_index(lines: list[str], path: Path) -> int:
+    """Return the index of the unofficial-section marker comment.
+
+    Args:
+        lines:
+            The config file's lines.
+        path:
+            The file (for error messages).
+
+    Returns:
+        The marker line index.
+
+    Raises:
+        click.ClickException:
+            When the marker is absent.
+    """
+    for i, line in enumerate(lines):
+        if line.strip() == UNOFFICIAL_MARKER:
+            return i
+    raise click.ClickException(f"No {UNOFFICIAL_MARKER!r} marker in {path}.")
+
+
+def _partition_doc_subsections(section: list[str]) -> list[str]:
+    """Stably reorder a task section's ``### `` subsections official-first.
+
+    Args:
+        section:
+            The lines of a task section, beginning at its first ``### ``
+            subsection.
+
+    Returns:
+        The lines with official subsections (no ``Unofficial:`` prefix) kept in
+        order first, then the unofficial ones.
+    """
+    subsections: list[list[str]] = []
+    current: list[str] = []
+    for line in section:
+        if line.startswith("### ") and current:
+            subsections.append(current)
+            current = []
+        current.append(line)
+    if current:
+        subsections.append(current)
+
+    official = [
+        sub
+        for sub in subsections
+        if not sub[0].startswith(f"### {DOC_UNOFFICIAL_PREFIX}")
+    ]
+    unofficial = [
+        sub for sub in subsections if sub[0].startswith(f"### {DOC_UNOFFICIAL_PREFIX}")
+    ]
+    result: list[str] = []
+    for sub in official + unofficial:
+        result.extend(sub)
+    return result
+
+
+def _pr_body(old_dataset: str | None, new_datasets: tuple[str, ...]) -> str:
+    """Return the standard PR description for a dataset swap.
+
+    Args:
+        old_dataset:
+            The demoted dataset id, or None if just adding.
+        new_datasets:
+            The promoted dataset ids.
+
+    Returns:
+        The markdown PR body.
+    """
+    new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
+    if old_dataset:
+        return (
+            f"Swaps the official dataset `{old_dataset}` for {new_ds_str}.\n\n"
+            "## What\n\n"
+            f"- Every model with a rank score on the affected leaderboard(s) was "
+            f"evaluated on {new_ds_str}, mirroring how each appears on the "
+            "leaderboard (validation/test split and zero-/few-shot).\n"
+            f"- `{old_dataset}` is demoted to unofficial and {new_ds_str} "
+            "promoted to official in the dataset configs and the dataset "
+            "documentation, keeping each file's official-first grouping.\n\n"
+            "The leaderboards will pick up the change on the next regeneration."
+        )
+    else:
+        return (
+            f"Adds {new_ds_str} as official dataset(s).\n\n"
+            "## What\n\n"
+            f"- Every model with a rank score on the affected leaderboard(s) was "
+            f"evaluated on {new_ds_str}, mirroring how each appears on the "
+            "leaderboard (validation/test split and zero-/few-shot).\n"
+            f"- {new_ds_str} promoted to official in the dataset configs "
+            "and the dataset documentation, keeping each file's official-first "
+            "grouping.\n\n"
+            "The leaderboards will pick up the change on the next regeneration."
+        )
 
 
 def _record_languages(record: dict[str, object]) -> list[str]:
@@ -1349,99 +1544,22 @@ def _record_languages(record: dict[str, object]) -> list[str]:
     return [str(code) for code in parsed] if isinstance(parsed, list) else []
 
 
-# --------------------------------------------------------------------------- #
-# Config + documentation swap
-# --------------------------------------------------------------------------- #
-def apply_swap(
-    old_dataset: str | None, new_datasets: tuple[str, ...], dry_run: bool
-) -> list[Path]:
-    """Swap officiality in the dataset configs and the frontend docs.
-
-    Args:
-        old_dataset:
-            The dataset to demote to unofficial, or None if just adding.
-        new_datasets:
-            The datasets to promote to official.
-        dry_run:
-            When True, log the files that would change without editing them.
-
-    Returns:
-        The paths that were (or would be) modified.
-
-    Raises:
-        click.ClickException:
-            When the dataset configs cannot be fetched.
-    """
-    changed: list[Path] = []
-    # Promote all new datasets to official
-    for dataset_id in new_datasets:
-        config_path = find_config_file(dataset_id=dataset_id)
-        changed.append(config_path)
-        if not dry_run:
-            set_config_officiality(
-                path=config_path, dataset_id=dataset_id, official=True
-            )
-        for doc_path in find_doc_files(dataset_id=dataset_id):
-            changed.append(doc_path)
-            if not dry_run:
-                set_doc_officiality(path=doc_path, dataset_id=dataset_id, official=True)
-    # Demote old dataset to unofficial if present
-    if old_dataset:
-        config_path = find_config_file(dataset_id=old_dataset)
-        changed.append(config_path)
-        if not dry_run:
-            set_config_officiality(
-                path=config_path, dataset_id=old_dataset, official=False
-            )
-        for doc_path in find_doc_files(dataset_id=old_dataset):
-            changed.append(doc_path)
-            if not dry_run:
-                set_doc_officiality(
-                    path=doc_path, dataset_id=old_dataset, official=False
-                )
-    unique = sorted({path for path in changed}, key=str)
-    verb = "Would edit" if dry_run else "Edited"
-    for path in unique:
-        logger.info(f"{verb} {path.relative_to(REPO_ROOT)}.")
-
-    # Update CHANGELOG.md
-    if not dry_run:
-        changelog_path = REPO_ROOT / "CHANGELOG.md"
-        old_config = dataset_config(dataset_id=old_dataset) if old_dataset else None
-        new_configs = []
-        for ds_id in new_datasets:
-            config = dataset_config(dataset_id=ds_id)
-            if config is None:
-                raise click.ClickException(
-                    f"Could not fetch dataset config for {ds_id!r}."
-                )
-            new_configs.append(config)
-        _update_changelog(
-            changelog_path=changelog_path,
-            old_dataset=old_dataset,
-            new_datasets=new_datasets,
-            old_config=old_config,
-            new_configs=new_configs,
+def _request_copilot_review() -> None:
+    """Best-effort request a Copilot review on the current branch's PR."""
+    result = _gh(
+        "pr",
+        "edit",
+        "--add-reviewer",
+        "copilot-pull-request-reviewer[bot]",
+        check=False,
+        capture=True,
+    )
+    if result.returncode != 0:
+        logger.info(
+            "Could not explicitly request a Copilot review (it may still run "
+            "automatically): %s",
+            result.stderr.strip(),
         )
-        changed.append(changelog_path)
-        logger.info(f"Edited {changelog_path.relative_to(REPO_ROOT)}.")
-
-        # Also track dataset_split_sizes.json if it has been modified
-        split_sizes_path = (
-            REPO_ROOT / "src" / "leaderboards" / "dataset_split_sizes.json"
-        )
-        if split_sizes_path.exists():
-            diff_result = _git(
-                "diff", "--quiet", "--", str(split_sizes_path), check=False
-            )
-            if diff_result.returncode != 0:
-                # File has modifications
-                changed.append(split_sizes_path)
-                logger.info(
-                    f"Tracked {split_sizes_path.relative_to(REPO_ROOT)} (modified)."
-                )
-
-    return sorted({path for path in changed}, key=str)
 
 
 def _update_changelog(
@@ -1520,6 +1638,27 @@ def _update_changelog(
     lines.insert(changed_idx + 1, "")
     lines.insert(changed_idx + 2, entry)
     changelog_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def dataset_config(dataset_id: str) -> DatasetConfig | None:
+    """Return the :class:`DatasetConfig` for a dataset id, or None if unknown.
+
+    Args:
+        dataset_id:
+            The dataset id to look up.
+
+    Returns:
+        The matching config, or None when unknown.
+    """
+    configs = get_all_dataset_configs(
+        custom_datasets_file=Path(""),
+        dataset_ids=[dataset_id],
+        api_key=None,
+        cache_dir=Path(".cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    return configs.get(dataset_id)
 
 
 def find_config_file(dataset_id: str) -> Path:
@@ -1642,176 +1781,114 @@ def set_doc_officiality(path: Path, dataset_id: str, official: bool) -> None:
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def _config_block_span(
-    lines: list[str], dataset_id: str, path: Path
-) -> tuple[int, int]:
-    """Return the inclusive ``(start, end)`` line span of a config block.
+# --------------------------------------------------------------------------- #
+# Config + documentation swap
+# --------------------------------------------------------------------------- #
+def apply_swap(
+    old_dataset: str | None, new_datasets: tuple[str, ...], dry_run: bool
+) -> list[Path]:
+    """Swap officiality in the dataset configs and the frontend docs.
 
     Args:
-        lines:
-            The config file's lines.
-        dataset_id:
-            The dataset id whose block to find.
-        path:
-            The file (for error messages).
+        old_dataset:
+            The dataset to demote to unofficial, or None if just adding.
+        new_datasets:
+            The datasets to promote to official.
+        dry_run:
+            When True, log the files that would change without editing them.
 
     Returns:
-        The start (``NAME = DatasetConfig(``) and end (``)``) indices.
+        The paths that were (or would be) modified.
 
     Raises:
         click.ClickException:
-            When the block can't be delimited.
+            When the dataset configs cannot be fetched.
     """
-    name_re = re.compile(rf'name\s*=\s*"{re.escape(dataset_id)}"')
-    name_idx = next((i for i, line in enumerate(lines) if name_re.search(line)), None)
-    if name_idx is None:
-        raise click.ClickException(f"{dataset_id!r} not found in {path}.")
-    start = name_idx
-    while start >= 0 and not lines[start].rstrip().endswith("DatasetConfig("):
-        start -= 1
-    end = name_idx
-    while end < len(lines) and lines[end].strip() != ")":
-        end += 1
-    if start < 0 or end >= len(lines):
-        raise click.ClickException(f"Could not delimit {dataset_id!r} block in {path}.")
-    return start, end
+    changed: list[Path] = []
+    # Promote all new datasets to official
+    for dataset_id in new_datasets:
+        config_path = find_config_file(dataset_id=dataset_id)
+        changed.append(config_path)
+        if not dry_run:
+            set_config_officiality(
+                path=config_path, dataset_id=dataset_id, official=True
+            )
+        for doc_path in find_doc_files(dataset_id=dataset_id):
+            changed.append(doc_path)
+            if not dry_run:
+                set_doc_officiality(path=doc_path, dataset_id=dataset_id, official=True)
+    # Demote old dataset to unofficial if present
+    if old_dataset:
+        config_path = find_config_file(dataset_id=old_dataset)
+        changed.append(config_path)
+        if not dry_run:
+            set_config_officiality(
+                path=config_path, dataset_id=old_dataset, official=False
+            )
+        for doc_path in find_doc_files(dataset_id=old_dataset):
+            changed.append(doc_path)
+            if not dry_run:
+                set_doc_officiality(
+                    path=doc_path, dataset_id=old_dataset, official=False
+                )
+    unique = sorted({path for path in changed}, key=str)
+    verb = "Would edit" if dry_run else "Edited"
+    for path in unique:
+        logger.info(f"{verb} {path.relative_to(REPO_ROOT)}.")
+
+    # Update CHANGELOG.md
+    if not dry_run:
+        changelog_path = REPO_ROOT / "CHANGELOG.md"
+        old_config = dataset_config(dataset_id=old_dataset) if old_dataset else None
+        new_configs = []
+        for ds_id in new_datasets:
+            config = dataset_config(dataset_id=ds_id)
+            if config is None:
+                raise click.ClickException(
+                    f"Could not fetch dataset config for {ds_id!r}."
+                )
+            new_configs.append(config)
+        _update_changelog(
+            changelog_path=changelog_path,
+            old_dataset=old_dataset,
+            new_datasets=new_datasets,
+            old_config=old_config,
+            new_configs=new_configs,
+        )
+        changed.append(changelog_path)
+        logger.info(f"Edited {changelog_path.relative_to(REPO_ROOT)}.")
+
+        # Also track dataset_split_sizes.json if it has been modified
+        split_sizes_path = (
+            REPO_ROOT / "src" / "leaderboards" / "dataset_split_sizes.json"
+        )
+        if split_sizes_path.exists():
+            diff_result = _git(
+                "diff", "--quiet", "--", str(split_sizes_path), check=False
+            )
+            if diff_result.returncode != 0:
+                # File has modifications
+                changed.append(split_sizes_path)
+                logger.info(
+                    f"Tracked {split_sizes_path.relative_to(REPO_ROOT)} (modified)."
+                )
+
+    return sorted({path for path in changed}, key=str)
 
 
-def _marker_index(lines: list[str], path: Path) -> int:
-    """Return the index of the unofficial-section marker comment.
+def checkout_branch(branch: str) -> None:
+    """Check out ``branch``, creating it if it doesn't exist.
 
     Args:
-        lines:
-            The config file's lines.
-        path:
-            The file (for error messages).
-
-    Returns:
-        The marker line index.
-
-    Raises:
-        click.ClickException:
-            When the marker is absent.
+        branch:
+            The branch to switch to.
     """
-    for i, line in enumerate(lines):
-        if line.strip() == UNOFFICIAL_MARKER:
-            return i
-    raise click.ClickException(f"No {UNOFFICIAL_MARKER!r} marker in {path}.")
-
-
-def _doc_heading_index(lines: list[str], dataset_id: str, path: Path) -> int:
-    """Return the ``### ...`` heading index for a dataset's doc section.
-
-    The section is the one whose body contains ``--dataset <id>``.
-
-    Args:
-        lines:
-            The doc file's lines.
-        dataset_id:
-            The dataset id to find.
-        path:
-            The file (for error messages).
-
-    Returns:
-        The heading line index.
-
-    Raises:
-        click.ClickException:
-            When the section can't be found.
-    """
-    anchor = re.compile(rf"--dataset {re.escape(dataset_id)}\b")
-    anchor_idx = next((i for i, line in enumerate(lines) if anchor.search(line)), None)
-    if anchor_idx is None:
-        raise click.ClickException(f"{dataset_id!r} not documented in {path}.")
-    for i in range(anchor_idx, -1, -1):
-        if lines[i].startswith("### "):
-            return i
-    raise click.ClickException(f"No '### ' heading above {dataset_id!r} in {path}.")
-
-
-def _doc_task_span(lines: list[str], heading_idx: int) -> tuple[int, int]:
-    """Return the ``[start, end)`` line span of the enclosing ``## Task`` section.
-
-    The span starts at the first ``### `` subsection under the task heading and
-    ends before the next ``## `` heading (or end of file), so the task's intro
-    lines are left in place.
-
-    Args:
-        lines:
-            The doc file's lines.
-        heading_idx:
-            The ``### `` heading index of the dataset's subsection.
-
-    Returns:
-        The ``(start, end)`` span covering the task's ``### `` subsections.
-    """
-    task_idx = heading_idx
-    while task_idx >= 0 and not lines[task_idx].startswith("## "):
-        task_idx -= 1
-    start = task_idx + 1
-    while start < len(lines) and not lines[start].startswith("### "):
-        start += 1
-    end = start
-    while end < len(lines) and not lines[end].startswith("## "):
-        end += 1
-    return start, end
-
-
-def _partition_doc_subsections(section: list[str]) -> list[str]:
-    """Stably reorder a task section's ``### `` subsections official-first.
-
-    Args:
-        section:
-            The lines of a task section, beginning at its first ``### ``
-            subsection.
-
-    Returns:
-        The lines with official subsections (no ``Unofficial:`` prefix) kept in
-        order first, then the unofficial ones.
-    """
-    subsections: list[list[str]] = []
-    current: list[str] = []
-    for line in section:
-        if line.startswith("### ") and current:
-            subsections.append(current)
-            current = []
-        current.append(line)
-    if current:
-        subsections.append(current)
-
-    official = [
-        sub
-        for sub in subsections
-        if not sub[0].startswith(f"### {DOC_UNOFFICIAL_PREFIX}")
-    ]
-    unofficial = [
-        sub for sub in subsections if sub[0].startswith(f"### {DOC_UNOFFICIAL_PREFIX}")
-    ]
-    result: list[str] = []
-    for sub in official + unofficial:
-        result.extend(sub)
-    return result
-
-
-def _flip_heading(heading: str, official: bool) -> str:
-    """Add or remove the ``Unofficial:`` prefix on a ``### `` heading.
-
-    Args:
-        heading:
-            The heading line (``### Title`` or ``### Unofficial: Title``).
-        official:
-            True to drop the prefix, False to add it.
-
-    Returns:
-        The updated heading line.
-    """
-    title = heading[len("### ") :]
-    has_prefix = title.startswith(DOC_UNOFFICIAL_PREFIX)
-    if official and has_prefix:
-        title = title[len(DOC_UNOFFICIAL_PREFIX) :]
-    elif not official and not has_prefix:
-        title = f"{DOC_UNOFFICIAL_PREFIX}{title}"
-    return f"### {title}"
+    existing = _git("rev-parse", "--verify", branch, check=False, capture=True)
+    if existing.returncode == 0:
+        _git("checkout", branch)
+    else:
+        _git("checkout", "-b", branch)
+    logger.info(f"On branch {branch!r}.")
 
 
 # --------------------------------------------------------------------------- #
@@ -1828,21 +1905,6 @@ def default_branch() -> str:
     if result.returncode == 0:
         return result.stdout.strip().rsplit("/", 1)[-1]
     return "main"
-
-
-def checkout_branch(branch: str) -> None:
-    """Check out ``branch``, creating it if it doesn't exist.
-
-    Args:
-        branch:
-            The branch to switch to.
-    """
-    existing = _git("rev-parse", "--verify", branch, check=False, capture=True)
-    if existing.returncode == 0:
-        _git("checkout", branch)
-    else:
-        _git("checkout", "-b", branch)
-    logger.info(f"On branch {branch!r}.")
 
 
 def open_pull_request(
@@ -1904,151 +1966,89 @@ def open_pull_request(
     logger.info("Opened pull request.")
 
 
-def _pr_body(old_dataset: str | None, new_datasets: tuple[str, ...]) -> str:
-    """Return the standard PR description for a dataset swap.
+def provider_for_model_id(model_id: str) -> _Provider | None:
+    """Return the API provider that owns a model id, or None.
 
     Args:
-        old_dataset:
-            The demoted dataset id, or None if just adding.
-        new_datasets:
-            The promoted dataset ids.
+        model_id:
+            The model id to classify.
 
     Returns:
-        The markdown PR body.
+        The matching provider, or None when no provider claims the id.
     """
-    new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
-    if old_dataset:
-        return (
-            f"Swaps the official dataset `{old_dataset}` for {new_ds_str}.\n\n"
-            "## What\n\n"
-            f"- Every model with a rank score on the affected leaderboard(s) was "
-            f"evaluated on {new_ds_str}, mirroring how each appears on the "
-            "leaderboard (validation/test split and zero-/few-shot).\n"
-            f"- `{old_dataset}` is demoted to unofficial and {new_ds_str} "
-            "promoted to official in the dataset configs and the dataset "
-            "documentation, keeping each file's official-first grouping.\n\n"
-            "The leaderboards will pick up the change on the next regeneration."
-        )
-    else:
-        return (
-            f"Adds {new_ds_str} as official dataset(s).\n\n"
-            "## What\n\n"
-            f"- Every model with a rank score on the affected leaderboard(s) was "
-            f"evaluated on {new_ds_str}, mirroring how each appears on the "
-            "leaderboard (validation/test split and zero-/few-shot).\n"
-            f"- {new_ds_str} promoted to official in the dataset configs "
-            "and the dataset documentation, keeping each file's official-first "
-            "grouping.\n\n"
-            "The leaderboards will pick up the change on the next regeneration."
-        )
+    for provider in PROVIDERS:
+        if provider.matches(model_id):
+            return provider
+    return None
 
 
-def _request_copilot_review() -> None:
-    """Best-effort request a Copilot review on the current branch's PR."""
-    result = _gh(
-        "pr",
-        "edit",
-        "--add-reviewer",
-        "copilot-pull-request-reviewer[bot]",
-        check=False,
-        capture=True,
-    )
-    if result.returncode != 0:
-        logger.info(
-            "Could not explicitly request a Copilot review (it may still run "
-            "automatically): %s",
-            result.stderr.strip(),
-        )
-
-
-def _git(
-    *args: str, check: bool = True, capture: bool = False
-) -> subprocess.CompletedProcess[str]:
-    """Run a git command in the repo root.
+def record_is_api(model_info: dict[str, object]) -> bool:
+    """Return whether a record's model was evaluated via an API.
 
     Args:
-        args:
-            The git subcommand and arguments.
-        check:
-            Whether to raise on a non-zero exit.
-        capture:
-            Whether to capture stdout/stderr.
+        model_info:
+            The ``model_info`` object of an EEE result record.
 
     Returns:
-        The completed process.
+        True when produced by ``litellm`` or flagged as not open-weight.
     """
-    return _run(["git", *args], check=check, capture=capture)
+    engine = model_info.get("inference_engine", {})
+    engine_name = engine.get("name", "") if isinstance(engine, dict) else ""
+    if str(engine_name).lower() == "litellm":
+        return True
+    details = model_info.get("additional_details", {})
+    open_flag = details.get("open") if isinstance(details, dict) else None
+    return str(open_flag).lower() == "false"
 
 
-def _gh(
-    *args: str, check: bool = True, capture: bool = False
-) -> subprocess.CompletedProcess[str]:
-    """Run a ``gh`` command in the repo root.
-
-    Args:
-        args:
-            The gh subcommand and arguments.
-        check:
-            Whether to raise on a non-zero exit.
-        capture:
-            Whether to capture stdout/stderr.
-
-    Returns:
-        The completed process.
-    """
-    return _run(["gh", *args], check=check, capture=capture)
-
-
-def _run(
-    cmd: list[str], check: bool, capture: bool
-) -> subprocess.CompletedProcess[str]:
-    """Run a subprocess in the repo root.
+def resolve_api_providers(
+    include_api: bool, api_providers_arg: str | None, present_providers: set[str]
+) -> set[str]:
+    """Resolve which API providers to run and verify their env vars.
 
     Args:
-        cmd:
-            The command and arguments.
-        check:
-            Whether to raise on a non-zero exit.
-        capture:
-            Whether to capture stdout/stderr.
+        include_api:
+            Whether the user opted in to API evaluation.
+        api_providers_arg:
+            Comma-separated provider names, or None to run every provider
+            present among the ranked API models.
+        present_providers:
+            Provider names actually present among the ranked API models.
 
     Returns:
-        The completed process.
+        The provider names to run.
 
     Raises:
         click.ClickException:
-            When ``check`` is True and the command fails.
+            When an unknown provider is named or a selected provider's env var
+            is missing.
     """
-    result = subprocess.run(
-        cmd, cwd=REPO_ROOT, capture_output=capture, text=True, check=False
-    )
-    if check and result.returncode != 0:
-        detail = result.stderr.strip() if capture and result.stderr else ""
+    if not include_api or not present_providers:
+        return set()
+    if api_providers_arg is None:
+        selected = set(present_providers)
+    else:
+        names = {n.strip().lower() for n in api_providers_arg.split(",") if n.strip()}
+        unknown = sorted(names - PROVIDERS_BY_NAME.keys())
+        if unknown:
+            raise click.ClickException(
+                f"Unknown API provider(s): {', '.join(unknown)}. "
+                f"Valid: {', '.join(PROVIDERS_BY_NAME)}."
+            )
+        selected = names & present_providers
+    missing = [
+        PROVIDERS_BY_NAME[name].env_var
+        for name in sorted(selected)
+        if not os.environ.get(PROVIDERS_BY_NAME[name].env_var)
+    ]
+    if missing:
         raise click.ClickException(
-            f"Command failed ({' '.join(cmd)}): exit {result.returncode}. {detail}"
+            f"Selected API provider(s) require: {', '.join(missing)} -- set the "
+            "variable(s) and re-run."
         )
-    return result
-
-
-def dataset_config(dataset_id: str) -> DatasetConfig | None:
-    """Return the :class:`DatasetConfig` for a dataset id, or None if unknown.
-
-    Args:
-        dataset_id:
-            The dataset id to look up.
-
-    Returns:
-        The matching config, or None when unknown.
-    """
-    configs = get_all_dataset_configs(
-        custom_datasets_file=Path(""),
-        dataset_ids=[dataset_id],
-        api_key=None,
-        cache_dir=Path(".cache"),
-        trust_remote_code=False,
-        run_with_cli=False,
-    )
-    return configs.get(dataset_id)
+    if selected:
+        logger.info(f"API providers enabled: {', '.join(sorted(selected))}.")
+    return selected
 
 
 if __name__ == "__main__":

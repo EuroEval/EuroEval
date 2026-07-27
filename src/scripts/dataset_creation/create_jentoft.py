@@ -13,10 +13,6 @@
 import logging
 
 import pandas as pd
-
-# These constants are used only inside pandas .query() strings, so the linter
-# cannot see the use.
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa: F401
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 
@@ -137,34 +133,6 @@ def prepare_dataset(dataset_url: str) -> pd.DataFrame:
     return df
 
 
-def sample_dataset(full_df: pd.DataFrame, size: int) -> pd.DataFrame:
-    """Sample a dataset with an equal number of 'correct' and 'incorrect' samples.
-
-    Args:
-        full_df:
-            The full dataset.
-        size:
-            The size of the sampled dataset.
-
-    Returns:
-        The sampled dataset.
-    """
-    half_size = size // 2
-    assert (full_df["label"] == "correct").sum() >= half_size, (
-        "Not enough 'correct' samples"
-    )
-
-    correct_df = full_df[full_df["label"] == "correct"].sample(
-        n=half_size, random_state=4242
-    )
-    incorrect_df = full_df[full_df["label"] == "incorrect"].sample(
-        n=half_size, random_state=4242
-    )
-    concatenated_df = pd.concat(objs=[correct_df, incorrect_df])
-    assert isinstance(concatenated_df, pd.DataFrame)
-    return concatenated_df
-
-
 def remove_overlapping_samples(
     full_train_df: pd.DataFrame, full_val_df: pd.DataFrame, full_test_df: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -218,6 +186,34 @@ def remove_overlapping_samples(
     assert len(set(clean_val_df["text"]).intersection(set(clean_test_df["text"]))) == 0
 
     return clean_train_df, clean_val_df, clean_test_df
+
+
+def sample_dataset(full_df: pd.DataFrame, size: int) -> pd.DataFrame:
+    """Sample a dataset with an equal number of 'correct' and 'incorrect' samples.
+
+    Args:
+        full_df:
+            The full dataset.
+        size:
+            The size of the sampled dataset.
+
+    Returns:
+        The sampled dataset.
+    """
+    half_size = size // 2
+    assert (full_df["label"] == "correct").sum() >= half_size, (
+        "Not enough 'correct' samples"
+    )
+
+    correct_df = full_df[full_df["label"] == "correct"].sample(
+        n=half_size, random_state=4242
+    )
+    incorrect_df = full_df[full_df["label"] == "incorrect"].sample(
+        n=half_size, random_state=4242
+    )
+    concatenated_df = pd.concat(objs=[correct_df, incorrect_df])
+    assert isinstance(concatenated_df, pd.DataFrame)
+    return concatenated_df
 
 
 if __name__ == "__main__":

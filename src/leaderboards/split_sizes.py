@@ -40,6 +40,17 @@ def _load_cache() -> dict[str, dict[str, int]]:
 _CACHE: dict[str, dict[str, int]] = _load_cache()
 
 
+def _save_cache() -> None:
+    """Persist the in-memory split-size cache to disk."""
+    try:
+        DATASET_SPLIT_SIZES_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        with DATASET_SPLIT_SIZES_CACHE.open("w") as f:
+            json.dump(_CACHE, f, indent=2, sort_keys=True)
+            f.write("\n")
+    except OSError as e:
+        logger.warning(f"Could not write split-size cache: {e}")
+
+
 def get_split_sizes(source: str) -> dict[str, int] | None:
     """Get the split sizes for a dataset, fetching and caching on a miss.
 
@@ -67,14 +78,3 @@ def get_split_sizes(source: str) -> dict[str, int] | None:
     _CACHE[source] = sizes
     _save_cache()
     return sizes
-
-
-def _save_cache() -> None:
-    """Persist the in-memory split-size cache to disk."""
-    try:
-        DATASET_SPLIT_SIZES_CACHE.parent.mkdir(parents=True, exist_ok=True)
-        with DATASET_SPLIT_SIZES_CACHE.open("w") as f:
-            json.dump(_CACHE, f, indent=2, sort_keys=True)
-            f.write("\n")
-    except OSError as e:
-        logger.warning(f"Could not write split-size cache: {e}")

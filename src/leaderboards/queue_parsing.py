@@ -63,73 +63,44 @@ _WORKERPROC_FAILED_RE = re.compile(r"WorkerProc initialization failed", re.IGNOR
 _MAX_LINE_CHARS = 600
 
 
-def extract_model_id(title: str, body: str | None = None) -> str | None:
-    """Return the model id for an issue, preferring the body's Model ID section.
-
-    Mirrors the frontend's ``extractModelId`` so the queue processor reads
-    the same source of truth as the UI: the issue body's ``### Model ID``
-    section, falling back to the title prefix for legacy issues that lack
-    the section.
+def _build_error_summary_parts(
+    lines: list[str], worker_block: str | None, traceback: str | None
+) -> list[str]:
+    """Build error summary parts from worker errors and traceback.
 
     Args:
-        title:
-            The full GitHub issue title.
-        body (optional):
-            The markdown body of the issue, or None. Defaults to None.
+        lines:
+            Cleaned output lines.
+        worker_block:
+            Worker error block from _worker_errors.
+        traceback:
+            Traceback from _last_traceback.
 
     Returns:
-        The parsed model id, or None if neither the body nor the title
-        yield a usable value.
+        List of summary parts.
     """
-    if body:
-        m = MODEL_ID_BODY_RE.search(body)
-        if m:
-            candidate = m.group(1).strip().strip("`*_").strip()
-            if candidate and candidate != "<model-name>":
-                return candidate
-    prefix = f"{ISSUE_TITLE_PREFIX} "
-    if not title.startswith(prefix):
-        return None
-    rest = title[len(prefix) :].strip()
-    return rest if rest and rest != "<model-name>" else None
+    parts: list[str] = []
+    # Prefer worker block unless a genuine traceback was captured
+    if worker_block and (traceback is None or _WORKERPROC_FAILED_RE.search(traceback)):
+        parts.append(worker_block)
+    elif traceback:
+        parts.append(traceback)
 
+    # Add load error (skip vLLM excuse line if traceback present)
+    for line in reversed(lines):
+        if _LOAD_ERROR_RE.search(line):
+            if traceback and "did not mention exactly what" in line:
+                break
+            parts.append(line.strip())
+            break
 
-def num_errored_benchmarks(output: str) -> int:
-    """Return the number of errored benchmarks parsed from euroeval output.
+    # Add summary line if found
+    for line in reversed(lines):
+        if _SUMMARY_LINE_RE.search(line):
+            parts.append(line.strip())
+            break
 
-    Args:
-        output:
-            The full captured combined-output of the euroeval subprocess.
-
-    Returns:
-        The integer reported by the last ``errored N benchmarks`` line,
-        or 0 if no such line is present.
-    """
-    last = 0
-    for m in ERRORED_BENCHMARKS_RE.finditer(output):
-        last = int(m.group(1))
-    return last
-
-
-def num_skipped_benchmarks(output: str) -> int:
-    """Return the number of skipped benchmarks parsed from euroeval output.
-
-    EuroEval deliberately skips a benchmark when, for instance, the
-    model's generative type does not match what the dataset allows. These
-    are not failures.
-
-    Args:
-        output:
-            The full captured combined-output of the euroeval subprocess.
-
-    Returns:
-        The integer reported by the last ``skipped N benchmarks`` line,
-        or 0 if no such line is present.
-    """
-    last = 0
-    for m in SKIPPED_BENCHMARKS_RE.finditer(output):
-        last = int(m.group(1))
-    return last
+    return parts
 
 
 def _is_noise_line(line: str) -> bool:
@@ -210,73 +181,55 @@ def _worker_errors(lines: list[str]) -> str | None:
     return "\n".join(lines[start : end + 1]).strip()
 
 
-def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
-    """Extract the meaningful error from a euroeval subprocess's output.
-
-    The queue runs euroeval with ``FULL_LOG=1``, so the raw output is dominated
-    by serialised result records, training-progress dicts and giant parameter
-    lists. A blind tail of that output almost never shows the real error (and is
-    frequently identical across unrelated models), so this scans the whole
-    output for the informative error text: a Python traceback, a model-load or
-    gating error, and the ``errored N benchmarks`` summary line.
+def completed_languages(lines: list[str], requested_languages: list[str]) -> list[str]:
+    """Return requested languages whose official pair coverage is complete.
 
     Args:
-        output:
-            The full captured combined-output of the euroeval subprocess.
-        max_chars:
-            The maximum length of the returned summary. Defaults to 4000.
+        lines:
+            The accumulated JSONL result lines.
+        requested_languages:
+            The flattened language codes selected on the issue.
 
     Returns:
-        A compact human-readable error summary, or ``"(no output captured)"``
-        when nothing usable is found.
+        The subset of ``requested_languages`` for which no official
+        dataset/language pair is still missing.
     """
-    text = _ANSI_ESCAPE_RE.sub("", output)
-    lines: list[str] = []
-    for raw_line in text.splitlines():
-        if not raw_line.strip() or _is_noise_line(raw_line):
-            continue
-        line = raw_line.rstrip()
-        if len(line) > _MAX_LINE_CHARS:
-            line = line[:_MAX_LINE_CHARS] + " …(truncated)"
-        lines.append(line)
+    missing = missing_official_dataset_language_pairs(
+        lines=lines, requested_languages=requested_languages
+    )
+    incomplete = {lang for _, lang in missing}
+    return [lang for lang in requested_languages if lang not in incomplete]
 
-    if not lines:
-        return "(no output captured)"
 
-    worker_block = _worker_errors(lines=lines)
-    traceback = _last_traceback(lines=lines)
-    parts: list[str] = []
-    # The main process only re-raises a generic "WorkerProc initialization
-    # failed" exception; the real cause is in the worker-prefixed ERROR lines,
-    # so prefer the worker block unless a genuine traceback was captured.
-    if worker_block and (traceback is None or _WORKERPROC_FAILED_RE.search(traceback)):
-        parts.append(worker_block)
-    elif traceback:
-        parts.append(traceback)
-    for line in reversed(lines):
-        if _LOAD_ERROR_RE.search(line):
-            # When a real traceback was already surfaced, the vLLM generic
-            # "could not be loaded, but vLLM did not mention exactly what
-            # happened" excuse line only buries the actual exception, so skip
-            # it rather than appending it on top of the traceback.
-            if traceback and "did not mention exactly what" in line:
-                break
-            parts.append(line.strip())
-            break
-    for line in reversed(lines):
-        if _SUMMARY_LINE_RE.search(line):
-            parts.append(line.strip())
-            break
+def extract_model_id(title: str, body: str | None = None) -> str | None:
+    """Return the model id for an issue, preferring the body's Model ID section.
 
-    # Fall back to the tail of the cleaned output when no marker was found.
-    if not parts:
-        parts = [line.strip() for line in lines[-20:]]
+    Mirrors the frontend's ``extractModelId`` so the queue processor reads
+    the same source of truth as the UI: the issue body's ``### Model ID``
+    section, falling back to the title prefix for legacy issues that lack
+    the section.
 
-    # De-duplicate while preserving order (a traceback may repeat the summary).
-    summary = "\n".join(dict.fromkeys(part for part in parts if part)).strip()
-    if len(summary) > max_chars:
-        summary = summary[-max_chars:].strip()
-    return summary or "(no output captured)"
+    Args:
+        title:
+            The full GitHub issue title.
+        body (optional):
+            The markdown body of the issue, or None. Defaults to None.
+
+    Returns:
+        The parsed model id, or None if neither the body nor the title
+        yield a usable value.
+    """
+    if body:
+        m = MODEL_ID_BODY_RE.search(body)
+        if m:
+            candidate = m.group(1).strip().strip("`*_").strip()
+            if candidate and candidate != "<model-name>":
+                return candidate
+    prefix = f"{ISSUE_TITLE_PREFIX} "
+    if not title.startswith(prefix):
+        return None
+    rest = title[len(prefix) :].strip()
+    return rest if rest and rest != "<model-name>" else None
 
 
 def format_dataset_language_pairs(dataset_language_pairs: set[tuple[str, str]]) -> str:
@@ -296,6 +249,44 @@ def format_dataset_language_pairs(dataset_language_pairs: set[tuple[str, str]]) 
     if len(sorted_pairs) > 10:
         suffix = f" (+{len(sorted_pairs) - 10} more)"
     return ", ".join(preview) + suffix
+
+
+def num_errored_benchmarks(output: str) -> int:
+    """Return the number of errored benchmarks parsed from euroeval output.
+
+    Args:
+        output:
+            The full captured combined-output of the euroeval subprocess.
+
+    Returns:
+        The integer reported by the last ``errored N benchmarks`` line,
+        or 0 if no such line is present.
+    """
+    last = 0
+    for m in ERRORED_BENCHMARKS_RE.finditer(output):
+        last = int(m.group(1))
+    return last
+
+
+def num_skipped_benchmarks(output: str) -> int:
+    """Return the number of skipped benchmarks parsed from euroeval output.
+
+    EuroEval deliberately skips a benchmark when, for instance, the
+    model's generative type does not match what the dataset allows. These
+    are not failures.
+
+    Args:
+        output:
+            The full captured combined-output of the euroeval subprocess.
+
+    Returns:
+        The integer reported by the last ``skipped N benchmarks`` line,
+        or 0 if no such line is present.
+    """
+    last = 0
+    for m in SKIPPED_BENCHMARKS_RE.finditer(output):
+        last = int(m.group(1))
+    return last
 
 
 def read_jsonl_lines(path: Path) -> list[str]:
@@ -343,21 +334,51 @@ def result_lines_for_model(lines: list[str], model_id: str) -> list[str]:
     return out
 
 
-def completed_languages(lines: list[str], requested_languages: list[str]) -> list[str]:
-    """Return requested languages whose official pair coverage is complete.
+def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
+    """Extract the meaningful error from a euroeval subprocess's output.
+
+    The queue runs euroeval with ``FULL_LOG=1``, so the raw output is dominated
+    by serialised result records, training-progress dicts and giant parameter
+    lists. A blind tail of that output almost never shows the real error (and is
+    frequently identical across unrelated models), so this scans the whole
+    output for the informative error text: a Python traceback, a model-load or
+    gating error, and the ``errored N benchmarks`` summary line.
 
     Args:
-        lines:
-            The accumulated JSONL result lines.
-        requested_languages:
-            The flattened language codes selected on the issue.
+        output:
+            The full captured combined-output of the euroeval subprocess.
+        max_chars (optional):
+            The maximum length of the returned summary. Defaults to 4000.
 
     Returns:
-        The subset of ``requested_languages`` for which no official
-        dataset/language pair is still missing.
+        A compact human-readable error summary, or ``"(no output captured)"``
+        when nothing usable is found.
     """
-    missing = missing_official_dataset_language_pairs(
-        lines=lines, requested_languages=requested_languages
+    text = _ANSI_ESCAPE_RE.sub("", output)
+    lines: list[str] = []
+    for raw_line in text.splitlines():
+        if not raw_line.strip() or _is_noise_line(raw_line):
+            continue
+        line = raw_line.rstrip()
+        if len(line) > _MAX_LINE_CHARS:
+            line = line[:_MAX_LINE_CHARS] + " …(truncated)"
+        lines.append(line)
+
+    if not lines:
+        return "(no output captured)"
+
+    worker_block = _worker_errors(lines=lines)
+    traceback = _last_traceback(lines=lines)
+    parts = _build_error_summary_parts(
+        lines=lines, worker_block=worker_block, traceback=traceback
     )
-    incomplete = {lang for _, lang in missing}
-    return [lang for lang in requested_languages if lang not in incomplete]
+
+    # Fall back to tail when no marker found
+    if not parts:
+        parts = [line.strip() for line in lines[-20:]]
+
+    # De-duplicate while preserving order (a traceback may repeat the summary).
+    summary = "\n".join(dict.fromkeys(part for part in parts if part)).strip()
+    if len(summary) > max_chars:
+        summary = summary[-max_chars:].strip()
+    return summary or "(no output captured)"

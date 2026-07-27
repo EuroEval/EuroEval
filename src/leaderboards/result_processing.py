@@ -36,6 +36,135 @@ from .result_loading import load_raw_results
 logger = logging.getLogger(__name__)
 
 
+def _write_record_file(
+    relative_path: Path, record: dict[str, t.Any], results_dir: Path
+) -> tuple[Path, str] | None:
+    """Write a single record file if it doesn't exist or content differs.
+
+    Args:
+        relative_path:
+            Relative path for the record file.
+        record:
+            The record dict to serialize.
+        results_dir:
+            The results directory.
+
+    Returns:
+        Tuple of (file_path, relative_path_str) if written, None if skipped.
+    """
+    file_path = results_dir / relative_path
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Use canonical JSON serialization for consistent comparison
+    canonical_content = json.dumps(
+        record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
+
+    # Only write if file doesn't exist or content differs
+    if file_path.exists():
+        try:
+            existing_content = file_path.read_text(encoding="utf-8").strip()
+            existing_record = json.loads(existing_content)
+            canonical_existing = json.dumps(
+                existing_record,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            )
+            if canonical_existing == canonical_content:
+                return None  # Skip unchanged files
+        except (json.JSONDecodeError, OSError):
+            pass  # If we can't parse existing, overwrite it
+
+    file_path.write_text(canonical_content + "\n", encoding="utf-8")
+    # Skip empty files
+    if file_path.stat().st_size > 0:
+        return (file_path, str(relative_path))
+    return None
+
+
+def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
+    """Write one JSON file per logical result and sync to the HF bucket.
+
+    Each record is written to
+    ``results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json``.
+    If two records resolve to the same path, the newer one is kept (based on
+    version and timestamp). Records with unresolvable model identities are dropped
+    with a log line.
+
+    Args:
+        processed_records:
+            The processed records to upload.
+
+    Raises:
+        RuntimeError:
+            If HF_TOKEN is not set or bucket sync fails.
+    """
+    hf_token = resolve_hf_token()
+    if not hf_token:
+        raise RuntimeError(
+            "HF_TOKEN not set. Cannot upload results to Hugging Face bucket. "
+            "Run 'hf auth login' or set the HF_TOKEN environment variable."
+        )
+
+    # Group records by path, handling deduplication and collision detection.
+    # Store (record, identity) to detect when distinct identities map to same path.
+    records_by_path: dict[Path, tuple[dict[str, t.Any], ResultIdentity]] = {}
+    dropped_count = 0
+
+    for record in processed_records:
+        try:
+            identity = identity_from_eee_record(record)
+        except ValueError as e:
+            logger.warning(f"Dropping record with unresolvable identity: {e}")
+            dropped_count += 1
+            continue
+
+        relative_path = record_relative_path(
+            model_id=identity[0],
+            dataset=identity[1],
+            validation_split=identity[2],
+            few_shot=identity[3],
+        )
+
+        if relative_path in records_by_path:
+            # Path collision - check if identities match
+            existing_record, existing_identity = records_by_path[relative_path]
+            # raise_on_collision will raise ValueError if identities differ
+            raise_on_collision(existing_identity, identity)
+            # Identities match - keep the newer record based on version/timestamp
+            records_by_path[relative_path] = (
+                dedup_newer_record(existing_record, record),
+                identity,
+            )
+        else:
+            records_by_path[relative_path] = (record, identity)
+
+    hf_results_bucket = f"hf://buckets/{HF_RESULTS_BUCKET}"
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Track which files were written to upload only these files
+    written_files: list[tuple[str | Path | bytes, str]] = []
+
+    logger.info("Writing result files...")
+    for relative_path, (record, _) in records_by_path.items():
+        result = _write_record_file(
+            relative_path=relative_path, record=record, results_dir=RESULTS_DIR
+        )
+        if result is not None:
+            written_files.append(result)
+
+    api = HfApi()
+    # Upload only the written files to the bucket
+    api.batch_bucket_files(
+        bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token
+    )
+    logger.info(f"Uploaded {len(written_files):,} result files to {hf_results_bucket}.")
+
+    if dropped_count > 0:
+        logger.info(f"Dropped {dropped_count:,} records with unresolvable identities.")
+
+
 def process_results(
     min_version: str,
     min_number_of_model_records: int,
@@ -114,110 +243,3 @@ def process_results(
     _upload_per_model_files(processed_records=processed_records)
     load_raw_results.cache_clear()
     logger.info("Cleared load_raw_results cache.")
-
-
-def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
-    """Write one JSON file per logical result and sync to the HF bucket.
-
-    Each record is written to
-    ``results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json``.
-    If two records resolve to the same path, the newer one is kept (based on
-    version and timestamp). Records with unresolvable model identities are dropped
-    with a log line.
-
-    Args:
-        processed_records:
-            The processed records to upload.
-
-    Raises:
-        RuntimeError:
-            If HF_TOKEN is not set or bucket sync fails.
-        ValueError:
-            If distinct identities sanitise to the same relative path.
-    """  # noqa: DOC502
-    hf_token = resolve_hf_token()
-    if not hf_token:
-        raise RuntimeError(
-            "HF_TOKEN not set. Cannot upload results to Hugging Face bucket. "
-            "Run 'hf auth login' or set the HF_TOKEN environment variable."
-        )
-
-    # Group records by path, handling deduplication and collision detection.
-    # Store (record, identity) to detect when distinct identities map to same path.
-    records_by_path: dict[Path, tuple[dict[str, t.Any], ResultIdentity]] = {}
-    dropped_count = 0
-
-    for record in processed_records:
-        try:
-            identity = identity_from_eee_record(record)
-        except ValueError as e:
-            logger.warning(f"Dropping record with unresolvable identity: {e}")
-            dropped_count += 1
-            continue
-
-        relative_path = record_relative_path(
-            model_id=identity[0],
-            dataset=identity[1],
-            validation_split=identity[2],
-            few_shot=identity[3],
-        )
-
-        if relative_path in records_by_path:
-            # Path collision - check if identities match
-            existing_record, existing_identity = records_by_path[relative_path]
-            # raise_on_collision will raise ValueError if identities differ
-            raise_on_collision(existing_identity, identity)
-            # Identities match - keep the newer record based on version/timestamp
-            records_by_path[relative_path] = (
-                dedup_newer_record(existing_record, record),
-                identity,
-            )
-        else:
-            records_by_path[relative_path] = (record, identity)
-
-    hf_results_bucket = f"hf://buckets/{HF_RESULTS_BUCKET}"
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Track which files were written to upload only these files
-    written_files: list[tuple[str | Path | bytes, str]] = []
-
-    logger.info("Writing result files...")
-    for relative_path, (record, _) in records_by_path.items():
-        file_path = RESULTS_DIR / relative_path
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        # Use canonical JSON serialization for consistent comparison
-        canonical_content = json.dumps(
-            record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-        )
-
-        # Only write if file doesn't exist or content differs (semantic comparison)
-        if file_path.exists():
-            try:
-                existing_content = file_path.read_text(encoding="utf-8").strip()
-                # Parse and compare dicts for semantic equality
-                existing_record = json.loads(existing_content)
-                canonical_existing = json.dumps(
-                    existing_record,
-                    sort_keys=True,
-                    separators=(",", ":"),
-                    ensure_ascii=False,
-                )
-                if canonical_existing == canonical_content:
-                    continue  # Skip unchanged files
-            except (json.JSONDecodeError, OSError):
-                pass  # If we can't parse existing, overwrite it
-
-        file_path.write_text(canonical_content + "\n", encoding="utf-8")
-        # Skip empty files
-        if file_path.stat().st_size > 0:
-            written_files.append((file_path, str(relative_path)))
-
-    api = HfApi()
-    # Upload only the written files to the bucket
-    api.batch_bucket_files(
-        bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token
-    )
-    logger.info(f"Uploaded {len(written_files):,} result files to {hf_results_bucket}.")
-
-    if dropped_count > 0:
-        logger.info(f"Dropped {dropped_count:,} records with unresolvable identities.")

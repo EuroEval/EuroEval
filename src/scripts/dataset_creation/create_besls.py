@@ -11,10 +11,6 @@
 """Create the Belarusian Sentiment dataset and upload it to the HF Hub."""
 
 import pandas as pd
-
-# These constants are used only inside pandas .query() strings, so the linter
-# cannot see the use.
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa: F401
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
@@ -63,31 +59,6 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def process(df: pd.DataFrame) -> pd.DataFrame:
-    """Process the dataframe.
-
-    Args:
-        df: The dataframe to process.
-
-    Returns:
-        The processed dataframe.
-    """
-    # Rename sentence to text
-    df.rename(columns={"sentence": "text"}, inplace=True)
-
-    # Keep only relevant columns
-    columns_to_keep = ["text", "label"]
-    df = df[columns_to_keep]
-
-    # Map labels
-    label_mapping = {0: "negative", 1: "positive"}
-    df["label"] = df["label"].map(lambda x: label_mapping[int(x)])
-
-    # Filter by text length
-    df = _filter_by_length(df)
-    return df
-
-
 def make_splits(
     df_train: pd.DataFrame, df_val: pd.DataFrame, df_test: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -125,6 +96,31 @@ def make_splits(
     assert isinstance(final_test_df, pd.DataFrame)
 
     return final_train_df, final_val_df, final_test_df
+
+
+def process(df: pd.DataFrame) -> pd.DataFrame:
+    """Process the dataframe.
+
+    Args:
+        df: The dataframe to process.
+
+    Returns:
+        The processed dataframe.
+    """
+    # Rename sentence to text
+    df.rename(columns={"sentence": "text"}, inplace=True)
+
+    # Keep only relevant columns
+    columns_to_keep = ["text", "label"]
+    df = df[columns_to_keep]
+
+    # Map labels
+    label_mapping = {0: "negative", 1: "positive"}
+    df["label"] = df["label"].map(lambda x: label_mapping[int(x)])
+
+    # Filter by text length
+    df = _filter_by_length(df)
+    return df
 
 
 def _filter_by_length(df: pd.DataFrame) -> pd.DataFrame:

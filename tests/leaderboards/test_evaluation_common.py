@@ -65,24 +65,6 @@ def test_estimated_model_bytes_handles_model_id_extras(
     assert calls[0]["revision"] == "rev"
 
 
-@pytest.mark.parametrize(argnames=["returncode"], argvalues=[(None,), (0,)])
-def test_killed_by_signal_note_returns_none_when_not_signal_death(
-    returncode: int | None,
-) -> None:
-    """A non-negative or absent returncode is not a signal death."""
-    assert _killed_by_signal_note(returncode=returncode) is None
-
-
-def test_killed_by_signal_note_ignores_shell_exit_code_convention() -> None:
-    """``Popen.returncode`` is negative for signal deaths, never 128+N.
-
-    The shell convention (e.g. 130 = 128 + SIGINT) only appears in ``$?``;
-    ``subprocess.Popen.returncode`` reports ``-N`` instead, so a positive 130
-    is an ordinary exit code and must not be misread as a signal death.
-    """
-    assert _killed_by_signal_note(returncode=130) is None
-
-
 @pytest.mark.parametrize(
     argnames=["returncode", "must_contain"],
     argvalues=[
@@ -98,6 +80,24 @@ def test_killed_by_signal_note_describes_signal_death(
     assert note is not None
     for needle in must_contain:
         assert needle in note
+
+
+def test_killed_by_signal_note_ignores_shell_exit_code_convention() -> None:
+    """``Popen.returncode`` is negative for signal deaths, never 128+N.
+
+    The shell convention (e.g. 130 = 128 + SIGINT) only appears in ``$?``;
+    ``subprocess.Popen.returncode`` reports ``-N`` instead, so a positive 130
+    is an ordinary exit code and must not be misread as a signal death.
+    """
+    assert _killed_by_signal_note(returncode=130) is None
+
+
+@pytest.mark.parametrize(argnames=["returncode"], argvalues=[(None,), (0,)])
+def test_killed_by_signal_note_returns_none_when_not_signal_death(
+    returncode: int | None,
+) -> None:
+    """A non-negative or absent returncode is not a signal death."""
+    assert _killed_by_signal_note(returncode=returncode) is None
 
 
 def test_pty_drain_handles_exited_parent_with_open_grandchild(

@@ -36,64 +36,22 @@ from .result_identity import sanitise_model_dir_name
 logger = logging.getLogger(__name__)
 
 
-def add_missing_entries(
-    record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
-) -> dict:
-    """Adds missing entries to a record.
+def _remove_model_results(model_id: str) -> None:
+    """Delete a model's result directory from RESULTS_DIR.
 
-    Fields are stored in their appropriate nested locations within the EEE
-    record (``model_info`` and ``eval_library``).
+    ``RESULTS_DIR`` is the source of truth for the leaderboard, so removing
+    the directory drops the model from future builds.
 
     Args:
-        record:
-            A record from the JSONL file.
-        trained_from_scratch_patterns:
-            A list of regex patterns for trained-from-scratch models.
-        cache:
-            The cache.
-
-    Returns:
-        The record with missing entries added.
+        model_id:
+            The model id whose result directory should be removed.
     """
-    model_info = record.setdefault("model_info", {})
-    model_additional = model_info.setdefault("additional_details", {})
-    eval_lib = record.setdefault("eval_library", {})
-    eval_additional = eval_lib.setdefault("additional_details", {})
-
-    if "validation_split" not in eval_additional:
-        eval_additional["validation_split"] = False
-    if "few_shot" not in eval_additional:
-        eval_additional["few_shot"] = True
-    if "generative" not in model_additional:
-        model_additional["generative"] = False
-    if "generative_type" not in model_additional:
-        model_additional["generative_type"] = get_generative_type(
-            record=record, cache=cache
-        )
-    if "merge" not in model_additional:
-        model_additional["merge"] = is_merge(record=record, cache=cache)
-
-    if "commercially_licensed" not in model_additional:
-        model_additional["commercially_licensed"] = is_commercially_licensed(
-            record=record, cache=cache
-        )
-    if "open" not in model_additional:
-        model_additional["open"] = is_open(record=record, cache=cache)
-    if "trained_from_scratch" not in model_additional:
-        model_additional["trained_from_scratch"] = is_trained_from_scratch(
-            record=record,
-            trained_from_scratch_patterns=trained_from_scratch_patterns,
-            cache=cache,
-        )
-    if "model_url" not in model_additional or model_additional["model_url"] is None:
-        model_additional["model_url"] = generate_model_url_with_cache(
-            model_id=plain_model_id(get_model_name(record=record)), cache=cache
-        )
-
-    return record
+    model_dir = RESULTS_DIR / sanitise_model_dir_name(plain_model_id(model_id))
+    shutil.rmtree(model_dir, ignore_errors=True)
+    logger.info(f"Removed result directory {model_dir.name} for {model_id}.")
 
 
-def generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
+def _generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
     """Generates a model URL using a cache.
 
     When no URL can be generated, the operator is asked whether to drop the
@@ -121,102 +79,69 @@ def generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
     return model_url
 
 
-def _remove_model_results(model_id: str) -> None:
-    """Delete a model's result directory from RESULTS_DIR.
-
-    ``RESULTS_DIR`` is the source of truth for the leaderboard, so removing
-    the directory drops the model from future builds.
+def _get_generative_type_from_keywords(model_id: str) -> str | None:
+    """Try to infer generative type from model ID keywords.
 
     Args:
         model_id:
-            The model id whose result directory should be removed.
+            The model ID to check.
+
+    Returns:
+        The inferred generative type or None.
     """
-    model_dir = RESULTS_DIR / sanitise_model_dir_name(plain_model_id(model_id))
-    shutil.rmtree(model_dir, ignore_errors=True)
-    logger.info(f"Removed result directory {model_dir.name} for {model_id}.")
+    for keywords, gen_type in GENERATIVE_TYPE_KEYWORDS:
+        if any(
+            re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
+            for keyword in keywords
+        ):
+            return gen_type
+    return None
 
 
-def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any]:
-    """Fixes metadata in a record.
+def _model_id_from_record(record: dict) -> str:
+    """Return the model id from a record, unwrapping an HTML anchor tag.
 
     Args:
         record:
             A record from the JSONL file.
 
     Returns:
-        The record with fixed metadata.
+        The model id, with any surrounding anchor tag stripped.
     """
-    # Copy the record to avoid modifying the original
-    record = deepcopy(record)
-
-    task = get_task(record)
-    if task == "question-answering":
-        record["eval_library"]["additional_details"]["task"] = "reading-comprehension"
-    if task == "european-values":
-        record["eval_library"]["additional_details"]["validation_split"] = None
-        record["eval_library"]["additional_details"]["few_shot"] = None
-
-    return record
+    model_id = get_model_name(record)
+    if model_id.startswith("<a href="):
+        model_id_match = re.search(r">(.+?)<", model_id)
+        if model_id_match:
+            return model_id_match.group(1)
+    return model_id
 
 
-def record_is_valid(
-    record: dict,
-    min_version: str,
-    banned_versions: list[str],
-    banned_model_patterns: list[re.Pattern],
-    api_model_patterns: list[re.Pattern],
-) -> bool:
-    """Determine if a record is valid.
+def _parse_generative_type_input(
+    user_input: str,
+) -> str | None | t.Literal["EXPLICIT_NULL"]:
+    """Parse user input for generative type.
 
     Args:
-        record:
-            The record to validate.
-        min_version:
-            The minimum EuroEval version to consider.
-        banned_versions:
-            The EuroEval versions to ban.
-        banned_model_patterns:
-            The model IDs to ban.
-        api_model_patterns:
-            Regex patterns identifying models accessed via API.
+        user_input:
+            The raw user input string.
 
     Returns:
-        True if the record is valid, False otherwise.
+        The parsed generative type, "EXPLICIT_NULL" for 0/null input, or None if
+        invalid.
     """
-    # Remove anchors from model ID, for logging purposes
-    inner_anchor_match = re.search(pattern=r">(.+?)<", string=get_model_name(record))
-    inner_model_id = (
-        inner_anchor_match.group(1) if inner_anchor_match else get_model_name(record)
-    )
-
-    # Remove records with disallowed EuroEval versions
-    version = get_version(record)
-    if version is None or version in banned_versions or version < min_version:
-        return False
-
-    # Remove banned models
-    if any(
-        re.search(pattern=pattern, string=inner_model_id)
-        for pattern in banned_model_patterns
-    ):
-        return False
-
-    # Do not allow few-shot evaluation for API models
-    few_shot = get_few_shot(record)
-    if (
-        any(
-            re.fullmatch(pattern=pattern, string=inner_model_id)
-            for pattern in api_model_patterns
-        )
-        and few_shot
-    ):
-        return False
-
-    # Otherwise, the record is valid
-    return True
+    input_lower = user_input.lower()
+    if input_lower in {"0", "null"}:
+        return "EXPLICIT_NULL"
+    if input_lower in {"1", "base"}:
+        return "base"
+    if input_lower in {"2", "instruction_tuned"}:
+        return "instruction_tuned"
+    if input_lower in {"3", "reasoning"}:
+        return "reasoning"
+    return None
 
 
-def get_generative_type(record: dict, cache: Cache) -> str | None:
+def _get_generative_type(record: dict, cache: Cache) -> str | None:
     """Asks for the generative type of a model.
 
     Args:
@@ -230,44 +155,42 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
     """
     raw_model_id = _model_id_from_record(record=record)
 
+    # Check special suffixes first
     if "#thinking" in raw_model_id:
         cache.generative_type[raw_model_id] = "reasoning"
         return "reasoning"
-    elif "#no-thinking" in raw_model_id:
+    if "#no-thinking" in raw_model_id:
         cache.generative_type[raw_model_id] = "instruction_tuned"
         return "instruction_tuned"
 
-    # Remove revisions and parameters from the model ID, and strip variant suffixes.
+    # Normalise model ID
     model_id = split_model_id(model_id=plain_model_id(raw_model_id)).model_id
 
     while True:
+        # Check cache
         if model_id in cache.generative_type:
             return cache.generative_type[model_id]
 
-        # Pre-fill the generative type from keyword matches in the model id.
-        for keywords, gen_type in GENERATIVE_TYPE_KEYWORDS:
-            if any(
-                re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
-                for keyword in keywords
-            ):
-                cache.generative_type[model_id] = gen_type
-                return gen_type
+        # Try keyword inference
+        inferred_type = _get_generative_type_from_keywords(model_id=model_id)
+        if inferred_type is not None:
+            cache.generative_type[model_id] = inferred_type
+            return inferred_type
 
+        # Ask user
         msg = f"What is the generative type of {model_id!r}?"
         if "/" in model_id:
             msg += f" (https://hf.co/{model_id})"
         msg += " [0=null, 1=base, 2=instruction_tuned, 3=reasoning] "
         user_input = input(msg)
-        if user_input.lower() in {"0", "null"}:
+        parsed = _parse_generative_type_input(user_input)
+        if parsed == "EXPLICIT_NULL":
             cache.generative_type[model_id] = None
-        elif user_input.lower() in {"1", "base"}:
-            cache.generative_type[model_id] = "base"
-        elif user_input.lower() in {"2", "instruction_tuned"}:
-            cache.generative_type[model_id] = "instruction_tuned"
-        elif user_input.lower() in {"3", "reasoning"}:
-            cache.generative_type[model_id] = "reasoning"
-        else:
-            logger.error("Invalid input. Please try again.")
+            return None
+        if parsed is not None:
+            cache.generative_type[model_id] = parsed
+            return parsed
+        logger.error("Invalid input. Please try again.")
 
 
 def _infer_commercial_from_hf_licence(
@@ -382,59 +305,6 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
         logger.error("Invalid input. Please try again.")
 
 
-def is_trained_from_scratch(
-    record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
-) -> bool:
-    """Determine if a model was trained from scratch or fine-tuned.
-
-    Args:
-        record:
-            A record from the JSONL file.
-        trained_from_scratch_patterns:
-            A list of regex patterns for trained-from-scratch models.
-        cache:
-            The cache.
-
-    Returns:
-        True if the model was trained from scratch.
-    """
-    model_id = split_model_id(
-        model_id=plain_model_id(_model_id_from_record(record=record))
-    ).model_id
-
-    if model_id in cache.trained_from_scratch:
-        return cache.trained_from_scratch[model_id]
-
-    # Check if model is open or closed
-    model_openness = cache.open.get(model_id)
-
-    # For closed models, auto-return "scratch" without prompting
-    if model_openness is False:
-        cache.trained_from_scratch[model_id] = True
-        return True
-
-    # If it matches any of the trained-from-scratch patterns, set it automatically
-    if any(
-        pattern.match(model_id) is not None for pattern in trained_from_scratch_patterns
-    ):
-        return True
-
-    # For open models, prompt user
-    while True:
-        msg = f"Was {model_id!r} trained from scratch? "
-        if "/" in model_id:
-            msg += f" (https://hf.co/{model_id})"
-        msg += " [y/n] "
-        user_input = input(msg)
-        if user_input.lower() in {"y", "yes"}:
-            cache.trained_from_scratch[model_id] = True
-            return True
-        if user_input.lower() in {"n", "no"}:
-            cache.trained_from_scratch[model_id] = False
-            return False
-        logger.error("Invalid input. Please try again.")
-
-
 def is_merge(record: dict, cache: Cache) -> bool:
     """Determines if a model is a merged model.
 
@@ -513,19 +383,191 @@ def is_open(record: dict, cache: Cache) -> bool:
     return True
 
 
-def _model_id_from_record(record: dict) -> str:
-    """Return the model id from a record, unwrapping an HTML anchor tag.
+def is_trained_from_scratch(
+    record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
+) -> bool:
+    """Determine if a model was trained from scratch or fine-tuned.
+
+    Args:
+        record:
+            A record from the JSONL file.
+        trained_from_scratch_patterns:
+            A list of regex patterns for trained-from-scratch models.
+        cache:
+            The cache.
+
+    Returns:
+        True if the model was trained from scratch.
+    """
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
+
+    if model_id in cache.trained_from_scratch:
+        return cache.trained_from_scratch[model_id]
+
+    # Check if model is open or closed
+    model_openness = cache.open.get(model_id)
+
+    # For closed models, auto-return "scratch" without prompting
+    if model_openness is False:
+        cache.trained_from_scratch[model_id] = True
+        return True
+
+    # If it matches any of the trained-from-scratch patterns, set it automatically
+    if any(
+        pattern.match(model_id) is not None for pattern in trained_from_scratch_patterns
+    ):
+        return True
+
+    # For open models, prompt user
+    while True:
+        msg = f"Was {model_id!r} trained from scratch? "
+        if "/" in model_id:
+            msg += f" (https://hf.co/{model_id})"
+        msg += " [y/n] "
+        user_input = input(msg)
+        if user_input.lower() in {"y", "yes"}:
+            cache.trained_from_scratch[model_id] = True
+            return True
+        if user_input.lower() in {"n", "no"}:
+            cache.trained_from_scratch[model_id] = False
+            return False
+        logger.error("Invalid input. Please try again.")
+
+
+def add_missing_entries(
+    record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
+) -> dict:
+    """Adds missing entries to a record.
+
+    Fields are stored in their appropriate nested locations within the EEE
+    record (``model_info`` and ``eval_library``).
+
+    Args:
+        record:
+            A record from the JSONL file.
+        trained_from_scratch_patterns:
+            A list of regex patterns for trained-from-scratch models.
+        cache:
+            The cache.
+
+    Returns:
+        The record with missing entries added.
+    """
+    model_info = record.setdefault("model_info", {})
+    model_additional = model_info.setdefault("additional_details", {})
+    eval_lib = record.setdefault("eval_library", {})
+    eval_additional = eval_lib.setdefault("additional_details", {})
+
+    if "validation_split" not in eval_additional:
+        eval_additional["validation_split"] = False
+    if "few_shot" not in eval_additional:
+        eval_additional["few_shot"] = True
+    if "generative" not in model_additional:
+        model_additional["generative"] = False
+    if "generative_type" not in model_additional:
+        model_additional["generative_type"] = _get_generative_type(
+            record=record, cache=cache
+        )
+    if "merge" not in model_additional:
+        model_additional["merge"] = is_merge(record=record, cache=cache)
+
+    if "commercially_licensed" not in model_additional:
+        model_additional["commercially_licensed"] = is_commercially_licensed(
+            record=record, cache=cache
+        )
+    if "open" not in model_additional:
+        model_additional["open"] = is_open(record=record, cache=cache)
+    if "trained_from_scratch" not in model_additional:
+        model_additional["trained_from_scratch"] = is_trained_from_scratch(
+            record=record,
+            trained_from_scratch_patterns=trained_from_scratch_patterns,
+            cache=cache,
+        )
+    if "model_url" not in model_additional or model_additional["model_url"] is None:
+        model_additional["model_url"] = _generate_model_url_with_cache(
+            model_id=plain_model_id(get_model_name(record=record)), cache=cache
+        )
+
+    return record
+
+
+def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any]:
+    """Fixes metadata in a record.
 
     Args:
         record:
             A record from the JSONL file.
 
     Returns:
-        The model id, with any surrounding anchor tag stripped.
+        The record with fixed metadata.
     """
-    model_id = get_model_name(record)
-    if model_id.startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", model_id)
-        if model_id_match:
-            return model_id_match.group(1)
-    return model_id
+    # Copy the record to avoid modifying the original
+    record = deepcopy(record)
+
+    task = get_task(record)
+    if task == "question-answering":
+        record["eval_library"]["additional_details"]["task"] = "reading-comprehension"
+    if task == "european-values":
+        record["eval_library"]["additional_details"]["validation_split"] = None
+        record["eval_library"]["additional_details"]["few_shot"] = None
+
+    return record
+
+
+def record_is_valid(
+    record: dict,
+    min_version: str,
+    banned_versions: list[str],
+    banned_model_patterns: list[re.Pattern],
+    api_model_patterns: list[re.Pattern],
+) -> bool:
+    """Determine if a record is valid.
+
+    Args:
+        record:
+            The record to validate.
+        min_version:
+            The minimum EuroEval version to consider.
+        banned_versions:
+            The EuroEval versions to ban.
+        banned_model_patterns:
+            The model IDs to ban.
+        api_model_patterns:
+            Regex patterns identifying models accessed via API.
+
+    Returns:
+        True if the record is valid, False otherwise.
+    """
+    # Remove anchors from model ID, for logging purposes
+    inner_anchor_match = re.search(pattern=r">(.+?)<", string=get_model_name(record))
+    inner_model_id = (
+        inner_anchor_match.group(1) if inner_anchor_match else get_model_name(record)
+    )
+
+    # Remove records with disallowed EuroEval versions
+    version = get_version(record)
+    if version is None or version in banned_versions or version < min_version:
+        return False
+
+    # Remove banned models
+    if any(
+        re.search(pattern=pattern, string=inner_model_id)
+        for pattern in banned_model_patterns
+    ):
+        return False
+
+    # Do not allow few-shot evaluation for API models
+    few_shot = get_few_shot(record)
+    if (
+        any(
+            re.fullmatch(pattern=pattern, string=inner_model_id)
+            for pattern in api_model_patterns
+        )
+        and few_shot
+    ):
+        return False
+
+    # Otherwise, the record is valid
+    return True

@@ -30,10 +30,10 @@ from tqdm.auto import tqdm
 from urllib3.exceptions import InsecureRequestWarning
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
-logger = logging.getLogger("create_eltec")
-
 
 nltk.download("punkt_tab")
+
+logger = logging.getLogger("create_eltec")
 
 
 def main() -> None:

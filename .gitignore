@@ -167,3 +167,7 @@ data/
 
 # Pi agent
 .pi/
+
+# Slopo code duplication detection
+.slopo/
+!.slopo/slopo.ignore.txt

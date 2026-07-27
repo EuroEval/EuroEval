@@ -118,11 +118,6 @@ ship new flagship models.
 """
 
 
-# ---------------------------------------------------------------------------
-# Rendering
-# ---------------------------------------------------------------------------
-
-
 @click.command()
 @click.option(
     "--dry-run",
@@ -144,392 +139,9 @@ def main(dry_run: bool) -> None:
     refresh_core_models(dry_run=dry_run)
 
 
-def _reasoning_flags(model: CoreModel) -> str:
-    """Return the trio of emoji flags explaining why this model was picked.
-
-    Args:
-        model:
-            The core model.
-
-    Returns:
-        Concatenated emoji string (⭐💜🇪🇺), possibly empty.
-    """
-    flags = []
-    if model.pareto_languages:
-        flags.append("⭐")
-    if model.osai_rank is not None:
-        flags.append("💜")
-    if model.eu:
-        flags.append("🇪🇺")
-    if model.api:
-        flags.append("👾")
-    return "".join(flags)
-
-
-def _format_parameters(parameters: float) -> str:
-    """Render a parameter count in compact ``Xm`` / ``X.YB`` notation.
-
-    Args:
-        parameters:
-            Number of parameters; NaN renders as a dash.
-
-    Returns:
-        Short display string for the issue table.
-    """
-    if parameters != parameters:  # NaN
-        return "—"
-    if parameters >= 1_000_000_000:
-        value = parameters / 1_000_000_000
-        return (f"{value:.1f}" if value < 10 else f"{value:.0f}") + "B"
-    if parameters >= 1_000_000:
-        return f"{parameters / 1_000_000:.0f}M"
-    return f"{parameters:.0f}"
-
-
-def _format_languages(model: CoreModel, all_languages: tuple[str, ...]) -> str:
-    """Render the Languages column for the issue table.
-
-    EU- or OSAI-listed models always get evaluated everywhere — those
-    inclusions aren't language-scoped. Pareto-only inclusions get the
-    flags of the languages they're on the frontier in, unless that
-    happens to be every supported language, in which case we collapse
-    to "All languages" so we don't splat 30 flags.
-
-    Args:
-        model:
-            The core model record.
-        all_languages:
-            All languages with an official leaderboard.
-
-    Returns:
-        Space-separated flag emojis, or the string ``All languages``.
-    """
-    if model.eu or model.osai_rank is not None or model.api:
-        return "All languages"
-    if not model.pareto_languages or set(model.pareto_languages) >= set(all_languages):
-        return "All languages"
-    return " ".join(_LANGUAGE_FLAG.get(lang, lang) for lang in model.pareto_languages)
-
-
-def render_issue_body(models: list[CoreModel], all_languages: tuple[str, ...]) -> str:
-    """Render the full issue body for #1186.
-
-    Args:
-        models:
-            The core model list, already sorted.
-        all_languages:
-            Every language that has an official leaderboard, used to
-            collapse "all flags" down to "All languages".
-
-    Returns:
-        Markdown text suitable for `PATCH /repos/.../issues/1186`.
-    """
-    header = "| Model | Parameters | Labels | Languages |"
-    separator = "| --- | --- | --- | --- |"
-    rows = [header, separator]
-    # Smallest first; models with unknown parameter counts sink to the
-    # bottom so they don't pollute the top of the table.
-    sorted_models = sorted(
-        models,
-        key=lambda m: (
-            m.parameters if m.parameters == m.parameters else math.inf,
-            m.model_id.lower(),
-        ),
-    )
-    for model in sorted_models:
-        rows.append(
-            f"| {model.model_id} "
-            f"| {_format_parameters(model.parameters)} "
-            f"| {_reasoning_flags(model)} "
-            f"| {_format_languages(model, all_languages)} |"
-        )
-    table = "\n".join(rows)
-    return _ISSUE_INTRO + "\n\n" + table + "\n"
-
-
 # ---------------------------------------------------------------------------
-# YAML I/O — we rewrite the file with a hand-rolled formatter to keep the
-# top section human-edited and the bottom section regenerated. PyYAML's
-# default dump would reorder keys and strip comments.
+# Rendering
 # ---------------------------------------------------------------------------
-
-
-_MODELS_MARKER = "models:"
-
-
-def _format_models_yaml(models: list[CoreModel]) -> str:
-    """Format the models list as a YAML fragment.
-
-    Args:
-        models:
-            The core model list.
-
-    Returns:
-        Text starting with ``models:`` and ending with a newline.
-    """
-    if not models:
-        return "models: []\n"
-    lines = ["models:"]
-    for m in models:
-        lines.append(f"  - id: {m.model_id}")
-        lines.append(f"    type: {m.model_type}")
-        lines.append(f"    bucket: {m.size_bucket}")
-        if m.parameters == m.parameters:  # not NaN
-            lines.append(f"    parameters: {int(m.parameters)}")
-        else:
-            lines.append("    parameters: null")
-        if m.pareto_languages:
-            langs = ", ".join(m.pareto_languages)
-            lines.append(f"    pareto_languages: [{langs}]")
-        else:
-            lines.append("    pareto_languages: []")
-        lines.append(f"    eu: {str(m.eu).lower()}")
-        if m.osai_rank is None:
-            lines.append("    osai_rank: null")
-        else:
-            lines.append(f"    osai_rank: {m.osai_rank}")
-        lines.append(f"    api: {str(m.api).lower()}")
-    return "\n".join(lines) + "\n"
-
-
-def _write_yaml(
-    config_path: Path, last_updated: dt.date, models: list[CoreModel]
-) -> None:
-    """Update `last_updated` and rewrite the `models:` section in place.
-
-    The hand-edited top section (intro comments, issue number, EU regex
-    list, OSAI overrides) is preserved verbatim — we only replace the
-    `last_updated:` line and everything from the `models:` marker
-    onwards.
-
-    Args:
-        config_path:
-            Path to `core_models.yaml`.
-        last_updated:
-            ISO date to record.
-        models:
-            The new core model list.
-    """
-    text = config_path.read_text(encoding="utf-8")
-    text = re.sub(
-        r"^last_updated:.*$",
-        f"last_updated: {last_updated.isoformat()}",
-        text,
-        count=1,
-        flags=re.MULTILINE,
-    )
-    idx = text.find("\n" + _MODELS_MARKER)
-    if idx == -1:
-        # Append if missing.
-        text = text.rstrip() + "\n\n" + _format_models_yaml(models)
-    else:
-        text = text[: idx + 1] + _format_models_yaml(models)
-    config_path.write_text(text, encoding="utf-8")
-
-
-# ---------------------------------------------------------------------------
-# Diffing
-# ---------------------------------------------------------------------------
-
-
-@dataclasses.dataclass
-class IssueDiff:
-    """Summary of changes between two core-model lists."""
-
-    added: list[str]
-    removed: list[str]
-    flag_changes: list[tuple[str, str, str]]  # (model_id, old_flags, new_flags)
-
-    @property
-    def is_empty(self) -> bool:
-        """Whether the diff has no entries."""
-        return not (self.added or self.removed or self.flag_changes)
-
-
-def _parse_issue_models(body: str) -> dict[str, str]:
-    """Parse the existing issue body into {model_id: flag_string}.
-
-    Args:
-        body:
-            Issue body markdown.
-
-    Returns:
-        Map of model_id to the trailing flag/emoji string for that line.
-    """
-    result: dict[str, str] = {}
-    for line in body.splitlines():
-        stripped = line.strip()
-        # The issue body lays models out in a Markdown table with columns
-        # Model | Parameters | Labels | Languages. Skip the header row,
-        # separator row, and any non-table content (intro, blank lines).
-        if not stripped.startswith("|") or stripped.startswith("| ---"):
-            continue
-        cells = [c.strip() for c in stripped.strip("|").split("|")]
-        if len(cells) < 4:
-            continue
-        if cells[0].lower() == "model":
-            continue
-        result[cells[0]] = cells[2]
-    return result
-
-
-def diff_issue(old_body: str, new_models: list[CoreModel]) -> IssueDiff:
-    """Compute the change set between the published issue and the new list.
-
-    Args:
-        old_body:
-            Current issue body markdown.
-        new_models:
-            The newly-generated core list.
-
-    Returns:
-        An `IssueDiff` with added, removed, and flag-changed entries.
-    """
-    old = _parse_issue_models(old_body)
-
-    new_flags = {m.model_id: _reasoning_flags(m) for m in new_models}
-    added = sorted(set(new_flags) - set(old))
-    removed = sorted(set(old) - set(new_flags))
-    flag_changes = sorted(
-        (mid, old[mid], new_flags[mid])
-        for mid in set(old) & set(new_flags)
-        if old[mid] != new_flags[mid]
-    )
-    return IssueDiff(added=added, removed=removed, flag_changes=flag_changes)
-
-
-def render_diff_comment(diff: IssueDiff) -> str:
-    """Render the diff as a GitHub issue comment.
-
-    Args:
-        diff:
-            The change set.
-
-    Returns:
-        Markdown text for the comment body.
-    """
-    parts = ["Here are some updates to the core model list:\n"]
-    if diff.is_empty:
-        parts.append("No changes since the previous run.")
-        return "\n".join(parts)
-    if diff.added:
-        parts.append(f"**Added** ({len(diff.added)}):\n")
-        parts.extend(f"- {m}" for m in diff.added)
-    if diff.removed:
-        parts.append(f"\n**Removed** ({len(diff.removed)}):\n")
-        parts.extend(f"- {m}" for m in diff.removed)
-    if diff.flag_changes:
-        parts.append(f"\n**Flag changes** ({len(diff.flag_changes)}):\n")
-        for mid, old, new in diff.flag_changes:
-            parts.append(f"- {mid}: `{old or '(none)'}` -> `{new or '(none)'}`")
-    return "\n".join(parts)
-
-
-# ---------------------------------------------------------------------------
-# GitHub API helpers (mirror the style of `collect_evaluation_results.py`)
-# ---------------------------------------------------------------------------
-
-
-def _gh_request(
-    path: str, *, method: str = "GET", payload: dict | None = None, token: str
-) -> dict | list:
-    """Call the GitHub REST API.
-
-    Args:
-        path:
-            Path component, e.g. ``/repos/owner/repo/issues/1186``.
-        method:
-            HTTP method.
-        payload:
-            JSON-serializable body for write methods.
-        token:
-            GitHub token with `issues: write`.
-
-    Returns:
-        Parsed JSON response body.
-    """
-    url = f"https://api.github.com{path}"
-    data = json.dumps(payload).encode("utf-8") if payload is not None else None
-    req = urllib.request.Request(
-        url=url,
-        data=data,
-        method=method,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "EuroEval-CoreModels/1",
-            "Content-Type": "application/json",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read().decode("utf-8"))
-
-
-def _get_issue_body(issue_number: int, token: str) -> str:
-    """Fetch the current body of an issue.
-
-    Args:
-        issue_number:
-            The issue number.
-        token:
-            GitHub PAT.
-
-    Returns:
-        The issue body string (empty if the issue has none).
-    """
-    issue = _gh_request(path=f"/repos/{REPO}/issues/{issue_number}", token=token)
-    assert isinstance(issue, dict)
-    return issue.get("body") or ""
-
-
-def _update_issue_body(issue_number: int, body: str, token: str) -> None:
-    """PATCH an issue with a new body.
-
-    Args:
-        issue_number:
-            The issue number.
-        body:
-            The new body markdown.
-        token:
-            GitHub PAT.
-    """
-    _gh_request(
-        path=f"/repos/{REPO}/issues/{issue_number}",
-        method="PATCH",
-        payload=dict(body=body),
-        token=token,
-    )
-
-
-def _post_issue_comment(issue_number: int, body: str, token: str) -> str:
-    """POST a comment to an issue.
-
-    Args:
-        issue_number:
-            The issue number.
-        body:
-            The comment markdown.
-        token:
-            GitHub PAT.
-
-    Returns:
-        The `html_url` of the newly-created comment.
-    """
-    response = _gh_request(
-        path=f"/repos/{REPO}/issues/{issue_number}/comments",
-        method="POST",
-        payload=dict(body=body),
-        token=token,
-    )
-    assert isinstance(response, dict)
-    return response["html_url"]
-
-
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
-
-
 def refresh_core_models(dry_run: bool = False) -> list[CoreModel]:
     """Rebuild the core-model list, update the YAML, and sync issue #1186.
 
@@ -609,6 +221,388 @@ def refresh_core_models(dry_run: bool = False) -> list[CoreModel]:
     _write_yaml(CORE_MODELS_CONFIG, today, models)
     logger.info(f"Wrote {CORE_MODELS_CONFIG}.")
     return models
+
+
+# ---------------------------------------------------------------------------
+# Diffing
+# ---------------------------------------------------------------------------
+@dataclasses.dataclass
+@dataclasses.dataclass
+def _update_issue_body(issue_number: int, body: str, token: str) -> None:
+    """PATCH an issue with a new body.
+
+    Args:
+        issue_number:
+            The issue number.
+        body:
+            The new body markdown.
+        token:
+            GitHub PAT.
+    """
+    _gh_request(
+        path=f"/repos/{REPO}/issues/{issue_number}",
+        method="PATCH",
+        payload=dict(body=body),
+        token=token,
+    )
+
+
+def _write_yaml(
+    config_path: Path, last_updated: dt.date, models: list[CoreModel]
+) -> None:
+    """Update `last_updated` and rewrite the `models:` section in place.
+
+    The hand-edited top section (intro comments, issue number, EU regex
+    list, OSAI overrides) is preserved verbatim — we only replace the
+    `last_updated:` line and everything from the `models:` marker
+    onwards.
+
+    Args:
+        config_path:
+            Path to `core_models.yaml`.
+        last_updated:
+            ISO date to record.
+        models:
+            The new core model list.
+    """
+    text = config_path.read_text(encoding="utf-8")
+    text = re.sub(
+        r"^last_updated:.*$",
+        f"last_updated: {last_updated.isoformat()}",
+        text,
+        count=1,
+        flags=re.MULTILINE,
+    )
+    idx = text.find("\n" + _MODELS_MARKER)
+    if idx == -1:
+        # Append if missing.
+        text = text.rstrip() + "\n\n" + _format_models_yaml(models)
+    else:
+        text = text[: idx + 1] + _format_models_yaml(models)
+    config_path.write_text(data=text, encoding="utf-8")
+
+
+def render_issue_body(models: list[CoreModel], all_languages: tuple[str, ...]) -> str:
+    """Render the full issue body for #1186.
+
+    Args:
+        models:
+            The core model list, already sorted.
+        all_languages:
+            Every language that has an official leaderboard, used to
+            collapse "all flags" down to "All languages".
+
+    Returns:
+        Markdown text suitable for `PATCH /repos/.../issues/1186`.
+    """
+    header = "| Model | Parameters | Labels | Languages |"
+    separator = "| --- | --- | --- | --- |"
+    rows = [header, separator]
+    # Smallest first; models with unknown parameter counts sink to the
+    # bottom so they don't pollute the top of the table.
+    sorted_models = sorted(
+        models,
+        key=lambda m: (
+            m.parameters if m.parameters == m.parameters else math.inf,
+            m.model_id.lower(),
+        ),
+    )
+    for model in sorted_models:
+        rows.append(
+            f"| {model.model_id} "
+            f"| {_format_parameters(model.parameters)} "
+            f"| {_reasoning_flags(model)} "
+            f"| {_format_languages(model, all_languages)} |"
+        )
+    table = "\n".join(rows)
+    return _ISSUE_INTRO + "\n\n" + table + "\n"
+
+
+@dataclasses.dataclass
+class IssueDiff:
+    """Summary of changes between two core-model lists."""
+
+    added: list[str]
+    removed: list[str]
+    flag_changes: list[tuple[str, str, str]]  # (model_id, old_flags, new_flags)
+
+    @property
+    def is_empty(self) -> bool:
+        """Whether the diff has no entries."""
+        return not (self.added or self.removed or self.flag_changes)
+
+
+# ---------------------------------------------------------------------------
+# YAML I/O — we rewrite the file with a hand-rolled formatter to keep the
+# top section human-edited and the bottom section regenerated. PyYAML's
+# default dump would reorder keys and strip comments.
+# ---------------------------------------------------------------------------
+
+
+_MODELS_MARKER = "models:"
+
+
+def _format_languages(model: CoreModel, all_languages: tuple[str, ...]) -> str:
+    """Render the Languages column for the issue table.
+
+    EU- or OSAI-listed models always get evaluated everywhere — those
+    inclusions aren't language-scoped. Pareto-only inclusions get the
+    flags of the languages they're on the frontier in, unless that
+    happens to be every supported language, in which case we collapse
+    to "All languages" so we don't splat 30 flags.
+
+    Args:
+        model:
+            The core model record.
+        all_languages:
+            All languages with an official leaderboard.
+
+    Returns:
+        Space-separated flag emojis, or the string ``All languages``.
+    """
+    if model.eu or model.osai_rank is not None or model.api:
+        return "All languages"
+    if not model.pareto_languages or set(model.pareto_languages) >= set(all_languages):
+        return "All languages"
+    return " ".join(_LANGUAGE_FLAG.get(lang, lang) for lang in model.pareto_languages)
+
+
+def _format_models_yaml(models: list[CoreModel]) -> str:
+    """Format the models list as a YAML fragment.
+
+    Args:
+        models:
+            The core model list.
+
+    Returns:
+        Text starting with ``models:`` and ending with a newline.
+    """
+    if not models:
+        return "models: []\n"
+    lines = ["models:"]
+    for m in models:
+        lines.append(f"  - id: {m.model_id}")
+        lines.append(f"    type: {m.model_type}")
+        lines.append(f"    bucket: {m.size_bucket}")
+        if m.parameters == m.parameters:  # not NaN
+            lines.append(f"    parameters: {int(m.parameters)}")
+        else:
+            lines.append("    parameters: null")
+        if m.pareto_languages:
+            langs = ", ".join(m.pareto_languages)
+            lines.append(f"    pareto_languages: [{langs}]")
+        else:
+            lines.append("    pareto_languages: []")
+        lines.append(f"    eu: {str(m.eu).lower()}")
+        if m.osai_rank is None:
+            lines.append("    osai_rank: null")
+        else:
+            lines.append(f"    osai_rank: {m.osai_rank}")
+        lines.append(f"    api: {str(m.api).lower()}")
+    return "\n".join(lines) + "\n"
+
+
+def _format_parameters(parameters: float) -> str:
+    """Render a parameter count in compact ``Xm`` / ``X.YB`` notation.
+
+    Args:
+        parameters:
+            Number of parameters; NaN renders as a dash.
+
+    Returns:
+        Short display string for the issue table.
+    """
+    if parameters != parameters:  # NaN
+        return "—"
+    if parameters >= 1_000_000_000:
+        value = parameters / 1_000_000_000
+        return (f"{value:.1f}" if value < 10 else f"{value:.0f}") + "B"
+    if parameters >= 1_000_000:
+        return f"{parameters / 1_000_000:.0f}M"
+    return f"{parameters:.0f}"
+
+
+def _gh_request(
+    path: str, *, method: str = "GET", payload: dict | None = None, token: str
+) -> dict | list:
+    """Call the GitHub REST API.
+
+    Args:
+        path:
+            Path component, e.g. ``/repos/owner/repo/issues/1186``.
+        method:
+            HTTP method.
+        payload:
+            JSON-serializable body for write methods.
+        token:
+            GitHub token with `issues: write`.
+
+    Returns:
+        Parsed JSON response body.
+    """
+    url = f"https://api.github.com{path}"
+    data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    req = urllib.request.Request(
+        url=url,
+        data=data,
+        method=method,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "EuroEval-CoreModels/1",
+            "Content-Type": "application/json",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+def _get_issue_body(issue_number: int, token: str) -> str:
+    """Fetch the current body of an issue.
+
+    Args:
+        issue_number:
+            The issue number.
+        token:
+            GitHub PAT.
+
+    Returns:
+        The issue body string (empty if the issue has none).
+    """
+    issue = _gh_request(path=f"/repos/{REPO}/issues/{issue_number}", token=token)
+    assert isinstance(issue, dict)
+    return issue.get("body") or ""
+
+
+def _parse_issue_models(body: str) -> dict[str, str]:
+    """Parse the existing issue body into {model_id: flag_string}.
+
+    Args:
+        body:
+            Issue body markdown.
+
+    Returns:
+        Map of model_id to the trailing flag/emoji string for that line.
+    """
+    result: dict[str, str] = {}
+    for line in body.splitlines():
+        stripped = line.strip()
+        # The issue body lays models out in a Markdown table with columns
+        # Model | Parameters | Labels | Languages. Skip the header row,
+        # separator row, and any non-table content (intro, blank lines).
+        if not stripped.startswith("|") or stripped.startswith("| ---"):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cells) < 4:
+            continue
+        if cells[0].lower() == "model":
+            continue
+        result[cells[0]] = cells[2]
+    return result
+
+
+def _post_issue_comment(issue_number: int, body: str, token: str) -> str:
+    """POST a comment to an issue.
+
+    Args:
+        issue_number:
+            The issue number.
+        body:
+            The comment markdown.
+        token:
+            GitHub PAT.
+
+    Returns:
+        The `html_url` of the newly-created comment.
+    """
+    response = _gh_request(
+        path=f"/repos/{REPO}/issues/{issue_number}/comments",
+        method="POST",
+        payload=dict(body=body),
+        token=token,
+    )
+    assert isinstance(response, dict)
+    return response["html_url"]
+
+
+def _reasoning_flags(model: CoreModel) -> str:
+    """Return the trio of emoji flags explaining why this model was picked.
+
+    Args:
+        model:
+            The core model.
+
+    Returns:
+        Concatenated emoji string (⭐💜🇪🇺), possibly empty.
+    """
+    flags = []
+    if model.pareto_languages:
+        flags.append("⭐")
+    if model.osai_rank is not None:
+        flags.append("💜")
+    if model.eu:
+        flags.append("🇪🇺")
+    if model.api:
+        flags.append("👾")
+    return "".join(flags)
+
+
+# ---------------------------------------------------------------------------
+# GitHub API helpers (mirror the style of `collect_evaluation_results.py`)
+# ---------------------------------------------------------------------------
+def diff_issue(old_body: str, new_models: list[CoreModel]) -> IssueDiff:
+    """Compute the change set between the published issue and the new list.
+
+    Args:
+        old_body:
+            Current issue body markdown.
+        new_models:
+            The newly-generated core list.
+
+    Returns:
+        An `IssueDiff` with added, removed, and flag-changed entries.
+    """
+    old = _parse_issue_models(old_body)
+
+    new_flags = {m.model_id: _reasoning_flags(m) for m in new_models}
+    added = sorted(set(new_flags) - set(old))
+    removed = sorted(set(old) - set(new_flags))
+    flag_changes = sorted(
+        (mid, old[mid], new_flags[mid])
+        for mid in set(old) & set(new_flags)
+        if old[mid] != new_flags[mid]
+    )
+    return IssueDiff(added=added, removed=removed, flag_changes=flag_changes)
+
+
+def render_diff_comment(diff: IssueDiff) -> str:
+    """Render the diff as a GitHub issue comment.
+
+    Args:
+        diff:
+            The change set.
+
+    Returns:
+        Markdown text for the comment body.
+    """
+    parts = ["Here are some updates to the core model list:\n"]
+    if diff.is_empty:
+        parts.append("No changes since the previous run.")
+        return "\n".join(parts)
+    if diff.added:
+        parts.append(f"**Added** ({len(diff.added)}):\n")
+        parts.extend(f"- {m}" for m in diff.added)
+    if diff.removed:
+        parts.append(f"\n**Removed** ({len(diff.removed)}):\n")
+        parts.extend(f"- {m}" for m in diff.removed)
+    if diff.flag_changes:
+        parts.append(f"\n**Flag changes** ({len(diff.flag_changes)}):\n")
+        for mid, old, new in diff.flag_changes:
+            parts.append(f"- {mid}: `{old or '(none)'}` -> `{new or '(none)'}`")
+    return "\n".join(parts)
 
 
 if __name__ == "__main__":

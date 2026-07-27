@@ -51,61 +51,38 @@ from .constants import DTYPE_BYTES, GPU_FIT_OVERHEAD, LANGUAGE_GROUP_CODES
 logger = logging.getLogger(__name__)
 
 
-def run_euroeval(
+def _build_euroeval_cmd(
     model_id: str,
     languages: c.Sequence[str],
-    datasets: c.Sequence[str] | None = None,
-    evaluate_test_split: bool = True,
-    zero_shot: bool = False,
-    trust_remote_code: bool = True,
-    clear_model_cache: bool = True,
-    gpu_memory_utilization: float | None = None,
-    stream_output: bool = True,
-    log_file: Path | t.IO[bytes] | None = None,
-) -> tuple[int, str]:
-    """Run the euroeval CLI for the given model, languages, and datasets.
-
-    Output is streamed live to stderr (so the operator can follow progress
-    on long evaluations) while also being captured for post-run inspection.
+    datasets: c.Sequence[str] | None,
+    evaluate_test_split: bool,
+    zero_shot: bool,
+    gpu_memory_utilization: float | None,
+    clear_model_cache: bool,
+    trust_remote_code: bool,
+) -> list[str]:
+    """Build the euroeval CLI command list.
 
     Args:
         model_id:
-            The model identifier to evaluate.
+            The model ID.
         languages:
-            ISO codes to pass via repeated ``--language`` flags.
-        datasets (optional):
-            Dataset ids to pass via repeated ``--dataset`` flags. When
-            None or empty, no ``--dataset`` flag is passed and the CLI
-            uses its language-driven default. Defaults to None.
-        evaluate_test_split (optional):
-            When True pass ``--evaluate-test-split``; when False pass
-            ``--evaluate-val-split``. Defaults to True.
-        zero_shot (optional):
-            When True pass ``--zero-shot``; otherwise omit (CLI default
-            is few-shot). Defaults to False.
-        trust_remote_code (optional):
-            Pass ``--trust-remote-code``. Defaults to True.
-        clear_model_cache (optional):
-            Pass ``--clear-model-cache``. Defaults to True.
-        gpu_memory_utilization (optional):
-            When set, pass ``--gpu-memory-utilization VALUE``. When None,
-            omit the flag so the euroeval CLI's default applies. Defaults
-            to None.
-        stream_output (optional):
-            When True, stream subprocess output live to stderr and force
-            ``FULL_LOG=1`` for maximum verbosity. When False, suppress
-            terminal output (subprocess writes go to /dev/null) and leave
-            verbosity at the CLI default. Defaults to True.
-        log_file (optional):
-            When provided, write subprocess output to this file (or file-like
-            object) as it arrives. Accepts a :class:`Path` (opened in append
-            binary mode) or a binary file-like object with a ``write()`` method.
-            Terminal output behaviour is still controlled by ``stream_output``.
-            Defaults to None.
+            The languages to evaluate.
+        datasets:
+            The datasets to evaluate, or None for all.
+        evaluate_test_split:
+            Whether to evaluate the test split.
+        zero_shot:
+            Whether to use zero-shot evaluation.
+        gpu_memory_utilization:
+            The GPU memory utilization.
+        clear_model_cache:
+            Whether to clear the model cache.
+        trust_remote_code:
+            Whether to trust remote code.
 
     Returns:
-        A ``(returncode, combined_output)`` pair. A returncode of 127
-        signals that the CLI was not found on PATH.
+        The command list.
     """
     cmd: list[str] = ["euroeval", "--model", model_id]
     if clear_model_cache:
@@ -123,11 +100,28 @@ def run_euroeval(
         cmd += ["--dataset", dataset]
     if gpu_memory_utilization is not None:
         cmd += ["--gpu-memory-utilization", str(gpu_memory_utilization)]
-    if stream_output:
-        logger.info(f"Running: {' '.join(cmd)}")
-    else:
-        logger.debug(f"Running: {' '.join(cmd)}")
+    return cmd
 
+
+def resolve_hf_token() -> str | None:
+    """Return the HF token from env or the ``hf auth login`` cache.
+
+    Returns:
+        The token string, or None if neither env nor cache yields one.
+    """
+    return os.environ.get("HF_TOKEN") or get_token()
+
+
+def _build_euroeval_env(stream_output: bool) -> dict[str, str]:
+    """Build the environment for the euroeval CLI subprocess.
+
+    Args:
+        stream_output:
+            Whether to stream output.
+
+    Returns:
+        The environment dictionary.
+    """
     env = os.environ.copy()
     if stream_output:
         env["FULL_LOG"] = "1"
@@ -135,96 +129,45 @@ def run_euroeval(
     if token:
         env.setdefault("HF_TOKEN", token)
         env.setdefault("HUGGINGFACE_API_KEY", token)
+    return env
 
-    # Import here to preserve deferred import pattern for lightweight callers
-    from euroeval.logging_utils import no_terminal_output  # noqa: PLC0415
 
-    parent_fd, child_fd = pty.openpty()
-    _set_pty_window_size(fd=child_fd)
-    spawned_pgid: int | None = None
-    try:
-        # Safe: ``cmd`` is a fixed argument list run without a shell; only the
-        # known euroeval CLI flags and operator-controlled model/language ids
-        # are interpolated, never untrusted shell input.
-        proc = subprocess.Popen(  # noqa: S603
-            cmd,
-            stdin=child_fd,
-            stdout=child_fd,
-            stderr=child_fd,
-            close_fds=True,
-            env=env,
-            preexec_fn=os.setsid,  # New process group for scoped cleanup
-        )
-        spawned_pgid = os.getpgid(proc.pid)
-    except FileNotFoundError:
-        os.close(parent_fd)
-        os.close(child_fd)
-        logger.error("`euroeval` CLI not found on PATH. Is it installed?")
-        return 127, "`euroeval` CLI not found on PATH."
-    os.close(child_fd)
-
-    # Open log file if a Path was provided
-    log_fh: t.IO[bytes] | None = None
-    if isinstance(log_file, Path):
-        log_fh = open(log_file, "ab")
-    elif log_file is not None:
-        # Assume it's already a file-like object
-        log_fh = log_file
-
-    captured: list[bytes] = []
-    MAX_DRAIN_TIME_AFTER_EXIT = 2.0  # Fixed deadline after parent exit
-    with no_terminal_output(disable=stream_output):
-        parent_exit_time: float | None = None
+def _cleanup_pty_process(
+    parent_fd: int,
+    spawned_pgid: int | None,
+    log_fh: t.IO[bytes] | None,
+    log_file: Path | t.IO[bytes] | None,
+) -> None:
+    """Clean up PTY file descriptor and kill process group."""
+    os.close(parent_fd)
+    if spawned_pgid is not None:
         try:
-            while True:
-                # Check deadline first: once parent exits, bound the drain time
-                # regardless of whether bytes are available. This prevents a
-                # chatty descendant from keeping the loop alive forever.
-                if parent_exit_time is not None:
-                    elapsed = time.monotonic() - parent_exit_time
-                    if elapsed > MAX_DRAIN_TIME_AFTER_EXIT:
-                        break
+            os.killpg(spawned_pgid, signal.SIGTERM)
+        except (ProcessLookupError, OSError):
+            pass
+    if log_fh is not None and isinstance(log_file, Path):
+        log_fh.close()
 
-                ready, _, _ = select.select([parent_fd], [], [], 0.1)
-                try:
-                    chunk = os.read(parent_fd, 4096) if ready else b""
-                except OSError:
-                    break
 
-                if chunk:
-                    if stream_output:
-                        sys.stderr.buffer.write(chunk)
-                        sys.stderr.buffer.flush()
-                    if log_fh is not None:
-                        log_fh.write(chunk)
-                        log_fh.flush()
-                    captured.append(chunk)
-                    # Parent may have exited while we read; start deadline
-                    if proc.poll() is not None and parent_exit_time is None:
-                        parent_exit_time = time.monotonic()
-                elif proc.poll() is not None:
-                    # Parent exited and no more bytes immediately available.
-                    # Start deadline timer if not already set.
-                    if parent_exit_time is None:
-                        parent_exit_time = time.monotonic()
-                # else: process still running, continue waiting
-        finally:
-            os.close(parent_fd)
-            # Kill process group for scoped cleanup (no broad pkill/killall)
-            if spawned_pgid is not None:
-                try:
-                    os.killpg(spawned_pgid, signal.SIGTERM)
-                except (ProcessLookupError, OSError):
-                    pass
-            if log_fh is not None and isinstance(log_file, Path):
-                # Only close if we opened it
-                log_fh.close()
-        proc.wait()
-    output = b"".join(captured).decode("utf-8", errors="replace")
-    note = _killed_by_signal_note(proc.returncode)
-    if note:
-        output += f"\n{note}\n"
-    return proc.returncode, output
+def _dtype_bits(dtype: str) -> int | None:
+    """Infer the number of bits used by a safetensors dtype string.
+
+    Args:
+        dtype:
+            The safetensors dtype string.
+
+    Returns:
+        The bit-width, or None when it cannot be inferred.
+    """
+    normalised_dtype = dtype.upper()
+    if normalised_dtype in DTYPE_BYTES:
+        return DTYPE_BYTES[normalised_dtype] * 8
+
+    for match in re.findall(pattern=r"\d+", string=normalised_dtype):
+        bits = int(match)
+        if bits > 0:
+            return bits
+    return None
 
 
 def _killed_by_signal_note(returncode: int | None) -> str | None:
@@ -260,6 +203,60 @@ def _killed_by_signal_note(returncode: int | None) -> str | None:
     return f"Process was killed by signal {signum} ({name})."
 
 
+def _run_pty_loop(
+    parent_fd: int,
+    proc: subprocess.Popen[bytes],
+    stream_output: bool,
+    log_fh: t.IO[bytes] | None,
+) -> list[bytes]:
+    """Read from PTY until subprocess exits, with drain timeout.
+
+    Args:
+        parent_fd:
+            The parent file descriptor.
+        proc:
+            The subprocess.
+        stream_output:
+            Whether to stream output.
+        log_fh:
+            The log file handle.
+
+    Returns:
+        The captured output as bytes.
+    """
+    captured: list[bytes] = []
+    MAX_DRAIN_TIME_AFTER_EXIT = 2.0
+    parent_exit_time: float | None = None
+
+    while True:
+        if parent_exit_time is not None:
+            elapsed = time.monotonic() - parent_exit_time
+            if elapsed > MAX_DRAIN_TIME_AFTER_EXIT:
+                break
+
+        ready, _, _ = select.select([parent_fd], [], [], 0.1)
+        try:
+            chunk = os.read(parent_fd, 4096) if ready else b""
+        except OSError:
+            break
+
+        if chunk:
+            if stream_output:
+                sys.stderr.buffer.write(chunk)
+                sys.stderr.buffer.flush()
+            if log_fh is not None:
+                log_fh.write(chunk)
+                log_fh.flush()
+            captured.append(chunk)
+            if proc.poll() is not None and parent_exit_time is None:
+                parent_exit_time = time.monotonic()
+        elif proc.poll() is not None:
+            if parent_exit_time is None:
+                parent_exit_time = time.monotonic()
+
+    return captured
+
+
 def _set_pty_window_size(fd: int) -> None:
     """Give a freshly-opened pty a sensible window size.
 
@@ -293,32 +290,6 @@ def _set_pty_window_size(fd: int) -> None:
         fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
     except OSError as e:
         logger.debug(f"Could not set pty window size: {e}")
-
-
-def model_fits_locally(model_id: str, gpu_bytes: int | None) -> tuple[bool, int | None]:
-    """Return whether an open-weight model fits the local memory budget.
-
-    Args:
-        model_id:
-            The HuggingFace repo id to size-check.
-        gpu_bytes:
-            The local memory budget in bytes, or None when unknown
-            (in which case the caller should skip the check).
-
-    Returns:
-        A ``(fits, needed_bytes)`` pair. ``fits`` is True when either
-        ``gpu_bytes`` is None, the model's safetensors footprint can't
-        be measured, or ``needed * GPU_FIT_OVERHEAD <= gpu_bytes``.
-        ``needed_bytes`` is the measured footprint, or None when it
-        couldn't be measured.
-    """
-    if gpu_bytes is None:
-        return True, None
-    needed = estimated_model_bytes(model_id=model_id)
-    if needed is None:
-        return True, None
-    needed = int(needed * GPU_FIT_OVERHEAD)
-    return needed <= gpu_bytes, needed
 
 
 def estimated_model_bytes(model_id: str) -> int | None:
@@ -367,25 +338,24 @@ def estimated_model_bytes(model_id: str) -> int | None:
     return total
 
 
-def _dtype_bits(dtype: str) -> int | None:
-    """Infer the number of bits used by a safetensors dtype string.
+def extract_language_groups(body: str | None) -> list[str]:
+    """Return the language-group labels that are ticked in an issue body.
 
     Args:
-        dtype:
-            The safetensors dtype string.
+        body:
+            The markdown body of a model-evaluation-request issue, or None.
 
     Returns:
-        The bit-width, or None when it cannot be inferred.
+        The labels (keys of ``LANGUAGE_GROUP_CODES``) whose checkbox is ticked.
     """
-    normalised_dtype = dtype.upper()
-    if normalised_dtype in DTYPE_BYTES:
-        return DTYPE_BYTES[normalised_dtype] * 8
-
-    for match in re.findall(pattern=r"\d+", string=normalised_dtype):
-        bits = int(match)
-        if bits > 0:
-            return bits
-    return None
+    if not body:
+        return []
+    selected: list[str] = []
+    for group in LANGUAGE_GROUP_CODES:
+        pattern = re.compile(rf"-\s*\[[xX]\]\s*{re.escape(group)}")
+        if pattern.search(body):
+            selected.append(group)
+    return selected
 
 
 def gpu_total_memory_bytes() -> int | None:
@@ -449,26 +419,6 @@ def official_dataset_language_pairs() -> set[tuple[str, str]]:
     }
 
 
-def extract_language_groups(body: str | None) -> list[str]:
-    """Return the language-group labels that are ticked in an issue body.
-
-    Args:
-        body:
-            The markdown body of a model-evaluation-request issue, or None.
-
-    Returns:
-        The labels (keys of ``LANGUAGE_GROUP_CODES``) whose checkbox is ticked.
-    """
-    if not body:
-        return []
-    selected: list[str] = []
-    for group in LANGUAGE_GROUP_CODES:
-        pattern = re.compile(rf"-\s*\[[xX]\]\s*{re.escape(group)}")
-        if pattern.search(body):
-            selected.append(group)
-    return selected
-
-
 def result_dataset_language_pairs(
     lines: c.Iterable[str],
 ) -> set[tuple[str, str, bool | None]]:
@@ -529,10 +479,153 @@ def missing_official_dataset_language_pairs(
     return expected_pairs - observed_pairs
 
 
-def resolve_hf_token() -> str | None:
-    """Return the HF token from env or the ``hf auth login`` cache.
+def model_fits_locally(model_id: str, gpu_bytes: int | None) -> tuple[bool, int | None]:
+    """Return whether an open-weight model fits the local memory budget.
+
+    Args:
+        model_id:
+            The HuggingFace repo id to size-check.
+        gpu_bytes:
+            The local memory budget in bytes, or None when unknown
+            (in which case the caller should skip the check).
 
     Returns:
-        The token string, or None if neither env nor cache yields one.
+        A ``(fits, needed_bytes)`` pair. ``fits`` is True when either
+        ``gpu_bytes`` is None, the model's safetensors footprint can't
+        be measured, or ``needed * GPU_FIT_OVERHEAD <= gpu_bytes``.
+        ``needed_bytes`` is the measured footprint, or None when it
+        couldn't be measured.
     """
-    return os.environ.get("HF_TOKEN") or get_token()
+    if gpu_bytes is None:
+        return True, None
+    needed = estimated_model_bytes(model_id=model_id)
+    if needed is None:
+        return True, None
+    needed = int(needed * GPU_FIT_OVERHEAD)
+    return needed <= gpu_bytes, needed
+
+
+def run_euroeval(
+    model_id: str,
+    languages: c.Sequence[str],
+    datasets: c.Sequence[str] | None = None,
+    evaluate_test_split: bool = True,
+    zero_shot: bool = False,
+    trust_remote_code: bool = True,
+    clear_model_cache: bool = True,
+    gpu_memory_utilization: float | None = None,
+    stream_output: bool = True,
+    log_file: Path | t.IO[bytes] | None = None,
+) -> tuple[int, str]:
+    """Run the euroeval CLI for the given model, languages, and datasets.
+
+    Output is streamed live to stderr (so the operator can follow progress
+    on long evaluations) while also being captured for post-run inspection.
+
+    Args:
+        model_id:
+            The model identifier to evaluate.
+        languages:
+            ISO codes to pass via repeated ``--language`` flags.
+        datasets (optional):
+            Dataset ids to pass via repeated ``--dataset`` flags. When
+            None or empty, no ``--dataset`` flag is passed and the CLI
+            uses its language-driven default. Defaults to None.
+        evaluate_test_split (optional):
+            When True pass ``--evaluate-test-split``; when False pass
+            ``--evaluate-val-split``. Defaults to True.
+        zero_shot (optional):
+            When True pass ``--zero-shot``; otherwise omit (CLI default
+            is few-shot). Defaults to False.
+        trust_remote_code (optional):
+            Pass ``--trust-remote-code``. Defaults to True.
+        clear_model_cache (optional):
+            Pass ``--clear-model-cache``. Defaults to True.
+        gpu_memory_utilization (optional):
+            When set, pass ``--gpu-memory-utilization VALUE``. When None,
+            omit the flag so the euroeval CLI's default applies. Defaults
+            to None.
+        stream_output (optional):
+            When True, stream subprocess output live to stderr and force
+            ``FULL_LOG=1`` for maximum verbosity. When False, suppress
+            terminal output (subprocess writes go to /dev/null) and leave
+            verbosity at the CLI default. Defaults to True.
+        log_file (optional):
+            When provided, write subprocess output to this file (or file-like
+            object) as it arrives. Accepts a :class:`Path` (opened in append
+            binary mode) or a binary file-like object with a ``write()`` method.
+            Terminal output behaviour is still controlled by ``stream_output``.
+            Defaults to None.
+
+    Returns:
+        A ``(returncode, combined_output)`` pair. A returncode of 127
+        signals that the CLI was not found on PATH.
+    """
+    cmd = _build_euroeval_cmd(
+        model_id=model_id,
+        languages=languages,
+        datasets=datasets,
+        evaluate_test_split=evaluate_test_split,
+        zero_shot=zero_shot,
+        gpu_memory_utilization=gpu_memory_utilization,
+        clear_model_cache=clear_model_cache,
+        trust_remote_code=trust_remote_code,
+    )
+    if stream_output:
+        logger.info(f"Running: {' '.join(cmd)}")
+    else:
+        logger.debug(f"Running: {' '.join(cmd)}")
+
+    env = _build_euroeval_env(stream_output=stream_output)
+
+    # Import here to preserve deferred import pattern for lightweight callers
+    from euroeval.logging_utils import no_terminal_output  # noqa: PLC0415
+
+    parent_fd, child_fd = pty.openpty()
+    _set_pty_window_size(fd=child_fd)
+    spawned_pgid: int | None = None
+    try:
+        proc = subprocess.Popen(  # noqa: S603
+            cmd,
+            stdin=child_fd,
+            stdout=child_fd,
+            stderr=child_fd,
+            close_fds=True,
+            env=env,
+            preexec_fn=os.setsid,
+        )
+        spawned_pgid = os.getpgid(proc.pid)
+    except FileNotFoundError:
+        os.close(parent_fd)
+        os.close(child_fd)
+        logger.error("`euroeval` CLI not found on PATH. Is it installed?")
+        return 127, "`euroeval` CLI not found on PATH."
+    os.close(child_fd)
+
+    log_fh: t.IO[bytes] | None = None
+    if isinstance(log_file, Path):
+        log_fh = open(log_file, "ab")
+    elif log_file is not None:
+        log_fh = log_file
+
+    with no_terminal_output(disable=stream_output):
+        try:
+            captured = _run_pty_loop(
+                parent_fd=parent_fd,
+                proc=proc,
+                stream_output=stream_output,
+                log_fh=log_fh,
+            )
+        finally:
+            _cleanup_pty_process(
+                parent_fd=parent_fd,
+                spawned_pgid=spawned_pgid,
+                log_fh=log_fh,
+                log_file=log_file,
+            )
+        proc.wait()
+    output = b"".join(captured).decode("utf-8", errors="replace")
+    note = _killed_by_signal_note(proc.returncode)
+    if note:
+        output += f"\n{note}\n"
+    return proc.returncode, output

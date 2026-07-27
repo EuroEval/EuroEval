@@ -19,6 +19,15 @@ class TestSerialiseNerTags:
         "o": "ingen",
     }
 
+    def test_includes_all_labels_even_when_empty(self) -> None:
+        """Every prompt label appears, with an empty list when no entity is tagged."""
+        result = serialise_ner_tags(
+            tokens=["hello", "world"],
+            labels=["o", "o"],
+            prompt_label_mapping=self.prompt_label_mapping,
+        )
+        assert json.loads(result) == {"person": [], "place": [], "ingen": []}
+
     def test_serialises_entities_as_json(self) -> None:
         """Tagged tokens are grouped by localised label into a JSON object string."""
         tokens = ["John", "Doe", "visited", "New", "York"]
@@ -32,11 +41,11 @@ class TestSerialiseNerTags:
             "ingen": [],
         }
 
-    def test_includes_all_labels_even_when_empty(self) -> None:
-        """Every prompt label appears, with an empty list when no entity is tagged."""
+    def test_unknown_tag_is_ignored(self) -> None:
+        """Tags absent from the mapping are skipped rather than raising."""
         result = serialise_ner_tags(
-            tokens=["hello", "world"],
-            labels=["o", "o"],
+            tokens=["foo", "bar"],
+            labels=["b-misc", "o"],
             prompt_label_mapping=self.prompt_label_mapping,
         )
         assert json.loads(result) == {"person": [], "place": [], "ingen": []}
@@ -50,15 +59,6 @@ class TestSerialiseNerTags:
         )
         assert '"place"' in result
         assert json.loads(result)["place"] == ["Paris"]
-
-    def test_unknown_tag_is_ignored(self) -> None:
-        """Tags absent from the mapping are skipped rather than raising."""
-        result = serialise_ner_tags(
-            tokens=["foo", "bar"],
-            labels=["b-misc", "o"],
-            prompt_label_mapping=self.prompt_label_mapping,
-        )
-        assert json.loads(result) == {"person": [], "place": [], "ingen": []}
 
 
 class TestSerialisedNerContentLength:

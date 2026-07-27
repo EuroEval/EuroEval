@@ -1,6 +1,22 @@
 """Exceptions to used by other functions."""
 
 
+class HuggingFaceHubDown(Exception):
+    """The Hugging Face Hub seems to be down."""
+
+    def __init__(
+        self, message: str = "The Hugging Face Hub is currently down."
+    ) -> None:
+        """Initialise the exception.
+
+        Args:
+            message:
+                The message to display.
+        """
+        self.message = message
+        super().__init__(self.message)
+
+
 class InvalidBenchmark(Exception):
     """The (model, dataset) combination cannot be benchmarked."""
 
@@ -47,38 +63,6 @@ class InvalidTask(Exception):
         super().__init__(self.message)
 
 
-class HuggingFaceHubDown(Exception):
-    """The Hugging Face Hub seems to be down."""
-
-    def __init__(
-        self, message: str = "The Hugging Face Hub is currently down."
-    ) -> None:
-        """Initialise the exception.
-
-        Args:
-            message:
-                The message to display.
-        """
-        self.message = message
-        super().__init__(self.message)
-
-
-class NoInternetConnection(Exception):
-    """There seems to be no internet connection."""
-
-    def __init__(
-        self, message: str = "There is currently no internet connection."
-    ) -> None:
-        """Initialise the exception.
-
-        Args:
-            message:
-                The message to display.
-        """
-        self.message = message
-        super().__init__(self.message)
-
-
 class NaNValueInModelOutput(Exception):
     """There is a NaN value in the model output."""
 
@@ -92,6 +76,57 @@ class NaNValueInModelOutput(Exception):
                 The message to display.
         """
         self.message = message
+        super().__init__(self.message)
+
+
+class NeedsAdditionalArgument(InvalidModel):
+    """The evaluation requires additional arguments to the `euroeval` command."""
+
+    def __init__(
+        self, cli_argument: str, script_argument: str, run_with_cli: bool
+    ) -> None:
+        """Initialise the exception.
+
+        Args:
+            cli_argument:
+                The argument that needs to be passed to the `euroeval` command.
+            script_argument:
+                The argument that needs to be passed to the `Benchmarker` class.
+            run_with_cli:
+                Whether the benchmark is being run with the CLI.
+        """
+        self.cli_argument = cli_argument
+        self.script_argument = script_argument
+        if run_with_cli:
+            self.message = (
+                f"The model you are trying to load requires the `{cli_argument}` "
+                "argument to be passed to the `euroeval` command. Please pass the "
+                "argument and try again."
+            )
+        else:
+            self.message = (
+                f"The model you are trying to load requires the `{script_argument}` "
+                "argument to be passed to the `Benchmarker` class. Please pass the "
+                "argument and try again."
+            )
+        super().__init__(self.message)
+
+
+class NeedsEnvironmentVariable(InvalidModel):
+    """The evaluation requires an environment variable to be set."""
+
+    def __init__(self, env_var: str) -> None:
+        """Initialise the exception.
+
+        Args:
+            env_var:
+                The environment variable that needs to be set.
+        """
+        self.env_var = env_var
+        self.message = (
+            f"The model you are trying to load requires the `{env_var}` environment "
+            "variable to be set. Please set the environment variable and try again."
+        )
         super().__init__(self.message)
 
 
@@ -152,52 +187,17 @@ class NeedsSystemDependency(InvalidModel):
         super().__init__(self.message)
 
 
-class NeedsAdditionalArgument(InvalidModel):
-    """The evaluation requires additional arguments to the `euroeval` command."""
+class NoInternetConnection(Exception):
+    """There seems to be no internet connection."""
 
     def __init__(
-        self, cli_argument: str, script_argument: str, run_with_cli: bool
+        self, message: str = "There is currently no internet connection."
     ) -> None:
         """Initialise the exception.
 
         Args:
-            cli_argument:
-                The argument that needs to be passed to the `euroeval` command.
-            script_argument:
-                The argument that needs to be passed to the `Benchmarker` class.
-            run_with_cli:
-                Whether the benchmark is being run with the CLI.
+            message:
+                The message to display.
         """
-        self.cli_argument = cli_argument
-        self.script_argument = script_argument
-        if run_with_cli:
-            self.message = (
-                f"The model you are trying to load requires the `{cli_argument}` "
-                "argument to be passed to the `euroeval` command. Please pass the "
-                "argument and try again."
-            )
-        else:
-            self.message = (
-                f"The model you are trying to load requires the `{script_argument}` "
-                "argument to be passed to the `Benchmarker` class. Please pass the "
-                "argument and try again."
-            )
-        super().__init__(self.message)
-
-
-class NeedsEnvironmentVariable(InvalidModel):
-    """The evaluation requires an environment variable to be set."""
-
-    def __init__(self, env_var: str) -> None:
-        """Initialise the exception.
-
-        Args:
-            env_var:
-                The environment variable that needs to be set.
-        """
-        self.env_var = env_var
-        self.message = (
-            f"The model you are trying to load requires the `{env_var}` environment "
-            "variable to be set. Please set the environment variable and try again."
-        )
+        self.message = message
         super().__init__(self.message)

@@ -17,59 +17,6 @@ from euroeval.types import Tokeniser
 
 
 @pytest.mark.parametrize(
-    argnames=["model_id", "expected"],
-    argvalues=[("01-ai/Yi-6B", True), ("google-bert/bert-base-uncased", False)],
-)
-@pytest.mark.skipif(
-    condition=not os.getenv("HF_TOKEN"),
-    reason="HF_TOKEN not set, required for loading tokenizers",
-)
-def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) -> None:
-    """Test that a model ID is a generative model."""
-    config = load_hf_model_config(
-        model_id=model_id,
-        num_labels=0,
-        id2label=HashableDict(),
-        label2id=HashableDict(),
-        revision="main",
-        model_cache_dir=None,
-        api_key=auth,
-        trust_remote_code=True,
-        run_with_cli=True,
-    )
-    tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
-        model_id, config=config
-    )
-    labels = ["positiv", "negativ"]
-    strip_prompts = should_prompts_be_stripped(
-        labels_to_be_generated=labels, tokeniser=tokeniser
-    )
-    assert strip_prompts == expected
-
-
-@pytest.mark.parametrize(
-    argnames=["model_id", "expected"],
-    argvalues=[("01-ai/Yi-6B", False), ("common-pile/comma-v0.1-2t", True)],
-)
-@pytest.mark.skipif(
-    condition=not os.getenv("HF_TOKEN"),
-    reason="HF_TOKEN not set, required for loading tokenizers",
-)
-def test_should_prefix_space_be_added_to_labels(
-    model_id: str, expected: bool, auth: str
-) -> None:
-    """Test whether a prefix space should be added to labels."""
-    tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
-        model_id, token=auth
-    )
-    labels = ["positiv", "negativ"]
-    strip_prompts = should_prefix_space_be_added_to_labels(
-        labels_to_be_generated=labels, tokeniser=tokeniser
-    )
-    assert strip_prompts == expected
-
-
-@pytest.mark.parametrize(
     argnames=["model_id", "expected_token_ids", "expected_string"],
     argvalues=[
         ("occiglot/occiglot-7b-de-en", None, None),
@@ -154,12 +101,12 @@ def test_load_xlmr_tokeniser_with_fallback(
     # Verify the first call had use_fast=True
     first_call_args = mock_from_pretrained.call_args_list[0]
     assert first_call_args.kwargs.get("use_fast") is True
-    assert first_call_args.args[0] == model_id
+    assert first_call_args.kwargs.get("pretrained_model_name_or_path") == model_id
 
     # Verify the second call had use_fast=False (the fallback)
     second_call_args = mock_from_pretrained.call_args_list[1]
     assert second_call_args.kwargs.get("use_fast") is False
-    assert second_call_args.args[0] == model_id
+    assert second_call_args.kwargs.get("pretrained_model_name_or_path") == model_id
 
     # Verify that the fallback to the slow tokenizer was used
     assert tokeniser.is_fast is False
@@ -167,3 +114,56 @@ def test_load_xlmr_tokeniser_with_fallback(
     # Verify tokenizer attributes are set
     assert tokeniser.bos_token == "<s>"
     assert tokeniser.eos_token == "</s>"
+
+
+@pytest.mark.parametrize(
+    argnames=["model_id", "expected"],
+    argvalues=[("01-ai/Yi-6B", False), ("common-pile/comma-v0.1-2t", True)],
+)
+@pytest.mark.skipif(
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for loading tokenizers",
+)
+def test_should_prefix_space_be_added_to_labels(
+    model_id: str, expected: bool, auth: str
+) -> None:
+    """Test whether a prefix space should be added to labels."""
+    tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
+        model_id, token=auth
+    )
+    labels = ["positiv", "negativ"]
+    strip_prompts = should_prefix_space_be_added_to_labels(
+        labels_to_be_generated=labels, tokeniser=tokeniser
+    )
+    assert strip_prompts == expected
+
+
+@pytest.mark.parametrize(
+    argnames=["model_id", "expected"],
+    argvalues=[("01-ai/Yi-6B", True), ("google-bert/bert-base-uncased", False)],
+)
+@pytest.mark.skipif(
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for loading tokenizers",
+)
+def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) -> None:
+    """Test that a model ID is a generative model."""
+    config = load_hf_model_config(
+        model_id=model_id,
+        num_labels=0,
+        id2label=HashableDict(),
+        label2id=HashableDict(),
+        revision="main",
+        model_cache_dir=None,
+        api_key=auth,
+        trust_remote_code=True,
+        run_with_cli=True,
+    )
+    tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
+        model_id, config=config
+    )
+    labels = ["positiv", "negativ"]
+    strip_prompts = should_prompts_be_stripped(
+        labels_to_be_generated=labels, tokeniser=tokeniser
+    )
+    assert strip_prompts == expected

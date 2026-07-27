@@ -44,30 +44,6 @@ def eu_models(model_ids: c.Iterable[str], eu_patterns: list[str]) -> set[str]:
     return eu_model_ids
 
 
-def params_from_model_id(model_id: str) -> float:
-    """Best-effort parameter count parsed from a model identifier.
-
-    Some entries (typically ones we haven't evaluated yet, or with broken
-    HF metadata) reach the core-model list with NaN parameters, which
-    would otherwise default them to the ``xlarge`` bucket. When the id
-    itself encodes the size (``EuroLLM-22B``, ``Ministral-3-14B``,
-    ``SmolLM2-135M``, ...), use that as a fallback.
-
-    Args:
-        model_id:
-            HuggingFace-style id, optionally with `org/` prefix.
-
-    Returns:
-        Parameter count, or NaN if no size token is present.
-    """
-    m = PARAMS_FROM_ID_RE.search(model_id)
-    if not m:
-        return float("nan")
-    value = float(m.group(1))
-    unit = m.group(2).lower()
-    return value * (1_000_000_000 if unit == "b" else 1_000_000)
-
-
 @cache
 def params_from_hf_safetensors(model_id: str) -> float:
     """Best-effort parameter count from a model's safetensors manifest.
@@ -79,7 +55,7 @@ def params_from_hf_safetensors(model_id: str) -> float:
     itself encodes the size (`yulan-team/YuLan-Mini` and friends).
 
     Network failures, missing repos, and missing safetensors data all
-    degrade to NaN — the caller will then bucket the model as ``xlarge``
+    degrade to NaN - the caller will then bucket the model as ``xlarge``
     which is the existing behaviour.
 
     Args:
@@ -109,3 +85,27 @@ def params_from_hf_safetensors(model_id: str) -> float:
         return float("nan")
     total = getattr(safetensors, "total", None)
     return float(total) if isinstance(total, int) and total > 0 else float("nan")
+
+
+def params_from_model_id(model_id: str) -> float:
+    """Best-effort parameter count parsed from a model identifier.
+
+    Some entries (typically ones we haven't evaluated yet, or with broken
+    HF metadata) reach the core-model list with NaN parameters, which
+    would otherwise default them to the ``xlarge`` bucket. When the id
+    itself encodes the size (``EuroLLM-22B``, ``Ministral-3-14B``,
+    ``SmolLM2-135M``, ...), use that as a fallback.
+
+    Args:
+        model_id:
+            HuggingFace-style id, optionally with `org/` prefix.
+
+    Returns:
+        Parameter count, or NaN if no size token is present.
+    """
+    m = PARAMS_FROM_ID_RE.search(model_id)
+    if not m:
+        return float("nan")
+    value = float(m.group(1))
+    unit = m.group(2).lower()
+    return value * (1_000_000_000 if unit == "b" else 1_000_000)

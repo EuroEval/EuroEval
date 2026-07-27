@@ -34,7 +34,7 @@ class Language:
 
     @property
     def and_separator(self) -> str:
-        """Get the word 'and' in the language.
+        """The word 'and' in the language.
 
         Returns:
             The word 'and' in the language.
@@ -55,7 +55,7 @@ class Language:
 
     @property
     def or_separator(self) -> str:
-        """Get the word 'or' in the language.
+        """The word 'or' in the language.
 
         Returns:
             The word 'or' in the language.

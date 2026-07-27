@@ -6,19 +6,53 @@ from enum import Enum, auto
 class AutoStrEnum(str, Enum):
     """StrEnum where auto() returns the field name in lower case."""
 
+    def __repr__(self) -> str:
+        """Return the value in upper case for better readability."""
+        return self.value.upper()
+
+    def __str__(self) -> str:
+        """Return the value in upper case for better readability."""
+        return self.value.upper()
+
     @staticmethod
     def _generate_next_value_(
         name: str, start: int, count: int, last_values: list
     ) -> str:
         return name.lower()
 
-    def __str__(self) -> str:
-        """Return the value in upper case for better readability."""
-        return self.value.upper()
 
-    def __repr__(self) -> str:
-        """Return the value in upper case for better readability."""
-        return self.value.upper()
+class BatchingPreference(AutoStrEnum):
+    """The preference for batching.
+
+    Attributes:
+        NO_PREFERENCE:
+            No preference for batching.
+        SINGLE_SAMPLE:
+            Single sample batching.
+        ALL_AT_ONCE:
+            All samples at once batching.
+    """
+
+    NO_PREFERENCE = auto()
+    SINGLE_SAMPLE = auto()
+    ALL_AT_ONCE = auto()
+
+
+class DataType(AutoStrEnum):
+    """The data type of the model weights.
+
+    Attributes:
+        FP32:
+            32-bit floating point.
+        FP16:
+            16-bit floating point.
+        BF16:
+            16-bit bfloat.
+    """
+
+    FP32 = auto()
+    FP16 = auto()
+    BF16 = auto()
 
 
 class Device(AutoStrEnum):
@@ -36,6 +70,23 @@ class Device(AutoStrEnum):
     CPU = auto()
     MPS = auto()
     CUDA = auto()
+
+
+class GenerativeType(AutoStrEnum):
+    """The type of a generative model.
+
+    Attributes:
+        BASE:
+            A base (i.e., pretrained) generative model.
+        INSTRUCTION_TUNED:
+            An instruction-tuned generative model.
+        REASONING:
+            A generative reasoning model.
+    """
+
+    BASE = auto()
+    INSTRUCTION_TUNED = auto()
+    REASONING = auto()
 
 
 class InferenceBackend(AutoStrEnum):
@@ -71,57 +122,6 @@ class ModelType(AutoStrEnum):
     def __repr__(self) -> str:
         """Return the value in upper case for better readability."""
         return self.value.upper()
-
-
-class GenerativeType(AutoStrEnum):
-    """The type of a generative model.
-
-    Attributes:
-        BASE:
-            A base (i.e., pretrained) generative model.
-        INSTRUCTION_TUNED:
-            An instruction-tuned generative model.
-        REASONING:
-            A generative reasoning model.
-    """
-
-    BASE = auto()
-    INSTRUCTION_TUNED = auto()
-    REASONING = auto()
-
-
-class DataType(AutoStrEnum):
-    """The data type of the model weights.
-
-    Attributes:
-        FP32:
-            32-bit floating point.
-        FP16:
-            16-bit floating point.
-        BF16:
-            16-bit bfloat.
-    """
-
-    FP32 = auto()
-    FP16 = auto()
-    BF16 = auto()
-
-
-class BatchingPreference(AutoStrEnum):
-    """The preference for batching.
-
-    Attributes:
-        NO_PREFERENCE:
-            No preference for batching.
-        SINGLE_SAMPLE:
-            Single sample batching.
-        ALL_AT_ONCE:
-            All samples at once batching.
-    """
-
-    NO_PREFERENCE = auto()
-    SINGLE_SAMPLE = auto()
-    ALL_AT_ONCE = auto()
 
 
 class TaskGroup(AutoStrEnum):

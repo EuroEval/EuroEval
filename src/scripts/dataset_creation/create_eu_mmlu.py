@@ -149,6 +149,33 @@ def main() -> None:
         dataset.push_to_hub(dataset_id, private=True)
 
 
+def build_split(df: pd.DataFrame, source_split: str, split: NamedSplit) -> Dataset:
+    """Build a single split of the dataset.
+
+    Args:
+        df:
+            The processed dataframe, containing all splits.
+        source_split:
+            The name of the split in the source dataset.
+        split:
+            The EuroEval split to build.
+
+    Returns:
+        The split, as a Hugging Face dataset.
+
+    Raises:
+        ValueError:
+            If the split ends up being empty.
+    """
+    split_df = df[df["Split"] == source_split].drop(columns="Split")
+    split_df = split_df.drop_duplicates().reset_index(drop=True)
+
+    if split_df.empty:
+        raise ValueError(f"The {source_split!r} split is empty.")
+
+    return Dataset.from_pandas(split_df, split=split)
+
+
 def load_locale_dataframe(locale: str) -> pd.DataFrame:
     """Load and clean the source CSV file for a single locale.
 
@@ -229,33 +256,6 @@ def process_dataframe(df: pd.DataFrame, language: str) -> pd.DataFrame:
     df["category"] = df["Subject"]
 
     return df[["text", "label", "category", "Split"]]
-
-
-def build_split(df: pd.DataFrame, source_split: str, split: NamedSplit) -> Dataset:
-    """Build a single split of the dataset.
-
-    Args:
-        df:
-            The processed dataframe, containing all splits.
-        source_split:
-            The name of the split in the source dataset.
-        split:
-            The EuroEval split to build.
-
-    Returns:
-        The split, as a Hugging Face dataset.
-
-    Raises:
-        ValueError:
-            If the split ends up being empty.
-    """
-    split_df = df[df["Split"] == source_split].drop(columns="Split")
-    split_df = split_df.drop_duplicates().reset_index(drop=True)
-
-    if split_df.empty:
-        raise ValueError(f"The {source_split!r} split is empty.")
-
-    return Dataset.from_pandas(split_df, split=split)
 
 
 if __name__ == "__main__":

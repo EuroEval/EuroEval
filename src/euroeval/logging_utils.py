@@ -24,6 +24,100 @@ from .caching_utils import cache_arguments
 logger = logging.getLogger("euroeval")
 
 
+def adjust_logging_level(verbose: bool, ignore_testing: bool = False) -> int:
+    """Adjust the logging level based on verbosity.
+
+    Args:
+        verbose:
+            Whether to output additional output.
+        ignore_testing:
+            Whether to ignore the testing flag.
+
+    Returns:
+        The logging level that was set.
+    """
+    if hasattr(sys, "_called_from_test") and not ignore_testing:
+        logging_level = logging.CRITICAL
+    elif verbose:
+        logging_level = logging.DEBUG
+    else:
+        logging_level = logging.INFO
+    logger.setLevel(logging_level)
+    return logging_level
+
+
+def block_terminal_output() -> None:
+    """Blocks libraries from writing output to the terminal.
+
+    This filters warnings from some libraries, sets the logging level to ERROR for some
+    libraries, disabled tokeniser progress bars when using Hugging Face tokenisers, and
+    disables most of the logging from the `transformers` library.
+    """
+    if os.getenv("FULL_LOG") == "1":
+        return
+
+    # Ignore miscellaneous warnings
+    warnings.filterwarnings("ignore", category=UserWarning)
+    warnings.filterwarnings("ignore", category=FutureWarning)
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    logging.getLogger("absl").setLevel(logging.CRITICAL)
+
+    # Disable dill warnings
+    warnings.filterwarnings("ignore", category=PicklingWarning)
+
+    # Disable matplotlib logging
+    logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
+
+    # Disable PyTorch logging
+    logging.getLogger("torch.utils.cpp_extension").setLevel(logging.CRITICAL)
+    warnings.filterwarnings(action="ignore", module="torch*")
+    os.environ["TORCH_LOGS"] = "-all"
+
+    # Disable huggingface_hub logging
+    logging.getLogger("huggingface_hub").setLevel(logging.CRITICAL)
+    disable_hf_hub_progress_bars()
+
+    # Disable LiteLLM logging
+    logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
+    logging.getLogger("LiteLLM Router").setLevel(logging.CRITICAL)
+    logging.getLogger("LiteLLM Proxy").setLevel(logging.CRITICAL)
+    logging.getLogger("openai").setLevel(logging.CRITICAL)
+    logging.getLogger("httpx").setLevel(logging.CRITICAL)
+    litellm.suppress_debug_info = True  # ty: ignore[invalid-assignment]
+    litellm.turn_off_message_logging = True
+
+    # Disable vLLM logging
+    logging.getLogger("vllm").setLevel(logging.CRITICAL)
+    logging.getLogger("vllm.engine.llm_engine").setLevel(logging.CRITICAL)
+    logging.getLogger("vllm.transformers_utils.tokenizer").setLevel(logging.CRITICAL)
+    logging.getLogger("vllm.core.scheduler").setLevel(logging.CRITICAL)
+    logging.getLogger("vllm.model_executor.weight_utils").setLevel(logging.CRITICAL)
+    logging.getLogger("vllm.platforms").setLevel(logging.CRITICAL)
+    logging.getLogger("mistral_common.tokens.tokenizers.tekken").setLevel(
+        logging.CRITICAL
+    )
+    os.environ["LOG_LEVEL"] = "CRITICAL"
+    os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
+
+    # Disable flashinfer logging
+    os.environ["FLASHINFER_LOGGING_LEVEL"] = "CRITICAL"
+
+    # Disable datasets logging
+    logging.getLogger("datasets").setLevel(logging.CRITICAL)
+    logging.getLogger("filelock").setLevel(logging.CRITICAL)
+    disable_datasets_progress_bars()
+
+    # Disable evaluate logging
+    warnings.filterwarnings("ignore", module="seqeval*")
+    disable_evaluate_progress_bar()
+
+    # Disable most of the `transformers` logging
+    tf_logging._default_log_level = logging.CRITICAL  # ty: ignore[invalid-assignment]
+    tf_logging.set_verbosity(logging.CRITICAL)
+    logging.getLogger("transformers.trainer").setLevel(logging.CRITICAL)
+    logging.getLogger("accelerate").setLevel(logging.CRITICAL)
+
+
 def get_pbar(*tqdm_args, **tqdm_kwargs) -> tqdm:
     """Get a progress bar for vLLM with custom hard-coded arguments.
 
@@ -106,78 +200,6 @@ def log_once(message: str, level: int, prefix: str = "") -> None:
     log(message=prefix + message, level=level)
 
 
-def block_terminal_output() -> None:
-    """Blocks libraries from writing output to the terminal.
-
-    This filters warnings from some libraries, sets the logging level to ERROR for some
-    libraries, disabled tokeniser progress bars when using Hugging Face tokenisers, and
-    disables most of the logging from the `transformers` library.
-    """
-    if os.getenv("FULL_LOG") == "1":
-        return
-
-    # Ignore miscellaneous warnings
-    warnings.filterwarnings("ignore", category=UserWarning)
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    warnings.filterwarnings("ignore", category=RuntimeWarning)
-    logging.getLogger("absl").setLevel(logging.CRITICAL)
-
-    # Disable dill warnings
-    warnings.filterwarnings("ignore", category=PicklingWarning)
-
-    # Disable matplotlib logging
-    logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
-
-    # Disable PyTorch logging
-    logging.getLogger("torch.utils.cpp_extension").setLevel(logging.CRITICAL)
-    warnings.filterwarnings(action="ignore", module="torch*")
-    os.environ["TORCH_LOGS"] = "-all"
-
-    # Disable huggingface_hub logging
-    logging.getLogger("huggingface_hub").setLevel(logging.CRITICAL)
-    disable_hf_hub_progress_bars()
-
-    # Disable LiteLLM logging
-    logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
-    logging.getLogger("LiteLLM Router").setLevel(logging.CRITICAL)
-    logging.getLogger("LiteLLM Proxy").setLevel(logging.CRITICAL)
-    logging.getLogger("openai").setLevel(logging.CRITICAL)
-    logging.getLogger("httpx").setLevel(logging.CRITICAL)
-    litellm.suppress_debug_info = True  # ty: ignore[invalid-assignment]
-    litellm.turn_off_message_logging = True
-
-    # Disable vLLM logging
-    logging.getLogger("vllm").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.engine.llm_engine").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.transformers_utils.tokenizer").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.core.scheduler").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.model_executor.weight_utils").setLevel(logging.CRITICAL)
-    logging.getLogger("vllm.platforms").setLevel(logging.CRITICAL)
-    logging.getLogger("mistral_common.tokens.tokenizers.tekken").setLevel(
-        logging.CRITICAL
-    )
-    os.environ["LOG_LEVEL"] = "CRITICAL"
-    os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
-
-    # Disable flashinfer logging
-    os.environ["FLASHINFER_LOGGING_LEVEL"] = "CRITICAL"
-
-    # Disable datasets logging
-    logging.getLogger("datasets").setLevel(logging.CRITICAL)
-    logging.getLogger("filelock").setLevel(logging.CRITICAL)
-    disable_datasets_progress_bars()
-
-    # Disable evaluate logging
-    warnings.filterwarnings("ignore", module="seqeval*")
-    disable_evaluate_progress_bar()
-
-    # Disable most of the `transformers` logging
-    tf_logging._default_log_level = logging.CRITICAL  # ty: ignore[invalid-assignment]
-    tf_logging.set_verbosity(logging.CRITICAL)
-    logging.getLogger("transformers.trainer").setLevel(logging.CRITICAL)
-    logging.getLogger("accelerate").setLevel(logging.CRITICAL)
-
-
 class no_terminal_output:
     """Context manager that suppresses all terminal output."""
 
@@ -200,28 +222,6 @@ class no_terminal_output:
             "terminal output, so expect more messy output - sorry!",
             level=logging.WARNING,
         )
-
-    def __enter__(self) -> None:
-        """Suppress all terminal output."""
-        if self.disable:
-            return
-
-        try:
-            # Save original FDs by duplicating them
-            self._original_stdout_fd = os.dup(sys.stdout.fileno())
-            self._original_stderr_fd = os.dup(sys.stderr.fileno())
-
-            # Open /dev/null
-            self.devnull_file = open(os.devnull, "w")
-
-            # Redirect stdout/stderr to /dev/null
-            os.dup2(self.devnull_file.fileno(), sys.stdout.fileno())
-            os.dup2(self.devnull_file.fileno(), sys.stderr.fileno())
-
-        except OSError:
-            self._log_windows_warning()
-            # If setup fails, clean up any resources we might have acquired
-            self.__exit__(None, None, None)
 
     def __exit__(
         self,
@@ -252,24 +252,24 @@ class no_terminal_output:
             if self.devnull_file is not None:
                 self.devnull_file.close()
 
+    def __enter__(self) -> None:
+        """Suppress all terminal output."""
+        if self.disable:
+            return
 
-def adjust_logging_level(verbose: bool, ignore_testing: bool = False) -> int:
-    """Adjust the logging level based on verbosity.
+        try:
+            # Save original FDs by duplicating them
+            self._original_stdout_fd = os.dup(sys.stdout.fileno())
+            self._original_stderr_fd = os.dup(sys.stderr.fileno())
 
-    Args:
-        verbose:
-            Whether to output additional output.
-        ignore_testing:
-            Whether to ignore the testing flag.
+            # Open /dev/null
+            self.devnull_file = open(os.devnull, "w")
 
-    Returns:
-        The logging level that was set.
-    """
-    if hasattr(sys, "_called_from_test") and not ignore_testing:
-        logging_level = logging.CRITICAL
-    elif verbose:
-        logging_level = logging.DEBUG
-    else:
-        logging_level = logging.INFO
-    logger.setLevel(logging_level)
-    return logging_level
+            # Redirect stdout/stderr to /dev/null
+            os.dup2(self.devnull_file.fileno(), sys.stdout.fileno())
+            os.dup2(self.devnull_file.fileno(), sys.stderr.fileno())
+
+        except OSError:
+            self._log_windows_warning()
+            # If setup fails, clean up any resources we might have acquired
+            self.__exit__(None, None, None)

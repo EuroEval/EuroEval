@@ -8,7 +8,6 @@
 # ]
 # ///
 
-
 """Create the Hungarian NER dataset SzegedNER and upload it to the HF Hub."""
 
 import ast
@@ -82,8 +81,14 @@ def download_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         A tuple of DataFrames for the training, validation, and test splits.
     """
     base_urls = {
-        "business": "https://huggingface.co/datasets/ficsort/SzegedNER/resolve/main/data/business",
-        "criminal": "https://huggingface.co/datasets/ficsort/SzegedNER/resolve/main/data/criminal",
+        "business": (
+            "https://huggingface.co/datasets/ficsort/SzegedNER/"
+            "resolve/main/data/business"
+        ),
+        "criminal": (
+            "https://huggingface.co/datasets/ficsort/SzegedNER/"
+            "resolve/main/data/criminal"
+        ),
     }
     # Types of datasets to download
     splits = ["train", "validation", "test"]
@@ -109,24 +114,6 @@ def download_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     test_df = _create_uniform_dataset_distribution(df=test_df)
 
     return train_df, val_df, test_df
-
-
-def _process_df(df: pd.DataFrame, dataset_name: str) -> pd.DataFrame:
-    """Process the dataframe.
-
-    Args:
-        df: The dataframe.
-        dataset_name: The name of the dataset.
-
-    Returns:
-        The processed dataframe.
-    """
-    df["original-dataset"] = dataset_name
-
-    df = df.rename(columns={"ner": "labels"})
-    df["labels"] = df["labels"].apply(ast.literal_eval)
-    df["tokens"] = df["tokens"].apply(ast.literal_eval)
-    return df
 
 
 def _create_uniform_dataset_distribution(
@@ -170,6 +157,24 @@ def _create_uniform_dataset_distribution(
     )
 
     return balanced_df
+
+
+def _process_df(df: pd.DataFrame, dataset_name: str) -> pd.DataFrame:
+    """Process the dataframe.
+
+    Args:
+        df: The dataframe.
+        dataset_name: The name of the dataset.
+
+    Returns:
+        The processed dataframe.
+    """
+    df["original-dataset"] = dataset_name
+
+    df = df.rename(columns={"ner": "labels"})
+    df["labels"] = df["labels"].apply(ast.literal_eval)
+    df["tokens"] = df["tokens"].apply(ast.literal_eval)
+    return df
 
 
 if __name__ == "__main__":

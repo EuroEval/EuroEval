@@ -167,6 +167,28 @@ def process_split(df: pd.DataFrame, language: str) -> pd.DataFrame:
     return df
 
 
+def add_text_column(df: pd.DataFrame, language: str) -> pd.DataFrame:
+    """Make a `text` column with all the options.
+
+    Args:
+        df: The input DataFrame.
+        language: The language of the dataset.
+
+    Returns:
+        The DataFrame with the added `text` column.
+    """
+    df["text"] = [
+        row.question.replace("\n", " ").strip() + "\n"
+        f"{CHOICES_MAPPING[language]}:\n"
+        "a. " + row.option_a.replace("\n", " ").strip() + "\n"
+        "b. " + row.option_b.replace("\n", " ").strip() + "\n"
+        "c. " + row.option_c.replace("\n", " ").strip() + "\n"
+        "d. " + row.option_d.replace("\n", " ").strip()
+        for _, row in df.iterrows()
+    ]
+    return df
+
+
 def filter_by_length(df: pd.DataFrame) -> pd.DataFrame:
     """Remove samples with overly short or long texts.
 
@@ -190,19 +212,6 @@ def filter_by_length(df: pd.DataFrame) -> pd.DataFrame:
     ]
 
 
-def is_repetitive(text: str) -> bool:
-    """Check if a text is repetitive.
-
-    Args:
-        text: The input text string.
-
-    Returns:
-        True if repetitive, False otherwise.
-    """
-    max_repetitions = max(Counter(text.split()).values())
-    return max_repetitions > MAX_REPETITIONS
-
-
 def filter_repetitive(df: pd.DataFrame) -> pd.DataFrame:
     """Remove overly repetitive samples.
 
@@ -221,26 +230,17 @@ def filter_repetitive(df: pd.DataFrame) -> pd.DataFrame:
     ]
 
 
-def add_text_column(df: pd.DataFrame, language: str) -> pd.DataFrame:
-    """Make a `text` column with all the options.
+def is_repetitive(text: str) -> bool:
+    """Check if a text is repetitive.
 
     Args:
-        df: The input DataFrame.
-        language: The language of the dataset.
+        text: The input text string.
 
     Returns:
-        The DataFrame with the added `text` column.
+        True if repetitive, False otherwise.
     """
-    df["text"] = [
-        row.question.replace("\n", " ").strip() + "\n"
-        f"{CHOICES_MAPPING[language]}:\n"
-        "a. " + row.option_a.replace("\n", " ").strip() + "\n"
-        "b. " + row.option_b.replace("\n", " ").strip() + "\n"
-        "c. " + row.option_c.replace("\n", " ").strip() + "\n"
-        "d. " + row.option_d.replace("\n", " ").strip()
-        for _, row in df.iterrows()
-    ]
-    return df
+    max_repetitions = max(Counter(text.split()).values())
+    return max_repetitions > MAX_REPETITIONS
 
 
 if __name__ == "__main__":

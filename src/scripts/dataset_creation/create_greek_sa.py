@@ -11,10 +11,6 @@
 """Create the Greek sentiment analysis dataset and upload it to the HF Hub."""
 
 import pandas as pd
-
-# These constants are used only inside pandas .query() strings, so the linter
-# cannot see the use.
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa: F401
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from sklearn.utils import resample
@@ -81,27 +77,6 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def process_split(dataset: Dataset) -> pd.DataFrame:
-    """Process a split of the dataset.
-
-    Args:
-        dataset: The dataset to process.
-
-    Returns:
-        A dataframe with the processed split.
-    """
-    df = dataset.to_pandas()
-    assert isinstance(df, pd.DataFrame)
-    df["label"] = df["label"].map(lambda x: {0: "negative", 1: "positive"}[x])
-    df["text_len"] = df["text"].str.len()
-    df = df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
-        "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
-    )
-    df = df.drop(columns=["text_len"]).reset_index(drop=True)
-    keep_columns = ["text", "label"]
-    return df.loc[keep_columns]
-
-
 def create_uniform_label_distribution(
     df: pd.DataFrame, random_state: int = 4242
 ) -> pd.DataFrame:
@@ -131,6 +106,27 @@ def create_uniform_label_distribution(
     balanced_df = pd.concat(resampled_dfs, ignore_index=True)
 
     return balanced_df
+
+
+def process_split(dataset: Dataset) -> pd.DataFrame:
+    """Process a split of the dataset.
+
+    Args:
+        dataset: The dataset to process.
+
+    Returns:
+        A dataframe with the processed split.
+    """
+    df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
+    df["label"] = df["label"].map(lambda x: {0: "negative", 1: "positive"}[x])
+    df["text_len"] = df["text"].str.len()
+    df = df.query("text_len >= @MIN_NUM_CHARS_IN_DOCUMENT").query(
+        "text_len <= @MAX_NUM_CHARS_IN_DOCUMENT"
+    )
+    df = df.drop(columns=["text_len"]).reset_index(drop=True)
+    keep_columns = ["text", "label"]
+    return df.loc[keep_columns]
 
 
 if __name__ == "__main__":

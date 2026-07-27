@@ -10,9 +10,7 @@
 
 """Create and upload the FullStack-LV-mini NER dataset from CoNLL-U format."""
 
-import glob
 import logging
-import os
 import shutil
 import subprocess
 from collections import defaultdict
@@ -145,6 +143,17 @@ def clone_fullstack_repository(repo_name: str = "FullStack") -> Path:
     return Path(repo_name)
 
 
+def delete_fullstack_repository(repo_path: Path) -> None:
+    """Delete the FullStack repository.
+
+    Args:
+        repo_path:
+            Path to the FullStack repository.
+    """
+    if repo_path.exists():
+        shutil.rmtree(repo_path)
+
+
 def load_fullstack_data(repo_path: Path) -> list[dict[str, list[str] | str]]:
     """Load and parse all FullStack NER data from the specified repository path.
 
@@ -167,7 +176,7 @@ def load_fullstack_data(repo_path: Path) -> list[dict[str, list[str] | str]]:
         )
 
     # Find all .conll2003 files in the directory
-    conll_files = glob.glob(os.path.join(data_dir, "*.conll2003"))
+    conll_files = list(data_dir.glob("*.conll2003"))
 
     all_records = []
 
@@ -242,17 +251,6 @@ def parse_conllu_data(raw_data: str) -> list[dict[str, list[str] | str]]:
         records.append(record)
 
     return records
-
-
-def delete_fullstack_repository(repo_path: Path) -> None:
-    """Delete the FullStack repository.
-
-    Args:
-        repo_path:
-            Path to the FullStack repository.
-    """
-    if repo_path.exists():
-        shutil.rmtree(repo_path)
 
 
 if __name__ == "__main__":

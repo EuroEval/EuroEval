@@ -48,6 +48,31 @@ def _dedup_by_storage_identity(
     return list(by_identity.values())
 
 
+def _sync_results_from_bucket() -> None:
+    """Sync the HF results bucket into RESULTS_DIR and back it up.
+
+    Performs an incremental fetch of the single EuroEval/results bucket into
+    RESULTS_DIR (downloading only files not already present locally) and creates
+    a backup of the synced per-record JSON files.
+
+    Raises:
+        FileNotFoundError:
+            If sync fails and no local files exist.
+    """
+    download_missing_bucket_files()
+
+    file_count = len(list(RESULTS_DIR.glob("*/*.json")))
+    if file_count == 0:
+        raise FileNotFoundError(
+            "No results available. Sync failed and no local cache exists."
+        )
+    logger.info(f"Synced {file_count:,} result files to {RESULTS_DIR}.")
+
+    backup_path = backup_results()
+    if backup_path:
+        logger.info(f"Backup created at {backup_path}.")
+
+
 @cache
 def load_raw_results() -> list[dict[str, t.Any]]:
     """Load all EEE-format results from the results directory.
@@ -97,28 +122,3 @@ def load_raw_results() -> list[dict[str, t.Any]]:
             raise ValueError(f"raw results record {idx:,} is not an EEE-format record.")
 
     return records
-
-
-def _sync_results_from_bucket() -> None:
-    """Sync the HF results bucket into RESULTS_DIR and back it up.
-
-    Performs an incremental fetch of the single EuroEval/results bucket into
-    RESULTS_DIR (downloading only files not already present locally) and creates
-    a backup of the synced per-record JSON files.
-
-    Raises:
-        FileNotFoundError:
-            If sync fails and no local files exist.
-    """
-    download_missing_bucket_files()
-
-    file_count = len(list(RESULTS_DIR.glob("*/*.json")))
-    if file_count == 0:
-        raise FileNotFoundError(
-            "No results available. Sync failed and no local cache exists."
-        )
-    logger.info(f"Synced {file_count:,} result files to {RESULTS_DIR}.")
-
-    backup_path = backup_results()
-    if backup_path:
-        logger.info(f"Backup created at {backup_path}.")

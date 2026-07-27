@@ -23,98 +23,106 @@ if t.TYPE_CHECKING:
     from ..types import Labels, Predictions
 
 
-def serialise_ner_tags(
-    tokens: c.Sequence[str],
-    labels: c.Sequence[str | int],
-    prompt_label_mapping: dict[str, str],
-) -> str:
-    """Serialise NER token tags into the JSON answer string used as the gold answer.
-
-    This is the canonical serialisation for token-classification answers: it is used
-    both to construct the few-shot demonstration answers and the gold answer that BPC
-    scoring measures, so the two never diverge.
+def _build_no_misc_variants(
+    predictions: list[list[str]], labels: list[list[str]]
+) -> "tuple[list[list[str]], list[list[str]]]":
+    """Build no-MISC variants of predictions and labels.
 
     Args:
-        tokens:
-            The tokens of the example.
+        predictions:
+            The predictions to process.
         labels:
-            The BIO tags aligned with `tokens` (e.g. ``"b-per"``, ``"i-per"``, ``"o"``).
-        prompt_label_mapping:
-            Mapping from lower-cased BIO tag to the localised prompt label.
+            The labels to process.
 
     Returns:
-        A JSON object string mapping each localised prompt label to the list of tagged
-        entity strings, with every label type present (empty lists included).
+        Tuple of (predictions_no_misc, labels_no_misc).
     """
-    tagged: dict[str, list[str]] = {
-        prompt_label: list() for prompt_label in prompt_label_mapping.values()
-    }
-    for token, label in zip(tokens, labels):
-        label_str = str(label).lower()
-        if label_str == "o" or label_str not in prompt_label_mapping:
-            continue
-        prompt_label = prompt_label_mapping[label_str]
-        if label_str.startswith("b-"):
-            tagged[prompt_label].append(token)
-        elif label_str.startswith("i-") and tagged[prompt_label]:
-            tagged[prompt_label][-1] += " " + token
-    return json.dumps(tagged, ensure_ascii=False)
+    predictions_no_misc = deepcopy(predictions)
+    for i, prediction_list in enumerate(predictions_no_misc):
+        for j, ner_tag in enumerate(prediction_list):
+            if ner_tag[-4:] == "misc":
+                predictions_no_misc[i][j] = "o"
+
+    labels_no_misc = deepcopy(labels)  # ty: ignore[invalid-assignment]
+    for i, label_list in enumerate(labels_no_misc):
+        for j, ner_tag in enumerate(label_list):
+            if (
+                isinstance(ner_tag, str)
+                and len(ner_tag) >= 4
+                and ner_tag[-4:] == "misc"
+            ):
+                labels_no_misc[i][j] = "o"
+
+    return predictions_no_misc, labels_no_misc
 
 
-def serialised_ner_content_length(serialised_tags: str) -> int:
-    """Count the entity-text characters in a serialised NER answer.
-
-    The serialised answer (see `serialise_ner_tags`) is a JSON object whose every label
-    key is always present, so the bulk of its characters are fixed scaffolding (keys,
-    braces, brackets, commas) that a model predicts near-perfectly after seeing the
-    same format in the few-shot demonstrations. Dividing BPC by the full string length
-    therefore drowns the entity signal in predictable boilerplate. This returns just
-    the number of characters belonging to the tagged entity strings, so BPC can be
-    measured per entity character instead.
-
-    Args:
-        serialised_tags:
-            A serialised NER answer as produced by `serialise_ner_tags`.
-
-    Returns:
-        The total number of characters across all tagged entity strings (0 if the
-        example has no entities).
-    """
-    tagged: dict[str, list[str]] = json.loads(serialised_tags)
-    return sum(len(entity) for entities in tagged.values() for entity in entities)
-
-
-def compute_metrics(
-    model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
-    has_misc_tags: bool,
+def _compute_single_metric(
+    metric: t.Callable,
+    metric_name: str,
+    predictions: list[list[str]],
+    labels: list[list[str]],
+    dataset: "Dataset",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
-    dataset: "Dataset",
-) -> dict[str, float]:
-    """Compute the metrics needed for evaluation.
+) -> float:
+    """Compute a single metric value.
 
     Args:
-        model_outputs_and_labels:
-            The first array contains the probability predictions and the second
-            array contains the true labels.
-        has_misc_tags:
-            Whether the dataset has MISC tags.
-        dataset_config:
-            The configuration of the dataset.
-        benchmark_config:
-            The configuration of the benchmark.
+        metric:
+            The metric function to call.
+        metric_name:
+            The name of the metric.
+        predictions:
+            The predictions to evaluate.
+        labels:
+            The labels to evaluate.
         dataset:
-            The dataset used for evaluation. This is only used in case any additional
-            metadata is used to compute the metrics.
+            The dataset.
+        dataset_config:
+            The dataset configuration.
+        benchmark_config:
+            The benchmark configuration.
 
     Returns:
-        A dictionary with the names of the metrics as keys and the metric values as
-        values.
+        The metric value.
 
     Raises:
         InvalidBenchmark:
-            If the tokeniser is not of a "fast" variant and the word IDs cannot be
-            extracted.
+            If the predictions and labels are not of the same length.
+    """
+    all_zero = all(
+        all(tag == "o" for tag in pred_list) for pred_list in predictions
+    ) and all(all(tag == "o" for tag in ref_list) for ref_list in labels)
+
+    if all_zero:
+        return 1.0
+
+    score: float | None = metric(
+        predictions=predictions,
+        references=labels,
+        dataset=dataset,
+        dataset_config=dataset_config,
+        benchmark_config=benchmark_config,
+    )
+    if score is None:
+        raise InvalidBenchmark("The predictions and labels are not of the same length.")
+    return score
+
+
+def _extract_predictions_and_labels(
+    model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
+    dataset_config: "DatasetConfig",
+) -> "tuple[list[list[str]], list[list[str]]]":
+    """Extract predictions and labels from model outputs.
+
+    Args:
+        model_outputs_and_labels:
+            The model outputs and labels tuple or EvalPrediction.
+        dataset_config:
+            The dataset configuration.
+
+    Returns:
+        Tuple of (predictions, labels) as lists of string lists.
     """
     model_outputs, labels = model_outputs_and_labels
 
@@ -149,20 +157,27 @@ def compute_metrics(
             ]
             for label in labels
         ]
-
     else:
         predictions = list(model_outputs)  # ty: ignore[invalid-assignment]
 
-    raise_if_model_output_contains_nan_values(model_output=predictions)
+    return predictions, labels  # ty: ignore[invalid-assignment,invalid-return-type]
 
-    # Replace predicted tag with either MISC or O tags if they are not part of the
-    # dataset
-    labels_without_misc = {
-        label
-        for label in dataset_config.id2label.values()
-        if label not in {"b-misc", "i-misc"}
-    }
-    ner_tag: str
+
+def _replace_ner_tags_with_misc_or_o(
+    predictions: list[list[str]], has_misc_tags: bool, labels_without_misc: set[str]
+) -> None:
+    """Replace predicted tags with MISC or O based on dataset tags.
+
+    Modifies predictions in-place.
+
+    Args:
+        predictions:
+            The predictions to modify.
+        has_misc_tags:
+            Whether the dataset has MISC tags.
+        labels_without_misc:
+            Set of valid NER tags excluding MISC.
+    """
     for i, prediction_list in enumerate(predictions):
         for j, ner_tag in enumerate(prediction_list):
             if ner_tag not in labels_without_misc:
@@ -173,6 +188,53 @@ def compute_metrics(
                 else:
                     predictions[i][j] = "o"
 
+
+def compute_metrics(
+    model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
+    has_misc_tags: bool,
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+    dataset: "Dataset",
+) -> dict[str, float]:
+    """Compute the metrics needed for evaluation.
+
+    Args:
+        model_outputs_and_labels:
+            The first array contains the probability predictions and the second
+            array contains the true labels.
+        has_misc_tags:
+            Whether the dataset has MISC tags.
+        dataset_config:
+            The configuration of the dataset.
+        benchmark_config:
+            The configuration of the benchmark.
+        dataset:
+            The dataset used for evaluation. This is only used in case any additional
+            metadata is used to compute the metrics.
+
+    Returns:
+        A dictionary with the names of the metrics as keys and the metric values as
+        values.
+    """
+    predictions, labels = _extract_predictions_and_labels(
+        model_outputs_and_labels=model_outputs_and_labels, dataset_config=dataset_config
+    )
+
+    raise_if_model_output_contains_nan_values(model_output=predictions)
+
+    # Replace predicted tag with either MISC or O tags if they are not part of the
+    # dataset
+    labels_without_misc = {
+        label
+        for label in dataset_config.id2label.values()
+        if label not in {"b-misc", "i-misc"}
+    }
+    _replace_ner_tags_with_misc_or_o(
+        predictions=predictions,
+        has_misc_tags=has_misc_tags,
+        labels_without_misc=labels_without_misc,
+    )
+
     # Build no-misc variants only when needed by any metric
     needs_no_misc = any(
         m.name == "micro_f1_no_misc" for m in dataset_config.task.metrics
@@ -180,21 +242,9 @@ def compute_metrics(
     predictions_no_misc: list[list[str]] = []
     labels_no_misc: list[list[str]] = []
     if needs_no_misc:
-        predictions_no_misc = deepcopy(predictions)
-        for i, prediction_list in enumerate(predictions_no_misc):
-            for j, ner_tag in enumerate(prediction_list):
-                if ner_tag[-4:] == "misc":
-                    predictions_no_misc[i][j] = "o"
-
-        labels_no_misc = deepcopy(labels)  # ty: ignore[invalid-assignment]
-        for i, label_list in enumerate(labels_no_misc):
-            for j, ner_tag in enumerate(label_list):
-                if (
-                    isinstance(ner_tag, str)
-                    and len(ner_tag) >= 4
-                    and ner_tag[-4:] == "misc"
-                ):
-                    labels_no_misc[i][j] = "o"
+        predictions_no_misc, labels_no_misc = _build_no_misc_variants(
+            predictions=predictions, labels=labels
+        )
 
     # Compute each metric defined on the task
     result: dict[str, float] = {}
@@ -207,28 +257,15 @@ def compute_metrics(
             preds = predictions
             refs = list(labels)
 
-        # We manually set the F1 metric to be 100% if both the labels and the
-        # predictions have no NER tags in them, since this causes an error with
-        # the `compute` method otherwise
-        all_zero = all(
-            all(tag == "o" for tag in pred_list) for pred_list in preds
-        ) and all(all(tag == "o" for tag in ref_list) for ref_list in refs)
-
-        if all_zero:
-            result[metric.name] = 1.0
-        else:
-            score: float | None = metric(
-                predictions=preds,
-                references=refs,
-                dataset=dataset,
-                dataset_config=dataset_config,
-                benchmark_config=benchmark_config,
-            )
-            if score is None:
-                raise InvalidBenchmark(
-                    "The predictions and labels are not of the same length."
-                )
-            result[metric.name] = score
+        result[metric.name] = _compute_single_metric(
+            metric=metric,
+            metric_name=metric.name,
+            predictions=preds,
+            labels=refs,
+            dataset=dataset,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+        )
 
     return result
 
@@ -307,6 +344,124 @@ def extract_labels_from_generation(
                             ):
                                 predicted_labels[idx][token_idx] = f"i-{tag_name}"
     return predicted_labels
+
+
+def handle_unk_tokens(
+    tokeniser: "PreTrainedTokenizer", tokens: list[str], words: c.Sequence[str]
+) -> c.Sequence[str]:
+    """Replace unknown tokens in the tokens with the corresponding word.
+
+    Args:
+        tokeniser:
+            The tokeniser used to tokenise the words.
+        tokens:
+            The list of tokens.
+        words:
+            The list of words.
+
+    Returns:
+        The list of tokens with unknown tokens replaced by the corresponding word.
+    """
+    # Locate the token indices of the unknown tokens
+    token_unk_idxs = [i for i, tok in enumerate(tokens) if tok == tokeniser.unk_token]
+
+    # Locate the word indices of the words which contain an unknown token
+    word_unk_idxs = [
+        i
+        for i, word in enumerate(words)
+        if tokeniser.unk_token
+        in tokeniser.convert_ids_to_tokens(
+            tokeniser.encode(word, add_special_tokens=False)
+        )
+    ]
+
+    # Iterate over the token index and word index pairs
+    for tok_idx, word_idx in zip(token_unk_idxs, word_unk_idxs):
+        # Fetch the word
+        word = words[word_idx]
+
+        # Tokenise the word, which is now a list containing at least one UNK token
+        tokens_with_unk = tokeniser.convert_ids_to_tokens(
+            tokeniser.encode(word, add_special_tokens=False)
+        )
+
+        # Iterate over the tokens in the word
+        for possible_unk_token in tokens_with_unk:
+            # If the token is not an UNK token then we remove the first occurence
+            # of the content of this token from the word. The result of the `word`
+            # variable will be the content of the UNK token.
+            # NOTE: This is a bit hacky and not bulletproof. For instance, if the
+            # word is "1925-1950" and the tokeniser splits it into ["[UNK]", "-",
+            # "19", "50"], then the result will be 2519 instead of 1925. This
+            # happens almost never, however, so we can live with it.
+            if possible_unk_token != tokeniser.unk_token:
+                word = word.replace(possible_unk_token, "", 1)
+
+        # Replace the token with the word
+        tokens[tok_idx] = word
+
+    return tokens
+
+
+def serialise_ner_tags(
+    tokens: c.Sequence[str],
+    labels: c.Sequence[str | int],
+    prompt_label_mapping: dict[str, str],
+) -> str:
+    """Serialise NER token tags into the JSON answer string used as the gold answer.
+
+    This is the canonical serialisation for token-classification answers: it is used
+    both to construct the few-shot demonstration answers and the gold answer that BPC
+    scoring measures, so the two never diverge.
+
+    Args:
+        tokens:
+            The tokens of the example.
+        labels:
+            The BIO tags aligned with `tokens` (e.g. ``"b-per"``, ``"i-per"``, ``"o"``).
+        prompt_label_mapping:
+            Mapping from lower-cased BIO tag to the localised prompt label.
+
+    Returns:
+        A JSON object string mapping each localised prompt label to the list of tagged
+        entity strings, with every label type present (empty lists included).
+    """
+    tagged: dict[str, list[str]] = {
+        prompt_label: list() for prompt_label in prompt_label_mapping.values()
+    }
+    for token, label in zip(tokens, labels):
+        label_str = str(label).lower()
+        if label_str == "o" or label_str not in prompt_label_mapping:
+            continue
+        prompt_label = prompt_label_mapping[label_str]
+        if label_str.startswith("b-"):
+            tagged[prompt_label].append(token)
+        elif label_str.startswith("i-") and tagged[prompt_label]:
+            tagged[prompt_label][-1] += " " + token
+    return json.dumps(tagged, ensure_ascii=False)
+
+
+def serialised_ner_content_length(serialised_tags: str) -> int:
+    """Count the entity-text characters in a serialised NER answer.
+
+    The serialised answer (see `serialise_ner_tags`) is a JSON object whose every label
+    key is always present, so the bulk of its characters are fixed scaffolding (keys,
+    braces, brackets, commas) that a model predicts near-perfectly after seeing the
+    same format in the few-shot demonstrations. Dividing BPC by the full string length
+    therefore drowns the entity signal in predictable boilerplate. This returns just
+    the number of characters belonging to the tagged entity strings, so BPC can be
+    measured per entity character instead.
+
+    Args:
+        serialised_tags:
+            A serialised NER answer as produced by `serialise_ner_tags`.
+
+    Returns:
+        The total number of characters across all tagged entity strings (0 if the
+        example has no entities).
+    """
+    tagged: dict[str, list[str]] = json.loads(serialised_tags)
+    return sum(len(entity) for entities in tagged.values() for entity in entities)
 
 
 def tokenize_and_align_labels(
@@ -445,60 +600,3 @@ def tokenize_and_align_labels(
         all_labels.append(label_ids)
     tokenized_inputs["labels"] = all_labels
     return tokenized_inputs
-
-
-def handle_unk_tokens(
-    tokeniser: "PreTrainedTokenizer", tokens: list[str], words: c.Sequence[str]
-) -> c.Sequence[str]:
-    """Replace unknown tokens in the tokens with the corresponding word.
-
-    Args:
-        tokeniser:
-            The tokeniser used to tokenise the words.
-        tokens:
-            The list of tokens.
-        words:
-            The list of words.
-
-    Returns:
-        The list of tokens with unknown tokens replaced by the corresponding word.
-    """
-    # Locate the token indices of the unknown tokens
-    token_unk_idxs = [i for i, tok in enumerate(tokens) if tok == tokeniser.unk_token]
-
-    # Locate the word indices of the words which contain an unknown token
-    word_unk_idxs = [
-        i
-        for i, word in enumerate(words)
-        if tokeniser.unk_token
-        in tokeniser.convert_ids_to_tokens(
-            tokeniser.encode(word, add_special_tokens=False)
-        )
-    ]
-
-    # Iterate over the token index and word index pairs
-    for tok_idx, word_idx in zip(token_unk_idxs, word_unk_idxs):
-        # Fetch the word
-        word = words[word_idx]
-
-        # Tokenise the word, which is now a list containing at least one UNK token
-        tokens_with_unk = tokeniser.convert_ids_to_tokens(
-            tokeniser.encode(word, add_special_tokens=False)
-        )
-
-        # Iterate over the tokens in the word
-        for possible_unk_token in tokens_with_unk:
-            # If the token is not an UNK token then we remove the first occurence
-            # of the content of this token from the word. The result of the `word`
-            # variable will be the content of the UNK token.
-            # NOTE: This is a bit hacky and not bulletproof. For instance, if the
-            # word is "1925-1950" and the tokeniser splits it into ["[UNK]", "-",
-            # "19", "50"], then the result will be 2519 instead of 1925. This
-            # happens almost never, however, so we can live with it.
-            if possible_unk_token != tokeniser.unk_token:
-                word = word.replace(possible_unk_token, "", 1)
-
-        # Replace the token with the word
-        tokens[tok_idx] = word
-
-    return tokens

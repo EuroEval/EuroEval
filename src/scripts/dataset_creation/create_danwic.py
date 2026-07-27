@@ -93,6 +93,33 @@ def download_and_load_dataset() -> pd.DataFrame:
     )
 
 
+def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Create balanced train / val / test splits.
+
+    Each split has an equal number of ``same_sense`` and ``different_sense`` samples.
+
+    Args:
+        df:
+            The full processed dataframe.
+
+    Returns:
+        A tuple of (train_df, val_df, test_df).
+    """
+    logger.info("Making splits...")
+    train_val, test = train_test_split(
+        df, train_size=TRAIN_SIZE + VAL_SIZE, random_state=4242, stratify=df["label"]
+    )
+    train, val = train_test_split(
+        train_val, test_size=VAL_SIZE, random_state=4242, stratify=train_val["label"]
+    )
+
+    train = train.sample(frac=1.0, random_state=4242).reset_index(drop=True)
+    val = val.sample(frac=1.0, random_state=4242).reset_index(drop=True)
+    test = test.sample(frac=1.0, random_state=4242).reset_index(drop=True)
+
+    return train, val, test
+
+
 def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Process the raw DanWiC dataframe into the benchmark format.
 
@@ -122,33 +149,6 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     )
     df = df[["text", "label", "type", "idx"]]
     return df.drop_duplicates().reset_index(drop=True)
-
-
-def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create balanced train / val / test splits.
-
-    Each split has an equal number of ``same_sense`` and ``different_sense`` samples.
-
-    Args:
-        df:
-            The full processed dataframe.
-
-    Returns:
-        A tuple of (train_df, val_df, test_df).
-    """
-    logger.info("Making splits...")
-    train_val, test = train_test_split(
-        df, train_size=TRAIN_SIZE + VAL_SIZE, random_state=4242, stratify=df["label"]
-    )
-    train, val = train_test_split(
-        train_val, test_size=VAL_SIZE, random_state=4242, stratify=train_val["label"]
-    )
-
-    train = train.sample(frac=1.0, random_state=4242).reset_index(drop=True)
-    val = val.sample(frac=1.0, random_state=4242).reset_index(drop=True)
-    test = test.sample(frac=1.0, random_state=4242).reset_index(drop=True)
-
-    return train, val, test
 
 
 if __name__ == "__main__":

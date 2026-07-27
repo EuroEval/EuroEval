@@ -64,43 +64,6 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    """Process the raw WiC-ITA dataframe into the benchmark format.
-
-    Combines the target word and two context sentences into a single ``text`` column
-    structured as::
-
-        Parola: {lemma}
-        Contesto 1: {sentence1}
-        Contesto 2: {sentence2}
-
-    Maps the integer labels (0/1) to string labels (different_sense/same_sense).
-
-    Args:
-        df:
-            The raw dataframe from the HuggingFace dataset.
-
-    Returns:
-        A dataframe with ``text`` and ``label`` columns.
-    """
-    df = df.copy()
-
-    df["text"] = (
-        "Parola: "
-        + df["lemma"].str.strip().astype(str)
-        + "\nContesto 1: "
-        + df["sentence1"].str.strip().astype(str)
-        + "\nContesto 2: "
-        + df["sentence2"].str.strip().astype(str)
-    )
-
-    df["label"] = df["label"].map({0: "different_sense", 1: "same_sense"})
-
-    df = df[["text", "label"]].copy()
-    df = df.drop_duplicates().reset_index(drop=True)
-    return df
-
-
 def make_train_val_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Create balanced train and val splits from the original training data.
 
@@ -141,6 +104,43 @@ def make_train_val_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]
     )
 
     return train_df, val_df
+
+
+def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Process the raw WiC-ITA dataframe into the benchmark format.
+
+    Combines the target word and two context sentences into a single ``text`` column
+    structured as::
+
+        Parola: {lemma}
+        Contesto 1: {sentence1}
+        Contesto 2: {sentence2}
+
+    Maps the integer labels (0/1) to string labels (different_sense/same_sense).
+
+    Args:
+        df:
+            The raw dataframe from the HuggingFace dataset.
+
+    Returns:
+        A dataframe with ``text`` and ``label`` columns.
+    """
+    df = df.copy()
+
+    df["text"] = (
+        "Parola: "
+        + df["lemma"].str.strip().astype(str)
+        + "\nContesto 1: "
+        + df["sentence1"].str.strip().astype(str)
+        + "\nContesto 2: "
+        + df["sentence2"].str.strip().astype(str)
+    )
+
+    df["label"] = df["label"].map({0: "different_sense", 1: "same_sense"})
+
+    df = df[["text", "label"]].copy()
+    df = df.drop_duplicates().reset_index(drop=True)
+    return df
 
 
 if __name__ == "__main__":

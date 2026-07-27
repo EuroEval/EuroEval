@@ -14,6 +14,44 @@ if t.TYPE_CHECKING:
     from .types import IterationScores, ScoreDict
 
 
+def aggregate_scores(
+    scores: c.Sequence["IterationScores"], metric: "Metric"
+) -> tuple[float, float]:
+    """Helper function to compute the mean with confidence intervals.
+
+    Args:
+        scores:
+            Dictionary with the names of the metrics as keys, of the form
+            "<split>_<metric_name>", such as "val_f1", and values the metric values.
+        metric:
+            The metric, which is used to collect the correct metric from `scores`.
+
+    Returns:
+        A pair of floats, containing the score and the radius of its 95% confidence
+        interval.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+
+        test_scores: list[float] = [
+            v
+            for dct in scores
+            for v in [
+                dct[metric.name] if metric.name in dct else dct[f"test_{metric.name}"]
+            ]
+            if isinstance(v, float)
+        ]
+        test_score = np.mean(test_scores).item()
+
+        if len(test_scores) > 1:
+            sample_std = np.std(test_scores, ddof=1)
+            test_se = (sample_std / np.sqrt(len(test_scores))).item()
+        else:
+            test_se = np.nan
+
+        return (test_score, 1.96 * test_se)
+
+
 def log_scores(
     dataset_name: str,
     metrics: c.Sequence["Metric"],
@@ -72,41 +110,3 @@ def log_scores(
     log("\n".join(all_log_strs), level=logging.INFO)
 
     return dict(raw=scores, total=total_dict)
-
-
-def aggregate_scores(
-    scores: c.Sequence["IterationScores"], metric: "Metric"
-) -> tuple[float, float]:
-    """Helper function to compute the mean with confidence intervals.
-
-    Args:
-        scores:
-            Dictionary with the names of the metrics as keys, of the form
-            "<split>_<metric_name>", such as "val_f1", and values the metric values.
-        metric:
-            The metric, which is used to collect the correct metric from `scores`.
-
-    Returns:
-        A pair of floats, containing the score and the radius of its 95% confidence
-        interval.
-    """
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-
-        test_scores: list[float] = [
-            v
-            for dct in scores
-            for v in [
-                dct[metric.name] if metric.name in dct else dct[f"test_{metric.name}"]
-            ]
-            if isinstance(v, float)
-        ]
-        test_score = np.mean(test_scores).item()
-
-        if len(test_scores) > 1:
-            sample_std = np.std(test_scores, ddof=1)
-            test_se = (sample_std / np.sqrt(len(test_scores))).item()
-        else:
-            test_se = np.nan
-
-        return (test_score, 1.96 * test_se)

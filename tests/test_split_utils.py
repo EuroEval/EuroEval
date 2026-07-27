@@ -8,6 +8,31 @@ from euroeval.split_utils import find_split, get_repo_split_names, get_repo_spli
 class TestFindSplit:
     """Tests for the `find_split` function."""
 
+    def test_find_split_case_insensitive(self) -> None:
+        """Test that keyword matching is case insensitive."""
+        splits = ["Train", "TRAINING", "Validation", "TEST"]
+        result = find_split(splits=splits, keyword="train")
+        assert result == "Train"
+
+    def test_find_split_multiple_matches_same_length(self) -> None:
+        """Test when multiple splits have the same length."""
+        splits = ["train_a", "train_b", "validation"]
+        # Should return first one in sorted order (alphabetically)
+        result = find_split(splits=splits, keyword="train")
+        assert result == "train_a"
+
+    def test_find_split_no_candidates(self) -> None:
+        """Test with empty splits list."""
+        splits: list[str] = []
+        result = find_split(splits=splits, keyword="train")
+        assert result is None
+
+    def test_find_split_no_match_returns_none(self) -> None:
+        """Test that None is returned when no split matches keyword."""
+        splits = ["training", "validation", "testing"]
+        result = find_split(splits=splits, keyword="eval")
+        assert result is None
+
     def test_find_split_with_exact_match(self) -> None:
         """Test finding split with exact keyword match."""
         splits = ["train", "validation", "test"]
@@ -19,31 +44,6 @@ class TestFindSplit:
         splits = ["training", "train", "train_data", "validation"]
         result = find_split(splits=splits, keyword="train")
         assert result == "train"
-
-    def test_find_split_no_match_returns_none(self) -> None:
-        """Test that None is returned when no split matches keyword."""
-        splits = ["training", "validation", "testing"]
-        result = find_split(splits=splits, keyword="eval")
-        assert result is None
-
-    def test_find_split_case_insensitive(self) -> None:
-        """Test that keyword matching is case insensitive."""
-        splits = ["Train", "TRAINING", "Validation", "TEST"]
-        result = find_split(splits=splits, keyword="train")
-        assert result == "Train"
-
-    def test_find_split_no_candidates(self) -> None:
-        """Test with empty splits list."""
-        splits: list[str] = []
-        result = find_split(splits=splits, keyword="train")
-        assert result is None
-
-    def test_find_split_multiple_matches_same_length(self) -> None:
-        """Test when multiple splits have the same length."""
-        splits = ["train_a", "train_b", "validation"]
-        # Should return first one in sorted order (alphabetically)
-        result = find_split(splits=splits, keyword="train")
-        assert result == "train_a"
 
 
 class TestGetRepoSplitNames:
@@ -98,16 +98,6 @@ class TestGetRepoSplits:
 
             assert result == ("train", None, "test")
 
-    def test_get_repo_splits_val_as_train_fallback(self) -> None:
-        """Test that validation split can be used as training when train is missing."""
-        with patch("euroeval.split_utils.get_repo_split_names") as mock_get_names:
-            # Using "validation" as keyword should find "validation" split
-            mock_get_names.return_value = ["validation", "test"]
-
-            result = get_repo_splits(hf_api=MagicMock(), dataset_id="test/dataset")
-
-            assert result == (None, "validation", "test")
-
     def test_get_repo_splits_no_splits(self) -> None:
         """Test when dataset has no splits defined."""
         with patch("euroeval.split_utils.get_repo_split_names") as mock_get_names:
@@ -125,3 +115,13 @@ class TestGetRepoSplits:
             result = get_repo_splits(hf_api=MagicMock(), dataset_id="test/dataset")
 
             assert result == ("training_set", "val", "testing")
+
+    def test_get_repo_splits_val_as_train_fallback(self) -> None:
+        """Test that validation split can be used as training when train is missing."""
+        with patch("euroeval.split_utils.get_repo_split_names") as mock_get_names:
+            # Using "validation" as keyword should find "validation" split
+            mock_get_names.return_value = ["validation", "test"]
+
+            result = get_repo_splits(hf_api=MagicMock(), dataset_id="test/dataset")
+
+            assert result == (None, "validation", "test")

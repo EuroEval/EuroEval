@@ -17,9 +17,9 @@ import requests
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 
-logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+logger = logging.getLogger(__name__)
 BASE_URL = "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/sa"
 
 # Capping limits for mini datasets
@@ -69,22 +69,6 @@ def main() -> None:
     logger.info(f"✓ Uploaded {dataset_id}")
 
 
-def _download_split(split: str) -> list[dict]:
-    """Download a single split from GitHub.
-
-    Args:
-        split:
-            Split name (train, dev, test).
-
-    Returns:
-        List of records from the JSON file.
-    """
-    url = f"{BASE_URL}/{split}.json"
-    response = requests.get(str(url), timeout=30)
-    response.raise_for_status()
-    return response.json()
-
-
 def _cap_split(df: pd.DataFrame, max_size: int) -> pd.DataFrame:
     """Cap a split to max_size rows using deterministic sampling.
 
@@ -101,6 +85,22 @@ def _cap_split(df: pd.DataFrame, max_size: int) -> pd.DataFrame:
     if len(df) <= max_size:
         return df
     return df.iloc[:max_size].reset_index(drop=True)
+
+
+def _download_split(split: str) -> list[dict]:
+    """Download a single split from GitHub.
+
+    Args:
+        split:
+            Split name (train, dev, test).
+
+    Returns:
+        List of records from the JSON file.
+    """
+    url = f"{BASE_URL}/{split}.json"
+    response = requests.get(str(url), timeout=30)
+    response.raise_for_status()
+    return response.json()
 
 
 def _load_split(data: list[dict]) -> pd.DataFrame:

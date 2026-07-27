@@ -17,9 +17,9 @@ import requests
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 
-logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+logger = logging.getLogger(__name__)
 BASE_URL = "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/tc"
 
 # Capping limits for mini datasets

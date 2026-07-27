@@ -1,7 +1,6 @@
 """Factory class for creating dataset configurations."""
 
 import collections.abc as c
-import importlib.util
 import logging
 import sys
 import typing as t
@@ -16,11 +15,256 @@ from .enums import Device
 from .languages import get_all_languages, get_correct_language_codes
 from .logging_utils import log
 
-if importlib.util.find_spec("vllm") is not None:
-    pass
-
 if t.TYPE_CHECKING:
     from .data_models import Language
+
+
+def _extract_dataset_ids(
+    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
+) -> list[str]:
+    """Extract dataset IDs from the dataset argument.
+
+    Args:
+        dataset:
+            The dataset argument to extract IDs from.
+
+    Returns:
+        List of dataset IDs.
+    """
+    dataset_ids: list[str] = list()
+    if isinstance(dataset, str):
+        dataset_ids.append(dataset)
+    elif isinstance(dataset, DatasetConfig):
+        dataset_ids.append(dataset.name)
+    elif isinstance(dataset, (list, tuple)):
+        for d in dataset:
+            if isinstance(d, str):
+                dataset_ids.append(d)
+            elif isinstance(d, DatasetConfig):
+                dataset_ids.append(d.name)
+    return dataset_ids
+
+
+def _handle_dataset_lookup_error(
+    error: KeyError, options: list[str], entity_type: str
+) -> None:
+    """Handle a KeyError during dataset or task lookup.
+
+    Args:
+        error:
+            The KeyError that was raised.
+        options:
+            List of valid options to search for closest match.
+        entity_type:
+            Type of entity ("dataset" or "task") for error message.
+    """
+    closest_match, closest_distance = get_closest_match(
+        string=error.args[0], options=options, case_sensitive=False
+    )
+    msg = f"The {entity_type} {error} was not found."
+    if closest_distance < 5:
+        msg += f" Maybe you meant to use {closest_match!r}?"
+    log(msg, level=logging.ERROR)
+    sys.exit(1)
+
+
+def _get_datasets_list(
+    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
+    all_dataset_configs: dict[str, DatasetConfig],
+    all_official_dataset_configs: c.Sequence[DatasetConfig],
+) -> c.Sequence[DatasetConfig]:
+    """Get the list of datasets based on the dataset argument.
+
+    Args:
+        dataset:
+            The dataset argument specifying which datasets to include.
+        all_dataset_configs:
+            Mapping of dataset IDs to DatasetConfig objects.
+        all_official_dataset_configs:
+            List of official dataset configs.
+
+    Returns:
+        List of dataset configs.
+
+    Raises:
+        SystemExit: If dataset lookup fails.
+    """
+    try:
+        if dataset is None:
+            return all_official_dataset_configs
+        elif isinstance(dataset, str):
+            return [all_dataset_configs[dataset]]
+        elif isinstance(dataset, DatasetConfig):
+            return [dataset]
+        else:
+            return [
+                all_dataset_configs[d] if isinstance(d, str) else d for d in dataset
+            ]
+    except KeyError as e:
+        _handle_dataset_lookup_error(
+            error=e, options=list(all_dataset_configs.keys()), entity_type="dataset"
+        )
+        # Unreachable: _handle_dataset_lookup_error calls sys.exit(1)
+        raise SystemExit(1)
+
+
+def _get_tasks_list(
+    task: "str | Task | c.Sequence[str | Task] | None", task_mapping: dict[str, Task]
+) -> list[Task] | None:
+    """Get the list of tasks based on the task argument.
+
+    Args:
+        task:
+            The task argument specifying which tasks to include.
+        task_mapping:
+            Mapping of task names to Task objects.
+
+    Returns:
+        List of tasks, or None if no task filtering.
+    """
+    try:
+        if task is None:
+            return None
+        elif isinstance(task, str):
+            return [task_mapping[task]]
+        elif isinstance(task, Task):
+            return [task]
+        else:
+            return [task_mapping[t] if isinstance(t, str) else t for t in task]
+    except KeyError as e:
+        _handle_dataset_lookup_error(
+            error=e, options=list(task_mapping.keys()), entity_type="task"
+        )
+
+
+def prepare_dataset_configs(
+    task: "str | Task | c.Sequence[str | Task] | None",
+    languages: c.Sequence["Language"],
+    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
+    custom_datasets_file: Path,
+    api_key: str | None,
+    cache_dir: Path,
+    trust_remote_code: bool,
+    run_with_cli: bool,
+) -> list["DatasetConfig"]:
+    """Prepare dataset config(s) for benchmarking.
+
+    Args:
+        task:
+            The tasks to include for dataset. If None then datasets will not be
+            filtered based on their task.
+        languages:
+            The languages of the datasets in the benchmark.
+        dataset:
+            The datasets to include for task. If None then all datasets will be
+            included, limited by the `task` and `languages` parameters.
+        custom_datasets_file:
+            A path to a Python file containing custom dataset configurations.
+        api_key:
+            The API key to use for accessing the Hugging Face Hub.
+        cache_dir:
+            The directory to store the cache in.
+        trust_remote_code:
+            Whether to trust remote code.
+        run_with_cli:
+            Whether to run the benchmark with the CLI.
+
+    Returns:
+        The prepared dataset configs.
+    """
+    dataset_ids = _extract_dataset_ids(dataset=dataset)
+
+    all_dataset_configs = get_all_dataset_configs(
+        custom_datasets_file=custom_datasets_file,
+        dataset_ids=dataset_ids,
+        api_key=api_key,
+        cache_dir=cache_dir,
+        trust_remote_code=trust_remote_code,
+        run_with_cli=run_with_cli,
+    )
+    all_official_dataset_configs: c.Sequence[DatasetConfig] = [
+        dataset_config
+        for dataset_config in all_dataset_configs.values()
+        if not dataset_config.unofficial
+    ]
+
+    datasets = _get_datasets_list(
+        dataset=dataset,
+        all_dataset_configs=all_dataset_configs,
+        all_official_dataset_configs=all_official_dataset_configs,
+    )
+
+    task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
+    tasks = _get_tasks_list(task=task, task_mapping=task_mapping)
+
+    return [
+        ds
+        for ds in datasets
+        if (tasks is None or ds.task in tasks)
+        and any(lang in languages for lang in ds.languages)
+    ]
+
+
+def prepare_device(device: Device | None) -> torch.device:
+    """Prepare device for benchmarking.
+
+    Args:
+        device:
+            The device to use for running the models. If None then the device will be
+            set automatically.
+
+    Returns:
+        The prepared device.
+    """
+    device_mapping = {
+        Device.CPU: torch.device("cpu"),
+        Device.CUDA: torch.device("cuda"),
+        Device.MPS: torch.device("mps"),
+    }
+    if isinstance(device, Device):
+        return device_mapping[device]
+
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        return torch.device("mps")
+    else:
+        return torch.device("cpu")
+
+
+def prepare_languages(
+    language_codes: str | c.Sequence[str] | None,
+    default_language_codes: c.Sequence[str],
+) -> c.Sequence["Language"]:
+    """Prepare language(s) for benchmarking.
+
+    Args:
+        language_codes:
+            The language codes of the languages to include for models or datasets.
+            If specified then this overrides the `language` parameter for model or
+            dataset languages.
+        default_language_codes:
+            The default language codes of the languages to include.
+
+    Returns:
+        The prepared dataset languages.
+    """
+    language_mapping = get_all_languages()
+
+    languages_str: c.Sequence[str]
+    if language_codes is None:
+        languages_str = default_language_codes
+    elif isinstance(language_codes, str):
+        languages_str = [language_codes]
+    else:
+        languages_str = language_codes
+
+    if "all" in languages_str:
+        prepared_languages = list(language_mapping.values())
+    else:
+        prepared_languages = [language_mapping[language] for language in languages_str]
+
+    return prepared_languages
 
 
 def build_benchmark_config(
@@ -88,186 +332,3 @@ def build_benchmark_config(
         max_context_length=benchmark_config_params.max_context_length,
         vocabulary_size=benchmark_config_params.vocabulary_size,
     )
-
-
-def prepare_languages(
-    language_codes: str | c.Sequence[str] | None,
-    default_language_codes: c.Sequence[str],
-) -> c.Sequence["Language"]:
-    """Prepare language(s) for benchmarking.
-
-    Args:
-        language_codes:
-            The language codes of the languages to include for models or datasets.
-            If specified then this overrides the `language` parameter for model or
-            dataset languages.
-        default_language_codes:
-            The default language codes of the languages to include.
-
-    Returns:
-        The prepared dataset languages.
-    """
-    # Create a dictionary that maps languages to their associated language objects
-    language_mapping = get_all_languages()
-
-    # Create the list `languages_str` of language codes to use for models or datasets
-    languages_str: c.Sequence[str]
-    if language_codes is None:
-        languages_str = default_language_codes
-    elif isinstance(language_codes, str):
-        languages_str = [language_codes]
-    else:
-        languages_str = language_codes
-
-    # Convert the model languages to language objects
-    if "all" in languages_str:
-        prepared_languages = list(language_mapping.values())
-    else:
-        prepared_languages = [language_mapping[language] for language in languages_str]
-
-    return prepared_languages
-
-
-def prepare_dataset_configs(
-    task: "str | Task | c.Sequence[str | Task] | None",
-    languages: c.Sequence["Language"],
-    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
-    custom_datasets_file: Path,
-    api_key: str | None,
-    cache_dir: Path,
-    trust_remote_code: bool,
-    run_with_cli: bool,
-) -> list["DatasetConfig"]:
-    """Prepare dataset config(s) for benchmarking.
-
-    Args:
-        task:
-            The tasks to include for dataset. If None then datasets will not be
-            filtered based on their task.
-        languages:
-            The languages of the datasets in the benchmark.
-        dataset:
-            The datasets to include for task. If None then all datasets will be
-            included, limited by the `task` and `languages` parameters.
-        custom_datasets_file:
-            A path to a Python file containing custom dataset configurations.
-        api_key:
-            The API key to use for accessing the Hugging Face Hub.
-        cache_dir:
-            The directory to store the cache in.
-        trust_remote_code:
-            Whether to trust remote code.
-        run_with_cli:
-            Whether to run the benchmark with the CLI.
-
-    Returns:
-        The prepared dataset configs.
-    """
-    # Extract the dataset IDs from the `dataset` argument
-    dataset_ids: list[str] = list()
-    if isinstance(dataset, str):
-        dataset_ids.append(dataset)
-    elif isinstance(dataset, DatasetConfig):
-        dataset_ids.append(dataset.name)
-    elif isinstance(dataset, list):
-        for d in dataset:
-            if isinstance(d, str):
-                dataset_ids.append(d)
-            elif isinstance(d, DatasetConfig):
-                dataset_ids.append(d.name)
-
-    # Create the list of dataset configs
-    all_dataset_configs = get_all_dataset_configs(
-        custom_datasets_file=custom_datasets_file,
-        dataset_ids=dataset_ids,
-        api_key=api_key,
-        cache_dir=cache_dir,
-        trust_remote_code=trust_remote_code,
-        run_with_cli=run_with_cli,
-    )
-    all_official_dataset_configs: c.Sequence[DatasetConfig] = [
-        dataset_config
-        for dataset_config in all_dataset_configs.values()
-        if not dataset_config.unofficial
-    ]
-    try:
-        if dataset is None:
-            datasets = all_official_dataset_configs
-        elif isinstance(dataset, str):
-            datasets = [all_dataset_configs[dataset]]
-        elif isinstance(dataset, DatasetConfig):
-            datasets = [dataset]
-        else:
-            datasets = [
-                all_dataset_configs[d] if isinstance(d, str) else d for d in dataset
-            ]
-    except KeyError as e:
-        closest_match, closest_distance = get_closest_match(
-            string=e.args[0],
-            options=list(all_dataset_configs.keys()),
-            case_sensitive=False,
-        )
-        msg = f"The dataset {e} was not found in the benchmark datasets."
-        if closest_distance < 5:
-            msg += f" Maybe you meant to use {closest_match!r}?"
-        log(msg, level=logging.ERROR)
-        sys.exit(1)
-
-    # Create the list of dataset tasks
-    task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
-
-    try:
-        if task is None:
-            tasks = None
-        elif isinstance(task, str):
-            tasks = [task_mapping[task]]
-        elif isinstance(task, Task):
-            tasks = [task]
-        else:
-            tasks = [task_mapping[t] if isinstance(t, str) else t for t in task]
-    except KeyError as e:
-        closest_match, closest_distance = get_closest_match(
-            string=e.args[0], options=list(task_mapping.keys()), case_sensitive=False
-        )
-        msg = f"Task {e} not found in the benchmark tasks."
-        if closest_distance < 5:
-            msg += f" Maybe you meant to use {closest_match!r}?"
-        log(msg, level=logging.ERROR)
-        sys.exit(1)
-
-    # Filter the dataset configs based on the specified tasks and languages
-    datasets = [
-        ds
-        for ds in datasets
-        if (tasks is None or ds.task in tasks)
-        and any(lang in languages for lang in ds.languages)
-    ]
-
-    return datasets
-
-
-def prepare_device(device: Device | None) -> torch.device:
-    """Prepare device for benchmarking.
-
-    Args:
-        device:
-            The device to use for running the models. If None then the device will be
-            set automatically.
-
-    Returns:
-        The prepared device.
-    """
-    device_mapping = {
-        Device.CPU: torch.device("cpu"),
-        Device.CUDA: torch.device("cuda"),
-        Device.MPS: torch.device("mps"),
-    }
-    if isinstance(device, Device):
-        return device_mapping[device]
-
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    elif torch.backends.mps.is_available():
-        return torch.device("mps")
-    else:
-        return torch.device("cpu")

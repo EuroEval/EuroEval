@@ -101,82 +101,6 @@ class BenchmarkModule(ABC):
             logging_msg += f"and a maximum context length of {self.model_max_length:,}."
         log_once(message=logging_msg, level=logging.INFO)
 
-    def get_pytorch_module(self) -> "nn.Module":
-        """Get the underlying PyTorch module.
-
-        Returns:
-            The PyTorch module.
-        """
-        if hasattr(self, "_model"):
-            return self._model
-        raise NotImplementedError(
-            "The `get_pytorch_module` method has not been implemented for "
-            f"{self.__class__.__name__}."
-        )
-
-    def get_tokeniser(self) -> "PreTrainedTokenizer":
-        """Get the underlying tokeniser.
-
-        Returns:
-            The tokeniser.
-        """
-        if hasattr(self, "_tokeniser"):
-            return self._tokeniser
-        raise NotImplementedError(
-            "The `get_tokeniser` method has not been implemented for "
-            f"{self.__class__.__name__}."
-        )
-
-    @cached_property
-    @abstractmethod
-    def num_params(self) -> int:
-        """The number of parameters in the model.
-
-        Returns:
-            The number of parameters in the model.
-        """
-        ...
-
-    @property
-    @abstractmethod
-    def generative_type(self) -> "GenerativeType | None":
-        """Get the generative type of the model.
-
-        Returns:
-            The generative type of the model, or None if the model is not generative.
-        """
-        ...
-
-    @cached_property
-    @abstractmethod
-    def vocab_size(self) -> int:
-        """The vocabulary size of the model.
-
-        Returns:
-            The vocabulary size of the model.
-        """
-        ...
-
-    @cached_property
-    @abstractmethod
-    def model_max_length(self) -> int:
-        """The maximum length of the model.
-
-        Returns:
-            The maximum length of the model.
-        """
-        ...
-
-    @property
-    @abstractmethod
-    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
-        """The data collator used to prepare samples during finetuning.
-
-        Returns:
-            The data collator.
-        """
-        ...
-
     @property
     def compute_metrics(self) -> "ComputeMetricsFunction":
         """The function used to compute the metrics.
@@ -238,6 +162,16 @@ class BenchmarkModule(ABC):
 
     @property
     @abstractmethod
+    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
+        """The data collator used to prepare samples during finetuning.
+
+        Returns:
+            The data collator.
+        """
+        ...
+
+    @property
+    @abstractmethod
     def extract_labels_from_generation(self) -> "ExtractLabelsFunction":
         """The function used to extract the labels from the generated output.
 
@@ -246,28 +180,134 @@ class BenchmarkModule(ABC):
         """
         ...
 
-    @property
-    @abstractmethod
-    def trainer_class(self) -> t.Type["Trainer"]:
-        """The Trainer class to use for finetuning.
+    def generate(self, inputs: dict) -> "GenerativeModelOutput":
+        """Generate outputs from the model.
+
+        Args:
+            inputs:
+                A batch of inputs to pass through the model.
 
         Returns:
-            The Trainer class.
+            The generated model outputs.
+        """
+        raise NotImplementedError(
+            "The `generate` method has not been implemented for "
+            f"{self.__class__.__name__}."
+        )
+
+    @property
+    @abstractmethod
+    def generative_type(self) -> "GenerativeType | None":
+        """The generative type of the model.
+
+        Returns:
+            The generative type of the model, or None if the model is not generative.
         """
         ...
 
-    def update_dataset_config(self, dataset_config: "DatasetConfig") -> t.Self:
-        """Update the dataset config registered in the benchmark module.
+    @classmethod
+    @abstractmethod
+    def get_model_config(
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> "ModelConfig":
+        """Fetch the model configuration.
 
         Args:
-            dataset_config:
-                The new dataset config.
+            model_id:
+                The model ID.
+            benchmark_config:
+                The benchmark configuration.
 
         Returns:
-            The benchmark module.
+            The model configuration.
         """
-        self.dataset_config = dataset_config
-        return self
+        ...
+
+    def get_pytorch_module(self) -> "nn.Module":
+        """Get the underlying PyTorch module.
+
+        Returns:
+            The PyTorch module.
+        """
+        if hasattr(self, "_model"):
+            return self._model
+        raise NotImplementedError(
+            "The `get_pytorch_module` method has not been implemented for "
+            f"{self.__class__.__name__}."
+        )
+
+    def get_tokeniser(self) -> "PreTrainedTokenizer":
+        """Get the underlying tokeniser.
+
+        Returns:
+            The tokeniser.
+        """
+        if hasattr(self, "_tokeniser"):
+            return self._tokeniser
+        raise NotImplementedError(
+            "The `get_tokeniser` method has not been implemented for "
+            f"{self.__class__.__name__}."
+        )
+
+    @classmethod
+    @abstractmethod
+    def model_exists(
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
+        """Check if a model exists.
+
+        Args:
+            model_id:
+                The model ID.
+            benchmark_config:
+                The benchmark configuration.
+
+        Returns:
+            Whether the model exists, or an error describing why we cannot check
+            whether the model exists.
+        """
+        ...
+
+    @cached_property
+    @abstractmethod
+    def model_max_length(self) -> int:
+        """The maximum length of the model.
+
+        Returns:
+            The maximum length of the model.
+        """
+        ...
+
+    @cached_property
+    @abstractmethod
+    def num_params(self) -> int:
+        """The number of parameters in the model.
+
+        Returns:
+            The number of parameters in the model.
+        """
+        ...
+
+    @abstractmethod
+    def prepare_dataset(
+        self, dataset: DatasetDict, task: "Task", itr_idx: int
+    ) -> DatasetDict:
+        """Prepare the dataset for the model.
+
+        This includes things like tokenisation.
+
+        Args:
+            dataset:
+                The dataset to prepare.
+            task:
+                The task to prepare the dataset for.
+            itr_idx:
+                The index of the dataset in the iterator.
+
+        Returns:
+            The prepared dataset.
+        """
+        ...
 
     def prepare_datasets(
         self, datasets: list[DatasetDict], task: "Task"
@@ -322,75 +362,35 @@ class BenchmarkModule(ABC):
             datasets[idx] = DatasetDict(datasets_dict)
         return datasets
 
+    @property
     @abstractmethod
-    def prepare_dataset(
-        self, dataset: DatasetDict, task: "Task", itr_idx: int
-    ) -> DatasetDict:
-        """Prepare the dataset for the model.
-
-        This includes things like tokenisation.
-
-        Args:
-            dataset:
-                The dataset to prepare.
-            task:
-                The task to prepare the dataset for.
-            itr_idx:
-                The index of the dataset in the iterator.
+    def trainer_class(self) -> t.Type["Trainer"]:
+        """The Trainer class to use for finetuning.
 
         Returns:
-            The prepared dataset.
+            The Trainer class.
         """
         ...
 
-    def generate(self, inputs: dict) -> "GenerativeModelOutput":
-        """Generate outputs from the model.
+    def update_dataset_config(self, dataset_config: "DatasetConfig") -> t.Self:
+        """Update the dataset config registered in the benchmark module.
 
         Args:
-            inputs:
-                A batch of inputs to pass through the model.
+            dataset_config:
+                The new dataset config.
 
         Returns:
-            The generated model outputs.
+            The benchmark module.
         """
-        raise NotImplementedError(
-            "The `generate` method has not been implemented for "
-            f"{self.__class__.__name__}."
-        )
+        self.dataset_config = dataset_config
+        return self
 
-    @classmethod
+    @cached_property
     @abstractmethod
-    def model_exists(
-        cls, model_id: str, benchmark_config: "BenchmarkConfig"
-    ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
-        """Check if a model exists.
-
-        Args:
-            model_id:
-                The model ID.
-            benchmark_config:
-                The benchmark configuration.
+    def vocab_size(self) -> int:
+        """The vocabulary size of the model.
 
         Returns:
-            Whether the model exists, or an error describing why we cannot check
-            whether the model exists.
-        """
-        ...
-
-    @classmethod
-    @abstractmethod
-    def get_model_config(
-        cls, model_id: str, benchmark_config: "BenchmarkConfig"
-    ) -> "ModelConfig":
-        """Fetch the model configuration.
-
-        Args:
-            model_id:
-                The model ID.
-            benchmark_config:
-                The benchmark configuration.
-
-        Returns:
-            The model configuration.
+            The vocabulary size of the model.
         """
         ...

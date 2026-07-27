@@ -19,6 +19,7 @@ import logging
 import os
 import random
 import re
+from pathlib import Path
 
 import pandas as pd
 from constants import CHOICES_MAPPING
@@ -31,19 +32,10 @@ from pydantic import BaseModel
 from tqdm.auto import tqdm
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
-logger = logging.getLogger("create_multinrc")
 
 load_dotenv()
 
-
-class CandidateAnswers(BaseModel):
-    """Candidate answers from the OpenAI API."""
-
-    first: str
-    second: str
-    third: str
-
-
+logger = logging.getLogger("create_multinrc")
 LABELS = ["a", "b", "c", "d"]
 
 LANGUAGE_SUBSET_MAPPING = {"es": "spanish", "fr": "french"}
@@ -117,8 +109,8 @@ def build_dataset_with_llm(dataset: Dataset, language: str) -> pd.DataFrame:
 
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-    cache_file = f"multinrc_{language}_cache.json"
-    if os.path.exists(cache_file):
+    cache_file = Path(f"multinrc_{language}_cache.json")
+    if cache_file.exists():
         with open(cache_file) as f:
             cache = json.load(f)
     else:
@@ -214,6 +206,14 @@ def build_dataset_with_llm(dataset: Dataset, language: str) -> pd.DataFrame:
         correct_labels.append(correct_label)
 
     return pd.DataFrame({"text": texts, "label": correct_labels})
+
+
+class CandidateAnswers(BaseModel):
+    """Candidate answers from the OpenAI API."""
+
+    first: str
+    second: str
+    third: str
 
 
 if __name__ == "__main__":

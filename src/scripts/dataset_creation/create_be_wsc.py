@@ -50,35 +50,6 @@ candidate_cache: dict[str, str] = {}
 client: OpenAI | None = None
 
 
-class SecondCandidate(BaseModel):
-    """Structured output: extracted second candidate span from the sentence."""
-
-    distractor: str
-
-
-def load_cache() -> dict[str, str]:
-    """Load cache from CACHE_FILE if it exists.
-
-    Returns:
-        The cache.
-    """
-    try:
-        with open(CACHE_FILE, "r") as cache_file:
-            return json.load(cache_file)
-    except FileNotFoundError:
-        return {}
-
-
-def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE.
-
-    Args:
-        cache: The cache to save.
-    """
-    with open(CACHE_FILE, "w") as cache_file:
-        json.dump(cache, cache_file, indent=4)
-
-
 def main() -> None:
     """Create the BE-WSC dataset and upload it to the HF Hub."""
     disable_progress_bars()
@@ -133,6 +104,19 @@ def main() -> None:
 
     HfApi().delete_repo(target_dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(target_dataset_id, private=True)
+
+
+def load_cache() -> dict[str, str]:
+    """Load cache from CACHE_FILE if it exists.
+
+    Returns:
+        The cache.
+    """
+    try:
+        with open(CACHE_FILE, "r") as cache_file:
+            return json.load(cache_file)
+    except FileNotFoundError:
+        return {}
 
 
 def make_splits(
@@ -257,17 +241,10 @@ def prepare_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def is_repetitive(text: str) -> bool:
-    """Return True if the text is repetitive.
+class SecondCandidate(BaseModel):
+    """Structured output: extracted second candidate span from the sentence."""
 
-    Args:
-        text: The text to check for repetition.
-
-    Returns:
-        True if the text is repetitive, False otherwise.
-    """
-    max_repetitions = max(Counter(text.split()).values())
-    return max_repetitions > MAX_REPETITIONS
+    distractor: str
 
 
 def _cache_key(row: pd.Series) -> str:
@@ -282,6 +259,16 @@ def _cache_key(row: pd.Series) -> str:
     split = str(row["split"]).strip()
     idx = int(row["idx"])
     return f"{split}_{idx}"
+
+
+def save_cache(cache: dict) -> None:
+    """Save cache to CACHE_FILE.
+
+    Args:
+        cache: The cache to save.
+    """
+    with open(CACHE_FILE, "w") as cache_file:
+        json.dump(cache, cache_file, indent=4)
 
 
 def _extract_second_candidate(row: pd.Series) -> str:
@@ -462,6 +449,19 @@ def _make_instruction(row: pd.Series) -> str:
     pronoun_idx = int(row["span2_index"])
     masked = _mask_pronoun(text=text, pronoun=pronoun, word_index=pronoun_idx)
     return f"{masked} Да каго або чаго адносіцца пропуск _?"
+
+
+def is_repetitive(text: str) -> bool:
+    """Return True if the text is repetitive.
+
+    Args:
+        text: The text to check for repetition.
+
+    Returns:
+        True if the text is repetitive, False otherwise.
+    """
+    max_repetitions = max(Counter(text.split()).values())
+    return max_repetitions > MAX_REPETITIONS
 
 
 if __name__ == "__main__":

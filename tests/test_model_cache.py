@@ -12,6 +12,30 @@ from euroeval.model_cache import ModelCache, load_cached_model_outputs
 class TestBPCCaching:
     """Tests that BPC scores are correctly cached and loaded."""
 
+    def test_bpc_score_roundtrip_via_json(self, tmp_path: Path) -> None:
+        """Verify bpc_score field survives JSON serialization roundtrip."""
+        cache = ModelCache(
+            model_cache_dir=tmp_path,
+            cache_name="test-roundtrip.json",
+            max_generated_tokens=64,
+            progress_bar=False,
+            store_metadata=False,
+            indent_json_when_saving=True,
+        )
+
+        model_output = GenerativeModelOutput(sequences=["test"], bpc_scores=[1.25])
+
+        model_inputs = {"text": ["input"]}
+        cache.add_to_cache(model_inputs=model_inputs, model_output=model_output)
+        cache.save()
+
+        # Read raw JSON to verify bpc_score is present
+        cache_file = tmp_path / "test-roundtrip.json"
+        raw_json = json.loads(cache_file.read_text())
+        first_entry = list(raw_json.values())[0]
+        assert "bpc_score" in first_entry
+        assert first_entry["bpc_score"] == 1.25
+
     def test_bpc_score_saved_and_loaded(self, tmp_path: Path) -> None:
         """BPC scores are persisted to disk and reconstructed on load."""
         cache = ModelCache(
@@ -50,29 +74,32 @@ class TestBPCCaching:
         for key, value in cache2.cache.items():
             assert value.bpc_score is not None
 
-    def test_bpc_score_roundtrip_via_json(self, tmp_path: Path) -> None:
-        """Verify bpc_score field survives JSON serialization roundtrip."""
+    def test_cache_key_distinguishes_bpc_runs(self, tmp_path: Path) -> None:
+        """Cache stores bpc_score separately from non-bpc data."""
         cache = ModelCache(
             model_cache_dir=tmp_path,
-            cache_name="test-roundtrip.json",
+            cache_name="test-bpc-distinction.json",
             max_generated_tokens=64,
             progress_bar=False,
             store_metadata=False,
             indent_json_when_saving=True,
         )
 
-        model_output = GenerativeModelOutput(sequences=["test"], bpc_scores=[1.25])
+        # Cache with BPC scores
+        model_output_with_bpc = GenerativeModelOutput(
+            sequences=["test"], bpc_scores=[0.9]
+        )
+        cache.add_to_cache(
+            model_inputs={"text": ["input"]}, model_output=model_output_with_bpc
+        )
 
-        model_inputs = {"text": ["input"]}
-        cache.add_to_cache(model_inputs=model_inputs, model_output=model_output)
+        # Save and reload
         cache.save()
+        cache.load()
 
-        # Read raw JSON to verify bpc_score is present
-        cache_file = tmp_path / "test-roundtrip.json"
-        raw_json = json.loads(cache_file.read_text())
-        first_entry = list(raw_json.values())[0]
-        assert "bpc_score" in first_entry
-        assert first_entry["bpc_score"] == 1.25
+        # Verify the cached entry has bpc_score
+        cached_entry = list(cache.cache.values())[0]
+        assert cached_entry.bpc_score == 0.9
 
     def test_load_cached_model_outputs_reconstructs_bpc_scores(
         self, tmp_path: Path
@@ -111,30 +138,3 @@ class TestBPCCaching:
         assert loaded_output.bpc_scores is not None
         assert len(loaded_output.bpc_scores) == 3
         assert loaded_output.bpc_scores == [0.5, 0.6, 0.7]
-
-    def test_cache_key_distinguishes_bpc_runs(self, tmp_path: Path) -> None:
-        """Cache stores bpc_score separately from non-bpc data."""
-        cache = ModelCache(
-            model_cache_dir=tmp_path,
-            cache_name="test-bpc-distinction.json",
-            max_generated_tokens=64,
-            progress_bar=False,
-            store_metadata=False,
-            indent_json_when_saving=True,
-        )
-
-        # Cache with BPC scores
-        model_output_with_bpc = GenerativeModelOutput(
-            sequences=["test"], bpc_scores=[0.9]
-        )
-        cache.add_to_cache(
-            model_inputs={"text": ["input"]}, model_output=model_output_with_bpc
-        )
-
-        # Save and reload
-        cache.save()
-        cache.load()
-
-        # Verify the cached entry has bpc_score
-        cached_entry = list(cache.cache.values())[0]
-        assert cached_entry.bpc_score == 0.9

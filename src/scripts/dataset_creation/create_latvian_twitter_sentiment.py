@@ -11,10 +11,6 @@
 """Create the Latvian Twitter Sentiment dataset and upload it to the HF Hub."""
 
 import pandas as pd
-
-# These constants are used only inside pandas .query() strings, so the linter
-# cannot see the use.
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa: F401
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
