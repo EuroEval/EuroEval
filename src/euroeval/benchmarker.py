@@ -574,8 +574,18 @@ class Benchmarker:
             The benchmark configuration.
         """
 
-        def _get_param(name: str, default: t.Any) -> t.Any:
-            """Get parameter value, falling back to default if None."""
+        def _get_param[T](name: str, default: T) -> T:
+            """Get parameter value, falling back to default if None.
+
+            Args:
+                name:
+                    The parameter name.
+                default:
+                    The default value to return if the parameter is None.
+
+            Returns:
+                The parameter value if not None, otherwise the default value.
+            """
             value = params.get(name)
             return default if value is None else value
 
