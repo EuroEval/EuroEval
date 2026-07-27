@@ -157,7 +157,10 @@ exclude = [
     ".ruff_cache",
     ".euroeval_cache",
     ".venv",
+    # Vulture whitelist: bare names are intentionally "undefined" here.
+    "vulture_whitelist.py",
 ]
+force-exclude = true
 extend-include = [
     "*.ipynb",
 ]
@@ -223,6 +226,10 @@ max-branches = 20
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ty.src]
+# Vulture whitelist: bare names are intentionally "undefined" here.
+exclude = ["vulture_whitelist.py"]
+
 [tool.ty.rules]
 unresolved-import = "ignore"
 unresolved-attribute = "ignore"
@@ -233,7 +240,7 @@ no-matching-overload = "ignore"
 unused-ignore-comment = "ignore"
 
 [tool.vulture]
-paths = ["src", "tests"]
+paths = ["src", "tests", "vulture_whitelist.py"]
 min_confidence = 80
 
 [tool.pytest.ini_options]
