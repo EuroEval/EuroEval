@@ -1818,7 +1818,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         ]
         if isinstance(self.buffer["first_label_token_mapping"], dict):
             choice_labels = [
-                self.buffer["first_label_token Mapping"][label]
+                self.buffer["first_label_token_mapping"][label]
                 for label in choice_labels
             ]
         struct_output = StructuredOutputsParams(choice=choice_labels)
