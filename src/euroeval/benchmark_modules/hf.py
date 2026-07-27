@@ -585,7 +585,7 @@ def load_hf_model_config(
             If an additional argument is required to load the model configuration.
         InvalidModel:
             If the model configuration could not be loaded.
-    """  # noqa: DOC502
+    """
     for _ in range(num_attempts := 5):
         try:
             config = AutoConfig.from_pretrained(
@@ -1159,7 +1159,7 @@ def load_model_and_tokeniser(
             If the model could not be loaded.
         InvalidBenchmark:
             If the model could not be loaded for this particular dataset.
-    """  # noqa: DOC502
+    """
     block_terminal_output()
 
     model_id = model_config.model_id
