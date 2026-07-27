@@ -140,7 +140,7 @@ def main() -> None:
         num_subjects = df["category"].nunique()
         print(f"{language}: {split_sizes} ({num_subjects} subjects)")
 
-        dataset_id = f"AIStudioDelta/eu-mmlu-{language}"
+        dataset_id = f"EuroEval/eu-mmlu-{language}"
 
         # Remove the dataset from Hugging Face Hub if it already exists
         HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
