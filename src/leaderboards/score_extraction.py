@@ -25,7 +25,9 @@ from .records import (
     get_dataset,
     get_model_name,
     plain_model_id,
+    strip_val_suffix,
 )
+from .result_identity import normalise_bool_value
 from .split_sizes import get_split_sizes
 from .task_metadata import dataset_sources, task_metric_names
 
@@ -143,11 +145,20 @@ def group_results_by_model(
     model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
         defaultdict(lambda: defaultdict(list))
     )
+    # Some datasets (e.g. MultiLoKo) have no validation split, so their records
+    # carry ``validation_split=None`` and are grouped under the test-split
+    # variant id (``... (zero-shot)``) — never under the ``(..., val)`` variant.
+    # A split-agnostic result is equally valid for either split, so we track
+    # these datasets per model id and later mirror them onto the matching
+    # validation-split variant row so it shows the score too.
+    split_agnostic_datasets: dict[str, set[str]] = defaultdict(set)
     for record in results:
         model_ids = extract_model_ids_from_record(record=record)
         dataset = get_dataset(record)
         if not dataset:
             continue
+
+        record_is_split_agnostic = _validation_split_is_none(record=record)
 
         task = get_task(record)
         if not task:
@@ -218,8 +229,71 @@ def group_results_by_model(
                 model_scores[model_id][dataset].append(
                     (raw_scores, total_score, std_err)
                 )
+                if record_is_split_agnostic:
+                    split_agnostic_datasets[model_id].add(dataset)
+
+    _mirror_split_agnostic_datasets(
+        model_scores=model_scores, split_agnostic_datasets=split_agnostic_datasets
+    )
 
     return model_scores
+
+
+def _validation_split_is_none(record: dict[str, t.Any]) -> bool:
+    """Whether a record's dataset has no validation/test split distinction.
+
+    A ``validation_split`` of ``None`` (stored as the JSON ``null`` or the
+    string ``"none"``) marks a dataset that has no validation split, so its
+    result applies to both the test-split and validation-split variant rows.
+    An absent flag defaults to ``False`` (test split), which is not
+    split-agnostic.
+
+    Args:
+        record:
+            A result record in EEE format.
+
+    Returns:
+        True if the record's ``validation_split`` is explicitly ``None``.
+    """
+    additional = record.get("eval_library", {}).get("additional_details", {})
+    if "validation_split" not in additional:
+        return False
+    return normalise_bool_value(additional["validation_split"]) is None
+
+
+def _mirror_split_agnostic_datasets(
+    model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    split_agnostic_datasets: dict[str, set[str]],
+) -> None:
+    """Mirror split-agnostic dataset scores onto validation-split variant rows.
+
+    Split-agnostic records (``validation_split=None``, e.g. MultiLoKo) are
+    grouped under the test-split variant id (``... (zero-shot)``). This copies
+    those scores onto the corresponding validation-split variant
+    (``... (zero-shot, val)``) whenever it exists, so the ``(val)`` row shows
+    the score too. Only the validation dimension is crossed — the few-shot
+    dimension is preserved, since ``strip_val_suffix`` differs only in the
+    ``val`` note. Mutates ``model_scores`` in place.
+
+    Args:
+        model_scores:
+            The grouped model results, keyed by model id.
+        split_agnostic_datasets:
+            Split-agnostic datasets per (test-split variant) model id.
+    """
+    for model_id in list(model_scores):
+        test_variant_id = strip_val_suffix(model_id=model_id)
+        # ``strip_val_suffix`` returns None unless the id carries a ``val`` note,
+        # so this only fires for validation-split variant rows.
+        if test_variant_id is None:
+            continue
+        for dataset in split_agnostic_datasets.get(test_variant_id, set()):
+            if dataset in model_scores[test_variant_id] and (
+                dataset not in model_scores[model_id]
+            ):
+                model_scores[model_id][dataset] = list(
+                    model_scores[test_variant_id][dataset]
+                )
 
 
 def _update_metadata_field(
