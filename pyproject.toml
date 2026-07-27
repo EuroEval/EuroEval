@@ -111,6 +111,7 @@ dev = [
     "tqdm-stubs>=0.2.1",
     "pre-commit>=4.5.1",
     "plotly>=6.9.0",
+    "slopo",
 ]
 
 [tool.uv.sources]
@@ -122,6 +123,8 @@ vllm = { git = "https://github.com/vllm-project/vllm.git", tag = "v0.22.0", mark
 [tool.uv]
 override-dependencies = [
   "transformers[mistral-common]>=5.14.0",
+  "python-dotenv>=1.2.2",
+  "numpy>=2.5.1",
 ]
 environments = [
   # Only support arm64 macos (dont try to resolve darwin + x86_64 or any other platforms)

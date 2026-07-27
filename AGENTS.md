@@ -74,6 +74,25 @@ this directory are _persistent_ scripts. One-off scripts don't belong in the rep
 
 - if you need to run a one-off script, store it in /tmp or in-memory.
 
+### Code Duplication Detection (Slopo)
+
+[Slopo](https://github.com/rafal-qa/slopo) detects semantic code duplicates using embeddings.
+Configured in `slopo.conf.yaml` to use local llama.cpp server with Jina embeddings.
+
+**Run analysis:**
+
+```bash
+export LITELLM_DROP_PARAMS=true
+make slopo
+```
+
+**Workflow:**
+
+1. Review clusters in `.slopo/report/index.md`
+2. Ask AI agent to add false-positive cluster hashes to `.slopo/slopo.ignore.txt`
+3. Re-run `uv run slopo analyze` for refined report
+4. Commit `.slopo/slopo.ignore.txt` (not `.slopo/slopo.db`)
+
 - **Dataset creation scripts** — Preserve upstream split boundaries when the source
   dataset already has splits. Do not concatenate train/dev/validation/test and
   regenerate new splits unless there is no source split information. Never let source

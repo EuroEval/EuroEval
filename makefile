@@ -93,6 +93,23 @@ tree:  ## Print directory tree
 
 check:  ## Lint, format, and type-check the code
 	@git add . && uv run pre-commit run --all-files
+	@if command -v llama-server >/dev/null 2>&1 && pgrep -x llama-server >/dev/null; then \
+		echo "Running Slopo code duplication detection..."; \
+		export LITELLM_DROP_PARAMS=true && \
+		uv run slopo index 2>&1 | grep -E "Indexed|unchanged|removed" && \
+		uv run slopo embed 2>&1 | grep -E "Embedded|Done" && \
+		uv run slopo analyze 2>&1 | grep -E "Similarity ratio|Exact copies"; \
+		ANALYSIS_OUTPUT=$$(uv run slopo analyze 2>&1); \
+		DUPLICATES=$$(echo "$$ANALYSIS_OUTPUT" | grep "Similarity ratio (including" | grep -oE "[0-9]+/[0-9]+"); \
+		if [ "$$DUPLICATES" != "" ]; then \
+			printf "\033[33m⚠️  Duplicate code detected: %s units\033[0m\n" "$$DUPLICATES"; \
+			RATIO=$$(echo "$$ANALYSIS_OUTPUT" | grep "Similarity ratio (including" | sed 's/.*: \([0-9.]*%\).*/\1/'); \
+			printf "\033[33m   Similarity ratio: %s\033[0m\n" "$$RATIO"; \
+			echo "   Full report: .slopo/report/"; \
+		fi; \
+	else \
+		echo "Slopo skipped (llama.cpp server not running)"; \
+	fi
 
 bump-major:
 	@uv run python -m src.scripts.versioning --major
@@ -160,3 +177,11 @@ publish-patch: install check bump-patch publish  ## Publish a patch version
 
 loc: ## Count the number of lines of code in the project
 	@git ls-files | grep '\.py' | xargs wc -l | tail -n 1
+
+slopo: ## Run Slopo code duplication detection (requires llama.cpp server running)
+	@echo "Running Slopo code duplication detection..."
+	@export LITELLM_DROP_PARAMS=true && \
+		uv run slopo index && \
+		uv run slopo embed && \
+		uv run slopo analyze
+	@echo "Report generated in .slopo/report/"
