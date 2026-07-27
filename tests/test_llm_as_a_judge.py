@@ -390,7 +390,7 @@ class TestLLMAsAJudgeCall:
         predictions = ["pred1"]
         references = ["ref1"]
 
-        with caplog.at_level(logging.WARNING):
+        with caplog.at_level(logging.WARNING, logger="euroeval"):
             simple_metric(
                 predictions=predictions,
                 references=references,
@@ -431,7 +431,7 @@ class TestLLMAsAJudgeCall:
         predictions = ["pred1"]
         references = ["ref1"]
 
-        with caplog.at_level(logging.DEBUG):
+        with caplog.at_level(logging.DEBUG, logger="euroeval"):
             simple_metric(
                 predictions=predictions,
                 references=references,
