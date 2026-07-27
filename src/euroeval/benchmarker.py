@@ -573,99 +573,105 @@ class Benchmarker:
         Returns:
             The benchmark configuration.
         """
+
+        def _get_param(name: str, default: t.Any) -> t.Any:
+            """Get parameter value, falling back to default if None."""
+            value = params.get(name)
+            return default if value is None else value
+
         return build_benchmark_config(
             benchmark_config_params=BenchmarkConfigParams(
-                task=params.get("task", self.benchmark_config_default_params.task),
-                dataset=params.get(
+                task=_get_param("task", self.benchmark_config_default_params.task),
+                dataset=_get_param(
                     "dataset", self.benchmark_config_default_params.dataset
                 ),
-                progress_bar=params.get(
+                progress_bar=_get_param(
                     "progress_bar", self.benchmark_config_default_params.progress_bar
                 ),
-                save_results=params.get(
+                save_results=_get_param(
                     "save_results", self.benchmark_config_default_params.save_results
                 ),
-                language=params.get(
+                language=_get_param(
                     "language", self.benchmark_config_default_params.language
                 ),
-                device=params.get(
+                device=_get_param(
                     "device", self.benchmark_config_default_params.device
                 ),
-                finetuning_batch_size=params.get(
+                finetuning_batch_size=_get_param(
                     "finetuning_batch_size",
                     self.benchmark_config_default_params.finetuning_batch_size,
                 ),
-                raise_errors=params.get(
+                raise_errors=_get_param(
                     "raise_errors", self.benchmark_config_default_params.raise_errors
                 ),
-                cache_dir=params.get(
+                cache_dir=_get_param(
                     "cache_dir", self.benchmark_config_default_params.cache_dir
                 ),
-                api_key=params.get(
+                api_key=_get_param(
                     "api_key", self.benchmark_config_default_params.api_key
                 ),
-                api_base=params.get(
+                api_base=_get_param(
                     "api_base", self.benchmark_config_default_params.api_base
                 ),
-                api_version=params.get(
+                api_version=_get_param(
                     "api_version", self.benchmark_config_default_params.api_version
                 ),
-                trust_remote_code=params.get(
+                trust_remote_code=_get_param(
                     "trust_remote_code",
                     self.benchmark_config_default_params.trust_remote_code,
                 ),
-                clear_model_cache=params.get(
+                clear_model_cache=_get_param(
                     "clear_model_cache",
                     self.benchmark_config_default_params.clear_model_cache,
                 ),
-                evaluate_test_split=params.get(
+                evaluate_test_split=_get_param(
                     "evaluate_test_split",
                     self.benchmark_config_default_params.evaluate_test_split,
                 ),
-                few_shot=params.get(
+                few_shot=_get_param(
                     "few_shot", self.benchmark_config_default_params.few_shot
                 ),
-                num_iterations=params.get(
+                num_iterations=_get_param(
                     "num_iterations",
                     self.benchmark_config_default_params.num_iterations,
                 ),
-                requires_safetensors=params.get(
+                requires_safetensors=_get_param(
                     "requires_safetensors",
                     self.benchmark_config_default_params.requires_safetensors,
                 ),
-                download_only=params.get(
+                download_only=_get_param(
                     "download_only", self.benchmark_config_default_params.download_only
                 ),
-                gpu_memory_utilization=params.get(
+                gpu_memory_utilization=_get_param(
                     "gpu_memory_utilization",
                     self.benchmark_config_default_params.gpu_memory_utilization,
                 ),
-                generative_type=params.get(
+                generative_type=_get_param(
                     "generative_type",
                     self.benchmark_config_default_params.generative_type,
                 ),
-                use_bits_per_character=params.get(
+                use_bits_per_character=_get_param(
                     "use_bits_per_character",
                     self.benchmark_config_default_params.use_bits_per_character,
                 ),
-                attention_backend=params.get(
+                attention_backend=_get_param(
                     "attention_backend",
                     self.benchmark_config_default_params.attention_backend,
                 ),
                 custom_datasets_file=Path(params["custom_datasets_file"])
                 if params.get("custom_datasets_file")
                 else self.benchmark_config_default_params.custom_datasets_file,
-                force=params.get("force", self.benchmark_config_default_params.force),
-                verbose=params.get(
+                force=_get_param("force", self.benchmark_config_default_params.force),
+                verbose=_get_param(
                     "verbose", self.benchmark_config_default_params.verbose
                 ),
-                debug=params.get("debug", self.benchmark_config_default_params.debug),
+                debug=_get_param("debug", self.benchmark_config_default_params.debug),
                 run_with_cli=self.benchmark_config_default_params.run_with_cli,
-                max_context_length=params.get(
+                max_context_length=_get_param(
                     "max_context_length",
                     self.benchmark_config_default_params.max_context_length,
                 ),
-                vocabulary_size=params.get(
+                vocabulary_size=_get_param(
                     "vocabulary_size",
                     self.benchmark_config_default_params.vocabulary_size,
                 ),

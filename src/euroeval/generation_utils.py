@@ -999,8 +999,9 @@ def apply_prompt(
     )
 
     # Build outputs based on model type
-    if is_instruction_tuned:
+    if is_instruction_tuned and always_populate_text_field:
         assert tokeniser is not None
+    if is_instruction_tuned:
         outputs = _build_instruction_tuned_outputs(
             few_shot_sections=few_shot_sections,
             new_sections=new_sections,
