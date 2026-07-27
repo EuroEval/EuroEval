@@ -1399,7 +1399,7 @@ def _get_olmo3_rope_parameters(
         A rope_parameters dict if the model is OLMo-3 and lacks existing
         rope_parameters; otherwise None.
     """
-    is_olmo3 = hf_model_config.model_type == "olmo3" or (
+    is_olmo3 = getattr(hf_model_config, "model_type", None) == "olmo3" or (
         hf_model_config.architectures
         and "Olmo3ForCausalLM" in hf_model_config.architectures
     )
