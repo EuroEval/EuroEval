@@ -21,7 +21,7 @@ repos:
       pass_filenames: false
 
 - repo: https://github.com/saattrupdan/funcsort
-  rev: v0.1.1
+  rev: v0.1.2
   hooks:
     - id: funcsort
       args:
