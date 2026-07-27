@@ -123,3 +123,12 @@ GREEK_MMLU_CONFIG = DatasetConfig(
     languages=[GREEK],
     unofficial=True,
 )
+
+EU_MMLU_EL_CONFIG = DatasetConfig(
+    name="eu-mmlu-el",
+    pretty_name="EU-MMLU-el",
+    source="EuroEval/eu-mmlu-el",
+    task=KNOW,
+    languages=[GREEK],
+    unofficial=True,
+)

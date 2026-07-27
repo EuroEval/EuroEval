@@ -616,6 +616,78 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-hu
 ```
 
+### Unofficial: EU-MMLU-hu
+
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 7 of the original
+57 subjects: college biology, college chemistry, college physics, global facts,
+international law, management and sociology. Unlike the other MMLU variants in EuroEval
+it was not machine translated - the translation was carried out by professional
+translators at the European Commission's Directorate-General for Translation, together
+with master's students from the European Master's in Translation network, as described
+in [this paper](https://arxiv.org/abs/2607.18432).
+
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 34 / 91 / 616 samples for training,
+validation and testing, respectively (so 741 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Melyik nem kulcsfontosságú sajátossága a vezetés nyílt rendszerként való felfogásának?\nVálaszlehetőségek:\na. Morál\nb. Innováció\nc. Fejlődéshez szükséges erőforrások\nd. Adaptáció",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Mit használ Berger (1963) a társadalmi valóság metaforájaként?\nVálaszlehetőségek:\na. egy vidámparki játékot\nb. egy cirkuszt\nc. egy bábszínházat\nd. egy balettet",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Egy adott populációban minden 400. embernél előfordulegy teljesen recesszív, b allél által okozott rosszindulatú daganatos megbetegedés. Ha feltételezzük, hogy a populáció Hardy-Weinberg-egyensúlyban van, adja meg azoknak a várható arányát, akik hordozzák a b allélt, de várhatóan nem alakul ki náluk daganatos megbetegedés.\nVálaszlehetőségek:\na. 1/400\nb. 19/400\nc. 20/400\nd. 38/400",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Az alábbiakban több választási lehetőséget tartalmazó kérdések találhatók (válaszokkal együtt).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Kérdés: {text}
+  Válasz: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Kérdés: {text}
+
+  Válaszoljon a fenti kérdésre az elérhető lehetőségek közül {labels_str} használatával, és semmi mással.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset eu-mmlu-hu
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-hu

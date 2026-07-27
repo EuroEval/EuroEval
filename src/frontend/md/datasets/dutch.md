@@ -988,6 +988,78 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset dutch-proverbs
 ```
 
+### Unofficial: EU-MMLU-nl
+
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 7 of the original
+57 subjects: college biology, college chemistry, college physics, global facts,
+international law, management and sociology. Unlike the other MMLU variants in EuroEval
+it was not machine translated - the translation was carried out by professional
+translators at the European Commission's Directorate-General for Translation, together
+with master's students from the European Master's in Translation network, as described
+in [this paper](https://arxiv.org/abs/2607.18432).
+
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 35 / 91 / 867 samples for training,
+validation and testing, respectively (so 993 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Met welke schrijver worden hygiënefactoren geassocieerd?\nAntwoordopties:\na. Frederick Hertzberg\nb. D.C. McClelland\nc. Abraham Maslow\nd. Douglas McGregor",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Wat beoogde de naoorlogse verzorgingsstaat van 1948 niet te bieden?\nAntwoordopties:\na. Gratis gezondheidszorg en onderwijs voor iedereen\nb. Een minimumloon\nc. Volledige werkgelegenheid\nd. Universele welvaart",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "In een bepaalde populatie heeft 1 op de 400 mensen kanker die wordt veroorzaakt door een volledig recessief allel, b. Stel dat de populatie zich in Hardy-Weinberg-evenwicht bevindt: wat is dan het verwachte percentage individuen dat het b-allel draagt maar naar verwachting geen kanker zal ontwikkelen?\nAntwoordopties:\na. 1/400\nb. 19/400\nc. 20/400\nd. 38/400",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+
+  Beantwoord de bovenstaande vraag met {labels_str}, en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset eu-mmlu-nl
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-nl

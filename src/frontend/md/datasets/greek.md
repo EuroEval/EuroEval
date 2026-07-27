@@ -716,6 +716,78 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset greek-mmlu
 ```
 
+### Unofficial: EU-MMLU-el
+
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 8 of the original
+57 subjects: college biology, college chemistry, college physics, global facts, high
+school European history, international law, management and sociology. Unlike the other
+MMLU variants in EuroEval it was not machine translated - the translation was carried
+out by professional translators at the European Commission's Directorate-General for
+Translation, together with master's students from the European Master's in Translation
+network, as described in [this paper](https://arxiv.org/abs/2607.18432).
+
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 39 / 109 / 1,032 samples for training,
+validation and testing, respectively (so 1,180 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Ποιο δεν είναι βασικό χαρακτηριστικό του μοντέλου των \"ανοιχτών συστημάτων\" στη διοίκηση;\nΕπιλογές:\na. το Ηθικό\nb. η Καινοτομία\nc. ο Πόρος ανάπτυξης\nd. η Προσαρμογή",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Τι περιγράφει ο Berger (1963) ως μια μεταφορά για την κοινωνική πραγματικότητα;\nΕπιλογές:\na. Μια βόλτα σε λούνα-παρκ\nb. Ένα τσίρκο\nc. Ένα κουκλοθέατρο\nd. Ένα μπαλέτο",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Σε έναν δεδομένο πληθυσμό, 1 στους 400 ανθρώπους παρουσιάζει έναν καρκίνο που προκαλείται από ένα πλήρως υπολειπόμενο αλληλόμορφο, b. Υποθέτοντας ότι ο πληθυσμός βρίσκεται σε ισορροπία Hardy-Weinberg, ποια από τις ακόλουθες είναι η αναμενόμενη αναλογία των ατόμων που φέρουν το αλληλόμορφο b, αλλά δεν αναμένεται να αναπτύξουν τον καρκίνο;\nΕπιλογές:\na. 1/400\nb. 19/400\nc. 20/400\nd. 38/400",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Ακολουθούν ερωτήσεις πολλαπλών επιλογών (με απαντήσεις).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Ερώτηση: {text}
+  Απάντηση: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Ερώτηση: {text}
+
+  Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας {labels_str}, και τίποτα άλλο.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset eu-mmlu-el
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-el

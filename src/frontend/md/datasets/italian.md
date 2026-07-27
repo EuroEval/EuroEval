@@ -773,6 +773,78 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multiloko-it
 ```
 
+### Unofficial: EU-MMLU-it
+
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 8 of the original
+57 subjects: college biology, college chemistry, college physics, global facts, high
+school European history, international law, management and sociology. Unlike the other
+MMLU variants in EuroEval it was not machine translated - the translation was carried
+out by professional translators at the European Commission's Directorate-General for
+Translation, together with master's students from the European Master's in Translation
+network, as described in [this paper](https://arxiv.org/abs/2607.18432).
+
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 39 / 109 / 1,032 samples for training,
+validation and testing, respectively (so 1,180 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Al 2017, qual è la percentuale globale di bambini di 1 anno che ha ricevuto almeno un vaccino contro una malattia?\nScelte:\na. 80 %.\nb. 60 %.\nc. 40 %.\nd. 20 %.",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "In quale dei seguenti processi termodinamici l’aumento dell’energia interna di un gas ideale equivale al calore somministrato al gas?\nScelte:\na. Temperatura constante.\nb. Volume constante.\nc. Pressione constante.\nd. Adiabatico.",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Come si possono descrivere le strutture organizzative caratterizzate da uno stile di gestione democratico e inclusivo?\nScelte:\na. Gerarchiche\nb. Burocratiche\nc. Piatte\nd. Funzionali",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Le seguenti sono domande a scelta multipla (con relative risposte).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Domanda: {text}
+  Risposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Domanda: {text}
+
+  Rispondete alla domanda precedente con {labels_str}, e nient'altro.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset eu-mmlu-it
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-it
