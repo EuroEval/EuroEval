@@ -25,7 +25,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
   - Croatian: `mmlu-hr` → `include-hr`
   - German: `hellaswag-de` → `winogrande-de`
-  - French: `mmlu-fr` → `include-fr` an `multiloko-fr`
+  - French: `mmlu-fr` → `include-fr` and `multiloko-fr`
 
 ### Fixed
 
