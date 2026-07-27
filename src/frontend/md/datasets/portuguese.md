@@ -429,8 +429,6 @@ euroeval --model <model-id> --dataset boolq-pt
 
 ### Unofficial: ALBA-MCQ
 
-> This dataset is **unofficial** — results do not count toward the Portuguese leaderboard.
-
 [ALBA-MCQ](https://huggingface.co/datasets/amalia-llm/alba_mcq) is the multiple-choice
 adaptation of ALBA, an expert-created benchmark introduced in the
 [ALBA paper](https://aclanthology.org/2026.propor-1.69/) for evaluating European
@@ -508,8 +506,6 @@ euroeval --model <model-id> --dataset alba-mcq-pt
 ```
 
 ### Unofficial: CulturaVivaPT
-
-> This dataset is **unofficial** — results do not count toward the Portuguese leaderboard.
 
 [CulturaVivaPT](https://huggingface.co/datasets/amalia-llm/cultura-viva-pt-mcq),
 released as part of the [AMALIA project](https://aclanthology.org/2026.propor-1.38/),
