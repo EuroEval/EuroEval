@@ -103,3 +103,12 @@ INCLUDE_HU_CONFIG = DatasetConfig(
     languages=[HUNGARIAN],
     unofficial=True,
 )
+
+EU_MMLU_HU_CONFIG = DatasetConfig(
+    name="eu-mmlu-hu",
+    pretty_name="EU-MMLU-hu",
+    source="EuroEval/eu-mmlu-hu",
+    task=KNOW,
+    languages=[HUNGARIAN],
+    unofficial=True,
+)

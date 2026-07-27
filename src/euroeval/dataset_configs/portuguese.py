@@ -212,3 +212,12 @@ CULTURA_VIVA_PT_CONFIG = DatasetConfig(
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     unofficial=True,
 )
+
+EU_MMLU_PT_CONFIG = DatasetConfig(
+    name="eu-mmlu-pt",
+    pretty_name="EU-MMLU-pt",
+    source="EuroEval/eu-mmlu-pt",
+    task=KNOW,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    unofficial=True,
+)

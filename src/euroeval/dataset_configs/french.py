@@ -184,3 +184,12 @@ MULTINRC_FR_CONFIG = DatasetConfig(
     languages=[FRENCH],
     unofficial=True,
 )
+
+EU_MMLU_FR_CONFIG = DatasetConfig(
+    name="eu-mmlu-fr",
+    pretty_name="EU-MMLU-fr",
+    source="EuroEval/eu-mmlu-fr",
+    task=KNOW,
+    languages=[FRENCH],
+    unofficial=True,
+)

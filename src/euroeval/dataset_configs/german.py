@@ -220,3 +220,12 @@ ZEBRA_PUZZLE_HARD_DE_CONFIG = DatasetConfig(
     languages=[GERMAN],
     unofficial=True,
 )
+
+EU_MMLU_DE_CONFIG = DatasetConfig(
+    name="eu-mmlu-de",
+    pretty_name="EU-MMLU-de",
+    source="EuroEval/eu-mmlu-de",
+    task=KNOW,
+    languages=[GERMAN],
+    unofficial=True,
+)

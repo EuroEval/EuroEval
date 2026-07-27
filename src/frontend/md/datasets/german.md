@@ -829,6 +829,78 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multiloko-de
 ```
 
+### Unofficial: EU-MMLU-de
+
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 7 of the original
+57 subjects: college biology, college chemistry, college physics, global facts,
+international law, management and sociology. Unlike the other MMLU variants in EuroEval
+it was not machine translated - the translation was carried out by professional
+translators at the European Commission's Directorate-General for Translation, together
+with master's students from the European Master's in Translation network, as described
+in [this paper](https://arxiv.org/abs/2607.18432).
+
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 34 / 91 / 866 samples for training,
+validation and testing, respectively (so 991 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Was ist kein Hauptmerkmal des Open System-Modells im Management?\nAntwortmöglichkeiten:\na. Moral\nb. Innovation\nc. Wachstumsressource\nd. Anpassung",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Bei welchen der folgenden thermodynamischen Vorgängen ist die Zunahme in der inneren Energie eines idealen Gases gleich, wie jene Wärme, die dem Gas hinzugefügt wird?\nAntwortmöglichkeiten:\na. Konstante Temperatur\nb. Konstantes Volumen\nc. Konstanter Druck\nd. Adiabatische Zustandsänderung",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "3 Cl−(aq) + 4 CrO_4^2−(aq) + 23 H+(aq) → 3 HClO2(aq) + 4 Cr3+(aq) + 10 H2O(l). In der oben dargestellten Reaktion verhält sich Cl−(aq) wie\nAntwortmöglichkeiten:\na. eine Säure\nb. eine Base\nc. ein Katalysator\nd. ein Reduktionsmittel",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Frage: {text}
+  Antwort: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Frage: {text}
+
+  Beantworten Sie die obige Frage mit {labels_str}, und nichts anderes.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset eu-mmlu-de
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-de
