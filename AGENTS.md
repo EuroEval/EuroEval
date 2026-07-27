@@ -74,24 +74,37 @@ this directory are _persistent_ scripts. One-off scripts don't belong in the rep
 
 - if you need to run a one-off script, store it in /tmp or in-memory.
 
+### Tests
+
+All evaluation framework tests are in `tests` and can be run with `make test`. This
+takes a very long time though, so prefer to just running the tests in the modules you
+have changed. There are no tests for the frontend or leaderboard generation.
+
+## Formatting, linting, and type checking
+
+All checks are run with `make check`, which runs all the pre-commit hooks. The following
+tools are used:
+
+- **funcsort** — Python function sorting
+- **Ruff** — Python formatter and linter (includes Jupyter notebook support)
+- **ty** — Python type checker
+- **markdownlint-cli2** — Markdown linting
+- **vue-tsc** — TypeScript type checking for the frontend (`src/frontend/`)
+
+The pre-commit hooks also include basic quality checks (end-of-file fixer, trailing
+whitespace, debug statements, type annotation enforcement, and notebook stripping).
+
 ### Code Duplication Detection (Slopo)
 
-[Slopo](https://github.com/rafal-qa/slopo) detects semantic code duplicates using embeddings.
-Configured in `slopo.conf.yaml` to use local llama.cpp server with Jina embeddings.
+[Slopo](https://github.com/rafal-qa/slopo) detects semantic code duplicates using
+embeddings. Configured in `slopo.conf.yaml` to use local llama.cpp server with Jina
+embeddings.
 
-**Run analysis:**
-
-```bash
-export LITELLM_DROP_PARAMS=true
-make slopo
-```
-
-**Workflow:**
-
-1. Review clusters in `.slopo/report/index.md`
-2. Ask AI agent to add false-positive cluster hashes to `.slopo/slopo.ignore.txt`
-3. Re-run `uv run slopo analyze` for refined report
-4. Commit `.slopo/slopo.ignore.txt` (not `.slopo/slopo.db`)
+The duplication check runs automatically as part of `make check`. Review the report in
+`.slopo/report/index.md` when it flags duplicates. Not all duplicates need to be fixed —
+consider each case, but if unsure or if fixing requires a substantial refactor, ask the
+user whether to proceed or leave it. False positives can be added to
+`.slopo/slopo.ignore.txt`.
 
 - **Dataset creation scripts** — Preserve upstream split boundaries when the source
   dataset already has splits. Do not concatenate train/dev/validation/test and
@@ -104,25 +117,6 @@ make slopo
   models across languages. Output is a PNG file (`language-spider-plot.png`). Use when
   asked to create a radial/spider plot for language performance comparison.
   `uv run src/scripts/create_language_spider_plot.py -m MODEL [-l LANGUAGE]`
-
-### Tests
-
-All evaluation framework tests are in `tests` and can be run with `make test`. This
-takes a very long time though, so prefer to just running the tests in the modules you
-have changed. There are no tests for the frontend or leaderboard generation.
-
-## Formatting, linting, and type checking
-
-All checks are run with `make check`, which runs all the pre-commit hooks. The following
-tools are used:
-
-- **Ruff** — Python formatter and linter (includes Jupyter notebook support)
-- **ty** — Python type checker
-- **markdownlint-cli2** — Markdown linting
-- **vue-tsc** — TypeScript type checking for the frontend (`src/frontend/`)
-
-The pre-commit hooks also include basic quality checks (end-of-file fixer, trailing
-whitespace, debug statements, type annotation enforcement, and notebook stripping).
 
 ## Changelog
 
