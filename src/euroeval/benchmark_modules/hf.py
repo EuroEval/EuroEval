@@ -777,8 +777,6 @@ def align_model_and_tokeniser(
     return model, tokeniser
 
 
-@cache_arguments()
-@cache_arguments("model_id")
 def _get_tags_for_adapter_model(
     model_id: str,
     revision: str,
@@ -1089,7 +1087,6 @@ def load_model_and_tokeniser(
 
 
 @cache_arguments("model_id")
-@cache_arguments("model_id", "run_with_cli")
 def _get_local_model_info(model_id: str) -> HfApiModelInfo | None:
     """Get model info for a local model directory.
 
@@ -1154,8 +1151,6 @@ def task_group_to_class_name(task_group: TaskGroup) -> str:
     return f"AutoModelFor{pascal_case}"
 
 
-@cache_arguments()
-@cache_arguments("model_id")
 def _load_model_from_pretrained(
     model_cls: t.Type[PreTrainedModel],
     model_id: str,
@@ -1369,8 +1364,6 @@ def get_dtype(
     return torch.float32
 
 
-@cache_arguments("model_id", "run_with_cli")
-@cache_arguments("model_id", "revision", "num_labels", "id2label", "label2id")
 def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedModel":
     """Setup a model for question answering.
 
@@ -1469,9 +1462,6 @@ def get_class_by_name(
     return None
 
 
-@cache_arguments()
-@cache_arguments("model_id")
-@cache_arguments("model_id", "run_with_cli")
 def _infer_pipeline_tag(
     model_id: str,
     revision: str,
@@ -1714,8 +1704,7 @@ def _set_pad_token_id(config: PretrainedConfig) -> None:
             config.pad_token_id = config.eos_token_id
 
 
-@cache_arguments("model_id", "revision", "num_labels", "id2label", "label2id")
-@cache_arguments()
+@cache_arguments("model_id", "run_with_cli")
 def _handle_model_config_error(
     error: Exception, model_id: str, run_with_cli: bool
 ) -> t.Literal["retry", "continue"] | PretrainedConfig | None:
