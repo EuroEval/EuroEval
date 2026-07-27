@@ -177,11 +177,3 @@ publish-patch: install check bump-patch publish  ## Publish a patch version
 
 loc: ## Count the number of lines of code in the project
 	@git ls-files | grep '\.py' | xargs wc -l | tail -n 1
-
-slopo: ## Run Slopo code duplication detection (requires llama.cpp server running)
-	@echo "Running Slopo code duplication detection..."
-	@export LITELLM_DROP_PARAMS=true && \
-		uv run slopo index && \
-		uv run slopo embed && \
-		uv run slopo analyze
-	@echo "Report generated in .slopo/report/"
