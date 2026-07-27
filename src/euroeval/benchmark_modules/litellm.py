@@ -1119,9 +1119,11 @@ class LiteLLMModel(BenchmarkModule):
             )
             return generation_kwargs, 10
 
-        # API base needs /v1 suffix
+        # API base needs /v1 suffix. NotFoundError is intentionally excluded here: it
+        # must be raised by _handle_fatal_error (which runs after this handler), to
+        # match the original precedence where NotFoundError always raised before /v1.
         if (
-            isinstance(error, (BadRequestError, NotFoundError))
+            isinstance(error, BadRequestError)
             and self.benchmark_config.api_base is not None
             and not self.benchmark_config.api_base.endswith("/v1")
         ):

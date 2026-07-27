@@ -37,6 +37,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed detection of models that report `temperature` as an unsupported parameter via a
+  `does not support parameters: [...'temperature'...]` error message. Such models now
+  have `temperature` removed and are retried, consistent with the existing handling of
+  `stop`, `logprobs` and `top_logprobs`.
 - Fixed `ValueError` in `prepare_train_examples` when the CLS token ID is not present
   in tokenised input IDs for certain tokenisers (e.g. Qwen3 embedding models,
   codefuse-ai/F2LLM-v2-0.6B). Falls back to position 0 with a debug log message.
