@@ -32,7 +32,6 @@ import collections.abc as c
 import json
 import logging
 import os
-import re
 import sys
 from dataclasses import dataclass
 
@@ -52,6 +51,7 @@ from leaderboards.jsonl_io import (
     load_records_from_jsonl_files,
     load_records_from_result_tree,
 )
+from leaderboards.records import strip_anchor
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -427,8 +427,7 @@ def _strip_anchor(model_id: str) -> str:
     Returns:
         The canonical model id, ready to compare against ``core_models.yaml``.
     """
-    m = _ANCHOR_RE.search(model_id)
-    return (m.group("inner").strip() if m else model_id).strip()
+    return strip_anchor(model_id)
 
 
 def select_api_providers(
@@ -539,9 +538,6 @@ def provider_for_model_id(model_id: str) -> _Provider | None:
         if provider.matches(model_id):
             return provider
     return None
-
-
-_ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
 
 
 PROVIDERS: list[_Provider] = [
