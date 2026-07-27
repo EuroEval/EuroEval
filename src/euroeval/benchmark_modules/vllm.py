@@ -130,6 +130,526 @@ _ARCHITECTURE_ALIASES: dict[str, str] = {
 }
 
 
+def _safe_batch_decode(
+    tokeniser: Tokeniser, sequences: list[list[int]], skip_special_tokens: bool
+) -> list[str]:
+    """Safely decode sequences of token IDs using batch_decode or individual decode.
+
+    Attempts to use the tokeniser's batch_decode method first. If that fails
+    with an AttributeError (e.g., for custom tokenisers that don't implement
+    batch_decode), falls back to calling decode for each sequence individually.
+
+    Args:
+        tokeniser:
+            The tokeniser to use for decoding.
+        sequences:
+            List of token ID sequences to decode.
+        skip_special_tokens:
+            Whether to skip special tokens during decoding.
+
+    Returns:
+        List of decoded strings.
+    """
+    try:
+        return tokeniser.batch_decode(
+            sequences, skip_special_tokens=skip_special_tokens
+        )
+    except AttributeError:
+        log_once(
+            "Tokeniser does not support batch_decode, falling back to individual "
+            "decode calls",
+            level=logging.WARNING,
+        )
+        return [
+            t.cast(str, tokeniser.decode(seq, skip_special_tokens=skip_special_tokens))
+            for seq in sequences
+        ]
+
+
+def clear_vllm() -> None:
+    """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
+    with contextlib.suppress(ValueError):
+        destroy_model_parallel()
+        destroy_distributed_environment()
+    with contextlib.suppress(AssertionError):
+        torch.distributed.destroy_process_group()
+    clear_memory()
+
+
+def compute_token_budget(
+    model_max_length: int, max_generated_tokens: int
+) -> tuple[int, int]:
+    """Compute the generation and per-prompt token budgets for a model.
+
+    The generation budget cannot exceed the model's context length, and we
+    additionally need to reserve room for the prompt. For models whose context is
+    too small to fit both the prompt and the dataset's full generation budget, we
+    shrink the generation budget (down to half the context) so that the prompt
+    retains room, rather than truncating the prompt down to nothing.
+
+    Args:
+        model_max_length:
+            The maximum context length of the model's tokeniser.
+        max_generated_tokens:
+            The dataset's configured number of tokens to generate.
+
+    Returns:
+        A pair ``(generation_budget, max_tokens_per_prompt)``, being the number of
+        tokens reserved for generation and the resulting maximum number of tokens
+        allowed in a prompt, respectively.
+
+    Raises:
+        InvalidBenchmark:
+            If the model's context length is too small to fit any prompt alongside
+            the generation budget.
+    """
+    max_context_length = min(model_max_length, MAX_CONTEXT_LENGTH)
+    generation_budget = min(max_generated_tokens, max(max_context_length // 2, 1))
+    max_tokens_per_prompt = max_context_length - generation_budget
+    if max_tokens_per_prompt <= 0:
+        raise InvalidBenchmark(
+            f"The model's context length of {max_context_length:,} tokens is too "
+            "small to fit any prompt alongside its generation budget, so it cannot "
+            "be benchmarked on this dataset."
+        )
+    return generation_budget, max_tokens_per_prompt
+
+
+def get_custom_stop_tokens(
+    model: "LLM",
+    tokeniser: Tokeniser,
+    model_id: str,
+    generative_type: GenerativeType | None,
+) -> list[str]:
+    """Get the stop tokens for a generative model.
+
+    Args:
+        model:
+            The vLLM model.
+        tokeniser:
+            The tokeniser.
+        model_id:
+            The model ID.
+        generative_type:
+            The generative type of the model.
+
+    Returns:
+        A list of stop tokens.
+    """
+    candidate_stop_tokens = CUSTOM_STOP_TOKENS
+
+    prompt = "Hello"
+    if has_chat_template(tokeniser=tokeniser):
+        templated_prompt = apply_chat_template(
+            conversation=[dict(role="user", content=prompt)],
+            tokeniser=tokeniser,
+            tokenise=False,
+            add_generation_prompt=True,
+            enable_thinking=generative_type == GenerativeType.REASONING,
+        )
+        assert isinstance(templated_prompt, str)
+        prompt = templated_prompt
+
+    max_tokens = (
+        REASONING_MAX_TOKENS if generative_type == GenerativeType.REASONING else 10
+    )
+    output = model.generate(
+        prompts=[prompt],
+        sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
+        use_tqdm=False,
+    )[0]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
+
+    stop_tokens = [
+        stop_token
+        for stop_token in candidate_stop_tokens
+        if stop_token in prompt or stop_token in completion
+    ]
+    if stop_tokens:
+        log(
+            f"Found the following custom stop tokens for model {model_id!r}: "
+            f"{stop_tokens}.",
+            level=logging.DEBUG,
+        )
+    else:
+        log(f"Found no custom stop tokens for model {model_id!r}.", level=logging.DEBUG)
+
+    return stop_tokens
+
+
+def get_end_of_reasoning_token(
+    model: "LLM", tokeniser: Tokeniser, model_config: "ModelConfig"
+) -> str | re.Pattern | None:
+    """Get the end-of-reasoning token for a generative model.
+
+    Args:
+        model:
+            The vLLM model.
+        tokeniser:
+            The tokeniser.
+        model_config:
+            The model configuration.
+
+    Returns:
+        The end of reasoning token, or None if it could not be found.
+    """
+    model_id = model_config.model_id
+
+    # Create a prompt to check if the model uses the reasoning tokens
+    prompt = "What is your name?"
+    if has_chat_template(tokeniser=tokeniser):
+        extra_kwargs = dict()
+        if model_config.param in {"thinking", "no-thinking"}:
+            extra_kwargs["enable_thinking"] = model_config.param == "thinking"
+        templated_prompt = apply_chat_template(
+            conversation=[dict(role="user", content=prompt)],
+            tokeniser=tokeniser,
+            tokenise=False,
+            add_generation_prompt=True,
+            **extra_kwargs,
+        )
+        assert isinstance(templated_prompt, str)
+        prompt = templated_prompt
+
+    # Check that the beginning-of-reasoning token is actually used by the model
+    output = model.generate(
+        prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
+    )[0]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
+    bor_reasoning_matches = [
+        (bor_token, eor_token)
+        for bor_token, eor_token in REASONING_TOKENS
+        if (
+            (
+                isinstance(bor_token, str)
+                and (bor_token in prompt or bor_token in completion)
+            )
+            or (
+                isinstance(bor_token, re.Pattern)
+                and (
+                    bor_token.search(prompt) is not None
+                    or bor_token.search(completion) is not None
+                )
+            )
+        )
+    ]
+    if not bor_reasoning_matches:
+        log_once(
+            f"The model {model_id!r} did not generate any beginning-of-reasoning "
+            "tokens in the prompt or the completion. Assuming the model is not a "
+            "reasoning model.",
+            level=logging.DEBUG,
+        )
+        return None
+
+    # Check that the end-of-reasoning token is actually used by the model
+    output = model.generate(
+        prompts=[prompt],
+        sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
+        use_tqdm=False,
+    )[0]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
+    eor_reasoning_matches = [
+        (bor_token, eor_token)
+        for bor_token, eor_token in bor_reasoning_matches
+        if (
+            (isinstance(eor_token, str) and eor_token in completion)
+            or (
+                isinstance(eor_token, re.Pattern)
+                and eor_token.search(completion) is not None
+            )
+        )
+    ]
+    if not eor_reasoning_matches:
+        log_once(
+            f"The model {model_id!r} did not generate any end-of-reasoning "
+            "tokens in the prompt or the completion, even though it generated "
+            "the beginning-of-reasoning tokens "
+            f"{[bor_token for bor_token, _ in bor_reasoning_matches]!r}. "
+            "This is probably not correct, so please report this issue.",
+            level=logging.WARNING,
+        )
+        return None
+
+    if len(eor_reasoning_matches) > 1:
+        log_once(
+            f"Found multiple reasoning tokens {eor_reasoning_matches} for "
+            f"model {model_id!r}. Using {eor_reasoning_matches[0]!r} as "
+            "the reasoning token. If this is not the correct reasoning token, "
+            "please report this issue.",
+            level=logging.WARNING,
+        )
+
+    bor_token, eor_token = eor_reasoning_matches[0]
+
+    bor_token_logging: str = (
+        bor_token if isinstance(bor_token, str) else bor_token.pattern
+    )
+    eor_token_logging: str = (
+        eor_token if isinstance(eor_token, str) else eor_token.pattern
+    )
+    log_once(
+        f"Detected beginning-of-reasoning token {bor_token_logging!r} and "
+        f"end-of-reasoning token {eor_token_logging!r} for model {model_id!r}.",
+        level=logging.DEBUG,
+    )
+
+    return eor_token
+
+
+def get_true_max_model_len(hf_model_config: "PretrainedConfig") -> int:
+    """Get the true maximum context length of a model.
+
+    Args:
+        hf_model_config:
+            The Hugging Face model configuration.
+
+    Returns:
+        The maximum context length.
+    """
+    potential_max_model_length_config_names = [
+        "max_position_embeddings",
+        "max_sequence_length",
+        "model_max_length",
+        "n_positions",
+    ]
+    true_max_model_len_candidates: list[int] = list()
+    for config_name in potential_max_model_length_config_names:
+        if hasattr(hf_model_config, config_name):
+            model_len = getattr(hf_model_config, config_name)
+            if model_len is not None:
+                true_max_model_len_candidates.append(model_len)
+
+    true_max_model_len = (
+        min(true_max_model_len_candidates)
+        if len(true_max_model_len_candidates) > 0
+        else MAX_CONTEXT_LENGTH
+    )
+    return true_max_model_len
+
+
+def select_backend_and_parallelism(
+    force_single_gpu: bool = False,
+) -> tuple[str, int, int]:
+    """Determine the distributed backend and parallelism for vLLM.
+
+    Args:
+        force_single_gpu:
+            If True, forces tensor parallelism to 1.
+
+    Returns:
+        Backend, tensor parallel size, and pipeline parallel size.
+    """
+    if not torch.cuda.is_available():
+        # Non-CUDA backends (e.g. Apple Metal, CPU) only ever expose a single device
+        # here, and their vLLM plugins don't support the multiprocessing executor —
+        # the Metal plugin rejects the worker's "mps" device. Use the in-process
+        # executor instead, which vLLM also selects by default for a single device.
+        #
+        # vLLM still initialises a gloo process group to talk to its engine-core
+        # subprocess, rendezvousing on the host's primary IP. On macOS that address is
+        # often unreachable from the host itself, so the rendezvous hangs indefinitely.
+        # Pin it to loopback (without clobbering an explicit user setting).
+        os.environ.setdefault("VLLM_HOST_IP", "127.0.0.1")
+        return "uni", 1, 1
+
+    # If forcing single GPU, skip multi-node setup entirely
+    if force_single_gpu:
+        return "mp", 1, 1
+
+    if not ray.is_initialized():
+        try:
+            ray.init(address="auto", ignore_reinit_error=True)
+        except Exception as e:
+            if "could not find any running ray instance" not in str(e).lower():
+                log_once(
+                    f"Ray initialisation failed with a {type(e)} exception: {e}",
+                    level=logging.DEBUG,
+                )
+
+    is_ray = ray.is_initialized()
+    local_gpu_count = torch.cuda.device_count()
+
+    if is_ray:
+        resources = ray.cluster_resources()
+        total_gpus = int(resources.get("GPU", 0))
+    else:
+        total_gpus = local_gpu_count
+
+    using_multiple_nodes = total_gpus > local_gpu_count
+    if is_ray and using_multiple_nodes:
+        distributed_executor_backend = "ray"
+        tensor_parallel_size = local_gpu_count if local_gpu_count > 0 else 1
+        pipeline_parallel_size = max(1, total_gpus // tensor_parallel_size)
+        log_once(
+            f"Detected a multi-node setup with {pipeline_parallel_size:,} nodes, each "
+            f"with {tensor_parallel_size:,} GPUs, so using `ray` as the "
+            "distributed backend.",
+            level=logging.DEBUG,
+        )
+    else:
+        distributed_executor_backend = "mp"
+        tensor_parallel_size = local_gpu_count if local_gpu_count > 0 else 1
+        pipeline_parallel_size = 1
+        log_once(
+            f"Detected a single-node setup with {tensor_parallel_size:,} GPUs, "
+            "so using the multiprocessing distributed backend.",
+            level=logging.DEBUG,
+        )
+
+    return distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size
+
+
+def _create_llm_instance(
+    model_location: str,
+    download_dir: str,
+    benchmark_config: "BenchmarkConfig",
+    max_model_len: int,
+    revision: str,
+    quantization: str | None,
+    dtype: str | torch.dtype,
+    hf_overrides: dict[str, t.Any],
+    vllm_params: dict[str, t.Any],
+    model_config: "ModelConfig",
+    force_single_gpu: bool = False,
+) -> "LLM":
+    """Create a vLLM LLM instance.
+
+    Args:
+        model_location:
+            Path or ID of the model.
+        download_dir:
+            Directory for downloading model weights.
+        benchmark_config:
+            Benchmark configuration.
+        max_model_len:
+            Maximum model length.
+        revision:
+            Model revision.
+        quantization:
+            Quantization method.
+        dtype:
+            Data type.
+        hf_overrides:
+            Hugging Face overrides.
+        vllm_params:
+            vLLM parameters.
+        model_config:
+            Model configuration.
+        force_single_gpu:
+            If True, forces tensor parallelism to 1.
+
+    Returns:
+        The loaded vLLM LLM instance.
+    """
+    backend, tp_size, pp_size = select_backend_and_parallelism(
+        force_single_gpu=force_single_gpu
+    )
+
+    llm_kwargs: dict[str, t.Any] = {
+        "model": model_location,
+        "tokenizer": model_location,
+        "gpu_memory_utilization": benchmark_config.gpu_memory_utilization,
+        "max_model_len": max_model_len,
+        "max_num_batched_tokens": max_model_len,
+        "download_dir": download_dir,
+        "trust_remote_code": benchmark_config.trust_remote_code,
+        "revision": revision,
+        "seed": 4242,
+        "distributed_executor_backend": backend,
+        "tensor_parallel_size": tp_size,
+        "pipeline_parallel_size": pp_size,
+        "disable_custom_all_reduce": True,
+        "quantization": quantization,
+        "dtype": dtype,  # ty: ignore[invalid-argument-type]
+        "enforce_eager": True,
+        "enable_prefix_caching": False,
+        "enable_flashinfer_autotune": False,
+        "enable_lora": model_config.adapter_base_model_id is not None,
+        "max_lora_rank": 256,
+        "limit_mm_per_prompt": {"image": 0, "video": 0, "audio": 0},
+        "runner": "generate",
+        **({"hf_overrides": hf_overrides} if hf_overrides else {}),
+        **vllm_params,
+    }
+    return LLM(**llm_kwargs)
+
+
+def _determine_dtype(
+    hf_model_config: "PretrainedConfig",
+) -> tuple[str | torch.dtype, str | None]:
+    """Determine the dtype and quantization for loading.
+
+    Args:
+        hf_model_config:
+            The Hugging Face model configuration.
+
+    Returns:
+        Tuple of (dtype, quantization).
+
+    Raises:
+        NeedsExtraInstalled:
+            If quantized model requires missing packages.
+    """
+    dtype: str | torch.dtype = "auto"
+
+    if hf_model_config.dtype == torch.float32:
+        if torch.cuda.is_bf16_supported():
+            log(
+                "You are loading a model with dtype FP32, which we will convert to "
+                "BF16 as FP32 is not supported by vLLM and BF16 is supported by your "
+                "GPU.",
+                level=logging.WARNING,
+            )
+            dtype = torch.bfloat16
+        else:
+            log(
+                "You are loading a model with dtype FP32, which we will convert to "
+                "FP16 as FP32 is not supported by vLLM and BF16 is not supported by "
+                "your GPU.",
+                level=logging.WARNING,
+            )
+            dtype = torch.float16
+
+    if hf_model_config.dtype == torch.bfloat16:
+        min_cuda_compute_capability = get_min_cuda_compute_capability()
+        required_capability = VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY
+
+        if min_cuda_compute_capability is not None:
+            if min_cuda_compute_capability < required_capability:
+                log(
+                    f"You are loading a model with dtype {hf_model_config.dtype}, "
+                    "which vLLM only supports for CUDA devices with CUDA compute "
+                    f"capability >={required_capability}. You are using one or more "
+                    f"devices with compute capability {min_cuda_compute_capability}. "
+                    "Setting dtype to float16 instead.",
+                    level=logging.WARNING,
+                )
+                dtype = torch.float16
+
+    quantization: str | None = None
+    if hasattr(hf_model_config, "quantization_config"):
+        quantization = hf_model_config.quantization_config.get("quant_method")
+
+    if quantization == "gptq" and (
+        importlib.util.find_spec("auto_gptq") is None
+        or importlib.util.find_spec("optimum") is None
+    ):
+        raise NeedsExtraInstalled(extra="quantization")
+    if quantization == "awq" and importlib.util.find_spec("awq") is None:
+        raise NeedsExtraInstalled(extra="quantization")
+
+    if quantization is not None:
+        log(
+            f"You are loading a quantized model with quantization {quantization}. "
+            "Forcing the vLLM dtype to 'auto'",
+            level=logging.WARNING,
+        )
+        dtype = "auto"
+
+    return dtype, quantization
+
+
 @contextlib.contextmanager
 def _skip_image_processor_context() -> c.Generator[None, None, None]:
     """Suppress missing image processor errors during model loading.
@@ -173,43 +693,535 @@ def _skip_image_processor_context() -> c.Generator[None, None, None]:
             os.environ.pop("VLLM_LIMIT_MM_PER_PROMPT", None)
 
 
-def compute_token_budget(
-    model_max_length: int, max_generated_tokens: int
-) -> tuple[int, int]:
-    """Compute the generation and per-prompt token budgets for a model.
-
-    The generation budget cannot exceed the model's context length, and we
-    additionally need to reserve room for the prompt. For models whose context is
-    too small to fit both the prompt and the dataset's full generation budget, we
-    shrink the generation budget (down to half the context) so that the prompt
-    retains room, rather than truncating the prompt down to nothing.
+def _handle_model_load_error(
+    error: Exception,
+    model_id: str,
+    benchmark_config: "BenchmarkConfig",
+    create_llm_fn: c.Callable[[bool], "LLM"],
+) -> "LLM":
+    """Handle model loading errors with retries.
 
     Args:
-        model_max_length:
-            The maximum context length of the model's tokeniser.
-        max_generated_tokens:
-            The dataset's configured number of tokens to generate.
+        error:
+            The exception raised during model loading.
+        model_id:
+            The model ID.
+        benchmark_config:
+            Benchmark configuration.
+        create_llm_fn:
+            Function to create LLM instance.
 
     Returns:
-        A pair ``(generation_budget, max_tokens_per_prompt)``, being the number of
-        tokens reserved for generation and the resulting maximum number of tokens
-        allowed in a prompt, respectively.
+        Loaded LLM instance.
 
     Raises:
-        InvalidBenchmark:
-            If the model's context length is too small to fit any prompt alongside
-            the generation budget.
+        InvalidModel:
+            If model cannot be loaded.
     """
-    max_context_length = min(model_max_length, MAX_CONTEXT_LENGTH)
-    generation_budget = min(max_generated_tokens, max(max_context_length // 2, 1))
-    max_tokens_per_prompt = max_context_length - generation_budget
-    if max_tokens_per_prompt <= 0:
-        raise InvalidBenchmark(
-            f"The model's context length of {max_context_length:,} tokens is too "
-            "small to fit any prompt alongside its generation budget, so it cannot "
-            "be benchmarked on this dataset."
+    error_str = str(error)
+
+    has_missing_processor = (
+        "Can't load image processor" in error_str
+        and "preprocessor_config.json" in error_str
+    )
+    if has_missing_processor:
+        log(
+            f"Model {model_id!r} is missing an image processor config. Retrying "
+            "without image processing since EuroEval only does text inference.",
+            level=logging.DEBUG,
         )
-    return generation_budget, max_tokens_per_prompt
+        try:
+            with _skip_image_processor_context():
+                return create_llm_fn(False)
+        except (RuntimeError, ValueError, OSError) as retry_e:
+            raise InvalidModel(
+                f"The model {model_id!r} could not be loaded. The error was "
+                f"{retry_e!r}."
+            ) from retry_e
+
+    multimodal_patterns = [
+        "multimodal budget",
+        "MM input",
+        "image input",
+        "vision model",
+    ]
+    if any(pattern in error_str for pattern in multimodal_patterns):
+        log(
+            f"Model {model_id!r} triggered multimodal error during initialisation. "
+            "Retrying with multimodal inputs disabled since EuroEval only does "
+            "text inference.",
+            level=logging.DEBUG,
+        )
+        try:
+            with _skip_image_processor_context():
+                return create_llm_fn(False)
+        except (RuntimeError, ValueError, OSError) as retry_e:
+            raise InvalidModel(
+                f"The model {model_id!r} could not be loaded in text-only mode. "
+                f"The error was {retry_e!r}."
+            ) from retry_e
+
+    if "attention heads" in error_str and "divisible by tensor parallel" in error_str:
+        log(
+            f"Model {model_id!r} failed with tensor parallel error. "
+            "Retrying with single GPU.",
+            level=logging.DEBUG,
+        )
+        try:
+            return create_llm_fn(True)
+        except (RuntimeError, ValueError, OSError) as retry_e:
+            raise InvalidModel(
+                f"The model {model_id!r} could not be loaded even with "
+                f"single GPU. The error was {retry_e!r}."
+            ) from retry_e
+
+    if "awaiting a review from the repo authors" in str(error):
+        raise InvalidModel(
+            f"The model {model_id!r} is awaiting a review from the repository "
+            "authors. Please try again later."
+        ) from error
+
+    if "trust_remote_code" in str(error):
+        raise InvalidModel(
+            f"Loading the model {model_id!r} needs to trust remote code. "
+            "If you trust the suppliers of this model, then you can enable "
+            "this by setting the `--trust-remote-code` flag."
+        ) from error
+
+    if "See stack trace for root cause." in str(
+        error
+    ) or "See root cause above." in str(error):
+        msg = (
+            f"The model {model_id!r} could not be loaded, but vLLM did not mention "
+            f"exactly what happened. "
+        )
+        if benchmark_config.verbose:
+            msg += (
+                "Since you're running in verbose mode, you might see a descriptive "
+                "error above already. Note however that if the error message urges "
+                "you to use the attention backend 'FLEX_ATTENTION', please try "
+                "setting it to 'TRITON_ATTN' instead using the "
+                "`--attention-backend` CLI argument, as that often solves the "
+                "issue, whereas 'FLEX_ATTENTION' usually doesn't. If you don't "
+                "see any descriptive error above, then you can try "
+            )
+        else:
+            msg += "Try "
+        msg += (
+            "re-running the benchmark with the environment variable `FULL_LOG` "
+            "set to `1` to see the full stack trace. E.g., "
+            f"`FULL_LOG=1 euroeval --model {model_id}`."
+        )
+        raise InvalidModel(msg) from error
+
+    raise InvalidModel(
+        f"The model {model_id!r} could not be loaded. The error was {error!r}."
+    ) from error
+
+
+def _get_rope_parameters_override(
+    model_id: str, hf_model_config: "PretrainedConfig"
+) -> dict[str, str | int | float] | None:
+    """Build a nested ``rope_parameters`` override from legacy top-level rope fields.
+
+    Transformers 5.x consolidated rope configuration into a single nested
+    ``rope_parameters`` dict, and vLLM model implementations written against that
+    schema (e.g. ``olmo2.py``, which OLMo-3 reuses) read from it. Many models,
+    however, still ship a ``config.json`` with the legacy top-level ``rope_theta`` and
+    ``rope_scaling`` fields, causing vLLM to raise ``KeyError: 'rope_theta'``. This
+    helper transcribes the legacy fields into the nested structure vLLM expects.
+
+    The transcription itself is model-agnostic, but we only apply it to an explicit
+    allowlist of model families that we have confirmed need it, to avoid injecting a
+    (possibly mis-transcribed) override into models whose vLLM implementation reads the
+    top-level fields correctly today.
+
+    Args:
+        model_id:
+            The model identifier.
+        hf_model_config:
+            The Hugging Face model configuration.
+
+    Returns:
+        A rope_parameters dict if the model is in the allowlist and lacks existing
+        rope_parameters; otherwise None.
+    """
+    # Families confirmed to require the legacy -> nested rope_parameters conversion,
+    # as (model_type, architecture) signals. Extend this list as new ones surface.
+    needs_override = getattr(hf_model_config, "model_type", None) == "olmo3" or (
+        hf_model_config.architectures
+        and "Olmo3ForCausalLM" in hf_model_config.architectures
+    )
+    if not needs_override or getattr(hf_model_config, "rope_parameters", None):
+        return None
+
+    rope_theta = getattr(hf_model_config, "rope_theta", 10000)
+    rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
+    rope_parameters: dict[str, str | int | float] = {
+        "rope_theta": rope_theta,
+        "rope_type": rope_scaling.get("rope_type", "default"),
+    }
+    for key in [
+        "factor",
+        "original_max_position_embeddings",
+        "attention_factor",
+        "beta_fast",
+        "beta_slow",
+        "short_factor",
+        "long_factor",
+    ]:
+        if key in rope_scaling:
+            rope_parameters[key] = rope_scaling[key]
+
+    log_once(
+        f"Adding rope_parameters override for model {model_id!r}: {rope_parameters!r}",
+        level=logging.DEBUG,
+    )
+    return rope_parameters
+
+
+def _prepare_hf_overrides(
+    hf_model_config: "PretrainedConfig", model_id: str
+) -> dict[str, dict[str, str | int | float] | list[str]]:
+    """Prepare Hugging Face overrides for vLLM.
+
+    Args:
+        hf_model_config:
+            The Hugging Face model configuration.
+        model_id:
+            The model ID.
+
+    Returns:
+        Dictionary of HF overrides.
+    """
+    hf_overrides: dict[str, dict[str, str | int | float] | list[str]] = {}
+
+    if hf_model_config.architectures:
+        remapped = [
+            _ARCHITECTURE_ALIASES.get(arch, arch)
+            for arch in hf_model_config.architectures
+        ]
+        if remapped != hf_model_config.architectures:
+            log(
+                f"Remapping model architectures {hf_model_config.architectures} -> "
+                f"{remapped} for vLLM compatibility.",
+                level=logging.INFO,
+            )
+            hf_model_config.architectures = remapped
+            hf_overrides["architectures"] = remapped
+
+    rope_parameters_override = _get_rope_parameters_override(
+        model_id=model_id, hf_model_config=hf_model_config
+    )
+    if rope_parameters_override is not None:
+        hf_overrides["rope_parameters"] = rope_parameters_override
+
+    return hf_overrides
+
+
+def get_vllm_tokenisation_params(
+    tokeniser: Tokeniser, model_config: "ModelConfig"
+) -> dict[str, t.Any]:
+    """Get the tokenisation parameters for vLLM.
+
+    Args:
+        tokeniser:
+            The tokeniser.
+        model_config:
+            The model configuration.
+
+    Returns:
+        A dictionary of tokenisation parameters to pass to vLLM.
+    """
+    if isinstance(tokeniser, MistralCommonTokenizer):
+        tokeniser_mode = "mistral"
+    elif model_config.param == "slow-tokenizer":
+        tokeniser_mode = "slow"
+    else:
+        tokeniser_mode = "auto"
+
+    if isinstance(tokeniser, MistralCommonTokenizer):
+        config_format = "mistral"
+    else:
+        config_format = "auto"
+
+    if isinstance(tokeniser, MistralCommonTokenizer):
+        load_format = "mistral"
+    else:
+        load_format = "auto"
+
+    return dict(
+        tokenizer_mode=tokeniser_mode,
+        config_format=config_format,
+        load_format=load_format,
+    )
+
+
+def load_model(
+    model_config: "ModelConfig",
+    benchmark_config: "BenchmarkConfig",
+    attention_backend: str | None,
+    generative_type: "GenerativeType",
+    true_max_model_len: int,
+    tokeniser: Tokeniser,
+    hf_model_config: "PretrainedConfig",
+) -> "LLM":
+    """Load the model.
+
+    Args:
+        model_config:
+            The model configuration.
+        benchmark_config:
+            The benchmark configuration.
+        attention_backend:
+            The attention backend to use, or None to use the vLLM default.
+        generative_type:
+            The generative type of the model.
+        true_max_model_len:
+            The maximum context length of the model.
+        tokeniser:
+            The tokeniser associated with the model.
+        hf_model_config:
+            The Hugging Face model configuration.
+
+    Returns:
+        The loaded model.
+    """
+    model_id = model_config.adapter_base_model_id or model_config.model_id
+    revision = (
+        model_config.revision if model_config.adapter_base_model_id is None else "main"
+    )
+
+    dtype, quantization = _determine_dtype(hf_model_config)
+
+    download_dir = (
+        str(Path(model_config.model_cache_dir) / "base_model")
+        if model_config.adapter_base_model_id is not None
+        else str(model_config.model_cache_dir)
+    )
+
+    os.environ.setdefault(
+        "VLLM_CACHE_ROOT", str((Path(benchmark_config.cache_dir) / "vllm").resolve())
+    )
+
+    vllm_params = get_vllm_tokenisation_params(
+        tokeniser=tokeniser, model_config=model_config
+    )
+
+    if hasattr(vllm.config, "attention") and attention_backend is not None:
+        vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)  # ty: ignore[invalid-argument-type]
+
+    clear_vllm()
+
+    hf_overrides = _prepare_hf_overrides(
+        hf_model_config=hf_model_config, model_id=model_id
+    )
+
+    distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
+        select_backend_and_parallelism(force_single_gpu=False)
+    )
+
+    model_location = (
+        model_id
+        if internet_connection_available() or Path(model_id).is_dir()
+        else resolve_model_path(download_dir=download_dir)
+    )
+
+    max_model_len = min(
+        true_max_model_len,
+        MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
+        if generative_type == GenerativeType.REASONING
+        else MAX_CONTEXT_LENGTH,
+    )
+
+    def _create_wrapped(force_single_gpu: bool = False) -> "LLM":
+        return _create_llm_instance(
+            model_location=model_location,
+            download_dir=download_dir,
+            benchmark_config=benchmark_config,
+            max_model_len=max_model_len,
+            revision=revision,
+            quantization=quantization,
+            dtype=dtype,
+            hf_overrides=hf_overrides,
+            vllm_params=vllm_params,
+            model_config=model_config,
+            force_single_gpu=force_single_gpu,
+        )
+
+    try:
+        model = _create_wrapped(False)
+    except (RuntimeError, ValueError, OSError) as e:
+        model = _handle_model_load_error(
+            error=e,
+            model_id=model_id,
+            benchmark_config=benchmark_config,
+            create_llm_fn=_create_wrapped,
+        )
+
+    model.config = hf_model_config
+    return model
+
+
+def _is_mistral_tokeniser_model(
+    model_id: str, hf_model_config: "PretrainedConfig"
+) -> bool:
+    """Determine whether a model should use the Mistral common tokeniser.
+
+    Used as a fallback when ``AutoTokenizer.from_pretrained`` fails, to decide whether
+    to retry with ``MistralCommonTokenizer``. The decision is based on the model's
+    identity rather than the error message, since the error raised by
+    ``MistralCommonBackend.from_pretrained`` mentions "MistralCommonBackend", which
+    would otherwise match non-Mistral models whose tokeniser loading happens to fail.
+
+    Args:
+        model_id:
+            The model identifier.
+        hf_model_config:
+            The Hugging Face model configuration.
+
+    Returns:
+        Whether the model should be loaded with the Mistral common tokeniser.
+    """
+    # Base models do not use the mistral-common tokeniser, so we never fall back
+    # to it for them regardless of their model type or architectures. This
+    # includes IDs containing "base" and versioned base models like
+    # mistralai/Mistral-7B-v0.1 which lack a chat template. Instruction-tuned
+    # models are exempt from this check.
+    model_name = model_id.rsplit("/", 1)[-1].lower()
+    if "instruct" not in model_name and (
+        "base" in model_name or re.search(r"-v\d+\.\d+$", model_name)
+    ):
+        return False
+    if model_id.startswith("mistralai/"):
+        return True
+    if getattr(hf_model_config, "model_type", None) == "mistral":
+        return True
+    architectures = getattr(hf_model_config, "architectures", None) or []
+    return any("Mistral" in architecture for architecture in architectures)
+
+
+def load_tokeniser(
+    model_id: str,
+    revision: str,
+    adapter_base_model_id: str | None,
+    trust_remote_code: bool,
+    model_max_length: int,
+    model_config: "ModelConfig",
+    hf_model_config: "PretrainedConfig",
+    token: str | None,
+) -> Tokeniser:
+    """Load the tokeniser.
+
+    Args:
+        model_id:
+            The model identifier.
+        revision:
+            The revision of the model.
+        adapter_base_model_id:
+            The base model ID for the adapter model. Can be None if the model is not an
+            adapter model.
+        trust_remote_code:
+            Whether to trust remote code.
+        model_max_length:
+            The maximum length of the model.
+        model_config:
+            The model configuration.
+        hf_model_config:
+            The Hugging Face model configuration.
+        token:
+            The Hugging Face API token.
+
+    Returns:
+        The loaded tokeniser.
+
+    Raises:
+        InvalidModel:
+            If the tokeniser could not be loaded.
+    """
+    revision = revision if adapter_base_model_id is None else "main"
+    num_retries = 5
+    for _ in range(num_retries):
+        try:
+            # Mistral instruction-tuned models need a custom tokeniser
+            if model_id.startswith("mistralai/") and "base" not in model_id.lower():
+                tokeniser = MistralCommonTokenizer.from_pretrained(
+                    model_id,
+                    padding_side="left",
+                    truncation_side="left",
+                    model_max_length=model_max_length,
+                    token=token,
+                )
+                break
+            tokeniser = AutoTokenizer.from_pretrained(
+                model_id,
+                revision=revision,
+                use_fast=False if model_config.param == "slow-tokenizer" else True,
+                trust_remote_code=trust_remote_code,
+                padding_side="left",
+                truncation_side="left",
+                model_max_length=model_max_length,
+                cache_dir=model_config.model_cache_dir,
+                config=hf_model_config,
+                token=token,
+                local_files_only=not internet_connection_available(),
+            )
+            break
+        except (json.JSONDecodeError, OSError, TypeError) as e:
+            if adapter_base_model_id is None or model_id == adapter_base_model_id:
+                raise InvalidModel(
+                    f"Could not load tokeniser for model {model_id!r}. The error was "
+                    f"{str(e)}."
+                ) from e
+            log(
+                f"Could not load tokeniser for {model_id!r}. Falling back to "
+                f"{adapter_base_model_id!r}.",
+                level=logging.DEBUG,
+            )
+            model_id = adapter_base_model_id
+        except (TimeoutError, RequestError):
+            log(
+                f"Couldn't load tokeniser for {model_id!r}. Retrying.",
+                level=logging.WARNING,
+            )
+            sleep(5)
+            continue
+        except (KeyError, ValueError) as e:
+            if _is_mistral_tokeniser_model(
+                model_id=model_id, hf_model_config=hf_model_config
+            ):
+                tokeniser = MistralCommonTokenizer.from_pretrained(
+                    model_id,
+                    padding_side="left",
+                    truncation_side="left",
+                    model_max_length=model_max_length,
+                    token=token,
+                )
+                break
+            raise InvalidModel(
+                f"Could not load tokeniser for model {model_id!r}. The error was "
+                f"{str(e)}."
+            ) from e
+    else:
+        raise InvalidModel(
+            f"Could not load tokeniser for model {model_id!r} after {num_retries} "
+            "attempts."
+        )
+
+    # Ensure that BOS, EOS and PAD tokens are set
+    if not isinstance(tokeniser, MistralCommonTokenizer):
+        if not isinstance(
+            tokeniser, TokenizersBackend | SentencePieceBackend | PythonBackend
+        ):
+            raise InvalidModel(
+                f"Unknown tokenizer type encountered: {tokeniser}. Please report this "
+                "bug at https://github.com/EuroEval/EuroEval/issues."
+            )
+        tokeniser.bos_token, tokeniser.bos_token_id = get_bos_token(tokeniser=tokeniser)
+        tokeniser.eos_token, tokeniser.eos_token_id = get_eos_token(tokeniser=tokeniser)
+        tokeniser.pad_token, tokeniser.pad_token_id = get_pad_token(tokeniser=tokeniser)
+
+    return tokeniser
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -381,373 +1393,6 @@ class VLLMModel(HuggingFaceEncoderModel):
         if hasattr(self, "_tokeniser"):
             del self._tokeniser
 
-    @property
-    def generative_type(self) -> GenerativeType | None:
-        """The generative type of the model.
-
-        Returns:
-            The generative type of the model, or None if it has not been set yet.
-        """
-        if self.benchmark_config.generative_type is not None:
-            type_ = self.benchmark_config.generative_type
-        elif self.model_config.param in {"thinking"}:
-            type_ = GenerativeType.REASONING
-        elif self.model_config.param in {"no-thinking"}:
-            type_ = GenerativeType.INSTRUCTION_TUNED
-        elif (
-            hasattr(self, "end_of_reasoning_token")
-            and self.end_of_reasoning_token is not None
-        ):
-            type_ = GenerativeType.REASONING
-        elif not hasattr(self, "_tokeniser"):
-            log_once(
-                "The generative type of the model has not been set yet as the "
-                "tokeniser has not been loaded.",
-                level=logging.DEBUG,
-            )
-            return None
-        elif (
-            has_chat_template(tokeniser=self._tokeniser)
-            or "instruct" in self.model_config.model_id.lower()
-        ):
-            type_ = GenerativeType.INSTRUCTION_TUNED
-        else:
-            type_ = GenerativeType.BASE
-        log_once(
-            f"Detected generative type {type_.name!r} for model "
-            f"{self.model_config.model_id!r}",
-            level=logging.DEBUG,
-        )
-        return type_
-
-    @property
-    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
-        """The function used to extract the labels from the generated output.
-
-        Returns:
-            The function used to extract the labels from the generated output.
-        """
-        match self.dataset_config.task.task_group:
-            case (
-                TaskGroup.SEQUENCE_CLASSIFICATION
-                | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-            ):
-                return partial(
-                    sequence_classification.extract_labels_from_generation,
-                    dataset_config=self.dataset_config,
-                    model_config=self.model_config,
-                    first_label_token_mapping=self.buffer["first_label_token_mapping"],
-                )
-            case TaskGroup.TEXT_TO_TEXT:
-                return text_to_text.extract_labels_from_generation
-            case TaskGroup.TOKEN_CLASSIFICATION:
-                return partial(
-                    token_classification.extract_labels_from_generation,
-                    dataset_config=self.dataset_config,
-                )
-            case TaskGroup.QUESTION_ANSWERING:
-                return question_answering.extract_labels_from_generation
-            case _:
-                raise NotImplementedError(
-                    f"Unsupported task group: {self.dataset_config.task.task_group}."
-                )
-
-    def prepare_dataset(
-        self, dataset: "DatasetDict", task: "Task", itr_idx: int
-    ) -> "DatasetDict":
-        """Prepare the dataset for the model.
-
-        This includes things like tokenisation.
-
-        Args:
-            dataset:
-                The dataset to prepare.
-            task:
-                The task to prepare the dataset for.
-            itr_idx:
-                The index of the dataset in the iterator.
-
-        Returns:
-            The prepared dataset.
-        """
-        if task.task_group == TaskGroup.QUESTION_ANSWERING:
-            dataset = dataset.map(
-                lambda examples: dict(
-                    label=[
-                        dict(
-                            id=id,
-                            answers=dict(
-                                answer_start=answer_dct["answer_start"],
-                                text=[
-                                    answer_text.lower()
-                                    for answer_text in answer_dct["text"]
-                                ],
-                            ),
-                        )
-                        for id, answer_dct in zip(examples["id"], examples["answers"])
-                    ]
-                ),
-                batched=True,
-                load_from_cache_file=False,
-                keep_in_memory=True,
-            )
-
-        if self.benchmark_config.few_shot:
-            few_shot_examples = extract_few_shot_examples(
-                dataset=dataset,
-                dataset_config=self.dataset_config,
-                benchmark_config=self.benchmark_config,
-                itr_idx=itr_idx,
-            )
-        else:
-            few_shot_examples = list()
-
-        dataset["test"] = dataset["test"].map(
-            partial(
-                apply_prompt,
-                few_shot_examples=few_shot_examples,
-                model_config=self.model_config,
-                dataset_config=self.dataset_config,
-                generative_type=self.generative_type,
-                always_populate_text_field=True,
-                tokeniser=self._tokeniser,
-                use_bits_per_character=self.benchmark_config.use_bits_per_character,
-            ),
-            batched=True,
-            load_from_cache_file=False,
-            keep_in_memory=True,
-        )
-
-        return dataset
-
-    def update_dataset_config(self, dataset_config: "DatasetConfig") -> t.Self:
-        """Update the dataset config registered in the benchmark module.
-
-        Args:
-            dataset_config:
-                The new dataset config.
-
-        Returns:
-            The benchmark module.
-
-        Raises:
-            InvalidBenchmark:
-                If the dataset requires logprobs, but we weren't able to update the
-                first label token mapping.
-        """
-        self.dataset_config = dataset_config
-        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
-            dataset_config=self.dataset_config,
-            model_config=self.model_config,
-            tokeniser=self._tokeniser,
-            generative_type=self.generative_type,
-            log_metadata=self.log_metadata,
-        )
-        if (
-            not self.buffer["first_label_token_mapping"]
-            and self.dataset_config.task.requires_logprobs
-        ):
-            raise InvalidBenchmark(
-                "The dataset requires logprobs, but we encountered an error when "
-                "trying to get the first token of each label in the dataset. You can "
-                "try running this benchmark with the --verbose flag or setting "
-                "FULL_LOG=1 to see what the error was. Skipping this evaluation."
-            )
-        return self
-
-    def _setup_stop_tokens(self) -> list[str]:
-        """Set up stopping tokens for generation.
-
-        Returns:
-            A list of stop tokens for generation.
-        """
-        stop_tokens: list[str] = self.custom_stop_tokens.copy()
-        if self.generative_type == GenerativeType.BASE:
-            stop_tokens.append("\n\n")
-        if self._tokeniser.pad_token_id is not None:
-            assert isinstance(self._tokeniser.pad_token, str), (
-                f"The pad token for the model {self.model_config.model_id!r} "
-                f"is not a string, which is unexpected: {self._tokeniser.pad_token!r}."
-            )
-            stop_tokens.append(self._tokeniser.pad_token)
-        if self._tokeniser.eos_token_id is not None:
-            assert isinstance(self._tokeniser.eos_token, str), (
-                f"The EOS token for the model {self.model_config.model_id!r} "
-                f"is not a string, which is unexpected: {self._tokeniser.eos_token!r}."
-            )
-            stop_tokens.append(self._tokeniser.eos_token)
-            if self._tokeniser.pad_token_id is None:
-                self._tokeniser.pad_token_id = self._tokeniser.eos_token_id
-                self._tokeniser.pad_token = self._tokeniser.eos_token
-        if self.end_of_chat_token_ids is not None:
-            end_of_chat_token = self._tokeniser.decode(
-                list(self.end_of_chat_token_ids)
-            ).strip()
-            if end_of_chat_token:
-                stop_tokens.append(end_of_chat_token)
-        return stop_tokens
-
-    def _setup_structured_outputs(
-        self, inputs: dict[str, t.Any]
-    ) -> "StructuredOutputsParams | None":
-        """Set up structured outputs parameters.
-
-        Args:
-            inputs:
-                The input dictionary for generation.
-
-        Returns:
-            StructuredOutputsParams if structured output is enabled, or None otherwise.
-        """
-        if (
-            self.dataset_config.task.uses_structured_output
-            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
-        ) and self.generative_type == GenerativeType.REASONING:
-            log_once(
-                "The dataset uses structured output, but we are not using it as the "
-                f"model {self.model_config.model_id!r} is a reasoning model.",
-                level=logging.DEBUG,
-            )
-            return None
-        if self.dataset_config.task.uses_structured_output:
-            return self._structured_output_for_task(inputs)
-        if (
-            self.dataset_config.task.uses_logprobs
-            and self.dataset_config.labels
-            and self.buffer.get("first_label_token_mapping", False)
-        ):
-            return self._structured_output_for_logprobs()
-        log_once(
-            "Not using structured generation as the dataset does not require it.",
-            level=logging.DEBUG,
-        )
-        return None
-
-    def _structured_output_for_task(
-        self, inputs: dict[str, t.Any]
-    ) -> "StructuredOutputsParams":
-        """Handle structured output for task-based generation.
-
-        Args:
-            inputs:
-                The input dictionary for generation.
-
-        Returns:
-            StructuredOutputsParams for the task.
-
-        Raises:
-            InvalidTask:
-                If the task requires structured output but doesn't define it.
-        """
-        if self.dataset_config.task.structured_output_format is not None:
-            return StructuredOutputsParams(
-                json=self.dataset_config.task.structured_output_format.model_json_schema()
-            )
-        if self.dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
-            return self._so_token_classification()
-        if self.dataset_config.task == LOGIC:
-            return self._so_logic(inputs)
-        raise InvalidTask(
-            message=(
-                "Task set to use structured output, but it neither defines "
-                "an output structure nor is a token classification task "
-                "- at least one of these must be true."
-            )
-        )
-
-    def _so_token_classification(self) -> "StructuredOutputsParams":
-        """Handle structured output for token classification.
-
-        Returns:
-            StructuredOutputsParams for token classification.
-        """
-        tag_names = list(self.dataset_config.prompt_label_mapping.values())
-        keys_and_their_types: dict[str, t.Any] = {
-            tag_name: (conlist(str, max_length=5), ...) for tag_name in tag_names
-        }
-        answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
-        schema = answer_format_class.model_json_schema()
-        log_once(
-            "Using structured generation with the JSON schema: "
-            f"{json.dumps(schema, ensure_ascii=False)}",
-            level=logging.DEBUG,
-        )
-        return StructuredOutputsParams(json=schema)
-
-    def _so_logic(self, inputs: dict[str, t.Any]) -> "StructuredOutputsParams":
-        """Handle structured output for LOGIC tasks.
-
-        Args:
-            inputs:
-                The input dictionary for generation.
-
-        Returns:
-            StructuredOutputsParams for LOGIC tasks.
-        """
-        first_sample_raw = inputs["target_text"][0]
-        first_sample = (
-            json.loads(first_sample_raw)
-            if isinstance(first_sample_raw, str)
-            else first_sample_raw
-        )
-        object_keys = [k for k in first_sample.keys() if k.startswith("object_")]
-        n = len(object_keys)
-        k = len(first_sample[object_keys[0]]) if object_keys else 0
-        keys_and_their_types: dict[str, t.Any] = {
-            f"object_{i}": (list[str], ...) for i in range(1, n + 1)
-        }
-        answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
-        schema = answer_format_class.model_json_schema()
-        log_once(
-            f"LOGIC task with {n} objects and {k} attributes per object. "
-            f"Using structured generation with the JSON schema: "
-            f"{json.dumps(schema, ensure_ascii=False)}",
-            level=logging.DEBUG,
-        )
-        return StructuredOutputsParams(json=schema)
-
-    def _structured_output_for_logprobs(self) -> "StructuredOutputsParams":
-        """Handle structured output for logprobs-based tasks.
-
-        Returns:
-            StructuredOutputsParams for logprobs-based tasks.
-        """
-        choice_labels = [
-            self.dataset_config.prompt_label_mapping[label]
-            for label in self.dataset_config.labels
-        ]
-        if isinstance(self.buffer["first_label_token_mapping"], dict):
-            choice_labels = [
-                self.buffer["first_label_token Mapping"][label]
-                for label in choice_labels
-            ]
-        struct_output = StructuredOutputsParams(choice=choice_labels)
-        log_once(
-            f"Using structured generation with the choices: {struct_output.choice!r}.",
-            level=logging.DEBUG,
-        )
-        return struct_output
-
-    def _setup_generation_kwargs(self) -> dict[str, t.Any]:
-        """Set up generation kwargs from model config.
-
-        Returns:
-            A dictionary of generation kwargs configured from the model.
-        """
-        generation_kwargs = GENERATION_KWARGS.copy()
-        if (generation_config := self.model_config.generation_config) is not None:
-            changed_params = generation_config.to_diff_dict()
-            for param_name in ["temperature", "top_p", "top_k", "repetition_penalty"]:
-                if param_name in changed_params:
-                    generation_kwargs[param_name] = changed_params[param_name]
-                    log_once(
-                        f"Using {param_name}={changed_params[param_name]} with the "
-                        f"model {self.model_config.model_id!r} as specified in its "
-                        "generation configuration.",
-                        level=logging.DEBUG,
-                    )
-        return generation_kwargs
-
     def _apply_token_budget(
         self, sampling_params: "SamplingParams", max_context_length: int
     ) -> int:
@@ -782,36 +1427,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 sampling_params.max_tokens = generation_budget
         return max_tokens_per_prompt
 
-    def _prepare_prompts(
-        self,
-        inputs: dict,
-        prompt_key: str,
-        max_tokens_per_prompt: int,
-        sampling_params: "SamplingParams",
-    ) -> list[str]:
-        """Prepare and truncate prompts.
-
-        Args:
-            inputs:
-                The input dictionary.
-            prompt_key:
-                The key for prompts in the inputs.
-            max_tokens_per_prompt:
-                Maximum tokens per prompt.
-            sampling_params:
-                The sampling parameters.
-
-        Returns:
-            A list of prepared and truncated prompts.
-        """
-        prompts: c.Sequence[str] = list(inputs[prompt_key])
-        prompts = self._clean_empty_prompts(prompts)
-        prompts = self._strip_prompts_if_needed(prompts)
-        prompts = self._truncate_prompts_if_needed(
-            prompts, max_tokens_per_prompt, sampling_params
-        )
-        return list(prompts)
-
     def _clean_empty_prompts(self, prompts: c.Sequence[str]) -> list[str]:
         """Replace empty prompts with BOS token.
 
@@ -831,6 +1446,166 @@ class VLLMModel(HuggingFaceEncoderModel):
                 for prompt in prompts
             ]
         return list(prompts)
+
+    def _remove_reasoning_content(self, completions: list[str]) -> list[str]:
+        """Remove reasoning content from completions for reasoning models.
+
+        Args:
+            completions:
+                The list of completion strings.
+
+        Returns:
+            The completions with reasoning content removed.
+        """
+        if (
+            self.end_of_reasoning_token is None
+            or self.generative_type != GenerativeType.REASONING
+        ):
+            return completions
+        count = 0
+        for idx, comp in enumerate(completions):
+            if (
+                isinstance(self.end_of_reasoning_token, str)
+                and self.end_of_reasoning_token in comp
+            ):
+                completions[idx] = comp.split(self.end_of_reasoning_token)[-1]
+            elif isinstance(
+                self.end_of_reasoning_token, re.Pattern
+            ) and self.end_of_reasoning_token.search(comp):
+                completions[idx] = self.end_of_reasoning_token.split(comp)[-1]
+            else:
+                count += 1
+                completions[idx] = ""
+        if count > 0:
+            log_once(
+                f"The model {self.model_config.model_id!r} is a reasoning model, "
+                f"but the generated output did not contain the end of reasoning token "
+                f"({self.end_of_reasoning_token!r}) in {count:,}/{len(completions):,} "
+                "of the samples. Using an empty string for all these samples instead.",
+                level=logging.WARNING
+                if count / len(completions) > 0.5
+                else logging.DEBUG,
+            )
+        return completions
+
+    def _setup_stop_tokens(self) -> list[str]:
+        """Set up stopping tokens for generation.
+
+        Returns:
+            A list of stop tokens for generation.
+        """
+        stop_tokens: list[str] = self.custom_stop_tokens.copy()
+        if self.generative_type == GenerativeType.BASE:
+            stop_tokens.append("\n\n")
+        if self._tokeniser.pad_token_id is not None:
+            assert isinstance(self._tokeniser.pad_token, str), (
+                f"The pad token for the model {self.model_config.model_id!r} "
+                f"is not a string, which is unexpected: {self._tokeniser.pad_token!r}."
+            )
+            stop_tokens.append(self._tokeniser.pad_token)
+        if self._tokeniser.eos_token_id is not None:
+            assert isinstance(self._tokeniser.eos_token, str), (
+                f"The EOS token for the model {self.model_config.model_id!r} "
+                f"is not a string, which is unexpected: {self._tokeniser.eos_token!r}."
+            )
+            stop_tokens.append(self._tokeniser.eos_token)
+            if self._tokeniser.pad_token_id is None:
+                self._tokeniser.pad_token_id = self._tokeniser.eos_token_id
+                self._tokeniser.pad_token = self._tokeniser.eos_token
+        if self.end_of_chat_token_ids is not None:
+            end_of_chat_token = self._tokeniser.decode(
+                list(self.end_of_chat_token_ids)
+            ).strip()
+            if end_of_chat_token:
+                stop_tokens.append(end_of_chat_token)
+        return stop_tokens
+
+    def _remove_stop_tokens(self, completions: list[str]) -> list[str]:
+        """Remove stop tokens from completions.
+
+        Args:
+            completions:
+                The list of completion strings.
+
+        Returns:
+            The completions with stop tokens removed.
+        """
+        stop_tokens = self._setup_stop_tokens()
+        pattern = re.compile("|".join(re.escape(t) for t in stop_tokens))
+        return [re.split(pattern=pattern, string=c)[0].strip() for c in completions]
+
+    def _parse_completions(
+        self, raw_outputs: list, sampling_params: "SamplingParams"
+    ) -> tuple[list[str], list]:
+        """Parse raw outputs into completions.
+
+        Args:
+            raw_outputs:
+                The raw model outputs.
+            sampling_params:
+                The sampling parameters.
+
+        Returns:
+            A tuple of (completions, raw_outputs).
+
+        Raises:
+            InvalidBenchmark:
+                If the number of completions doesn't match the outputs.
+        """
+        if sampling_params.prompt_logprobs is not None:
+            return [""] * len(raw_outputs), raw_outputs
+        completion_ids = [list(out.outputs[0].token_ids) for out in raw_outputs]
+        completions = _safe_batch_decode(
+            self._tokeniser, completion_ids, skip_special_tokens=False
+        )
+        completions = self._remove_reasoning_content(completions)
+        completions = self._remove_stop_tokens(completions)
+        comp_ids = self._tokeniser(text=completions).input_ids
+        completions = _safe_batch_decode(
+            self._tokeniser, comp_ids, skip_special_tokens=True
+        )
+        if len(completions) != len(raw_outputs):
+            raise InvalidBenchmark(
+                f"Expected {len(raw_outputs):,} completions, "
+                f"but got {len(completions):,}."
+            )
+        return completions, raw_outputs
+
+    def _filter_and_parse_outputs(
+        self, prompts: list[str], raw_outputs: list, sampling_params: "SamplingParams"
+    ) -> tuple[list[str], list]:
+        """Filter extra outputs and parse completions.
+
+        Args:
+            prompts:
+                The list of prompts.
+            raw_outputs:
+                The raw model outputs.
+            sampling_params:
+                The sampling parameters.
+
+        Returns:
+            A tuple of (completions, raw_outputs).
+
+        Raises:
+            InvalidBenchmark:
+                If the prompts and outputs do not match.
+        """
+        extra = len(raw_outputs) - len(prompts)
+        if extra > 0:
+            raw_outputs = raw_outputs[extra:]
+            if not all(out.prompt == p for out, p in zip(raw_outputs, prompts)):
+                raise InvalidBenchmark(
+                    "The prompts and the model outputs do not match. "
+                    f"There were {extra!r} extra outputs."
+                )
+            log(
+                f"Filtered out {extra:,} extra outputs from the model, "
+                "which occured as we interupted the generation when we truncated "
+                "the prompts.",
+                level=logging.DEBUG,
+            )
+        return self._parse_completions(raw_outputs, sampling_params)
 
     def _strip_prompts_if_needed(self, prompts: c.Sequence[str]) -> list[str]:
         """Strip prompts if the model's tokeniser requires it.
@@ -855,53 +1630,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             return [p.strip() for p in prompts]
         return list(prompts)
-
-    def _truncate_prompts_if_needed(
-        self,
-        prompts: c.Sequence[str],
-        max_tokens_per_prompt: int,
-        sampling_params: "SamplingParams",
-    ) -> c.Sequence[str]:
-        """Truncate prompts if they exceed the token budget.
-
-        Args:
-            prompts:
-                The sequence of prompts.
-            max_tokens_per_prompt:
-                Maximum tokens per prompt.
-            sampling_params:
-                The sampling parameters.
-
-        Returns:
-            The truncated prompts.
-
-        Raises:
-            InvalidBenchmark:
-                If the model type is not set.
-        """
-        tokenized = self._tokeniser(text=prompts, max_length=max_tokens_per_prompt)
-        if all(len(ids) < max_tokens_per_prompt for ids in tokenized.input_ids):
-            log_once(
-                f"Truncation of prompts for model {self.model_config.model_id!r} is "
-                "not needed, so skipping truncation.",
-                level=logging.DEBUG,
-            )
-            return prompts
-        log(
-            f"Truncating prompts for the model {self.model_config.model_id!r} "
-            f"to a maximum of {max_tokens_per_prompt:,} tokens.",
-            level=logging.DEBUG,
-        )
-        if self.generative_type == GenerativeType.BASE:
-            return self._truncate_base_prompts(
-                prompts, max_tokens_per_prompt, sampling_params
-            )
-        if self.generative_type in (
-            GenerativeType.INSTRUCTION_TUNED,
-            GenerativeType.REASONING,
-        ):
-            return self._truncate_instruction_prompts(prompts, max_tokens_per_prompt)
-        raise InvalidBenchmark("The model type is not set!")
 
     def _truncate_base_prompts(
         self,
@@ -981,242 +1709,243 @@ class VLLMModel(HuggingFaceEncoderModel):
             self._tokeniser, truncated.input_ids, skip_special_tokens=True
         )
 
-    def _generate_with_retries(
+    def _truncate_prompts_if_needed(
         self,
-        prompts: list[str],
+        prompts: c.Sequence[str],
+        max_tokens_per_prompt: int,
         sampling_params: "SamplingParams",
-        max_context_length: int,
-    ) -> tuple[list[str], list]:
-        """Generate sequences with retry logic.
+    ) -> c.Sequence[str]:
+        """Truncate prompts if they exceed the token budget.
 
         Args:
             prompts:
-                The list of prompts to generate from.
-            sampling_params:
-                The sampling parameters.
-            max_context_length:
-                The maximum context length.
-
-        Returns:
-            A tuple of (completions, raw_outputs).
-
-        Raises:
-            InvalidBenchmark:
-                If generation fails after retries or outputs are invalid.
-        """
-        input_is_test = len(prompts) == 1 and len(set(prompts[0])) == 1
-        num_attempts = 3
-        truncation_attempts = 1
-        oom_messages = [
-            "out of memory",
-            "outofmemory",
-            "insufficient memory",
-            "command buffer execution failed",
-        ]
-
-        def check_oom(error: Exception) -> None:
-            if any(m in str(error).lower() for m in oom_messages):
-                raise InvalidModel(
-                    "vLLM ran out of device memory during generation. On "
-                    "shared-memory devices (e.g. Apple Metal) the default GPU memory "
-                    "utilization is often too high, since the reserved KV cache "
-                    "leaves no room for the per-step allocations. Re-run with a lower "
-                    "value, e.g. `--gpu-memory-utilization 0.3` (or lower). "
-                    f"Underlying error: {str(error)}"
-                ) from error
-
-        for _ in range(num_attempts):
-            try:
-                bos = str(self._tokeniser.bos_token or "x")
-                prompts = [p if p.strip() else bos for p in prompts]
-                raw_outputs = self._model.generate(  # ty: ignore[call-non-callable]
-                    prompts=prompts,
-                    sampling_params=sampling_params,
-                    use_tqdm=False if input_is_test else get_pbar,
-                    lora_request=self.buffer.get("lora_request"),
-                )
-                break
-            except TypeError as e:
-                log(
-                    f"Encountered error during vLLM generation: {str(e)}. Retrying...",
-                    level=logging.DEBUG,
-                )
-                sleep(1)
-            except (ValueError, RuntimeError) as e:
-                check_oom(e)
-                trunc_msgs = [
-                    r"prompt \(length [0-9]+\) is longer than the maximum model length",
-                    "Sampled token IDs exceed the max model length",
-                ]
-                if any(
-                    re.search(pat, str(e), flags=re.IGNORECASE) for pat in trunc_msgs
-                ):
-                    log(
-                        "Prompts are too long, so truncating them and trying again...",
-                        level=logging.WARNING,
-                    )
-                    log(f"The error message was: {str(e)}", level=logging.DEBUG)
-                    extra = 50 * truncation_attempts
-                    truncation_attempts += 1
-                    tok = self._tokeniser(
-                        text=prompts,
-                        truncation=True,
-                        max_length=max(
-                            max_context_length - sampling_params.max_tokens - extra, 0
-                        ),
-                    )
-                    prompts = _safe_batch_decode(
-                        self._tokeniser, tok.input_ids, skip_special_tokens=True
-                    )
-                else:
-                    raise InvalidBenchmark(
-                        f"An error occurred during vLLM generation: {str(e)}"
-                    ) from e
-            except Exception as e:
-                check_oom(e)
-                if type(e).__name__ == "EngineDeadError" or "RPC call" in str(e):
-                    raise InvalidBenchmark(
-                        "The vLLM engine died during generation, likely due to a "
-                        "worker RPC timeout. Consider raising "
-                        "`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` or reducing the "
-                        f"batch size. Underlying error: {str(e)}"
-                    ) from e
-                raise
-        else:
-            raise InvalidBenchmark(
-                f"Could not generate sequences after {num_attempts} attempts."
-            )
-        return self._filter_and_parse_outputs(
-            prompts=prompts, raw_outputs=raw_outputs, sampling_params=sampling_params
-        )
-
-    def _filter_and_parse_outputs(
-        self, prompts: list[str], raw_outputs: list, sampling_params: "SamplingParams"
-    ) -> tuple[list[str], list]:
-        """Filter extra outputs and parse completions.
-
-        Args:
-            prompts:
-                The list of prompts.
-            raw_outputs:
-                The raw model outputs.
+                The sequence of prompts.
+            max_tokens_per_prompt:
+                Maximum tokens per prompt.
             sampling_params:
                 The sampling parameters.
 
         Returns:
-            A tuple of (completions, raw_outputs).
+            The truncated prompts.
 
         Raises:
             InvalidBenchmark:
-                If the prompts and outputs do not match.
+                If the model type is not set.
         """
-        extra = len(raw_outputs) - len(prompts)
-        if extra > 0:
-            raw_outputs = raw_outputs[extra:]
-            if not all(out.prompt == p for out, p in zip(raw_outputs, prompts)):
-                raise InvalidBenchmark(
-                    "The prompts and the model outputs do not match. "
-                    f"There were {extra!r} extra outputs."
-                )
-            log(
-                f"Filtered out {extra:,} extra outputs from the model, "
-                "which occured as we interupted the generation when we truncated "
-                "the prompts.",
+        tokenized = self._tokeniser(text=prompts, max_length=max_tokens_per_prompt)
+        if all(len(ids) < max_tokens_per_prompt for ids in tokenized.input_ids):
+            log_once(
+                f"Truncation of prompts for model {self.model_config.model_id!r} is "
+                "not needed, so skipping truncation.",
                 level=logging.DEBUG,
             )
-        return self._parse_completions(raw_outputs, sampling_params)
+            return prompts
+        log(
+            f"Truncating prompts for the model {self.model_config.model_id!r} "
+            f"to a maximum of {max_tokens_per_prompt:,} tokens.",
+            level=logging.DEBUG,
+        )
+        if self.generative_type == GenerativeType.BASE:
+            return self._truncate_base_prompts(
+                prompts, max_tokens_per_prompt, sampling_params
+            )
+        if self.generative_type in (
+            GenerativeType.INSTRUCTION_TUNED,
+            GenerativeType.REASONING,
+        ):
+            return self._truncate_instruction_prompts(prompts, max_tokens_per_prompt)
+        raise InvalidBenchmark("The model type is not set!")
 
-    def _parse_completions(
-        self, raw_outputs: list, sampling_params: "SamplingParams"
-    ) -> tuple[list[str], list]:
-        """Parse raw outputs into completions.
+    def _prepare_prompts(
+        self,
+        inputs: dict,
+        prompt_key: str,
+        max_tokens_per_prompt: int,
+        sampling_params: "SamplingParams",
+    ) -> list[str]:
+        """Prepare and truncate prompts.
 
         Args:
-            raw_outputs:
-                The raw model outputs.
+            inputs:
+                The input dictionary.
+            prompt_key:
+                The key for prompts in the inputs.
+            max_tokens_per_prompt:
+                Maximum tokens per prompt.
             sampling_params:
                 The sampling parameters.
 
         Returns:
-            A tuple of (completions, raw_outputs).
+            A list of prepared and truncated prompts.
+        """
+        prompts: c.Sequence[str] = list(inputs[prompt_key])
+        prompts = self._clean_empty_prompts(prompts)
+        prompts = self._strip_prompts_if_needed(prompts)
+        prompts = self._truncate_prompts_if_needed(
+            prompts, max_tokens_per_prompt, sampling_params
+        )
+        return list(prompts)
+
+    def _setup_generation_kwargs(self) -> dict[str, t.Any]:
+        """Set up generation kwargs from model config.
+
+        Returns:
+            A dictionary of generation kwargs configured from the model.
+        """
+        generation_kwargs = GENERATION_KWARGS.copy()
+        if (generation_config := self.model_config.generation_config) is not None:
+            changed_params = generation_config.to_diff_dict()
+            for param_name in ["temperature", "top_p", "top_k", "repetition_penalty"]:
+                if param_name in changed_params:
+                    generation_kwargs[param_name] = changed_params[param_name]
+                    log_once(
+                        f"Using {param_name}={changed_params[param_name]} with the "
+                        f"model {self.model_config.model_id!r} as specified in its "
+                        "generation configuration.",
+                        level=logging.DEBUG,
+                    )
+        return generation_kwargs
+
+    def _structured_output_for_logprobs(self) -> "StructuredOutputsParams":
+        """Handle structured output for logprobs-based tasks.
+
+        Returns:
+            StructuredOutputsParams for logprobs-based tasks.
+        """
+        choice_labels = [
+            self.dataset_config.prompt_label_mapping[label]
+            for label in self.dataset_config.labels
+        ]
+        if isinstance(self.buffer["first_label_token_mapping"], dict):
+            choice_labels = [
+                self.buffer["first_label_token Mapping"][label]
+                for label in choice_labels
+            ]
+        struct_output = StructuredOutputsParams(choice=choice_labels)
+        log_once(
+            f"Using structured generation with the choices: {struct_output.choice!r}.",
+            level=logging.DEBUG,
+        )
+        return struct_output
+
+    def _so_logic(self, inputs: dict[str, t.Any]) -> "StructuredOutputsParams":
+        """Handle structured output for LOGIC tasks.
+
+        Args:
+            inputs:
+                The input dictionary for generation.
+
+        Returns:
+            StructuredOutputsParams for LOGIC tasks.
+        """
+        first_sample_raw = inputs["target_text"][0]
+        first_sample = (
+            json.loads(first_sample_raw)
+            if isinstance(first_sample_raw, str)
+            else first_sample_raw
+        )
+        object_keys = [k for k in first_sample.keys() if k.startswith("object_")]
+        n = len(object_keys)
+        k = len(first_sample[object_keys[0]]) if object_keys else 0
+        keys_and_their_types: dict[str, t.Any] = {
+            f"object_{i}": (list[str], ...) for i in range(1, n + 1)
+        }
+        answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
+        schema = answer_format_class.model_json_schema()
+        log_once(
+            f"LOGIC task with {n} objects and {k} attributes per object. "
+            f"Using structured generation with the JSON schema: "
+            f"{json.dumps(schema, ensure_ascii=False)}",
+            level=logging.DEBUG,
+        )
+        return StructuredOutputsParams(json=schema)
+
+    def _so_token_classification(self) -> "StructuredOutputsParams":
+        """Handle structured output for token classification.
+
+        Returns:
+            StructuredOutputsParams for token classification.
+        """
+        tag_names = list(self.dataset_config.prompt_label_mapping.values())
+        keys_and_their_types: dict[str, t.Any] = {
+            tag_name: (conlist(str, max_length=5), ...) for tag_name in tag_names
+        }
+        answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
+        schema = answer_format_class.model_json_schema()
+        log_once(
+            "Using structured generation with the JSON schema: "
+            f"{json.dumps(schema, ensure_ascii=False)}",
+            level=logging.DEBUG,
+        )
+        return StructuredOutputsParams(json=schema)
+
+    def _structured_output_for_task(
+        self, inputs: dict[str, t.Any]
+    ) -> "StructuredOutputsParams":
+        """Handle structured output for task-based generation.
+
+        Args:
+            inputs:
+                The input dictionary for generation.
+
+        Returns:
+            StructuredOutputsParams for the task.
 
         Raises:
-            InvalidBenchmark:
-                If the number of completions doesn't match the outputs.
+            InvalidTask:
+                If the task requires structured output but doesn't define it.
         """
-        if sampling_params.prompt_logprobs is not None:
-            return [""] * len(raw_outputs), raw_outputs
-        completion_ids = [list(out.outputs[0].token_ids) for out in raw_outputs]
-        completions = _safe_batch_decode(
-            self._tokeniser, completion_ids, skip_special_tokens=False
-        )
-        completions = self._remove_reasoning_content(completions)
-        completions = self._remove_stop_tokens(completions)
-        comp_ids = self._tokeniser(text=completions).input_ids
-        completions = _safe_batch_decode(
-            self._tokeniser, comp_ids, skip_special_tokens=True
-        )
-        if len(completions) != len(raw_outputs):
-            raise InvalidBenchmark(
-                f"Expected {len(raw_outputs):,} completions, "
-                f"but got {len(completions):,}."
+        if self.dataset_config.task.structured_output_format is not None:
+            return StructuredOutputsParams(
+                json=self.dataset_config.task.structured_output_format.model_json_schema()
             )
-        return completions, raw_outputs
+        if self.dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+            return self._so_token_classification()
+        if self.dataset_config.task == LOGIC:
+            return self._so_logic(inputs)
+        raise InvalidTask(
+            message=(
+                "Task set to use structured output, but it neither defines "
+                "an output structure nor is a token classification task "
+                "- at least one of these must be true."
+            )
+        )
 
-    def _remove_reasoning_content(self, completions: list[str]) -> list[str]:
-        """Remove reasoning content from completions for reasoning models.
+    def _setup_structured_outputs(
+        self, inputs: dict[str, t.Any]
+    ) -> "StructuredOutputsParams | None":
+        """Set up structured outputs parameters.
 
         Args:
-            completions:
-                The list of completion strings.
+            inputs:
+                The input dictionary for generation.
 
         Returns:
-            The completions with reasoning content removed.
+            StructuredOutputsParams if structured output is enabled, or None otherwise.
         """
         if (
-            self.end_of_reasoning_token is None
-            or self.generative_type != GenerativeType.REASONING
-        ):
-            return completions
-        count = 0
-        for idx, comp in enumerate(completions):
-            if (
-                isinstance(self.end_of_reasoning_token, str)
-                and self.end_of_reasoning_token in comp
-            ):
-                completions[idx] = comp.split(self.end_of_reasoning_token)[-1]
-            elif isinstance(
-                self.end_of_reasoning_token, re.Pattern
-            ) and self.end_of_reasoning_token.search(comp):
-                completions[idx] = self.end_of_reasoning_token.split(comp)[-1]
-            else:
-                count += 1
-                completions[idx] = ""
-        if count > 0:
+            self.dataset_config.task.uses_structured_output
+            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
+        ) and self.generative_type == GenerativeType.REASONING:
             log_once(
-                f"The model {self.model_config.model_id!r} is a reasoning model, "
-                f"but the generated output did not contain the end of reasoning token "
-                f"({self.end_of_reasoning_token!r}) in {count:,}/{len(completions):,} "
-                "of the samples. Using an empty string for all these samples instead.",
-                level=logging.WARNING
-                if count / len(completions) > 0.5
-                else logging.DEBUG,
+                "The dataset uses structured output, but we are not using it as the "
+                f"model {self.model_config.model_id!r} is a reasoning model.",
+                level=logging.DEBUG,
             )
-        return completions
-
-    def _remove_stop_tokens(self, completions: list[str]) -> list[str]:
-        """Remove stop tokens from completions.
-
-        Args:
-            completions:
-                The list of completion strings.
-
-        Returns:
-            The completions with stop tokens removed.
-        """
-        stop_tokens = self._setup_stop_tokens()
-        pattern = re.compile("|".join(re.escape(t) for t in stop_tokens))
-        return [re.split(pattern=pattern, string=c)[0].strip() for c in completions]
+            return None
+        if self.dataset_config.task.uses_structured_output:
+            return self._structured_output_for_task(inputs)
+        if (
+            self.dataset_config.task.uses_logprobs
+            and self.dataset_config.labels
+            and self.buffer.get("first_label_token_mapping", False)
+        ):
+            return self._structured_output_for_logprobs()
+        log_once(
+            "Not using structured generation as the dataset does not require it.",
+            level=logging.DEBUG,
+        )
+        return None
 
     def _run_vllm_core(
         self, inputs: dict, prompt_key: str, sampling_params: "SamplingParams"
@@ -1334,82 +2063,196 @@ class VLLMModel(HuggingFaceEncoderModel):
             return GenerativeModelOutput(sequences=completions, scores=scores)
         return GenerativeModelOutput(sequences=completions)
 
-    def score(self, inputs: dict) -> "GenerativeModelOutput":
-        """Compute BPC scores from prompt_logprobs.
+    def _generate_with_retries(
+        self,
+        prompts: list[str],
+        sampling_params: "SamplingParams",
+        max_context_length: int,
+    ) -> tuple[list[str], list]:
+        """Generate sequences with retry logic.
 
         Args:
-            inputs:
-                A batch of inputs with bpc_prompt column.
+            prompts:
+                The list of prompts to generate from.
+            sampling_params:
+                The sampling parameters.
+            max_context_length:
+                The maximum context length.
 
         Returns:
-            Model output with BPC scores.
+            A tuple of (completions, raw_outputs).
+
+        Raises:
+            InvalidBenchmark:
+                If generation fails after retries or outputs are invalid.
         """
-        sampling_params = SamplingParams(
-            # BPC scoring only reads `prompt_logprobs`; no generation is needed, but
-            # vLLM requires `max_tokens >= 1`, so we generate a single throwaway token.
-            max_tokens=1,
-            prompt_logprobs=BPC_LOGPROBS,
-            logprobs=None,
-            temperature=GENERATION_KWARGS["temperature"],
-            top_p=GENERATION_KWARGS["top_p"],
-            top_k=int(GENERATION_KWARGS["top_k"]),
-            repetition_penalty=GENERATION_KWARGS["repetition_penalty"],
-            stop=[],  # Set in _run_vllm_core
-            structured_outputs=None,  # Set in _run_vllm_core
-        )
-        completions, raw_outputs = self._run_vllm_core(
-            inputs, "bpc_prompt", sampling_params
+        input_is_test = len(prompts) == 1 and len(set(prompts[0])) == 1
+        num_attempts = 3
+        truncation_attempts = 1
+        oom_messages = [
+            "out of memory",
+            "outofmemory",
+            "insufficient memory",
+            "command buffer execution failed",
+        ]
+
+        def check_oom(error: Exception) -> None:
+            if any(m in str(error).lower() for m in oom_messages):
+                raise InvalidModel(
+                    "vLLM ran out of device memory during generation. On "
+                    "shared-memory devices (e.g. Apple Metal) the default GPU memory "
+                    "utilization is often too high, since the reserved KV cache "
+                    "leaves no room for the per-step allocations. Re-run with a lower "
+                    "value, e.g. `--gpu-memory-utilization 0.3` (or lower). "
+                    f"Underlying error: {str(error)}"
+                ) from error
+
+        for _ in range(num_attempts):
+            try:
+                bos = str(self._tokeniser.bos_token or "x")
+                prompts = [p if p.strip() else bos for p in prompts]
+                raw_outputs = self._model.generate(  # ty: ignore[call-non-callable]
+                    prompts=prompts,
+                    sampling_params=sampling_params,
+                    use_tqdm=False if input_is_test else get_pbar,
+                    lora_request=self.buffer.get("lora_request"),
+                )
+                break
+            except TypeError as e:
+                log(
+                    f"Encountered error during vLLM generation: {str(e)}. Retrying...",
+                    level=logging.DEBUG,
+                )
+                sleep(1)
+            except (ValueError, RuntimeError) as e:
+                check_oom(e)
+                trunc_msgs = [
+                    r"prompt \(length [0-9]+\) is longer than the maximum model length",
+                    "Sampled token IDs exceed the max model length",
+                ]
+                if any(
+                    re.search(pat, str(e), flags=re.IGNORECASE) for pat in trunc_msgs
+                ):
+                    log(
+                        "Prompts are too long, so truncating them and trying again...",
+                        level=logging.WARNING,
+                    )
+                    log(f"The error message was: {str(e)}", level=logging.DEBUG)
+                    extra = 50 * truncation_attempts
+                    truncation_attempts += 1
+                    tok = self._tokeniser(
+                        text=prompts,
+                        truncation=True,
+                        max_length=max(
+                            max_context_length - sampling_params.max_tokens - extra, 0
+                        ),
+                    )
+                    prompts = _safe_batch_decode(
+                        self._tokeniser, tok.input_ids, skip_special_tokens=True
+                    )
+                else:
+                    raise InvalidBenchmark(
+                        f"An error occurred during vLLM generation: {str(e)}"
+                    ) from e
+            except Exception as e:
+                check_oom(e)
+                if type(e).__name__ == "EngineDeadError" or "RPC call" in str(e):
+                    raise InvalidBenchmark(
+                        "The vLLM engine died during generation, likely due to a "
+                        "worker RPC timeout. Consider raising "
+                        "`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` or reducing the "
+                        f"batch size. Underlying error: {str(e)}"
+                    ) from e
+                raise
+        else:
+            raise InvalidBenchmark(
+                f"Could not generate sequences after {num_attempts} attempts."
+            )
+        return self._filter_and_parse_outputs(
+            prompts=prompts, raw_outputs=raw_outputs, sampling_params=sampling_params
         )
 
-        # Compute BPC scores
-        bpc_scores = compute_bpc_scores_for_vllm_outputs(
-            raw_outputs=raw_outputs, inputs=inputs, tokeniser=self._tokeniser
-        )
-        output = GenerativeModelOutput(sequences=completions)
-        if bpc_scores is not None:
-            output.bpc_scores = bpc_scores
-        return output
-
-    @classmethod
-    def model_exists(
-        cls, model_id: str, benchmark_config: "BenchmarkConfig"
-    ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
-        """Check if a model exists.
-
-        Args:
-            model_id:
-                The model ID.
-            benchmark_config:
-                The benchmark configuration.
+    @property
+    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
+        """The data collator used to prepare samples during finetuning.
 
         Returns:
-            Whether the model exists, or an error describing why we cannot check
-            whether the model exists.
+            The data collator.
         """
-        using_api = (
-            benchmark_config.api_base is not None
-            or benchmark_config.api_version is not None
+        raise NotImplementedError(
+            "The `data_collator` property has not been implemented for vLLM models."
         )
-        if using_api:
-            return False
 
-        model_id_components = split_model_id(model_id=model_id)
-        model_id = model_id_components.model_id
-        revision = model_id_components.revision
+    @property
+    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
+        """The function used to extract the labels from the generated output.
 
-        model_info = get_model_repo_info(
-            model_id=model_id,
-            revision=revision,
-            api_key=benchmark_config.api_key,
-            cache_dir=benchmark_config.cache_dir,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            requires_safetensors=benchmark_config.requires_safetensors,
-            run_with_cli=benchmark_config.run_with_cli,
+        Returns:
+            The function used to extract the labels from the generated output.
+        """
+        match self.dataset_config.task.task_group:
+            case (
+                TaskGroup.SEQUENCE_CLASSIFICATION
+                | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+            ):
+                return partial(
+                    sequence_classification.extract_labels_from_generation,
+                    dataset_config=self.dataset_config,
+                    model_config=self.model_config,
+                    first_label_token_mapping=self.buffer["first_label_token_mapping"],
+                )
+            case TaskGroup.TEXT_TO_TEXT:
+                return text_to_text.extract_labels_from_generation
+            case TaskGroup.TOKEN_CLASSIFICATION:
+                return partial(
+                    token_classification.extract_labels_from_generation,
+                    dataset_config=self.dataset_config,
+                )
+            case TaskGroup.QUESTION_ANSWERING:
+                return question_answering.extract_labels_from_generation
+            case _:
+                raise NotImplementedError(
+                    f"Unsupported task group: {self.dataset_config.task.task_group}."
+                )
+
+    @property
+    def generative_type(self) -> GenerativeType | None:
+        """The generative type of the model.
+
+        Returns:
+            The generative type of the model, or None if it has not been set yet.
+        """
+        if self.benchmark_config.generative_type is not None:
+            type_ = self.benchmark_config.generative_type
+        elif self.model_config.param in {"thinking"}:
+            type_ = GenerativeType.REASONING
+        elif self.model_config.param in {"no-thinking"}:
+            type_ = GenerativeType.INSTRUCTION_TUNED
+        elif (
+            hasattr(self, "end_of_reasoning_token")
+            and self.end_of_reasoning_token is not None
+        ):
+            type_ = GenerativeType.REASONING
+        elif not hasattr(self, "_tokeniser"):
+            log_once(
+                "The generative type of the model has not been set yet as the "
+                "tokeniser has not been loaded.",
+                level=logging.DEBUG,
+            )
+            return None
+        elif (
+            has_chat_template(tokeniser=self._tokeniser)
+            or "instruct" in self.model_config.model_id.lower()
+        ):
+            type_ = GenerativeType.INSTRUCTION_TUNED
+        else:
+            type_ = GenerativeType.BASE
+        log_once(
+            f"Detected generative type {type_.name!r} for model "
+            f"{self.model_config.model_id!r}",
+            level=logging.DEBUG,
         )
-        return (
-            model_info is not None
-            and model_info.pipeline_tag in GENERATIVE_PIPELINE_TAGS
-        )
+        return type_
 
     @classmethod
     def get_model_config(
@@ -1479,16 +2322,150 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         return model_config
 
-    @property
-    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
-        """The data collator used to prepare samples during finetuning.
+    @classmethod
+    def model_exists(
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
+        """Check if a model exists.
+
+        Args:
+            model_id:
+                The model ID.
+            benchmark_config:
+                The benchmark configuration.
 
         Returns:
-            The data collator.
+            Whether the model exists, or an error describing why we cannot check
+            whether the model exists.
         """
-        raise NotImplementedError(
-            "The `data_collator` property has not been implemented for vLLM models."
+        using_api = (
+            benchmark_config.api_base is not None
+            or benchmark_config.api_version is not None
         )
+        if using_api:
+            return False
+
+        model_id_components = split_model_id(model_id=model_id)
+        model_id = model_id_components.model_id
+        revision = model_id_components.revision
+
+        model_info = get_model_repo_info(
+            model_id=model_id,
+            revision=revision,
+            api_key=benchmark_config.api_key,
+            cache_dir=benchmark_config.cache_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            requires_safetensors=benchmark_config.requires_safetensors,
+            run_with_cli=benchmark_config.run_with_cli,
+        )
+        return (
+            model_info is not None
+            and model_info.pipeline_tag in GENERATIVE_PIPELINE_TAGS
+        )
+
+    def prepare_dataset(
+        self, dataset: "DatasetDict", task: "Task", itr_idx: int
+    ) -> "DatasetDict":
+        """Prepare the dataset for the model.
+
+        This includes things like tokenisation.
+
+        Args:
+            dataset:
+                The dataset to prepare.
+            task:
+                The task to prepare the dataset for.
+            itr_idx:
+                The index of the dataset in the iterator.
+
+        Returns:
+            The prepared dataset.
+        """
+        if task.task_group == TaskGroup.QUESTION_ANSWERING:
+            dataset = dataset.map(
+                lambda examples: dict(
+                    label=[
+                        dict(
+                            id=id,
+                            answers=dict(
+                                answer_start=answer_dct["answer_start"],
+                                text=[
+                                    answer_text.lower()
+                                    for answer_text in answer_dct["text"]
+                                ],
+                            ),
+                        )
+                        for id, answer_dct in zip(examples["id"], examples["answers"])
+                    ]
+                ),
+                batched=True,
+                load_from_cache_file=False,
+                keep_in_memory=True,
+            )
+
+        if self.benchmark_config.few_shot:
+            few_shot_examples = extract_few_shot_examples(
+                dataset=dataset,
+                dataset_config=self.dataset_config,
+                benchmark_config=self.benchmark_config,
+                itr_idx=itr_idx,
+            )
+        else:
+            few_shot_examples = list()
+
+        dataset["test"] = dataset["test"].map(
+            partial(
+                apply_prompt,
+                few_shot_examples=few_shot_examples,
+                model_config=self.model_config,
+                dataset_config=self.dataset_config,
+                generative_type=self.generative_type,
+                always_populate_text_field=True,
+                tokeniser=self._tokeniser,
+                use_bits_per_character=self.benchmark_config.use_bits_per_character,
+            ),
+            batched=True,
+            load_from_cache_file=False,
+            keep_in_memory=True,
+        )
+
+        return dataset
+
+    def score(self, inputs: dict) -> "GenerativeModelOutput":
+        """Compute BPC scores from prompt_logprobs.
+
+        Args:
+            inputs:
+                A batch of inputs with bpc_prompt column.
+
+        Returns:
+            Model output with BPC scores.
+        """
+        sampling_params = SamplingParams(
+            # BPC scoring only reads `prompt_logprobs`; no generation is needed, but
+            # vLLM requires `max_tokens >= 1`, so we generate a single throwaway token.
+            max_tokens=1,
+            prompt_logprobs=BPC_LOGPROBS,
+            logprobs=None,
+            temperature=GENERATION_KWARGS["temperature"],
+            top_p=GENERATION_KWARGS["top_p"],
+            top_k=int(GENERATION_KWARGS["top_k"]),
+            repetition_penalty=GENERATION_KWARGS["repetition_penalty"],
+            stop=[],  # Set in _run_vllm_core
+            structured_outputs=None,  # Set in _run_vllm_core
+        )
+        completions, raw_outputs = self._run_vllm_core(
+            inputs, "bpc_prompt", sampling_params
+        )
+
+        # Compute BPC scores
+        bpc_scores = compute_bpc_scores_for_vllm_outputs(
+            raw_outputs=raw_outputs, inputs=inputs, tokeniser=self._tokeniser
+        )
+        output = GenerativeModelOutput(sequences=completions)
+        if bpc_scores is not None:
+            output.bpc_scores = bpc_scores
+        return output
 
     @property
     def trainer_class(self) -> t.Type["Trainer"]:
@@ -1501,1014 +2478,37 @@ class VLLMModel(HuggingFaceEncoderModel):
             "The `trainer_class` property has not been implemented for vLLM models."
         )
 
+    def update_dataset_config(self, dataset_config: "DatasetConfig") -> t.Self:
+        """Update the dataset config registered in the benchmark module.
 
-def _get_rope_parameters_override(
-    model_id: str, hf_model_config: "PretrainedConfig"
-) -> dict[str, str | int | float] | None:
-    """Build a nested ``rope_parameters`` override from legacy top-level rope fields.
+        Args:
+            dataset_config:
+                The new dataset config.
 
-    Transformers 5.x consolidated rope configuration into a single nested
-    ``rope_parameters`` dict, and vLLM model implementations written against that
-    schema (e.g. ``olmo2.py``, which OLMo-3 reuses) read from it. Many models,
-    however, still ship a ``config.json`` with the legacy top-level ``rope_theta`` and
-    ``rope_scaling`` fields, causing vLLM to raise ``KeyError: 'rope_theta'``. This
-    helper transcribes the legacy fields into the nested structure vLLM expects.
+        Returns:
+            The benchmark module.
 
-    The transcription itself is model-agnostic, but we only apply it to an explicit
-    allowlist of model families that we have confirmed need it, to avoid injecting a
-    (possibly mis-transcribed) override into models whose vLLM implementation reads the
-    top-level fields correctly today.
-
-    Args:
-        model_id:
-            The model identifier.
-        hf_model_config:
-            The Hugging Face model configuration.
-
-    Returns:
-        A rope_parameters dict if the model is in the allowlist and lacks existing
-        rope_parameters; otherwise None.
-    """
-    # Families confirmed to require the legacy -> nested rope_parameters conversion,
-    # as (model_type, architecture) signals. Extend this list as new ones surface.
-    needs_override = getattr(hf_model_config, "model_type", None) == "olmo3" or (
-        hf_model_config.architectures
-        and "Olmo3ForCausalLM" in hf_model_config.architectures
-    )
-    if not needs_override or getattr(hf_model_config, "rope_parameters", None):
-        return None
-
-    rope_theta = getattr(hf_model_config, "rope_theta", 10000)
-    rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
-    rope_parameters: dict[str, str | int | float] = {
-        "rope_theta": rope_theta,
-        "rope_type": rope_scaling.get("rope_type", "default"),
-    }
-    for key in [
-        "factor",
-        "original_max_position_embeddings",
-        "attention_factor",
-        "beta_fast",
-        "beta_slow",
-        "short_factor",
-        "long_factor",
-    ]:
-        if key in rope_scaling:
-            rope_parameters[key] = rope_scaling[key]
-
-    log_once(
-        f"Adding rope_parameters override for model {model_id!r}: {rope_parameters!r}",
-        level=logging.DEBUG,
-    )
-    return rope_parameters
-
-
-def _determine_dtype(
-    hf_model_config: "PretrainedConfig",
-) -> tuple[str | torch.dtype, str | None]:
-    """Determine the dtype and quantization for loading.
-
-    Args:
-        hf_model_config:
-            The Hugging Face model configuration.
-
-    Returns:
-        Tuple of (dtype, quantization).
-
-    Raises:
-        NeedsExtraInstalled:
-            If quantized model requires missing packages.
-    """
-    dtype: str | torch.dtype = "auto"
-
-    if hf_model_config.dtype == torch.float32:
-        if torch.cuda.is_bf16_supported():
-            log(
-                "You are loading a model with dtype FP32, which we will convert to "
-                "BF16 as FP32 is not supported by vLLM and BF16 is supported by your "
-                "GPU.",
-                level=logging.WARNING,
-            )
-            dtype = torch.bfloat16
-        else:
-            log(
-                "You are loading a model with dtype FP32, which we will convert to "
-                "FP16 as FP32 is not supported by vLLM and BF16 is not supported by "
-                "your GPU.",
-                level=logging.WARNING,
-            )
-            dtype = torch.float16
-
-    if hf_model_config.dtype == torch.bfloat16:
-        min_cuda_compute_capability = get_min_cuda_compute_capability()
-        required_capability = VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY
-
-        if min_cuda_compute_capability is not None:
-            if min_cuda_compute_capability < required_capability:
-                log(
-                    f"You are loading a model with dtype {hf_model_config.dtype}, "
-                    "which vLLM only supports for CUDA devices with CUDA compute "
-                    f"capability >={required_capability}. You are using one or more "
-                    f"devices with compute capability {min_cuda_compute_capability}. "
-                    "Setting dtype to float16 instead.",
-                    level=logging.WARNING,
-                )
-                dtype = torch.float16
-
-    quantization: str | None = None
-    if hasattr(hf_model_config, "quantization_config"):
-        quantization = hf_model_config.quantization_config.get("quant_method")
-
-    if quantization == "gptq" and (
-        importlib.util.find_spec("auto_gptq") is None
-        or importlib.util.find_spec("optimum") is None
-    ):
-        raise NeedsExtraInstalled(extra="quantization")
-    if quantization == "awq" and importlib.util.find_spec("awq") is None:
-        raise NeedsExtraInstalled(extra="quantization")
-
-    if quantization is not None:
-        log(
-            f"You are loading a quantized model with quantization {quantization}. "
-            "Forcing the vLLM dtype to 'auto'",
-            level=logging.WARNING,
+        Raises:
+            InvalidBenchmark:
+                If the dataset requires logprobs, but we weren't able to update the
+                first label token mapping.
+        """
+        self.dataset_config = dataset_config
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            tokeniser=self._tokeniser,
+            generative_type=self.generative_type,
+            log_metadata=self.log_metadata,
         )
-        dtype = "auto"
-
-    return dtype, quantization
-
-
-def _prepare_hf_overrides(
-    hf_model_config: "PretrainedConfig", model_id: str
-) -> dict[str, dict[str, str | int | float] | list[str]]:
-    """Prepare Hugging Face overrides for vLLM.
-
-    Args:
-        hf_model_config:
-            The Hugging Face model configuration.
-        model_id:
-            The model ID.
-
-    Returns:
-        Dictionary of HF overrides.
-    """
-    hf_overrides: dict[str, dict[str, str | int | float] | list[str]] = {}
-
-    if hf_model_config.architectures:
-        remapped = [
-            _ARCHITECTURE_ALIASES.get(arch, arch)
-            for arch in hf_model_config.architectures
-        ]
-        if remapped != hf_model_config.architectures:
-            log(
-                f"Remapping model architectures {hf_model_config.architectures} -> "
-                f"{remapped} for vLLM compatibility.",
-                level=logging.INFO,
-            )
-            hf_model_config.architectures = remapped
-            hf_overrides["architectures"] = remapped
-
-    rope_parameters_override = _get_rope_parameters_override(
-        model_id=model_id, hf_model_config=hf_model_config
-    )
-    if rope_parameters_override is not None:
-        hf_overrides["rope_parameters"] = rope_parameters_override
-
-    return hf_overrides
-
-
-def _create_llm_instance(
-    model_location: str,
-    download_dir: str,
-    benchmark_config: "BenchmarkConfig",
-    max_model_len: int,
-    revision: str,
-    quantization: str | None,
-    dtype: str | torch.dtype,
-    hf_overrides: dict[str, t.Any],
-    vllm_params: dict[str, t.Any],
-    model_config: "ModelConfig",
-    force_single_gpu: bool = False,
-) -> "LLM":
-    """Create a vLLM LLM instance.
-
-    Args:
-        model_location:
-            Path or ID of the model.
-        download_dir:
-            Directory for downloading model weights.
-        benchmark_config:
-            Benchmark configuration.
-        max_model_len:
-            Maximum model length.
-        revision:
-            Model revision.
-        quantization:
-            Quantization method.
-        dtype:
-            Data type.
-        hf_overrides:
-            Hugging Face overrides.
-        vllm_params:
-            vLLM parameters.
-        model_config:
-            Model configuration.
-        force_single_gpu:
-            If True, forces tensor parallelism to 1.
-
-    Returns:
-        The loaded vLLM LLM instance.
-    """
-    backend, tp_size, pp_size = select_backend_and_parallelism(
-        force_single_gpu=force_single_gpu
-    )
-
-    llm_kwargs: dict[str, t.Any] = {
-        "model": model_location,
-        "tokenizer": model_location,
-        "gpu_memory_utilization": benchmark_config.gpu_memory_utilization,
-        "max_model_len": max_model_len,
-        "max_num_batched_tokens": max_model_len,
-        "download_dir": download_dir,
-        "trust_remote_code": benchmark_config.trust_remote_code,
-        "revision": revision,
-        "seed": 4242,
-        "distributed_executor_backend": backend,
-        "tensor_parallel_size": tp_size,
-        "pipeline_parallel_size": pp_size,
-        "disable_custom_all_reduce": True,
-        "quantization": quantization,
-        "dtype": dtype,  # ty: ignore[invalid-argument-type]
-        "enforce_eager": True,
-        "enable_prefix_caching": False,
-        "enable_flashinfer_autotune": False,
-        "enable_lora": model_config.adapter_base_model_id is not None,
-        "max_lora_rank": 256,
-        "limit_mm_per_prompt": {"image": 0, "video": 0, "audio": 0},
-        "runner": "generate",
-        **({"hf_overrides": hf_overrides} if hf_overrides else {}),
-        **vllm_params,
-    }
-    return LLM(**llm_kwargs)
-
-
-def _handle_model_load_error(
-    error: Exception,
-    model_id: str,
-    benchmark_config: "BenchmarkConfig",
-    create_llm_fn: c.Callable[[bool], "LLM"],
-) -> "LLM":
-    """Handle model loading errors with retries.
-
-    Args:
-        error:
-            The exception raised during model loading.
-        model_id:
-            The model ID.
-        benchmark_config:
-            Benchmark configuration.
-        create_llm_fn:
-            Function to create LLM instance.
-
-    Returns:
-        Loaded LLM instance.
-
-    Raises:
-        InvalidModel:
-            If model cannot be loaded.
-    """
-    error_str = str(error)
-
-    has_missing_processor = (
-        "Can't load image processor" in error_str
-        and "preprocessor_config.json" in error_str
-    )
-    if has_missing_processor:
-        log(
-            f"Model {model_id!r} is missing an image processor config. Retrying "
-            "without image processing since EuroEval only does text inference.",
-            level=logging.DEBUG,
-        )
-        try:
-            with _skip_image_processor_context():
-                return create_llm_fn(False)
-        except (RuntimeError, ValueError, OSError) as retry_e:
-            raise InvalidModel(
-                f"The model {model_id!r} could not be loaded. The error was "
-                f"{retry_e!r}."
-            ) from retry_e
-
-    multimodal_patterns = [
-        "multimodal budget",
-        "MM input",
-        "image input",
-        "vision model",
-    ]
-    if any(pattern in error_str for pattern in multimodal_patterns):
-        log(
-            f"Model {model_id!r} triggered multimodal error during initialisation. "
-            "Retrying with multimodal inputs disabled since EuroEval only does "
-            "text inference.",
-            level=logging.DEBUG,
-        )
-        try:
-            with _skip_image_processor_context():
-                return create_llm_fn(False)
-        except (RuntimeError, ValueError, OSError) as retry_e:
-            raise InvalidModel(
-                f"The model {model_id!r} could not be loaded in text-only mode. "
-                f"The error was {retry_e!r}."
-            ) from retry_e
-
-    if "attention heads" in error_str and "divisible by tensor parallel" in error_str:
-        log(
-            f"Model {model_id!r} failed with tensor parallel error. "
-            "Retrying with single GPU.",
-            level=logging.DEBUG,
-        )
-        try:
-            return create_llm_fn(True)
-        except (RuntimeError, ValueError, OSError) as retry_e:
-            raise InvalidModel(
-                f"The model {model_id!r} could not be loaded even with "
-                f"single GPU. The error was {retry_e!r}."
-            ) from retry_e
-
-    if "awaiting a review from the repo authors" in str(error):
-        raise InvalidModel(
-            f"The model {model_id!r} is awaiting a review from the repository "
-            "authors. Please try again later."
-        ) from error
-
-    if "trust_remote_code" in str(error):
-        raise InvalidModel(
-            f"Loading the model {model_id!r} needs to trust remote code. "
-            "If you trust the suppliers of this model, then you can enable "
-            "this by setting the `--trust-remote-code` flag."
-        ) from error
-
-    if "See stack trace for root cause." in str(
-        error
-    ) or "See root cause above." in str(error):
-        msg = (
-            f"The model {model_id!r} could not be loaded, but vLLM did not mention "
-            f"exactly what happened. "
-        )
-        if benchmark_config.verbose:
-            msg += (
-                "Since you're running in verbose mode, you might see a descriptive "
-                "error above already. Note however that if the error message urges "
-                "you to use the attention backend 'FLEX_ATTENTION', please try "
-                "setting it to 'TRITON_ATTN' instead using the "
-                "`--attention-backend` CLI argument, as that often solves the "
-                "issue, whereas 'FLEX_ATTENTION' usually doesn't. If you don't "
-                "see any descriptive error above, then you can try "
-            )
-        else:
-            msg += "Try "
-        msg += (
-            "re-running the benchmark with the environment variable `FULL_LOG` "
-            "set to `1` to see the full stack trace. E.g., "
-            f"`FULL_LOG=1 euroeval --model {model_id}`."
-        )
-        raise InvalidModel(msg) from error
-
-    raise InvalidModel(
-        f"The model {model_id!r} could not be loaded. The error was {error!r}."
-    ) from error
-
-
-def load_model(
-    model_config: "ModelConfig",
-    benchmark_config: "BenchmarkConfig",
-    attention_backend: str | None,
-    generative_type: "GenerativeType",
-    true_max_model_len: int,
-    tokeniser: Tokeniser,
-    hf_model_config: "PretrainedConfig",
-) -> "LLM":
-    """Load the model.
-
-    Args:
-        model_config:
-            The model configuration.
-        benchmark_config:
-            The benchmark configuration.
-        attention_backend:
-            The attention backend to use, or None to use the vLLM default.
-        generative_type:
-            The generative type of the model.
-        true_max_model_len:
-            The maximum context length of the model.
-        tokeniser:
-            The tokeniser associated with the model.
-        hf_model_config:
-            The Hugging Face model configuration.
-
-    Returns:
-        The loaded model.
-    """
-    model_id = model_config.adapter_base_model_id or model_config.model_id
-    revision = (
-        model_config.revision if model_config.adapter_base_model_id is None else "main"
-    )
-
-    dtype, quantization = _determine_dtype(hf_model_config)
-
-    download_dir = (
-        str(Path(model_config.model_cache_dir) / "base_model")
-        if model_config.adapter_base_model_id is not None
-        else str(model_config.model_cache_dir)
-    )
-
-    os.environ.setdefault(
-        "VLLM_CACHE_ROOT", str((Path(benchmark_config.cache_dir) / "vllm").resolve())
-    )
-
-    vllm_params = get_vllm_tokenisation_params(
-        tokeniser=tokeniser, model_config=model_config
-    )
-
-    if hasattr(vllm.config, "attention") and attention_backend is not None:
-        vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)  # ty: ignore[invalid-argument-type]
-
-    clear_vllm()
-
-    hf_overrides = _prepare_hf_overrides(
-        hf_model_config=hf_model_config, model_id=model_id
-    )
-
-    distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
-        select_backend_and_parallelism(force_single_gpu=False)
-    )
-
-    model_location = (
-        model_id
-        if internet_connection_available() or Path(model_id).is_dir()
-        else resolve_model_path(download_dir=download_dir)
-    )
-
-    max_model_len = min(
-        true_max_model_len,
-        MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
-        if generative_type == GenerativeType.REASONING
-        else MAX_CONTEXT_LENGTH,
-    )
-
-    def _create_wrapped(force_single_gpu: bool = False) -> "LLM":
-        return _create_llm_instance(
-            model_location=model_location,
-            download_dir=download_dir,
-            benchmark_config=benchmark_config,
-            max_model_len=max_model_len,
-            revision=revision,
-            quantization=quantization,
-            dtype=dtype,
-            hf_overrides=hf_overrides,
-            vllm_params=vllm_params,
-            model_config=model_config,
-            force_single_gpu=force_single_gpu,
-        )
-
-    try:
-        model = _create_wrapped(False)
-    except (RuntimeError, ValueError, OSError) as e:
-        model = _handle_model_load_error(
-            error=e,
-            model_id=model_id,
-            benchmark_config=benchmark_config,
-            create_llm_fn=_create_wrapped,
-        )
-
-    model.config = hf_model_config
-    return model
-
-
-def get_true_max_model_len(hf_model_config: "PretrainedConfig") -> int:
-    """Get the true maximum context length of a model.
-
-    Args:
-        hf_model_config:
-            The Hugging Face model configuration.
-
-    Returns:
-        The maximum context length.
-    """
-    potential_max_model_length_config_names = [
-        "max_position_embeddings",
-        "max_sequence_length",
-        "model_max_length",
-        "n_positions",
-    ]
-    true_max_model_len_candidates: list[int] = list()
-    for config_name in potential_max_model_length_config_names:
-        if hasattr(hf_model_config, config_name):
-            model_len = getattr(hf_model_config, config_name)
-            if model_len is not None:
-                true_max_model_len_candidates.append(model_len)
-
-    true_max_model_len = (
-        min(true_max_model_len_candidates)
-        if len(true_max_model_len_candidates) > 0
-        else MAX_CONTEXT_LENGTH
-    )
-    return true_max_model_len
-
-
-def load_tokeniser(
-    model_id: str,
-    revision: str,
-    adapter_base_model_id: str | None,
-    trust_remote_code: bool,
-    model_max_length: int,
-    model_config: "ModelConfig",
-    hf_model_config: "PretrainedConfig",
-    token: str | None,
-) -> Tokeniser:
-    """Load the tokeniser.
-
-    Args:
-        model_id:
-            The model identifier.
-        revision:
-            The revision of the model.
-        adapter_base_model_id:
-            The base model ID for the adapter model. Can be None if the model is not an
-            adapter model.
-        trust_remote_code:
-            Whether to trust remote code.
-        model_max_length:
-            The maximum length of the model.
-        model_config:
-            The model configuration.
-        hf_model_config:
-            The Hugging Face model configuration.
-        token:
-            The Hugging Face API token.
-
-    Returns:
-        The loaded tokeniser.
-
-    Raises:
-        InvalidModel:
-            If the tokeniser could not be loaded.
-    """
-    revision = revision if adapter_base_model_id is None else "main"
-    num_retries = 5
-    for _ in range(num_retries):
-        try:
-            # Mistral instruction-tuned models need a custom tokeniser
-            if model_id.startswith("mistralai/") and "base" not in model_id.lower():
-                tokeniser = MistralCommonTokenizer.from_pretrained(
-                    model_id,
-                    padding_side="left",
-                    truncation_side="left",
-                    model_max_length=model_max_length,
-                    token=token,
-                )
-                break
-            tokeniser = AutoTokenizer.from_pretrained(
-                model_id,
-                revision=revision,
-                use_fast=False if model_config.param == "slow-tokenizer" else True,
-                trust_remote_code=trust_remote_code,
-                padding_side="left",
-                truncation_side="left",
-                model_max_length=model_max_length,
-                cache_dir=model_config.model_cache_dir,
-                config=hf_model_config,
-                token=token,
-                local_files_only=not internet_connection_available(),
-            )
-            break
-        except (json.JSONDecodeError, OSError, TypeError) as e:
-            if adapter_base_model_id is None or model_id == adapter_base_model_id:
-                raise InvalidModel(
-                    f"Could not load tokeniser for model {model_id!r}. The error was "
-                    f"{str(e)}."
-                ) from e
-            log(
-                f"Could not load tokeniser for {model_id!r}. Falling back to "
-                f"{adapter_base_model_id!r}.",
-                level=logging.DEBUG,
-            )
-            model_id = adapter_base_model_id
-        except (TimeoutError, RequestError):
-            log(
-                f"Couldn't load tokeniser for {model_id!r}. Retrying.",
-                level=logging.WARNING,
-            )
-            sleep(5)
-            continue
-        except (KeyError, ValueError) as e:
-            if _is_mistral_tokeniser_model(
-                model_id=model_id, hf_model_config=hf_model_config
-            ):
-                tokeniser = MistralCommonTokenizer.from_pretrained(
-                    model_id,
-                    padding_side="left",
-                    truncation_side="left",
-                    model_max_length=model_max_length,
-                    token=token,
-                )
-                break
-            raise InvalidModel(
-                f"Could not load tokeniser for model {model_id!r}. The error was "
-                f"{str(e)}."
-            ) from e
-    else:
-        raise InvalidModel(
-            f"Could not load tokeniser for model {model_id!r} after {num_retries} "
-            "attempts."
-        )
-
-    # Ensure that BOS, EOS and PAD tokens are set
-    if not isinstance(tokeniser, MistralCommonTokenizer):
-        if not isinstance(
-            tokeniser, TokenizersBackend | SentencePieceBackend | PythonBackend
+        if (
+            not self.buffer["first_label_token_mapping"]
+            and self.dataset_config.task.requires_logprobs
         ):
-            raise InvalidModel(
-                f"Unknown tokenizer type encountered: {tokeniser}. Please report this "
-                "bug at https://github.com/EuroEval/EuroEval/issues."
+            raise InvalidBenchmark(
+                "The dataset requires logprobs, but we encountered an error when "
+                "trying to get the first token of each label in the dataset. You can "
+                "try running this benchmark with the --verbose flag or setting "
+                "FULL_LOG=1 to see what the error was. Skipping this evaluation."
             )
-        tokeniser.bos_token, tokeniser.bos_token_id = get_bos_token(tokeniser=tokeniser)
-        tokeniser.eos_token, tokeniser.eos_token_id = get_eos_token(tokeniser=tokeniser)
-        tokeniser.pad_token, tokeniser.pad_token_id = get_pad_token(tokeniser=tokeniser)
-
-    return tokeniser
-
-
-def _is_mistral_tokeniser_model(
-    model_id: str, hf_model_config: "PretrainedConfig"
-) -> bool:
-    """Determine whether a model should use the Mistral common tokeniser.
-
-    Used as a fallback when ``AutoTokenizer.from_pretrained`` fails, to decide whether
-    to retry with ``MistralCommonTokenizer``. The decision is based on the model's
-    identity rather than the error message, since the error raised by
-    ``MistralCommonBackend.from_pretrained`` mentions "MistralCommonBackend", which
-    would otherwise match non-Mistral models whose tokeniser loading happens to fail.
-
-    Args:
-        model_id:
-            The model identifier.
-        hf_model_config:
-            The Hugging Face model configuration.
-
-    Returns:
-        Whether the model should be loaded with the Mistral common tokeniser.
-    """
-    # Base models do not use the mistral-common tokeniser, so we never fall back
-    # to it for them regardless of their model type or architectures. This
-    # includes IDs containing "base" and versioned base models like
-    # mistralai/Mistral-7B-v0.1 which lack a chat template. Instruction-tuned
-    # models are exempt from this check.
-    model_name = model_id.rsplit("/", 1)[-1].lower()
-    if "instruct" not in model_name and (
-        "base" in model_name or re.search(r"-v\d+\.\d+$", model_name)
-    ):
-        return False
-    if model_id.startswith("mistralai/"):
-        return True
-    if getattr(hf_model_config, "model_type", None) == "mistral":
-        return True
-    architectures = getattr(hf_model_config, "architectures", None) or []
-    return any("Mistral" in architecture for architecture in architectures)
-
-
-def clear_vllm() -> None:
-    """Clear the GPU memory used by the vLLM model, enabling re-initialisation."""
-    with contextlib.suppress(ValueError):
-        destroy_model_parallel()
-        destroy_distributed_environment()
-    with contextlib.suppress(AssertionError):
-        torch.distributed.destroy_process_group()
-    clear_memory()
-
-
-def get_end_of_reasoning_token(
-    model: "LLM", tokeniser: Tokeniser, model_config: "ModelConfig"
-) -> str | re.Pattern | None:
-    """Get the end-of-reasoning token for a generative model.
-
-    Args:
-        model:
-            The vLLM model.
-        tokeniser:
-            The tokeniser.
-        model_config:
-            The model configuration.
-
-    Returns:
-        The end of reasoning token, or None if it could not be found.
-    """
-    model_id = model_config.model_id
-
-    # Create a prompt to check if the model uses the reasoning tokens
-    prompt = "What is your name?"
-    if has_chat_template(tokeniser=tokeniser):
-        extra_kwargs = dict()
-        if model_config.param in {"thinking", "no-thinking"}:
-            extra_kwargs["enable_thinking"] = model_config.param == "thinking"
-        templated_prompt = apply_chat_template(
-            conversation=[dict(role="user", content=prompt)],
-            tokeniser=tokeniser,
-            tokenise=False,
-            add_generation_prompt=True,
-            **extra_kwargs,
-        )
-        assert isinstance(templated_prompt, str)
-        prompt = templated_prompt
-
-    # Check that the beginning-of-reasoning token is actually used by the model
-    output = model.generate(
-        prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
-    )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
-    bor_reasoning_matches = [
-        (bor_token, eor_token)
-        for bor_token, eor_token in REASONING_TOKENS
-        if (
-            (
-                isinstance(bor_token, str)
-                and (bor_token in prompt or bor_token in completion)
-            )
-            or (
-                isinstance(bor_token, re.Pattern)
-                and (
-                    bor_token.search(prompt) is not None
-                    or bor_token.search(completion) is not None
-                )
-            )
-        )
-    ]
-    if not bor_reasoning_matches:
-        log_once(
-            f"The model {model_id!r} did not generate any beginning-of-reasoning "
-            "tokens in the prompt or the completion. Assuming the model is not a "
-            "reasoning model.",
-            level=logging.DEBUG,
-        )
-        return None
-
-    # Check that the end-of-reasoning token is actually used by the model
-    output = model.generate(
-        prompts=[prompt],
-        sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
-        use_tqdm=False,
-    )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
-    eor_reasoning_matches = [
-        (bor_token, eor_token)
-        for bor_token, eor_token in bor_reasoning_matches
-        if (
-            (isinstance(eor_token, str) and eor_token in completion)
-            or (
-                isinstance(eor_token, re.Pattern)
-                and eor_token.search(completion) is not None
-            )
-        )
-    ]
-    if not eor_reasoning_matches:
-        log_once(
-            f"The model {model_id!r} did not generate any end-of-reasoning "
-            "tokens in the prompt or the completion, even though it generated "
-            "the beginning-of-reasoning tokens "
-            f"{[bor_token for bor_token, _ in bor_reasoning_matches]!r}. "
-            "This is probably not correct, so please report this issue.",
-            level=logging.WARNING,
-        )
-        return None
-
-    if len(eor_reasoning_matches) > 1:
-        log_once(
-            f"Found multiple reasoning tokens {eor_reasoning_matches} for "
-            f"model {model_id!r}. Using {eor_reasoning_matches[0]!r} as "
-            "the reasoning token. If this is not the correct reasoning token, "
-            "please report this issue.",
-            level=logging.WARNING,
-        )
-
-    bor_token, eor_token = eor_reasoning_matches[0]
-
-    bor_token_logging: str = (
-        bor_token if isinstance(bor_token, str) else bor_token.pattern
-    )
-    eor_token_logging: str = (
-        eor_token if isinstance(eor_token, str) else eor_token.pattern
-    )
-    log_once(
-        f"Detected beginning-of-reasoning token {bor_token_logging!r} and "
-        f"end-of-reasoning token {eor_token_logging!r} for model {model_id!r}.",
-        level=logging.DEBUG,
-    )
-
-    return eor_token
-
-
-def get_custom_stop_tokens(
-    model: "LLM",
-    tokeniser: Tokeniser,
-    model_id: str,
-    generative_type: GenerativeType | None,
-) -> list[str]:
-    """Get the stop tokens for a generative model.
-
-    Args:
-        model:
-            The vLLM model.
-        tokeniser:
-            The tokeniser.
-        model_id:
-            The model ID.
-        generative_type:
-            The generative type of the model.
-
-    Returns:
-        A list of stop tokens.
-    """
-    candidate_stop_tokens = CUSTOM_STOP_TOKENS
-
-    prompt = "Hello"
-    if has_chat_template(tokeniser=tokeniser):
-        templated_prompt = apply_chat_template(
-            conversation=[dict(role="user", content=prompt)],
-            tokeniser=tokeniser,
-            tokenise=False,
-            add_generation_prompt=True,
-            enable_thinking=generative_type == GenerativeType.REASONING,
-        )
-        assert isinstance(templated_prompt, str)
-        prompt = templated_prompt
-
-    max_tokens = (
-        REASONING_MAX_TOKENS if generative_type == GenerativeType.REASONING else 10
-    )
-    output = model.generate(
-        prompts=[prompt],
-        sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
-        use_tqdm=False,
-    )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
-
-    stop_tokens = [
-        stop_token
-        for stop_token in candidate_stop_tokens
-        if stop_token in prompt or stop_token in completion
-    ]
-    if stop_tokens:
-        log(
-            f"Found the following custom stop tokens for model {model_id!r}: "
-            f"{stop_tokens}.",
-            level=logging.DEBUG,
-        )
-    else:
-        log(f"Found no custom stop tokens for model {model_id!r}.", level=logging.DEBUG)
-
-    return stop_tokens
-
-
-def get_vllm_tokenisation_params(
-    tokeniser: Tokeniser, model_config: "ModelConfig"
-) -> dict[str, t.Any]:
-    """Get the tokenisation parameters for vLLM.
-
-    Args:
-        tokeniser:
-            The tokeniser.
-        model_config:
-            The model configuration.
-
-    Returns:
-        A dictionary of tokenisation parameters to pass to vLLM.
-    """
-    if isinstance(tokeniser, MistralCommonTokenizer):
-        tokeniser_mode = "mistral"
-    elif model_config.param == "slow-tokenizer":
-        tokeniser_mode = "slow"
-    else:
-        tokeniser_mode = "auto"
-
-    if isinstance(tokeniser, MistralCommonTokenizer):
-        config_format = "mistral"
-    else:
-        config_format = "auto"
-
-    if isinstance(tokeniser, MistralCommonTokenizer):
-        load_format = "mistral"
-    else:
-        load_format = "auto"
-
-    return dict(
-        tokenizer_mode=tokeniser_mode,
-        config_format=config_format,
-        load_format=load_format,
-    )
-
-
-def _safe_batch_decode(
-    tokeniser: Tokeniser, sequences: list[list[int]], skip_special_tokens: bool
-) -> list[str]:
-    """Safely decode sequences of token IDs using batch_decode or individual decode.
-
-    Attempts to use the tokeniser's batch_decode method first. If that fails
-    with an AttributeError (e.g., for custom tokenisers that don't implement
-    batch_decode), falls back to calling decode for each sequence individually.
-
-    Args:
-        tokeniser:
-            The tokeniser to use for decoding.
-        sequences:
-            List of token ID sequences to decode.
-        skip_special_tokens:
-            Whether to skip special tokens during decoding.
-
-    Returns:
-        List of decoded strings.
-    """
-    try:
-        return tokeniser.batch_decode(
-            sequences, skip_special_tokens=skip_special_tokens
-        )
-    except AttributeError:
-        log_once(
-            "Tokeniser does not support batch_decode, falling back to individual "
-            "decode calls",
-            level=logging.WARNING,
-        )
-        return [
-            t.cast(str, tokeniser.decode(seq, skip_special_tokens=skip_special_tokens))
-            for seq in sequences
-        ]
-
-
-def select_backend_and_parallelism(
-    force_single_gpu: bool = False,
-) -> tuple[str, int, int]:
-    """Determine the distributed backend and parallelism for vLLM.
-
-    Args:
-        force_single_gpu:
-            If True, forces tensor parallelism to 1.
-
-    Returns:
-        Backend, tensor parallel size, and pipeline parallel size.
-    """
-    if not torch.cuda.is_available():
-        # Non-CUDA backends (e.g. Apple Metal, CPU) only ever expose a single device
-        # here, and their vLLM plugins don't support the multiprocessing executor —
-        # the Metal plugin rejects the worker's "mps" device. Use the in-process
-        # executor instead, which vLLM also selects by default for a single device.
-        #
-        # vLLM still initialises a gloo process group to talk to its engine-core
-        # subprocess, rendezvousing on the host's primary IP. On macOS that address is
-        # often unreachable from the host itself, so the rendezvous hangs indefinitely.
-        # Pin it to loopback (without clobbering an explicit user setting).
-        os.environ.setdefault("VLLM_HOST_IP", "127.0.0.1")
-        return "uni", 1, 1
-
-    # If forcing single GPU, skip multi-node setup entirely
-    if force_single_gpu:
-        return "mp", 1, 1
-
-    if not ray.is_initialized():
-        try:
-            ray.init(address="auto", ignore_reinit_error=True)
-        except Exception as e:
-            if "could not find any running ray instance" not in str(e).lower():
-                log_once(
-                    f"Ray initialisation failed with a {type(e)} exception: {e}",
-                    level=logging.DEBUG,
-                )
-
-    is_ray = ray.is_initialized()
-    local_gpu_count = torch.cuda.device_count()
-
-    if is_ray:
-        resources = ray.cluster_resources()
-        total_gpus = int(resources.get("GPU", 0))
-    else:
-        total_gpus = local_gpu_count
-
-    using_multiple_nodes = total_gpus > local_gpu_count
-    if is_ray and using_multiple_nodes:
-        distributed_executor_backend = "ray"
-        tensor_parallel_size = local_gpu_count if local_gpu_count > 0 else 1
-        pipeline_parallel_size = max(1, total_gpus // tensor_parallel_size)
-        log_once(
-            f"Detected a multi-node setup with {pipeline_parallel_size:,} nodes, each "
-            f"with {tensor_parallel_size:,} GPUs, so using `ray` as the "
-            "distributed backend.",
-            level=logging.DEBUG,
-        )
-    else:
-        distributed_executor_backend = "mp"
-        tensor_parallel_size = local_gpu_count if local_gpu_count > 0 else 1
-        pipeline_parallel_size = 1
-        log_once(
-            f"Detected a single-node setup with {tensor_parallel_size:,} GPUs, "
-            "so using the multiprocessing distributed backend.",
-            level=logging.DEBUG,
-        )
-
-    return distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size
+        return self

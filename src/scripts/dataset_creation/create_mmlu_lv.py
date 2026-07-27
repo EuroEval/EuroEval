@@ -201,21 +201,6 @@ def get_mmlu_subjects_from_github() -> list[dict[str, str]]:
     return sorted(json_files, key=lambda x: x["name"])
 
 
-def is_repetitive(text: str) -> bool:
-    """Return True if the text is repetitive.
-
-    Args:
-        text (str): The text to check.
-
-    Returns:
-        bool: True if the text is repetitive, False otherwise.
-    """
-    if not isinstance(text, str):
-        return False
-    max_repetitions = max(Counter(text.split()).values()) if text.split() else 0
-    return max_repetitions > MAX_REPETITIONS
-
-
 def process_mmlu_data(data: list[dict[str, t.Any]]) -> pd.DataFrame:
     """Process raw MMLU data into the expected format.
 
@@ -264,6 +249,21 @@ def process_mmlu_data(data: list[dict[str, t.Any]]) -> pd.DataFrame:
         processed_data.append(processed_item)
 
     return pd.DataFrame(processed_data)
+
+
+def is_repetitive(text: str) -> bool:
+    """Return True if the text is repetitive.
+
+    Args:
+        text (str): The text to check.
+
+    Returns:
+        bool: True if the text is repetitive, False otherwise.
+    """
+    if not isinstance(text, str):
+        return False
+    max_repetitions = max(Counter(text.split()).values()) if text.split() else 0
+    return max_repetitions > MAX_REPETITIONS
 
 
 if __name__ == "__main__":

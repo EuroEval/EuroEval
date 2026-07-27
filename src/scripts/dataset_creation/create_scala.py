@@ -326,6 +326,43 @@ def corrupt(
     return corruptions
 
 
+def join_tokens(tokens: list[str]) -> str:
+    """Joins a list of tokens into a string.
+
+    Args:
+        tokens:
+            The list of tokens to join.
+
+    Returns:
+        The joined string.
+    """
+    # Form document
+    doc = " ".join(tokens)
+
+    # Remove whitespace around punctuation
+    doc = (
+        doc.replace(" .", ".")
+        .replace(" ,", ",")
+        .replace(" ;", ";")
+        .replace(" :", ":")
+        .replace("( ", "(")
+        .replace(" )", ")")
+        .replace("[ ", "[")
+        .replace(" ]", "]")
+        .replace("{ ", "{")
+        .replace(" }", "}")
+        .replace(" ?", "?")
+        .replace(" !", "!")
+    )
+
+    # Remove whitespace around quotes
+    if doc.count('"') % 2 == 0:
+        doc = re.sub('" ([^"]*) "', '"\\1"', doc)
+
+    # Return the document
+    return doc
+
+
 def delete(tokens: list[str], pos_tags: list[str]) -> str | None:
     """Delete a random token from a list of tokens.
 
@@ -378,43 +415,6 @@ def delete(tokens: list[str], pos_tags: list[str]) -> str | None:
 
     # Join up the new tokens and return the string
     return join_tokens(new_tokens)
-
-
-def join_tokens(tokens: list[str]) -> str:
-    """Joins a list of tokens into a string.
-
-    Args:
-        tokens:
-            The list of tokens to join.
-
-    Returns:
-        The joined string.
-    """
-    # Form document
-    doc = " ".join(tokens)
-
-    # Remove whitespace around punctuation
-    doc = (
-        doc.replace(" .", ".")
-        .replace(" ,", ",")
-        .replace(" ;", ";")
-        .replace(" :", ":")
-        .replace("( ", "(")
-        .replace(" )", ")")
-        .replace("[ ", "[")
-        .replace(" ]", "]")
-        .replace("{ ", "{")
-        .replace(" }", "}")
-        .replace(" ?", "?")
-        .replace(" !", "!")
-    )
-
-    # Remove whitespace around quotes
-    if doc.count('"') % 2 == 0:
-        doc = re.sub('" ([^"]*) "', '"\\1"', doc)
-
-    # Return the document
-    return doc
 
 
 def flip_neighbours(tokens: list[str], pos_tags: list[str]) -> str | None:

@@ -21,99 +21,211 @@ from .split_utils import get_repo_splits
 from .tasks import OPEN_ENDED_QA, get_all_tasks
 
 
-def load_yaml_config(
-    hf_api: HfApi, dataset_id: str, cache_dir: Path
-) -> DatasetConfig | None:
-    """Load a dataset config from an eval.yaml file in a Hugging Face repo.
+def infer_task_from_inspect_ai(
+    raw: dict[str, object], task_map: dict[str, Task]
+) -> Task | None:
+    """Try to infer the EuroEval task from Inspect AI YAML fields.
+
+    Currently detects:
+
+    * A solver with `name: multiple_choice` in `tasks[0].solvers`
+      -> `multiple-choice`
+    * A `choices` key in `tasks[0].field_spec` -> `multiple-choice`
+    * A scorer with `name: model_graded_fact` in `tasks[0].scorers`
+      -> `open-ended-qa` task with an LLM-as-a-judge metric.
+      The judge model is read from `scorers[0].args.model`; when absent, the
+      default judge defined in `OPEN_ENDED_QA` is used.
 
     Args:
-        hf_api:
-            The Hugging Face API object.
-        dataset_id:
-            The ID of the dataset to get the config for.
-        cache_dir:
-            The directory to store the cache in.
+        raw:
+            The raw YAML data.
+        task_map:
+            The mapping from task names to task objects.
 
     Returns:
-        The dataset config if it exists, otherwise None.
+        The inferred task, or None if the task cannot be inferred.
     """
-    external_config_path = cache_dir / "external_dataset_configs" / dataset_id
-    external_config_path.mkdir(parents=True, exist_ok=True)
-    hf_api.hf_hub_download(
-        repo_id=dataset_id,
-        repo_type="dataset",
-        filename="eval.yaml",
-        local_dir=external_config_path,
-        local_dir_use_symlinks=False,
-    )
-
-    repo_dataset_info = hf_api.dataset_info(repo_id=dataset_id)
-    fallback_language_codes: list[str] | None = None
-    if repo_dataset_info.card_data is not None:
-        lang_meta = getattr(repo_dataset_info.card_data, "language", None)
-        if isinstance(lang_meta, list) and lang_meta:
-            fallback_language_codes = [str(c) for c in lang_meta if c]
-
-    inspect_ai_config: str | None = None
-    inspect_ai_split: str | None = None
-    yaml_file_path = external_config_path / "eval.yaml"
-    try:
-        with yaml_file_path.open(encoding="utf-8") as fh:
-            raw_peek = yaml.safe_load(fh)
-        if isinstance(raw_peek, dict):
-            tasks_peek = raw_peek.get("tasks")
-            if isinstance(tasks_peek, list) and tasks_peek:
-                first_task_peek = tasks_peek[0]
-                if isinstance(first_task_peek, dict):
-                    config_val = first_task_peek.get("config")
-                    if isinstance(config_val, str) and config_val:
-                        inspect_ai_config = config_val
-                    split_val = first_task_peek.get("split")
-                    if isinstance(split_val, str) and split_val:
-                        inspect_ai_split = split_val
-    except (yaml.YAMLError, OSError):
-        pass
-
-    repo_dataset_config = load_dataset_config_from_yaml(
-        yaml_path=yaml_file_path, fallback_language_codes=fallback_language_codes
-    )
-    if repo_dataset_config is None:
+    tasks_raw = raw.get("tasks")
+    if not isinstance(tasks_raw, list) or not tasks_raw:
+        return None
+    first_task: dict[str, object] = cast(dict[str, object], tasks_raw[0])
+    if not isinstance(first_task, dict):
         return None
 
-    train_split, val_split, auto_test_split = get_repo_splits(
-        hf_api=hf_api, dataset_id=dataset_id
-    )
-    test_split = inspect_ai_split if inspect_ai_split is not None else auto_test_split
-    if test_split is None:
-        log_once(
-            message=(
-                f"Dataset {dataset_id} does not have a test split, so we cannot load "
-                "it. Please ensure that the dataset has a test split."
-            ),
-            level=logging.ERROR,
-        )
-        return None
+    solvers = first_task.get("solvers")
+    if isinstance(solvers, list):
+        for solver in solvers:
+            if isinstance(solver, dict):
+                _s: dict[str, object] = cast(dict[str, object], solver)
+                if _s.get("name") == "multiple_choice":
+                    return task_map.get("multiple-choice")
 
-    if train_split is None and val_split is not None:
+    scorers = first_task.get("scorers")
+    if isinstance(scorers, list):
+        for scorer in scorers:
+            if isinstance(scorer, dict):
+                _sc: dict[str, object] = cast(dict[str, object], scorer)
+                if _sc.get("name") == "model_graded_fact":
+                    judge_id: str | None = None
+                    args = _sc.get("args") or {}
+                    if isinstance(args, dict):
+                        model_val = args.get("model")
+                        if isinstance(model_val, str) and model_val:
+                            judge_id = model_val
+                    if judge_id is not None:
+                        metric = create_model_graded_fact_metric(judge_id=judge_id)
+                        return dataclasses.replace(OPEN_ENDED_QA, metrics=[metric])
+                    return OPEN_ENDED_QA
+
+    field_spec = first_task.get("field_spec")
+    if isinstance(field_spec, dict) and "choices" in field_spec:
+        return task_map.get("multiple-choice")
+
+    return None
+
+
+def parse_languages(
+    raw: dict[str, object], fallback_codes: list[str] | None, yaml_path: Path
+) -> list[Language] | None:
+    """Parse language codes from YAML or use fallbacks.
+
+    Args:
+        raw:
+            The parsed YAML data.
+        fallback_codes:
+            ISO 639-1 language codes to use as a fallback.
+        yaml_path:
+            Path to the YAML config file (for error messages).
+
+    Returns:
+        A list of Language objects, or None if validation failed.
+    """
+    language_map = get_all_languages()
+    raw_languages = raw.get("languages")
+
+    if isinstance(raw_languages, list) and raw_languages:
+        language_codes: list[str] = [str(c) for c in raw_languages]
+    elif fallback_codes:
         log_once(
             message=(
-                f"Dataset {dataset_id!r} has no training split. Using the validation "
-                f"split {val_split!r} as the training split instead."
+                f"YAML config at {yaml_path} does not contain a 'languages' key. "
+                "Using language(s) from the repository metadata: "
+                f"{fallback_codes}."
             ),
             level=logging.DEBUG,
         )
-        train_split = val_split
-        val_split = None
+        language_codes = fallback_codes
+    else:
+        log_once(
+            message=(
+                f"YAML config at {yaml_path} does not contain a 'languages' key and "
+                "no language metadata could be found for this repository. Defaulting "
+                "to English. Add a top-level 'languages' key to the YAML file "
+                "(e.g. 'languages: [en]') to override this."
+            ),
+            level=logging.WARNING,
+        )
+        language_codes = ["en"]
 
-    source = f"{dataset_id}::{inspect_ai_config}" if inspect_ai_config else dataset_id
+    language_objs: list[Language] = []
+    for code in language_codes:
+        lang = language_map.get(code)
+        if lang is None:
+            log_once(
+                message=(
+                    f"Unknown language code '{code}' in YAML config at {yaml_path}."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+        language_objs.append(lang)
 
-    repo_dataset_config.name = dataset_id
-    repo_dataset_config.pretty_name = dataset_id
-    repo_dataset_config.source = source
-    repo_dataset_config.train_split = train_split
-    repo_dataset_config.val_split = val_split
-    repo_dataset_config.test_split = test_split
-    return repo_dataset_config
+    return language_objs
+
+
+def promote_field_spec_fields(raw: dict[str, object]) -> None:
+    """Promote column names from field_spec to top-level keys.
+
+    Promotes the following mappings when the top-level key is not already set:
+
+    * `field_spec.input` -> `input_column`
+    * `field_spec.target` -> `target_column` (only if plain, not literal/int)
+    * `field_spec.choices` -> `choices_column`
+    * `tasks[0].split` -> `test_split`
+
+    Args:
+        raw:
+            The parsed YAML data to modify in place.
+    """
+    tasks_raw = raw.get("tasks")
+    if not isinstance(tasks_raw, list) or not tasks_raw:
+        return
+
+    first_task: dict[str, object] = cast(dict[str, object], tasks_raw[0])
+    if not isinstance(first_task, dict):
+        return
+
+    field_spec = first_task.get("field_spec")
+    if isinstance(field_spec, dict):
+        _fs: dict[str, object] = cast(dict[str, object], field_spec)
+        if "input" in _fs and "input_column" not in raw:
+            raw["input_column"] = _fs["input"]
+
+        if "target" in _fs and "target_column" not in raw:
+            target = _fs["target"]
+            if isinstance(target, str) and not target.startswith("literal:"):
+                raw["target_column"] = target
+
+        if "choices" in _fs and "choices_column" not in raw:
+            raw["choices_column"] = _fs["choices"]
+
+    split_val = first_task.get("split")
+    if isinstance(split_val, str) and split_val and "test_split" not in raw:
+        raw["test_split"] = split_val
+
+
+def validate_and_get_task(raw: dict[str, object], yaml_path: Path) -> Task | None:
+    """Validate the task field or infer it from Inspect AI hints.
+
+    Args:
+        raw:
+            The parsed YAML data.
+        yaml_path:
+            Path to the YAML config file (for error messages).
+
+    Returns:
+        A valid Task object, or None if validation failed.
+    """
+    task_map = get_all_tasks()
+    task_name = raw.get("task")
+
+    if isinstance(task_name, str):
+        task_obj = task_map.get(task_name)
+        if task_obj is None:
+            log_once(
+                message=(
+                    f"Unknown task '{task_name}' in YAML config at {yaml_path}. "
+                    f"Valid task names are: {sorted(task_map)}."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+    else:
+        task_obj = infer_task_from_inspect_ai(raw=raw, task_map=task_map)
+        if task_obj is None:
+            log_once(
+                message=(
+                    f"YAML config at {yaml_path} does not contain a 'task' field and "
+                    "the task could not be inferred from the Inspect AI 'tasks' block. "
+                    "Add a top-level 'task' key (e.g. 'task: classification') or "
+                    "include a 'multiple_choice' solver / a 'choices' field_spec entry "
+                    "so that the task can be detected automatically."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+
+    return task_obj
 
 
 def load_dataset_config_from_yaml(
@@ -237,214 +349,164 @@ def load_dataset_config_from_yaml(
     return DatasetConfig(task=task_obj, languages=language_objs, **kwargs)  # ty: ignore[invalid-argument-type]
 
 
-def promote_field_spec_fields(raw: dict[str, object]) -> None:
-    """Promote column names from field_spec to top-level keys.
-
-    Promotes the following mappings when the top-level key is not already set:
-
-    * `field_spec.input` -> `input_column`
-    * `field_spec.target` -> `target_column` (only if plain, not literal/int)
-    * `field_spec.choices` -> `choices_column`
-    * `tasks[0].split` -> `test_split`
+def load_yaml_config(
+    hf_api: HfApi, dataset_id: str, cache_dir: Path
+) -> DatasetConfig | None:
+    """Load a dataset config from an eval.yaml file in a Hugging Face repo.
 
     Args:
-        raw:
-            The parsed YAML data to modify in place.
-    """
-    tasks_raw = raw.get("tasks")
-    if not isinstance(tasks_raw, list) or not tasks_raw:
-        return
-
-    first_task: dict[str, object] = cast(dict[str, object], tasks_raw[0])
-    if not isinstance(first_task, dict):
-        return
-
-    field_spec = first_task.get("field_spec")
-    if isinstance(field_spec, dict):
-        _fs: dict[str, object] = cast(dict[str, object], field_spec)
-        if "input" in _fs and "input_column" not in raw:
-            raw["input_column"] = _fs["input"]
-
-        if "target" in _fs and "target_column" not in raw:
-            target = _fs["target"]
-            if isinstance(target, str) and not target.startswith("literal:"):
-                raw["target_column"] = target
-
-        if "choices" in _fs and "choices_column" not in raw:
-            raw["choices_column"] = _fs["choices"]
-
-    split_val = first_task.get("split")
-    if isinstance(split_val, str) and split_val and "test_split" not in raw:
-        raw["test_split"] = split_val
-
-
-def validate_and_get_task(raw: dict[str, object], yaml_path: Path) -> Task | None:
-    """Validate the task field or infer it from Inspect AI hints.
-
-    Args:
-        raw:
-            The parsed YAML data.
-        yaml_path:
-            Path to the YAML config file (for error messages).
+        hf_api:
+            The Hugging Face API object.
+        dataset_id:
+            The ID of the dataset to get the config for.
+        cache_dir:
+            The directory to store the cache in.
 
     Returns:
-        A valid Task object, or None if validation failed.
+        The dataset config if it exists, otherwise None.
     """
-    task_map = get_all_tasks()
-    task_name = raw.get("task")
+    external_config_path = cache_dir / "external_dataset_configs" / dataset_id
+    external_config_path.mkdir(parents=True, exist_ok=True)
+    hf_api.hf_hub_download(
+        repo_id=dataset_id,
+        repo_type="dataset",
+        filename="eval.yaml",
+        local_dir=external_config_path,
+        local_dir_use_symlinks=False,
+    )
 
-    if isinstance(task_name, str):
-        task_obj = task_map.get(task_name)
-        if task_obj is None:
-            log_once(
-                message=(
-                    f"Unknown task '{task_name}' in YAML config at {yaml_path}. "
-                    f"Valid task names are: {sorted(task_map)}."
-                ),
-                level=logging.ERROR,
-            )
-            return None
-    else:
-        task_obj = infer_task_from_inspect_ai(raw=raw, task_map=task_map)
-        if task_obj is None:
-            log_once(
-                message=(
-                    f"YAML config at {yaml_path} does not contain a 'task' field and "
-                    "the task could not be inferred from the Inspect AI 'tasks' block. "
-                    "Add a top-level 'task' key (e.g. 'task: classification') or "
-                    "include a 'multiple_choice' solver / a 'choices' field_spec entry "
-                    "so that the task can be detected automatically."
-                ),
-                level=logging.ERROR,
-            )
-            return None
+    repo_dataset_info = hf_api.dataset_info(repo_id=dataset_id)
+    fallback_language_codes: list[str] | None = None
+    if repo_dataset_info.card_data is not None:
+        lang_meta = getattr(repo_dataset_info.card_data, "language", None)
+        if isinstance(lang_meta, list) and lang_meta:
+            fallback_language_codes = [str(c) for c in lang_meta if c]
 
-    return task_obj
+    inspect_ai_config: str | None = None
+    inspect_ai_split: str | None = None
+    yaml_file_path = external_config_path / "eval.yaml"
+    try:
+        with yaml_file_path.open(encoding="utf-8") as fh:
+            raw_peek = yaml.safe_load(fh)
+        if isinstance(raw_peek, dict):
+            tasks_peek = raw_peek.get("tasks")
+            if isinstance(tasks_peek, list) and tasks_peek:
+                first_task_peek = tasks_peek[0]
+                if isinstance(first_task_peek, dict):
+                    config_val = first_task_peek.get("config")
+                    if isinstance(config_val, str) and config_val:
+                        inspect_ai_config = config_val
+                    split_val = first_task_peek.get("split")
+                    if isinstance(split_val, str) and split_val:
+                        inspect_ai_split = split_val
+    except (yaml.YAMLError, OSError):
+        pass
 
-
-def infer_task_from_inspect_ai(
-    raw: dict[str, object], task_map: dict[str, Task]
-) -> Task | None:
-    """Try to infer the EuroEval task from Inspect AI YAML fields.
-
-    Currently detects:
-
-    * A solver with `name: multiple_choice` in `tasks[0].solvers`
-      -> `multiple-choice`
-    * A `choices` key in `tasks[0].field_spec` -> `multiple-choice`
-    * A scorer with `name: model_graded_fact` in `tasks[0].scorers`
-      -> `open-ended-qa` task with an LLM-as-a-judge metric.
-      The judge model is read from `scorers[0].args.model`; when absent, the
-      default judge defined in `OPEN_ENDED_QA` is used.
-
-    Args:
-        raw:
-            The raw YAML data.
-        task_map:
-            The mapping from task names to task objects.
-
-    Returns:
-        The inferred task, or None if the task cannot be inferred.
-    """
-    tasks_raw = raw.get("tasks")
-    if not isinstance(tasks_raw, list) or not tasks_raw:
-        return None
-    first_task: dict[str, object] = cast(dict[str, object], tasks_raw[0])
-    if not isinstance(first_task, dict):
+    repo_dataset_config = load_dataset_config_from_yaml(
+        yaml_path=yaml_file_path, fallback_language_codes=fallback_language_codes
+    )
+    if repo_dataset_config is None:
         return None
 
-    solvers = first_task.get("solvers")
-    if isinstance(solvers, list):
-        for solver in solvers:
-            if isinstance(solver, dict):
-                _s: dict[str, object] = cast(dict[str, object], solver)
-                if _s.get("name") == "multiple_choice":
-                    return task_map.get("multiple-choice")
-
-    scorers = first_task.get("scorers")
-    if isinstance(scorers, list):
-        for scorer in scorers:
-            if isinstance(scorer, dict):
-                _sc: dict[str, object] = cast(dict[str, object], scorer)
-                if _sc.get("name") == "model_graded_fact":
-                    judge_id: str | None = None
-                    args = _sc.get("args") or {}
-                    if isinstance(args, dict):
-                        model_val = args.get("model")
-                        if isinstance(model_val, str) and model_val:
-                            judge_id = model_val
-                    if judge_id is not None:
-                        metric = create_model_graded_fact_metric(judge_id=judge_id)
-                        return dataclasses.replace(OPEN_ENDED_QA, metrics=[metric])
-                    return OPEN_ENDED_QA
-
-    field_spec = first_task.get("field_spec")
-    if isinstance(field_spec, dict) and "choices" in field_spec:
-        return task_map.get("multiple-choice")
-
-    return None
-
-
-def parse_languages(
-    raw: dict[str, object], fallback_codes: list[str] | None, yaml_path: Path
-) -> list[Language] | None:
-    """Parse language codes from YAML or use fallbacks.
-
-    Args:
-        raw:
-            The parsed YAML data.
-        fallback_codes:
-            ISO 639-1 language codes to use as a fallback.
-        yaml_path:
-            Path to the YAML config file (for error messages).
-
-    Returns:
-        A list of Language objects, or None if validation failed.
-    """
-    language_map = get_all_languages()
-    raw_languages = raw.get("languages")
-
-    if isinstance(raw_languages, list) and raw_languages:
-        language_codes: list[str] = [str(c) for c in raw_languages]
-    elif fallback_codes:
+    train_split, val_split, auto_test_split = get_repo_splits(
+        hf_api=hf_api, dataset_id=dataset_id
+    )
+    test_split = inspect_ai_split if inspect_ai_split is not None else auto_test_split
+    if test_split is None:
         log_once(
             message=(
-                f"YAML config at {yaml_path} does not contain a 'languages' key. "
-                "Using language(s) from the repository metadata: "
-                f"{fallback_codes}."
+                f"Dataset {dataset_id} does not have a test split, so we cannot load "
+                "it. Please ensure that the dataset has a test split."
+            ),
+            level=logging.ERROR,
+        )
+        return None
+
+    if train_split is None and val_split is not None:
+        log_once(
+            message=(
+                f"Dataset {dataset_id!r} has no training split. Using the validation "
+                f"split {val_split!r} as the training split instead."
             ),
             level=logging.DEBUG,
         )
-        language_codes = fallback_codes
-    else:
-        log_once(
-            message=(
-                f"YAML config at {yaml_path} does not contain a 'languages' key and "
-                "no language metadata could be found for this repository. Defaulting "
-                "to English. Add a top-level 'languages' key to the YAML file "
-                "(e.g. 'languages: [en]') to override this."
-            ),
-            level=logging.WARNING,
-        )
-        language_codes = ["en"]
+        train_split = val_split
+        val_split = None
 
-    language_objs: list[Language] = []
-    for code in language_codes:
-        lang = language_map.get(code)
-        if lang is None:
+    source = f"{dataset_id}::{inspect_ai_config}" if inspect_ai_config else dataset_id
+
+    repo_dataset_config.name = dataset_id
+    repo_dataset_config.pretty_name = dataset_id
+    repo_dataset_config.source = source
+    repo_dataset_config.train_split = train_split
+    repo_dataset_config.val_split = val_split
+    repo_dataset_config.test_split = test_split
+    return repo_dataset_config
+
+
+DatasetKwargs = dict[str, str | int | bool | list[str] | dict[str, str]]
+
+
+def parse_int_field(
+    raw: dict[str, object], field_name: str, yaml_path: Path
+) -> int | None:
+    """Parse and validate an integer field from YAML.
+
+    Args:
+        raw:
+            The parsed YAML data.
+        field_name:
+            The name of the field to parse.
+        yaml_path:
+            Path to the YAML config file (for error messages).
+
+    Returns:
+        The field value as an integer, or None if validation failed.
+    """
+    value = raw.get(field_name)
+    if value is not None:
+        if isinstance(value, bool) or not isinstance(value, int):
             log_once(
                 message=(
-                    f"Unknown language code '{code}' in YAML config at {yaml_path}."
+                    f"Field '{field_name}' in YAML config at {yaml_path} must be an "
+                    "integer."
                 ),
                 level=logging.ERROR,
             )
             return None
-        language_objs.append(lang)
+        return value
+    return None
 
-    return language_objs
 
+def parse_string_field(
+    raw: dict[str, object], field_name: str, yaml_path: Path
+) -> str | None:
+    """Parse and validate a string field from YAML.
 
-DatasetKwargs = dict[str, str | int | bool | list[str] | dict[str, str]]
+    Args:
+        raw:
+            The parsed YAML data.
+        field_name:
+            The name of the field to parse.
+        yaml_path:
+            Path to the YAML config file (for error messages).
+
+    Returns:
+        The field value as a string, or None if validation failed.
+    """
+    value = raw.get(field_name)
+    if value is not None:
+        if not isinstance(value, str):
+            log_once(
+                message=(
+                    f"Field '{field_name}' in YAML config at {yaml_path} must be a "
+                    "string."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+        return value
+    return None
 
 
 def build_kwargs(raw: dict[str, object], yaml_path: Path) -> DatasetKwargs | None:
@@ -533,68 +595,6 @@ def build_kwargs(raw: dict[str, object], yaml_path: Path) -> DatasetKwargs | Non
             return None
 
     return kwargs
-
-
-def parse_string_field(
-    raw: dict[str, object], field_name: str, yaml_path: Path
-) -> str | None:
-    """Parse and validate a string field from YAML.
-
-    Args:
-        raw:
-            The parsed YAML data.
-        field_name:
-            The name of the field to parse.
-        yaml_path:
-            Path to the YAML config file (for error messages).
-
-    Returns:
-        The field value as a string, or None if validation failed.
-    """
-    value = raw.get(field_name)
-    if value is not None:
-        if not isinstance(value, str):
-            log_once(
-                message=(
-                    f"Field '{field_name}' in YAML config at {yaml_path} must be a "
-                    "string."
-                ),
-                level=logging.ERROR,
-            )
-            return None
-        return value
-    return None
-
-
-def parse_int_field(
-    raw: dict[str, object], field_name: str, yaml_path: Path
-) -> int | None:
-    """Parse and validate an integer field from YAML.
-
-    Args:
-        raw:
-            The parsed YAML data.
-        field_name:
-            The name of the field to parse.
-        yaml_path:
-            Path to the YAML config file (for error messages).
-
-    Returns:
-        The field value as an integer, or None if validation failed.
-    """
-    value = raw.get(field_name)
-    if value is not None:
-        if isinstance(value, bool) or not isinstance(value, int):
-            log_once(
-                message=(
-                    f"Field '{field_name}' in YAML config at {yaml_path} must be an "
-                    "integer."
-                ),
-                level=logging.ERROR,
-            )
-            return None
-        return value
-    return None
 
 
 def load_yaml_file(yaml_path: Path) -> dict[str, object] | None:

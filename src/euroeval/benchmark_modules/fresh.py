@@ -46,178 +46,6 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig
 
 
-class FreshEncoderModel(HuggingFaceEncoderModel):
-    """A freshly initialised encoder model."""
-
-    fresh_model = True
-    allowed_params = {re.compile(r".*"): ["slow-tokenizer"]}
-
-    def __init__(
-        self,
-        model_config: "ModelConfig",
-        dataset_config: "DatasetConfig",
-        benchmark_config: "BenchmarkConfig",
-        log_metadata: bool = True,
-    ) -> None:
-        """Initialise the model.
-
-        Args:
-            model_config:
-                The model configuration.
-            dataset_config:
-                The dataset configuration.
-            benchmark_config:
-                The benchmark configuration.
-            log_metadata:
-                Whether to log metadata about the model and the benchmark.
-        """
-        raise_if_wrong_params(
-            model_config=model_config, allowed_params=self.allowed_params
-        )
-
-        # These are already set when calling `super().__init__`, but we need them to get
-        # values from `self.model_max_length`, so we set them here as well.
-        self.model_config = model_config
-        self.benchmark_config = benchmark_config
-
-        model, tokeniser = load_model_and_tokeniser(
-            model_config=model_config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-            model_max_length=self.model_max_length,
-        )
-        self._model: "PreTrainedModel" = model
-        self._tokeniser: Tokeniser = tokeniser
-
-        self._model, self._tokeniser = align_model_and_tokeniser(
-            model=self._model,
-            tokeniser=self._tokeniser,
-            model_max_length=self.model_max_length,
-            raise_errors=benchmark_config.raise_errors,
-            is_multiple_choice=(
-                dataset_config.task.task_group
-                == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-            ),
-        )
-
-        # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
-        # to call the `__init__` method of the `BenchmarkModule` class.
-        super(HuggingFaceEncoderModel, self).__init__(
-            model_config=model_config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-            log_metadata=log_metadata,
-        )
-
-    @cached_property
-    def num_params(self) -> int:
-        """The number of parameters in the model.
-
-        Returns:
-            The number of parameters in the model.
-        """
-        match self.model_config.model_id:
-            case "fresh-xlm-roberta-base":
-                return 278_885_778
-            case "fresh-electra-small":
-                return 13_738_755
-            case _:
-                raise NotImplementedError(
-                    f"Number of parameters for model {self.model_config.model_id} is "
-                    "not implemented."
-                )
-
-    @cached_property
-    def vocab_size(self) -> int:
-        """The vocabulary size of the model.
-
-        Returns:
-            The vocabulary size of the model.
-        """
-        if self.benchmark_config.vocabulary_size is not None:
-            return self.benchmark_config.vocabulary_size
-        match self.model_config.model_id:
-            case "fresh-xlm-roberta-base":
-                return 250_002
-            case "fresh-electra-small":
-                return 32_000
-            case _:
-                raise NotImplementedError(
-                    f"Vocabulary size for model {self.model_config.model_id} is not "
-                    "implemented."
-                )
-
-    @cached_property
-    def model_max_length(self) -> int:
-        """The maximum context length of the model.
-
-        Returns:
-            The maximum context length of the model.
-        """
-        if self.benchmark_config.max_context_length is not None:
-            return self.benchmark_config.max_context_length
-        match self.model_config.model_id:
-            case "fresh-xlm-roberta-base":
-                return 512
-            case "fresh-electra-small":
-                return 128
-            case _:
-                raise NotImplementedError(
-                    f"Maximum context length for model {self.model_config.model_id} is "
-                    "not implemented."
-                )
-
-    @classmethod
-    def model_exists(
-        cls, model_id: str, benchmark_config: "BenchmarkConfig"
-    ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
-        """Check if a model exists.
-
-        Args:
-            model_id:
-                The model ID.
-            benchmark_config:
-                The benchmark configuration.
-
-        Returns:
-            Whether the model exists, or an error describing why we cannot check
-            whether the model exists.
-        """
-        valid_models = ["fresh-electra-small", "fresh-xlm-roberta-base"]
-        return model_id in valid_models
-
-    @classmethod
-    def get_model_config(
-        cls, model_id: str, benchmark_config: "BenchmarkConfig"
-    ) -> "ModelConfig":
-        """Fetch the model configuration.
-
-        Args:
-            model_id:
-                The model ID.
-            benchmark_config:
-                The benchmark configuration.
-
-        Returns:
-            The model configuration.
-        """
-        return ModelConfig(
-            model_id=model_id,
-            revision="main",
-            param=None,
-            task="fill-mask",
-            languages=list(),
-            merge=False,
-            inference_backend=InferenceBackend.TRANSFORMERS,
-            model_type=ModelType.ENCODER,
-            fresh=True,
-            model_cache_dir=create_model_cache_dir(
-                cache_dir=benchmark_config.cache_dir, model_id=model_id
-            ),
-            adapter_base_model_id=None,
-        )
-
-
 def load_model_and_tokeniser(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
@@ -332,3 +160,175 @@ def load_model_and_tokeniser(
     )
 
     return model, tokeniser
+
+
+class FreshEncoderModel(HuggingFaceEncoderModel):
+    """A freshly initialised encoder model."""
+
+    fresh_model = True
+    allowed_params = {re.compile(r".*"): ["slow-tokenizer"]}
+
+    def __init__(
+        self,
+        model_config: "ModelConfig",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
+        log_metadata: bool = True,
+    ) -> None:
+        """Initialise the model.
+
+        Args:
+            model_config:
+                The model configuration.
+            dataset_config:
+                The dataset configuration.
+            benchmark_config:
+                The benchmark configuration.
+            log_metadata:
+                Whether to log metadata about the model and the benchmark.
+        """
+        raise_if_wrong_params(
+            model_config=model_config, allowed_params=self.allowed_params
+        )
+
+        # These are already set when calling `super().__init__`, but we need them to get
+        # values from `self.model_max_length`, so we set them here as well.
+        self.model_config = model_config
+        self.benchmark_config = benchmark_config
+
+        model, tokeniser = load_model_and_tokeniser(
+            model_config=model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            model_max_length=self.model_max_length,
+        )
+        self._model: "PreTrainedModel" = model
+        self._tokeniser: Tokeniser = tokeniser
+
+        self._model, self._tokeniser = align_model_and_tokeniser(
+            model=self._model,
+            tokeniser=self._tokeniser,
+            model_max_length=self.model_max_length,
+            raise_errors=benchmark_config.raise_errors,
+            is_multiple_choice=(
+                dataset_config.task.task_group
+                == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+            ),
+        )
+
+        # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
+        # to call the `__init__` method of the `BenchmarkModule` class.
+        super(HuggingFaceEncoderModel, self).__init__(
+            model_config=model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=log_metadata,
+        )
+
+    @classmethod
+    def get_model_config(
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> "ModelConfig":
+        """Fetch the model configuration.
+
+        Args:
+            model_id:
+                The model ID.
+            benchmark_config:
+                The benchmark configuration.
+
+        Returns:
+            The model configuration.
+        """
+        return ModelConfig(
+            model_id=model_id,
+            revision="main",
+            param=None,
+            task="fill-mask",
+            languages=list(),
+            merge=False,
+            inference_backend=InferenceBackend.TRANSFORMERS,
+            model_type=ModelType.ENCODER,
+            fresh=True,
+            model_cache_dir=create_model_cache_dir(
+                cache_dir=benchmark_config.cache_dir, model_id=model_id
+            ),
+            adapter_base_model_id=None,
+        )
+
+    @classmethod
+    def model_exists(
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
+        """Check if a model exists.
+
+        Args:
+            model_id:
+                The model ID.
+            benchmark_config:
+                The benchmark configuration.
+
+        Returns:
+            Whether the model exists, or an error describing why we cannot check
+            whether the model exists.
+        """
+        valid_models = ["fresh-electra-small", "fresh-xlm-roberta-base"]
+        return model_id in valid_models
+
+    @cached_property
+    def model_max_length(self) -> int:
+        """The maximum context length of the model.
+
+        Returns:
+            The maximum context length of the model.
+        """
+        if self.benchmark_config.max_context_length is not None:
+            return self.benchmark_config.max_context_length
+        match self.model_config.model_id:
+            case "fresh-xlm-roberta-base":
+                return 512
+            case "fresh-electra-small":
+                return 128
+            case _:
+                raise NotImplementedError(
+                    f"Maximum context length for model {self.model_config.model_id} is "
+                    "not implemented."
+                )
+
+    @cached_property
+    def num_params(self) -> int:
+        """The number of parameters in the model.
+
+        Returns:
+            The number of parameters in the model.
+        """
+        match self.model_config.model_id:
+            case "fresh-xlm-roberta-base":
+                return 278_885_778
+            case "fresh-electra-small":
+                return 13_738_755
+            case _:
+                raise NotImplementedError(
+                    f"Number of parameters for model {self.model_config.model_id} is "
+                    "not implemented."
+                )
+
+    @cached_property
+    def vocab_size(self) -> int:
+        """The vocabulary size of the model.
+
+        Returns:
+            The vocabulary size of the model.
+        """
+        if self.benchmark_config.vocabulary_size is not None:
+            return self.benchmark_config.vocabulary_size
+        match self.model_config.model_id:
+            case "fresh-xlm-roberta-base":
+                return 250_002
+            case "fresh-electra-small":
+                return 32_000
+            case _:
+                raise NotImplementedError(
+                    f"Vocabulary size for model {self.model_config.model_id} is not "
+                    "implemented."
+                )

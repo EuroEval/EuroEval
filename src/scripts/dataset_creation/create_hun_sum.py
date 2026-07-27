@@ -44,16 +44,6 @@ def load_cache() -> dict:
 summary_cache = load_cache()
 
 
-class SummaryValidation(BaseModel):
-    """Structured output for the summary validation.
-
-    Args:
-        is_valid_summary: True if the summary aligns with the text, False otherwise.
-    """
-
-    is_valid_summary: bool
-
-
 def main() -> None:
     """Create the Hungarian summarisation mini dataset and upload to HF Hub."""
     dataset_id = "ariel-ml/hun-sum-chatml-5k"
@@ -191,6 +181,22 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+class SummaryValidation(BaseModel):
+    """Structured output for the summary validation.
+
+    Args:
+        is_valid_summary: True if the summary aligns with the text, False otherwise.
+    """
+
+    is_valid_summary: bool
+
+
+def save_cache(cache: dict) -> None:
+    """Save cache to CACHE_FILE."""
+    with open(CACHE_FILE, "w") as cache_file:
+        json.dump(cache, cache_file, indent=4)
+
+
 def _text_summary_alignment(row: pd.Series) -> bool:
     """Check if the summary aligns with the text using an LLM, with caching.
 
@@ -230,12 +236,6 @@ def _text_summary_alignment(row: pd.Series) -> bool:
     save_cache(cache=summary_cache)
 
     return is_valid_summary
-
-
-def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE."""
-    with open(CACHE_FILE, "w") as cache_file:
-        json.dump(cache, cache_file, indent=4)
 
 
 if __name__ == "__main__":

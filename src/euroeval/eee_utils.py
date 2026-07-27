@@ -13,6 +13,156 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkResult
 
 
+def parse_optional_bool(value: str | bool | None) -> bool | None:
+    """Parse a string-encoded or bool optional boolean value.
+
+    Args:
+        value:
+            The value to parse. `None` maps to `None`; bool values are
+            returned as-is; string values are compared case-insensitively
+            to `"true"`.
+
+    Returns:
+        `None` if value is `None`, otherwise a boolean.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    return value.lower() == "true"
+
+
+def parse_optional_str(value: str | None) -> str | None:
+    """Parse a string-encoded optional string value.
+
+    Args:
+        value:
+            The string to parse.  `None` maps to `None`.
+
+    Returns:
+        `None` if value is `None`, otherwise the original string.
+    """
+    return None if value is None else value
+
+
+def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
+    """Create a BenchmarkResult from an Every Eval Ever format dictionary.
+
+    Reconstructs a full `BenchmarkResult` from a dictionary conforming to the
+    Every Eval Ever (EEE) JSON schema v0.2.1.  This function is the inverse of
+    `benchmark_result_to_eee_dict` and enables lossless round-trips.
+
+    Args:
+        config:
+            A dictionary conforming to the EEE JSON schema v0.2.1, as produced
+            by `benchmark_result_to_eee_dict`.
+
+    Returns:
+        The reconstructed benchmark result.
+    """
+    # Importing here to avoid circular imports
+    from .data_models import BenchmarkResult  # noqa: PLC0415
+
+    model_info = config.get("model_info", {})
+    eval_library = config.get("eval_library", {})
+    evaluation_results: c.Sequence[dict] = config.get("evaluation_results", [])
+
+    model = model_info.get("name", "")
+    model_additional = model_info.get("additional_details", {})
+    eval_lib_additional = eval_library.get("additional_details", {})
+
+    if evaluation_results:
+        dataset = evaluation_results[0].get("source_data", {}).get("dataset_name", "")
+    else:
+        dataset = eval_lib_additional.get("dataset", "")
+
+    raw_results_json = eval_lib_additional.get("raw_results", "[]")
+    try:
+        raw_results = json.loads(raw_results_json)
+    except json.JSONDecodeError:
+        raw_results = []
+
+    total_dict: dict[str, float] = {}
+    for eval_result in evaluation_results:
+        metric_name = eval_result.get("evaluation_name", "")
+        score_details = eval_result.get("score_details", {})
+        total_dict[metric_name] = score_details.get("score", 0.0)
+
+        uncertainty = score_details.get("uncertainty", {})
+        ci_info = uncertainty.get("confidence_interval", {})
+        if "lower" in ci_info and "upper" in ci_info:
+            ci_half_width = (ci_info["upper"] - ci_info["lower"]) / 2
+            total_dict[f"{metric_name}_se"] = ci_half_width
+
+        details = score_details.get("details", {})
+        if (
+            "num_failed_instances" in details
+            and "num_failed_instances" not in total_dict
+        ):
+            total_dict["num_failed_instances"] = float(details["num_failed_instances"])
+
+    results = {"raw": raw_results, "total": total_dict}
+
+    languages_json = eval_lib_additional.get("languages", "[]")
+    try:
+        languages: list[str] = json.loads(languages_json)
+    except json.JSONDecodeError:
+        languages = []
+
+    # Metadata
+    commercially_licensed = parse_optional_bool(
+        model_additional.get(
+            "commercially_licensed", config.get("commercially_licensed")
+        )
+    )
+    open = parse_optional_bool(model_additional.get("open", config.get("open")))
+    trained_from_scratch = parse_optional_bool(
+        model_additional.get("trained_from_scratch", config.get("trained_from_scratch"))
+    )
+
+    return BenchmarkResult(
+        dataset=dataset,
+        task=eval_lib_additional.get("task", ""),
+        languages=languages,
+        model=model,
+        results=results,
+        num_model_parameters=int(
+            model_additional.get("num_model_parameters", "0") or "0"
+        ),
+        max_sequence_length=int(
+            model_additional.get("max_sequence_length", "0") or "0"
+        ),
+        vocabulary_size=int(model_additional.get("vocabulary_size", "0") or "0"),
+        merge=model_additional.get("merge", "false") == "true",
+        generative=model_additional.get("generative", "false") == "true",
+        generative_type=parse_optional_str(model_additional.get("generative_type")),
+        few_shot=parse_optional_bool(eval_lib_additional.get("few_shot")),
+        validation_split=parse_optional_bool(
+            eval_lib_additional.get("validation_split")
+        ),
+        use_bits_per_character=parse_optional_bool(
+            eval_lib_additional.get("use_bits_per_character")
+        ),
+        euroeval_version=parse_optional_str(
+            None
+            if eval_library.get("version") == "unknown"
+            else eval_library.get("version")
+        ),
+        transformers_version=parse_optional_str(
+            eval_lib_additional.get("transformers_version")
+        ),
+        torch_version=parse_optional_str(eval_lib_additional.get("torch_version")),
+        vllm_version=parse_optional_str(eval_lib_additional.get("vllm_version")),
+        xgrammar_version=parse_optional_str(
+            eval_lib_additional.get("xgrammar_version")
+        ),
+        litellm_version=parse_optional_str(eval_lib_additional.get("litellm_version")),
+        commercially_licensed=commercially_licensed,
+        open=open,
+        trained_from_scratch=trained_from_scratch,
+    )
+
+
 def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
     """Convert a BenchmarkResult to the Every Eval Ever (EEE) format.
 
@@ -190,153 +340,3 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         },
         "evaluation_results": evaluation_results,
     }
-
-
-def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
-    """Create a BenchmarkResult from an Every Eval Ever format dictionary.
-
-    Reconstructs a full `BenchmarkResult` from a dictionary conforming to the
-    Every Eval Ever (EEE) JSON schema v0.2.1.  This function is the inverse of
-    `benchmark_result_to_eee_dict` and enables lossless round-trips.
-
-    Args:
-        config:
-            A dictionary conforming to the EEE JSON schema v0.2.1, as produced
-            by `benchmark_result_to_eee_dict`.
-
-    Returns:
-        The reconstructed benchmark result.
-    """
-    # Importing here to avoid circular imports
-    from .data_models import BenchmarkResult  # noqa: PLC0415
-
-    model_info = config.get("model_info", {})
-    eval_library = config.get("eval_library", {})
-    evaluation_results: c.Sequence[dict] = config.get("evaluation_results", [])
-
-    model = model_info.get("name", "")
-    model_additional = model_info.get("additional_details", {})
-    eval_lib_additional = eval_library.get("additional_details", {})
-
-    if evaluation_results:
-        dataset = evaluation_results[0].get("source_data", {}).get("dataset_name", "")
-    else:
-        dataset = eval_lib_additional.get("dataset", "")
-
-    raw_results_json = eval_lib_additional.get("raw_results", "[]")
-    try:
-        raw_results = json.loads(raw_results_json)
-    except json.JSONDecodeError:
-        raw_results = []
-
-    total_dict: dict[str, float] = {}
-    for eval_result in evaluation_results:
-        metric_name = eval_result.get("evaluation_name", "")
-        score_details = eval_result.get("score_details", {})
-        total_dict[metric_name] = score_details.get("score", 0.0)
-
-        uncertainty = score_details.get("uncertainty", {})
-        ci_info = uncertainty.get("confidence_interval", {})
-        if "lower" in ci_info and "upper" in ci_info:
-            ci_half_width = (ci_info["upper"] - ci_info["lower"]) / 2
-            total_dict[f"{metric_name}_se"] = ci_half_width
-
-        details = score_details.get("details", {})
-        if (
-            "num_failed_instances" in details
-            and "num_failed_instances" not in total_dict
-        ):
-            total_dict["num_failed_instances"] = float(details["num_failed_instances"])
-
-    results = {"raw": raw_results, "total": total_dict}
-
-    languages_json = eval_lib_additional.get("languages", "[]")
-    try:
-        languages: list[str] = json.loads(languages_json)
-    except json.JSONDecodeError:
-        languages = []
-
-    # Metadata
-    commercially_licensed = parse_optional_bool(
-        model_additional.get(
-            "commercially_licensed", config.get("commercially_licensed")
-        )
-    )
-    open = parse_optional_bool(model_additional.get("open", config.get("open")))
-    trained_from_scratch = parse_optional_bool(
-        model_additional.get("trained_from_scratch", config.get("trained_from_scratch"))
-    )
-
-    return BenchmarkResult(
-        dataset=dataset,
-        task=eval_lib_additional.get("task", ""),
-        languages=languages,
-        model=model,
-        results=results,
-        num_model_parameters=int(
-            model_additional.get("num_model_parameters", "0") or "0"
-        ),
-        max_sequence_length=int(
-            model_additional.get("max_sequence_length", "0") or "0"
-        ),
-        vocabulary_size=int(model_additional.get("vocabulary_size", "0") or "0"),
-        merge=model_additional.get("merge", "false") == "true",
-        generative=model_additional.get("generative", "false") == "true",
-        generative_type=parse_optional_str(model_additional.get("generative_type")),
-        few_shot=parse_optional_bool(eval_lib_additional.get("few_shot")),
-        validation_split=parse_optional_bool(
-            eval_lib_additional.get("validation_split")
-        ),
-        use_bits_per_character=parse_optional_bool(
-            eval_lib_additional.get("use_bits_per_character")
-        ),
-        euroeval_version=parse_optional_str(
-            None
-            if eval_library.get("version") == "unknown"
-            else eval_library.get("version")
-        ),
-        transformers_version=parse_optional_str(
-            eval_lib_additional.get("transformers_version")
-        ),
-        torch_version=parse_optional_str(eval_lib_additional.get("torch_version")),
-        vllm_version=parse_optional_str(eval_lib_additional.get("vllm_version")),
-        xgrammar_version=parse_optional_str(
-            eval_lib_additional.get("xgrammar_version")
-        ),
-        litellm_version=parse_optional_str(eval_lib_additional.get("litellm_version")),
-        commercially_licensed=commercially_licensed,
-        open=open,
-        trained_from_scratch=trained_from_scratch,
-    )
-
-
-def parse_optional_str(value: str | None) -> str | None:
-    """Parse a string-encoded optional string value.
-
-    Args:
-        value:
-            The string to parse.  `None` maps to `None`.
-
-    Returns:
-        `None` if value is `None`, otherwise the original string.
-    """
-    return None if value is None else value
-
-
-def parse_optional_bool(value: str | bool | None) -> bool | None:
-    """Parse a string-encoded or bool optional boolean value.
-
-    Args:
-        value:
-            The value to parse. `None` maps to `None`; bool values are
-            returned as-is; string values are compared case-insensitively
-            to `"true"`.
-
-    Returns:
-        `None` if value is `None`, otherwise a boolean.
-    """
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return value
-    return value.lower() == "true"

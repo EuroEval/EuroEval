@@ -39,14 +39,6 @@ logger = logging.getLogger("create_swedish_knowledge")
 LABELS = ["a", "b", "c", "d"]
 
 
-class CandidateAnswers(BaseModel):
-    """Candidate answers from the OpenAI API."""
-
-    first: str
-    second: str
-    third: str
-
-
 def main() -> None:
     """Create the Swedish knowledge dataset."""
     # Define the base download URL
@@ -240,6 +232,14 @@ def drop_duplicate_questions(dataset: Dataset) -> Dataset:
     df = df[["question", "answer"]]
 
     return Dataset.from_pandas(df)
+
+
+class CandidateAnswers(BaseModel):
+    """Candidate answers from the OpenAI API."""
+
+    first: str
+    second: str
+    third: str
 
 
 if __name__ == "__main__":

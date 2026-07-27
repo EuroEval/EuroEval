@@ -52,6 +52,34 @@ def main() -> None:
         path.unlink()
 
 
+def _validate_metadata(
+    result_dict: dict[str, t.Any], model_id: str, cache: dict[str, dict[str, bool]]
+) -> None:
+    """Validate and fill in missing metadata fields.
+
+    Args:
+        result_dict:
+            The result dictionary to update.
+        model_id:
+            The model identifier.
+        cache:
+            Cache of previously entered metadata values.
+    """
+    model_info = t.cast(dict[str, t.Any], result_dict["model_info"])
+    for metadata_field in REQUIRED_METADATA_FIELDS:
+        if metadata_field not in model_info["additional_details"]:
+            if model_id in cache and metadata_field in cache[model_id]:
+                value = cache[model_id][metadata_field]
+            else:
+                input_prompt = f"{metadata_field} for https://hf.co/{model_id} (y/n)? "
+                value = input(input_prompt)
+                while value not in ["y", "n"]:
+                    value = input(input_prompt)
+                value = value == "y"
+                cache[model_id][metadata_field] = value
+            model_info["additional_details"][metadata_field] = value
+
+
 def _validate_record(record_file: Path) -> tuple[list[dict[str, t.Any]], bool]:
     """Validate a single result record.
 
@@ -100,34 +128,6 @@ def _validate_record(record_file: Path) -> tuple[list[dict[str, t.Any]], bool]:
         return [], True
 
     return model_results, False
-
-
-def _validate_metadata(
-    result_dict: dict[str, t.Any], model_id: str, cache: dict[str, dict[str, bool]]
-) -> None:
-    """Validate and fill in missing metadata fields.
-
-    Args:
-        result_dict:
-            The result dictionary to update.
-        model_id:
-            The model identifier.
-        cache:
-            Cache of previously entered metadata values.
-    """
-    model_info = t.cast(dict[str, t.Any], result_dict["model_info"])
-    for metadata_field in REQUIRED_METADATA_FIELDS:
-        if metadata_field not in model_info["additional_details"]:
-            if model_id in cache and metadata_field in cache[model_id]:
-                value = cache[model_id][metadata_field]
-            else:
-                input_prompt = f"{metadata_field} for https://hf.co/{model_id} (y/n)? "
-                value = input(input_prompt)
-                while value not in ["y", "n"]:
-                    value = input(input_prompt)
-                value = value == "y"
-                cache[model_id][metadata_field] = value
-            model_info["additional_details"][metadata_field] = value
 
 
 if __name__ == "__main__":

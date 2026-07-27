@@ -58,14 +58,6 @@ LABELS = ["a", "b", "c", "d"]
 TRAIN_SIZE = 16
 
 
-class CandidateAnswers(BaseModel):
-    """Candidate wrong answers from the OpenAI API."""
-
-    first: str
-    second: str
-    third: str
-
-
 def main() -> None:
     """Create the MultiLoKo-mini datasets and upload them to the HF Hub."""
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
@@ -257,6 +249,14 @@ def build_dataset_with_llm(
         labels.append(correct_label)
 
     return pd.DataFrame({"text": texts, "label": labels})
+
+
+class CandidateAnswers(BaseModel):
+    """Candidate wrong answers from the OpenAI API."""
+
+    first: str
+    second: str
+    third: str
 
 
 if __name__ == "__main__":

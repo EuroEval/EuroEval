@@ -47,8 +47,6 @@ load_dotenv()
 
 
 # Constants for leaderboard generation
-
-
 @click.command()
 @click.option(
     "--categories",

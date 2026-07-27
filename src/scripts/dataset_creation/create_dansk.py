@@ -17,24 +17,6 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
 
-@dataclass
-class NamedEntity:
-    """A named entity."""
-
-    start: int
-    end: int
-    label: str
-
-
-@dataclass
-class Token:
-    """A token."""
-
-    id: int
-    start: int
-    end: int
-
-
 def main() -> None:
     """Create the DANSK-mini NER dataset and uploads it to the HF Hub."""
     # Define dataset ID
@@ -183,6 +165,24 @@ def main() -> None:
 
     # Push the dataset to the Hugging Face Hub
     dataset.push_to_hub(dataset_id, private=True)
+
+
+@dataclass
+class NamedEntity:
+    """A named entity."""
+
+    start: int
+    end: int
+    label: str
+
+
+@dataclass
+class Token:
+    """A token."""
+
+    id: int
+    start: int
+    end: int
 
 
 if __name__ == "__main__":

@@ -141,6 +141,32 @@ def hydrate_data(df: pd.DataFrame) -> pd.DataFrame:
     return df.dropna(subset=["comment_content"])
 
 
+def extract_datetime_from_signature(signature_body: Tag) -> dt.datetime | None:
+    """Parse the signature to extract the datetime information.
+
+    Args:
+        signature_body:
+            The signature body to extract the datetime information from.
+
+    Returns:
+        The extracted datetime information, or None if no datetime information was
+        found.
+    """
+    signature_str = "".join([str(child) for child in signature_body.children]).strip()
+    signature_str = re.sub("\n", " ", signature_str)
+    signature_str = re.sub(r"\s+", " ", signature_str)
+
+    datetime_match = re.search(
+        pattern=r"(\d{1,2}\.\d{1,2}\.\d{4})\s+kl\.\s+(\d{1,2}:\d{2})",
+        string=signature_str,
+    )
+    if not datetime_match:
+        return None
+
+    date_str, time_str = datetime_match.groups()
+    return dt.datetime.strptime(f"{date_str} {time_str}", "%d.%m.%Y %H:%M")
+
+
 def scrape_comment_content(url: str, target_datetime: dt.datetime) -> str | None:
     """Scrape the content of a comment with a given datetime from a URL.
 
@@ -200,32 +226,6 @@ def scrape_comment_content(url: str, target_datetime: dt.datetime) -> str | None
     else:
         logger.error(f"Error scraping comment content for {url!r}")
         return None
-
-
-def extract_datetime_from_signature(signature_body: Tag) -> dt.datetime | None:
-    """Parse the signature to extract the datetime information.
-
-    Args:
-        signature_body:
-            The signature body to extract the datetime information from.
-
-    Returns:
-        The extracted datetime information, or None if no datetime information was
-        found.
-    """
-    signature_str = "".join([str(child) for child in signature_body.children]).strip()
-    signature_str = re.sub("\n", " ", signature_str)
-    signature_str = re.sub(r"\s+", " ", signature_str)
-
-    datetime_match = re.search(
-        pattern=r"(\d{1,2}\.\d{1,2}\.\d{4})\s+kl\.\s+(\d{1,2}:\d{2})",
-        string=signature_str,
-    )
-    if not datetime_match:
-        return None
-
-    date_str, time_str = datetime_match.groups()
-    return dt.datetime.strptime(f"{date_str} {time_str}", "%d.%m.%Y %H:%M")
 
 
 if __name__ == "__main__":

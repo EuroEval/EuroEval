@@ -26,88 +26,6 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig
 
 
-class TokenHallucinationMetric(Metric):
-    """Hallucination metric."""
-
-    def __init__(self, name: str, pretty_name: str) -> None:
-        """Initialise the token hallucination metric.
-
-        Args:
-            name:
-                The name of the metric in snake_case.
-            pretty_name:
-                The pretty name of the metric, used for display purposes.
-        """
-        super().__init__(name=name, pretty_name=pretty_name, postprocessing_fn=None)
-
-    def download(
-        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
-    ) -> "TokenHallucinationMetric":
-        """Pre-download hallucination detection models.
-
-        The hallucination detection model is language-specific. When a dataset
-        configuration is provided, only the model(s) for the relevant language(s)
-        are downloaded. Otherwise, all hallucination detection models referenced
-        by built-in dataset configurations are fetched for offline benchmarking.
-
-        Args:
-            cache_dir:
-                The directory where the models will be downloaded to.
-            dataset_config (optional):
-                The dataset configuration, used to filter which hallucination
-                detection models to download based on language. When None, all
-                models are downloaded. Defaults to None.
-
-        Returns:
-            The metric object itself.
-        """
-        for model_id in _hallucination_model_ids(
-            cache_dir=cache_dir, dataset_config=dataset_config
-        ):
-            snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
-        return self
-
-    def __call__(
-        self,
-        predictions: c.Iterable[dict[str, t.Any]],
-        references: c.Sequence,
-        dataset: "Dataset",
-        dataset_config: "DatasetConfig",
-        benchmark_config: "BenchmarkConfig",
-    ) -> float | None:
-        """Compute the token-level hallucination rate for a set of predictions.
-
-        This method wraps `detect_hallucinations` to run a token-level
-        hallucination detector over the provided predictions and dataset contexts,
-        and returns the rate of tokens classified as hallucinated.
-
-        Args:
-            predictions:
-                The model predictions. Each prediction must provide a
-                ``"prediction_text"`` field containing the model's answer text.
-            references:
-                The ground truth references. Unused by this metric, but accepted
-                for API consistency with the base ``Metric`` interface.
-            dataset:
-                The dataset used for evaluation.
-            dataset_config:
-                The dataset configuration.
-            benchmark_config:
-                The benchmark configuration, used to determine the compute device.
-
-        Returns:
-            The hallucination rate (hallucinated_tokens/total_tokens).
-        """
-        hallucination_rate = detect_hallucinations(
-            dataset=dataset,
-            predictions=predictions,
-            model=_hallucination_model_id(dataset_config=dataset_config),
-            device=Device(benchmark_config.device.type),
-            cache_dir=benchmark_config.cache_dir,
-        )
-        return hallucination_rate
-
-
 def _hallucination_model_id(dataset_config: "DatasetConfig") -> str:
     """Build the hallucination detection model ID for a dataset.
 
@@ -186,6 +104,33 @@ def _hallucination_model_ids(
         ):
             model_ids.add(_hallucination_model_id(dataset_config=dataset_config))
     return model_ids
+
+
+def _answer_too_long(
+    answer: str, tokenizer: "PreTrainedTokenizerBase", max_length: int
+) -> bool:
+    """Check whether an answer alone exceeds the detector's token budget.
+
+    The hallucination detector tokenises the prompt and answer together with
+    ``truncation="only_first"``, which only truncates the prompt. If the answer
+    alone leaves no room for the prompt (e.g. for reasoning models that emit long
+    answers), the tokeniser raises a truncation error. Such samples are skipped.
+
+    Args:
+        answer:
+            The predicted answer text to check.
+        tokenizer:
+            The detector's tokeniser, used to count tokens.
+        max_length:
+            The detector's maximum input sequence length.
+
+    Returns:
+        Whether the answer is too long to be evaluated alongside a prompt.
+    """
+    answer_token_count = len(tokenizer(answer, add_special_tokens=False)["input_ids"])
+    # Reserve room for special tokens ([CLS], two [SEP]) and at least one prompt
+    # token, matching the detector's ``truncation="only_first"`` requirement.
+    return answer_token_count >= max_length - 4
 
 
 def detect_hallucinations(
@@ -280,31 +225,86 @@ def detect_hallucinations(
     return hallucination_rate
 
 
-def _answer_too_long(
-    answer: str, tokenizer: "PreTrainedTokenizerBase", max_length: int
-) -> bool:
-    """Check whether an answer alone exceeds the detector's token budget.
+class TokenHallucinationMetric(Metric):
+    """Hallucination metric."""
 
-    The hallucination detector tokenises the prompt and answer together with
-    ``truncation="only_first"``, which only truncates the prompt. If the answer
-    alone leaves no room for the prompt (e.g. for reasoning models that emit long
-    answers), the tokeniser raises a truncation error. Such samples are skipped.
+    def __init__(self, name: str, pretty_name: str) -> None:
+        """Initialise the token hallucination metric.
 
-    Args:
-        answer:
-            The predicted answer text to check.
-        tokenizer:
-            The detector's tokeniser, used to count tokens.
-        max_length:
-            The detector's maximum input sequence length.
+        Args:
+            name:
+                The name of the metric in snake_case.
+            pretty_name:
+                The pretty name of the metric, used for display purposes.
+        """
+        super().__init__(name=name, pretty_name=pretty_name, postprocessing_fn=None)
 
-    Returns:
-        Whether the answer is too long to be evaluated alongside a prompt.
-    """
-    answer_token_count = len(tokenizer(answer, add_special_tokens=False)["input_ids"])
-    # Reserve room for special tokens ([CLS], two [SEP]) and at least one prompt
-    # token, matching the detector's ``truncation="only_first"`` requirement.
-    return answer_token_count >= max_length - 4
+    def __call__(
+        self,
+        predictions: c.Iterable[dict[str, t.Any]],
+        references: c.Sequence,
+        dataset: "Dataset",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> float | None:
+        """Compute the token-level hallucination rate for a set of predictions.
+
+        This method wraps `detect_hallucinations` to run a token-level
+        hallucination detector over the provided predictions and dataset contexts,
+        and returns the rate of tokens classified as hallucinated.
+
+        Args:
+            predictions:
+                The model predictions. Each prediction must provide a
+                ``"prediction_text"`` field containing the model's answer text.
+            references:
+                The ground truth references. Unused by this metric, but accepted
+                for API consistency with the base ``Metric`` interface.
+            dataset:
+                The dataset used for evaluation.
+            dataset_config:
+                The dataset configuration.
+            benchmark_config:
+                The benchmark configuration, used to determine the compute device.
+
+        Returns:
+            The hallucination rate (hallucinated_tokens/total_tokens).
+        """
+        hallucination_rate = detect_hallucinations(
+            dataset=dataset,
+            predictions=predictions,
+            model=_hallucination_model_id(dataset_config=dataset_config),
+            device=Device(benchmark_config.device.type),
+            cache_dir=benchmark_config.cache_dir,
+        )
+        return hallucination_rate
+
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
+    ) -> "TokenHallucinationMetric":
+        """Pre-download hallucination detection models.
+
+        The hallucination detection model is language-specific. When a dataset
+        configuration is provided, only the model(s) for the relevant language(s)
+        are downloaded. Otherwise, all hallucination detection models referenced
+        by built-in dataset configurations are fetched for offline benchmarking.
+
+        Args:
+            cache_dir:
+                The directory where the models will be downloaded to.
+            dataset_config (optional):
+                The dataset configuration, used to filter which hallucination
+                detection models to download based on language. When None, all
+                models are downloaded. Defaults to None.
+
+        Returns:
+            The metric object itself.
+        """
+        for model_id in _hallucination_model_ids(
+            cache_dir=cache_dir, dataset_config=dataset_config
+        ):
+            snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
+        return self
 
 
 hallucination_metric = TokenHallucinationMetric(

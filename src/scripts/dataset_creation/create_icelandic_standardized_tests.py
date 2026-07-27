@@ -289,55 +289,6 @@ TEST_PDFS: list[tuple[str, str, list[str], str]] = [
 ]
 
 
-class AnswerEntry(BaseModel):
-    """A single answer-key entry."""
-
-    question_id: int
-    answer_key: AnswerKeyType
-
-    def model_post_init(self, __context: dict) -> None:
-        """Post-processing for AnswerEntry."""
-        if isinstance(self.answer_key, str):
-            self.answer_key = self.answer_key.upper()
-
-
-class AnswerKey(BaseModel):
-    """Complete answer key extracted from a marking guide."""
-
-    answers: list[AnswerEntry]
-
-
-class GeneralReadingPassage(BaseModel):
-    """A long general reading passage."""
-
-    id: int
-    text: Annotated[str, Field(min_length=100)]
-
-
-class Option(BaseModel):
-    """A single multiple-choice question with four options."""
-
-    answer_key: AnswerKeyType
-    answer: str
-
-
-class McQuestion(BaseModel):
-    """A single multiple-choice question with four options."""
-
-    question: Annotated[str, Field(min_length=10)]
-    options: list[Option]
-    skip: bool = False
-
-
-class McQuestionWithPassage(BaseModel):
-    """A single multiple-choice question with a passage and four options."""
-
-    passage_id: int
-    question: Annotated[str, Field(min_length=10)]
-    options: list[Option]
-    skip: bool = False
-
-
 def main() -> None:
     """Create the Icelandic standardized tests datasets and upload to HF Hub."""
     logging.getLogger("httpx").setLevel(logging.CRITICAL)
@@ -577,6 +528,74 @@ def pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[str]:
     return images
 
 
+def format_question_text(question: str, options: dict[str, str]) -> str:
+    """Format a multiple-choice question as a text string for EuroEval.
+
+    Args:
+        question:
+            The question text.
+        options:
+            A dict mapping option letters to their text.
+
+    Returns:
+        The formatted text string.
+    """
+    choices_label = CHOICES_MAPPING["is"]
+    text = f"{question}\n{choices_label}:\n" + "\n".join(
+        [f"{letter}. {option}" for letter, option in options.items()]
+    )
+    return text
+
+
+class AnswerEntry(BaseModel):
+    """A single answer-key entry."""
+
+    question_id: int
+    answer_key: AnswerKeyType
+
+    def model_post_init(self, __context: dict) -> None:
+        """Post-processing for AnswerEntry."""
+        if isinstance(self.answer_key, str):
+            self.answer_key = self.answer_key.upper()
+
+
+class AnswerKey(BaseModel):
+    """Complete answer key extracted from a marking guide."""
+
+    answers: list[AnswerEntry]
+
+
+class GeneralReadingPassage(BaseModel):
+    """A long general reading passage."""
+
+    id: int
+    text: Annotated[str, Field(min_length=100)]
+
+
+class Option(BaseModel):
+    """A single multiple-choice question with four options."""
+
+    answer_key: AnswerKeyType
+    answer: str
+
+
+class McQuestion(BaseModel):
+    """A single multiple-choice question with four options."""
+
+    question: Annotated[str, Field(min_length=10)]
+    options: list[Option]
+    skip: bool = False
+
+
+class McQuestionWithPassage(BaseModel):
+    """A single multiple-choice question with a passage and four options."""
+
+    passage_id: int
+    question: Annotated[str, Field(min_length=10)]
+    options: list[Option]
+    skip: bool = False
+
+
 def extract_questions(
     pdf_bytes: bytes, client: OpenAI, subject: str, ids: list[int]
 ) -> dict[int, McQuestion | McQuestionWithPassage]:
@@ -676,25 +695,6 @@ def extract_questions(
             del questions[question_id]
 
     return questions
-
-
-def format_question_text(question: str, options: dict[str, str]) -> str:
-    """Format a multiple-choice question as a text string for EuroEval.
-
-    Args:
-        question:
-            The question text.
-        options:
-            A dict mapping option letters to their text.
-
-    Returns:
-        The formatted text string.
-    """
-    choices_label = CHOICES_MAPPING["is"]
-    text = f"{question}\n{choices_label}:\n" + "\n".join(
-        [f"{letter}. {option}" for letter, option in options.items()]
-    )
-    return text
 
 
 if __name__ == "__main__":

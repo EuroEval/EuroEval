@@ -41,14 +41,6 @@ LABELS = ["a", "b", "c", "d"]
 LANGUAGE_SUBSET_MAPPING = {"es": "spanish", "fr": "french"}
 
 
-class CandidateAnswers(BaseModel):
-    """Candidate answers from the OpenAI API."""
-
-    first: str
-    second: str
-    third: str
-
-
 def main() -> None:
     """Create the MultiNRC datasets and upload them to the HF Hub."""
     repo_id = "ScaleAI/MultiNRC"
@@ -214,6 +206,14 @@ def build_dataset_with_llm(dataset: Dataset, language: str) -> pd.DataFrame:
         correct_labels.append(correct_label)
 
     return pd.DataFrame({"text": texts, "label": correct_labels})
+
+
+class CandidateAnswers(BaseModel):
+    """Candidate answers from the OpenAI API."""
+
+    first: str
+    second: str
+    third: str
 
 
 if __name__ == "__main__":

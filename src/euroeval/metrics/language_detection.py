@@ -41,6 +41,43 @@ class LanguageDetector:
             .build()
         )
 
+    @cache_arguments()
+    def _detect_language(
+        self, predictions: tuple[str], detector_languages: tuple[LinguaLanguage]
+    ) -> list[float]:
+        """Internal method that performs language detection with caching.
+
+        Args:
+            predictions:
+                The predictions to detect the language of.
+            detector_languages:
+                The detector languages to use for filtering.
+
+        Returns:
+            List of binary scores (1.0 or 0.0) for each prediction, where 1.0
+            indicates the prediction is in the correct language(s) and 0.0 indicates
+            it is not. Score is 1.0 if the sum of confidence values for target
+            languages exceeds MIN_LANG_CONFIDENCE_SCORE
+        """
+        if self.model is None:
+            self.download()
+        assert self.model is not None, (
+            "Model is not initialized, please call download() first"
+        )
+
+        conf_values = self.model.compute_language_confidence_values_in_parallel(
+            list(predictions)
+        )
+        scores = []
+        for confidence in conf_values:
+            # Sum the confidence values so we get a single value for datasets with
+            # 'multiple' languages, like Danish and Norwegian
+            lang_confidence = sum(
+                conf.value for conf in confidence if conf.language in detector_languages
+            )
+            scores.append(1.0 if lang_confidence > MIN_LANG_CONFIDENCE_SCORE else 0.0)
+        return scores
+
     def __call__(
         self, predictions: c.Sequence, dataset_config: "DatasetConfig"
     ) -> list[float]:
@@ -122,43 +159,6 @@ class LanguageDetector:
         return self._detect_language(
             predictions=tuple(predictions), detector_languages=tuple(detector_languages)
         )
-
-    @cache_arguments()
-    def _detect_language(
-        self, predictions: tuple[str], detector_languages: tuple[LinguaLanguage]
-    ) -> list[float]:
-        """Internal method that performs language detection with caching.
-
-        Args:
-            predictions:
-                The predictions to detect the language of.
-            detector_languages:
-                The detector languages to use for filtering.
-
-        Returns:
-            List of binary scores (1.0 or 0.0) for each prediction, where 1.0
-            indicates the prediction is in the correct language(s) and 0.0 indicates
-            it is not. Score is 1.0 if the sum of confidence values for target
-            languages exceeds MIN_LANG_CONFIDENCE_SCORE
-        """
-        if self.model is None:
-            self.download()
-        assert self.model is not None, (
-            "Model is not initialized, please call download() first"
-        )
-
-        conf_values = self.model.compute_language_confidence_values_in_parallel(
-            list(predictions)
-        )
-        scores = []
-        for confidence in conf_values:
-            # Sum the confidence values so we get a single value for datasets with
-            # 'multiple' languages, like Danish and Norwegian
-            lang_confidence = sum(
-                conf.value for conf in confidence if conf.language in detector_languages
-            )
-            scores.append(1.0 if lang_confidence > MIN_LANG_CONFIDENCE_SCORE else 0.0)
-        return scores
 
 
 language_detector = LanguageDetector()

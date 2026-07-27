@@ -14,127 +14,6 @@ if t.TYPE_CHECKING:
     pass
 
 
-def merge_input_and_choices(
-    example: dict,
-    input_column: str,
-    choices_column: "str | list[str]",
-    choices_label: str,
-) -> dict:
-    """Merge input text and choices into a single text field.
-
-    Args:
-        example:
-            A single dataset example with at least the ``input_column`` and
-            the column(s) named by ``choices_column``.
-        input_column:
-            The name of the column containing the input text.
-        choices_column:
-            Either the name of a single column containing a list of answer-choice
-            strings, or a list of column names each containing a single answer-choice
-            string.
-        choices_label:
-            The language-specific label for the choices section (e.g. ``"Choices"``).
-
-    Returns:
-        The example with a new ``"text"`` key containing the merged input and formatted
-        choices. The original bare input text and raw choice list are also preserved
-        as ``"bare_input"`` and ``"raw_choices"`` to support BPC scoring that needs
-        bare questions without enumerated choices.
-    """
-    input_text = example[input_column].replace("\n", " ").strip()
-    if isinstance(choices_column, list):
-        choices = [example[col] for col in choices_column]
-    else:
-        choices = example[choices_column]
-    cleaned_choices = [choice.replace("\n", " ").strip() for choice in choices]
-    options = "\n".join(
-        f"{letter}. {choice}" for letter, choice in zip(CHOICE_LETTERS, cleaned_choices)
-    )
-    example["text"] = f"{input_text}\n{choices_label}:\n{options}"
-    example["bare_input"] = input_text
-    example["raw_choices"] = cleaned_choices
-    return example
-
-
-def _get_standard_target_column(
-    task_group: TaskGroup, target_column: str | None
-) -> str | None:
-    """Determine the standard target column name for a task group.
-
-    Args:
-        task_group:
-            The task group to determine the standard for.
-        target_column:
-            The target column name, or None if not applicable.
-
-    Returns:
-        The standard target column name, or None if target_column is None.
-    """
-    if target_column is None:
-        return None
-    if task_group == TaskGroup.TOKEN_CLASSIFICATION:
-        return "labels"
-    if task_group == TaskGroup.TEXT_TO_TEXT:
-        return "target_text"
-    return "label"
-
-
-def _validate_columns(
-    dataset: DatasetDict,
-    dataset_name: str,
-    input_column: str,
-    choices_cols: list[str] | None,
-    target_column: str | None,
-) -> None:
-    """Validate that configured columns exist in all splits.
-
-    Args:
-        dataset:
-            The dataset to validate.
-        dataset_name:
-            The name of the dataset, used in error messages.
-        input_column:
-            The input column to validate.
-        choices_cols:
-            List of choices columns to validate, or None.
-        target_column:
-            The target column to validate, or None.
-
-    Raises:
-        InvalidBenchmark:
-            If a configured column is absent from all splits.
-    """
-    if input_column != "text":
-        input_found = all(
-            input_column in split.column_names for split in dataset.values()
-        )
-        if not input_found:
-            raise InvalidBenchmark(
-                f"The dataset is configured with an input column "
-                f"{input_column!r}, but this column was not found in all splits "
-                f"for the dataset {dataset_name!r}."
-            )
-    if choices_cols is not None:
-        for col in choices_cols:
-            col_found = all(col in split.column_names for split in dataset.values())
-            if not col_found:
-                raise InvalidBenchmark(
-                    f"The dataset is configured with a choices column "
-                    f"{col!r}, but this column was not found in all splits "
-                    f"for the dataset {dataset_name!r}."
-                )
-    if target_column is not None:
-        target_found = all(
-            target_column in split.column_names for split in dataset.values()
-        )
-        if not target_found:
-            raise InvalidBenchmark(
-                f"The dataset is configured with a target column "
-                f"{target_column!r}, but this column was not found in all splits "
-                f"for the dataset {dataset_name!r}."
-            )
-
-
 def _fix_mc_label_column(
     example: dict, choices_column: "str | list[str]", target_column: str
 ) -> dict:
@@ -165,6 +44,29 @@ def _fix_mc_label_column(
     if isinstance(example[target_column], str):
         example[target_column] = example[target_column].lower()
     return example
+
+
+def _get_standard_target_column(
+    task_group: TaskGroup, target_column: str | None
+) -> str | None:
+    """Determine the standard target column name for a task group.
+
+    Args:
+        task_group:
+            The task group to determine the standard for.
+        target_column:
+            The target column name, or None if not applicable.
+
+    Returns:
+        The standard target column name, or None if target_column is None.
+    """
+    if target_column is None:
+        return None
+    if task_group == TaskGroup.TOKEN_CLASSIFICATION:
+        return "labels"
+    if task_group == TaskGroup.TEXT_TO_TEXT:
+        return "target_text"
+    return "label"
 
 
 def _handle_choices_columns(
@@ -246,6 +148,62 @@ def _handle_target_column_rename(
             split = split.remove_columns([std_target])
         split = split.rename_column(target_column, std_target)
     return split
+
+
+def _validate_columns(
+    dataset: DatasetDict,
+    dataset_name: str,
+    input_column: str,
+    choices_cols: list[str] | None,
+    target_column: str | None,
+) -> None:
+    """Validate that configured columns exist in all splits.
+
+    Args:
+        dataset:
+            The dataset to validate.
+        dataset_name:
+            The name of the dataset, used in error messages.
+        input_column:
+            The input column to validate.
+        choices_cols:
+            List of choices columns to validate, or None.
+        target_column:
+            The target column to validate, or None.
+
+    Raises:
+        InvalidBenchmark:
+            If a configured column is absent from all splits.
+    """
+    if input_column != "text":
+        input_found = all(
+            input_column in split.column_names for split in dataset.values()
+        )
+        if not input_found:
+            raise InvalidBenchmark(
+                f"The dataset is configured with an input column "
+                f"{input_column!r}, but this column was not found in all splits "
+                f"for the dataset {dataset_name!r}."
+            )
+    if choices_cols is not None:
+        for col in choices_cols:
+            col_found = all(col in split.column_names for split in dataset.values())
+            if not col_found:
+                raise InvalidBenchmark(
+                    f"The dataset is configured with a choices column "
+                    f"{col!r}, but this column was not found in all splits "
+                    f"for the dataset {dataset_name!r}."
+                )
+    if target_column is not None:
+        target_found = all(
+            target_column in split.column_names for split in dataset.values()
+        )
+        if not target_found:
+            raise InvalidBenchmark(
+                f"The dataset is configured with a target column "
+                f"{target_column!r}, but this column was not found in all splits "
+                f"for the dataset {dataset_name!r}."
+            )
 
 
 def build_preprocessing_func(
@@ -356,3 +314,45 @@ def build_preprocessing_func(
         return dataset
 
     return preprocessing_func
+
+
+def merge_input_and_choices(
+    example: dict,
+    input_column: str,
+    choices_column: "str | list[str]",
+    choices_label: str,
+) -> dict:
+    """Merge input text and choices into a single text field.
+
+    Args:
+        example:
+            A single dataset example with at least the ``input_column`` and
+            the column(s) named by ``choices_column``.
+        input_column:
+            The name of the column containing the input text.
+        choices_column:
+            Either the name of a single column containing a list of answer-choice
+            strings, or a list of column names each containing a single answer-choice
+            string.
+        choices_label:
+            The language-specific label for the choices section (e.g. ``"Choices"``).
+
+    Returns:
+        The example with a new ``"text"`` key containing the merged input and formatted
+        choices. The original bare input text and raw choice list are also preserved
+        as ``"bare_input"`` and ``"raw_choices"`` to support BPC scoring that needs
+        bare questions without enumerated choices.
+    """
+    input_text = example[input_column].replace("\n", " ").strip()
+    if isinstance(choices_column, list):
+        choices = [example[col] for col in choices_column]
+    else:
+        choices = example[choices_column]
+    cleaned_choices = [choice.replace("\n", " ").strip() for choice in choices]
+    options = "\n".join(
+        f"{letter}. {choice}" for letter, choice in zip(CHOICE_LETTERS, cleaned_choices)
+    )
+    example["text"] = f"{input_text}\n{choices_label}:\n{options}"
+    example["bare_input"] = input_text
+    example["raw_choices"] = cleaned_choices
+    return example

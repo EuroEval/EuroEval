@@ -39,14 +39,6 @@ logger = logging.getLogger("create_idioms_no")
 LABELS = ["a", "b", "c", "d"]
 
 
-class CandidateAnswers(BaseModel):
-    """Candidate answers from the OpenAI API."""
-
-    first: str
-    second: str
-    third: str
-
-
 def main() -> None:
     """Create the Idioms-no knowledge dataset."""
     # Define the base download URL
@@ -249,6 +241,14 @@ def drop_duplicate_idioms(dataset: Dataset) -> Dataset:
     df = df.drop_duplicates(subset="idiom_start")
 
     return Dataset.from_pandas(df)
+
+
+class CandidateAnswers(BaseModel):
+    """Candidate answers from the OpenAI API."""
+
+    first: str
+    second: str
+    third: str
 
 
 if __name__ == "__main__":

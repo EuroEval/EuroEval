@@ -42,6 +42,46 @@ if t.TYPE_CHECKING:
     from .enums import InferenceBackend
 
 
+def _convert_old_raw_results_format(config: dict[str, object]) -> None:
+    """Convert old raw_results format in-place.
+
+    Handles legacy nested dict format:
+    - raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]}
+    and converts to flat list: raw = [{"test_mcc": 0.5, "test_accuracy": 0.6}].
+
+    List format raw = [{"mcc": 0.5, "accuracy": 0.6}] is preserved as-is for EEE format.
+    """
+    if "results" not in config:
+        return
+    results = t.cast(dict[str, object], config["results"])
+    if "raw" not in results:
+        return
+    raw = results["raw"]
+
+    # Preserve list format - it's what EEE format needs
+    if isinstance(raw, list):
+        return
+
+    # Convert nested dict format: {"test": [...]} to flat list [{...}]
+    if isinstance(raw, dict):
+        raw_list: list[dict[str, float]] = []
+        for split_name, split_data in raw.items():
+            if not isinstance(split_data, list) or not split_data:
+                continue
+            for i, item in enumerate(split_data):
+                if not isinstance(item, dict):
+                    continue
+                while len(raw_list) <= i:
+                    raw_list.append({})
+                for metric, value in item.items():
+                    if isinstance(value, (int, float)):
+                        key = f"{split_name}_{metric}"
+                        if key not in raw_list[i]:
+                            raw_list[i][key] = float(value)
+        if raw_list:
+            results["raw"] = raw_list
+
+
 def get_package_version(package_name: str) -> str | None:
     """Get the version of a package.
 
@@ -56,6 +96,339 @@ def get_package_version(package_name: str) -> str | None:
         return importlib.metadata.version(package_name)
     except importlib.metadata.PackageNotFoundError:
         return None
+
+
+class BenchmarkResult(pydantic.BaseModel):
+    """A benchmark result."""
+
+    dataset: str
+    task: str
+    languages: c.Sequence[str]
+    model: str
+    results: ScoreDict
+    num_model_parameters: int
+    max_sequence_length: int
+    vocabulary_size: int
+    merge: bool
+    generative: bool
+    generative_type: str | None
+    few_shot: bool | None
+    validation_split: bool | None
+    use_bits_per_character: bool | None = None
+    euroeval_version: str | None = get_package_version("euroeval")
+    transformers_version: str | None = get_package_version("transformers")
+    torch_version: str | None = get_package_version("torch")
+    vllm_version: str | None = get_package_version("vllm")
+    xgrammar_version: str | None = get_package_version("xgrammar")
+    litellm_version: str | None = None
+    # EuroEval-specific metadata fields (preserved through EEE conversion)
+    commercially_licensed: bool | None = None
+    open: bool | None = None
+    trained_from_scratch: bool | None = None
+
+    def to_eee_dict(self) -> dict[str, object]:
+        """Convert this benchmark result to the Every Eval Ever (EEE) format.
+
+        Produces a dictionary conforming to the Every Eval Ever JSON schema v0.2.1
+        (https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json).
+        The resulting dict can be written directly to
+        `euroeval_benchmark_results.jsonl` and later reconstructed without loss
+        via `from_eee_dict` (or `from_dict`).
+
+        Returns:
+            A dictionary matching the EEE JSON schema v0.2.1.
+        """
+        return benchmark_result_to_eee_dict(result=self)
+
+    def append_to_results(self, results_path: Path) -> None:
+        """Append the benchmark result to the results file.
+
+        Each record is written self-terminated with a trailing newline. If the
+        file already exists without a trailing newline (e.g. written by an older
+        version), a separating newline is added first so records can't be glued
+        onto the same line.
+
+        Args:
+            results_path:
+                The path to the results file.
+        """
+        json_str = json.dumps(self.to_eee_dict(), ensure_ascii=False)
+        needs_sep = (
+            results_path.exists()
+            and results_path.stat().st_size > 0
+            and not results_path.read_bytes().endswith(b"\n")
+        )
+        with results_path.open("a") as f:
+            f.write(("\n" if needs_sep else "") + json_str + "\n")
+
+    @classmethod
+    def from_eee_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
+        """Create a BenchmarkResult from an Every Eval Ever format dictionary.
+
+        Reconstructs a full `BenchmarkResult` from a dictionary conforming to the
+        Every Eval Ever (EEE) JSON schema v0.2.1.  The method is the inverse of
+        `to_eee_dict` and enables lossless round-trips via `from_dict`.
+
+        Args:
+            config:
+                A dictionary conforming to the EEE JSON schema v0.2.1, as produced
+                by `to_eee_dict`.
+
+        Returns:
+            The reconstructed benchmark result.
+        """
+        return benchmark_result_from_eee_dict(config=config)
+
+    @classmethod
+    def from_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
+        """Create a benchmark result from a dictionary.
+
+        Args:
+            config:
+                The configuration dictionary.
+
+        Returns:
+            The benchmark result.
+        """
+        # Detect Every Eval Ever format by the presence of schema_version
+        if "schema_version" in config:
+            return cls.from_eee_dict(config)
+
+        # To be backwards compatible, we accept old results which changed the model
+        # name with parameters rather than adding them as explicit parameters
+        val_matches = re.search(r"\(.*val.*\)$", config["model"])
+        few_shot_matches = re.search(r"\(.*few-shot.*\)$", config["model"])
+        zero_shot_matches = re.search(r"\(.*zero-shot.*\)$", config["model"])
+        config["model"] = re.sub(
+            r"\(.*(few-shot|val).*\)$", "", config["model"]
+        ).strip()
+
+        if "merge" not in config:
+            config["merge"] = False
+        if "generative" not in config:
+            config["generative"] = (
+                few_shot_matches is not None or zero_shot_matches is not None
+            )
+        if "generative_type" not in config:
+            config["generative_type"] = None
+        if "few_shot" not in config:
+            config["few_shot"] = zero_shot_matches is None
+        if "validation_split" not in config:
+            config["validation_split"] = val_matches is not None
+        if "use_bits_per_character" not in config:
+            config["use_bits_per_character"] = False
+
+        # Backwards compatibility
+        if "dataset_languages" in config:
+            config["languages"] = config.pop("dataset_languages")
+
+        # Handle languages being a JSON-encoded string
+        languages_value = config.get("languages")
+        if isinstance(languages_value, str):
+            try:
+                config["languages"] = json.loads(languages_value)
+            except json.JSONDecodeError:
+                # Fallback: treat as a single language code (e.g. "bg" -> ["bg"])
+                config["languages"] = [languages_value]
+
+        # Fill in missing required fields with defaults for very old result formats
+        if "task" not in config:
+            config["task"] = ""
+        if "languages" not in config:
+            config["languages"] = []
+        if "results" not in config:
+            config["results"] = {"raw": [], "total": {}}
+        if "num_model_parameters" not in config:
+            config["num_model_parameters"] = 0
+        if "max_sequence_length" not in config:
+            config["max_sequence_length"] = 0
+        if "vocabulary_size" not in config:
+            config["vocabulary_size"] = 0
+
+        # Backwards compatibility: convert old raw_results format where
+        # raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]} to flattened
+        # raw = {"test_mcc": 0.5, "test_accuracy": 0.6}
+        _convert_old_raw_results_format(config)
+
+        return cls(**config)  # ty: ignore[invalid-argument-type]
+
+    @classmethod
+    def from_jsonl(cls, results_path: Path) -> list["BenchmarkResult"]:
+        """Load benchmark results from a JSONL file.
+
+        Parses a JSONL file with robust handling of blank lines and concatenated
+        JSON objects (`}{`). Returns an empty list if the file does not exist.
+
+        Args:
+            results_path:
+                The path to the JSONL file containing benchmark results.
+
+        Returns:
+            A list of BenchmarkResult instances.
+        """
+        if not results_path.exists():
+            return []
+
+        lines = results_path.read_text(encoding="utf-8").splitlines()
+        records = parse_jsonl_lines(lines=lines, source=str(results_path), strict=False)
+        return [cls.from_dict(record) for record in records]
+
+
+class HashableDict(dict[t.Any, t.Any]):
+    """A hashable dictionary."""
+
+    def __hash__(self) -> int:
+        """Return the hash of the dictionary."""
+        return hash(frozenset(self.items()))
+
+
+@dataclass
+class GenerativeModelOutput:
+    """The output of a generative model.
+
+    Attributes:
+        sequences:
+            The generated sequences.
+        predicted_labels (optional):
+            The predicted labels from the `sequences` and sometimes also `scores`. Can
+            be None if the labels have not been predicted yet. Defaults to None.
+        scores (optional):
+            The scores of the sequences. This is an array of shape (batch_size,
+            num_tokens, num_logprobs, 2), where the last dimension contains the
+            token and its logprob. Can be None if the scores are not available. Defaults
+            to None.
+        metadatas (optional):
+            All the metadata fields for the samples, including ground truth labels (if
+            applicable). Defaults to an empty list.
+        failed_instances (optional):
+            A list of dictionaries, one per failed instance, each containing
+            ``"sample_index"`` (the index of the sample in the batch) and ``"error"``
+            (a short description of why it failed). Defaults to an empty list.
+        bpc_scores (optional):
+            Bits-per-character scores for each generated sequence. Computed as
+            ``sum(log P(answer_tokens)) / len(answer_chars)``. Lower is better.
+            Only populated when ``use_bits_per_character=True``. Defaults to None.
+    """
+
+    sequences: c.Sequence[str]
+    predicted_labels: c.Sequence[object] | None = None
+    scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
+    metadatas: list["HashableDict | None"] = field(default_factory=list)
+    failed_instances: list["FailedInstance"] = field(default_factory=list)
+    bpc_scores: c.Sequence[float] | None = None
+
+    def __post_init__(self) -> None:
+        """Post-initialisation."""
+        if not self.metadatas:
+            self.metadatas = [None] * len(self.sequences)
+
+
+@dataclass
+class HFModelInfo:
+    """Information about a Hugging Face model.
+
+    Attributes:
+        pipeline_tag:
+            The pipeline tag of the model.
+        tags:
+            The other tags of the model.
+        adapter_base_model_id:
+            The model ID of the base model if the model is an adapter model. Can be None
+            if the model is not an adapter model.
+    """
+
+    pipeline_tag: str
+    tags: c.Sequence[str]
+    adapter_base_model_id: str | None
+
+
+@dataclass
+class ModelConfig:
+    """Configuration for a model.
+
+    Attributes:
+        model_id:
+            The ID of the model.
+        revision:
+            The revision of the model.
+        param:
+            The parameter of the model, or None if the model has no parameters.
+        task:
+            The task that the model was trained on.
+        languages:
+            The languages of the model.
+        inference_backend:
+            The backend used to perform inference with the model.
+        merge:
+            Whether the model is a merged model.
+        model_type:
+            The type of the model (e.g., encoder, base decoder, instruction tuned).
+        fresh:
+            Whether the model is freshly initialised.
+        model_cache_dir:
+            The directory to cache the model in.
+        adapter_base_model_id:
+            The model ID of the base model if the model is an adapter model. Can be None
+            if the model is not an adapter model.
+        generation_config (optional):
+            The generation configuration for generative models, if specified in the
+            model repository. Defaults to no generation configuration.
+    """
+
+    model_id: str
+    revision: str
+    param: str | None
+    task: str
+    languages: c.Sequence[Language]
+    inference_backend: "InferenceBackend"
+    merge: bool
+    model_type: ModelType
+    fresh: bool
+    model_cache_dir: str
+    adapter_base_model_id: str | None
+    generation_config: GenerationConfig | None = None
+
+    def __hash__(self) -> int:
+        """Return a hash of the model configuration."""
+        return hash(self.model_id)
+
+
+@dataclass
+class ModelIdComponents:
+    """A model ID split into its components.
+
+    Attributes:
+        model_id:
+            The main model ID without revision or parameters.
+        revision:
+            The revision of the model, if any.
+        param:
+            The parameter of the model, if any.
+    """
+
+    model_id: str
+    revision: str
+    param: str | None
+
+
+@dataclass
+class PreparedModelInputs:
+    """The inputs to a model.
+
+    Attributes:
+        texts:
+            The texts to input to the model. Can be None if the input IDs and attention
+            mask are provided instead.
+        input_ids:
+            The input IDs of the texts. Can be None if the texts are provided instead.
+        attention_mask:
+            The attention mask of the texts. Can be None if the texts are provided
+            instead.
+    """
+
+    texts: c.Sequence[str] | None = None
+    input_ids: torch.Tensor | None = None
+    attention_mask: torch.Tensor | None = None
 
 
 @dataclass
@@ -84,6 +457,36 @@ class PromptConfig:
     default_prompt_template: str
     default_instruction_prompt: str
     default_prompt_label_mapping: dict[str, str] | t.Literal["auto"]
+
+
+@dataclass
+class SingleGenerativeModelOutput:
+    """A single output of a generative model.
+
+    Attributes:
+        sequence:
+            The generated sequence.
+        predicted_label (optional):
+            The predicted label from the `sequence` and sometimes also `scores`. Can be
+            None if the label has not been predicted yet. Defaults to None.
+        scores (optional):
+            The scores of the sequence. This is an array of shape (num_tokens,
+            num_logprobs, 2), where the last dimension contains the token and its
+            logprob. Can be None if the scores are not available. Defaults to None.
+        metadata (optional):
+            The metadata fields for the sample, including ground truth labels (if
+            applicable). Can be None if the metadata is not available. Defaults to None.
+        bpc_score (optional):
+            Bits-per-character score for this generated sequence. Computed as
+            ``sum(log P(answer_tokens)) / len(answer_chars)``. Lower is better.
+            Only populated when ``use_bits_per_character=True``. Defaults to None.
+    """
+
+    sequence: str
+    predicted_label: str | None = None
+    scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
+    metadata: "HashableDict | None" = None
+    bpc_score: float | None = None
 
 
 @dataclass
@@ -172,6 +575,10 @@ class Task:
     )
     default_allow_invalid_model_outputs: bool = True
 
+    def __hash__(self) -> int:
+        """Return a hash of the task."""
+        return hash(self.name)
+
     def __post_init__(self) -> None:
         """Post-initialisation checks."""
         self.uses_logprobs = self.uses_logprobs or self.requires_logprobs
@@ -182,10 +589,6 @@ class Task:
                 "- thus this specified structure will not be used.",
                 level=logging.WARNING,
             )
-
-    def __hash__(self) -> int:
-        """Return a hash of the task."""
-        return hash(self.name)
 
 
 class DatasetConfig:
@@ -422,6 +825,10 @@ class DatasetConfig:
         else:
             self.preprocessing_func = preprocessing_func  # None or user-provided
 
+    def __hash__(self) -> int:
+        """Return a hash of the dataset configuration."""
+        return hash(self.name)
+
     def __repr__(self) -> str:
         """The representation of the dataset configuration.
 
@@ -448,80 +855,55 @@ class DatasetConfig:
             pass
         return f"DatasetConfig({', '.join(parts)})"
 
-    @property
-    def name(self) -> str:
-        """The name of the dataset.
+    def get_labels_str(self, labels: c.Sequence[str] | None = None) -> str:
+        """Converts a set of labels to a natural string, in the specified language.
 
-        Returns:
-            The name of the dataset.
-
-        Raises:
-            ValueError:
-                If the name of the dataset is not set.
-        """
-        if self._name is None:
-            raise ValueError("The name of the dataset is not set!")
-        return self._name
-
-    @name.setter
-    def name(self, value: str) -> None:
-        """Set the name of the dataset.
+        If the task is NER, we separate using 'and' and use the mapped labels instead of
+        the BIO NER labels.
 
         Args:
-            value:
-                The new name of the dataset.
-        """
-        self._name = value
-
-    @property
-    def pretty_name(self) -> str:
-        """The pretty name of the dataset.
+            labels (optional):
+                The labels to convert to a natural string. If None, uses all the labels
+                in the dataset. Defaults to None.
 
         Returns:
-            The pretty name of the dataset.
-
-        Raises:
-            ValueError:
-                If the pretty name of the dataset is not set.
+            The natural string representation of the labels in specified language.
         """
-        if self._pretty_name is None:
-            raise ValueError("The pretty name of the dataset is not set!")
-        return self._pretty_name
+        if self.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+            sep_word = self.main_language.and_separator
+        else:
+            sep_word = self.main_language.or_separator
 
-    @pretty_name.setter
-    def pretty_name(self, value: str) -> None:
-        """Set the pretty name of the dataset.
+        if labels is None:
+            labels = list()
+            for english_label in self.labels:
+                if english_label not in self.prompt_label_mapping:
+                    continue
+                label = self.prompt_label_mapping[english_label]
+                if label not in labels:
+                    labels.append(label)
 
-        Args:
-            value:
-                The new pretty name of the dataset.
-        """
-        self._pretty_name = value
+        # Convert labels to single-quoted labels - and remove duplicates
+        quoted_labels = [f"'{label}'" for label in labels]
+
+        if not quoted_labels:
+            return ""
+        elif len(quoted_labels) == 1:
+            return quoted_labels[0]
+        elif len(quoted_labels) == 2:
+            return f"{quoted_labels[0]} {sep_word} {quoted_labels[1]}"
+        else:
+            return f"{', '.join(quoted_labels[:-1])} {sep_word} {quoted_labels[-1]}"
 
     @property
-    def source(self) -> str | dict[str, str]:
-        """The source of the dataset.
+    def id2label(self) -> "HashableDict":
+        """The mapping from ID to label."""
+        return HashableDict({idx: label for idx, label in enumerate(self.labels)})
 
-        Returns:
-            The source of the dataset.
-
-        Raises:
-            ValueError:
-                If the source of the dataset is not set.
-        """
-        if self._source is None:
-            raise ValueError("The source of the dataset is not set!")
-        return self._source
-
-    @source.setter
-    def source(self, value: str | dict[str, str]) -> None:
-        """Set the source of the dataset.
-
-        Args:
-            value:
-                The new source of the dataset.
-        """
-        self._source = value
+    @property
+    def label2id(self) -> "HashableDict":
+        """The mapping from label to ID."""
+        return HashableDict({label: i for i, label in enumerate(self.labels)})
 
     @property
     def logging_string(self) -> str:
@@ -608,63 +990,84 @@ class DatasetConfig:
                     return self.languages[0]
 
     @property
-    def id2label(self) -> "HashableDict":
-        """The mapping from ID to label."""
-        return HashableDict({idx: label for idx, label in enumerate(self.labels)})
+    def name(self) -> str:
+        """The name of the dataset.
 
-    @property
-    def label2id(self) -> "HashableDict":
-        """The mapping from label to ID."""
-        return HashableDict({label: i for i, label in enumerate(self.labels)})
+        Returns:
+            The name of the dataset.
+
+        Raises:
+            ValueError:
+                If the name of the dataset is not set.
+        """
+        if self._name is None:
+            raise ValueError("The name of the dataset is not set!")
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        """Set the name of the dataset.
+
+        Args:
+            value:
+                The new name of the dataset.
+        """
+        self._name = value
 
     @property
     def num_labels(self) -> int:
         """The number of labels in the dataset."""
         return len(self.labels)
 
-    def __hash__(self) -> int:
-        """Return a hash of the dataset configuration."""
-        return hash(self.name)
-
-    def get_labels_str(self, labels: c.Sequence[str] | None = None) -> str:
-        """Converts a set of labels to a natural string, in the specified language.
-
-        If the task is NER, we separate using 'and' and use the mapped labels instead of
-        the BIO NER labels.
-
-        Args:
-            labels (optional):
-                The labels to convert to a natural string. If None, uses all the labels
-                in the dataset. Defaults to None.
+    @property
+    def pretty_name(self) -> str:
+        """The pretty name of the dataset.
 
         Returns:
-            The natural string representation of the labels in specified language.
+            The pretty name of the dataset.
+
+        Raises:
+            ValueError:
+                If the pretty name of the dataset is not set.
         """
-        if self.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
-            sep_word = self.main_language.and_separator
-        else:
-            sep_word = self.main_language.or_separator
+        if self._pretty_name is None:
+            raise ValueError("The pretty name of the dataset is not set!")
+        return self._pretty_name
 
-        if labels is None:
-            labels = list()
-            for english_label in self.labels:
-                if english_label not in self.prompt_label_mapping:
-                    continue
-                label = self.prompt_label_mapping[english_label]
-                if label not in labels:
-                    labels.append(label)
+    @pretty_name.setter
+    def pretty_name(self, value: str) -> None:
+        """Set the pretty name of the dataset.
 
-        # Convert labels to single-quoted labels - and remove duplicates
-        quoted_labels = [f"'{label}'" for label in labels]
+        Args:
+            value:
+                The new pretty name of the dataset.
+        """
+        self._pretty_name = value
 
-        if not quoted_labels:
-            return ""
-        elif len(quoted_labels) == 1:
-            return quoted_labels[0]
-        elif len(quoted_labels) == 2:
-            return f"{quoted_labels[0]} {sep_word} {quoted_labels[1]}"
-        else:
-            return f"{', '.join(quoted_labels[:-1])} {sep_word} {quoted_labels[-1]}"
+    @property
+    def source(self) -> str | dict[str, str]:
+        """The source of the dataset.
+
+        Returns:
+            The source of the dataset.
+
+        Raises:
+            ValueError:
+                If the source of the dataset is not set.
+        """
+        if self._source is None:
+            raise ValueError("The source of the dataset is not set!")
+        return self._source
+
+    @source.setter
+    def source(self, value: str | dict[str, str]) -> None:
+        """Set the source of the dataset.
+
+        Args:
+            value:
+                The new source of the dataset.
+        """
+        self._source = value
 
 
 @dataclass
@@ -777,17 +1180,17 @@ class BenchmarkConfig:
     vocabulary_size: int | None
     use_bits_per_character: bool = False
 
-    @property
-    def tasks(self) -> c.Sequence[Task]:
-        """The tasks in the benchmark configuration."""
-        return list({dataset_config.task for dataset_config in self.datasets})
-
     def __post_init__(self) -> None:
         """Post-initialisation checks."""
         # Set dummy API key if it has not been set and we're benchmarking a model on an
         # inference API
         if self.api_key is None and self.api_base is not None:
             self.api_key = "dummy"
+
+    @property
+    def tasks(self) -> c.Sequence[Task]:
+        """The tasks in the benchmark configuration."""
+        return list({dataset_config.task for dataset_config in self.datasets})
 
 
 class BenchmarkConfigParams(pydantic.BaseModel):
@@ -832,406 +1235,3 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     max_context_length: int | None
     vocabulary_size: int | None
     use_bits_per_character: bool = False
-
-
-def _convert_old_raw_results_format(config: dict[str, object]) -> None:
-    """Convert old raw_results format in-place.
-
-    Handles legacy nested dict format:
-    - raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]}
-    and converts to flat list: raw = [{"test_mcc": 0.5, "test_accuracy": 0.6}].
-
-    List format raw = [{"mcc": 0.5, "accuracy": 0.6}] is preserved as-is for EEE format.
-    """
-    if "results" not in config:
-        return
-    results = t.cast(dict[str, object], config["results"])
-    if "raw" not in results:
-        return
-    raw = results["raw"]
-
-    # Preserve list format - it's what EEE format needs
-    if isinstance(raw, list):
-        return
-
-    # Convert nested dict format: {"test": [...]} to flat list [{...}]
-    if isinstance(raw, dict):
-        raw_list: list[dict[str, float]] = []
-        for split_name, split_data in raw.items():
-            if not isinstance(split_data, list) or not split_data:
-                continue
-            for i, item in enumerate(split_data):
-                if not isinstance(item, dict):
-                    continue
-                while len(raw_list) <= i:
-                    raw_list.append({})
-                for metric, value in item.items():
-                    if isinstance(value, (int, float)):
-                        key = f"{split_name}_{metric}"
-                        if key not in raw_list[i]:
-                            raw_list[i][key] = float(value)
-        if raw_list:
-            results["raw"] = raw_list
-
-
-class BenchmarkResult(pydantic.BaseModel):
-    """A benchmark result."""
-
-    dataset: str
-    task: str
-    languages: c.Sequence[str]
-    model: str
-    results: ScoreDict
-    num_model_parameters: int
-    max_sequence_length: int
-    vocabulary_size: int
-    merge: bool
-    generative: bool
-    generative_type: str | None
-    few_shot: bool | None
-    validation_split: bool | None
-    use_bits_per_character: bool | None = None
-    euroeval_version: str | None = get_package_version("euroeval")
-    transformers_version: str | None = get_package_version("transformers")
-    torch_version: str | None = get_package_version("torch")
-    vllm_version: str | None = get_package_version("vllm")
-    xgrammar_version: str | None = get_package_version("xgrammar")
-    litellm_version: str | None = None
-    # EuroEval-specific metadata fields (preserved through EEE conversion)
-    commercially_licensed: bool | None = None
-    open: bool | None = None
-    trained_from_scratch: bool | None = None
-
-    @classmethod
-    def from_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
-        """Create a benchmark result from a dictionary.
-
-        Args:
-            config:
-                The configuration dictionary.
-
-        Returns:
-            The benchmark result.
-        """
-        # Detect Every Eval Ever format by the presence of schema_version
-        if "schema_version" in config:
-            return cls.from_eee_dict(config)
-
-        # To be backwards compatible, we accept old results which changed the model
-        # name with parameters rather than adding them as explicit parameters
-        val_matches = re.search(r"\(.*val.*\)$", config["model"])
-        few_shot_matches = re.search(r"\(.*few-shot.*\)$", config["model"])
-        zero_shot_matches = re.search(r"\(.*zero-shot.*\)$", config["model"])
-        config["model"] = re.sub(
-            r"\(.*(few-shot|val).*\)$", "", config["model"]
-        ).strip()
-
-        if "merge" not in config:
-            config["merge"] = False
-        if "generative" not in config:
-            config["generative"] = (
-                few_shot_matches is not None or zero_shot_matches is not None
-            )
-        if "generative_type" not in config:
-            config["generative_type"] = None
-        if "few_shot" not in config:
-            config["few_shot"] = zero_shot_matches is None
-        if "validation_split" not in config:
-            config["validation_split"] = val_matches is not None
-        if "use_bits_per_character" not in config:
-            config["use_bits_per_character"] = False
-
-        # Backwards compatibility
-        if "dataset_languages" in config:
-            config["languages"] = config.pop("dataset_languages")
-
-        # Handle languages being a JSON-encoded string
-        languages_value = config.get("languages")
-        if isinstance(languages_value, str):
-            try:
-                config["languages"] = json.loads(languages_value)
-            except json.JSONDecodeError:
-                # Fallback: treat as a single language code (e.g. "bg" -> ["bg"])
-                config["languages"] = [languages_value]
-
-        # Fill in missing required fields with defaults for very old result formats
-        if "task" not in config:
-            config["task"] = ""
-        if "languages" not in config:
-            config["languages"] = []
-        if "results" not in config:
-            config["results"] = {"raw": [], "total": {}}
-        if "num_model_parameters" not in config:
-            config["num_model_parameters"] = 0
-        if "max_sequence_length" not in config:
-            config["max_sequence_length"] = 0
-        if "vocabulary_size" not in config:
-            config["vocabulary_size"] = 0
-
-        # Backwards compatibility: convert old raw_results format where
-        # raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]} to flattened
-        # raw = {"test_mcc": 0.5, "test_accuracy": 0.6}
-        _convert_old_raw_results_format(config)
-
-        return cls(**config)  # ty: ignore[invalid-argument-type]
-
-    @classmethod
-    def from_eee_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
-        """Create a BenchmarkResult from an Every Eval Ever format dictionary.
-
-        Reconstructs a full `BenchmarkResult` from a dictionary conforming to the
-        Every Eval Ever (EEE) JSON schema v0.2.1.  The method is the inverse of
-        `to_eee_dict` and enables lossless round-trips via `from_dict`.
-
-        Args:
-            config:
-                A dictionary conforming to the EEE JSON schema v0.2.1, as produced
-                by `to_eee_dict`.
-
-        Returns:
-            The reconstructed benchmark result.
-        """
-        return benchmark_result_from_eee_dict(config=config)
-
-    def to_eee_dict(self) -> dict[str, object]:
-        """Convert this benchmark result to the Every Eval Ever (EEE) format.
-
-        Produces a dictionary conforming to the Every Eval Ever JSON schema v0.2.1
-        (https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json).
-        The resulting dict can be written directly to
-        `euroeval_benchmark_results.jsonl` and later reconstructed without loss
-        via `from_eee_dict` (or `from_dict`).
-
-        Returns:
-            A dictionary matching the EEE JSON schema v0.2.1.
-        """
-        return benchmark_result_to_eee_dict(result=self)
-
-    def append_to_results(self, results_path: Path) -> None:
-        """Append the benchmark result to the results file.
-
-        Each record is written self-terminated with a trailing newline. If the
-        file already exists without a trailing newline (e.g. written by an older
-        version), a separating newline is added first so records can't be glued
-        onto the same line.
-
-        Args:
-            results_path:
-                The path to the results file.
-        """
-        json_str = json.dumps(self.to_eee_dict(), ensure_ascii=False)
-        needs_sep = (
-            results_path.exists()
-            and results_path.stat().st_size > 0
-            and not results_path.read_bytes().endswith(b"\n")
-        )
-        with results_path.open("a") as f:
-            f.write(("\n" if needs_sep else "") + json_str + "\n")
-
-    @classmethod
-    def from_jsonl(cls, results_path: Path) -> list["BenchmarkResult"]:
-        """Load benchmark results from a JSONL file.
-
-        Parses a JSONL file with robust handling of blank lines and concatenated
-        JSON objects (`}{`). Returns an empty list if the file does not exist.
-
-        Args:
-            results_path:
-                The path to the JSONL file containing benchmark results.
-
-        Returns:
-            A list of BenchmarkResult instances.
-        """
-        if not results_path.exists():
-            return []
-
-        lines = results_path.read_text(encoding="utf-8").splitlines()
-        records = parse_jsonl_lines(lines=lines, source=str(results_path), strict=False)
-        return [cls.from_dict(record) for record in records]
-
-
-@dataclass
-class ModelConfig:
-    """Configuration for a model.
-
-    Attributes:
-        model_id:
-            The ID of the model.
-        revision:
-            The revision of the model.
-        param:
-            The parameter of the model, or None if the model has no parameters.
-        task:
-            The task that the model was trained on.
-        languages:
-            The languages of the model.
-        inference_backend:
-            The backend used to perform inference with the model.
-        merge:
-            Whether the model is a merged model.
-        model_type:
-            The type of the model (e.g., encoder, base decoder, instruction tuned).
-        fresh:
-            Whether the model is freshly initialised.
-        model_cache_dir:
-            The directory to cache the model in.
-        adapter_base_model_id:
-            The model ID of the base model if the model is an adapter model. Can be None
-            if the model is not an adapter model.
-        generation_config (optional):
-            The generation configuration for generative models, if specified in the
-            model repository. Defaults to no generation configuration.
-    """
-
-    model_id: str
-    revision: str
-    param: str | None
-    task: str
-    languages: c.Sequence[Language]
-    inference_backend: "InferenceBackend"
-    merge: bool
-    model_type: ModelType
-    fresh: bool
-    model_cache_dir: str
-    adapter_base_model_id: str | None
-    generation_config: GenerationConfig | None = None
-
-    def __hash__(self) -> int:
-        """Return a hash of the model configuration."""
-        return hash(self.model_id)
-
-
-@dataclass
-class PreparedModelInputs:
-    """The inputs to a model.
-
-    Attributes:
-        texts:
-            The texts to input to the model. Can be None if the input IDs and attention
-            mask are provided instead.
-        input_ids:
-            The input IDs of the texts. Can be None if the texts are provided instead.
-        attention_mask:
-            The attention mask of the texts. Can be None if the texts are provided
-            instead.
-    """
-
-    texts: c.Sequence[str] | None = None
-    input_ids: torch.Tensor | None = None
-    attention_mask: torch.Tensor | None = None
-
-
-@dataclass
-class GenerativeModelOutput:
-    """The output of a generative model.
-
-    Attributes:
-        sequences:
-            The generated sequences.
-        predicted_labels (optional):
-            The predicted labels from the `sequences` and sometimes also `scores`. Can
-            be None if the labels have not been predicted yet. Defaults to None.
-        scores (optional):
-            The scores of the sequences. This is an array of shape (batch_size,
-            num_tokens, num_logprobs, 2), where the last dimension contains the
-            token and its logprob. Can be None if the scores are not available. Defaults
-            to None.
-        metadatas (optional):
-            All the metadata fields for the samples, including ground truth labels (if
-            applicable). Defaults to an empty list.
-        failed_instances (optional):
-            A list of dictionaries, one per failed instance, each containing
-            ``"sample_index"`` (the index of the sample in the batch) and ``"error"``
-            (a short description of why it failed). Defaults to an empty list.
-        bpc_scores (optional):
-            Bits-per-character scores for each generated sequence. Computed as
-            ``sum(log P(answer_tokens)) / len(answer_chars)``. Lower is better.
-            Only populated when ``use_bits_per_character=True``. Defaults to None.
-    """
-
-    sequences: c.Sequence[str]
-    predicted_labels: c.Sequence[object] | None = None
-    scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
-    metadatas: list["HashableDict | None"] = field(default_factory=list)
-    failed_instances: list["FailedInstance"] = field(default_factory=list)
-    bpc_scores: c.Sequence[float] | None = None
-
-    def __post_init__(self) -> None:
-        """Post-initialisation."""
-        if not self.metadatas:
-            self.metadatas = [None] * len(self.sequences)
-
-
-@dataclass
-class SingleGenerativeModelOutput:
-    """A single output of a generative model.
-
-    Attributes:
-        sequence:
-            The generated sequence.
-        predicted_label (optional):
-            The predicted label from the `sequence` and sometimes also `scores`. Can be
-            None if the label has not been predicted yet. Defaults to None.
-        scores (optional):
-            The scores of the sequence. This is an array of shape (num_tokens,
-            num_logprobs, 2), where the last dimension contains the token and its
-            logprob. Can be None if the scores are not available. Defaults to None.
-        metadata (optional):
-            The metadata fields for the sample, including ground truth labels (if
-            applicable). Can be None if the metadata is not available. Defaults to None.
-        bpc_score (optional):
-            Bits-per-character score for this generated sequence. Computed as
-            ``sum(log P(answer_tokens)) / len(answer_chars)``. Lower is better.
-            Only populated when ``use_bits_per_character=True``. Defaults to None.
-    """
-
-    sequence: str
-    predicted_label: str | None = None
-    scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
-    metadata: "HashableDict | None" = None
-    bpc_score: float | None = None
-
-
-@dataclass
-class HFModelInfo:
-    """Information about a Hugging Face model.
-
-    Attributes:
-        pipeline_tag:
-            The pipeline tag of the model.
-        tags:
-            The other tags of the model.
-        adapter_base_model_id:
-            The model ID of the base model if the model is an adapter model. Can be None
-            if the model is not an adapter model.
-    """
-
-    pipeline_tag: str
-    tags: c.Sequence[str]
-    adapter_base_model_id: str | None
-
-
-@dataclass
-class ModelIdComponents:
-    """A model ID split into its components.
-
-    Attributes:
-        model_id:
-            The main model ID without revision or parameters.
-        revision:
-            The revision of the model, if any.
-        param:
-            The parameter of the model, if any.
-    """
-
-    model_id: str
-    revision: str
-    param: str | None
-
-
-class HashableDict(dict[t.Any, t.Any]):
-    """A hashable dictionary."""
-
-    def __hash__(self) -> int:
-        """Return the hash of the dictionary."""
-        return hash(frozenset(self.items()))

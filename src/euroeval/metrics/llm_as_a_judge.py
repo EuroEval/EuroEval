@@ -85,6 +85,78 @@ class LLMAsAJudgeMetric(Metric):
         # Add response format to the generation kwargs
         self.judge_kwargs["response_format"] = self.response_format
 
+    def _get_batch_scoring_fn(
+        self,
+        scoring_fn: ScoringFunction | None,
+        batch_scoring_fn: BatchScoringFunction | None,
+    ) -> BatchScoringFunction:
+        """Get the batch scoring function.
+
+        Args:
+            scoring_fn:
+                The scoring function to use.
+            batch_scoring_fn:
+                The batch scoring function to use.
+
+        Returns:
+            The batch scoring function.
+
+        Raises:
+            InvalidBenchmark:
+                If both or neither of the scoring functions are provided.
+        """
+        if scoring_fn is not None and batch_scoring_fn is not None:
+            raise InvalidBenchmark(
+                "Both `scoring_fn` and `batch_scoring_fn` are provided. Please "
+                "provide only one of them."
+            )
+        if scoring_fn is not None:
+            scoring_fn_nonnull = scoring_fn
+
+            def batch_fn(
+                outputs: list[BaseModel], dataset: "Dataset | None" = None
+            ) -> float:
+                return sum(scoring_fn_nonnull(output) for output in outputs) / len(
+                    outputs
+                )
+
+            return batch_fn
+        if batch_scoring_fn is not None:
+            return batch_scoring_fn
+        raise InvalidBenchmark(
+            "Neither `scoring_fn` nor `batch_scoring_fn` are provided. Please "
+            "provide one of them."
+        )
+
+    def _apply_user_prompt(self, prediction: str, condition: str | None = None) -> str:
+        """Apply the user prompt to the prediction and condition.
+
+        Args:
+            prediction:
+                The model prediction.
+            condition (optional):
+                A description of what the prediction should be judged on. If not
+                provided, it will be omitted from the prompt.
+
+        Returns:
+            The formatted user prompt with the prediction and reference.
+
+        Raises:
+            InvalidBenchmark:
+                If the user prompt requires a reference but none is provided.
+        """
+        condition_required = "{condition}" in self.user_prompt
+        if condition_required and condition is None:
+            raise InvalidBenchmark(
+                f"The user prompt for the {self.pretty_name!r} metric requires a "
+                "condition, but none was provided."
+            )
+        if condition is not None:
+            return self.user_prompt.format(
+                prediction=prediction, condition=self.condition_formatting_fn(condition)
+            )
+        return self.user_prompt.format(prediction=prediction)
+
     def __call__(
         self,
         predictions: c.Sequence,
@@ -226,78 +298,6 @@ class LLMAsAJudgeMetric(Metric):
             return None
 
         return self.batch_scoring_fn(outputs=outputs, dataset=dataset)
-
-    def _apply_user_prompt(self, prediction: str, condition: str | None = None) -> str:
-        """Apply the user prompt to the prediction and condition.
-
-        Args:
-            prediction:
-                The model prediction.
-            condition (optional):
-                A description of what the prediction should be judged on. If not
-                provided, it will be omitted from the prompt.
-
-        Returns:
-            The formatted user prompt with the prediction and reference.
-
-        Raises:
-            InvalidBenchmark:
-                If the user prompt requires a reference but none is provided.
-        """
-        condition_required = "{condition}" in self.user_prompt
-        if condition_required and condition is None:
-            raise InvalidBenchmark(
-                f"The user prompt for the {self.pretty_name!r} metric requires a "
-                "condition, but none was provided."
-            )
-        if condition is not None:
-            return self.user_prompt.format(
-                prediction=prediction, condition=self.condition_formatting_fn(condition)
-            )
-        return self.user_prompt.format(prediction=prediction)
-
-    def _get_batch_scoring_fn(
-        self,
-        scoring_fn: ScoringFunction | None,
-        batch_scoring_fn: BatchScoringFunction | None,
-    ) -> BatchScoringFunction:
-        """Get the batch scoring function.
-
-        Args:
-            scoring_fn:
-                The scoring function to use.
-            batch_scoring_fn:
-                The batch scoring function to use.
-
-        Returns:
-            The batch scoring function.
-
-        Raises:
-            InvalidBenchmark:
-                If both or neither of the scoring functions are provided.
-        """
-        if scoring_fn is not None and batch_scoring_fn is not None:
-            raise InvalidBenchmark(
-                "Both `scoring_fn` and `batch_scoring_fn` are provided. Please "
-                "provide only one of them."
-            )
-        if scoring_fn is not None:
-            scoring_fn_nonnull = scoring_fn
-
-            def batch_fn(
-                outputs: list[BaseModel], dataset: "Dataset | None" = None
-            ) -> float:
-                return sum(scoring_fn_nonnull(output) for output in outputs) / len(
-                    outputs
-                )
-
-            return batch_fn
-        if batch_scoring_fn is not None:
-            return batch_scoring_fn
-        raise InvalidBenchmark(
-            "Neither `scoring_fn` nor `batch_scoring_fn` are provided. Please "
-            "provide one of them."
-        )
 
 
 fluency_metric = LLMAsAJudgeMetric(

@@ -46,14 +46,6 @@ def load_cache() -> dict:
 label_cache = load_cache()
 
 
-class Sentiment(BaseModel):
-    """Sentiment classification."""
-
-    sentiment: t.Literal["negative", "positive"] = Field(
-        description="The sentiment of the text, either 'negative' or 'positive'"
-    )
-
-
 def main() -> None:
     """Create the RoSent Romanian sentiment dataset and upload to HF Hub."""
     # Load the dataset
@@ -144,6 +136,51 @@ def process(df: pd.DataFrame, n_samples: int) -> pd.DataFrame:
     return df
 
 
+def _create_uniform_label_distribution(
+    df: pd.DataFrame, random_state: int = 4242
+) -> pd.DataFrame:
+    """Create a sampled dataset with a uniform label distribution.
+
+    Args:
+        df: The input dataframe with a 'label' column.
+        random_state: The random state for reproducibility.
+
+    Returns:
+        A dataframe with a uniform label distribution.
+    """
+    # Separate each class
+    classes = df["label"].unique()
+    class_dfs = [df[df["label"] == label] for label in classes]
+
+    # Find the size of the smallest class
+    min_size = min(len(class_df) for class_df in class_dfs)
+
+    # Resample each class to the size of the smallest class
+    resampled_dfs = [
+        resample(class_df, replace=False, n_samples=min_size, random_state=random_state)
+        for class_df in class_dfs
+    ]
+
+    # Combine the resampled dataframes (keep original indices!)
+    balanced_df = pd.concat(resampled_dfs, ignore_index=False)
+
+    return balanced_df
+
+
+class Sentiment(BaseModel):
+    """Sentiment classification."""
+
+    sentiment: t.Literal["negative", "positive"] = Field(
+        description="The sentiment of the text, either 'negative' or 'positive'"
+    )
+
+
+def save_cache(cache: dict) -> None:
+    """Save cache to CACHE_FILE."""
+    with open(CACHE_FILE, "w") as cache_file:
+        json.dump(cache, cache_file, indent=4)
+
+
 def _classify_text(text: str) -> str:
     """Classify the text using GPT-4o model.
 
@@ -180,12 +217,6 @@ def _classify_text(text: str) -> str:
     return label
 
 
-def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE."""
-    with open(CACHE_FILE, "w") as cache_file:
-        json.dump(cache, cache_file, indent=4)
-
-
 def _compare_labels(row: pd.Series) -> bool:
     """Compare the labels from the RoSent model and the original dataset.
 
@@ -197,37 +228,6 @@ def _compare_labels(row: pd.Series) -> bool:
         True if labels are the same, False if they are different.
     """
     return row["label"] == row["label_llm"]
-
-
-def _create_uniform_label_distribution(
-    df: pd.DataFrame, random_state: int = 4242
-) -> pd.DataFrame:
-    """Create a sampled dataset with a uniform label distribution.
-
-    Args:
-        df: The input dataframe with a 'label' column.
-        random_state: The random state for reproducibility.
-
-    Returns:
-        A dataframe with a uniform label distribution.
-    """
-    # Separate each class
-    classes = df["label"].unique()
-    class_dfs = [df[df["label"] == label] for label in classes]
-
-    # Find the size of the smallest class
-    min_size = min(len(class_df) for class_df in class_dfs)
-
-    # Resample each class to the size of the smallest class
-    resampled_dfs = [
-        resample(class_df, replace=False, n_samples=min_size, random_state=random_state)
-        for class_df in class_dfs
-    ]
-
-    # Combine the resampled dataframes (keep original indices!)
-    balanced_df = pd.concat(resampled_dfs, ignore_index=False)
-
-    return balanced_df
 
 
 if __name__ == "__main__":

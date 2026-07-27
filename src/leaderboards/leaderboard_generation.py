@@ -25,6 +25,50 @@ from .task_metadata import category_includes_task, official_datasets_for_languag
 logger = logging.getLogger(__name__)
 
 
+def _apply_display_transforms(
+    df: pd.DataFrame,
+    category_to_orthogonal_datasets: dict[str, dict[str, str]],
+    category: str,
+) -> pd.DataFrame:
+    """Apply display transforms: booleans to symbols, generative_type to emojis.
+
+    Args:
+        df:
+            The DataFrame to transform.
+        category_to_orthogonal_datasets:
+            Category to orthogonal datasets mapping.
+        category:
+            The current category.
+
+    Returns:
+        The transformed DataFrame.
+    """
+    boolean_columns = ["commercial", "merge", "open", "trained_from_scratch"]
+    for col in boolean_columns:
+        df[col] = df[col].apply(lambda x: "✓" if x else "✗")
+
+    for orthogonal_task in category_to_orthogonal_datasets[category].values():
+        col_name = orthogonal_task.replace("-", "_")
+        df[col_name] = df.apply(
+            lambda row: (
+                row[col_name]
+                if row.generative_type in ["instruction_tuned", "reasoning"]
+                else "N/A"
+            ),
+            axis=1,
+        )
+
+    generative_type_emoji_mapping = {
+        "base": "🧠",
+        "instruction_tuned": "📝",
+        "reasoning": "🤔",
+    }
+    df["generative_type"] = df.generative_type.map(
+        lambda x: generative_type_emoji_mapping.get(x, "🔍")
+    )
+    return df
+
+
 def _build_category_dataset_maps(
     categories: list[t.Literal["generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
@@ -69,91 +113,28 @@ def _build_category_dataset_maps(
     )
 
 
-def _compute_eligible_models_and_ranks(
-    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    category: str,
-    category_to_datasets: dict[str, list[str]],
-    category_to_orthogonal_datasets: dict[str, dict[str, str]],
-    leaderboard_configs: dict[str, dict[str, list[str]]],
-) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, list[str]], dict]":  # noqa: E501
-    """Compute eligible models and bootstrap ranks for a category.
+def _format_rank_score(entry: object) -> str:
+    """Render a {"score", "ci_upper", ...} dict as "score +/- margin", or "-".
 
     Args:
-        model_results:
-            The model results.
-        category:
-            The current category.
-        category_to_datasets:
-            Category to datasets mapping.
-        category_to_orthogonal_datasets:
-            Category to orthogonal datasets mapping.
-        leaderboard_configs:
-            The leaderboard configurations.
+        entry:
+            The dict to format.
 
     Returns:
-        Tuple of (eligible_model_results, language_to_required_datasets,
-        all_standard_ranks).
+        The formatted string.
     """
-    required_datasets = [
-        ds
-        for ds in category_to_datasets[category]
-        if ds not in category_to_orthogonal_datasets[category]
-    ]
-    eligible_model_results = {
-        mid: r
-        for mid, r in model_results.items()
-        if all(ds in r for ds in required_datasets)
-    }
-
-    language_to_required_datasets = {
-        language: [
-            dataset
-            for task, task_datasets in config.items()
-            for dataset in task_datasets
-            if category_includes_task(category=category, task=task)
-            and task not in ORTHOGONAL_TASKS
-        ]
-        for language, config in leaderboard_configs.items()
-    }
-
-    all_standard_ranks = compute_standard_ranks_bootstrap(
-        model_results=eligible_model_results,
-        configs=leaderboard_configs,
-        n_bootstraps=NUM_BOOTSTRAPS,
-        seed=42,
+    if not isinstance(entry, dict):
+        return "-"
+    score = entry.get("score", float("nan"))
+    ci_upper = entry.get("ci_upper", float("nan"))
+    if not (isinstance(score, (int, float)) and math.isfinite(score)):
+        return "-"
+    margin = (
+        (ci_upper - score)
+        if isinstance(ci_upper, int | float) and math.isfinite(ci_upper)
+        else 0.0
     )
-
-    return eligible_model_results, language_to_required_datasets, all_standard_ranks
-
-
-def _collect_orthogonal_scores(
-    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    category: str,
-    category_to_orthogonal_datasets: dict[str, dict[str, str]],
-) -> dict[str, dict[str, float]]:
-    """Collect orthogonal scores keyed by plain model id.
-
-    Args:
-        model_results:
-            The model results.
-        category:
-            The current category.
-        category_to_orthogonal_datasets:
-            Category to orthogonal datasets mapping.
-
-    Returns:
-        Dictionary mapping plain model ids to orthogonal scores.
-    """
-    orthogonal_scores_by_plain: dict[str, dict[str, float]] = defaultdict(dict)
-    for other_model_id, other_results in model_results.items():
-        other_plain_id = plain_model_id(other_model_id)
-        for dataset in category_to_orthogonal_datasets[category]:
-            if dataset not in other_results:
-                continue
-            main_score = other_results[dataset][0][1]
-            if not math.isnan(main_score):
-                orthogonal_scores_by_plain[other_plain_id][dataset] = main_score
-    return orthogonal_scores_by_plain
+    return f"{score:.2f} \u00b1 {margin:.2f}"
 
 
 def _build_model_row_data(
@@ -305,6 +286,299 @@ def _build_model_row_data(
     return model_values
 
 
+def _collect_orthogonal_scores(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    category: str,
+    category_to_orthogonal_datasets: dict[str, dict[str, str]],
+) -> dict[str, dict[str, float]]:
+    """Collect orthogonal scores keyed by plain model id.
+
+    Args:
+        model_results:
+            The model results.
+        category:
+            The current category.
+        category_to_orthogonal_datasets:
+            Category to orthogonal datasets mapping.
+
+    Returns:
+        Dictionary mapping plain model ids to orthogonal scores.
+    """
+    orthogonal_scores_by_plain: dict[str, dict[str, float]] = defaultdict(dict)
+    for other_model_id, other_results in model_results.items():
+        other_plain_id = plain_model_id(other_model_id)
+        for dataset in category_to_orthogonal_datasets[category]:
+            if dataset not in other_results:
+                continue
+            main_score = other_results[dataset][0][1]
+            if not math.isnan(main_score):
+                orthogonal_scores_by_plain[other_plain_id][dataset] = main_score
+    return orthogonal_scores_by_plain
+
+
+def _compute_eligible_models_and_ranks(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    category: str,
+    category_to_datasets: dict[str, list[str]],
+    category_to_orthogonal_datasets: dict[str, dict[str, str]],
+    leaderboard_configs: dict[str, dict[str, list[str]]],
+) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, list[str]], dict]":  # noqa: E501
+    """Compute eligible models and bootstrap ranks for a category.
+
+    Args:
+        model_results:
+            The model results.
+        category:
+            The current category.
+        category_to_datasets:
+            Category to datasets mapping.
+        category_to_orthogonal_datasets:
+            Category to orthogonal datasets mapping.
+        leaderboard_configs:
+            The leaderboard configurations.
+
+    Returns:
+        Tuple of (eligible_model_results, language_to_required_datasets,
+        all_standard_ranks).
+    """
+    required_datasets = [
+        ds
+        for ds in category_to_datasets[category]
+        if ds not in category_to_orthogonal_datasets[category]
+    ]
+    eligible_model_results = {
+        mid: r
+        for mid, r in model_results.items()
+        if all(ds in r for ds in required_datasets)
+    }
+
+    language_to_required_datasets = {
+        language: [
+            dataset
+            for task, task_datasets in config.items()
+            for dataset in task_datasets
+            if category_includes_task(category=category, task=task)
+            and task not in ORTHOGONAL_TASKS
+        ]
+        for language, config in leaderboard_configs.items()
+    }
+
+    all_standard_ranks = compute_standard_ranks_bootstrap(
+        model_results=eligible_model_results,
+        configs=leaderboard_configs,
+        n_bootstraps=NUM_BOOTSTRAPS,
+        seed=42,
+    )
+
+    return eligible_model_results, language_to_required_datasets, all_standard_ranks
+
+
+def _create_leaderboard_headers(
+    df: pd.DataFrame | pd.Series, leaderboard_configs: dict[str, dict[str, list[str]]]
+) -> tuple[list[str], list[str]]:
+    """Create the leaderboard headers.
+
+    The first header includes the task types (with links), and the second header
+    contains the 'original' header but with html links to the datasets.
+
+    Args:
+        df:
+            The dataframe.
+        leaderboard_configs:
+            The leaderboard configurations.
+
+    Returns:
+        The first and second header.
+    """
+    # Extract information from each dataset, and set up an anchor tag template which
+    # will replace the dataset column name with a link
+    all_datasets = []
+    dataset_to_language = {}
+    dataset_to_task_info = {}
+    for language, tasks in leaderboard_configs.items():
+        dataset_link_tag = (
+            f"<a href='https://euroeval.com/datasets/{language}#"
+            + "{anchor}'>{dataset}</a>"
+        )
+
+        language_datasets = list(chain.from_iterable(tasks.values()))
+        all_datasets.extend(language_datasets)
+
+        for dataset in language_datasets:
+            dataset_to_language[dataset] = (language, dataset_link_tag)
+
+        for task, datasets in tasks.items():
+            for dataset in datasets:
+                dataset_to_task_info[dataset] = (task, len(datasets))
+
+    top_header = []
+    second_header = []
+    processed_tasks_per_language: dict[str, set[str]] = {}
+    seen_version_col = False
+    for id_, col in enumerate(df.columns):
+        if (task := col.replace(" ", "-").lower()) in ORTHOGONAL_TASKS:
+            top_header.append("")
+            second_header.append(
+                f'<a href="https://euroeval.com/tasks/{task}">{col}</a>'
+            )
+
+        # Replace dataset columns with task links in the first header, and dataset links
+        # in the second header
+        elif (leaderboard_col := col.replace("_", "-")) in all_datasets:
+            language, dataset_link_tag = dataset_to_language[leaderboard_col]
+            task, num_datasets = dataset_to_task_info[leaderboard_col]
+
+            if language not in processed_tasks_per_language:
+                processed_tasks_per_language[language] = set()
+
+            if task in processed_tasks_per_language[language]:
+                top_header.append("")
+                second_header.append(
+                    dataset_link_tag.format(anchor=leaderboard_col, dataset=col)
+                )
+                continue
+
+            task_link = generate_task_link(id_, task)
+            if num_datasets > 1:
+                task_link = f"~~~{task_link}~~~"
+
+            top_header.append(task_link)
+            second_header.append(
+                dataset_link_tag.format(anchor=leaderboard_col, dataset=col)
+            )
+            processed_tasks_per_language[language].add(task)
+
+        # Special case if it's a dataset version column
+        else:
+            if "version" in col and not seen_version_col:
+                top_header.append("<span style='visibility: hidden;'>hidden</span>")
+                seen_version_col = True
+            else:
+                top_header.append("")
+
+            second_header.append(col)
+
+    # Add "Task Type" label to the top-left cell, and make cell (0, 1) invisible to
+    # ensure proper alignment
+    top_header[0] = (
+        "<span style='font-size: 12px; font-weight: normal; opacity: 0.6;'>"
+        "Task Type"
+        "</span>"
+    )
+    top_header[1] = "<span style='visibility: hidden;'>dummy</span>"
+
+    return top_header, second_header
+
+
+def _create_simplified_and_rename(
+    df: pd.DataFrame,
+    rank_cols: list[str],
+    category_to_orthogonal_datasets: dict[str, dict[str, str]],
+    category: str,
+) -> "tuple[pd.DataFrame, pd.DataFrame]":
+    """Create simplified DataFrame and rename columns for display.
+
+    Args:
+        df:
+            The full DataFrame.
+        rank_cols:
+            The rank column names.
+        category_to_orthogonal_datasets:
+            Category to orthogonal datasets mapping.
+        category:
+            The current category.
+
+    Returns:
+        Tuple of (df, df_simplified) with renamed columns.
+    """
+    df_simplified = df[
+        [
+            "rank",
+            "model",
+            "mean_rank_score",
+            "generative_type",
+            "open",
+            "commercial",
+            "merge",
+            "trained_from_scratch",
+            "parameters",
+            "vocabulary_size",
+            "context",
+        ]
+    ]
+    df_simplified = df_simplified.query("rank != '-'")
+    df_simplified = df_simplified.convert_dtypes()
+
+    renaming_dict = (
+        {
+            "model": "Model",
+            "generative_type": "Type",
+            "rank": "Rank",
+            "parameters": "Parameters",
+            "vocabulary_size": "Vocabulary",
+            "context": "Context",
+            "commercial": "Commercial",
+            "merge": "Merge",
+            "open": "Open",
+            "trained_from_scratch": "Trained from scratch",
+        }
+        | {"mean_rank_score": "Rank score"}
+        | {rank_col: rank_col.title() for rank_col in rank_cols[2:]}
+        | {
+            orthogonal_task.replace("-", "_"): orthogonal_task.replace("-", " ").title()
+            for orthogonal_task in category_to_orthogonal_datasets[category].values()
+        }
+    )
+    df = df.rename(renaming_dict, axis="columns")
+
+    return df, df_simplified
+
+
+def _filter_orthogonal_only_models(
+    df: pd.DataFrame,
+    category: str,
+    orthogonal_cols: list[str],
+    dataset_cols: list[str],
+    rank_cols: list[str],
+) -> pd.DataFrame:
+    """Filter out models with only orthogonal values.
+
+    Args:
+        df:
+            The DataFrame to filter.
+        category:
+            The current category.
+        orthogonal_cols:
+            The orthogonal column names.
+        dataset_cols:
+            The dataset column names.
+        rank_cols:
+            The rank column names.
+
+    Returns:
+        The filtered DataFrame.
+    """
+    num_before = len(df)
+    value_cols = [col for col in dataset_cols + rank_cols[1:] if col in df.columns]
+    model_ids_with_dataset_values = df.query(
+        " or ".join([f"({col} != '-')" for col in value_cols])
+    ).model.tolist()
+    model_ids_with_orthogonal_values = df[
+        df[orthogonal_cols].notna().any(axis=1)
+    ].model.tolist()
+    model_ids_to_drop = set(model_ids_with_orthogonal_values) - set(
+        model_ids_with_dataset_values
+    )
+    df = df[~df.model.isin(model_ids_to_drop)].reset_index(drop=True)
+    num_after = len(df)
+    if num_after < num_before:
+        logger.info(
+            f"Dropped {num_before - num_after:,} models from the {category!r} "
+            "leaderboard that had only orthogonal scores but no dataset scores."
+        )
+    return df
+
+
 def _format_ordinal_rank_column(df: pd.DataFrame, rank_cols: list[str]) -> pd.DataFrame:
     """Format the ordinal rank column with sentinel for NaN.
 
@@ -389,157 +663,145 @@ def _reorder_columns(
     return df[cols]
 
 
-def _filter_orthogonal_only_models(
-    df: pd.DataFrame,
-    category: str,
-    orthogonal_cols: list[str],
-    dataset_cols: list[str],
-    rank_cols: list[str],
-) -> pd.DataFrame:
-    """Filter out models with only orthogonal values.
+def _generate_dataframe(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
+    metadata_dict: dict[str, dict],
+    categories: list[t.Literal["generative", "all_models"]],
+    leaderboard_configs: dict[str, dict[str, list[str]]],
+    include_dataset_columns: bool,
+) -> list[tuple[pd.DataFrame, pd.DataFrame]]:
+    """Generate DataFrames from the model results.
 
     Args:
-        df:
-            The DataFrame to filter.
-        category:
-            The current category.
-        orthogonal_cols:
-            The orthogonal column names.
-        dataset_cols:
-            The dataset column names.
-        rank_cols:
-            The rank column names.
+        model_results:
+            The model results.
+        ranks:
+            The ranks of the models (from compute_ranks).
+        metadata_dict:
+            The metadata.
+        categories:
+            The categories of leaderboards to generate.
+        leaderboard_configs:
+            The leaderboard configurations.
+        include_dataset_columns:
+            Whether to include dataset columns in the DataFrame.
 
     Returns:
-        The filtered DataFrame.
+        A list of pairs (df, df_simplified), where df is the full leaderboard DataFrame
+        and df_simplified is the simplified version.
     """
-    num_before = len(df)
-    value_cols = [col for col in dataset_cols + rank_cols[1:] if col in df.columns]
-    model_ids_with_dataset_values = df.query(
-        " or ".join([f"({col} != '-')" for col in value_cols])
-    ).model.tolist()
-    model_ids_with_orthogonal_values = df[
-        df[orthogonal_cols].notna().any(axis=1)
-    ].model.tolist()
-    model_ids_to_drop = set(model_ids_with_orthogonal_values) - set(
-        model_ids_with_dataset_values
+    if model_results == {}:
+        logger.error("No model results found, skipping leaderboard generation.")
+        return []
+
+    category_to_datasets, category_to_orthogonal_datasets = (
+        _build_category_dataset_maps(categories, leaderboard_configs)
     )
-    df = df[~df.model.isin(model_ids_to_drop)].reset_index(drop=True)
-    num_after = len(df)
-    if num_after < num_before:
-        logger.info(
-            f"Dropped {num_before - num_after:,} models from the {category!r} "
-            "leaderboard that had only orthogonal scores but no dataset scores."
-        )
-    return df
 
-
-def _apply_display_transforms(
-    df: pd.DataFrame,
-    category_to_orthogonal_datasets: dict[str, dict[str, str]],
-    category: str,
-) -> pd.DataFrame:
-    """Apply display transforms: booleans to symbols, generative_type to emojis.
-
-    Args:
-        df:
-            The DataFrame to transform.
-        category_to_orthogonal_datasets:
-            Category to orthogonal datasets mapping.
-        category:
-            The current category.
-
-    Returns:
-        The transformed DataFrame.
-    """
-    boolean_columns = ["commercial", "merge", "open", "trained_from_scratch"]
-    for col in boolean_columns:
-        df[col] = df[col].apply(lambda x: "✓" if x else "✗")
-
-    for orthogonal_task in category_to_orthogonal_datasets[category].values():
-        col_name = orthogonal_task.replace("-", "_")
-        df[col_name] = df.apply(
-            lambda row: (
-                row[col_name]
-                if row.generative_type in ["instruction_tuned", "reasoning"]
-                else "N/A"
-            ),
-            axis=1,
+    dfs: list[tuple[pd.DataFrame, pd.DataFrame]] = []
+    for category in categories:
+        (eligible_model_results, language_to_required_datasets, all_standard_ranks) = (
+            _compute_eligible_models_and_ranks(
+                model_results=model_results,
+                category=category,
+                category_to_datasets=category_to_datasets,
+                category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+                leaderboard_configs=leaderboard_configs,
+            )
         )
 
-    generative_type_emoji_mapping = {
-        "base": "🧠",
-        "instruction_tuned": "📝",
-        "reasoning": "🤔",
-    }
-    df["generative_type"] = df.generative_type.map(
-        lambda x: generative_type_emoji_mapping.get(x, "🔍")
-    )
-    return df
+        orthogonal_scores_by_plain = _collect_orthogonal_scores(
+            model_results=model_results,
+            category=category,
+            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+        )
 
+        data_dict: dict[str, list] = defaultdict(list)
+        for model_id, results in model_results.items():
+            model_values = _build_model_row_data(
+                model_id=model_id,
+                results=results,
+                eligible_model_results=eligible_model_results,
+                all_standard_ranks=all_standard_ranks,
+                ranks=ranks,
+                category=category,
+                language_to_required_datasets=language_to_required_datasets,
+                leaderboard_configs=leaderboard_configs,
+                category_to_datasets=category_to_datasets,
+                category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+                orthogonal_scores_by_plain=orthogonal_scores_by_plain,
+                metadata_dict=metadata_dict,
+            )
+            for key, value in model_values.items():
+                data_dict[key].append(value)
 
-def _create_simplified_and_rename(
-    df: pd.DataFrame,
-    rank_cols: list[str],
-    category_to_orthogonal_datasets: dict[str, dict[str, str]],
-    category: str,
-) -> "tuple[pd.DataFrame, pd.DataFrame]":
-    """Create simplified DataFrame and rename columns for display.
+            assert len({len(values) for values in data_dict.values()}) == 1, (
+                f"Length of data_dict values must be equal, but got "
+                f"{ {key: len(values) for key, values in data_dict.items()} }."
+            )
 
-    Args:
-        df:
-            The full DataFrame.
-        rank_cols:
-            The rank column names.
-        category_to_orthogonal_datasets:
-            Category to orthogonal datasets mapping.
-        category:
-            The current category.
+        df = (
+            pd.DataFrame(data_dict)
+            .sort_values(by="rank", na_position="last")
+            .reset_index(drop=True)
+        )
 
-    Returns:
-        Tuple of (df, df_simplified) with renamed columns.
-    """
-    df_simplified = df[
-        [
-            "rank",
-            "model",
-            "mean_rank_score",
-            "generative_type",
-            "open",
-            "commercial",
-            "merge",
-            "trained_from_scratch",
-            "parameters",
-            "vocabulary_size",
-            "context",
+        rank_cols = ["rank", "mean_rank_score"]
+        if len(leaderboard_configs) > 1:
+            rank_cols += list(leaderboard_configs.keys())
+
+        df = _format_ordinal_rank_column(df, rank_cols)
+
+        df.columns = df.columns.str.replace("-", "_")
+
+        orthogonal_cols = list(
+            {
+                orthogonal_task.replace("-", "_")
+                for orthogonal_task in category_to_orthogonal_datasets[
+                    category
+                ].values()
+            }
+        )
+        dataset_cols = [
+            dataset.replace("-", "_")
+            for dataset in category_to_datasets[category]
+            if dataset not in category_to_orthogonal_datasets[category]
         ]
-    ]
-    df_simplified = df_simplified.query("rank != '-'")
-    df_simplified = df_simplified.convert_dtypes()
+        df = _reorder_columns(
+            df=df,
+            category=category,
+            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+            category_to_datasets=category_to_datasets,
+            rank_cols=rank_cols,
+            include_dataset_columns=include_dataset_columns,
+        )
 
-    renaming_dict = (
-        {
-            "model": "Model",
-            "generative_type": "Type",
-            "rank": "Rank",
-            "parameters": "Parameters",
-            "vocabulary_size": "Vocabulary",
-            "context": "Context",
-            "commercial": "Commercial",
-            "merge": "Merge",
-            "open": "Open",
-            "trained_from_scratch": "Trained from scratch",
-        }
-        | {"mean_rank_score": "Rank score"}
-        | {rank_col: rank_col.title() for rank_col in rank_cols[2:]}
-        | {
-            orthogonal_task.replace("-", "_"): orthogonal_task.replace("-", " ").title()
-            for orthogonal_task in category_to_orthogonal_datasets[category].values()
-        }
-    )
-    df = df.rename(renaming_dict, axis="columns")
+        df = _filter_orthogonal_only_models(
+            df=df,
+            category=category,
+            orthogonal_cols=orthogonal_cols,
+            dataset_cols=dataset_cols,
+            rank_cols=rank_cols,
+        )
 
-    return df, df_simplified
+        df = _apply_display_transforms(
+            df=df,
+            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+            category=category,
+        )
+
+        df, df_simplified = _create_simplified_and_rename(
+            df=df,
+            rank_cols=rank_cols,
+            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+            category=category,
+        )
+
+        assert isinstance(df, pd.DataFrame)
+        dfs.append((df, df_simplified))
+
+    return dfs
 
 
 def generate_leaderboard(
@@ -795,265 +1057,3 @@ def generate_leaderboard(
                 f"No updates to the {category!r} category of the {leaderboard_title} "
                 "leaderboard."
             )
-
-
-def _create_leaderboard_headers(
-    df: pd.DataFrame | pd.Series, leaderboard_configs: dict[str, dict[str, list[str]]]
-) -> tuple[list[str], list[str]]:
-    """Create the leaderboard headers.
-
-    The first header includes the task types (with links), and the second header
-    contains the 'original' header but with html links to the datasets.
-
-    Args:
-        df:
-            The dataframe.
-        leaderboard_configs:
-            The leaderboard configurations.
-
-    Returns:
-        The first and second header.
-    """
-    # Extract information from each dataset, and set up an anchor tag template which
-    # will replace the dataset column name with a link
-    all_datasets = []
-    dataset_to_language = {}
-    dataset_to_task_info = {}
-    for language, tasks in leaderboard_configs.items():
-        dataset_link_tag = (
-            f"<a href='https://euroeval.com/datasets/{language}#"
-            + "{anchor}'>{dataset}</a>"
-        )
-
-        language_datasets = list(chain.from_iterable(tasks.values()))
-        all_datasets.extend(language_datasets)
-
-        for dataset in language_datasets:
-            dataset_to_language[dataset] = (language, dataset_link_tag)
-
-        for task, datasets in tasks.items():
-            for dataset in datasets:
-                dataset_to_task_info[dataset] = (task, len(datasets))
-
-    top_header = []
-    second_header = []
-    processed_tasks_per_language: dict[str, set[str]] = {}
-    seen_version_col = False
-    for id_, col in enumerate(df.columns):
-        if (task := col.replace(" ", "-").lower()) in ORTHOGONAL_TASKS:
-            top_header.append("")
-            second_header.append(
-                f'<a href="https://euroeval.com/tasks/{task}">{col}</a>'
-            )
-
-        # Replace dataset columns with task links in the first header, and dataset links
-        # in the second header
-        elif (leaderboard_col := col.replace("_", "-")) in all_datasets:
-            language, dataset_link_tag = dataset_to_language[leaderboard_col]
-            task, num_datasets = dataset_to_task_info[leaderboard_col]
-
-            if language not in processed_tasks_per_language:
-                processed_tasks_per_language[language] = set()
-
-            if task in processed_tasks_per_language[language]:
-                top_header.append("")
-                second_header.append(
-                    dataset_link_tag.format(anchor=leaderboard_col, dataset=col)
-                )
-                continue
-
-            task_link = generate_task_link(id_, task)
-            if num_datasets > 1:
-                task_link = f"~~~{task_link}~~~"
-
-            top_header.append(task_link)
-            second_header.append(
-                dataset_link_tag.format(anchor=leaderboard_col, dataset=col)
-            )
-            processed_tasks_per_language[language].add(task)
-
-        # Special case if it's a dataset version column
-        else:
-            if "version" in col and not seen_version_col:
-                top_header.append("<span style='visibility: hidden;'>hidden</span>")
-                seen_version_col = True
-            else:
-                top_header.append("")
-
-            second_header.append(col)
-
-    # Add "Task Type" label to the top-left cell, and make cell (0, 1) invisible to
-    # ensure proper alignment
-    top_header[0] = (
-        "<span style='font-size: 12px; font-weight: normal; opacity: 0.6;'>"
-        "Task Type"
-        "</span>"
-    )
-    top_header[1] = "<span style='visibility: hidden;'>dummy</span>"
-
-    return top_header, second_header
-
-
-def _generate_dataframe(
-    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
-    metadata_dict: dict[str, dict],
-    categories: list[t.Literal["generative", "all_models"]],
-    leaderboard_configs: dict[str, dict[str, list[str]]],
-    include_dataset_columns: bool,
-) -> list[tuple[pd.DataFrame, pd.DataFrame]]:
-    """Generate DataFrames from the model results.
-
-    Args:
-        model_results:
-            The model results.
-        ranks:
-            The ranks of the models (from compute_ranks).
-        metadata_dict:
-            The metadata.
-        categories:
-            The categories of leaderboards to generate.
-        leaderboard_configs:
-            The leaderboard configurations.
-        include_dataset_columns:
-            Whether to include dataset columns in the DataFrame.
-
-    Returns:
-        A list of pairs (df, df_simplified), where df is the full leaderboard DataFrame
-        and df_simplified is the simplified version.
-    """
-    if model_results == {}:
-        logger.error("No model results found, skipping leaderboard generation.")
-        return []
-
-    category_to_datasets, category_to_orthogonal_datasets = (
-        _build_category_dataset_maps(categories, leaderboard_configs)
-    )
-
-    dfs: list[tuple[pd.DataFrame, pd.DataFrame]] = []
-    for category in categories:
-        (eligible_model_results, language_to_required_datasets, all_standard_ranks) = (
-            _compute_eligible_models_and_ranks(
-                model_results=model_results,
-                category=category,
-                category_to_datasets=category_to_datasets,
-                category_to_orthogonal_datasets=category_to_orthogonal_datasets,
-                leaderboard_configs=leaderboard_configs,
-            )
-        )
-
-        orthogonal_scores_by_plain = _collect_orthogonal_scores(
-            model_results=model_results,
-            category=category,
-            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
-        )
-
-        data_dict: dict[str, list] = defaultdict(list)
-        for model_id, results in model_results.items():
-            model_values = _build_model_row_data(
-                model_id=model_id,
-                results=results,
-                eligible_model_results=eligible_model_results,
-                all_standard_ranks=all_standard_ranks,
-                ranks=ranks,
-                category=category,
-                language_to_required_datasets=language_to_required_datasets,
-                leaderboard_configs=leaderboard_configs,
-                category_to_datasets=category_to_datasets,
-                category_to_orthogonal_datasets=category_to_orthogonal_datasets,
-                orthogonal_scores_by_plain=orthogonal_scores_by_plain,
-                metadata_dict=metadata_dict,
-            )
-            for key, value in model_values.items():
-                data_dict[key].append(value)
-
-            assert len({len(values) for values in data_dict.values()}) == 1, (
-                f"Length of data_dict values must be equal, but got "
-                f"{ {key: len(values) for key, values in data_dict.items()} }."
-            )
-
-        df = (
-            pd.DataFrame(data_dict)
-            .sort_values(by="rank", na_position="last")
-            .reset_index(drop=True)
-        )
-
-        rank_cols = ["rank", "mean_rank_score"]
-        if len(leaderboard_configs) > 1:
-            rank_cols += list(leaderboard_configs.keys())
-
-        df = _format_ordinal_rank_column(df, rank_cols)
-
-        df.columns = df.columns.str.replace("-", "_")
-
-        orthogonal_cols = list(
-            {
-                orthogonal_task.replace("-", "_")
-                for orthogonal_task in category_to_orthogonal_datasets[
-                    category
-                ].values()
-            }
-        )
-        dataset_cols = [
-            dataset.replace("-", "_")
-            for dataset in category_to_datasets[category]
-            if dataset not in category_to_orthogonal_datasets[category]
-        ]
-        df = _reorder_columns(
-            df=df,
-            category=category,
-            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
-            category_to_datasets=category_to_datasets,
-            rank_cols=rank_cols,
-            include_dataset_columns=include_dataset_columns,
-        )
-
-        df = _filter_orthogonal_only_models(
-            df=df,
-            category=category,
-            orthogonal_cols=orthogonal_cols,
-            dataset_cols=dataset_cols,
-            rank_cols=rank_cols,
-        )
-
-        df = _apply_display_transforms(
-            df=df,
-            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
-            category=category,
-        )
-
-        df, df_simplified = _create_simplified_and_rename(
-            df=df,
-            rank_cols=rank_cols,
-            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
-            category=category,
-        )
-
-        assert isinstance(df, pd.DataFrame)
-        dfs.append((df, df_simplified))
-
-    return dfs
-
-
-def _format_rank_score(entry: object) -> str:
-    """Render a {"score", "ci_upper", ...} dict as "score +/- margin", or "-".
-
-    Args:
-        entry:
-            The dict to format.
-
-    Returns:
-        The formatted string.
-    """
-    if not isinstance(entry, dict):
-        return "-"
-    score = entry.get("score", float("nan"))
-    ci_upper = entry.get("ci_upper", float("nan"))
-    if not (isinstance(score, (int, float)) and math.isfinite(score)):
-        return "-"
-    margin = (
-        (ci_upper - score)
-        if isinstance(ci_upper, int | float) and math.isfinite(ci_upper)
-        else 0.0
-    )
-    return f"{score:.2f} \u00b1 {margin:.2f}"

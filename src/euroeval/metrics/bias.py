@@ -17,6 +17,22 @@ VALID_BIAS_TYPES: tuple[BiasType, ...] = t.get_args(BiasType)
 CHOICE_TO_INDEX: dict[str, int] = {"a": 0, "b": 1, "c": 2}
 
 
+def _bias_adjusted_accuracy(acc: float, bias: float) -> float:
+    """Accuracy minus a symmetric bias penalty (|bias|), clamped at zero.
+
+    Keeps accuracy leading while subtracting bias directly.
+
+    Args:
+        acc: Raw accuracy value.
+        bias: Signed bias value.
+
+    Returns:
+        Bias-adjusted accuracy clamped to zero.
+    """
+    penalty = abs(bias)
+    return max(0.0, acc - penalty)
+
+
 def _prediction_to_index(prediction: int | str) -> int | None:
     """Convert a prediction to an integer index if possible.
 
@@ -35,22 +51,6 @@ def _prediction_to_index(prediction: int | str) -> int | None:
         if cleaned.isdigit():
             return int(cleaned)
     return None
-
-
-def _bias_adjusted_accuracy(acc: float, bias: float) -> float:
-    """Accuracy minus a symmetric bias penalty (|bias|), clamped at zero.
-
-    Keeps accuracy leading while subtracting bias directly.
-
-    Args:
-        acc: Raw accuracy value.
-        bias: Signed bias value.
-
-    Returns:
-        Bias-adjusted accuracy clamped to zero.
-    """
-    penalty = abs(bias)
-    return max(0.0, acc - penalty)
 
 
 def _tally_ambig(

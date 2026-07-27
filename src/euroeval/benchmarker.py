@@ -37,6 +37,131 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig, Task
 
 
+def clear_model_cache_fn(cache_dir: str) -> None:
+    """Clear the model cache.
+
+    Note that this will not remove the stored completions.
+
+    Args:
+        cache_dir:
+            The path to the cache directory.
+    """
+    model_cache_path = Path(cache_dir) / "model_cache"
+    model_cache_path.mkdir(parents=True, exist_ok=True)
+    for model_dir in model_cache_path.iterdir():
+        if model_dir.is_dir():
+            for sub_model_dir in model_dir.iterdir():
+                if sub_model_dir.is_dir():
+                    rmtree(sub_model_dir, ignore_errors=True)
+
+
+def get_record(
+    model_config: "ModelConfig",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+    benchmark_results: c.Sequence[BenchmarkResult],
+) -> BenchmarkResult | None:
+    """Get the benchmark record for a given model and dataset.
+
+    Args:
+        model_config:
+            The configuration of the model we are evaluating.
+        dataset_config:
+            The configuration of the dataset we are evaluating on.
+        benchmark_config:
+            The general benchmark configuration.
+        benchmark_results:
+            The benchmark results.
+
+    Returns:
+        The benchmark record, or None if no such record exists.
+    """
+    for record in benchmark_results:
+        model_id_components = split_model_id(model_id=record.model)
+        same_model_id = model_id_components.model_id == model_config.model_id
+        same_revision = model_id_components.revision == model_config.revision
+        same_param = model_id_components.param == model_config.param
+        same_dataset = record.dataset == dataset_config.name
+        same_split = record.validation_split != benchmark_config.evaluate_test_split
+        same_num_shots = (
+            record.few_shot == benchmark_config.few_shot
+            or record.few_shot is None
+            or not record.generative
+            or dataset_config.task.requires_zero_shot
+        )
+        if (
+            same_model_id
+            and same_revision
+            and same_param
+            and same_dataset
+            and same_split
+            and same_num_shots
+        ):
+            return record
+    return None
+
+
+def initial_logging(
+    model_config: "ModelConfig",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+    num_finished_benchmarks: int,
+    num_total_benchmarks: int,
+) -> None:
+    """Initial logging at the start of the benchmarking process.
+
+    Args:
+        model_config:
+            The configuration of the model we are evaluating.
+        dataset_config:
+            The configuration of the dataset we are evaluating on.
+        benchmark_config:
+            The general benchmark configuration.
+        num_finished_benchmarks:
+            The number of benchmarks that have already been finished.
+        num_total_benchmarks:
+            The total number of benchmarks to be run.
+    """
+    model_id = model_config.model_id
+    if model_config.revision and model_config.revision != "main":
+        model_id += f"@{model_config.revision}"
+    if model_config.param is not None:
+        model_id += f"#{model_config.param}"
+
+    split_type = "validation" if not benchmark_config.evaluate_test_split else "test"
+    if model_config.task in GENERATIVE_PIPELINE_TAGS:
+        if benchmark_config.few_shot:
+            eval_type = "Few-shot benchmarking"
+        else:
+            eval_type = "Zero-shot benchmarking"
+    else:
+        eval_type = "Benchmarking"
+
+    log_once(
+        f"\n{eval_type} {model_id} on the {split_type} split of "
+        f"{dataset_config.logging_string} ({num_finished_benchmarks + 1}/"
+        f"{num_total_benchmarks} benchmarks)...",
+        prefix=f"\n[{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]",
+        level=logging.INFO,
+    )
+
+    if dataset_config.unofficial:
+        log_once(
+            f"Note that the {dataset_config.name!r} dataset is unofficial, "
+            "meaning that the resulting evaluation will not be included in the "
+            "official leaderboard.",
+            level=logging.WARNING,
+        )
+
+    if benchmark_config.debug:
+        log_once(
+            "Running in debug mode. This will output additional information, as "
+            "well as store the model outputs in the current directory after each "
+            "batch. For this reason, evaluation will be slower.",
+            level=logging.WARNING,
+        )
+
+
 class Benchmarker:
     """Benchmarking all the language models.
 
@@ -249,89 +374,194 @@ class Benchmarker:
         self.results_path = Path.cwd() / "euroeval_benchmark_results.jsonl"
         adjust_logging_level(verbose=self.benchmark_config.verbose)
 
-    @property
-    def benchmark_results(self) -> c.Sequence[BenchmarkResult]:
-        """The benchmark results.
-
-        Returns:
-            A list of benchmark results.
-        """
-        return BenchmarkResult.from_jsonl(self.results_path)
-
-    def _download(
+    def _benchmark_single(
         self,
-        dataset_config: "DatasetConfig",
+        model: "BenchmarkModule | None",
         model_config: "ModelConfig",
+        dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
-    ) -> None:
-        """Download data, metrics, and model for the given dataset, and model.
+        num_finished_benchmarks: int,
+        num_total_benchmarks: int,
+    ) -> BenchmarkResult | InvalidBenchmark | InvalidModel:
+        """Benchmark a single model on a single dataset.
 
         Args:
-            dataset_config: The configuration for the dataset.
-            model_config: The configuration for the model.
-            benchmark_config: The configuration for the benchmark.
-        """
-        log_once(
-            f"Loading data for {dataset_config.logging_string}", level=logging.INFO
-        )
-        dataset = load_raw_data(
-            dataset_config=dataset_config,
-            cache_dir=benchmark_config.cache_dir,
-            api_key=benchmark_config.api_key,
-        )
-        del dataset
+            model:
+                The model to benchmark.
+            model_config:
+                The configuration of the model we are evaluating.
+            dataset_config:
+                The configuration of the dataset we are evaluating on.
+            benchmark_config:
+                The general benchmark configuration.
+            num_finished_benchmarks:
+                The number of benchmarks that have already been completed.
+            num_total_benchmarks:
+                The total number of benchmarks to be completed.
 
-        # Skip download if model is a local path
-        if not Path(model_config.model_id).exists():
-            # Check if model is already cached before downloading
-            cache_path = Path(model_config.model_cache_dir)
-            has_cached = cache_path.exists() and any(cache_path.rglob("*.safetensors"))
-            if has_cached:
-                log_once(
-                    f"Model {model_config.model_id!r} is already cached, skipping "
-                    "download.",
+        Returns:
+            The benchmark result, or an error if the benchmark was unsuccessful.
+
+        Raises:
+            RuntimeError:
+                If the MPS fallback is not enabled when required.
+            InvalidBenchmark:
+                If the benchmark was unsuccessful.
+            InvalidModel:
+                If the model is invalid.
+        """
+        if model is not None:
+            try:
+                model.update_dataset_config(dataset_config=dataset_config)
+            except InvalidBenchmark as e:
+                return e
+
+        for _ in range(num_attempts := 5):
+            try:
+                # Set random seeds to enforce reproducibility of the randomly
+                # initialised weights
+                rng = enforce_reproducibility()
+
+                if model is None or model_config.model_type != ModelType.GENERATIVE:
+                    model = load_model(
+                        model_config=model_config,
+                        dataset_config=dataset_config,
+                        benchmark_config=benchmark_config,
+                    )
+                assert model is not None
+
+                initial_logging(
+                    model_config=model_config,
+                    dataset_config=dataset_config,
+                    benchmark_config=benchmark_config,
+                    num_finished_benchmarks=num_finished_benchmarks,
+                    num_total_benchmarks=num_total_benchmarks,
+                )
+
+                if dataset_config.task == SPEED:
+                    scores = benchmark_speed(
+                        model=model, benchmark_config=benchmark_config
+                    )
+
+                else:
+                    bootstrapped_datasets = load_data(
+                        rng=rng,
+                        dataset_config=dataset_config,
+                        benchmark_config=benchmark_config,
+                    )
+                    prepared_datasets = model.prepare_datasets(
+                        datasets=bootstrapped_datasets, task=dataset_config.task
+                    )
+                    if model_config.model_type == ModelType.GENERATIVE:
+                        scores = generate(
+                            model=model,
+                            datasets=prepared_datasets,
+                            model_config=model_config,
+                            dataset_config=dataset_config,
+                            benchmark_config=benchmark_config,
+                        )
+                    else:
+                        scores = finetune(
+                            model=model,
+                            datasets=prepared_datasets,
+                            model_config=model_config,
+                            dataset_config=dataset_config,
+                            benchmark_config=benchmark_config,
+                        )
+
+                results = log_scores(
+                    dataset_name=dataset_config.logging_string,
+                    metrics=(
+                        [bpc_metric]
+                        if benchmark_config.use_bits_per_character
+                        else dataset_config.task.metrics
+                    ),
+                    scores=scores,
+                    model_id=model_config.model_id,
+                    model_revision=model_config.revision,
+                    model_param=model_config.param,
+                )
+
+                model_id_to_be_stored = model_config.model_id
+                if model_config.revision != "main":
+                    model_id_to_be_stored += f"@{model_config.revision}"
+                if model_config.param is not None:
+                    model_id_to_be_stored += f"#{model_config.param}"
+
+                record = BenchmarkResult(
+                    dataset=dataset_config.name,
+                    task=dataset_config.task.name,
+                    languages=[language.code for language in dataset_config.languages],
+                    model=model_id_to_be_stored,
+                    results=results,
+                    num_model_parameters=model.num_params,
+                    max_sequence_length=model.model_max_length,
+                    vocabulary_size=model.vocab_size,
+                    merge=model_config.merge,
+                    generative=model_config.model_type == ModelType.GENERATIVE,
+                    generative_type=(
+                        model.generative_type.value
+                        if model.generative_type is not None
+                        else None
+                    ),
+                    few_shot=(
+                        None
+                        if dataset_config.task.requires_zero_shot
+                        else benchmark_config.few_shot
+                    ),
+                    validation_split=(
+                        None
+                        if dataset_config.val_split is None
+                        else not benchmark_config.evaluate_test_split
+                    ),
+                    use_bits_per_character=benchmark_config.use_bits_per_character,
+                    vllm_version=(
+                        get_package_version("vllm")
+                        if model_config.inference_backend == InferenceBackend.VLLM
+                        else None
+                    ),
+                    litellm_version=(
+                        get_package_version("litellm")
+                        if model_config.inference_backend == InferenceBackend.LITELLM
+                        else None
+                    ),
+                )
+                log(f"Results:\n{results}", level=logging.DEBUG)
+                return record
+
+            except HuggingFaceHubDown:
+                wait_time = 30
+                log(
+                    f"The Hugging Face Hub seems to be down. Retrying in {wait_time} "
+                    "seconds.",
                     level=logging.DEBUG,
                 )
-            else:
-                log_once(
-                    f"Downloading model {model_config.model_id!r}...",
-                    level=logging.INFO,
-                )
-                snapshot_download(
-                    repo_id=model_config.model_id,
-                    revision=model_config.revision,
-                    cache_dir=model_config.model_cache_dir,
-                    token=get_hf_token(api_key=benchmark_config.api_key),
-                )
+                sleep(wait_time)
+                continue
 
-            # For adapter models, also download the base model
-            if model_config.adapter_base_model_id:
-                base_id = model_config.adapter_base_model_id
-                log_once(
-                    f"Downloading adapter base model {base_id!r}...", level=logging.INFO
-                )
-                snapshot_download(
-                    repo_id=model_config.adapter_base_model_id,
-                    revision="main",
-                    cache_dir=model_config.model_cache_dir,
-                    token=get_hf_token(api_key=benchmark_config.api_key),
-                )
+            except (InvalidBenchmark, InvalidModel) as e:
+                # If the model ID is not valid then raise an error
+                model_err_msg = "does not exist on the Hugging Face Hub"
+                if benchmark_config.raise_errors and model_err_msg in str(e):
+                    raise e
+
+                # Otherwise, if the error is due to the MPS fallback not being enabled,
+                # then raise an error asking the user to enable it
+                elif "PYTORCH_ENABLE_MPS_FALLBACK" in str(e):
+                    raise RuntimeError(
+                        "The benchmark failed because the environment variable "
+                        "`PYTORCH_ENABLE_MPS_FALLBACK` is not set. Please set this "
+                        "environment variable to `1` and try again."
+                    )
+
+                elif benchmark_config.raise_errors:
+                    raise e
+                return e
         else:
-            log_once(
-                f"Model {model_config.model_id!r} is a local path, skipping download",
-                level=logging.INFO,
+            return InvalidBenchmark(
+                f"Failed to benchmark model {model_config.model_id!r} on dataset "
+                f"{dataset_config.name!r} after {num_attempts} attempts."
             )
-
-        log_once(
-            f"Loading metrics for the '{dataset_config.task.name}' task",
-            level=logging.INFO,
-        )
-        for metric_name in dataset_config.task.metrics:
-            log_once(f"Loading metric {metric_name.name}", level=logging.DEBUG)
-            metric = metric_name.download(
-                cache_dir=benchmark_config.cache_dir, dataset_config=dataset_config
-            )
-            del metric
 
     def _build_benchmark_config(self, **params) -> "BenchmarkConfig":
         """Build benchmark configuration from parameters.
@@ -442,6 +672,141 @@ class Benchmarker:
             )
         )
 
+    def _check_adapter_requirements(
+        self, model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
+    ) -> None:
+        """Check adapter model requirements.
+
+        Args:
+            model_config:
+                The model configuration.
+            benchmark_config:
+                The benchmark configuration.
+
+        Raises:
+            InvalidModel:
+                If offline benchmarking of adapter models is attempted.
+        """
+        if not model_config.adapter_base_model_id:
+            return
+        msg = (
+            "If offline support is important to you, please consider opening an issue "
+            "at https://github.com/EuroEval/EuroEval/issues."
+        )
+        if not internet_connection_available():
+            raise InvalidModel(
+                "Offline benchmarking of models with adapters is not currently "
+                "supported. An active internet connection is required. " + msg
+            )
+        if benchmark_config.download_only:
+            msg_full = (
+                "You are using download-only mode with a model that includes an "
+                "adapter. Please note that offline benchmarking of adapter models "
+                "is not currently supported - an internet connection will be required "
+                "during evaluation in this case. " + msg
+            )
+            log_once(msg_full, level=logging.WARNING)
+
+    def _create_model_dataset_mapping(
+        self,
+        model_configs: list["ModelConfig"],
+        dataset_configs: c.Sequence["DatasetConfig"],
+    ) -> dict["ModelConfig", list["DatasetConfig"]]:
+        """Create mapping from model configs to dataset configs.
+
+        Args:
+            model_configs:
+                The model configurations.
+            dataset_configs:
+                The dataset configurations.
+
+        Returns:
+            A mapping from model configs to dataset configs.
+        """
+        return {
+            model_config: [
+                ds_config
+                for ds_config in dataset_configs
+                if model_config.model_type in ds_config.allowed_model_types
+            ]
+            for model_config in model_configs
+        }
+
+    def _download(
+        self,
+        dataset_config: "DatasetConfig",
+        model_config: "ModelConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> None:
+        """Download data, metrics, and model for the given dataset, and model.
+
+        Args:
+            dataset_config: The configuration for the dataset.
+            model_config: The configuration for the model.
+            benchmark_config: The configuration for the benchmark.
+        """
+        log_once(
+            f"Loading data for {dataset_config.logging_string}", level=logging.INFO
+        )
+        dataset = load_raw_data(
+            dataset_config=dataset_config,
+            cache_dir=benchmark_config.cache_dir,
+            api_key=benchmark_config.api_key,
+        )
+        del dataset
+
+        # Skip download if model is a local path
+        if not Path(model_config.model_id).exists():
+            # Check if model is already cached before downloading
+            cache_path = Path(model_config.model_cache_dir)
+            has_cached = cache_path.exists() and any(cache_path.rglob("*.safetensors"))
+            if has_cached:
+                log_once(
+                    f"Model {model_config.model_id!r} is already cached, skipping "
+                    "download.",
+                    level=logging.DEBUG,
+                )
+            else:
+                log_once(
+                    f"Downloading model {model_config.model_id!r}...",
+                    level=logging.INFO,
+                )
+                snapshot_download(
+                    repo_id=model_config.model_id,
+                    revision=model_config.revision,
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
+
+            # For adapter models, also download the base model
+            if model_config.adapter_base_model_id:
+                base_id = model_config.adapter_base_model_id
+                log_once(
+                    f"Downloading adapter base model {base_id!r}...", level=logging.INFO
+                )
+                snapshot_download(
+                    repo_id=model_config.adapter_base_model_id,
+                    revision="main",
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
+        else:
+            log_once(
+                f"Model {model_config.model_id!r} is a local path, skipping download",
+                level=logging.INFO,
+            )
+
+        log_once(
+            f"Loading metrics for the '{dataset_config.task.name}' task",
+            level=logging.INFO,
+        )
+        for metric_name in dataset_config.task.metrics:
+            log_once(f"Loading metric {metric_name.name}", level=logging.DEBUG)
+            metric = metric_name.download(
+                cache_dir=benchmark_config.cache_dir, dataset_config=dataset_config
+            )
+            del metric
+
     def _fetch_model_configs(
         self, model_ids: c.Sequence[str], benchmark_config: "BenchmarkConfig"
     ) -> list["ModelConfig"]:
@@ -471,31 +836,6 @@ class Benchmarker:
             except InvalidModel as e:
                 log(e.message, level=logging.ERROR)
         return configs
-
-    def _create_model_dataset_mapping(
-        self,
-        model_configs: list["ModelConfig"],
-        dataset_configs: c.Sequence["DatasetConfig"],
-    ) -> dict["ModelConfig", list["DatasetConfig"]]:
-        """Create mapping from model configs to dataset configs.
-
-        Args:
-            model_configs:
-                The model configurations.
-            dataset_configs:
-                The dataset configurations.
-
-        Returns:
-            A mapping from model configs to dataset configs.
-        """
-        return {
-            model_config: [
-                ds_config
-                for ds_config in dataset_configs
-                if model_config.model_type in ds_config.allowed_model_types
-            ]
-            for model_config in model_configs
-        }
 
     def _filter_existing_benchmarks(
         self,
@@ -533,78 +873,35 @@ class Benchmarker:
             model_mapping[model_config] = new_ds_configs
         return model_mapping, current_results
 
-    def _check_adapter_requirements(
-        self, model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
-    ) -> None:
-        """Check adapter model requirements.
+    def _generate_summary_message(
+        self, finished: int, skipped: int, errored: int
+    ) -> str | None:
+        """Generate summary message.
 
         Args:
-            model_config:
-                The model configuration.
-            benchmark_config:
-                The benchmark configuration.
-
-        Raises:
-            InvalidModel:
-                If offline benchmarking of adapter models is attempted.
-        """
-        if not model_config.adapter_base_model_id:
-            return
-        msg = (
-            "If offline support is important to you, please consider opening an issue "
-            "at https://github.com/EuroEval/EuroEval/issues."
-        )
-        if not internet_connection_available():
-            raise InvalidModel(
-                "Offline benchmarking of models with adapters is not currently "
-                "supported. An active internet connection is required. " + msg
-            )
-        if benchmark_config.download_only:
-            msg_full = (
-                "You are using download-only mode with a model that includes an "
-                "adapter. Please note that offline benchmarking of adapter models "
-                "is not currently supported - an internet connection will be required "
-                "during evaluation in this case. " + msg
-            )
-            log_once(msg_full, level=logging.WARNING)
-
-    def _update_benchmark_config_for_dataset(
-        self, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"
-    ) -> dict[str, t.Any]:
-        """Update benchmark config for dataset.
-
-        Args:
-            dataset_config:
-                The dataset configuration.
-            benchmark_config:
-                The benchmark configuration.
+            finished:
+                The number of finished benchmarks.
+            skipped:
+                The number of skipped benchmarks.
+            errored:
+                The number of errored benchmarks.
 
         Returns:
-            A dictionary of parameters to revert.
+            The summary message, or None if no benchmarks were run.
         """
-        params_to_revert: dict[str, t.Any] = {}
-        if (
-            dataset_config.val_split is None
-            and not benchmark_config.evaluate_test_split
-        ):
-            log(
-                "The dataset does not have a validation split, so even though "
-                "you requested evaluating the validation split (the default), "
-                "we will evaluate on the test split.",
-                level=logging.DEBUG,
-            )
-            params_to_revert["evaluate_test_split"] = False
-            benchmark_config.evaluate_test_split = True
-        if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
-            log(
-                "The task requires zero-shot evaluation, so even though you "
-                "requested few-shot evaluation (the default), we will evaluate "
-                "zero-shot.",
-                level=logging.DEBUG,
-            )
-            params_to_revert["few_shot"] = True
-            benchmark_config.few_shot = False
-        return params_to_revert
+        parts: list[str] = []
+        if finished:
+            parts.append(f"completed {finished:,} benchmarks")
+        if skipped:
+            parts.append(f"skipped {skipped:,} benchmarks")
+        if errored:
+            parts.append(f"errored {errored:,} benchmarks")
+        if not parts:
+            return None
+        parts[0] = parts[0].capitalize()
+        if len(parts) > 1:
+            parts[-1] = "and " + parts[-1]
+        return "\n" + ", ".join(parts)
 
     def _handle_benchmark_result(
         self,
@@ -667,35 +964,68 @@ class Benchmarker:
         num_finished += 1
         return num_finished, num_skipped, num_errored, False
 
-    def _generate_summary_message(
-        self, finished: int, skipped: int, errored: int
-    ) -> str | None:
-        """Generate summary message.
+    def _prepare_model_ids(self, model_id: c.Sequence[str] | str) -> c.Sequence[str]:
+        """Prepare the model ID(s) to be benchmarked.
 
         Args:
-            finished:
-                The number of finished benchmarks.
-            skipped:
-                The number of skipped benchmarks.
-            errored:
-                The number of errored benchmarks.
+            model_id:
+                The model ID(s) of the models to benchmark.
 
         Returns:
-            The summary message, or None if no benchmarks were run.
+            The prepared list of model IDs.
         """
-        parts: list[str] = []
-        if finished:
-            parts.append(f"completed {finished:,} benchmarks")
-        if skipped:
-            parts.append(f"skipped {skipped:,} benchmarks")
-        if errored:
-            parts.append(f"errored {errored:,} benchmarks")
-        if not parts:
-            return None
-        parts[0] = parts[0].capitalize()
-        if len(parts) > 1:
-            parts[-1] = "and " + parts[-1]
-        return "\n" + ", ".join(parts)
+        model_ids = [model_id] if isinstance(model_id, str) else model_id
+
+        # Reorder the `model_ids` list to include the ones present in the benchmark
+        # results first
+        benchmarked_model_ids = [
+            re.sub(r"\(.+\)", "", record.model).strip()
+            for record in self.benchmark_results
+        ]
+        model_ids_sorted = [m_id for m_id in model_ids if m_id in benchmarked_model_ids]
+        model_ids_sorted += [
+            m_id for m_id in model_ids if m_id not in benchmarked_model_ids
+        ]
+
+        return [m_id.rstrip(" /") for m_id in model_ids_sorted]
+
+    def _update_benchmark_config_for_dataset(
+        self, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"
+    ) -> dict[str, t.Any]:
+        """Update benchmark config for dataset.
+
+        Args:
+            dataset_config:
+                The dataset configuration.
+            benchmark_config:
+                The benchmark configuration.
+
+        Returns:
+            A dictionary of parameters to revert.
+        """
+        params_to_revert: dict[str, t.Any] = {}
+        if (
+            dataset_config.val_split is None
+            and not benchmark_config.evaluate_test_split
+        ):
+            log(
+                "The dataset does not have a validation split, so even though "
+                "you requested evaluating the validation split (the default), "
+                "we will evaluate on the test split.",
+                level=logging.DEBUG,
+            )
+            params_to_revert["evaluate_test_split"] = False
+            benchmark_config.evaluate_test_split = True
+        if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
+            log(
+                "The task requires zero-shot evaluation, so even though you "
+                "requested few-shot evaluation (the default), we will evaluate "
+                "zero-shot.",
+                level=logging.DEBUG,
+            )
+            params_to_revert["few_shot"] = True
+            benchmark_config.few_shot = False
+        return params_to_revert
 
     def benchmark(
         self,
@@ -1058,341 +1388,11 @@ class Benchmarker:
 
         return current_results
 
-    def _prepare_model_ids(self, model_id: c.Sequence[str] | str) -> c.Sequence[str]:
-        """Prepare the model ID(s) to be benchmarked.
-
-        Args:
-            model_id:
-                The model ID(s) of the models to benchmark.
+    @property
+    def benchmark_results(self) -> c.Sequence[BenchmarkResult]:
+        """The benchmark results.
 
         Returns:
-            The prepared list of model IDs.
+            A list of benchmark results.
         """
-        model_ids = [model_id] if isinstance(model_id, str) else model_id
-
-        # Reorder the `model_ids` list to include the ones present in the benchmark
-        # results first
-        benchmarked_model_ids = [
-            re.sub(r"\(.+\)", "", record.model).strip()
-            for record in self.benchmark_results
-        ]
-        model_ids_sorted = [m_id for m_id in model_ids if m_id in benchmarked_model_ids]
-        model_ids_sorted += [
-            m_id for m_id in model_ids if m_id not in benchmarked_model_ids
-        ]
-
-        return [m_id.rstrip(" /") for m_id in model_ids_sorted]
-
-    def _benchmark_single(
-        self,
-        model: "BenchmarkModule | None",
-        model_config: "ModelConfig",
-        dataset_config: "DatasetConfig",
-        benchmark_config: "BenchmarkConfig",
-        num_finished_benchmarks: int,
-        num_total_benchmarks: int,
-    ) -> BenchmarkResult | InvalidBenchmark | InvalidModel:
-        """Benchmark a single model on a single dataset.
-
-        Args:
-            model:
-                The model to benchmark.
-            model_config:
-                The configuration of the model we are evaluating.
-            dataset_config:
-                The configuration of the dataset we are evaluating on.
-            benchmark_config:
-                The general benchmark configuration.
-            num_finished_benchmarks:
-                The number of benchmarks that have already been completed.
-            num_total_benchmarks:
-                The total number of benchmarks to be completed.
-
-        Returns:
-            The benchmark result, or an error if the benchmark was unsuccessful.
-
-        Raises:
-            RuntimeError:
-                If the MPS fallback is not enabled when required.
-            InvalidBenchmark:
-                If the benchmark was unsuccessful.
-            InvalidModel:
-                If the model is invalid.
-        """
-        if model is not None:
-            try:
-                model.update_dataset_config(dataset_config=dataset_config)
-            except InvalidBenchmark as e:
-                return e
-
-        for _ in range(num_attempts := 5):
-            try:
-                # Set random seeds to enforce reproducibility of the randomly
-                # initialised weights
-                rng = enforce_reproducibility()
-
-                if model is None or model_config.model_type != ModelType.GENERATIVE:
-                    model = load_model(
-                        model_config=model_config,
-                        dataset_config=dataset_config,
-                        benchmark_config=benchmark_config,
-                    )
-                assert model is not None
-
-                initial_logging(
-                    model_config=model_config,
-                    dataset_config=dataset_config,
-                    benchmark_config=benchmark_config,
-                    num_finished_benchmarks=num_finished_benchmarks,
-                    num_total_benchmarks=num_total_benchmarks,
-                )
-
-                if dataset_config.task == SPEED:
-                    scores = benchmark_speed(
-                        model=model, benchmark_config=benchmark_config
-                    )
-
-                else:
-                    bootstrapped_datasets = load_data(
-                        rng=rng,
-                        dataset_config=dataset_config,
-                        benchmark_config=benchmark_config,
-                    )
-                    prepared_datasets = model.prepare_datasets(
-                        datasets=bootstrapped_datasets, task=dataset_config.task
-                    )
-                    if model_config.model_type == ModelType.GENERATIVE:
-                        scores = generate(
-                            model=model,
-                            datasets=prepared_datasets,
-                            model_config=model_config,
-                            dataset_config=dataset_config,
-                            benchmark_config=benchmark_config,
-                        )
-                    else:
-                        scores = finetune(
-                            model=model,
-                            datasets=prepared_datasets,
-                            model_config=model_config,
-                            dataset_config=dataset_config,
-                            benchmark_config=benchmark_config,
-                        )
-
-                results = log_scores(
-                    dataset_name=dataset_config.logging_string,
-                    metrics=(
-                        [bpc_metric]
-                        if benchmark_config.use_bits_per_character
-                        else dataset_config.task.metrics
-                    ),
-                    scores=scores,
-                    model_id=model_config.model_id,
-                    model_revision=model_config.revision,
-                    model_param=model_config.param,
-                )
-
-                model_id_to_be_stored = model_config.model_id
-                if model_config.revision != "main":
-                    model_id_to_be_stored += f"@{model_config.revision}"
-                if model_config.param is not None:
-                    model_id_to_be_stored += f"#{model_config.param}"
-
-                record = BenchmarkResult(
-                    dataset=dataset_config.name,
-                    task=dataset_config.task.name,
-                    languages=[language.code for language in dataset_config.languages],
-                    model=model_id_to_be_stored,
-                    results=results,
-                    num_model_parameters=model.num_params,
-                    max_sequence_length=model.model_max_length,
-                    vocabulary_size=model.vocab_size,
-                    merge=model_config.merge,
-                    generative=model_config.model_type == ModelType.GENERATIVE,
-                    generative_type=(
-                        model.generative_type.value
-                        if model.generative_type is not None
-                        else None
-                    ),
-                    few_shot=(
-                        None
-                        if dataset_config.task.requires_zero_shot
-                        else benchmark_config.few_shot
-                    ),
-                    validation_split=(
-                        None
-                        if dataset_config.val_split is None
-                        else not benchmark_config.evaluate_test_split
-                    ),
-                    use_bits_per_character=benchmark_config.use_bits_per_character,
-                    vllm_version=(
-                        get_package_version("vllm")
-                        if model_config.inference_backend == InferenceBackend.VLLM
-                        else None
-                    ),
-                    litellm_version=(
-                        get_package_version("litellm")
-                        if model_config.inference_backend == InferenceBackend.LITELLM
-                        else None
-                    ),
-                )
-                log(f"Results:\n{results}", level=logging.DEBUG)
-                return record
-
-            except HuggingFaceHubDown:
-                wait_time = 30
-                log(
-                    f"The Hugging Face Hub seems to be down. Retrying in {wait_time} "
-                    "seconds.",
-                    level=logging.DEBUG,
-                )
-                sleep(wait_time)
-                continue
-
-            except (InvalidBenchmark, InvalidModel) as e:
-                # If the model ID is not valid then raise an error
-                model_err_msg = "does not exist on the Hugging Face Hub"
-                if benchmark_config.raise_errors and model_err_msg in str(e):
-                    raise e
-
-                # Otherwise, if the error is due to the MPS fallback not being enabled,
-                # then raise an error asking the user to enable it
-                elif "PYTORCH_ENABLE_MPS_FALLBACK" in str(e):
-                    raise RuntimeError(
-                        "The benchmark failed because the environment variable "
-                        "`PYTORCH_ENABLE_MPS_FALLBACK` is not set. Please set this "
-                        "environment variable to `1` and try again."
-                    )
-
-                elif benchmark_config.raise_errors:
-                    raise e
-                return e
-        else:
-            return InvalidBenchmark(
-                f"Failed to benchmark model {model_config.model_id!r} on dataset "
-                f"{dataset_config.name!r} after {num_attempts} attempts."
-            )
-
-
-def get_record(
-    model_config: "ModelConfig",
-    dataset_config: "DatasetConfig",
-    benchmark_config: "BenchmarkConfig",
-    benchmark_results: c.Sequence[BenchmarkResult],
-) -> BenchmarkResult | None:
-    """Get the benchmark record for a given model and dataset.
-
-    Args:
-        model_config:
-            The configuration of the model we are evaluating.
-        dataset_config:
-            The configuration of the dataset we are evaluating on.
-        benchmark_config:
-            The general benchmark configuration.
-        benchmark_results:
-            The benchmark results.
-
-    Returns:
-        The benchmark record, or None if no such record exists.
-    """
-    for record in benchmark_results:
-        model_id_components = split_model_id(model_id=record.model)
-        same_model_id = model_id_components.model_id == model_config.model_id
-        same_revision = model_id_components.revision == model_config.revision
-        same_param = model_id_components.param == model_config.param
-        same_dataset = record.dataset == dataset_config.name
-        same_split = record.validation_split != benchmark_config.evaluate_test_split
-        same_num_shots = (
-            record.few_shot == benchmark_config.few_shot
-            or record.few_shot is None
-            or not record.generative
-            or dataset_config.task.requires_zero_shot
-        )
-        if (
-            same_model_id
-            and same_revision
-            and same_param
-            and same_dataset
-            and same_split
-            and same_num_shots
-        ):
-            return record
-    return None
-
-
-def clear_model_cache_fn(cache_dir: str) -> None:
-    """Clear the model cache.
-
-    Note that this will not remove the stored completions.
-
-    Args:
-        cache_dir:
-            The path to the cache directory.
-    """
-    model_cache_path = Path(cache_dir) / "model_cache"
-    model_cache_path.mkdir(parents=True, exist_ok=True)
-    for model_dir in model_cache_path.iterdir():
-        if model_dir.is_dir():
-            for sub_model_dir in model_dir.iterdir():
-                if sub_model_dir.is_dir():
-                    rmtree(sub_model_dir, ignore_errors=True)
-
-
-def initial_logging(
-    model_config: "ModelConfig",
-    dataset_config: "DatasetConfig",
-    benchmark_config: "BenchmarkConfig",
-    num_finished_benchmarks: int,
-    num_total_benchmarks: int,
-) -> None:
-    """Initial logging at the start of the benchmarking process.
-
-    Args:
-        model_config:
-            The configuration of the model we are evaluating.
-        dataset_config:
-            The configuration of the dataset we are evaluating on.
-        benchmark_config:
-            The general benchmark configuration.
-        num_finished_benchmarks:
-            The number of benchmarks that have already been finished.
-        num_total_benchmarks:
-            The total number of benchmarks to be run.
-    """
-    model_id = model_config.model_id
-    if model_config.revision and model_config.revision != "main":
-        model_id += f"@{model_config.revision}"
-    if model_config.param is not None:
-        model_id += f"#{model_config.param}"
-
-    split_type = "validation" if not benchmark_config.evaluate_test_split else "test"
-    if model_config.task in GENERATIVE_PIPELINE_TAGS:
-        if benchmark_config.few_shot:
-            eval_type = "Few-shot benchmarking"
-        else:
-            eval_type = "Zero-shot benchmarking"
-    else:
-        eval_type = "Benchmarking"
-
-    log_once(
-        f"\n{eval_type} {model_id} on the {split_type} split of "
-        f"{dataset_config.logging_string} ({num_finished_benchmarks + 1}/"
-        f"{num_total_benchmarks} benchmarks)...",
-        prefix=f"\n[{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]",
-        level=logging.INFO,
-    )
-
-    if dataset_config.unofficial:
-        log_once(
-            f"Note that the {dataset_config.name!r} dataset is unofficial, "
-            "meaning that the resulting evaluation will not be included in the "
-            "official leaderboard.",
-            level=logging.WARNING,
-        )
-
-    if benchmark_config.debug:
-        log_once(
-            "Running in debug mode. This will output additional information, as "
-            "well as store the model outputs in the current directory after each "
-            "batch. For this reason, evaluation will be slower.",
-            level=logging.WARNING,
-        )
+        return BenchmarkResult.from_jsonl(self.results_path)

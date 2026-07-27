@@ -15,15 +15,14 @@ from euroeval.model_loading import load_model
 
 
 @pytest.mark.skipif(
-    condition=not os.getenv("HF_TOKEN"),
-    reason="HF_TOKEN not set, required for model loading",
+    condition=torch.cuda.is_available() is False, reason="CUDA not available"
 )
-def test_load_non_generative_model(
-    encoder_model_id: str, benchmark_config: BenchmarkConfig
+def test_load_generative_model(
+    generative_model_id: str, benchmark_config: BenchmarkConfig
 ) -> None:
-    """Test loading a non-generative model."""
+    """Test loading a generative model."""
     model_config = get_model_config(
-        model_id=encoder_model_id, benchmark_config=benchmark_config
+        model_id=generative_model_id, benchmark_config=benchmark_config
     )
     model = load_model(
         model_config=model_config,
@@ -42,14 +41,15 @@ def test_load_non_generative_model(
 
 
 @pytest.mark.skipif(
-    condition=torch.cuda.is_available() is False, reason="CUDA not available"
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for model loading",
 )
-def test_load_generative_model(
-    generative_model_id: str, benchmark_config: BenchmarkConfig
+def test_load_non_generative_model(
+    encoder_model_id: str, benchmark_config: BenchmarkConfig
 ) -> None:
-    """Test loading a generative model."""
+    """Test loading a non-generative model."""
     model_config = get_model_config(
-        model_id=generative_model_id, benchmark_config=benchmark_config
+        model_id=encoder_model_id, benchmark_config=benchmark_config
     )
     model = load_model(
         model_config=model_config,

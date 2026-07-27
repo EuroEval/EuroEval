@@ -408,55 +408,6 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
     return candidates
 
 
-def reclaim_orphaned_issues(assignee: str, vm_id: str) -> None:
-    """Return this VM's orphaned issues to the queue.
-
-    Args:
-        assignee:
-            GitHub user assigned to issues owned by this runner.
-        vm_id:
-            VM marker used to distinguish this runner from other VMs.
-    """
-    try:
-        issues = gh_request(
-            path=f"/repos/{REPO}/issues",
-            params={
-                "state": "open",
-                "labels": MODEL_REQUEST_LABEL,
-                "per_page": "100",
-                "assignee": assignee,
-            },
-        )
-    except urllib.error.HTTPError as e:
-        logger.warning(f"Could not list assigned issues for reclaim: {e}")
-        return
-
-    if not isinstance(issues, list):
-        return
-
-    reclaimed = 0
-    for issue in issues:
-        if not isinstance(issue, dict) or "pull_request" in issue:
-            continue
-        labels = issue.get("labels") or []
-        label_names = {label.get("name") for label in labels if isinstance(label, dict)}
-        if RESULTS_READY_LABEL in label_names:
-            continue
-        body = issue.get("body") or ""
-        m = VM_MARKER_RE.search(body)
-        if not m or m.group(1) != vm_id:
-            continue
-        number = issue["number"]
-        try:
-            clear_vm_marker(number=number, vm_id=vm_id)
-            unassign_issue(number=number, assignee=assignee)
-        except urllib.error.HTTPError as e:
-            logger.warning(f"#{number}: failed to reclaim: {e}")
-            continue
-        reclaimed += 1
-        logger.info(f"#{number}: reclaimed orphaned issue (vm-id {vm_id}).")
-
-
 def process_issue(
     issue: dict,
     model_id: str,
@@ -547,87 +498,6 @@ def process_issue(
     except BaseException:
         release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
         raise
-
-
-def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
-    """Upload result lines to the HF results bucket.
-
-    Writes one JSON file per logical result via result_identity paths
-    (results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json), then uploads
-    only those files to the bucket. Never deletes existing files (additive only).
-
-    Args:
-        lines:
-            The JSONL result lines to upload.
-        model_id:
-            The HuggingFace model ID.
-
-    Returns:
-        True if upload succeeded, False otherwise.
-    """
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    valid_records_seen = 0
-    records_written = 0
-    written_paths: list[Path] = []
-    for line in lines:
-        if not line.strip():
-            continue
-        try:
-            record = json.loads(line)
-            identity = identity_from_eee_record(record)
-            record_path = RESULTS_DIR / identity_to_path(identity)
-            record_path.parent.mkdir(parents=True, exist_ok=True)
-            # Use canonical JSON for consistent comparison
-            new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
-
-            # Count as seen before checking if unchanged
-            valid_records_seen += 1
-
-            # Only write if file doesn't exist or content differs
-            if record_path.exists():
-                try:
-                    existing_content = record_path.read_text(encoding="utf-8").strip()
-                    existing_record = json.loads(existing_content)
-                    canonical_existing = json.dumps(
-                        existing_record, sort_keys=True, separators=(",", ":")
-                    )
-                    if canonical_existing == new_content:
-                        continue  # Skip unchanged files
-                except (json.JSONDecodeError, OSError):
-                    pass  # If we can't parse existing, overwrite it
-
-            record_path.write_text(new_content, encoding="utf-8")
-            records_written += 1
-            written_paths.append(record_path)
-        except (json.JSONDecodeError, ValueError, KeyError) as e:
-            logger.debug(f"Skipping invalid record: {e}")
-
-    if valid_records_seen == 0:
-        logger.info("No valid records to process.")
-        return True
-
-    if records_written == 0:
-        logger.info("All records unchanged.")
-        return True
-
-    try:
-        logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
-        # Skip any files that are empty (0 bytes)
-        api = HfApi()
-        add_list: list[tuple[str | Path | bytes, str]] = [
-            (str(path), str(path.relative_to(RESULTS_DIR)))
-            for path in written_paths
-            if path.is_file() and path.stat().st_size > 0
-        ]
-        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
-        logger.info(
-            f"Uploaded {records_written} result records for {model_id!r} to HF bucket."
-        )
-        return True
-    except HfHubHTTPError as e:
-        logger.error(f"Failed to upload to HF bucket: {e}")
-        return False
 
 
 def _run_claimed_issue(
@@ -836,33 +706,6 @@ def _run_claimed_issue(
     clear_vm_marker(number=number, vm_id=vm_id)
 
 
-def issue_is_still_claimable(number: int) -> bool:
-    """Return True if the issue is still open with no assignees.
-
-    Re-fetches the issue at claim time so that issues which were closed
-    or assigned between the initial snapshot and now are not
-    double-processed.
-
-    Args:
-        number:
-            The issue number to verify.
-
-    Returns:
-        True if the issue is currently open and has no assignees; False
-        otherwise (including when the lookup fails).
-    """
-    try:
-        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
-    except urllib.error.HTTPError as e:
-        logger.warning(f"#{number}: could not re-check issue state: {e}")
-        return False
-    if not isinstance(current, dict):
-        return False
-    if current.get("state") != "open":
-        return False
-    return not current.get("assignees")
-
-
 def issue_has_matching_error_comment(number: int, reason: str) -> bool:
     """Return True if an error comment with the same ``reason`` already exists.
 
@@ -893,6 +736,163 @@ def issue_has_matching_error_comment(number: int, reason: str) -> bool:
     return any(
         isinstance(c, dict) and marker in (c.get("body") or "") for c in comments
     )
+
+
+def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
+    """Upload result lines to the HF results bucket.
+
+    Writes one JSON file per logical result via result_identity paths
+    (results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json), then uploads
+    only those files to the bucket. Never deletes existing files (additive only).
+
+    Args:
+        lines:
+            The JSONL result lines to upload.
+        model_id:
+            The HuggingFace model ID.
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    valid_records_seen = 0
+    records_written = 0
+    written_paths: list[Path] = []
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+            identity = identity_from_eee_record(record)
+            record_path = RESULTS_DIR / identity_to_path(identity)
+            record_path.parent.mkdir(parents=True, exist_ok=True)
+            # Use canonical JSON for consistent comparison
+            new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
+
+            # Count as seen before checking if unchanged
+            valid_records_seen += 1
+
+            # Only write if file doesn't exist or content differs
+            if record_path.exists():
+                try:
+                    existing_content = record_path.read_text(encoding="utf-8").strip()
+                    existing_record = json.loads(existing_content)
+                    canonical_existing = json.dumps(
+                        existing_record, sort_keys=True, separators=(",", ":")
+                    )
+                    if canonical_existing == new_content:
+                        continue  # Skip unchanged files
+                except (json.JSONDecodeError, OSError):
+                    pass  # If we can't parse existing, overwrite it
+
+            record_path.write_text(new_content, encoding="utf-8")
+            records_written += 1
+            written_paths.append(record_path)
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            logger.debug(f"Skipping invalid record: {e}")
+
+    if valid_records_seen == 0:
+        logger.info("No valid records to process.")
+        return True
+
+    if records_written == 0:
+        logger.info("All records unchanged.")
+        return True
+
+    try:
+        logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
+        # Skip any files that are empty (0 bytes)
+        api = HfApi()
+        add_list: list[tuple[str | Path | bytes, str]] = [
+            (str(path), str(path.relative_to(RESULTS_DIR)))
+            for path in written_paths
+            if path.is_file() and path.stat().st_size > 0
+        ]
+        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
+        logger.info(
+            f"Uploaded {records_written} result records for {model_id!r} to HF bucket."
+        )
+        return True
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to upload to HF bucket: {e}")
+        return False
+
+
+def issue_is_still_claimable(number: int) -> bool:
+    """Return True if the issue is still open with no assignees.
+
+    Re-fetches the issue at claim time so that issues which were closed
+    or assigned between the initial snapshot and now are not
+    double-processed.
+
+    Args:
+        number:
+            The issue number to verify.
+
+    Returns:
+        True if the issue is currently open and has no assignees; False
+        otherwise (including when the lookup fails).
+    """
+    try:
+        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not re-check issue state: {e}")
+        return False
+    if not isinstance(current, dict):
+        return False
+    if current.get("state") != "open":
+        return False
+    return not current.get("assignees")
+
+
+def reclaim_orphaned_issues(assignee: str, vm_id: str) -> None:
+    """Return this VM's orphaned issues to the queue.
+
+    Args:
+        assignee:
+            GitHub user assigned to issues owned by this runner.
+        vm_id:
+            VM marker used to distinguish this runner from other VMs.
+    """
+    try:
+        issues = gh_request(
+            path=f"/repos/{REPO}/issues",
+            params={
+                "state": "open",
+                "labels": MODEL_REQUEST_LABEL,
+                "per_page": "100",
+                "assignee": assignee,
+            },
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"Could not list assigned issues for reclaim: {e}")
+        return
+
+    if not isinstance(issues, list):
+        return
+
+    reclaimed = 0
+    for issue in issues:
+        if not isinstance(issue, dict) or "pull_request" in issue:
+            continue
+        labels = issue.get("labels") or []
+        label_names = {label.get("name") for label in labels if isinstance(label, dict)}
+        if RESULTS_READY_LABEL in label_names:
+            continue
+        body = issue.get("body") or ""
+        m = VM_MARKER_RE.search(body)
+        if not m or m.group(1) != vm_id:
+            continue
+        number = issue["number"]
+        try:
+            clear_vm_marker(number=number, vm_id=vm_id)
+            unassign_issue(number=number, assignee=assignee)
+        except urllib.error.HTTPError as e:
+            logger.warning(f"#{number}: failed to reclaim: {e}")
+            continue
+        reclaimed += 1
+        logger.info(f"#{number}: reclaimed orphaned issue (vm-id {vm_id}).")
 
 
 if __name__ == "__main__":

@@ -20,6 +20,84 @@ if t.TYPE_CHECKING:
 class LogicPuzzleMetric(Metric):
     """Base class for logic puzzle metrics."""
 
+    @staticmethod
+    def _check_full_type(variable: object, expected_type: t.Type) -> bool:
+        """Check if a variable is of the expected type.
+
+        Args:
+            variable:
+                The variable to check.
+            expected_type:
+                The expected type.
+
+        Returns:
+            True if the variable is of the expected type, False otherwise.
+
+        Raises:
+            ValueError:
+                If the expected type is invalid.
+        """
+        if expected_type == list[dict[str, list[str]]]:
+            if not isinstance(variable, list):
+                return False
+            return all(
+                isinstance(item, dict)
+                and all(
+                    isinstance(k, str) and isinstance(v, list) for k, v in item.items()
+                )
+                for item in variable
+            )
+        elif expected_type == dict[str, list[str]]:
+            if not isinstance(variable, dict):
+                return False
+            return all(
+                isinstance(k, str) and isinstance(v, list) for k, v in variable.items()
+            )
+        else:
+            raise ValueError(f"Invalid expected type: {expected_type}")
+
+    def _compare_prediction_and_label(
+        self, prediction: dict[str, list[str]], label: dict[str, list[str]]
+    ) -> float:
+        """Compare a prediction and a label and compute a metric.
+
+        This method must be implemented by subclasses.
+
+        Args:
+            prediction:
+                The model predictions as a dictionary.
+            label:
+                The true labels as a dictionary.
+
+        Returns:
+            The metric result.
+        """
+        raise NotImplementedError(
+            "Subclasses must implement _compare_prediction_and_label"
+        )
+
+    def _compare_all_json_predictions_and_labels(
+        self,
+        predictions: list[dict[str, list[str]]],
+        labels: list[dict[str, list[str]]],
+    ) -> np.ndarray:
+        """Compare all JSON predictions and labels.
+
+        Args:
+            predictions:
+                The model predictions.
+            labels:
+                The ground truth labels.
+
+        Returns:
+            An array with comparison results.
+        """
+        n_puzzles = len(labels)
+        results: np.ndarray = np.zeros(n_puzzles)
+        for i, (prediction, label) in enumerate(zip(predictions, labels)):
+            results[i] = self._compare_prediction_and_label(prediction, label)
+        return results
+
     def __call__(
         self,
         predictions: c.Sequence,
@@ -110,84 +188,6 @@ class LogicPuzzleMetric(Metric):
         return mean_result
 
     @staticmethod
-    def _check_full_type(variable: object, expected_type: t.Type) -> bool:
-        """Check if a variable is of the expected type.
-
-        Args:
-            variable:
-                The variable to check.
-            expected_type:
-                The expected type.
-
-        Returns:
-            True if the variable is of the expected type, False otherwise.
-
-        Raises:
-            ValueError:
-                If the expected type is invalid.
-        """
-        if expected_type == list[dict[str, list[str]]]:
-            if not isinstance(variable, list):
-                return False
-            return all(
-                isinstance(item, dict)
-                and all(
-                    isinstance(k, str) and isinstance(v, list) for k, v in item.items()
-                )
-                for item in variable
-            )
-        elif expected_type == dict[str, list[str]]:
-            if not isinstance(variable, dict):
-                return False
-            return all(
-                isinstance(k, str) and isinstance(v, list) for k, v in variable.items()
-            )
-        else:
-            raise ValueError(f"Invalid expected type: {expected_type}")
-
-    def _compare_all_json_predictions_and_labels(
-        self,
-        predictions: list[dict[str, list[str]]],
-        labels: list[dict[str, list[str]]],
-    ) -> np.ndarray:
-        """Compare all JSON predictions and labels.
-
-        Args:
-            predictions:
-                The model predictions.
-            labels:
-                The ground truth labels.
-
-        Returns:
-            An array with comparison results.
-        """
-        n_puzzles = len(labels)
-        results: np.ndarray = np.zeros(n_puzzles)
-        for i, (prediction, label) in enumerate(zip(predictions, labels)):
-            results[i] = self._compare_prediction_and_label(prediction, label)
-        return results
-
-    def _compare_prediction_and_label(
-        self, prediction: dict[str, list[str]], label: dict[str, list[str]]
-    ) -> float:
-        """Compare a prediction and a label and compute a metric.
-
-        This method must be implemented by subclasses.
-
-        Args:
-            prediction:
-                The model predictions as a dictionary.
-            label:
-                The true labels as a dictionary.
-
-        Returns:
-            The metric result.
-        """
-        raise NotImplementedError(
-            "Subclasses must implement _compare_prediction_and_label"
-        )
-
-    @staticmethod
     def _prepare_data(
         prediction: dict[str, list[str]], label: dict[str, list[str]]
     ) -> tuple[dict[str, set], dict[str, set], int, int]:
@@ -221,73 +221,6 @@ class LogicPuzzleMetric(Metric):
         return prediction_sets, label_sets, n_keys, n_elements_per_key
 
 
-class PuzzleLevelAccuracyMetric(LogicPuzzleMetric):
-    """Puzzle-level accuracy metric."""
-
-    def __init__(self) -> None:
-        """Initialise the puzzle-level accuracy metric."""
-        super().__init__(
-            name="puzzle_level_accuracy",
-            pretty_name="Puzzle-level Accuracy",
-            postprocessing_fn=None,
-        )
-
-    def _compare_prediction_and_label(
-        self, prediction: dict[str, list[str]], label: dict[str, list[str]]
-    ) -> float:
-        """Compare a prediction and a label and compute the puzzle score.
-
-        Args:
-            prediction:
-                The model predictions as a dictionary.
-            label:
-                The true labels as a dictionary.
-
-        Returns:
-            The puzzle score.
-        """
-        prediction_sets, label_sets, _, _ = self._prepare_data(prediction, label)
-
-        return float(
-            self._compute_puzzle_score(prediction=prediction_sets, label=label_sets)
-        )
-
-    def _compute_puzzle_score(
-        self, prediction: dict[str, set], label: dict[str, set]
-    ) -> int:
-        """Compute the puzzle score.
-
-        Args:
-            prediction: The prediction as a dictionary.
-            label: The label as a dictionary.
-
-        Returns:
-            The puzzle score as an integer (1 if correct, 0 otherwise).
-        """
-        # Sort the prediction and label by object keys to ensure consistent order
-        prediction = dict(sorted(prediction.items()))
-        label = dict(sorted(label.items()))
-
-        # Reject predictions with wrong key counts
-        if len(prediction) != len(label):
-            return 0
-
-        if prediction == label:
-            return 1
-
-        # Check if all rows are correct
-        for attributes_pred, attributes_label in zip(
-            prediction.values(), label.values()
-        ):
-            # strip whitespace (coerce to str to handle non-string attributes)
-            attributes_pred = {str(attr).strip() for attr in attributes_pred}
-            attributes_label = {str(attr).strip() for attr in attributes_label}
-            if attributes_pred != attributes_label:
-                return 0
-
-        return 1
-
-
 class CellWiseAccuracyMetric(LogicPuzzleMetric):
     """Cell-wise accuracy metric."""
 
@@ -297,30 +230,6 @@ class CellWiseAccuracyMetric(LogicPuzzleMetric):
             name="cell_wise_accuracy",
             pretty_name="Cell-wise Accuracy",
             postprocessing_fn=None,
-        )
-
-    def _compare_prediction_and_label(
-        self, prediction: dict[str, list[str]], label: dict[str, list[str]]
-    ) -> float:
-        """Compare a prediction and a label and compute the cell score.
-
-        Args:
-            prediction:
-                The model predictions as a dictionary.
-            label:
-                The true labels as a dictionary.
-
-        Returns:
-            The cell score.
-        """
-        prediction_sets, label_sets, n_keys, n_elements_per_key = self._prepare_data(
-            prediction, label
-        )
-        return self._compute_cell_score(
-            prediction=prediction_sets,
-            label=label_sets,
-            n_keys=n_keys,
-            n_elements_per_key=n_elements_per_key,
         )
 
     def _compute_cell_score(
@@ -367,6 +276,30 @@ class CellWiseAccuracyMetric(LogicPuzzleMetric):
         cell_score = float(n_correct_attributes) / float(n_keys * n_elements_per_key)
         return cell_score
 
+    def _compare_prediction_and_label(
+        self, prediction: dict[str, list[str]], label: dict[str, list[str]]
+    ) -> float:
+        """Compare a prediction and a label and compute the cell score.
+
+        Args:
+            prediction:
+                The model predictions as a dictionary.
+            label:
+                The true labels as a dictionary.
+
+        Returns:
+            The cell score.
+        """
+        prediction_sets, label_sets, n_keys, n_elements_per_key = self._prepare_data(
+            prediction, label
+        )
+        return self._compute_cell_score(
+            prediction=prediction_sets,
+            label=label_sets,
+            n_keys=n_keys,
+            n_elements_per_key=n_elements_per_key,
+        )
+
 
 class BestPermutedCellWiseAccuracyMetric(LogicPuzzleMetric):
     """Best permuted cell-wise accuracy metric."""
@@ -380,30 +313,6 @@ class BestPermutedCellWiseAccuracyMetric(LogicPuzzleMetric):
         )
         # Use CellWiseAccuracyMetric's _compute_cell_score method
         self._cell_score_computer = CellWiseAccuracyMetric()
-
-    def _compare_prediction_and_label(
-        self, prediction: dict[str, list[str]], label: dict[str, list[str]]
-    ) -> float:
-        """Compare a prediction and a label and compute the best permuted score.
-
-        Args:
-            prediction:
-                The model predictions as a dictionary.
-            label:
-                The true labels as a dictionary.
-
-        Returns:
-            The best permuted cell score.
-        """
-        prediction_sets, label_sets, n_keys, n_elements_per_key = self._prepare_data(
-            prediction, label
-        )
-        return self._compute_best_permuted_cell_score(
-            prediction=prediction_sets,
-            label=label_sets,
-            n_keys=n_keys,
-            n_elements_per_key=n_elements_per_key,
-        )
 
     def _compute_best_permuted_cell_score(
         self,
@@ -454,6 +363,97 @@ class BestPermutedCellWiseAccuracyMetric(LogicPuzzleMetric):
                 best_permuted_cell_score = permuted_cell_score
 
         return best_permuted_cell_score
+
+    def _compare_prediction_and_label(
+        self, prediction: dict[str, list[str]], label: dict[str, list[str]]
+    ) -> float:
+        """Compare a prediction and a label and compute the best permuted score.
+
+        Args:
+            prediction:
+                The model predictions as a dictionary.
+            label:
+                The true labels as a dictionary.
+
+        Returns:
+            The best permuted cell score.
+        """
+        prediction_sets, label_sets, n_keys, n_elements_per_key = self._prepare_data(
+            prediction, label
+        )
+        return self._compute_best_permuted_cell_score(
+            prediction=prediction_sets,
+            label=label_sets,
+            n_keys=n_keys,
+            n_elements_per_key=n_elements_per_key,
+        )
+
+
+class PuzzleLevelAccuracyMetric(LogicPuzzleMetric):
+    """Puzzle-level accuracy metric."""
+
+    def __init__(self) -> None:
+        """Initialise the puzzle-level accuracy metric."""
+        super().__init__(
+            name="puzzle_level_accuracy",
+            pretty_name="Puzzle-level Accuracy",
+            postprocessing_fn=None,
+        )
+
+    def _compute_puzzle_score(
+        self, prediction: dict[str, set], label: dict[str, set]
+    ) -> int:
+        """Compute the puzzle score.
+
+        Args:
+            prediction: The prediction as a dictionary.
+            label: The label as a dictionary.
+
+        Returns:
+            The puzzle score as an integer (1 if correct, 0 otherwise).
+        """
+        # Sort the prediction and label by object keys to ensure consistent order
+        prediction = dict(sorted(prediction.items()))
+        label = dict(sorted(label.items()))
+
+        # Reject predictions with wrong key counts
+        if len(prediction) != len(label):
+            return 0
+
+        if prediction == label:
+            return 1
+
+        # Check if all rows are correct
+        for attributes_pred, attributes_label in zip(
+            prediction.values(), label.values()
+        ):
+            # strip whitespace (coerce to str to handle non-string attributes)
+            attributes_pred = {str(attr).strip() for attr in attributes_pred}
+            attributes_label = {str(attr).strip() for attr in attributes_label}
+            if attributes_pred != attributes_label:
+                return 0
+
+        return 1
+
+    def _compare_prediction_and_label(
+        self, prediction: dict[str, list[str]], label: dict[str, list[str]]
+    ) -> float:
+        """Compare a prediction and a label and compute the puzzle score.
+
+        Args:
+            prediction:
+                The model predictions as a dictionary.
+            label:
+                The true labels as a dictionary.
+
+        Returns:
+            The puzzle score.
+        """
+        prediction_sets, label_sets, _, _ = self._prepare_data(prediction, label)
+
+        return float(
+            self._compute_puzzle_score(prediction=prediction_sets, label=label_sets)
+        )
 
 
 puzzle_level_accuracy_metric = PuzzleLevelAccuracyMetric()

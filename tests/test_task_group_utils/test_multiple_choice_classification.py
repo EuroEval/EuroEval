@@ -26,47 +26,49 @@ class TestPrepareExamples:
         }
         return tokeniser
 
-    @pytest.fixture
-    def valid_batch(self) -> dict:
-        """Create a valid batch with 2 MC questions, each with 2 choices.
-
-        Returns:
-            A batch dict with 'text' and 'label' keys.
-        """
-        return {
-            "text": [
-                "What is 2+2?\nChoices:\na. 3\nb. 4",
-                "What is 3+3?\nChoices:\na. 5\nb. 6",
-            ],
-            "label": ["b", "b"],  # Both answers are "b"
-        }
-
-    def test_valid_input_produces_nested_output(
-        self, mock_tokeniser: MagicMock, valid_batch: dict
+    def test_dynamic_choice_count_from_first_document(
+        self, mock_tokeniser: MagicMock
     ) -> None:
-        """Valid MC input produces correctly nested tokeniser output."""
+        """When num_choices=0, count is inferred from first document."""
+        batch = {"text": ["What is 2+2?\nChoices:\na. 3\nb. 4\nc. 5"], "label": ["c"]}
+
         result = multiple_choice_classification.prepare_examples(
-            examples=valid_batch,  # ty: ignore[invalid-argument-type]
+            examples=batch,  # ty: ignore[invalid-argument-type]
             tokeniser=mock_tokeniser,
-            num_choices=2,
+            num_choices=0,
         )
 
-        # Check tokeniser was called
+        # Should work with 3 choices inferred
         mock_tokeniser.assert_called_once()
-
-        # Check output is nested: 2 questions, each with 2 choices
-        assert len(result["input_ids"]) == 2  # 2 questions
-        assert len(result["input_ids"][0]) == 2  # Each has 2 choices
-        assert len(result["input_ids"][1]) == 2
-
-        # Check labels are integers
-        assert result["label"] == [1, 1]  # "b" -> index 1
+        assert result["label"] == [2]  # "c" -> index 2
 
     def test_empty_choices_raises(self, mock_tokeniser: MagicMock) -> None:
         """A document with no choices raises `InvalidBenchmark`."""
         batch = {"text": ["Just a question, no choices."], "label": ["a"]}
 
         with pytest.raises(InvalidBenchmark, match="No choices found"):
+            multiple_choice_classification.prepare_examples(
+                examples=batch,  # ty: ignore[invalid-argument-type]
+                tokeniser=mock_tokeniser,
+                num_choices=2,
+            )
+
+    def test_invalid_gold_label_raises(
+        self, mock_tokeniser: MagicMock, valid_batch: dict
+    ) -> None:
+        """A gold label outside the valid range raises `InvalidBenchmark`."""
+        # Second question has gold label "d" but only 2 choices (a, b)
+        batch = {
+            "text": [
+                "What is 2+2?\nChoices:\na. 3\nb. 4",
+                "What is 3+3?\nChoices:\na. 5\nb. 6",
+            ],
+            "label": ["b", "d"],  # "d" is invalid for 2-choice question
+        }
+
+        with pytest.raises(
+            InvalidBenchmark, match="Gold label 'd' is not a valid choice"
+        ):
             multiple_choice_classification.prepare_examples(
                 examples=batch,  # ty: ignore[invalid-argument-type]
                 tokeniser=mock_tokeniser,
@@ -96,28 +98,6 @@ class TestPrepareExamples:
                 num_choices=2,
             )
 
-    def test_invalid_gold_label_raises(
-        self, mock_tokeniser: MagicMock, valid_batch: dict
-    ) -> None:
-        """A gold label outside the valid range raises `InvalidBenchmark`."""
-        # Second question has gold label "d" but only 2 choices (a, b)
-        batch = {
-            "text": [
-                "What is 2+2?\nChoices:\na. 3\nb. 4",
-                "What is 3+3?\nChoices:\na. 5\nb. 6",
-            ],
-            "label": ["b", "d"],  # "d" is invalid for 2-choice question
-        }
-
-        with pytest.raises(
-            InvalidBenchmark, match="Gold label 'd' is not a valid choice"
-        ):
-            multiple_choice_classification.prepare_examples(
-                examples=batch,  # ty: ignore[invalid-argument-type]
-                tokeniser=mock_tokeniser,
-                num_choices=2,
-            )
-
     def test_uppercase_gold_label_accepted(
         self, mock_tokeniser: MagicMock, valid_batch: dict
     ) -> None:
@@ -135,18 +115,38 @@ class TestPrepareExamples:
 
         assert result["label"] == [1]  # "B" -> "b" -> index 1
 
-    def test_dynamic_choice_count_from_first_document(
-        self, mock_tokeniser: MagicMock
+    def test_valid_input_produces_nested_output(
+        self, mock_tokeniser: MagicMock, valid_batch: dict
     ) -> None:
-        """When num_choices=0, count is inferred from first document."""
-        batch = {"text": ["What is 2+2?\nChoices:\na. 3\nb. 4\nc. 5"], "label": ["c"]}
-
+        """Valid MC input produces correctly nested tokeniser output."""
         result = multiple_choice_classification.prepare_examples(
-            examples=batch,  # ty: ignore[invalid-argument-type]
+            examples=valid_batch,  # ty: ignore[invalid-argument-type]
             tokeniser=mock_tokeniser,
-            num_choices=0,
+            num_choices=2,
         )
 
-        # Should work with 3 choices inferred
+        # Check tokeniser was called
         mock_tokeniser.assert_called_once()
-        assert result["label"] == [2]  # "c" -> index 2
+
+        # Check output is nested: 2 questions, each with 2 choices
+        assert len(result["input_ids"]) == 2  # 2 questions
+        assert len(result["input_ids"][0]) == 2  # Each has 2 choices
+        assert len(result["input_ids"][1]) == 2
+
+        # Check labels are integers
+        assert result["label"] == [1, 1]  # "b" -> index 1
+
+    @pytest.fixture
+    def valid_batch(self) -> dict:
+        """Create a valid batch with 2 MC questions, each with 2 choices.
+
+        Returns:
+            A batch dict with 'text' and 'label' keys.
+        """
+        return {
+            "text": [
+                "What is 2+2?\nChoices:\na. 3\nb. 4",
+                "What is 3+3?\nChoices:\na. 5\nb. 6",
+            ],
+            "label": ["b", "b"],  # Both answers are "b"
+        }

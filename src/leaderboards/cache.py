@@ -38,36 +38,6 @@ def _normalise_model_id_for_hf_matching(model_id: str) -> str:
     return split_model_id(model_id).model_id
 
 
-def _is_hf_url_for_model(model_url: str, model_id: str) -> bool:
-    """Check if a model URL is a Hugging Face URL for the given model.
-
-    Uses exact repo-path matching to avoid false positives from prefix
-    matching (e.g., https://hf.co/org/repo2 should not match org/repo).
-
-    Args:
-        model_url:
-            The model URL to check.
-        model_id:
-            The model ID (e.g., ``org/repo``). May contain anchors,
-            variant suffixes, or #param/@revision suffixes.
-
-    Returns:
-        True if the URL is an HF Hub URL for the model, False otherwise.
-    """
-    model_id = _normalise_model_id_for_hf_matching(model_id)
-    parsed = urllib.parse.urlparse(model_url)
-    if parsed.netloc not in (
-        "hf.co",
-        "huggingface.co",
-        "www.hf.co",
-        "www.huggingface.co",
-    ):
-        return False
-    # Path should be exactly /{model_id}
-    path = parsed.path.rstrip("/")
-    return path == f"/{model_id}"
-
-
 @dataclass
 class Cache:
     """A cache for model metadata.
@@ -94,36 +64,6 @@ class Cache:
     open: dict[str, bool] = field(default_factory=dict)
     trained_from_scratch: dict[str, bool] = field(default_factory=dict)
     model_url: dict[str, str | None] = field(default_factory=dict)
-
-    @classmethod
-    def from_results_dir(cls, results_dir: Path) -> "Cache":
-        """Create a cache from records in the results directory.
-
-        Walks the JSON tree structure (``results_dir/<model>/*.json``) and
-        loads all records. Preserves metadata fields in
-        ``model_info.additional_details`` (commercially_licensed, open,
-        trained_from_scratch, model_url, etc.).
-
-        Args:
-            results_dir:
-                The path to the directory containing per-record JSON files
-                with metadata.
-
-        Returns:
-            A Cache instance populated with model metadata.
-
-        Raises:
-            FileNotFoundError:
-                If the results directory does not exist.
-        """
-        if not results_dir.exists():
-            raise FileNotFoundError(f"Results directory {results_dir} not found.")
-
-        records = load_records_from_result_tree(results_dir=results_dir)
-
-        return cls._from_records(
-            records=records, desc="Building caches from results dir"
-        )
 
     @classmethod
     def _from_records(cls, records: list[dict[str, object]], desc: str) -> "Cache":
@@ -168,3 +108,63 @@ class Cache:
                 cache.model_url[model_id] = additional["model_url"]
 
         return cache
+
+    @classmethod
+    def from_results_dir(cls, results_dir: Path) -> "Cache":
+        """Create a cache from records in the results directory.
+
+        Walks the JSON tree structure (``results_dir/<model>/*.json``) and
+        loads all records. Preserves metadata fields in
+        ``model_info.additional_details`` (commercially_licensed, open,
+        trained_from_scratch, model_url, etc.).
+
+        Args:
+            results_dir:
+                The path to the directory containing per-record JSON files
+                with metadata.
+
+        Returns:
+            A Cache instance populated with model metadata.
+
+        Raises:
+            FileNotFoundError:
+                If the results directory does not exist.
+        """
+        if not results_dir.exists():
+            raise FileNotFoundError(f"Results directory {results_dir} not found.")
+
+        records = load_records_from_result_tree(results_dir=results_dir)
+
+        return cls._from_records(
+            records=records, desc="Building caches from results dir"
+        )
+
+
+def _is_hf_url_for_model(model_url: str, model_id: str) -> bool:
+    """Check if a model URL is a Hugging Face URL for the given model.
+
+    Uses exact repo-path matching to avoid false positives from prefix
+    matching (e.g., https://hf.co/org/repo2 should not match org/repo).
+
+    Args:
+        model_url:
+            The model URL to check.
+        model_id:
+            The model ID (e.g., ``org/repo``). May contain anchors,
+            variant suffixes, or #param/@revision suffixes.
+
+    Returns:
+        True if the URL is an HF Hub URL for the model, False otherwise.
+    """
+    model_id = _normalise_model_id_for_hf_matching(model_id)
+    parsed = urllib.parse.urlparse(model_url)
+    if parsed.netloc not in (
+        "hf.co",
+        "huggingface.co",
+        "www.hf.co",
+        "www.huggingface.co",
+    ):
+        return False
+    # Path should be exactly /{model_id}
+    path = parsed.path.rstrip("/")
+    return path == f"/{model_id}"

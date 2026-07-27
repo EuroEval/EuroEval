@@ -88,64 +88,6 @@ def main() -> None:
     logger.info(f"[api-reference] wrote {OUTPUT.relative_to(REPO)} ({len(out)} lines)")
 
 
-def render_nested_subpackage(
-    parent_rel: Path, parent_source: str, submodule_files: list[Path], out: list[str]
-) -> None:
-    """Render a subpackage with its submodules folded inside.
-
-    Args:
-        parent_rel:
-            Path of the subpackage's `__init__.py` relative to the package
-            root.
-        parent_source:
-            Source code of the `__init__.py`.
-        submodule_files:
-            Absolute paths of submodule `.py` files to nest inside the
-            subpackage's collapsible.
-        out:
-            The output buffer (mutated in place).
-    """
-    try:
-        tree = ast.parse(parent_source)
-    except SyntaxError:
-        tree = ast.parse("")
-    classes = [
-        n for n in tree.body if isinstance(n, ast.ClassDef) and is_public(name=n.name)
-    ]
-    funcs = [
-        n
-        for n in tree.body
-        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
-        and is_public(name=n.name)
-    ]
-    module_doc = ast.get_docstring(node=tree, clean=True)
-
-    mod_name = rel_to_module(rel=parent_rel)
-    anchor = "api-" + mod_name.replace(".", "-")
-    out.append(f'<details class="api-module" id="{anchor}-wrap">')
-    out.append(
-        f'<summary class="api-module-summary">'
-        f'<h2 id="{anchor}" class="api-module-heading">'
-        f"<code>{mod_name}</code>{source_link(url=gh_url(rel=parent_rel))}</h2>"
-        f"</summary>"
-    )
-    out.append("")
-    if module_doc:
-        out.append(indent_docstring(doc=module_doc))
-        out.append("")
-    for cls in classes:
-        render_class(cls=cls, out=out, rel=parent_rel, level=3)
-    for f in funcs:
-        render_function(node=f, out=out, level=3, rel=parent_rel)
-    for sub in submodule_files:
-        rel = sub.relative_to(PKG_ROOT)
-        render_submodule_inline(
-            rel=rel, source=sub.read_text(encoding="utf-8"), out=out
-        )
-    out.append("</details>")
-    out.append("")
-
-
 def render_module(rel: Path, source: str, out: list[str]) -> None:
     """Append a module section (heading, docstring, classes, functions) to out.
 
@@ -202,86 +144,71 @@ def render_module(rel: Path, source: str, out: list[str]) -> None:
     out.append("")
 
 
-def should_skip(rel: Path) -> bool:
-    """Decide whether a Python file should be excluded from the API reference.
-
-    Private modules and packages (any path segment starting with `_`, except
-    `__init__.py` itself) are skipped, as are `__pycache__` artifacts.
+def gh_url(rel: Path, lineno: int | None = None) -> str:
+    """Build a GitHub source URL for a file (optionally pointing at a line).
 
     Args:
         rel:
             Path relative to the package root.
+        lineno (optional):
+            1-based line number, or None to link to the file itself.
+            Defaults to None.
 
     Returns:
-        True iff the file should be skipped.
+        An absolute URL on github.com.
     """
-    for part in rel.parts[:-1]:
-        if part.startswith("_") and part != "__pycache__":
-            return True
-        if part == "__pycache__":
-            return True
-    name = rel.name
-    if name == "__init__.py":
-        return False
-    return name.startswith("_")
+    base = f"{GITHUB_SRC}/{rel.as_posix()}"
+    return f"{base}#L{lineno}" if lineno else base
 
 
-def render_submodule_inline(rel: Path, source: str, out: list[str]) -> None:
-    """Render a submodule as an h4 entry inside its parent's collapsible.
+def indent_docstring(doc: str) -> str:
+    """Normalise a docstring for inclusion in markdown.
 
-    Only the module docstring and any classes / functions are emitted; the
-    heading is an h4 so it doesn't appear in the right-hand table of
-    contents.
+    The Google-style sections (`Args:`, `Returns:`, ...) are kept as-is so
+    they appear as normal paragraphs -- good enough for an at-a-glance
+    reference.
+
+    Args:
+        doc:
+            The raw docstring text returned by `ast.get_docstring`.
+
+    Returns:
+        The trimmed docstring, ready to be appended to the output buffer.
+    """
+    return doc.strip()
+
+
+def is_public(name: str) -> bool:
+    """Check whether a name is part of the public API.
+
+    Args:
+        name:
+            The identifier to test.
+
+    Returns:
+        True iff the name does not start with an underscore.
+    """
+    return not name.startswith("_")
+
+
+def rel_to_module(rel: Path) -> str:
+    """Convert a relative path to a dotted module label.
+
+    The leading `euroeval.` prefix is dropped -- every entry on the page is
+    implicitly under the `euroeval` package, so repeating it just adds noise.
 
     Args:
         rel:
-            Path relative to the package root.
-        source:
-            The source code of the module.
-        out:
-            The output buffer (mutated in place).
+            Path relative to the package root, e.g. `metrics/__init__.py`.
+
+    Returns:
+        The dotted module label, e.g. `metrics` or `metrics.ifeval.compute`.
+        Returns the empty string for the package root `__init__.py`.
     """
-    try:
-        tree = ast.parse(source)
-    except SyntaxError as e:
-        out.append(f"#### `{rel_to_module(rel=rel)}`")
-        out.append("")
-        out.append(f"_failed to parse: {e}_")
-        out.append("")
-        return
-
-    classes = [
-        n for n in tree.body if isinstance(n, ast.ClassDef) and is_public(name=n.name)
-    ]
-    funcs = [
-        n
-        for n in tree.body
-        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
-        and is_public(name=n.name)
-    ]
-    module_doc = ast.get_docstring(node=tree, clean=True)
-    if not classes and not funcs and not module_doc:
-        return
-
-    mod_name = rel_to_module(rel=rel)
-    anchor = "api-" + mod_name.replace(".", "-")
-    out.append(f'<details class="api-submodule" id="{anchor}-wrap">')
-    out.append(
-        f'<summary class="api-submodule-summary">'
-        f"<code>{mod_name}</code>{source_link(url=gh_url(rel=rel))}</summary>"
-    )
-    out.append("")
-    if module_doc:
-        out.append(indent_docstring(doc=module_doc))
-        out.append("")
-    for cls in classes:
-        # Bump class headings down a level so they remain below the submodule
-        # heading and out of the TOC.
-        render_class(cls=cls, out=out, rel=rel, level=5)
-    for f in funcs:
-        render_function(node=f, out=out, level=5, rel=rel)
-    out.append("</details>")
-    out.append("")
+    parts = list(rel.with_suffix("").parts)
+    if parts and parts[-1] == "__init__":
+        parts.pop()
+    return ".".join(parts)
 
 
 def render_class(
@@ -328,37 +255,47 @@ def render_class(
         )
 
 
-def rel_to_module(rel: Path) -> str:
-    """Convert a relative path to a dotted module label.
+def heading_html(level: int, anchor: str, code: str, url: str) -> str:
+    """Emit a raw HTML heading with a `<code>` label and a GitHub source link.
 
-    The leading `euroeval.` prefix is dropped -- every entry on the page is
-    implicitly under the `euroeval` package, so repeating it just adds noise.
-
-    Args:
-        rel:
-            Path relative to the package root, e.g. `metrics/__init__.py`.
-
-    Returns:
-        The dotted module label, e.g. `metrics` or `metrics.ifeval.compute`.
-        Returns the empty string for the package root `__init__.py`.
-    """
-    parts = list(rel.with_suffix("").parts)
-    if parts and parts[-1] == "__init__":
-        parts.pop()
-    return ".".join(parts)
-
-
-def is_public(name: str) -> bool:
-    """Check whether a name is part of the public API.
+    Markdown's heading syntax is bypassed so the source link can be attached
+    without polluting the auto-generated heading slug -- and so the TOC
+    extraction can recognise the source-link span and skip it.
 
     Args:
-        name:
-            The identifier to test.
+        level:
+            Heading level (2-6).
+        anchor:
+            The HTML id for the heading.
+        code:
+            Label text rendered inside `<code>` (e.g. a function signature).
+        url:
+            GitHub URL appended as a `source` link.
 
     Returns:
-        True iff the name does not start with an underscore.
+        A single-line `<hN>...</hN>` snippet for the markdown buffer.
     """
-    return not name.startswith("_")
+    return (
+        f'<h{level} id="{anchor}" class="api-symbol">'
+        f"<code>{html.escape(s=code, quote=False)}</code>"
+        f"{source_link(url=url)}</h{level}>"
+    )
+
+
+def source_link(url: str) -> str:
+    """Render a small "source" anchor pointing at a GitHub URL.
+
+    Args:
+        url:
+            The GitHub URL to link to.
+
+    Returns:
+        An HTML `<a>` snippet ready to be appended to a heading.
+    """
+    return (
+        f' <a class="api-source-link" href="{url}" '
+        f'target="_blank" rel="noopener">source</a>'
+    )
 
 
 def render_function(
@@ -401,103 +338,6 @@ def render_function(
     if doc:
         out.append(indent_docstring(doc=doc))
         out.append("")
-
-
-def symbol_anchor(rel: Path, parts: tuple[str, ...] = ()) -> str:
-    """Build a stable HTML id for a symbol declared in a module.
-
-    Args:
-        rel:
-            Path relative to the package root.
-        parts (optional):
-            Symbol path within the file (e.g. `("Class",)` or
-            `("Class", "method")`). Defaults to an empty tuple.
-
-    Returns:
-        A unique anchor like `api-metrics-Foo-bar`.
-    """
-    mod = rel.with_suffix("").as_posix().replace("/", "-")
-    if mod.endswith("-__init__"):
-        mod = mod[: -len("-__init__")]
-    suffix = "-" + "-".join(parts) if parts else ""
-    return f"api-{mod}{suffix}"
-
-
-def heading_html(level: int, anchor: str, code: str, url: str) -> str:
-    """Emit a raw HTML heading with a `<code>` label and a GitHub source link.
-
-    Markdown's heading syntax is bypassed so the source link can be attached
-    without polluting the auto-generated heading slug -- and so the TOC
-    extraction can recognise the source-link span and skip it.
-
-    Args:
-        level:
-            Heading level (2-6).
-        anchor:
-            The HTML id for the heading.
-        code:
-            Label text rendered inside `<code>` (e.g. a function signature).
-        url:
-            GitHub URL appended as a `source` link.
-
-    Returns:
-        A single-line `<hN>...</hN>` snippet for the markdown buffer.
-    """
-    return (
-        f'<h{level} id="{anchor}" class="api-symbol">'
-        f"<code>{html.escape(s=code, quote=False)}</code>"
-        f"{source_link(url=url)}</h{level}>"
-    )
-
-
-def gh_url(rel: Path, lineno: int | None = None) -> str:
-    """Build a GitHub source URL for a file (optionally pointing at a line).
-
-    Args:
-        rel:
-            Path relative to the package root.
-        lineno (optional):
-            1-based line number, or None to link to the file itself.
-            Defaults to None.
-
-    Returns:
-        An absolute URL on github.com.
-    """
-    base = f"{GITHUB_SRC}/{rel.as_posix()}"
-    return f"{base}#L{lineno}" if lineno else base
-
-
-def source_link(url: str) -> str:
-    """Render a small "source" anchor pointing at a GitHub URL.
-
-    Args:
-        url:
-            The GitHub URL to link to.
-
-    Returns:
-        An HTML `<a>` snippet ready to be appended to a heading.
-    """
-    return (
-        f' <a class="api-source-link" href="{url}" '
-        f'target="_blank" rel="noopener">source</a>'
-    )
-
-
-def indent_docstring(doc: str) -> str:
-    """Normalise a docstring for inclusion in markdown.
-
-    The Google-style sections (`Args:`, `Returns:`, ...) are kept as-is so
-    they appear as normal paragraphs -- good enough for an at-a-glance
-    reference.
-
-    Args:
-        doc:
-            The raw docstring text returned by `ast.get_docstring`.
-
-    Returns:
-        The trimmed docstring, ready to be appended to the output buffer.
-    """
-    return doc.strip()
 
 
 def render_signature(func: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
@@ -569,6 +409,166 @@ def _render_param(arg: ast.arg, default: ast.expr | None = None) -> str:
     if default is not None:
         s += f" = {ast.unparse(default)}"
     return s
+
+
+def symbol_anchor(rel: Path, parts: tuple[str, ...] = ()) -> str:
+    """Build a stable HTML id for a symbol declared in a module.
+
+    Args:
+        rel:
+            Path relative to the package root.
+        parts (optional):
+            Symbol path within the file (e.g. `("Class",)` or
+            `("Class", "method")`). Defaults to an empty tuple.
+
+    Returns:
+        A unique anchor like `api-metrics-Foo-bar`.
+    """
+    mod = rel.with_suffix("").as_posix().replace("/", "-")
+    if mod.endswith("-__init__"):
+        mod = mod[: -len("-__init__")]
+    suffix = "-" + "-".join(parts) if parts else ""
+    return f"api-{mod}{suffix}"
+
+
+def render_nested_subpackage(
+    parent_rel: Path, parent_source: str, submodule_files: list[Path], out: list[str]
+) -> None:
+    """Render a subpackage with its submodules folded inside.
+
+    Args:
+        parent_rel:
+            Path of the subpackage's `__init__.py` relative to the package
+            root.
+        parent_source:
+            Source code of the `__init__.py`.
+        submodule_files:
+            Absolute paths of submodule `.py` files to nest inside the
+            subpackage's collapsible.
+        out:
+            The output buffer (mutated in place).
+    """
+    try:
+        tree = ast.parse(parent_source)
+    except SyntaxError:
+        tree = ast.parse("")
+    classes = [
+        n for n in tree.body if isinstance(n, ast.ClassDef) and is_public(name=n.name)
+    ]
+    funcs = [
+        n
+        for n in tree.body
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and is_public(name=n.name)
+    ]
+    module_doc = ast.get_docstring(node=tree, clean=True)
+
+    mod_name = rel_to_module(rel=parent_rel)
+    anchor = "api-" + mod_name.replace(".", "-")
+    out.append(f'<details class="api-module" id="{anchor}-wrap">')
+    out.append(
+        f'<summary class="api-module-summary">'
+        f'<h2 id="{anchor}" class="api-module-heading">'
+        f"<code>{mod_name}</code>{source_link(url=gh_url(rel=parent_rel))}</h2>"
+        f"</summary>"
+    )
+    out.append("")
+    if module_doc:
+        out.append(indent_docstring(doc=module_doc))
+        out.append("")
+    for cls in classes:
+        render_class(cls=cls, out=out, rel=parent_rel, level=3)
+    for f in funcs:
+        render_function(node=f, out=out, level=3, rel=parent_rel)
+    for sub in submodule_files:
+        rel = sub.relative_to(PKG_ROOT)
+        render_submodule_inline(
+            rel=rel, source=sub.read_text(encoding="utf-8"), out=out
+        )
+    out.append("</details>")
+    out.append("")
+
+
+def render_submodule_inline(rel: Path, source: str, out: list[str]) -> None:
+    """Render a submodule as an h4 entry inside its parent's collapsible.
+
+    Only the module docstring and any classes / functions are emitted; the
+    heading is an h4 so it doesn't appear in the right-hand table of
+    contents.
+
+    Args:
+        rel:
+            Path relative to the package root.
+        source:
+            The source code of the module.
+        out:
+            The output buffer (mutated in place).
+    """
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as e:
+        out.append(f"#### `{rel_to_module(rel=rel)}`")
+        out.append("")
+        out.append(f"_failed to parse: {e}_")
+        out.append("")
+        return
+
+    classes = [
+        n for n in tree.body if isinstance(n, ast.ClassDef) and is_public(name=n.name)
+    ]
+    funcs = [
+        n
+        for n in tree.body
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and is_public(name=n.name)
+    ]
+    module_doc = ast.get_docstring(node=tree, clean=True)
+    if not classes and not funcs and not module_doc:
+        return
+
+    mod_name = rel_to_module(rel=rel)
+    anchor = "api-" + mod_name.replace(".", "-")
+    out.append(f'<details class="api-submodule" id="{anchor}-wrap">')
+    out.append(
+        f'<summary class="api-submodule-summary">'
+        f"<code>{mod_name}</code>{source_link(url=gh_url(rel=rel))}</summary>"
+    )
+    out.append("")
+    if module_doc:
+        out.append(indent_docstring(doc=module_doc))
+        out.append("")
+    for cls in classes:
+        # Bump class headings down a level so they remain below the submodule
+        # heading and out of the TOC.
+        render_class(cls=cls, out=out, rel=rel, level=5)
+    for f in funcs:
+        render_function(node=f, out=out, level=5, rel=rel)
+    out.append("</details>")
+    out.append("")
+
+
+def should_skip(rel: Path) -> bool:
+    """Decide whether a Python file should be excluded from the API reference.
+
+    Private modules and packages (any path segment starting with `_`, except
+    `__init__.py` itself) are skipped, as are `__pycache__` artifacts.
+
+    Args:
+        rel:
+            Path relative to the package root.
+
+    Returns:
+        True iff the file should be skipped.
+    """
+    for part in rel.parts[:-1]:
+        if part.startswith("_") and part != "__pycache__":
+            return True
+        if part == "__pycache__":
+            return True
+    name = rel.name
+    if name == "__init__.py":
+        return False
+    return name.startswith("_")
 
 
 if __name__ == "__main__":

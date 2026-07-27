@@ -30,553 +30,23 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 
 
-def _extract_classification_examples(
-    shuffled_train: Dataset,
-    num_few_shots: int,
-    dataset_config: "DatasetConfig",
-    random_seed: int,
-) -> list[dict[str, t.Any]]:
-    """Extract few-shot examples for classification task groups.
-
-    Args:
-        shuffled_train:
-            The shuffled training dataset.
-        num_few_shots:
-            The number of few-shot examples to extract.
-        dataset_config:
-            The dataset configuration.
-        random_seed:
-            The random seed for reproducibility.
-
-    Returns:
-        A list of few-shot examples.
-
-    Raises:
-        InvalidBenchmark:
-            If not enough short examples are found.
-    """
-    # Locate the maximum number of tokens that constitutes a short example
-    for max_num_tokens in [512, 1024, 2048, 4096, 8192]:
-        train_with_short_examples = shuffled_train.filter(
-            lambda example: len(example["text"]) < max_num_tokens
-        )
-        num_short_examples = len(train_with_short_examples)
-        if num_short_examples >= num_few_shots:
-            break
-    else:
-        raise InvalidBenchmark(
-            "Could not find enough short examples for few-shot learning."
-        )
-
-    shuffled_train = train_with_short_examples.shuffle(seed=random_seed)
-    few_shot_examples: list[dict[str, t.Any]] = list()
-
-    if dataset_config.labels:
-        labels = it.cycle(dataset_config.labels)
-        labels_with_no_samples: set[str] = set()
-        while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
-            if len(labels_with_no_samples) == len(dataset_config.labels):
-                raise InvalidBenchmark(
-                    "Could not find enough examples for few-shot learning. "
-                    "Please check the dataset and the labels."
-                )
-            label = next(labels)
-            possible_examples = shuffled_train.filter(
-                lambda x: str(x["label"]).lower() == label.lower()
-            )
-            assert isinstance(possible_examples, Dataset), (
-                f"Expected `possible_examples` to be a Dataset, but got "
-                f"{type(possible_examples)} instead."
-            )
-            if len(possible_examples) == 0:
-                labels_with_no_samples.add(label)
-                continue
-            example = possible_examples.select(range(1))[0]
-            assert isinstance(example, dict), (
-                f"Expected `example` to be a dict, but got {type(example)} instead."
-            )
-            few_shot_examples.append(example)
-            shuffled_train = shuffled_train.filter(
-                lambda x: x["text"] != example["text"]
-            )
-    else:
-        # No labels defined (e.g. community datasets with variable number of
-        # choices) — fall back to random sampling.
-        while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
-            example = shuffled_train.select(range(1))[0]
-            assert isinstance(example, dict), (
-                f"Expected `example` to be a dict, but got {type(example)} instead."
-            )
-            few_shot_examples.append(example)
-            shuffled_train = shuffled_train.filter(
-                lambda x: x["text"] != example["text"]
-            )
-
-    return few_shot_examples
-
-
-def _extract_text_to_text_examples(
-    shuffled_train: Dataset, num_few_shots: int
-) -> list[dict[str, t.Any]]:
-    """Extract few-shot examples for text-to-text task group.
-
-    Args:
-        shuffled_train:
-            The shuffled training dataset.
-        num_few_shots:
-            The number of few-shot examples to extract.
-
-    Returns:
-        A list of few-shot examples.
-    """
-    few_shot_examples: list[dict[str, t.Any]] = list()
-    while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
-        example = shuffled_train.select(range(1))[0]
-        assert isinstance(example, dict), (
-            f"Expected `example` to be a dict, but got {type(example)} instead."
-        )
-        few_shot_examples.append(example)
-        shuffled_train = shuffled_train.filter(lambda x: x["text"] != example["text"])
-    return few_shot_examples
-
-
-def _extract_token_classification_examples(
-    shuffled_train: Dataset, num_few_shots: int, dataset_config: "DatasetConfig"
-) -> list[dict[str, t.Any]]:
-    """Extract few-shot examples for token classification task group.
-
-    Args:
-        shuffled_train:
-            The shuffled training dataset.
-        num_few_shots:
-            The number of few-shot examples to extract.
-        dataset_config:
-            The dataset configuration.
-
-    Returns:
-        A list of few-shot examples.
-    """
-    few_shot_examples: list[dict[str, t.Any]] = list()
-    labels = it.cycle(
-        [
-            label.lower()
-            for label in dataset_config.labels
-            if label.lower().startswith("b-")
-        ]
-    )
-    while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
-        label = next(labels)
-        possible_examples = shuffled_train.filter(
-            lambda x: label in [str(tag).lower() for tag in x["labels"]]
-        )
-        assert isinstance(possible_examples, Dataset), (
-            f"Expected `possible_examples` to be a Dataset, but got "
-            f"{type(possible_examples)} instead."
-        )
-        if len(possible_examples) == 0:
-            continue
-        example = possible_examples.select(range(1))[0]
-        assert isinstance(example, dict), (
-            f"Expected `example` to be a dict, but got {type(example)} instead."
-        )
-        few_shot_examples.append(example)
-        shuffled_train = shuffled_train.filter(
-            lambda x: x["tokens"] != example["tokens"]
-        )
-    return few_shot_examples
-
-
-def _extract_question_answering_examples(
-    shuffled_train: Dataset, num_few_shots: int, random_seed: int
-) -> list[dict[str, t.Any]]:
-    """Extract few-shot examples for question answering task group.
-
-    Args:
-        shuffled_train:
-            The shuffled training dataset.
-        num_few_shots:
-            The number of few-shot examples to extract.
-        random_seed:
-            The random seed for reproducibility.
-
-    Returns:
-        A list of few-shot examples.
-
-    Raises:
-        InvalidBenchmark:
-            If not enough short examples are found.
-    """
-    # Locate the maximum number of tokens that constitutes a short example
-    for max_num_tokens in [512, 1024, 2048, 4096, 8192]:
-        train_with_short_examples = shuffled_train.filter(
-            lambda example: len(example["context"]) < max_num_tokens
-        )
-        num_short_examples = len(train_with_short_examples)
-        if num_short_examples >= num_few_shots:
-            break
-    else:
-        raise InvalidBenchmark(
-            "Could not find enough short examples for few-shot learning."
-        )
-
-    shuffled_train = train_with_short_examples.shuffle(seed=random_seed)
-    few_shot_examples: list[dict[str, t.Any]] = list()
-    while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
-        example = shuffled_train.select(range(1))[0]
-        assert isinstance(example, dict), (
-            f"Expected `example` to be a dict, but got {type(example)} instead."
-        )
-        few_shot_examples.append(example)
-        shuffled_train = shuffled_train.filter(
-            lambda x: x["context"] != example["context"]
-        )
-    return few_shot_examples
-
-
-def extract_few_shot_examples(
-    dataset: "DatasetDict",
-    dataset_config: "DatasetConfig",
-    benchmark_config: "BenchmarkConfig",
-    itr_idx: int,
-) -> c.Sequence[dict[str, t.Any]]:
-    """Extract few-shot examples from a dataset.
-
-    This will always extract the examples from the training split.
-
-    We ensure that the few-shot examples are unique by picking them one at a time.
-
-    Args:
-        dataset:
-            The dataset to extract the few-shot examples from.
-        dataset_config:
-            The dataset configuration.
-        benchmark_config:
-            The benchmark configuration.
-        itr_idx:
-            The index of the dataset in the iterator.
-
-    Returns:
-        The few-shot examples.
-    """
-    if "train" not in dataset:
-        log_once(
-            "There is no training split in the dataset, so we cannot extract any "
-            "few-shot examples, even though you requested few-shot evaluation (it's "
-            "the default). We will therefore evaluate the model zero-shot.",
-            level=logging.DEBUG,
-        )
-        return list()
-
-    if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
-        msg = (
-            "This task only allows zero-shot evaluation, so even though you have "
-            "requested few-shot evaluation "
-        )
-        if benchmark_config.run_with_cli:
-            msg += "(by not setting the --zero-shot flag), "
-        else:
-            msg += "(by setting the default `few_shot=True` argument), "
-        msg += "we will run the evaluation in zero-shot mode."
-        benchmark_config.few_shot = False
-        log_once(msg, level=logging.DEBUG)
-        return []
-
-    random_seed = 4242 + itr_idx
-    num_few_shots = dataset_config.num_few_shot_examples
-    shuffled_train = dataset["train"].shuffle(seed=random_seed)
-    assert isinstance(shuffled_train, Dataset), (
-        f"Expected `shuffled_train` to be a Dataset, but got {type(shuffled_train)} "
-        "instead."
-    )
-
-    few_shot_examples: list[dict[str, t.Any]]
-    match dataset_config.task.task_group:
-        case (
-            TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-        ):
-            few_shot_examples = _extract_classification_examples(
-                shuffled_train=shuffled_train,
-                num_few_shots=num_few_shots,
-                dataset_config=dataset_config,
-                random_seed=random_seed,
-            )
-        case TaskGroup.TEXT_TO_TEXT:
-            few_shot_examples = _extract_text_to_text_examples(
-                shuffled_train=shuffled_train, num_few_shots=num_few_shots
-            )
-        case TaskGroup.TOKEN_CLASSIFICATION:
-            few_shot_examples = _extract_token_classification_examples(
-                shuffled_train=shuffled_train,
-                num_few_shots=num_few_shots,
-                dataset_config=dataset_config,
-            )
-        case TaskGroup.QUESTION_ANSWERING:
-            few_shot_examples = _extract_question_answering_examples(
-                shuffled_train=shuffled_train,
-                num_few_shots=num_few_shots,
-                random_seed=random_seed,
-            )
-        case _:
-            raise NotImplementedError(
-                f"Unsupported task group: {dataset_config.task.task_group}."
-            )
-
-    random.seed(random_seed)
-    random.shuffle(few_shot_examples)
-    return few_shot_examples
-
-
-def _get_sections_builder(
-    task_group: TaskGroup, dataset_config: "DatasetConfig", use_bits_per_character: bool
-) -> c.Callable[
-    [list[dict[str, t.Any]], dict[str, t.Any], c.Callable],
-    tuple[list[tuple[str, str]], list[tuple[str, str]]],
-]:
-    """Get a function that builds few-shot and new sections for a task group.
-
-    Args:
-        task_group:
-            The task group to build sections for.
-        dataset_config:
-            The dataset configuration.
-        use_bits_per_character:
-            Whether to use bits-per-character scoring.
-
-    Returns:
-        A function that takes few_shot_examples, examples, and create_prompt,
-        and returns (few_shot_sections, new_sections).
-    """
-    if task_group == TaskGroup.SEQUENCE_CLASSIFICATION:
-        return lambda few_shot_examples, examples, create_prompt: (
-            _build_sequence_classification_sections(
-                few_shot_examples=few_shot_examples,
-                examples=examples,
-                create_prompt=create_prompt,
-                dataset_config=dataset_config,
-            )
-        )
-    elif task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-        return lambda few_shot_examples, examples, create_prompt: _build_mcq_sections(
-            few_shot_examples=few_shot_examples,
-            examples=examples,
-            create_prompt=create_prompt,
-            dataset_config=dataset_config,
-            use_bits_per_character=use_bits_per_character,
-        )
-    elif task_group == TaskGroup.TEXT_TO_TEXT:
-        return lambda few_shot_examples, examples, create_prompt: (
-            _build_text_to_text_sections(
-                few_shot_examples=few_shot_examples,
-                examples=examples,
-                create_prompt=create_prompt,
-            )
-        )
-    elif task_group == TaskGroup.TOKEN_CLASSIFICATION:
-        return lambda few_shot_examples, examples, create_prompt: (
-            _build_token_classification_sections(
-                few_shot_examples=few_shot_examples,
-                examples=examples,
-                create_prompt=create_prompt,
-                dataset_config=dataset_config,
-            )
-        )
-    elif task_group == TaskGroup.QUESTION_ANSWERING:
-        return lambda few_shot_examples, examples, create_prompt: (
-            _build_question_answering_sections(
-                few_shot_examples=few_shot_examples,
-                examples=examples,
-                create_prompt=create_prompt,
-            )
-        )
-    else:
-        raise NotImplementedError(f"Unsupported task group: {task_group}.")
-
-
-def _build_sequence_classification_sections(
-    few_shot_examples: list[dict[str, t.Any]],
-    examples: dict[str, t.Any],
-    create_prompt: c.Callable,
-    dataset_config: "DatasetConfig",
-) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-    """Build sections for sequence classification tasks.
-
-    Args:
-        few_shot_examples:
-            The few-shot examples.
-        examples:
-            The examples to evaluate.
-        create_prompt:
-            The function to create prompts.
-        dataset_config:
-            The dataset configuration.
-
-    Returns:
-        A tuple of (few-shot sections, new sections).
-    """
-    labels_str = dataset_config.get_labels_str()
-    few_shot_sections = [
-        create_prompt(
-            text=example["text"].replace("\n", " ").strip(),
-            label=str(example["label"]).replace("\n", " ").strip(),
-            labels_str=labels_str,
-        )
-        for example in few_shot_examples
-    ]
-    new_sections = [
-        create_prompt(
-            text=text.replace("\n", " ").strip(), label="", labels_str=labels_str
-        )
-        for text in examples["text"]
-    ]
-    return few_shot_sections, new_sections
-
-
-def _build_mcq_sections(
-    few_shot_examples: list[dict[str, t.Any]],
-    examples: dict[str, t.Any],
-    create_prompt: c.Callable,
-    dataset_config: "DatasetConfig",
-    use_bits_per_character: bool,
-) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-    """Build sections for multiple choice classification tasks.
-
-    Args:
-        few_shot_examples:
-            The few-shot examples.
-        examples:
-            The examples to evaluate.
-        create_prompt:
-            The function to create prompts.
-        dataset_config:
-            The dataset configuration.
-        use_bits_per_character:
-            Whether to use bits-per-character scoring.
-
-    Returns:
-        A tuple of (few-shot sections, new sections).
-    """
-    if use_bits_per_character:
-        few_shot_sections = [
-            create_prompt(
-                text=example["bare_input"].replace("\n", " ").strip(),
-                label=letter_to_choice_text(
-                    letter=str(example["label"]).strip().lower(),
-                    raw_choices=example["raw_choices"],
-                )
-                .replace("\n", " ")
-                .strip(),
-            )
-            for example in few_shot_examples
-        ]
-        new_sections = [
-            create_prompt(
-                text=examples["bare_input"][i].replace("\n", " ").strip(), label=""
-            )
-            for i in range(len(examples["text"]))
-        ]
-    else:
-        few_shot_sections = [
-            create_prompt(
-                text=example["text"].replace("\n", " ").strip(),
-                label=str(example["label"]).replace("\n", " ").strip(),
-                labels_str=dataset_config.get_labels_str(
-                    labels=extract_multiple_choice_labels(
-                        prompt=example["text"], candidate_labels=dataset_config.labels
-                    )
-                ),
-            )
-            for example in few_shot_examples
-        ]
-        new_sections = [
-            create_prompt(
-                text=text.replace("\n", " ").strip(),
-                label="",
-                labels_str=dataset_config.get_labels_str(
-                    labels=extract_multiple_choice_labels(
-                        prompt=text, candidate_labels=dataset_config.labels
-                    )
-                ),
-            )
-            for text in examples["text"]
-        ]
-    return few_shot_sections, new_sections
-
-
-def _build_text_to_text_sections(
-    few_shot_examples: list[dict[str, t.Any]],
-    examples: dict[str, t.Any],
-    create_prompt: c.Callable,
-) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-    """Build sections for text-to-text tasks.
-
-    Args:
-        few_shot_examples:
-            The few-shot examples.
-        examples:
-            The examples to evaluate.
-        create_prompt:
-            The function to create prompts.
-
-    Returns:
-        A tuple of (few-shot sections, new sections).
-    """
-    few_shot_sections = [
-        create_prompt(
-            text=re.sub(r"\n{2,}", "\n", example["text"]).strip(),
-            target_text=re.sub(r"\n{2,}", "\n", example["target_text"]).strip(),
-        )
-        for example in few_shot_examples
-    ]
-    new_sections = [
-        create_prompt(text=re.sub(r"\n{2,}", "\n", text).strip(), target_text="")
-        for text in examples["text"]
-    ]
-    return few_shot_sections, new_sections
-
-
-def _build_token_classification_sections(
-    few_shot_examples: list[dict[str, t.Any]],
-    examples: dict[str, t.Any],
-    create_prompt: c.Callable,
-    dataset_config: "DatasetConfig",
-) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-    """Build sections for token classification tasks.
-
-    Args:
-        few_shot_examples:
-            The few-shot examples.
-        examples:
-            The examples to evaluate.
-        create_prompt:
-            The function to create prompts.
-        dataset_config:
-            The dataset configuration.
-
-    Returns:
-        A tuple of (few-shot sections, new sections).
-    """
-    labels_str = dataset_config.get_labels_str()
-    few_shot_sections = [
-        create_prompt(
-            text=" ".join(example["tokens"]).replace("\n", " ").strip(),
-            label=serialise_ner_tags(
-                tokens=example["tokens"],
-                labels=example["labels"],
-                prompt_label_mapping=dataset_config.prompt_label_mapping,
-            ),
-            labels_str=labels_str,
-        )
-        for example in few_shot_examples
-    ]
-    new_sections = [
-        create_prompt(
-            text=" ".join(tokens).replace("\n", " ").strip(),
-            label="",
-            labels_str=labels_str,
-        )
-        for tokens in examples["tokens"]
-    ]
-    return few_shot_sections, new_sections
+def _add_bare_inputs_for_bpc(
+    examples: dict[str, t.Any], few_shot_examples: list[dict[str, t.Any]]
+) -> None:
+    """Add bare_input and raw_choices for BPC scoring on MCQ tasks."""
+    bare_inputs: list[str] = []
+    raw_choices_list: list[list[str]] = []
+    for text in examples["text"]:
+        bare_input, raw_choices = parse_bare_question_and_choices(text)
+        bare_inputs.append(bare_input)
+        raw_choices_list.append(raw_choices)
+    examples["bare_input"] = bare_inputs
+    examples["raw_choices"] = raw_choices_list
+    for fs_example in few_shot_examples:
+        if "raw_choices" not in fs_example:
+            fs_bare, fs_choices = parse_bare_question_and_choices(fs_example["text"])
+            fs_example["bare_input"] = fs_bare
+            fs_example["raw_choices"] = fs_choices
 
 
 def _build_bpc_columns(
@@ -715,106 +185,105 @@ def _extract_bpc_answers(
         return None
 
 
-def _build_question_answering_sections(
-    few_shot_examples: list[dict[str, t.Any]],
+def _build_bpc_outputs(
+    dataset_config: "DatasetConfig",
     examples: dict[str, t.Any],
-    create_prompt: c.Callable,
-) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-    """Build sections for question answering tasks.
-
-    Args:
-        few_shot_examples:
-            The few-shot examples.
-        examples:
-            The examples to evaluate.
-        create_prompt:
-            The function to create prompts.
-
-    Returns:
-        A tuple of (few-shot sections, new sections).
-    """
-    few_shot_sections = [
-        create_prompt(
-            text=example["context"].replace("\n", " ").strip(),
-            question=example["question"].replace("\n", " ").strip(),
-            label=example["answers"]["text"][0].replace("\n", " "),
-        )
-        for example in few_shot_examples
-    ]
-    new_sections = [
-        create_prompt(
-            text=context.replace("\n", " ").strip(),
-            question=question.replace("\n", " ").strip(),
-            label="",
-        )
-        for context, question in zip(examples["context"], examples["question"])
-    ]
-    return few_shot_sections, new_sections
-
-
-def _create_prompt_creator(
-    dataset_config: "DatasetConfig", generative_type: GenerativeType | None
-) -> c.Callable[..., tuple[str, str]]:
-    """Create a function that builds prompts from keyword arguments.
+    tokeniser: "PreTrainedTokenizer",
+    num_examples: int,
+) -> dict[str, t.Any]:
+    """Build BPC prompt and answer_start columns.
 
     Args:
         dataset_config:
             The dataset configuration.
-        generative_type:
-            The generative type of the model.
+        examples:
+            The examples to evaluate.
+        tokeniser:
+            The tokeniser.
+        num_examples:
+            The number of examples.
 
     Returns:
-        A function that builds prompts from keyword arguments.
+        A dictionary of BPC outputs.
     """
+    labels_for_spacing = list(dataset_config.prompt_label_mapping.values()) or [
+        "negative",
+        "positive",
+    ]
+    strip_bpc_prompt = should_prompts_be_stripped(
+        labels_to_be_generated=labels_for_spacing, tokeniser=tokeniser
+    )
 
-    def create_prompt(**kwargs: str) -> tuple[str, str]:
-        """Create a prompt from the given keyword arguments.
+    full_prompts: list[str] = [str(text) for text in examples["text"]]
 
-        Args:
-            kwargs:
-                The keyword arguments to use in the prompt.
+    answers = _extract_bpc_answers(
+        task_group=dataset_config.task.task_group,
+        examples=examples,
+        dataset_config=dataset_config,
+        num_examples=num_examples,
+    )
 
-        Returns:
-            A pair (prompt, label), where "label" is an empty string if the model is
-            not instruction tuned (as in this case it is included in the prompt).
-        """
-        label_key = "label" if "label" in kwargs else "target_text"
-        label = kwargs.pop(label_key)
-        assert label is not None, (
-            f"Found a None label for the prompt: {kwargs}. This should not happen."
-        )
-        label_mapping = dataset_config.prompt_label_mapping
-        label = label_mapping.get(label, label)
-        if generative_type in {
-            GenerativeType.INSTRUCTION_TUNED,
-            GenerativeType.REASONING,
-        }:
-            prompt = dataset_config.instruction_prompt.format(**kwargs)
-            return prompt, label
-        else:
-            kwargs[label_key] = label
-            return dataset_config.prompt_template.format(**kwargs), ""
-
-    return create_prompt
+    bpc_data = _build_bpc_columns(
+        task_group=dataset_config.task.task_group,
+        full_prompts=full_prompts,
+        answers=answers,
+        tokeniser=tokeniser,
+        strip_bpc_prompt=strip_bpc_prompt,
+        num_examples=num_examples,
+    )
+    return bpc_data
 
 
-def _add_bare_inputs_for_bpc(
-    examples: dict[str, t.Any], few_shot_examples: list[dict[str, t.Any]]
-) -> None:
-    """Add bare_input and raw_choices for BPC scoring on MCQ tasks."""
-    bare_inputs: list[str] = []
-    raw_choices_list: list[list[str]] = []
-    for text in examples["text"]:
-        bare_input, raw_choices = parse_bare_question_and_choices(text)
-        bare_inputs.append(bare_input)
-        raw_choices_list.append(raw_choices)
-    examples["bare_input"] = bare_inputs
-    examples["raw_choices"] = raw_choices_list
-    for fs_example in few_shot_examples:
-        if "raw_choices" not in fs_example:
-            fs_bare, fs_choices = parse_bare_question_and_choices(fs_example["text"])
-            fs_example["bare_input"] = fs_bare
-            fs_example["raw_choices"] = fs_choices
+def _build_chat_template_kwargs(model_config: "ModelConfig") -> dict[str, t.Any]:
+    """Build chat template kwargs for reasoning effort.
+
+    Args:
+        model_config:
+            The model configuration.
+
+    Returns:
+        A dictionary of chat template kwargs.
+    """
+    if model_config.param in {"low", "medium", "high"}:
+        log_once(f"Set reasoning mode to {model_config.param!r}.", level=logging.DEBUG)
+        return {"reasoning_effort": model_config.param}
+    return {}
+
+
+def _select_chat_template(
+    tokeniser: "PreTrainedTokenizer",
+    dataset_config: "DatasetConfig",
+    model_config: "ModelConfig",
+) -> str | None:
+    """Select chat template matching dataset language if available.
+
+    Args:
+        tokeniser:
+            The tokeniser.
+        dataset_config:
+            The dataset configuration.
+        model_config:
+            The model configuration.
+
+    Returns:
+        The chat template, or None if no matching template is found.
+    """
+    if not (
+        hasattr(tokeniser, "chat_template")
+        and isinstance(tokeniser.chat_template, dict)
+    ):
+        return None
+
+    language_codes = [language.code for language in dataset_config.languages]
+    for name, candidate_template in tokeniser.chat_template.items():
+        if name.lower() in language_codes:
+            log_once(
+                f"Using the {name!r} chat template for the tokeniser for "
+                f"model {model_config.model_id!r}.",
+                level=logging.DEBUG,
+            )
+            return candidate_template
+    return None
 
 
 def _build_instruction_tuned_outputs(
@@ -882,56 +351,151 @@ def _build_instruction_tuned_outputs(
     return outputs
 
 
-def _select_chat_template(
-    tokeniser: "PreTrainedTokenizer",
+def _build_mcq_sections(
+    few_shot_examples: list[dict[str, t.Any]],
+    examples: dict[str, t.Any],
+    create_prompt: c.Callable,
     dataset_config: "DatasetConfig",
-    model_config: "ModelConfig",
-) -> str | None:
-    """Select chat template matching dataset language if available.
+    use_bits_per_character: bool,
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Build sections for multiple choice classification tasks.
 
     Args:
-        tokeniser:
-            The tokeniser.
+        few_shot_examples:
+            The few-shot examples.
+        examples:
+            The examples to evaluate.
+        create_prompt:
+            The function to create prompts.
         dataset_config:
             The dataset configuration.
-        model_config:
-            The model configuration.
+        use_bits_per_character:
+            Whether to use bits-per-character scoring.
 
     Returns:
-        The chat template, or None if no matching template is found.
+        A tuple of (few-shot sections, new sections).
     """
-    if not (
-        hasattr(tokeniser, "chat_template")
-        and isinstance(tokeniser.chat_template, dict)
-    ):
-        return None
-
-    language_codes = [language.code for language in dataset_config.languages]
-    for name, candidate_template in tokeniser.chat_template.items():
-        if name.lower() in language_codes:
-            log_once(
-                f"Using the {name!r} chat template for the tokeniser for "
-                f"model {model_config.model_id!r}.",
-                level=logging.DEBUG,
+    if use_bits_per_character:
+        few_shot_sections = [
+            create_prompt(
+                text=example["bare_input"].replace("\n", " ").strip(),
+                label=letter_to_choice_text(
+                    letter=str(example["label"]).strip().lower(),
+                    raw_choices=example["raw_choices"],
+                )
+                .replace("\n", " ")
+                .strip(),
             )
-            return candidate_template
-    return None
+            for example in few_shot_examples
+        ]
+        new_sections = [
+            create_prompt(
+                text=examples["bare_input"][i].replace("\n", " ").strip(), label=""
+            )
+            for i in range(len(examples["text"]))
+        ]
+    else:
+        few_shot_sections = [
+            create_prompt(
+                text=example["text"].replace("\n", " ").strip(),
+                label=str(example["label"]).replace("\n", " ").strip(),
+                labels_str=dataset_config.get_labels_str(
+                    labels=extract_multiple_choice_labels(
+                        prompt=example["text"], candidate_labels=dataset_config.labels
+                    )
+                ),
+            )
+            for example in few_shot_examples
+        ]
+        new_sections = [
+            create_prompt(
+                text=text.replace("\n", " ").strip(),
+                label="",
+                labels_str=dataset_config.get_labels_str(
+                    labels=extract_multiple_choice_labels(
+                        prompt=text, candidate_labels=dataset_config.labels
+                    )
+                ),
+            )
+            for text in examples["text"]
+        ]
+    return few_shot_sections, new_sections
 
 
-def _build_chat_template_kwargs(model_config: "ModelConfig") -> dict[str, t.Any]:
-    """Build chat template kwargs for reasoning effort.
+def _build_question_answering_sections(
+    few_shot_examples: list[dict[str, t.Any]],
+    examples: dict[str, t.Any],
+    create_prompt: c.Callable,
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Build sections for question answering tasks.
 
     Args:
-        model_config:
-            The model configuration.
+        few_shot_examples:
+            The few-shot examples.
+        examples:
+            The examples to evaluate.
+        create_prompt:
+            The function to create prompts.
 
     Returns:
-        A dictionary of chat template kwargs.
+        A tuple of (few-shot sections, new sections).
     """
-    if model_config.param in {"low", "medium", "high"}:
-        log_once(f"Set reasoning mode to {model_config.param!r}.", level=logging.DEBUG)
-        return {"reasoning_effort": model_config.param}
-    return {}
+    few_shot_sections = [
+        create_prompt(
+            text=example["context"].replace("\n", " ").strip(),
+            question=example["question"].replace("\n", " ").strip(),
+            label=example["answers"]["text"][0].replace("\n", " "),
+        )
+        for example in few_shot_examples
+    ]
+    new_sections = [
+        create_prompt(
+            text=context.replace("\n", " ").strip(),
+            question=question.replace("\n", " ").strip(),
+            label="",
+        )
+        for context, question in zip(examples["context"], examples["question"])
+    ]
+    return few_shot_sections, new_sections
+
+
+def _build_sequence_classification_sections(
+    few_shot_examples: list[dict[str, t.Any]],
+    examples: dict[str, t.Any],
+    create_prompt: c.Callable,
+    dataset_config: "DatasetConfig",
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Build sections for sequence classification tasks.
+
+    Args:
+        few_shot_examples:
+            The few-shot examples.
+        examples:
+            The examples to evaluate.
+        create_prompt:
+            The function to create prompts.
+        dataset_config:
+            The dataset configuration.
+
+    Returns:
+        A tuple of (few-shot sections, new sections).
+    """
+    labels_str = dataset_config.get_labels_str()
+    few_shot_sections = [
+        create_prompt(
+            text=example["text"].replace("\n", " ").strip(),
+            label=str(example["label"]).replace("\n", " ").strip(),
+            labels_str=labels_str,
+        )
+        for example in few_shot_examples
+    ]
+    new_sections = [
+        create_prompt(
+            text=text.replace("\n", " ").strip(), label="", labels_str=labels_str
+        )
+        for text in examples["text"]
+    ]
+    return few_shot_sections, new_sections
 
 
 def _build_standard_outputs(
@@ -971,53 +535,396 @@ def _build_standard_outputs(
     }
 
 
-def _build_bpc_outputs(
-    dataset_config: "DatasetConfig",
+def _build_text_to_text_sections(
+    few_shot_examples: list[dict[str, t.Any]],
     examples: dict[str, t.Any],
-    tokeniser: "PreTrainedTokenizer",
-    num_examples: int,
-) -> dict[str, t.Any]:
-    """Build BPC prompt and answer_start columns.
+    create_prompt: c.Callable,
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Build sections for text-to-text tasks.
+
+    Args:
+        few_shot_examples:
+            The few-shot examples.
+        examples:
+            The examples to evaluate.
+        create_prompt:
+            The function to create prompts.
+
+    Returns:
+        A tuple of (few-shot sections, new sections).
+    """
+    few_shot_sections = [
+        create_prompt(
+            text=re.sub(r"\n{2,}", "\n", example["text"]).strip(),
+            target_text=re.sub(r"\n{2,}", "\n", example["target_text"]).strip(),
+        )
+        for example in few_shot_examples
+    ]
+    new_sections = [
+        create_prompt(text=re.sub(r"\n{2,}", "\n", text).strip(), target_text="")
+        for text in examples["text"]
+    ]
+    return few_shot_sections, new_sections
+
+
+def _build_token_classification_sections(
+    few_shot_examples: list[dict[str, t.Any]],
+    examples: dict[str, t.Any],
+    create_prompt: c.Callable,
+    dataset_config: "DatasetConfig",
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Build sections for token classification tasks.
+
+    Args:
+        few_shot_examples:
+            The few-shot examples.
+        examples:
+            The examples to evaluate.
+        create_prompt:
+            The function to create prompts.
+        dataset_config:
+            The dataset configuration.
+
+    Returns:
+        A tuple of (few-shot sections, new sections).
+    """
+    labels_str = dataset_config.get_labels_str()
+    few_shot_sections = [
+        create_prompt(
+            text=" ".join(example["tokens"]).replace("\n", " ").strip(),
+            label=serialise_ner_tags(
+                tokens=example["tokens"],
+                labels=example["labels"],
+                prompt_label_mapping=dataset_config.prompt_label_mapping,
+            ),
+            labels_str=labels_str,
+        )
+        for example in few_shot_examples
+    ]
+    new_sections = [
+        create_prompt(
+            text=" ".join(tokens).replace("\n", " ").strip(),
+            label="",
+            labels_str=labels_str,
+        )
+        for tokens in examples["tokens"]
+    ]
+    return few_shot_sections, new_sections
+
+
+def _create_prompt_creator(
+    dataset_config: "DatasetConfig", generative_type: GenerativeType | None
+) -> c.Callable[..., tuple[str, str]]:
+    """Create a function that builds prompts from keyword arguments.
 
     Args:
         dataset_config:
             The dataset configuration.
-        examples:
-            The examples to evaluate.
-        tokeniser:
-            The tokeniser.
-        num_examples:
-            The number of examples.
+        generative_type:
+            The generative type of the model.
 
     Returns:
-        A dictionary of BPC outputs.
+        A function that builds prompts from keyword arguments.
     """
-    labels_for_spacing = list(dataset_config.prompt_label_mapping.values()) or [
-        "negative",
-        "positive",
-    ]
-    strip_bpc_prompt = should_prompts_be_stripped(
-        labels_to_be_generated=labels_for_spacing, tokeniser=tokeniser
-    )
 
-    full_prompts: list[str] = [str(text) for text in examples["text"]]
+    def create_prompt(**kwargs: str) -> tuple[str, str]:
+        """Create a prompt from the given keyword arguments.
 
-    answers = _extract_bpc_answers(
-        task_group=dataset_config.task.task_group,
-        examples=examples,
-        dataset_config=dataset_config,
-        num_examples=num_examples,
-    )
+        Args:
+            kwargs:
+                The keyword arguments to use in the prompt.
 
-    bpc_data = _build_bpc_columns(
-        task_group=dataset_config.task.task_group,
-        full_prompts=full_prompts,
-        answers=answers,
-        tokeniser=tokeniser,
-        strip_bpc_prompt=strip_bpc_prompt,
-        num_examples=num_examples,
+        Returns:
+            A pair (prompt, label), where "label" is an empty string if the model is
+            not instruction tuned (as in this case it is included in the prompt).
+        """
+        label_key = "label" if "label" in kwargs else "target_text"
+        label = kwargs.pop(label_key)
+        assert label is not None, (
+            f"Found a None label for the prompt: {kwargs}. This should not happen."
+        )
+        label_mapping = dataset_config.prompt_label_mapping
+        label = label_mapping.get(label, label)
+        if generative_type in {
+            GenerativeType.INSTRUCTION_TUNED,
+            GenerativeType.REASONING,
+        }:
+            prompt = dataset_config.instruction_prompt.format(**kwargs)
+            return prompt, label
+        else:
+            kwargs[label_key] = label
+            return dataset_config.prompt_template.format(**kwargs), ""
+
+    return create_prompt
+
+
+def _extract_classification_examples(
+    shuffled_train: Dataset,
+    num_few_shots: int,
+    dataset_config: "DatasetConfig",
+    random_seed: int,
+) -> list[dict[str, t.Any]]:
+    """Extract few-shot examples for classification task groups.
+
+    Args:
+        shuffled_train:
+            The shuffled training dataset.
+        num_few_shots:
+            The number of few-shot examples to extract.
+        dataset_config:
+            The dataset configuration.
+        random_seed:
+            The random seed for reproducibility.
+
+    Returns:
+        A list of few-shot examples.
+
+    Raises:
+        InvalidBenchmark:
+            If not enough short examples are found.
+    """
+    # Locate the maximum number of tokens that constitutes a short example
+    for max_num_tokens in [512, 1024, 2048, 4096, 8192]:
+        train_with_short_examples = shuffled_train.filter(
+            lambda example: len(example["text"]) < max_num_tokens
+        )
+        num_short_examples = len(train_with_short_examples)
+        if num_short_examples >= num_few_shots:
+            break
+    else:
+        raise InvalidBenchmark(
+            "Could not find enough short examples for few-shot learning."
+        )
+
+    shuffled_train = train_with_short_examples.shuffle(seed=random_seed)
+    few_shot_examples: list[dict[str, t.Any]] = list()
+
+    if dataset_config.labels:
+        labels = it.cycle(dataset_config.labels)
+        labels_with_no_samples: set[str] = set()
+        while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+            if len(labels_with_no_samples) == len(dataset_config.labels):
+                raise InvalidBenchmark(
+                    "Could not find enough examples for few-shot learning. "
+                    "Please check the dataset and the labels."
+                )
+            label = next(labels)
+            possible_examples = shuffled_train.filter(
+                lambda x: str(x["label"]).lower() == label.lower()
+            )
+            assert isinstance(possible_examples, Dataset), (
+                f"Expected `possible_examples` to be a Dataset, but got "
+                f"{type(possible_examples)} instead."
+            )
+            if len(possible_examples) == 0:
+                labels_with_no_samples.add(label)
+                continue
+            example = possible_examples.select(range(1))[0]
+            assert isinstance(example, dict), (
+                f"Expected `example` to be a dict, but got {type(example)} instead."
+            )
+            few_shot_examples.append(example)
+            shuffled_train = shuffled_train.filter(
+                lambda x: x["text"] != example["text"]
+            )
+    else:
+        # No labels defined (e.g. community datasets with variable number of
+        # choices) — fall back to random sampling.
+        while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+            example = shuffled_train.select(range(1))[0]
+            assert isinstance(example, dict), (
+                f"Expected `example` to be a dict, but got {type(example)} instead."
+            )
+            few_shot_examples.append(example)
+            shuffled_train = shuffled_train.filter(
+                lambda x: x["text"] != example["text"]
+            )
+
+    return few_shot_examples
+
+
+def _extract_question_answering_examples(
+    shuffled_train: Dataset, num_few_shots: int, random_seed: int
+) -> list[dict[str, t.Any]]:
+    """Extract few-shot examples for question answering task group.
+
+    Args:
+        shuffled_train:
+            The shuffled training dataset.
+        num_few_shots:
+            The number of few-shot examples to extract.
+        random_seed:
+            The random seed for reproducibility.
+
+    Returns:
+        A list of few-shot examples.
+
+    Raises:
+        InvalidBenchmark:
+            If not enough short examples are found.
+    """
+    # Locate the maximum number of tokens that constitutes a short example
+    for max_num_tokens in [512, 1024, 2048, 4096, 8192]:
+        train_with_short_examples = shuffled_train.filter(
+            lambda example: len(example["context"]) < max_num_tokens
+        )
+        num_short_examples = len(train_with_short_examples)
+        if num_short_examples >= num_few_shots:
+            break
+    else:
+        raise InvalidBenchmark(
+            "Could not find enough short examples for few-shot learning."
+        )
+
+    shuffled_train = train_with_short_examples.shuffle(seed=random_seed)
+    few_shot_examples: list[dict[str, t.Any]] = list()
+    while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+        example = shuffled_train.select(range(1))[0]
+        assert isinstance(example, dict), (
+            f"Expected `example` to be a dict, but got {type(example)} instead."
+        )
+        few_shot_examples.append(example)
+        shuffled_train = shuffled_train.filter(
+            lambda x: x["context"] != example["context"]
+        )
+    return few_shot_examples
+
+
+def _extract_text_to_text_examples(
+    shuffled_train: Dataset, num_few_shots: int
+) -> list[dict[str, t.Any]]:
+    """Extract few-shot examples for text-to-text task group.
+
+    Args:
+        shuffled_train:
+            The shuffled training dataset.
+        num_few_shots:
+            The number of few-shot examples to extract.
+
+    Returns:
+        A list of few-shot examples.
+    """
+    few_shot_examples: list[dict[str, t.Any]] = list()
+    while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+        example = shuffled_train.select(range(1))[0]
+        assert isinstance(example, dict), (
+            f"Expected `example` to be a dict, but got {type(example)} instead."
+        )
+        few_shot_examples.append(example)
+        shuffled_train = shuffled_train.filter(lambda x: x["text"] != example["text"])
+    return few_shot_examples
+
+
+def _extract_token_classification_examples(
+    shuffled_train: Dataset, num_few_shots: int, dataset_config: "DatasetConfig"
+) -> list[dict[str, t.Any]]:
+    """Extract few-shot examples for token classification task group.
+
+    Args:
+        shuffled_train:
+            The shuffled training dataset.
+        num_few_shots:
+            The number of few-shot examples to extract.
+        dataset_config:
+            The dataset configuration.
+
+    Returns:
+        A list of few-shot examples.
+    """
+    few_shot_examples: list[dict[str, t.Any]] = list()
+    labels = it.cycle(
+        [
+            label.lower()
+            for label in dataset_config.labels
+            if label.lower().startswith("b-")
+        ]
     )
-    return bpc_data
+    while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+        label = next(labels)
+        possible_examples = shuffled_train.filter(
+            lambda x: label in [str(tag).lower() for tag in x["labels"]]
+        )
+        assert isinstance(possible_examples, Dataset), (
+            f"Expected `possible_examples` to be a Dataset, but got "
+            f"{type(possible_examples)} instead."
+        )
+        if len(possible_examples) == 0:
+            continue
+        example = possible_examples.select(range(1))[0]
+        assert isinstance(example, dict), (
+            f"Expected `example` to be a dict, but got {type(example)} instead."
+        )
+        few_shot_examples.append(example)
+        shuffled_train = shuffled_train.filter(
+            lambda x: x["tokens"] != example["tokens"]
+        )
+    return few_shot_examples
+
+
+def _get_sections_builder(
+    task_group: TaskGroup, dataset_config: "DatasetConfig", use_bits_per_character: bool
+) -> c.Callable[
+    [list[dict[str, t.Any]], dict[str, t.Any], c.Callable],
+    tuple[list[tuple[str, str]], list[tuple[str, str]]],
+]:
+    """Get a function that builds few-shot and new sections for a task group.
+
+    Args:
+        task_group:
+            The task group to build sections for.
+        dataset_config:
+            The dataset configuration.
+        use_bits_per_character:
+            Whether to use bits-per-character scoring.
+
+    Returns:
+        A function that takes few_shot_examples, examples, and create_prompt,
+        and returns (few_shot_sections, new_sections).
+    """
+    if task_group == TaskGroup.SEQUENCE_CLASSIFICATION:
+        return lambda few_shot_examples, examples, create_prompt: (
+            _build_sequence_classification_sections(
+                few_shot_examples=few_shot_examples,
+                examples=examples,
+                create_prompt=create_prompt,
+                dataset_config=dataset_config,
+            )
+        )
+    elif task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+        return lambda few_shot_examples, examples, create_prompt: _build_mcq_sections(
+            few_shot_examples=few_shot_examples,
+            examples=examples,
+            create_prompt=create_prompt,
+            dataset_config=dataset_config,
+            use_bits_per_character=use_bits_per_character,
+        )
+    elif task_group == TaskGroup.TEXT_TO_TEXT:
+        return lambda few_shot_examples, examples, create_prompt: (
+            _build_text_to_text_sections(
+                few_shot_examples=few_shot_examples,
+                examples=examples,
+                create_prompt=create_prompt,
+            )
+        )
+    elif task_group == TaskGroup.TOKEN_CLASSIFICATION:
+        return lambda few_shot_examples, examples, create_prompt: (
+            _build_token_classification_sections(
+                few_shot_examples=few_shot_examples,
+                examples=examples,
+                create_prompt=create_prompt,
+                dataset_config=dataset_config,
+            )
+        )
+    elif task_group == TaskGroup.QUESTION_ANSWERING:
+        return lambda few_shot_examples, examples, create_prompt: (
+            _build_question_answering_sections(
+                few_shot_examples=few_shot_examples,
+                examples=examples,
+                create_prompt=create_prompt,
+            )
+        )
+    else:
+        raise NotImplementedError(f"Unsupported task group: {task_group}.")
 
 
 def apply_prompt(
@@ -1130,6 +1037,99 @@ def apply_prompt(
         examples.update(bpc_data)
 
     return examples
+
+
+def extract_few_shot_examples(
+    dataset: "DatasetDict",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+    itr_idx: int,
+) -> c.Sequence[dict[str, t.Any]]:
+    """Extract few-shot examples from a dataset.
+
+    This will always extract the examples from the training split.
+
+    We ensure that the few-shot examples are unique by picking them one at a time.
+
+    Args:
+        dataset:
+            The dataset to extract the few-shot examples from.
+        dataset_config:
+            The dataset configuration.
+        benchmark_config:
+            The benchmark configuration.
+        itr_idx:
+            The index of the dataset in the iterator.
+
+    Returns:
+        The few-shot examples.
+    """
+    if "train" not in dataset:
+        log_once(
+            "There is no training split in the dataset, so we cannot extract any "
+            "few-shot examples, even though you requested few-shot evaluation (it's "
+            "the default). We will therefore evaluate the model zero-shot.",
+            level=logging.DEBUG,
+        )
+        return list()
+
+    if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
+        msg = (
+            "This task only allows zero-shot evaluation, so even though you have "
+            "requested few-shot evaluation "
+        )
+        if benchmark_config.run_with_cli:
+            msg += "(by not setting the --zero-shot flag), "
+        else:
+            msg += "(by setting the default `few_shot=True` argument), "
+        msg += "we will run the evaluation in zero-shot mode."
+        benchmark_config.few_shot = False
+        log_once(msg, level=logging.DEBUG)
+        return []
+
+    random_seed = 4242 + itr_idx
+    num_few_shots = dataset_config.num_few_shot_examples
+    shuffled_train = dataset["train"].shuffle(seed=random_seed)
+    assert isinstance(shuffled_train, Dataset), (
+        f"Expected `shuffled_train` to be a Dataset, but got {type(shuffled_train)} "
+        "instead."
+    )
+
+    few_shot_examples: list[dict[str, t.Any]]
+    match dataset_config.task.task_group:
+        case (
+            TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        ):
+            few_shot_examples = _extract_classification_examples(
+                shuffled_train=shuffled_train,
+                num_few_shots=num_few_shots,
+                dataset_config=dataset_config,
+                random_seed=random_seed,
+            )
+        case TaskGroup.TEXT_TO_TEXT:
+            few_shot_examples = _extract_text_to_text_examples(
+                shuffled_train=shuffled_train, num_few_shots=num_few_shots
+            )
+        case TaskGroup.TOKEN_CLASSIFICATION:
+            few_shot_examples = _extract_token_classification_examples(
+                shuffled_train=shuffled_train,
+                num_few_shots=num_few_shots,
+                dataset_config=dataset_config,
+            )
+        case TaskGroup.QUESTION_ANSWERING:
+            few_shot_examples = _extract_question_answering_examples(
+                shuffled_train=shuffled_train,
+                num_few_shots=num_few_shots,
+                random_seed=random_seed,
+            )
+        case _:
+            raise NotImplementedError(
+                f"Unsupported task group: {dataset_config.task.task_group}."
+            )
+
+    random.seed(random_seed)
+    random.shuffle(few_shot_examples)
+    return few_shot_examples
 
 
 def raise_if_wrong_params(

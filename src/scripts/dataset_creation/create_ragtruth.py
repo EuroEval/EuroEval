@@ -232,59 +232,6 @@ TRANSLATION_PROMPT_DATA2TXT = (
 logger = logging.getLogger("translator")
 
 
-class ClientConfig(t.TypedDict):
-    """Configuration for OpenAI client."""
-
-    url: str
-    headers: dict[str, str]
-
-
-class RetryableTranslationError(Exception):
-    """Exception raised for transient translation/API errors that should be retried."""
-
-    def __init__(self, message: str, retry_after: float | None = None) -> None:
-        """Initialise the error.
-
-        Args:
-            message:
-                The error message.
-            retry_after:
-                Server-provided number of seconds to wait before retrying, if any.
-        """
-        super().__init__(message)
-        self.retry_after = retry_after
-
-
-class TranslationError(Exception):
-    """Exception raised for errors during translation."""
-
-    pass
-
-
-class TagMismatchError(TranslationError):
-    """Raised when translated <HAL> tags don't align with the annotated spans.
-
-    The translation model sometimes invents extra ``<HAL>...</HAL>`` pairs or
-    drops annotated ones. When the number of translated tag pairs differs from
-    the number of annotated spans (or the opening/closing tags are unbalanced),
-    the span alignment is unreliable, so the sample is discarded rather than
-    saved with fabricated or missing hallucination spans — either of which would
-    corrupt the benchmark's gold labels.
-    """
-
-    pass
-
-
-class TruncatedTranslationError(TranslationError):
-    """Raised when the model's output hit the token cap and was truncated.
-
-    Treated as non-retryable: the affected sample is discarded rather than saved
-    with an incomplete translation (which would corrupt its hallucination spans).
-    """
-
-    pass
-
-
 def main() -> None:
     """Download RAGTruth data, translate to all target languages, and upload to Hub."""
     parser = argparse.ArgumentParser(
@@ -446,178 +393,6 @@ def _report_token_estimate(total_source_samples: int, model: str) -> None:
     else:
         logger.info(f"  (no pricing configured for model '{model}'; cost omitted)")
     logger.info("=" * 60)
-
-
-def _translate_to_language(
-    source_data: HallucinationData | None,
-    target_lang: str,
-    client_config: ClientConfig,
-    model: str,
-    max_workers: int,
-    batch_size: int,
-    test_mode: bool = False,
-    test_num_samples: int = 10,
-) -> None:
-    """Translate RAGTruth data to a single target language.
-
-    Uses global configuration constants for Hub settings.
-
-    Args:
-        source_data:
-            Source hallucination data (None if resuming without source).
-        target_lang:
-            Target language to translate to.
-        client_config:
-            OpenAI client configuration.
-        model:
-            Model ID to use for translation.
-        max_workers:
-            Maximum number of concurrent in-flight API requests.
-        batch_size:
-            Number of samples processed between save points.
-        test_mode:
-            If True, run a limited smoke test and skip Hub uploads.
-        test_num_samples:
-            Number of samples to translate per language in test mode.
-
-    Raises:
-        FileNotFoundError:
-            If source data is not available and no cached translation exists.
-    """
-    # Set up files for this language
-    output_file = OUTPUT_DIR / f"{DATASET_NAME}_data_{target_lang}.json"
-
-    # Load existing translated data if output file exists (cache)
-    if output_file.exists():
-        translated_data, last_processed_index = load_check_existing_data(
-            output_file=output_file
-        )
-
-        # Use metadata index if available, fall back to sample count
-        num_processed = (
-            last_processed_index
-            if last_processed_index is not None
-            else len(translated_data.samples)
-        )
-        logger.info(f"Resuming from index {num_processed}")
-    else:
-        translated_data = HallucinationData(samples=[])
-        num_processed = 0
-
-    # Get remaining samples to translate
-    remaining_samples: list[HallucinationSample] = []
-    if source_data is not None:
-        remaining_samples = source_data.samples[num_processed:]
-    elif num_processed > 0:
-        logger.warning(
-            f"Proceeding in push-only mode with {num_processed} existing "
-            "translated samples."
-        )
-    else:
-        logger.error("No source data available and no cached translation exists")
-        raise FileNotFoundError(
-            "Source data not found and no cached translation to resume"
-        )
-
-    # In test mode, translate a small number of samples per language. Spread the
-    # picks evenly across the whole source rather than taking the first N, so the
-    # measured token usage covers the different task types (QA / Summary /
-    # Data2txt) and yields a representative full-dataset estimate.
-    if test_mode and len(remaining_samples) > test_num_samples > 0:
-        step = len(remaining_samples) / test_num_samples
-        remaining_samples = [
-            remaining_samples[int(i * step)] for i in range(test_num_samples)
-        ]
-
-    total_samples = len(remaining_samples)
-
-    if total_samples == 0:
-        if test_mode:
-            logger.info("No samples to translate (test mode); skipping Hub uploads.")
-        else:
-            _push_if_no_samples(translated_data, target_lang)
-        return
-
-    # English is the source language, so skip translation and just copy the data
-    if target_lang == SOURCE_LANG:
-        logger.info(
-            "Target language is English (same as source) - copying data without "
-            "translation"
-        )
-        translated_data.samples = list(source_data.samples)
-        for sample in translated_data.samples:
-            sample.language = target_lang  # ty:ignore[invalid-assignment]
-        save_progress(
-            translated_data=translated_data,
-            output_file=output_file,
-            target_lang=target_lang,
-            last_processed_index=len(source_data.samples),
-        )
-        logger.info(f"Copied {len(translated_data.samples)} samples to {output_file}")
-    else:
-        logger.info(f"Using model: {model}")
-        logger.info(f"Total samples to process: {total_samples}")
-        logger.info(f"Batch size: {batch_size}, Max workers: {max_workers}")
-
-        try:
-            asyncio.run(
-                run_translation(
-                    remaining_samples=remaining_samples,
-                    translated_data=translated_data,
-                    output_file=output_file,
-                    target_lang=target_lang,
-                    num_processed=num_processed,
-                    client_config=client_config,
-                    model=model,
-                    max_workers=max_workers,
-                    batch_size=batch_size,
-                )
-            )
-        except KeyboardInterrupt:
-            # run_translation's finally block already saved progress with the correct
-            # watermark; do not re-save here with this scope's stale index (which would
-            # reset the metadata and break discard-aware resume).
-            logger.info(
-                f"Translation interrupted by user. Saved "
-                f"{len(translated_data.samples)} translated samples to {output_file}"
-            )
-            return
-
-        except Exception as e:
-            # Progress was persisted by run_translation's finally block with the
-            # correct watermark; just surface the error.
-            logger.error(f"Unexpected error: {e!s}")
-            raise
-
-    logger.info(
-        f"Translation complete. Translated {len(translated_data.samples)} samples."
-    )
-    logger.info(f"Output saved to {output_file}")
-
-    if test_mode:
-        logger.info("Test mode: skipping Hub uploads.")
-        return
-
-    if PUSH_TO_HUB:
-        push_translated_data_to_hub(
-            translated_data=translated_data,
-            repo_id=HUB_REPO_ID,
-            config_name=target_lang,
-            private=HUB_REPO_PRIVATE,
-        )
-
-    if PUSH_TEST_SUBSET:
-        resolved_test_repo_id = (
-            f"EuroEval/{DATASET_NAME}-translated-hallucinations-{target_lang}-mini"
-        )
-        push_test_subset_to_hub(
-            translated_data=translated_data,
-            repo_id=resolved_test_repo_id,
-            config_name=target_lang,
-            private=PRIVATE_UPLOAD,
-            n=TEST_SUBSET_SIZE,
-            validation_n=VALIDATION_SUBSET_SIZE,
-        )
 
 
 def _push_if_no_samples(translated_data: HallucinationData, target_lang: str) -> None:
@@ -801,113 +576,6 @@ def load_check_existing_data(output_file: Path) -> tuple[HallucinationData, int 
             return HallucinationData(samples=[]), None
     else:
         return HallucinationData(samples=[]), None
-
-
-async def run_translation(
-    remaining_samples: list[HallucinationSample],
-    translated_data: HallucinationData,
-    output_file: Path,
-    target_lang: str,
-    num_processed: int,
-    client_config: ClientConfig,
-    model: str,
-    max_workers: int,
-    batch_size: int,
-) -> None:
-    """Run batched async translation with connection pooling.
-
-    Args:
-        remaining_samples:
-            Samples that still need translation.
-        translated_data:
-            Existing translated data to append to.
-        model:
-            Model ID to use for translation.
-        output_file:
-            Output JSON file path.
-        target_lang:
-            Target language code.
-        num_processed:
-            Number of already translated samples from cache.
-        client_config:
-            API URL and headers.
-        max_workers:
-            Maximum number of concurrent in-flight API requests.
-        batch_size:
-            Number of samples processed between save points.
-    """
-    total_samples = len(remaining_samples)
-    log_file = OUTPUT_DIR / "error_log.txt"
-
-    limits, timeout, semaphore = _setup_http_client(max_workers)
-
-    progress_bar = tqdm.tqdm(total=total_samples, desc="Translating")
-    start_time = time.time()
-    save_interval = 60
-    last_save_time = start_time
-
-    # Track the resume watermark here so it is always persisted with the correct
-    # value on the way out (see the finally block), even on interrupt/crash. This
-    # index counts source samples *processed* (advancing by batch size, not result
-    # count), so discarded samples stay cached and are never re-translated.
-    last_processed_index = num_processed
-
-    try:
-        async with httpx.AsyncClient(
-            headers=client_config["headers"], timeout=timeout, limits=limits
-        ) as http_client:
-            for i in range(0, total_samples, batch_size):
-                batch = remaining_samples[i : i + batch_size]
-                batch_results = await process_batch(
-                    samples=batch,
-                    http_client=http_client,
-                    url=client_config["url"],
-                    semaphore=semaphore,
-                    model=model,
-                    start_idx=num_processed + i,
-                    log_file=log_file,
-                    source_lang=SOURCE_LANG,
-                    target_lang=target_lang,
-                    dataset=DATASET_NAME,
-                )
-
-                translated_data.samples.extend(batch_results)
-                progress_bar.update(len(batch_results))
-
-                # Update last_processed_index by batch size (not results count)
-                last_processed_index = num_processed + i + len(batch)
-
-                current_time = time.time()
-                if (
-                    current_time - last_save_time > save_interval
-                    or i + batch_size >= total_samples
-                ):
-                    save_progress(
-                        translated_data=translated_data,
-                        output_file=output_file,
-                        target_lang=target_lang,
-                        last_processed_index=last_processed_index,
-                    )
-                    last_save_time = current_time
-
-                current_count = len(translated_data.samples)
-                elapsed_time = current_time - start_time
-                _log_translation_progress(
-                    current_count=current_count,
-                    total=num_processed + total_samples,
-                    elapsed=elapsed_time,
-                )
-    finally:
-        progress_bar.close()
-        # Persist the correct watermark on every exit path (normal completion,
-        # interrupt or crash) so a resume never falls back to len(samples), which
-        # would ignore discards and re-translate/duplicate boundary samples.
-        save_progress(
-            translated_data=translated_data,
-            output_file=output_file,
-            target_lang=target_lang,
-            last_processed_index=last_processed_index,
-        )
 
 
 def _log_translation_progress(current_count: int, total: int, elapsed: float) -> None:
@@ -1476,6 +1144,52 @@ async def translate_text(
     )
 
 
+class RetryableTranslationError(Exception):
+    """Exception raised for transient translation/API errors that should be retried."""
+
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
+        """Initialise the error.
+
+        Args:
+            message:
+                The error message.
+            retry_after:
+                Server-provided number of seconds to wait before retrying, if any.
+        """
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+class TranslationError(Exception):
+    """Exception raised for errors during translation."""
+
+    pass
+
+
+class TagMismatchError(TranslationError):
+    """Raised when translated <HAL> tags don't align with the annotated spans.
+
+    The translation model sometimes invents extra ``<HAL>...</HAL>`` pairs or
+    drops annotated ones. When the number of translated tag pairs differs from
+    the number of annotated spans (or the opening/closing tags are unbalanced),
+    the span alignment is unreliable, so the sample is discarded rather than
+    saved with fabricated or missing hallucination spans — either of which would
+    corrupt the benchmark's gold labels.
+    """
+
+    pass
+
+
+class TruncatedTranslationError(TranslationError):
+    """Raised when the model's output hit the token cap and was truncated.
+
+    Treated as non-retryable: the affected sample is discarded rather than saved
+    with an incomplete translation (which would corrupt its hallucination spans).
+    """
+
+    pass
+
+
 def save_progress(
     translated_data: HallucinationData,
     output_file: Path,
@@ -1515,31 +1229,6 @@ def save_progress(
             logger.info(f"Saved backup to {backup_file}")
         except Exception as e2:
             logger.error(f"Error saving backup: {e2!s}")
-
-
-def get_openai_client() -> ClientConfig:
-    """Get HTTP client configuration from environment variables.
-
-    Returns:
-        Dict with `url` and `headers` for chat completion requests.
-
-    Raises:
-        ValueError: If API key is not set.
-    """
-    api_key = os.getenv("OPENAI_API_KEY")
-    base_url = os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1"
-    if not api_key:
-        raise ValueError(
-            "OPENAI_API_KEY is not set. Export it in your shell or load it from .env "
-            "before running translation."
-        )
-    return {
-        "url": f"{base_url.rstrip('/')}/chat/completions",
-        "headers": {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-    }
 
 
 def load_ragtruth_data() -> HallucinationData:
@@ -1620,6 +1309,317 @@ def setup_logging(output_dir: Path) -> None:
         logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     )
     logger.addHandler(file_handler)
+
+
+class ClientConfig(t.TypedDict):
+    """Configuration for OpenAI client."""
+
+    url: str
+    headers: dict[str, str]
+
+
+def _translate_to_language(
+    source_data: HallucinationData | None,
+    target_lang: str,
+    client_config: ClientConfig,
+    model: str,
+    max_workers: int,
+    batch_size: int,
+    test_mode: bool = False,
+    test_num_samples: int = 10,
+) -> None:
+    """Translate RAGTruth data to a single target language.
+
+    Uses global configuration constants for Hub settings.
+
+    Args:
+        source_data:
+            Source hallucination data (None if resuming without source).
+        target_lang:
+            Target language to translate to.
+        client_config:
+            OpenAI client configuration.
+        model:
+            Model ID to use for translation.
+        max_workers:
+            Maximum number of concurrent in-flight API requests.
+        batch_size:
+            Number of samples processed between save points.
+        test_mode:
+            If True, run a limited smoke test and skip Hub uploads.
+        test_num_samples:
+            Number of samples to translate per language in test mode.
+
+    Raises:
+        FileNotFoundError:
+            If source data is not available and no cached translation exists.
+    """
+    # Set up files for this language
+    output_file = OUTPUT_DIR / f"{DATASET_NAME}_data_{target_lang}.json"
+
+    # Load existing translated data if output file exists (cache)
+    if output_file.exists():
+        translated_data, last_processed_index = load_check_existing_data(
+            output_file=output_file
+        )
+
+        # Use metadata index if available, fall back to sample count
+        num_processed = (
+            last_processed_index
+            if last_processed_index is not None
+            else len(translated_data.samples)
+        )
+        logger.info(f"Resuming from index {num_processed}")
+    else:
+        translated_data = HallucinationData(samples=[])
+        num_processed = 0
+
+    # Get remaining samples to translate
+    remaining_samples: list[HallucinationSample] = []
+    if source_data is not None:
+        remaining_samples = source_data.samples[num_processed:]
+    elif num_processed > 0:
+        logger.warning(
+            f"Proceeding in push-only mode with {num_processed} existing "
+            "translated samples."
+        )
+    else:
+        logger.error("No source data available and no cached translation exists")
+        raise FileNotFoundError(
+            "Source data not found and no cached translation to resume"
+        )
+
+    # In test mode, translate a small number of samples per language. Spread the
+    # picks evenly across the whole source rather than taking the first N, so the
+    # measured token usage covers the different task types (QA / Summary /
+    # Data2txt) and yields a representative full-dataset estimate.
+    if test_mode and len(remaining_samples) > test_num_samples > 0:
+        step = len(remaining_samples) / test_num_samples
+        remaining_samples = [
+            remaining_samples[int(i * step)] for i in range(test_num_samples)
+        ]
+
+    total_samples = len(remaining_samples)
+
+    if total_samples == 0:
+        if test_mode:
+            logger.info("No samples to translate (test mode); skipping Hub uploads.")
+        else:
+            _push_if_no_samples(translated_data, target_lang)
+        return
+
+    # English is the source language, so skip translation and just copy the data
+    if target_lang == SOURCE_LANG:
+        logger.info(
+            "Target language is English (same as source) - copying data without "
+            "translation"
+        )
+        translated_data.samples = list(source_data.samples)
+        for sample in translated_data.samples:
+            sample.language = target_lang  # ty:ignore[invalid-assignment]
+        save_progress(
+            translated_data=translated_data,
+            output_file=output_file,
+            target_lang=target_lang,
+            last_processed_index=len(source_data.samples),
+        )
+        logger.info(f"Copied {len(translated_data.samples)} samples to {output_file}")
+    else:
+        logger.info(f"Using model: {model}")
+        logger.info(f"Total samples to process: {total_samples}")
+        logger.info(f"Batch size: {batch_size}, Max workers: {max_workers}")
+
+        try:
+            asyncio.run(
+                run_translation(
+                    remaining_samples=remaining_samples,
+                    translated_data=translated_data,
+                    output_file=output_file,
+                    target_lang=target_lang,
+                    num_processed=num_processed,
+                    client_config=client_config,
+                    model=model,
+                    max_workers=max_workers,
+                    batch_size=batch_size,
+                )
+            )
+        except KeyboardInterrupt:
+            # run_translation's finally block already saved progress with the correct
+            # watermark; do not re-save here with this scope's stale index (which would
+            # reset the metadata and break discard-aware resume).
+            logger.info(
+                f"Translation interrupted by user. Saved "
+                f"{len(translated_data.samples)} translated samples to {output_file}"
+            )
+            return
+
+        except Exception as e:
+            # Progress was persisted by run_translation's finally block with the
+            # correct watermark; just surface the error.
+            logger.error(f"Unexpected error: {e!s}")
+            raise
+
+    logger.info(
+        f"Translation complete. Translated {len(translated_data.samples)} samples."
+    )
+    logger.info(f"Output saved to {output_file}")
+
+    if test_mode:
+        logger.info("Test mode: skipping Hub uploads.")
+        return
+
+    if PUSH_TO_HUB:
+        push_translated_data_to_hub(
+            translated_data=translated_data,
+            repo_id=HUB_REPO_ID,
+            config_name=target_lang,
+            private=HUB_REPO_PRIVATE,
+        )
+
+    if PUSH_TEST_SUBSET:
+        resolved_test_repo_id = (
+            f"EuroEval/{DATASET_NAME}-translated-hallucinations-{target_lang}-mini"
+        )
+        push_test_subset_to_hub(
+            translated_data=translated_data,
+            repo_id=resolved_test_repo_id,
+            config_name=target_lang,
+            private=PRIVATE_UPLOAD,
+            n=TEST_SUBSET_SIZE,
+            validation_n=VALIDATION_SUBSET_SIZE,
+        )
+
+
+async def run_translation(
+    remaining_samples: list[HallucinationSample],
+    translated_data: HallucinationData,
+    output_file: Path,
+    target_lang: str,
+    num_processed: int,
+    client_config: ClientConfig,
+    model: str,
+    max_workers: int,
+    batch_size: int,
+) -> None:
+    """Run batched async translation with connection pooling.
+
+    Args:
+        remaining_samples:
+            Samples that still need translation.
+        translated_data:
+            Existing translated data to append to.
+        model:
+            Model ID to use for translation.
+        output_file:
+            Output JSON file path.
+        target_lang:
+            Target language code.
+        num_processed:
+            Number of already translated samples from cache.
+        client_config:
+            API URL and headers.
+        max_workers:
+            Maximum number of concurrent in-flight API requests.
+        batch_size:
+            Number of samples processed between save points.
+    """
+    total_samples = len(remaining_samples)
+    log_file = OUTPUT_DIR / "error_log.txt"
+
+    limits, timeout, semaphore = _setup_http_client(max_workers)
+
+    progress_bar = tqdm.tqdm(total=total_samples, desc="Translating")
+    start_time = time.time()
+    save_interval = 60
+    last_save_time = start_time
+
+    # Track the resume watermark here so it is always persisted with the correct
+    # value on the way out (see the finally block), even on interrupt/crash. This
+    # index counts source samples *processed* (advancing by batch size, not result
+    # count), so discarded samples stay cached and are never re-translated.
+    last_processed_index = num_processed
+
+    try:
+        async with httpx.AsyncClient(
+            headers=client_config["headers"], timeout=timeout, limits=limits
+        ) as http_client:
+            for i in range(0, total_samples, batch_size):
+                batch = remaining_samples[i : i + batch_size]
+                batch_results = await process_batch(
+                    samples=batch,
+                    http_client=http_client,
+                    url=client_config["url"],
+                    semaphore=semaphore,
+                    model=model,
+                    start_idx=num_processed + i,
+                    log_file=log_file,
+                    source_lang=SOURCE_LANG,
+                    target_lang=target_lang,
+                    dataset=DATASET_NAME,
+                )
+
+                translated_data.samples.extend(batch_results)
+                progress_bar.update(len(batch_results))
+
+                # Update last_processed_index by batch size (not results count)
+                last_processed_index = num_processed + i + len(batch)
+
+                current_time = time.time()
+                if (
+                    current_time - last_save_time > save_interval
+                    or i + batch_size >= total_samples
+                ):
+                    save_progress(
+                        translated_data=translated_data,
+                        output_file=output_file,
+                        target_lang=target_lang,
+                        last_processed_index=last_processed_index,
+                    )
+                    last_save_time = current_time
+
+                current_count = len(translated_data.samples)
+                elapsed_time = current_time - start_time
+                _log_translation_progress(
+                    current_count=current_count,
+                    total=num_processed + total_samples,
+                    elapsed=elapsed_time,
+                )
+    finally:
+        progress_bar.close()
+        # Persist the correct watermark on every exit path (normal completion,
+        # interrupt or crash) so a resume never falls back to len(samples), which
+        # would ignore discards and re-translate/duplicate boundary samples.
+        save_progress(
+            translated_data=translated_data,
+            output_file=output_file,
+            target_lang=target_lang,
+            last_processed_index=last_processed_index,
+        )
+
+
+def get_openai_client() -> ClientConfig:
+    """Get HTTP client configuration from environment variables.
+
+    Returns:
+        Dict with `url` and `headers` for chat completion requests.
+
+    Raises:
+        ValueError: If API key is not set.
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    base_url = os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1"
+    if not api_key:
+        raise ValueError(
+            "OPENAI_API_KEY is not set. Export it in your shell or load it from .env "
+            "before running translation."
+        )
+    return {
+        "url": f"{base_url.rstrip('/')}/chat/completions",
+        "headers": {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+    }
 
 
 if __name__ == "__main__":

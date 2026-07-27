@@ -10,6 +10,24 @@ from .constants import REQUIRED_METADATA_FIELDS
 logger = logging.getLogger(__name__)
 
 
+def is_eee_record(record: dict[str, object]) -> bool:
+    """Return whether a record uses the EEE envelope.
+
+    Args:
+        record:
+            Record to inspect.
+
+    Returns:
+        True if the record has the required EEE top-level structures.
+    """
+    return (
+        "schema_version" in record
+        and isinstance(record.get("model_info"), dict)
+        and isinstance(record.get("eval_library"), dict)
+        and isinstance(record.get("evaluation_results"), list)
+    )
+
+
 def validate_eee_record(record: dict[str, object], context: str = "record") -> None:
     """Validate that a result record is acceptable leaderboard input/output.
 
@@ -58,24 +76,6 @@ def validate_eee_records(records: list[dict[str, object]], context: str) -> None
     """
     for idx, record in enumerate(records, start=1):
         validate_eee_record(record=record, context=f"{context} record {idx:,}")
-
-
-def is_eee_record(record: dict[str, object]) -> bool:
-    """Return whether a record uses the EEE envelope.
-
-    Args:
-        record:
-            Record to inspect.
-
-    Returns:
-        True if the record has the required EEE top-level structures.
-    """
-    return (
-        "schema_version" in record
-        and isinstance(record.get("model_info"), dict)
-        and isinstance(record.get("eval_library"), dict)
-        and isinstance(record.get("evaluation_results"), list)
-    )
 
 
 def dump_jsonl_records(records: list[dict[str, object]]) -> str:
