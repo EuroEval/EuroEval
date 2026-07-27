@@ -33,6 +33,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
   - Croatian: `mmlu-hr` → `include-hr`
   - German: `hellaswag-de` → `winogrande-de`
+  - French: `mmlu-fr` → `include-fr` and `multiloko-fr`
 
 ### Fixed
 
@@ -48,10 +49,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   parallel size. This fixes evaluation failures for models like SmolLM series (9/15
   heads) on multi-GPU setups, which previously raised errors like "Total number of
   attention heads (X) must be divisible by tensor parallel size (Y)".
-- Fixed `KeyError: 'rope_theta'` when loading OLMo-3 models (e.g. `allenai/Olmo-3-1125-32B`)
-  with vLLM. The model config now includes a `rope_parameters` override that converts
-  the top-level `rope_theta` and `rope_scaling` fields into the nested structure
-  expected by vLLM's `olmo2.py` implementation.
+- Fixed `KeyError: 'rope_theta'` when loading models whose `config.json` still uses the
+  legacy top-level `rope_theta`/`rope_scaling` fields with a vLLM implementation that
+  expects the nested `rope_parameters` structure introduced in transformers 5.x (e.g.
+  OLMo-3 models such as `allenai/Olmo-3-1125-32B`). The model config now transcribes the
+  legacy fields into the nested structure, applied to an explicit allowlist of confirmed
+  model families.
 
 ## [v17.7.0] - 2026-07-22
 

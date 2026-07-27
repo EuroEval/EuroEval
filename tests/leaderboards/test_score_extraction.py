@@ -9,6 +9,7 @@ from leaderboards.score_extraction import (
     extract_model_metadata,
     group_results_by_model,
 )
+from leaderboards.task_metadata import task_metric_names
 
 
 class TestIsBetterMetadata:
@@ -624,3 +625,100 @@ class TestGroupResultsByModel:
         # std_err should be computed from scaled raw scores:
         # stdev([60.0, 62.0]) / sqrt(2) = 1.414... / 1.414... = 1.0
         assert std_err == 1.0
+
+    @staticmethod
+    def _make_record(
+        dataset: str, task: str, validation_split: bool | None, score: float
+    ) -> dict:
+        """Build a minimal EEE-style record for a given split configuration.
+
+        Args:
+            dataset:
+                The dataset name.
+            task:
+                The task name (used to derive the primary metric).
+            validation_split:
+                The validation-split flag: True (val), False (test), or None
+                (no validation split, i.e. split-agnostic).
+            score:
+                The score to record for the primary metric.
+
+        Returns:
+            A minimal EEE-style record.
+        """
+        additional: dict[str, object] = {
+            "dataset": dataset,
+            "task": task,
+            "few_shot": "false",
+            "raw_results": [{f"test_{task_metric_names(task)[0]}": score}],
+        }
+        if validation_split is not None:
+            additional["validation_split"] = validation_split
+        else:
+            # Datasets without a validation split store an explicit ``None``.
+            additional["validation_split"] = None
+        metric = task_metric_names(task)[0]
+        return {
+            "model_info": {"name": "org/model"},
+            "eval_library": {"version": "17.6.0", "additional_details": additional},
+            "evaluation_results": [
+                {"evaluation_name": f"test_{metric}", "score_details": {"score": score}}
+            ],
+        }
+
+    def test_split_agnostic_dataset_mirrored_onto_val_variant(self) -> None:
+        """Regression: a no-validation-split dataset shows on both variant rows.
+
+        Datasets without a validation split (e.g. MultiLoKo) carry
+        ``validation_split=None`` and are grouped under the test-split variant
+        id (``... (zero-shot)``). Their score must also surface on the matching
+        ``(..., val)`` variant, so a model evaluated on the validation split for
+        the rest of its datasets still shows the split-agnostic score.
+        """
+        # A regular validation-split run creates the "(zero-shot, val)" variant.
+        val_record = self._make_record(
+            dataset="angry-tweets",
+            task="sentiment-classification",
+            validation_split=True,
+            score=61.0,
+        )
+        # A split-agnostic run (no validation split) lands under "(zero-shot)".
+        none_record = self._make_record(
+            dataset="multiloko-fr", task="knowledge", validation_split=None, score=42.0
+        )
+
+        result = group_results_by_model(results=[val_record, none_record])
+
+        val_variant = "org/model (zero-shot, val)"
+        test_variant = "org/model (zero-shot)"
+
+        # The split-agnostic dataset appears under both variants...
+        assert "multiloko-fr" in result[val_variant]
+        assert "multiloko-fr" in result[test_variant]
+        assert result[val_variant]["multiloko-fr"][0][1] == 42.0
+        # ...while the genuine validation-split dataset stays on the val row only.
+        assert "angry-tweets" in result[val_variant]
+        assert "angry-tweets" not in result[test_variant]
+
+    def test_split_agnostic_dataset_not_mirrored_without_val_variant(self) -> None:
+        """A split-agnostic dataset is not mirrored when no val variant exists.
+
+        If a model was only ever run on the test split, there is no
+        ``(..., val)`` variant to mirror onto, so no phantom validation row is
+        created.
+        """
+        test_record = self._make_record(
+            dataset="angry-tweets",
+            task="sentiment-classification",
+            validation_split=False,
+            score=61.0,
+        )
+        none_record = self._make_record(
+            dataset="multiloko-fr", task="knowledge", validation_split=None, score=42.0
+        )
+
+        result = group_results_by_model(results=[test_record, none_record])
+
+        # Only the test-split variant exists; no "(zero-shot, val)" row appears.
+        assert "org/model (zero-shot, val)" not in result
+        assert "multiloko-fr" in result["org/model (zero-shot)"]

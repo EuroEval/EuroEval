@@ -1381,13 +1381,22 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
 
 
-def _get_olmo3_rope_parameters(
+def _get_rope_parameters_override(
     model_id: str, hf_model_config: "PretrainedConfig"
 ) -> dict[str, str | int | float] | None:
-    """Build rope_parameters override for OLMo-3 models.
+    """Build a nested ``rope_parameters`` override from legacy top-level rope fields.
 
-    OLMo-3 models store rope_theta and rope_scaling at the top level of config.json,
-    but vLLM's olmo2.py implementation expects them nested in rope_parameters.
+    Transformers 5.x consolidated rope configuration into a single nested
+    ``rope_parameters`` dict, and vLLM model implementations written against that
+    schema (e.g. ``olmo2.py``, which OLMo-3 reuses) read from it. Many models,
+    however, still ship a ``config.json`` with the legacy top-level ``rope_theta`` and
+    ``rope_scaling`` fields, causing vLLM to raise ``KeyError: 'rope_theta'``. This
+    helper transcribes the legacy fields into the nested structure vLLM expects.
+
+    The transcription itself is model-agnostic, but we only apply it to an explicit
+    allowlist of model families that we have confirmed need it, to avoid injecting a
+    (possibly mis-transcribed) override into models whose vLLM implementation reads the
+    top-level fields correctly today.
 
     Args:
         model_id:
@@ -1396,14 +1405,16 @@ def _get_olmo3_rope_parameters(
             The Hugging Face model configuration.
 
     Returns:
-        A rope_parameters dict if the model is OLMo-3 and lacks existing
+        A rope_parameters dict if the model is in the allowlist and lacks existing
         rope_parameters; otherwise None.
     """
-    is_olmo3 = hf_model_config.model_type == "olmo3" or (
+    # Families confirmed to require the legacy -> nested rope_parameters conversion,
+    # as (model_type, architecture) signals. Extend this list as new ones surface.
+    needs_override = getattr(hf_model_config, "model_type", None) == "olmo3" or (
         hf_model_config.architectures
         and "Olmo3ForCausalLM" in hf_model_config.architectures
     )
-    if not is_olmo3 or getattr(hf_model_config, "rope_parameters", None):
+    if not needs_override or getattr(hf_model_config, "rope_parameters", None):
         return None
 
     rope_theta = getattr(hf_model_config, "rope_theta", 10000)
@@ -1425,8 +1436,7 @@ def _get_olmo3_rope_parameters(
             rope_parameters[key] = rope_scaling[key]
 
     log_once(
-        f"Adding rope_parameters override for OLMo-3 model {model_id!r}: "
-        f"{rope_parameters!r}",
+        f"Adding rope_parameters override for model {model_id!r}: {rope_parameters!r}",
         level=logging.DEBUG,
     )
     return rope_parameters
@@ -1579,12 +1589,11 @@ def load_model(
             hf_model_config.architectures = remapped
             hf_overrides["architectures"] = remapped
 
-    # TODO: Remove this block when we don't care about OLMo-3 anymore
-    olmo3_rope_parameters = _get_olmo3_rope_parameters(
+    rope_parameters_override = _get_rope_parameters_override(
         model_id=model_id, hf_model_config=hf_model_config
     )
-    if olmo3_rope_parameters is not None:
-        hf_overrides["rope_parameters"] = olmo3_rope_parameters
+    if rope_parameters_override is not None:
+        hf_overrides["rope_parameters"] = rope_parameters_override
 
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism(force_single_gpu=False)
