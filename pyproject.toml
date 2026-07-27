@@ -112,6 +112,7 @@ dev = [
     "pre-commit>=4.5.1",
     "plotly>=6.9.0",
     "slopo",
+    "vulture>=2.16",
 ]
 
 [tool.uv.sources]
@@ -230,6 +231,10 @@ unsupported-operator = "ignore"
 no-matching-overload = "ignore"
 # vLLM types differ between macOS (0.22.0+cpu) and Linux (0.23.0), so ignore warnings
 unused-ignore-comment = "ignore"
+
+[tool.vulture]
+paths = ["src", "tests"]
+min_confidence = 80
 
 [tool.pytest.ini_options]
 minversion = "7.0"

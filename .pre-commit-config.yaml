@@ -12,6 +12,11 @@ repos:
     - id: trailing-whitespace
     - id: debug-statements
 
+- repo: https://github.com/jendrikseipp/vulture
+  rev: v2.16
+  hooks:
+    - id: vulture
+
 - repo: https://github.com/saattrupdan/funcsort
   rev: v0.1.1
   hooks:
