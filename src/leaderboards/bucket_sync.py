@@ -185,7 +185,9 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
 
             if local_identity == bucket_identity:
                 # Same identity - keep the newer record
-                winner = dedup_newer_record(local_record, bucket_record)
+                winner = dedup_newer_record(
+                    record_a=local_record, record_b=bucket_record
+                )
                 if winner is local_record:
                     logger.debug(f"Local record newer for {rel_path}, restoring")
                     file_path.write_bytes(local_raw)
@@ -282,10 +284,11 @@ def _sort_key(record: dict) -> tuple[str, str]:
 def merge_results(results_file: Path) -> int:
     """Merge per-record JSON tree into a single JSONL file.
 
-    Reads all ``results/*/*.json`` files and writes a deduplicated JSONL file.
-    Deduplication uses canonical result identity
-    ``(model_id, dataset, validation_split, few_shot)`` with newer records
-    winning based on ``eval_library.version`` and ``retrieved_timestamp``.
+    Reads all ``results/*/*.json`` files and existing records from the JSONL
+    file itself, then writes a deduplicated JSONL file. Deduplication uses
+    canonical result identity ``(model_id, dataset, validation_split, few_shot)``
+    with newer records winning based on ``eval_library.version`` and
+    ``retrieved_timestamp``.
 
     Args:
         results_file:
@@ -296,10 +299,34 @@ def merge_results(results_file: Path) -> int:
     """
     existing: dict[ResultIdentity, dict] = {}
 
+    # PHASE 1: Read existing records from the JSONL file (if it exists)
+    # This preserves results that haven't been synced to the tree yet
+    if results_file.exists():
+        logger.info(f"Reading existing records from {results_file}...")
+        with results_file.open("r", encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    record = json.loads(line)
+                    identity = identity_from_eee_record(record)
+                    if identity not in existing:
+                        existing[identity] = record
+                    else:
+                        # Deduplicate: keep newer record (tree records in Phase 2
+                        # will override via dedup_newer_record)
+                        existing[identity] = dedup_newer_record(
+                            record_a=existing[identity], record_b=record
+                        )
+                except (json.JSONDecodeError, ValueError, KeyError, TypeError) as e:
+                    logger.debug(
+                        f"Skipping invalid JSONL line in {results_file}: {e}"
+                    )
+
     # Remove empty JSON files before processing
     remove_empty_json_files(RESULTS_DIR)
 
-    # Read all record files from the tree
+    # PHASE 2: Read all record files from the tree (these override existing)
     if RESULTS_DIR.exists():
         for record_file in RESULTS_DIR.rglob("*.json"):
             if not record_file.is_file():
@@ -308,7 +335,9 @@ def merge_results(results_file: Path) -> int:
                 record = json.loads(record_file.read_text(encoding="utf-8"))
                 identity = identity_from_eee_record(record)
                 if identity in existing:
-                    existing[identity] = dedup_newer_record(existing[identity], record)
+                    existing[identity] = dedup_newer_record(
+                        record_a=existing[identity], record_b=record
+                    )
                 else:
                     existing[identity] = record
             except (json.JSONDecodeError, ValueError, KeyError) as e:
