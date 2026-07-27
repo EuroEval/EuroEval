@@ -8,10 +8,15 @@ from pydantic import BaseModel, Field, create_model
 
 from euroeval.data_models import BenchmarkConfig, DatasetConfig
 from euroeval.exceptions import InvalidBenchmark
+from euroeval.logging_utils import logger as euroeval_logger
 from euroeval.metrics.llm_as_a_judge import (
     LLMAsAJudgeMetric,
     create_model_graded_fact_metric,
 )
+
+# Configure euroeval logger to propagate to root so caplog can capture it
+euroeval_logger.propagate = True
+euroeval_logger.setLevel(logging.DEBUG)
 
 
 class TestCreateModelGradedFactMetric:

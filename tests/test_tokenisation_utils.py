@@ -101,12 +101,12 @@ def test_load_xlmr_tokeniser_with_fallback(
     # Verify the first call had use_fast=True
     first_call_args = mock_from_pretrained.call_args_list[0]
     assert first_call_args.kwargs.get("use_fast") is True
-    assert first_call_args.args[0] == model_id
+    assert first_call_args.kwargs.get("pretrained_model_name_or_path") == model_id
 
     # Verify the second call had use_fast=False (the fallback)
     second_call_args = mock_from_pretrained.call_args_list[1]
     assert second_call_args.kwargs.get("use_fast") is False
-    assert second_call_args.args[0] == model_id
+    assert second_call_args.kwargs.get("pretrained_model_name_or_path") == model_id
 
     # Verify that the fallback to the slow tokenizer was used
     assert tokeniser.is_fast is False
