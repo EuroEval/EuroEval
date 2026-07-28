@@ -245,8 +245,11 @@ def _upload_model_list_to_space(models_file: Path) -> bool:
         )
         logger.info(f"Uploaded {models_file.name} to {HF_LEADERBOARD_SPACE}.")
         return True
-    except HfHubHTTPError as e:
-        logger.error(f"Failed to upload models.py to {HF_LEADERBOARD_SPACE}: {e}")
+    except Exception as e:  # noqa: BLE001
+        logger.error(
+            f"Failed to upload models.py to {HF_LEADERBOARD_SPACE}: {e}",
+            exc_info=True,
+        )
         return False
 
 
