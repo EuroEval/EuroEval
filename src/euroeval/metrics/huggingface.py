@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import collections.abc as c
-import os
 import typing as t
 from pathlib import Path
 
@@ -12,7 +11,6 @@ import numpy as np
 from datasets import DownloadConfig, DownloadMode
 
 from ..exceptions import InvalidBenchmark
-from ..logging_utils import no_terminal_output
 from .base import Metric
 
 if t.TYPE_CHECKING:
@@ -94,15 +92,46 @@ class HuggingFaceMetric(Metric):
         Returns:
             The metric object itself.
         """
+        import os
+
         metric_cache_dir = Path(cache_dir) / "metrics"
         metric_cache_dir.mkdir(parents=True, exist_ok=True)
-        download_config = DownloadConfig(cache_dir=metric_cache_dir)
-        self.metric = evaluate.load(
-            path=self.huggingface_id,
-            download_config=download_config,
-            download_mode=DownloadMode.REUSE_CACHE_IF_EXISTS,
-            cache_dir=metric_cache_dir.as_posix(),
-        )
+
+        # Set up NLTK data directory for metrics that use NLTK (meteor, sari)
+        # This ensures NLTK data is stored inside .euroeval_cache and suppresses output
+        nltk_data_dir = metric_cache_dir / "nltk_data"
+        nltk_data_dir.mkdir(parents=True, exist_ok=True)
+
+        # CRITICAL: Set NLTK_DATA BEFORE importing NLTK
+        # This must happen before any import that might trigger NLTK (e.g., logging_utils importing evaluate)
+        os.environ["NLTK_DATA"] = str(nltk_data_dir)
+
+        # Now safe to import no_terminal_output (imports evaluate which imports nltk)
+        # NLTK will pick up NLTK_DATA env var during its initialization
+        from ..logging_utils import no_terminal_output
+
+        # Import NLTK after setting NLTK_DATA - it will use our custom data directory
+        import nltk
+
+        # Ensure NLTK uses only our custom data directory, not system defaults
+        nltk.data.path = [str(nltk_data_dir)]
+
+        # Suppress NLTK download logging using the no_terminal_output context manager
+        # This captures both stdout and stderr at the OS level
+        # We need to wrap both nltk.download AND evaluate.load because evaluate.load()
+        # triggers NLTK downloads for metrics like meteor
+        with no_terminal_output():
+            nltk.download("punkt_tab", download_dir=str(nltk_data_dir), quiet=True)
+            nltk.download("wordnet", download_dir=str(nltk_data_dir), quiet=True)
+            nltk.download("omw-1.4", download_dir=str(nltk_data_dir), quiet=True)
+
+            download_config = DownloadConfig(cache_dir=metric_cache_dir)
+            self.metric = evaluate.load(
+                path=self.huggingface_id,
+                download_config=download_config,
+                download_mode=DownloadMode.REUSE_CACHE_IF_EXISTS,
+                cache_dir=metric_cache_dir.as_posix(),
+            )
         return self
 
     def __call__(
