@@ -1,8 +1,7 @@
 """EuroEval - A benchmarking framework for language models."""
 
-# STAGE 0 ###
-# Configure NLTK to use .euroeval_cache to prevent downloading to home directory ###
-# This must be done BEFORE any import that might trigger NLTK (like logging_utils)
+# STAGE 1 ###
+# Block unwanted terminal output that happens on importing external modules ###
 
 import importlib.util
 import logging
@@ -11,10 +10,6 @@ import sys
 import warnings
 
 from termcolor import colored
-
-# STAGE 1 ###
-# Block unwanted terminal output that happens on importing external modules ###
-
 
 # Block specific warnings before importing anything else, as they can be noisy
 if os.getenv("FULL_LOG") != "1":
