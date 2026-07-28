@@ -71,6 +71,31 @@ class Provider:
     matches: c.Callable[[str], bool]
 
 
+PROVIDERS: list[Provider] = [
+    Provider(
+        name="openai",
+        env_var="OPENAI_API_KEY",
+        matches=lambda m: m.startswith(("openai/", "gpt-")),
+    ),
+    Provider(
+        name="anthropic",
+        env_var="ANTHROPIC_API_KEY",
+        matches=lambda m: m.startswith(("claude-", "anthropic/")),
+    ),
+    Provider(
+        name="google",
+        env_var="GEMINI_API_KEY",
+        matches=lambda m: m.startswith(("gemini/", "gemini-")),
+    ),
+    Provider(
+        name="xai",
+        env_var="XAI_API_KEY",
+        matches=lambda m: m.startswith(("xai/", "grok-")),
+    ),
+]
+PROVIDERS_BY_NAME: dict[str, Provider] = {p.name: p for p in PROVIDERS}
+
+
 def _build_euroeval_cmd(
     model_id: str,
     languages: c.Sequence[str],

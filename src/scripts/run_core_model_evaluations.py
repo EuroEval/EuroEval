@@ -42,7 +42,8 @@ from euroeval.languages import get_all_languages
 from leaderboards.constants import NEW_RESULTS_PATH, RESULTS_DIR
 from leaderboards.core_models import CoreModel
 from leaderboards.evaluation_common import (
-    Provider,
+    PROVIDERS,
+    PROVIDERS_BY_NAME,
     gpu_total_memory_bytes,
     model_fits_locally,
     official_dataset_language_pairs,
@@ -516,27 +517,6 @@ def _prompt_api_providers() -> set[str]:
         if click.confirm(f"  Include {provider.name}?", default=True):
             selected.add(provider.name)
     return selected
-
-
-PROVIDERS: list[Provider] = [
-    Provider(
-        name="openai",
-        env_var="OPENAI_API_KEY",
-        matches=lambda m: m.startswith("openai/"),
-    ),
-    Provider(
-        name="anthropic",
-        env_var="ANTHROPIC_API_KEY",
-        matches=lambda m: m.startswith("claude-") or m.startswith("anthropic/"),
-    ),
-    Provider(
-        name="google",
-        env_var="GEMINI_API_KEY",
-        matches=lambda m: m.startswith("gemini/"),
-    ),
-    Provider(name="xai", env_var="XAI_API_KEY", matches=lambda m: m.startswith("xai/")),
-]
-PROVIDERS_BY_NAME: dict[str, Provider] = {p.name: p for p in PROVIDERS}
 
 
 if __name__ == "__main__":

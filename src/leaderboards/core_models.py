@@ -78,7 +78,6 @@ class SizeBucket(enum.StrEnum):
 
 
 @dataclasses.dataclass(frozen=True)
-@dataclasses.dataclass(frozen=True)
 class CoreModel:
     """A model that should be re-evaluated when datasets change.
 
