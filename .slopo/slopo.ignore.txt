@@ -75,8 +75,3 @@ a52d4598fe08  # euroeval/task_group_utils/question_answering.py, euroeval/task_g
 4aa197b50304  # euroeval/data_models.py
 7d9b2e3cbf6b  # euroeval/exceptions.py
 490246fc7f9d  # leaderboards/queue_env.py
-
-
-# ===========================================================================
-# hashes
-# ===========================================================================
