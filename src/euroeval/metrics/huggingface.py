@@ -104,13 +104,15 @@ class HuggingFaceMetric(Metric):
 
         # Load the metric (evaluate.load() may trigger additional NLTK downloads)
         # but NLTK is already configured, so it will use our cache directory
-        download_config = DownloadConfig(cache_dir=metric_cache_dir)
-        self.metric = evaluate.load(
-            path=self.huggingface_id,
-            download_config=download_config,
-            download_mode=DownloadMode.REUSE_CACHE_IF_EXISTS,
-            cache_dir=metric_cache_dir.as_posix(),
-        )
+        # Wrap in no_terminal_output() to suppress any output from evaluate.load()
+        with no_terminal_output():
+            download_config = DownloadConfig(cache_dir=metric_cache_dir)
+            self.metric = evaluate.load(
+                path=self.huggingface_id,
+                download_config=download_config,
+                download_mode=DownloadMode.REUSE_CACHE_IF_EXISTS,
+                cache_dir=metric_cache_dir.as_posix(),
+            )
         return self
 
     def __call__(

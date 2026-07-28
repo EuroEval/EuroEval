@@ -3,8 +3,6 @@
 import os
 from pathlib import Path
 
-import nltk
-
 from .logging_utils import no_terminal_output
 
 
@@ -20,6 +18,8 @@ def download_nltk_packages(
             List of NLTK package names to download. If None, downloads the default
             packages: punkt_tab, wordnet, omw-1.4.
     """
+    import nltk  # noqa: PLC0415 (import inside function intentional - defers NLTK init)
+
     if packages is None:
         packages = ["punkt_tab", "wordnet", "omw-1.4"]
 
@@ -42,6 +42,8 @@ def setup_nltk_data_dir(cache_dir: str | Path) -> Path:
     Returns:
         The path to the NLTK data directory.
     """
+    import nltk  # noqa: PLC0415 (import inside function intentional - defers NLTK init)
+
     nltk_data_dir = Path(cache_dir) / "nltk_data"
     nltk_data_dir.mkdir(parents=True, exist_ok=True)
 
