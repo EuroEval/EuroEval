@@ -8,7 +8,7 @@
 # Format: <12-char-hash>  # <filename1>, <filename2>, ...
 
 
-# ---------- Dataset-creation boilerplate: self-contained ETL scripts, not library code ----------
+# ---------- Dataset-creation scripts: each is a standalone recipe, not shared library code ----------
 
 897f0ed8b886  # scripts/dataset_creation/create_fquad.py, scripts/dataset_creation/create_squad.py
 d2ed204d79d0  # scripts/dataset_creation/create_hasoc.py, scripts/dataset_creation/create_sarcasm_humor.py
@@ -53,16 +53,16 @@ ac81abca3ab6  # scripts/dataset_creation/create_qnli.py
 a52d4598fe08  # euroeval/task_group_utils/question_answering.py, euroeval/task_group_utils/sequence_classification.py
 
 
-# ---------- Dataclass property pairs: symmetric id2label/label2id by design ----------
+# ---------- Dataclass property pairs: id2label and label2id are intentionally symmetric ----------
 
 4aa197b50304  # euroeval/data_models.py
 
 
-# ---------- Exception boilerplate: standard __init__ pattern ----------
+# ---------- Exception classes: all use the same __init__ signature, which is normal ----------
 
 7d9b2e3cbf6b  # euroeval/exceptions.py
 
 
-# ---------- Closure boilerplate: reader/writer getpass wrappers ----------
+# ---------- Reader/writer closures: both wrap password input, structural identity is expected ----------
 
 490246fc7f9d  # leaderboards/queue_env.py
