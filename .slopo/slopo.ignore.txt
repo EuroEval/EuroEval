@@ -5,7 +5,11 @@
 #   uv run slopo index && uv run slopo embed && uv run slopo analyze
 #   uv run python .slopo/gen_ignore.py   # merges new clusters into this file
 #
-# Format: <12-char-hash>  # <filename1>, <filename2>, ...
+# Format (one hash per line, files listed after #):
+#   <hash>  # path/to/file1.py, path/to/file2.py, ...
+#
+# Example:
+#   897f0ed8b886  # scripts/dataset_creation/create_fquad.py, scripts/dataset_creation/create_squad.py
 
 
 # ---------- Dataset-creation scripts: each is a standalone recipe, not shared library code ----------
