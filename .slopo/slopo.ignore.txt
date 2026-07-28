@@ -6,19 +6,9 @@
 #   uv run python .slopo/gen_ignore.py   # merges new clusters into this file
 #
 # Format: <12-char-hash>  # <filename1>, <filename2>, ...
-#
-# Section headers explain WHY each category is ignored.
 
 
-# ===========================================================================
-# Dataset-creation boilerplate
-# ===========================================================================
-
-# Each script under `scripts/dataset_creation/` is a deliberately self-contained recipe
-# for one dataset. These are not library code meant to be shared — they are independent
-# ETL pipelines that happen to follow similar patterns. Extracting "common" code would
-# couple unrelated datasets, introduce import dependencies between otherwise isolated
-# scripts, and hurt readability more than the trivial duplication costs.
+# ---------- Dataset-creation boilerplate: self-contained ETL scripts, not library code ----------
 
 897f0ed8b886  # scripts/dataset_creation/create_fquad.py, scripts/dataset_creation/create_squad.py
 d2ed204d79d0  # scripts/dataset_creation/create_hasoc.py, scripts/dataset_creation/create_sarcasm_humor.py
@@ -55,19 +45,7 @@ ac81abca3ab6  # scripts/dataset_creation/create_qnli.py
 4af81a865fac  # scripts/dataset_creation/create_icelandic_knowledge.py, scripts/dataset_creation/create_swedish_facts.py, ...
 
 
-# ===========================================================================
-# Post-refactor wrappers (benchmark_modules)
-# ===========================================================================
-
-# These clusters remain after genuine duplication was refactored into shared helpers
-# in `benchmark_modules/base.py` and `task_group_utils/_common.py`. What Slopo flags
-# now are thin wrapper methods that delegate to shared helpers. They cannot be further
-# unified without breaking the inheritance hierarchy:
-# - `BenchmarkModule` (ABC) → `HuggingFaceEncoderModel` → `VLLMModel` / `FreshEncoderModel`
-# - `LiteLLMModel` is a sibling under `BenchmarkModule`
-# Lifting shared logic onto `BenchmarkModule` would cause wrong method resolution order
-# (e.g. `VLLMModel` would inherit encoder implementation from `HuggingFaceEncoderModel`).
-# Module-level helpers in `base.py` are the correct abstraction.
+# ---------- Post-refactor wrappers: thin delegations after extraction to base.py/_common.py ----------
 
 01d1b47f0981  # euroeval/benchmark_modules/hf.py, euroeval/benchmark_modules/vllm.py
 06bf2c0c305a  # euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/litellm.py
@@ -75,45 +53,16 @@ ac81abca3ab6  # scripts/dataset_creation/create_qnli.py
 a52d4598fe08  # euroeval/task_group_utils/question_answering.py, euroeval/task_group_utils/sequence_classification.py
 
 
-# ===========================================================================
-# Post-refactor wrappers (task_group_utils)
-# ===========================================================================
-
-# Shared metric computation extracted to `task_group_utils/_common.py`
-# (`normalise_model_outputs`, `compute_simple_metrics`). Callers now delegate
-# to the shared helper. `text_to_text.py` kept its own OOM-retry loop.
-
-
-
-# ===========================================================================
-# Dataclass property pairs
-# ===========================================================================
-
-# Symmetric properties on the same dataclass (id2label = enumerate labels,
-# label2id = enumerate reversed). Forcing these into "shared" code would add
-# indirection without reducing cognitive load — the duplication is trivial
-# and intentional by design.
+# ---------- Dataclass property pairs: symmetric id2label/label2id by design ----------
 
 4aa197b50304  # euroeval/data_models.py
 
 
-# ===========================================================================
-# Exception boilerplate
-# ===========================================================================
-
-# Custom exception classes in `exceptions.py` share the same `__init__` signature
-# (message + optional args). Extracting into a common base class would add
-# indirection without reducing cognitive load — this is standard Python pattern.
+# ---------- Exception boilerplate: standard __init__ pattern ----------
 
 7d9b2e3cbf6b  # euroeval/exceptions.py
 
 
-# ===========================================================================
-# Closure boilerplate
-# ===========================================================================
-
-# Reader/writer closures in `queue_env.py` are structurally identical because
-# they wrap `getpass.getpass` and `msvcrt.getwch` respectively. Unifying would
-# require higher-order function indirection for negligible gain.
+# ---------- Closure boilerplate: reader/writer getpass wrappers ----------
 
 490246fc7f9d  # leaderboards/queue_env.py
