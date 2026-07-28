@@ -11,7 +11,7 @@
 
 
 # ===========================================================================
-# Dataset-creation boilerplate (33 clusters)
+# Dataset-creation boilerplate
 # ===========================================================================
 
 # Each script under `scripts/dataset_creation/` is a deliberately self-contained recipe
@@ -56,7 +56,7 @@ ac81abca3ab6  # scripts/dataset_creation/create_qnli.py
 
 
 # ===========================================================================
-# Library code (7 clusters)
+# Library code
 # ===========================================================================
 
 # These clusters remain after genuine duplication was refactored into shared helpers
@@ -78,5 +78,5 @@ a52d4598fe08  # euroeval/task_group_utils/question_answering.py, euroeval/task_g
 
 
 # ===========================================================================
-# Total: 40 clusters (33 dataset-creation + 7 library)
+# hashes
 # ===========================================================================
