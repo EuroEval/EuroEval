@@ -19,7 +19,7 @@
 # - "dataclass property pair" — id2label/label2id symmetry on the same class
 
 # ===========================================================================
-# Dataset-creation boilerplate (32 clusters)
+# Dataset-creation boilerplate (33 clusters)
 # ===========================================================================
 # Each script under scripts/dataset_creation/ is a deliberately self-contained
 # recipe for one dataset. Extracting shared code would couple unrelated datasets
@@ -56,9 +56,9 @@ ac81abca3ab6  # dataset-creation boilerplate
 97384c51d04e  # dataset-creation boilerplate
 608baeb94734  # dataset-creation boilerplate
 40191ae9ba83  # dataset-creation boilerplate
-
+4af81a865fac  # dataset-creation boilerplate: LLM-based question generation (create_icelandic_knowledge.py, create_swedish_facts.py, create_multinrc.py, create_multiloko.py)
 # ===========================================================================
-# Library code (8 clusters)
+# Library code (7 clusters)
 # ===========================================================================
 
 # Post-refactor thin wrappers — genuine duplication already extracted into
@@ -72,32 +72,11 @@ ac81abca3ab6  # dataset-creation boilerplate
 818252123316  # post-refactor wrapper: extract_labels helper in litellm.py vs vllm.py
 06bf2c0c305a  # post-refactor wrapper: prepare_dataset in vllm.py vs litellm.py
 0964ffc78620  # post-refactor wrapper: generative_type property in vllm.py vs litellm.py
-
-# Module-level helper extracted to benchmark_modules/base.py (build_model_config).
-# Shared by reference, not duplication.
 01d1b47f0981  # post-refactor wrapper: model_exists in hf.py vs vllm.py (different polarity: HF = not in GENERATIVE_PIPELINE_TAGS, vLLM = in)
-
-# Shared logic extracted to task_group_utils/_common.py (normalise_model_outputs,
-# compute_simple_metrics). Callers (question_answering, sequence_classification)
-# now delegate; text_to_text.py kept its own OOM-retry loop.
 a52d4598fe08  # post-refactor wrapper: compute_metrics in question_answering.py vs sequence_classification.py
-
-# Dataclass property pair on the same class — structurally identical by symmetry
-# (id2label = enumerate labels, label2id = enumerate reversed). Forcing these
-# into shared code would hurt readability more than the trivial duplication helps.
 4aa197b50304  # dataclass property pair: id2label vs label2id in DataConfig (exact logical inverse)
-
-# Exception hierarchy boilerplate — all custom exceptions in exceptions.py share
-# the same __init__ signature (message + optional args). Extracting into a base
-# class would add indirection without reducing cognitive load.
-7d9b2e3cbf6b  # exception boilerplate: NoHFDataError vs NoCoreDatasetError __init__ (external reviewers)
-
-# Closure boilerplate in queue_env.py — reader() and writer() are structurally
-# identical closures over getpass.getpass / msvcrt.getwch. Unifying would require
-# higher-order function indirection for negligible gain.
-490246fc7f9d  # closure boilerplate: reader vs writer in queue_env file validator (getpass/getch wrappers)
-
+7d9b2e3cbf6b  # exception boilerplate: NoHFDataError vs NoCoreDatasetError __init__ (structural necessity)
+490246fc7f9d  # closure boilerplate: reader vs writer in queue_env.py (getpass/getch wrappers)
 # ===========================================================================
-4af81a865fac  # dataset-creation boilerplate: LLM-based question generation (create_icelandic_knowledge.py, create_swedish_facts.py, create_multinrc.py, create_multiloko.py)
-# Total: 40 clusters (32 dataset-creation + 8 library)
+# Total: 40 clusters (33 dataset-creation + 7 library)
 # ===========================================================================
