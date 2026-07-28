@@ -240,7 +240,7 @@ def generate_model_list() -> None:
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open(mode="w") as f:
-        f.write('"""Auto-generated list of models in the EuroEval leaderboards."""\n')
+        f.write('"""Auto-generated list of models in the EuroEval leaderboards."""\n\n')
         f.write("MODEL_NAMES = [\n")
         f.writelines(f'    "{model_id}",\n' for model_id in model_ids)
         f.write("]\n")
