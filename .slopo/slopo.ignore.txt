@@ -21,8 +21,8 @@
 
 # ===========================================================================
 # Dataset-creation boilerplate (33 clusters)
-
 # ===========================================================================
+
 # Each script under scripts/dataset_creation/ is a deliberately self-contained
 # recipe for one dataset. Extracting shared code would couple unrelated datasets
 # and hurt readability. These are ignored en masse.
@@ -60,9 +60,9 @@ ac81abca3ab6  # dataset-creation boilerplate
 40191ae9ba83  # dataset-creation boilerplate
 4af81a865fac  # dataset-creation boilerplate: LLM-based question generation (create_icelandic_knowledge.py, create_swedish_facts.py, create_multinrc.py, create_multiloko.py)
 
+
 # ===========================================================================
 # Library code (7 clusters)
-
 # ===========================================================================
 
 # Post-refactor thin wrappers — genuine duplication already extracted into
@@ -82,7 +82,7 @@ a52d4598fe08  # post-refactor wrapper: compute_metrics in question_answering.py 
 7d9b2e3cbf6b  # exception boilerplate: NoHFDataError vs NoCoreDatasetError __init__ (structural necessity)
 490246fc7f9d  # closure boilerplate: reader vs writer in queue_env.py (getpass/getch wrappers)
 
+
 # ===========================================================================
 # Total: 40 clusters (33 dataset-creation + 7 library)
-
 # ===========================================================================
