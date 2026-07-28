@@ -10,6 +10,8 @@
 
 """Create the Público-mini summarisation dataset."""
 
+# Configure NLTK to use .euroeval_cache instead of home directory
+import os as _os
 import random
 
 import nltk
@@ -17,7 +19,12 @@ from datasets import Dataset, DatasetDict, load_dataset
 from huggingface_hub.hf_api import HfApi
 from nltk.tokenize import sent_tokenize
 
-nltk.download("punkt")
+_nltk_data_path = _os.path.expanduser("~/gitsky/EuroEval/.euroeval_cache/nltk_data")
+_os.makedirs(_nltk_data_path, exist_ok=True)
+_os.environ["NLTK_DATA"] = _nltk_data_path
+nltk.data.path = [_nltk_data_path]
+
+nltk.download("punkt", quiet=True)
 
 TOTAL = 1024 + 256 + 2048
 

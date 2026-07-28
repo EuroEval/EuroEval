@@ -16,6 +16,7 @@
 import io
 import json
 import logging
+import os as _os
 import re
 import warnings
 from collections import defaultdict
@@ -31,7 +32,14 @@ from urllib3.exceptions import InsecureRequestWarning
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 
-nltk.download("punkt_tab")
+# Configure NLTK to use .euroeval_cache instead of home directory
+
+_nltk_data_path = _os.path.expanduser("~/gitsky/EuroEval/.euroeval_cache/nltk_data")
+_os.makedirs(_nltk_data_path, exist_ok=True)
+_os.environ["NLTK_DATA"] = _nltk_data_path
+nltk.data.path = [_nltk_data_path]
+
+nltk.download("punkt_tab", quiet=True)
 
 logger = logging.getLogger("create_eltec")
 

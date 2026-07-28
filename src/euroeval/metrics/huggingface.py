@@ -108,10 +108,10 @@ class HuggingFaceMetric(Metric):
 
         # Now safe to import no_terminal_output (imports evaluate which imports nltk)
         # NLTK will pick up NLTK_DATA env var during its initialization
-        from ..logging_utils import no_terminal_output
-
         # Import NLTK after setting NLTK_DATA - it will use our custom data directory
         import nltk
+
+        from ..logging_utils import no_terminal_output
 
         # Ensure NLTK uses only our custom data directory, not system defaults
         nltk.data.path = [str(nltk_data_dir)]
