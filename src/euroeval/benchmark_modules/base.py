@@ -11,9 +11,15 @@ from typing import cast
 from datasets import Dataset, DatasetDict
 from torch import nn
 
+from ..constants import MERGE_TAGS
+from ..data_models import ModelConfig
 from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark, NeedsEnvironmentVariable, NeedsExtraInstalled
+from ..generation_utils import apply_prompt, extract_few_shot_examples
+from ..languages import get_all_languages
 from ..logging_utils import get_pbar, log_once
+from ..model_cache import create_model_cache_dir
+from ..string_utils import split_model_id
 from ..task_group_utils import (
     question_answering,
     sequence_classification,
@@ -22,6 +28,7 @@ from ..task_group_utils import (
 )
 
 if t.TYPE_CHECKING:
+    from transformers.generation.configuration_utils import GenerationConfig
     from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.trainer import Trainer
 
@@ -29,10 +36,10 @@ if t.TYPE_CHECKING:
         BenchmarkConfig,
         DatasetConfig,
         GenerativeModelOutput,
-        ModelConfig,
+        HFModelInfo,
         Task,
     )
-    from ..enums import BatchingPreference, GenerativeType
+    from ..enums import BatchingPreference, GenerativeType, InferenceBackend, ModelType
     from ..types import ComputeMetricsFunction, ExtractLabelsFunction
 
 
@@ -394,3 +401,240 @@ class BenchmarkModule(ABC):
             The vocabulary size of the model.
         """
         ...
+
+
+def _build_model_config_helper(
+    model_id: str,
+    revision: str,
+    param: str | None,
+    task: str,
+    model_info: "HFModelInfo",
+    benchmark_config: "BenchmarkConfig",
+    inference_backend: "InferenceBackend",
+    model_type: "ModelType",
+    adapter_base_model_id: str | None,
+    generation_config: "GenerationConfig | None" = None,
+) -> "ModelConfig":
+    """Helper function to build a ModelConfig from shared components.
+
+    Args:
+        model_id:
+            The model ID.
+        revision:
+            The model revision.
+        param:
+            The model parameter, or None if not applicable.
+        task:
+            The task that the model was trained on.
+        model_info:
+            The model information from Hugging Face Hub.
+        benchmark_config:
+            The benchmark configuration.
+        inference_backend:
+            The inference backend to use.
+        model_type:
+            The model type.
+        adapter_base_model_id:
+            The base model ID if this is an adapter model.
+        generation_config:
+            The generation configuration, or None if not applicable.
+
+    Returns:
+        The constructed ModelConfig.
+    """
+    language_mapping = get_all_languages()
+    language_codes = list(language_mapping.keys())
+
+    return ModelConfig(
+        model_id=model_id,
+        revision=revision,
+        param=param,
+        task=task,
+        languages=[
+            language_mapping[tag] for tag in model_info.tags if tag in language_codes
+        ],
+        merge=any(tag in model_info.tags for tag in MERGE_TAGS),
+        inference_backend=inference_backend,
+        model_type=model_type,
+        fresh=False,
+        model_cache_dir=create_model_cache_dir(
+            cache_dir=benchmark_config.cache_dir, model_id=model_id
+        ),
+        adapter_base_model_id=adapter_base_model_id,
+        generation_config=generation_config,
+    )
+
+
+def _extract_labels_from_generation_helper(
+    dataset_config: "DatasetConfig",
+    model_config: "ModelConfig",
+    first_label_token_mapping: dict[str, str] | bool,
+) -> "ExtractLabelsFunction":
+    """Helper function to extract labels from generated output.
+
+    Args:
+        dataset_config:
+            The dataset configuration.
+        model_config:
+            The model configuration.
+        first_label_token_mapping:
+            Mapping from labels to their first token IDs.
+
+    Returns:
+        The function used to extract labels from the generated output.
+
+    Raises:
+        NotImplementedError:
+            If the task group is not supported.
+    """
+    match dataset_config.task.task_group:
+        case (
+            TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        ):
+            return partial(
+                sequence_classification.extract_labels_from_generation,
+                dataset_config=dataset_config,
+                model_config=model_config,
+                first_label_token_mapping=first_label_token_mapping,
+            )
+        case TaskGroup.TEXT_TO_TEXT:
+            return text_to_text.extract_labels_from_generation
+        case TaskGroup.TOKEN_CLASSIFICATION:
+            return partial(
+                token_classification.extract_labels_from_generation,
+                dataset_config=dataset_config,
+            )
+        case TaskGroup.QUESTION_ANSWERING:
+            return question_answering.extract_labels_from_generation
+        case _:
+            raise NotImplementedError(
+                f"Unsupported task group: {dataset_config.task.task_group}."
+            )
+
+
+def _lookup_model_info(
+    model_id: str, benchmark_config: "BenchmarkConfig"
+) -> tuple[str, str, "HFModelInfo | None"]:
+    """Helper function to look up model information from Hugging Face Hub.
+
+    This performs the shared lookup logic: split the model ID and fetch
+    repository information.
+
+    Args:
+        model_id:
+            The model ID.
+        benchmark_config:
+            The benchmark configuration.
+
+    Returns:
+        A tuple of (model_id, revision, model_info), where model_info may be None
+        if the model was not found.
+
+    Note:
+        Uses a late import of get_model_repo_info to avoid circular imports.
+    """
+    # Late import to avoid circular dependency with hf.py
+    from .hf import get_model_repo_info  # noqa: PLC0415
+
+    model_id_components = split_model_id(model_id=model_id)
+    model_info = get_model_repo_info(
+        model_id=model_id_components.model_id,
+        revision=model_id_components.revision,
+        api_key=benchmark_config.api_key,
+        cache_dir=benchmark_config.cache_dir,
+        trust_remote_code=benchmark_config.trust_remote_code,
+        requires_safetensors=benchmark_config.requires_safetensors,
+        run_with_cli=benchmark_config.run_with_cli,
+    )
+    return (model_id_components.model_id, model_id_components.revision, model_info)
+
+
+def _prepare_dataset_helper(
+    dataset: DatasetDict,
+    task: "Task",
+    model_config: "ModelConfig",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+    generative_type: "GenerativeType | None",
+    itr_idx: int,
+    always_populate_text_field: bool,
+    tokeniser: "PreTrainedTokenizer | None",
+) -> DatasetDict:
+    """Helper function to prepare a dataset for a generative model.
+
+    Args:
+        dataset:
+            The dataset to prepare.
+        task:
+            The task to prepare the dataset for.
+        model_config:
+            The model configuration.
+        dataset_config:
+            The dataset configuration.
+        benchmark_config:
+            The benchmark configuration.
+        generative_type:
+            The generative type of the model.
+        itr_idx:
+            The index of the dataset in the iterator.
+        always_populate_text_field:
+            Whether to always populate the text field.
+        tokeniser:
+            The tokeniser to use, or None if not applicable.
+
+    Returns:
+        The prepared dataset.
+    """
+    if task.task_group == TaskGroup.QUESTION_ANSWERING:
+        dataset = dataset.map(
+            lambda examples: dict(
+                label=[
+                    dict(
+                        id=id,
+                        answers=dict(
+                            answer_start=answer_dct["answer_start"],
+                            text=[
+                                answer_text.lower()
+                                for answer_text in answer_dct["text"]
+                            ],
+                        ),
+                    )
+                    for id, answer_dct in zip(examples["id"], examples["answers"])
+                ]
+            ),
+            batched=True,
+            load_from_cache_file=False,
+            keep_in_memory=True,
+        )
+
+    if benchmark_config.few_shot:
+        few_shot_examples = extract_few_shot_examples(
+            dataset=dataset,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            itr_idx=itr_idx,
+        )
+    else:
+        few_shot_examples = list()
+
+    mapped_dataset = dataset["test"].map(
+        partial(
+            apply_prompt,
+            few_shot_examples=few_shot_examples,
+            model_config=model_config,
+            dataset_config=dataset_config,
+            generative_type=generative_type,
+            always_populate_text_field=always_populate_text_field,
+            tokeniser=tokeniser,
+            use_bits_per_character=benchmark_config.use_bits_per_character,
+        ),
+        batched=True,
+        load_from_cache_file=False,
+        keep_in_memory=True,
+    )
+    assert isinstance(mapped_dataset, Dataset), (
+        "Mapped dataset is not a Dataset instance."
+    )
+    dataset["test"] = mapped_dataset
+
+    return dataset

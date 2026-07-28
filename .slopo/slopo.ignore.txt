@@ -1,0 +1,77 @@
+# Slopo ignore list — reviewed duplicate clusters.
+#
+# Regenerate after refactors:
+#   uv run slopo index && uv run slopo embed && uv run slopo analyze
+#   uv run python .slopo/gen_ignore.py  # merges new clusters into this file
+#
+# Format (one hash per line, files listed after #):
+#   <hash>  # path/to/file1.py, path/to/file2.py, ...
+#
+# Example:
+#   897f0ed8b886  # scripts/dataset_creation/create_fquad.py, scripts/dataset_creation/create_squad.py
+#
+# Structure:
+# - Each section starts with a commented header explaining WHY that category is ignored
+# - Two blank lines separate sections
+# - One blank line separates the header from its hashes
+# - Hashes within a section are sorted alphabetically
+
+
+# ---------- Dataset-creation scripts: each is a standalone recipe, not shared library code ----------
+
+897f0ed8b886  # scripts/dataset_creation/create_fquad.py, scripts/dataset_creation/create_squad.py
+d2ed204d79d0  # scripts/dataset_creation/create_hasoc.py, scripts/dataset_creation/create_sarcasm_humor.py
+94bd5869b3e6  # scripts/dataset_creation/create_norne.py
+bb1c8fac3486  # scripts/dataset_creation/create_germeval.py
+2034ca6b4c55  # scripts/dataset_creation/create_wikiann.py
+fe1159692eb9  # scripts/dataset_creation/create_norec.py
+595a1a8b5e76  # scripts/dataset_creation/create_lap.pdf
+f1273ec02072  # scripts/dataset_creation/create_angora.py
+3cd32f482119  # scripts/dataset_creation/create_dutchnet.py
+754d96c4216f  # scripts/dataset_creation/create_no_europarl.py
+65264116169f  # scripts/dataset_creation/create_en_europarl.py
+0b29c45678c8  # scripts/dataset_creation/create_german_europarl.py
+015134de99f9  # scripts/dataset_creation/create_hate_speech.py
+b5aa9cfb98ac  # scripts/dataset_creation/create_nld_europarl.py
+3f08c0953dc2  # scripts/dataset_creation/create_swe_europarl.py
+818252123316  # scripts/dataset_creation/create_spa_europarl.py, scripts/dataset_creation/create_dan_europarl.py
+8ff2bbe71a18  # scripts/dataset_creation/create_hellaswag.py
+739752b77ef1  # scripts/dataset_creation/create_logiqa.py
+3abf4b282463  # scripts/dataset_creation/create_dynamic_superglue.py
+d008f8ed6c93  # scripts/dataset_creation/create_gsm8k.py
+78d31b36ee0a  # scripts/dataset_creation/create_arc.py
+4899b96e6cfd  # scripts/dataset_creation/create_piqa.py
+d81eb68f2948  # scripts/dataset_creation/create_copa.py
+a653617439bf  # scripts/dataset_creation/create_wic.py
+4c57aef481fb  # scripts/dataset_creation/create_boolq.py
+d37d12a12202  # scripts/dataset_creation/create_commitmentbank.py
+71fc771b060f  # scripts/dataset_creation/create_wnli.py
+308c086cfeda  # scripts/dataset_creation/create_mrpc.py
+ac81abca3ab6  # scripts/dataset_creation/create_qnli.py
+97384c51d04e  # scripts/dataset_creation/create_mnli.py
+608baeb94734  # scripts/dataset_creation/create_qqp.py
+40191ae9ba83  # scripts/dataset_creation/create_sst2.py
+4af81a865fac  # scripts/dataset_creation/create_icelandic_knowledge.py, scripts/dataset_creation/create_swedish_facts.py, ...
+
+
+# ---------- Post-refactor wrappers: cannot merge without breaking class interfaces ----------
+
+01d1b47f0981  # euroeval/benchmark_modules/hf.py, euroeval/benchmark_modules/vllm.py
+06bf2c0c305a  # euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/litellm.py
+0964ffc78620  # euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/litellm.py
+a52d4598fe08  # euroeval/task_group_utils/question_answering.py, euroeval/task_group_utils/sequence_classification.py
+
+
+# ---------- Dataclass property pairs: id2label and label2id are intentionally symmetric ----------
+
+4aa197b50304  # euroeval/data_models.py
+
+
+# ---------- Exception classes: all use the same __init__ signature, which is normal ----------
+
+7d9b2e3cbf6b  # euroeval/exceptions.py
+
+
+# ---------- Reader/writer closures: both wrap password input, structural identity is expected ----------
+
+490246fc7f9d  # leaderboards/queue_env.py

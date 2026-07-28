@@ -37,7 +37,6 @@ OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY / XAI_API_KEY
 
 from __future__ import annotations
 
-import collections.abc as c
 import json
 import logging
 import os
@@ -66,8 +65,11 @@ from leaderboards.constants import (
     RESULTS_DIR,
 )
 from leaderboards.evaluation_common import (
+    PROVIDERS,
+    PROVIDERS_BY_NAME,
     gpu_total_memory_bytes,
     model_fits_locally,
+    provider_for_model_id,
     resolve_hf_token,
     run_euroeval,
 )
@@ -369,6 +371,692 @@ def main(
         )
 
 
+# --------------------------------------------------------------------------- #
+# Config + documentation swap
+# --------------------------------------------------------------------------- #
+def apply_swap(
+    old_dataset: str | None, new_datasets: tuple[str, ...], dry_run: bool
+) -> list[Path]:
+    """Swap officiality in the dataset configs and the frontend docs.
+
+    Args:
+        old_dataset:
+            The dataset to demote to unofficial, or None if just adding.
+        new_datasets:
+            The datasets to promote to official.
+        dry_run:
+            When True, log the files that would change without editing them.
+
+    Returns:
+        The paths that were (or would be) modified.
+
+    Raises:
+        click.ClickException:
+            When the dataset configs cannot be fetched.
+    """
+    changed: list[Path] = []
+    # Promote all new datasets to official
+    for dataset_id in new_datasets:
+        config_path = find_config_file(dataset_id=dataset_id)
+        changed.append(config_path)
+        if not dry_run:
+            set_config_officiality(
+                path=config_path, dataset_id=dataset_id, official=True
+            )
+        for doc_path in find_doc_files(dataset_id=dataset_id):
+            changed.append(doc_path)
+            if not dry_run:
+                set_doc_officiality(path=doc_path, dataset_id=dataset_id, official=True)
+    # Demote old dataset to unofficial if present
+    if old_dataset:
+        config_path = find_config_file(dataset_id=old_dataset)
+        changed.append(config_path)
+        if not dry_run:
+            set_config_officiality(
+                path=config_path, dataset_id=old_dataset, official=False
+            )
+        for doc_path in find_doc_files(dataset_id=old_dataset):
+            changed.append(doc_path)
+            if not dry_run:
+                set_doc_officiality(
+                    path=doc_path, dataset_id=old_dataset, official=False
+                )
+    unique = sorted({path for path in changed}, key=str)
+    verb = "Would edit" if dry_run else "Edited"
+    for path in unique:
+        logger.info(f"{verb} {path.relative_to(REPO_ROOT)}.")
+
+    # Update CHANGELOG.md
+    if not dry_run:
+        changelog_path = REPO_ROOT / "CHANGELOG.md"
+        old_config = dataset_config(dataset_id=old_dataset) if old_dataset else None
+        new_configs = []
+        for ds_id in new_datasets:
+            config = dataset_config(dataset_id=ds_id)
+            if config is None:
+                raise click.ClickException(
+                    f"Could not fetch dataset config for {ds_id!r}."
+                )
+            new_configs.append(config)
+        _update_changelog(
+            changelog_path=changelog_path,
+            old_dataset=old_dataset,
+            new_datasets=new_datasets,
+            old_config=old_config,
+            new_configs=new_configs,
+        )
+        changed.append(changelog_path)
+        logger.info(f"Edited {changelog_path.relative_to(REPO_ROOT)}.")
+
+        # Also track dataset_split_sizes.json if it has been modified
+        split_sizes_path = (
+            REPO_ROOT / "src" / "leaderboards" / "dataset_split_sizes.json"
+        )
+        if split_sizes_path.exists():
+            diff_result = _git(
+                "diff", "--quiet", "--", str(split_sizes_path), check=False
+            )
+            if diff_result.returncode != 0:
+                # File has modifications
+                changed.append(split_sizes_path)
+                logger.info(
+                    f"Tracked {split_sizes_path.relative_to(REPO_ROOT)} (modified)."
+                )
+
+    return sorted({path for path in changed}, key=str)
+
+
+def _git(
+    *args: str, check: bool = True, capture: bool = False
+) -> subprocess.CompletedProcess[str]:
+    """Run a git command in the repo root.
+
+    Args:
+        args:
+            The git subcommand and arguments.
+        check:
+            Whether to raise on a non-zero exit.
+        capture:
+            Whether to capture stdout/stderr.
+
+    Returns:
+        The completed process.
+    """
+    return _run(["git", *args], check=check, capture=capture)
+
+
+def _run(
+    cmd: list[str], check: bool, capture: bool
+) -> subprocess.CompletedProcess[str]:
+    """Run a subprocess in the repo root.
+
+    Args:
+        cmd:
+            The command and arguments.
+        check:
+            Whether to raise on a non-zero exit.
+        capture:
+            Whether to capture stdout/stderr.
+
+    Returns:
+        The completed process.
+
+    Raises:
+        click.ClickException:
+            When ``check`` is True and the command fails.
+    """
+    result = subprocess.run(
+        cmd, cwd=REPO_ROOT, capture_output=capture, text=True, check=False
+    )
+    if check and result.returncode != 0:
+        detail = result.stderr.strip() if capture and result.stderr else ""
+        raise click.ClickException(
+            f"Command failed ({' '.join(cmd)}): exit {result.returncode}. {detail}"
+        )
+    return result
+
+
+def _update_changelog(
+    changelog_path: Path,
+    old_dataset: str | None,
+    new_datasets: tuple[str, ...],
+    old_config: DatasetConfig | None,
+    new_configs: list[DatasetConfig],
+) -> None:
+    """Add a changelog entry for the dataset swap under [Unreleased] -> Changed.
+
+    Args:
+        changelog_path:
+            Path to CHANGELOG.md.
+        old_dataset:
+            The dataset being demoted to unofficial, or None if just adding.
+        new_datasets:
+            The datasets being promoted to official.
+        old_config:
+            DatasetConfig for the old dataset, or None if just adding.
+        new_configs:
+            DatasetConfigs for the new datasets.
+
+    Raises:
+        ValueError:
+            When the '### Changed' section under '## [Unreleased]' is not found.
+    """
+    lines = changelog_path.read_text(encoding="utf-8").split("\n")
+
+    # Find the "### Changed" section under "## [Unreleased]"
+    unreleased_idx: int | None = None
+    changed_idx: int | None = None
+    next_section_idx: int | None = None
+
+    for i, line in enumerate(lines):
+        if line.strip() == "## [Unreleased]":
+            unreleased_idx = i
+        elif unreleased_idx is not None and line.strip() == "### Changed":
+            changed_idx = i
+        elif changed_idx is not None and line.startswith("## "):
+            next_section_idx = i
+            break
+
+    if changed_idx is None or next_section_idx is None:
+        raise ValueError(
+            "Could not find '### Changed' section under '## [Unreleased]' in "
+            "CHANGELOG.md"
+        )
+
+    # Build the changelog entry
+    if old_config:
+        lang_list = ", ".join(sorted([lang.name for lang in old_config.languages]))
+        new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
+        entry = (
+            f"- Swapped official dataset for {lang_list}:\n"
+            f"`{old_dataset}` → {new_ds_str}."
+        )
+    else:
+        lang_list = ", ".join(
+            sorted(
+                set(
+                    lang.name
+                    for new_config in new_configs
+                    for lang in new_config.languages
+                )
+            )
+        )
+        new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
+        entry = (
+            f"- Added official datasets for {lang_list}: {new_ds_str}. The script "
+            "`swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md "
+            "when performing dataset swaps."
+        )
+
+    # Insert a blank line after "### Changed", then the entry
+    lines.insert(changed_idx + 1, "")
+    lines.insert(changed_idx + 2, entry)
+    changelog_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def dataset_config(dataset_id: str) -> DatasetConfig | None:
+    """Return the :class:`DatasetConfig` for a dataset id, or None if unknown.
+
+    Args:
+        dataset_id:
+            The dataset id to look up.
+
+    Returns:
+        The matching config, or None when unknown.
+    """
+    configs = get_all_dataset_configs(
+        custom_datasets_file=Path(""),
+        dataset_ids=[dataset_id],
+        api_key=None,
+        cache_dir=Path(".cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    return configs.get(dataset_id)
+
+
+def find_config_file(dataset_id: str) -> Path:
+    """Return the dataset-config file that defines ``dataset_id``.
+
+    Args:
+        dataset_id:
+            The dataset id to locate.
+
+    Returns:
+        The path to the ``dataset_configs/<lang>.py`` file.
+
+    Raises:
+        click.ClickException:
+            When no config file references the dataset id.
+    """
+    needle = re.compile(rf'name\s*=\s*"{re.escape(dataset_id)}"')
+    for path in sorted(DATASET_CONFIG_DIR.glob("*.py")):
+        if needle.search(path.read_text(encoding="utf-8")):
+            return path
+    raise click.ClickException(
+        f"Could not find a dataset config defining {dataset_id!r}."
+    )
+
+
+def find_doc_files(dataset_id: str) -> list[Path]:
+    """Return the dataset-doc files that document ``dataset_id``.
+
+    Each dataset's section ends with ``euroeval ... --dataset <id>``; that is a
+    reliable anchor regardless of the section's human-readable heading.
+
+    Args:
+        dataset_id:
+            The dataset id to locate.
+
+    Returns:
+        The matching doc paths (possibly several for multilingual datasets).
+
+    Raises:
+        click.ClickException:
+            When no doc file references the dataset id.
+    """
+    needle = re.compile(rf"--dataset {re.escape(dataset_id)}\b")
+    matches = [
+        path
+        for path in sorted(DATASET_DOC_DIR.glob("*.md"))
+        if needle.search(path.read_text(encoding="utf-8"))
+    ]
+    if not matches:
+        raise click.ClickException(
+            f"Could not find dataset documentation for {dataset_id!r}."
+        )
+    return matches
+
+
+def set_config_officiality(path: Path, dataset_id: str, official: bool) -> None:
+    """Flip a dataset's officiality in a config file and reposition its block.
+
+    Adds/removes the ``unofficial=True`` line and moves the ``DatasetConfig``
+    block into the official section (just before the unofficial marker) or the
+    unofficial section (just after it), keeping the file's grouping.
+
+    Args:
+        path:
+            The config file to edit.
+        dataset_id:
+            The dataset id whose block to move.
+        official:
+            True to make it official, False to make it unofficial.
+    """
+    lines = path.read_text(encoding="utf-8").split("\n")
+    start, end = _config_block_span(lines=lines, dataset_id=dataset_id, path=path)
+    block = lines[start : end + 1]
+    if official:
+        block = [line for line in block if not UNOFFICIAL_LINE_RE.match(line)]
+    elif not any(UNOFFICIAL_LINE_RE.match(line) for line in block):
+        block = block[:-1] + ["    unofficial=True,", block[-1]]
+
+    # Drop the block and exactly one adjacent blank line to keep spacing tidy.
+    del lines[start : end + 1]
+    if start < len(lines) and lines[start].strip() == "":
+        del lines[start]
+    elif start > 0 and lines[start - 1].strip() == "":
+        del lines[start - 1]
+
+    marker = _marker_index(lines=lines, path=path)
+    if official:
+        insert_at = marker
+    else:
+        insert_at = marker + 1
+        if insert_at < len(lines) and lines[insert_at].strip() == "":
+            insert_at += 1
+    lines[insert_at:insert_at] = block + [""]
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _config_block_span(
+    lines: list[str], dataset_id: str, path: Path
+) -> tuple[int, int]:
+    """Return the inclusive ``(start, end)`` line span of a config block.
+
+    Args:
+        lines:
+            The config file's lines.
+        dataset_id:
+            The dataset id whose block to find.
+        path:
+            The file (for error messages).
+
+    Returns:
+        The start (``NAME = DatasetConfig(``) and end (``)``) indices.
+
+    Raises:
+        click.ClickException:
+            When the block can't be delimited.
+    """
+    name_re = re.compile(rf'name\s*=\s*"{re.escape(dataset_id)}"')
+    name_idx = next((i for i, line in enumerate(lines) if name_re.search(line)), None)
+    if name_idx is None:
+        raise click.ClickException(f"{dataset_id!r} not found in {path}.")
+    start = name_idx
+    while start >= 0 and not lines[start].rstrip().endswith("DatasetConfig("):
+        start -= 1
+    end = name_idx
+    while end < len(lines) and lines[end].strip() != ")":
+        end += 1
+    if start < 0 or end >= len(lines):
+        raise click.ClickException(f"Could not delimit {dataset_id!r} block in {path}.")
+    return start, end
+
+
+def _marker_index(lines: list[str], path: Path) -> int:
+    """Return the index of the unofficial-section marker comment.
+
+    Args:
+        lines:
+            The config file's lines.
+        path:
+            The file (for error messages).
+
+    Returns:
+        The marker line index.
+
+    Raises:
+        click.ClickException:
+            When the marker is absent.
+    """
+    for i, line in enumerate(lines):
+        if line.strip() == UNOFFICIAL_MARKER:
+            return i
+    raise click.ClickException(f"No {UNOFFICIAL_MARKER!r} marker in {path}.")
+
+
+def set_doc_officiality(path: Path, dataset_id: str, official: bool) -> None:
+    """Flip a dataset's ``Unofficial:`` heading prefix and reorder its section.
+
+    Within the dataset's ``## Task`` section, official subsections (those
+    without the ``Unofficial:`` prefix) are kept before unofficial ones; after
+    flipping the heading the task section is stably re-partitioned so the
+    promoted dataset moves up and the demoted one moves down.
+
+    Args:
+        path:
+            The doc file to edit.
+        dataset_id:
+            The dataset id whose section to flip.
+        official:
+            True to drop the ``Unofficial:`` prefix, False to add it.
+    """
+    lines = path.read_text(encoding="utf-8").split("\n")
+    heading_idx = _doc_heading_index(lines=lines, dataset_id=dataset_id, path=path)
+    lines[heading_idx] = _flip_heading(heading=lines[heading_idx], official=official)
+
+    task_start, task_end = _doc_task_span(lines=lines, heading_idx=heading_idx)
+    reordered = _partition_doc_subsections(section=lines[task_start:task_end])
+    lines[task_start:task_end] = reordered
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _doc_heading_index(lines: list[str], dataset_id: str, path: Path) -> int:
+    """Return the ``### ...`` heading index for a dataset's doc section.
+
+    The section is the one whose body contains ``--dataset <id>``.
+
+    Args:
+        lines:
+            The doc file's lines.
+        dataset_id:
+            The dataset id to find.
+        path:
+            The file (for error messages).
+
+    Returns:
+        The heading line index.
+
+    Raises:
+        click.ClickException:
+            When the section can't be found.
+    """
+    anchor = re.compile(rf"--dataset {re.escape(dataset_id)}\b")
+    anchor_idx = next((i for i, line in enumerate(lines) if anchor.search(line)), None)
+    if anchor_idx is None:
+        raise click.ClickException(f"{dataset_id!r} not documented in {path}.")
+    for i in range(anchor_idx, -1, -1):
+        if lines[i].startswith("### "):
+            return i
+    raise click.ClickException(f"No '### ' heading above {dataset_id!r} in {path}.")
+
+
+def _doc_task_span(lines: list[str], heading_idx: int) -> tuple[int, int]:
+    """Return the ``[start, end)`` line span of the enclosing ``## Task`` section.
+
+    The span starts at the first ``### `` subsection under the task heading and
+    ends before the next ``## `` heading (or end of file), so the task's intro
+    lines are left in place.
+
+    Args:
+        lines:
+            The doc file's lines.
+        heading_idx:
+            The ``### `` heading index of the dataset's subsection.
+
+    Returns:
+        The ``(start, end)`` span covering the task's ``### `` subsections.
+    """
+    task_idx = heading_idx
+    while task_idx >= 0 and not lines[task_idx].startswith("## "):
+        task_idx -= 1
+    start = task_idx + 1
+    while start < len(lines) and not lines[start].startswith("### "):
+        start += 1
+    end = start
+    while end < len(lines) and not lines[end].startswith("## "):
+        end += 1
+    return start, end
+
+
+def _flip_heading(heading: str, official: bool) -> str:
+    """Add or remove the ``Unofficial:`` prefix on a ``### `` heading.
+
+    Args:
+        heading:
+            The heading line (``### Title`` or ``### Unofficial: Title``).
+        official:
+            True to drop the prefix, False to add it.
+
+    Returns:
+        The updated heading line.
+    """
+    title = heading[len("### ") :]
+    has_prefix = title.startswith(DOC_UNOFFICIAL_PREFIX)
+    if official and has_prefix:
+        title = title[len(DOC_UNOFFICIAL_PREFIX) :]
+    elif not official and not has_prefix:
+        title = f"{DOC_UNOFFICIAL_PREFIX}{title}"
+    return f"### {title}"
+
+
+def _partition_doc_subsections(section: list[str]) -> list[str]:
+    """Stably reorder a task section's ``### `` subsections official-first.
+
+    Args:
+        section:
+            The lines of a task section, beginning at its first ``### ``
+            subsection.
+
+    Returns:
+        The lines with official subsections (no ``Unofficial:`` prefix) kept in
+        order first, then the unofficial ones.
+    """
+    subsections: list[list[str]] = []
+    current: list[str] = []
+    for line in section:
+        if line.startswith("### ") and current:
+            subsections.append(current)
+            current = []
+        current.append(line)
+    if current:
+        subsections.append(current)
+
+    official = [
+        sub
+        for sub in subsections
+        if not sub[0].startswith(f"### {DOC_UNOFFICIAL_PREFIX}")
+    ]
+    unofficial = [
+        sub for sub in subsections if sub[0].startswith(f"### {DOC_UNOFFICIAL_PREFIX}")
+    ]
+    result: list[str] = []
+    for sub in official + unofficial:
+        result.extend(sub)
+    return result
+
+
+def checkout_branch(branch: str) -> None:
+    """Check out ``branch``, creating it if it doesn't exist.
+
+    Args:
+        branch:
+            The branch to switch to.
+    """
+    existing = _git("rev-parse", "--verify", branch, check=False, capture=True)
+    if existing.returncode == 0:
+        _git("checkout", branch)
+    else:
+        _git("checkout", "-b", branch)
+    logger.info(f"On branch {branch!r}.")
+
+
+def open_pull_request(
+    old_dataset: str | None,
+    new_datasets: tuple[str, ...],
+    branch: str,
+    changed_paths: list[Path],
+    reviewer: str = "saattrupdan",
+) -> None:
+    """Commit the swap, push the branch, and open a pull request.
+
+    Assigns the logged-in GitHub user, requests a reviewer, and best-effort
+    requests a Copilot review. CODEOWNERS are assigned automatically by GitHub.
+
+    Args:
+        old_dataset:
+            The demoted dataset id, or None if just adding.
+        new_datasets:
+            The promoted dataset ids.
+        branch:
+            The branch to push.
+        changed_paths:
+            The files that were changed (staged explicitly).
+        reviewer:
+            GitHub username to request as reviewer.
+    """
+    for path in changed_paths:
+        _git("add", str(path))
+
+    # Check if there are any actual changes to commit
+    diff_result = _git("diff", "--cached", "--quiet", check=False)
+    if diff_result.returncode == 0:
+        logger.info("No changes to commit; skipping PR creation.")
+        return
+
+    if old_dataset:
+        title = (
+            f"feat: swap official dataset {old_dataset} -> {', '.join(new_datasets)}"
+        )
+    else:
+        title = f"feat: add official datasets {', '.join(new_datasets)}"
+    body = _pr_body(old_dataset=old_dataset, new_datasets=new_datasets)
+    _git("commit", "-m", title, "-m", body)
+    _git("push", "--set-upstream", "origin", branch)
+
+    _gh(
+        "pr",
+        "create",
+        "--title",
+        title,
+        "--body",
+        body,
+        "--assignee",
+        "@me",
+        "--reviewer",
+        reviewer,
+    )
+    _request_copilot_review()
+    logger.info("Opened pull request.")
+
+
+def _gh(
+    *args: str, check: bool = True, capture: bool = False
+) -> subprocess.CompletedProcess[str]:
+    """Run a ``gh`` command in the repo root.
+
+    Args:
+        args:
+            The gh subcommand and arguments.
+        check:
+            Whether to raise on a non-zero exit.
+        capture:
+            Whether to capture stdout/stderr.
+
+    Returns:
+        The completed process.
+    """
+    return _run(["gh", *args], check=check, capture=capture)
+
+
+def _pr_body(old_dataset: str | None, new_datasets: tuple[str, ...]) -> str:
+    """Return the standard PR description for a dataset swap.
+
+    Args:
+        old_dataset:
+            The demoted dataset id, or None if just adding.
+        new_datasets:
+            The promoted dataset ids.
+
+    Returns:
+        The markdown PR body.
+    """
+    new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
+    if old_dataset:
+        return (
+            f"Swaps the official dataset `{old_dataset}` for {new_ds_str}.\n\n"
+            "## What\n\n"
+            f"- Every model with a rank score on the affected leaderboard(s) was "
+            f"evaluated on {new_ds_str}, mirroring how each appears on the "
+            "leaderboard (validation/test split and zero-/few-shot).\n"
+            f"- `{old_dataset}` is demoted to unofficial and {new_ds_str} "
+            "promoted to official in the dataset configs and the dataset "
+            "documentation, keeping each file's official-first grouping.\n\n"
+            "The leaderboards will pick up the change on the next regeneration."
+        )
+    else:
+        return (
+            f"Adds {new_ds_str} as official dataset(s).\n\n"
+            "## What\n\n"
+            f"- Every model with a rank score on the affected leaderboard(s) was "
+            f"evaluated on {new_ds_str}, mirroring how each appears on the "
+            "leaderboard (validation/test split and zero-/few-shot).\n"
+            f"- {new_ds_str} promoted to official in the dataset configs "
+            "and the dataset documentation, keeping each file's official-first "
+            "grouping.\n\n"
+            "The leaderboards will pick up the change on the next regeneration."
+        )
+
+
+def _request_copilot_review() -> None:
+    """Best-effort request a Copilot review on the current branch's PR."""
+    result = _gh(
+        "pr",
+        "edit",
+        "--add-reviewer",
+        "copilot-pull-request-reviewer[bot]",
+        check=False,
+        capture=True,
+    )
+    if result.returncode != 0:
+        logger.info(
+            "Could not explicitly request a Copilot review (it may still run "
+            "automatically): %s",
+            result.stderr.strip(),
+        )
+
+
 def resolve_languages(
     old_config: DatasetConfig | None, new_configs: list[DatasetConfig]
 ) -> set[str]:
@@ -452,7 +1140,8 @@ def run_evaluations(
     present_providers = {
         provider.name
         for model_id in ranked_api
-        if (provider := provider_for_model_id(model_id=model_id)) is not None
+        if (provider := provider_for_model_id(model_id=model_id, providers=PROVIDERS))
+        is not None
     }
     selected_providers = resolve_api_providers(
         include_api=include_api,
@@ -807,7 +1496,7 @@ def build_eval_jobs(
             if not include_api:
                 skipped_api_set.add(model_id)
                 continue
-            provider = provider_for_model_id(model_id=model_id)
+            provider = provider_for_model_id(model_id=model_id, providers=PROVIDERS)
             if provider is not None and provider.name not in selected_providers:
                 skipped_api_set.add(model_id)
                 continue
@@ -915,6 +1604,49 @@ def load_corpus() -> _Corpus:
     )
 
 
+def _record_languages(record: dict[str, object]) -> list[str]:
+    """Return the language codes a result record covers.
+
+    Args:
+        record:
+            A result record in EEE format.
+
+    Returns:
+        The list of language codes.
+    """
+    raw = (
+        record.get("eval_library", {})
+        .get("additional_details", {})
+        .get("languages", "[]")
+    )
+    if isinstance(raw, list):
+        return [str(code) for code in raw]
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return []
+    return [str(code) for code in parsed] if isinstance(parsed, list) else []
+
+
+def record_is_api(model_info: dict[str, object]) -> bool:
+    """Return whether a record's model was evaluated via an API.
+
+    Args:
+        model_info:
+            The ``model_info`` object of an EEE result record.
+
+    Returns:
+        True when produced by ``litellm`` or flagged as not open-weight.
+    """
+    engine = model_info.get("inference_engine", {})
+    engine_name = engine.get("name", "") if isinstance(engine, dict) else ""
+    if str(engine_name).lower() == "litellm":
+        return True
+    details = model_info.get("additional_details", {})
+    open_flag = details.get("open") if isinstance(details, dict) else None
+    return str(open_flag).lower() == "false"
+
+
 def ranked_model_language_pairs(
     old_dataset: str | None,
     new_datasets: tuple[str, ...],
@@ -996,6 +1728,56 @@ def ranked_model_language_pairs(
     return ranked
 
 
+def resolve_api_providers(
+    include_api: bool, api_providers_arg: str | None, present_providers: set[str]
+) -> set[str]:
+    """Resolve which API providers to run and verify their env vars.
+
+    Args:
+        include_api:
+            Whether the user opted in to API evaluation.
+        api_providers_arg:
+            Comma-separated provider names, or None to run every provider
+            present among the ranked API models.
+        present_providers:
+            Provider names actually present among the ranked API models.
+
+    Returns:
+        The provider names to run.
+
+    Raises:
+        click.ClickException:
+            When an unknown provider is named or a selected provider's env var
+            is missing.
+    """
+    if not include_api or not present_providers:
+        return set()
+    if api_providers_arg is None:
+        selected = set(present_providers)
+    else:
+        names = {n.strip().lower() for n in api_providers_arg.split(",") if n.strip()}
+        unknown = sorted(names - PROVIDERS_BY_NAME.keys())
+        if unknown:
+            raise click.ClickException(
+                f"Unknown API provider(s): {', '.join(unknown)}. "
+                f"Valid: {', '.join(PROVIDERS_BY_NAME)}."
+            )
+        selected = names & present_providers
+    missing = [
+        PROVIDERS_BY_NAME[name].env_var
+        for name in sorted(selected)
+        if not os.environ.get(PROVIDERS_BY_NAME[name].env_var)
+    ]
+    if missing:
+        raise click.ClickException(
+            f"Selected API provider(s) require: {', '.join(missing)} -- set the "
+            "variable(s) and re-run."
+        )
+    if selected:
+        logger.info(f"API providers enabled: {', '.join(sorted(selected))}.")
+    return selected
+
+
 def validate_branch(branch: str) -> None:
     """Reject an empty branch name or the default branch.
 
@@ -1015,6 +1797,22 @@ def validate_branch(branch: str) -> None:
             f"--branch may not be the default branch ({default!r}); pick a new "
             "branch name for the swap."
         )
+
+
+# --------------------------------------------------------------------------- #
+# Git + pull request
+# --------------------------------------------------------------------------- #
+def default_branch() -> str:
+    """Return the repository's default branch name.
+
+    Returns:
+        The default branch (``origin/HEAD`` target), or ``"main"`` if it can't
+        be determined.
+    """
+    result = _git("symbolic-ref", "refs/remotes/origin/HEAD", check=False, capture=True)
+    if result.returncode == 0:
+        return result.stdout.strip().rsplit("/", 1)[-1]
+    return "main"
 
 
 # --------------------------------------------------------------------------- #
@@ -1103,15 +1901,6 @@ def validate_gh_installed() -> None:
         raise click.ClickException(
             "GitHub CLI not found; install it from https://cli.github.com/"
         )
-
-
-@dataclass(frozen=True)
-class _Provider:
-    """An API provider: its short name, env var, and id predicate."""
-
-    name: str
-    env_var: str
-    matches: c.Callable[[str], bool]
 
 
 def download_bucket_files_for_datasets(dataset_ids: set[str]) -> int:
@@ -1221,834 +2010,6 @@ def result_sync_dataset_ids(
             )
 
     return dataset_ids
-
-
-PROVIDERS: list[_Provider] = [
-    _Provider("openai", "OPENAI_API_KEY", lambda m: m.startswith(("openai/", "gpt-"))),
-    _Provider(
-        "anthropic",
-        "ANTHROPIC_API_KEY",
-        lambda m: m.startswith(("claude-", "anthropic/")),
-    ),
-    _Provider(
-        "google", "GEMINI_API_KEY", lambda m: m.startswith(("gemini/", "gemini-"))
-    ),
-    _Provider("xai", "XAI_API_KEY", lambda m: m.startswith(("xai/", "grok-"))),
-]
-PROVIDERS_BY_NAME: dict[str, _Provider] = {
-    provider.name: provider for provider in PROVIDERS
-}
-
-
-def _config_block_span(
-    lines: list[str], dataset_id: str, path: Path
-) -> tuple[int, int]:
-    """Return the inclusive ``(start, end)`` line span of a config block.
-
-    Args:
-        lines:
-            The config file's lines.
-        dataset_id:
-            The dataset id whose block to find.
-        path:
-            The file (for error messages).
-
-    Returns:
-        The start (``NAME = DatasetConfig(``) and end (``)``) indices.
-
-    Raises:
-        click.ClickException:
-            When the block can't be delimited.
-    """
-    name_re = re.compile(rf'name\s*=\s*"{re.escape(dataset_id)}"')
-    name_idx = next((i for i, line in enumerate(lines) if name_re.search(line)), None)
-    if name_idx is None:
-        raise click.ClickException(f"{dataset_id!r} not found in {path}.")
-    start = name_idx
-    while start >= 0 and not lines[start].rstrip().endswith("DatasetConfig("):
-        start -= 1
-    end = name_idx
-    while end < len(lines) and lines[end].strip() != ")":
-        end += 1
-    if start < 0 or end >= len(lines):
-        raise click.ClickException(f"Could not delimit {dataset_id!r} block in {path}.")
-    return start, end
-
-
-def _doc_heading_index(lines: list[str], dataset_id: str, path: Path) -> int:
-    """Return the ``### ...`` heading index for a dataset's doc section.
-
-    The section is the one whose body contains ``--dataset <id>``.
-
-    Args:
-        lines:
-            The doc file's lines.
-        dataset_id:
-            The dataset id to find.
-        path:
-            The file (for error messages).
-
-    Returns:
-        The heading line index.
-
-    Raises:
-        click.ClickException:
-            When the section can't be found.
-    """
-    anchor = re.compile(rf"--dataset {re.escape(dataset_id)}\b")
-    anchor_idx = next((i for i, line in enumerate(lines) if anchor.search(line)), None)
-    if anchor_idx is None:
-        raise click.ClickException(f"{dataset_id!r} not documented in {path}.")
-    for i in range(anchor_idx, -1, -1):
-        if lines[i].startswith("### "):
-            return i
-    raise click.ClickException(f"No '### ' heading above {dataset_id!r} in {path}.")
-
-
-def _doc_task_span(lines: list[str], heading_idx: int) -> tuple[int, int]:
-    """Return the ``[start, end)`` line span of the enclosing ``## Task`` section.
-
-    The span starts at the first ``### `` subsection under the task heading and
-    ends before the next ``## `` heading (or end of file), so the task's intro
-    lines are left in place.
-
-    Args:
-        lines:
-            The doc file's lines.
-        heading_idx:
-            The ``### `` heading index of the dataset's subsection.
-
-    Returns:
-        The ``(start, end)`` span covering the task's ``### `` subsections.
-    """
-    task_idx = heading_idx
-    while task_idx >= 0 and not lines[task_idx].startswith("## "):
-        task_idx -= 1
-    start = task_idx + 1
-    while start < len(lines) and not lines[start].startswith("### "):
-        start += 1
-    end = start
-    while end < len(lines) and not lines[end].startswith("## "):
-        end += 1
-    return start, end
-
-
-def _flip_heading(heading: str, official: bool) -> str:
-    """Add or remove the ``Unofficial:`` prefix on a ``### `` heading.
-
-    Args:
-        heading:
-            The heading line (``### Title`` or ``### Unofficial: Title``).
-        official:
-            True to drop the prefix, False to add it.
-
-    Returns:
-        The updated heading line.
-    """
-    title = heading[len("### ") :]
-    has_prefix = title.startswith(DOC_UNOFFICIAL_PREFIX)
-    if official and has_prefix:
-        title = title[len(DOC_UNOFFICIAL_PREFIX) :]
-    elif not official and not has_prefix:
-        title = f"{DOC_UNOFFICIAL_PREFIX}{title}"
-    return f"### {title}"
-
-
-def _run(
-    cmd: list[str], check: bool, capture: bool
-) -> subprocess.CompletedProcess[str]:
-    """Run a subprocess in the repo root.
-
-    Args:
-        cmd:
-            The command and arguments.
-        check:
-            Whether to raise on a non-zero exit.
-        capture:
-            Whether to capture stdout/stderr.
-
-    Returns:
-        The completed process.
-
-    Raises:
-        click.ClickException:
-            When ``check`` is True and the command fails.
-    """
-    result = subprocess.run(
-        cmd, cwd=REPO_ROOT, capture_output=capture, text=True, check=False
-    )
-    if check and result.returncode != 0:
-        detail = result.stderr.strip() if capture and result.stderr else ""
-        raise click.ClickException(
-            f"Command failed ({' '.join(cmd)}): exit {result.returncode}. {detail}"
-        )
-    return result
-
-
-def _gh(
-    *args: str, check: bool = True, capture: bool = False
-) -> subprocess.CompletedProcess[str]:
-    """Run a ``gh`` command in the repo root.
-
-    Args:
-        args:
-            The gh subcommand and arguments.
-        check:
-            Whether to raise on a non-zero exit.
-        capture:
-            Whether to capture stdout/stderr.
-
-    Returns:
-        The completed process.
-    """
-    return _run(["gh", *args], check=check, capture=capture)
-
-
-def _git(
-    *args: str, check: bool = True, capture: bool = False
-) -> subprocess.CompletedProcess[str]:
-    """Run a git command in the repo root.
-
-    Args:
-        args:
-            The git subcommand and arguments.
-        check:
-            Whether to raise on a non-zero exit.
-        capture:
-            Whether to capture stdout/stderr.
-
-    Returns:
-        The completed process.
-    """
-    return _run(["git", *args], check=check, capture=capture)
-
-
-def _marker_index(lines: list[str], path: Path) -> int:
-    """Return the index of the unofficial-section marker comment.
-
-    Args:
-        lines:
-            The config file's lines.
-        path:
-            The file (for error messages).
-
-    Returns:
-        The marker line index.
-
-    Raises:
-        click.ClickException:
-            When the marker is absent.
-    """
-    for i, line in enumerate(lines):
-        if line.strip() == UNOFFICIAL_MARKER:
-            return i
-    raise click.ClickException(f"No {UNOFFICIAL_MARKER!r} marker in {path}.")
-
-
-def _partition_doc_subsections(section: list[str]) -> list[str]:
-    """Stably reorder a task section's ``### `` subsections official-first.
-
-    Args:
-        section:
-            The lines of a task section, beginning at its first ``### ``
-            subsection.
-
-    Returns:
-        The lines with official subsections (no ``Unofficial:`` prefix) kept in
-        order first, then the unofficial ones.
-    """
-    subsections: list[list[str]] = []
-    current: list[str] = []
-    for line in section:
-        if line.startswith("### ") and current:
-            subsections.append(current)
-            current = []
-        current.append(line)
-    if current:
-        subsections.append(current)
-
-    official = [
-        sub
-        for sub in subsections
-        if not sub[0].startswith(f"### {DOC_UNOFFICIAL_PREFIX}")
-    ]
-    unofficial = [
-        sub for sub in subsections if sub[0].startswith(f"### {DOC_UNOFFICIAL_PREFIX}")
-    ]
-    result: list[str] = []
-    for sub in official + unofficial:
-        result.extend(sub)
-    return result
-
-
-def _pr_body(old_dataset: str | None, new_datasets: tuple[str, ...]) -> str:
-    """Return the standard PR description for a dataset swap.
-
-    Args:
-        old_dataset:
-            The demoted dataset id, or None if just adding.
-        new_datasets:
-            The promoted dataset ids.
-
-    Returns:
-        The markdown PR body.
-    """
-    new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
-    if old_dataset:
-        return (
-            f"Swaps the official dataset `{old_dataset}` for {new_ds_str}.\n\n"
-            "## What\n\n"
-            f"- Every model with a rank score on the affected leaderboard(s) was "
-            f"evaluated on {new_ds_str}, mirroring how each appears on the "
-            "leaderboard (validation/test split and zero-/few-shot).\n"
-            f"- `{old_dataset}` is demoted to unofficial and {new_ds_str} "
-            "promoted to official in the dataset configs and the dataset "
-            "documentation, keeping each file's official-first grouping.\n\n"
-            "The leaderboards will pick up the change on the next regeneration."
-        )
-    else:
-        return (
-            f"Adds {new_ds_str} as official dataset(s).\n\n"
-            "## What\n\n"
-            f"- Every model with a rank score on the affected leaderboard(s) was "
-            f"evaluated on {new_ds_str}, mirroring how each appears on the "
-            "leaderboard (validation/test split and zero-/few-shot).\n"
-            f"- {new_ds_str} promoted to official in the dataset configs "
-            "and the dataset documentation, keeping each file's official-first "
-            "grouping.\n\n"
-            "The leaderboards will pick up the change on the next regeneration."
-        )
-
-
-def _record_languages(record: dict[str, object]) -> list[str]:
-    """Return the language codes a result record covers.
-
-    Args:
-        record:
-            A result record in EEE format.
-
-    Returns:
-        The list of language codes.
-    """
-    raw = (
-        record.get("eval_library", {})
-        .get("additional_details", {})
-        .get("languages", "[]")
-    )
-    if isinstance(raw, list):
-        return [str(code) for code in raw]
-    try:
-        parsed = json.loads(raw)
-    except (json.JSONDecodeError, TypeError):
-        return []
-    return [str(code) for code in parsed] if isinstance(parsed, list) else []
-
-
-def _request_copilot_review() -> None:
-    """Best-effort request a Copilot review on the current branch's PR."""
-    result = _gh(
-        "pr",
-        "edit",
-        "--add-reviewer",
-        "copilot-pull-request-reviewer[bot]",
-        check=False,
-        capture=True,
-    )
-    if result.returncode != 0:
-        logger.info(
-            "Could not explicitly request a Copilot review (it may still run "
-            "automatically): %s",
-            result.stderr.strip(),
-        )
-
-
-def _update_changelog(
-    changelog_path: Path,
-    old_dataset: str | None,
-    new_datasets: tuple[str, ...],
-    old_config: DatasetConfig | None,
-    new_configs: list[DatasetConfig],
-) -> None:
-    """Add a changelog entry for the dataset swap under [Unreleased] -> Changed.
-
-    Args:
-        changelog_path:
-            Path to CHANGELOG.md.
-        old_dataset:
-            The dataset being demoted to unofficial, or None if just adding.
-        new_datasets:
-            The datasets being promoted to official.
-        old_config:
-            DatasetConfig for the old dataset, or None if just adding.
-        new_configs:
-            DatasetConfigs for the new datasets.
-
-    Raises:
-        ValueError:
-            When the '### Changed' section under '## [Unreleased]' is not found.
-    """
-    lines = changelog_path.read_text(encoding="utf-8").split("\n")
-
-    # Find the "### Changed" section under "## [Unreleased]"
-    unreleased_idx: int | None = None
-    changed_idx: int | None = None
-    next_section_idx: int | None = None
-
-    for i, line in enumerate(lines):
-        if line.strip() == "## [Unreleased]":
-            unreleased_idx = i
-        elif unreleased_idx is not None and line.strip() == "### Changed":
-            changed_idx = i
-        elif changed_idx is not None and line.startswith("## "):
-            next_section_idx = i
-            break
-
-    if changed_idx is None or next_section_idx is None:
-        raise ValueError(
-            "Could not find '### Changed' section under '## [Unreleased]' in "
-            "CHANGELOG.md"
-        )
-
-    # Build the changelog entry
-    if old_config:
-        lang_list = ", ".join(sorted([lang.name for lang in old_config.languages]))
-        new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
-        entry = (
-            f"- Swapped official dataset for {lang_list}:\n"
-            f"`{old_dataset}` → {new_ds_str}."
-        )
-    else:
-        lang_list = ", ".join(
-            sorted(
-                set(
-                    lang.name
-                    for new_config in new_configs
-                    for lang in new_config.languages
-                )
-            )
-        )
-        new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
-        entry = (
-            f"- Added official datasets for {lang_list}: {new_ds_str}. The script "
-            "`swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md "
-            "when performing dataset swaps."
-        )
-
-    # Insert a blank line after "### Changed", then the entry
-    lines.insert(changed_idx + 1, "")
-    lines.insert(changed_idx + 2, entry)
-    changelog_path.write_text("\n".join(lines), encoding="utf-8")
-
-
-def dataset_config(dataset_id: str) -> DatasetConfig | None:
-    """Return the :class:`DatasetConfig` for a dataset id, or None if unknown.
-
-    Args:
-        dataset_id:
-            The dataset id to look up.
-
-    Returns:
-        The matching config, or None when unknown.
-    """
-    configs = get_all_dataset_configs(
-        custom_datasets_file=Path(""),
-        dataset_ids=[dataset_id],
-        api_key=None,
-        cache_dir=Path(".cache"),
-        trust_remote_code=False,
-        run_with_cli=False,
-    )
-    return configs.get(dataset_id)
-
-
-def find_config_file(dataset_id: str) -> Path:
-    """Return the dataset-config file that defines ``dataset_id``.
-
-    Args:
-        dataset_id:
-            The dataset id to locate.
-
-    Returns:
-        The path to the ``dataset_configs/<lang>.py`` file.
-
-    Raises:
-        click.ClickException:
-            When no config file references the dataset id.
-    """
-    needle = re.compile(rf'name\s*=\s*"{re.escape(dataset_id)}"')
-    for path in sorted(DATASET_CONFIG_DIR.glob("*.py")):
-        if needle.search(path.read_text(encoding="utf-8")):
-            return path
-    raise click.ClickException(
-        f"Could not find a dataset config defining {dataset_id!r}."
-    )
-
-
-def find_doc_files(dataset_id: str) -> list[Path]:
-    """Return the dataset-doc files that document ``dataset_id``.
-
-    Each dataset's section ends with ``euroeval ... --dataset <id>``; that is a
-    reliable anchor regardless of the section's human-readable heading.
-
-    Args:
-        dataset_id:
-            The dataset id to locate.
-
-    Returns:
-        The matching doc paths (possibly several for multilingual datasets).
-
-    Raises:
-        click.ClickException:
-            When no doc file references the dataset id.
-    """
-    needle = re.compile(rf"--dataset {re.escape(dataset_id)}\b")
-    matches = [
-        path
-        for path in sorted(DATASET_DOC_DIR.glob("*.md"))
-        if needle.search(path.read_text(encoding="utf-8"))
-    ]
-    if not matches:
-        raise click.ClickException(
-            f"Could not find dataset documentation for {dataset_id!r}."
-        )
-    return matches
-
-
-def set_config_officiality(path: Path, dataset_id: str, official: bool) -> None:
-    """Flip a dataset's officiality in a config file and reposition its block.
-
-    Adds/removes the ``unofficial=True`` line and moves the ``DatasetConfig``
-    block into the official section (just before the unofficial marker) or the
-    unofficial section (just after it), keeping the file's grouping.
-
-    Args:
-        path:
-            The config file to edit.
-        dataset_id:
-            The dataset id whose block to move.
-        official:
-            True to make it official, False to make it unofficial.
-    """
-    lines = path.read_text(encoding="utf-8").split("\n")
-    start, end = _config_block_span(lines=lines, dataset_id=dataset_id, path=path)
-    block = lines[start : end + 1]
-    if official:
-        block = [line for line in block if not UNOFFICIAL_LINE_RE.match(line)]
-    elif not any(UNOFFICIAL_LINE_RE.match(line) for line in block):
-        block = block[:-1] + ["    unofficial=True,", block[-1]]
-
-    # Drop the block and exactly one adjacent blank line to keep spacing tidy.
-    del lines[start : end + 1]
-    if start < len(lines) and lines[start].strip() == "":
-        del lines[start]
-    elif start > 0 and lines[start - 1].strip() == "":
-        del lines[start - 1]
-
-    marker = _marker_index(lines=lines, path=path)
-    if official:
-        insert_at = marker
-    else:
-        insert_at = marker + 1
-        if insert_at < len(lines) and lines[insert_at].strip() == "":
-            insert_at += 1
-    lines[insert_at:insert_at] = block + [""]
-    path.write_text("\n".join(lines), encoding="utf-8")
-
-
-def set_doc_officiality(path: Path, dataset_id: str, official: bool) -> None:
-    """Flip a dataset's ``Unofficial:`` heading prefix and reorder its section.
-
-    Within the dataset's ``## Task`` section, official subsections (those
-    without the ``Unofficial:`` prefix) are kept before unofficial ones; after
-    flipping the heading the task section is stably re-partitioned so the
-    promoted dataset moves up and the demoted one moves down.
-
-    Args:
-        path:
-            The doc file to edit.
-        dataset_id:
-            The dataset id whose section to flip.
-        official:
-            True to drop the ``Unofficial:`` prefix, False to add it.
-    """
-    lines = path.read_text(encoding="utf-8").split("\n")
-    heading_idx = _doc_heading_index(lines=lines, dataset_id=dataset_id, path=path)
-    lines[heading_idx] = _flip_heading(heading=lines[heading_idx], official=official)
-
-    task_start, task_end = _doc_task_span(lines=lines, heading_idx=heading_idx)
-    reordered = _partition_doc_subsections(section=lines[task_start:task_end])
-    lines[task_start:task_end] = reordered
-    path.write_text("\n".join(lines), encoding="utf-8")
-
-
-# --------------------------------------------------------------------------- #
-# Config + documentation swap
-# --------------------------------------------------------------------------- #
-def apply_swap(
-    old_dataset: str | None, new_datasets: tuple[str, ...], dry_run: bool
-) -> list[Path]:
-    """Swap officiality in the dataset configs and the frontend docs.
-
-    Args:
-        old_dataset:
-            The dataset to demote to unofficial, or None if just adding.
-        new_datasets:
-            The datasets to promote to official.
-        dry_run:
-            When True, log the files that would change without editing them.
-
-    Returns:
-        The paths that were (or would be) modified.
-
-    Raises:
-        click.ClickException:
-            When the dataset configs cannot be fetched.
-    """
-    changed: list[Path] = []
-    # Promote all new datasets to official
-    for dataset_id in new_datasets:
-        config_path = find_config_file(dataset_id=dataset_id)
-        changed.append(config_path)
-        if not dry_run:
-            set_config_officiality(
-                path=config_path, dataset_id=dataset_id, official=True
-            )
-        for doc_path in find_doc_files(dataset_id=dataset_id):
-            changed.append(doc_path)
-            if not dry_run:
-                set_doc_officiality(path=doc_path, dataset_id=dataset_id, official=True)
-    # Demote old dataset to unofficial if present
-    if old_dataset:
-        config_path = find_config_file(dataset_id=old_dataset)
-        changed.append(config_path)
-        if not dry_run:
-            set_config_officiality(
-                path=config_path, dataset_id=old_dataset, official=False
-            )
-        for doc_path in find_doc_files(dataset_id=old_dataset):
-            changed.append(doc_path)
-            if not dry_run:
-                set_doc_officiality(
-                    path=doc_path, dataset_id=old_dataset, official=False
-                )
-    unique = sorted({path for path in changed}, key=str)
-    verb = "Would edit" if dry_run else "Edited"
-    for path in unique:
-        logger.info(f"{verb} {path.relative_to(REPO_ROOT)}.")
-
-    # Update CHANGELOG.md
-    if not dry_run:
-        changelog_path = REPO_ROOT / "CHANGELOG.md"
-        old_config = dataset_config(dataset_id=old_dataset) if old_dataset else None
-        new_configs = []
-        for ds_id in new_datasets:
-            config = dataset_config(dataset_id=ds_id)
-            if config is None:
-                raise click.ClickException(
-                    f"Could not fetch dataset config for {ds_id!r}."
-                )
-            new_configs.append(config)
-        _update_changelog(
-            changelog_path=changelog_path,
-            old_dataset=old_dataset,
-            new_datasets=new_datasets,
-            old_config=old_config,
-            new_configs=new_configs,
-        )
-        changed.append(changelog_path)
-        logger.info(f"Edited {changelog_path.relative_to(REPO_ROOT)}.")
-
-        # Also track dataset_split_sizes.json if it has been modified
-        split_sizes_path = (
-            REPO_ROOT / "src" / "leaderboards" / "dataset_split_sizes.json"
-        )
-        if split_sizes_path.exists():
-            diff_result = _git(
-                "diff", "--quiet", "--", str(split_sizes_path), check=False
-            )
-            if diff_result.returncode != 0:
-                # File has modifications
-                changed.append(split_sizes_path)
-                logger.info(
-                    f"Tracked {split_sizes_path.relative_to(REPO_ROOT)} (modified)."
-                )
-
-    return sorted({path for path in changed}, key=str)
-
-
-def checkout_branch(branch: str) -> None:
-    """Check out ``branch``, creating it if it doesn't exist.
-
-    Args:
-        branch:
-            The branch to switch to.
-    """
-    existing = _git("rev-parse", "--verify", branch, check=False, capture=True)
-    if existing.returncode == 0:
-        _git("checkout", branch)
-    else:
-        _git("checkout", "-b", branch)
-    logger.info(f"On branch {branch!r}.")
-
-
-# --------------------------------------------------------------------------- #
-# Git + pull request
-# --------------------------------------------------------------------------- #
-def default_branch() -> str:
-    """Return the repository's default branch name.
-
-    Returns:
-        The default branch (``origin/HEAD`` target), or ``"main"`` if it can't
-        be determined.
-    """
-    result = _git("symbolic-ref", "refs/remotes/origin/HEAD", check=False, capture=True)
-    if result.returncode == 0:
-        return result.stdout.strip().rsplit("/", 1)[-1]
-    return "main"
-
-
-def open_pull_request(
-    old_dataset: str | None,
-    new_datasets: tuple[str, ...],
-    branch: str,
-    changed_paths: list[Path],
-    reviewer: str = "saattrupdan",
-) -> None:
-    """Commit the swap, push the branch, and open a pull request.
-
-    Assigns the logged-in GitHub user, requests a reviewer, and best-effort
-    requests a Copilot review. CODEOWNERS are assigned automatically by GitHub.
-
-    Args:
-        old_dataset:
-            The demoted dataset id, or None if just adding.
-        new_datasets:
-            The promoted dataset ids.
-        branch:
-            The branch to push.
-        changed_paths:
-            The files that were changed (staged explicitly).
-        reviewer:
-            GitHub username to request as reviewer.
-    """
-    for path in changed_paths:
-        _git("add", str(path))
-
-    # Check if there are any actual changes to commit
-    diff_result = _git("diff", "--cached", "--quiet", check=False)
-    if diff_result.returncode == 0:
-        logger.info("No changes to commit; skipping PR creation.")
-        return
-
-    if old_dataset:
-        title = (
-            f"feat: swap official dataset {old_dataset} -> {', '.join(new_datasets)}"
-        )
-    else:
-        title = f"feat: add official datasets {', '.join(new_datasets)}"
-    body = _pr_body(old_dataset=old_dataset, new_datasets=new_datasets)
-    _git("commit", "-m", title, "-m", body)
-    _git("push", "--set-upstream", "origin", branch)
-
-    _gh(
-        "pr",
-        "create",
-        "--title",
-        title,
-        "--body",
-        body,
-        "--assignee",
-        "@me",
-        "--reviewer",
-        reviewer,
-    )
-    _request_copilot_review()
-    logger.info("Opened pull request.")
-
-
-def provider_for_model_id(model_id: str) -> _Provider | None:
-    """Return the API provider that owns a model id, or None.
-
-    Args:
-        model_id:
-            The model id to classify.
-
-    Returns:
-        The matching provider, or None when no provider claims the id.
-    """
-    for provider in PROVIDERS:
-        if provider.matches(model_id):
-            return provider
-    return None
-
-
-def record_is_api(model_info: dict[str, object]) -> bool:
-    """Return whether a record's model was evaluated via an API.
-
-    Args:
-        model_info:
-            The ``model_info`` object of an EEE result record.
-
-    Returns:
-        True when produced by ``litellm`` or flagged as not open-weight.
-    """
-    engine = model_info.get("inference_engine", {})
-    engine_name = engine.get("name", "") if isinstance(engine, dict) else ""
-    if str(engine_name).lower() == "litellm":
-        return True
-    details = model_info.get("additional_details", {})
-    open_flag = details.get("open") if isinstance(details, dict) else None
-    return str(open_flag).lower() == "false"
-
-
-def resolve_api_providers(
-    include_api: bool, api_providers_arg: str | None, present_providers: set[str]
-) -> set[str]:
-    """Resolve which API providers to run and verify their env vars.
-
-    Args:
-        include_api:
-            Whether the user opted in to API evaluation.
-        api_providers_arg:
-            Comma-separated provider names, or None to run every provider
-            present among the ranked API models.
-        present_providers:
-            Provider names actually present among the ranked API models.
-
-    Returns:
-        The provider names to run.
-
-    Raises:
-        click.ClickException:
-            When an unknown provider is named or a selected provider's env var
-            is missing.
-    """
-    if not include_api or not present_providers:
-        return set()
-    if api_providers_arg is None:
-        selected = set(present_providers)
-    else:
-        names = {n.strip().lower() for n in api_providers_arg.split(",") if n.strip()}
-        unknown = sorted(names - PROVIDERS_BY_NAME.keys())
-        if unknown:
-            raise click.ClickException(
-                f"Unknown API provider(s): {', '.join(unknown)}. "
-                f"Valid: {', '.join(PROVIDERS_BY_NAME)}."
-            )
-        selected = names & present_providers
-    missing = [
-        PROVIDERS_BY_NAME[name].env_var
-        for name in sorted(selected)
-        if not os.environ.get(PROVIDERS_BY_NAME[name].env_var)
-    ]
-    if missing:
-        raise click.ClickException(
-            f"Selected API provider(s) require: {', '.join(missing)} -- set the "
-            "variable(s) and re-run."
-        )
-    if selected:
-        logger.info(f"API providers enabled: {', '.join(sorted(selected))}.")
-    return selected
 
 
 if __name__ == "__main__":

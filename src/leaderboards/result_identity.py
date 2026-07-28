@@ -14,6 +14,8 @@ from pathlib import Path
 
 from euroeval.data_models import BenchmarkResult
 
+from .record_fields import get_version
+
 # Type alias for the identity tuple
 ResultIdentity = tuple[str, str, bool | None, bool | None]
 
@@ -114,24 +116,6 @@ def _extract_timestamp(record: dict) -> int:
         except (ValueError, TypeError):
             pass
     return 0
-
-
-def _extract_version(record: dict) -> str | None:
-    """Extract the EuroEval version from a record.
-
-    Strips any ``.dev`` suffix.
-
-    Args:
-        record:
-            A record in EEE format.
-
-    Returns:
-        Version string or None if not found.
-    """
-    version = record.get("eval_library", {}).get("version")
-    if version:
-        return re.sub(r"\.dev\d+", "", version)
-    return None
 
 
 def normalise_bool_value(value: bool | str | None) -> bool | None:
@@ -241,8 +225,8 @@ def dedup_newer_record(record_a: dict, record_b: dict) -> dict:
             f"Records have different identities: {identity_a} vs {identity_b}"
         )
 
-    version_a = _extract_version(record_a)
-    version_b = _extract_version(record_b)
+    version_a = get_version(record=record_a)
+    version_b = get_version(record=record_b)
 
     version_cmp = _compare_versions(version_a, version_b)
     if version_cmp > 0:

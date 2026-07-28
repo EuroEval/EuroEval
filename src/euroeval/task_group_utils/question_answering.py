@@ -17,7 +17,7 @@ from ..exceptions import InvalidBenchmark
 from ..logging_utils import log_once
 from ..tokenisation_utils import get_special_token_metadata
 from ..types import Predictions
-from ..utils import raise_if_model_output_contains_nan_values
+from ._common import compute_simple_metrics, normalise_model_outputs
 
 if t.TYPE_CHECKING:
     import torch.nn as nn
@@ -56,37 +56,17 @@ def compute_metrics(
         A dictionary with the names of the metrics as keys and the metric values as
         values.
     """
-    model_outputs, labels = model_outputs_and_labels
+    _, labels, predictions = normalise_model_outputs(
+        model_outputs_and_labels=model_outputs_and_labels
+    )
 
-    # If the model outputs is a pair, then the first element corresponds to the model
-    # predictions
-    if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
-        model_outputs = model_outputs[0]
-
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)
-
-    model_output_dtype = np.asarray(model_outputs).dtype
-    if model_output_dtype in [np.float16, np.float32, np.float64]:
-        predictions = np.asarray(model_outputs).argmax(axis=-1)
-    else:
-        predictions = model_outputs
-
-    results: dict[str, float] = dict()
-    for metric in dataset_config.task.metrics:
-        score: float | None = metric(
-            predictions=predictions,  # ty: ignore[invalid-argument-type]
-            references=labels,  # ty: ignore[invalid-argument-type]
-            dataset=dataset,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-        )
-
-        # The metric returns None if we are running on multi-GPU and the current
-        # process is not the main process
-        if score is not None:
-            results[metric.name] = score
-
-    return results
+    return compute_simple_metrics(
+        predictions=predictions,
+        references=labels,
+        dataset=dataset,
+        dataset_config=dataset_config,
+        benchmark_config=benchmark_config,
+    )
 
 
 def find_valid_answers(

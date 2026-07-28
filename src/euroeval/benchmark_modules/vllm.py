@@ -9,7 +9,6 @@ import os
 import re
 import shutil
 import typing as t
-from functools import partial
 from pathlib import Path
 from time import sleep
 
@@ -30,7 +29,6 @@ from ..constants import (
     GENERATIVE_PIPELINE_TAGS,
     MAX_CONTEXT_LENGTH,
     MAX_VLLM_LOGPROBS,
-    MERGE_TAGS,
     REASONING_MAX_TOKENS,
     REASONING_TOKENS,
     VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY,
@@ -51,21 +49,9 @@ from ..exceptions import (
     NeedsExtraInstalled,
     NeedsSystemDependency,
 )
-from ..generation_utils import (
-    apply_prompt,
-    extract_few_shot_examples,
-    raise_if_wrong_params,
-)
-from ..languages import get_all_languages
+from ..generation_utils import raise_if_wrong_params
 from ..logging_utils import get_pbar, log, log_once, no_terminal_output
-from ..model_cache import create_model_cache_dir
 from ..string_utils import split_model_id
-from ..task_group_utils import (
-    question_answering,
-    sequence_classification,
-    text_to_text,
-    token_classification,
-)
 from ..tasks import LOGIC
 from ..tokenisation_utils import (
     apply_chat_template,
@@ -85,7 +71,13 @@ from ..utils import (
     internet_connection_available,
     resolve_model_path,
 )
-from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
+from .base import (
+    _build_model_config_helper,
+    _extract_labels_from_generation_helper,
+    _lookup_model_info,
+    _prepare_dataset_helper,
+)
+from .hf import HuggingFaceEncoderModel, load_hf_model_config
 
 try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
@@ -2190,30 +2182,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             The function used to extract the labels from the generated output.
         """
-        match self.dataset_config.task.task_group:
-            case (
-                TaskGroup.SEQUENCE_CLASSIFICATION
-                | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-            ):
-                return partial(
-                    sequence_classification.extract_labels_from_generation,
-                    dataset_config=self.dataset_config,
-                    model_config=self.model_config,
-                    first_label_token_mapping=self.buffer["first_label_token_mapping"],
-                )
-            case TaskGroup.TEXT_TO_TEXT:
-                return text_to_text.extract_labels_from_generation
-            case TaskGroup.TOKEN_CLASSIFICATION:
-                return partial(
-                    token_classification.extract_labels_from_generation,
-                    dataset_config=self.dataset_config,
-                )
-            case TaskGroup.QUESTION_ANSWERING:
-                return question_answering.extract_labels_from_generation
-            case _:
-                raise NotImplementedError(
-                    f"Unsupported task group: {self.dataset_config.task.task_group}."
-                )
+        return _extract_labels_from_generation_helper(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            first_label_token_mapping=self.buffer["first_label_token_mapping"],
+        )
 
     @property
     def generative_type(self) -> GenerativeType | None:
@@ -2273,54 +2246,36 @@ class VLLMModel(HuggingFaceEncoderModel):
             InvalidModel:
                 If the model does not exist.
         """
-        model_id_components = split_model_id(model_id=model_id)
-        model_info = get_model_repo_info(
-            model_id=model_id_components.model_id,
-            revision=model_id_components.revision,
-            api_key=benchmark_config.api_key,
-            cache_dir=benchmark_config.cache_dir,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            requires_safetensors=benchmark_config.requires_safetensors,
-            run_with_cli=benchmark_config.run_with_cli,
+        resolved_model_id, revision, model_info = _lookup_model_info(
+            model_id=model_id, benchmark_config=benchmark_config
         )
         if model_info is None:
             raise InvalidModel(f"The model {model_id!r} could not be found.")
 
         try:
             generation_config = GenerationConfig.from_pretrained(
-                pretrained_model_name=model_id_components.model_id,
-                revision=model_id_components.revision,
+                pretrained_model_name=resolved_model_id,
+                revision=revision,
                 cache_dir=benchmark_config.cache_dir,
                 token=benchmark_config.api_key,
             )
         except OSError:
             generation_config = None
 
-        language_mapping = get_all_languages()
-        language_codes = list(language_mapping.keys())
+        model_id_components = split_model_id(model_id=model_id)
 
-        model_config = ModelConfig(
-            model_id=model_id_components.model_id,
-            revision=model_id_components.revision,
+        return _build_model_config_helper(
+            model_id=resolved_model_id,
+            revision=revision,
             param=model_id_components.param,
             task=model_info.pipeline_tag,
-            languages=[
-                language_mapping[tag]
-                for tag in model_info.tags
-                if tag in language_codes
-            ],
-            merge=any(tag in model_info.tags for tag in MERGE_TAGS),
+            model_info=model_info,
+            benchmark_config=benchmark_config,
             inference_backend=InferenceBackend.VLLM,
             model_type=ModelType.GENERATIVE,
-            fresh=False,
-            model_cache_dir=create_model_cache_dir(
-                cache_dir=benchmark_config.cache_dir, model_id=model_id
-            ),
             adapter_base_model_id=model_info.adapter_base_model_id,
             generation_config=generation_config,
         )
-
-        return model_config
 
     @classmethod
     def model_exists(
@@ -2345,18 +2300,8 @@ class VLLMModel(HuggingFaceEncoderModel):
         if using_api:
             return False
 
-        model_id_components = split_model_id(model_id=model_id)
-        model_id = model_id_components.model_id
-        revision = model_id_components.revision
-
-        model_info = get_model_repo_info(
-            model_id=model_id,
-            revision=revision,
-            api_key=benchmark_config.api_key,
-            cache_dir=benchmark_config.cache_dir,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            requires_safetensors=benchmark_config.requires_safetensors,
-            run_with_cli=benchmark_config.run_with_cli,
+        _, _, model_info = _lookup_model_info(
+            model_id=model_id, benchmark_config=benchmark_config
         )
         return (
             model_info is not None
@@ -2381,55 +2326,17 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             The prepared dataset.
         """
-        if task.task_group == TaskGroup.QUESTION_ANSWERING:
-            dataset = dataset.map(
-                lambda examples: dict(
-                    label=[
-                        dict(
-                            id=id,
-                            answers=dict(
-                                answer_start=answer_dct["answer_start"],
-                                text=[
-                                    answer_text.lower()
-                                    for answer_text in answer_dct["text"]
-                                ],
-                            ),
-                        )
-                        for id, answer_dct in zip(examples["id"], examples["answers"])
-                    ]
-                ),
-                batched=True,
-                load_from_cache_file=False,
-                keep_in_memory=True,
-            )
-
-        if self.benchmark_config.few_shot:
-            few_shot_examples = extract_few_shot_examples(
-                dataset=dataset,
-                dataset_config=self.dataset_config,
-                benchmark_config=self.benchmark_config,
-                itr_idx=itr_idx,
-            )
-        else:
-            few_shot_examples = list()
-
-        dataset["test"] = dataset["test"].map(
-            partial(
-                apply_prompt,
-                few_shot_examples=few_shot_examples,
-                model_config=self.model_config,
-                dataset_config=self.dataset_config,
-                generative_type=self.generative_type,
-                always_populate_text_field=True,
-                tokeniser=self._tokeniser,
-                use_bits_per_character=self.benchmark_config.use_bits_per_character,
-            ),
-            batched=True,
-            load_from_cache_file=False,
-            keep_in_memory=True,
+        return _prepare_dataset_helper(
+            dataset=dataset,
+            task=task,
+            model_config=self.model_config,
+            dataset_config=self.dataset_config,
+            benchmark_config=self.benchmark_config,
+            generative_type=self.generative_type,
+            itr_idx=itr_idx,
+            always_populate_text_field=True,
+            tokeniser=self._tokeniser,
         )
-
-        return dataset
 
     def score(self, inputs: dict) -> "GenerativeModelOutput":
         """Compute BPC scores from prompt_logprobs.

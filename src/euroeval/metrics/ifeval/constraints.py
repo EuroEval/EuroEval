@@ -15,6 +15,10 @@ from ...exceptions import InvalidBenchmark
 
 logger = logging.getLogger(__name__)
 
+_ACCENTED_CHARS_RE = re.compile(
+    r"[àáâãäåçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ]"
+)
+
 
 class Constraint(t.Protocol):
     """An instruction-following constraint."""
@@ -133,10 +137,7 @@ def check_accents(response: str, **_) -> bool:
     Returns:
         True if the response contains accents, False otherwise.
     """
-    accented_chars = re.compile(
-        pattern=(r"[àáâãäåçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ]")
-    )
-    return accented_chars.search(response) is not None
+    return _ACCENTED_CHARS_RE.search(response) is not None
 
 
 @register("change_case:capital_letters")
@@ -703,10 +704,7 @@ def check_no_accents(response: str, **_) -> bool:
     Returns:
         True if the response contains no accents, False otherwise.
     """
-    accented_chars = re.compile(
-        pattern=(r"[àáâãäåçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ]")
-    )
-    return accented_chars.search(response) is None
+    return not check_accents(response)
 
 
 @register("punctuation:no_comma")
