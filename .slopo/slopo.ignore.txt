@@ -45,7 +45,7 @@ ac81abca3ab6  # scripts/dataset_creation/create_qnli.py
 4af81a865fac  # scripts/dataset_creation/create_icelandic_knowledge.py, scripts/dataset_creation/create_swedish_facts.py, ...
 
 
-# ---------- Post-refactor wrappers: thin delegations after extraction to base.py/_common.py ----------
+# ---------- Post-refactor wrappers: cannot merge without breaking class interfaces ----------
 
 01d1b47f0981  # euroeval/benchmark_modules/hf.py, euroeval/benchmark_modules/vllm.py
 06bf2c0c305a  # euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/litellm.py
