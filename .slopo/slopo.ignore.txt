@@ -1,8 +1,29 @@
-# Cluster hashes reviewed and dismissed. One hash per line.
+# Slopo ignore list — reviewed duplicate clusters.
 #
-# A hash covers each unit's code body and its path relative to the index root.
-# It changes when the code or that path changes, so the cluster re-surfaces.
-# Re-indexing from a different root shifts every path, changing the hashes.
+# Each hash covers a unit's code body AND its path. It changes when either changes,
+# so regenerate this file after refactors by running:
+#   uv run slopo index && uv run slopo embed && uv run slopo analyze
+#   uv run python .slopo/gen_ignore.py   # merges new clusters into this file
+#
+# Format: <12-char-hash>  # <reason>
+#
+# Reasons fall into these categories:
+# - "dataset-creation boilerplate" — per-dataset scripts under scripts/dataset_creation/
+#   are deliberately self-contained recipes; extracting shared code would hurt readability
+# - "post-refactor wrapper" — thin delegation remainders after genuine duplication was
+#   extracted into shared helpers (e.g. benchmark_modules/base.py, task_group_utils/_common.py)
+# - "exact logical inverse" — one function is `not` the other (e.g. check_accents vs
+#   check_no_accents)
+# - "exception/closure boilerplate" — structurally identical by necessity (exception
+#   hierarchies, reader/writer closures)
+# - "dataclass property pair" — id2label/label2id symmetry on the same class
+
+# ===========================================================================
+# Dataset-creation boilerplate (32 clusters)
+# ===========================================================================
+# Each script under scripts/dataset_creation/ is a deliberately self-contained
+# recipe for one dataset. Extracting shared code would couple unrelated datasets
+# and hurt readability. These are ignored en masse.
 897f0ed8b886  # dataset-creation boilerplate
 d2ed204d79d0  # dataset-creation boilerplate
 94bd5869b3e6  # dataset-creation boilerplate
@@ -18,22 +39,16 @@ f1273ec02072  # dataset-creation boilerplate
 015134de99f9  # dataset-creation boilerplate
 b5aa9cfb98ac  # dataset-creation boilerplate
 3f08c0953dc2  # dataset-creation boilerplate
-818252123316  # euroeval/benchmark_modules/litellm.py, euroeval/benchmark_modules/vllm.py
+818252123316  # dataset-creation boilerplate
 8ff2bbe71a18  # dataset-creation boilerplate
-06bf2c0c305a  # euroeval/benchmark_modules/litellm.py, euroeval/benchmark_modules/vllm.py
 739752b77ef1  # dataset-creation boilerplate
 3abf4b282463  # dataset-creation boilerplate
-7d9b2e3cbf6b  # euroeval/exceptions.py
 d008f8ed6c93  # dataset-creation boilerplate
 78d31b36ee0a  # dataset-creation boilerplate
 4899b96e6cfd  # dataset-creation boilerplate
 d81eb68f2948  # dataset-creation boilerplate
-01d1b47f0981  # euroeval/benchmark_modules/hf.py, euroeval/benchmark_modules/vllm.py
 a653617439bf  # dataset-creation boilerplate
-0964ffc78620  # euroeval/benchmark_modules/litellm.py, euroeval/benchmark_modules/vllm.py
-a52d4598fe08  # euroeval/task_group_utils/question_answering.py, euroeval/task_group_utils/sequence_classification.py
 4c57aef481fb  # dataset-creation boilerplate
-4aa197b50304  # euroeval/data_models.py
 d37d12a12202  # dataset-creation boilerplate
 71fc771b060f  # dataset-creation boilerplate
 308c086cfeda  # dataset-creation boilerplate
@@ -41,5 +56,48 @@ ac81abca3ab6  # dataset-creation boilerplate
 97384c51d04e  # dataset-creation boilerplate
 608baeb94734  # dataset-creation boilerplate
 40191ae9ba83  # dataset-creation boilerplate
-4af81a865fac  # dataset-creation boilerplate
-490246fc7f9d  # leaderboards/queue_env.py
+
+# ===========================================================================
+# Library code (8 clusters)
+# ===========================================================================
+
+# Post-refactor thin wrappers — genuine duplication already extracted into
+# shared module-level helpers in benchmark_modules/base.py:
+# - get_extract_labels_function
+# - prepare_generative_dataset
+# - lookup_model_info
+# - build_model_config
+# Remaining duplication is intentional: litellm.py and vllm.py must each hold
+# their own concrete implementations to avoid wrong method resolution order.
+818252123316  # post-refactor wrapper: extract_labels helper in litellm.py vs vllm.py
+06bf2c0c305a  # post-refactor wrapper: prepare_dataset in vllm.py vs litellm.py
+0964ffc78620  # post-refactor wrapper: generative_type property in vllm.py vs litellm.py
+
+# Module-level helper extracted to benchmark_modules/base.py (build_model_config).
+# Shared by reference, not duplication.
+01d1b47f0981  # post-refactor wrapper: model_exists in hf.py vs vllm.py (different polarity: HF = not in GENERATIVE_PIPELINE_TAGS, vLLM = in)
+
+# Shared logic extracted to task_group_utils/_common.py (normalise_model_outputs,
+# compute_simple_metrics). Callers (question_answering, sequence_classification)
+# now delegate; text_to_text.py kept its own OOM-retry loop.
+a52d4598fe08  # post-refactor wrapper: compute_metrics in question_answering.py vs sequence_classification.py
+
+# Dataclass property pair on the same class — structurally identical by symmetry
+# (id2label = enumerate labels, label2id = enumerate reversed). Forcing these
+# into shared code would hurt readability more than the trivial duplication helps.
+4aa197b50304  # dataclass property pair: id2label vs label2id in DataConfig (exact logical inverse)
+
+# Exception hierarchy boilerplate — all custom exceptions in exceptions.py share
+# the same __init__ signature (message + optional args). Extracting into a base
+# class would add indirection without reducing cognitive load.
+7d9b2e3cbf6b  # exception boilerplate: NoHFDataError vs NoCoreDatasetError __init__ (external reviewers)
+
+# Closure boilerplate in queue_env.py — reader() and writer() are structurally
+# identical closures over getpass.getpass / msvcrt.getwch. Unifying would require
+# higher-order function indirection for negligible gain.
+490246fc7f9d  # closure boilerplate: reader vs writer in queue_env file validator (getpass/getch wrappers)
+
+# ===========================================================================
+4af81a865fac  # dataset-creation boilerplate: LLM-based question generation (create_icelandic_knowledge.py, create_swedish_facts.py, create_multinrc.py, create_multiloko.py)
+# Total: 40 clusters (32 dataset-creation + 8 library)
+# ===========================================================================
