@@ -37,7 +37,6 @@ OPENAI_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY / XAI_API_KEY
 
 from __future__ import annotations
 
-import collections.abc as c
 import json
 import logging
 import os
@@ -66,8 +65,10 @@ from leaderboards.constants import (
     RESULTS_DIR,
 )
 from leaderboards.evaluation_common import (
+    Provider,
     gpu_total_memory_bytes,
     model_fits_locally,
+    provider_for_model_id,
     resolve_hf_token,
     run_euroeval,
 )
@@ -452,7 +453,8 @@ def run_evaluations(
     present_providers = {
         provider.name
         for model_id in ranked_api
-        if (provider := provider_for_model_id(model_id=model_id)) is not None
+        if (provider := provider_for_model_id(model_id=model_id, providers=PROVIDERS))
+        is not None
     }
     selected_providers = resolve_api_providers(
         include_api=include_api,
@@ -807,7 +809,7 @@ def build_eval_jobs(
             if not include_api:
                 skipped_api_set.add(model_id)
                 continue
-            provider = provider_for_model_id(model_id=model_id)
+            provider = provider_for_model_id(model_id=model_id, providers=PROVIDERS)
             if provider is not None and provider.name not in selected_providers:
                 skipped_api_set.add(model_id)
                 continue
@@ -1105,15 +1107,6 @@ def validate_gh_installed() -> None:
         )
 
 
-@dataclass(frozen=True)
-class _Provider:
-    """An API provider: its short name, env var, and id predicate."""
-
-    name: str
-    env_var: str
-    matches: c.Callable[[str], bool]
-
-
 def download_bucket_files_for_datasets(dataset_ids: set[str]) -> int:
     """Download missing bucket files whose filenames match dataset ids.
 
@@ -1223,19 +1216,19 @@ def result_sync_dataset_ids(
     return dataset_ids
 
 
-PROVIDERS: list[_Provider] = [
-    _Provider("openai", "OPENAI_API_KEY", lambda m: m.startswith(("openai/", "gpt-"))),
-    _Provider(
+PROVIDERS: list[Provider] = [
+    Provider("openai", "OPENAI_API_KEY", lambda m: m.startswith(("openai/", "gpt-"))),
+    Provider(
         "anthropic",
         "ANTHROPIC_API_KEY",
         lambda m: m.startswith(("claude-", "anthropic/")),
     ),
-    _Provider(
+    Provider(
         "google", "GEMINI_API_KEY", lambda m: m.startswith(("gemini/", "gemini-"))
     ),
-    _Provider("xai", "XAI_API_KEY", lambda m: m.startswith(("xai/", "grok-"))),
+    Provider("xai", "XAI_API_KEY", lambda m: m.startswith(("xai/", "grok-"))),
 ]
-PROVIDERS_BY_NAME: dict[str, _Provider] = {
+PROVIDERS_BY_NAME: dict[str, Provider] = {
     provider.name: provider for provider in PROVIDERS
 }
 
@@ -1964,22 +1957,6 @@ def open_pull_request(
     )
     _request_copilot_review()
     logger.info("Opened pull request.")
-
-
-def provider_for_model_id(model_id: str) -> _Provider | None:
-    """Return the API provider that owns a model id, or None.
-
-    Args:
-        model_id:
-            The model id to classify.
-
-    Returns:
-        The matching provider, or None when no provider claims the id.
-    """
-    for provider in PROVIDERS:
-        if provider.matches(model_id):
-            return provider
-    return None
 
 
 def record_is_api(model_info: dict[str, object]) -> bool:
