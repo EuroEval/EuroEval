@@ -13,12 +13,12 @@
 # Configure NLTK to use .euroeval_cache instead of home directory
 import os as _os
 import random
+from pathlib import Path
 
 import nltk
 from datasets import Dataset, DatasetDict, load_dataset
 from huggingface_hub.hf_api import HfApi
 from nltk.tokenize import sent_tokenize
-from pathlib import Path
 
 # Path to project root (script is in src/scripts/dataset_creation/)
 project_root = Path(__file__).parent.parent.parent.parent.absolute()

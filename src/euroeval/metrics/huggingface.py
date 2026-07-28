@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import collections.abc as c
+import os
 import typing as t
 from pathlib import Path
 
@@ -11,6 +12,7 @@ import numpy as np
 from datasets import DownloadConfig, DownloadMode
 
 from ..exceptions import InvalidBenchmark
+from ..logging_utils import no_terminal_output
 from ..nltk_utils import ensure_nltk_packages
 from .base import Metric
 

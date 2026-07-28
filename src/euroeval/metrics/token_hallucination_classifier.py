@@ -270,10 +270,18 @@ class TokenHallucinationMetric(Metric):
         Returns:
             The hallucination rate (hallucinated_tokens/total_tokens).
         """
+        # Extract language code from dataset config
+        main_language = dataset_config.main_language
+        language_code: str = (
+            main_language.code
+            if isinstance(main_language, Language)
+            else main_language.code[1]
+        )
+
         hallucination_rate = detect_hallucinations(
             dataset=dataset,
             predictions=predictions,
-            model=_hallucination_model_id(dataset_config=dataset_config),
+            model=_hallucination_model_id(language_code=language_code),
             device=Device(benchmark_config.device.type),
             cache_dir=benchmark_config.cache_dir,
         )
