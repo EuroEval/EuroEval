@@ -57,6 +57,66 @@ class LogicPuzzleMetric(Metric):
         else:
             raise ValueError(f"Invalid expected type: {expected_type}")
 
+    @abc.abstractmethod
+    def _compute_score(
+        self,
+        prediction: dict[str, set],
+        label: dict[str, set],
+        n_keys: int,
+        n_elements_per_key: int,
+    ) -> float:
+        """Compute the score for a single prediction-label pair.
+
+        Subclasses must implement this method to define their specific scoring logic.
+
+        Args:
+            prediction:
+                The prediction as a dictionary of sets.
+            label:
+                The label as a dictionary of sets.
+            n_keys:
+                Number of keys in the label.
+            n_elements_per_key:
+                Number of elements per key in the label.
+
+        Returns:
+            The computed score as a float.
+        """
+        ...
+
+    @staticmethod
+    def _prepare_data(
+        prediction: dict[str, list[str]], label: dict[str, list[str]]
+    ) -> tuple[dict[str, set], dict[str, set], int, int]:
+        """Prepare prediction and label data for comparison.
+
+        Args:
+            prediction:
+                The model predictions as a dictionary.
+            label:
+                The true labels as a dictionary.
+
+        Returns:
+            A tuple containing:
+                - prediction_sets: The prediction as a dictionary of sets.
+                - label_sets: The label as a dictionary of sets.
+                - n_keys: Number of keys in the label.
+                - n_elements_per_key: Number of elements per key in the label.
+        """
+        n_keys = len(label)
+
+        # Get the first item to determine the number of elements per key
+        first_key = next(iter(label))
+        n_elements_per_key = len(label[first_key])
+
+        # Convert each row to a set of values so the order within the row doesn't matter
+        prediction_sets = {
+            obj: set(row_attributes) for obj, row_attributes in prediction.items()
+        }
+        label_sets = {obj: set(row_attributes) for obj, row_attributes in label.items()}
+
+        return prediction_sets, label_sets, n_keys, n_elements_per_key
+
     def _compare_prediction_and_label(
         self, prediction: dict[str, list[str]], label: dict[str, list[str]]
     ) -> float:
@@ -193,66 +253,6 @@ class LogicPuzzleMetric(Metric):
         )
         mean_result = float(np.mean(results))
         return mean_result
-
-    @staticmethod
-    def _prepare_data(
-        prediction: dict[str, list[str]], label: dict[str, list[str]]
-    ) -> tuple[dict[str, set], dict[str, set], int, int]:
-        """Prepare prediction and label data for comparison.
-
-        Args:
-            prediction:
-                The model predictions as a dictionary.
-            label:
-                The true labels as a dictionary.
-
-        Returns:
-            A tuple containing:
-                - prediction_sets: The prediction as a dictionary of sets.
-                - label_sets: The label as a dictionary of sets.
-                - n_keys: Number of keys in the label.
-                - n_elements_per_key: Number of elements per key in the label.
-        """
-        n_keys = len(label)
-
-        # Get the first item to determine the number of elements per key
-        first_key = next(iter(label))
-        n_elements_per_key = len(label[first_key])
-
-        # Convert each row to a set of values so the order within the row doesn't matter
-        prediction_sets = {
-            obj: set(row_attributes) for obj, row_attributes in prediction.items()
-        }
-        label_sets = {obj: set(row_attributes) for obj, row_attributes in label.items()}
-
-        return prediction_sets, label_sets, n_keys, n_elements_per_key
-
-    @abc.abstractmethod
-    def _compute_score(
-        self,
-        prediction: dict[str, set],
-        label: dict[str, set],
-        n_keys: int,
-        n_elements_per_key: int,
-    ) -> float:
-        """Compute the score for a single prediction-label pair.
-
-        Subclasses must implement this method to define their specific scoring logic.
-
-        Args:
-            prediction:
-                The prediction as a dictionary of sets.
-            label:
-                The label as a dictionary of sets.
-            n_keys:
-                Number of keys in the label.
-            n_elements_per_key:
-                Number of elements per key in the label.
-
-        Returns:
-            The computed score as a float.
-        """
-        ...
 
 
 class CellWiseAccuracyMetric(LogicPuzzleMetric):

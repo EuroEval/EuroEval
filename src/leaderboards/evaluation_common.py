@@ -71,30 +71,6 @@ class Provider:
     matches: c.Callable[[str], bool]
 
 
-def provider_for_model_id(
-    model_id: str, providers: c.Sequence[Provider]
-) -> Provider | None:
-    """Return the API provider that owns a model id, or None.
-
-    Scans the provided provider list and returns the first provider whose
-    :attr:`Provider.matches` predicate accepts the model id.
-
-    Args:
-        model_id:
-            The model id to classify (e.g. "openai/gpt-4", "claude-3-opus").
-        providers:
-            The sequence of providers to check, in priority order.
-
-    Returns:
-        The matching :class:`Provider`, or None when no provider claims the id
-        (i.e. the model is not an API model).
-    """
-    for provider in providers:
-        if provider.matches(model_id):
-            return provider
-    return None
-
-
 def _build_euroeval_cmd(
     model_id: str,
     languages: c.Sequence[str],
@@ -547,6 +523,30 @@ def model_fits_locally(model_id: str, gpu_bytes: int | None) -> tuple[bool, int 
         return True, None
     needed = int(needed * GPU_FIT_OVERHEAD)
     return needed <= gpu_bytes, needed
+
+
+def provider_for_model_id(
+    model_id: str, providers: c.Sequence[Provider]
+) -> Provider | None:
+    """Return the API provider that owns a model id, or None.
+
+    Scans the provided provider list and returns the first provider whose
+    :attr:`Provider.matches` predicate accepts the model id.
+
+    Args:
+        model_id:
+            The model id to classify (e.g. "openai/gpt-4", "claude-3-opus").
+        providers:
+            The sequence of providers to check, in priority order.
+
+    Returns:
+        The matching :class:`Provider`, or None when no provider claims the id
+        (i.e. the model is not an API model).
+    """
+    for provider in providers:
+        if provider.matches(model_id):
+            return provider
+    return None
 
 
 def run_euroeval(

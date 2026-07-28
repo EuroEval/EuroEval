@@ -8,7 +8,7 @@ from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
 from ..metrics import HuggingFaceMetric
-from ._common import _normalize_model_outputs
+from ._common import normalise_model_outputs
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -48,7 +48,7 @@ def compute_metrics(
         InvalidBenchmark:
             If the metric computation fails.
     """
-    model_outputs, labels, predictions = _normalize_model_outputs(
+    model_outputs, labels, predictions = normalise_model_outputs(
         model_outputs_and_labels=model_outputs_and_labels
     )
 

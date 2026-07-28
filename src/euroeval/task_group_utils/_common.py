@@ -15,46 +15,7 @@ if t.TYPE_CHECKING:
     from ..types import Labels
 
 
-def _normalize_model_outputs(
-    model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
-) -> tuple[t.Any, "Labels", "Predictions"]:
-    """Normalise model outputs and compute predictions.
-
-    Performs shared preprocessing: unpacks outputs, handles tuple-wrapped
-    predictions, checks for NaN values, and converts probability distributions
-    to class predictions via argmax when needed.
-
-    Args:
-        model_outputs_and_labels:
-            The first sequence contains the model outputs and the second sequence
-            contains the true labels.
-
-    Returns:
-        A tuple containing:
-        - model_outputs: The squeezed model outputs (first element if tuple).
-        - labels: The true labels.
-        - predictions: Either the raw outputs (if integer type) or the argmax
-          across the last axis (if float type).
-    """
-    model_outputs, labels = model_outputs_and_labels
-
-    # If the model outputs is a pair, then the first element corresponds to the model
-    # predictions
-    if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
-        model_outputs = model_outputs[0]
-
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)
-
-    model_output_dtype = np.asarray(model_outputs).dtype
-    if model_output_dtype in [np.float16, np.float32, np.float64]:
-        predictions = np.asarray(model_outputs).argmax(axis=-1)
-    else:
-        predictions = model_outputs
-
-    return model_outputs, labels, predictions
-
-
-def _compute_simple_metrics(
+def compute_simple_metrics(
     predictions: "Predictions",
     references: "Labels",
     dataset: "Dataset",
@@ -100,3 +61,42 @@ def _compute_simple_metrics(
             results[metric.name] = score
 
     return results
+
+
+def normalise_model_outputs(
+    model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
+) -> tuple["Predictions", "Labels", "Predictions"]:
+    """Normalise model outputs and compute predictions.
+
+    Performs shared preprocessing: unpacks outputs, handles tuple-wrapped
+    predictions, checks for NaN values, and converts probability distributions
+    to class predictions via argmax when needed.
+
+    Args:
+        model_outputs_and_labels:
+            The first sequence contains the model outputs and the second sequence
+            contains the true labels.
+
+    Returns:
+        A tuple containing:
+        - model_outputs: The squeezed model outputs (first element if tuple).
+        - labels: The true labels.
+        - predictions: Either the raw outputs (if integer type) or the argmax
+          across the last axis (if float type).
+    """
+    model_outputs, labels = model_outputs_and_labels
+
+    # If the model outputs is a pair, then the first element corresponds to the model
+    # predictions
+    if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
+        model_outputs = model_outputs[0]
+
+    raise_if_model_output_contains_nan_values(model_output=model_outputs)
+
+    model_output_dtype = np.asarray(model_outputs).dtype
+    if model_output_dtype in [np.float16, np.float32, np.float64]:
+        predictions = np.asarray(model_outputs).argmax(axis=-1)
+    else:
+        predictions = model_outputs
+
+    return model_outputs, labels, predictions

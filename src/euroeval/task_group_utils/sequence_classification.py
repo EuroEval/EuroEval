@@ -13,7 +13,7 @@ from ..exceptions import InvalidBenchmark
 from ..string_utils import extract_multiple_choice_labels
 from ..types import Predictions
 from ..utils import log_once
-from ._common import _compute_simple_metrics, _normalize_model_outputs
+from ._common import compute_simple_metrics, normalise_model_outputs
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -51,7 +51,7 @@ def compute_metrics(
         A dictionary with the names of the metrics as keys and the metric values as
         values.
     """
-    _, labels, predictions = _normalize_model_outputs(
+    _, labels, predictions = normalise_model_outputs(
         model_outputs_and_labels=model_outputs_and_labels
     )
 
@@ -89,7 +89,7 @@ def compute_metrics(
         label2id[label.lower()] if isinstance(label, str) else label for label in labels
     ]
 
-    return _compute_simple_metrics(
+    return compute_simple_metrics(
         predictions=predictions,  # ty: ignore[invalid-argument-type]
         references=label_ids,  # ty: ignore[invalid-argument-type]
         dataset=dataset,
