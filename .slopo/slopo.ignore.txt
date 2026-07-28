@@ -56,22 +56,64 @@ ac81abca3ab6  # scripts/dataset_creation/create_qnli.py
 
 
 # ===========================================================================
-# Library code
+# Post-refactor wrappers (benchmark_modules)
 # ===========================================================================
 
 # These clusters remain after genuine duplication was refactored into shared helpers
-# (`benchmark_modules/base.py`, `task_group_utils/_common.py`). What Slopo flags now are:
-# - Thin wrapper methods that delegate to the shared helpers (cannot be further unified
-# without breaking the inheritance hierarchy)
-# - Structurally identical code that is intentional by design (dataclass property pairs,
-# exception __init__ signatures, reader/writer closures)
-# Forcing these into "shared" code would add indirection, hurt readability, or change
-# runtime behaviour.
+# in `benchmark_modules/base.py` and `task_group_utils/_common.py`. What Slopo flags
+# now are thin wrapper methods that delegate to shared helpers. They cannot be further
+# unified without breaking the inheritance hierarchy:
+# - `BenchmarkModule` (ABC) → `HuggingFaceEncoderModel` → `VLLMModel` / `FreshEncoderModel`
+# - `LiteLLMModel` is a sibling under `BenchmarkModule`
+# Lifting shared logic onto `BenchmarkModule` would cause wrong method resolution order
+# (e.g. `VLLMModel` would inherit encoder implementation from `HuggingFaceEncoderModel`).
+# Module-level helpers in `base.py` are the correct abstraction.
 
+01d1b47f0981  # euroeval/benchmark_modules/hf.py, euroeval/benchmark_modules/vllm.py
 06bf2c0c305a  # euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/litellm.py
 0964ffc78620  # euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/litellm.py
-01d1b47f0981  # euroeval/benchmark_modules/hf.py, euroeval/benchmark_modules/vllm.py
 a52d4598fe08  # euroeval/task_group_utils/question_answering.py, euroeval/task_group_utils/sequence_classification.py
+
+
+# ===========================================================================
+# Post-refactor wrappers (task_group_utils)
+# ===========================================================================
+
+# Shared metric computation extracted to `task_group_utils/_common.py`
+# (`normalise_model_outputs`, `compute_simple_metrics`). Callers now delegate
+# to the shared helper. `text_to_text.py` kept its own OOM-retry loop.
+
+
+
+# ===========================================================================
+# Dataclass property pairs
+# ===========================================================================
+
+# Symmetric properties on the same dataclass (id2label = enumerate labels,
+# label2id = enumerate reversed). Forcing these into "shared" code would add
+# indirection without reducing cognitive load — the duplication is trivial
+# and intentional by design.
+
 4aa197b50304  # euroeval/data_models.py
+
+
+# ===========================================================================
+# Exception boilerplate
+# ===========================================================================
+
+# Custom exception classes in `exceptions.py` share the same `__init__` signature
+# (message + optional args). Extracting into a common base class would add
+# indirection without reducing cognitive load — this is standard Python pattern.
+
 7d9b2e3cbf6b  # euroeval/exceptions.py
+
+
+# ===========================================================================
+# Closure boilerplate
+# ===========================================================================
+
+# Reader/writer closures in `queue_env.py` are structurally identical because
+# they wrap `getpass.getpass` and `msvcrt.getwch` respectively. Unifying would
+# require higher-order function indirection for negligible gain.
+
 490246fc7f9d  # leaderboards/queue_env.py
