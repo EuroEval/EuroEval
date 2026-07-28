@@ -1,15 +1,20 @@
 # Slopo ignore list — reviewed duplicate clusters.
 #
-# Each hash covers a unit's code body AND its path. It changes when either changes,
-# so regenerate this file after refactors by running:
+# Regenerate after refactors:
 #   uv run slopo index && uv run slopo embed && uv run slopo analyze
-#   uv run python .slopo/gen_ignore.py   # merges new clusters into this file
+#   uv run python .slopo/gen_ignore.py  # merges new clusters into this file
 #
 # Format (one hash per line, files listed after #):
 #   <hash>  # path/to/file1.py, path/to/file2.py, ...
 #
 # Example:
 #   897f0ed8b886  # scripts/dataset_creation/create_fquad.py, scripts/dataset_creation/create_squad.py
+#
+# Structure:
+# - Each section starts with a commented header explaining WHY that category is ignored
+# - Two blank lines separate sections
+# - One blank line separates the header from its hashes
+# - Hashes within a section are sorted alphabetically
 
 
 # ---------- Dataset-creation scripts: each is a standalone recipe, not shared library code ----------
