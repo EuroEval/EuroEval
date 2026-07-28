@@ -13,6 +13,7 @@ import click
 from dotenv import load_dotenv
 from yaml import safe_load
 
+from euroeval.string_utils import split_model_id
 from leaderboards.backup import backup_results, restore_from_backup_if_missing
 from leaderboards.constants import (
     API_MODEL_PATTERNS,
@@ -28,9 +29,13 @@ from leaderboards.constants import (
     TRAINED_FROM_SCRATCH_PATTERNS,
 )
 from leaderboards.leaderboard_generation import generate_leaderboard
+from leaderboards.records import get_dataset, plain_model_id
+from leaderboards.result_loading import load_raw_results
 from leaderboards.result_processing import process_results
+from leaderboards.score_extraction import extract_model_metadata
 from leaderboards.task_metadata import (
     languages_with_official_datasets,
+    official_datasets_for_language,
     task_metric_pretty_names,
 )
 
@@ -148,6 +153,9 @@ def main(
     # Keep the frontend's task -> metric-names map in sync with euroeval.
     generate_task_metrics()
 
+    # Keep the HF Space's model list in sync so it shows up on model cards.
+    generate_model_list()
+
     # Snapshot the (possibly updated) results to the backup directory,
     # rotating out oldest backups to keep total size under the cap.
     try:
@@ -206,6 +214,37 @@ def _maybe_refresh_core_models() -> None:
         subprocess.run([sys.executable, str(script_path)], check=True)
     except subprocess.CalledProcessError as exc:
         logger.warning(f"update_core_models failed (exit {exc.returncode}).")
+
+
+def generate_model_list() -> None:
+    """Generate the models.py file for upload to the leaderboard HF Space."""
+    output_path: Path = REPO_ROOT / "hf_space" / "models.py"
+    all_datasets = {
+        dataset
+        for language in languages_with_official_datasets()
+        for task_datasets in official_datasets_for_language(language).values()
+        for dataset in task_datasets
+    }
+    results = [
+        r
+        for r in load_raw_results()
+        if get_dataset(r) in all_datasets and not r.get("use_bits_per_character", False)
+    ]
+    model_metadata_dict = extract_model_metadata(results=results)
+    model_ids = sorted(
+        {
+            split_model_id(model_id=plain_model_id(model_id)).model_id
+            for model_id, model_metadata in model_metadata_dict.items()
+            if model_metadata.get("open", False)
+        }
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open(mode="w") as f:
+        f.write('"""Auto-generated list of models in the EuroEval leaderboards."""\n')
+        f.write("MODEL_NAMES = [\n")
+        f.writelines(f'    "{model_id}",\n' for model_id in model_ids)
+        f.write("]\n")
+    logger.info(f"Wrote {output_path.relative_to(REPO_ROOT)}")
 
 
 def generate_task_metrics() -> None:

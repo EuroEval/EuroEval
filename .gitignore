@@ -116,6 +116,10 @@ results/
 # Leaderboard CSVs (regenerated build artifact; bundled by Vite at build time).
 src/frontend/csv/
 
+# models.py (regenerated build artifact; uploaded to the EuroEval/euroeval_leaderboard
+# HF Space
+hf_space/
+
 # Experiments
 gai-experiments.xlsx
 ~$gai-experiments.xlsx
