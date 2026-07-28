@@ -11,6 +11,8 @@ from datasets import Dataset
 from huggingface_hub import HfApi, snapshot_download
 from lettucedetect import HallucinationDetector
 
+from euroeval.languages import Language
+
 from ..constants import MAX_CONTEXT_LENGTH
 from ..enums import Device
 from ..exceptions import InvalidBenchmark
@@ -26,20 +28,19 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig
 
 
-def _hallucination_model_id(dataset_config: "DatasetConfig") -> str:
+def _hallucination_model_id(language_code: str) -> str:
     """Build the hallucination detection model ID for a dataset.
 
     Args:
-        dataset_config:
-            The dataset configuration, whose main language determines the
-            language-specific hallucination detection model.
+        language_code:
+            The language code of the dataset.
 
     Returns:
         The Hugging Face Hub repository ID of the hallucination detection model.
     """
     return (
         "alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-"
-        f"ragtruth-{dataset_config.main_language.code}"
+        f"ragtruth-{language_code}"
     )
 
 
@@ -67,22 +68,15 @@ def _hallucination_model_ids(
         Otherwise, contains all models referenced by built-in dataset
         configurations.
     """
+    # Extract language(s) from the provided dataset configuration if available
     if dataset_config is not None:
-        # Extract language(s) from the provided dataset configuration
         main_language = dataset_config.main_language
-        if isinstance(main_language, tuple):
-            # Translation task: use target language (second element) since that's
-            # what the model outputs and what we check for hallucinations
-            return {
-                "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
-                f"{main_language[1].code}"
-            }
-        else:
-            # Single language
-            return {
-                "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
-                f"{main_language.code}"
-            }
+        language_code: str = (
+            main_language.code
+            if isinstance(main_language, Language)
+            else main_language.code[1]
+        )
+        return {_hallucination_model_id(language_code=language_code)}
 
     # Imported here rather than at module level to avoid a circular import, since
     # the dataset configurations import this metric module via the task registry.
@@ -102,7 +96,13 @@ def _hallucination_model_ids(
             isinstance(metric, TokenHallucinationMetric)
             for metric in dataset_config.task.metrics
         ):
-            model_ids.add(_hallucination_model_id(dataset_config=dataset_config))
+            main_language = dataset_config.main_language
+            language_code: str = (
+                main_language.code
+                if isinstance(main_language, Language)
+                else main_language.code[1]
+            )
+            model_ids.add(_hallucination_model_id(language_code=language_code))
     return model_ids
 
 
