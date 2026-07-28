@@ -42,9 +42,11 @@ from euroeval.languages import get_all_languages
 from leaderboards.constants import NEW_RESULTS_PATH, RESULTS_DIR
 from leaderboards.core_models import CoreModel
 from leaderboards.evaluation_common import (
+    Provider,
     gpu_total_memory_bytes,
     model_fits_locally,
     official_dataset_language_pairs,
+    provider_for_model_id,
     run_euroeval,
 )
 from leaderboards.jsonl_io import (
@@ -238,7 +240,9 @@ def build_jobs(
 
     for model in models:
         if model.api:
-            provider = provider_for_model_id(model_id=model.model_id)
+            provider = provider_for_model_id(
+                model_id=model.model_id, providers=PROVIDERS
+            )
             if provider is None or provider.name not in selected_providers:
                 continue
         model_languages = codes_for_model(model=model)
@@ -514,53 +518,25 @@ def _prompt_api_providers() -> set[str]:
     return selected
 
 
-@dataclass(frozen=True)
-class _Provider:
-    """An API provider: its short name, required env var, and id predicate."""
-
-    name: str
-    env_var: str
-    matches: c.Callable[[str], bool]
-
-
-def provider_for_model_id(model_id: str) -> _Provider | None:
-    """Return the API provider that owns a model id, or None.
-
-    Args:
-        model_id:
-            The model id to classify.
-
-    Returns:
-        The matching :class:`_Provider`, or None when no provider claims
-        the id (i.e. the model is not an API model).
-    """
-    for provider in PROVIDERS:
-        if provider.matches(model_id):
-            return provider
-    return None
-
-
-PROVIDERS: list[_Provider] = [
-    _Provider(
+PROVIDERS: list[Provider] = [
+    Provider(
         name="openai",
         env_var="OPENAI_API_KEY",
         matches=lambda m: m.startswith("openai/"),
     ),
-    _Provider(
+    Provider(
         name="anthropic",
         env_var="ANTHROPIC_API_KEY",
         matches=lambda m: m.startswith("claude-") or m.startswith("anthropic/"),
     ),
-    _Provider(
+    Provider(
         name="google",
         env_var="GEMINI_API_KEY",
         matches=lambda m: m.startswith("gemini/"),
     ),
-    _Provider(
-        name="xai", env_var="XAI_API_KEY", matches=lambda m: m.startswith("xai/")
-    ),
+    Provider(name="xai", env_var="XAI_API_KEY", matches=lambda m: m.startswith("xai/")),
 ]
-PROVIDERS_BY_NAME: dict[str, _Provider] = {p.name: p for p in PROVIDERS}
+PROVIDERS_BY_NAME: dict[str, Provider] = {p.name: p for p in PROVIDERS}
 
 
 if __name__ == "__main__":
