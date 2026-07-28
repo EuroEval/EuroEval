@@ -11,7 +11,7 @@
 """Create the Público-mini summarisation dataset."""
 
 # Configure NLTK to use .euroeval_cache instead of home directory
-import os as _os
+import os
 import random
 from pathlib import Path
 
@@ -24,7 +24,7 @@ from nltk.tokenize import sent_tokenize
 project_root = Path(__file__).parent.parent.parent.parent.absolute()
 nltk_data_dir = project_root / ".euroeval_cache" / "nltk_data"
 nltk_data_dir.mkdir(parents=True, exist_ok=True)
-_os.environ["NLTK_DATA"] = str(nltk_data_dir)
+os.environ["NLTK_DATA"] = str(nltk_data_dir)
 nltk.data.path = [str(nltk_data_dir)]
 nltk.download("punkt", quiet=True)
 

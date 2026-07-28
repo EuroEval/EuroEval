@@ -7,21 +7,10 @@
 import importlib.util
 import logging
 import os
-import os as _os
 import sys
 import warnings
 
-import nltk as _nltk
 from termcolor import colored
-
-_nltk_data_path = _os.path.join(
-    _os.path.dirname(__file__), ".euroeval_cache", "nltk_data"
-)
-_os.environ["NLTK_DATA"] = _nltk_data_path
-
-# Import NLTK early and configure it to use only our cache directory
-# This prevents NLTK from checking/using system-wide or home directory installations
-_nltk.data.path = [_nltk_data_path]
 
 # STAGE 1 ###
 # Block unwanted terminal output that happens on importing external modules ###

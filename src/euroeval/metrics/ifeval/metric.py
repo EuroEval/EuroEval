@@ -6,8 +6,8 @@ import typing as t
 from pathlib import Path
 
 from ...logging_utils import log_once
+from ...nltk_utils import ensure_nltk_packages
 from ..base import Metric
-from ..nltk_utils import ensure_nltk_packages
 from .constraints import ALL_CONSTRAINTS
 
 if t.TYPE_CHECKING:
@@ -24,21 +24,11 @@ class IFEvalInstructionAccuracy(Metric):
     def __init__(self) -> None:
         """Initialise the metric."""
         self.downloaded_nltk = False
-        self._nltk_data_dir: Path | None = None
         super().__init__(
             name="instruction_accuracy",
             pretty_name="Instruction Accuracy",
             postprocessing_fn=None,
         )
-
-    def _setup_nltk(self, cache_dir: Path) -> None:
-        """Set up NLTK to use the cache directory and suppress logging.
-
-        Args:
-            cache_dir:
-                The cache directory to use for NLTK data.
-        """
-        self._nltk_data_dir = ensure_nltk_packages(cache_dir)
 
     def __call__(
         self,
@@ -66,7 +56,7 @@ class IFEvalInstructionAccuracy(Metric):
             The instruction-level accuracy.
         """
         if not self.downloaded_nltk:
-            self._setup_nltk(Path(benchmark_config.cache_dir))
+            ensure_nltk_packages(Path(benchmark_config.cache_dir))
             self.downloaded_nltk = True
 
         all_results: list[bool] = []
