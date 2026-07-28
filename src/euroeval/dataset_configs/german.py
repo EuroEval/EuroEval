@@ -98,15 +98,6 @@ ZEBRA_PUZZLE_EASY_DE_CONFIG = DatasetConfig(
     languages=[GERMAN],
 )
 
-RAGTRUTH_DE_CONFIG = DatasetConfig(
-    name="ragtruth-de",
-    pretty_name="RAGTruth-de",
-    source="EuroEval/ragtruth-translated-hallucinations-de-mini",
-    task=HALLU,
-    languages=[GERMAN],
-    train_split=None,
-)
-
 
 WINOGRANDE_DE_CONFIG = DatasetConfig(
     name="winogrande-de",
@@ -227,5 +218,15 @@ EU_MMLU_DE_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-de",
     task=KNOW,
     languages=[GERMAN],
+    unofficial=True,
+)
+
+RAGTRUTH_DE_CONFIG = DatasetConfig(
+    name="ragtruth-de",
+    pretty_name="RAGTruth-de",
+    source="EuroEval/ragtruth-translated-hallucinations-de-mini",
+    task=HALLU,
+    languages=[GERMAN],
+    train_split=None,
     unofficial=True,
 )
