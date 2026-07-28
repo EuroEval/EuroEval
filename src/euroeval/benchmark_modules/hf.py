@@ -45,7 +45,6 @@ from ..constants import (
     GENERATIVE_PIPELINE_TAGS,
     LOCAL_MODELS_REQUIRED_FILES,
     MAX_CONTEXT_LENGTH,
-    MERGE_TAGS,
 )
 from ..data_models import HashableDict, HFModelInfo, ModelConfig
 from ..enums import (
@@ -64,7 +63,6 @@ from ..exceptions import (
     NeedsExtraInstalled,
 )
 from ..generation_utils import raise_if_wrong_params
-from ..languages import get_all_languages
 from ..logging_utils import block_terminal_output, log, log_once
 from ..model_cache import create_model_cache_dir
 from ..safetensors_utils import get_num_params_from_safetensors_metadata
@@ -77,7 +75,7 @@ from ..task_group_utils import (
 from ..tokenisation_utils import get_bos_token, get_eos_token
 from ..types import Tokeniser
 from ..utils import get_hf_token, internet_connection_available
-from .base import BenchmarkModule
+from .base import BenchmarkModule, _build_model_config_helper, _lookup_model_info
 
 try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
@@ -1548,43 +1546,25 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             InvalidModel:
                 If the model could not be found.
         """
-        model_id_components = split_model_id(model_id=model_id)
-        model_info = get_model_repo_info(
-            model_id=model_id_components.model_id,
-            revision=model_id_components.revision,
-            api_key=benchmark_config.api_key,
-            cache_dir=benchmark_config.cache_dir,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            requires_safetensors=benchmark_config.requires_safetensors,
-            run_with_cli=benchmark_config.run_with_cli,
+        resolved_model_id, revision, model_info = _lookup_model_info(
+            model_id=model_id, benchmark_config=benchmark_config
         )
         if model_info is None:
             raise InvalidModel(f"The model {model_id!r} could not be found.")
 
-        language_mapping = get_all_languages()
-        language_codes = list(language_mapping.keys())
+        model_id_components = split_model_id(model_id=model_id)
 
-        model_config = ModelConfig(
-            model_id=model_id_components.model_id,
-            revision=model_id_components.revision,
+        return _build_model_config_helper(
+            model_id=resolved_model_id,
+            revision=revision,
             param=model_id_components.param,
             task=model_info.pipeline_tag,
-            languages=[
-                language_mapping[tag]
-                for tag in model_info.tags
-                if tag in language_codes
-            ],
-            merge=any(tag in model_info.tags for tag in MERGE_TAGS),
+            model_info=model_info,
+            benchmark_config=benchmark_config,
             inference_backend=InferenceBackend.TRANSFORMERS,
             model_type=ModelType.ENCODER,
-            fresh=False,
-            model_cache_dir=create_model_cache_dir(
-                cache_dir=benchmark_config.cache_dir, model_id=model_id
-            ),
             adapter_base_model_id=None,
         )
-
-        return model_config
 
     @classmethod
     def model_exists(
@@ -1602,15 +1582,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
-        model_id_components = split_model_id(model_id=model_id)
-        model_info = get_model_repo_info(
-            model_id=model_id_components.model_id,
-            revision=model_id_components.revision,
-            api_key=benchmark_config.api_key,
-            cache_dir=benchmark_config.cache_dir,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            requires_safetensors=benchmark_config.requires_safetensors,
-            run_with_cli=benchmark_config.run_with_cli,
+        _, _, model_info = _lookup_model_info(
+            model_id=model_id, benchmark_config=benchmark_config
         )
         return (
             model_info is not None
