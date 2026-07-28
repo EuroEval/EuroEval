@@ -24,6 +24,7 @@ from zipfile import ZipFile
 
 import nltk
 import pandas as pd
+from pathlib import Path
 import requests as rq
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
@@ -32,13 +33,12 @@ from urllib3.exceptions import InsecureRequestWarning
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 
-# Configure NLTK to use .euroeval_cache instead of home directory
-
-_nltk_data_path = _os.path.expanduser("~/gitsky/EuroEval/.euroeval_cache/nltk_data")
-_os.makedirs(_nltk_data_path, exist_ok=True)
-_os.environ["NLTK_DATA"] = _nltk_data_path
-nltk.data.path = [_nltk_data_path]
-
+# Path to project root (script is in src/scripts/dataset_creation/)
+project_root = Path(__file__).parent.parent.parent.parent.absolute()
+nltk_data_dir = project_root / ".euroeval_cache" / "nltk_data"
+nltk_data_dir.mkdir(parents=True, exist_ok=True)
+_os.environ["NLTK_DATA"] = str(nltk_data_dir)
+nltk.data.path = [str(nltk_data_dir)]
 nltk.download("punkt_tab", quiet=True)
 
 logger = logging.getLogger("create_eltec")

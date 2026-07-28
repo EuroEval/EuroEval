@@ -5,10 +5,9 @@ import logging
 import typing as t
 from pathlib import Path
 
-import nltk
-
 from ...logging_utils import log_once
 from ..base import Metric
+from ..nltk_utils import ensure_nltk_packages
 from .constraints import ALL_CONSTRAINTS
 
 if t.TYPE_CHECKING:
@@ -39,25 +38,7 @@ class IFEvalInstructionAccuracy(Metric):
             cache_dir:
                 The cache directory to use for NLTK data.
         """
-        self._nltk_data_dir = cache_dir / "nltk_data"
-        self._nltk_data_dir.mkdir(parents=True, exist_ok=True)
-
-        # Set the NLTK search path to include only our cache directory
-        # This ensures NLTK data is stored inside .euroeval_cache
-        nltk.data.path.insert(0, str(self._nltk_data_dir))
-
-        # Suppress NLTK download logging using no_terminal_output
-        # This captures both stdout and stderr at the OS level
-        # NLTK prints to both streams even with quiet=True
-        from ...logging_utils import no_terminal_output
-
-        with no_terminal_output():
-            # Download required NLTK packages
-            nltk.download(
-                "punkt_tab", download_dir=str(self._nltk_data_dir), quiet=True
-            )
-            nltk.download("wordnet", download_dir=str(self._nltk_data_dir), quiet=True)
-            nltk.download("omw-1.4", download_dir=str(self._nltk_data_dir), quiet=True)
+        self._nltk_data_dir = ensure_nltk_packages(cache_dir)
 
     def __call__(
         self,
