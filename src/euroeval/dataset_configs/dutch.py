@@ -32,10 +32,10 @@ DBRD_CONFIG = DatasetConfig(
     labels=["negative", "positive"],
 )
 
-SCALA_NL_CONFIG = DatasetConfig(
-    name="scala-nl",
-    pretty_name="ScaLA-nl",
-    source="EuroEval/scala-nl",
+DUTCH_COLA_CONFIG = DatasetConfig(
+    name="dutch-cola",
+    pretty_name="Dutch CoLA",
+    source="EuroEval/dutch-cola",
     task=LA,
     languages=[DUTCH],
 )
@@ -157,6 +157,15 @@ MMLU_NL_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+SCALA_NL_CONFIG = DatasetConfig(
+    name="scala-nl",
+    pretty_name="ScaLA-nl",
+    source="EuroEval/scala-nl",
+    task=LA,
+    languages=[DUTCH],
+    unofficial=True,
+)
+
 WINOGRANDE_NL_CONFIG = DatasetConfig(
     name="winogrande-nl",
     pretty_name="Winogrande-nl",
@@ -164,15 +173,6 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DUTCH],
     labels=["a", "b"],
-    unofficial=True,
-)
-
-DUTCH_COLA_CONFIG = DatasetConfig(
-    name="dutch-cola",
-    pretty_name="Dutch CoLA",
-    source="EuroEval/dutch-cola",
-    task=LA,
-    languages=[DUTCH],
     unofficial=True,
 )
 
