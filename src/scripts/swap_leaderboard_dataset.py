@@ -56,6 +56,7 @@ from tqdm.auto import tqdm
 from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
+from euroeval.jsonl_io import parse_jsonl_lines
 from euroeval.languages import get_all_languages
 from leaderboards.bucket_sync import merge_results, upload_results_to_bucket
 from leaderboards.constants import (
@@ -1381,6 +1382,7 @@ def execute_jobs(
 
     logger.info(f"Evaluation log: {log_path}")
 
+    result_keys = _BenchmarkResultKeys()
     with tqdm(jobs, desc="Evaluating models", unit="model") as progress:
         for idx, job in enumerate(progress, start=1):
             progress.set_postfix_str(job.model_id)
@@ -1430,9 +1432,7 @@ def execute_jobs(
                 )
                 failed.append(f"{job.model_id} (exit {returncode})")
                 continue
-            missing = _job_missing_results(
-                job=job, result_keys=_benchmark_result_keys()
-            )
+            missing = _job_missing_results(job=job, result_keys=result_keys.current())
             if missing:
                 logger.warning(
                     f"{job.model_id}: euroeval exited 0 but produced no result for "
@@ -1445,28 +1445,55 @@ def execute_jobs(
     return evaluated, failed
 
 
-def _benchmark_result_keys() -> set[tuple[str, str, str]]:
-    """Return the (model, dataset, language) triples in the local CLI results file.
+class _BenchmarkResultKeys:
+    """Incrementally collects ``(model, dataset, language)`` result triples.
 
-    Reads ``euroeval_benchmark_results.jsonl`` (where ``euroeval`` CLI runs append
-    their records) and returns the set of ``(plain_model_id, dataset, language)``
-    triples it currently holds, so a just-run job can be checked for a real result.
-
-    Returns:
-        The set of triples present, empty when the results file is absent.
+    Tracks the ``(plain_model_id, dataset, language)`` triples present in the
+    local ``euroeval_benchmark_results.jsonl`` file that ``euroeval`` CLI runs
+    append to. Each :meth:`current` call parses only the bytes appended since the
+    previous call (up to the last complete line), so checking every job's result
+    after it runs stays ``O(results-file-size)`` across a whole run rather than
+    ``O(jobs * results-file-size)``. Malformed or partially written lines are
+    skipped rather than raising, so a corrupt line can never crash the run.
     """
-    if not EUROEVAL_BENCHMARK_RESULTS_PATH.exists():
-        return set()
-    keys: set[tuple[str, str, str]] = set()
-    for record in load_records_from_jsonl_files([EUROEVAL_BENCHMARK_RESULTS_PATH]):
-        model_info = t.cast(dict[str, object], record.get("model_info", {}))
-        model = plain_model_id(str(model_info.get("name") or model_info.get("id", "")))
-        dataset = get_dataset(record=record)
-        if not model or not dataset:
-            continue
-        for language in _record_languages(record=record):
-            keys.add((model, str(dataset), language))
-    return keys
+
+    def __init__(self) -> None:
+        """Initialise an empty tracker at the start of the results file."""
+        self._offset = 0
+        self._keys: set[tuple[str, str, str]] = set()
+
+    def current(self) -> set[tuple[str, str, str]]:
+        """Return the triples seen so far, parsing any newly appended lines.
+
+        Returns:
+            The set of ``(model, dataset, language)`` triples present in the
+            results file, empty when the file is absent.
+        """
+        path = EUROEVAL_BENCHMARK_RESULTS_PATH
+        if not path.exists():
+            return self._keys
+        data = path.read_bytes()
+        # Only consume up to the last newline; a trailing partial line (e.g. one
+        # still being written) is left for a later call. Cutting on ``\n`` is
+        # always a safe UTF-8 boundary.
+        end = data.rfind(b"\n") + 1
+        if end <= self._offset:
+            return self._keys
+        chunk = data[self._offset : end].decode("utf-8", errors="replace")
+        self._offset = end
+        for record in parse_jsonl_lines(
+            lines=chunk.splitlines(), source=str(path), strict=False
+        ):
+            model_info = t.cast(dict[str, object], record.get("model_info", {}))
+            model = plain_model_id(
+                str(model_info.get("name") or model_info.get("id", ""))
+            )
+            dataset = get_dataset(record=record)
+            if not model or not dataset:
+                continue
+            for language in _record_languages(record=record):
+                self._keys.add((model, str(dataset), language))
+        return self._keys
 
 
 def _record_languages(record: dict[str, object]) -> list[str]:
