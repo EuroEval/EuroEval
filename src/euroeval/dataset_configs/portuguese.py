@@ -89,15 +89,6 @@ VALEU_PT_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
-RAGTRUTH_PT_CONFIG = DatasetConfig(
-    name="ragtruth-pt",
-    pretty_name="RAGTruth-pt",
-    source="EuroEval/ragtruth-translated-hallucinations-pt-mini",
-    task=HALLU,
-    languages=[PORTUGUESE],
-    train_split=None,
-)
-
 
 MMLU_PT_CONFIG = DatasetConfig(
     name="mmlu-pt",
@@ -219,5 +210,15 @@ EU_MMLU_PT_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-pt",
     task=KNOW,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    unofficial=True,
+)
+
+RAGTRUTH_PT_CONFIG = DatasetConfig(
+    name="ragtruth-pt",
+    pretty_name="RAGTruth-pt",
+    source="EuroEval/ragtruth-translated-hallucinations-pt-mini",
+    task=HALLU,
+    languages=[PORTUGUESE],
+    train_split=None,
     unofficial=True,
 )

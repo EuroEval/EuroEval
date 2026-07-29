@@ -226,8 +226,6 @@ def refresh_core_models(dry_run: bool = False) -> list[CoreModel]:
 # ---------------------------------------------------------------------------
 # Diffing
 # ---------------------------------------------------------------------------
-@dataclasses.dataclass
-@dataclasses.dataclass
 def _update_issue_body(issue_number: int, body: str, token: str) -> None:
     """PATCH an issue with a new body.
 

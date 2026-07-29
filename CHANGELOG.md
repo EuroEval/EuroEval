@@ -40,6 +40,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed a model ID error for hallucination detection models.
 - Fixed detection of models that report `temperature` as an unsupported parameter via a
   `does not support parameters: [...'temperature'...]` error message. Such models now
   have `temperature` removed and are retried, consistent with the existing handling of

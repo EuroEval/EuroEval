@@ -15,6 +15,7 @@ sync.
 from __future__ import annotations
 
 import collections.abc as c
+import dataclasses
 import fcntl
 import json
 import logging
@@ -49,6 +50,50 @@ from .constants import DTYPE_BYTES, GPU_FIT_OVERHEAD, LANGUAGE_GROUP_CODES
 # don't pay a multi-second import cost they never use.
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass(frozen=True)
+class Provider:
+    """An API provider: its short name, required env var, and id predicate.
+
+    Attributes:
+        name:
+            The provider's short name (e.g. "openai", "anthropic").
+        env_var:
+            The environment variable holding the API key.
+        matches:
+            A callable that returns True when a model id belongs to this
+            provider.
+    """
+
+    name: str
+    env_var: str
+    matches: c.Callable[[str], bool]
+
+
+PROVIDERS: list[Provider] = [
+    Provider(
+        name="openai",
+        env_var="OPENAI_API_KEY",
+        matches=lambda m: m.startswith(("openai/", "gpt-")),
+    ),
+    Provider(
+        name="anthropic",
+        env_var="ANTHROPIC_API_KEY",
+        matches=lambda m: m.startswith(("claude-", "anthropic/")),
+    ),
+    Provider(
+        name="google",
+        env_var="GEMINI_API_KEY",
+        matches=lambda m: m.startswith(("gemini/", "gemini-")),
+    ),
+    Provider(
+        name="xai",
+        env_var="XAI_API_KEY",
+        matches=lambda m: m.startswith(("xai/", "grok-")),
+    ),
+]
+PROVIDERS_BY_NAME: dict[str, Provider] = {p.name: p for p in PROVIDERS}
 
 
 def _build_euroeval_cmd(
@@ -503,6 +548,30 @@ def model_fits_locally(model_id: str, gpu_bytes: int | None) -> tuple[bool, int 
         return True, None
     needed = int(needed * GPU_FIT_OVERHEAD)
     return needed <= gpu_bytes, needed
+
+
+def provider_for_model_id(
+    model_id: str, providers: c.Sequence[Provider]
+) -> Provider | None:
+    """Return the API provider that owns a model id, or None.
+
+    Scans the provided provider list and returns the first provider whose
+    :attr:`Provider.matches` predicate accepts the model id.
+
+    Args:
+        model_id:
+            The model id to classify (e.g. "openai/gpt-4", "claude-3-opus").
+        providers:
+            The sequence of providers to check, in priority order.
+
+    Returns:
+        The matching :class:`Provider`, or None when no provider claims the id
+        (i.e. the model is not an API model).
+    """
+    for provider in providers:
+        if provider.matches(model_id):
+            return provider
+    return None
 
 
 def run_euroeval(

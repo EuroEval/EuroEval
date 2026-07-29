@@ -4,13 +4,11 @@ import collections.abc as c
 import logging
 import typing as t
 
-import numpy as np
-
 from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
 from ..metrics import HuggingFaceMetric
-from ..utils import raise_if_model_output_contains_nan_values
+from ._common import normalise_model_outputs
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -50,22 +48,9 @@ def compute_metrics(
         InvalidBenchmark:
             If the metric computation fails.
     """
-    model_outputs, raw_labels = model_outputs_and_labels
-
-    # If the model outputs is a pair, then the first element corresponds to the model
-    # predictions
-    if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
-        model_outputs = model_outputs[0]
-
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)
-
-    labels = raw_labels
-    model_output_dtype = np.asarray(model_outputs).dtype
-    output_is_prob = model_output_dtype in [np.float16, np.float32, np.float64]
-    if output_is_prob:
-        predictions = np.asarray(model_outputs).argmax(axis=-1)
-    else:
-        predictions = model_outputs
+    model_outputs, labels, predictions = normalise_model_outputs(
+        model_outputs_and_labels=model_outputs_and_labels
+    )
 
     results: dict[str, float] = dict()
     for metric in dataset_config.task.metrics:

@@ -45,7 +45,6 @@ from ..constants import (
     GENERATIVE_PIPELINE_TAGS,
     LOCAL_MODELS_REQUIRED_FILES,
     MAX_CONTEXT_LENGTH,
-    MERGE_TAGS,
 )
 from ..data_models import HashableDict, HFModelInfo, ModelConfig
 from ..enums import (
@@ -64,7 +63,6 @@ from ..exceptions import (
     NeedsExtraInstalled,
 )
 from ..generation_utils import raise_if_wrong_params
-from ..languages import get_all_languages
 from ..logging_utils import block_terminal_output, log, log_once
 from ..model_cache import create_model_cache_dir
 from ..safetensors_utils import get_num_params_from_safetensors_metadata
@@ -77,7 +75,7 @@ from ..task_group_utils import (
 from ..tokenisation_utils import get_bos_token, get_eos_token
 from ..types import Tokeniser
 from ..utils import get_hf_token, internet_connection_available
-from .base import BenchmarkModule
+from .base import BenchmarkModule, _build_model_config_helper, _lookup_model_info
 
 try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
@@ -242,207 +240,168 @@ def align_model_and_tokeniser(
     return model, tokeniser
 
 
-def _check_safetensors_available(
-    hf_api: HfApi,
+def _load_model_from_pretrained(
+    model_cls: t.Type[PreTrainedModel],
     model_id: str,
-    revision: str,
-    base_model_id: str | None,
-    run_with_cli: bool,
-) -> bool:
-    """Check if safetensors weights are available.
+    model_kwargs: dict[str, t.Any],
+    task_group: TaskGroup,
+) -> PreTrainedModel | tuple[PreTrainedModel, ...]:
+    """Load a model from pretrained with error handling.
 
     Args:
-        hf_api:
-            The Hugging Face API client.
+        model_cls:
+            The model class to load.
         model_id:
             The model ID.
-        revision:
-            The revision.
-        base_model_id:
-            Base model ID if this is an adapter.
-        run_with_cli:
-            Whether running with CLI.
+        model_kwargs:
+            Keyword arguments for loading the model.
+        task_group:
+            The task group for error messages.
 
     Returns:
-        True if safetensors are available, False otherwise.
+        The loaded model or tuple of models.
+
+    Raises:
+        InvalidModel:
+            If the model could not be loaded.
+        InvalidBenchmark:
+            If the model architecture doesn't support the task.
     """
-    repo_files = hf_api.list_repo_files(repo_id=model_id, revision=revision)
-    has_safetensors = any(f.endswith(".safetensors") for f in repo_files)
-    if not has_safetensors:
-        msg = f"Model {model_id} does not have safetensors weights available. "
-        if run_with_cli:
-            msg += "Skipping since the `--only-allow-safetensors` flag is set."
-        else:
-            msg += (
-                "Skipping since the `requires_safetensors` argument is set to `True`."
-            )
-        log(msg, level=logging.WARNING)
-        return False
-
-    if base_model_id is not None:
-        base_repo_files = hf_api.list_repo_files(repo_id=base_model_id)
-        base_has_safetensors = any(f.endswith(".safetensors") for f in base_repo_files)
-        if not base_has_safetensors:
-            msg = (
-                f"Base model {base_model_id} does not have safetensors "
-                "weights available."
-            )
-            if run_with_cli:
-                msg += " Skipping since the `--only-allow-safetensors` flag is set."
-            else:
-                msg += (
-                    " Skipping since the `requires_safetensors` argument is set "
-                    "to `True`."
-                )
-            logging.warning(msg)
-            return False
-    return True
-
-
-def _fetch_model_info_from_hub(
-    hf_api: HfApi, model_id: str, revision: str, token: str | None
-) -> HfApiModelInfo | None:
-    """Fetch model info from HF Hub with retry logic.
-
-    Args:
-        hf_api:
-            The Hugging Face API client.
-        model_id:
-            The model ID.
-        revision:
-            The revision to fetch.
-        token:
-            The API token.
-
-    Returns:
-        Model info object, or None if not found or access denied.
-    """
-    num_attempts = 3
-    errors: list[Exception] = list()
-    for _ in range(num_attempts):
+    for _ in range(num_attempts := 5):
         try:
-            return hf_api.model_info(repo_id=model_id, revision=revision, token=token)
-        except (GatedRepoError, LocalTokenNotFoundError) as e:
-            try:
-                hf_whoami(token=token)
-                log(
-                    f"Could not access the model {model_id} with the revision "
-                    f"{revision}. The error was {str(e)!r}.",
-                    level=logging.DEBUG,
-                )
-                return None
-            except LocalTokenNotFoundError:
-                log(
-                    f"Could not access the model {model_id} with the revision "
-                    f"{revision}. The error was {str(e)!r}. Please set the "
-                    "`HUGGINGFACE_API_KEY` or `HF_TOKEN` environment variable or "
-                    "use the `--api-key` argument.",
-                    level=logging.DEBUG,
-                )
-                return None
-        except (RepositoryNotFoundError, HFValidationError, HfHubHTTPError):
-            return None
-        except (OSError, RequestException) as e:
-            if internet_connection_available():
-                errors.append(e)
-                continue
-            log(
-                "Could not access the Hugging Face Hub. Please check your internet "
-                "connection.",
-                level=logging.DEBUG,
+            return model_cls.from_pretrained(
+                pretrained_model_name_or_path=model_id, **model_kwargs
             )
-            return None
-    else:
+        except (KeyError, RuntimeError) as e:
+            if not model_kwargs.get("ignore_mismatched_sizes", False):
+                log(
+                    f"{type(e).__name__} occurred during the loading "
+                    f"of the {model_id!r} model. Retrying with "
+                    "`ignore_mismatched_sizes` set to True.",
+                    level=logging.DEBUG,
+                )
+                model_kwargs["ignore_mismatched_sizes"] = True
+                continue
+            raise InvalidModel(str(e)) from e
+        except (TimeoutError, RequestError):
+            log(
+                f"Couldn't load the model {model_id!r}. Retrying.",
+                level=logging.WARNING,
+            )
+            sleep(5)
+            continue
+        except (OSError, ValueError) as e:
+            error_str = str(e)
+            if "checkpoint seems to be incorrect" in error_str:
+                raise InvalidModel(
+                    f"The model {model_id!r} has an incorrect checkpoint."
+                ) from e
+            if "trust_remote_code" in error_str:
+                raise InvalidModel(
+                    f"Loading the model {model_id!r} needs to trust remote code. "
+                    "If you trust the suppliers of this model, then you can enable "
+                    "this by setting the `--trust-remote-code` flag."
+                ) from e
+            if (
+                "Unrecognized configuration class" in error_str
+                and "AutoModelFor" in error_str
+            ):
+                raise InvalidBenchmark(
+                    f"The model {model_id!r} does not support the "
+                    f"task group {task_group.value!r} as its architecture is not "
+                    f"compatible with the required HuggingFace model class. "
+                    f"Error: {e}"
+                ) from e
+            raise InvalidModel(
+                f"The model {model_id!r} could not be loaded. The error was {e!r}."
+            ) from e
+    raise InvalidModel(
+        f"Could not load the model {model_id!r} after {num_attempts} attempts."
+    )
+
+
+def get_class_by_name(
+    class_name: str | c.Sequence[str], module_name: str
+) -> t.Type | None:
+    """Get a class by its name.
+
+    Args:
+        class_name:
+            The name of the class, written in kebab-case. The corresponding class name
+            must be the same, but written in PascalCase, and lying in a module with the
+            same name, but written in snake_case. If a list of strings is passed, the
+            first class that is found is returned.
+        module_name:
+            The name of the module where the class is located.
+
+    Returns:
+        The class. If the class is not found, None is returned.
+    """
+    if isinstance(class_name, str):
+        class_name = [class_name]
+
+    error_messages = list()
+    for name in class_name:
+        try:
+            module = importlib.import_module(name=module_name)
+            class_: t.Type = getattr(module, name)
+            return class_
+        except (ModuleNotFoundError, AttributeError) as e:
+            error_messages.append(str(e))
+
+    if error_messages:
+        errors = "\n- " + "\n- ".join(error_messages)
         log(
-            f"Could not access model info for the model {model_id!r} from the "
-            f"Hugging Face Hub, after {num_attempts} attempts. The errors "
-            f"encountered were {errors!r}.",
+            f"Could not find the class with the name(s) {', '.join(class_name)}. The "
+            f"following error messages were raised: {errors}",
             level=logging.DEBUG,
         )
-        return None
+
+    return None
 
 
-@cache_arguments("model_id")
-def _get_local_model_info(model_id: str) -> HfApiModelInfo | None:
-    """Get model info for a local model directory.
+@cache_arguments()
+def get_dtype(
+    device: torch.device,
+    dtype_is_set: bool,
+    bf16_available: bool,
+    dtype_override: "DataType | None" = None,
+) -> str | torch.dtype:
+    """Get the torch dtype, used for loading the model.
 
     Args:
-        model_id:
-            Path to the local model directory.
+        device:
+            The device to use.
+        dtype_is_set:
+            Whether the data type is set in the model configuration.
+        bf16_available:
+            Whether bfloat16 is available.
+        dtype_override (optional):
+            An explicit data type to load the model weights in, taking precedence
+            over both the model configuration and the hardware-derived default. Used
+            by the finetuning NaN-retry, which reloads the model in full fp32 after
+            detecting NaN values under mixed precision; without honouring the
+            override the model would be reloaded in the same (NaN-producing) dtype.
+            Defaults to None.
 
     Returns:
-        Model info object, or None if required files are missing.
+        The dtype.
     """
-    if Path(model_id, "config.json").exists():
-        log_once(
-            f"The local model directory {model_id!r} has a 'config.json' file, so "
-            "we're skipping looking up model information from the Hugging Face "
-            "Hub.",
-            level=logging.DEBUG,
-        )
-        return HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
-    elif Path(model_id, "adapter_config.json").exists():
-        log_once(
-            f"The local model directory {model_id!r} has an 'adapter_config.json' "
-            "file, so we're skipping looking up model information from the Hugging "
-            "Face Hub.",
-            level=logging.DEBUG,
-        )
-        return HfApiModelInfo(
-            id=model_id,
-            tags=None,
-            pipeline_tag=None,
-            siblings=[dict(rfilename="adapter_config.json")],
-        )
-    else:
-        log_once(
-            f"The local model directory {model_id} does not contain any of the "
-            f"required files: {LOCAL_MODELS_REQUIRED_FILES}. Skipping this "
-            f"model.",
-            level=logging.WARNING,
-        )
-        return None
+    if dtype_override is not None:
+        return {
+            DataType.FP32: torch.float32,
+            DataType.FP16: torch.float16,
+            DataType.BF16: torch.bfloat16,
+        }[dtype_override]
 
-
-def _get_tags_for_adapter_model(
-    model_id: str,
-    revision: str,
-    model_info: HfApiModelInfo,
-    hf_api: HfApi,
-    token: str | None,
-) -> tuple[list[str], str | None]:
-    """Get tags for an adapter model including base model tags.
-
-    Args:
-        model_id:
-            The adapter model ID.
-        revision:
-            The revision.
-        model_info:
-            The model info for the adapter.
-        hf_api:
-            The Hugging Face API client.
-        token:
-            The API token.
-
-    Returns:
-        Tuple of (tags, base_model_id).
-    """
-    adapter_config = PeftConfig.from_pretrained(
-        pretrained_model_name_or_path=model_id, revision=revision
-    )
-    base_model_id = adapter_config.base_model_name_or_path
-    log_once(
-        f"Model {model_id!r} identified as an adapter model, with base model "
-        f"{base_model_id!r}.",
-        level=logging.DEBUG,
-    )
-    tags = model_info.tags or list()
-    if base_model_id is not None:
-        base_model_info = hf_api.model_info(repo_id=base_model_id, token=token)
-        tags += base_model_info.tags or list()
-        tags = list(set(tags))
-    return tags, base_model_id
+    using_cuda = device == torch.device("cuda")
+    if using_cuda and dtype_is_set:
+        return "auto"
+    elif using_cuda and bf16_available:
+        return torch.bfloat16
+    elif using_cuda:
+        return torch.float16
+    return torch.float32
 
 
 @cache_arguments("model_id", "run_with_cli")
@@ -617,318 +576,6 @@ def load_hf_model_config(
 
     _set_pad_token_id(config=config)
     return config
-
-
-def _infer_pipeline_tag(
-    model_id: str,
-    revision: str,
-    cache_dir: str,
-    api_key: str | None,
-    trust_remote_code: bool,
-    run_with_cli: bool,
-    base_model_id: str | None,
-) -> str:
-    """Infer pipeline tag from model architecture.
-
-    Args:
-        model_id:
-            The model ID.
-        revision:
-            The revision.
-        cache_dir:
-            Cache directory.
-        api_key:
-            API key.
-        trust_remote_code:
-            Whether to trust remote code.
-        run_with_cli:
-            Whether running with CLI.
-        base_model_id:
-            Base model ID if this is an adapter.
-
-    Returns:
-        The inferred pipeline tag.
-    """
-    hf_config = load_hf_model_config(
-        model_id=base_model_id or model_id,
-        num_labels=0,
-        id2label=HashableDict(),
-        label2id=HashableDict(),
-        revision=revision,
-        model_cache_dir=create_model_cache_dir(cache_dir=cache_dir, model_id=model_id),
-        api_key=api_key,
-        trust_remote_code=trust_remote_code,
-        run_with_cli=run_with_cli,
-    )
-    class_names = hf_config.architectures
-    generative_class_names = [
-        class_name
-        for tag in GENERATIVE_PIPELINE_TAGS
-        for class_name in TASK_MAPPING.get(tag, dict()).values()
-    ]
-    if class_names is not None and (
-        any(class_name in generative_class_names for class_name in class_names)
-        or any("ForCausalLM" in class_name for class_name in class_names)
-    ):
-        return "text-generation"
-    return "fill-mask"
-
-
-def get_model_repo_info(
-    model_id: str,
-    revision: str,
-    api_key: str | None,
-    cache_dir: str,
-    trust_remote_code: bool,
-    requires_safetensors: bool,
-    run_with_cli: bool,
-) -> "HFModelInfo | None":
-    """Get the information about the model from the HF Hub or a local directory.
-
-    Args:
-        model_id:
-            The model ID.
-        revision:
-            The revision of the model.
-        api_key:
-            The Hugging Face API key.
-        cache_dir:
-            The directory to cache the model in.
-        trust_remote_code:
-            Whether to trust remote code.
-        requires_safetensors:
-            Whether the model requires safetensors.
-        run_with_cli:
-            Whether the script is being run with the CLI.
-
-    Returns:
-        The information about the model, or None if the model could not be found.
-    """
-    token = get_hf_token(api_key=api_key)
-    hf_api = HfApi(token=token)
-
-    # Try to get model info from local directory first
-    model_info: HfApiModelInfo | None = None
-    if Path(model_id).is_dir():
-        model_info = _get_local_model_info(model_id=model_id)
-        if model_info is None:
-            return None
-    elif not internet_connection_available():
-        model_info = HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
-
-    # Fetch from HF Hub if not found locally
-    if model_info is None:
-        model_info = _fetch_model_info_from_hub(
-            hf_api=hf_api, model_id=model_id, revision=revision, token=token
-        )
-        if model_info is None:
-            return None
-
-    # Handle adapter models - get base model tags
-    tags = model_info.tags or list()
-    base_model_id: str | None = None
-    has_adapter_config = model_info.siblings is not None and any(
-        sibling.rfilename == "adapter_config.json" for sibling in model_info.siblings
-    )
-    if has_adapter_config:
-        tags, base_model_id = _get_tags_for_adapter_model(
-            model_id=model_id,
-            revision=revision,
-            model_info=model_info,
-            hf_api=hf_api,
-            token=token,
-        )
-
-    # Infer pipeline tag if not specified
-    pipeline_tag = model_info.pipeline_tag
-    if pipeline_tag is None:
-        pipeline_tag = _infer_pipeline_tag(
-            model_id=model_id,
-            revision=revision,
-            cache_dir=cache_dir,
-            api_key=api_key,
-            trust_remote_code=trust_remote_code,
-            run_with_cli=run_with_cli,
-            base_model_id=base_model_id,
-        )
-
-    # Check safetensors requirement
-    if requires_safetensors and not _check_safetensors_available(
-        hf_api=hf_api,
-        model_id=model_id,
-        revision=revision,
-        base_model_id=base_model_id,
-        run_with_cli=run_with_cli,
-    ):
-        return None
-
-    return HFModelInfo(
-        pipeline_tag=pipeline_tag, tags=tags, adapter_base_model_id=base_model_id
-    )
-
-
-def _load_model_from_pretrained(
-    model_cls: t.Type[PreTrainedModel],
-    model_id: str,
-    model_kwargs: dict[str, t.Any],
-    task_group: TaskGroup,
-) -> PreTrainedModel | tuple[PreTrainedModel, ...]:
-    """Load a model from pretrained with error handling.
-
-    Args:
-        model_cls:
-            The model class to load.
-        model_id:
-            The model ID.
-        model_kwargs:
-            Keyword arguments for loading the model.
-        task_group:
-            The task group for error messages.
-
-    Returns:
-        The loaded model or tuple of models.
-
-    Raises:
-        InvalidModel:
-            If the model could not be loaded.
-        InvalidBenchmark:
-            If the model architecture doesn't support the task.
-    """
-    for _ in range(num_attempts := 5):
-        try:
-            return model_cls.from_pretrained(
-                pretrained_model_name_or_path=model_id, **model_kwargs
-            )
-        except (KeyError, RuntimeError) as e:
-            if not model_kwargs.get("ignore_mismatched_sizes", False):
-                log(
-                    f"{type(e).__name__} occurred during the loading "
-                    f"of the {model_id!r} model. Retrying with "
-                    "`ignore_mismatched_sizes` set to True.",
-                    level=logging.DEBUG,
-                )
-                model_kwargs["ignore_mismatched_sizes"] = True
-                continue
-            raise InvalidModel(str(e)) from e
-        except (TimeoutError, RequestError):
-            log(
-                f"Couldn't load the model {model_id!r}. Retrying.",
-                level=logging.WARNING,
-            )
-            sleep(5)
-            continue
-        except (OSError, ValueError) as e:
-            error_str = str(e)
-            if "checkpoint seems to be incorrect" in error_str:
-                raise InvalidModel(
-                    f"The model {model_id!r} has an incorrect checkpoint."
-                ) from e
-            if "trust_remote_code" in error_str:
-                raise InvalidModel(
-                    f"Loading the model {model_id!r} needs to trust remote code. "
-                    "If you trust the suppliers of this model, then you can enable "
-                    "this by setting the `--trust-remote-code` flag."
-                ) from e
-            if (
-                "Unrecognized configuration class" in error_str
-                and "AutoModelFor" in error_str
-            ):
-                raise InvalidBenchmark(
-                    f"The model {model_id!r} does not support the "
-                    f"task group {task_group.value!r} as its architecture is not "
-                    f"compatible with the required HuggingFace model class. "
-                    f"Error: {e}"
-                ) from e
-            raise InvalidModel(
-                f"The model {model_id!r} could not be loaded. The error was {e!r}."
-            ) from e
-    raise InvalidModel(
-        f"Could not load the model {model_id!r} after {num_attempts} attempts."
-    )
-
-
-def get_class_by_name(
-    class_name: str | c.Sequence[str], module_name: str
-) -> t.Type | None:
-    """Get a class by its name.
-
-    Args:
-        class_name:
-            The name of the class, written in kebab-case. The corresponding class name
-            must be the same, but written in PascalCase, and lying in a module with the
-            same name, but written in snake_case. If a list of strings is passed, the
-            first class that is found is returned.
-        module_name:
-            The name of the module where the class is located.
-
-    Returns:
-        The class. If the class is not found, None is returned.
-    """
-    if isinstance(class_name, str):
-        class_name = [class_name]
-
-    error_messages = list()
-    for name in class_name:
-        try:
-            module = importlib.import_module(name=module_name)
-            class_: t.Type = getattr(module, name)
-            return class_
-        except (ModuleNotFoundError, AttributeError) as e:
-            error_messages.append(str(e))
-
-    if error_messages:
-        errors = "\n- " + "\n- ".join(error_messages)
-        log(
-            f"Could not find the class with the name(s) {', '.join(class_name)}. The "
-            f"following error messages were raised: {errors}",
-            level=logging.DEBUG,
-        )
-
-    return None
-
-
-@cache_arguments()
-def get_dtype(
-    device: torch.device,
-    dtype_is_set: bool,
-    bf16_available: bool,
-    dtype_override: "DataType | None" = None,
-) -> str | torch.dtype:
-    """Get the torch dtype, used for loading the model.
-
-    Args:
-        device:
-            The device to use.
-        dtype_is_set:
-            Whether the data type is set in the model configuration.
-        bf16_available:
-            Whether bfloat16 is available.
-        dtype_override (optional):
-            An explicit data type to load the model weights in, taking precedence
-            over both the model configuration and the hardware-derived default. Used
-            by the finetuning NaN-retry, which reloads the model in full fp32 after
-            detecting NaN values under mixed precision; without honouring the
-            override the model would be reloaded in the same (NaN-producing) dtype.
-            Defaults to None.
-
-    Returns:
-        The dtype.
-    """
-    if dtype_override is not None:
-        return {
-            DataType.FP32: torch.float32,
-            DataType.FP16: torch.float16,
-            DataType.BF16: torch.bfloat16,
-        }[dtype_override]
-
-    using_cuda = device == torch.device("cuda")
-    if using_cuda and dtype_is_set:
-        return "auto"
-    elif using_cuda and bf16_available:
-        return torch.bfloat16
-    elif using_cuda:
-        return torch.float16
-    return torch.float32
 
 
 def load_tokeniser(
@@ -1548,43 +1195,25 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             InvalidModel:
                 If the model could not be found.
         """
-        model_id_components = split_model_id(model_id=model_id)
-        model_info = get_model_repo_info(
-            model_id=model_id_components.model_id,
-            revision=model_id_components.revision,
-            api_key=benchmark_config.api_key,
-            cache_dir=benchmark_config.cache_dir,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            requires_safetensors=benchmark_config.requires_safetensors,
-            run_with_cli=benchmark_config.run_with_cli,
+        resolved_model_id, revision, model_info = _lookup_model_info(
+            model_id=model_id, benchmark_config=benchmark_config
         )
         if model_info is None:
             raise InvalidModel(f"The model {model_id!r} could not be found.")
 
-        language_mapping = get_all_languages()
-        language_codes = list(language_mapping.keys())
+        model_id_components = split_model_id(model_id=model_id)
 
-        model_config = ModelConfig(
-            model_id=model_id_components.model_id,
-            revision=model_id_components.revision,
+        return _build_model_config_helper(
+            model_id=resolved_model_id,
+            revision=revision,
             param=model_id_components.param,
             task=model_info.pipeline_tag,
-            languages=[
-                language_mapping[tag]
-                for tag in model_info.tags
-                if tag in language_codes
-            ],
-            merge=any(tag in model_info.tags for tag in MERGE_TAGS),
+            model_info=model_info,
+            benchmark_config=benchmark_config,
             inference_backend=InferenceBackend.TRANSFORMERS,
             model_type=ModelType.ENCODER,
-            fresh=False,
-            model_cache_dir=create_model_cache_dir(
-                cache_dir=benchmark_config.cache_dir, model_id=model_id
-            ),
             adapter_base_model_id=None,
         )
-
-        return model_config
 
     @classmethod
     def model_exists(
@@ -1602,15 +1231,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
         """
-        model_id_components = split_model_id(model_id=model_id)
-        model_info = get_model_repo_info(
-            model_id=model_id_components.model_id,
-            revision=model_id_components.revision,
-            api_key=benchmark_config.api_key,
-            cache_dir=benchmark_config.cache_dir,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            requires_safetensors=benchmark_config.requires_safetensors,
-            run_with_cli=benchmark_config.run_with_cli,
+        _, _, model_info = _lookup_model_info(
+            model_id=model_id, benchmark_config=benchmark_config
         )
         return (
             model_info is not None
@@ -1778,3 +1400,354 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         ):
             vocab_size = self._tokeniser.vocab_size
         return vocab_size
+
+
+def _check_safetensors_available(
+    hf_api: HfApi,
+    model_id: str,
+    revision: str,
+    base_model_id: str | None,
+    run_with_cli: bool,
+) -> bool:
+    """Check if safetensors weights are available.
+
+    Args:
+        hf_api:
+            The Hugging Face API client.
+        model_id:
+            The model ID.
+        revision:
+            The revision.
+        base_model_id:
+            Base model ID if this is an adapter.
+        run_with_cli:
+            Whether running with CLI.
+
+    Returns:
+        True if safetensors are available, False otherwise.
+    """
+    repo_files = hf_api.list_repo_files(repo_id=model_id, revision=revision)
+    has_safetensors = any(f.endswith(".safetensors") for f in repo_files)
+    if not has_safetensors:
+        msg = f"Model {model_id} does not have safetensors weights available. "
+        if run_with_cli:
+            msg += "Skipping since the `--only-allow-safetensors` flag is set."
+        else:
+            msg += (
+                "Skipping since the `requires_safetensors` argument is set to `True`."
+            )
+        log(msg, level=logging.WARNING)
+        return False
+
+    if base_model_id is not None:
+        base_repo_files = hf_api.list_repo_files(repo_id=base_model_id)
+        base_has_safetensors = any(f.endswith(".safetensors") for f in base_repo_files)
+        if not base_has_safetensors:
+            msg = (
+                f"Base model {base_model_id} does not have safetensors "
+                "weights available."
+            )
+            if run_with_cli:
+                msg += " Skipping since the `--only-allow-safetensors` flag is set."
+            else:
+                msg += (
+                    " Skipping since the `requires_safetensors` argument is set "
+                    "to `True`."
+                )
+            logging.warning(msg)
+            return False
+    return True
+
+
+def _fetch_model_info_from_hub(
+    hf_api: HfApi, model_id: str, revision: str, token: str | None
+) -> HfApiModelInfo | None:
+    """Fetch model info from HF Hub with retry logic.
+
+    Args:
+        hf_api:
+            The Hugging Face API client.
+        model_id:
+            The model ID.
+        revision:
+            The revision to fetch.
+        token:
+            The API token.
+
+    Returns:
+        Model info object, or None if not found or access denied.
+    """
+    num_attempts = 3
+    errors: list[Exception] = list()
+    for _ in range(num_attempts):
+        try:
+            return hf_api.model_info(repo_id=model_id, revision=revision, token=token)
+        except (GatedRepoError, LocalTokenNotFoundError) as e:
+            try:
+                hf_whoami(token=token)
+                log(
+                    f"Could not access the model {model_id} with the revision "
+                    f"{revision}. The error was {str(e)!r}.",
+                    level=logging.DEBUG,
+                )
+                return None
+            except LocalTokenNotFoundError:
+                log(
+                    f"Could not access the model {model_id} with the revision "
+                    f"{revision}. The error was {str(e)!r}. Please set the "
+                    "`HUGGINGFACE_API_KEY` or `HF_TOKEN` environment variable or "
+                    "use the `--api-key` argument.",
+                    level=logging.DEBUG,
+                )
+                return None
+        except (RepositoryNotFoundError, HFValidationError, HfHubHTTPError):
+            return None
+        except (OSError, RequestException) as e:
+            if internet_connection_available():
+                errors.append(e)
+                continue
+            log(
+                "Could not access the Hugging Face Hub. Please check your internet "
+                "connection.",
+                level=logging.DEBUG,
+            )
+            return None
+    else:
+        log(
+            f"Could not access model info for the model {model_id!r} from the "
+            f"Hugging Face Hub, after {num_attempts} attempts. The errors "
+            f"encountered were {errors!r}.",
+            level=logging.DEBUG,
+        )
+        return None
+
+
+@cache_arguments("model_id")
+def _get_local_model_info(model_id: str) -> HfApiModelInfo | None:
+    """Get model info for a local model directory.
+
+    Args:
+        model_id:
+            Path to the local model directory.
+
+    Returns:
+        Model info object, or None if required files are missing.
+    """
+    if Path(model_id, "config.json").exists():
+        log_once(
+            f"The local model directory {model_id!r} has a 'config.json' file, so "
+            "we're skipping looking up model information from the Hugging Face "
+            "Hub.",
+            level=logging.DEBUG,
+        )
+        return HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
+    elif Path(model_id, "adapter_config.json").exists():
+        log_once(
+            f"The local model directory {model_id!r} has an 'adapter_config.json' "
+            "file, so we're skipping looking up model information from the Hugging "
+            "Face Hub.",
+            level=logging.DEBUG,
+        )
+        return HfApiModelInfo(
+            id=model_id,
+            tags=None,
+            pipeline_tag=None,
+            siblings=[dict(rfilename="adapter_config.json")],
+        )
+    else:
+        log_once(
+            f"The local model directory {model_id} does not contain any of the "
+            f"required files: {LOCAL_MODELS_REQUIRED_FILES}. Skipping this "
+            f"model.",
+            level=logging.WARNING,
+        )
+        return None
+
+
+def _get_tags_for_adapter_model(
+    model_id: str,
+    revision: str,
+    model_info: HfApiModelInfo,
+    hf_api: HfApi,
+    token: str | None,
+) -> tuple[list[str], str | None]:
+    """Get tags for an adapter model including base model tags.
+
+    Args:
+        model_id:
+            The adapter model ID.
+        revision:
+            The revision.
+        model_info:
+            The model info for the adapter.
+        hf_api:
+            The Hugging Face API client.
+        token:
+            The API token.
+
+    Returns:
+        Tuple of (tags, base_model_id).
+    """
+    adapter_config = PeftConfig.from_pretrained(
+        pretrained_model_name_or_path=model_id, revision=revision
+    )
+    base_model_id = adapter_config.base_model_name_or_path
+    log_once(
+        f"Model {model_id!r} identified as an adapter model, with base model "
+        f"{base_model_id!r}.",
+        level=logging.DEBUG,
+    )
+    tags = model_info.tags or list()
+    if base_model_id is not None:
+        base_model_info = hf_api.model_info(repo_id=base_model_id, token=token)
+        tags += base_model_info.tags or list()
+        tags = list(set(tags))
+    return tags, base_model_id
+
+
+def _infer_pipeline_tag(
+    model_id: str,
+    revision: str,
+    cache_dir: str,
+    api_key: str | None,
+    trust_remote_code: bool,
+    run_with_cli: bool,
+    base_model_id: str | None,
+) -> str:
+    """Infer pipeline tag from model architecture.
+
+    Args:
+        model_id:
+            The model ID.
+        revision:
+            The revision.
+        cache_dir:
+            Cache directory.
+        api_key:
+            API key.
+        trust_remote_code:
+            Whether to trust remote code.
+        run_with_cli:
+            Whether running with CLI.
+        base_model_id:
+            Base model ID if this is an adapter.
+
+    Returns:
+        The inferred pipeline tag.
+    """
+    hf_config = load_hf_model_config(
+        model_id=base_model_id or model_id,
+        num_labels=0,
+        id2label=HashableDict(),
+        label2id=HashableDict(),
+        revision=revision,
+        model_cache_dir=create_model_cache_dir(cache_dir=cache_dir, model_id=model_id),
+        api_key=api_key,
+        trust_remote_code=trust_remote_code,
+        run_with_cli=run_with_cli,
+    )
+    class_names = hf_config.architectures
+    generative_class_names = [
+        class_name
+        for tag in GENERATIVE_PIPELINE_TAGS
+        for class_name in TASK_MAPPING.get(tag, dict()).values()
+    ]
+    if class_names is not None and (
+        any(class_name in generative_class_names for class_name in class_names)
+        or any("ForCausalLM" in class_name for class_name in class_names)
+    ):
+        return "text-generation"
+    return "fill-mask"
+
+
+def get_model_repo_info(
+    model_id: str,
+    revision: str,
+    api_key: str | None,
+    cache_dir: str,
+    trust_remote_code: bool,
+    requires_safetensors: bool,
+    run_with_cli: bool,
+) -> "HFModelInfo | None":
+    """Get the information about the model from the HF Hub or a local directory.
+
+    Args:
+        model_id:
+            The model ID.
+        revision:
+            The revision of the model.
+        api_key:
+            The Hugging Face API key.
+        cache_dir:
+            The directory to cache the model in.
+        trust_remote_code:
+            Whether to trust remote code.
+        requires_safetensors:
+            Whether the model requires safetensors.
+        run_with_cli:
+            Whether the script is being run with the CLI.
+
+    Returns:
+        The information about the model, or None if the model could not be found.
+    """
+    token = get_hf_token(api_key=api_key)
+    hf_api = HfApi(token=token)
+
+    # Try to get model info from local directory first
+    model_info: HfApiModelInfo | None = None
+    if Path(model_id).is_dir():
+        model_info = _get_local_model_info(model_id=model_id)
+        if model_info is None:
+            return None
+    elif not internet_connection_available():
+        model_info = HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
+
+    # Fetch from HF Hub if not found locally
+    if model_info is None:
+        model_info = _fetch_model_info_from_hub(
+            hf_api=hf_api, model_id=model_id, revision=revision, token=token
+        )
+        if model_info is None:
+            return None
+
+    # Handle adapter models - get base model tags
+    tags = model_info.tags or list()
+    base_model_id: str | None = None
+    has_adapter_config = model_info.siblings is not None and any(
+        sibling.rfilename == "adapter_config.json" for sibling in model_info.siblings
+    )
+    if has_adapter_config:
+        tags, base_model_id = _get_tags_for_adapter_model(
+            model_id=model_id,
+            revision=revision,
+            model_info=model_info,
+            hf_api=hf_api,
+            token=token,
+        )
+
+    # Infer pipeline tag if not specified
+    pipeline_tag = model_info.pipeline_tag
+    if pipeline_tag is None:
+        pipeline_tag = _infer_pipeline_tag(
+            model_id=model_id,
+            revision=revision,
+            cache_dir=cache_dir,
+            api_key=api_key,
+            trust_remote_code=trust_remote_code,
+            run_with_cli=run_with_cli,
+            base_model_id=base_model_id,
+        )
+
+    # Check safetensors requirement
+    if requires_safetensors and not _check_safetensors_available(
+        hf_api=hf_api,
+        model_id=model_id,
+        revision=revision,
+        base_model_id=base_model_id,
+        run_with_cli=run_with_cli,
+    ):
+        return None
+
+    return HFModelInfo(
+        pipeline_tag=pipeline_tag, tags=tags, adapter_base_model_id=base_model_id
+    )

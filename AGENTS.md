@@ -100,11 +100,13 @@ whitespace, debug statements, type annotation enforcement, and notebook strippin
 embeddings. Configured in `slopo.conf.yaml` to use local llama.cpp server with Jina
 embeddings.
 
-The duplication check runs automatically as part of `make check`. Review the report in
-`.slopo/report/index.md` when it flags duplicates. Not all duplicates need to be fixed —
-consider each case, but if unsure or if fixing requires a substantial refactor, ask the
-user whether to proceed or leave it. False positives can be added to
-`.slopo/slopo.ignore.txt`.
+The duplication check runs automatically as part of `make check`. If duplicates are
+found, the check **fails**. Review the report in `.slopo/report/index.md` to inspect
+duplicate clusters. Not all duplicates need to be fixed:
+
+- **To ignore irrelevant duplicates:** Add their hashes to `.slopo/slopo.ignore.txt`
+- **To fix duplicates:** Refactor the flagged code
+- **If unsure:** Ask the user whether to proceed with a refactor or ignore the cluster
 
 - **Dataset creation scripts** — Preserve upstream split boundaries when the source
   dataset already has splits. Do not concatenate train/dev/validation/test and

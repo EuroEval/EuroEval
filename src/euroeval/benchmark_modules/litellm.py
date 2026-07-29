@@ -8,12 +8,11 @@ import os
 import re
 import typing as t
 from copy import deepcopy
-from functools import cached_property, partial
+from functools import cached_property
 from time import sleep
 
 import litellm
 import ollama
-from datasets import Dataset
 from litellm.exceptions import (
     APIConnectionError,
     APIError,
@@ -63,25 +62,19 @@ from ..exceptions import (
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
 )
-from ..generation_utils import (
-    apply_prompt,
-    extract_few_shot_examples,
-    raise_if_wrong_params,
-)
+from ..generation_utils import raise_if_wrong_params
 from ..logging_utils import get_pbar, log, log_once
 from ..model_cache import create_model_cache_dir
 from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from ..string_utils import split_model_id
-from ..task_group_utils import (
-    question_answering,
-    sequence_classification,
-    text_to_text,
-    token_classification,
-)
 from ..tasks import LOGIC
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
-from .base import BenchmarkModule
+from .base import (
+    BenchmarkModule,
+    _extract_labels_from_generation_helper,
+    _prepare_dataset_helper,
+)
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokeniser
 
 if t.TYPE_CHECKING:
@@ -1325,30 +1318,11 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The function used to extract the labels from the generated output.
         """
-        match self.dataset_config.task.task_group:
-            case (
-                TaskGroup.SEQUENCE_CLASSIFICATION
-                | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-            ):
-                return partial(
-                    sequence_classification.extract_labels_from_generation,
-                    dataset_config=self.dataset_config,
-                    model_config=self.model_config,
-                    first_label_token_mapping=self.buffer["first_label_token_mapping"],
-                )
-            case TaskGroup.TEXT_TO_TEXT:
-                return text_to_text.extract_labels_from_generation
-            case TaskGroup.TOKEN_CLASSIFICATION:
-                return partial(
-                    token_classification.extract_labels_from_generation,
-                    dataset_config=self.dataset_config,
-                )
-            case TaskGroup.QUESTION_ANSWERING:
-                return question_answering.extract_labels_from_generation
-            case _:
-                raise NotImplementedError(
-                    f"Unsupported task group: {self.dataset_config.task.task_group}."
-                )
+        return _extract_labels_from_generation_helper(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            first_label_token_mapping=self.buffer["first_label_token_mapping"],
+        )
 
     def get_generation_kwargs(self, dataset_config: DatasetConfig) -> dict[str, t.Any]:
         """Get the generation arguments for the model.
@@ -2033,59 +2007,17 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The prepared dataset.
         """
-        if task.task_group == TaskGroup.QUESTION_ANSWERING:
-            dataset = dataset.map(
-                lambda examples: dict(
-                    label=[
-                        dict(
-                            id=id,
-                            answers=dict(
-                                answer_start=answer_dct["answer_start"],
-                                text=[
-                                    answer_text.lower()
-                                    for answer_text in answer_dct["text"]
-                                ],
-                            ),
-                        )
-                        for id, answer_dct in zip(examples["id"], examples["answers"])
-                    ]
-                ),
-                batched=True,
-                load_from_cache_file=False,
-                keep_in_memory=True,
-            )
-
-        if self.benchmark_config.few_shot:
-            few_shot_examples = extract_few_shot_examples(
-                dataset=dataset,
-                dataset_config=self.dataset_config,
-                benchmark_config=self.benchmark_config,
-                itr_idx=itr_idx,
-            )
-        else:
-            few_shot_examples = list()
-
-        mapped_dataset = dataset["test"].map(
-            partial(
-                apply_prompt,
-                few_shot_examples=few_shot_examples,
-                model_config=self.model_config,
-                dataset_config=self.dataset_config,
-                generative_type=self.generative_type,
-                always_populate_text_field=False,
-                tokeniser=None,
-                use_bits_per_character=self.benchmark_config.use_bits_per_character,
-            ),
-            batched=True,
-            load_from_cache_file=False,
-            keep_in_memory=True,
+        return _prepare_dataset_helper(
+            dataset=dataset,
+            task=task,
+            model_config=self.model_config,
+            dataset_config=self.dataset_config,
+            benchmark_config=self.benchmark_config,
+            generative_type=self.generative_type,
+            itr_idx=itr_idx,
+            always_populate_text_field=False,
+            tokeniser=None,
         )
-        assert isinstance(mapped_dataset, Dataset), (
-            "Mapped dataset is not a Dataset instance."
-        )
-        dataset["test"] = mapped_dataset
-
-        return dataset
 
     @property
     def trainer_class(self) -> t.Type["Trainer"]:
