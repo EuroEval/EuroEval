@@ -592,6 +592,147 @@ class TestLoadModelMaxModelLen:
         assert call_kwargs["max_model_len"] == expected_max_model_len
 
 
+class TestLoadModelMoeTpAlignmentRetry:
+    """Tests that load_model retries on MoE tensor-parallel alignment errors.
+
+    Regression for: all-MoE models such as ``JetBrains/Mellum2-12B-A2.5B-Base`` whose
+    expert intermediate size is not a multiple of 128 once sharded across multiple GPUs,
+    which the fused MoE kernels reject on Blackwell GPUs. Before the fix this propagated
+    as InvalidModel; after the fix load_model retries once on a single GPU and succeeds.
+    """
+
+    def test_load_model_does_not_retry_moe_alignment_error_on_single_gpu(
+        self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """load_model does not retry the MoE alignment error with only one GPU."""
+        mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
+        mock_hf_model_config.dtype = torch.float16
+        mock_hf_model_config.architectures = ["MellumForCausalLM"]
+        mock_tokeniser = MagicMock()
+        mock_vllm_module = MagicMock()
+        mock_vllm_module.config = MagicMock(spec=[])
+
+        call_count = [0]
+
+        def _llm_constructor(**kwargs: object) -> object:
+            call_count[0] += 1
+            raise RuntimeError(
+                "Worker failed with error 'Check failed: "
+                "args->intermediate_size % 128 == 0 (64 vs. 0) : "
+                "the second dimension of weights must be a multiple of 128.', "
+                "please check the stack trace above for the root cause"
+            )
+
+        with (
+            patch(
+                "euroeval.benchmark_modules.vllm.LLM",
+                side_effect=_llm_constructor,
+                create=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
+            patch("euroeval.benchmark_modules.vllm.clear_vllm"),
+            patch(
+                "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
+                return_value=("mp", 1, 1),
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.torch.cuda.device_count",
+                return_value=1,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.internet_connection_available",
+                return_value=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params",
+                return_value={},
+            ),
+        ):
+            with pytest.raises(InvalidModel):
+                load_model(
+                    model_config=model_config,
+                    benchmark_config=benchmark_config,
+                    attention_backend=None,
+                    generative_type=GenerativeType.INSTRUCTION_TUNED,
+                    true_max_model_len=4096,
+                    tokeniser=mock_tokeniser,
+                    hf_model_config=mock_hf_model_config,
+                )
+
+        assert call_count[0] == 1, "LLM should be called once with no single-GPU retry"
+
+    def test_load_model_retries_on_moe_tp_alignment_error(
+        self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """load_model succeeds when LLM() raises a MoE TP alignment error once."""
+        mock_llm_instance = MagicMock()
+        mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
+        mock_hf_model_config.dtype = torch.float16
+        mock_hf_model_config.architectures = ["MellumForCausalLM"]
+        mock_tokeniser = MagicMock()
+        mock_vllm_module = MagicMock()
+        mock_vllm_module.config = MagicMock(spec=[])
+
+        call_count = [0]
+
+        def _llm_constructor(**kwargs: object) -> object:
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise RuntimeError(
+                    "Worker failed with error 'Check failed: "
+                    "args->intermediate_size % 128 == 0 (64 vs. 0) : "
+                    "the second dimension of weights must be a multiple of 128.', "
+                    "please check the stack trace above for the root cause"
+                )
+            return mock_llm_instance
+
+        with (
+            patch(
+                "euroeval.benchmark_modules.vllm.LLM",
+                side_effect=_llm_constructor,
+                create=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
+            patch("euroeval.benchmark_modules.vllm.clear_vllm"),
+            patch(
+                "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
+                return_value=("mp", 2, 1),
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.torch.cuda.device_count",
+                return_value=2,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.internet_connection_available",
+                return_value=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params",
+                return_value={},
+            ),
+        ):
+            result = load_model(
+                model_config=model_config,
+                benchmark_config=benchmark_config,
+                attention_backend=None,
+                generative_type=GenerativeType.INSTRUCTION_TUNED,
+                true_max_model_len=4096,
+                tokeniser=mock_tokeniser,
+                hf_model_config=mock_hf_model_config,
+            )
+
+        assert call_count[0] == 2, "LLM should be called twice: first attempt + retry"
+        assert result is mock_llm_instance
+
+
 class TestLoadModelMultimodalBudgetRetry:
     """Tests that load_model retries on multimodal budget errors.
 
@@ -653,69 +794,6 @@ class TestLoadModelMultimodalBudgetRetry:
                     tokeniser=mock_tokeniser,
                     hf_model_config=mock_hf_model_config,
                 )
-
-    def test_load_model_retries_on_moe_tp_alignment_error(
-        self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
-    ) -> None:
-        """load_model succeeds when LLM() raises a MoE TP alignment error once."""
-        mock_llm_instance = MagicMock()
-        mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
-        mock_hf_model_config.dtype = torch.float16
-        mock_hf_model_config.architectures = ["MellumForCausalLM"]
-        mock_tokeniser = MagicMock()
-        mock_vllm_module = MagicMock()
-        mock_vllm_module.config = MagicMock(spec=[])
-
-        call_count = [0]
-
-        def _llm_constructor(**kwargs: object) -> object:
-            call_count[0] += 1
-            if call_count[0] == 1:
-                raise RuntimeError(
-                    "Worker failed with error 'Check failed: "
-                    "args->intermediate_size % 128 == 0 (64 vs. 0) : "
-                    "the second dimension of weights must be a multiple of 128.', "
-                    "please check the stack trace above for the root cause"
-                )
-            return mock_llm_instance
-
-        with (
-            patch(
-                "euroeval.benchmark_modules.vllm.LLM",
-                side_effect=_llm_constructor,
-                create=True,
-            ),
-            patch(
-                "euroeval.benchmark_modules.vllm.vllm",
-                new=mock_vllm_module,
-                create=True,
-            ),
-            patch("euroeval.benchmark_modules.vllm.clear_vllm"),
-            patch(
-                "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
-                return_value=("mp", 1, 1),
-            ),
-            patch(
-                "euroeval.benchmark_modules.vllm.internet_connection_available",
-                return_value=True,
-            ),
-            patch(
-                "euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params",
-                return_value={},
-            ),
-        ):
-            result = load_model(
-                model_config=model_config,
-                benchmark_config=benchmark_config,
-                attention_backend=None,
-                generative_type=GenerativeType.INSTRUCTION_TUNED,
-                true_max_model_len=4096,
-                tokeniser=mock_tokeniser,
-                hf_model_config=mock_hf_model_config,
-            )
-
-        assert call_count[0] == 2, "LLM should be called twice: first attempt + retry"
-        assert result is mock_llm_instance
 
     def test_load_model_retries_on_multimodal_budget_error(
         self, model_config: ModelConfig, benchmark_config: BenchmarkConfig

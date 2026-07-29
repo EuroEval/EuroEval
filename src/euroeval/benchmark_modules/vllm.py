@@ -2039,7 +2039,7 @@ def _handle_model_load_error(
         "the second dimension of weights must be a multiple of 128" in error_str
         or "intermediate_size % 128" in error_str
     )
-    if moe_tp_alignment_error:
+    if moe_tp_alignment_error and torch.cuda.device_count() > 1:
         log(
             f"Model {model_id!r} failed to load because its expert intermediate "
             "size is not a multiple of 128 once sharded across the available GPUs, "
