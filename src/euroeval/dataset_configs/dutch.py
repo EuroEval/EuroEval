@@ -64,14 +64,6 @@ WIKI_LINGUA_NL_CONFIG = DatasetConfig(
     languages=[DUTCH],
 )
 
-MMLU_NL_CONFIG = DatasetConfig(
-    name="mmlu-nl",
-    pretty_name="MMLU-nl",
-    source="EuroEval/mmlu-nl-mini",
-    task=KNOW,
-    languages=[DUTCH],
-)
-
 DUIDELIJKE_TAAL_NL_CONFIG = DatasetConfig(
     name="duidelijke-taal",
     pretty_name="Duidelijke Taal",
@@ -137,7 +129,33 @@ HELLASWAG_NL_CONFIG = DatasetConfig(
 )
 
 
+INCLUDE_NL_CONFIG = DatasetConfig(
+    name="include-nl",
+    pretty_name="INCLUDE-nl",
+    source="EuroEval/include-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+)
+
+MULTILOKO_NL_CONFIG = DatasetConfig(
+    name="multiloko-nl",
+    pretty_name="MultiLoKo-nl",
+    source="EuroEval/multiloko-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+    val_split=None,
+)
+
 # Unofficial datasets ###
+
+MMLU_NL_CONFIG = DatasetConfig(
+    name="mmlu-nl",
+    pretty_name="MMLU-nl",
+    source="EuroEval/mmlu-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+    unofficial=True,
+)
 
 WINOGRANDE_NL_CONFIG = DatasetConfig(
     name="winogrande-nl",
@@ -221,25 +239,6 @@ GOLDENSWAG_NL_CONFIG = DatasetConfig(
     source="EuroEval/goldenswag-nl-mini",
     task=COMMON_SENSE,
     languages=[DUTCH],
-    unofficial=True,
-)
-
-INCLUDE_NL_CONFIG = DatasetConfig(
-    name="include-nl",
-    pretty_name="INCLUDE-nl",
-    source="EuroEval/include-nl-mini",
-    task=KNOW,
-    languages=[DUTCH],
-    unofficial=True,
-)
-
-MULTILOKO_NL_CONFIG = DatasetConfig(
-    name="multiloko-nl",
-    pretty_name="MultiLoKo-nl",
-    source="EuroEval/multiloko-nl-mini",
-    task=KNOW,
-    languages=[DUTCH],
-    val_split=None,
     unofficial=True,
 )
 
