@@ -199,6 +199,11 @@
     "train": 50,
     "val": 51
   },
+  "EuroEval/dutch-cola": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/elner-mini": {
     "test": 2048,
     "train": 1024,
