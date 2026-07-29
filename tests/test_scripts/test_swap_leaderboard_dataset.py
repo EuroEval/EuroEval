@@ -408,6 +408,87 @@ class TestExecuteJobsLogging:
         assert re.search(r"eval_log_\d{8}_\d{6}\.log", log_messages[0])
 
 
+class TestExecuteJobsResultDetection:
+    """Tests that execute_jobs counts result-less exit-0 jobs as failed."""
+
+    def test_exit_zero_with_result_counts_as_evaluated(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A job that exits 0 and has a matching result record is evaluated."""
+        Job = swap_leaderboard_dataset.Job
+        benchmark_results = tmp_path / "euroeval_benchmark_results.jsonl"
+        record = {
+            "model_info": {"name": "good-model"},
+            "eval_library": {
+                "additional_details": {"dataset": "dutch-cola", "languages": ["nl"]}
+            },
+        }
+        benchmark_results.write_text(json.dumps(record) + "\n", encoding="utf-8")
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="EUROEVAL_BENCHMARK_RESULTS_PATH",
+            value=benchmark_results,
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="run_euroeval",
+            value=lambda **kwargs: (0, "ok"),
+        )
+        jobs = [
+            Job(
+                model_id="good-model",
+                languages=("nl",),
+                is_api=False,
+                evaluate_test_split=True,
+                zero_shot=False,
+                datasets=("dutch-cola",),
+            )
+        ]
+        evaluated, failed = swap_leaderboard_dataset.execute_jobs(
+            jobs=jobs, datasets=("dutch-cola",), gpu_memory_utilization=None
+        )
+        assert failed == []
+        assert evaluated == ["good-model"]
+
+    def test_exit_zero_without_result_counts_as_failed(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A job that exits 0 but writes no result record must be marked failed."""
+        Job = swap_leaderboard_dataset.Job
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="EUROEVAL_BENCHMARK_RESULTS_PATH",
+            value=tmp_path / "euroeval_benchmark_results.jsonl",
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="run_euroeval",
+            value=lambda **kwargs: (0, "errored 1 benchmarks"),
+        )
+        jobs = [
+            Job(
+                model_id="oom-model",
+                languages=("nl",),
+                is_api=False,
+                evaluate_test_split=True,
+                zero_shot=False,
+                datasets=("dutch-cola",),
+            )
+        ]
+        evaluated, failed = swap_leaderboard_dataset.execute_jobs(
+            jobs=jobs, datasets=("dutch-cola",), gpu_memory_utilization=None
+        )
+        assert evaluated == []
+        assert len(failed) == 1
+        assert "oom-model" in failed[0]
+
+
 class TestLoadCorpusAndBuildEvalJobs:
     """Tests for load_corpus and build_eval_jobs functions."""
 
