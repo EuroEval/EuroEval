@@ -5,10 +5,34 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
+import nltk  # noqa: WPS433 (needed for test)
+
+from euroeval.logging_utils import no_terminal_output  # noqa: WPS433 (needed for test)
+from euroeval.nltk_utils import ensure_nltk_packages  # noqa: WPS433 (needed for test)
 
 
-def test_nltk_download_output_suppressed():
+def test_ensure_nltk_packages_suppresses_output() -> None:
+    """Test that ensure_nltk_packages suppresses download output."""
+    captured_output = io.StringIO()
+
+    # Create a temporary cache directory
+    with patch("sys.stdout", captured_output), patch("sys.stderr", captured_output):
+        test_cache_dir = Path("/tmp/test_ensure_nltk")
+        test_cache_dir.mkdir(parents=True, exist_ok=True)
+
+        # Call ensure_nltk_packages which should suppress output
+        # Note: This will actually try to download packages, but with quiet=True
+        # and no_terminal_output() wrapping, there should be no output
+        ensure_nltk_packages(test_cache_dir, packages=["punkt_tab"])
+
+    output = captured_output.getvalue()
+
+    # Should not have any NLTK-related output
+    assert "[nltk_data]" not in output, f"Found unsuppressed NLTK output: {output}"
+    assert "Downloading" not in output.lower(), f"Found download messages: {output}"
+
+
+def test_nltk_download_output_suppressed() -> None:
     """Test that NLTK download output is suppressed during evaluation.
 
     This test verifies the fix for the issue where NLTK would print messages like:
@@ -24,7 +48,6 @@ def test_nltk_download_output_suppressed():
     with patch("sys.stdout", captured_output), patch("sys.stderr", captured_output):
         # Simulate the scenario: NLTK is imported and a download is triggered
         # This is what happens when evaluate.load() is called for METEOR/SARI metrics
-        import nltk  # noqa: WPS433 (import inside test)
 
         # Force NLTK to think packages need downloading by manipulating the path
         test_cache_dir = Path("/tmp/test_nltk_cache")
@@ -38,7 +61,6 @@ def test_nltk_download_output_suppressed():
         # In the real scenario, this would print to stdout/stderr
         with patch.object(nltk.data, "path", [str(fake_package_dir)]):
             # This is what happens in HuggingFaceMetric.download()
-            from euroeval.metrics.huggingface import HuggingFaceMetric
 
             # Create a minimal metric instance and trigger download
             # The key is that evaluate.load() internally calls nltk.download()
@@ -57,16 +79,16 @@ def test_nltk_download_output_suppressed():
     ]
 
     for pattern in nltk_output_patterns:
-        assert (
-            pattern not in output
-        ), f"NLTK output was not suppressed! Found pattern '{pattern}' in output:\n{output}"
+        msg = (
+            f"NLTK output was not suppressed! "
+            f"Found pattern '{pattern}' in output:\n{output}"
+        )
+        assert pattern not in output, msg
 
 
-def test_no_terminal_output_context_manager():
+def test_no_terminal_output_context_manager() -> None:
     """Test that no_terminal_output() actually suppresses output."""
-    from euroeval.logging_utils import no_terminal_output
-
-    captured_output = io.StringIO()
+    _ = io.StringIO()
 
     # Test that output is suppressed inside the context manager
     with no_terminal_output():
@@ -75,26 +97,3 @@ def test_no_terminal_output_context_manager():
 
     # The context manager redirects stdout/stderr to devnull internally
     # After exiting, output should be restored (but we're not testing that here)
-
-
-def test_ensure_nltk_packages_suppresses_output():
-    """Test that ensure_nltk_packages suppresses download output."""
-    from euroeval.nltk_utils import ensure_nltk_packages
-
-    captured_output = io.StringIO()
-
-    # Create a temporary cache directory
-    with patch("sys.stdout", captured_output), patch("sys.stderr", captured_output):
-        test_cache_dir = Path("/tmp/test_ensure_nltk")
-        test_cache_dir.mkdir(parents=True, exist_ok=True)
-
-        # Call ensure_nltk_packages which should suppress output
-        # Note: This will actually try to download packages, but with quiet=True
-        # and no_terminal_output() wrapping, there should be no output
-        ensure_nltk_packages(test_cache_dir, packages=["punkt_tab"])
-
-    output = captured_output.getvalue()
-
-    # Should not have any NLTK-related output
-    assert "[nltk_data]" not in output, f"Found unsuppressed NLTK output: {output}"
-    assert "Downloading" not in output.lower(), f"Found download messages: {output}"
