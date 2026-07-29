@@ -29,79 +29,6 @@ from src.scripts.create_language_spider_plot import (
 )
 
 
-def make_eee_record(
-    model_name: str,
-    languages: list[str],
-    scores: dict[str, float],
-    few_shot: bool,
-    task: str = "summarization",
-    dataset: str = "nordjylland-news",
-    raw_scores: list[float] | None = None,
-    metric_name: str = "macro_f1",
-) -> JsonDict:
-    """Create a minimal EEE-format record for testing.
-
-    Uses real dataset names from the official EuroEval configs so that
-    dataset-to-task-to-language mapping works correctly.
-
-    Args:
-        model_name:
-            Model name/ID.
-        languages:
-            Language codes.
-        scores:
-            Dict mapping metric names to aggregated scores.
-        few_shot:
-            Whether this is a few-shot record.
-        task (optional):
-            Task name. Defaults to "summarization".
-        dataset (optional):
-            Dataset name. Defaults to "nordjylland-news" (Danish summarisation).
-        raw_scores (optional):
-            List of raw per-iteration/bootstrap scores. If provided, these
-            are used for rank score computation instead of aggregated scores.
-        metric_name (optional):
-            Metric name for raw scores. Defaults to "macro_f1".
-
-    Returns:
-        EEE-format record dictionary.
-    """
-    eval_results = [
-        {
-            "evaluation_name": metric_name,
-            "source_data": {"dataset_name": dataset},
-            "metric_config": {"lower_is_better": False},
-            "score_details": {"score": score, "details": {}},
-        }
-        for metric_name, score in scores.items()
-    ]
-
-    additional_details: dict[str, str] = {
-        "languages": json.dumps(languages),
-        "few_shot": "true" if few_shot else "false",
-        "task": task,
-        "dataset": dataset,
-    }
-
-    # Add raw results if provided
-    if raw_scores is not None:
-        raw_results = [
-            {f"test_{metric_name}": score, metric_name: score} for score in raw_scores
-        ]
-        additional_details["raw_results"] = json.dumps(raw_results)
-
-    return {
-        "schema_version": "0.2.1",
-        "model_info": {"name": model_name, "id": model_name, "additional_details": {}},
-        "eval_library": {
-            "name": "euroeval",
-            "version": "17.0.0",
-            "additional_details": additional_details,
-        },
-        "evaluation_results": eval_results,
-    }
-
-
 class TestBuildScoreMatrix:
     """Tests for _build_score_matrix function with rank scores.
 
@@ -505,6 +432,79 @@ class TestBuildScoreMatrix:
         assert matrix["model1"]["da"] == 1.0
         assert matrix["model2"]["da"] > 1.0
         assert matrix["model2"]["da"] > matrix["model1"]["da"]
+
+
+def make_eee_record(
+    model_name: str,
+    languages: list[str],
+    scores: dict[str, float],
+    few_shot: bool,
+    task: str = "summarization",
+    dataset: str = "nordjylland-news",
+    raw_scores: list[float] | None = None,
+    metric_name: str = "macro_f1",
+) -> JsonDict:
+    """Create a minimal EEE-format record for testing.
+
+    Uses real dataset names from the official EuroEval configs so that
+    dataset-to-task-to-language mapping works correctly.
+
+    Args:
+        model_name:
+            Model name/ID.
+        languages:
+            Language codes.
+        scores:
+            Dict mapping metric names to aggregated scores.
+        few_shot:
+            Whether this is a few-shot record.
+        task (optional):
+            Task name. Defaults to "summarization".
+        dataset (optional):
+            Dataset name. Defaults to "nordjylland-news" (Danish summarisation).
+        raw_scores (optional):
+            List of raw per-iteration/bootstrap scores. If provided, these
+            are used for rank score computation instead of aggregated scores.
+        metric_name (optional):
+            Metric name for raw scores. Defaults to "macro_f1".
+
+    Returns:
+        EEE-format record dictionary.
+    """
+    eval_results = [
+        {
+            "evaluation_name": metric_name,
+            "source_data": {"dataset_name": dataset},
+            "metric_config": {"lower_is_better": False},
+            "score_details": {"score": score, "details": {}},
+        }
+        for metric_name, score in scores.items()
+    ]
+
+    additional_details: dict[str, str] = {
+        "languages": json.dumps(languages),
+        "few_shot": "true" if few_shot else "false",
+        "task": task,
+        "dataset": dataset,
+    }
+
+    # Add raw results if provided
+    if raw_scores is not None:
+        raw_results = [
+            {f"test_{metric_name}": score, metric_name: score} for score in raw_scores
+        ]
+        additional_details["raw_results"] = json.dumps(raw_results)
+
+    return {
+        "schema_version": "0.2.1",
+        "model_info": {"name": model_name, "id": model_name, "additional_details": {}},
+        "eval_library": {
+            "name": "euroeval",
+            "version": "17.0.0",
+            "additional_details": additional_details,
+        },
+        "evaluation_results": eval_results,
+    }
 
 
 class TestClickCLI:

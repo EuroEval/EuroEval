@@ -10,78 +10,6 @@ import pytest
 from leaderboards.cache import Cache
 
 
-def _make_eee_record(
-    model_id: str = "test/model",
-    model_name: str | None = None,
-    dataset: str = "dataset1",
-    validation_split: bool | None = False,
-    few_shot: bool | None = False,
-    commercially_licensed: bool | None = None,
-    open_license: bool | None = None,
-    trained_from_scratch: bool | None = None,
-    model_url: str | None = None,
-) -> dict:
-    """Helper to create a valid EEE-format record for cache testing.
-
-    Args:
-        model_id:
-            Model identifier.
-        model_name:
-            Model name (defaults to model_id).
-        dataset:
-            Dataset name.
-        validation_split:
-            Validation split flag.
-        few_shot:
-            Few-shot flag.
-        commercially_licensed:
-            Whether commercially licensed.
-        open_license:
-            Whether open license.
-        trained_from_scratch:
-            Whether trained from scratch.
-        model_url:
-            Model URL.
-
-    Returns:
-        A valid EEE-format record dict.
-    """
-    if model_name is None:
-        model_name = model_id
-    record = {
-        "schema_version": "1.0",
-        "model_info": {"id": model_id, "name": model_name, "additional_details": {}},
-        "eval_library": {
-            "additional_details": {
-                "dataset": dataset,
-                "validation_split": validation_split,
-                "few_shot": few_shot,
-            }
-        },
-        "retrieved_timestamp": "100",
-        "evaluation_results": [{"label": "pass", "score": 0.5}],
-    }
-
-    # Add metadata fields if provided
-    has_metadata = any(
-        v is not None
-        for v in [commercially_licensed, open_license, trained_from_scratch, model_url]
-    )
-    if has_metadata:
-        additional = {}
-        if commercially_licensed is not None:
-            additional["commercially_licensed"] = commercially_licensed
-        if open_license is not None:
-            additional["open"] = open_license
-        if trained_from_scratch is not None:
-            additional["trained_from_scratch"] = trained_from_scratch
-        if model_url is not None:
-            additional["model_url"] = model_url
-        record["model_info"]["additional_details"] = additional
-
-    return record
-
-
 class TestCacheFromResultsDir:
     """Tests for Cache.from_results_dir with tree structure."""
 
@@ -165,3 +93,75 @@ class TestCacheFromResultsDir:
         """Should raise FileNotFoundError for nonexistent directory."""
         with pytest.raises(FileNotFoundError, match="Results directory"):
             Cache.from_results_dir(results_dir=Path("/nonexistent/path"))
+
+
+def _make_eee_record(
+    model_id: str = "test/model",
+    model_name: str | None = None,
+    dataset: str = "dataset1",
+    validation_split: bool | None = False,
+    few_shot: bool | None = False,
+    commercially_licensed: bool | None = None,
+    open_license: bool | None = None,
+    trained_from_scratch: bool | None = None,
+    model_url: str | None = None,
+) -> dict:
+    """Helper to create a valid EEE-format record for cache testing.
+
+    Args:
+        model_id:
+            Model identifier.
+        model_name:
+            Model name (defaults to model_id).
+        dataset:
+            Dataset name.
+        validation_split:
+            Validation split flag.
+        few_shot:
+            Few-shot flag.
+        commercially_licensed:
+            Whether commercially licensed.
+        open_license:
+            Whether open license.
+        trained_from_scratch:
+            Whether trained from scratch.
+        model_url:
+            Model URL.
+
+    Returns:
+        A valid EEE-format record dict.
+    """
+    if model_name is None:
+        model_name = model_id
+    record = {
+        "schema_version": "1.0",
+        "model_info": {"id": model_id, "name": model_name, "additional_details": {}},
+        "eval_library": {
+            "additional_details": {
+                "dataset": dataset,
+                "validation_split": validation_split,
+                "few_shot": few_shot,
+            }
+        },
+        "retrieved_timestamp": "100",
+        "evaluation_results": [{"label": "pass", "score": 0.5}],
+    }
+
+    # Add metadata fields if provided
+    has_metadata = any(
+        v is not None
+        for v in [commercially_licensed, open_license, trained_from_scratch, model_url]
+    )
+    if has_metadata:
+        additional = {}
+        if commercially_licensed is not None:
+            additional["commercially_licensed"] = commercially_licensed
+        if open_license is not None:
+            additional["open"] = open_license
+        if trained_from_scratch is not None:
+            additional["trained_from_scratch"] = trained_from_scratch
+        if model_url is not None:
+            additional["model_url"] = model_url
+        record["model_info"]["additional_details"] = additional
+
+    return record

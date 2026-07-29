@@ -22,17 +22,21 @@ from .constants import FAILED_LABEL, GATED_LABEL, REPO, RESULTS_READY_LABEL, USE
 logger = logging.getLogger(__name__)
 
 
-def _token() -> str:
-    """Return the GitHub API token from the environment, or exit on failure.
+def add_failed_label(number: int) -> None:
+    """Attach the ``evaluation-failed`` label to an issue.
 
-    Returns:
-        The value of the ``GITHUB_TOKEN`` environment variable.
+    Args:
+        number:
+            The issue number to label.
     """
-    token = os.environ.get("GITHUB_TOKEN")
-    if not token:
-        logger.error("GITHUB_TOKEN env var is required.")
-        sys.exit(1)
-    return token
+    try:
+        gh_request(
+            path=f"/repos/{REPO}/issues/{number}/labels",
+            method="POST",
+            body={"labels": [FAILED_LABEL]},
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not add {FAILED_LABEL!r} label: {e}")
 
 
 def gh_request(
@@ -78,21 +82,17 @@ def gh_request(
         return json.loads(raw) if raw else None
 
 
-def add_failed_label(number: int) -> None:
-    """Attach the ``evaluation-failed`` label to an issue.
+def _token() -> str:
+    """Return the GitHub API token from the environment, or exit on failure.
 
-    Args:
-        number:
-            The issue number to label.
+    Returns:
+        The value of the ``GITHUB_TOKEN`` environment variable.
     """
-    try:
-        gh_request(
-            path=f"/repos/{REPO}/issues/{number}/labels",
-            method="POST",
-            body={"labels": [FAILED_LABEL]},
-        )
-    except urllib.error.HTTPError as e:
-        logger.warning(f"#{number}: could not add {FAILED_LABEL!r} label: {e}")
+    token = os.environ.get("GITHUB_TOKEN")
+    if not token:
+        logger.error("GITHUB_TOKEN env var is required.")
+        sys.exit(1)
+    return token
 
 
 def add_gated_label(number: int) -> None:

@@ -128,35 +128,6 @@ class LLMAsAJudgeMetric(Metric):
             "provide one of them."
         )
 
-    def _apply_user_prompt(self, prediction: str, condition: str | None = None) -> str:
-        """Apply the user prompt to the prediction and condition.
-
-        Args:
-            prediction:
-                The model prediction.
-            condition (optional):
-                A description of what the prediction should be judged on. If not
-                provided, it will be omitted from the prompt.
-
-        Returns:
-            The formatted user prompt with the prediction and reference.
-
-        Raises:
-            InvalidBenchmark:
-                If the user prompt requires a reference but none is provided.
-        """
-        condition_required = "{condition}" in self.user_prompt
-        if condition_required and condition is None:
-            raise InvalidBenchmark(
-                f"The user prompt for the {self.pretty_name!r} metric requires a "
-                "condition, but none was provided."
-            )
-        if condition is not None:
-            return self.user_prompt.format(
-                prediction=prediction, condition=self.condition_formatting_fn(condition)
-            )
-        return self.user_prompt.format(prediction=prediction)
-
     def __call__(
         self,
         predictions: c.Sequence,
@@ -298,6 +269,35 @@ class LLMAsAJudgeMetric(Metric):
             return None
 
         return self.batch_scoring_fn(outputs=outputs, dataset=dataset)
+
+    def _apply_user_prompt(self, prediction: str, condition: str | None = None) -> str:
+        """Apply the user prompt to the prediction and condition.
+
+        Args:
+            prediction:
+                The model prediction.
+            condition (optional):
+                A description of what the prediction should be judged on. If not
+                provided, it will be omitted from the prompt.
+
+        Returns:
+            The formatted user prompt with the prediction and reference.
+
+        Raises:
+            InvalidBenchmark:
+                If the user prompt requires a reference but none is provided.
+        """
+        condition_required = "{condition}" in self.user_prompt
+        if condition_required and condition is None:
+            raise InvalidBenchmark(
+                f"The user prompt for the {self.pretty_name!r} metric requires a "
+                "condition, but none was provided."
+            )
+        if condition is not None:
+            return self.user_prompt.format(
+                prediction=prediction, condition=self.condition_formatting_fn(condition)
+            )
+        return self.user_prompt.format(prediction=prediction)
 
 
 fluency_metric = LLMAsAJudgeMetric(

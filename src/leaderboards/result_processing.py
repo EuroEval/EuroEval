@@ -36,51 +36,84 @@ from .result_loading import load_raw_results
 logger = logging.getLogger(__name__)
 
 
-def _write_record_file(
-    relative_path: Path, record: dict[str, t.Any], results_dir: Path
-) -> tuple[Path, str] | None:
-    """Write a single record file if it doesn't exist or content differs.
+def process_results(
+    min_version: str,
+    min_number_of_model_records: int,
+    banned_versions: list[str],
+    banned_model_patterns: list[re.Pattern],
+    api_model_patterns: list[re.Pattern],
+    trained_from_scratch_patterns: list[re.Pattern],
+) -> None:
+    """Process EuroEval records from a JSONL file.
 
     Args:
-        relative_path:
-            Relative path for the record file.
-        record:
-            The record dict to serialize.
-        results_dir:
-            The results directory.
-
-    Returns:
-        Tuple of (file_path, relative_path_str) if written, None if skipped.
+        min_version:
+            The minimum EuroEval version to include.
+        min_number_of_model_records:
+            The minimum number of records for a model to be included.
+        banned_versions:
+            A list of banned EuroEval versions to filter out.
+        banned_model_patterns:
+            A list of regex patterns to filter out models that should not be
+            included.
+        api_model_patterns:
+            A list of regex patterns for API inference models.
+        trained_from_scratch_patterns:
+            A list of regex patterns for trained-from-scratch models.
     """
-    file_path = results_dir / relative_path
-    file_path.parent.mkdir(parents=True, exist_ok=True)
+    # Load raw results first so per-model files in RESULTS_DIR are synced.
+    records = load_raw_results()
 
-    # Use canonical JSON serialization for consistent comparison
-    canonical_content = json.dumps(
-        record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-    )
+    # Build the metadata cache from the synced per-model result files.
+    cache = Cache.from_results_dir(RESULTS_DIR)
+    num_raw_records = len(records)
 
-    # Only write if file doesn't exist or content differs
-    if file_path.exists():
-        try:
-            existing_content = file_path.read_text(encoding="utf-8").strip()
-            existing_record = json.loads(existing_content)
-            canonical_existing = json.dumps(
-                existing_record,
-                sort_keys=True,
-                separators=(",", ":"),
-                ensure_ascii=False,
-            )
-            if canonical_existing == canonical_content:
-                return None  # Skip unchanged files
-        except (json.JSONDecodeError, OSError):
-            pass  # If we can't parse existing, overwrite it
+    records = deduplicate_records(records=records)
+    num_duplicates = num_raw_records - len(records)
+    if num_duplicates:
+        logger.info(f"Removed {num_duplicates:,} duplicates.")
 
-    file_path.write_text(canonical_content + "\n", encoding="utf-8")
-    # Skip empty files
-    if file_path.stat().st_size > 0:
-        return (file_path, str(relative_path))
-    return None
+    fixed_records = [
+        fix_metadata(record=record)
+        for record in tqdm(records, desc="Fixing metadata in records")
+    ]
+
+    processed_records = [
+        record
+        for record in fixed_records
+        if record_is_valid(
+            record=record,
+            min_version=min_version,
+            banned_versions=banned_versions,
+            banned_model_patterns=banned_model_patterns,
+            api_model_patterns=api_model_patterns,
+        )
+    ]
+
+    # Remove records for models with few records
+    counter = Counter([get_model_name(record) for record in processed_records])
+    processed_records = [
+        record
+        for record in processed_records
+        if counter[get_model_name(record)] >= min_number_of_model_records
+    ]
+
+    num_invalid_records = num_raw_records - num_duplicates - len(processed_records)
+    if num_invalid_records > 0:
+        logger.info(f"Removed {num_invalid_records:,} invalid records.")
+
+    processed_records = [
+        add_missing_entries(
+            record=record,
+            trained_from_scratch_patterns=trained_from_scratch_patterns,
+            cache=cache,
+        )
+        for record in tqdm(processed_records, desc="Adding missing entries")
+    ]
+
+    _upload_per_model_files(processed_records=processed_records)
+    load_raw_results.cache_clear()
+    logger.info("Cleared load_raw_results cache.")
 
 
 def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
@@ -165,81 +198,48 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
         logger.info(f"Dropped {dropped_count:,} records with unresolvable identities.")
 
 
-def process_results(
-    min_version: str,
-    min_number_of_model_records: int,
-    banned_versions: list[str],
-    banned_model_patterns: list[re.Pattern],
-    api_model_patterns: list[re.Pattern],
-    trained_from_scratch_patterns: list[re.Pattern],
-) -> None:
-    """Process EuroEval records from a JSONL file.
+def _write_record_file(
+    relative_path: Path, record: dict[str, t.Any], results_dir: Path
+) -> tuple[Path, str] | None:
+    """Write a single record file if it doesn't exist or content differs.
 
     Args:
-        min_version:
-            The minimum EuroEval version to include.
-        min_number_of_model_records:
-            The minimum number of records for a model to be included.
-        banned_versions:
-            A list of banned EuroEval versions to filter out.
-        banned_model_patterns:
-            A list of regex patterns to filter out models that should not be
-            included.
-        api_model_patterns:
-            A list of regex patterns for API inference models.
-        trained_from_scratch_patterns:
-            A list of regex patterns for trained-from-scratch models.
+        relative_path:
+            Relative path for the record file.
+        record:
+            The record dict to serialize.
+        results_dir:
+            The results directory.
+
+    Returns:
+        Tuple of (file_path, relative_path_str) if written, None if skipped.
     """
-    # Load raw results first so per-model files in RESULTS_DIR are synced.
-    records = load_raw_results()
+    file_path = results_dir / relative_path
+    file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Build the metadata cache from the synced per-model result files.
-    cache = Cache.from_results_dir(RESULTS_DIR)
-    num_raw_records = len(records)
+    # Use canonical JSON serialization for consistent comparison
+    canonical_content = json.dumps(
+        record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
 
-    records = deduplicate_records(records=records)
-    num_duplicates = num_raw_records - len(records)
-    if num_duplicates:
-        logger.info(f"Removed {num_duplicates:,} duplicates.")
+    # Only write if file doesn't exist or content differs
+    if file_path.exists():
+        try:
+            existing_content = file_path.read_text(encoding="utf-8").strip()
+            existing_record = json.loads(existing_content)
+            canonical_existing = json.dumps(
+                existing_record,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            )
+            if canonical_existing == canonical_content:
+                return None  # Skip unchanged files
+        except (json.JSONDecodeError, OSError):
+            pass  # If we can't parse existing, overwrite it
 
-    fixed_records = [
-        fix_metadata(record=record)
-        for record in tqdm(records, desc="Fixing metadata in records")
-    ]
-
-    processed_records = [
-        record
-        for record in fixed_records
-        if record_is_valid(
-            record=record,
-            min_version=min_version,
-            banned_versions=banned_versions,
-            banned_model_patterns=banned_model_patterns,
-            api_model_patterns=api_model_patterns,
-        )
-    ]
-
-    # Remove records for models with few records
-    counter = Counter([get_model_name(record) for record in processed_records])
-    processed_records = [
-        record
-        for record in processed_records
-        if counter[get_model_name(record)] >= min_number_of_model_records
-    ]
-
-    num_invalid_records = num_raw_records - num_duplicates - len(processed_records)
-    if num_invalid_records > 0:
-        logger.info(f"Removed {num_invalid_records:,} invalid records.")
-
-    processed_records = [
-        add_missing_entries(
-            record=record,
-            trained_from_scratch_patterns=trained_from_scratch_patterns,
-            cache=cache,
-        )
-        for record in tqdm(processed_records, desc="Adding missing entries")
-    ]
-
-    _upload_per_model_files(processed_records=processed_records)
-    load_raw_results.cache_clear()
-    logger.info("Cleared load_raw_results cache.")
+    file_path.write_text(canonical_content + "\n", encoding="utf-8")
+    # Skip empty files
+    if file_path.stat().st_size > 0:
+        return (file_path, str(relative_path))
+    return None

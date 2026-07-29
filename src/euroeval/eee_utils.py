@@ -13,38 +13,6 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkResult
 
 
-def parse_optional_bool(value: str | bool | None) -> bool | None:
-    """Parse a string-encoded or bool optional boolean value.
-
-    Args:
-        value:
-            The value to parse. `None` maps to `None`; bool values are
-            returned as-is; string values are compared case-insensitively
-            to `"true"`.
-
-    Returns:
-        `None` if value is `None`, otherwise a boolean.
-    """
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return value
-    return value.lower() == "true"
-
-
-def parse_optional_str(value: str | None) -> str | None:
-    """Parse a string-encoded optional string value.
-
-    Args:
-        value:
-            The string to parse.  `None` maps to `None`.
-
-    Returns:
-        `None` if value is `None`, otherwise the original string.
-    """
-    return None if value is None else value
-
-
 def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
     """Create a BenchmarkResult from an Every Eval Ever format dictionary.
 
@@ -161,6 +129,38 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
         open=open,
         trained_from_scratch=trained_from_scratch,
     )
+
+
+def parse_optional_bool(value: str | bool | None) -> bool | None:
+    """Parse a string-encoded or bool optional boolean value.
+
+    Args:
+        value:
+            The value to parse. `None` maps to `None`; bool values are
+            returned as-is; string values are compared case-insensitively
+            to `"true"`.
+
+    Returns:
+        `None` if value is `None`, otherwise a boolean.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    return value.lower() == "true"
+
+
+def parse_optional_str(value: str | None) -> str | None:
+    """Parse a string-encoded optional string value.
+
+    Args:
+        value:
+            The string to parse.  `None` maps to `None`.
+
+    Returns:
+        `None` if value is `None`, otherwise the original string.
+    """
+    return None if value is None else value
 
 
 def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:

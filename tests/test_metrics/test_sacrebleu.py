@@ -20,25 +20,6 @@ from euroeval.metrics.sacrebleu import (
 from euroeval.tasks import SUMM
 
 
-class DummyBenchmarkConfig:
-    """Dummy benchmark config for testing."""
-
-    device = Device.CPU
-    generative_type = GenerativeType.INSTRUCTION_TUNED
-
-
-class DummyDatasetConfig:
-    """Dummy dataset config for testing."""
-
-    task = SUMM
-    languages: list[Language] = [ENGLISH]
-
-    @property
-    def main_language(self) -> Language:
-        """The main language for the dataset."""
-        return self.languages[0]
-
-
 @pytest.fixture(autouse=True)
 def disable_chrf_language_detector() -> None:
     """Disable language detection for all ChrF metrics during tests."""
@@ -55,10 +36,29 @@ def disable_chrf_language_detector() -> None:
         metric.language_detector = None
 
 
+class DummyBenchmarkConfig:
+    """Dummy benchmark config for testing."""
+
+    device = Device.CPU
+    generative_type = GenerativeType.INSTRUCTION_TUNED
+
+
 @pytest.fixture
 def dummy_benchmark_config() -> t.Generator[DummyBenchmarkConfig, None, None]:
     """Yield a dummy benchmark config (not used by ChrF metric)."""
     yield DummyBenchmarkConfig()
+
+
+class DummyDatasetConfig:
+    """Dummy dataset config for testing."""
+
+    task = SUMM
+    languages: list[Language] = [ENGLISH]
+
+    @property
+    def main_language(self) -> Language:
+        """The main language for the dataset."""
+        return self.languages[0]
 
 
 @pytest.fixture
@@ -67,24 +67,6 @@ def dummy_dataset_config() -> t.Generator[DummyDatasetConfig, None, None]:
     # The ChrF metric doesn't actually use dataset_config or benchmark_config
     # We return None-like objects that won't cause issues
     yield DummyDatasetConfig()
-
-
-@pytest.fixture
-def make_dataset() -> c.Generator[
-    c.Callable[[list[str], list[str]], Dataset], None, None
-]:
-    """Create a dataset from predictions and references.
-
-    Yields:
-        A function that takes predictions and references and returns a Dataset.
-    """
-
-    def _make(predictions: list[str], references: list[str]) -> Dataset:
-        return Dataset.from_list(
-            [{"prediction": p, "reference": r} for p, r in zip(predictions, references)]
-        )
-
-    yield _make
 
 
 @pytest.mark.parametrize(
@@ -123,6 +105,24 @@ def test_all_chrff_variants(
     assert score is not None
     # CHRF returns scores as percentages (0-100)
     assert score == pytest.approx(100.0, abs=0.01)
+
+
+@pytest.fixture
+def make_dataset() -> c.Generator[
+    c.Callable[[list[str], list[str]], Dataset], None, None
+]:
+    """Create a dataset from predictions and references.
+
+    Yields:
+        A function that takes predictions and references and returns a Dataset.
+    """
+
+    def _make(predictions: list[str], references: list[str]) -> Dataset:
+        return Dataset.from_list(
+            [{"prediction": p, "reference": r} for p, r in zip(predictions, references)]
+        )
+
+    yield _make
 
 
 def test_chrff_different_word_orders(

@@ -359,24 +359,6 @@ class TestCachePriority:
         assert cache.open["openai/gpt-4"] is False
 
 
-def _record(model_name: str, generative: bool = True) -> dict:
-    """Create a minimal record for testing.
-
-    Args:
-        model_name:
-            The model name for the record.
-        generative (optional):
-            Whether the model is generative. Defaults to True.
-
-    Returns:
-        A minimal record dictionary.
-    """
-    return {
-        "model_info": {"name": model_name, "additional_details": {}},
-        "generative": generative,
-    }
-
-
 class TestCommercialLicenceInference:
     """Tests for best-effort commercial licence inference from HF model info."""
 
@@ -588,6 +570,24 @@ class TestCommercialLicenceInference:
         result = is_commercially_licensed(record=record, cache=cache)
 
         assert result is True
+
+
+def _record(model_name: str, generative: bool = True) -> dict:
+    """Create a minimal record for testing.
+
+    Args:
+        model_name:
+            The model name for the record.
+        generative (optional):
+            Whether the model is generative. Defaults to True.
+
+    Returns:
+        A minimal record dictionary.
+    """
+    return {
+        "model_info": {"name": model_name, "additional_details": {}},
+        "generative": generative,
+    }
 
 
 class TestRemoveModelResults:

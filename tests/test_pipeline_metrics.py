@@ -12,6 +12,19 @@ from euroeval.metrics.pipeline import european_values_preprocessing_fn
 NUM_QUESTIONS = 53
 
 
+def test_invalid_prediction_does_not_raise(
+    make_ev_dataset: c.Callable[[list[dict]], Dataset],
+) -> None:
+    """An out-of-range prediction should be handled gracefully (no exception)."""
+    three_choices = {"0": 1, "1": 2, "2": 3}
+    dataset = make_ev_dataset([three_choices] * NUM_QUESTIONS)
+
+    # Prediction 8 is not a valid index for a question with choices {0, 1, 2}
+    predictions = [0] * (NUM_QUESTIONS - 1) + [8]
+    result = european_values_preprocessing_fn(predictions=predictions, dataset=dataset)
+    assert len(result) == NUM_QUESTIONS
+
+
 @pytest.fixture(scope="module")
 def make_ev_dataset() -> c.Generator[c.Callable[[list[dict]], Dataset], None, None]:
     """Create a European Values dataset with a given idx_to_choice per question.
@@ -27,19 +40,6 @@ def make_ev_dataset() -> c.Generator[c.Callable[[list[dict]], Dataset], None, No
         return Dataset.from_list(records)
 
     yield _make
-
-
-def test_invalid_prediction_does_not_raise(
-    make_ev_dataset: c.Callable[[list[dict]], Dataset],
-) -> None:
-    """An out-of-range prediction should be handled gracefully (no exception)."""
-    three_choices = {"0": 1, "1": 2, "2": 3}
-    dataset = make_ev_dataset([three_choices] * NUM_QUESTIONS)
-
-    # Prediction 8 is not a valid index for a question with choices {0, 1, 2}
-    predictions = [0] * (NUM_QUESTIONS - 1) + [8]
-    result = european_values_preprocessing_fn(predictions=predictions, dataset=dataset)
-    assert len(result) == NUM_QUESTIONS
 
 
 def test_invalid_prediction_logs_warning(

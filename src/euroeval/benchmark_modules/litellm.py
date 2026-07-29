@@ -198,169 +198,6 @@ CUSTOM_INFERENCE_API_PREFIXES = [
 UNOFFICIAL_INFERENCE_API_PREFIXES = ["ordbogen/", "alx/"]
 
 
-def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
-    """Clean a model ID.
-
-    This adds the default `openai/` prefix to the model ID if we're benchmarking a
-    custom API inference server and no prefix is used, just to make it more
-    convenient for the user.
-
-    Args:
-        model_id:
-            The model ID.
-        benchmark_config:
-            The benchmark configuration.
-
-    Returns:
-        The cleaned model ID.
-    """
-    new_model_id = deepcopy(model_id)
-
-    # Remove unofficial prefixes
-    for unofficial_prefix in UNOFFICIAL_INFERENCE_API_PREFIXES:
-        new_model_id = re.sub(
-            pattern=rf"^{re.escape(unofficial_prefix)}", repl="", string=new_model_id
-        )
-
-    if benchmark_config.api_base is not None and not any(
-        new_model_id.startswith(prefix) for prefix in CUSTOM_INFERENCE_API_PREFIXES
-    ):
-        if benchmark_config.generative_type == GenerativeType.BASE:
-            prefix = "text-completion-openai/"
-        else:
-            prefix = "openai/"
-        new_model_id = prefix + new_model_id
-
-    # When we want to evaluate an OpenAI model on a custom inference server, such as HF
-    # inference endpoints, LiteLLM gets confused since it's already using the `openai/`
-    # prefix. We thus have to add it twice, and this hack here is to ensure that we
-    # don't store the results with model ID `openai/openai/...`.
-    elif benchmark_config.api_base is not None and new_model_id.startswith("openai/"):
-        new_model_id = "openai/openai/" + re.sub(r"(openai/)*", "", new_model_id)
-
-    return new_model_id
-
-
-def set_up_benchmark_config_for_model(
-    benchmark_config: BenchmarkConfig, model_id: str
-) -> None:
-    """Set up the benchmark configuration for the model.
-
-    Args:
-        benchmark_config:
-            The benchmark configuration to set up.
-        model_id:
-            The model ID.
-    """
-    if model_id.startswith("ordbogen/"):
-        benchmark_config.api_key = os.getenv("ORDBOGEN_API_KEY")
-        benchmark_config.api_base = "https://api.ordbogen.ai/v1"
-    elif model_id.startswith("alx/"):
-        benchmark_config.api_key = os.getenv("ALX_API_KEY")
-        benchmark_config.api_base = "https://inference.alexandra.dk/v1"
-
-
-def try_download_ollama_model(model_id: str, progress_bar: bool) -> bool:
-    """Try to download an Ollama model.
-
-    Args:
-        model_id:
-            The model ID. If the model does not start with "ollama/" or "ollama_chat/"
-            then this function will return False.
-        progress_bar:
-            Whether to show a progress bar while downloading the model.
-
-    Returns:
-        Whether the model was downloaded successfully.
-
-    Raises:
-        InvalidModel:
-            If Ollama is not running or the model cannot be downloaded.
-    """
-    if not (model_id.startswith("ollama/") or model_id.startswith("ollama_chat/")):
-        return False
-
-    if model_id.startswith("ollama/"):
-        log_once(
-            "You're trying to benchmark a model with the old 'ollama/' prefix, which "
-            "probably results in bad performance, as it doesn't use the model's chat "
-            "template. If the model is not a chat model then just disregard this "
-            "warning, but if it is a chat model then please cancel this run and "
-            "use the 'ollama_chat/' prefix instead.",
-            level=logging.WARNING,
-        )
-
-    try:
-        downloaded_ollama_models: c.Sequence[str] = [
-            model_obj.model
-            for model_obj in ollama.list().models
-            if model_obj.model is not None
-        ]
-    except ConnectionError as e:
-        raise InvalidModel(
-            "Ollama does not seem to be running, so we cannot evaluate the model "
-            f"{model_id!r}. Please make sure that Ollama is running and try again."
-        ) from e
-
-    ollama_model_id = "/".join(model_id.split("/")[1:])
-    if ollama_model_id not in downloaded_ollama_models:
-        # Try fetching the model info
-        try:
-            response = ollama.pull(model=ollama_model_id, stream=True)
-        except ollama.ResponseError as e:
-            if "file does not exist" in str(e).lower():
-                # Check if the model exists if we prepend "hf.co/"
-                try:
-                    ollama_model_id_with_prefix = f"hf.co/{ollama_model_id}"
-                    model_id_with_prefix = (
-                        f"{model_id.split('/')[0]}/{ollama_model_id_with_prefix}"
-                    )
-                    ollama.pull(model=ollama_model_id_with_prefix, stream=True)
-                    log_once(
-                        f"The model {model_id!r} cannot be found on Ollama, but the "
-                        f"model {model_id_with_prefix} *was* found, so we would "
-                        "recommend you cancelling this run and trying the evaluation "
-                        "with that model ID instead.",
-                        level=logging.WARNING,
-                    )
-                    return False
-                except ollama.ResponseError as inner_e:
-                    if "file does not exist" in str(inner_e).lower():
-                        return False
-                    else:
-                        raise InvalidModel(
-                            f"Failed to download Ollama model {ollama_model_id}. "
-                            f"The error message was: {inner_e}"
-                        ) from inner_e
-            else:
-                raise InvalidModel(
-                    f"Failed to download Ollama model {ollama_model_id}. "
-                    f"The error message was: {e}"
-                ) from e
-
-        # Download the model
-        with get_pbar(
-            desc=f"Downloading {ollama_model_id}",
-            unit_scale=True,
-            unit="B",
-            disable=not progress_bar,
-        ) as pbar:
-            for status in response:
-                if status.total is not None:
-                    pbar.total = status.total
-                if status.completed is not None:
-                    pbar.update(status.completed - pbar.n)
-        return True
-
-    else:
-        log_once(
-            f"Ollama model {ollama_model_id!r} already downloaded, so skipping "
-            "download.",
-            level=logging.DEBUG,
-        )
-        return True
-
-
 class LiteLLMModel(BenchmarkModule):
     """A generative model from LiteLLM."""
 
@@ -451,6 +288,163 @@ class LiteLLMModel(BenchmarkModule):
             log_metadata=self.log_metadata,
         )
         self.buffer["max_concurrent_calls"] = 20
+
+    @property
+    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
+        """The data collator used to prepare samples during finetuning.
+
+        Returns:
+            The data collator.
+        """
+        raise NotImplementedError(
+            "The `data_collator` property has not been implemented for LiteLLM models."
+        )
+
+    @property
+    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
+        """The function used to extract the labels from the generated output.
+
+        Returns:
+            The function used to extract the labels from the generated output.
+        """
+        return _extract_labels_from_generation_helper(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            first_label_token_mapping=self.buffer["first_label_token_mapping"],
+        )
+
+    def generate(self, inputs: dict) -> GenerativeModelOutput:
+        """Generate outputs from the model.
+
+        Args:
+            inputs:
+                A batch of inputs to pass through the model.
+
+        Returns:
+            The generated model outputs.
+
+        Raises:
+            InvalidBenchmark:
+                If the inputs do not contain either 'messages' or 'text' keys.
+        """
+        model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str]
+        if "messages" in inputs:
+            model_inputs = inputs["messages"]
+        elif "text" in inputs:
+            model_inputs = inputs["text"]
+        else:
+            raise InvalidBenchmark(
+                "The inputs must contain either 'messages' or 'text' keys."
+            )
+
+        # Get the mapping from labels to the first token in the label. We call this each
+        # time we generate a new dataset since the dataset config can change
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            tokeniser=None,
+            generative_type=self.generative_type,
+            log_metadata=self.log_metadata,
+        )
+
+        all_responses: dict[int, "ModelResponse"] = {}
+        inputs_to_run: c.Sequence[
+            tuple[int, c.Sequence[litellm.AllMessageValues] | str]
+        ] = list(enumerate(model_inputs))
+        for attempt in range(num_attempts := 10):
+            if not inputs_to_run:
+                break
+
+            generation_kwargs = self.generation_kwargs or self.get_generation_kwargs(
+                dataset_config=self.dataset_config
+            )
+
+            batch_indices, batch_inputs = zip(*inputs_to_run)
+            successes, failures = safe_run(
+                self._generate_async(
+                    model_id=self.model_config.model_id,
+                    inputs=list(batch_inputs),
+                    max_concurrent_calls=self.buffer["max_concurrent_calls"],
+                    **generation_kwargs,
+                )
+            )
+
+            # Store the successful model outputs
+            for idx, response in successes:
+                orig_idx = batch_indices[idx]
+                all_responses[orig_idx] = response
+
+            # If all requests were successful, break
+            if not failures:
+                inputs_to_run = []
+                break
+
+            # Put the failed requests back in the queue to try again
+            inputs_to_run = [
+                (batch_indices[idx], model_inputs[batch_indices[idx]])
+                for idx, _ in failures
+            ]
+            log(
+                f"Attempt {attempt + 1:,}/{num_attempts:,}: retrying "
+                f"{len(inputs_to_run):,} failed message(s). Here is the first error: "
+                f"{failures[0][1]}.",
+                level=logging.DEBUG,
+            )
+
+            # Check if any errors are due to HTTP 429 (too many requests), in which case
+            # we reduce the number of concurrent calls
+            http_429_errors = [
+                idx
+                for idx, (_, error) in enumerate(failures)
+                if isinstance(error, RateLimitError)
+            ]
+            if http_429_errors and self.buffer["max_concurrent_calls"] > 1:
+                failures = [
+                    failures[i]
+                    for i in range(len(failures))
+                    if i not in http_429_errors
+                ]
+                self.buffer["max_concurrent_calls"] = max(
+                    1, self.buffer["max_concurrent_calls"] // 2
+                )
+                log(
+                    f"Reducing the maximum number of concurrent calls to "
+                    f"{self.buffer['max_concurrent_calls']:,} due to rate limiting.",
+                    level=logging.DEBUG,
+                )
+
+            # Attempt to handle the exceptions, to improve the chance of getting
+            # successful generations next time around
+            time_to_wait = 0
+            for _, error in failures:
+                generation_kwargs, wait_time = self._handle_exception(
+                    error=error, **generation_kwargs
+                )
+                time_to_wait = max(time_to_wait, wait_time)
+            if time_to_wait > 0:
+                log(
+                    f"Waiting {time_to_wait} second(s) before retrying...",
+                    level=logging.DEBUG,
+                )
+                sleep(time_to_wait)
+        else:
+            raise InvalidBenchmark(
+                message=f"Failed to generate text, after {num_attempts:,} attempts."
+            )
+
+        # Extract the generations from the model output
+        ordered_responses = [all_responses[i] for i in range(len(model_inputs))]
+        model_output = self._create_model_output(
+            model_responses=ordered_responses, model_id=self.model_config.model_id
+        )
+
+        if len(model_inputs) != len(model_output.sequences):
+            raise InvalidBenchmark(
+                f"Number of model inputs ({len(model_inputs):,}) does not match the "
+                f"number of model outputs ({len(model_output.sequences):,})."
+            )
+
+        return model_output
 
     @staticmethod
     def _create_model_output(
@@ -741,6 +735,57 @@ class LiteLLMModel(BenchmarkModule):
             pass  # Already closed
 
         return successes, failures
+
+    def _handle_exception(
+        self, error: Exception, **generation_kwargs
+    ) -> tuple[dict, int]:
+        """Handle an exception from the model.
+
+        Args:
+            error:
+                The exception to handle.
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+
+        Returns:
+            A pair (generation_kwargs, retry_delay_seconds), where `generation_kwargs`
+            is the updated generation kwargs to pass to the model, and
+            `retry_delay_seconds` is the number of seconds to wait before retrying.
+
+        Raises:
+            InvalidBenchmark:
+                If the model's reasoning budget is not specified correctly.
+        """
+        error_msg = str(error).lower()
+        model_id = self.model_config.model_id
+
+        # Try parameter-specific handlers first
+        result = self._handle_parameter_error(
+            error=error,
+            error_msg=error_msg,
+            model_id=model_id,
+            generation_kwargs=generation_kwargs,
+        )
+        if result is not None:
+            return result
+
+        # Try service/retry handlers
+        result = self._handle_service_error(
+            error=error,
+            error_msg=error_msg,
+            model_id=model_id,
+            generation_kwargs=generation_kwargs,
+        )
+        if result is not None:
+            return result
+
+        # Try error-raising handlers
+        self._handle_fatal_error(error=error, error_msg=error_msg, model_id=model_id)
+
+        # Default: raise InvalidBenchmark
+        raise InvalidBenchmark(
+            f"Failed to generate text. The error message was: {error}"
+        ) from error
 
     def _handle_fatal_error(
         self, error: Exception, error_msg: str, model_id: str
@@ -1131,199 +1176,6 @@ class LiteLLMModel(BenchmarkModule):
 
         return None
 
-    def _handle_exception(
-        self, error: Exception, **generation_kwargs
-    ) -> tuple[dict, int]:
-        """Handle an exception from the model.
-
-        Args:
-            error:
-                The exception to handle.
-            generation_kwargs:
-                The generation kwargs to pass to the model.
-
-        Returns:
-            A pair (generation_kwargs, retry_delay_seconds), where `generation_kwargs`
-            is the updated generation kwargs to pass to the model, and
-            `retry_delay_seconds` is the number of seconds to wait before retrying.
-
-        Raises:
-            InvalidBenchmark:
-                If the model's reasoning budget is not specified correctly.
-        """
-        error_msg = str(error).lower()
-        model_id = self.model_config.model_id
-
-        # Try parameter-specific handlers first
-        result = self._handle_parameter_error(
-            error=error,
-            error_msg=error_msg,
-            model_id=model_id,
-            generation_kwargs=generation_kwargs,
-        )
-        if result is not None:
-            return result
-
-        # Try service/retry handlers
-        result = self._handle_service_error(
-            error=error,
-            error_msg=error_msg,
-            model_id=model_id,
-            generation_kwargs=generation_kwargs,
-        )
-        if result is not None:
-            return result
-
-        # Try error-raising handlers
-        self._handle_fatal_error(error=error, error_msg=error_msg, model_id=model_id)
-
-        # Default: raise InvalidBenchmark
-        raise InvalidBenchmark(
-            f"Failed to generate text. The error message was: {error}"
-        ) from error
-
-    def _setup_model_params(
-        self, generation_kwargs: dict[str, t.Any]
-    ) -> dict[str, t.Any]:
-        """Set up model-specific parameters.
-
-        Args:
-            generation_kwargs:
-                The generation kwargs to pass to the model.
-
-        Returns:
-            The updated generation kwargs with model-specific parameters configured.
-        """
-        if self.buffer["first_label_token_mapping"]:
-            generation_kwargs["logprobs"] = True
-            generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
-
-        param = self.model_config.param
-        if param == "thinking":
-            generation_kwargs["thinking"] = dict(
-                type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
-            )
-            log_once(
-                f"Enabling thinking mode for model {self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
-        elif param == "no-thinking":
-            generation_kwargs["thinking"] = dict(budget_tokens=0)
-            log_once(
-                f"Disabling thinking mode for model {self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
-        elif param in {"none", "minimal", "low", "medium", "high", "xhigh"}:
-            generation_kwargs["reasoning_effort"] = param
-            log_once(
-                f"Enabling reasoning effort {param!r} for model "
-                f"{self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
-
-        return generation_kwargs
-
-    def _setup_response_format(
-        self, dataset_config: DatasetConfig, generation_kwargs: dict[str, t.Any]
-    ) -> dict[str, t.Any]:
-        """Set up response_format for structured generation.
-
-        Args:
-            dataset_config:
-                The dataset configuration.
-            generation_kwargs:
-                The generation kwargs to pass to the model.
-
-        Returns:
-            The updated generation kwargs with response_format configured.
-
-        Raises:
-            InvalidBenchmark:
-                If structured generation is required but not implemented for the task.
-        """
-        if dataset_config.task.structured_output_format is not None:
-            pydantic_class = dataset_config.task.structured_output_format
-            generation_kwargs["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": pydantic_class.__class__.__name__,
-                    "schema": pydantic_class.model_json_schema(),
-                },
-            }
-            log_once(
-                "Enabling structured generation for model "
-                f"{self.model_config.model_id!r} with response_format "
-                f"{pydantic_class.model_json_schema()}.",
-                level=logging.DEBUG,
-            )
-            return generation_kwargs
-
-        if self.benchmark_config.api_base is not None or supports_response_schema(
-            model=self.model_config.model_id
-        ):
-            if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
-                tag_names = list(dataset_config.prompt_label_mapping.values())
-                keys_and_their_types: dict[str, t.Any] = {
-                    tag_name: (conlist(str, max_length=5), ...)
-                    for tag_name in tag_names
-                }
-                pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
-                generation_kwargs["response_format"] = pydantic_class
-                log_once(
-                    "Enabling structured generation for model "
-                    f"{self.model_config.model_id!r} with the JSON schema "
-                    f"{pydantic_class.model_json_schema()}",
-                    level=logging.DEBUG,
-                )
-                return generation_kwargs
-            elif dataset_config.task == LOGIC:
-                generation_kwargs["response_format"] = dict(type="json_object")
-                log_once(
-                    "Enabling structured generation for model "
-                    f"{self.model_config.model_id!r} with a generic JSON schema",
-                    level=logging.DEBUG,
-                )
-                return generation_kwargs
-            else:
-                raise InvalidBenchmark(
-                    "This task requires structured generation, but it has not "
-                    "been implemented for this task yet. Please open an issue "
-                    "at https://github.com/EuroEval/EuroEval/issues."
-                )
-
-        generation_kwargs["response_format"] = dict(type="json_object")
-        log_once(
-            "Enabling structured JSON generation for model "
-            f"{self.model_config.model_id!r} with no custom JSON schema, as "
-            "the model does not support schemas.",
-            level=logging.DEBUG,
-        )
-        return generation_kwargs
-
-    @property
-    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
-        """The data collator used to prepare samples during finetuning.
-
-        Returns:
-            The data collator.
-        """
-        raise NotImplementedError(
-            "The `data_collator` property has not been implemented for LiteLLM models."
-        )
-
-    @property
-    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
-        """The function used to extract the labels from the generated output.
-
-        Returns:
-            The function used to extract the labels from the generated output.
-        """
-        return _extract_labels_from_generation_helper(
-            dataset_config=self.dataset_config,
-            model_config=self.model_config,
-            first_label_token_mapping=self.buffer["first_label_token_mapping"],
-        )
-
     def get_generation_kwargs(self, dataset_config: DatasetConfig) -> dict[str, t.Any]:
         """Get the generation arguments for the model.
 
@@ -1461,138 +1313,123 @@ class LiteLLMModel(BenchmarkModule):
 
         return generation_kwargs
 
-    def generate(self, inputs: dict) -> GenerativeModelOutput:
-        """Generate outputs from the model.
+    def _setup_model_params(
+        self, generation_kwargs: dict[str, t.Any]
+    ) -> dict[str, t.Any]:
+        """Set up model-specific parameters.
 
         Args:
-            inputs:
-                A batch of inputs to pass through the model.
+            generation_kwargs:
+                The generation kwargs to pass to the model.
 
         Returns:
-            The generated model outputs.
-
-        Raises:
-            InvalidBenchmark:
-                If the inputs do not contain either 'messages' or 'text' keys.
+            The updated generation kwargs with model-specific parameters configured.
         """
-        model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str]
-        if "messages" in inputs:
-            model_inputs = inputs["messages"]
-        elif "text" in inputs:
-            model_inputs = inputs["text"]
-        else:
-            raise InvalidBenchmark(
-                "The inputs must contain either 'messages' or 'text' keys."
+        if self.buffer["first_label_token_mapping"]:
+            generation_kwargs["logprobs"] = True
+            generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
+
+        param = self.model_config.param
+        if param == "thinking":
+            generation_kwargs["thinking"] = dict(
+                type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
             )
-
-        # Get the mapping from labels to the first token in the label. We call this each
-        # time we generate a new dataset since the dataset config can change
-        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
-            dataset_config=self.dataset_config,
-            model_config=self.model_config,
-            tokeniser=None,
-            generative_type=self.generative_type,
-            log_metadata=self.log_metadata,
-        )
-
-        all_responses: dict[int, "ModelResponse"] = {}
-        inputs_to_run: c.Sequence[
-            tuple[int, c.Sequence[litellm.AllMessageValues] | str]
-        ] = list(enumerate(model_inputs))
-        for attempt in range(num_attempts := 10):
-            if not inputs_to_run:
-                break
-
-            generation_kwargs = self.generation_kwargs or self.get_generation_kwargs(
-                dataset_config=self.dataset_config
+            log_once(
+                f"Enabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
             )
-
-            batch_indices, batch_inputs = zip(*inputs_to_run)
-            successes, failures = safe_run(
-                self._generate_async(
-                    model_id=self.model_config.model_id,
-                    inputs=list(batch_inputs),
-                    max_concurrent_calls=self.buffer["max_concurrent_calls"],
-                    **generation_kwargs,
-                )
+        elif param == "no-thinking":
+            generation_kwargs["thinking"] = dict(budget_tokens=0)
+            log_once(
+                f"Disabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
             )
-
-            # Store the successful model outputs
-            for idx, response in successes:
-                orig_idx = batch_indices[idx]
-                all_responses[orig_idx] = response
-
-            # If all requests were successful, break
-            if not failures:
-                inputs_to_run = []
-                break
-
-            # Put the failed requests back in the queue to try again
-            inputs_to_run = [
-                (batch_indices[idx], model_inputs[batch_indices[idx]])
-                for idx, _ in failures
-            ]
-            log(
-                f"Attempt {attempt + 1:,}/{num_attempts:,}: retrying "
-                f"{len(inputs_to_run):,} failed message(s). Here is the first error: "
-                f"{failures[0][1]}.",
+        elif param in {"none", "minimal", "low", "medium", "high", "xhigh"}:
+            generation_kwargs["reasoning_effort"] = param
+            log_once(
+                f"Enabling reasoning effort {param!r} for model "
+                f"{self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
 
-            # Check if any errors are due to HTTP 429 (too many requests), in which case
-            # we reduce the number of concurrent calls
-            http_429_errors = [
-                idx
-                for idx, (_, error) in enumerate(failures)
-                if isinstance(error, RateLimitError)
-            ]
-            if http_429_errors and self.buffer["max_concurrent_calls"] > 1:
-                failures = [
-                    failures[i]
-                    for i in range(len(failures))
-                    if i not in http_429_errors
-                ]
-                self.buffer["max_concurrent_calls"] = max(
-                    1, self.buffer["max_concurrent_calls"] // 2
-                )
-                log(
-                    f"Reducing the maximum number of concurrent calls to "
-                    f"{self.buffer['max_concurrent_calls']:,} due to rate limiting.",
-                    level=logging.DEBUG,
-                )
+        return generation_kwargs
 
-            # Attempt to handle the exceptions, to improve the chance of getting
-            # successful generations next time around
-            time_to_wait = 0
-            for _, error in failures:
-                generation_kwargs, wait_time = self._handle_exception(
-                    error=error, **generation_kwargs
-                )
-                time_to_wait = max(time_to_wait, wait_time)
-            if time_to_wait > 0:
-                log(
-                    f"Waiting {time_to_wait} second(s) before retrying...",
-                    level=logging.DEBUG,
-                )
-                sleep(time_to_wait)
-        else:
-            raise InvalidBenchmark(
-                message=f"Failed to generate text, after {num_attempts:,} attempts."
+    def _setup_response_format(
+        self, dataset_config: DatasetConfig, generation_kwargs: dict[str, t.Any]
+    ) -> dict[str, t.Any]:
+        """Set up response_format for structured generation.
+
+        Args:
+            dataset_config:
+                The dataset configuration.
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+
+        Returns:
+            The updated generation kwargs with response_format configured.
+
+        Raises:
+            InvalidBenchmark:
+                If structured generation is required but not implemented for the task.
+        """
+        if dataset_config.task.structured_output_format is not None:
+            pydantic_class = dataset_config.task.structured_output_format
+            generation_kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": pydantic_class.__class__.__name__,
+                    "schema": pydantic_class.model_json_schema(),
+                },
+            }
+            log_once(
+                "Enabling structured generation for model "
+                f"{self.model_config.model_id!r} with response_format "
+                f"{pydantic_class.model_json_schema()}.",
+                level=logging.DEBUG,
             )
+            return generation_kwargs
 
-        # Extract the generations from the model output
-        ordered_responses = [all_responses[i] for i in range(len(model_inputs))]
-        model_output = self._create_model_output(
-            model_responses=ordered_responses, model_id=self.model_config.model_id
+        if self.benchmark_config.api_base is not None or supports_response_schema(
+            model=self.model_config.model_id
+        ):
+            if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+                tag_names = list(dataset_config.prompt_label_mapping.values())
+                keys_and_their_types: dict[str, t.Any] = {
+                    tag_name: (conlist(str, max_length=5), ...)
+                    for tag_name in tag_names
+                }
+                pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
+                generation_kwargs["response_format"] = pydantic_class
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with the JSON schema "
+                    f"{pydantic_class.model_json_schema()}",
+                    level=logging.DEBUG,
+                )
+                return generation_kwargs
+            elif dataset_config.task == LOGIC:
+                generation_kwargs["response_format"] = dict(type="json_object")
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with a generic JSON schema",
+                    level=logging.DEBUG,
+                )
+                return generation_kwargs
+            else:
+                raise InvalidBenchmark(
+                    "This task requires structured generation, but it has not "
+                    "been implemented for this task yet. Please open an issue "
+                    "at https://github.com/EuroEval/EuroEval/issues."
+                )
+
+        generation_kwargs["response_format"] = dict(type="json_object")
+        log_once(
+            "Enabling structured JSON generation for model "
+            f"{self.model_config.model_id!r} with no custom JSON schema, as "
+            "the model does not support schemas.",
+            level=logging.DEBUG,
         )
-
-        if len(model_inputs) != len(model_output.sequences):
-            raise InvalidBenchmark(
-                f"Number of model inputs ({len(model_inputs):,}) does not match the "
-                f"number of model outputs ({len(model_output.sequences):,})."
-            )
-
-        return model_output
+        return generation_kwargs
 
     @property
     def generative_type(self) -> GenerativeType | None:
@@ -1692,6 +1529,121 @@ class LiteLLMModel(BenchmarkModule):
             ),
             adapter_base_model_id=None,
         )
+
+    @cached_property
+    def model_max_length(self) -> int:
+        """The maximum length of the model.
+
+        Returns:
+            The maximum length of the model.
+        """
+        if self.benchmark_config.max_context_length is not None:
+            return self.benchmark_config.max_context_length
+        # Start by trying out the regex mapping, and use the value if it matches
+        for key, value in MODEL_MAX_LENGTH_MAPPING.items():
+            if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
+                return value
+
+        # If it is an Ollama model then we can get the maximum length from the Ollama
+        # Python SDK
+        if self.is_ollama:
+            ollama_model_id = "/".join(self.model_config.model_id.split("/")[1:])
+            model_info = self._ollama_show.modelinfo
+            if model_info is not None:
+                context_length_keys = [
+                    key for key in model_info.keys() if "context_length" in key.lower()
+                ]
+                if context_length_keys:
+                    context_length = model_info[context_length_keys[0]]
+                    if context_length is not None:
+                        if self.log_metadata:
+                            log_once(
+                                f"Detected context length key "
+                                f"{context_length_keys[0]!r} for Ollama model "
+                                f"{ollama_model_id!r}",
+                                level=logging.DEBUG,
+                            )
+                        return int(context_length)
+                elif self.log_metadata:
+                    log_once(
+                        f"Tried to get the maximum length of the Ollama model "
+                        f"{ollama_model_id!r}, but could not find a context length. "
+                        f"The model info was {model_info}. Returning -1",
+                        level=logging.DEBUG,
+                    )
+
+        # If it is a model accessed through the Hugging Face inference API then we can
+        # get the maximum length from the Hugging Face model configuration from the
+        # Hugging Face Hub
+        if self.model_config.model_id.startswith("huggingface/"):
+            model_id = "/".join(self.model_config.model_id.split(sep="/")[-2:])
+            if HuggingFaceEncoderModel.model_exists(
+                model_id=model_id, benchmark_config=self.benchmark_config
+            ):
+                hf_config = load_hf_model_config(
+                    model_id=model_id,
+                    num_labels=self.dataset_config.num_labels,
+                    id2label=self.dataset_config.id2label,
+                    label2id=self.dataset_config.label2id,
+                    revision="main",
+                    model_cache_dir=self.model_config.model_cache_dir,
+                    api_key=self.benchmark_config.api_key,
+                    trust_remote_code=self.benchmark_config.trust_remote_code,
+                    run_with_cli=self.benchmark_config.run_with_cli,
+                )
+
+                tokeniser = load_tokeniser(
+                    model=None,
+                    model_id=model_id,
+                    trust_remote_code=self.benchmark_config.trust_remote_code,
+                    model_config=self.model_config,
+                )
+
+                all_max_lengths: list[int] = list()
+
+                # Add the registered max length of the tokeniser
+                if hasattr(
+                    tokeniser, "model_max_length"
+                ) and tokeniser.model_max_length < int(1e30):
+                    all_max_lengths.append(tokeniser.model_max_length)
+
+                # Add the max length derived from the model's input sizes
+                if hasattr(tokeniser, "max_model_input_sizes"):
+                    all_max_lengths.extend(
+                        [
+                            size
+                            for size in tokeniser.max_model_input_sizes.values()
+                            if size is not None
+                        ]
+                    )
+
+                # Add max length candidates from the model's configuration
+                candidate_config_max_lengths = [
+                    "max_position_embeddings",
+                    "max_sequence_length",
+                    "model_max_length",
+                    "sliding_window",
+                    "sliding_window_size",
+                    "n_positions",
+                ]
+                for candidate_config_max_length in candidate_config_max_lengths:
+                    if (
+                        hasattr(hf_config, candidate_config_max_length)
+                        and (value := getattr(hf_config, candidate_config_max_length))
+                        is not None
+                    ):
+                        all_max_lengths.append(value)
+
+                # To avoid models having artificially low max lengths, we remove any max
+                # lengths that are less than 128
+                all_max_lengths = [
+                    max_length for max_length in all_max_lengths if max_length >= 128
+                ]
+
+                if len(list(all_max_lengths)) > 0:
+                    return min(list(all_max_lengths))
+
+        return -1
 
     @classmethod
     def model_exists(
@@ -1815,121 +1767,6 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.ERROR,
             )
             return False
-
-    @cached_property
-    def model_max_length(self) -> int:
-        """The maximum length of the model.
-
-        Returns:
-            The maximum length of the model.
-        """
-        if self.benchmark_config.max_context_length is not None:
-            return self.benchmark_config.max_context_length
-        # Start by trying out the regex mapping, and use the value if it matches
-        for key, value in MODEL_MAX_LENGTH_MAPPING.items():
-            if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
-                return value
-
-        # If it is an Ollama model then we can get the maximum length from the Ollama
-        # Python SDK
-        if self.is_ollama:
-            ollama_model_id = "/".join(self.model_config.model_id.split("/")[1:])
-            model_info = self._ollama_show.modelinfo
-            if model_info is not None:
-                context_length_keys = [
-                    key for key in model_info.keys() if "context_length" in key.lower()
-                ]
-                if context_length_keys:
-                    context_length = model_info[context_length_keys[0]]
-                    if context_length is not None:
-                        if self.log_metadata:
-                            log_once(
-                                f"Detected context length key "
-                                f"{context_length_keys[0]!r} for Ollama model "
-                                f"{ollama_model_id!r}",
-                                level=logging.DEBUG,
-                            )
-                        return int(context_length)
-                elif self.log_metadata:
-                    log_once(
-                        f"Tried to get the maximum length of the Ollama model "
-                        f"{ollama_model_id!r}, but could not find a context length. "
-                        f"The model info was {model_info}. Returning -1",
-                        level=logging.DEBUG,
-                    )
-
-        # If it is a model accessed through the Hugging Face inference API then we can
-        # get the maximum length from the Hugging Face model configuration from the
-        # Hugging Face Hub
-        if self.model_config.model_id.startswith("huggingface/"):
-            model_id = "/".join(self.model_config.model_id.split(sep="/")[-2:])
-            if HuggingFaceEncoderModel.model_exists(
-                model_id=model_id, benchmark_config=self.benchmark_config
-            ):
-                hf_config = load_hf_model_config(
-                    model_id=model_id,
-                    num_labels=self.dataset_config.num_labels,
-                    id2label=self.dataset_config.id2label,
-                    label2id=self.dataset_config.label2id,
-                    revision="main",
-                    model_cache_dir=self.model_config.model_cache_dir,
-                    api_key=self.benchmark_config.api_key,
-                    trust_remote_code=self.benchmark_config.trust_remote_code,
-                    run_with_cli=self.benchmark_config.run_with_cli,
-                )
-
-                tokeniser = load_tokeniser(
-                    model=None,
-                    model_id=model_id,
-                    trust_remote_code=self.benchmark_config.trust_remote_code,
-                    model_config=self.model_config,
-                )
-
-                all_max_lengths: list[int] = list()
-
-                # Add the registered max length of the tokeniser
-                if hasattr(
-                    tokeniser, "model_max_length"
-                ) and tokeniser.model_max_length < int(1e30):
-                    all_max_lengths.append(tokeniser.model_max_length)
-
-                # Add the max length derived from the model's input sizes
-                if hasattr(tokeniser, "max_model_input_sizes"):
-                    all_max_lengths.extend(
-                        [
-                            size
-                            for size in tokeniser.max_model_input_sizes.values()
-                            if size is not None
-                        ]
-                    )
-
-                # Add max length candidates from the model's configuration
-                candidate_config_max_lengths = [
-                    "max_position_embeddings",
-                    "max_sequence_length",
-                    "model_max_length",
-                    "sliding_window",
-                    "sliding_window_size",
-                    "n_positions",
-                ]
-                for candidate_config_max_length in candidate_config_max_lengths:
-                    if (
-                        hasattr(hf_config, candidate_config_max_length)
-                        and (value := getattr(hf_config, candidate_config_max_length))
-                        is not None
-                    ):
-                        all_max_lengths.append(value)
-
-                # To avoid models having artificially low max lengths, we remove any max
-                # lengths that are less than 128
-                all_max_lengths = [
-                    max_length for max_length in all_max_lengths if max_length >= 128
-                ]
-
-                if len(list(all_max_lengths)) > 0:
-                    return min(list(all_max_lengths))
-
-        return -1
 
     @cached_property
     def num_params(self) -> int:
@@ -2086,3 +1923,166 @@ class LiteLLMModel(BenchmarkModule):
                 return vocab_size
 
         return -1
+
+
+def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
+    """Clean a model ID.
+
+    This adds the default `openai/` prefix to the model ID if we're benchmarking a
+    custom API inference server and no prefix is used, just to make it more
+    convenient for the user.
+
+    Args:
+        model_id:
+            The model ID.
+        benchmark_config:
+            The benchmark configuration.
+
+    Returns:
+        The cleaned model ID.
+    """
+    new_model_id = deepcopy(model_id)
+
+    # Remove unofficial prefixes
+    for unofficial_prefix in UNOFFICIAL_INFERENCE_API_PREFIXES:
+        new_model_id = re.sub(
+            pattern=rf"^{re.escape(unofficial_prefix)}", repl="", string=new_model_id
+        )
+
+    if benchmark_config.api_base is not None and not any(
+        new_model_id.startswith(prefix) for prefix in CUSTOM_INFERENCE_API_PREFIXES
+    ):
+        if benchmark_config.generative_type == GenerativeType.BASE:
+            prefix = "text-completion-openai/"
+        else:
+            prefix = "openai/"
+        new_model_id = prefix + new_model_id
+
+    # When we want to evaluate an OpenAI model on a custom inference server, such as HF
+    # inference endpoints, LiteLLM gets confused since it's already using the `openai/`
+    # prefix. We thus have to add it twice, and this hack here is to ensure that we
+    # don't store the results with model ID `openai/openai/...`.
+    elif benchmark_config.api_base is not None and new_model_id.startswith("openai/"):
+        new_model_id = "openai/openai/" + re.sub(r"(openai/)*", "", new_model_id)
+
+    return new_model_id
+
+
+def set_up_benchmark_config_for_model(
+    benchmark_config: BenchmarkConfig, model_id: str
+) -> None:
+    """Set up the benchmark configuration for the model.
+
+    Args:
+        benchmark_config:
+            The benchmark configuration to set up.
+        model_id:
+            The model ID.
+    """
+    if model_id.startswith("ordbogen/"):
+        benchmark_config.api_key = os.getenv("ORDBOGEN_API_KEY")
+        benchmark_config.api_base = "https://api.ordbogen.ai/v1"
+    elif model_id.startswith("alx/"):
+        benchmark_config.api_key = os.getenv("ALX_API_KEY")
+        benchmark_config.api_base = "https://inference.alexandra.dk/v1"
+
+
+def try_download_ollama_model(model_id: str, progress_bar: bool) -> bool:
+    """Try to download an Ollama model.
+
+    Args:
+        model_id:
+            The model ID. If the model does not start with "ollama/" or "ollama_chat/"
+            then this function will return False.
+        progress_bar:
+            Whether to show a progress bar while downloading the model.
+
+    Returns:
+        Whether the model was downloaded successfully.
+
+    Raises:
+        InvalidModel:
+            If Ollama is not running or the model cannot be downloaded.
+    """
+    if not (model_id.startswith("ollama/") or model_id.startswith("ollama_chat/")):
+        return False
+
+    if model_id.startswith("ollama/"):
+        log_once(
+            "You're trying to benchmark a model with the old 'ollama/' prefix, which "
+            "probably results in bad performance, as it doesn't use the model's chat "
+            "template. If the model is not a chat model then just disregard this "
+            "warning, but if it is a chat model then please cancel this run and "
+            "use the 'ollama_chat/' prefix instead.",
+            level=logging.WARNING,
+        )
+
+    try:
+        downloaded_ollama_models: c.Sequence[str] = [
+            model_obj.model
+            for model_obj in ollama.list().models
+            if model_obj.model is not None
+        ]
+    except ConnectionError as e:
+        raise InvalidModel(
+            "Ollama does not seem to be running, so we cannot evaluate the model "
+            f"{model_id!r}. Please make sure that Ollama is running and try again."
+        ) from e
+
+    ollama_model_id = "/".join(model_id.split("/")[1:])
+    if ollama_model_id not in downloaded_ollama_models:
+        # Try fetching the model info
+        try:
+            response = ollama.pull(model=ollama_model_id, stream=True)
+        except ollama.ResponseError as e:
+            if "file does not exist" in str(e).lower():
+                # Check if the model exists if we prepend "hf.co/"
+                try:
+                    ollama_model_id_with_prefix = f"hf.co/{ollama_model_id}"
+                    model_id_with_prefix = (
+                        f"{model_id.split('/')[0]}/{ollama_model_id_with_prefix}"
+                    )
+                    ollama.pull(model=ollama_model_id_with_prefix, stream=True)
+                    log_once(
+                        f"The model {model_id!r} cannot be found on Ollama, but the "
+                        f"model {model_id_with_prefix} *was* found, so we would "
+                        "recommend you cancelling this run and trying the evaluation "
+                        "with that model ID instead.",
+                        level=logging.WARNING,
+                    )
+                    return False
+                except ollama.ResponseError as inner_e:
+                    if "file does not exist" in str(inner_e).lower():
+                        return False
+                    else:
+                        raise InvalidModel(
+                            f"Failed to download Ollama model {ollama_model_id}. "
+                            f"The error message was: {inner_e}"
+                        ) from inner_e
+            else:
+                raise InvalidModel(
+                    f"Failed to download Ollama model {ollama_model_id}. "
+                    f"The error message was: {e}"
+                ) from e
+
+        # Download the model
+        with get_pbar(
+            desc=f"Downloading {ollama_model_id}",
+            unit_scale=True,
+            unit="B",
+            disable=not progress_bar,
+        ) as pbar:
+            for status in response:
+                if status.total is not None:
+                    pbar.total = status.total
+                if status.completed is not None:
+                    pbar.update(status.completed - pbar.n)
+        return True
+
+    else:
+        log_once(
+            f"Ollama model {ollama_model_id!r} already downloaded, so skipping "
+            "download.",
+            level=logging.DEBUG,
+        )
+        return True
