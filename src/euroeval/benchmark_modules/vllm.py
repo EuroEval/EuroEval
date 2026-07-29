@@ -2035,6 +2035,26 @@ def _handle_model_load_error(
                 f"single GPU. The error was {retry_e!r}."
             ) from retry_e
 
+    moe_tp_alignment_error = (
+        "the second dimension of weights must be a multiple of 128" in error_str
+        or "intermediate_size % 128" in error_str
+    )
+    if moe_tp_alignment_error:
+        log(
+            f"Model {model_id!r} failed to load because its expert intermediate "
+            "size is not a multiple of 128 once sharded across the available GPUs, "
+            "which the fused MoE kernels require on Blackwell GPUs. Retrying with a "
+            "single GPU.",
+            level=logging.DEBUG,
+        )
+        try:
+            return create_llm_fn(True)
+        except (RuntimeError, ValueError, OSError) as retry_e:
+            raise InvalidModel(
+                f"The model {model_id!r} could not be loaded even with "
+                f"single GPU. The error was {retry_e!r}."
+            ) from retry_e
+
     if "awaiting a review from the repo authors" in str(error):
         raise InvalidModel(
             f"The model {model_id!r} is awaiting a review from the repository "
