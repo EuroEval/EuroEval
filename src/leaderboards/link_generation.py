@@ -33,107 +33,6 @@ logger = logging.getLogger(__name__)
 
 @cache
 @cache
-@cache
-def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
-    """Check if a model exists on the Hugging Face Hub with retry logic.
-
-    Retries only on connection-related errors (not repository errors).
-
-    Args:
-        model_id:
-            The Hugging Face model ID.
-        hf_api:
-            The Hugging Face API client.
-
-    Raises:
-        RepositoryNotFoundError:
-            If the repository does not exist (not retried).
-        GatedRepoError:
-            If the repository is gated (not retried).
-        HFValidationError:
-            If the model ID is invalid (not retried).
-        httpx.RemoteProtocolError:
-            If the server disconnects without sending a response (retried).
-        ConnectionError:
-            If there is a network connection error (retried).
-    """
-    max_attempts = 3
-    for attempt in range(max_attempts):
-        try:
-            hf_api.model_info(repo_id=model_id)
-            return
-        except (httpx.RemoteProtocolError, ConnectionError) as e:
-            if attempt == max_attempts - 1:
-                raise  # Re-raise on last attempt
-            wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
-            logger.warning(
-                f"Connection error checking {model_id}: {e}. "
-                f"Retrying in {wait_time}s..."
-            )
-            time.sleep(wait_time)
-        except (RepositoryNotFoundError, GatedRepoError, HFValidationError):
-            raise  # Don't retry these errors
-
-
-@cache
-@cache
-def _load_model_url_decisions() -> dict[str, bool]:
-    """Load cached model URL decisions (remove or keep).
-
-    Returns:
-        A dict mapping model IDs to whether they should be removed (True)
-        or kept without a URL (False). Returns an empty dict if the cache
-        file does not exist.
-    """
-    if not MODELS_WITHOUT_URLS_CACHE.exists():
-        return {}
-    with MODELS_WITHOUT_URLS_CACHE.open("r") as f:
-        data = safe_load(f) or {}
-    # Backwards compatibility: old format was a list of model IDs to keep
-    if isinstance(data, list):
-        return {model_id: False for model_id in data}
-    return data
-
-
-@cache
-def _load_model_url_decision(model_id: str) -> bool | None:
-    """Load a cached decision for a specific model.
-
-    Args:
-        model_id:
-            The model ID to look up.
-
-    Returns:
-        True if the model should be removed, False if it should be kept
-        without a URL, or None if no cached decision exists.
-    """
-    decisions = _load_model_url_decisions()
-    return decisions.get(model_id)
-
-
-@cache
-@cache
-def _remember_model_url_decision(model_id: str, remove: bool) -> None:
-    """Persist a model URL decision to the cache.
-
-    Args:
-        model_id:
-            The model ID.
-        remove:
-            True if the model should be removed, False if it should be
-            kept without a URL.
-    """
-    decisions = _load_model_url_decisions()
-    if model_id in decisions:
-        return
-    decisions[model_id] = remove
-    with MODELS_WITHOUT_URLS_CACHE.open("w") as f:
-        safe_dump(dict(sorted(decisions.items())), f)
-    _load_model_url_decisions.cache_clear()
-
-
-@cache
-@cache
 def ask_user_to_remove_model(model_id: str) -> bool:
     """Ask the user if they want to remove a model from the results.
 
@@ -160,6 +59,63 @@ def ask_user_to_remove_model(model_id: str) -> bool:
         remove = user_input == "y"
         _remember_model_url_decision(model_id=model_id, remove=remove)
         return remove
+
+
+@cache
+def _load_model_url_decision(model_id: str) -> bool | None:
+    """Load a cached decision for a specific model.
+
+    Args:
+        model_id:
+            The model ID to look up.
+
+    Returns:
+        True if the model should be removed, False if it should be kept
+        without a URL, or None if no cached decision exists.
+    """
+    decisions = _load_model_url_decisions()
+    return decisions.get(model_id)
+
+
+@cache
+@cache
+def _load_model_url_decisions() -> dict[str, bool]:
+    """Load cached model URL decisions (remove or keep).
+
+    Returns:
+        A dict mapping model IDs to whether they should be removed (True)
+        or kept without a URL (False). Returns an empty dict if the cache
+        file does not exist.
+    """
+    if not MODELS_WITHOUT_URLS_CACHE.exists():
+        return {}
+    with MODELS_WITHOUT_URLS_CACHE.open("r") as f:
+        data = safe_load(f) or {}
+    # Backwards compatibility: old format was a list of model IDs to keep
+    if isinstance(data, list):
+        return {model_id: False for model_id in data}
+    return data
+
+
+@cache
+@cache
+def _remember_model_url_decision(model_id: str, remove: bool) -> None:
+    """Persist a model URL decision to the cache.
+
+    Args:
+        model_id:
+            The model ID.
+        remove:
+            True if the model should be removed, False if it should be
+            kept without a URL.
+    """
+    decisions = _load_model_url_decisions()
+    if model_id in decisions:
+        return
+    decisions[model_id] = remove
+    with MODELS_WITHOUT_URLS_CACHE.open("w") as f:
+        safe_dump(dict(sorted(decisions.items())), f)
+    _load_model_url_decisions.cache_clear()
 
 
 @cache
@@ -262,6 +218,50 @@ def generate_hf_hub_url(model_id: str) -> str | None:
 
 @cache
 @cache
+@cache
+def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
+    """Check if a model exists on the Hugging Face Hub with retry logic.
+
+    Retries only on connection-related errors (not repository errors).
+
+    Args:
+        model_id:
+            The Hugging Face model ID.
+        hf_api:
+            The Hugging Face API client.
+
+    Raises:
+        RepositoryNotFoundError:
+            If the repository does not exist (not retried).
+        GatedRepoError:
+            If the repository is gated (not retried).
+        HFValidationError:
+            If the model ID is invalid (not retried).
+        httpx.RemoteProtocolError:
+            If the server disconnects without sending a response (retried).
+        ConnectionError:
+            If there is a network connection error (retried).
+    """
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            hf_api.model_info(repo_id=model_id)
+            return
+        except (httpx.RemoteProtocolError, ConnectionError) as e:
+            if attempt == max_attempts - 1:
+                raise  # Re-raise on last attempt
+            wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
+            logger.warning(
+                f"Connection error checking {model_id}: {e}. "
+                f"Retrying in {wait_time}s..."
+            )
+            time.sleep(wait_time)
+        except (RepositoryNotFoundError, GatedRepoError, HFValidationError):
+            raise  # Don't retry these errors
+
+
+@cache
+@cache
 def generate_model_url(model_id: str) -> str | None:
     """Generate a URL for a model.
 
@@ -337,34 +337,6 @@ def generate_ollama_url(model_id: str) -> str | None:
 @cache
 @cache
 @cache
-@cache
-def get_openai_models() -> list[str]:
-    """Get a list of all OpenAI models.
-
-    Returns:
-        A list of all OpenAI models.
-
-    Raises:
-        Exception if there was an error fetching the OpenAI models, and no cache file
-        exists.
-    """
-    cache_path = REPO_ROOT / "src" / "leaderboards" / "openai_models.yaml"
-    try:
-        results: list[str] = [model_info.id for model_info in openai.models.list().data]
-        with cache_path.open("w") as f:
-            safe_dump(results, f)
-        return results
-    except Exception as e:
-        if cache_path.exists():
-            with cache_path.open("r") as f:
-                results = safe_load(f)
-            return results
-        raise e
-
-
-@cache
-@cache
-@cache
 def generate_openai_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on OpenAI.
 
@@ -395,6 +367,34 @@ def generate_openai_url(model_id: str) -> str | None:
     ):
         return f"https://platform.openai.com/docs/models/{model_id_without_version_id}"
     return None
+
+
+@cache
+@cache
+@cache
+@cache
+def get_openai_models() -> list[str]:
+    """Get a list of all OpenAI models.
+
+    Returns:
+        A list of all OpenAI models.
+
+    Raises:
+        Exception if there was an error fetching the OpenAI models, and no cache file
+        exists.
+    """
+    cache_path = REPO_ROOT / "src" / "leaderboards" / "openai_models.yaml"
+    try:
+        results: list[str] = [model_info.id for model_info in openai.models.list().data]
+        with cache_path.open("w") as f:
+            safe_dump(results, f)
+        return results
+    except Exception as e:
+        if cache_path.exists():
+            with cache_path.open("r") as f:
+                results = safe_load(f)
+            return results
+        raise e
 
 
 @cache

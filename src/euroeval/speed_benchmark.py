@@ -17,6 +17,33 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig
 
 
+def benchmark_speed(
+    model: "BenchmarkModule", benchmark_config: "BenchmarkConfig"
+) -> c.Sequence[dict[str, float]]:
+    """Benchmark model inference speed.
+
+    Args:
+        model:
+            Model to use.
+        benchmark_config:
+            Configuration for the benchmark.
+
+    Returns:
+        Dictionary of scores.
+    """
+    scores: list[dict[str, float]] = list()
+    for idx in get_pbar(
+        iterable=range(benchmark_config.num_iterations),
+        desc="Benchmarking",
+        disable=not benchmark_config.progress_bar,
+    ):
+        itr_scores = benchmark_speed_single_iteration(model=model, itr_idx=idx)
+        clear_memory()
+        scores.append(itr_scores)
+        log(f"Scores for iteration {idx}: {itr_scores}", level=logging.DEBUG)
+    return scores
+
+
 def benchmark_speed_single_iteration(
     model: "BenchmarkModule", itr_idx: int
 ) -> dict[str, float]:
@@ -100,30 +127,3 @@ def benchmark_speed_single_iteration(
     return dict(
         test_speed=gpt2_tokens_per_second, test_speed_short=gpt2_tokens_per_second_short
     )
-
-
-def benchmark_speed(
-    model: "BenchmarkModule", benchmark_config: "BenchmarkConfig"
-) -> c.Sequence[dict[str, float]]:
-    """Benchmark model inference speed.
-
-    Args:
-        model:
-            Model to use.
-        benchmark_config:
-            Configuration for the benchmark.
-
-    Returns:
-        Dictionary of scores.
-    """
-    scores: list[dict[str, float]] = list()
-    for idx in get_pbar(
-        iterable=range(benchmark_config.num_iterations),
-        desc="Benchmarking",
-        disable=not benchmark_config.progress_bar,
-    ):
-        itr_scores = benchmark_speed_single_iteration(model=model, itr_idx=idx)
-        clear_memory()
-        scores.append(itr_scores)
-        log(f"Scores for iteration {idx}: {itr_scores}", level=logging.DEBUG)
-    return scores

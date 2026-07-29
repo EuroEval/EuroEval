@@ -18,6 +18,18 @@ DETECTOR_PATH = "euroeval.metrics.token_hallucination_classifier.HallucinationDe
 HF_API_PATH = "euroeval.metrics.token_hallucination_classifier.HfApi"
 
 
+@pytest.fixture(autouse=True)
+def _mock_hf_api() -> t.Generator[None, None, None]:
+    """Patch ``HfApi`` so the hallucination model is always reported as existing.
+
+    Yields:
+        None.
+    """
+    with patch(HF_API_PATH) as mock_api:
+        mock_api.return_value.repo_exists.return_value = True
+        yield
+
+
 class DummyDevice:
     """Dummy device for testing."""
 
@@ -31,6 +43,16 @@ class DummyBenchmarkConfig:
     cache_dir = ".euroeval_cache"
 
 
+@pytest.fixture
+def benchmark_config() -> t.Generator[DummyBenchmarkConfig, None, None]:
+    """Yield a dummy benchmark config.
+
+    Yields:
+        A DummyBenchmarkConfig instance.
+    """
+    yield DummyBenchmarkConfig()
+
+
 class DummyLanguage:
     """Dummy language for testing."""
 
@@ -41,6 +63,40 @@ class DummyDatasetConfig:
     """Dummy dataset config for testing."""
 
     main_language = DummyLanguage()
+
+
+@pytest.fixture
+def dataset_config() -> t.Generator[DummyDatasetConfig, None, None]:
+    """Yield a dummy dataset config.
+
+    Yields:
+        A DummyDatasetConfig instance.
+    """
+    yield DummyDatasetConfig()
+
+
+def test_all_hallucinations_returns_one(
+    metric: TokenHallucinationMetric,
+    dataset_config: DummyDatasetConfig,
+    benchmark_config: DummyBenchmarkConfig,
+    make_dataset: t.Callable[[list[str]], Dataset],
+) -> None:
+    """Return 1.0 when every token is flagged as hallucinated."""
+    detector = _make_detector(predict_return=[{"pred": 1}])
+    dataset = make_dataset(["ctx1", "ctx2"])
+    predictions = [
+        {"id": "0", "prediction_text": "hallucinated1", "no_answer_probability": 0.0},
+        {"id": "1", "prediction_text": "hallucinated2", "no_answer_probability": 0.0},
+    ]
+    with patch(DETECTOR_PATH, return_value=detector):
+        result = metric(
+            predictions=predictions,
+            references=[],
+            dataset=dataset,
+            dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+            benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
+        )
+    assert result == pytest.approx(1.0)
 
 
 def _make_detector(
@@ -72,38 +128,6 @@ def _make_detector(
     return detector
 
 
-@pytest.fixture(autouse=True)
-def _mock_hf_api() -> t.Generator[None, None, None]:
-    """Patch ``HfApi`` so the hallucination model is always reported as existing.
-
-    Yields:
-        None.
-    """
-    with patch(HF_API_PATH) as mock_api:
-        mock_api.return_value.repo_exists.return_value = True
-        yield
-
-
-@pytest.fixture
-def benchmark_config() -> t.Generator[DummyBenchmarkConfig, None, None]:
-    """Yield a dummy benchmark config.
-
-    Yields:
-        A DummyBenchmarkConfig instance.
-    """
-    yield DummyBenchmarkConfig()
-
-
-@pytest.fixture
-def dataset_config() -> t.Generator[DummyDatasetConfig, None, None]:
-    """Yield a dummy dataset config.
-
-    Yields:
-        A DummyDatasetConfig instance.
-    """
-    yield DummyDatasetConfig()
-
-
 @pytest.fixture
 def make_dataset() -> t.Callable[[list[str]], Dataset]:
     """Return a factory that builds datasets from contexts.
@@ -130,30 +154,6 @@ def metric() -> t.Generator[TokenHallucinationMetric, None, None]:
     yield TokenHallucinationMetric(
         name="hallucination_rate", pretty_name="Hallucination rate"
     )
-
-
-def test_all_hallucinations_returns_one(
-    metric: TokenHallucinationMetric,
-    dataset_config: DummyDatasetConfig,
-    benchmark_config: DummyBenchmarkConfig,
-    make_dataset: t.Callable[[list[str]], Dataset],
-) -> None:
-    """Return 1.0 when every token is flagged as hallucinated."""
-    detector = _make_detector(predict_return=[{"pred": 1}])
-    dataset = make_dataset(["ctx1", "ctx2"])
-    predictions = [
-        {"id": "0", "prediction_text": "hallucinated1", "no_answer_probability": 0.0},
-        {"id": "1", "prediction_text": "hallucinated2", "no_answer_probability": 0.0},
-    ]
-    with patch(DETECTOR_PATH, return_value=detector):
-        result = metric(
-            predictions=predictions,
-            references=[],
-            dataset=dataset,
-            dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
-            benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
-        )
-    assert result == pytest.approx(1.0)
 
 
 def test_detector_uses_correct_model_id(

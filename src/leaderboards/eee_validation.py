@@ -10,22 +10,36 @@ from .constants import REQUIRED_METADATA_FIELDS
 logger = logging.getLogger(__name__)
 
 
-def is_eee_record(record: dict[str, object]) -> bool:
-    """Return whether a record uses the EEE envelope.
+def dump_jsonl_records(records: list[dict[str, object]]) -> str:
+    """Serialise EEE records as JSONL.
 
     Args:
-        record:
-            Record to inspect.
+        records:
+            Records to serialise. All records must already be EEE-valid.
 
     Returns:
-        True if the record has the required EEE top-level structures.
+        JSONL text with a trailing newline if records are present.
+
     """
-    return (
-        "schema_version" in record
-        and isinstance(record.get("model_info"), dict)
-        and isinstance(record.get("eval_library"), dict)
-        and isinstance(record.get("evaluation_results"), list)
-    )
+    validate_eee_records(records=records, context="JSONL output")
+    if not records:
+        return ""
+    lines = [json.dumps(record, ensure_ascii=False) for record in records]
+    return "\n".join(lines) + "\n"
+
+
+def validate_eee_records(records: list[dict[str, object]], context: str) -> None:
+    """Validate a list of EEE result records.
+
+    Args:
+        records:
+            Records to validate.
+        context:
+            Human-readable source name used in error messages.
+
+    """
+    for idx, record in enumerate(records, start=1):
+        validate_eee_record(record=record, context=f"{context} record {idx:,}")
 
 
 def validate_eee_record(record: dict[str, object], context: str = "record") -> None:
@@ -64,33 +78,19 @@ def validate_eee_record(record: dict[str, object], context: str = "record") -> N
         )
 
 
-def validate_eee_records(records: list[dict[str, object]], context: str) -> None:
-    """Validate a list of EEE result records.
+def is_eee_record(record: dict[str, object]) -> bool:
+    """Return whether a record uses the EEE envelope.
 
     Args:
-        records:
-            Records to validate.
-        context:
-            Human-readable source name used in error messages.
-
-    """
-    for idx, record in enumerate(records, start=1):
-        validate_eee_record(record=record, context=f"{context} record {idx:,}")
-
-
-def dump_jsonl_records(records: list[dict[str, object]]) -> str:
-    """Serialise EEE records as JSONL.
-
-    Args:
-        records:
-            Records to serialise. All records must already be EEE-valid.
+        record:
+            Record to inspect.
 
     Returns:
-        JSONL text with a trailing newline if records are present.
-
+        True if the record has the required EEE top-level structures.
     """
-    validate_eee_records(records=records, context="JSONL output")
-    if not records:
-        return ""
-    lines = [json.dumps(record, ensure_ascii=False) for record in records]
-    return "\n".join(lines) + "\n"
+    return (
+        "schema_version" in record
+        and isinstance(record.get("model_info"), dict)
+        and isinstance(record.get("eval_library"), dict)
+        and isinstance(record.get("evaluation_results"), list)
+    )

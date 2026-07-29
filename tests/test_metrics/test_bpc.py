@@ -12,6 +12,10 @@ class TestBitsPerCharacterMetric:
     configs are ignored, so `None` is passed for them.
     """
 
+    def test_all_non_finite_returns_none(self) -> None:
+        """If every score is non-finite there is nothing to average."""
+        assert self._call([float("inf"), float("nan")]) is None
+
     def _call(self, predictions: list[float]) -> float | None:
         """Call the metric with only predictions set.
 
@@ -28,10 +32,6 @@ class TestBitsPerCharacterMetric:
             dataset_config=None,  # ty: ignore[invalid-argument-type]
             benchmark_config=None,  # ty: ignore[invalid-argument-type]
         )
-
-    def test_all_non_finite_returns_none(self) -> None:
-        """If every score is non-finite there is nothing to average."""
-        assert self._call([float("inf"), float("nan")]) is None
 
     def test_averages_finite_scores(self) -> None:
         """The mean of finite scores is returned."""

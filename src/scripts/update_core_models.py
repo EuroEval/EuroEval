@@ -420,6 +420,26 @@ def _format_parameters(parameters: float) -> str:
     return f"{parameters:.0f}"
 
 
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+def _get_issue_body(issue_number: int, token: str) -> str:
+    """Fetch the current body of an issue.
+
+    Args:
+        issue_number:
+            The issue number.
+        token:
+            GitHub PAT.
+
+    Returns:
+        The issue body string (empty if the issue has none).
+    """
+    issue = _gh_request(path=f"/repos/{REPO}/issues/{issue_number}", token=token)
+    assert isinstance(issue, dict)
+    return issue.get("body") or ""
+
+
 def _gh_request(
     path: str, *, method: str = "GET", payload: dict | None = None, token: str
 ) -> dict | list:
@@ -455,24 +475,56 @@ def _gh_request(
         return json.loads(resp.read().decode("utf-8"))
 
 
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
-def _get_issue_body(issue_number: int, token: str) -> str:
-    """Fetch the current body of an issue.
+def _post_issue_comment(issue_number: int, body: str, token: str) -> str:
+    """POST a comment to an issue.
 
     Args:
         issue_number:
             The issue number.
+        body:
+            The comment markdown.
         token:
             GitHub PAT.
 
     Returns:
-        The issue body string (empty if the issue has none).
+        The `html_url` of the newly-created comment.
     """
-    issue = _gh_request(path=f"/repos/{REPO}/issues/{issue_number}", token=token)
-    assert isinstance(issue, dict)
-    return issue.get("body") or ""
+    response = _gh_request(
+        path=f"/repos/{REPO}/issues/{issue_number}/comments",
+        method="POST",
+        payload=dict(body=body),
+        token=token,
+    )
+    assert isinstance(response, dict)
+    return response["html_url"]
+
+
+# ---------------------------------------------------------------------------
+# GitHub API helpers (mirror the style of `collect_evaluation_results.py`)
+# ---------------------------------------------------------------------------
+def diff_issue(old_body: str, new_models: list[CoreModel]) -> IssueDiff:
+    """Compute the change set between the published issue and the new list.
+
+    Args:
+        old_body:
+            Current issue body markdown.
+        new_models:
+            The newly-generated core list.
+
+    Returns:
+        An `IssueDiff` with added, removed, and flag-changed entries.
+    """
+    old = _parse_issue_models(old_body)
+
+    new_flags = {m.model_id: _reasoning_flags(m) for m in new_models}
+    added = sorted(set(new_flags) - set(old))
+    removed = sorted(set(old) - set(new_flags))
+    flag_changes = sorted(
+        (mid, old[mid], new_flags[mid])
+        for mid in set(old) & set(new_flags)
+        if old[mid] != new_flags[mid]
+    )
+    return IssueDiff(added=added, removed=removed, flag_changes=flag_changes)
 
 
 def _parse_issue_models(body: str) -> dict[str, str]:
@@ -502,30 +554,6 @@ def _parse_issue_models(body: str) -> dict[str, str]:
     return result
 
 
-def _post_issue_comment(issue_number: int, body: str, token: str) -> str:
-    """POST a comment to an issue.
-
-    Args:
-        issue_number:
-            The issue number.
-        body:
-            The comment markdown.
-        token:
-            GitHub PAT.
-
-    Returns:
-        The `html_url` of the newly-created comment.
-    """
-    response = _gh_request(
-        path=f"/repos/{REPO}/issues/{issue_number}/comments",
-        method="POST",
-        payload=dict(body=body),
-        token=token,
-    )
-    assert isinstance(response, dict)
-    return response["html_url"]
-
-
 def _reasoning_flags(model: CoreModel) -> str:
     """Return the trio of emoji flags explaining why this model was picked.
 
@@ -546,34 +574,6 @@ def _reasoning_flags(model: CoreModel) -> str:
     if model.api:
         flags.append("👾")
     return "".join(flags)
-
-
-# ---------------------------------------------------------------------------
-# GitHub API helpers (mirror the style of `collect_evaluation_results.py`)
-# ---------------------------------------------------------------------------
-def diff_issue(old_body: str, new_models: list[CoreModel]) -> IssueDiff:
-    """Compute the change set between the published issue and the new list.
-
-    Args:
-        old_body:
-            Current issue body markdown.
-        new_models:
-            The newly-generated core list.
-
-    Returns:
-        An `IssueDiff` with added, removed, and flag-changed entries.
-    """
-    old = _parse_issue_models(old_body)
-
-    new_flags = {m.model_id: _reasoning_flags(m) for m in new_models}
-    added = sorted(set(new_flags) - set(old))
-    removed = sorted(set(old) - set(new_flags))
-    flag_changes = sorted(
-        (mid, old[mid], new_flags[mid])
-        for mid in set(old) & set(new_flags)
-        if old[mid] != new_flags[mid]
-    )
-    return IssueDiff(added=added, removed=removed, flag_changes=flag_changes)
 
 
 def render_diff_comment(diff: IssueDiff) -> str:

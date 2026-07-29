@@ -19,122 +19,71 @@ if t.TYPE_CHECKING:
     from .data_models import Language
 
 
-def _extract_dataset_ids(
-    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
-) -> list[str]:
-    """Extract dataset IDs from the dataset argument.
+def build_benchmark_config(
+    benchmark_config_params: BenchmarkConfigParams,
+) -> BenchmarkConfig:
+    """Create a benchmark configuration.
 
     Args:
-        dataset:
-            The dataset argument to extract IDs from.
+        benchmark_config_params:
+            The parameters for creating the benchmark configuration.
 
     Returns:
-        List of dataset IDs.
+        The benchmark configuration.
     """
-    dataset_ids: list[str] = list()
-    if isinstance(dataset, str):
-        dataset_ids.append(dataset)
-    elif isinstance(dataset, DatasetConfig):
-        dataset_ids.append(dataset.name)
-    elif isinstance(dataset, (list, tuple)):
-        for d in dataset:
-            if isinstance(d, str):
-                dataset_ids.append(d)
-            elif isinstance(d, DatasetConfig):
-                dataset_ids.append(d.name)
-    return dataset_ids
-
-
-def _handle_dataset_lookup_error(
-    error: KeyError, options: list[str], entity_type: str
-) -> None:
-    """Handle a KeyError during dataset or task lookup.
-
-    Args:
-        error:
-            The KeyError that was raised.
-        options:
-            List of valid options to search for closest match.
-        entity_type:
-            Type of entity ("dataset" or "task") for error message.
-    """
-    closest_match, closest_distance = get_closest_match(
-        string=error.args[0], options=options, case_sensitive=False
+    language_codes = get_correct_language_codes(
+        language_codes=benchmark_config_params.language
     )
-    msg = f"The {entity_type} {error} was not found."
-    if closest_distance < 5:
-        msg += f" Maybe you meant to use {closest_match!r}?"
-    log(msg, level=logging.ERROR)
-    sys.exit(1)
+    languages = prepare_languages(
+        language_codes=benchmark_config_params.language,
+        default_language_codes=language_codes,
+    )
 
+    dataset_configs = prepare_dataset_configs(
+        task=benchmark_config_params.task,
+        dataset=benchmark_config_params.dataset,
+        languages=languages,
+        custom_datasets_file=benchmark_config_params.custom_datasets_file,
+        api_key=benchmark_config_params.api_key,
+        cache_dir=Path(benchmark_config_params.cache_dir),
+        trust_remote_code=benchmark_config_params.trust_remote_code,
+        run_with_cli=benchmark_config_params.run_with_cli,
+    )
 
-def _get_datasets_list(
-    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
-    all_dataset_configs: dict[str, DatasetConfig],
-    all_official_dataset_configs: c.Sequence[DatasetConfig],
-) -> c.Sequence[DatasetConfig]:
-    """Get the list of datasets based on the dataset argument.
-
-    Args:
-        dataset:
-            The dataset argument specifying which datasets to include.
-        all_dataset_configs:
-            Mapping of dataset IDs to DatasetConfig objects.
-        all_official_dataset_configs:
-            List of official dataset configs.
-
-    Returns:
-        List of dataset configs.
-
-    Raises:
-        SystemExit: If dataset lookup fails.
-    """
-    try:
-        if dataset is None:
-            return all_official_dataset_configs
-        elif isinstance(dataset, str):
-            return [all_dataset_configs[dataset]]
-        elif isinstance(dataset, DatasetConfig):
-            return [dataset]
-        else:
-            return [
-                all_dataset_configs[d] if isinstance(d, str) else d for d in dataset
-            ]
-    except KeyError as e:
-        _handle_dataset_lookup_error(
-            error=e, options=list(all_dataset_configs.keys()), entity_type="dataset"
-        )
-        # Unreachable: _handle_dataset_lookup_error calls sys.exit(1)
-        raise SystemExit(1)
-
-
-def _get_tasks_list(
-    task: "str | Task | c.Sequence[str | Task] | None", task_mapping: dict[str, Task]
-) -> list[Task] | None:
-    """Get the list of tasks based on the task argument.
-
-    Args:
-        task:
-            The task argument specifying which tasks to include.
-        task_mapping:
-            Mapping of task names to Task objects.
-
-    Returns:
-        List of tasks, or None if no task filtering.
-    """
-    try:
-        if task is None:
-            return None
-        elif isinstance(task, str):
-            return [task_mapping[task]]
-        elif isinstance(task, Task):
-            return [task]
-        else:
-            return [task_mapping[t] if isinstance(t, str) else t for t in task]
-    except KeyError as e:
-        _handle_dataset_lookup_error(
-            error=e, options=list(task_mapping.keys()), entity_type="task"
-        )
+    return BenchmarkConfig(
+        datasets=dataset_configs,
+        languages=languages,
+        finetuning_batch_size=benchmark_config_params.finetuning_batch_size,
+        raise_errors=benchmark_config_params.raise_errors,
+        cache_dir=benchmark_config_params.cache_dir,
+        api_key=benchmark_config_params.api_key,
+        force=benchmark_config_params.force,
+        progress_bar=benchmark_config_params.progress_bar,
+        save_results=benchmark_config_params.save_results,
+        verbose=benchmark_config_params.verbose or benchmark_config_params.debug,
+        device=prepare_device(device=benchmark_config_params.device),
+        trust_remote_code=benchmark_config_params.trust_remote_code,
+        clear_model_cache=benchmark_config_params.clear_model_cache,
+        evaluate_test_split=benchmark_config_params.evaluate_test_split,
+        few_shot=benchmark_config_params.few_shot,
+        num_iterations=(
+            1
+            if hasattr(sys, "_called_from_test")
+            else benchmark_config_params.num_iterations
+        ),
+        api_base=benchmark_config_params.api_base,
+        api_version=benchmark_config_params.api_version,
+        gpu_memory_utilization=benchmark_config_params.gpu_memory_utilization,
+        attention_backend=benchmark_config_params.attention_backend,
+        generative_type=benchmark_config_params.generative_type,
+        use_bits_per_character=benchmark_config_params.use_bits_per_character,
+        debug=benchmark_config_params.debug,
+        run_with_cli=benchmark_config_params.run_with_cli,
+        requires_safetensors=benchmark_config_params.requires_safetensors,
+        download_only=benchmark_config_params.download_only,
+        max_context_length=benchmark_config_params.max_context_length,
+        vocabulary_size=benchmark_config_params.vocabulary_size,
+    )
 
 
 def prepare_dataset_configs(
@@ -205,6 +154,124 @@ def prepare_dataset_configs(
     ]
 
 
+def _extract_dataset_ids(
+    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
+) -> list[str]:
+    """Extract dataset IDs from the dataset argument.
+
+    Args:
+        dataset:
+            The dataset argument to extract IDs from.
+
+    Returns:
+        List of dataset IDs.
+    """
+    dataset_ids: list[str] = list()
+    if isinstance(dataset, str):
+        dataset_ids.append(dataset)
+    elif isinstance(dataset, DatasetConfig):
+        dataset_ids.append(dataset.name)
+    elif isinstance(dataset, (list, tuple)):
+        for d in dataset:
+            if isinstance(d, str):
+                dataset_ids.append(d)
+            elif isinstance(d, DatasetConfig):
+                dataset_ids.append(d.name)
+    return dataset_ids
+
+
+def _get_datasets_list(
+    dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
+    all_dataset_configs: dict[str, DatasetConfig],
+    all_official_dataset_configs: c.Sequence[DatasetConfig],
+) -> c.Sequence[DatasetConfig]:
+    """Get the list of datasets based on the dataset argument.
+
+    Args:
+        dataset:
+            The dataset argument specifying which datasets to include.
+        all_dataset_configs:
+            Mapping of dataset IDs to DatasetConfig objects.
+        all_official_dataset_configs:
+            List of official dataset configs.
+
+    Returns:
+        List of dataset configs.
+
+    Raises:
+        SystemExit: If dataset lookup fails.
+    """
+    try:
+        if dataset is None:
+            return all_official_dataset_configs
+        elif isinstance(dataset, str):
+            return [all_dataset_configs[dataset]]
+        elif isinstance(dataset, DatasetConfig):
+            return [dataset]
+        else:
+            return [
+                all_dataset_configs[d] if isinstance(d, str) else d for d in dataset
+            ]
+    except KeyError as e:
+        _handle_dataset_lookup_error(
+            error=e, options=list(all_dataset_configs.keys()), entity_type="dataset"
+        )
+        # Unreachable: _handle_dataset_lookup_error calls sys.exit(1)
+        raise SystemExit(1)
+
+
+def _handle_dataset_lookup_error(
+    error: KeyError, options: list[str], entity_type: str
+) -> None:
+    """Handle a KeyError during dataset or task lookup.
+
+    Args:
+        error:
+            The KeyError that was raised.
+        options:
+            List of valid options to search for closest match.
+        entity_type:
+            Type of entity ("dataset" or "task") for error message.
+    """
+    closest_match, closest_distance = get_closest_match(
+        string=error.args[0], options=options, case_sensitive=False
+    )
+    msg = f"The {entity_type} {error} was not found."
+    if closest_distance < 5:
+        msg += f" Maybe you meant to use {closest_match!r}?"
+    log(msg, level=logging.ERROR)
+    sys.exit(1)
+
+
+def _get_tasks_list(
+    task: "str | Task | c.Sequence[str | Task] | None", task_mapping: dict[str, Task]
+) -> list[Task] | None:
+    """Get the list of tasks based on the task argument.
+
+    Args:
+        task:
+            The task argument specifying which tasks to include.
+        task_mapping:
+            Mapping of task names to Task objects.
+
+    Returns:
+        List of tasks, or None if no task filtering.
+    """
+    try:
+        if task is None:
+            return None
+        elif isinstance(task, str):
+            return [task_mapping[task]]
+        elif isinstance(task, Task):
+            return [task]
+        else:
+            return [task_mapping[t] if isinstance(t, str) else t for t in task]
+    except KeyError as e:
+        _handle_dataset_lookup_error(
+            error=e, options=list(task_mapping.keys()), entity_type="task"
+        )
+
+
 def prepare_device(device: Device | None) -> torch.device:
     """Prepare device for benchmarking.
 
@@ -265,70 +332,3 @@ def prepare_languages(
         prepared_languages = [language_mapping[language] for language in languages_str]
 
     return prepared_languages
-
-
-def build_benchmark_config(
-    benchmark_config_params: BenchmarkConfigParams,
-) -> BenchmarkConfig:
-    """Create a benchmark configuration.
-
-    Args:
-        benchmark_config_params:
-            The parameters for creating the benchmark configuration.
-
-    Returns:
-        The benchmark configuration.
-    """
-    language_codes = get_correct_language_codes(
-        language_codes=benchmark_config_params.language
-    )
-    languages = prepare_languages(
-        language_codes=benchmark_config_params.language,
-        default_language_codes=language_codes,
-    )
-
-    dataset_configs = prepare_dataset_configs(
-        task=benchmark_config_params.task,
-        dataset=benchmark_config_params.dataset,
-        languages=languages,
-        custom_datasets_file=benchmark_config_params.custom_datasets_file,
-        api_key=benchmark_config_params.api_key,
-        cache_dir=Path(benchmark_config_params.cache_dir),
-        trust_remote_code=benchmark_config_params.trust_remote_code,
-        run_with_cli=benchmark_config_params.run_with_cli,
-    )
-
-    return BenchmarkConfig(
-        datasets=dataset_configs,
-        languages=languages,
-        finetuning_batch_size=benchmark_config_params.finetuning_batch_size,
-        raise_errors=benchmark_config_params.raise_errors,
-        cache_dir=benchmark_config_params.cache_dir,
-        api_key=benchmark_config_params.api_key,
-        force=benchmark_config_params.force,
-        progress_bar=benchmark_config_params.progress_bar,
-        save_results=benchmark_config_params.save_results,
-        verbose=benchmark_config_params.verbose or benchmark_config_params.debug,
-        device=prepare_device(device=benchmark_config_params.device),
-        trust_remote_code=benchmark_config_params.trust_remote_code,
-        clear_model_cache=benchmark_config_params.clear_model_cache,
-        evaluate_test_split=benchmark_config_params.evaluate_test_split,
-        few_shot=benchmark_config_params.few_shot,
-        num_iterations=(
-            1
-            if hasattr(sys, "_called_from_test")
-            else benchmark_config_params.num_iterations
-        ),
-        api_base=benchmark_config_params.api_base,
-        api_version=benchmark_config_params.api_version,
-        gpu_memory_utilization=benchmark_config_params.gpu_memory_utilization,
-        attention_backend=benchmark_config_params.attention_backend,
-        generative_type=benchmark_config_params.generative_type,
-        use_bits_per_character=benchmark_config_params.use_bits_per_character,
-        debug=benchmark_config_params.debug,
-        run_with_cli=benchmark_config_params.run_with_cli,
-        requires_safetensors=benchmark_config_params.requires_safetensors,
-        download_only=benchmark_config_params.download_only,
-        max_context_length=benchmark_config_params.max_context_length,
-        vocabulary_size=benchmark_config_params.vocabulary_size,
-    )

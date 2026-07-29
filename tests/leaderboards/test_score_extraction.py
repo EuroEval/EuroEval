@@ -15,36 +15,6 @@ from leaderboards.task_metadata import task_metric_names
 class TestExtractModelMetadata:
     """Tests for the `extract_model_metadata` function."""
 
-    def _record(
-        self,
-        name: str = "org/model",
-        dataset: str = "angry-tweets",
-        version: str = "17.6.0",
-        additional_details: dict | None = None,
-    ) -> dict:
-        """Build a minimal EEE-style record.
-
-        Args:
-            name:
-                The model name.
-            dataset:
-                The dataset name.
-            version:
-                The EuroEval version.
-            additional_details:
-                Additional details to include.
-
-        Returns:
-            A minimal EEE-style record.
-        """
-        additional: dict = {"dataset": dataset}
-        if additional_details:
-            additional.update(additional_details)
-        return {
-            "model_info": {"name": name, "additional_details": additional},
-            "eval_library": {"version": version},
-        }
-
     def test_all_standard_metadata_keys_present_for_all_models(self) -> None:
         """Regression test: all models have all standard metadata keys.
 
@@ -136,6 +106,36 @@ class TestExtractModelMetadata:
             metadata[model_full_key]["model_url"]
             == "https://huggingface.co/ollama/model-full"
         )
+
+    def _record(
+        self,
+        name: str = "org/model",
+        dataset: str = "angry-tweets",
+        version: str = "17.6.0",
+        additional_details: dict | None = None,
+    ) -> dict:
+        """Build a minimal EEE-style record.
+
+        Args:
+            name:
+                The model name.
+            dataset:
+                The dataset name.
+            version:
+                The EuroEval version.
+            additional_details:
+                Additional details to include.
+
+        Returns:
+            A minimal EEE-style record.
+        """
+        additional: dict = {"dataset": dataset}
+        if additional_details:
+            additional.update(additional_details)
+        return {
+            "model_info": {"name": name, "additional_details": additional},
+            "eval_library": {"version": version},
+        }
 
     def test_explicit_model_url_replaces_fallback(self) -> None:
         """Regression test: explicit URL should replace generated fallback.
@@ -415,6 +415,40 @@ class TestExtractModelMetadata:
 class TestGroupResultsByModel:
     """Tests for the `group_results_by_model` function."""
 
+    def test_split_agnostic_dataset_mirrored_onto_val_variant(self) -> None:
+        """Regression: a no-validation-split dataset shows on both variant rows.
+
+        Datasets without a validation split (e.g. MultiLoKo) carry
+        ``validation_split=None`` and are grouped under the test-split variant
+        id (``... (zero-shot)``). Their score must also surface on the matching
+        ``(..., val)`` variant, so a model evaluated on the validation split for
+        the rest of its datasets still shows the split-agnostic score.
+        """
+        # A regular validation-split run creates the "(zero-shot, val)" variant.
+        val_record = self._make_record(
+            dataset="angry-tweets",
+            task="sentiment-classification",
+            validation_split=True,
+            score=61.0,
+        )
+        # A split-agnostic run (no validation split) lands under "(zero-shot)".
+        none_record = self._make_record(
+            dataset="multiloko-fr", task="knowledge", validation_split=None, score=42.0
+        )
+
+        result = group_results_by_model(results=[val_record, none_record])
+
+        val_variant = "org/model (zero-shot, val)"
+        test_variant = "org/model (zero-shot)"
+
+        # The split-agnostic dataset appears under both variants...
+        assert "multiloko-fr" in result[val_variant]
+        assert "multiloko-fr" in result[test_variant]
+        assert result[val_variant]["multiloko-fr"][0][1] == 42.0
+        # ...while the genuine validation-split dataset stays on the val row only.
+        assert "angry-tweets" in result[val_variant]
+        assert "angry-tweets" not in result[test_variant]
+
     @staticmethod
     def _make_record(
         dataset: str, task: str, validation_split: bool | None, score: float
@@ -454,40 +488,6 @@ class TestGroupResultsByModel:
                 {"evaluation_name": f"test_{metric}", "score_details": {"score": score}}
             ],
         }
-
-    def test_split_agnostic_dataset_mirrored_onto_val_variant(self) -> None:
-        """Regression: a no-validation-split dataset shows on both variant rows.
-
-        Datasets without a validation split (e.g. MultiLoKo) carry
-        ``validation_split=None`` and are grouped under the test-split variant
-        id (``... (zero-shot)``). Their score must also surface on the matching
-        ``(..., val)`` variant, so a model evaluated on the validation split for
-        the rest of its datasets still shows the split-agnostic score.
-        """
-        # A regular validation-split run creates the "(zero-shot, val)" variant.
-        val_record = self._make_record(
-            dataset="angry-tweets",
-            task="sentiment-classification",
-            validation_split=True,
-            score=61.0,
-        )
-        # A split-agnostic run (no validation split) lands under "(zero-shot)".
-        none_record = self._make_record(
-            dataset="multiloko-fr", task="knowledge", validation_split=None, score=42.0
-        )
-
-        result = group_results_by_model(results=[val_record, none_record])
-
-        val_variant = "org/model (zero-shot, val)"
-        test_variant = "org/model (zero-shot)"
-
-        # The split-agnostic dataset appears under both variants...
-        assert "multiloko-fr" in result[val_variant]
-        assert "multiloko-fr" in result[test_variant]
-        assert result[val_variant]["multiloko-fr"][0][1] == 42.0
-        # ...while the genuine validation-split dataset stays on the val row only.
-        assert "angry-tweets" in result[val_variant]
-        assert "angry-tweets" not in result[test_variant]
 
     def test_split_agnostic_dataset_not_mirrored_without_val_variant(self) -> None:
         """A split-agnostic dataset is not mirrored when no val variant exists.

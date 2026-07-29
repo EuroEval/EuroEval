@@ -55,16 +55,6 @@ from .task_metadata import (
 logger = logging.getLogger(__name__)
 
 
-class ModelType(enum.StrEnum):
-    """The architectural / training-stage category of a core model."""
-
-    ENCODER = "encoder"
-    BASE_DECODER = "base_decoder"
-    INSTRUCTION_TUNED_DECODER = "instruction_tuned_decoder"
-    REASONING_DECODER = "reasoning_decoder"
-    API = "api"
-
-
 class SizeBucket(enum.StrEnum):
     """Bucket label used to group models in the GitHub issue."""
 
@@ -74,6 +64,16 @@ class SizeBucket(enum.StrEnum):
     MEDIUM = "medium"
     LARGE = "large"
     XLARGE = "xlarge"
+    API = "api"
+
+
+class ModelType(enum.StrEnum):
+    """The architectural / training-stage category of a core model."""
+
+    ENCODER = "encoder"
+    BASE_DECODER = "base_decoder"
+    INSTRUCTION_TUNED_DECODER = "instruction_tuned_decoder"
+    REASONING_DECODER = "reasoning_decoder"
     API = "api"
 
 
@@ -112,205 +112,6 @@ class CoreModel:
     eu: bool
     osai_rank: int | None
     api: bool
-
-
-def _classify_model(model_id: str, metadata: dict) -> ModelType:
-    """Return the architectural/training type for a model.
-
-    Args:
-        model_id:
-            The HuggingFace-style model identifier.
-        metadata:
-            The metadata entry from `extract_model_metadata`.
-
-    Returns:
-        One of the `ModelType` literals.
-    """
-    plain = plain_model_id(model_id).split("#")[0]
-    if any(p.fullmatch(plain) for p in API_MODEL_PATTERNS):
-        return ModelType.API
-    generative_type = metadata.get("generative_type")
-    if generative_type is None:
-        return ModelType.ENCODER
-    model_type = GENERATIVE_TYPE_TO_MODEL_TYPE.get(generative_type)
-    return ModelType(model_type) if model_type is not None else ModelType.BASE_DECODER
-
-
-def _is_on_pareto_frontier(
-    model_id: str,
-    params: float,
-    rank: float,
-    sized_ranked: list[tuple[str, float, float]],
-) -> bool:
-    """Check if a model is on the Pareto frontier.
-
-    A model is on the Pareto frontier if no other model with <= parameters
-    has a strictly better (lower) rank score.
-
-    Args:
-        model_id:
-            The model ID to check.
-        params:
-            The model's parameter count.
-        rank:
-            The model's rank score.
-        sized_ranked:
-            List of (model_id, params, rank) tuples for all comparable models.
-
-    Returns:
-        True if the model is on the Pareto frontier.
-    """
-    return not any(
-        other_params <= params and other_rank < rank
-        for other_id, other_params, other_rank in sized_ranked
-        if other_id != model_id
-    )
-
-
-def _process_pareto_for_category(
-    model_type: ModelType,
-    category: str,
-    members: list[tuple[str, float]],
-    languages: list[str],
-    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
-    pareto: dict[str, set[str]],
-) -> None:
-    """Process Pareto frontier for a single model type and category.
-
-    Args:
-        model_type:
-            The model type being processed.
-        category:
-            The category (e.g. "generative" or "all_models").
-        members:
-            List of (model_id, params) tuples for this model type.
-        languages:
-            Languages to consider.
-        ranks:
-            Output of `compute_ranks`.
-        pareto:
-            Accumulator dict to update.
-    """
-    for language in languages:
-        # Collect sized&ranked models for this (type, category, language)
-        sized_ranked: list[tuple[str, float, float]] = []
-        for model_id, params in members:
-            rank_entry = (
-                ranks.get(model_id, {}).get(category, {}).get(language, {}).get("score")
-            )
-            if rank_entry is None or not math.isfinite(rank_entry):
-                continue
-            sized_ranked.append((model_id, params, rank_entry))
-
-        for model_id, params, rank in sized_ranked:
-            if _is_on_pareto_frontier(
-                model_id=model_id, params=params, rank=rank, sized_ranked=sized_ranked
-            ):
-                pareto[model_id].add(language)
-
-
-# ---------------------------------------------------------------------------
-# Pareto frontier
-# ---------------------------------------------------------------------------
-def _pareto_languages_per_model(
-    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
-    metadata: dict[str, dict],
-    model_types: dict[str, ModelType],
-    languages: list[str],
-) -> dict[str, list[str]]:
-    """For each model, return the languages where it is on its Pareto frontier.
-
-    A model M with type T and parameter count P is on the Pareto frontier
-    for language L iff no other model with type T and parameters <= P has
-    a strictly better (smaller) rank score in L. Models with unknown
-    parameter counts are skipped: we can't compare them on the (size, rank)
-    plane.
-
-    Args:
-        ranks:
-            Output of `compute_ranks`: model -> category -> language ->
-            {"score", "ci_lower", "ci_upper"}.
-        metadata:
-            Output of `extract_model_metadata`.
-        model_types:
-            Mapping of model_id to its `ModelType`.
-        languages:
-            Languages to consider (each must appear as a key in the inner
-            dicts of `ranks`).
-
-    Returns:
-        model_id -> sorted list of languages where the model qualifies.
-    """
-    logger.info("Fetching the Pareto frontier languages for each model...")
-
-    # Encoders only get scored on the NLU-restricted `all_models`
-    # category. Generative models live on both leaderboards: `generative`
-    # spans every task and `all_models` restricts to NLU — a generative
-    # model that's Pareto-optimal in either category counts, so we
-    # consider both and union the languages.
-    categories_for_type: dict[ModelType, tuple[str, ...]] = {
-        ModelType.ENCODER: ("all_models",),
-        ModelType.BASE_DECODER: ("generative", "all_models"),
-        ModelType.INSTRUCTION_TUNED_DECODER: ("generative", "all_models"),
-        ModelType.REASONING_DECODER: ("generative", "all_models"),
-    }
-
-    # Group candidate models by type, dropping anything we can't size.
-    by_type: dict[ModelType, list[tuple[str, float]]] = defaultdict(list)
-    for model_id, model_type in model_types.items():
-        if model_type == ModelType.API:
-            continue
-        params = metadata.get(model_id, {}).get("parameters", float("nan"))
-        if not math.isfinite(params):
-            continue
-        by_type[model_type].append((model_id, params))
-
-    pareto: dict[str, set[str]] = defaultdict(set)
-    for model_type, members in by_type.items():
-        for category in categories_for_type[model_type]:
-            _process_pareto_for_category(
-                model_type=model_type,
-                category=category,
-                members=members,
-                languages=languages,
-                ranks=ranks,
-                pareto=pareto,
-            )
-
-    logger.info("Fetched the Pareto frontier languages for each model.")
-    return {model_id: sorted(langs) for model_id, langs in pareto.items()}
-
-
-# ---------------------------------------------------------------------------
-# Model classification helpers
-# ---------------------------------------------------------------------------
-def _size_bucket(model_type: ModelType, parameters: float) -> SizeBucket:
-    """Map a model's type and parameter count to a bucket for the issue.
-
-    Args:
-        model_type:
-            The classification from `_classify_model`.
-        parameters:
-            Number of parameters; NaN for API/unknown.
-
-    Returns:
-        The bucket label used to group models in the issue body.
-    """
-    if model_type == ModelType.ENCODER:
-        return SizeBucket.ENCODER
-    if model_type == ModelType.API:
-        return SizeBucket.API
-    if not math.isfinite(parameters):
-        return SizeBucket.XLARGE
-    if parameters < 2_000_000_000:
-        return SizeBucket.TINY
-    if parameters < 10_000_000_000:
-        return SizeBucket.SMALL
-    if parameters < 40_000_000_000:
-        return SizeBucket.MEDIUM
-    if parameters < 80_000_000_000:
-        return SizeBucket.LARGE
-    return SizeBucket.XLARGE
 
 
 # ---------------------------------------------------------------------------
@@ -442,3 +243,202 @@ def build_core_model_list(
         key=lambda m: (PARAM_SIZE_BUCKET_ORDER[m.size_bucket], m.model_id.lower())
     )
     return core
+
+
+def _classify_model(model_id: str, metadata: dict) -> ModelType:
+    """Return the architectural/training type for a model.
+
+    Args:
+        model_id:
+            The HuggingFace-style model identifier.
+        metadata:
+            The metadata entry from `extract_model_metadata`.
+
+    Returns:
+        One of the `ModelType` literals.
+    """
+    plain = plain_model_id(model_id).split("#")[0]
+    if any(p.fullmatch(plain) for p in API_MODEL_PATTERNS):
+        return ModelType.API
+    generative_type = metadata.get("generative_type")
+    if generative_type is None:
+        return ModelType.ENCODER
+    model_type = GENERATIVE_TYPE_TO_MODEL_TYPE.get(generative_type)
+    return ModelType(model_type) if model_type is not None else ModelType.BASE_DECODER
+
+
+# ---------------------------------------------------------------------------
+# Pareto frontier
+# ---------------------------------------------------------------------------
+def _pareto_languages_per_model(
+    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
+    metadata: dict[str, dict],
+    model_types: dict[str, ModelType],
+    languages: list[str],
+) -> dict[str, list[str]]:
+    """For each model, return the languages where it is on its Pareto frontier.
+
+    A model M with type T and parameter count P is on the Pareto frontier
+    for language L iff no other model with type T and parameters <= P has
+    a strictly better (smaller) rank score in L. Models with unknown
+    parameter counts are skipped: we can't compare them on the (size, rank)
+    plane.
+
+    Args:
+        ranks:
+            Output of `compute_ranks`: model -> category -> language ->
+            {"score", "ci_lower", "ci_upper"}.
+        metadata:
+            Output of `extract_model_metadata`.
+        model_types:
+            Mapping of model_id to its `ModelType`.
+        languages:
+            Languages to consider (each must appear as a key in the inner
+            dicts of `ranks`).
+
+    Returns:
+        model_id -> sorted list of languages where the model qualifies.
+    """
+    logger.info("Fetching the Pareto frontier languages for each model...")
+
+    # Encoders only get scored on the NLU-restricted `all_models`
+    # category. Generative models live on both leaderboards: `generative`
+    # spans every task and `all_models` restricts to NLU — a generative
+    # model that's Pareto-optimal in either category counts, so we
+    # consider both and union the languages.
+    categories_for_type: dict[ModelType, tuple[str, ...]] = {
+        ModelType.ENCODER: ("all_models",),
+        ModelType.BASE_DECODER: ("generative", "all_models"),
+        ModelType.INSTRUCTION_TUNED_DECODER: ("generative", "all_models"),
+        ModelType.REASONING_DECODER: ("generative", "all_models"),
+    }
+
+    # Group candidate models by type, dropping anything we can't size.
+    by_type: dict[ModelType, list[tuple[str, float]]] = defaultdict(list)
+    for model_id, model_type in model_types.items():
+        if model_type == ModelType.API:
+            continue
+        params = metadata.get(model_id, {}).get("parameters", float("nan"))
+        if not math.isfinite(params):
+            continue
+        by_type[model_type].append((model_id, params))
+
+    pareto: dict[str, set[str]] = defaultdict(set)
+    for model_type, members in by_type.items():
+        for category in categories_for_type[model_type]:
+            _process_pareto_for_category(
+                model_type=model_type,
+                category=category,
+                members=members,
+                languages=languages,
+                ranks=ranks,
+                pareto=pareto,
+            )
+
+    logger.info("Fetched the Pareto frontier languages for each model.")
+    return {model_id: sorted(langs) for model_id, langs in pareto.items()}
+
+
+def _process_pareto_for_category(
+    model_type: ModelType,
+    category: str,
+    members: list[tuple[str, float]],
+    languages: list[str],
+    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
+    pareto: dict[str, set[str]],
+) -> None:
+    """Process Pareto frontier for a single model type and category.
+
+    Args:
+        model_type:
+            The model type being processed.
+        category:
+            The category (e.g. "generative" or "all_models").
+        members:
+            List of (model_id, params) tuples for this model type.
+        languages:
+            Languages to consider.
+        ranks:
+            Output of `compute_ranks`.
+        pareto:
+            Accumulator dict to update.
+    """
+    for language in languages:
+        # Collect sized&ranked models for this (type, category, language)
+        sized_ranked: list[tuple[str, float, float]] = []
+        for model_id, params in members:
+            rank_entry = (
+                ranks.get(model_id, {}).get(category, {}).get(language, {}).get("score")
+            )
+            if rank_entry is None or not math.isfinite(rank_entry):
+                continue
+            sized_ranked.append((model_id, params, rank_entry))
+
+        for model_id, params, rank in sized_ranked:
+            if _is_on_pareto_frontier(
+                model_id=model_id, params=params, rank=rank, sized_ranked=sized_ranked
+            ):
+                pareto[model_id].add(language)
+
+
+def _is_on_pareto_frontier(
+    model_id: str,
+    params: float,
+    rank: float,
+    sized_ranked: list[tuple[str, float, float]],
+) -> bool:
+    """Check if a model is on the Pareto frontier.
+
+    A model is on the Pareto frontier if no other model with <= parameters
+    has a strictly better (lower) rank score.
+
+    Args:
+        model_id:
+            The model ID to check.
+        params:
+            The model's parameter count.
+        rank:
+            The model's rank score.
+        sized_ranked:
+            List of (model_id, params, rank) tuples for all comparable models.
+
+    Returns:
+        True if the model is on the Pareto frontier.
+    """
+    return not any(
+        other_params <= params and other_rank < rank
+        for other_id, other_params, other_rank in sized_ranked
+        if other_id != model_id
+    )
+
+
+# ---------------------------------------------------------------------------
+# Model classification helpers
+# ---------------------------------------------------------------------------
+def _size_bucket(model_type: ModelType, parameters: float) -> SizeBucket:
+    """Map a model's type and parameter count to a bucket for the issue.
+
+    Args:
+        model_type:
+            The classification from `_classify_model`.
+        parameters:
+            Number of parameters; NaN for API/unknown.
+
+    Returns:
+        The bucket label used to group models in the issue body.
+    """
+    if model_type == ModelType.ENCODER:
+        return SizeBucket.ENCODER
+    if model_type == ModelType.API:
+        return SizeBucket.API
+    if not math.isfinite(parameters):
+        return SizeBucket.XLARGE
+    if parameters < 2_000_000_000:
+        return SizeBucket.TINY
+    if parameters < 10_000_000_000:
+        return SizeBucket.SMALL
+    if parameters < 40_000_000_000:
+        return SizeBucket.MEDIUM
+    if parameters < 80_000_000_000:
+        return SizeBucket.LARGE
+    return SizeBucket.XLARGE

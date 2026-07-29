@@ -137,6 +137,100 @@ def get_pbar(*tqdm_args, **tqdm_kwargs) -> tqdm:
     return tqdm(*tqdm_args, **tqdm_kwargs)
 
 
+class no_terminal_output:
+    """Context manager that suppresses all terminal output."""
+
+    def __init__(self, disable: bool = False) -> None:
+        """Initialise the context manager.
+
+        Args:
+            disable:
+                If True, this context manager does nothing.
+        """
+        self.disable = disable
+        self.devnull_file: TextIOWrapper | None = None
+        self._original_stdout_fd: int | None = None
+        self._original_stderr_fd: int | None = None
+
+    def __enter__(self) -> None:
+        """Suppress all terminal output."""
+        if self.disable:
+            return
+
+        try:
+            # Save original FDs by duplicating them
+            self._original_stdout_fd = os.dup(sys.stdout.fileno())
+            self._original_stderr_fd = os.dup(sys.stderr.fileno())
+
+            # Open /dev/null
+            self.devnull_file = open(os.devnull, "w")
+
+            # Redirect stdout/stderr to /dev/null
+            os.dup2(self.devnull_file.fileno(), sys.stdout.fileno())
+            os.dup2(self.devnull_file.fileno(), sys.stderr.fileno())
+
+        except OSError:
+            self._log_windows_warning()
+            # If setup fails, clean up any resources we might have acquired
+            self.__exit__(None, None, None)
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        """Re-enable terminal output."""
+        if self.disable:
+            return
+
+        # Restore stdout/stderr from our saved FDs
+        try:
+            if self._original_stdout_fd is not None:
+                os.dup2(self._original_stdout_fd, sys.stdout.fileno())
+            if self._original_stderr_fd is not None:
+                os.dup2(self._original_stderr_fd, sys.stderr.fileno())
+        except OSError:
+            self._log_windows_warning()
+        finally:
+            # Close the duplicated FDs we created
+            if self._original_stdout_fd is not None:
+                os.close(self._original_stdout_fd)
+            if self._original_stderr_fd is not None:
+                os.close(self._original_stderr_fd)
+
+            # Close the /dev/null file
+            if self.devnull_file is not None:
+                self.devnull_file.close()
+
+    def _log_windows_warning(self) -> None:
+        """Log a warning about Windows not supporting blocking terminal output."""
+        log_once(
+            "Your operating system (probably Windows) does not support blocking "
+            "terminal output, so expect more messy output - sorry!",
+            level=logging.WARNING,
+        )
+
+
+@cache_arguments("message")
+def log_once(message: str, level: int, prefix: str = "") -> None:
+    """Log a message once.
+
+    This is ensured by caching the "message" argument and only logging it the first time
+    this function is called with that message.
+
+    Args:
+        message:
+            The message to log.
+        level:
+            The logging level. Defaults to logging.INFO.
+        prefix:
+            A prefix to add to the message, which is not considered when determining if
+            the message has been logged before.
+    """
+    log(message=prefix + message, level=level)
+
+
 def log(message: str, level: int, colour: str | None = None) -> None:
     """Log a message.
 
@@ -179,97 +273,3 @@ def log(message: str, level: int, colour: str | None = None) -> None:
             logger.critical(message)
         case _:
             raise ValueError(f"Invalid logging level: {level}")
-
-
-@cache_arguments("message")
-def log_once(message: str, level: int, prefix: str = "") -> None:
-    """Log a message once.
-
-    This is ensured by caching the "message" argument and only logging it the first time
-    this function is called with that message.
-
-    Args:
-        message:
-            The message to log.
-        level:
-            The logging level. Defaults to logging.INFO.
-        prefix:
-            A prefix to add to the message, which is not considered when determining if
-            the message has been logged before.
-    """
-    log(message=prefix + message, level=level)
-
-
-class no_terminal_output:
-    """Context manager that suppresses all terminal output."""
-
-    def __init__(self, disable: bool = False) -> None:
-        """Initialise the context manager.
-
-        Args:
-            disable:
-                If True, this context manager does nothing.
-        """
-        self.disable = disable
-        self.devnull_file: TextIOWrapper | None = None
-        self._original_stdout_fd: int | None = None
-        self._original_stderr_fd: int | None = None
-
-    def _log_windows_warning(self) -> None:
-        """Log a warning about Windows not supporting blocking terminal output."""
-        log_once(
-            "Your operating system (probably Windows) does not support blocking "
-            "terminal output, so expect more messy output - sorry!",
-            level=logging.WARNING,
-        )
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        """Re-enable terminal output."""
-        if self.disable:
-            return
-
-        # Restore stdout/stderr from our saved FDs
-        try:
-            if self._original_stdout_fd is not None:
-                os.dup2(self._original_stdout_fd, sys.stdout.fileno())
-            if self._original_stderr_fd is not None:
-                os.dup2(self._original_stderr_fd, sys.stderr.fileno())
-        except OSError:
-            self._log_windows_warning()
-        finally:
-            # Close the duplicated FDs we created
-            if self._original_stdout_fd is not None:
-                os.close(self._original_stdout_fd)
-            if self._original_stderr_fd is not None:
-                os.close(self._original_stderr_fd)
-
-            # Close the /dev/null file
-            if self.devnull_file is not None:
-                self.devnull_file.close()
-
-    def __enter__(self) -> None:
-        """Suppress all terminal output."""
-        if self.disable:
-            return
-
-        try:
-            # Save original FDs by duplicating them
-            self._original_stdout_fd = os.dup(sys.stdout.fileno())
-            self._original_stderr_fd = os.dup(sys.stderr.fileno())
-
-            # Open /dev/null
-            self.devnull_file = open(os.devnull, "w")
-
-            # Redirect stdout/stderr to /dev/null
-            os.dup2(self.devnull_file.fileno(), sys.stdout.fileno())
-            os.dup2(self.devnull_file.fileno(), sys.stderr.fileno())
-
-        except OSError:
-            self._log_windows_warning()
-            # If setup fails, clean up any resources we might have acquired
-            self.__exit__(None, None, None)

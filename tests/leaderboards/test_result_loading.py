@@ -12,52 +12,6 @@ from leaderboards.constants import NEW_RESULTS_PATH
 from leaderboards.result_loading import _dedup_by_storage_identity, load_raw_results
 
 
-def _make_eee_record(
-    model_id: str = "test/model",
-    dataset: str = "dataset1",
-    validation_split: bool | None = False,
-    few_shot: bool | None = False,
-    version: str = "1.0.0",
-    timestamp: str = "100",
-    score: float = 0.5,
-) -> dict:
-    """Helper to create a valid EEE-format record for testing.
-
-    Args:
-        model_id:
-            Model identifier.
-        dataset:
-            Dataset name.
-        validation_split:
-            Validation split flag.
-        few_shot:
-            Few-shot flag.
-        version:
-            EuroEval version.
-        timestamp:
-            Retrieved timestamp as string integer.
-        score:
-            Test score.
-
-    Returns:
-        A valid EEE-format record dict.
-    """
-    return {
-        "schema_version": "1.0",
-        "model_info": {"id": model_id},
-        "eval_library": {
-            "additional_details": {
-                "dataset": dataset,
-                "validation_split": validation_split,
-                "few_shot": few_shot,
-            },
-            "version": version,
-        },
-        "retrieved_timestamp": timestamp,
-        "evaluation_results": [{"label": "pass", "score": score}],
-    }
-
-
 class TestDedupByStorageIdentity:
     """Tests for _dedup_by_storage_identity."""
 
@@ -138,6 +92,52 @@ class TestDedupByStorageIdentity:
 
         assert len(deduped) == 1
         assert deduped[0]["retrieved_timestamp"] == "200"
+
+
+def _make_eee_record(
+    model_id: str = "test/model",
+    dataset: str = "dataset1",
+    validation_split: bool | None = False,
+    few_shot: bool | None = False,
+    version: str = "1.0.0",
+    timestamp: str = "100",
+    score: float = 0.5,
+) -> dict:
+    """Helper to create a valid EEE-format record for testing.
+
+    Args:
+        model_id:
+            Model identifier.
+        dataset:
+            Dataset name.
+        validation_split:
+            Validation split flag.
+        few_shot:
+            Few-shot flag.
+        version:
+            EuroEval version.
+        timestamp:
+            Retrieved timestamp as string integer.
+        score:
+            Test score.
+
+    Returns:
+        A valid EEE-format record dict.
+    """
+    return {
+        "schema_version": "1.0",
+        "model_info": {"id": model_id},
+        "eval_library": {
+            "additional_details": {
+                "dataset": dataset,
+                "validation_split": validation_split,
+                "few_shot": few_shot,
+            },
+            "version": version,
+        },
+        "retrieved_timestamp": timestamp,
+        "evaluation_results": [{"label": "pass", "score": score}],
+    }
 
 
 class TestLoadRawResults:

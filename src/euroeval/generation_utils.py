@@ -30,6 +30,119 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 
 
+def apply_prompt(
+    examples: dict[str, t.Any],
+    few_shot_examples: c.Sequence[dict[str, t.Any]],
+    model_config: "ModelConfig",
+    dataset_config: "DatasetConfig",
+    generative_type: GenerativeType | None,
+    always_populate_text_field: bool,
+    tokeniser: "PreTrainedTokenizer | None",
+    use_bits_per_character: bool = False,
+) -> dict[str, t.Any]:
+    """Apply prompt template to an example, potentially with few-shot examples.
+
+    Args:
+        examples:
+            The examples to apply the few-shot examples to.
+        few_shot_examples:
+            The few-shot examples to apply.
+        model_config:
+            The model configuration.
+        dataset_config:
+            The dataset configuration.
+        generative_type:
+            The generative type of the model.
+        always_populate_text_field:
+            Whether to always populate the 'text' field in the examples, as opposed to
+            the 'messages' field.
+        tokeniser:
+            The tokeniser to use for the model. If None, the tokeniser is not used.
+        use_bits_per_character:
+            Whether to use bits-per-character (BPC) scoring. For multiple-choice tasks,
+            treats benchmark as text-to-text with bare question → full answer text.
+            Defaults to False.
+
+    Returns:
+        The example with the few-shot examples applied.
+
+    Raises:
+        ValueError:
+            If the `tokeniser` argument is not provided when the model is instruction
+            tuned and when we are not just returning the raw messages.
+    """
+    # Sanity check
+    is_instruction_tuned = generative_type in {
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    }
+    if is_instruction_tuned and always_populate_text_field and tokeniser is None:
+        raise ValueError(
+            "The `tokeniser` argument must be provided when the model is instruction "
+            "tuned and when we are not just returning the raw messages."
+        )
+
+    create_prompt = _create_prompt_creator(dataset_config, generative_type)
+
+    # Add bare inputs for BPC on MCQ tasks
+    if (
+        use_bits_per_character
+        and dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        and "raw_choices" not in examples
+    ):
+        _add_bare_inputs_for_bpc(examples, list(few_shot_examples))
+
+    sections_builder = _get_sections_builder(
+        task_group=dataset_config.task.task_group,
+        dataset_config=dataset_config,
+        use_bits_per_character=use_bits_per_character,
+    )
+    few_shot_sections, new_sections = sections_builder(
+        list(few_shot_examples), examples, create_prompt
+    )
+
+    # Build outputs based on model type
+    if is_instruction_tuned and always_populate_text_field:
+        assert tokeniser is not None
+    if is_instruction_tuned:
+        outputs = _build_instruction_tuned_outputs(
+            few_shot_sections=few_shot_sections,
+            new_sections=new_sections,
+            model_config=model_config,
+            dataset_config=dataset_config,
+            generative_type=generative_type,
+            tokeniser=tokeniser,
+            always_populate_text_field=always_populate_text_field,
+        )
+        examples.update(outputs)
+    else:
+        outputs = _build_standard_outputs(
+            few_shot_sections=few_shot_sections,
+            new_sections=new_sections,
+            dataset_config=dataset_config,
+        )
+        examples.update(outputs)
+
+    # Always add the final prompts without few-shot examples, too, for analysis
+    examples["prompt"] = [new_prompt for new_prompt, _ in new_sections]
+
+    # Create bpc_prompt column for BPC scoring when requested
+    if use_bits_per_character:
+        assert tokeniser is not None, (
+            "tokeniser must be provided when use_bits_per_character=True"
+        )
+        num_examples = len(new_sections)
+        bpc_data = _build_bpc_outputs(
+            dataset_config=dataset_config,
+            examples=examples,
+            tokeniser=tokeniser,
+            num_examples=num_examples,
+        )
+        examples.update(bpc_data)
+
+    return examples
+
+
 def _add_bare_inputs_for_bpc(
     examples: dict[str, t.Any], few_shot_examples: list[dict[str, t.Any]]
 ) -> None:
@@ -47,6 +160,55 @@ def _add_bare_inputs_for_bpc(
             fs_bare, fs_choices = parse_bare_question_and_choices(fs_example["text"])
             fs_example["bare_input"] = fs_bare
             fs_example["raw_choices"] = fs_choices
+
+
+def _build_bpc_outputs(
+    dataset_config: "DatasetConfig",
+    examples: dict[str, t.Any],
+    tokeniser: "PreTrainedTokenizer",
+    num_examples: int,
+) -> dict[str, t.Any]:
+    """Build BPC prompt and answer_start columns.
+
+    Args:
+        dataset_config:
+            The dataset configuration.
+        examples:
+            The examples to evaluate.
+        tokeniser:
+            The tokeniser.
+        num_examples:
+            The number of examples.
+
+    Returns:
+        A dictionary of BPC outputs.
+    """
+    labels_for_spacing = list(dataset_config.prompt_label_mapping.values()) or [
+        "negative",
+        "positive",
+    ]
+    strip_bpc_prompt = should_prompts_be_stripped(
+        labels_to_be_generated=labels_for_spacing, tokeniser=tokeniser
+    )
+
+    full_prompts: list[str] = [str(text) for text in examples["text"]]
+
+    answers = _extract_bpc_answers(
+        task_group=dataset_config.task.task_group,
+        examples=examples,
+        dataset_config=dataset_config,
+        num_examples=num_examples,
+    )
+
+    bpc_data = _build_bpc_columns(
+        task_group=dataset_config.task.task_group,
+        full_prompts=full_prompts,
+        answers=answers,
+        tokeniser=tokeniser,
+        strip_bpc_prompt=strip_bpc_prompt,
+        num_examples=num_examples,
+    )
+    return bpc_data
 
 
 def _build_bpc_columns(
@@ -185,107 +347,6 @@ def _extract_bpc_answers(
         return None
 
 
-def _build_bpc_outputs(
-    dataset_config: "DatasetConfig",
-    examples: dict[str, t.Any],
-    tokeniser: "PreTrainedTokenizer",
-    num_examples: int,
-) -> dict[str, t.Any]:
-    """Build BPC prompt and answer_start columns.
-
-    Args:
-        dataset_config:
-            The dataset configuration.
-        examples:
-            The examples to evaluate.
-        tokeniser:
-            The tokeniser.
-        num_examples:
-            The number of examples.
-
-    Returns:
-        A dictionary of BPC outputs.
-    """
-    labels_for_spacing = list(dataset_config.prompt_label_mapping.values()) or [
-        "negative",
-        "positive",
-    ]
-    strip_bpc_prompt = should_prompts_be_stripped(
-        labels_to_be_generated=labels_for_spacing, tokeniser=tokeniser
-    )
-
-    full_prompts: list[str] = [str(text) for text in examples["text"]]
-
-    answers = _extract_bpc_answers(
-        task_group=dataset_config.task.task_group,
-        examples=examples,
-        dataset_config=dataset_config,
-        num_examples=num_examples,
-    )
-
-    bpc_data = _build_bpc_columns(
-        task_group=dataset_config.task.task_group,
-        full_prompts=full_prompts,
-        answers=answers,
-        tokeniser=tokeniser,
-        strip_bpc_prompt=strip_bpc_prompt,
-        num_examples=num_examples,
-    )
-    return bpc_data
-
-
-def _build_chat_template_kwargs(model_config: "ModelConfig") -> dict[str, t.Any]:
-    """Build chat template kwargs for reasoning effort.
-
-    Args:
-        model_config:
-            The model configuration.
-
-    Returns:
-        A dictionary of chat template kwargs.
-    """
-    if model_config.param in {"low", "medium", "high"}:
-        log_once(f"Set reasoning mode to {model_config.param!r}.", level=logging.DEBUG)
-        return {"reasoning_effort": model_config.param}
-    return {}
-
-
-def _select_chat_template(
-    tokeniser: "PreTrainedTokenizer",
-    dataset_config: "DatasetConfig",
-    model_config: "ModelConfig",
-) -> str | None:
-    """Select chat template matching dataset language if available.
-
-    Args:
-        tokeniser:
-            The tokeniser.
-        dataset_config:
-            The dataset configuration.
-        model_config:
-            The model configuration.
-
-    Returns:
-        The chat template, or None if no matching template is found.
-    """
-    if not (
-        hasattr(tokeniser, "chat_template")
-        and isinstance(tokeniser.chat_template, dict)
-    ):
-        return None
-
-    language_codes = [language.code for language in dataset_config.languages]
-    for name, candidate_template in tokeniser.chat_template.items():
-        if name.lower() in language_codes:
-            log_once(
-                f"Using the {name!r} chat template for the tokeniser for "
-                f"model {model_config.model_id!r}.",
-                level=logging.DEBUG,
-            )
-            return candidate_template
-    return None
-
-
 def _build_instruction_tuned_outputs(
     few_shot_sections: list[tuple[str, str]],
     new_sections: list[tuple[str, str]],
@@ -349,6 +410,207 @@ def _build_instruction_tuned_outputs(
         outputs["messages"] = messages_list
 
     return outputs
+
+
+def _build_chat_template_kwargs(model_config: "ModelConfig") -> dict[str, t.Any]:
+    """Build chat template kwargs for reasoning effort.
+
+    Args:
+        model_config:
+            The model configuration.
+
+    Returns:
+        A dictionary of chat template kwargs.
+    """
+    if model_config.param in {"low", "medium", "high"}:
+        log_once(f"Set reasoning mode to {model_config.param!r}.", level=logging.DEBUG)
+        return {"reasoning_effort": model_config.param}
+    return {}
+
+
+def _select_chat_template(
+    tokeniser: "PreTrainedTokenizer",
+    dataset_config: "DatasetConfig",
+    model_config: "ModelConfig",
+) -> str | None:
+    """Select chat template matching dataset language if available.
+
+    Args:
+        tokeniser:
+            The tokeniser.
+        dataset_config:
+            The dataset configuration.
+        model_config:
+            The model configuration.
+
+    Returns:
+        The chat template, or None if no matching template is found.
+    """
+    if not (
+        hasattr(tokeniser, "chat_template")
+        and isinstance(tokeniser.chat_template, dict)
+    ):
+        return None
+
+    language_codes = [language.code for language in dataset_config.languages]
+    for name, candidate_template in tokeniser.chat_template.items():
+        if name.lower() in language_codes:
+            log_once(
+                f"Using the {name!r} chat template for the tokeniser for "
+                f"model {model_config.model_id!r}.",
+                level=logging.DEBUG,
+            )
+            return candidate_template
+    return None
+
+
+def _build_standard_outputs(
+    few_shot_sections: list[tuple[str, str]],
+    new_sections: list[tuple[str, str]],
+    dataset_config: "DatasetConfig",
+) -> dict[str, t.Any]:
+    """Build outputs for non-instruction-tuned models.
+
+    Args:
+        few_shot_sections:
+            The few-shot sections.
+        new_sections:
+            The new sections.
+        dataset_config:
+            The dataset configuration.
+
+    Returns:
+        A dictionary of outputs.
+    """
+    prompt_prefix = ""
+    if dataset_config.prompt_prefix:
+        labels_str = dataset_config.get_labels_str()
+        prompt_prefix = (
+            dataset_config.prompt_prefix.format(labels_str=labels_str) + "\n\n"
+        )
+
+    few_shot_prompt = "\n\n".join([prompt for prompt, _ in few_shot_sections])
+    if few_shot_prompt:
+        few_shot_prompt += "\n\n"
+
+    return {
+        "text": [
+            prompt_prefix + few_shot_prompt + new_prompt
+            for new_prompt, _ in new_sections
+        ]
+    }
+
+
+def _create_prompt_creator(
+    dataset_config: "DatasetConfig", generative_type: GenerativeType | None
+) -> c.Callable[..., tuple[str, str]]:
+    """Create a function that builds prompts from keyword arguments.
+
+    Args:
+        dataset_config:
+            The dataset configuration.
+        generative_type:
+            The generative type of the model.
+
+    Returns:
+        A function that builds prompts from keyword arguments.
+    """
+
+    def create_prompt(**kwargs: str) -> tuple[str, str]:
+        """Create a prompt from the given keyword arguments.
+
+        Args:
+            kwargs:
+                The keyword arguments to use in the prompt.
+
+        Returns:
+            A pair (prompt, label), where "label" is an empty string if the model is
+            not instruction tuned (as in this case it is included in the prompt).
+        """
+        label_key = "label" if "label" in kwargs else "target_text"
+        label = kwargs.pop(label_key)
+        assert label is not None, (
+            f"Found a None label for the prompt: {kwargs}. This should not happen."
+        )
+        label_mapping = dataset_config.prompt_label_mapping
+        label = label_mapping.get(label, label)
+        if generative_type in {
+            GenerativeType.INSTRUCTION_TUNED,
+            GenerativeType.REASONING,
+        }:
+            prompt = dataset_config.instruction_prompt.format(**kwargs)
+            return prompt, label
+        else:
+            kwargs[label_key] = label
+            return dataset_config.prompt_template.format(**kwargs), ""
+
+    return create_prompt
+
+
+def _get_sections_builder(
+    task_group: TaskGroup, dataset_config: "DatasetConfig", use_bits_per_character: bool
+) -> c.Callable[
+    [list[dict[str, t.Any]], dict[str, t.Any], c.Callable],
+    tuple[list[tuple[str, str]], list[tuple[str, str]]],
+]:
+    """Get a function that builds few-shot and new sections for a task group.
+
+    Args:
+        task_group:
+            The task group to build sections for.
+        dataset_config:
+            The dataset configuration.
+        use_bits_per_character:
+            Whether to use bits-per-character scoring.
+
+    Returns:
+        A function that takes few_shot_examples, examples, and create_prompt,
+        and returns (few_shot_sections, new_sections).
+    """
+    if task_group == TaskGroup.SEQUENCE_CLASSIFICATION:
+        return lambda few_shot_examples, examples, create_prompt: (
+            _build_sequence_classification_sections(
+                few_shot_examples=few_shot_examples,
+                examples=examples,
+                create_prompt=create_prompt,
+                dataset_config=dataset_config,
+            )
+        )
+    elif task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+        return lambda few_shot_examples, examples, create_prompt: _build_mcq_sections(
+            few_shot_examples=few_shot_examples,
+            examples=examples,
+            create_prompt=create_prompt,
+            dataset_config=dataset_config,
+            use_bits_per_character=use_bits_per_character,
+        )
+    elif task_group == TaskGroup.TEXT_TO_TEXT:
+        return lambda few_shot_examples, examples, create_prompt: (
+            _build_text_to_text_sections(
+                few_shot_examples=few_shot_examples,
+                examples=examples,
+                create_prompt=create_prompt,
+            )
+        )
+    elif task_group == TaskGroup.TOKEN_CLASSIFICATION:
+        return lambda few_shot_examples, examples, create_prompt: (
+            _build_token_classification_sections(
+                few_shot_examples=few_shot_examples,
+                examples=examples,
+                create_prompt=create_prompt,
+                dataset_config=dataset_config,
+            )
+        )
+    elif task_group == TaskGroup.QUESTION_ANSWERING:
+        return lambda few_shot_examples, examples, create_prompt: (
+            _build_question_answering_sections(
+                few_shot_examples=few_shot_examples,
+                examples=examples,
+                create_prompt=create_prompt,
+            )
+        )
+    else:
+        raise NotImplementedError(f"Unsupported task group: {task_group}.")
 
 
 def _build_mcq_sections(
@@ -498,43 +760,6 @@ def _build_sequence_classification_sections(
     return few_shot_sections, new_sections
 
 
-def _build_standard_outputs(
-    few_shot_sections: list[tuple[str, str]],
-    new_sections: list[tuple[str, str]],
-    dataset_config: "DatasetConfig",
-) -> dict[str, t.Any]:
-    """Build outputs for non-instruction-tuned models.
-
-    Args:
-        few_shot_sections:
-            The few-shot sections.
-        new_sections:
-            The new sections.
-        dataset_config:
-            The dataset configuration.
-
-    Returns:
-        A dictionary of outputs.
-    """
-    prompt_prefix = ""
-    if dataset_config.prompt_prefix:
-        labels_str = dataset_config.get_labels_str()
-        prompt_prefix = (
-            dataset_config.prompt_prefix.format(labels_str=labels_str) + "\n\n"
-        )
-
-    few_shot_prompt = "\n\n".join([prompt for prompt, _ in few_shot_sections])
-    if few_shot_prompt:
-        few_shot_prompt += "\n\n"
-
-    return {
-        "text": [
-            prompt_prefix + few_shot_prompt + new_prompt
-            for new_prompt, _ in new_sections
-        ]
-    }
-
-
 def _build_text_to_text_sections(
     few_shot_examples: list[dict[str, t.Any]],
     examples: dict[str, t.Any],
@@ -612,50 +837,97 @@ def _build_token_classification_sections(
     return few_shot_sections, new_sections
 
 
-def _create_prompt_creator(
-    dataset_config: "DatasetConfig", generative_type: GenerativeType | None
-) -> c.Callable[..., tuple[str, str]]:
-    """Create a function that builds prompts from keyword arguments.
+def extract_few_shot_examples(
+    dataset: "DatasetDict",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+    itr_idx: int,
+) -> c.Sequence[dict[str, t.Any]]:
+    """Extract few-shot examples from a dataset.
+
+    This will always extract the examples from the training split.
+
+    We ensure that the few-shot examples are unique by picking them one at a time.
 
     Args:
+        dataset:
+            The dataset to extract the few-shot examples from.
         dataset_config:
             The dataset configuration.
-        generative_type:
-            The generative type of the model.
+        benchmark_config:
+            The benchmark configuration.
+        itr_idx:
+            The index of the dataset in the iterator.
 
     Returns:
-        A function that builds prompts from keyword arguments.
+        The few-shot examples.
     """
-
-    def create_prompt(**kwargs: str) -> tuple[str, str]:
-        """Create a prompt from the given keyword arguments.
-
-        Args:
-            kwargs:
-                The keyword arguments to use in the prompt.
-
-        Returns:
-            A pair (prompt, label), where "label" is an empty string if the model is
-            not instruction tuned (as in this case it is included in the prompt).
-        """
-        label_key = "label" if "label" in kwargs else "target_text"
-        label = kwargs.pop(label_key)
-        assert label is not None, (
-            f"Found a None label for the prompt: {kwargs}. This should not happen."
+    if "train" not in dataset:
+        log_once(
+            "There is no training split in the dataset, so we cannot extract any "
+            "few-shot examples, even though you requested few-shot evaluation (it's "
+            "the default). We will therefore evaluate the model zero-shot.",
+            level=logging.DEBUG,
         )
-        label_mapping = dataset_config.prompt_label_mapping
-        label = label_mapping.get(label, label)
-        if generative_type in {
-            GenerativeType.INSTRUCTION_TUNED,
-            GenerativeType.REASONING,
-        }:
-            prompt = dataset_config.instruction_prompt.format(**kwargs)
-            return prompt, label
-        else:
-            kwargs[label_key] = label
-            return dataset_config.prompt_template.format(**kwargs), ""
+        return list()
 
-    return create_prompt
+    if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
+        msg = (
+            "This task only allows zero-shot evaluation, so even though you have "
+            "requested few-shot evaluation "
+        )
+        if benchmark_config.run_with_cli:
+            msg += "(by not setting the --zero-shot flag), "
+        else:
+            msg += "(by setting the default `few_shot=True` argument), "
+        msg += "we will run the evaluation in zero-shot mode."
+        benchmark_config.few_shot = False
+        log_once(msg, level=logging.DEBUG)
+        return []
+
+    random_seed = 4242 + itr_idx
+    num_few_shots = dataset_config.num_few_shot_examples
+    shuffled_train = dataset["train"].shuffle(seed=random_seed)
+    assert isinstance(shuffled_train, Dataset), (
+        f"Expected `shuffled_train` to be a Dataset, but got {type(shuffled_train)} "
+        "instead."
+    )
+
+    few_shot_examples: list[dict[str, t.Any]]
+    match dataset_config.task.task_group:
+        case (
+            TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        ):
+            few_shot_examples = _extract_classification_examples(
+                shuffled_train=shuffled_train,
+                num_few_shots=num_few_shots,
+                dataset_config=dataset_config,
+                random_seed=random_seed,
+            )
+        case TaskGroup.TEXT_TO_TEXT:
+            few_shot_examples = _extract_text_to_text_examples(
+                shuffled_train=shuffled_train, num_few_shots=num_few_shots
+            )
+        case TaskGroup.TOKEN_CLASSIFICATION:
+            few_shot_examples = _extract_token_classification_examples(
+                shuffled_train=shuffled_train,
+                num_few_shots=num_few_shots,
+                dataset_config=dataset_config,
+            )
+        case TaskGroup.QUESTION_ANSWERING:
+            few_shot_examples = _extract_question_answering_examples(
+                shuffled_train=shuffled_train,
+                num_few_shots=num_few_shots,
+                random_seed=random_seed,
+            )
+        case _:
+            raise NotImplementedError(
+                f"Unsupported task group: {dataset_config.task.task_group}."
+            )
+
+    random.seed(random_seed)
+    random.shuffle(few_shot_examples)
+    return few_shot_examples
 
 
 def _extract_classification_examples(
@@ -858,278 +1130,6 @@ def _extract_token_classification_examples(
         shuffled_train = shuffled_train.filter(
             lambda x: x["tokens"] != example["tokens"]
         )
-    return few_shot_examples
-
-
-def _get_sections_builder(
-    task_group: TaskGroup, dataset_config: "DatasetConfig", use_bits_per_character: bool
-) -> c.Callable[
-    [list[dict[str, t.Any]], dict[str, t.Any], c.Callable],
-    tuple[list[tuple[str, str]], list[tuple[str, str]]],
-]:
-    """Get a function that builds few-shot and new sections for a task group.
-
-    Args:
-        task_group:
-            The task group to build sections for.
-        dataset_config:
-            The dataset configuration.
-        use_bits_per_character:
-            Whether to use bits-per-character scoring.
-
-    Returns:
-        A function that takes few_shot_examples, examples, and create_prompt,
-        and returns (few_shot_sections, new_sections).
-    """
-    if task_group == TaskGroup.SEQUENCE_CLASSIFICATION:
-        return lambda few_shot_examples, examples, create_prompt: (
-            _build_sequence_classification_sections(
-                few_shot_examples=few_shot_examples,
-                examples=examples,
-                create_prompt=create_prompt,
-                dataset_config=dataset_config,
-            )
-        )
-    elif task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-        return lambda few_shot_examples, examples, create_prompt: _build_mcq_sections(
-            few_shot_examples=few_shot_examples,
-            examples=examples,
-            create_prompt=create_prompt,
-            dataset_config=dataset_config,
-            use_bits_per_character=use_bits_per_character,
-        )
-    elif task_group == TaskGroup.TEXT_TO_TEXT:
-        return lambda few_shot_examples, examples, create_prompt: (
-            _build_text_to_text_sections(
-                few_shot_examples=few_shot_examples,
-                examples=examples,
-                create_prompt=create_prompt,
-            )
-        )
-    elif task_group == TaskGroup.TOKEN_CLASSIFICATION:
-        return lambda few_shot_examples, examples, create_prompt: (
-            _build_token_classification_sections(
-                few_shot_examples=few_shot_examples,
-                examples=examples,
-                create_prompt=create_prompt,
-                dataset_config=dataset_config,
-            )
-        )
-    elif task_group == TaskGroup.QUESTION_ANSWERING:
-        return lambda few_shot_examples, examples, create_prompt: (
-            _build_question_answering_sections(
-                few_shot_examples=few_shot_examples,
-                examples=examples,
-                create_prompt=create_prompt,
-            )
-        )
-    else:
-        raise NotImplementedError(f"Unsupported task group: {task_group}.")
-
-
-def apply_prompt(
-    examples: dict[str, t.Any],
-    few_shot_examples: c.Sequence[dict[str, t.Any]],
-    model_config: "ModelConfig",
-    dataset_config: "DatasetConfig",
-    generative_type: GenerativeType | None,
-    always_populate_text_field: bool,
-    tokeniser: "PreTrainedTokenizer | None",
-    use_bits_per_character: bool = False,
-) -> dict[str, t.Any]:
-    """Apply prompt template to an example, potentially with few-shot examples.
-
-    Args:
-        examples:
-            The examples to apply the few-shot examples to.
-        few_shot_examples:
-            The few-shot examples to apply.
-        model_config:
-            The model configuration.
-        dataset_config:
-            The dataset configuration.
-        generative_type:
-            The generative type of the model.
-        always_populate_text_field:
-            Whether to always populate the 'text' field in the examples, as opposed to
-            the 'messages' field.
-        tokeniser:
-            The tokeniser to use for the model. If None, the tokeniser is not used.
-        use_bits_per_character:
-            Whether to use bits-per-character (BPC) scoring. For multiple-choice tasks,
-            treats benchmark as text-to-text with bare question → full answer text.
-            Defaults to False.
-
-    Returns:
-        The example with the few-shot examples applied.
-
-    Raises:
-        ValueError:
-            If the `tokeniser` argument is not provided when the model is instruction
-            tuned and when we are not just returning the raw messages.
-    """
-    # Sanity check
-    is_instruction_tuned = generative_type in {
-        GenerativeType.INSTRUCTION_TUNED,
-        GenerativeType.REASONING,
-    }
-    if is_instruction_tuned and always_populate_text_field and tokeniser is None:
-        raise ValueError(
-            "The `tokeniser` argument must be provided when the model is instruction "
-            "tuned and when we are not just returning the raw messages."
-        )
-
-    create_prompt = _create_prompt_creator(dataset_config, generative_type)
-
-    # Add bare inputs for BPC on MCQ tasks
-    if (
-        use_bits_per_character
-        and dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-        and "raw_choices" not in examples
-    ):
-        _add_bare_inputs_for_bpc(examples, list(few_shot_examples))
-
-    sections_builder = _get_sections_builder(
-        task_group=dataset_config.task.task_group,
-        dataset_config=dataset_config,
-        use_bits_per_character=use_bits_per_character,
-    )
-    few_shot_sections, new_sections = sections_builder(
-        list(few_shot_examples), examples, create_prompt
-    )
-
-    # Build outputs based on model type
-    if is_instruction_tuned and always_populate_text_field:
-        assert tokeniser is not None
-    if is_instruction_tuned:
-        outputs = _build_instruction_tuned_outputs(
-            few_shot_sections=few_shot_sections,
-            new_sections=new_sections,
-            model_config=model_config,
-            dataset_config=dataset_config,
-            generative_type=generative_type,
-            tokeniser=tokeniser,
-            always_populate_text_field=always_populate_text_field,
-        )
-        examples.update(outputs)
-    else:
-        outputs = _build_standard_outputs(
-            few_shot_sections=few_shot_sections,
-            new_sections=new_sections,
-            dataset_config=dataset_config,
-        )
-        examples.update(outputs)
-
-    # Always add the final prompts without few-shot examples, too, for analysis
-    examples["prompt"] = [new_prompt for new_prompt, _ in new_sections]
-
-    # Create bpc_prompt column for BPC scoring when requested
-    if use_bits_per_character:
-        assert tokeniser is not None, (
-            "tokeniser must be provided when use_bits_per_character=True"
-        )
-        num_examples = len(new_sections)
-        bpc_data = _build_bpc_outputs(
-            dataset_config=dataset_config,
-            examples=examples,
-            tokeniser=tokeniser,
-            num_examples=num_examples,
-        )
-        examples.update(bpc_data)
-
-    return examples
-
-
-def extract_few_shot_examples(
-    dataset: "DatasetDict",
-    dataset_config: "DatasetConfig",
-    benchmark_config: "BenchmarkConfig",
-    itr_idx: int,
-) -> c.Sequence[dict[str, t.Any]]:
-    """Extract few-shot examples from a dataset.
-
-    This will always extract the examples from the training split.
-
-    We ensure that the few-shot examples are unique by picking them one at a time.
-
-    Args:
-        dataset:
-            The dataset to extract the few-shot examples from.
-        dataset_config:
-            The dataset configuration.
-        benchmark_config:
-            The benchmark configuration.
-        itr_idx:
-            The index of the dataset in the iterator.
-
-    Returns:
-        The few-shot examples.
-    """
-    if "train" not in dataset:
-        log_once(
-            "There is no training split in the dataset, so we cannot extract any "
-            "few-shot examples, even though you requested few-shot evaluation (it's "
-            "the default). We will therefore evaluate the model zero-shot.",
-            level=logging.DEBUG,
-        )
-        return list()
-
-    if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
-        msg = (
-            "This task only allows zero-shot evaluation, so even though you have "
-            "requested few-shot evaluation "
-        )
-        if benchmark_config.run_with_cli:
-            msg += "(by not setting the --zero-shot flag), "
-        else:
-            msg += "(by setting the default `few_shot=True` argument), "
-        msg += "we will run the evaluation in zero-shot mode."
-        benchmark_config.few_shot = False
-        log_once(msg, level=logging.DEBUG)
-        return []
-
-    random_seed = 4242 + itr_idx
-    num_few_shots = dataset_config.num_few_shot_examples
-    shuffled_train = dataset["train"].shuffle(seed=random_seed)
-    assert isinstance(shuffled_train, Dataset), (
-        f"Expected `shuffled_train` to be a Dataset, but got {type(shuffled_train)} "
-        "instead."
-    )
-
-    few_shot_examples: list[dict[str, t.Any]]
-    match dataset_config.task.task_group:
-        case (
-            TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-        ):
-            few_shot_examples = _extract_classification_examples(
-                shuffled_train=shuffled_train,
-                num_few_shots=num_few_shots,
-                dataset_config=dataset_config,
-                random_seed=random_seed,
-            )
-        case TaskGroup.TEXT_TO_TEXT:
-            few_shot_examples = _extract_text_to_text_examples(
-                shuffled_train=shuffled_train, num_few_shots=num_few_shots
-            )
-        case TaskGroup.TOKEN_CLASSIFICATION:
-            few_shot_examples = _extract_token_classification_examples(
-                shuffled_train=shuffled_train,
-                num_few_shots=num_few_shots,
-                dataset_config=dataset_config,
-            )
-        case TaskGroup.QUESTION_ANSWERING:
-            few_shot_examples = _extract_question_answering_examples(
-                shuffled_train=shuffled_train,
-                num_few_shots=num_few_shots,
-                random_seed=random_seed,
-            )
-        case _:
-            raise NotImplementedError(
-                f"Unsupported task group: {dataset_config.task.task_group}."
-            )
-
-    random.seed(random_seed)
-    random.shuffle(few_shot_examples)
     return few_shot_examples
 
 
