@@ -40,8 +40,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed loading of Mixture-of-Experts models whose expert intermediate size is not a
   multiple of 128 after being sharded across multiple GPUs (e.g.
   `JetBrains/Mellum2-12B-A2.5B-Base` on Blackwell GPUs), which previously crashed vLLM
-  with a "second dimension of weights must be a multiple of 128" error. EuroEval now
-  automatically retries such models on a single GPU.
+  with a "second dimension of weights must be a multiple of 128" error during memory
+  profiling. EuroEval now reduces the tensor parallel size up front so the per-GPU
+  expert intermediate size stays 128-aligned, as the crash originates in a worker
+  subprocess and never surfaces to be retried reactively.
 - Fixed a model ID error for hallucination detection models.
 - Fixed detection of models that report `temperature` as an unsupported parameter via a
   `does not support parameters: [...'temperature'...]` error message. Such models now
