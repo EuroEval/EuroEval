@@ -6,6 +6,28 @@ from pathlib import Path
 from .logging_utils import no_terminal_output
 
 
+def ensure_nltk_packages(
+    cache_dir: str | Path, packages: list[str] | None = None
+) -> Path:
+    """Configure NLTK and download required packages.
+
+    This is the main entry point - call this before using any NLTK functionality.
+
+    Args:
+        cache_dir:
+            The cache directory where NLTK data will be stored.
+        packages:
+            List of NLTK package names to download. If None, downloads the default
+            packages: punkt_tab, wordnet, omw-1.4.
+
+    Returns:
+        The path to the NLTK data directory.
+    """
+    nltk_data_dir = setup_nltk_data_dir(cache_dir)
+    download_nltk_packages(nltk_data_dir, packages)
+    return nltk_data_dir
+
+
 def download_nltk_packages(
     nltk_data_dir: Path, packages: list[str] | None = None
 ) -> None:
@@ -53,26 +75,4 @@ def setup_nltk_data_dir(cache_dir: str | Path) -> Path:
     # Override NLTK's search path to use only our cache directory
     nltk.data.path = [str(nltk_data_dir)]
 
-    return nltk_data_dir
-
-
-def ensure_nltk_packages(
-    cache_dir: str | Path, packages: list[str] | None = None
-) -> Path:
-    """Configure NLTK and download required packages.
-
-    This is the main entry point - call this before using any NLTK functionality.
-
-    Args:
-        cache_dir:
-            The cache directory where NLTK data will be stored.
-        packages:
-            List of NLTK package names to download. If None, downloads the default
-            packages: punkt_tab, wordnet, omw-1.4.
-
-    Returns:
-        The path to the NLTK data directory.
-    """
-    nltk_data_dir = setup_nltk_data_dir(cache_dir)
-    download_nltk_packages(nltk_data_dir, packages)
     return nltk_data_dir

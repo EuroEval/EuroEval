@@ -30,47 +30,75 @@ from .constants import (
 logger = logging.getLogger(__name__)
 
 
-class _OsaiEntry(t.TypedDict):
-    """A single parsed OSAI model entry.
+def osai_top_models(
+    limit: int = 10, overrides: list[str] | None = None
+) -> list[tuple[str, int]]:
+    """Return the top OSAI 'truly open' text models as (model_id, rank) pairs.
 
-    Attributes:
-        name:
-            The model's system name.
-        endmodelname:
-            The end-model name.
-        type:
-            The model type (e.g. ``"text"``).
-        open_count:
-            Number of openness ranking fields marked open.
-        required_open:
-            Whether trainingcode and datasources_basemodel are both open.
-        weight_links:
-            Mapping from each open weights field name to its HF URL.
-    """
-
-    name: str
-    endmodelname: str
-    type: str
-    open_count: int
-    required_open: bool
-    weight_links: dict[str, str]
-
-
-def _fetch(url: str, timeout: float = 20.0) -> str:
-    """Fetch a URL as text.
+    The OSAI index is filtered to text models with open base weights,
+    training code, and data sources. Models are ranked by total open-field
+    count (descending). We scrape the live JS bundle; on any failure (no
+    bundle reachable, regex match yields zero entries, etc.) we return
+    the override list from the YAML config so the pipeline stays
+    deterministic.
 
     Args:
-        url:
-            The URL to fetch.
-        timeout (optional):
-            Socket timeout in seconds. Defaults to 20.0.
+        limit (optional):
+            Number of top models to return. Defaults to 10.
+        overrides (optional):
+            Fallback list of `org/repo` model IDs in rank order, used
+            verbatim when the scrape fails. Defaults to None.
 
     Returns:
-        The response body as text.
+        List of `(model_id, rank)` pairs in 1-based rank order. Empty
+        list if both the scrape and overrides yield nothing.
     """
-    req = urllib.request.Request(url, headers={"User-Agent": "EuroEval-CoreModels/1"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read().decode("utf-8", errors="replace")
+    logger.info(f"Fetching the top-{limit} OSAI open models...")
+
+    bundle = _osai_bundle()
+    if bundle is None:
+        logger.warning("OSAI: bundle not found; using overrides.")
+        return _overrides_to_ranked(overrides=overrides, limit=limit)
+
+    entries = _parse_osai_models(bundle=bundle)
+    if not entries:
+        logger.warning("OSAI: parsed zero model entries; using overrides.")
+        return _overrides_to_ranked(overrides=overrides, limit=limit)
+
+    # A model qualifies if training code and base-model data sources are
+    # open and at least one of base/end-model weights is open. When both
+    # weights are open, both are added to the eval target list — they're
+    # different checkpoints worth scoring independently.
+    qualifying = [
+        e
+        for e in entries
+        if e["type"] == "text" and e["required_open"] and e["weight_links"]
+    ]
+    qualifying.sort(key=lambda e: (-e["open_count"], e["endmodelname"].lower()))
+
+    seen: set[str] = set()
+    ranked: list[tuple[str, int]] = []
+    for entry in qualifying:
+        # Stable ordering: prefer the base-model checkpoint first, then end.
+        for field in OSAI_WEIGHT_CRITERIA:
+            link = entry["weight_links"].get(field)
+            if not link:
+                continue
+            model_id = _hf_url_to_model_id(url=link)
+            if model_id is None:
+                logger.info(
+                    f"OSAI: skipping {entry['endmodelname']!r} ({field}): "
+                    f"cannot map {link!r} to org/repo."
+                )
+                continue
+            if model_id in seen:
+                continue
+            seen.add(model_id)
+            ranked.append((model_id, len(ranked) + 1))
+            if len(ranked) >= limit:
+                return ranked
+    logger.info(f"Fetched {len(ranked)} OSAI models.")
+    return ranked
 
 
 def _hf_url_to_model_id(url: str) -> str | None:
@@ -142,6 +170,23 @@ def _osai_bundle() -> str | None:
     return None
 
 
+def _fetch(url: str, timeout: float = 20.0) -> str:
+    """Fetch a URL as text.
+
+    Args:
+        url:
+            The URL to fetch.
+        timeout (optional):
+            Socket timeout in seconds. Defaults to 20.0.
+
+    Returns:
+        The response body as text.
+    """
+    req = urllib.request.Request(url, headers={"User-Agent": "EuroEval-CoreModels/1"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf-8", errors="replace")
+
+
 def _overrides_to_ranked(
     overrides: list[str] | None, limit: int
 ) -> list[tuple[str, int]]:
@@ -159,6 +204,32 @@ def _overrides_to_ranked(
     if not overrides:
         return []
     return [(model_id, rank) for rank, model_id in enumerate(overrides[:limit], 1)]
+
+
+class _OsaiEntry(t.TypedDict):
+    """A single parsed OSAI model entry.
+
+    Attributes:
+        name:
+            The model's system name.
+        endmodelname:
+            The end-model name.
+        type:
+            The model type (e.g. ``"text"``).
+        open_count:
+            Number of openness ranking fields marked open.
+        required_open:
+            Whether trainingcode and datasources_basemodel are both open.
+        weight_links:
+            Mapping from each open weights field name to its HF URL.
+    """
+
+    name: str
+    endmodelname: str
+    type: str
+    open_count: int
+    required_open: bool
+    weight_links: dict[str, str]
 
 
 def _parse_osai_models(bundle: str) -> list[_OsaiEntry]:
@@ -218,74 +289,3 @@ def _parse_osai_models(bundle: str) -> list[_OsaiEntry]:
             )
         )
     return entries
-
-
-def osai_top_models(
-    limit: int = 10, overrides: list[str] | None = None
-) -> list[tuple[str, int]]:
-    """Return the top OSAI 'truly open' text models as (model_id, rank) pairs.
-
-    The OSAI index is filtered to text models with open base weights,
-    training code, and data sources. Models are ranked by total open-field
-    count (descending). We scrape the live JS bundle; on any failure (no
-    bundle reachable, regex match yields zero entries, etc.) we return
-    the override list from the YAML config so the pipeline stays
-    deterministic.
-
-    Args:
-        limit (optional):
-            Number of top models to return. Defaults to 10.
-        overrides (optional):
-            Fallback list of `org/repo` model IDs in rank order, used
-            verbatim when the scrape fails. Defaults to None.
-
-    Returns:
-        List of `(model_id, rank)` pairs in 1-based rank order. Empty
-        list if both the scrape and overrides yield nothing.
-    """
-    logger.info(f"Fetching the top-{limit} OSAI open models...")
-
-    bundle = _osai_bundle()
-    if bundle is None:
-        logger.warning("OSAI: bundle not found; using overrides.")
-        return _overrides_to_ranked(overrides=overrides, limit=limit)
-
-    entries = _parse_osai_models(bundle=bundle)
-    if not entries:
-        logger.warning("OSAI: parsed zero model entries; using overrides.")
-        return _overrides_to_ranked(overrides=overrides, limit=limit)
-
-    # A model qualifies if training code and base-model data sources are
-    # open and at least one of base/end-model weights is open. When both
-    # weights are open, both are added to the eval target list — they're
-    # different checkpoints worth scoring independently.
-    qualifying = [
-        e
-        for e in entries
-        if e["type"] == "text" and e["required_open"] and e["weight_links"]
-    ]
-    qualifying.sort(key=lambda e: (-e["open_count"], e["endmodelname"].lower()))
-
-    seen: set[str] = set()
-    ranked: list[tuple[str, int]] = []
-    for entry in qualifying:
-        # Stable ordering: prefer the base-model checkpoint first, then end.
-        for field in OSAI_WEIGHT_CRITERIA:
-            link = entry["weight_links"].get(field)
-            if not link:
-                continue
-            model_id = _hf_url_to_model_id(url=link)
-            if model_id is None:
-                logger.info(
-                    f"OSAI: skipping {entry['endmodelname']!r} ({field}): "
-                    f"cannot map {link!r} to org/repo."
-                )
-                continue
-            if model_id in seen:
-                continue
-            seen.add(model_id)
-            ranked.append((model_id, len(ranked) + 1))
-            if len(ranked) >= limit:
-                return ranked
-    logger.info(f"Fetched {len(ranked)} OSAI models.")
-    return ranked

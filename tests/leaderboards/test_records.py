@@ -85,6 +85,25 @@ class TestPlainModelId:
         )
 
 
+def test_anchored_and_plain_names_hash_identically() -> None:
+    """Anchored and plain model names must deduplicate to the same hash.
+
+    Otherwise both records survive deduplication yet collapse onto a single
+    leaderboard row (``extract_model_ids_from_record`` strips the anchor),
+    showing multiple scores for one model+benchmark combination (issue #1970).
+    """
+    anchored = _record(
+        name="<a href='https://ollama.com/library/gemma3'>ollama_chat/gemma3</a>"
+    )
+    plain = _record(name="ollama_chat/gemma3")
+
+    assert get_record_hash(record=anchored) == get_record_hash(record=plain)
+    # The two forms must also collapse to the same leaderboard row identity.
+    assert extract_model_ids_from_record(record=anchored) == (
+        extract_model_ids_from_record(record=plain)
+    )
+
+
 def _record(
     name: str,
     dataset: str = "angry-tweets",
@@ -121,25 +140,6 @@ def _record(
         "model_info": {"name": name},
         "eval_library": {"additional_details": additional},
     }
-
-
-def test_anchored_and_plain_names_hash_identically() -> None:
-    """Anchored and plain model names must deduplicate to the same hash.
-
-    Otherwise both records survive deduplication yet collapse onto a single
-    leaderboard row (``extract_model_ids_from_record`` strips the anchor),
-    showing multiple scores for one model+benchmark combination (issue #1970).
-    """
-    anchored = _record(
-        name="<a href='https://ollama.com/library/gemma3'>ollama_chat/gemma3</a>"
-    )
-    plain = _record(name="ollama_chat/gemma3")
-
-    assert get_record_hash(record=anchored) == get_record_hash(record=plain)
-    # The two forms must also collapse to the same leaderboard row identity.
-    assert extract_model_ids_from_record(record=anchored) == (
-        extract_model_ids_from_record(record=plain)
-    )
 
 
 def test_distinct_datasets_hash_differently() -> None:

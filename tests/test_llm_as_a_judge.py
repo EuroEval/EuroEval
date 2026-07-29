@@ -271,31 +271,6 @@ class TestLLMAsAJudgeBatchScoringFn:
         )
 
 
-@pytest.fixture
-def simple_metric(simple_response_format: type[BaseModel]) -> LLMAsAJudgeMetric:
-    """Create a simple LLMAsAJudgeMetric instance.
-
-    Args:
-        simple_response_format: The simple response format Pydantic model.
-
-    Returns:
-        LLMAsAJudgeMetric: A configured LLMAsAJudgeMetric instance.
-    """
-
-    def scoring_fn(output: MagicMock) -> float:
-        return output.value / 10.0
-
-    return LLMAsAJudgeMetric(
-        name="test_metric",
-        pretty_name="Test Metric",
-        judge_id="test-model",
-        judge_kwargs=dict(temperature=0.5),
-        user_prompt="Score: {prediction}",
-        response_format=simple_response_format,
-        scoring_fn=scoring_fn,  # ty: ignore[invalid-argument-type]
-    )
-
-
 class TestLLMAsAJudgeCall:
     """Tests for LLMAsAJudgeMetric.__call__."""
 
@@ -441,6 +416,31 @@ class TestLLMAsAJudgeCall:
             )
 
         assert "Could not parse/validate" in caplog.text
+
+
+@pytest.fixture
+def simple_metric(simple_response_format: type[BaseModel]) -> LLMAsAJudgeMetric:
+    """Create a simple LLMAsAJudgeMetric instance.
+
+    Args:
+        simple_response_format: The simple response format Pydantic model.
+
+    Returns:
+        LLMAsAJudgeMetric: A configured LLMAsAJudgeMetric instance.
+    """
+
+    def scoring_fn(output: MagicMock) -> float:
+        return output.value / 10.0
+
+    return LLMAsAJudgeMetric(
+        name="test_metric",
+        pretty_name="Test Metric",
+        judge_id="test-model",
+        judge_kwargs=dict(temperature=0.5),
+        user_prompt="Score: {prediction}",
+        response_format=simple_response_format,
+        scoring_fn=scoring_fn,  # ty: ignore[invalid-argument-type]
+    )
 
 
 class TestLLMAsAJudgeMetricInit:

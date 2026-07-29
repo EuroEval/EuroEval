@@ -25,50 +25,6 @@ from leaderboards.result_identity import (
 )
 
 
-def _make_eee_record(
-    model_id: str = "org/model",
-    dataset: str = "test_dataset",
-    validation_split: bool | str | None = False,
-    few_shot: bool | str | None = True,
-    version: str | None = "1.0.0",
-    timestamp: str | int | None = "1234567890",
-) -> dict:
-    """Helper to create an EEE-format record for testing.
-
-    Args:
-        model_id:
-            Model identifier.
-        dataset:
-            Dataset name.
-        validation_split:
-            Validation split flag.
-        few_shot:
-            Few-shot flag.
-        version:
-            EuroEval version.
-        timestamp:
-            Retrieved timestamp.
-
-    Returns:
-        EEE-format record dictionary.
-    """
-    return {
-        "schema_version": "0.2.1",
-        "model_info": {"id": model_id, "name": "Test Model"},
-        "eval_library": {
-            "name": "euroeval",
-            "version": version,
-            "additional_details": {
-                "dataset": dataset,
-                "validation_split": validation_split,
-                "few_shot": few_shot,
-            },
-        },
-        "retrieved_timestamp": timestamp,
-        "evaluation_results": [],
-    }
-
-
 class TestDedupNewerRecord:
     """Tests for dedup_newer_record."""
 
@@ -113,6 +69,50 @@ class TestDedupNewerRecord:
         record_b = _make_eee_record(version="1.9.0", timestamp="200")
         winner = dedup_newer_record(record_a, record_b)
         assert winner is record_a
+
+
+def _make_eee_record(
+    model_id: str = "org/model",
+    dataset: str = "test_dataset",
+    validation_split: bool | str | None = False,
+    few_shot: bool | str | None = True,
+    version: str | None = "1.0.0",
+    timestamp: str | int | None = "1234567890",
+) -> dict:
+    """Helper to create an EEE-format record for testing.
+
+    Args:
+        model_id:
+            Model identifier.
+        dataset:
+            Dataset name.
+        validation_split:
+            Validation split flag.
+        few_shot:
+            Few-shot flag.
+        version:
+            EuroEval version.
+        timestamp:
+            Retrieved timestamp.
+
+    Returns:
+        EEE-format record dictionary.
+    """
+    return {
+        "schema_version": "0.2.1",
+        "model_info": {"id": model_id, "name": "Test Model"},
+        "eval_library": {
+            "name": "euroeval",
+            "version": version,
+            "additional_details": {
+                "dataset": dataset,
+                "validation_split": validation_split,
+                "few_shot": few_shot,
+            },
+        },
+        "retrieved_timestamp": timestamp,
+        "evaluation_results": [],
+    }
 
 
 class TestExtractTimestamp:

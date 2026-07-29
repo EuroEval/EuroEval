@@ -21,42 +21,66 @@ from .utils import get_hf_token
 from .yaml_config import load_yaml_config
 
 
-def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None:
-    """Load the custom datasets module if it exists.
+def try_get_dataset_config_from_repo(
+    dataset_id: str,
+    api_key: str | None,
+    cache_dir: Path,
+    trust_remote_code: bool,
+    run_with_cli: bool,
+) -> DatasetConfig | None:
+    """Try to get a dataset config from a Hugging Face dataset repository.
+
+    The function first looks for a YAML config file (`eval.yaml`) which can be
+    loaded without executing any remote code. If no YAML file is present the
+    function falls back to `euroeval_config.py`, which requires
+    `trust_remote_code=True`.
 
     Args:
-        custom_datasets_file:
-            The path to the custom datasets module.
+        dataset_id:
+            The ID of the dataset to get the config for.
+        api_key:
+            The Hugging Face API key to use to check if the repositories have
+            custom dataset configs.
+        cache_dir:
+            The directory to store the cache in.
+        trust_remote_code:
+            Whether to trust remote code. Only required when loading a Python
+            config (`euroeval_config.py`). YAML configs never require this flag.
+        run_with_cli:
+            Whether the code is being run with the CLI.
 
     Returns:
-        The custom datasets module, or None if it does not exist.
+        The dataset config if it exists, otherwise None.
     """
-    if custom_datasets_file.is_file():
-        spec = importlib.util.spec_from_file_location(
-            name="custom_datasets_module", location=str(custom_datasets_file.resolve())
-        )
-        if spec is None:
+    token = get_hf_token(api_key=api_key)
+    hf_api = HfApi(token=token)
+    if not _repo_exists(hf_api=hf_api, dataset_id=dataset_id):
+        return None
+
+    repo_files = _list_repo_files(hf_api=hf_api, dataset_id=dataset_id, revision="main")
+
+    if "eval.yaml" in repo_files:
+        try:
+            yaml_config = load_yaml_config(
+                hf_api=hf_api, dataset_id=dataset_id, cache_dir=cache_dir
+            )
+            if yaml_config is not None:
+                return yaml_config
+        except Exception as e:
             log_once(
-                message=(
-                    "Could not load the spec for the custom datasets file from "
-                    f"{custom_datasets_file.resolve()}."
-                ),
+                f"Failed to load eval.yaml from dataset repository {dataset_id}. "
+                f"The error was '{e}'. Trying the Python config instead, if it "
+                "exists.",
                 level=logging.ERROR,
             )
-            return None
-        module = importlib.util.module_from_spec(spec=spec)
-        if spec.loader is None:
-            log_once(
-                message=(
-                    "Could not load the module for the custom datasets file from "
-                    f"{custom_datasets_file.resolve()}."
-                ),
-                level=logging.ERROR,
-            )
-            return None
-        spec.loader.exec_module(module)
-        return module
-    return None
+
+    return load_python_config(
+        hf_api=hf_api,
+        dataset_id=dataset_id,
+        cache_dir=cache_dir,
+        trust_remote_code=trust_remote_code,
+        run_with_cli=run_with_cli,
+    )
 
 
 def load_python_config(
@@ -179,63 +203,39 @@ def load_python_config(
     return repo_dataset_config
 
 
-def try_get_dataset_config_from_repo(
-    dataset_id: str,
-    api_key: str | None,
-    cache_dir: Path,
-    trust_remote_code: bool,
-    run_with_cli: bool,
-) -> DatasetConfig | None:
-    """Try to get a dataset config from a Hugging Face dataset repository.
-
-    The function first looks for a YAML config file (`eval.yaml`) which can be
-    loaded without executing any remote code. If no YAML file is present the
-    function falls back to `euroeval_config.py`, which requires
-    `trust_remote_code=True`.
+def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None:
+    """Load the custom datasets module if it exists.
 
     Args:
-        dataset_id:
-            The ID of the dataset to get the config for.
-        api_key:
-            The Hugging Face API key to use to check if the repositories have
-            custom dataset configs.
-        cache_dir:
-            The directory to store the cache in.
-        trust_remote_code:
-            Whether to trust remote code. Only required when loading a Python
-            config (`euroeval_config.py`). YAML configs never require this flag.
-        run_with_cli:
-            Whether the code is being run with the CLI.
+        custom_datasets_file:
+            The path to the custom datasets module.
 
     Returns:
-        The dataset config if it exists, otherwise None.
+        The custom datasets module, or None if it does not exist.
     """
-    token = get_hf_token(api_key=api_key)
-    hf_api = HfApi(token=token)
-    if not _repo_exists(hf_api=hf_api, dataset_id=dataset_id):
-        return None
-
-    repo_files = _list_repo_files(hf_api=hf_api, dataset_id=dataset_id, revision="main")
-
-    if "eval.yaml" in repo_files:
-        try:
-            yaml_config = load_yaml_config(
-                hf_api=hf_api, dataset_id=dataset_id, cache_dir=cache_dir
-            )
-            if yaml_config is not None:
-                return yaml_config
-        except Exception as e:
+    if custom_datasets_file.is_file():
+        spec = importlib.util.spec_from_file_location(
+            name="custom_datasets_module", location=str(custom_datasets_file.resolve())
+        )
+        if spec is None:
             log_once(
-                f"Failed to load eval.yaml from dataset repository {dataset_id}. "
-                f"The error was '{e}'. Trying the Python config instead, if it "
-                "exists.",
+                message=(
+                    "Could not load the spec for the custom datasets file from "
+                    f"{custom_datasets_file.resolve()}."
+                ),
                 level=logging.ERROR,
             )
-
-    return load_python_config(
-        hf_api=hf_api,
-        dataset_id=dataset_id,
-        cache_dir=cache_dir,
-        trust_remote_code=trust_remote_code,
-        run_with_cli=run_with_cli,
-    )
+            return None
+        module = importlib.util.module_from_spec(spec=spec)
+        if spec.loader is None:
+            log_once(
+                message=(
+                    "Could not load the module for the custom datasets file from "
+                    f"{custom_datasets_file.resolve()}."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+        spec.loader.exec_module(module)
+        return module
+    return None

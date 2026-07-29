@@ -7,6 +7,31 @@ from huggingface_hub import HfApi
 from .caching_utils import cache_arguments
 
 
+def get_repo_splits(
+    hf_api: HfApi, dataset_id: str
+) -> tuple[str | None, str | None, str | None]:
+    """Return the (train, val, test) split names for a Hugging Face dataset repo.
+
+    Args:
+        hf_api:
+            The Hugging Face API object.
+        dataset_id:
+            The ID of the dataset to get the split names for.
+
+    Returns:
+        A 3-tuple (train_split, val_split, test_split) where each element is either
+            the name of the matching split or None if no such split exists.
+    """
+    splits = get_repo_split_names(hf_api=hf_api, dataset_id=dataset_id)
+    if splits is None:
+        return None, None, None
+    return (
+        find_split(splits=splits, keyword="train"),
+        find_split(splits=splits, keyword="val"),
+        find_split(splits=splits, keyword="test"),
+    )
+
+
 def find_split(splits: list[str], keyword: str) -> str | None:
     """Return the shortest split name containing `keyword`, or None.
 
@@ -62,28 +87,3 @@ def get_repo_split_names(hf_api: HfApi, dataset_id: str) -> list[str] | None:
             return split_names
 
     return None
-
-
-def get_repo_splits(
-    hf_api: HfApi, dataset_id: str
-) -> tuple[str | None, str | None, str | None]:
-    """Return the (train, val, test) split names for a Hugging Face dataset repo.
-
-    Args:
-        hf_api:
-            The Hugging Face API object.
-        dataset_id:
-            The ID of the dataset to get the split names for.
-
-    Returns:
-        A 3-tuple (train_split, val_split, test_split) where each element is either
-            the name of the matching split or None if no such split exists.
-    """
-    splits = get_repo_split_names(hf_api=hf_api, dataset_id=dataset_id)
-    if splits is None:
-        return None, None, None
-    return (
-        find_split(splits=splits, keyword="train"),
-        find_split(splits=splits, keyword="val"),
-        find_split(splits=splits, keyword="test"),
-    )

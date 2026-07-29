@@ -13,6 +13,21 @@ from euroeval.metrics import (
 )
 
 
+def test_accuracy_ambig_accepts_numpy_ints(
+    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
+) -> None:
+    """Accept numpy integer predictions."""
+    ds = make_dataset("ambig", [1, 2, 0], None, 3)
+    preds = np.array([0, 0, 0], dtype=np.int64)
+    assert accuracy_ambig_metric(
+        predictions=preds,  # ty: ignore[invalid-argument-type]
+        references=[],
+        dataset=ds,
+        dataset_config=None,
+        benchmark_config=None,
+    ) == pytest.approx(1.0)
+
+
 @pytest.fixture(scope="module")
 def make_dataset() -> Callable[[str, Sequence[int], int | None, int], Dataset]:
     """Build small datasets with the columns needed by bias metrics.
@@ -54,21 +69,6 @@ def make_dataset() -> Callable[[str, Sequence[int], int | None, int], Dataset]:
         return Dataset.from_list(records)
 
     return _make
-
-
-def test_accuracy_ambig_accepts_numpy_ints(
-    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
-) -> None:
-    """Accept numpy integer predictions."""
-    ds = make_dataset("ambig", [1, 2, 0], None, 3)
-    preds = np.array([0, 0, 0], dtype=np.int64)
-    assert accuracy_ambig_metric(
-        predictions=preds,  # ty: ignore[invalid-argument-type]
-        references=[],
-        dataset=ds,
-        dataset_config=None,
-        benchmark_config=None,
-    ) == pytest.approx(1.0)
 
 
 # --- AccuracyA tests (ambiguous contexts) ---

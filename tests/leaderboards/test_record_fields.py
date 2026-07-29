@@ -5,6 +5,16 @@ import typing as t
 from leaderboards.record_fields import _metadata_richness_score, deduplicate_records
 
 
+def test_deduplicate_collapses_generative_flag_variants() -> None:
+    """Records differing only in the ``generative`` flag collapse to one.
+
+    This is the Apertus v1.1 regression (issue #1970): the two records render
+    on the same leaderboard row, so only one must survive deduplication.
+    """
+    records = [_record(generative=True), _record(generative=None)]
+    assert len(deduplicate_records(records=records)) == 1
+
+
 def _record(
     name: str = "org/model",
     dataset: str = "angry-tweets",
@@ -38,16 +48,6 @@ def _record(
     if version is not None:
         library["version"] = version
     return {"model_info": model_info, "eval_library": library}
-
-
-def test_deduplicate_collapses_generative_flag_variants() -> None:
-    """Records differing only in the ``generative`` flag collapse to one.
-
-    This is the Apertus v1.1 regression (issue #1970): the two records render
-    on the same leaderboard row, so only one must survive deduplication.
-    """
-    records = [_record(generative=True), _record(generative=None)]
-    assert len(deduplicate_records(records=records)) == 1
 
 
 def test_deduplicate_equal_richness_preserves_first_record() -> None:

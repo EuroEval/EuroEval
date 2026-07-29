@@ -63,124 +63,6 @@ _WORKERPROC_FAILED_RE = re.compile(r"WorkerProc initialization failed", re.IGNOR
 _MAX_LINE_CHARS = 600
 
 
-def _build_error_summary_parts(
-    lines: list[str], worker_block: str | None, traceback: str | None
-) -> list[str]:
-    """Build error summary parts from worker errors and traceback.
-
-    Args:
-        lines:
-            Cleaned output lines.
-        worker_block:
-            Worker error block from _worker_errors.
-        traceback:
-            Traceback from _last_traceback.
-
-    Returns:
-        List of summary parts.
-    """
-    parts: list[str] = []
-    # Prefer worker block unless a genuine traceback was captured
-    if worker_block and (traceback is None or _WORKERPROC_FAILED_RE.search(traceback)):
-        parts.append(worker_block)
-    elif traceback:
-        parts.append(traceback)
-
-    # Add load error (skip vLLM excuse line if traceback present)
-    for line in reversed(lines):
-        if _LOAD_ERROR_RE.search(line):
-            if traceback and "did not mention exactly what" in line:
-                break
-            parts.append(line.strip())
-            break
-
-    # Add summary line if found
-    for line in reversed(lines):
-        if _SUMMARY_LINE_RE.search(line):
-            parts.append(line.strip())
-            break
-
-    return parts
-
-
-def _is_noise_line(line: str) -> bool:
-    """Return True if a line is verbose ``FULL_LOG`` output rather than an error.
-
-    Args:
-        line:
-            A single (already ANSI-stripped) line of euroeval output.
-
-    Returns:
-        True if the line is a serialised result record or a training-progress
-        dict that should be dropped from an error summary.
-    """
-    stripped = line.strip()
-    if any(sub in stripped for sub in _NOISE_SUBSTRINGS):
-        return True
-    return bool(_TRAINING_PROGRESS_RE.match(stripped))
-
-
-def _last_traceback(lines: list[str]) -> str | None:
-    """Return the last Python traceback in ``lines``, or None if there is none.
-
-    Args:
-        lines:
-            The cleaned, noise-filtered output lines.
-
-    Returns:
-        The traceback text, from its ``Traceback (most recent call last):``
-        header through the terminating exception line, or None.
-    """
-    start = None
-    for i, line in enumerate(lines):
-        if line.strip().startswith(_TRACEBACK_START):
-            start = i
-    if start is None:
-        return None
-    # Extend to the exception line that closes the traceback (the first line at
-    # the end that is not an indented frame), keeping the block compact.
-    end = start
-    for i in range(start + 1, len(lines)):
-        end = i
-        if _EXCEPTION_LINE_RE.match(lines[i].strip()):
-            break
-    return "\n".join(lines[start : end + 1]).strip()
-
-
-def _worker_errors(lines: list[str]) -> str | None:
-    """Return the first worker-prefixed error block in ``lines``, or None.
-
-    vLLM's ``WorkerProc`` logs the real cause of an initialisation failure from
-    the worker subprocess, prefixing every line with ``(Worker_TP* pid=*)``.
-    The main process only re-raises a generic ``WorkerProc initialization
-    failed`` exception, so without this helper the actual error -- buried in
-    worker-prefixed ``ERROR`` lines -- is never surfaced.
-
-    Args:
-        lines:
-            The cleaned, noise-filtered output lines.
-
-    Returns:
-        The first worker ``ERROR`` line together with the consecutive
-        worker-prefixed lines that follow it (typically the worker's
-        traceback), joined with newlines, or None when no worker error is
-        present.
-    """
-    start = None
-    for i, line in enumerate(lines):
-        if _WORKER_ERROR_RE.match(line.strip()):
-            start = i
-            break
-    if start is None:
-        return None
-    end = start
-    for i in range(start + 1, len(lines)):
-        if not _WORKER_PREFIX_RE.match(lines[i].strip()):
-            break
-        end = i
-    return "\n".join(lines[start : end + 1]).strip()
-
-
 def completed_languages(lines: list[str], requested_languages: list[str]) -> list[str]:
     """Return requested languages whose official pair coverage is complete.
 
@@ -382,3 +264,121 @@ def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
     if len(summary) > max_chars:
         summary = summary[-max_chars:].strip()
     return summary or "(no output captured)"
+
+
+def _build_error_summary_parts(
+    lines: list[str], worker_block: str | None, traceback: str | None
+) -> list[str]:
+    """Build error summary parts from worker errors and traceback.
+
+    Args:
+        lines:
+            Cleaned output lines.
+        worker_block:
+            Worker error block from _worker_errors.
+        traceback:
+            Traceback from _last_traceback.
+
+    Returns:
+        List of summary parts.
+    """
+    parts: list[str] = []
+    # Prefer worker block unless a genuine traceback was captured
+    if worker_block and (traceback is None or _WORKERPROC_FAILED_RE.search(traceback)):
+        parts.append(worker_block)
+    elif traceback:
+        parts.append(traceback)
+
+    # Add load error (skip vLLM excuse line if traceback present)
+    for line in reversed(lines):
+        if _LOAD_ERROR_RE.search(line):
+            if traceback and "did not mention exactly what" in line:
+                break
+            parts.append(line.strip())
+            break
+
+    # Add summary line if found
+    for line in reversed(lines):
+        if _SUMMARY_LINE_RE.search(line):
+            parts.append(line.strip())
+            break
+
+    return parts
+
+
+def _is_noise_line(line: str) -> bool:
+    """Return True if a line is verbose ``FULL_LOG`` output rather than an error.
+
+    Args:
+        line:
+            A single (already ANSI-stripped) line of euroeval output.
+
+    Returns:
+        True if the line is a serialised result record or a training-progress
+        dict that should be dropped from an error summary.
+    """
+    stripped = line.strip()
+    if any(sub in stripped for sub in _NOISE_SUBSTRINGS):
+        return True
+    return bool(_TRAINING_PROGRESS_RE.match(stripped))
+
+
+def _last_traceback(lines: list[str]) -> str | None:
+    """Return the last Python traceback in ``lines``, or None if there is none.
+
+    Args:
+        lines:
+            The cleaned, noise-filtered output lines.
+
+    Returns:
+        The traceback text, from its ``Traceback (most recent call last):``
+        header through the terminating exception line, or None.
+    """
+    start = None
+    for i, line in enumerate(lines):
+        if line.strip().startswith(_TRACEBACK_START):
+            start = i
+    if start is None:
+        return None
+    # Extend to the exception line that closes the traceback (the first line at
+    # the end that is not an indented frame), keeping the block compact.
+    end = start
+    for i in range(start + 1, len(lines)):
+        end = i
+        if _EXCEPTION_LINE_RE.match(lines[i].strip()):
+            break
+    return "\n".join(lines[start : end + 1]).strip()
+
+
+def _worker_errors(lines: list[str]) -> str | None:
+    """Return the first worker-prefixed error block in ``lines``, or None.
+
+    vLLM's ``WorkerProc`` logs the real cause of an initialisation failure from
+    the worker subprocess, prefixing every line with ``(Worker_TP* pid=*)``.
+    The main process only re-raises a generic ``WorkerProc initialization
+    failed`` exception, so without this helper the actual error -- buried in
+    worker-prefixed ``ERROR`` lines -- is never surfaced.
+
+    Args:
+        lines:
+            The cleaned, noise-filtered output lines.
+
+    Returns:
+        The first worker ``ERROR`` line together with the consecutive
+        worker-prefixed lines that follow it (typically the worker's
+        traceback), joined with newlines, or None when no worker error is
+        present.
+    """
+    start = None
+    for i, line in enumerate(lines):
+        if _WORKER_ERROR_RE.match(line.strip()):
+            start = i
+            break
+    if start is None:
+        return None
+    end = start
+    for i in range(start + 1, len(lines)):
+        if not _WORKER_PREFIX_RE.match(lines[i].strip()):
+            break
+        end = i
+    return "\n".join(lines[start : end + 1]).strip()

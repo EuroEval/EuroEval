@@ -80,41 +80,6 @@ class HuggingFaceMetric(Metric):
         )
         self.metric: "EvaluationModule | None" = None
 
-    def download(
-        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
-    ) -> "HuggingFaceMetric":
-        """Initiates the download of the metric if needed.
-
-        Args:
-            cache_dir:
-                The directory where the metric will be downloaded to.
-            dataset_config (optional):
-                The dataset configuration. Unused by this metric.
-                Defaults to None.
-
-        Returns:
-            The metric object itself.
-        """
-        metric_cache_dir = Path(cache_dir) / "metrics"
-        metric_cache_dir.mkdir(parents=True, exist_ok=True)
-
-        # Configure NLTK to use the cache directory and download required packages
-        # This suppresses output and ensures data is stored in .euroeval_cache
-        ensure_nltk_packages(metric_cache_dir)
-
-        # Load the metric (evaluate.load() may trigger additional NLTK downloads)
-        # but NLTK is already configured, so it will use our cache directory
-        # Wrap in no_terminal_output() to suppress any output from evaluate.load()
-        with no_terminal_output():
-            download_config = DownloadConfig(cache_dir=metric_cache_dir)
-            self.metric = evaluate.load(
-                path=self.huggingface_id,
-                download_config=download_config,
-                download_mode=DownloadMode.REUSE_CACHE_IF_EXISTS,
-                cache_dir=metric_cache_dir.as_posix(),
-            )
-        return self
-
     def __call__(
         self,
         predictions: c.Sequence,
@@ -167,6 +132,41 @@ class HuggingFaceMetric(Metric):
             score = float(score)
 
         return score
+
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
+    ) -> "HuggingFaceMetric":
+        """Initiates the download of the metric if needed.
+
+        Args:
+            cache_dir:
+                The directory where the metric will be downloaded to.
+            dataset_config (optional):
+                The dataset configuration. Unused by this metric.
+                Defaults to None.
+
+        Returns:
+            The metric object itself.
+        """
+        metric_cache_dir = Path(cache_dir) / "metrics"
+        metric_cache_dir.mkdir(parents=True, exist_ok=True)
+
+        # Configure NLTK to use the cache directory and download required packages
+        # This suppresses output and ensures data is stored in .euroeval_cache
+        ensure_nltk_packages(metric_cache_dir)
+
+        # Load the metric (evaluate.load() may trigger additional NLTK downloads)
+        # but NLTK is already configured, so it will use our cache directory
+        # Wrap in no_terminal_output() to suppress any output from evaluate.load()
+        with no_terminal_output():
+            download_config = DownloadConfig(cache_dir=metric_cache_dir)
+            self.metric = evaluate.load(
+                path=self.huggingface_id,
+                download_config=download_config,
+                download_mode=DownloadMode.REUSE_CACHE_IF_EXISTS,
+                cache_dir=metric_cache_dir.as_posix(),
+            )
+        return self
 
 
 class SourceBasedMetric(HuggingFaceMetric):

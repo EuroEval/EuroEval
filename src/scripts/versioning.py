@@ -11,6 +11,12 @@ import subprocess
 from pathlib import Path
 
 
+def bump_major() -> None:
+    """Add one to the major version."""
+    major, _, _ = get_current_version()
+    set_new_version(major + 1, 0, 0)
+
+
 def get_current_version() -> tuple[int, int, int]:
     """Fetch the current version of the package.
 
@@ -86,12 +92,6 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     subprocess.run(args=["git", "tag", f"v{version}"], check=True)
     subprocess.run(args=["git", "push"], check=True)
     subprocess.run(args=["git", "push", "--tags"], check=True)
-
-
-def bump_major() -> None:
-    """Add one to the major version."""
-    major, _, _ = get_current_version()
-    set_new_version(major + 1, 0, 0)
 
 
 def bump_minor() -> None:

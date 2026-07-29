@@ -295,27 +295,6 @@ class BenchmarkModule(ABC):
         """
         ...
 
-    @abstractmethod
-    def prepare_dataset(
-        self, dataset: DatasetDict, task: "Task", itr_idx: int
-    ) -> DatasetDict:
-        """Prepare the dataset for the model.
-
-        This includes things like tokenisation.
-
-        Args:
-            dataset:
-                The dataset to prepare.
-            task:
-                The task to prepare the dataset for.
-            itr_idx:
-                The index of the dataset in the iterator.
-
-        Returns:
-            The prepared dataset.
-        """
-        ...
-
     def prepare_datasets(
         self, datasets: list[DatasetDict], task: "Task"
     ) -> c.Sequence[DatasetDict]:
@@ -368,6 +347,27 @@ class BenchmarkModule(ABC):
 
             datasets[idx] = DatasetDict(datasets_dict)
         return datasets
+
+    @abstractmethod
+    def prepare_dataset(
+        self, dataset: DatasetDict, task: "Task", itr_idx: int
+    ) -> DatasetDict:
+        """Prepare the dataset for the model.
+
+        This includes things like tokenisation.
+
+        Args:
+            dataset:
+                The dataset to prepare.
+            task:
+                The task to prepare the dataset for.
+            itr_idx:
+                The index of the dataset in the iterator.
+
+        Returns:
+            The prepared dataset.
+        """
+        ...
 
     @property
     @abstractmethod

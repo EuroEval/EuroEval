@@ -28,28 +28,6 @@ class TestComputeBPCFromPromptLogprobs:
     """Tests for `compute_bpc_scores` using prompt_logprobs."""
 
     @staticmethod
-    def _create_mock_output(
-        prompt: str,
-        prompt_logprobs: list[dict[int, float] | None],
-        prompt_token_ids: list[int],
-    ) -> MagicMock:
-        """Create a mock vLLM output with prompt_logprobs.
-
-        Args:
-            prompt: The prompt text.
-            prompt_logprobs: List of logprob dicts (or None) per token position.
-            prompt_token_ids: The token ids vLLM scored, aligned with prompt_logprobs.
-
-        Returns:
-            A MagicMock with prompt, prompt_logprobs and prompt_token_ids attributes.
-        """
-        output = MagicMock()
-        output.prompt = prompt
-        output.prompt_logprobs = prompt_logprobs
-        output.prompt_token_ids = prompt_token_ids
-        return output
-
-    @staticmethod
     def _lp(value: float) -> float:
         """Return a logprob value (natural log).
 
@@ -90,6 +68,28 @@ class TestComputeBPCFromPromptLogprobs:
         # BPC = -log2(exp(-0.693)) / 1 = 1.0 / 1 ≈ 1.0 (3x the len-based 0.333).
         assert len(bpc_scores) == 1
         assert abs(bpc_scores[0] - 1.0) < 0.01
+
+    @staticmethod
+    def _create_mock_output(
+        prompt: str,
+        prompt_logprobs: list[dict[int, float] | None],
+        prompt_token_ids: list[int],
+    ) -> MagicMock:
+        """Create a mock vLLM output with prompt_logprobs.
+
+        Args:
+            prompt: The prompt text.
+            prompt_logprobs: List of logprob dicts (or None) per token position.
+            prompt_token_ids: The token ids vLLM scored, aligned with prompt_logprobs.
+
+        Returns:
+            A MagicMock with prompt, prompt_logprobs and prompt_token_ids attributes.
+        """
+        output = MagicMock()
+        output.prompt = prompt
+        output.prompt_logprobs = prompt_logprobs
+        output.prompt_token_ids = prompt_token_ids
+        return output
 
     def test_basic_bpc_computation(self) -> None:
         """Test basic BPC computation with simple prompt_logprobs.

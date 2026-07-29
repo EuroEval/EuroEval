@@ -9,22 +9,6 @@ from euroeval.enums import TaskGroup
 from euroeval.generation import generate
 
 
-def _make_benchmark_config(use_bits_per_character: bool) -> MagicMock:
-    """Build a minimal BenchmarkConfig stand-in.
-
-    Args:
-        use_bits_per_character: Whether to use BPC scoring to flag on the config.
-
-    Returns:
-        A MagicMock with `scoring_method`, `debug`, and `progress_bar` set.
-    """
-    bc = MagicMock()
-    bc.use_bits_per_character = use_bits_per_character
-    bc.debug = False
-    bc.progress_bar = False
-    return bc
-
-
 class TestBPCacheNamespace:
     """Tests that BPC runs use a separate on-disk cache from MCF runs.
 
@@ -92,6 +76,22 @@ class TestBPCacheNamespace:
             cache_name = MockCache.call_args.kwargs["cache_name"]
         assert "fake-ds-model-outputs" in cache_name
         assert "-bpc-" not in cache_name
+
+
+def _make_benchmark_config(use_bits_per_character: bool) -> MagicMock:
+    """Build a minimal BenchmarkConfig stand-in.
+
+    Args:
+        use_bits_per_character: Whether to use BPC scoring to flag on the config.
+
+    Returns:
+        A MagicMock with `scoring_method`, `debug`, and `progress_bar` set.
+    """
+    bc = MagicMock()
+    bc.use_bits_per_character = use_bits_per_character
+    bc.debug = False
+    bc.progress_bar = False
+    return bc
 
 
 @pytest.fixture

@@ -247,30 +247,6 @@ class SecondCandidate(BaseModel):
     distractor: str
 
 
-def _cache_key(row: pd.Series) -> str:
-    """Create a stable cache key for the second-candidate extraction call.
-
-    Args:
-        row: The row of the dataframe.
-
-    Returns:
-        The cache key.
-    """
-    split = str(row["split"]).strip()
-    idx = int(row["idx"])
-    return f"{split}_{idx}"
-
-
-def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE.
-
-    Args:
-        cache: The cache to save.
-    """
-    with open(CACHE_FILE, "w") as cache_file:
-        json.dump(cache, cache_file, indent=4)
-
-
 def _extract_second_candidate(row: pd.Series) -> str:
     """Extract a second candidate referent span from the sentence (cached).
 
@@ -409,6 +385,46 @@ def _extract_second_candidate(row: pd.Series) -> str:
     return second_candidate
 
 
+def _cache_key(row: pd.Series) -> str:
+    """Create a stable cache key for the second-candidate extraction call.
+
+    Args:
+        row: The row of the dataframe.
+
+    Returns:
+        The cache key.
+    """
+    split = str(row["split"]).strip()
+    idx = int(row["idx"])
+    return f"{split}_{idx}"
+
+
+def save_cache(cache: dict) -> None:
+    """Save cache to CACHE_FILE.
+
+    Args:
+        cache: The cache to save.
+    """
+    with open(CACHE_FILE, "w") as cache_file:
+        json.dump(cache, cache_file, indent=4)
+
+
+def _make_instruction(row: pd.Series) -> str:
+    """Create the instruction string in Winogrande-like format.
+
+    Args:
+        row: The row of the dataframe.
+
+    Returns:
+        The instruction string.
+    """
+    text = str(row["text"]).replace("\n", " ").strip()
+    pronoun = str(row["span2_text"]).strip()
+    pronoun_idx = int(row["span2_index"])
+    masked = _mask_pronoun(text=text, pronoun=pronoun, word_index=pronoun_idx)
+    return f"{masked} Да каго або чаго адносіцца пропуск _?"
+
+
 def _mask_pronoun(text: str, pronoun: str, word_index: int) -> str:
     """Replace the pronoun token (by word index) with '_'.
 
@@ -433,22 +449,6 @@ def _mask_pronoun(text: str, pronoun: str, word_index: int) -> str:
         assert False, f"Pronoun not found in token: {token} in text: {text}"
 
     return " ".join(words)
-
-
-def _make_instruction(row: pd.Series) -> str:
-    """Create the instruction string in Winogrande-like format.
-
-    Args:
-        row: The row of the dataframe.
-
-    Returns:
-        The instruction string.
-    """
-    text = str(row["text"]).replace("\n", " ").strip()
-    pronoun = str(row["span2_text"]).strip()
-    pronoun_idx = int(row["span2_index"])
-    masked = _mask_pronoun(text=text, pronoun=pronoun, word_index=pronoun_idx)
-    return f"{masked} Да каго або чаго адносіцца пропуск _?"
 
 
 def is_repetitive(text: str) -> bool:

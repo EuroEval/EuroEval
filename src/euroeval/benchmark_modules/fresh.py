@@ -46,122 +46,6 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig
 
 
-def load_model_and_tokeniser(
-    model_config: "ModelConfig",
-    dataset_config: "DatasetConfig",
-    benchmark_config: "BenchmarkConfig",
-    model_max_length: int,
-) -> tuple["PreTrainedModel", Tokeniser]:
-    """Load the model and tokeniser.
-
-    Args:
-        model_config:
-            The model configuration.
-        dataset_config:
-            The dataset configuration.
-        benchmark_config:
-            The benchmark configuration.
-        model_max_length:
-            The maximum context length of the model.
-
-    Returns:
-        The loaded model and tokeniser.
-
-    Raises:
-        InvalidModel:
-            If the model could not be loaded.
-        InvalidBenchmark:
-            If the model could not be loaded for this particular dataset.
-    """
-    config: "PretrainedConfig"
-    block_terminal_output()
-
-    # Get the fresh model ID and the corresponding real model ID
-    model_id = model_config.model_id.replace("-", "_")
-    fresh_to_real_model_id_mapping = dict(
-        fresh_xlm_roberta_base="FacebookAI/xlm-roberta-base",
-        fresh_electra_small="google/electra-small-discriminator",
-    )
-    real_model_id = fresh_to_real_model_id_mapping[model_id]
-
-    match dataset_config.task.task_group:
-        case TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.SPEED:
-            model_cls_mapping = dict(
-                fresh_xlm_roberta_base=XLMRobertaForSequenceClassification,
-                fresh_electra_small=ElectraForSequenceClassification,
-            )
-        case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-            model_cls_mapping = dict(
-                fresh_xlm_roberta_base=XLMRobertaForMultipleChoice,
-                fresh_electra_small=ElectraForMultipleChoice,
-            )
-        case TaskGroup.TOKEN_CLASSIFICATION:
-            model_cls_mapping = dict(
-                fresh_xlm_roberta_base=XLMRobertaForTokenClassification,
-                fresh_electra_small=ElectraForTokenClassification,
-            )
-        case TaskGroup.QUESTION_ANSWERING:
-            model_cls_mapping = dict(
-                fresh_xlm_roberta_base=XLMRobertaForQuestionAnswering,
-                fresh_electra_small=ElectraForQuestionAnswering,
-            )
-        case _:
-            raise InvalidBenchmark(
-                f"Task group {dataset_config.task.task_group} is not "
-                f"supported for model {model_config.model_id}."
-            )
-    model_cls = model_cls_mapping[model_id]
-
-    # Special case where there is a mismatch between the labels during training and
-    # testing
-    id2label = dataset_config.id2label
-
-    config = AutoConfig.from_pretrained(
-        real_model_id,
-        token=get_hf_token(api_key=benchmark_config.api_key),
-        num_labels=len(id2label),
-        id2label=id2label,
-        label2id={label: id_ for id_, label in id2label.items()},
-        cache_dir=model_config.model_cache_dir,
-        trust_remote_code=benchmark_config.trust_remote_code,
-    )
-    model = model_cls(config)
-
-    if dataset_config.task.task_group == TaskGroup.QUESTION_ANSWERING:
-        model = setup_model_for_question_answering(model=model)
-
-    # Load the tokeniser. If the model is a subclass of a RoBERTa model then we
-    # have to add a prefix space to the tokens, by the way the model is constructed
-    prefix_models = ["Roberta", "GPT", "Deberta"]
-    prefix = any(model_type in type(model).__name__ for model_type in prefix_models)
-    try:
-        tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
-            real_model_id,
-            revision=model_config.revision,
-            token=get_hf_token(api_key=benchmark_config.api_key),
-            add_prefix_space=prefix,
-            cache_dir=model_config.model_cache_dir,
-            use_fast=False if model_config.param == "slow-tokenizer" else True,
-            trust_remote_code=benchmark_config.trust_remote_code,
-        )
-    except (JSONDecodeError, OSError) as e:
-        raise InvalidModel(
-            f"Could not load tokeniser for model {real_model_id!r}."
-        ) from e
-
-    model, tokeniser = align_model_and_tokeniser(
-        model=model,
-        tokeniser=tokeniser,
-        model_max_length=model_max_length,
-        raise_errors=benchmark_config.raise_errors,
-        is_multiple_choice=(
-            dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-        ),
-    )
-
-    return model, tokeniser
-
-
 class FreshEncoderModel(HuggingFaceEncoderModel):
     """A freshly initialised encoder model."""
 
@@ -332,3 +216,119 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
                     f"Vocabulary size for model {self.model_config.model_id} is not "
                     "implemented."
                 )
+
+
+def load_model_and_tokeniser(
+    model_config: "ModelConfig",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+    model_max_length: int,
+) -> tuple["PreTrainedModel", Tokeniser]:
+    """Load the model and tokeniser.
+
+    Args:
+        model_config:
+            The model configuration.
+        dataset_config:
+            The dataset configuration.
+        benchmark_config:
+            The benchmark configuration.
+        model_max_length:
+            The maximum context length of the model.
+
+    Returns:
+        The loaded model and tokeniser.
+
+    Raises:
+        InvalidModel:
+            If the model could not be loaded.
+        InvalidBenchmark:
+            If the model could not be loaded for this particular dataset.
+    """
+    config: "PretrainedConfig"
+    block_terminal_output()
+
+    # Get the fresh model ID and the corresponding real model ID
+    model_id = model_config.model_id.replace("-", "_")
+    fresh_to_real_model_id_mapping = dict(
+        fresh_xlm_roberta_base="FacebookAI/xlm-roberta-base",
+        fresh_electra_small="google/electra-small-discriminator",
+    )
+    real_model_id = fresh_to_real_model_id_mapping[model_id]
+
+    match dataset_config.task.task_group:
+        case TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.SPEED:
+            model_cls_mapping = dict(
+                fresh_xlm_roberta_base=XLMRobertaForSequenceClassification,
+                fresh_electra_small=ElectraForSequenceClassification,
+            )
+        case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+            model_cls_mapping = dict(
+                fresh_xlm_roberta_base=XLMRobertaForMultipleChoice,
+                fresh_electra_small=ElectraForMultipleChoice,
+            )
+        case TaskGroup.TOKEN_CLASSIFICATION:
+            model_cls_mapping = dict(
+                fresh_xlm_roberta_base=XLMRobertaForTokenClassification,
+                fresh_electra_small=ElectraForTokenClassification,
+            )
+        case TaskGroup.QUESTION_ANSWERING:
+            model_cls_mapping = dict(
+                fresh_xlm_roberta_base=XLMRobertaForQuestionAnswering,
+                fresh_electra_small=ElectraForQuestionAnswering,
+            )
+        case _:
+            raise InvalidBenchmark(
+                f"Task group {dataset_config.task.task_group} is not "
+                f"supported for model {model_config.model_id}."
+            )
+    model_cls = model_cls_mapping[model_id]
+
+    # Special case where there is a mismatch between the labels during training and
+    # testing
+    id2label = dataset_config.id2label
+
+    config = AutoConfig.from_pretrained(
+        real_model_id,
+        token=get_hf_token(api_key=benchmark_config.api_key),
+        num_labels=len(id2label),
+        id2label=id2label,
+        label2id={label: id_ for id_, label in id2label.items()},
+        cache_dir=model_config.model_cache_dir,
+        trust_remote_code=benchmark_config.trust_remote_code,
+    )
+    model = model_cls(config)
+
+    if dataset_config.task.task_group == TaskGroup.QUESTION_ANSWERING:
+        model = setup_model_for_question_answering(model=model)
+
+    # Load the tokeniser. If the model is a subclass of a RoBERTa model then we
+    # have to add a prefix space to the tokens, by the way the model is constructed
+    prefix_models = ["Roberta", "GPT", "Deberta"]
+    prefix = any(model_type in type(model).__name__ for model_type in prefix_models)
+    try:
+        tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
+            real_model_id,
+            revision=model_config.revision,
+            token=get_hf_token(api_key=benchmark_config.api_key),
+            add_prefix_space=prefix,
+            cache_dir=model_config.model_cache_dir,
+            use_fast=False if model_config.param == "slow-tokenizer" else True,
+            trust_remote_code=benchmark_config.trust_remote_code,
+        )
+    except (JSONDecodeError, OSError) as e:
+        raise InvalidModel(
+            f"Could not load tokeniser for model {real_model_id!r}."
+        ) from e
+
+    model, tokeniser = align_model_and_tokeniser(
+        model=model,
+        tokeniser=tokeniser,
+        model_max_length=model_max_length,
+        raise_errors=benchmark_config.raise_errors,
+        is_multiple_choice=(
+            dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        ),
+    )
+
+    return model, tokeniser

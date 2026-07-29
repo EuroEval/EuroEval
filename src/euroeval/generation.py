@@ -33,39 +33,6 @@ if t.TYPE_CHECKING:
     from .types import FailedInstance, IterationScores
 
 
-def _labels_match(predicted: object, gold: object) -> bool:
-    """Check whether a predicted label (or label sequence) matches the gold one.
-
-    The comparison is case-insensitive, and for token-classification label
-    sequences it is an exact element-wise match. For sequence classification this
-    mirrors the task metric exactly. For token classification the metric is
-    span-based F1 rather than element-wise equality, but failed instances there
-    only arise when JSON parsing fails entirely (so the prediction defaults to all
-    "o"); exact-match then correctly treats an all-"o" prediction against an
-    all-"o" gold as not a failure, which is the intended behaviour.
-
-    Args:
-        predicted:
-            The model's predicted label, or its list of per-token labels.
-        gold:
-            The gold label, or its list of per-token labels.
-
-    Returns:
-        Whether the prediction matches the gold label.
-    """
-    if isinstance(predicted, str) and isinstance(gold, str):
-        return predicted.lower() == gold.lower()
-    if isinstance(predicted, list) and isinstance(gold, list):
-        predicted_norm = [
-            label.lower() if isinstance(label, str) else label for label in predicted
-        ]
-        gold_norm = [
-            label.lower() if isinstance(label, str) else label for label in gold
-        ]
-        return predicted_norm == gold_norm
-    return predicted == gold
-
-
 def _compute_final_scores(
     benchmark_config: "BenchmarkConfig",
     dataset: Dataset,
@@ -137,6 +104,39 @@ def _compute_final_scores(
             benchmark_config=benchmark_config,
         )
         return {**metrics_scores, "failed_instances": failed_instances}
+
+
+def _labels_match(predicted: object, gold: object) -> bool:
+    """Check whether a predicted label (or label sequence) matches the gold one.
+
+    The comparison is case-insensitive, and for token-classification label
+    sequences it is an exact element-wise match. For sequence classification this
+    mirrors the task metric exactly. For token classification the metric is
+    span-based F1 rather than element-wise equality, but failed instances there
+    only arise when JSON parsing fails entirely (so the prediction defaults to all
+    "o"); exact-match then correctly treats an all-"o" prediction against an
+    all-"o" gold as not a failure, which is the intended behaviour.
+
+    Args:
+        predicted:
+            The model's predicted label, or its list of per-token labels.
+        gold:
+            The gold label, or its list of per-token labels.
+
+    Returns:
+        Whether the prediction matches the gold label.
+    """
+    if isinstance(predicted, str) and isinstance(gold, str):
+        return predicted.lower() == gold.lower()
+    if isinstance(predicted, list) and isinstance(gold, list):
+        predicted_norm = [
+            label.lower() if isinstance(label, str) else label for label in predicted
+        ]
+        gold_norm = [
+            label.lower() if isinstance(label, str) else label for label in gold
+        ]
+        return predicted_norm == gold_norm
+    return predicted == gold
 
 
 def _extract_ground_truth(
@@ -221,6 +221,92 @@ def _get_iteration_iterator(
             f"The batching preference {batching_preference!r} is "
             "currently not supported."
         )
+
+
+def _process_batch(
+    batch: dict[str, t.Any],
+    model: "BenchmarkModule",
+    benchmark_config: "BenchmarkConfig",
+    dataset_config: "DatasetConfig",
+    all_preds: list[str],
+    all_predicted_labels: list[object],
+    all_bpc_scores: list[float],
+    failed_instances: list["FailedInstance"],
+    cache: ModelCache,
+) -> None:
+    """Process a single batch and update accumulators.
+
+    Args:
+        batch:
+            The batch to process.
+        model:
+            The model to use for generation.
+        benchmark_config:
+            The benchmark configuration.
+        dataset_config:
+            The dataset configuration.
+        all_preds:
+            Accumulator for extracted labels.
+        all_predicted_labels:
+            Accumulator for predicted labels.
+        all_bpc_scores:
+            Accumulator for BPC scores.
+        failed_instances:
+            Accumulator for failed instances.
+        cache:
+            The model output cache.
+    """
+    # Ensure batch is in list format
+    single_sample_batch = ("text" in batch and isinstance(batch["text"], str)) or (
+        "messages" in batch and isinstance(batch["messages"][0], dict)
+    )
+    if single_sample_batch:
+        batch = {key: [value] for key, value in batch.items()}
+
+    # Use score() for BPC, generate() for standard generation
+    if benchmark_config.use_bits_per_character:
+        model_output = model.score(inputs=batch)  # type: ignore[attr-defined]
+    else:
+        model_output = model.generate(inputs=batch)
+
+    # In BPC mode we score via prompt_logprobs only
+    if not benchmark_config.use_bits_per_character:
+        extracted_labels = model.extract_labels_from_generation(
+            input_batch=batch, model_output=model_output
+        )
+        if pred2extracted := dataset_config.prompt_label_mapping:
+            extracted_to_predicted = {
+                extracted: predicted for predicted, extracted in pred2extracted.items()
+            }
+            model_output.predicted_labels = [
+                extracted_to_predicted.get(label, label).lower()
+                if isinstance(label, str)
+                else [extracted_to_predicted.get(lbl, lbl).lower() for lbl in label]
+                for label in extracted_labels
+            ]
+        else:
+            model_output.predicted_labels = extracted_labels
+        offset = len(all_preds)
+        for failed_instance in model_output.failed_instances:
+            failed_instance["sample_index"] += offset
+        all_preds.extend(extracted_labels)
+        all_predicted_labels.extend(model_output.predicted_labels or [])
+
+    failed_instances.extend(model_output.failed_instances)
+
+    # Extended logging in debug mode
+    if benchmark_config.debug:
+        debug_log(batch=batch, model_output=model_output, dataset_config=dataset_config)
+
+    cache.add_to_cache(model_inputs=batch, model_output=model_output)
+
+    # Collect BPC scores
+    if benchmark_config.use_bits_per_character and model_output.bpc_scores:
+        all_bpc_scores.extend(model_output.bpc_scores)
+
+    # Save cache often in debug mode
+    if benchmark_config.debug:
+        cache.save()
 
 
 def debug_log(
@@ -332,171 +418,6 @@ def debug_log(
         )
 
 
-def _process_cached_dataset(
-    cached_dataset: Dataset,
-    model: "BenchmarkModule",
-    benchmark_config: "BenchmarkConfig",
-    dataset_config: "DatasetConfig",
-    cache: ModelCache,
-    all_preds: list[str],
-    all_predicted_labels: list[object],
-    all_bpc_scores: list[float],
-    failed_instances: list["FailedInstance"],
-) -> None:
-    """Process cached dataset and update accumulators.
-
-    Args:
-        cached_dataset:
-            The cached dataset to process.
-        model:
-            The model for label extraction.
-        benchmark_config:
-            The benchmark configuration.
-        dataset_config:
-            The dataset configuration.
-        cache:
-            The model output cache.
-        all_preds:
-            Accumulator for extracted labels.
-        all_predicted_labels:
-            Accumulator for predicted labels.
-        all_bpc_scores:
-            Accumulator for BPC scores.
-        failed_instances:
-            Accumulator for failed instances.
-    """
-    model_output = load_cached_model_outputs(cached_dataset=cached_dataset, cache=cache)
-    if not benchmark_config.use_bits_per_character:
-        extracted_labels = model.extract_labels_from_generation(
-            input_batch=cached_dataset[:], model_output=model_output
-        )
-        if model_output.predicted_labels is None:
-            if pred2extracted := dataset_config.prompt_label_mapping:
-                extracted_to_predicted = {
-                    extracted: predicted
-                    for predicted, extracted in pred2extracted.items()
-                }
-                model_output.predicted_labels = [
-                    extracted_to_predicted.get(label, label).lower()
-                    if isinstance(label, str)
-                    else [extracted_to_predicted.get(lbl, lbl).lower() for lbl in label]
-                    for label in extracted_labels
-                ]
-            else:
-                model_output.predicted_labels = extracted_labels
-        offset = len(all_preds)
-        for failed_instance in model_output.failed_instances:
-            failed_instance["sample_index"] += offset
-        all_preds.extend(extracted_labels)
-        all_predicted_labels.extend(model_output.predicted_labels or [])
-
-    failed_instances.extend(model_output.failed_instances)
-
-    if benchmark_config.use_bits_per_character and model_output.bpc_scores:
-        all_bpc_scores.extend(model_output.bpc_scores)
-
-
-def generate_single_iteration(
-    dataset: "Dataset",
-    model: "BenchmarkModule",
-    dataset_config: "DatasetConfig",
-    benchmark_config: "BenchmarkConfig",
-    cache: ModelCache,
-) -> "IterationScores":
-    """Evaluate a model on a dataset in a single iteration through generation.
-
-    Args:
-        dataset:
-            The dataset to evaluate on.
-        model:
-            The model to evaluate.
-        dataset_config:
-            The configuration of the dataset.
-        benchmark_config:
-            The configuration of the benchmark.
-        cache:
-            The model output cache.
-
-    Returns:
-        A dictionary of scores with a 'failed_instances' key.
-    """
-    cache.load()
-
-    # Split dataset into cached and non-cached parts
-    if dataset_config.bootstrap_samples:
-        cached_dataset, non_cached_dataset = split_dataset_into_cached_and_non_cached(
-            dataset=dataset, cache=cache
-        )
-    else:
-        cached_dataset = Dataset.from_dict({})
-        non_cached_dataset = dataset
-
-    all_preds: list[str] = []
-    all_predicted_labels: list[object] = []
-    all_bpc_scores: list[float] = []
-    failed_instances: list["FailedInstance"] = []
-
-    # Process non-cached dataset
-    if len(non_cached_dataset) > 0:
-        itr = _get_iteration_iterator(
-            dataset=non_cached_dataset,
-            batching_preference=model.batching_preference,
-            progress_bar=benchmark_config.progress_bar,
-        )
-
-        for batch in itr:
-            assert isinstance(batch, dict), (
-                f"Expected a dictionary but got {type(batch)}."
-            )
-            _process_batch(
-                batch=batch,
-                model=model,
-                benchmark_config=benchmark_config,
-                dataset_config=dataset_config,
-                all_preds=all_preds,
-                all_predicted_labels=all_predicted_labels,
-                all_bpc_scores=all_bpc_scores,
-                failed_instances=failed_instances,
-                cache=cache,
-            )
-
-        if isinstance(itr, tqdm):
-            itr.close()
-        cache.save()
-
-    # Process cached dataset
-    if len(cached_dataset) > 0:
-        _process_cached_dataset(
-            cached_dataset=cached_dataset,
-            model=model,
-            benchmark_config=benchmark_config,
-            dataset_config=dataset_config,
-            cache=cache,
-            all_preds=all_preds,
-            all_predicted_labels=all_predicted_labels,
-            all_bpc_scores=all_bpc_scores,
-            failed_instances=failed_instances,
-        )
-
-    # Extract ground truth labels
-    ground_truth = _extract_ground_truth(
-        non_cached_dataset=non_cached_dataset, cached_dataset=cached_dataset
-    )
-
-    # Compute and return final scores
-    return _compute_final_scores(
-        benchmark_config=benchmark_config,
-        dataset=dataset,
-        dataset_config=dataset_config,
-        model=model,
-        all_bpc_scores=all_bpc_scores,
-        all_preds=all_preds,
-        all_predicted_labels=all_predicted_labels,
-        ground_truth=ground_truth,
-        failed_instances=failed_instances,
-    )
-
-
 def generate(
     model: "BenchmarkModule",
     datasets: c.Sequence["DatasetDict"],
@@ -604,28 +525,131 @@ def generate(
     return scores
 
 
-def _process_batch(
-    batch: dict[str, t.Any],
+def generate_single_iteration(
+    dataset: "Dataset",
+    model: "BenchmarkModule",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+    cache: ModelCache,
+) -> "IterationScores":
+    """Evaluate a model on a dataset in a single iteration through generation.
+
+    Args:
+        dataset:
+            The dataset to evaluate on.
+        model:
+            The model to evaluate.
+        dataset_config:
+            The configuration of the dataset.
+        benchmark_config:
+            The configuration of the benchmark.
+        cache:
+            The model output cache.
+
+    Returns:
+        A dictionary of scores with a 'failed_instances' key.
+    """
+    cache.load()
+
+    # Split dataset into cached and non-cached parts
+    if dataset_config.bootstrap_samples:
+        cached_dataset, non_cached_dataset = split_dataset_into_cached_and_non_cached(
+            dataset=dataset, cache=cache
+        )
+    else:
+        cached_dataset = Dataset.from_dict({})
+        non_cached_dataset = dataset
+
+    all_preds: list[str] = []
+    all_predicted_labels: list[object] = []
+    all_bpc_scores: list[float] = []
+    failed_instances: list["FailedInstance"] = []
+
+    # Process non-cached dataset
+    if len(non_cached_dataset) > 0:
+        itr = _get_iteration_iterator(
+            dataset=non_cached_dataset,
+            batching_preference=model.batching_preference,
+            progress_bar=benchmark_config.progress_bar,
+        )
+
+        for batch in itr:
+            assert isinstance(batch, dict), (
+                f"Expected a dictionary but got {type(batch)}."
+            )
+            _process_batch(
+                batch=batch,
+                model=model,
+                benchmark_config=benchmark_config,
+                dataset_config=dataset_config,
+                all_preds=all_preds,
+                all_predicted_labels=all_predicted_labels,
+                all_bpc_scores=all_bpc_scores,
+                failed_instances=failed_instances,
+                cache=cache,
+            )
+
+        if isinstance(itr, tqdm):
+            itr.close()
+        cache.save()
+
+    # Process cached dataset
+    if len(cached_dataset) > 0:
+        _process_cached_dataset(
+            cached_dataset=cached_dataset,
+            model=model,
+            benchmark_config=benchmark_config,
+            dataset_config=dataset_config,
+            cache=cache,
+            all_preds=all_preds,
+            all_predicted_labels=all_predicted_labels,
+            all_bpc_scores=all_bpc_scores,
+            failed_instances=failed_instances,
+        )
+
+    # Extract ground truth labels
+    ground_truth = _extract_ground_truth(
+        non_cached_dataset=non_cached_dataset, cached_dataset=cached_dataset
+    )
+
+    # Compute and return final scores
+    return _compute_final_scores(
+        benchmark_config=benchmark_config,
+        dataset=dataset,
+        dataset_config=dataset_config,
+        model=model,
+        all_bpc_scores=all_bpc_scores,
+        all_preds=all_preds,
+        all_predicted_labels=all_predicted_labels,
+        ground_truth=ground_truth,
+        failed_instances=failed_instances,
+    )
+
+
+def _process_cached_dataset(
+    cached_dataset: Dataset,
     model: "BenchmarkModule",
     benchmark_config: "BenchmarkConfig",
     dataset_config: "DatasetConfig",
+    cache: ModelCache,
     all_preds: list[str],
     all_predicted_labels: list[object],
     all_bpc_scores: list[float],
     failed_instances: list["FailedInstance"],
-    cache: ModelCache,
 ) -> None:
-    """Process a single batch and update accumulators.
+    """Process cached dataset and update accumulators.
 
     Args:
-        batch:
-            The batch to process.
+        cached_dataset:
+            The cached dataset to process.
         model:
-            The model to use for generation.
+            The model for label extraction.
         benchmark_config:
             The benchmark configuration.
         dataset_config:
             The dataset configuration.
+        cache:
+            The model output cache.
         all_preds:
             Accumulator for extracted labels.
         all_predicted_labels:
@@ -634,39 +658,26 @@ def _process_batch(
             Accumulator for BPC scores.
         failed_instances:
             Accumulator for failed instances.
-        cache:
-            The model output cache.
     """
-    # Ensure batch is in list format
-    single_sample_batch = ("text" in batch and isinstance(batch["text"], str)) or (
-        "messages" in batch and isinstance(batch["messages"][0], dict)
-    )
-    if single_sample_batch:
-        batch = {key: [value] for key, value in batch.items()}
-
-    # Use score() for BPC, generate() for standard generation
-    if benchmark_config.use_bits_per_character:
-        model_output = model.score(inputs=batch)  # type: ignore[attr-defined]
-    else:
-        model_output = model.generate(inputs=batch)
-
-    # In BPC mode we score via prompt_logprobs only
+    model_output = load_cached_model_outputs(cached_dataset=cached_dataset, cache=cache)
     if not benchmark_config.use_bits_per_character:
         extracted_labels = model.extract_labels_from_generation(
-            input_batch=batch, model_output=model_output
+            input_batch=cached_dataset[:], model_output=model_output
         )
-        if pred2extracted := dataset_config.prompt_label_mapping:
-            extracted_to_predicted = {
-                extracted: predicted for predicted, extracted in pred2extracted.items()
-            }
-            model_output.predicted_labels = [
-                extracted_to_predicted.get(label, label).lower()
-                if isinstance(label, str)
-                else [extracted_to_predicted.get(lbl, lbl).lower() for lbl in label]
-                for label in extracted_labels
-            ]
-        else:
-            model_output.predicted_labels = extracted_labels
+        if model_output.predicted_labels is None:
+            if pred2extracted := dataset_config.prompt_label_mapping:
+                extracted_to_predicted = {
+                    extracted: predicted
+                    for predicted, extracted in pred2extracted.items()
+                }
+                model_output.predicted_labels = [
+                    extracted_to_predicted.get(label, label).lower()
+                    if isinstance(label, str)
+                    else [extracted_to_predicted.get(lbl, lbl).lower() for lbl in label]
+                    for label in extracted_labels
+                ]
+            else:
+                model_output.predicted_labels = extracted_labels
         offset = len(all_preds)
         for failed_instance in model_output.failed_instances:
             failed_instance["sample_index"] += offset
@@ -675,16 +686,5 @@ def _process_batch(
 
     failed_instances.extend(model_output.failed_instances)
 
-    # Extended logging in debug mode
-    if benchmark_config.debug:
-        debug_log(batch=batch, model_output=model_output, dataset_config=dataset_config)
-
-    cache.add_to_cache(model_inputs=batch, model_output=model_output)
-
-    # Collect BPC scores
     if benchmark_config.use_bits_per_character and model_output.bpc_scores:
         all_bpc_scores.extend(model_output.bpc_scores)
-
-    # Save cache often in debug mode
-    if benchmark_config.debug:
-        cache.save()

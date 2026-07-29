@@ -9,6 +9,42 @@ import typing as t
 from .records import get_bool_field, get_record_hash
 
 
+def deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
+    """Deduplicate records by hash, keeping the newest EuroEval version per hash.
+
+    Records sharing a :func:`~leaderboards.records.get_record_hash` value render
+    on the same leaderboard row, so only one should survive. Among records with
+    an equal (newest) version, the one with richer metadata wins (more non-default
+    fields for commercially_licensed, open, merge, trained_from_scratch,
+    generative_type, model_url). If still tied, the first one in input order is
+    kept to preserve explicit boolean values against conflicting later duplicates.
+    Output is ordered by hash for stable, diff-friendly downstream files.
+
+    Args:
+        records:
+            The records to deduplicate. Every record must carry a dataset (so
+            that hashing succeeds).
+
+    Returns:
+        The deduplicated records, ordered by hash. Note that
+        ``get_record_hash`` raises ``ValueError`` if any record has no dataset.
+    """
+    best: dict[str, tuple[list[int], int, dict[str, t.Any]]] = {}
+    for record in records:
+        hash_value = get_record_hash(record=record)
+        version = list(map(int, (get_version(record=record) or "0.0.0").split(".")))
+        richness = _metadata_richness_score(record=record)
+        existing = best.get(hash_value)
+        # Prefer: newer version > richer metadata
+        # On tie (same version and richness), keep existing record to preserve
+        # explicit boolean values (e.g. False) against conflicting later duplicates
+        if existing is None or version > existing[0]:
+            best[hash_value] = (version, richness, record)
+        elif version == existing[0] and richness > existing[1]:
+            best[hash_value] = (version, richness, record)
+    return [record for _, (_, _, record) in sorted(best.items())]
+
+
 def _metadata_richness_score(record: dict) -> int:
     """Score how "rich" a record's metadata is.
 
@@ -69,42 +105,6 @@ def get_version(record: dict) -> str | None:
     if version:
         return re.sub(r"\.dev\d+", "", version)
     return None
-
-
-def deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
-    """Deduplicate records by hash, keeping the newest EuroEval version per hash.
-
-    Records sharing a :func:`~leaderboards.records.get_record_hash` value render
-    on the same leaderboard row, so only one should survive. Among records with
-    an equal (newest) version, the one with richer metadata wins (more non-default
-    fields for commercially_licensed, open, merge, trained_from_scratch,
-    generative_type, model_url). If still tied, the first one in input order is
-    kept to preserve explicit boolean values against conflicting later duplicates.
-    Output is ordered by hash for stable, diff-friendly downstream files.
-
-    Args:
-        records:
-            The records to deduplicate. Every record must carry a dataset (so
-            that hashing succeeds).
-
-    Returns:
-        The deduplicated records, ordered by hash. Note that
-        ``get_record_hash`` raises ``ValueError`` if any record has no dataset.
-    """
-    best: dict[str, tuple[list[int], int, dict[str, t.Any]]] = {}
-    for record in records:
-        hash_value = get_record_hash(record=record)
-        version = list(map(int, (get_version(record=record) or "0.0.0").split(".")))
-        richness = _metadata_richness_score(record=record)
-        existing = best.get(hash_value)
-        # Prefer: newer version > richer metadata
-        # On tie (same version and richness), keep existing record to preserve
-        # explicit boolean values (e.g. False) against conflicting later duplicates
-        if existing is None or version > existing[0]:
-            best[hash_value] = (version, richness, record)
-        elif version == existing[0] and richness > existing[1]:
-            best[hash_value] = (version, richness, record)
-    return [record for _, (_, _, record) in sorted(best.items())]
 
 
 def get_few_shot(record: dict) -> bool:

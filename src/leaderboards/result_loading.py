@@ -16,6 +16,57 @@ from .result_identity import dedup_newer_record, identity_from_eee_record
 logger = logging.getLogger(__name__)
 
 
+@cache
+def load_raw_results() -> list[dict[str, t.Any]]:
+    """Load all EEE-format results from the results directory.
+
+    Syncs the EuroEval/results bucket into RESULTS_DIR, then reads every
+    per-record JSON file from the tree structure
+    (``results/<model>/<dataset>__<split>__<shot>.json``). Records staged in
+    NEW_RESULTS_PATH (a transient JSONL file) are folded in (and the staging
+    file removed) so manually added results are picked up exactly once. No
+    distinction is made between raw and processed results; leaderboard consumers
+    receive the EEE records exactly as stored.
+
+    Deduplicates by the canonical storage identity
+    ``(model_id, dataset, validation_split, few_shot)`` using
+    :func:`.result_identity.dedup_newer_record` to keep the newest record per
+    identity.
+
+    Only the EEE envelope structure is validated here. The "precious" metadata
+    fields (commercially_licensed, open, trained_from_scratch) are intentionally
+    not required at load time: results posted from compute VMs can't supply them,
+    so they're filled in later by the interactive ``add_missing_entries`` step
+    and enforced when the processed records are written back out.
+
+    Returns:
+        All evaluation results in EEE format, deduplicated by storage identity.
+
+    Raises:
+        ValueError:
+            If a loaded record is not an EEE-format record.
+    """
+    _sync_results_from_bucket()
+
+    records = load_records_from_result_tree(results_dir=RESULTS_DIR)
+    logger.info(f"Loaded {len(records):,} existing results from {RESULTS_DIR}.")
+
+    if NEW_RESULTS_PATH.exists():
+        new_records = load_records_from_jsonl_files(paths=[NEW_RESULTS_PATH])
+        logger.info(f"Loaded {len(new_records):,} new results from staging file.")
+        records.extend(new_records)
+        NEW_RESULTS_PATH.unlink()
+
+    # Deduplicate by storage identity, keeping the newest record per identity
+    records = _dedup_by_storage_identity(records=records)
+
+    for idx, record in enumerate(records, start=1):
+        if not is_eee_record(record=record):
+            raise ValueError(f"raw results record {idx:,} is not an EEE-format record.")
+
+    return records
+
+
 def _dedup_by_storage_identity(
     records: list[dict[str, t.Any]],
 ) -> list[dict[str, t.Any]]:
@@ -71,54 +122,3 @@ def _sync_results_from_bucket() -> None:
     backup_path = backup_results()
     if backup_path:
         logger.info(f"Backup created at {backup_path}.")
-
-
-@cache
-def load_raw_results() -> list[dict[str, t.Any]]:
-    """Load all EEE-format results from the results directory.
-
-    Syncs the EuroEval/results bucket into RESULTS_DIR, then reads every
-    per-record JSON file from the tree structure
-    (``results/<model>/<dataset>__<split>__<shot>.json``). Records staged in
-    NEW_RESULTS_PATH (a transient JSONL file) are folded in (and the staging
-    file removed) so manually added results are picked up exactly once. No
-    distinction is made between raw and processed results; leaderboard consumers
-    receive the EEE records exactly as stored.
-
-    Deduplicates by the canonical storage identity
-    ``(model_id, dataset, validation_split, few_shot)`` using
-    :func:`.result_identity.dedup_newer_record` to keep the newest record per
-    identity.
-
-    Only the EEE envelope structure is validated here. The "precious" metadata
-    fields (commercially_licensed, open, trained_from_scratch) are intentionally
-    not required at load time: results posted from compute VMs can't supply them,
-    so they're filled in later by the interactive ``add_missing_entries`` step
-    and enforced when the processed records are written back out.
-
-    Returns:
-        All evaluation results in EEE format, deduplicated by storage identity.
-
-    Raises:
-        ValueError:
-            If a loaded record is not an EEE-format record.
-    """
-    _sync_results_from_bucket()
-
-    records = load_records_from_result_tree(results_dir=RESULTS_DIR)
-    logger.info(f"Loaded {len(records):,} existing results from {RESULTS_DIR}.")
-
-    if NEW_RESULTS_PATH.exists():
-        new_records = load_records_from_jsonl_files(paths=[NEW_RESULTS_PATH])
-        logger.info(f"Loaded {len(new_records):,} new results from staging file.")
-        records.extend(new_records)
-        NEW_RESULTS_PATH.unlink()
-
-    # Deduplicate by storage identity, keeping the newest record per identity
-    records = _dedup_by_storage_identity(records=records)
-
-    for idx, record in enumerate(records, start=1):
-        if not is_eee_record(record=record):
-            raise ValueError(f"raw results record {idx:,} is not an EEE-format record.")
-
-    return records
