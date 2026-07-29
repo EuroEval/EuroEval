@@ -1714,6 +1714,7 @@ def load_model(
             hf_overrides=hf_overrides,
             vllm_params=vllm_params,
             model_config=model_config,
+            hf_model_config=hf_model_config,
             force_single_gpu=force_single_gpu,
         )
 
@@ -1742,6 +1743,7 @@ def _create_llm_instance(
     hf_overrides: dict[str, t.Any],
     vllm_params: dict[str, t.Any],
     model_config: "ModelConfig",
+    hf_model_config: "PretrainedConfig",
     force_single_gpu: bool = False,
 ) -> "LLM":
     """Create a vLLM LLM instance.
@@ -1767,6 +1769,8 @@ def _create_llm_instance(
             vLLM parameters.
         model_config:
             Model configuration.
+        hf_model_config:
+            The Hugging Face model configuration.
         force_single_gpu:
             If True, forces tensor parallelism to 1.
 
@@ -1774,7 +1778,7 @@ def _create_llm_instance(
         The loaded vLLM LLM instance.
     """
     backend, tp_size, pp_size = select_backend_and_parallelism(
-        force_single_gpu=force_single_gpu
+        force_single_gpu=force_single_gpu, hf_model_config=hf_model_config
     )
 
     llm_kwargs: dict[str, t.Any] = {
@@ -1807,13 +1811,17 @@ def _create_llm_instance(
 
 
 def select_backend_and_parallelism(
-    force_single_gpu: bool = False,
+    force_single_gpu: bool = False, hf_model_config: "PretrainedConfig | None" = None
 ) -> tuple[str, int, int]:
     """Determine the distributed backend and parallelism for vLLM.
 
     Args:
         force_single_gpu:
             If True, forces tensor parallelism to 1.
+        hf_model_config:
+            The Hugging Face model configuration, used to keep the tensor parallel
+            size compatible with Mixture-of-Experts expert weight alignment. If None,
+            no such adjustment is made.
 
     Returns:
         Backend, tensor parallel size, and pipeline parallel size.
@@ -1875,7 +1883,60 @@ def select_backend_and_parallelism(
             level=logging.DEBUG,
         )
 
+    tensor_parallel_size = _moe_aligned_tensor_parallel_size(
+        tensor_parallel_size=tensor_parallel_size, hf_model_config=hf_model_config
+    )
+
     return distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size
+
+
+def _moe_aligned_tensor_parallel_size(
+    tensor_parallel_size: int, hf_model_config: "PretrainedConfig | None"
+) -> int:
+    """Reduce the tensor parallel size to keep MoE expert weights 128-aligned.
+
+    Fused Mixture-of-Experts kernels (notably the FlashInfer TRTLLM MoE kernels used
+    on Blackwell GPUs) require the per-GPU expert intermediate size to be a multiple
+    of 128. vLLM shards ``moe_intermediate_size`` across the tensor parallel ranks, so
+    a tensor parallel size that leaves a non-128-aligned shard crashes the worker
+    during memory profiling with a "second dimension of weights must be a multiple of
+    128" error. That error is only ever printed from the worker subprocess and never
+    reaches the caller (the engine surfaces a generic "see root cause above" error), so
+    it cannot be caught and retried reactively. Instead we pick, up front, the largest
+    tensor parallel size not exceeding the requested one that keeps the shard
+    128-aligned, falling back to 1.
+
+    Args:
+        tensor_parallel_size:
+            The requested tensor parallel size.
+        hf_model_config:
+            The Hugging Face model configuration, or None if unavailable.
+
+    Returns:
+        A tensor parallel size that keeps the MoE expert intermediate size a multiple
+        of 128 per GPU. Non-MoE models are returned unchanged.
+    """
+    if hf_model_config is None or tensor_parallel_size <= 1:
+        return tensor_parallel_size
+
+    moe_intermediate_size = getattr(hf_model_config, "moe_intermediate_size", None)
+    if not isinstance(moe_intermediate_size, int) or moe_intermediate_size <= 0:
+        return tensor_parallel_size
+
+    aligned_size = tensor_parallel_size
+    while aligned_size > 1 and moe_intermediate_size % (128 * aligned_size) != 0:
+        aligned_size -= 1
+
+    if aligned_size != tensor_parallel_size:
+        log_once(
+            f"Reducing the tensor parallel size from {tensor_parallel_size:,} to "
+            f"{aligned_size:,}, since the Mixture-of-Experts expert intermediate size "
+            f"({moe_intermediate_size:,}) would otherwise not be a multiple of 128 per "
+            "GPU, which the fused MoE kernels require (notably on Blackwell GPUs).",
+            level=logging.INFO,
+        )
+
+    return aligned_size
 
 
 def _determine_dtype(

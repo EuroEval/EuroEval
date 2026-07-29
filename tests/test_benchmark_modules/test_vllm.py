@@ -12,6 +12,7 @@ from transformers.models.auto.image_processing_auto import AutoImageProcessor
 from euroeval.benchmark_modules.vllm import (
     VLLMModel,
     _is_mistral_tokeniser_model,
+    _moe_aligned_tensor_parallel_size,
     _safe_batch_decode,
     _skip_image_processor_context,
     compute_token_budget,
@@ -714,6 +715,46 @@ class TestLoadModelMultimodalBudgetRetry:
 
         assert call_count[0] == 2, "LLM should be called twice: first attempt + retry"
         assert result is mock_llm_instance
+
+
+class TestMoeAlignedTensorParallelSize:
+    """Tests for `_moe_aligned_tensor_parallel_size`.
+
+    Regression for: all-MoE models such as ``JetBrains/Mellum2-12B-A2.5B-Base`` whose
+    ``moe_intermediate_size`` (896) is not a multiple of 128 once sharded across the
+    requested number of GPUs. The fused MoE kernels (notably on Blackwell GPUs) reject
+    such shards during memory profiling, and that error never reaches the caller, so the
+    tensor parallel size must be reduced up front to keep the shard 128-aligned.
+    """
+
+    def test_none_config_is_returned_unchanged(self) -> None:
+        """A missing model config leaves the tensor parallel size unchanged."""
+        assert _moe_aligned_tensor_parallel_size(4, None) == 4
+
+    def test_reduces_size_to_keep_expert_shard_aligned(self) -> None:
+        """Mellum2's 896 expert size forces a drop from 2 GPUs to 1 (896 = 128 x 7)."""
+        # 896 / 2 = 448 and 448 % 128 == 64 != 0, so only tp in {1, 7} stay aligned.
+        hf_model_config = MagicMock(spec=["moe_intermediate_size"])
+        hf_model_config.moe_intermediate_size = 896
+        assert _moe_aligned_tensor_parallel_size(2, hf_model_config) == 1
+
+    def test_returns_size_unchanged_for_non_moe_config(self) -> None:
+        """A config without ``moe_intermediate_size`` is left unchanged."""
+        hf_model_config = MagicMock(spec=[])
+        assert _moe_aligned_tensor_parallel_size(4, hf_model_config) == 4
+
+    def test_returns_size_unchanged_when_already_aligned(self) -> None:
+        """An aligned expert size keeps the requested tensor parallel size."""
+        # 1024 / 2 = 512, which is a multiple of 128.
+        hf_model_config = MagicMock(spec=["moe_intermediate_size"])
+        hf_model_config.moe_intermediate_size = 1024
+        assert _moe_aligned_tensor_parallel_size(2, hf_model_config) == 2
+
+    def test_single_gpu_request_is_never_reduced(self) -> None:
+        """A single-GPU request is returned unchanged regardless of expert size."""
+        hf_model_config = MagicMock(spec=["moe_intermediate_size"])
+        hf_model_config.moe_intermediate_size = 896
+        assert _moe_aligned_tensor_parallel_size(1, hf_model_config) == 1
 
 
 class TestNvccCheck:
