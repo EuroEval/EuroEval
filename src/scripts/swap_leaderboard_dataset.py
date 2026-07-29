@@ -229,6 +229,15 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     "when the evaluations already ran).",
 )
 @click.option(
+    "--allow-eval-failures/--no-allow-eval-failures",
+    "allow_eval_failures",
+    is_flag=True,
+    default=False,
+    help="Proceed with the officiality swap even when some evaluations failed or "
+    "produced no result. By default the swap is aborted so the leaderboard never "
+    "shows a ranked model with no score on the new official dataset.",
+)
+@click.option(
     "--pr/--no-pr",
     is_flag=True,
     default=True,
@@ -264,6 +273,7 @@ def main(
     api_providers: str | None,
     gpu_memory_utilization: float | None,
     skip_eval: bool,
+    allow_eval_failures: bool,
     pr: bool,
     reviewer: str,
     force: bool,
@@ -274,7 +284,9 @@ def main(
     Raises:
         ClickException:
             If --api-providers is set without --include-api, if --pr is set without
-            --reviewer, or if --old-dataset and --add-only are both set or both unset.
+            --reviewer, if --old-dataset and --add-only are both set or both unset,
+            or when evaluations failed or produced no result and
+            --allow-eval-failures is not passed.
     """
     # Validation checks
     if api_providers and not include_api:
@@ -328,10 +340,11 @@ def main(
             target_codes=target_codes,
         )
 
+    eval_failures: list[str] = []
     if skip_eval:
         logger.info("--skip-eval set; skipping the evaluation phase.")
     else:
-        run_evaluations(
+        eval_failures = run_evaluations(
             old_dataset=old_dataset,
             new_datasets=new_datasets,
             swapped_task=old_config.task.name
@@ -346,6 +359,15 @@ def main(
         )
         if not dry_run:
             upload_results_to_bucket(results_file=EUROEVAL_BENCHMARK_RESULTS_PATH)
+
+    if eval_failures and not allow_eval_failures and not dry_run:
+        raise click.ClickException(
+            f"{len(eval_failures)} evaluation(s) failed or produced no result, so "
+            "refusing to flip dataset officiality (the leaderboard would otherwise "
+            "show ranked models with no score on the new official dataset). Re-run to "
+            "retry the failures, or pass --allow-eval-failures to swap anyway. "
+            f"Failed: {', '.join(eval_failures)}."
+        )
 
     changed = apply_swap(
         old_dataset=old_dataset, new_datasets=new_datasets, dry_run=dry_run
@@ -1103,7 +1125,7 @@ def run_evaluations(
     gpu_memory_utilization: float | None,
     force: bool,
     dry_run: bool,
-) -> None:
+) -> list[str]:
     """Evaluate every ranked model on the new dataset(s), mirroring their setup.
 
     Args:
@@ -1125,6 +1147,9 @@ def run_evaluations(
             When True, re-run pairs already holding a new-dataset result.
         dry_run:
             When True, print the plan without running.
+
+    Returns:
+        The list of failed job descriptions (empty on dry-run).
     """
     corpus = load_corpus()
     ranked = ranked_model_language_pairs(
@@ -1173,7 +1198,7 @@ def run_evaluations(
                 f"[{tag}] {job.model_id} :: {job.datasets} :: "
                 f"{', '.join(job.languages)} :: {split}, {shots}"
             )
-        return
+        return []
 
     evaluated, failed = execute_jobs(
         jobs=jobs, datasets=new_datasets, gpu_memory_utilization=gpu_memory_utilization
@@ -1185,6 +1210,7 @@ def run_evaluations(
         skipped_existing=skipped_existing,
         skipped_too_large=skipped_too_large,
     )
+    return failed
 
 
 def _log_summary(
@@ -1403,9 +1429,92 @@ def execute_jobs(
                     f"{output_tail}"
                 )
                 failed.append(f"{job.model_id} (exit {returncode})")
+                continue
+            missing = _job_missing_results(
+                job=job, result_keys=_benchmark_result_keys()
+            )
+            if missing:
+                logger.warning(
+                    f"{job.model_id}: euroeval exited 0 but produced no result for "
+                    f"{', '.join(missing)}; the benchmark(s) likely errored (e.g. an "
+                    "out-of-memory at model load). Counting as failed."
+                )
+                failed.append(f"{job.model_id} (no result)")
             else:
                 evaluated.append(job.model_id)
     return evaluated, failed
+
+
+def _benchmark_result_keys() -> set[tuple[str, str, str]]:
+    """Return the (model, dataset, language) triples in the local CLI results file.
+
+    Reads ``euroeval_benchmark_results.jsonl`` (where ``euroeval`` CLI runs append
+    their records) and returns the set of ``(plain_model_id, dataset, language)``
+    triples it currently holds, so a just-run job can be checked for a real result.
+
+    Returns:
+        The set of triples present, empty when the results file is absent.
+    """
+    if not EUROEVAL_BENCHMARK_RESULTS_PATH.exists():
+        return set()
+    keys: set[tuple[str, str, str]] = set()
+    for record in load_records_from_jsonl_files([EUROEVAL_BENCHMARK_RESULTS_PATH]):
+        model_info = t.cast(dict[str, object], record.get("model_info", {}))
+        model = plain_model_id(str(model_info.get("name") or model_info.get("id", "")))
+        dataset = get_dataset(record=record)
+        if not model or not dataset:
+            continue
+        for language in _record_languages(record=record):
+            keys.add((model, str(dataset), language))
+    return keys
+
+
+def _record_languages(record: dict[str, object]) -> list[str]:
+    """Return the language codes a result record covers.
+
+    Args:
+        record:
+            A result record in EEE format.
+
+    Returns:
+        The list of language codes.
+    """
+    raw = (
+        record.get("eval_library", {})
+        .get("additional_details", {})
+        .get("languages", "[]")
+    )
+    if isinstance(raw, list):
+        return [str(code) for code in raw]
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return []
+    return [str(code) for code in parsed] if isinstance(parsed, list) else []
+
+
+def _job_missing_results(
+    job: "Job", result_keys: set[tuple[str, str, str]]
+) -> list[str]:
+    """Return ``"dataset/language"`` labels a job should have produced but didn't.
+
+    Args:
+        job:
+            The job that was run.
+        result_keys:
+            The (model, dataset, language) triples present in the local results file.
+
+    Returns:
+        The ``"dataset/language"`` labels with no result record, empty when every
+        expected result is present.
+    """
+    model = plain_model_id(job.model_id)
+    missing: list[str] = []
+    for dataset in job.datasets:
+        for language in job.languages:
+            if (model, dataset, language) not in result_keys:
+                missing.append(f"{dataset}/{language}")
+    return missing
 
 
 @dataclass(frozen=True)
@@ -1602,30 +1711,6 @@ def load_corpus() -> _Corpus:
         observations=observations,
         eval_configs=eval_configs,
     )
-
-
-def _record_languages(record: dict[str, object]) -> list[str]:
-    """Return the language codes a result record covers.
-
-    Args:
-        record:
-            A result record in EEE format.
-
-    Returns:
-        The list of language codes.
-    """
-    raw = (
-        record.get("eval_library", {})
-        .get("additional_details", {})
-        .get("languages", "[]")
-    )
-    if isinstance(raw, list):
-        return [str(code) for code in raw]
-    try:
-        parsed = json.loads(raw)
-    except (json.JSONDecodeError, TypeError):
-        return []
-    return [str(code) for code in parsed] if isinstance(parsed, list) else []
 
 
 def record_is_api(model_info: dict[str, object]) -> bool:
