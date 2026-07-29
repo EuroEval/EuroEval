@@ -11,8 +11,6 @@ from datasets import Dataset
 from huggingface_hub import HfApi, snapshot_download
 from lettucedetect import HallucinationDetector
 
-from euroeval.languages import Language
-
 from ..constants import MAX_CONTEXT_LENGTH
 from ..enums import Device
 from ..exceptions import InvalidBenchmark
@@ -76,9 +74,9 @@ class TokenHallucinationMetric(Metric):
         # Extract language code from dataset config
         main_language = dataset_config.main_language
         language_code: str = (
-            main_language.code
-            if isinstance(main_language, Language)
-            else main_language.code[1]
+            main_language[1].code
+            if isinstance(main_language, tuple)
+            else main_language.code
         )
 
         hallucination_rate = detect_hallucinations(
@@ -162,9 +160,9 @@ def _hallucination_model_ids(
     if dataset_config is not None:
         main_language = dataset_config.main_language
         language_code: str = (
-            main_language.code
-            if isinstance(main_language, Language)
-            else main_language.code[1]
+            main_language[1].code
+            if isinstance(main_language, tuple)
+            else main_language.code
         )
         return {_hallucination_model_id(language_code=language_code)}
 
@@ -188,9 +186,9 @@ def _hallucination_model_ids(
         ):
             main_language = dataset_config.main_language
             language_code: str = (
-                main_language.code
-                if isinstance(main_language, Language)
-                else main_language.code[1]
+                main_language[1].code
+                if isinstance(main_language, tuple)
+                else main_language.code
             )
             model_ids.add(_hallucination_model_id(language_code=language_code))
     return model_ids
