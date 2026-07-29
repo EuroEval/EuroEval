@@ -23,7 +23,6 @@ from collections import defaultdict
 from pathlib import Path
 from zipfile import ZipFile
 
-import nltk
 import pandas as pd
 import requests as rq
 from datasets import Dataset, DatasetDict, Split
@@ -33,11 +32,15 @@ from urllib3.exceptions import InsecureRequestWarning
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 
-# Path to project root (script is in src/scripts/dataset_creation/)
+# Set NLTK_DATA before importing nltk to ensure cache location is correct
 project_root = Path(__file__).parent.parent.parent.parent.absolute()
 nltk_data_dir = project_root / ".euroeval_cache" / "nltk_data"
 nltk_data_dir.mkdir(parents=True, exist_ok=True)
 os.environ["NLTK_DATA"] = str(nltk_data_dir)
+
+import nltk
+from nltk.tokenize import word_tokenize
+
 nltk.data.path = [str(nltk_data_dir)]
 nltk.download("punkt_tab", quiet=True)
 
