@@ -221,9 +221,7 @@ def generate_model_list() -> None:
 
     A model is included if it has a rank score on at least one monolingual
     leaderboard (i.e. results for all official non-orthogonal datasets of
-    that language) and resolves to an actual HF repo -- API-only models
-    (gpt-5.5, gemini/*, claude*, ...) can't benefit from a Space link since
-    HF has nothing to link the Space to.
+    that language) and resolves to an actual HF repo/it is an open-source model.
     """
     simplified_csv_paths = (
         path
