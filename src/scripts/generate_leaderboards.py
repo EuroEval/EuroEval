@@ -220,8 +220,10 @@ def generate_model_list() -> None:
     """Generate the models.py file for upload to the leaderboard HF Space.
 
     A model is included if it has a rank score on at least one monolingual
-    leaderboard, i.e. it has results for all official non-orthogonal
-    datasets of that language.
+    leaderboard (i.e. results for all official non-orthogonal datasets of
+    that language) and resolves to an actual HF repo -- API-only models
+    (gpt-5.5, gemini/*, claude*, ...) can't benefit from a Space link since
+    HF has nothing to link the Space to.
     """
     simplified_csv_paths = (
         path
@@ -232,6 +234,8 @@ def generate_model_list() -> None:
     for path in simplified_csv_paths:
         with path.open(newline="") as f:
             for row in csv.DictReader(f):
+                if row["open"] != "✓":
+                    continue
                 clean_model_id = split_model_id(
                     model_id=plain_model_id(row["model"])
                 ).model_id
