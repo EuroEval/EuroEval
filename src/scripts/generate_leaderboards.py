@@ -1,5 +1,6 @@
 """Generate all leaderboards."""
 
+import csv
 import datetime as dt
 import json
 import logging
@@ -13,6 +14,7 @@ import click
 from dotenv import load_dotenv
 from yaml import safe_load
 
+from euroeval.string_utils import split_model_id
 from leaderboards.backup import backup_results, restore_from_backup_if_missing
 from leaderboards.constants import (
     API_MODEL_PATTERNS,
@@ -24,10 +26,13 @@ from leaderboards.constants import (
     LEADERBOARD_TASKS,
     MINIMUM_NUMBER_OF_MODEL_RECORDS,
     MINIMUM_VERSION,
+    MODELS_PY_PATH,
+    OUTPUT_DIR,
     REPO_ROOT,
     TRAINED_FROM_SCRATCH_PATTERNS,
 )
 from leaderboards.leaderboard_generation import generate_leaderboard
+from leaderboards.records import plain_model_id
 from leaderboards.result_processing import process_results
 from leaderboards.task_metadata import (
     languages_with_official_datasets,
@@ -148,6 +153,9 @@ def main(
     # Keep the frontend's task -> metric-names map in sync with euroeval.
     generate_task_metrics()
 
+    # Keep the HF Space's model list in sync so it shows up on model cards.
+    generate_model_list()
+
     # Snapshot the (possibly updated) results to the backup directory,
     # rotating out oldest backups to keep total size under the cap.
     try:
@@ -206,6 +214,39 @@ def _maybe_refresh_core_models() -> None:
         subprocess.run([sys.executable, str(script_path)], check=True)
     except subprocess.CalledProcessError as exc:
         logger.warning(f"update_core_models failed (exit {exc.returncode}).")
+
+
+def generate_model_list() -> None:
+    """Generate the models.py file for upload to the leaderboard HF Space.
+
+    A model is included if it has a rank score on at least one monolingual
+    leaderboard (i.e. results for all official non-orthogonal datasets of
+    that language) and resolves to an actual HF repo/it is an open-source model.
+    """
+    simplified_csv_paths = (
+        path
+        for language in languages_with_official_datasets()
+        for path in OUTPUT_DIR.glob(f"{language}_*_simplified.csv")
+    )
+    unique_model_ids: set[str] = set()
+    for path in simplified_csv_paths:
+        with path.open(newline="") as f:
+            for row in csv.DictReader(f):
+                if row["open"] != "✓":
+                    continue
+                clean_model_id = split_model_id(
+                    model_id=plain_model_id(row["model"])
+                ).model_id
+                unique_model_ids.add(clean_model_id)
+
+    model_ids = sorted(unique_model_ids)
+    MODELS_PY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with MODELS_PY_PATH.open(mode="w") as f:
+        f.write('"""Auto-generated list of models in the EuroEval leaderboards."""\n\n')
+        f.write("MODEL_NAMES = [\n")
+        f.writelines(f'    "{model_id}",\n' for model_id in model_ids)
+        f.write("]\n")
+    logger.info(f"Wrote {MODELS_PY_PATH.relative_to(REPO_ROOT)}")
 
 
 def generate_task_metrics() -> None:

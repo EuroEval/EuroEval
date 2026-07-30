@@ -46,6 +46,7 @@ from huggingface_hub.errors import HfHubHTTPError
 from leaderboards.backup import backup_results
 from leaderboards.constants import (
     MODEL_REQUEST_LABEL,
+    MODELS_PY_PATH,
     REPO,
     RESULTS_DIR,
     RESULTS_READY_LABEL,
@@ -73,6 +74,9 @@ NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
 
 # Canonical HF bucket for storing evaluation results (public read access).
 HF_RESULTS_BUCKET = "EuroEval/results"
+
+# The leaderboard HF Space that models.py gets uploaded to.
+HF_LEADERBOARD_SPACE = "EuroEval/euroeval_leaderboard"
 
 
 @click.command()
@@ -194,6 +198,15 @@ def main(force: bool) -> None:
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
         sys.exit(1)
 
+    # Keep the leaderboard HF Space's model list in sync. A failure here
+    # shouldn't block closing harvested issues -- it'll just retry on the
+    # next successful run.
+    models_file = MODELS_PY_PATH
+    if models_file.exists():
+        _upload_model_list_to_space(models_file)
+    else:
+        logger.warning(f"{models_file} does not exist; skipping HF Space upload.")
+
     # Create backup
     backup_path = backup_results()
     if backup_path:
@@ -211,6 +224,33 @@ def main(force: bool) -> None:
             logger.info(f"#{number}: closed.")
         except urllib.error.HTTPError as e:
             logger.error(f"#{number}: failed to close: {e}")
+
+
+def _upload_model_list_to_space(models_file: Path) -> bool:
+    """Upload the generated models.py to the leaderboard HF Space.
+
+    Args:
+        models_file:
+            Path to the generated models.py file.
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    api = HfApi()
+    try:
+        api.upload_file(
+            path_or_fileobj=models_file,
+            path_in_repo="models.py",
+            repo_id=HF_LEADERBOARD_SPACE,
+            repo_type="space",
+        )
+        logger.info(f"Uploaded {models_file.name} to {HF_LEADERBOARD_SPACE}.")
+        return True
+    except Exception as e:  # noqa: BLE001
+        logger.error(
+            f"Failed to upload models.py to {HF_LEADERBOARD_SPACE}: {e}", exc_info=True
+        )
+        return False
 
 
 def check_required_env_vars() -> None:
