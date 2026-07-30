@@ -1,5 +1,6 @@
 """Generate all leaderboards."""
 
+import csv
 import datetime as dt
 import json
 import logging
@@ -26,17 +27,15 @@ from leaderboards.constants import (
     MINIMUM_NUMBER_OF_MODEL_RECORDS,
     MINIMUM_VERSION,
     MODELS_PY_PATH,
+    OUTPUT_DIR,
     REPO_ROOT,
     TRAINED_FROM_SCRATCH_PATTERNS,
 )
 from leaderboards.leaderboard_generation import generate_leaderboard
-from leaderboards.records import get_dataset, plain_model_id
-from leaderboards.result_loading import load_raw_results
+from leaderboards.records import plain_model_id
 from leaderboards.result_processing import process_results
-from leaderboards.score_extraction import extract_model_metadata
 from leaderboards.task_metadata import (
     languages_with_official_datasets,
-    official_datasets_for_language,
     task_metric_pretty_names,
 )
 
@@ -218,26 +217,27 @@ def _maybe_refresh_core_models() -> None:
 
 
 def generate_model_list() -> None:
-    """Generate the models.py file for upload to the leaderboard HF Space."""
-    all_datasets = {
-        dataset
+    """Generate the models.py file for upload to the leaderboard HF Space.
+
+    A model is included if it has a rank score on at least one monolingual
+    leaderboard, i.e. it has results for all official non-orthogonal
+    datasets of that language.
+    """
+    simplified_csv_paths = (
+        path
         for language in languages_with_official_datasets()
-        for task_datasets in official_datasets_for_language(language).values()
-        for dataset in task_datasets
-    }
-    results = [
-        r
-        for r in load_raw_results()
-        if get_dataset(r) in all_datasets and not r.get("use_bits_per_character", False)
-    ]
-    model_metadata_dict = extract_model_metadata(results=results)
-    model_ids = sorted(
-        {
-            split_model_id(model_id=plain_model_id(model_id)).model_id
-            for model_id, model_metadata in model_metadata_dict.items()
-            if model_metadata.get("open", False)
-        }
+        for path in OUTPUT_DIR.glob(f"{language}_*_simplified.csv")
     )
+    unique_model_ids: set[str] = set()
+    for path in simplified_csv_paths:
+        with path.open(newline="") as f:
+            for row in csv.DictReader(f):
+                clean_model_id = split_model_id(
+                    model_id=plain_model_id(row["model"])
+                ).model_id
+                unique_model_ids.add(clean_model_id)
+
+    model_ids = sorted(unique_model_ids)
     MODELS_PY_PATH.parent.mkdir(parents=True, exist_ok=True)
     with MODELS_PY_PATH.open(mode="w") as f:
         f.write('"""Auto-generated list of models in the EuroEval leaderboards."""\n\n')
