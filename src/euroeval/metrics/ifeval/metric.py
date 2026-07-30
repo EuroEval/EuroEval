@@ -3,10 +3,10 @@
 import collections.abc as c
 import logging
 import typing as t
-
-import nltk
+from pathlib import Path
 
 from ...logging_utils import log_once
+from ...nltk_utils import ensure_nltk_packages
 from ..base import Metric
 from .constraints import ALL_CONSTRAINTS
 
@@ -56,7 +56,7 @@ class IFEvalInstructionAccuracy(Metric):
             The instruction-level accuracy.
         """
         if not self.downloaded_nltk:
-            nltk.download("punkt_tab", quiet=True)
+            ensure_nltk_packages(Path(benchmark_config.cache_dir))
             self.downloaded_nltk = True
 
         all_results: list[bool] = []

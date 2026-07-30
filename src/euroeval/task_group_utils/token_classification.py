@@ -23,6 +23,87 @@ if t.TYPE_CHECKING:
     from ..types import Labels, Predictions
 
 
+def compute_metrics(
+    model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
+    has_misc_tags: bool,
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+    dataset: "Dataset",
+) -> dict[str, float]:
+    """Compute the metrics needed for evaluation.
+
+    Args:
+        model_outputs_and_labels:
+            The first array contains the probability predictions and the second
+            array contains the true labels.
+        has_misc_tags:
+            Whether the dataset has MISC tags.
+        dataset_config:
+            The configuration of the dataset.
+        benchmark_config:
+            The configuration of the benchmark.
+        dataset:
+            The dataset used for evaluation. This is only used in case any additional
+            metadata is used to compute the metrics.
+
+    Returns:
+        A dictionary with the names of the metrics as keys and the metric values as
+        values.
+    """
+    predictions, labels = _extract_predictions_and_labels(
+        model_outputs_and_labels=model_outputs_and_labels, dataset_config=dataset_config
+    )
+
+    raise_if_model_output_contains_nan_values(model_output=predictions)
+
+    # Replace predicted tag with either MISC or O tags if they are not part of the
+    # dataset
+    labels_without_misc = {
+        label
+        for label in dataset_config.id2label.values()
+        if label not in {"b-misc", "i-misc"}
+    }
+    _replace_ner_tags_with_misc_or_o(
+        predictions=predictions,
+        has_misc_tags=has_misc_tags,
+        labels_without_misc=labels_without_misc,
+    )
+
+    # Build no-misc variants only when needed by any metric
+    needs_no_misc = any(
+        m.name == "micro_f1_no_misc" for m in dataset_config.task.metrics
+    )
+    predictions_no_misc: list[list[str]] = []
+    labels_no_misc: list[list[str]] = []
+    if needs_no_misc:
+        predictions_no_misc, labels_no_misc = _build_no_misc_variants(
+            predictions=predictions, labels=labels
+        )
+
+    # Compute each metric defined on the task
+    result: dict[str, float] = {}
+    for metric in dataset_config.task.metrics:
+        # Select the appropriate predictions/labels variant
+        if metric.name == "micro_f1_no_misc":
+            preds = predictions_no_misc
+            refs = labels_no_misc
+        else:
+            preds = predictions
+            refs = list(labels)
+
+        result[metric.name] = _compute_single_metric(
+            metric=metric,
+            metric_name=metric.name,
+            predictions=preds,
+            labels=refs,
+            dataset=dataset,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+        )
+
+    return result
+
+
 def _build_no_misc_variants(
     predictions: list[list[str]], labels: list[list[str]]
 ) -> "tuple[list[list[str]], list[list[str]]]":
@@ -189,87 +270,6 @@ def _replace_ner_tags_with_misc_or_o(
                     predictions[i][j] = "o"
 
 
-def compute_metrics(
-    model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
-    has_misc_tags: bool,
-    dataset_config: "DatasetConfig",
-    benchmark_config: "BenchmarkConfig",
-    dataset: "Dataset",
-) -> dict[str, float]:
-    """Compute the metrics needed for evaluation.
-
-    Args:
-        model_outputs_and_labels:
-            The first array contains the probability predictions and the second
-            array contains the true labels.
-        has_misc_tags:
-            Whether the dataset has MISC tags.
-        dataset_config:
-            The configuration of the dataset.
-        benchmark_config:
-            The configuration of the benchmark.
-        dataset:
-            The dataset used for evaluation. This is only used in case any additional
-            metadata is used to compute the metrics.
-
-    Returns:
-        A dictionary with the names of the metrics as keys and the metric values as
-        values.
-    """
-    predictions, labels = _extract_predictions_and_labels(
-        model_outputs_and_labels=model_outputs_and_labels, dataset_config=dataset_config
-    )
-
-    raise_if_model_output_contains_nan_values(model_output=predictions)
-
-    # Replace predicted tag with either MISC or O tags if they are not part of the
-    # dataset
-    labels_without_misc = {
-        label
-        for label in dataset_config.id2label.values()
-        if label not in {"b-misc", "i-misc"}
-    }
-    _replace_ner_tags_with_misc_or_o(
-        predictions=predictions,
-        has_misc_tags=has_misc_tags,
-        labels_without_misc=labels_without_misc,
-    )
-
-    # Build no-misc variants only when needed by any metric
-    needs_no_misc = any(
-        m.name == "micro_f1_no_misc" for m in dataset_config.task.metrics
-    )
-    predictions_no_misc: list[list[str]] = []
-    labels_no_misc: list[list[str]] = []
-    if needs_no_misc:
-        predictions_no_misc, labels_no_misc = _build_no_misc_variants(
-            predictions=predictions, labels=labels
-        )
-
-    # Compute each metric defined on the task
-    result: dict[str, float] = {}
-    for metric in dataset_config.task.metrics:
-        # Select the appropriate predictions/labels variant
-        if metric.name == "micro_f1_no_misc":
-            preds = predictions_no_misc
-            refs = labels_no_misc
-        else:
-            preds = predictions
-            refs = list(labels)
-
-        result[metric.name] = _compute_single_metric(
-            metric=metric,
-            metric_name=metric.name,
-            predictions=preds,
-            labels=refs,
-            dataset=dataset,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-        )
-
-    return result
-
-
 def extract_labels_from_generation(
     input_batch: dict[str, list],
     model_output: "GenerativeModelOutput",
@@ -344,63 +344,6 @@ def extract_labels_from_generation(
                             ):
                                 predicted_labels[idx][token_idx] = f"i-{tag_name}"
     return predicted_labels
-
-
-def handle_unk_tokens(
-    tokeniser: "PreTrainedTokenizer", tokens: list[str], words: c.Sequence[str]
-) -> c.Sequence[str]:
-    """Replace unknown tokens in the tokens with the corresponding word.
-
-    Args:
-        tokeniser:
-            The tokeniser used to tokenise the words.
-        tokens:
-            The list of tokens.
-        words:
-            The list of words.
-
-    Returns:
-        The list of tokens with unknown tokens replaced by the corresponding word.
-    """
-    # Locate the token indices of the unknown tokens
-    token_unk_idxs = [i for i, tok in enumerate(tokens) if tok == tokeniser.unk_token]
-
-    # Locate the word indices of the words which contain an unknown token
-    word_unk_idxs = [
-        i
-        for i, word in enumerate(words)
-        if tokeniser.unk_token
-        in tokeniser.convert_ids_to_tokens(
-            tokeniser.encode(word, add_special_tokens=False)
-        )
-    ]
-
-    # Iterate over the token index and word index pairs
-    for tok_idx, word_idx in zip(token_unk_idxs, word_unk_idxs):
-        # Fetch the word
-        word = words[word_idx]
-
-        # Tokenise the word, which is now a list containing at least one UNK token
-        tokens_with_unk = tokeniser.convert_ids_to_tokens(
-            tokeniser.encode(word, add_special_tokens=False)
-        )
-
-        # Iterate over the tokens in the word
-        for possible_unk_token in tokens_with_unk:
-            # If the token is not an UNK token then we remove the first occurence
-            # of the content of this token from the word. The result of the `word`
-            # variable will be the content of the UNK token.
-            # NOTE: This is a bit hacky and not bulletproof. For instance, if the
-            # word is "1925-1950" and the tokeniser splits it into ["[UNK]", "-",
-            # "19", "50"], then the result will be 2519 instead of 1925. This
-            # happens almost never, however, so we can live with it.
-            if possible_unk_token != tokeniser.unk_token:
-                word = word.replace(possible_unk_token, "", 1)
-
-        # Replace the token with the word
-        tokens[tok_idx] = word
-
-    return tokens
 
 
 def serialise_ner_tags(
@@ -600,3 +543,60 @@ def tokenize_and_align_labels(
         all_labels.append(label_ids)
     tokenized_inputs["labels"] = all_labels
     return tokenized_inputs
+
+
+def handle_unk_tokens(
+    tokeniser: "PreTrainedTokenizer", tokens: list[str], words: c.Sequence[str]
+) -> c.Sequence[str]:
+    """Replace unknown tokens in the tokens with the corresponding word.
+
+    Args:
+        tokeniser:
+            The tokeniser used to tokenise the words.
+        tokens:
+            The list of tokens.
+        words:
+            The list of words.
+
+    Returns:
+        The list of tokens with unknown tokens replaced by the corresponding word.
+    """
+    # Locate the token indices of the unknown tokens
+    token_unk_idxs = [i for i, tok in enumerate(tokens) if tok == tokeniser.unk_token]
+
+    # Locate the word indices of the words which contain an unknown token
+    word_unk_idxs = [
+        i
+        for i, word in enumerate(words)
+        if tokeniser.unk_token
+        in tokeniser.convert_ids_to_tokens(
+            tokeniser.encode(word, add_special_tokens=False)
+        )
+    ]
+
+    # Iterate over the token index and word index pairs
+    for tok_idx, word_idx in zip(token_unk_idxs, word_unk_idxs):
+        # Fetch the word
+        word = words[word_idx]
+
+        # Tokenise the word, which is now a list containing at least one UNK token
+        tokens_with_unk = tokeniser.convert_ids_to_tokens(
+            tokeniser.encode(word, add_special_tokens=False)
+        )
+
+        # Iterate over the tokens in the word
+        for possible_unk_token in tokens_with_unk:
+            # If the token is not an UNK token then we remove the first occurence
+            # of the content of this token from the word. The result of the `word`
+            # variable will be the content of the UNK token.
+            # NOTE: This is a bit hacky and not bulletproof. For instance, if the
+            # word is "1925-1950" and the tokeniser splits it into ["[UNK]", "-",
+            # "19", "50"], then the result will be 2519 instead of 1925. This
+            # happens almost never, however, so we can live with it.
+            if possible_unk_token != tokeniser.unk_token:
+                word = word.replace(possible_unk_token, "", 1)
+
+        # Replace the token with the word
+        tokens[tok_idx] = word
+
+    return tokens

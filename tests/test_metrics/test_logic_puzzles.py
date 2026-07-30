@@ -12,6 +12,12 @@ from euroeval.metrics.logic_puzzles import (
 class TestBestPermutedCellWiseAccuracyMetric:
     """Tests for `BestPermutedCellWiseAccuracyMetric`."""
 
+    def test_extra_keys_yields_zero(self) -> None:
+        """Prediction with more keys yields 0.0."""
+        pred = {"object_1": ["Alice"], "object_2": ["Bob"], "object_3": ["Charlie"]}
+        label = {"object_1": ["Alice"], "object_2": ["Bob"]}
+        assert self._call(prediction=pred, label=label) == 0.0
+
     def _call(
         self, prediction: dict[str, list[str]], label: dict[str, list[str]]
     ) -> float:
@@ -34,12 +40,6 @@ class TestBestPermutedCellWiseAccuracyMetric:
         )
         assert result is not None
         return result
-
-    def test_extra_keys_yields_zero(self) -> None:
-        """Prediction with more keys yields 0.0."""
-        pred = {"object_1": ["Alice"], "object_2": ["Bob"], "object_3": ["Charlie"]}
-        label = {"object_1": ["Alice"], "object_2": ["Bob"]}
-        assert self._call(prediction=pred, label=label) == 0.0
 
     def test_missing_keys_yields_zero(self) -> None:
         """Prediction with fewer keys yields 0.0."""
@@ -72,6 +72,21 @@ class TestBestPermutedCellWiseAccuracyMetric:
 class TestCellWiseAccuracyMetric:
     """Tests for `CellWiseAccuracyMetric`."""
 
+    def test_completely_wrong(self) -> None:
+        """All attributes wrong yields 0.0."""
+        pred = {
+            "object_1": ["Bob", "Blue"],
+            "object_2": ["Charlie", "Green"],
+            "object_3": ["Alice", "Red"],
+        }
+        label = {
+            "object_1": ["Alice", "Red"],
+            "object_2": ["Bob", "Blue"],
+            "object_3": ["Charlie", "Green"],
+        }
+        # 0 correct attributes out of 6 total
+        assert self._call(prediction=pred, label=label) == 0.0
+
     def _call(
         self, prediction: dict[str, list[str]], label: dict[str, list[str]]
     ) -> float:
@@ -94,21 +109,6 @@ class TestCellWiseAccuracyMetric:
         )
         assert result is not None
         return result
-
-    def test_completely_wrong(self) -> None:
-        """All attributes wrong yields 0.0."""
-        pred = {
-            "object_1": ["Bob", "Blue"],
-            "object_2": ["Charlie", "Green"],
-            "object_3": ["Alice", "Red"],
-        }
-        label = {
-            "object_1": ["Alice", "Red"],
-            "object_2": ["Bob", "Blue"],
-            "object_3": ["Charlie", "Green"],
-        }
-        # 0 correct attributes out of 6 total
-        assert self._call(prediction=pred, label=label) == 0.0
 
     def test_extra_keys_yields_zero(self) -> None:
         """Prediction with more keys than label yields 0.0."""
@@ -172,6 +172,20 @@ class TestCellWiseAccuracyMetric:
 class TestPuzzleLevelAccuracyMetric:
     """Tests for `PuzzleLevelAccuracyMetric`."""
 
+    def test_completely_wrong(self) -> None:
+        """All attributes wrong yields 0.0."""
+        pred = {
+            "object_1": ["Bob", "Blue"],
+            "object_2": ["Charlie", "Green"],
+            "object_3": ["Alice", "Red"],
+        }
+        label = {
+            "object_1": ["Alice", "Red"],
+            "object_2": ["Bob", "Blue"],
+            "object_3": ["Charlie", "Green"],
+        }
+        assert self._call(prediction=pred, label=label) == 0.0
+
     def _call(
         self, prediction: dict[str, list[str]], label: dict[str, list[str]]
     ) -> float:
@@ -194,20 +208,6 @@ class TestPuzzleLevelAccuracyMetric:
         )
         assert result is not None
         return result
-
-    def test_completely_wrong(self) -> None:
-        """All attributes wrong yields 0.0."""
-        pred = {
-            "object_1": ["Bob", "Blue"],
-            "object_2": ["Charlie", "Green"],
-            "object_3": ["Alice", "Red"],
-        }
-        label = {
-            "object_1": ["Alice", "Red"],
-            "object_2": ["Bob", "Blue"],
-            "object_3": ["Charlie", "Green"],
-        }
-        assert self._call(prediction=pred, label=label) == 0.0
 
     def test_extra_keys_yields_zero(self) -> None:
         """Prediction with more keys than label yields 0.0."""

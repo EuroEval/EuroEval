@@ -26,21 +26,19 @@ from euroeval.tasks import get_all_tasks
 from .constants import LEADERBOARD_TASKS, NLU_TASK_GROUPS
 
 
-@cache
-def _iter_all_dataset_configs() -> tuple[DatasetConfig, ...]:
-    """Collect every ``DatasetConfig`` defined in ``euroeval.dataset_configs``.
+def category_includes_task(category: str, task: str) -> bool:
+    """Check whether a task is scored within a leaderboard category.
 
-    All built-in configs are re-exported into the ``euroeval.dataset_configs``
-    namespace, so we read them straight off the module. Cached because the
-    leaderboard pipeline calls into this module once per language and the set is
-    fixed per process.
+    Args:
+        category:
+            Leaderboard category name.
+        task:
+            Task slug.
 
     Returns:
-        Every ``DatasetConfig`` exported by the lib.
+        True if the task is scored within the category.
     """
-    return tuple(
-        value for value in vars(_ds_module).values() if isinstance(value, DatasetConfig)
-    )
+    return category == "generative" or task_category(task) == "nlu"
 
 
 def task_category(task_name: str) -> str:
@@ -55,21 +53,6 @@ def task_category(task_name: str) -> str:
     """
     task = get_all_tasks()[task_name]
     return "nlu" if task.task_group in NLU_TASK_GROUPS else "nlg"
-
-
-def category_includes_task(category: str, task: str) -> bool:
-    """Check whether a task is scored within a leaderboard category.
-
-    Args:
-        category:
-            Leaderboard category name.
-        task:
-            Task slug.
-
-    Returns:
-        True if the task is scored within the category.
-    """
-    return category == "generative" or task_category(task) == "nlu"
 
 
 @cache
@@ -90,22 +73,21 @@ def dataset_sources() -> dict[str, str]:
     }
 
 
-def language_name_to_codes(name: str) -> set[str]:
-    """Resolve a leaderboard yaml language name (e.g. ``"danish"``) to codes.
+@cache
+def _iter_all_dataset_configs() -> tuple[DatasetConfig, ...]:
+    """Collect every ``DatasetConfig`` defined in ``euroeval.dataset_configs``.
 
-    Args:
-        name:
-            The language name as written in a leaderboard yaml.
+    All built-in configs are re-exported into the ``euroeval.dataset_configs``
+    namespace, so we read them straight off the module. Cached because the
+    leaderboard pipeline calls into this module once per language and the set is
+    fixed per process.
 
     Returns:
-        The set of language codes matching the given name.
+        Every ``DatasetConfig`` exported by the lib.
     """
-    target = name.strip().lower()
-    return {
-        lang.code
-        for lang in get_all_languages().values()
-        if lang.name.lower() == target
-    }
+    return tuple(
+        value for value in vars(_ds_module).values() if isinstance(value, DatasetConfig)
+    )
 
 
 def languages_with_official_datasets() -> list[str]:
@@ -172,6 +154,24 @@ def official_datasets_for_language(language_name: str) -> OrderedDict[str, list[
     return OrderedDict(
         (task, datasets) for task, datasets in by_task.items() if datasets
     )
+
+
+def language_name_to_codes(name: str) -> set[str]:
+    """Resolve a leaderboard yaml language name (e.g. ``"danish"``) to codes.
+
+    Args:
+        name:
+            The language name as written in a leaderboard yaml.
+
+    Returns:
+        The set of language codes matching the given name.
+    """
+    target = name.strip().lower()
+    return {
+        lang.code
+        for lang in get_all_languages().values()
+        if lang.name.lower() == target
+    }
 
 
 def task_metric_names(task_name: str) -> tuple[str, str | None]:

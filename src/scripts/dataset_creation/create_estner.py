@@ -53,6 +53,21 @@ def main() -> None:
     ds.push_to_hub(target_repo_id, private=True)
 
 
+def convert_labels(row: t.MutableMapping) -> t.MutableMapping:
+    """Convert original labels in a row to new ones.
+
+    Args:
+        row:
+            A row of the original dataset.
+
+    Returns:
+        The updated row, with the new labels.
+    """
+    label_map = get_label_map()
+    row["labels"] = [label_map.get(label, label) for label in row["labels"]]
+    return row
+
+
 def get_label_map() -> dict[str, str]:
     """Get the map from original labels to the EuroEval ones.
 
@@ -93,21 +108,6 @@ def get_label_map() -> dict[str, str]:
                 label_map[label] = f"{position}-{entity_type}"
 
     return label_map
-
-
-def convert_labels(row: t.MutableMapping) -> t.MutableMapping:
-    """Convert original labels in a row to new ones.
-
-    Args:
-        row:
-            A row of the original dataset.
-
-    Returns:
-        The updated row, with the new labels.
-    """
-    label_map = get_label_map()
-    row["labels"] = [label_map.get(label, label) for label in row["labels"]]
-    return row
 
 
 if __name__ == "__main__":

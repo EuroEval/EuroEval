@@ -98,147 +98,6 @@ def compute_metrics(
     )
 
 
-def get_closest_logprobs_labels(
-    generation_logprobs: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]],
-    first_label_token_mapping: dict[str, str] | t.Literal[True],
-    candidate_labels: c.Sequence[c.Sequence[str]],
-) -> c.Sequence[str] | None:
-    """Get the labels with the highest predicted logprob value.
-
-    In case a candidate label is split into multiple tokens, we only use the first
-    token to compute the logprob value. E.g., if the candidate label "positive" is
-    tokenised as ["pos", "itive"], we only use the logprob value of "pos" to
-    represent the logprob value of the entire label.
-
-    Args:
-        generation_logprobs:
-            The logprobs of the generated tokens, for all samples in the batch. Of shape
-            (batch_size, num_tokens, num_logprobs).
-        first_label_token_mapping:
-            A mapping from labels to the first token in each label, or alternatively a
-            `True` value indicating that the model should output logprobs.
-        candidate_labels:
-            The candidate labels for each sample in the batch.
-
-    Returns:
-        The predicted labels, or None if labels could not be extracted.
-
-    Raises:
-        InvalidBenchmark:
-            If no candidate label can be found for any of the generated labels.
-    """
-    output_labels: list[str] = list()
-    for idx, sample in enumerate(generation_logprobs):
-        for logprob_list in sample:
-            generated_labels = [
-                re.sub(pattern=r"^[^a-zæøåüöä0-9]+$", repl="", string=label.lower())
-                for label, _ in logprob_list
-            ]
-            generated_labels = [label for label in generated_labels if label != ""]
-
-            # We want to use the first generated label which contains a unique candidate
-            # label, as the output label
-            output_label: str | None = None
-            for generated_label in generated_labels:
-                # Get the candidate labels. If we have a first label token mapping, we
-                # use it to get the candidate labels. Otherwise, we check if any of the
-                # labels start with the generated label.
-                if isinstance(first_label_token_mapping, dict):
-                    if any(
-                        candidate_label not in first_label_token_mapping
-                        for candidate_label in candidate_labels[idx]
-                    ):
-                        raise InvalidBenchmark(
-                            "There is a label not present in the first label token "
-                            "mapping - this should never happen! Please report this "
-                            "issue to the EuroEval team at "
-                            "github.com/EuroEval/EuroEval/issues."
-                        )
-
-                    candidate_output_labels = {
-                        candidate_label
-                        for candidate_label in candidate_labels[idx]
-                        if generated_label == first_label_token_mapping[candidate_label]
-                    }
-                else:
-                    candidate_output_labels = {
-                        candidate_label
-                        for candidate_label in candidate_labels[idx]
-                        if candidate_label.startswith(generated_label.strip())
-                    }
-
-                # If we can uniquely determine the output label, we break the loop.
-                if len(candidate_output_labels) == 1:
-                    output_label = candidate_output_labels.pop()
-                    break
-
-                # If we have multiple candidate labels, we cannot uniquely determine the
-                # output label, so we abandon extracting the labels using logprobs and
-                # fall back to using word edit distance.
-                elif len(candidate_output_labels) > 1:
-                    log_once(
-                        "Multiple candidate labels found for the generated label "
-                        f"{generated_label!r}: {candidate_output_labels}. This means "
-                        "that using logprobs to extract the labels is not reliable, "
-                        "and we will instead fall back to extracting the labels "
-                        "using word edit distance.",
-                        level=logging.DEBUG,
-                    )
-                    return None
-
-                # If no candidate label is found, we first check if any of the labels
-                # start with the generated label. This could be the case if the labels
-                # in the first token mapping is inaccurate or incomplete, for instance
-                # if 'pos' is in the first label token mapping, but the model outputted
-                # 'posit'. If this is the case then we cannot trust the first label
-                # token mapping, and we fall back to using word edit distance.
-                # Otherwise, the generated label is just bad, and we skip to the next
-                # generated label.
-                elif len(candidate_output_labels) == 0:
-                    candidate_output_labels_starting_with_generated_label = [
-                        candidate_label
-                        for candidate_label in candidate_labels[idx]
-                        if candidate_label.startswith(generated_label)
-                    ]
-                    if candidate_output_labels_starting_with_generated_label:
-                        log_once(
-                            f"No candidate label found for the generated label "
-                            f"{generated_label!r}, but there are candidate labels "
-                            f"starting with it: "
-                            f"{candidate_output_labels_starting_with_generated_label}. "
-                            "This means that the first label token mapping is not "
-                            "reliable, and we will instead fall back to extracting "
-                            "the labels using word edit distance.",
-                            level=logging.DEBUG,
-                        )
-                        return None
-
-            if output_label is not None:
-                output_labels.append(output_label)
-                break
-        else:
-            if len(sample) == 0:
-                log_once(
-                    "The model outputted an empty string, so no candidate labels could "
-                    "be determined. This means that using logprobs to extract the "
-                    "labels is not reliable, and we will instead fall back to "
-                    "extracting the labels using word edit distance.",
-                    level=logging.DEBUG,
-                )
-            else:
-                log_once(
-                    "No candidate label found for any of the generated labels, which "
-                    "means that using logprobs to extract the labels is not reliable, "
-                    "and we will instead fall back to extracting the labels using "
-                    "word edit distance.",
-                    level=logging.DEBUG,
-                )
-            return None
-
-    assert len(output_labels) == len(generation_logprobs)
-    return output_labels
-
-
 def extract_labels_from_generation(
     input_batch: dict[str, list],
     model_output: "GenerativeModelOutput",
@@ -383,3 +242,144 @@ def extract_labels_from_generation(
             )
 
     return new_predicted_labels
+
+
+def get_closest_logprobs_labels(
+    generation_logprobs: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]],
+    first_label_token_mapping: dict[str, str] | t.Literal[True],
+    candidate_labels: c.Sequence[c.Sequence[str]],
+) -> c.Sequence[str] | None:
+    """Get the labels with the highest predicted logprob value.
+
+    In case a candidate label is split into multiple tokens, we only use the first
+    token to compute the logprob value. E.g., if the candidate label "positive" is
+    tokenised as ["pos", "itive"], we only use the logprob value of "pos" to
+    represent the logprob value of the entire label.
+
+    Args:
+        generation_logprobs:
+            The logprobs of the generated tokens, for all samples in the batch. Of shape
+            (batch_size, num_tokens, num_logprobs).
+        first_label_token_mapping:
+            A mapping from labels to the first token in each label, or alternatively a
+            `True` value indicating that the model should output logprobs.
+        candidate_labels:
+            The candidate labels for each sample in the batch.
+
+    Returns:
+        The predicted labels, or None if labels could not be extracted.
+
+    Raises:
+        InvalidBenchmark:
+            If no candidate label can be found for any of the generated labels.
+    """
+    output_labels: list[str] = list()
+    for idx, sample in enumerate(generation_logprobs):
+        for logprob_list in sample:
+            generated_labels = [
+                re.sub(pattern=r"^[^a-zæøåüöä0-9]+$", repl="", string=label.lower())
+                for label, _ in logprob_list
+            ]
+            generated_labels = [label for label in generated_labels if label != ""]
+
+            # We want to use the first generated label which contains a unique candidate
+            # label, as the output label
+            output_label: str | None = None
+            for generated_label in generated_labels:
+                # Get the candidate labels. If we have a first label token mapping, we
+                # use it to get the candidate labels. Otherwise, we check if any of the
+                # labels start with the generated label.
+                if isinstance(first_label_token_mapping, dict):
+                    if any(
+                        candidate_label not in first_label_token_mapping
+                        for candidate_label in candidate_labels[idx]
+                    ):
+                        raise InvalidBenchmark(
+                            "There is a label not present in the first label token "
+                            "mapping - this should never happen! Please report this "
+                            "issue to the EuroEval team at "
+                            "github.com/EuroEval/EuroEval/issues."
+                        )
+
+                    candidate_output_labels = {
+                        candidate_label
+                        for candidate_label in candidate_labels[idx]
+                        if generated_label == first_label_token_mapping[candidate_label]
+                    }
+                else:
+                    candidate_output_labels = {
+                        candidate_label
+                        for candidate_label in candidate_labels[idx]
+                        if candidate_label.startswith(generated_label.strip())
+                    }
+
+                # If we can uniquely determine the output label, we break the loop.
+                if len(candidate_output_labels) == 1:
+                    output_label = candidate_output_labels.pop()
+                    break
+
+                # If we have multiple candidate labels, we cannot uniquely determine the
+                # output label, so we abandon extracting the labels using logprobs and
+                # fall back to using word edit distance.
+                elif len(candidate_output_labels) > 1:
+                    log_once(
+                        "Multiple candidate labels found for the generated label "
+                        f"{generated_label!r}: {candidate_output_labels}. This means "
+                        "that using logprobs to extract the labels is not reliable, "
+                        "and we will instead fall back to extracting the labels "
+                        "using word edit distance.",
+                        level=logging.DEBUG,
+                    )
+                    return None
+
+                # If no candidate label is found, we first check if any of the labels
+                # start with the generated label. This could be the case if the labels
+                # in the first token mapping is inaccurate or incomplete, for instance
+                # if 'pos' is in the first label token mapping, but the model outputted
+                # 'posit'. If this is the case then we cannot trust the first label
+                # token mapping, and we fall back to using word edit distance.
+                # Otherwise, the generated label is just bad, and we skip to the next
+                # generated label.
+                elif len(candidate_output_labels) == 0:
+                    candidate_output_labels_starting_with_generated_label = [
+                        candidate_label
+                        for candidate_label in candidate_labels[idx]
+                        if candidate_label.startswith(generated_label)
+                    ]
+                    if candidate_output_labels_starting_with_generated_label:
+                        log_once(
+                            f"No candidate label found for the generated label "
+                            f"{generated_label!r}, but there are candidate labels "
+                            f"starting with it: "
+                            f"{candidate_output_labels_starting_with_generated_label}. "
+                            "This means that the first label token mapping is not "
+                            "reliable, and we will instead fall back to extracting "
+                            "the labels using word edit distance.",
+                            level=logging.DEBUG,
+                        )
+                        return None
+
+            if output_label is not None:
+                output_labels.append(output_label)
+                break
+        else:
+            if len(sample) == 0:
+                log_once(
+                    "The model outputted an empty string, so no candidate labels could "
+                    "be determined. This means that using logprobs to extract the "
+                    "labels is not reliable, and we will instead fall back to "
+                    "extracting the labels using word edit distance.",
+                    level=logging.DEBUG,
+                )
+            else:
+                log_once(
+                    "No candidate label found for any of the generated labels, which "
+                    "means that using logprobs to extract the labels is not reliable, "
+                    "and we will instead fall back to extracting the labels using "
+                    "word edit distance.",
+                    level=logging.DEBUG,
+                )
+            return None
+
+    assert len(output_labels) == len(generation_logprobs)
+    return output_labels

@@ -32,11 +32,20 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Swapped official datasets for four languages (all performed by the
   `swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
   - Croatian: `mmlu-hr` → `include-hr`
-  - German: `hellaswag-de` → `winogrande-de`
+  - Dutch: `scala-nl` → `dutch-cola`, `mmlu-nl` → `include-nl`, `multiloko-nl`
   - French: `mmlu-fr` → `include-fr` and `multiloko-fr`
+  - German: `hellaswag-de` → `winogrande-de`
 
 ### Fixed
 
+- Fixed loading of Mixture-of-Experts models whose expert intermediate size is not a
+  multiple of 128 after being sharded across multiple GPUs (e.g.
+  `JetBrains/Mellum2-12B-A2.5B-Base` on Blackwell GPUs), which previously crashed vLLM
+  with a "second dimension of weights must be a multiple of 128" error during memory
+  profiling. EuroEval now reduces the tensor parallel size up front so the per-GPU
+  expert intermediate size stays 128-aligned, as the crash originates in a worker
+  subprocess and never surfaces to be retried reactively.
+- Fixed a model ID error for hallucination detection models.
 - Fixed detection of models that report `temperature` as an unsupported parameter via a
   `does not support parameters: [...'temperature'...]` error message. Such models now
   have `temperature` removed and are retried, consistent with the existing handling of

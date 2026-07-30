@@ -76,18 +76,6 @@ class ModelCache:
         self.indent_json_when_saving = indent_json_when_saving
         self.cache: dict[str, SingleGenerativeModelOutput] = dict()
 
-    def _hash_key(self, key: str | c.Sequence[dict[str, str]]) -> str:
-        """Hash the key to use as an index in the cache.
-
-        Args:
-            key:
-                The key to hash.
-
-        Returns:
-            The hashed key.
-        """
-        return hashlib.md5(string=str(key).encode()).hexdigest()
-
     def __contains__(self, key: str | c.Sequence[dict[str, str]]) -> bool:
         """Check if a key is in the cache.
 
@@ -100,6 +88,18 @@ class ModelCache:
         """
         hashed_key = self._hash_key(key=key)
         return hashed_key in self.cache
+
+    def _hash_key(self, key: str | c.Sequence[dict[str, str]]) -> str:
+        """Hash the key to use as an index in the cache.
+
+        Args:
+            key:
+                The key to hash.
+
+        Returns:
+            The hashed key.
+        """
+        return hashlib.md5(string=str(key).encode()).hexdigest()
 
     def __getitem__(
         self, key: str | c.Sequence[dict[str, str]]

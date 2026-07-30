@@ -20,28 +20,48 @@ from .record_fields import get_version
 ResultIdentity = tuple[str, str, bool | None, bool | None]
 
 
-def _parse_version(version: str) -> list[int]:
-    """Parse a version string into numeric components.
+def dedup_newer_record(record_a: dict, record_b: dict) -> dict:
+    """Determine which of two records with the same identity is newer.
 
-    Splits on non-digit characters and converts each component to int.
-    Non-numeric parts are treated as 0.
+    Compares by ``eval_library.version`` (semver-ish, higher wins),
+    tie-broken by ``retrieved_timestamp`` (higher/newer wins).
 
     Args:
-        version:
-            Version string (e.g., "1.2.3", "2.0.1rc1").
+        record_a:
+            First record in EEE format.
+        record_b:
+            Second record in EEE format.
 
     Returns:
-        List of integer components.
+        The newer record (either record_a or record_b).
+
+    Raises:
+        ValueError:
+            If the records do not share the same identity.
     """
-    parts = re.split(r"[^0-9]+", version)
-    result = []
-    for part in parts:
-        if part:
-            try:
-                result.append(int(part))
-            except ValueError:
-                result.append(0)
-    return result
+    identity_a = identity_from_eee_record(record_a)
+    identity_b = identity_from_eee_record(record_b)
+
+    if identity_a != identity_b:
+        raise ValueError(
+            f"Records have different identities: {identity_a} vs {identity_b}"
+        )
+
+    version_a = get_version(record=record_a)
+    version_b = get_version(record=record_b)
+
+    version_cmp = _compare_versions(version_a, version_b)
+    if version_cmp > 0:
+        return record_a
+    if version_cmp < 0:
+        return record_b
+
+    timestamp_a = _extract_timestamp(record_a)
+    timestamp_b = _extract_timestamp(record_b)
+
+    if timestamp_a >= timestamp_b:
+        return record_a
+    return record_b
 
 
 def _compare_versions(version_a: str | None, version_b: str | None) -> int:
@@ -85,6 +105,30 @@ def _compare_versions(version_a: str | None, version_b: str | None) -> int:
     return 0
 
 
+def _parse_version(version: str) -> list[int]:
+    """Parse a version string into numeric components.
+
+    Splits on non-digit characters and converts each component to int.
+    Non-numeric parts are treated as 0.
+
+    Args:
+        version:
+            Version string (e.g., "1.2.3", "2.0.1rc1").
+
+    Returns:
+        List of integer components.
+    """
+    parts = re.split(r"[^0-9]+", version)
+    result = []
+    for part in parts:
+        if part:
+            try:
+                result.append(int(part))
+            except ValueError:
+                result.append(0)
+    return result
+
+
 def _extract_timestamp(record: dict) -> int:
     """Extract the retrieved_timestamp from a record.
 
@@ -116,41 +160,6 @@ def _extract_timestamp(record: dict) -> int:
         except (ValueError, TypeError):
             pass
     return 0
-
-
-def normalise_bool_value(value: bool | str | None) -> bool | None:
-    """Normalise a boolean value that may arrive as bool, string, or None.
-
-    Handles Python bool, None, or lowercase strings 'true'/'false'/'none'.
-
-    Args:
-        value:
-            The value to normalise. May be a bool, a string ('true', 'false',
-            'none', case-insensitive), or None.
-
-    Returns:
-        A normalised bool or None.
-
-    Raises:
-        ValueError:
-            If the string value is not one of 'true', 'false', or 'none'.
-        TypeError:
-            If the value is not a bool, str, or None.
-    """
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        lower = value.lower()
-        if lower == "true":
-            return True
-        if lower == "false":
-            return False
-        if lower == "none":
-            return None
-        raise ValueError(f"Invalid boolean string value: {value!r}")
-    raise TypeError(f"Unexpected type for boolean value: {type(value)}")
 
 
 def identity_from_eee_record(record: dict) -> ResultIdentity:
@@ -198,48 +207,39 @@ def identity_from_eee_record(record: dict) -> ResultIdentity:
     return (model_id, dataset, validation_split, few_shot)
 
 
-def dedup_newer_record(record_a: dict, record_b: dict) -> dict:
-    """Determine which of two records with the same identity is newer.
+def normalise_bool_value(value: bool | str | None) -> bool | None:
+    """Normalise a boolean value that may arrive as bool, string, or None.
 
-    Compares by ``eval_library.version`` (semver-ish, higher wins),
-    tie-broken by ``retrieved_timestamp`` (higher/newer wins).
+    Handles Python bool, None, or lowercase strings 'true'/'false'/'none'.
 
     Args:
-        record_a:
-            First record in EEE format.
-        record_b:
-            Second record in EEE format.
+        value:
+            The value to normalise. May be a bool, a string ('true', 'false',
+            'none', case-insensitive), or None.
 
     Returns:
-        The newer record (either record_a or record_b).
+        A normalised bool or None.
 
     Raises:
         ValueError:
-            If the records do not share the same identity.
+            If the string value is not one of 'true', 'false', or 'none'.
+        TypeError:
+            If the value is not a bool, str, or None.
     """
-    identity_a = identity_from_eee_record(record_a)
-    identity_b = identity_from_eee_record(record_b)
-
-    if identity_a != identity_b:
-        raise ValueError(
-            f"Records have different identities: {identity_a} vs {identity_b}"
-        )
-
-    version_a = get_version(record=record_a)
-    version_b = get_version(record=record_b)
-
-    version_cmp = _compare_versions(version_a, version_b)
-    if version_cmp > 0:
-        return record_a
-    if version_cmp < 0:
-        return record_b
-
-    timestamp_a = _extract_timestamp(record_a)
-    timestamp_b = _extract_timestamp(record_b)
-
-    if timestamp_a >= timestamp_b:
-        return record_a
-    return record_b
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        lower = value.lower()
+        if lower == "true":
+            return True
+        if lower == "false":
+            return False
+        if lower == "none":
+            return None
+        raise ValueError(f"Invalid boolean string value: {value!r}")
+    raise TypeError(f"Unexpected type for boolean value: {type(value)}")
 
 
 def identity_from_benchmark_result(result: BenchmarkResult) -> ResultIdentity:
@@ -256,6 +256,94 @@ def identity_from_benchmark_result(result: BenchmarkResult) -> ResultIdentity:
         Identity tuple ``(model_id, dataset, validation_split, few_shot)``.
     """
     return (result.model, result.dataset, result.validation_split, result.few_shot)
+
+
+def raise_on_collision(identity_a: ResultIdentity, identity_b: ResultIdentity) -> None:
+    """Raise an error if two distinct identities would sanitise to the same path.
+
+    Args:
+        identity_a:
+            First identity tuple.
+        identity_b:
+            Second identity tuple.
+
+    Raises:
+        ValueError:
+            If the identities are different but would produce the same path.
+    """
+    if identity_a != identity_b:
+        path_a = identity_to_path(identity_a)
+        path_b = identity_to_path(identity_b)
+        if path_a == path_b:
+            raise ValueError(
+                f"Identity collision detected: {identity_a} and {identity_b} "
+                f"both sanitise to {path_a}"
+            )
+
+
+def identity_to_path(identity: ResultIdentity) -> Path:
+    """Produce the full relative path for a result identity.
+
+    Args:
+        identity:
+            Identity tuple ``(model_id, dataset, validation_split, few_shot)``.
+
+    Returns:
+        Path object representing the relative path.
+    """
+    model_id, dataset, validation_split, few_shot = identity
+    return record_relative_path(model_id, dataset, validation_split, few_shot)
+
+
+def record_relative_path(
+    model_id: str, dataset: str, validation_split: bool | None, few_shot: bool | None
+) -> Path:
+    """Produce the full relative path for a result record.
+
+    Path format: ``<sanitise(model_id)>/<sanitise(dataset)>__<split>__<shot>.json``
+
+    Args:
+        model_id:
+            The full model identifier.
+        dataset:
+            The dataset name.
+        validation_split:
+            The validation split flag.
+        few_shot:
+            The few-shot flag.
+
+    Returns:
+        Path object representing the relative path.
+    """
+    model_dir = sanitise_model_dir_name(model_id)
+    filename = record_filename(dataset, validation_split, few_shot)
+    return Path(model_dir) / filename
+
+
+def record_filename(
+    dataset: str, validation_split: bool | None, few_shot: bool | None
+) -> str:
+    """Produce the per-record filename for a given identity.
+
+    Format: ``<sanitise(dataset)>__<split_label>__<shot_label>.json``
+
+    Args:
+        dataset:
+            The dataset name.
+        validation_split:
+            The validation split flag. Maps to: True -> 'val', False -> 'test',
+            None -> 'none'.
+        few_shot:
+            The few-shot flag. Maps to: True -> 'fewshot', False -> 'zeroshot',
+            None -> 'none'.
+
+    Returns:
+        Filename string suitable for storing the result record.
+    """
+    sanitised_dataset = sanitise_dataset_name(dataset)
+    split_lbl = split_label(validation_split)
+    shot_lbl = shot_label(few_shot)
+    return f"{sanitised_dataset}__{split_lbl}__{shot_lbl}.json"
 
 
 def sanitise_dataset_name(dataset: str) -> str:
@@ -307,32 +395,6 @@ def split_label(validation_split: bool | None) -> str:
     return "none"
 
 
-def record_filename(
-    dataset: str, validation_split: bool | None, few_shot: bool | None
-) -> str:
-    """Produce the per-record filename for a given identity.
-
-    Format: ``<sanitise(dataset)>__<split_label>__<shot_label>.json``
-
-    Args:
-        dataset:
-            The dataset name.
-        validation_split:
-            The validation split flag. Maps to: True -> 'val', False -> 'test',
-            None -> 'none'.
-        few_shot:
-            The few-shot flag. Maps to: True -> 'fewshot', False -> 'zeroshot',
-            None -> 'none'.
-
-    Returns:
-        Filename string suitable for storing the result record.
-    """
-    sanitised_dataset = sanitise_dataset_name(dataset)
-    split_lbl = split_label(validation_split)
-    shot_lbl = shot_label(few_shot)
-    return f"{sanitised_dataset}__{split_lbl}__{shot_lbl}.json"
-
-
 def sanitise_model_dir_name(model_id: str) -> str:
     """Produce a sanitised model directory name from a model id.
 
@@ -349,65 +411,3 @@ def sanitise_model_dir_name(model_id: str) -> str:
         A sanitised string suitable for use as a directory name.
     """
     return model_id.replace("/", "_")
-
-
-def record_relative_path(
-    model_id: str, dataset: str, validation_split: bool | None, few_shot: bool | None
-) -> Path:
-    """Produce the full relative path for a result record.
-
-    Path format: ``<sanitise(model_id)>/<sanitise(dataset)>__<split>__<shot>.json``
-
-    Args:
-        model_id:
-            The full model identifier.
-        dataset:
-            The dataset name.
-        validation_split:
-            The validation split flag.
-        few_shot:
-            The few-shot flag.
-
-    Returns:
-        Path object representing the relative path.
-    """
-    model_dir = sanitise_model_dir_name(model_id)
-    filename = record_filename(dataset, validation_split, few_shot)
-    return Path(model_dir) / filename
-
-
-def identity_to_path(identity: ResultIdentity) -> Path:
-    """Produce the full relative path for a result identity.
-
-    Args:
-        identity:
-            Identity tuple ``(model_id, dataset, validation_split, few_shot)``.
-
-    Returns:
-        Path object representing the relative path.
-    """
-    model_id, dataset, validation_split, few_shot = identity
-    return record_relative_path(model_id, dataset, validation_split, few_shot)
-
-
-def raise_on_collision(identity_a: ResultIdentity, identity_b: ResultIdentity) -> None:
-    """Raise an error if two distinct identities would sanitise to the same path.
-
-    Args:
-        identity_a:
-            First identity tuple.
-        identity_b:
-            Second identity tuple.
-
-    Raises:
-        ValueError:
-            If the identities are different but would produce the same path.
-    """
-    if identity_a != identity_b:
-        path_a = identity_to_path(identity_a)
-        path_b = identity_to_path(identity_b)
-        if path_a == path_b:
-            raise ValueError(
-                f"Identity collision detected: {identity_a} and {identity_b} "
-                f"both sanitise to {path_a}"
-            )

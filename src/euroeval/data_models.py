@@ -126,20 +126,6 @@ class BenchmarkResult(pydantic.BaseModel):
     open: bool | None = None
     trained_from_scratch: bool | None = None
 
-    def to_eee_dict(self) -> dict[str, object]:
-        """Convert this benchmark result to the Every Eval Ever (EEE) format.
-
-        Produces a dictionary conforming to the Every Eval Ever JSON schema v0.2.1
-        (https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json).
-        The resulting dict can be written directly to
-        `euroeval_benchmark_results.jsonl` and later reconstructed without loss
-        via `from_eee_dict` (or `from_dict`).
-
-        Returns:
-            A dictionary matching the EEE JSON schema v0.2.1.
-        """
-        return benchmark_result_to_eee_dict(result=self)
-
     def append_to_results(self, results_path: Path) -> None:
         """Append the benchmark result to the results file.
 
@@ -161,23 +147,40 @@ class BenchmarkResult(pydantic.BaseModel):
         with results_path.open("a") as f:
             f.write(("\n" if needs_sep else "") + json_str + "\n")
 
-    @classmethod
-    def from_eee_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
-        """Create a BenchmarkResult from an Every Eval Ever format dictionary.
+    def to_eee_dict(self) -> dict[str, object]:
+        """Convert this benchmark result to the Every Eval Ever (EEE) format.
 
-        Reconstructs a full `BenchmarkResult` from a dictionary conforming to the
-        Every Eval Ever (EEE) JSON schema v0.2.1.  The method is the inverse of
-        `to_eee_dict` and enables lossless round-trips via `from_dict`.
-
-        Args:
-            config:
-                A dictionary conforming to the EEE JSON schema v0.2.1, as produced
-                by `to_eee_dict`.
+        Produces a dictionary conforming to the Every Eval Ever JSON schema v0.2.1
+        (https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json).
+        The resulting dict can be written directly to
+        `euroeval_benchmark_results.jsonl` and later reconstructed without loss
+        via `from_eee_dict` (or `from_dict`).
 
         Returns:
-            The reconstructed benchmark result.
+            A dictionary matching the EEE JSON schema v0.2.1.
         """
-        return benchmark_result_from_eee_dict(config=config)
+        return benchmark_result_to_eee_dict(result=self)
+
+    @classmethod
+    def from_jsonl(cls, results_path: Path) -> list["BenchmarkResult"]:
+        """Load benchmark results from a JSONL file.
+
+        Parses a JSONL file with robust handling of blank lines and concatenated
+        JSON objects (`}{`). Returns an empty list if the file does not exist.
+
+        Args:
+            results_path:
+                The path to the JSONL file containing benchmark results.
+
+        Returns:
+            A list of BenchmarkResult instances.
+        """
+        if not results_path.exists():
+            return []
+
+        lines = results_path.read_text(encoding="utf-8").splitlines()
+        records = parse_jsonl_lines(lines=lines, source=str(results_path), strict=False)
+        return [cls.from_dict(record) for record in records]
 
     @classmethod
     def from_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
@@ -253,25 +256,22 @@ class BenchmarkResult(pydantic.BaseModel):
         return cls(**config)  # ty: ignore[invalid-argument-type]
 
     @classmethod
-    def from_jsonl(cls, results_path: Path) -> list["BenchmarkResult"]:
-        """Load benchmark results from a JSONL file.
+    def from_eee_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
+        """Create a BenchmarkResult from an Every Eval Ever format dictionary.
 
-        Parses a JSONL file with robust handling of blank lines and concatenated
-        JSON objects (`}{`). Returns an empty list if the file does not exist.
+        Reconstructs a full `BenchmarkResult` from a dictionary conforming to the
+        Every Eval Ever (EEE) JSON schema v0.2.1.  The method is the inverse of
+        `to_eee_dict` and enables lossless round-trips via `from_dict`.
 
         Args:
-            results_path:
-                The path to the JSONL file containing benchmark results.
+            config:
+                A dictionary conforming to the EEE JSON schema v0.2.1, as produced
+                by `to_eee_dict`.
 
         Returns:
-            A list of BenchmarkResult instances.
+            The reconstructed benchmark result.
         """
-        if not results_path.exists():
-            return []
-
-        lines = results_path.read_text(encoding="utf-8").splitlines()
-        records = parse_jsonl_lines(lines=lines, source=str(results_path), strict=False)
-        return [cls.from_dict(record) for record in records]
+        return benchmark_result_from_eee_dict(config=config)
 
 
 class HashableDict(dict[t.Any, t.Any]):

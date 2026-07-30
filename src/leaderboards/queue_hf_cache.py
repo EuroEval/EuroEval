@@ -24,6 +24,85 @@ from .constants import HF_CACHE_PATH, HF_CACHE_TTL_SECONDS
 logger = logging.getLogger(__name__)
 
 
+def cached_model_summary(model_id: str) -> dict | None:
+    """Return a ``{param_count, gated, gguf, generative}`` summary for a model id.
+
+    Looks up :data:`HF_CACHE_PATH` first and falls back to
+    ``HfApi.model_info`` only on cache miss or stale entry. Negative
+    results (model not found) are not cached so that typo corrections take
+    effect immediately.
+
+    Args:
+        model_id:
+            The Hugging Face repo id to look up.
+
+    Returns:
+        A dict with keys:
+
+        - ``param_count`` (int, possibly ``sys.maxsize`` for unknown).
+        - ``gated`` (bool, True when the configured assignee does not have
+          read access to a gated repo -- i.e. ``model_info`` raised
+          ``GatedRepoError``).
+        - ``gguf`` (bool, True when the repo is a GGUF model, which the
+          evaluation queue cannot run).
+        - ``generative`` (bool, True for generative models and False for
+          encoder models; see :func:`is_generative_model`). Defaults to True
+          for gated repos and legacy cache entries whose type is unknown.
+
+        Returns None when the model is not on the Hub.
+    """
+    cache = _load_hf_cache()
+    entry = cache.get(model_id)
+    if entry is not None and "param_count" in entry:
+        return {
+            "param_count": int(entry["param_count"]),
+            "gated": False,
+            "gguf": bool(entry.get("gguf", False)),
+            "generative": bool(entry.get("generative", True)),
+        }
+
+    try:
+        info = HfApi().model_info(repo_id=model_id)
+    except GatedRepoError:
+        # Don't cache: access can be granted at any time, and we want to
+        # pick that up on the next run.
+        return {
+            "param_count": sys.maxsize,
+            "gated": True,
+            "gguf": False,
+            "generative": True,
+        }
+    except RepositoryNotFoundError:
+        # Expected for typo-d / since-deleted repos; just drop the candidate.
+        return None
+    except Exception as e:  # noqa: BLE001
+        # Best-effort network lookup: any other failure (transient HTTP, timeout,
+        # unexpected payload) should just drop the candidate, never crash the run.
+        logger.warning(f"HF model lookup failed for {model_id}: {e}")
+        return None
+
+    safetensors = getattr(info, "safetensors", None)
+    total = getattr(safetensors, "total", None) if safetensors else None
+    param_count = total if isinstance(total, int) and total > 0 else sys.maxsize
+
+    gguf = is_gguf_model(info=info)
+    generative = is_generative_model(info=info)
+
+    cache[model_id] = {
+        "timestamp": time.time(),
+        "param_count": param_count,
+        "gguf": gguf,
+        "generative": generative,
+    }
+    _write_hf_cache(cache=cache)
+    return {
+        "param_count": param_count,
+        "gated": False,
+        "gguf": gguf,
+        "generative": generative,
+    }
+
+
 def _load_hf_cache() -> dict[str, dict]:
     """Read the on-disk HF Hub lookup cache, or return an empty dict.
 
@@ -126,82 +205,3 @@ def is_gguf_model(info: ModelInfo) -> bool:
         name.endswith(".safetensors") for name in filenames
     )
     return has_gguf and not has_safetensors
-
-
-def cached_model_summary(model_id: str) -> dict | None:
-    """Return a ``{param_count, gated, gguf, generative}`` summary for a model id.
-
-    Looks up :data:`HF_CACHE_PATH` first and falls back to
-    ``HfApi.model_info`` only on cache miss or stale entry. Negative
-    results (model not found) are not cached so that typo corrections take
-    effect immediately.
-
-    Args:
-        model_id:
-            The Hugging Face repo id to look up.
-
-    Returns:
-        A dict with keys:
-
-        - ``param_count`` (int, possibly ``sys.maxsize`` for unknown).
-        - ``gated`` (bool, True when the configured assignee does not have
-          read access to a gated repo -- i.e. ``model_info`` raised
-          ``GatedRepoError``).
-        - ``gguf`` (bool, True when the repo is a GGUF model, which the
-          evaluation queue cannot run).
-        - ``generative`` (bool, True for generative models and False for
-          encoder models; see :func:`is_generative_model`). Defaults to True
-          for gated repos and legacy cache entries whose type is unknown.
-
-        Returns None when the model is not on the Hub.
-    """
-    cache = _load_hf_cache()
-    entry = cache.get(model_id)
-    if entry is not None and "param_count" in entry:
-        return {
-            "param_count": int(entry["param_count"]),
-            "gated": False,
-            "gguf": bool(entry.get("gguf", False)),
-            "generative": bool(entry.get("generative", True)),
-        }
-
-    try:
-        info = HfApi().model_info(repo_id=model_id)
-    except GatedRepoError:
-        # Don't cache: access can be granted at any time, and we want to
-        # pick that up on the next run.
-        return {
-            "param_count": sys.maxsize,
-            "gated": True,
-            "gguf": False,
-            "generative": True,
-        }
-    except RepositoryNotFoundError:
-        # Expected for typo-d / since-deleted repos; just drop the candidate.
-        return None
-    except Exception as e:  # noqa: BLE001
-        # Best-effort network lookup: any other failure (transient HTTP, timeout,
-        # unexpected payload) should just drop the candidate, never crash the run.
-        logger.warning(f"HF model lookup failed for {model_id}: {e}")
-        return None
-
-    safetensors = getattr(info, "safetensors", None)
-    total = getattr(safetensors, "total", None) if safetensors else None
-    param_count = total if isinstance(total, int) and total > 0 else sys.maxsize
-
-    gguf = is_gguf_model(info=info)
-    generative = is_generative_model(info=info)
-
-    cache[model_id] = {
-        "timestamp": time.time(),
-        "param_count": param_count,
-        "gguf": gguf,
-        "generative": generative,
-    }
-    _write_hf_cache(cache=cache)
-    return {
-        "param_count": param_count,
-        "gated": False,
-        "gguf": gguf,
-        "generative": generative,
-    }

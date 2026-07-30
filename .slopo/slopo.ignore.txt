@@ -52,6 +52,8 @@ ac81abca3ab6  # scripts/dataset_creation/create_qnli.py
 608baeb94734  # scripts/dataset_creation/create_qqp.py
 40191ae9ba83  # scripts/dataset_creation/create_sst2.py
 4af81a865fac  # scripts/dataset_creation/create_icelandic_knowledge.py, scripts/dataset_creation/create_swedish_facts.py, ...
+4d5548b3212c  # scripts/dataset_creation/create_cinexio.py, scripts/dataset_creation/create_lt_emotions.py, scripts/dataset_creation/create_rosent.py
+025661b0f86d  # scripts/dataset_creation/create_icelandic_error_corpus.py, scripts/dataset_creation/create_scala.py
 
 
 # ---------- Post-refactor wrappers: cannot merge without breaking class interfaces ----------
@@ -75,3 +77,8 @@ a52d4598fe08  # euroeval/task_group_utils/question_answering.py, euroeval/task_g
 # ---------- Reader/writer closures: both wrap password input, structural identity is expected ----------
 
 490246fc7f9d  # leaderboards/queue_env.py
+
+
+# ---------- Test methods with intentional pattern duplication: tests follow same template ----------
+
+1ac2077b354d  # euroeval/benchmark_modules/litellm.py, euroeval/benchmark_modules/vllm.py

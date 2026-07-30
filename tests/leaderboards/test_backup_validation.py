@@ -21,33 +21,6 @@ from leaderboards.backup import (
 from leaderboards.eee_validation import validate_eee_record
 
 
-def _create_eee_record(
-    model_name: str = "test/model", include_precious_metadata: bool = False
-) -> dict[str, t.Any]:
-    """Create a minimal EEE-format record.
-
-    Args:
-        model_name (optional):
-            Model name for the record. Defaults to "test/model".
-        include_precious_metadata (optional):
-            Whether to include precious metadata fields. Defaults to False.
-
-    Returns:
-        A minimal EEE-format record dictionary.
-    """
-    record: dict[str, t.Any] = {
-        "schema_version": "1.0",
-        "model_info": {"name": model_name, "additional_details": {}},
-        "eval_library": {"name": "euroeval", "additional_details": {}},
-        "evaluation_results": [],
-    }
-    if include_precious_metadata:
-        record["model_info"]["additional_details"].update(
-            {"commercially_licensed": False, "open": True, "trained_from_scratch": True}
-        )
-    return record
-
-
 class TestBackupResultsIntegration:
     """Integration tests for backup_results with tree structure results."""
 
@@ -75,6 +48,33 @@ class TestBackupResultsIntegration:
             backup_path = backup_results(source=temp_results_dir)
             assert backup_path is not None
             assert backup_path.exists()
+
+
+def _create_eee_record(
+    model_name: str = "test/model", include_precious_metadata: bool = False
+) -> dict[str, t.Any]:
+    """Create a minimal EEE-format record.
+
+    Args:
+        model_name (optional):
+            Model name for the record. Defaults to "test/model".
+        include_precious_metadata (optional):
+            Whether to include precious metadata fields. Defaults to False.
+
+    Returns:
+        A minimal EEE-format record dictionary.
+    """
+    record: dict[str, t.Any] = {
+        "schema_version": "1.0",
+        "model_info": {"name": model_name, "additional_details": {}},
+        "eval_library": {"name": "euroeval", "additional_details": {}},
+        "evaluation_results": [],
+    }
+    if include_precious_metadata:
+        record["model_info"]["additional_details"].update(
+            {"commercially_licensed": False, "open": True, "trained_from_scratch": True}
+        )
+    return record
 
 
 class TestTreeStructureBackup:

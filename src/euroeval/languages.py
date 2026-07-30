@@ -75,15 +75,6 @@ class Language:
         self._or_separator = value
 
 
-def get_all_languages() -> dict[str, Language]:
-    """Get a list of all the languages.
-
-    Returns:
-        A mapping between language codes and their configurations.
-    """
-    return {cfg.code: cfg for cfg in globals().values() if isinstance(cfg, Language)}
-
-
 def get_correct_language_codes(
     language_codes: str | c.Sequence[str],
 ) -> c.Sequence[str]:
@@ -117,6 +108,15 @@ def get_correct_language_codes(
         languages = list(set(languages) | {"no"})
 
     return languages
+
+
+def get_all_languages() -> dict[str, Language]:
+    """Get a list of all the languages.
+
+    Returns:
+        A mapping between language codes and their configurations.
+    """
+    return {cfg.code: cfg for cfg in globals().values() if isinstance(cfg, Language)}
 
 
 ABKHAZIAN: Language = Language(

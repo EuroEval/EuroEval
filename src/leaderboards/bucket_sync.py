@@ -30,48 +30,6 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def _cleanup_empty_bucket_files(hf_token: str) -> None:
-    """Delete 0-byte JSON files from the Hugging Face bucket.
-
-    Lists all files in the bucket, identifies empty JSON files by size,
-    and removes them via batch operation.
-
-    Args:
-        hf_token:
-            Hugging Face authentication token.
-    """
-    api = HfApi()
-    empty_files: list[str] = []
-
-    try:
-        # List all files in the bucket
-        files = list_bucket_tree(
-            bucket_id=HF_RESULTS_BUCKET, token=hf_token, recursive=True
-        )
-        for file_info in files:
-            # Check if it's a JSON file with size 0
-            if isinstance(file_info, BucketFile):
-                if file_info.path.endswith(".json") and file_info.size == 0:
-                    empty_files.append(file_info.path)
-            elif isinstance(file_info, dict):
-                # Handle dict format if API returns that
-                path = str(file_info.get("path", ""))
-                size = file_info.get("size", 0)
-                if path.endswith(".json") and size == 0:
-                    empty_files.append(path)
-    except HfHubHTTPError as e:
-        logger.error(f"Failed to list bucket files: {e}")
-        return
-
-    if empty_files:
-        logger.info(f"Found {len(empty_files)} empty file(s) in bucket, deleting...")
-        try:
-            api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, delete=empty_files)
-            logger.info(f"Deleted {len(empty_files)} empty file(s) from bucket.")
-        except HfHubHTTPError as e:
-            logger.error(f"Failed to delete empty bucket files: {e}")
-
-
 def _sort_key(record: dict) -> tuple[str, str]:
     """Extract sort key from a record for deterministic ordering.
 
@@ -144,29 +102,6 @@ def download_missing_bucket_files() -> int:
     return len(to_download)
 
 
-def remove_empty_json_files(results_dir: Path) -> list[str]:
-    """Find and delete empty JSON files (0 bytes).
-
-    Scans recursively for all *.json files and removes any with zero size.
-
-    Args:
-        results_dir:
-            Directory to scan for empty JSON files.
-
-    Returns:
-        List of relative paths that were deleted.
-    """
-    deleted: list[str] = []
-    for json_file in results_dir.rglob("*.json"):
-        if json_file.is_file() and json_file.stat().st_size == 0:
-            logger.info(f"Removing empty file {json_file}")
-            json_file.unlink()
-            deleted.append(str(json_file.relative_to(results_dir)))
-    if deleted:
-        logger.info(f"Deleted {len(deleted)} empty JSON file(s).")
-    return deleted
-
-
 def merge_results(results_file: Path) -> int:
     """Merge per-record JSON tree into a single JSONL file.
 
@@ -236,6 +171,29 @@ def merge_results(results_file: Path) -> int:
         for record in sorted(existing.values(), key=_sort_key):
             f.write(json.dumps(record) + "\n")
     return len(existing)
+
+
+def remove_empty_json_files(results_dir: Path) -> list[str]:
+    """Find and delete empty JSON files (0 bytes).
+
+    Scans recursively for all *.json files and removes any with zero size.
+
+    Args:
+        results_dir:
+            Directory to scan for empty JSON files.
+
+    Returns:
+        List of relative paths that were deleted.
+    """
+    deleted: list[str] = []
+    for json_file in results_dir.rglob("*.json"):
+        if json_file.is_file() and json_file.stat().st_size == 0:
+            logger.info(f"Removing empty file {json_file}")
+            json_file.unlink()
+            deleted.append(str(json_file.relative_to(results_dir)))
+    if deleted:
+        logger.info(f"Deleted {len(deleted)} empty JSON file(s).")
+    return deleted
 
 
 def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
@@ -350,6 +308,48 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
         _cleanup_empty_bucket_files(hf_token)
 
     logger.info(f"Synced bucket {HF_RESULTS_BUCKET}.")
+
+
+def _cleanup_empty_bucket_files(hf_token: str) -> None:
+    """Delete 0-byte JSON files from the Hugging Face bucket.
+
+    Lists all files in the bucket, identifies empty JSON files by size,
+    and removes them via batch operation.
+
+    Args:
+        hf_token:
+            Hugging Face authentication token.
+    """
+    api = HfApi()
+    empty_files: list[str] = []
+
+    try:
+        # List all files in the bucket
+        files = list_bucket_tree(
+            bucket_id=HF_RESULTS_BUCKET, token=hf_token, recursive=True
+        )
+        for file_info in files:
+            # Check if it's a JSON file with size 0
+            if isinstance(file_info, BucketFile):
+                if file_info.path.endswith(".json") and file_info.size == 0:
+                    empty_files.append(file_info.path)
+            elif isinstance(file_info, dict):
+                # Handle dict format if API returns that
+                path = str(file_info.get("path", ""))
+                size = file_info.get("size", 0)
+                if path.endswith(".json") and size == 0:
+                    empty_files.append(path)
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to list bucket files: {e}")
+        return
+
+    if empty_files:
+        logger.info(f"Found {len(empty_files)} empty file(s) in bucket, deleting...")
+        try:
+            api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, delete=empty_files)
+            logger.info(f"Deleted {len(empty_files)} empty file(s) from bucket.")
+        except HfHubHTTPError as e:
+            logger.error(f"Failed to delete empty bucket files: {e}")
 
 
 def upload_results_to_bucket(results_file: Path) -> None:

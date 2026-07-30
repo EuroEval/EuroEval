@@ -175,12 +175,6 @@ class Sentiment(BaseModel):
     )
 
 
-def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE."""
-    with open(CACHE_FILE, "w") as cache_file:
-        json.dump(cache, cache_file, indent=4)
-
-
 def _classify_text(text: str) -> str:
     """Classify the text using GPT-4o model.
 
@@ -215,6 +209,12 @@ def _classify_text(text: str) -> str:
     label_cache[text] = label
     save_cache(cache=label_cache)
     return label
+
+
+def save_cache(cache: dict) -> None:
+    """Save cache to CACHE_FILE."""
+    with open(CACHE_FILE, "w") as cache_file:
+        json.dump(cache, cache_file, indent=4)
 
 
 def _compare_labels(row: pd.Series) -> bool:

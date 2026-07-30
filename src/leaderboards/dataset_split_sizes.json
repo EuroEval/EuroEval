@@ -199,6 +199,11 @@
     "train": 50,
     "val": 51
   },
+  "EuroEval/dutch-cola": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/elner-mini": {
     "test": 2048,
     "train": 1024,
@@ -534,6 +539,11 @@
     "train": 15,
     "val": 64
   },
+  "EuroEval/include-nl-mini": {
+    "test": 469,
+    "train": 24,
+    "val": 64
+  },
   "EuroEval/include-sq-mini": {
     "test": 466,
     "train": 24,
@@ -830,6 +840,10 @@
   },
   "EuroEval/multiloko-fr-mini": {
     "test": 234,
+    "train": 16
+  },
+  "EuroEval/multiloko-nl-mini": {
+    "test": 233,
     "train": 16
   },
   "EuroEval/multinerd-mini-it": {

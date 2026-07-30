@@ -196,43 +196,8 @@ class TestLoadData:
         assert all(set(d.keys()) == {"train", "val", "test"} for d in datasets)
 
 
-def make_dataset(col: str, value: str = "positive") -> DatasetDict:
-    """Build a minimal three-split DatasetDict with a 'text' column and a custom column.
-
-    Args:
-        col:
-            The name of the custom column to add.
-        value:
-            The value to use in the custom column. Defaults to "positive".
-
-    Returns:
-        A DatasetDict with "train", "val", and "test" splits, each containing a single
-        row with a "text" column and the specified custom column.
-    """
-    split = Dataset.from_dict({"text": ["hello"], col: [value]})
-    return DatasetDict({"train": split, "val": split, "test": split})
-
-
 class TestPreprocessingFunc:
     """Tests for the preprocessing function built from column arguments."""
-
-    def _config(
-        self,
-        task: Task,
-        target_column: str | None = None,
-        input_column: str = "text",
-        choices_column: str | None = None,
-    ) -> DatasetConfig:
-        return DatasetConfig(
-            name="test-dataset",
-            pretty_name="Test Dataset",
-            source="dummy/source",
-            task=task,
-            languages=[DANISH],
-            target_column=target_column,
-            input_column=input_column,
-            choices_column=choices_column,
-        )
 
     def test_choices_column_merged_with_input_column(self) -> None:
         """choices_column is merged with input_column into 'text'."""
@@ -254,6 +219,24 @@ class TestPreprocessingFunc:
         assert "What is 1+1?" in text
         assert "a. 1" in text
         assert "b. 2" in text
+
+    def _config(
+        self,
+        task: Task,
+        target_column: str | None = None,
+        input_column: str = "text",
+        choices_column: str | None = None,
+    ) -> DatasetConfig:
+        return DatasetConfig(
+            name="test-dataset",
+            pretty_name="Test Dataset",
+            source="dummy/source",
+            task=task,
+            languages=[DANISH],
+            target_column=target_column,
+            input_column=input_column,
+            choices_column=choices_column,
+        )
 
     def test_conflict_existing_target_column_is_replaced(self) -> None:
         """When target column already exists, it is removed before renaming."""
@@ -312,6 +295,23 @@ class TestPreprocessingFunc:
         result = config.preprocessing_func(raw)
         assert "labels" in result["test"].column_names
         assert "ner_tags" not in result["test"].column_names
+
+
+def make_dataset(col: str, value: str = "positive") -> DatasetDict:
+    """Build a minimal three-split DatasetDict with a 'text' column and a custom column.
+
+    Args:
+        col:
+            The name of the custom column to add.
+        value:
+            The value to use in the custom column. Defaults to "positive".
+
+    Returns:
+        A DatasetDict with "train", "val", and "test" splits, each containing a single
+        row with a "text" column and the specified custom column.
+    """
+    split = Dataset.from_dict({"text": ["hello"], col: [value]})
+    return DatasetDict({"train": split, "val": split, "test": split})
 
 
 @pytest.fixture(scope="module")

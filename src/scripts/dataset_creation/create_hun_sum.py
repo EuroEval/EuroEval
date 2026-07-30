@@ -191,12 +191,6 @@ class SummaryValidation(BaseModel):
     is_valid_summary: bool
 
 
-def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE."""
-    with open(CACHE_FILE, "w") as cache_file:
-        json.dump(cache, cache_file, indent=4)
-
-
 def _text_summary_alignment(row: pd.Series) -> bool:
     """Check if the summary aligns with the text using an LLM, with caching.
 
@@ -236,6 +230,12 @@ def _text_summary_alignment(row: pd.Series) -> bool:
     save_cache(cache=summary_cache)
 
     return is_valid_summary
+
+
+def save_cache(cache: dict) -> None:
+    """Save cache to CACHE_FILE."""
+    with open(CACHE_FILE, "w") as cache_file:
+        json.dump(cache, cache_file, indent=4)
 
 
 if __name__ == "__main__":

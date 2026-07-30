@@ -26,20 +26,109 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig
 
 
-def _hallucination_model_id(dataset_config: "DatasetConfig") -> str:
+class TokenHallucinationMetric(Metric):
+    """Hallucination metric."""
+
+    def __init__(self, name: str, pretty_name: str) -> None:
+        """Initialise the token hallucination metric.
+
+        Args:
+            name:
+                The name of the metric in snake_case.
+            pretty_name:
+                The pretty name of the metric, used for display purposes.
+        """
+        super().__init__(name=name, pretty_name=pretty_name, postprocessing_fn=None)
+
+    def __call__(
+        self,
+        predictions: c.Iterable[dict[str, t.Any]],
+        references: c.Sequence,
+        dataset: "Dataset",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> float | None:
+        """Compute the token-level hallucination rate for a set of predictions.
+
+        This method wraps `detect_hallucinations` to run a token-level
+        hallucination detector over the provided predictions and dataset contexts,
+        and returns the rate of tokens classified as hallucinated.
+
+        Args:
+            predictions:
+                The model predictions. Each prediction must provide a
+                ``"prediction_text"`` field containing the model's answer text.
+            references:
+                The ground truth references. Unused by this metric, but accepted
+                for API consistency with the base ``Metric`` interface.
+            dataset:
+                The dataset used for evaluation.
+            dataset_config:
+                The dataset configuration.
+            benchmark_config:
+                The benchmark configuration, used to determine the compute device.
+
+        Returns:
+            The hallucination rate (hallucinated_tokens/total_tokens).
+        """
+        # Extract language code from dataset config
+        main_language = dataset_config.main_language
+        language_code: str = (
+            main_language[1].code
+            if isinstance(main_language, tuple)
+            else main_language.code
+        )
+
+        hallucination_rate = detect_hallucinations(
+            dataset=dataset,
+            predictions=predictions,
+            model=_hallucination_model_id(language_code=language_code),
+            device=Device(benchmark_config.device.type),
+            cache_dir=benchmark_config.cache_dir,
+        )
+        return hallucination_rate
+
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
+    ) -> "TokenHallucinationMetric":
+        """Pre-download hallucination detection models.
+
+        The hallucination detection model is language-specific. When a dataset
+        configuration is provided, only the model(s) for the relevant language(s)
+        are downloaded. Otherwise, all hallucination detection models referenced
+        by built-in dataset configurations are fetched for offline benchmarking.
+
+        Args:
+            cache_dir:
+                The directory where the models will be downloaded to.
+            dataset_config (optional):
+                The dataset configuration, used to filter which hallucination
+                detection models to download based on language. When None, all
+                models are downloaded. Defaults to None.
+
+        Returns:
+            The metric object itself.
+        """
+        for model_id in _hallucination_model_ids(
+            cache_dir=cache_dir, dataset_config=dataset_config
+        ):
+            snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
+        return self
+
+
+def _hallucination_model_id(language_code: str) -> str:
     """Build the hallucination detection model ID for a dataset.
 
     Args:
-        dataset_config:
-            The dataset configuration, whose main language determines the
-            language-specific hallucination detection model.
+        language_code:
+            The language code of the dataset.
 
     Returns:
         The Hugging Face Hub repository ID of the hallucination detection model.
     """
     return (
         "alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-"
-        f"ragtruth-{dataset_config.main_language.code}"
+        f"ragtruth-{language_code}"
     )
 
 
@@ -67,22 +156,15 @@ def _hallucination_model_ids(
         Otherwise, contains all models referenced by built-in dataset
         configurations.
     """
+    # Extract language(s) from the provided dataset configuration if available
     if dataset_config is not None:
-        # Extract language(s) from the provided dataset configuration
         main_language = dataset_config.main_language
-        if isinstance(main_language, tuple):
-            # Translation task: use target language (second element) since that's
-            # what the model outputs and what we check for hallucinations
-            return {
-                "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
-                f"{main_language[1].code}"
-            }
-        else:
-            # Single language
-            return {
-                "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
-                f"{main_language.code}"
-            }
+        language_code: str = (
+            main_language[1].code
+            if isinstance(main_language, tuple)
+            else main_language.code
+        )
+        return {_hallucination_model_id(language_code=language_code)}
 
     # Imported here rather than at module level to avoid a circular import, since
     # the dataset configurations import this metric module via the task registry.
@@ -102,35 +184,14 @@ def _hallucination_model_ids(
             isinstance(metric, TokenHallucinationMetric)
             for metric in dataset_config.task.metrics
         ):
-            model_ids.add(_hallucination_model_id(dataset_config=dataset_config))
+            main_language = dataset_config.main_language
+            language_code: str = (
+                main_language[1].code
+                if isinstance(main_language, tuple)
+                else main_language.code
+            )
+            model_ids.add(_hallucination_model_id(language_code=language_code))
     return model_ids
-
-
-def _answer_too_long(
-    answer: str, tokenizer: "PreTrainedTokenizerBase", max_length: int
-) -> bool:
-    """Check whether an answer alone exceeds the detector's token budget.
-
-    The hallucination detector tokenises the prompt and answer together with
-    ``truncation="only_first"``, which only truncates the prompt. If the answer
-    alone leaves no room for the prompt (e.g. for reasoning models that emit long
-    answers), the tokeniser raises a truncation error. Such samples are skipped.
-
-    Args:
-        answer:
-            The predicted answer text to check.
-        tokenizer:
-            The detector's tokeniser, used to count tokens.
-        max_length:
-            The detector's maximum input sequence length.
-
-    Returns:
-        Whether the answer is too long to be evaluated alongside a prompt.
-    """
-    answer_token_count = len(tokenizer(answer, add_special_tokens=False)["input_ids"])
-    # Reserve room for special tokens ([CLS], two [SEP]) and at least one prompt
-    # token, matching the detector's ``truncation="only_first"`` requirement.
-    return answer_token_count >= max_length - 4
 
 
 def detect_hallucinations(
@@ -225,86 +286,31 @@ def detect_hallucinations(
     return hallucination_rate
 
 
-class TokenHallucinationMetric(Metric):
-    """Hallucination metric."""
+def _answer_too_long(
+    answer: str, tokenizer: "PreTrainedTokenizerBase", max_length: int
+) -> bool:
+    """Check whether an answer alone exceeds the detector's token budget.
 
-    def __init__(self, name: str, pretty_name: str) -> None:
-        """Initialise the token hallucination metric.
+    The hallucination detector tokenises the prompt and answer together with
+    ``truncation="only_first"``, which only truncates the prompt. If the answer
+    alone leaves no room for the prompt (e.g. for reasoning models that emit long
+    answers), the tokeniser raises a truncation error. Such samples are skipped.
 
-        Args:
-            name:
-                The name of the metric in snake_case.
-            pretty_name:
-                The pretty name of the metric, used for display purposes.
-        """
-        super().__init__(name=name, pretty_name=pretty_name, postprocessing_fn=None)
+    Args:
+        answer:
+            The predicted answer text to check.
+        tokenizer:
+            The detector's tokeniser, used to count tokens.
+        max_length:
+            The detector's maximum input sequence length.
 
-    def __call__(
-        self,
-        predictions: c.Iterable[dict[str, t.Any]],
-        references: c.Sequence,
-        dataset: "Dataset",
-        dataset_config: "DatasetConfig",
-        benchmark_config: "BenchmarkConfig",
-    ) -> float | None:
-        """Compute the token-level hallucination rate for a set of predictions.
-
-        This method wraps `detect_hallucinations` to run a token-level
-        hallucination detector over the provided predictions and dataset contexts,
-        and returns the rate of tokens classified as hallucinated.
-
-        Args:
-            predictions:
-                The model predictions. Each prediction must provide a
-                ``"prediction_text"`` field containing the model's answer text.
-            references:
-                The ground truth references. Unused by this metric, but accepted
-                for API consistency with the base ``Metric`` interface.
-            dataset:
-                The dataset used for evaluation.
-            dataset_config:
-                The dataset configuration.
-            benchmark_config:
-                The benchmark configuration, used to determine the compute device.
-
-        Returns:
-            The hallucination rate (hallucinated_tokens/total_tokens).
-        """
-        hallucination_rate = detect_hallucinations(
-            dataset=dataset,
-            predictions=predictions,
-            model=_hallucination_model_id(dataset_config=dataset_config),
-            device=Device(benchmark_config.device.type),
-            cache_dir=benchmark_config.cache_dir,
-        )
-        return hallucination_rate
-
-    def download(
-        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
-    ) -> "TokenHallucinationMetric":
-        """Pre-download hallucination detection models.
-
-        The hallucination detection model is language-specific. When a dataset
-        configuration is provided, only the model(s) for the relevant language(s)
-        are downloaded. Otherwise, all hallucination detection models referenced
-        by built-in dataset configurations are fetched for offline benchmarking.
-
-        Args:
-            cache_dir:
-                The directory where the models will be downloaded to.
-            dataset_config (optional):
-                The dataset configuration, used to filter which hallucination
-                detection models to download based on language. When None, all
-                models are downloaded. Defaults to None.
-
-        Returns:
-            The metric object itself.
-        """
-        for model_id in _hallucination_model_ids(
-            cache_dir=cache_dir, dataset_config=dataset_config
-        ):
-            snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
-        return self
+    Returns:
+        Whether the answer is too long to be evaluated alongside a prompt.
+    """
+    answer_token_count = len(tokenizer(answer, add_special_tokens=False)["input_ids"])
+    # Reserve room for special tokens ([CLS], two [SEP]) and at least one prompt
+    # token, matching the detector's ``truncation="only_first"`` requirement.
+    return answer_token_count >= max_length - 4
 
 
 hallucination_metric = TokenHallucinationMetric(

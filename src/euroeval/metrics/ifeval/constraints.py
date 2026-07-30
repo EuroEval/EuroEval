@@ -126,20 +126,6 @@ def register(
     return decorator
 
 
-@register("fr:special_character:accents")
-def check_accents(response: str, **_) -> bool:
-    """Check response contains accents.
-
-    Args:
-        response:
-            The response string to check.
-
-    Returns:
-        True if the response contains accents, False otherwise.
-    """
-    return _ACCENTED_CHARS_RE.search(response) is not None
-
-
 @register("change_case:capital_letters")
 @register("change_case:capital")
 def check_capital_letters(response: str, **_) -> bool:
@@ -705,6 +691,20 @@ def check_no_accents(response: str, **_) -> bool:
         True if the response contains no accents, False otherwise.
     """
     return not check_accents(response)
+
+
+@register("fr:special_character:accents")
+def check_accents(response: str, **_) -> bool:
+    """Check response contains accents.
+
+    Args:
+        response:
+            The response string to check.
+
+    Returns:
+        True if the response contains accents, False otherwise.
+    """
+    return _ACCENTED_CHARS_RE.search(response) is not None
 
 
 @register("punctuation:no_comma")

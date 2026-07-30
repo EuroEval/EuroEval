@@ -94,60 +94,6 @@ class PipelineMetric(Metric):
         self.pipeline: "Pipeline | None" = None
         self.preprocessing_fn = preprocessing_fn
 
-    def _download_pipeline(self, cache_dir: str) -> "Pipeline":
-        """Download the scikit-learn pipeline from the given URL.
-
-        Args:
-            cache_dir:
-                The directory to use for caching the downloaded pipeline.
-
-        Returns:
-            The downloaded scikit-learn pipeline.
-
-        Raises:
-            InvalidBenchmark:
-                If the loading of the pipeline fails for any reason.
-        """
-        log(f"Loading pipeline from {self.pipeline_repo}...", level=logging.DEBUG)
-        with no_terminal_output():
-            folder_path = hf_hub.HfApi(
-                token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_")
-            ).snapshot_download(
-                repo_id=self.pipeline_repo, repo_type="model", cache_dir=cache_dir
-            )
-        model_path = Path(folder_path, self.pipeline_file_name)
-        try:
-            with model_path.open(mode="rb") as f:
-                pipeline = cloudpickle.load(f)
-        except Exception as e:
-            raise InvalidBenchmark(
-                f"Failed to load pipeline from {self.pipeline_repo!r}: {e}"
-            ) from e
-        log(f"Successfully loaded pipeline: {pipeline}", level=logging.DEBUG)
-        return pipeline
-
-    def download(
-        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
-    ) -> "PipelineMetric":
-        """Initiates the download of the pipeline if needed.
-
-        Args:
-            cache_dir:
-                The directory where the pipeline will be downloaded to.
-            dataset_config (optional):
-                The dataset configuration. Unused by this metric.
-                Defaults to None.
-
-        Returns:
-            The metric object itself.
-        """
-        if self.pipeline is not None:
-            return self
-        pipeline_cache_dir = Path(cache_dir) / "pipelines"
-        pipeline_cache_dir.mkdir(parents=True, exist_ok=True)
-        self.pipeline = self._download_pipeline(cache_dir=pipeline_cache_dir.as_posix())
-        return self
-
     def __call__(
         self,
         predictions: c.Sequence,
@@ -184,6 +130,60 @@ class PipelineMetric(Metric):
                 predictions=predictions, dataset=dataset
             )
         return self.pipeline_scoring_function(self.pipeline, predictions)
+
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
+    ) -> "PipelineMetric":
+        """Initiates the download of the pipeline if needed.
+
+        Args:
+            cache_dir:
+                The directory where the pipeline will be downloaded to.
+            dataset_config (optional):
+                The dataset configuration. Unused by this metric.
+                Defaults to None.
+
+        Returns:
+            The metric object itself.
+        """
+        if self.pipeline is not None:
+            return self
+        pipeline_cache_dir = Path(cache_dir) / "pipelines"
+        pipeline_cache_dir.mkdir(parents=True, exist_ok=True)
+        self.pipeline = self._download_pipeline(cache_dir=pipeline_cache_dir.as_posix())
+        return self
+
+    def _download_pipeline(self, cache_dir: str) -> "Pipeline":
+        """Download the scikit-learn pipeline from the given URL.
+
+        Args:
+            cache_dir:
+                The directory to use for caching the downloaded pipeline.
+
+        Returns:
+            The downloaded scikit-learn pipeline.
+
+        Raises:
+            InvalidBenchmark:
+                If the loading of the pipeline fails for any reason.
+        """
+        log(f"Loading pipeline from {self.pipeline_repo}...", level=logging.DEBUG)
+        with no_terminal_output():
+            folder_path = hf_hub.HfApi(
+                token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_")
+            ).snapshot_download(
+                repo_id=self.pipeline_repo, repo_type="model", cache_dir=cache_dir
+            )
+        model_path = Path(folder_path, self.pipeline_file_name)
+        try:
+            with model_path.open(mode="rb") as f:
+                pipeline = cloudpickle.load(f)
+        except Exception as e:
+            raise InvalidBenchmark(
+                f"Failed to load pipeline from {self.pipeline_repo!r}: {e}"
+            ) from e
+        log(f"Successfully loaded pipeline: {pipeline}", level=logging.DEBUG)
+        return pipeline
 
 
 # European Values Metric ###

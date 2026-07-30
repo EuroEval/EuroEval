@@ -23,6 +23,92 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, DatasetConfig
 
 
+def load_data(
+    rng: Generator, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"
+) -> list["DatasetDict"]:
+    """Load the raw bootstrapped datasets.
+
+    Args:
+        rng:
+            The random number generator to use.
+        dataset_config:
+            The configuration for the dataset.
+        benchmark_config:
+            The configuration for the benchmark.
+
+    Returns:
+        A list of bootstrapped datasets, one for each iteration.
+    """
+    dataset = load_raw_data(
+        dataset_config=dataset_config,
+        cache_dir=benchmark_config.cache_dir,
+        api_key=benchmark_config.api_key,
+    )
+
+    # Apply custom preprocessing function if configured
+    if dataset_config.preprocessing_func is not None:
+        dataset = dataset_config.preprocessing_func(dataset)
+
+    # Always add an index column to the dataset, so that we can easily identify which
+    # example is which when we're bootstrapping
+    for split_name, split in dataset.items():
+        if "index" not in split.features:
+            split = split.add_column(name="index", column=range(len(split)))
+            assert isinstance(split, Dataset), (
+                f"Expected a Dataset object after adding an index column, but got "
+                f"{type(split)}."
+            )
+            dataset[split_name] = split
+
+    if (
+        not benchmark_config.evaluate_test_split
+        and dataset_config.val_split is not None
+    ):
+        dataset["test"] = dataset["val"]
+
+    splits = [split for split in ["train", "val", "test"] if split in dataset]
+
+    # Remove empty examples from the datasets
+    for text_feature in ["tokens", "text"]:
+        for split in splits:
+            if text_feature in dataset[split].features:
+                dataset = dataset.filter(lambda x: len(x[text_feature]) > 0)
+
+    # If we are testing then truncate the test set, unless we need the full set for
+    # evaluation
+    if hasattr(sys, "_called_from_test") and dataset_config.task != EUROPEAN_VALUES:
+        # Truncate test set to one sample for testing
+        dataset["test"] = dataset["test"].select(range(1))
+
+    # Bootstrap the splits, if applicable
+    if dataset_config.bootstrap_samples:
+        bootstrapped_splits: dict[str, c.Sequence["Dataset"]] = dict()
+        for split in splits:
+            bootstrap_indices = rng.integers(
+                0,
+                len(dataset[split]),
+                size=(benchmark_config.num_iterations, len(dataset[split])),
+            )
+            bootstrapped_splits[split] = [
+                dataset[split].select(bootstrap_indices[idx])
+                for idx in range(benchmark_config.num_iterations)
+            ]
+        datasets = [
+            DatasetDict(
+                {
+                    split: bootstrapped_splits[split][idx]
+                    for split in ["train", "val", "test"]
+                    if split in bootstrapped_splits
+                }
+            )
+            for idx in range(benchmark_config.num_iterations)
+        ]
+    else:
+        datasets = [dataset] * benchmark_config.num_iterations
+
+    return datasets
+
+
 def load_raw_data(
     dataset_config: "DatasetConfig", cache_dir: str, api_key: str | None
 ) -> "DatasetDict":
@@ -167,89 +253,3 @@ def load_raw_data(
     )
 
     return dataset
-
-
-def load_data(
-    rng: Generator, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"
-) -> list["DatasetDict"]:
-    """Load the raw bootstrapped datasets.
-
-    Args:
-        rng:
-            The random number generator to use.
-        dataset_config:
-            The configuration for the dataset.
-        benchmark_config:
-            The configuration for the benchmark.
-
-    Returns:
-        A list of bootstrapped datasets, one for each iteration.
-    """
-    dataset = load_raw_data(
-        dataset_config=dataset_config,
-        cache_dir=benchmark_config.cache_dir,
-        api_key=benchmark_config.api_key,
-    )
-
-    # Apply custom preprocessing function if configured
-    if dataset_config.preprocessing_func is not None:
-        dataset = dataset_config.preprocessing_func(dataset)
-
-    # Always add an index column to the dataset, so that we can easily identify which
-    # example is which when we're bootstrapping
-    for split_name, split in dataset.items():
-        if "index" not in split.features:
-            split = split.add_column(name="index", column=range(len(split)))
-            assert isinstance(split, Dataset), (
-                f"Expected a Dataset object after adding an index column, but got "
-                f"{type(split)}."
-            )
-            dataset[split_name] = split
-
-    if (
-        not benchmark_config.evaluate_test_split
-        and dataset_config.val_split is not None
-    ):
-        dataset["test"] = dataset["val"]
-
-    splits = [split for split in ["train", "val", "test"] if split in dataset]
-
-    # Remove empty examples from the datasets
-    for text_feature in ["tokens", "text"]:
-        for split in splits:
-            if text_feature in dataset[split].features:
-                dataset = dataset.filter(lambda x: len(x[text_feature]) > 0)
-
-    # If we are testing then truncate the test set, unless we need the full set for
-    # evaluation
-    if hasattr(sys, "_called_from_test") and dataset_config.task != EUROPEAN_VALUES:
-        # Truncate test set to one sample for testing
-        dataset["test"] = dataset["test"].select(range(1))
-
-    # Bootstrap the splits, if applicable
-    if dataset_config.bootstrap_samples:
-        bootstrapped_splits: dict[str, c.Sequence["Dataset"]] = dict()
-        for split in splits:
-            bootstrap_indices = rng.integers(
-                0,
-                len(dataset[split]),
-                size=(benchmark_config.num_iterations, len(dataset[split])),
-            )
-            bootstrapped_splits[split] = [
-                dataset[split].select(bootstrap_indices[idx])
-                for idx in range(benchmark_config.num_iterations)
-            ]
-        datasets = [
-            DatasetDict(
-                {
-                    split: bootstrapped_splits[split][idx]
-                    for split in ["train", "val", "test"]
-                    if split in bootstrapped_splits
-                }
-            )
-            for idx in range(benchmark_config.num_iterations)
-        ]
-    else:
-        datasets = [dataset] * benchmark_config.num_iterations
-
-    return datasets
