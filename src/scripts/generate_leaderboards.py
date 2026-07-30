@@ -25,6 +25,7 @@ from leaderboards.constants import (
     LEADERBOARD_TASKS,
     MINIMUM_NUMBER_OF_MODEL_RECORDS,
     MINIMUM_VERSION,
+    MODELS_PY_PATH,
     REPO_ROOT,
     TRAINED_FROM_SCRATCH_PATTERNS,
 )
@@ -218,7 +219,6 @@ def _maybe_refresh_core_models() -> None:
 
 def generate_model_list() -> None:
     """Generate the models.py file for upload to the leaderboard HF Space."""
-    output_path: Path = REPO_ROOT / "hf_space" / "models.py"
     all_datasets = {
         dataset
         for language in languages_with_official_datasets()
@@ -238,13 +238,13 @@ def generate_model_list() -> None:
             if model_metadata.get("open", False)
         }
     )
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_path.open(mode="w") as f:
+    MODELS_PY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with MODELS_PY_PATH.open(mode="w") as f:
         f.write('"""Auto-generated list of models in the EuroEval leaderboards."""\n\n')
         f.write("MODEL_NAMES = [\n")
         f.writelines(f'    "{model_id}",\n' for model_id in model_ids)
         f.write("]\n")
-    logger.info(f"Wrote {output_path.relative_to(REPO_ROOT)}")
+    logger.info(f"Wrote {MODELS_PY_PATH.relative_to(REPO_ROOT)}")
 
 
 def generate_task_metrics() -> None:

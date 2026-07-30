@@ -46,6 +46,7 @@ from huggingface_hub.errors import HfHubHTTPError
 from leaderboards.backup import backup_results
 from leaderboards.constants import (
     MODEL_REQUEST_LABEL,
+    MODELS_PY_PATH,
     REPO,
     RESULTS_DIR,
     RESULTS_READY_LABEL,
@@ -200,7 +201,7 @@ def main(force: bool) -> None:
     # Keep the leaderboard HF Space's model list in sync. A failure here
     # shouldn't block closing harvested issues -- it'll just retry on the
     # next successful run.
-    models_file = REPO_ROOT / "hf_space" / "models.py"
+    models_file = MODELS_PY_PATH
     if models_file.exists():
         _upload_model_list_to_space(models_file)
     else:
@@ -247,8 +248,7 @@ def _upload_model_list_to_space(models_file: Path) -> bool:
         return True
     except Exception as e:  # noqa: BLE001
         logger.error(
-            f"Failed to upload models.py to {HF_LEADERBOARD_SPACE}: {e}",
-            exc_info=True,
+            f"Failed to upload models.py to {HF_LEADERBOARD_SPACE}: {e}", exc_info=True
         )
         return False
 
