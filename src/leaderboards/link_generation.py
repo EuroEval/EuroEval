@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 
 @cache
-@cache
 def ask_user_to_remove_model(model_id: str) -> bool:
     """Ask the user if they want to remove a model from the results.
 
@@ -78,7 +77,6 @@ def _load_model_url_decision(model_id: str) -> bool | None:
 
 
 @cache
-@cache
 def _load_model_url_decisions() -> dict[str, bool]:
     """Load cached model URL decisions (remove or keep).
 
@@ -97,7 +95,6 @@ def _load_model_url_decisions() -> dict[str, bool]:
     return data
 
 
-@cache
 @cache
 def _remember_model_url_decision(model_id: str, remove: bool) -> None:
     """Persist a model URL decision to the cache.
@@ -119,9 +116,6 @@ def _remember_model_url_decision(model_id: str, remove: bool) -> None:
 
 
 @cache
-@cache
-@cache
-@cache
 def generate_alx_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on ALX.
 
@@ -138,9 +132,6 @@ def generate_alx_url(model_id: str) -> str | None:
     return "https://platform.alexandra.dk/pricing/"
 
 
-@cache
-@cache
-@cache
 @cache
 def generate_anthropic_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on Anthropic.
@@ -169,9 +160,6 @@ def generate_anthropic_url(model_id: str) -> str | None:
     return None
 
 
-@cache
-@cache
-@cache
 @cache
 def generate_google_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on Google.
@@ -217,8 +205,6 @@ def generate_hf_hub_url(model_id: str) -> str | None:
 
 
 @cache
-@cache
-@cache
 def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
     """Check if a model exists on the Hugging Face Hub with retry logic.
 
@@ -260,7 +246,6 @@ def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
             raise  # Don't retry these errors
 
 
-@cache
 @cache
 def generate_model_url(model_id: str) -> str | None:
     """Generate a URL for a model.
@@ -315,9 +300,6 @@ def generate_model_url(model_id: str) -> str | None:
 
 
 @cache
-@cache
-@cache
-@cache
 def generate_ollama_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on Ollama.
 
@@ -334,8 +316,6 @@ def generate_ollama_url(model_id: str) -> str | None:
     return f"https://ollama.com/library/{model_id}"
 
 
-@cache
-@cache
 @cache
 def generate_openai_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on OpenAI.
@@ -370,9 +350,6 @@ def generate_openai_url(model_id: str) -> str | None:
 
 
 @cache
-@cache
-@cache
-@cache
 def get_openai_models() -> list[str]:
     """Get a list of all OpenAI models.
 
@@ -397,9 +374,6 @@ def get_openai_models() -> list[str]:
         raise e
 
 
-@cache
-@cache
-@cache
 @cache
 def generate_ordbogen_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on Ordbogen.
@@ -446,9 +420,6 @@ def generate_task_link(task_id: int, label: str) -> str:
     )
 
 
-@cache
-@cache
-@cache
 @cache
 def generate_xai_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on xAI.
