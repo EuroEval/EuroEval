@@ -69,6 +69,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   OLMo-3 models such as `allenai/Olmo-3-1125-32B`). The model config now transcribes the
   legacy fields into the nested structure, applied to an explicit allowlist of confirmed
   model families.
+- Fixed handling of OLMo-3 models with the nested `rope_parameters` format from
+  transformers 5.x (containing `full_attention` and `sliding_attention` sub-dicts). The
+  override now flattens `full_attention` contents with top-level `rope_theta` for vLLM
+  compatibility, while preserving already-flat `rope_parameters` without modification.
 
 ## [v17.7.0] - 2026-07-22
 

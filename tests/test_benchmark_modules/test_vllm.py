@@ -1118,6 +1118,97 @@ class TestOlmo3RopeParameters:
         # Should not override if rope_parameters already exists
         assert "rope_parameters" not in hf_overrides
 
+    def test_olmo3_with_nested_rope_parameters_flattened(
+        self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """Test that nested rope_parameters (Transformers 5.x format) are flattened.
+
+        Transformers 5.x uses nested rope_parameters with full_attention and
+        sliding_attention sub-dicts. vLLM expects a flat structure, so we extract
+        from full_attention and merge with top-level rope_theta.
+        """
+        mock_llm_instance = MagicMock()
+        mock_hf_model_config = MagicMock(
+            spec=[
+                "dtype",
+                "architectures",
+                "model_type",
+                "rope_theta",
+                "rope_parameters",
+            ]
+        )
+        mock_hf_model_config.dtype = torch.bfloat16
+        mock_hf_model_config.model_type = "olmo3"
+        mock_hf_model_config.architectures = ["Olmo3ForCausalLM"]
+        mock_hf_model_config.rope_theta = 250000
+        mock_hf_model_config.rope_parameters = {
+            "full_attention": {
+                "rope_type": "yarn",
+                "factor": 4.0,
+                "original_max_position_embeddings": 16384,
+                "attention_factor": 1.1,
+                "beta_fast": 16.0,
+                "beta_slow": 0.5,
+            },
+            "sliding_attention": {"rope_type": "yarn", "factor": 2.0},
+        }
+        mock_tokeniser = MagicMock()
+
+        mock_vllm_module = MagicMock()
+        mock_vllm_module.config = MagicMock(spec=[])
+
+        with (
+            patch(
+                "euroeval.benchmark_modules.vllm.LLM",
+                return_value=mock_llm_instance,
+                create=True,
+            ) as mock_llm_cls,
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
+            patch("euroeval.benchmark_modules.vllm.clear_vllm"),
+            patch(
+                "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
+                return_value=("mp", 1, 1),
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.internet_connection_available",
+                return_value=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params",
+                return_value={},
+            ),
+        ):
+            load_model(
+                model_config=model_config,
+                benchmark_config=benchmark_config,
+                attention_backend=None,
+                generative_type=GenerativeType.INSTRUCTION_TUNED,
+                true_max_model_len=32768,
+                tokeniser=mock_tokeniser,
+                hf_model_config=mock_hf_model_config,
+            )
+
+        mock_llm_cls.assert_called_once()
+        call_kwargs = mock_llm_cls.call_args.kwargs
+        assert "hf_overrides" in call_kwargs
+        assert "rope_parameters" in call_kwargs["hf_overrides"]
+        rope_params = call_kwargs["hf_overrides"]["rope_parameters"]
+        # Should include top-level rope_theta
+        assert rope_params["rope_theta"] == 250000
+        # Should flatten from full_attention
+        assert rope_params["rope_type"] == "yarn"
+        assert rope_params["factor"] == 4.0
+        assert rope_params["original_max_position_embeddings"] == 16384
+        assert rope_params["attention_factor"] == 1.1
+        assert rope_params["beta_fast"] == 16.0
+        assert rope_params["beta_slow"] == 0.5
+        # Should NOT include sliding_attention keys (they would conflict)
+        # full_attention values take precedence
+
 
 class TestSafeBatchDecode:
     """Tests for the `_safe_batch_decode` helper function."""
