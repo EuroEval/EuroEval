@@ -40,11 +40,15 @@ def bootstrap_confidence_intervals(
     """
     result: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
 
-    for model_id, cats_data in bootstrap_scores.items():
+    # Sort for deterministic iteration order.
+    for model_id in sorted(bootstrap_scores.keys()):
+        cats_data = bootstrap_scores[model_id]
         result[model_id] = {}
-        for cat, langs in cats_data.items():
+        for cat in sorted(cats_data.keys()):
+            langs = cats_data[cat]
             result[model_id][cat] = {}
-            for lang, samples in langs.items():
+            for lang in sorted(langs.keys()):
+                samples = langs[lang]
                 if len(samples) == 0:
                     continue
                 q_low = np.percentile(samples, 100 * alpha / 2)
@@ -94,13 +98,16 @@ def bootstrap_rank_scores(
 
     rng = np.random.default_rng(seed)
 
+    # Sort model IDs for deterministic iteration order (RNG consumption must be
+    # deterministic across runs with the same seed).
+    sorted_model_ids = sorted(model_results.keys())
     model_datasets: dict[str, set[str]] = {
-        mid: set(data.keys()) for mid, data in model_results.items()
+        mid: set(model_results[mid].keys()) for mid in sorted_model_ids
     }
 
     dataset_models: dict[str, set[str]] = defaultdict(set)
-    for mid, ds in model_datasets.items():
-        for d in ds:
+    for mid in sorted_model_ids:
+        for d in sorted(model_datasets[mid]):
             dataset_models[d].add(mid)
 
     task_datasets, dataset_to_category = _build_dataset_mappings(
@@ -163,9 +170,11 @@ def _bootstrap_single_iteration(
     Returns:
         Nested dict: model_id -> category -> language -> score.
     """
-    # Resample datasets with replacement (stratified by task)
+    # Resample datasets with replacement (stratified by task).
+    # Iterate in sorted order for deterministic RNG consumption.
     sampled_datasets: dict[str, list[str]] = {}
-    for task, ds_list in task_datasets.items():
+    for task in sorted(task_datasets.keys()):
+        ds_list = task_datasets[task]
         n = len(ds_list)
         indices = rng.integers(0, n, size=n)
         sampled_datasets[task] = [ds_list[i] for i in indices]
@@ -219,7 +228,8 @@ def _aggregate_bootstrap_sample(
         category -> {lang: score, "overall": overall or None}
     """
     result: dict[str, dict[str, float | None]] = {}
-    for category in categories:
+    # Sort for deterministic iteration order.
+    for category in sorted(categories):
         model_rank_scores = all_rank_scores.get(model_id, {}).get(category, {})
         if not model_rank_scores:
             continue
@@ -304,12 +314,13 @@ def _compute_dataset_stats(
         Dict of dataset -> (best_mean, pooled_sd).
     """
     dataset_stats: dict[str, tuple[float, float]] = {}
-    for ds in sampled_set:
+    # Sort for deterministic RNG consumption.
+    for ds in sorted(sampled_set):
         models_on_ds = dataset_models.get(ds, set())
         if not models_on_ds:
             continue
         scores: list[tuple[str, float, list[float]]] = []
-        for mid in models_on_ds:
+        for mid in sorted(models_on_ds):
             if mid in model_results and ds in model_datasets[mid]:
                 raw, mean_sc, _ = model_results[mid][ds][0]
                 if np.isfinite(mean_sc):
@@ -352,11 +363,13 @@ def _compute_rank_scores(
         Nested dict: model_id -> category -> dataset -> score.
     """
     all_rank_scores: dict[str, dict[str, dict[str, float]]] = {}
-    for ds, (best_mean, pooled_sd) in dataset_stats.items():
+    # Sort for deterministic RNG consumption.
+    for ds in sorted(dataset_stats.keys()):
+        best_mean, pooled_sd = dataset_stats[ds]
         if pooled_sd <= 0:
             continue
         models_on_ds = dataset_models.get(ds, set())
-        for mid in models_on_ds:
+        for mid in sorted(models_on_ds):
             if mid not in model_results or ds not in model_datasets[mid]:
                 continue
             raw, mean_sc, _ = model_results[mid][ds][0]
@@ -386,19 +399,24 @@ def _build_dataset_mappings(
         Tuple of (task_datasets dict, dataset_to_category dict).
     """
     dataset_to_task: dict[str, str] = {}
-    for _language, config in configs.items():
-        for task, task_datasets_list in config.items():
+    # Sort for deterministic iteration order.
+    for language in sorted(configs.keys()):
+        config = configs[language]
+        for task in sorted(config.keys()):
+            task_datasets_list = config[task]
             if task in ORTHOGONAL_TASKS:
                 continue
-            for ds in task_datasets_list:
+            for ds in sorted(task_datasets_list):
                 dataset_to_task[ds] = task
 
     task_datasets: dict[str, list[str]] = defaultdict(list)
-    for ds, task in dataset_to_task.items():
+    for ds in sorted(dataset_to_task.keys()):
+        task = dataset_to_task[ds]
         task_datasets[task].append(ds)
 
     dataset_to_category: dict[str, set[str]] = {}
-    for ds, task in dataset_to_task.items():
+    for ds in sorted(dataset_to_task.keys()):
+        task = dataset_to_task[ds]
         cats: set[str] = set()
         for category in categories:
             if category_includes_task(category=category, task=task):
@@ -422,10 +440,15 @@ def _convert_bootstrap_scores_to_arrays(
         Same structure but with np.ndarray values.
     """
     result: dict[str, dict[str, dict[str, np.ndarray]]] = {}
-    for mid, cats_data in bootstrap_scores.items():
+    # Sort for deterministic iteration order.
+    for mid in sorted(bootstrap_scores.keys()):
+        cats_data = bootstrap_scores[mid]
         result[mid] = {}
-        for cat, langs in cats_data.items():
+        for cat in sorted(cats_data.keys()):
+            langs = cats_data[cat]
             result[mid][cat] = {
-                lang: np.array(scores) for lang, scores in langs.items()
+                lang: np.array(scores)
+                for lang in sorted(langs.keys())
+                for scores in [langs[lang]]
             }
     return result
