@@ -212,6 +212,20 @@ Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
     This works for both encoder and decoder checkpoints. If you'd rather serve the model
     through an inference server and benchmark over HTTP, see the previous recipe.
 
+??? example "Debug your setup with the dummy model"
+
+    Use the built-in `dummy` model to check that a dataset/task works end-to-end
+    without downloading or running any real model. For tasks with a fixed set of
+    possible answers (e.g. classification, multiple-choice), it predicts a uniform
+    probability across all of them; for named entity recognition it predicts no
+    entities; for everything else it returns a generic placeholder answer. Either
+    way, failures point to your dataset/task code rather than the model or inference
+    framework:
+
+    ```bash
+    euroeval --model dummy --dataset <your-dataset>
+    ```
+
 ??? example "Score a base decoder with bits-per-character (BPC)"
 
     For base (completion-only) decoder models, bits-per-character scoring measures the
