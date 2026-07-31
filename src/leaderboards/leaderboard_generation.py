@@ -14,11 +14,12 @@ import pandas as pd
 
 from euroeval.constants import ORTHOGONAL_TASKS
 
+from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
 from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR
 from .link_generation import generate_task_link
 from .records import drop_val_duplicates, get_dataset, plain_model_id
 from .result_loading import load_raw_results
-from .score_computation import compute_ranks_bootstrap, compute_standard_ranks_bootstrap
+from .score_computation import compute_standard_ranks_from_bootstrap_scores
 from .score_extraction import extract_model_metadata, group_results_by_model
 from .task_metadata import category_includes_task, official_datasets_for_language
 
@@ -77,24 +78,17 @@ def generate_leaderboard(
     )
     model_results = drop_val_duplicates(model_results=model_results)
 
-    # Use bootstrap-based CIs for the displayed "Rank score ± margin" column.
-    # Bootstrap resamples datasets with replacement (stratified by task),
-    # recomputes the full hierarchy, and returns percentile CIs.
-    ranks = compute_ranks_bootstrap(
-        model_results=model_results,
-        configs=configs,
-        n_bootstraps=NUM_BOOTSTRAPS,
-        seed=42,
-    )
     metadata_dict = extract_model_metadata(results=results)
 
     # Only include dataset columns in monolingual leaderboards
     include_dataset_columns = len(configs) == 1
 
-    # Generate the leaderboard and store it to disk
+    # Generate the leaderboard and store it to disk.
+    # Ranks are computed per-category from the eligible model set, ensuring
+    # that displayed "Rank score" and ordinal "Rank" are derived from the
+    # same bootstrap distribution.
     df_pairs = _generate_dataframe(
         model_results=model_results,
-        ranks=ranks,
         metadata_dict=metadata_dict,
         categories=categories,
         leaderboard_configs=configs,
@@ -379,7 +373,6 @@ def _create_leaderboard_headers(
 
 def _generate_dataframe(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
     metadata_dict: dict[str, dict],
     categories: list[t.Literal["generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
@@ -390,8 +383,6 @@ def _generate_dataframe(
     Args:
         model_results:
             The model results.
-        ranks:
-            The ranks of the models (from compute_ranks).
         metadata_dict:
             The metadata.
         categories:
@@ -415,14 +406,17 @@ def _generate_dataframe(
 
     dfs: list[tuple[pd.DataFrame, pd.DataFrame]] = []
     for category in categories:
-        (eligible_model_results, language_to_required_datasets, all_standard_ranks) = (
-            _compute_eligible_models_and_ranks(
-                model_results=model_results,
-                category=category,
-                category_to_datasets=category_to_datasets,
-                category_to_orthogonal_datasets=category_to_orthogonal_datasets,
-                leaderboard_configs=leaderboard_configs,
-            )
+        (
+            eligible_model_results,
+            language_to_required_datasets,
+            ranks,
+            all_standard_ranks,
+        ) = _compute_eligible_models_and_ranks(
+            model_results=model_results,
+            category=category,
+            category_to_datasets=category_to_datasets,
+            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+            leaderboard_configs=leaderboard_configs,
         )
 
         orthogonal_scores_by_plain = _collect_orthogonal_scores(
@@ -815,8 +809,12 @@ def _compute_eligible_models_and_ranks(
     category_to_datasets: dict[str, list[str]],
     category_to_orthogonal_datasets: dict[str, dict[str, str]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
-) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, list[str]], dict]":  # noqa: E501
+) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, list[str]], dict, dict]":  # noqa: E501
     """Compute eligible models and bootstrap ranks for a category.
+
+    Computes both displayed rank scores (for the "Rank score" column) and
+    ordinal ranks from the SAME bootstrap distribution over the eligible model
+    set, ensuring consistency between the two.
 
     Args:
         model_results:
@@ -832,17 +830,20 @@ def _compute_eligible_models_and_ranks(
 
     Returns:
         Tuple of (eligible_model_results, language_to_required_datasets,
-        all_standard_ranks).
+        ranks, all_standard_ranks). Ranks are the displayed rank scores
+        (model_id -> category -> language -> {"score", "ci_lower", "ci_upper"}),
+        all_standard_ranks are the ordinal ranks (model_id -> category -> int).
     """
     required_datasets = [
         ds
-        for ds in category_to_datasets[category]
+        for ds in sorted(category_to_datasets[category])
         if ds not in category_to_orthogonal_datasets[category]
     ]
+    # Sort for deterministic iteration.
     eligible_model_results = {
-        mid: r
-        for mid, r in model_results.items()
-        if all(ds in r for ds in required_datasets)
+        mid: model_results[mid]
+        for mid in sorted(model_results.keys())
+        if all(ds in model_results[mid] for ds in required_datasets)
     }
 
     language_to_required_datasets = {
@@ -856,14 +857,30 @@ def _compute_eligible_models_and_ranks(
         for language, config in leaderboard_configs.items()
     }
 
-    all_standard_ranks = compute_standard_ranks_bootstrap(
+    # Compute bootstrap distributions once, then derive both displayed scores
+    # and ordinal ranks from the same distribution.
+    bootstrap_scores = bootstrap_rank_scores(
         model_results=eligible_model_results,
         configs=leaderboard_configs,
         n_bootstraps=NUM_BOOTSTRAPS,
         seed=42,
+        categories=(category,),
     )
 
-    return eligible_model_results, language_to_required_datasets, all_standard_ranks
+    # Displayed rank scores (median + percentile CI).
+    ranks = bootstrap_confidence_intervals(bootstrap_scores)
+
+    # Ordinal ranks from paired-bootstrap method.
+    all_standard_ranks = compute_standard_ranks_from_bootstrap_scores(
+        bootstrap_scores=bootstrap_scores, alpha=0.05
+    )
+
+    return (
+        eligible_model_results,
+        language_to_required_datasets,
+        ranks,
+        all_standard_ranks,
+    )
 
 
 def _create_simplified_and_rename(
