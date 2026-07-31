@@ -99,11 +99,14 @@ class InferenceBackend(AutoStrEnum):
             VLLM library.
         LITELLM:
             LiteLLM library.
+        DUMMY:
+            The built-in dummy model, used for debugging.
     """
 
     TRANSFORMERS = auto()
     VLLM = auto()
     LITELLM = auto()
+    DUMMY = auto()
 
 
 class ModelType(AutoStrEnum):

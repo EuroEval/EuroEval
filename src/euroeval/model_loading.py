@@ -4,6 +4,7 @@ import logging
 import typing as t
 
 from .benchmark_modules import (
+    DummyModel,
     FreshEncoderModel,
     HuggingFaceEncoderModel,
     LiteLLMModel,
@@ -121,6 +122,8 @@ def load_model(
             model_class = HuggingFaceEncoderModel
         case (ModelType.GENERATIVE, InferenceBackend.LITELLM, False):
             model_class = LiteLLMModel
+        case (ModelType.GENERATIVE, InferenceBackend.DUMMY, False):
+            model_class = DummyModel
         case (ModelType.ENCODER, InferenceBackend.TRANSFORMERS, True):
             model_class = FreshEncoderModel
         case (_, _, True):
