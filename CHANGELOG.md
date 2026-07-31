@@ -27,9 +27,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Swapped official dataset for German:
-`mmlu-de` → `include-de`, `multiloko-de`.
-
 - Bumped minimum `transformers` version to 5.14.0 (required for XLMRoberta/Camembert
   `ForMultipleChoice` heads; see huggingface/transformers#47147).
 - Swapped official datasets for four languages (all performed by the
@@ -37,7 +34,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Croatian: `mmlu-hr` → `include-hr`
   - Dutch: `scala-nl` → `dutch-cola`, `mmlu-nl` → `include-nl`, `multiloko-nl`
   - French: `mmlu-fr` → `include-fr`, `multiloko-fr`
-  - German: `hellaswag-de` → `winogrande-de`
+  - German: `hellaswag-de` → `winogrande-de`, `mmlu-de` → `include-de`, `multiloko-de`
   - Portuguese: `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
 
 ### Fixed
