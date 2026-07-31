@@ -281,7 +281,7 @@ def compute_dataset_ranks_bootstrap(
             datasets = [
                 ds
                 for task in sorted(config.keys())
-                for ds in config[task]
+                for ds in sorted(config[task])
                 if task not in ORTHOGONAL_TASKS
                 and category_includes_task(category, task)
             ]
@@ -505,9 +505,9 @@ def compute_standard_ranks_from_bootstrap_scores(
 
         for i in range(1, n_models):
             current_group = rank_groups[-1]
-            is_worse_than_all = all(is_worse[i][j] for j in current_group)
+            group_anchor = current_group[0]
 
-            if is_worse_than_all:
+            if is_worse[i][group_anchor]:
                 rank_groups.append([i])
             else:
                 rank_groups[-1].append(i)

@@ -8,13 +8,31 @@ from __future__ import annotations
 import numpy as np
 
 from src.leaderboards.bootstrap_cis import (
+    _aggregate_scores_to_categories,
     bootstrap_confidence_intervals,
     bootstrap_rank_scores,
 )
 from src.leaderboards.score_computation import (
+    compute_dataset_ranks_bootstrap,
     compute_standard_ranks_bootstrap,
     compute_standard_ranks_from_bootstrap_scores,
 )
+
+
+class TestBootstrapAggregation:
+    """Tests for bootstrap aggregation semantics."""
+
+    def test_aggregate_scores_retains_duplicate_dataset_samples(self) -> None:
+        """Duplicate dataset samples contribute with their full multiplicity."""
+        configs = {"da": {"knowledge": ["dataset_a", "dataset_b"]}}
+        dataset_scores = {"dataset_a": [1.0, 3.0], "dataset_b": [5.0]}
+
+        language_scores, overall = _aggregate_scores_to_categories(
+            dataset_scores=dataset_scores, configs=configs
+        )
+
+        assert language_scores["da"] == 3.0
+        assert overall == 3.0
 
 
 class TestBootstrapDeterminism:
@@ -66,6 +84,31 @@ class TestBootstrapDeterminism:
             result1[model_id][category][lang], result2[model_id][category][lang]
         )
 
+    def test_dataset_rank_bootstrap_ignores_dataset_list_order(self) -> None:
+        """Dataset-level CIs are deterministic under config list reordering."""
+        model_ids = ["model_a", "model_b"]
+        datasets = [f"dataset_{i}" for i in range(4)]
+        model_results = _make_dummy_results(model_ids, datasets)
+        configs = _make_dummy_configs(["da"], datasets)
+        configs_reordered = {
+            "da": {
+                task: list(reversed(task_datasets))
+                for task, task_datasets in configs["da"].items()
+            }
+        }
+
+        result1 = compute_dataset_ranks_bootstrap(
+            model_results=model_results, configs=configs, n_bootstraps=100, seed=42
+        )
+        result2 = compute_dataset_ranks_bootstrap(
+            model_results=model_results,
+            configs=configs_reordered,
+            n_bootstraps=100,
+            seed=42,
+        )
+
+        assert result1 == result2
+
     def test_semantic_inputs_same_order_produce_identical_arrays(self) -> None:
         """Same semantic inputs with different dict insertion order give same results.
 
@@ -77,7 +120,6 @@ class TestBootstrapDeterminism:
         model_results = _make_dummy_results(model_ids, datasets)
         configs = _make_dummy_configs(["da"], datasets)
 
-        # Create reordered versions (simulating different insertion order)
         model_results_reordered = {
             model_id: {
                 ds: model_results[model_id][ds]
@@ -104,7 +146,6 @@ class TestBootstrapDeterminism:
             seed=42,
         )
 
-        # Results should be identical despite different iteration order
         for model_id in model_ids:
             for category in result1[model_id]:
                 for lang in result1[model_id][category]:
@@ -275,6 +316,26 @@ class TestPairedBootstrapRanks:
 
         # model_a should be ranked better (lower number) than model_b
         assert ranks["model_a"]["all_models"] <= ranks["model_b"]["all_models"]
+
+    def test_non_transitive_overlap_compares_to_group_anchor(self) -> None:
+        """An intermediate overlap does not pull worse models into rank 1."""
+        model_a = np.zeros(100)
+        model_b = np.full(100, 0.1)
+        model_b[:3] = -0.1
+        model_c = np.full(100, 0.2)
+        model_c[3:6] = 0.05
+        bootstrap_scores = {
+            "model_a": {"generative": {"overall": model_a}},
+            "model_b": {"generative": {"overall": model_b}},
+            "model_c": {"generative": {"overall": model_c}},
+        }
+
+        ranks = compute_standard_ranks_from_bootstrap_scores(
+            bootstrap_scores=bootstrap_scores, alpha=0.05
+        )
+
+        assert ranks["model_a"]["generative"] == ranks["model_b"]["generative"]
+        assert ranks["model_c"]["generative"] > ranks["model_a"]["generative"]
 
     def test_overlapping_paired_difference_ci_keeps_same_rank(self) -> None:
         """Models tie when paired differences are not reliably positive."""
