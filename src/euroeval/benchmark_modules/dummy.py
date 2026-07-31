@@ -176,6 +176,12 @@ class DummyModel(BenchmarkModule):
                 self.dataset_config.prompt_label_mapping[label]
                 for label in self.dataset_config.id2label.values()
             ]
+            if not candidate_labels:
+                raise InvalidBenchmark(
+                    "No candidate labels found for this dataset. "
+                    "Set DatasetConfig.labels/prompt_label_mapping for classification "
+                    "tasks before using the dummy backend."
+                )
             uniform_logprob = math.log(1 / len(candidate_labels))
             scores = [
                 [[(label, uniform_logprob) for label in candidate_labels]]
