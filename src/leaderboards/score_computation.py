@@ -406,31 +406,28 @@ def compute_standard_ranks_bootstrap(
     seed: int | None = None,
     alpha: float = 0.05,
 ) -> dict[str, dict[str, int]]:
-    """Compute ordinal ranks (1, 2, 3...) with ties via bootstrap CIs.
+    """Compute ordinal ranks with ties from paired bootstrap differences.
 
-    Sorts by overall mean rank score ascending (lower = better). Walks down
-    the list; for each model, compares its CI against the current anchor's CI.
-    If the candidate's lower CI bound is strictly above the anchor's upper CI
-    bound (no overlap), it starts a new rank group. Otherwise it shares the
-    anchor's rank.
-
-    CIs are computed from the bootstrap distributions themselves (percentile
-    method), so the Rank column is consistent with the statistical uncertainty
-    captured by the bootstrap - rather than using a bootstrap hypothesis test
-    which operates on raw distributions and can disagree with the displayed CIs.
+    Sorts models by median rank score (lower = better). A candidate starts a
+    worse rank group only when the lower bound of the paired bootstrap CI for
+    ``candidate - anchor`` is strictly above zero for every model in the current
+    rank group.
 
     Args:
-        model_results: The model results.
-        configs: Per-language task -> dataset mappings.
-        n_bootstraps: Number of bootstrap replicates.
-        seed: Random seed for reproducibility.
-        alpha (optional): Significance level for the bootstrap CI. Defaults to
-            0.05.
+        model_results:
+            The model results.
+        configs:
+            Per-language task -> dataset mappings.
+        n_bootstraps:
+            Number of bootstrap replicates.
+        seed:
+            Random seed for reproducibility.
+        alpha (optional):
+            Significance level for the paired bootstrap CI. Defaults to 0.05.
 
     Returns:
         model_id -> category -> int rank.
     """
-    # Step 1: Compute bootstrap distributions.
     bootstrap_scores = bootstrap_rank_scores(
         model_results=model_results,
         configs=configs,
@@ -438,8 +435,6 @@ def compute_standard_ranks_bootstrap(
         seed=seed,
     )
 
-    # Step 2: Use paired-bootstrap method to derive ordinal ranks from the
-    # bootstrap score distributions.
     return compute_standard_ranks_from_bootstrap_scores(
         bootstrap_scores=bootstrap_scores, alpha=alpha
     )
@@ -474,12 +469,14 @@ def compute_standard_ranks_from_bootstrap_scores(
     """
     ranks: dict[str, dict[str, int]] = {}
 
-    for category in sorted(
-        bootstrap_scores[list(bootstrap_scores.keys())[0]].keys()
-        if bootstrap_scores
-        else []
-    ):
-        # Collect models with overall scores for this category.
+    categories = sorted(
+        {
+            category
+            for model_scores in bootstrap_scores.values()
+            for category in model_scores
+        }
+    )
+    for category in categories:
         scored: list[tuple[float, str, np.ndarray]] = []
         for model_id in sorted(bootstrap_scores.keys()):
             if (
@@ -495,27 +492,18 @@ def compute_standard_ranks_from_bootstrap_scores(
 
         scored.sort(key=lambda x: x[0])
 
-        # Compute pairwise significance using paired differences.
-        # A model is "significantly worse" if the (1-alpha) percentile of
-        # (candidate - anchor) differences is strictly positive.
         n_models = len(scored)
         is_worse: list[list[bool]] = [[False] * n_models for _ in range(n_models)]
 
         for i in range(n_models):
             for j in range(i + 1, n_models):
-                # scored[i] has lower median than scored[j], so check if j is
-                # significantly worse than i.
                 diff = scored[j][2] - scored[i][2]
-                threshold = np.percentile(diff, (1 - alpha) * 100)
-                is_worse[j][i] = threshold > 0  # j significantly worse than i
+                lower_bound = np.percentile(diff, 100 * alpha / 2)
+                is_worse[j][i] = lower_bound > 0
 
-        # Assign ranks: start a new rank group only if the candidate is
-        # significantly worse than ALL models in the current rank group.
-        rank_groups: list[list[int]] = [[0]]  # First model starts group 0
+        rank_groups: list[list[int]] = [[0]]
 
         for i in range(1, n_models):
-            # Check if model i is significantly worse than any model in the
-            # current rank group.
             current_group = rank_groups[-1]
             is_worse_than_all = all(is_worse[i][j] for j in current_group)
 

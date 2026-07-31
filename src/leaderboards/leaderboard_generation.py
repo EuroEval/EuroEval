@@ -112,8 +112,8 @@ def generate_leaderboard(
         # model as "updated":
         #   * the ordinal "Rank" column (a position relative to the pool);
         #   * the "Rank score" column and the per-language rank columns
-        #     (bootstrap scores computed over the whole pool, so they shift for
-        #     everyone when the set of models changes);
+        #     (bootstrap scores are population-relative, so they shift when the
+        #     eligible model set changes);
         #   * the per-dataset "_version"/"_failures"/"_scored" companion columns.
         # The remaining columns are the per-dataset scores, which only change
         # when the model itself is re-evaluated — and additions/removals are

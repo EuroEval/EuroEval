@@ -276,6 +276,19 @@ class TestPairedBootstrapRanks:
         # model_a should be ranked better (lower number) than model_b
         assert ranks["model_a"]["all_models"] <= ranks["model_b"]["all_models"]
 
+    def test_overlapping_paired_difference_ci_keeps_same_rank(self) -> None:
+        """Models tie when paired differences are not reliably positive."""
+        bootstrap_scores = {
+            "model_a": {"generative": {"overall": np.array([1.0, 1.0, 1.0, 1.0, 1.0])}},
+            "model_b": {"generative": {"overall": np.array([0.9, 1.1, 1.1, 1.1, 1.1])}},
+        }
+
+        ranks = compute_standard_ranks_from_bootstrap_scores(
+            bootstrap_scores=bootstrap_scores, alpha=0.05
+        )
+
+        assert ranks["model_a"]["generative"] == ranks["model_b"]["generative"]
+
     def test_paired_ranks_deterministic_with_seed(self) -> None:
         """Paired-bootstrap ranks are deterministic when using a seed."""
         model_ids = ["model_a", "model_b", "model_c"]
@@ -307,7 +320,6 @@ class TestPairedBootstrapRanks:
             bootstrap_scores=bootstrap_scores, alpha=0.05
         )
 
-        # All models should have ranks
         for model_id in model_ids:
             assert model_id in ranks
             assert "all_models" in ranks[model_id]
