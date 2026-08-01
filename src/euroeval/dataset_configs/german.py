@@ -60,14 +60,6 @@ MLSUM_DE_CONFIG = DatasetConfig(
     languages=[GERMAN],
 )
 
-MMLU_DE_CONFIG = DatasetConfig(
-    name="mmlu-de",
-    pretty_name="MMLU-de",
-    source="EuroEval/mmlu-de-mini",
-    task=KNOW,
-    languages=[GERMAN],
-)
-
 MULTI_IFEVAL_DE_CONFIG = DatasetConfig(
     name="multi-ifeval-de",
     pretty_name="MultiIFEval-de",
@@ -108,7 +100,33 @@ WINOGRANDE_DE_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
+INCLUDE_DE_CONFIG = DatasetConfig(
+    name="include-de",
+    pretty_name="INCLUDE-de",
+    source="EuroEval/include-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
+)
+
+MULTILOKO_DE_CONFIG = DatasetConfig(
+    name="multiloko-de",
+    pretty_name="MultiLoKo-de",
+    source="EuroEval/multiloko-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
+    val_split=None,
+)
+
 # Unofficial datasets ###
+
+MMLU_DE_CONFIG = DatasetConfig(
+    name="mmlu-de",
+    pretty_name="MMLU-de",
+    source="EuroEval/mmlu-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
+    unofficial=True,
+)
 
 HELLASWAG_DE_CONFIG = DatasetConfig(
     name="hellaswag-de",
@@ -172,25 +190,6 @@ GOLDENSWAG_DE_CONFIG = DatasetConfig(
     source="EuroEval/goldenswag-de-mini",
     task=COMMON_SENSE,
     languages=[GERMAN],
-    unofficial=True,
-)
-
-INCLUDE_DE_CONFIG = DatasetConfig(
-    name="include-de",
-    pretty_name="INCLUDE-de",
-    source="EuroEval/include-de-mini",
-    task=KNOW,
-    languages=[GERMAN],
-    unofficial=True,
-)
-
-MULTILOKO_DE_CONFIG = DatasetConfig(
-    name="multiloko-de",
-    pretty_name="MultiLoKo-de",
-    source="EuroEval/multiloko-de-mini",
-    task=KNOW,
-    languages=[GERMAN],
-    val_split=None,
     unofficial=True,
 )
 
