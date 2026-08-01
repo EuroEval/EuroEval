@@ -27,9 +27,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Swapped official dataset for Hungarian:
-`mmlu-hu` → `include-hu`.
-
 - Bumped minimum `transformers` version to 5.14.0 (required for XLMRoberta/Camembert
   `ForMultipleChoice` heads; see huggingface/transformers#47147).
 - Swapped official datasets for four languages (all performed by the
@@ -39,6 +36,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - French: `mmlu-fr` → `include-fr`, `multiloko-fr`
   - German: `hellaswag-de` → `winogrande-de`, `mmlu-de` → `include-de`, `multiloko-de`
   - Greek: `global-mmlu-el` → `greek-mmlu`
+  - Hungarian: `mmlu-hu` → `include-hu`
   - Portuguese: `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
 
 ### Fixed
