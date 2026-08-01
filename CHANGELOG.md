@@ -35,6 +35,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Dutch: `scala-nl` → `dutch-cola`, `mmlu-nl` → `include-nl`, `multiloko-nl`
   - French: `mmlu-fr` → `include-fr`, `multiloko-fr`
   - German: `hellaswag-de` → `winogrande-de`, `mmlu-de` → `include-de`, `multiloko-de`
+  - Greek: `global-mmlu-el` → `greek-mmlu`
   - Portuguese: `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
 
 ### Fixed

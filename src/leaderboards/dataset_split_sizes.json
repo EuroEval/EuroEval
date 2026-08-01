@@ -380,6 +380,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/greek-mmlu-mini": {
+    "test": 2048,
+    "train": 215,
+    "val": 256
+  },
   "EuroEval/greek-sa-mini": {
     "test": 2048,
     "train": 1024,
