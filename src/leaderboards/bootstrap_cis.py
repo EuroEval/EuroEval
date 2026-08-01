@@ -40,11 +40,15 @@ def bootstrap_confidence_intervals(
     """
     result: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
 
-    for model_id, cats_data in bootstrap_scores.items():
+    # Sort for deterministic iteration order.
+    for model_id in sorted(bootstrap_scores.keys()):
+        cats_data = bootstrap_scores[model_id]
         result[model_id] = {}
-        for cat, langs in cats_data.items():
+        for cat in sorted(cats_data.keys()):
+            langs = cats_data[cat]
             result[model_id][cat] = {}
-            for lang, samples in langs.items():
+            for lang in sorted(langs.keys()):
+                samples = langs[lang]
                 if len(samples) == 0:
                     continue
                 q_low = np.percentile(samples, 100 * alpha / 2)
@@ -94,13 +98,16 @@ def bootstrap_rank_scores(
 
     rng = np.random.default_rng(seed)
 
+    # Sort model IDs for deterministic iteration order (RNG consumption must be
+    # deterministic across runs with the same seed).
+    sorted_model_ids = sorted(model_results.keys())
     model_datasets: dict[str, set[str]] = {
-        mid: set(data.keys()) for mid, data in model_results.items()
+        mid: set(model_results[mid].keys()) for mid in sorted_model_ids
     }
 
     dataset_models: dict[str, set[str]] = defaultdict(set)
-    for mid, ds in model_datasets.items():
-        for d in ds:
+    for mid in sorted_model_ids:
+        for d in sorted(model_datasets[mid]):
             dataset_models[d].add(mid)
 
     task_datasets, dataset_to_category = _build_dataset_mappings(
@@ -122,9 +129,12 @@ def bootstrap_rank_scores(
             categories=categories,
             rng=rng,
         )
-        for model_id, model_data in iteration_scores.items():
-            for category, cat_data in model_data.items():
-                for key, score in cat_data.items():
+        for model_id in sorted(iteration_scores.keys()):
+            model_data = iteration_scores[model_id]
+            for category in sorted(model_data.keys()):
+                cat_data = model_data[category]
+                for key in sorted(cat_data.keys()):
+                    score = cat_data[key]
                     bootstrap_scores[model_id][category][key].append(score)
 
     return _convert_bootstrap_scores_to_arrays(bootstrap_scores)
@@ -163,16 +173,18 @@ def _bootstrap_single_iteration(
     Returns:
         Nested dict: model_id -> category -> language -> score.
     """
-    # Resample datasets with replacement (stratified by task)
+    # Resample datasets with replacement (stratified by task).
+    # Iterate in sorted order for deterministic RNG consumption.
     sampled_datasets: dict[str, list[str]] = {}
-    for task, ds_list in task_datasets.items():
+    for task in sorted(task_datasets.keys()):
+        ds_list = task_datasets[task]
         n = len(ds_list)
         indices = rng.integers(0, n, size=n)
         sampled_datasets[task] = [ds_list[i] for i in indices]
 
-    sampled_set: set[str] = set()
-    for ds_list in sampled_datasets.values():
-        sampled_set.update(ds_list)
+    sampled_set = {
+        dataset for ds_list in sampled_datasets.values() for dataset in ds_list
+    }
 
     dataset_stats = _compute_dataset_stats(
         sampled_set=sampled_set,
@@ -182,6 +194,7 @@ def _bootstrap_single_iteration(
     )
 
     all_rank_scores = _compute_rank_scores(
+        sampled_datasets=sampled_datasets,
         dataset_stats=dataset_stats,
         dataset_models=dataset_models,
         model_datasets=model_datasets,
@@ -191,7 +204,7 @@ def _bootstrap_single_iteration(
     )
 
     aggregated: dict[str, dict[str, dict[str, float]]] = {}
-    for model_id in model_results:
+    for model_id in sorted(model_results.keys()):
         model_agg = _aggregate_bootstrap_sample(
             model_id=model_id,
             categories=categories,
@@ -210,16 +223,16 @@ def _bootstrap_single_iteration(
 def _aggregate_bootstrap_sample(
     model_id: str,
     categories: tuple[str, ...],
-    all_rank_scores: dict[str, dict[str, dict[str, float]]],
+    all_rank_scores: dict[str, dict[str, dict[str, list[float]]]],
     configs: dict[str, dict[str, list[str]]],
 ) -> dict[str, dict[str, float | None]]:
-    """Aggregate per-dataset scores for one model in one bootstrap sample.
+    """Aggregate sampled per-dataset scores for one model.
 
     Returns:
         category -> {lang: score, "overall": overall or None}
     """
     result: dict[str, dict[str, float | None]] = {}
-    for category in categories:
+    for category in sorted(categories):
         model_rank_scores = all_rank_scores.get(model_id, {}).get(category, {})
         if not model_rank_scores:
             continue
@@ -231,15 +244,16 @@ def _aggregate_bootstrap_sample(
 
 
 def _aggregate_scores_to_categories(
-    dataset_scores: dict[str, float], configs: dict[str, dict[str, list[str]]]
+    dataset_scores: dict[str, list[float]], configs: dict[str, dict[str, list[str]]]
 ) -> tuple[dict[str, float], float | None]:
-    """Aggregate per-dataset scores up to language and overall mean rank scores.
+    """Aggregate sampled dataset scores to language and overall scores.
 
-    Hierarchy: dataset -> task -> language -> overall.
+    Hierarchy: sampled dataset occurrence -> task -> language -> overall.
+    Duplicate dataset samples are intentionally retained.
 
     Args:
         dataset_scores:
-            dataset -> score mapping for this model.
+            Dataset -> sampled rank scores for this model.
         configs:
             Per-language task -> dataset mappings.
 
@@ -250,29 +264,28 @@ def _aggregate_scores_to_categories(
     """
     lang_task_scores: dict[str, dict[str, list[float]]] = {}
 
-    for ds, score in dataset_scores.items():
-        task = None
-        found_lang = None
-        for lang_name, config in configs.items():
-            for task_name, task_ds in config.items():
-                if ds in task_ds:
-                    task = task_name
-                    found_lang = lang_name
-                    break
-            if task:
-                break
-        if task and task not in ORTHOGONAL_TASKS and found_lang:
-            lang_task_scores.setdefault(found_lang, {}).setdefault(task, []).append(
-                score
-            )
+    for lang_name in sorted(configs.keys()):
+        config = configs[lang_name]
+        for task_name in sorted(config.keys()):
+            if task_name in ORTHOGONAL_TASKS:
+                continue
+            for dataset in sorted(config[task_name]):
+                scores = dataset_scores.get(dataset, [])
+                if scores:
+                    lang_task_scores.setdefault(lang_name, {}).setdefault(
+                        task_name, []
+                    ).extend(scores)
 
     if not lang_task_scores:
         return {}, None
 
     language_scores: dict[str, float] = {}
     lang_means = []
-    for lang, task_scores in lang_task_scores.items():
-        task_means = [np.mean(scores) for scores in task_scores.values()]
+    for lang in sorted(lang_task_scores.keys()):
+        task_scores = lang_task_scores[lang]
+        task_means = [
+            np.mean(scores) for _, scores in sorted(task_scores.items()) if scores
+        ]
         if task_means:
             lang_mean = float(np.mean(task_means))
             language_scores[lang] = lang_mean
@@ -304,12 +317,13 @@ def _compute_dataset_stats(
         Dict of dataset -> (best_mean, pooled_sd).
     """
     dataset_stats: dict[str, tuple[float, float]] = {}
-    for ds in sampled_set:
+    # Sort for deterministic RNG consumption.
+    for ds in sorted(sampled_set):
         models_on_ds = dataset_models.get(ds, set())
         if not models_on_ds:
             continue
         scores: list[tuple[str, float, list[float]]] = []
-        for mid in models_on_ds:
+        for mid in sorted(models_on_ds):
             if mid in model_results and ds in model_datasets[mid]:
                 raw, mean_sc, _ = model_results[mid][ds][0]
                 if np.isfinite(mean_sc):
@@ -325,16 +339,19 @@ def _compute_dataset_stats(
 
 
 def _compute_rank_scores(
+    sampled_datasets: dict[str, list[str]],
     dataset_stats: dict[str, tuple[float, float]],
     dataset_models: dict[str, set[str]],
     model_datasets: dict[str, set[str]],
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     dataset_to_category: dict[str, set[str]],
     rng: np.random.Generator,
-) -> dict[str, dict[str, dict[str, float]]]:
-    """Compute rank scores for all models on all sampled datasets.
+) -> dict[str, dict[str, dict[str, list[float]]]]:
+    """Compute rank scores for sampled dataset occurrences.
 
     Args:
+        sampled_datasets:
+            Task -> sampled datasets, retaining bootstrap multiplicity.
         dataset_stats:
             Per-dataset statistics.
         dataset_models:
@@ -349,25 +366,31 @@ def _compute_rank_scores(
             Random number generator.
 
     Returns:
-        Nested dict: model_id -> category -> dataset -> score.
+        Nested dict: model_id -> category -> dataset -> sampled scores.
     """
-    all_rank_scores: dict[str, dict[str, dict[str, float]]] = {}
-    for ds, (best_mean, pooled_sd) in dataset_stats.items():
-        if pooled_sd <= 0:
-            continue
-        models_on_ds = dataset_models.get(ds, set())
-        for mid in models_on_ds:
-            if mid not in model_results or ds not in model_datasets[mid]:
+    all_rank_scores: dict[str, dict[str, dict[str, list[float]]]] = {}
+    for task in sorted(sampled_datasets.keys()):
+        for ds in sampled_datasets[task]:
+            if ds not in dataset_stats:
                 continue
-            raw, mean_sc, _ = model_results[mid][ds][0]
-            if not np.isfinite(mean_sc):
+            best_mean, pooled_sd = dataset_stats[ds]
+            if pooled_sd <= 0:
                 continue
-            resampled_raw = rng.choice(raw, size=len(raw), replace=True)
-            resampled_mean = float(np.mean(resampled_raw))
-            diff = (best_mean - resampled_mean) / pooled_sd
-            score = 1.0 + diff
-            for cat in dataset_to_category.get(ds, set()):
-                all_rank_scores.setdefault(mid, {}).setdefault(cat, {})[ds] = score
+            models_on_ds = dataset_models.get(ds, set())
+            for mid in sorted(models_on_ds):
+                if mid not in model_results or ds not in model_datasets[mid]:
+                    continue
+                raw, mean_sc, _ = model_results[mid][ds][0]
+                if not np.isfinite(mean_sc):
+                    continue
+                resampled_raw = rng.choice(raw, size=len(raw), replace=True)
+                resampled_mean = float(np.mean(resampled_raw))
+                diff = (best_mean - resampled_mean) / pooled_sd
+                score = 1.0 + diff
+                for cat in sorted(dataset_to_category.get(ds, set())):
+                    all_rank_scores.setdefault(mid, {}).setdefault(cat, {}).setdefault(
+                        ds, []
+                    ).append(score)
     return all_rank_scores
 
 
@@ -386,19 +409,24 @@ def _build_dataset_mappings(
         Tuple of (task_datasets dict, dataset_to_category dict).
     """
     dataset_to_task: dict[str, str] = {}
-    for _language, config in configs.items():
-        for task, task_datasets_list in config.items():
+    # Sort for deterministic iteration order.
+    for language in sorted(configs.keys()):
+        config = configs[language]
+        for task in sorted(config.keys()):
+            task_datasets_list = config[task]
             if task in ORTHOGONAL_TASKS:
                 continue
-            for ds in task_datasets_list:
+            for ds in sorted(task_datasets_list):
                 dataset_to_task[ds] = task
 
     task_datasets: dict[str, list[str]] = defaultdict(list)
-    for ds, task in dataset_to_task.items():
+    for ds in sorted(dataset_to_task.keys()):
+        task = dataset_to_task[ds]
         task_datasets[task].append(ds)
 
     dataset_to_category: dict[str, set[str]] = {}
-    for ds, task in dataset_to_task.items():
+    for ds in sorted(dataset_to_task.keys()):
+        task = dataset_to_task[ds]
         cats: set[str] = set()
         for category in categories:
             if category_includes_task(category=category, task=task):
@@ -422,10 +450,15 @@ def _convert_bootstrap_scores_to_arrays(
         Same structure but with np.ndarray values.
     """
     result: dict[str, dict[str, dict[str, np.ndarray]]] = {}
-    for mid, cats_data in bootstrap_scores.items():
+    # Sort for deterministic iteration order.
+    for mid in sorted(bootstrap_scores.keys()):
+        cats_data = bootstrap_scores[mid]
         result[mid] = {}
-        for cat, langs in cats_data.items():
+        for cat in sorted(cats_data.keys()):
+            langs = cats_data[cat]
             result[mid][cat] = {
-                lang: np.array(scores) for lang, scores in langs.items()
+                lang: np.array(scores)
+                for lang in sorted(langs.keys())
+                for scores in [langs[lang]]
             }
     return result
