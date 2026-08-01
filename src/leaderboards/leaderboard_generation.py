@@ -816,6 +816,11 @@ def _compute_eligible_models_and_ranks(
     ordinal ranks from the SAME bootstrap distribution over the eligible model
     set, ensuring consistency between the two.
 
+    For multilingual leaderboards, per-language rank score columns are computed
+    using each language's monolingual eligible set, matching the corresponding
+    monolingual leaderboard. The overall "Rank score" and ordinal "Rank" remain
+    pan-leaderboard.
+
     Args:
         model_results:
             The model results.
@@ -857,8 +862,7 @@ def _compute_eligible_models_and_ranks(
         for language, config in leaderboard_configs.items()
     }
 
-    # Compute bootstrap distributions once, then derive both displayed scores
-    # and ordinal ranks from the same distribution.
+    # Compute bootstrap distributions for overall rank score and ordinal ranks.
     bootstrap_scores = bootstrap_rank_scores(
         model_results=eligible_model_results,
         configs=leaderboard_configs,
@@ -874,6 +878,39 @@ def _compute_eligible_models_and_ranks(
     all_standard_ranks = compute_standard_ranks_from_bootstrap_scores(
         bootstrap_scores=bootstrap_scores, alpha=0.05
     )
+
+    # For multilingual leaderboards, compute per-language rank scores using
+    # each language's monolingual eligible set. This ensures the per-language
+    # columns match the corresponding monolingual leaderboards.
+    if len(leaderboard_configs) > 1:
+        for language, lang_config in leaderboard_configs.items():
+            lang_required = language_to_required_datasets[language]
+            # Eligible models for this language only (monolingual eligibility).
+            lang_eligible = {
+                mid: model_results[mid]
+                for mid in sorted(model_results.keys())
+                if all(ds in model_results[mid] for ds in lang_required)
+            }
+            # Single-language config for bootstrap.
+            single_lang_config = {language: lang_config}
+            # Compute bootstrap for this language.
+            lang_bootstrap = bootstrap_rank_scores(
+                model_results=lang_eligible,
+                configs=single_lang_config,
+                n_bootstraps=NUM_BOOTSTRAPS,
+                seed=42,
+                categories=(category,),
+            )
+            lang_ranks = bootstrap_confidence_intervals(lang_bootstrap)
+            # Merge per-language scores into ranks.
+            for model_id, model_data in lang_ranks.items():
+                if model_id not in ranks:
+                    ranks[model_id] = {}
+                if category not in ranks[model_id]:
+                    ranks[model_id][category] = {}
+                # Copy the language-specific rank score (preserves overall).
+                if language in model_data.get(category, {}):
+                    ranks[model_id][category][language] = model_data[category][language]
 
     return (
         eligible_model_results,
