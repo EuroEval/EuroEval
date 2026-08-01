@@ -36,15 +36,29 @@ from lettucedetect.datasets.hallucination_dataset import (
     HallucinationSample,
 )
 
-# Language codes (removed euroeval dependency)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()],
+)
 
+logging.getLogger("httpx").setLevel(logging.CRITICAL)
+
+load_dotenv()
+
+# Language codes (removed euroeval dependency)
 # =============================================================================
 # Configuration constants
 # =============================================================================
-
 # RAGTruth data source
-SOURCE_INFO_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs/heads/main/dataset/source_info.jsonl"
-RESPONSE_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs/heads/main/dataset/response.jsonl"
+SOURCE_INFO_URL = (
+    "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/"
+    "refs/heads/main/dataset/source_info.jsonl"
+)
+RESPONSE_URL = (
+    "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/"
+    "refs/heads/main/dataset/response.jsonl"
+)
 
 # Translation settings
 SOURCE_LANG: str = "en"
@@ -215,69 +229,7 @@ TRANSLATION_PROMPT_DATA2TXT = (
     "\n"
     "Output in {target_lang}:\n"
 )
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()],
-)
 logger = logging.getLogger("translator")
-logging.getLogger("httpx").setLevel(logging.CRITICAL)
-
-load_dotenv()
-
-
-class TranslationError(Exception):
-    """Exception raised for errors during translation."""
-
-    pass
-
-
-class TruncatedTranslationError(TranslationError):
-    """Raised when the model's output hit the token cap and was truncated.
-
-    Treated as non-retryable: the affected sample is discarded rather than saved
-    with an incomplete translation (which would corrupt its hallucination spans).
-    """
-
-    pass
-
-
-class TagMismatchError(TranslationError):
-    """Raised when translated <HAL> tags don't align with the annotated spans.
-
-    The translation model sometimes invents extra ``<HAL>...</HAL>`` pairs or
-    drops annotated ones. When the number of translated tag pairs differs from
-    the number of annotated spans (or the opening/closing tags are unbalanced),
-    the span alignment is unreliable, so the sample is discarded rather than
-    saved with fabricated or missing hallucination spans — either of which would
-    corrupt the benchmark's gold labels.
-    """
-
-    pass
-
-
-class RetryableTranslationError(Exception):
-    """Exception raised for transient translation/API errors that should be retried."""
-
-    def __init__(self, message: str, retry_after: float | None = None) -> None:
-        """Initialise the error.
-
-        Args:
-            message:
-                The error message.
-            retry_after:
-                Server-provided number of seconds to wait before retrying, if any.
-        """
-        super().__init__(message)
-        self.retry_after = retry_after
-
-
-class ClientConfig(t.TypedDict):
-    """Configuration for OpenAI client."""
-
-    url: str
-    headers: dict[str, str]
 
 
 def main() -> None:
@@ -388,70 +340,209 @@ def main() -> None:
         _report_token_estimate(total_source_samples=len(data.samples), model=model)
 
 
-def download_jsonl(url: str) -> list[dict[str, t.Any]]:
-    """Download a JSONL file from a URL with streaming to reduce memory usage.
+def _report_token_estimate(total_source_samples: int, model: str) -> None:
+    """Log measured token usage and extrapolate it to the full dataset.
+
+    The estimate multiplies the average per-sample token usage measured during
+    this (test) run by the full dataset size (all source samples x all target
+    languages). It is only as representative as the sampled subset, so scale up
+    ``--test-num-samples`` for a tighter estimate.
 
     Args:
-        url: URL to the JSONL file.
-
-    Returns:
-        List of parsed JSON objects from each line.
+        total_source_samples:
+            Number of source samples in the full (untranslated) dataset.
+        model:
+            Model ID used for translation, for the pricing lookup.
     """
-    logger.info(f"Downloading {url}...")
-    with httpx.Client(timeout=300.0) as client:
-        with client.stream("GET", url) as response:
-            response.raise_for_status()
-            lines = []
-            for line in response.iter_lines():
-                line = line.strip()
-                if line:
-                    lines.append(json.loads(line))
-            return lines
+    measured = TOKEN_USAGE["samples"]
+    if measured == 0 or total_source_samples == 0:
+        logger.warning("No samples measured; skipping token-usage estimate.")
+        return
+
+    in_tok = TOKEN_USAGE["input_tokens"]
+    out_tok = TOKEN_USAGE["output_tokens"]
+    avg_in = in_tok / measured
+    avg_out = out_tok / measured
+
+    full_samples = total_source_samples * len(TARGET_LANGS)
+    est_in = avg_in * full_samples
+    est_out = avg_out * full_samples
+
+    logger.info("=" * 60)
+    logger.info("TOKEN USAGE")
+    logger.info(
+        f"Measured over {measured} translated samples "
+        f"({TOKEN_USAGE['api_calls']} API calls):"
+    )
+    logger.info(f"  input : {in_tok:,} tokens (avg {avg_in:,.1f}/sample)")
+    logger.info(f"  output: {out_tok:,} tokens (avg {avg_out:,.1f}/sample)")
+    logger.info(
+        f"Full-dataset estimate ({total_source_samples:,} source samples x "
+        f"{len(TARGET_LANGS)} languages = {full_samples:,} samples):"
+    )
+    logger.info(f"  est. input : {est_in / 1e6:,.1f}M tokens")
+    logger.info(f"  est. output: {est_out / 1e6:,.1f}M tokens")
+
+    pricing = MODEL_PRICING.get(model)
+    if pricing is not None:
+        input_price, output_price = pricing
+        measured_cost = in_tok / 1e6 * input_price + out_tok / 1e6 * output_price
+        est_cost = est_in / 1e6 * input_price + est_out / 1e6 * output_price
+        logger.info(f"  measured cost so far: ${measured_cost:,.4f}")
+        logger.info(f"  est. full-dataset cost ({model}): ${est_cost:,.2f}")
+    else:
+        logger.info(f"  (no pricing configured for model '{model}'; cost omitted)")
+    logger.info("=" * 60)
 
 
-def load_ragtruth_data() -> HallucinationData:
-    """Download and join RAGTruth dataset from GitHub.
+def _push_if_no_samples(translated_data: HallucinationData, target_lang: str) -> None:
+    """Push data to hub when there are no samples to translate.
 
-    Returns:
-        HallucinationData with joined samples.
+    Args:
+        translated_data:
+            Translated data to push.
+        target_lang:
+            Target language code.
     """
-    source_info_list = download_jsonl(SOURCE_INFO_URL)
-    response_list = download_jsonl(RESPONSE_URL)
-
-    logger.info(f"Downloaded {len(source_info_list)} source records")
-    logger.info(f"Downloaded {len(response_list)} response records")
-
-    source_lookup: dict[str, dict[str, t.Any]] = {
-        src["source_id"]: src for src in source_info_list
-    }
-
-    samples: list[HallucinationSample] = []
-    for resp in response_list:
-        source_id = resp.get("source_id")
-        if source_id not in source_lookup:
-            logger.warning(f"No source info for response {resp.get('id')}")
-            continue
-
-        src = source_lookup[source_id]
-        labels = [
-            {"start": lbl["start"], "end": lbl["end"], "label": lbl["label_type"]}
-            for lbl in resp.get("labels", [])
-        ]
-
-        samples.append(
-            HallucinationSample(
-                prompt=src.get("prompt", ""),
-                answer=resp.get("response", ""),
-                labels=labels,
-                split=resp.get("split", "train"),
-                task_type=src.get("task_type", "unknown"),
-                dataset="ragtruth",
-                language="en",
-            )
+    logger.info("No samples to translate. Exiting.")
+    if PUSH_TO_HUB:
+        push_translated_data_to_hub(
+            translated_data=translated_data,
+            repo_id=HUB_REPO_ID,
+            config_name=target_lang,
+            private=HUB_REPO_PRIVATE,
+        )
+    if PUSH_TEST_SUBSET:
+        resolved_test_repo_id = (
+            f"EuroEval/{DATASET_NAME}-translated-hallucinations-{target_lang}-mini"
+        )
+        push_test_subset_to_hub(
+            translated_data=translated_data,
+            repo_id=resolved_test_repo_id,
+            config_name=target_lang,
+            private=PRIVATE_UPLOAD,
+            n=TEST_SUBSET_SIZE,
+            validation_n=VALIDATION_SUBSET_SIZE,
         )
 
-    logger.info(f"Created {len(samples)} samples from RAGTruth dataset")
-    return HallucinationData(samples=samples)
+
+def push_test_subset_to_hub(
+    translated_data: HallucinationData,
+    repo_id: str,
+    config_name: str,
+    private: bool,
+    n: int = 2048,
+    validation_n: int = 256,
+) -> None:
+    """Push test and validation subsets of translated data to the Hub.
+
+    Args:
+        translated_data: Translated samples to filter and push.
+        repo_id: Target Hugging Face dataset repo id.
+        config_name: Dataset config/subset name (typically language code).
+        private: Whether to keep dataset private on Hub.
+        n: Maximum number of test samples to upload.
+        validation_n: Maximum number of validation samples to upload.
+    """
+    samples = translated_data.samples[:]
+    random.shuffle(samples)
+
+    def _to_rows(items: list[HallucinationSample]) -> list[dict[str, t.Any]]:
+        """Preprocess samples for the hallucination (question-answering) task.
+
+        The task group expects ``id``, ``context``, ``question`` and ``answers``
+        columns, derived here from the RAG ``prompt`` and reference ``answer``
+        while keeping the original columns intact.
+
+        Returns:
+            List of dictionaries with the required columns for the QA task.
+        """
+        return [
+            {
+                "id": str(index),
+                "prompt": sample.prompt,
+                "answer": sample.answer,
+                "labels": sample.labels,
+                "split": sample.split,
+                "task_type": sample.task_type,
+                "dataset": sample.dataset,
+                "language": sample.language,
+                "context": sample.prompt,
+                "question": "",
+                "answers": {"text": [sample.answer], "answer_start": [0]},
+            }
+            for index, sample in enumerate(items)
+        ]
+
+    test_samples = [s for s in samples if s.split == "test"][:n]
+
+    # RAGTruth only ships train/test splits, so carve the validation split from train.
+    validation_samples = [s for s in samples if s.split == "train"][:validation_n]
+
+    if not test_samples and not validation_samples:
+        logger.warning("No test or validation samples available; skipping upload.")
+        return
+
+    # Push all splits in a single commit so the entire config is overwritten
+    # atomically. Pushing splits one at a time fails when the existing splits on the
+    # hub use a different (e.g. older) schema, since the new split's features are
+    # validated against the stale ones.
+    splits: dict[str, Dataset] = {}
+    if test_samples:
+        splits["test"] = Dataset.from_list(_to_rows(test_samples))
+    else:
+        logger.warning("No test samples available; skipping test split upload.")
+    if validation_samples:
+        splits["val"] = Dataset.from_list(_to_rows(validation_samples))
+    else:
+        logger.warning("No validation samples available; skipping val split upload.")
+
+    DatasetDict(splits).push_to_hub(
+        repo_id=repo_id, config_name=config_name, private=private
+    )
+    for split_name, split_dataset in splits.items():
+        logger.info(
+            "Pushed %d %s samples to hub: %s (config=%s)",
+            len(split_dataset),
+            split_name,
+            repo_id,
+            config_name,
+        )
+
+
+def push_translated_data_to_hub(
+    translated_data: HallucinationData, repo_id: str, config_name: str, private: bool
+) -> None:
+    """Push translated hallucination data to Hugging Face Hub.
+
+    Args:
+        translated_data: Translated samples to push.
+        repo_id: Target Hugging Face dataset repo id.
+        config_name: Dataset config/subset name (typically language code).
+        private: Whether to keep dataset private on Hub.
+    """
+    if not translated_data.samples:
+        logger.warning("No translated samples available; skipping Hub upload.")
+        return
+
+    rows = [
+        {
+            "prompt": sample.prompt,
+            "answer": sample.answer,
+            "labels": sample.labels,
+            "split": sample.split,
+            "task_type": sample.task_type,
+            "dataset": sample.dataset,
+            "language": sample.language,
+        }
+        for sample in translated_data.samples
+    ]
+
+    dataset = Dataset.from_list(rows)
+    dataset.push_to_hub(repo_id=repo_id, config_name=config_name, private=private)
+    logger.info(
+        "Pushed translated dataset to hub: %s (config=%s)", repo_id, config_name
+    )
 
 
 def load_check_existing_data(output_file: Path) -> tuple[HallucinationData, int | None]:
@@ -487,6 +578,23 @@ def load_check_existing_data(output_file: Path) -> tuple[HallucinationData, int 
         return HallucinationData(samples=[]), None
 
 
+def _log_translation_progress(current_count: int, total: int, elapsed: float) -> None:
+    """Log translation progress.
+
+    Args:
+        current_count:
+            Number of samples processed so far.
+        total:
+            Total number of samples.
+        elapsed:
+            Elapsed time in seconds.
+    """
+    samples_per_sec = current_count / elapsed if elapsed > 0 else 0
+    logger.info(
+        f"Processed {current_count}/{total} samples ({samples_per_sec:.2f} samples/sec)"
+    )
+
+
 def _setup_http_client(
     max_workers: int,
 ) -> tuple[httpx.Limits, httpx.Timeout, asyncio.Semaphore]:
@@ -505,130 +613,6 @@ def _setup_http_client(
     timeout = httpx.Timeout(60.0)
     semaphore = asyncio.Semaphore(max_workers)
     return limits, timeout, semaphore
-
-
-def _log_translation_progress(current_count: int, total: int, elapsed: float) -> None:
-    """Log translation progress.
-
-    Args:
-        current_count:
-            Number of samples processed so far.
-        total:
-            Total number of samples.
-        elapsed:
-            Elapsed time in seconds.
-    """
-    samples_per_sec = current_count / elapsed if elapsed > 0 else 0
-    logger.info(
-        f"Processed {current_count}/{total} samples ({samples_per_sec:.2f} samples/sec)"
-    )
-
-
-async def run_translation(
-    remaining_samples: list[HallucinationSample],
-    translated_data: HallucinationData,
-    output_file: Path,
-    target_lang: str,
-    num_processed: int,
-    client_config: ClientConfig,
-    model: str,
-    max_workers: int,
-    batch_size: int,
-) -> None:
-    """Run batched async translation with connection pooling.
-
-    Args:
-        remaining_samples:
-            Samples that still need translation.
-        translated_data:
-            Existing translated data to append to.
-        model:
-            Model ID to use for translation.
-        output_file:
-            Output JSON file path.
-        target_lang:
-            Target language code.
-        num_processed:
-            Number of already translated samples from cache.
-        client_config:
-            API URL and headers.
-        max_workers:
-            Maximum number of concurrent in-flight API requests.
-        batch_size:
-            Number of samples processed between save points.
-    """
-    total_samples = len(remaining_samples)
-    log_file = OUTPUT_DIR / "error_log.txt"
-
-    limits, timeout, semaphore = _setup_http_client(max_workers)
-
-    progress_bar = tqdm.tqdm(total=total_samples, desc="Translating")
-    start_time = time.time()
-    save_interval = 60
-    last_save_time = start_time
-
-    # Track the resume watermark here so it is always persisted with the correct
-    # value on the way out (see the finally block), even on interrupt/crash. This
-    # index counts source samples *processed* (advancing by batch size, not result
-    # count), so discarded samples stay cached and are never re-translated.
-    last_processed_index = num_processed
-
-    try:
-        async with httpx.AsyncClient(
-            headers=client_config["headers"], timeout=timeout, limits=limits
-        ) as http_client:
-            for i in range(0, total_samples, batch_size):
-                batch = remaining_samples[i : i + batch_size]
-                batch_results = await process_batch(
-                    samples=batch,
-                    http_client=http_client,
-                    url=client_config["url"],
-                    semaphore=semaphore,
-                    model=model,
-                    start_idx=num_processed + i,
-                    log_file=log_file,
-                    source_lang=SOURCE_LANG,
-                    target_lang=target_lang,
-                    dataset=DATASET_NAME,
-                )
-
-                translated_data.samples.extend(batch_results)
-                progress_bar.update(len(batch_results))
-
-                # Update last_processed_index by batch size (not results count)
-                last_processed_index = num_processed + i + len(batch)
-
-                current_time = time.time()
-                if (
-                    current_time - last_save_time > save_interval
-                    or i + batch_size >= total_samples
-                ):
-                    save_progress(
-                        translated_data=translated_data,
-                        output_file=output_file,
-                        target_lang=target_lang,
-                        last_processed_index=last_processed_index,
-                    )
-                    last_save_time = current_time
-
-                current_count = len(translated_data.samples)
-                elapsed_time = current_time - start_time
-                _log_translation_progress(
-                    current_count=current_count,
-                    total=num_processed + total_samples,
-                    elapsed=elapsed_time,
-                )
-    finally:
-        progress_bar.close()
-        # Persist the correct watermark on every exit path (normal completion,
-        # interrupt or crash) so a resume never falls back to len(samples), which
-        # would ignore discards and re-translate/duplicate boundary samples.
-        save_progress(
-            translated_data=translated_data,
-            output_file=output_file,
-            target_lang=target_lang,
-            last_processed_index=last_processed_index,
-        )
 
 
 async def process_batch(
@@ -812,120 +796,6 @@ async def translate_sample(
         return None
 
 
-def merge_overlapping_spans(labels: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
-    """Merge overlapping hallucination spans into a single span.
-
-    Args:
-        labels: List of label spans to merge.
-
-    Returns:
-        List of merged spans.
-    """
-    if not labels:
-        return []
-
-    labels_copy = sorted(labels, key=lambda x: x["start"])
-    new_labels = []
-    current_span = labels_copy[0].copy()
-
-    for span in labels_copy[1:]:
-        if span["start"] <= current_span["end"]:
-            current_span["end"] = max(current_span["end"], span["end"])
-        else:
-            new_labels.append(current_span)
-            current_span = span.copy()
-
-    new_labels.append(current_span)
-    return new_labels
-
-
-def put_hallucination_tags(
-    sample: HallucinationSample, answer: str
-) -> tuple[str, list[dict[str, t.Any]]]:
-    """Add hallucination tags to the text.
-
-    Args:
-        sample: Sample containing labels.
-        answer: Text to add tags to.
-
-    Returns:
-        Tuple of (tagged text, merged labels).
-    """
-    # Skip the process if there are no labels
-    if not sample.labels:
-        return answer, []
-
-    labels = merge_overlapping_spans(sample.labels)
-    labels = sorted(labels, key=lambda x: (x["end"], x["start"]), reverse=True)
-    tagged_answer = answer
-
-    for label in labels:
-        start, end = label["start"], label["end"]
-        if start < 0 or end > len(tagged_answer) or start >= end:
-            logger.warning(
-                f"Invalid span: {start}-{end} for text of length "
-                f"{len(tagged_answer)}. Skipping."
-            )
-            continue
-
-        tagged_answer = tagged_answer[:end] + "</HAL>" + tagged_answer[end:]
-        tagged_answer = tagged_answer[:start] + "<HAL>" + tagged_answer[start:]
-
-    return tagged_answer, labels
-
-
-def normalize_hallucination_tags(text: str) -> str:
-    """Repair malformed <HAL>/</HAL> tags emitted by the translation model.
-
-    The model occasionally duplicates, nests or glues tags together (e.g.
-    ``<HAL<HAL>>``, ``<HAL<HAL<HAL>>>``, ``<HAL><HAL>`` or ``</HAL></HAL>``).
-    This flattens any such structure to a single, well-formed, non-nested level
-    of tags: glued/nested tags are first un-glued into standalone tokens, then a
-    left-to-right scan keeps only the outermost ``<HAL>`` and its matching
-    ``</HAL>``, drops stray unbalanced tags, and closes any tag left open at the
-    end so the spans are always balanced.
-
-    Args:
-        text:
-            Translated text that may contain malformed <HAL>/</HAL> tags.
-
-    Returns:
-        Text with well-formed, non-nested, balanced <HAL>...</HAL> tags.
-    """
-    # Collapse glued/nested tag markers into a single canonical token. The model
-    # writes nested openings as "<HAL" repeated k times followed by k ">", e.g.
-    # "<HAL<HAL>>" or "<HAL<HAL<HAL>>>"; likewise for closings. A single regex
-    # pass handles arbitrary depth because the whole run is matched at once.
-    text = re.sub(r"(?:<HAL)+>+", "<HAL>", text)
-    text = re.sub(r"(?:</HAL)+>+", "</HAL>", text)
-
-    # Scan tokens, flattening nesting to a single level and dropping stray tags.
-    result: list[str] = []
-    depth = 0
-    pos = 0
-    for match in re.finditer(r"<HAL>|</HAL>", text):
-        result.append(text[pos : match.start()])
-        pos = match.end()
-        if match.group() == "<HAL>":
-            if depth == 0:
-                result.append("<HAL>")
-            depth += 1
-        else:  # "</HAL>"
-            if depth > 0:
-                depth -= 1
-                if depth == 0:
-                    result.append("</HAL>")
-            # A stray closing tag with no matching opening is dropped.
-    result.append(text[pos:])
-    normalized = "".join(result)
-
-    # Close any tag left open at the end so spans stay balanced.
-    if depth > 0:
-        normalized = normalized.rstrip() + "</HAL>"
-
-    return normalized
-
-
 def find_hallucination_tags(
     text: str, labels: list[dict[str, t.Any]], sample_index: int
 ) -> tuple[list[tuple[int, int, str]], str]:
@@ -993,6 +863,120 @@ def find_hallucination_tags(
 
     # Return text with tags preserved
     return hal_spans, text
+
+
+def normalize_hallucination_tags(text: str) -> str:
+    """Repair malformed <HAL>/</HAL> tags emitted by the translation model.
+
+    The model occasionally duplicates, nests or glues tags together (e.g.
+    ``<HAL<HAL>>``, ``<HAL<HAL<HAL>>>``, ``<HAL><HAL>`` or ``</HAL></HAL>``).
+    This flattens any such structure to a single, well-formed, non-nested level
+    of tags: glued/nested tags are first un-glued into standalone tokens, then a
+    left-to-right scan keeps only the outermost ``<HAL>`` and its matching
+    ``</HAL>``, drops stray unbalanced tags, and closes any tag left open at the
+    end so the spans are always balanced.
+
+    Args:
+        text:
+            Translated text that may contain malformed <HAL>/</HAL> tags.
+
+    Returns:
+        Text with well-formed, non-nested, balanced <HAL>...</HAL> tags.
+    """
+    # Collapse glued/nested tag markers into a single canonical token. The model
+    # writes nested openings as "<HAL" repeated k times followed by k ">", e.g.
+    # "<HAL<HAL>>" or "<HAL<HAL<HAL>>>"; likewise for closings. A single regex
+    # pass handles arbitrary depth because the whole run is matched at once.
+    text = re.sub(r"(?:<HAL)+>+", "<HAL>", text)
+    text = re.sub(r"(?:</HAL)+>+", "</HAL>", text)
+
+    # Scan tokens, flattening nesting to a single level and dropping stray tags.
+    result: list[str] = []
+    depth = 0
+    pos = 0
+    for match in re.finditer(r"<HAL>|</HAL>", text):
+        result.append(text[pos : match.start()])
+        pos = match.end()
+        if match.group() == "<HAL>":
+            if depth == 0:
+                result.append("<HAL>")
+            depth += 1
+        else:  # "</HAL>"
+            if depth > 0:
+                depth -= 1
+                if depth == 0:
+                    result.append("</HAL>")
+            # A stray closing tag with no matching opening is dropped.
+    result.append(text[pos:])
+    normalized = "".join(result)
+
+    # Close any tag left open at the end so spans stay balanced.
+    if depth > 0:
+        normalized = normalized.rstrip() + "</HAL>"
+
+    return normalized
+
+
+def put_hallucination_tags(
+    sample: HallucinationSample, answer: str
+) -> tuple[str, list[dict[str, t.Any]]]:
+    """Add hallucination tags to the text.
+
+    Args:
+        sample: Sample containing labels.
+        answer: Text to add tags to.
+
+    Returns:
+        Tuple of (tagged text, merged labels).
+    """
+    # Skip the process if there are no labels
+    if not sample.labels:
+        return answer, []
+
+    labels = merge_overlapping_spans(sample.labels)
+    labels = sorted(labels, key=lambda x: (x["end"], x["start"]), reverse=True)
+    tagged_answer = answer
+
+    for label in labels:
+        start, end = label["start"], label["end"]
+        if start < 0 or end > len(tagged_answer) or start >= end:
+            logger.warning(
+                f"Invalid span: {start}-{end} for text of length "
+                f"{len(tagged_answer)}. Skipping."
+            )
+            continue
+
+        tagged_answer = tagged_answer[:end] + "</HAL>" + tagged_answer[end:]
+        tagged_answer = tagged_answer[:start] + "<HAL>" + tagged_answer[start:]
+
+    return tagged_answer, labels
+
+
+def merge_overlapping_spans(labels: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
+    """Merge overlapping hallucination spans into a single span.
+
+    Args:
+        labels: List of label spans to merge.
+
+    Returns:
+        List of merged spans.
+    """
+    if not labels:
+        return []
+
+    labels_copy = sorted(labels, key=lambda x: x["start"])
+    new_labels = []
+    current_span = labels_copy[0].copy()
+
+    for span in labels_copy[1:]:
+        if span["start"] <= current_span["end"]:
+            current_span["end"] = max(current_span["end"], span["end"])
+        else:
+            new_labels.append(current_span)
+            current_span = span.copy()
+
+    new_labels.append(current_span)
+    return new_labels
 
 
 async def translate_text(
@@ -1160,6 +1144,52 @@ async def translate_text(
     )
 
 
+class RetryableTranslationError(Exception):
+    """Exception raised for transient translation/API errors that should be retried."""
+
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
+        """Initialise the error.
+
+        Args:
+            message:
+                The error message.
+            retry_after:
+                Server-provided number of seconds to wait before retrying, if any.
+        """
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+class TranslationError(Exception):
+    """Exception raised for errors during translation."""
+
+    pass
+
+
+class TagMismatchError(TranslationError):
+    """Raised when translated <HAL> tags don't align with the annotated spans.
+
+    The translation model sometimes invents extra ``<HAL>...</HAL>`` pairs or
+    drops annotated ones. When the number of translated tag pairs differs from
+    the number of annotated spans (or the opening/closing tags are unbalanced),
+    the span alignment is unreliable, so the sample is discarded rather than
+    saved with fabricated or missing hallucination spans — either of which would
+    corrupt the benchmark's gold labels.
+    """
+
+    pass
+
+
+class TruncatedTranslationError(TranslationError):
+    """Raised when the model's output hit the token cap and was truncated.
+
+    Treated as non-retryable: the affected sample is discarded rather than saved
+    with an incomplete translation (which would corrupt its hallucination spans).
+    """
+
+    pass
+
+
 def save_progress(
     translated_data: HallucinationData,
     output_file: Path,
@@ -1201,123 +1231,70 @@ def save_progress(
             logger.error(f"Error saving backup: {e2!s}")
 
 
-def push_translated_data_to_hub(
-    translated_data: HallucinationData, repo_id: str, config_name: str, private: bool
-) -> None:
-    """Push translated hallucination data to Hugging Face Hub.
+def load_ragtruth_data() -> HallucinationData:
+    """Download and join RAGTruth dataset from GitHub.
 
-    Args:
-        translated_data: Translated samples to push.
-        repo_id: Target Hugging Face dataset repo id.
-        config_name: Dataset config/subset name (typically language code).
-        private: Whether to keep dataset private on Hub.
+    Returns:
+        HallucinationData with joined samples.
     """
-    if not translated_data.samples:
-        logger.warning("No translated samples available; skipping Hub upload.")
-        return
+    source_info_list = download_jsonl(SOURCE_INFO_URL)
+    response_list = download_jsonl(RESPONSE_URL)
 
-    rows = [
-        {
-            "prompt": sample.prompt,
-            "answer": sample.answer,
-            "labels": sample.labels,
-            "split": sample.split,
-            "task_type": sample.task_type,
-            "dataset": sample.dataset,
-            "language": sample.language,
-        }
-        for sample in translated_data.samples
-    ]
+    logger.info(f"Downloaded {len(source_info_list)} source records")
+    logger.info(f"Downloaded {len(response_list)} response records")
 
-    dataset = Dataset.from_list(rows)
-    dataset.push_to_hub(repo_id=repo_id, config_name=config_name, private=private)
-    logger.info(
-        "Pushed translated dataset to hub: %s (config=%s)", repo_id, config_name
-    )
+    source_lookup: dict[str, dict[str, t.Any]] = {
+        src["source_id"]: src for src in source_info_list
+    }
 
+    samples: list[HallucinationSample] = []
+    for resp in response_list:
+        source_id = resp.get("source_id")
+        if source_id not in source_lookup:
+            logger.warning(f"No source info for response {resp.get('id')}")
+            continue
 
-def push_test_subset_to_hub(
-    translated_data: HallucinationData,
-    repo_id: str,
-    config_name: str,
-    private: bool,
-    n: int = 2048,
-    validation_n: int = 256,
-) -> None:
-    """Push test and validation subsets of translated data to the Hub.
-
-    Args:
-        translated_data: Translated samples to filter and push.
-        repo_id: Target Hugging Face dataset repo id.
-        config_name: Dataset config/subset name (typically language code).
-        private: Whether to keep dataset private on Hub.
-        n: Maximum number of test samples to upload.
-        validation_n: Maximum number of validation samples to upload.
-    """
-    samples = translated_data.samples[:]
-    random.shuffle(samples)
-
-    def _to_rows(items: list[HallucinationSample]) -> list[dict[str, t.Any]]:
-        """Preprocess samples for the hallucination (question-answering) task.
-
-        The task group expects ``id``, ``context``, ``question`` and ``answers``
-        columns, derived here from the RAG ``prompt`` and reference ``answer``
-        while keeping the original columns intact.
-
-        Returns:
-            List of dictionaries with the required columns for the QA task.
-        """
-        return [
-            {
-                "id": str(index),
-                "prompt": sample.prompt,
-                "answer": sample.answer,
-                "labels": sample.labels,
-                "split": sample.split,
-                "task_type": sample.task_type,
-                "dataset": sample.dataset,
-                "language": sample.language,
-                "context": sample.prompt,
-                "question": "",
-                "answers": {"text": [sample.answer], "answer_start": [0]},
-            }
-            for index, sample in enumerate(items)
+        src = source_lookup[source_id]
+        labels = [
+            {"start": lbl["start"], "end": lbl["end"], "label": lbl["label_type"]}
+            for lbl in resp.get("labels", [])
         ]
 
-    test_samples = [s for s in samples if s.split == "test"][:n]
-
-    # RAGTruth only ships train/test splits, so carve the validation split from train.
-    validation_samples = [s for s in samples if s.split == "train"][:validation_n]
-
-    if not test_samples and not validation_samples:
-        logger.warning("No test or validation samples available; skipping upload.")
-        return
-
-    # Push all splits in a single commit so the entire config is overwritten
-    # atomically. Pushing splits one at a time fails when the existing splits on the
-    # hub use a different (e.g. older) schema, since the new split's features are
-    # validated against the stale ones.
-    splits: dict[str, Dataset] = {}
-    if test_samples:
-        splits["test"] = Dataset.from_list(_to_rows(test_samples))
-    else:
-        logger.warning("No test samples available; skipping test split upload.")
-    if validation_samples:
-        splits["val"] = Dataset.from_list(_to_rows(validation_samples))
-    else:
-        logger.warning("No validation samples available; skipping val split upload.")
-
-    DatasetDict(splits).push_to_hub(
-        repo_id=repo_id, config_name=config_name, private=private
-    )
-    for split_name, split_dataset in splits.items():
-        logger.info(
-            "Pushed %d %s samples to hub: %s (config=%s)",
-            len(split_dataset),
-            split_name,
-            repo_id,
-            config_name,
+        samples.append(
+            HallucinationSample(
+                prompt=src.get("prompt", ""),
+                answer=resp.get("response", ""),
+                labels=labels,
+                split=resp.get("split", "train"),
+                task_type=src.get("task_type", "unknown"),
+                dataset="ragtruth",
+                language="en",
+            )
         )
+
+    logger.info(f"Created {len(samples)} samples from RAGTruth dataset")
+    return HallucinationData(samples=samples)
+
+
+def download_jsonl(url: str) -> list[dict[str, t.Any]]:
+    """Download a JSONL file from a URL with streaming to reduce memory usage.
+
+    Args:
+        url: URL to the JSONL file.
+
+    Returns:
+        List of parsed JSON objects from each line.
+    """
+    logger.info(f"Downloading {url}...")
+    with httpx.Client(timeout=300.0) as client:
+        with client.stream("GET", url) as response:
+            response.raise_for_status()
+            lines = []
+            for line in response.iter_lines():
+                line = line.strip()
+                if line:
+                    lines.append(json.loads(line))
+            return lines
 
 
 def setup_logging(output_dir: Path) -> None:
@@ -1334,35 +1311,11 @@ def setup_logging(output_dir: Path) -> None:
     logger.addHandler(file_handler)
 
 
-def _push_if_no_samples(translated_data: HallucinationData, target_lang: str) -> None:
-    """Push data to hub when there are no samples to translate.
+class ClientConfig(t.TypedDict):
+    """Configuration for OpenAI client."""
 
-    Args:
-        translated_data:
-            Translated data to push.
-        target_lang:
-            Target language code.
-    """
-    logger.info("No samples to translate. Exiting.")
-    if PUSH_TO_HUB:
-        push_translated_data_to_hub(
-            translated_data=translated_data,
-            repo_id=HUB_REPO_ID,
-            config_name=target_lang,
-            private=HUB_REPO_PRIVATE,
-        )
-    if PUSH_TEST_SUBSET:
-        resolved_test_repo_id = (
-            f"EuroEval/{DATASET_NAME}-translated-hallucinations-{target_lang}-mini"
-        )
-        push_test_subset_to_hub(
-            translated_data=translated_data,
-            repo_id=resolved_test_repo_id,
-            config_name=target_lang,
-            private=PRIVATE_UPLOAD,
-            n=TEST_SUBSET_SIZE,
-            validation_n=VALIDATION_SUBSET_SIZE,
-        )
+    url: str
+    headers: dict[str, str]
 
 
 def _translate_to_language(
@@ -1537,59 +1490,111 @@ def _translate_to_language(
         )
 
 
-def _report_token_estimate(total_source_samples: int, model: str) -> None:
-    """Log measured token usage and extrapolate it to the full dataset.
-
-    The estimate multiplies the average per-sample token usage measured during
-    this (test) run by the full dataset size (all source samples x all target
-    languages). It is only as representative as the sampled subset, so scale up
-    ``--test-num-samples`` for a tighter estimate.
+async def run_translation(
+    remaining_samples: list[HallucinationSample],
+    translated_data: HallucinationData,
+    output_file: Path,
+    target_lang: str,
+    num_processed: int,
+    client_config: ClientConfig,
+    model: str,
+    max_workers: int,
+    batch_size: int,
+) -> None:
+    """Run batched async translation with connection pooling.
 
     Args:
-        total_source_samples:
-            Number of source samples in the full (untranslated) dataset.
+        remaining_samples:
+            Samples that still need translation.
+        translated_data:
+            Existing translated data to append to.
         model:
-            Model ID used for translation, for the pricing lookup.
+            Model ID to use for translation.
+        output_file:
+            Output JSON file path.
+        target_lang:
+            Target language code.
+        num_processed:
+            Number of already translated samples from cache.
+        client_config:
+            API URL and headers.
+        max_workers:
+            Maximum number of concurrent in-flight API requests.
+        batch_size:
+            Number of samples processed between save points.
     """
-    measured = TOKEN_USAGE["samples"]
-    if measured == 0 or total_source_samples == 0:
-        logger.warning("No samples measured; skipping token-usage estimate.")
-        return
+    total_samples = len(remaining_samples)
+    log_file = OUTPUT_DIR / "error_log.txt"
 
-    in_tok = TOKEN_USAGE["input_tokens"]
-    out_tok = TOKEN_USAGE["output_tokens"]
-    avg_in = in_tok / measured
-    avg_out = out_tok / measured
+    limits, timeout, semaphore = _setup_http_client(max_workers)
 
-    full_samples = total_source_samples * len(TARGET_LANGS)
-    est_in = avg_in * full_samples
-    est_out = avg_out * full_samples
+    progress_bar = tqdm.tqdm(total=total_samples, desc="Translating")
+    start_time = time.time()
+    save_interval = 60
+    last_save_time = start_time
 
-    logger.info("=" * 60)
-    logger.info("TOKEN USAGE")
-    logger.info(
-        f"Measured over {measured} translated samples "
-        f"({TOKEN_USAGE['api_calls']} API calls):"
-    )
-    logger.info(f"  input : {in_tok:,} tokens (avg {avg_in:,.1f}/sample)")
-    logger.info(f"  output: {out_tok:,} tokens (avg {avg_out:,.1f}/sample)")
-    logger.info(
-        f"Full-dataset estimate ({total_source_samples:,} source samples x "
-        f"{len(TARGET_LANGS)} languages = {full_samples:,} samples):"
-    )
-    logger.info(f"  est. input : {est_in / 1e6:,.1f}M tokens")
-    logger.info(f"  est. output: {est_out / 1e6:,.1f}M tokens")
+    # Track the resume watermark here so it is always persisted with the correct
+    # value on the way out (see the finally block), even on interrupt/crash. This
+    # index counts source samples *processed* (advancing by batch size, not result
+    # count), so discarded samples stay cached and are never re-translated.
+    last_processed_index = num_processed
 
-    pricing = MODEL_PRICING.get(model)
-    if pricing is not None:
-        input_price, output_price = pricing
-        measured_cost = in_tok / 1e6 * input_price + out_tok / 1e6 * output_price
-        est_cost = est_in / 1e6 * input_price + est_out / 1e6 * output_price
-        logger.info(f"  measured cost so far: ${measured_cost:,.4f}")
-        logger.info(f"  est. full-dataset cost ({model}): ${est_cost:,.2f}")
-    else:
-        logger.info(f"  (no pricing configured for model '{model}'; cost omitted)")
-    logger.info("=" * 60)
+    try:
+        async with httpx.AsyncClient(
+            headers=client_config["headers"], timeout=timeout, limits=limits
+        ) as http_client:
+            for i in range(0, total_samples, batch_size):
+                batch = remaining_samples[i : i + batch_size]
+                batch_results = await process_batch(
+                    samples=batch,
+                    http_client=http_client,
+                    url=client_config["url"],
+                    semaphore=semaphore,
+                    model=model,
+                    start_idx=num_processed + i,
+                    log_file=log_file,
+                    source_lang=SOURCE_LANG,
+                    target_lang=target_lang,
+                    dataset=DATASET_NAME,
+                )
+
+                translated_data.samples.extend(batch_results)
+                progress_bar.update(len(batch_results))
+
+                # Update last_processed_index by batch size (not results count)
+                last_processed_index = num_processed + i + len(batch)
+
+                current_time = time.time()
+                if (
+                    current_time - last_save_time > save_interval
+                    or i + batch_size >= total_samples
+                ):
+                    save_progress(
+                        translated_data=translated_data,
+                        output_file=output_file,
+                        target_lang=target_lang,
+                        last_processed_index=last_processed_index,
+                    )
+                    last_save_time = current_time
+
+                current_count = len(translated_data.samples)
+                elapsed_time = current_time - start_time
+                _log_translation_progress(
+                    current_count=current_count,
+                    total=num_processed + total_samples,
+                    elapsed=elapsed_time,
+                )
+    finally:
+        progress_bar.close()
+        # Persist the correct watermark on every exit path (normal completion,
+        # interrupt or crash) so a resume never falls back to len(samples), which
+        # would ignore discards and re-translate/duplicate boundary samples.
+        save_progress(
+            translated_data=translated_data,
+            output_file=output_file,
+            target_lang=target_lang,
+            last_processed_index=last_processed_index,
+        )
 
 
 def get_openai_client() -> ClientConfig:

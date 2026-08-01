@@ -76,90 +76,18 @@ class ModelCache:
         self.indent_json_when_saving = indent_json_when_saving
         self.cache: dict[str, SingleGenerativeModelOutput] = dict()
 
-    def load(self) -> None:
-        """Load the model output cache."""
-        if not self.cache_path.exists():
-            with self.cache_path.open("w") as f:
-                json.dump(
-                    dict(),
-                    f,
-                    indent=2 if self.indent_json_when_saving else None,
-                    ensure_ascii=False,
-                )
+    def __contains__(self, key: str | c.Sequence[dict[str, str]]) -> bool:
+        """Check if a key is in the cache.
 
-        try:
-            with self.cache_path.open() as f:
-                json_cache = json.load(f)
-        except json.JSONDecodeError:
-            log(
-                f"Failed to load the cache from {self.cache_path}. The cache will be "
-                f"re-initialised.",
-                level=logging.WARNING,
-            )
-            json_cache = dict()
-            with self.cache_path.open("w") as f:
-                json.dump(
-                    dict(),
-                    f,
-                    indent=2 if self.indent_json_when_saving else None,
-                    ensure_ascii=False,
-                )
+        Args:
+            key:
+                The key to check.
 
-        cache: dict[str, SingleGenerativeModelOutput] = dict()
-        for key in json_cache:
-            value_dict = json_cache[key]
-            sequence = value_dict.pop("sequence", None)
-            predicted_label = value_dict.pop("predicted_label", None)
-            scores = value_dict.pop("scores", None)
-            bpc_score = value_dict.pop("bpc_score", None)
-            cache[key] = SingleGenerativeModelOutput(
-                sequence=sequence,
-                predicted_label=predicted_label,
-                scores=scores,
-                metadata=HashableDict(value_dict),
-                bpc_score=bpc_score,
-            )
-
-        self.cache = cache
-
-    def save(self) -> None:
-        """Save the model output cache to disk."""
-        # Unpack metadata to get a flat dict to dump
-        dumpable_cache: dict[str, dict] = defaultdict(dict)
-        for key, value in self.cache.items():
-            value_dict = asdict(value)
-            metadata = value_dict.pop("metadata", dict())
-            if metadata is None:
-                metadata = dict()
-            value_dict |= metadata
-            if "index" in metadata:
-                value_dict = {"index": metadata.pop("index")} | value_dict
-            dumpable_cache[key] = value_dict
-
-        try:
-            self.cache_path.parent.mkdir(exist_ok=True, parents=True)
-            self.cache_path.write_text(
-                json.dumps(
-                    dumpable_cache,
-                    indent=2 if self.indent_json_when_saving else None,
-                    ensure_ascii=False,
-                )
-            )
-
-        except KeyError:
-            log(
-                f"Failed to load the cache from {self.cache_path}. The cache will be "
-                f"re-initialised.",
-                level=logging.WARNING,
-            )
-            self.cache = dict()
-            with self.cache_path.open("w") as f:
-                json.dump(
-                    dict(),
-                    f,
-                    indent=2 if self.indent_json_when_saving else None,
-                    ensure_ascii=False,
-                )
+        Returns:
+            Whether the key is in the cache.
+        """
+        hashed_key = self._hash_key(key=key)
+        return hashed_key in self.cache
 
     def _hash_key(self, key: str | c.Sequence[dict[str, str]]) -> str:
         """Hash the key to use as an index in the cache.
@@ -201,24 +129,6 @@ class ModelCache:
         """
         hashed_key = self._hash_key(key=key)
         self.cache[hashed_key] = value
-
-    def remove(self) -> None:
-        """Remove the cache from memory and delete it from disk."""
-        self.cache_path.unlink()
-        del self.cache
-
-    def __contains__(self, key: str | c.Sequence[dict[str, str]]) -> bool:
-        """Check if a key is in the cache.
-
-        Args:
-            key:
-                The key to check.
-
-        Returns:
-            Whether the key is in the cache.
-        """
-        hashed_key = self._hash_key(key=key)
-        return hashed_key in self.cache
 
     def add_to_cache(
         self, model_inputs: dict, model_output: GenerativeModelOutput
@@ -305,47 +215,128 @@ class ModelCache:
                     bpc_score=bpc_score,
                 )
 
+    def load(self) -> None:
+        """Load the model output cache."""
+        if not self.cache_path.exists():
+            with self.cache_path.open("w") as f:
+                json.dump(
+                    dict(),
+                    f,
+                    indent=2 if self.indent_json_when_saving else None,
+                    ensure_ascii=False,
+                )
 
-def split_dataset_into_cached_and_non_cached(
-    dataset: "Dataset", cache: ModelCache
-) -> tuple["Dataset", "Dataset"]:
-    """Split a dataset into a cached and non-cached part.
+        try:
+            with self.cache_path.open() as f:
+                json_cache = json.load(f)
+        except json.JSONDecodeError:
+            log(
+                f"Failed to load the cache from {self.cache_path}. The cache will be "
+                f"re-initialised.",
+                level=logging.WARNING,
+            )
+            json_cache = dict()
+            with self.cache_path.open("w") as f:
+                json.dump(
+                    dict(),
+                    f,
+                    indent=2 if self.indent_json_when_saving else None,
+                    ensure_ascii=False,
+                )
+
+        cache: dict[str, SingleGenerativeModelOutput] = dict()
+        for key in json_cache:
+            value_dict = json_cache[key]
+            sequence = value_dict.pop("sequence", None)
+            predicted_label = value_dict.pop("predicted_label", None)
+            scores = value_dict.pop("scores", None)
+            bpc_score = value_dict.pop("bpc_score", None)
+            cache[key] = SingleGenerativeModelOutput(
+                sequence=sequence,
+                predicted_label=predicted_label,
+                scores=scores,
+                metadata=HashableDict(value_dict),
+                bpc_score=bpc_score,
+            )
+
+        self.cache = cache
+
+    def remove(self) -> None:
+        """Remove the cache from memory and delete it from disk."""
+        self.cache_path.unlink()
+        del self.cache
+
+    def save(self) -> None:
+        """Save the model output cache to disk."""
+        # Unpack metadata to get a flat dict to dump
+        dumpable_cache: dict[str, dict] = defaultdict(dict)
+        for key, value in self.cache.items():
+            value_dict = asdict(value)
+            metadata = value_dict.pop("metadata", dict())
+            if metadata is None:
+                metadata = dict()
+            value_dict |= metadata
+            if "index" in metadata:
+                value_dict = {"index": metadata.pop("index")} | value_dict
+            dumpable_cache[key] = value_dict
+
+        try:
+            self.cache_path.parent.mkdir(exist_ok=True, parents=True)
+            self.cache_path.write_text(
+                json.dumps(
+                    dumpable_cache,
+                    indent=2 if self.indent_json_when_saving else None,
+                    ensure_ascii=False,
+                )
+            )
+
+        except KeyError:
+            log(
+                f"Failed to load the cache from {self.cache_path}. The cache will be "
+                f"re-initialised.",
+                level=logging.WARNING,
+            )
+            self.cache = dict()
+            with self.cache_path.open("w") as f:
+                json.dump(
+                    dict(),
+                    f,
+                    indent=2 if self.indent_json_when_saving else None,
+                    ensure_ascii=False,
+                )
+
+
+def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
+    """Create cache directory for a model.
 
     Args:
-        dataset:
-            The dataset to split.
-        cache:
-            The model output cache.
+        cache_dir:
+            The cache directory.
+        model_id:
+            The model ID.
 
     Returns:
-        The cached and non-cached parts of the dataset.
+        The path to the cache directory.
     """
-    # Get the sample indices of the non-cached examples, which are unique with respect
-    # to the "text" column.
-    input_column = "messages" if "messages" in dataset.column_names else "text"
-    dataset_texts = dataset[input_column]
-    unique_non_cached_ids = set()
-    unique_texts = list()
-    for idx, dataset_text in enumerate(dataset_texts):
-        if dataset_text not in cache and dataset_text not in unique_texts:
-            unique_non_cached_ids.add(idx)
-            unique_texts.append(dataset_text)
+    # If the model ID is a path, we just use that as the cache dir
+    if Path(model_id).is_dir():
+        log_once(
+            f"Since the model {model_id!r} is a local model, we will use the model "
+            "directory directly as the model cache directory.",
+            level=logging.DEBUG,
+        )
+        return model_id
 
-    # The cached examples are the ones that are not in the non-cached examples. This
-    # means that if the dataset has duplicates, only a single copy of the duplicate
-    # will be put in the non-cached part, and the rest in the cached part.
-    cached_ids = set(range(len(dataset))) - unique_non_cached_ids
-
-    cached = dataset.select(cached_ids)
-    non_cached = dataset.select(unique_non_cached_ids)
-
-    assert isinstance(cached, Dataset), (
-        f"Expected the cached dataset to be a Dataset, but got {type(cached)}"
+    # Otherwise, we create a cache dir based on the model ID
+    model_cache_dir = Path(
+        cache_dir, "model_cache", model_id.replace("/", "--")
+    ).as_posix()
+    log_once(
+        f"Using the model cache directory {model_cache_dir!r} for the model "
+        f"{model_id!r}.",
+        level=logging.DEBUG,
     )
-    assert isinstance(non_cached, Dataset), (
-        f"Expected the non-cached dataset to be a Dataset, but got {type(non_cached)}"
-    )
-    return cached, non_cached
+    return model_cache_dir
 
 
 def load_cached_model_outputs(
@@ -392,34 +383,43 @@ def load_cached_model_outputs(
     )
 
 
-def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
-    """Create cache directory for a model.
+def split_dataset_into_cached_and_non_cached(
+    dataset: "Dataset", cache: ModelCache
+) -> tuple["Dataset", "Dataset"]:
+    """Split a dataset into a cached and non-cached part.
 
     Args:
-        cache_dir:
-            The cache directory.
-        model_id:
-            The model ID.
+        dataset:
+            The dataset to split.
+        cache:
+            The model output cache.
 
     Returns:
-        The path to the cache directory.
+        The cached and non-cached parts of the dataset.
     """
-    # If the model ID is a path, we just use that as the cache dir
-    if Path(model_id).is_dir():
-        log_once(
-            f"Since the model {model_id!r} is a local model, we will use the model "
-            "directory directly as the model cache directory.",
-            level=logging.DEBUG,
-        )
-        return model_id
+    # Get the sample indices of the non-cached examples, which are unique with respect
+    # to the "text" column.
+    input_column = "messages" if "messages" in dataset.column_names else "text"
+    dataset_texts = dataset[input_column]
+    unique_non_cached_ids = set()
+    unique_texts = list()
+    for idx, dataset_text in enumerate(dataset_texts):
+        if dataset_text not in cache and dataset_text not in unique_texts:
+            unique_non_cached_ids.add(idx)
+            unique_texts.append(dataset_text)
 
-    # Otherwise, we create a cache dir based on the model ID
-    model_cache_dir = Path(
-        cache_dir, "model_cache", model_id.replace("/", "--")
-    ).as_posix()
-    log_once(
-        f"Using the model cache directory {model_cache_dir!r} for the model "
-        f"{model_id!r}.",
-        level=logging.DEBUG,
+    # The cached examples are the ones that are not in the non-cached examples. This
+    # means that if the dataset has duplicates, only a single copy of the duplicate
+    # will be put in the non-cached part, and the rest in the cached part.
+    cached_ids = set(range(len(dataset))) - unique_non_cached_ids
+
+    cached = dataset.select(cached_ids)
+    non_cached = dataset.select(unique_non_cached_ids)
+
+    assert isinstance(cached, Dataset), (
+        f"Expected the cached dataset to be a Dataset, but got {type(cached)}"
     )
-    return model_cache_dir
+    assert isinstance(non_cached, Dataset), (
+        f"Expected the non-cached dataset to be a Dataset, but got {type(non_cached)}"
+    )
+    return cached, non_cached

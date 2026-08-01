@@ -14,6 +14,28 @@ from euroeval.exceptions import InvalidModel
 from euroeval.model_loading import load_model
 
 
+class TestBPCGating:
+    """Tests that BPC scoring is rejected for non-vLLM backends.
+
+    BPC validation happens in load_model() before backend initialization.
+    """
+
+    def test_bpc_rejected_for_hf_encoder(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """BPC scoring raises InvalidModel for HF encoder backend."""
+        bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
+        with pytest.raises(InvalidModel, match="vLLM backend"):
+            load_model(
+                model_config=model_config,
+                dataset_config=dataset_config,
+                benchmark_config=bpc_config,
+            )
+
+
 @pytest.mark.parametrize(
     argnames=["test_device", "dtype_is_set", "bf16_available", "expected"],
     argvalues=[
@@ -89,25 +111,3 @@ def test_safetensors_check(
             run_with_cli=benchmark_config.run_with_cli,
         )
         assert (result is not None) == model_exists
-
-
-class TestBPCGating:
-    """Tests that BPC scoring is rejected for non-vLLM backends.
-
-    BPC validation happens in load_model() before backend initialization.
-    """
-
-    def test_bpc_rejected_for_hf_encoder(
-        self,
-        model_config: ModelConfig,
-        dataset_config: DatasetConfig,
-        benchmark_config: BenchmarkConfig,
-    ) -> None:
-        """BPC scoring raises InvalidModel for HF encoder backend."""
-        bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
-        with pytest.raises(InvalidModel, match="vLLM backend"):
-            load_model(
-                model_config=model_config,
-                dataset_config=dataset_config,
-                benchmark_config=bpc_config,
-            )

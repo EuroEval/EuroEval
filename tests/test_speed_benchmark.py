@@ -19,20 +19,6 @@ from euroeval.model_config import get_model_config
 from euroeval.speed_benchmark import benchmark_speed, benchmark_speed_single_iteration
 
 
-@pytest.fixture(scope="module")
-def model(
-    encoder_model_id: str, benchmark_config: BenchmarkConfig
-) -> Generator[BenchmarkModule, None, None]:
-    """Yields a model."""
-    yield HuggingFaceEncoderModel(
-        model_config=get_model_config(
-            model_id=encoder_model_id, benchmark_config=benchmark_config
-        ),
-        dataset_config=SPEED_CONFIG,
-        benchmark_config=benchmark_config,
-    )
-
-
 class TestBenchmarkSpeed:
     """Tests for the `benchmark_speed` function."""
 
@@ -48,10 +34,6 @@ class TestBenchmarkSpeed:
         """Yields the benchmark speed scores."""
         yield benchmark_speed(model=model, benchmark_config=benchmark_config)
 
-    def test_scores_is_list(self, scores: list[dict[str, float]]) -> None:
-        """Tests that the scores is a list."""
-        assert isinstance(scores, list)
-
     def test_scores_contain_dicts(self, scores: list[dict[str, float]]) -> None:
         """Tests that the scores contain dicts."""
         assert all(isinstance(x, dict) for x in scores)
@@ -66,15 +48,13 @@ class TestBenchmarkSpeed:
             all(isinstance(value, float) for value in x.values()) for x in scores
         )
 
+    def test_scores_is_list(self, scores: list[dict[str, float]]) -> None:
+        """Tests that the scores is a list."""
+        assert isinstance(scores, list)
+
 
 class TestBenchmarkSpeedSingleIteration:
     """Tests for the `benchmark_speed_single_iteration` function."""
-
-    @pytest.fixture
-    def mock_model(self) -> Generator[MagicMock, None, None]:
-        """Yields a mock model."""
-        mock = MagicMock(spec=BenchmarkModule)
-        yield mock
 
     @pytest.fixture
     def mock_benchmark_config(self) -> BenchmarkConfig:
@@ -113,53 +93,25 @@ class TestBenchmarkSpeedSingleIteration:
             vocabulary_size=None,
         )
 
-    def test_benchmark_speed_single_iteration_vllm_model(
+    @pytest.fixture
+    def mock_model(self) -> Generator[MagicMock, None, None]:
+        """Yields a mock model."""
+        mock = MagicMock(spec=BenchmarkModule)
+        yield mock
+
+    def test_benchmark_speed_single_iteration_cuda_oom_error(
         self, mock_model: MagicMock, mock_benchmark_config: BenchmarkConfig
     ) -> None:
-        """Test speed benchmark with VLLM model type."""
+        """Test InvalidBenchmark raised when CUDA OOM occurs."""
         mock_model.__class__ = VLLMModel
 
         with patch(
             "euroeval.speed_benchmark.pyinfer.InferenceReport"
         ) as mock_inference_report:
-            mock_report = MagicMock()
-            mock_report.run.return_value = {"Infer(p/sec)": 10.0}
-            mock_inference_report.return_value = mock_report
+            mock_inference_report.side_effect = RuntimeError("CUDA out of memory")
 
-            with patch("euroeval.speed_benchmark.AutoTokenizer") as mock_tokenizer:
-                mock_tokenizer.from_pretrained.return_value = MagicMock(
-                    return_value={"input_ids": [[1, 2, 3, 4, 5]]}
-                )
-
-                scores = benchmark_speed_single_iteration(model=mock_model, itr_idx=0)
-
-        assert "test_speed" in scores
-        assert "test_speed_short" in scores
-        assert all(isinstance(v, float) for v in scores.values())
-
-    def test_benchmark_speed_single_iteration_litellm_model(
-        self, mock_model: MagicMock, mock_benchmark_config: BenchmarkConfig
-    ) -> None:
-        """Test speed benchmark with LiteLLM model type."""
-        mock_model.__class__ = LiteLLMModel
-
-        with patch(
-            "euroeval.speed_benchmark.pyinfer.InferenceReport"
-        ) as mock_inference_report:
-            mock_report = MagicMock()
-            mock_report.run.return_value = {"Infer(p/sec)": 10.0}
-            mock_inference_report.return_value = mock_report
-
-            with patch("euroeval.speed_benchmark.AutoTokenizer") as mock_tokenizer:
-                mock_tokenizer.from_pretrained.return_value = MagicMock(
-                    return_value={"input_ids": [[1, 2, 3, 4, 5]]}
-                )
-
-                scores = benchmark_speed_single_iteration(model=mock_model, itr_idx=0)
-
-        assert "test_speed" in scores
-        assert "test_speed_short" in scores
-        assert all(isinstance(v, float) for v in scores.values())
+            with pytest.raises(InvalidBenchmark, match="Speed benchmark failed"):
+                benchmark_speed_single_iteration(model=mock_model, itr_idx=0)
 
     def test_benchmark_speed_single_iteration_huggingface_encoder_model(
         self, mock_model: MagicMock, mock_benchmark_config: BenchmarkConfig
@@ -197,16 +149,64 @@ class TestBenchmarkSpeedSingleIteration:
         with pytest.raises(ValueError, match="Model type.*not supported"):
             benchmark_speed_single_iteration(model=mock_model, itr_idx=0)
 
-    def test_benchmark_speed_single_iteration_cuda_oom_error(
+    def test_benchmark_speed_single_iteration_litellm_model(
         self, mock_model: MagicMock, mock_benchmark_config: BenchmarkConfig
     ) -> None:
-        """Test InvalidBenchmark raised when CUDA OOM occurs."""
+        """Test speed benchmark with LiteLLM model type."""
+        mock_model.__class__ = LiteLLMModel
+
+        with patch(
+            "euroeval.speed_benchmark.pyinfer.InferenceReport"
+        ) as mock_inference_report:
+            mock_report = MagicMock()
+            mock_report.run.return_value = {"Infer(p/sec)": 10.0}
+            mock_inference_report.return_value = mock_report
+
+            with patch("euroeval.speed_benchmark.AutoTokenizer") as mock_tokenizer:
+                mock_tokenizer.from_pretrained.return_value = MagicMock(
+                    return_value={"input_ids": [[1, 2, 3, 4, 5]]}
+                )
+
+                scores = benchmark_speed_single_iteration(model=mock_model, itr_idx=0)
+
+        assert "test_speed" in scores
+        assert "test_speed_short" in scores
+        assert all(isinstance(v, float) for v in scores.values())
+
+    def test_benchmark_speed_single_iteration_vllm_model(
+        self, mock_model: MagicMock, mock_benchmark_config: BenchmarkConfig
+    ) -> None:
+        """Test speed benchmark with VLLM model type."""
         mock_model.__class__ = VLLMModel
 
         with patch(
             "euroeval.speed_benchmark.pyinfer.InferenceReport"
         ) as mock_inference_report:
-            mock_inference_report.side_effect = RuntimeError("CUDA out of memory")
+            mock_report = MagicMock()
+            mock_report.run.return_value = {"Infer(p/sec)": 10.0}
+            mock_inference_report.return_value = mock_report
 
-            with pytest.raises(InvalidBenchmark, match="Speed benchmark failed"):
-                benchmark_speed_single_iteration(model=mock_model, itr_idx=0)
+            with patch("euroeval.speed_benchmark.AutoTokenizer") as mock_tokenizer:
+                mock_tokenizer.from_pretrained.return_value = MagicMock(
+                    return_value={"input_ids": [[1, 2, 3, 4, 5]]}
+                )
+
+                scores = benchmark_speed_single_iteration(model=mock_model, itr_idx=0)
+
+        assert "test_speed" in scores
+        assert "test_speed_short" in scores
+        assert all(isinstance(v, float) for v in scores.values())
+
+
+@pytest.fixture(scope="module")
+def model(
+    encoder_model_id: str, benchmark_config: BenchmarkConfig
+) -> Generator[BenchmarkModule, None, None]:
+    """Yields a model."""
+    yield HuggingFaceEncoderModel(
+        model_config=get_model_config(
+            model_id=encoder_model_id, benchmark_config=benchmark_config
+        ),
+        dataset_config=SPEED_CONFIG,
+        benchmark_config=benchmark_config,
+    )

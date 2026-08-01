@@ -84,41 +84,37 @@ frontend:  ## Build and deploy the frontend
 
 leaderboards:  ## Collect finished evaluation results and regenerate leaderboards
 	@uv run python src/scripts/collect_evaluation_results.py
-	@echo "Starting Vercel dev server for preview..."
-	@vercel dev > /dev/null 2>&1 &
-	@DEV_PID=$$!; \
-		sleep 3; \
-		read -p "Everything looks alright? [Y/n] " confirm; \
-		kill $$DEV_PID 2>/dev/null || true; \
-		if [ -z "$$confirm" ] || [ "$$confirm" = "Y" ] || [ "$$confirm" = "y" ]; then \
-			echo "Deploying..."; \
-			vercel build --prod 2>&1 | grep -v "^WARNING!" && vercel deploy --prebuilt --prod; \
-		else \
-			echo "Aborting deployment."; \
-			exit 0; \
-		fi
 
 force-leaderboards:
 	@uv run python src/scripts/collect_evaluation_results.py --force
-	@echo "Starting Vercel dev server for preview..."
-	@vercel dev > /dev/null 2>&1 &
-	@DEV_PID=$$!; \
-		sleep 3; \
-		read -p "Everything looks alright? [Y/n] " confirm; \
-		kill $$DEV_PID 2>/dev/null || true; \
-		if [ -z "$$confirm" ] || [ "$$confirm" = "Y" ] || [ "$$confirm" = "y" ]; then \
-			echo "Deploying..."; \
-			vercel build --prod 2>&1 | grep -v "^WARNING!" && vercel deploy --prebuilt --prod; \
-		else \
-			echo "Aborting deployment."; \
-			exit 0; \
-		fi
 
 tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
 
 check:  ## Lint, format, and type-check the code
 	@git add . && uv run pre-commit run --all-files
+	@if command -v llama-server >/dev/null 2>&1 && pgrep -x llama-server >/dev/null; then \
+		echo "Running Slopo code duplication detection..."; \
+		export LITELLM_DROP_PARAMS=true; \
+		uv run slopo index 2>&1 | grep -E "Indexed|unchanged|removed" || true; \
+		uv run slopo embed 2>&1 || true; \
+		ANALYSIS_OUTPUT=$$(uv run slopo analyze 2>&1); \
+		echo "$$ANALYSIS_OUTPUT" | grep -E "Exact copies|Similarity ratio" || true; \
+		DUPLICATE_COUNT=$$(echo "$$ANALYSIS_OUTPUT" | grep "Similarity ratio (including exact copies)" | sed -E 's/.*\(([0-9]+)\/.*/\1/'); \
+		if [ "$$DUPLICATE_COUNT" -gt 0 ] 2>/dev/null; then \
+			RATIO=$$(echo "$$ANALYSIS_OUTPUT" | grep "Similarity ratio (including exact copies)" | sed -E 's/.*: ([0-9.]+%).*/\1/'); \
+			echo ""; \
+			echo "❌ Slopo failed: duplicate code detected"; \
+			printf "   Duplicate units: %s\n" "$$DUPLICATE_COUNT"; \
+			printf "   Similarity ratio: %s\n" "$$RATIO"; \
+			echo "   Full report: .slopo/report/index.md"; \
+			echo "   To ignore irrelevant duplicates, add their cluster hashes to .slopo/slopo.ignore.txt"; \
+			echo ""; \
+			exit 1; \
+		fi; \
+	else \
+		echo "Slopo skipped (llama.cpp server not running)"; \
+	fi
 
 bump-major:
 	@uv run python -m src.scripts.versioning --major

@@ -6,6 +6,7 @@
 #     "requests==2.32.5",
 # ]
 # ///
+
 """Create the Estonian Trivia dataset and upload to HF Hub."""
 
 import typing as t

@@ -34,7 +34,7 @@ class Language:
 
     @property
     def and_separator(self) -> str:
-        """Get the word 'and' in the language.
+        """The word 'and' in the language.
 
         Returns:
             The word 'and' in the language.
@@ -55,7 +55,7 @@ class Language:
 
     @property
     def or_separator(self) -> str:
-        """Get the word 'or' in the language.
+        """The word 'or' in the language.
 
         Returns:
             The word 'or' in the language.
@@ -73,15 +73,6 @@ class Language:
     @or_separator.setter
     def or_separator(self, value: str | None) -> None:
         self._or_separator = value
-
-
-def get_all_languages() -> dict[str, Language]:
-    """Get a list of all the languages.
-
-    Returns:
-        A mapping between language codes and their configurations.
-    """
-    return {cfg.code: cfg for cfg in globals().values() if isinstance(cfg, Language)}
 
 
 def get_correct_language_codes(
@@ -117,6 +108,15 @@ def get_correct_language_codes(
         languages = list(set(languages) | {"no"})
 
     return languages
+
+
+def get_all_languages() -> dict[str, Language]:
+    """Get a list of all the languages.
+
+    Returns:
+        A mapping between language codes and their configurations.
+    """
+    return {cfg.code: cfg for cfg in globals().values() if isinstance(cfg, Language)}
 
 
 ABKHAZIAN: Language = Language(

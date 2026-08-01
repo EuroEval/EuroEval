@@ -5,60 +5,44 @@ import inspect
 from euroeval import exceptions
 
 
-def test_all_classes_are_exceptions() -> None:
-    """Test that all classes in `exceptions` are exceptions."""
-    all_classes = [
-        getattr(exceptions, obj_name)
-        for obj_name in dir(exceptions)
-        if not obj_name.startswith("_")
-        and inspect.isclass(getattr(exceptions, obj_name))
-    ]
-    for obj in all_classes:
-        assert issubclass(obj, Exception), f"Class {obj.__name__} is not an exception."
+class TestBaseExceptions:
+    """Tests for base exception classes."""
 
+    def test_hugging_face_hub_down_default_message(self) -> None:
+        """Test HuggingFaceHubDown with default message."""
+        exc = exceptions.HuggingFaceHubDown()
+        assert exc.message == "The Hugging Face Hub is currently down."
 
-class TestNeedsExtraInstalled:
-    """Tests for the NeedsExtraInstalled exception."""
+    def test_invalid_benchmark_custom_message(self) -> None:
+        """Test InvalidBenchmark with custom message."""
+        custom_msg = "Custom error message"
+        exc = exceptions.InvalidBenchmark(message=custom_msg)
+        assert exc.message == custom_msg
 
-    def test_needs_extra_installed_message_format(self) -> None:
-        """Test that message contains extra name."""
-        extra_name = "test-extra"
-        exc = exceptions.NeedsExtraInstalled(extra=extra_name)
+    def test_invalid_benchmark_default_message(self) -> None:
+        """Test InvalidBenchmark with default message."""
+        exc = exceptions.InvalidBenchmark()
+        assert exc.message == "This model cannot be benchmarked on the given dataset."
 
-        assert extra_name in exc.message
-        assert "euroeval" in exc.message
-        assert extra_name in exc.message
-        assert exc.extra == extra_name
+    def test_invalid_model_default_message(self) -> None:
+        """Test InvalidModel with default message."""
+        exc = exceptions.InvalidModel()
+        assert exc.message == "The model cannot be benchmarked on any datasets."
 
+    def test_invalid_task_default_message(self) -> None:
+        """Test InvalidTask with default message."""
+        exc = exceptions.InvalidTask()
+        assert exc.message == "The task is invalid."
 
-class TestNeedsManualDependency:
-    """Tests for the NeedsManualDependency exception."""
+    def test_nan_value_in_model_output_default_message(self) -> None:
+        """Test NaNValueInModelOutput with default message."""
+        exc = exceptions.NaNValueInModelOutput()
+        assert exc.message == "There is a NaN value in the model output."
 
-    def test_needs_manual_dependency_message_format(self) -> None:
-        """Test that message contains package name."""
-        package_name = "test-package"
-        exc = exceptions.NeedsManualDependency(package=package_name)
-
-        assert package_name in exc.message
-        assert "pip install" in exc.message
-        assert exc.package == package_name
-
-
-class TestNeedsSystemDependency:
-    """Tests for the NeedsSystemDependency exception."""
-
-    def test_needs_system_dependency_message_format(self) -> None:
-        """Test that message contains dependency and instructions."""
-        dependency = "test-dependency"
-        instructions = "Please install it using your package manager."
-        exc = exceptions.NeedsSystemDependency(
-            dependency=dependency, instructions=instructions
-        )
-
-        assert dependency in exc.message
-        assert instructions in exc.message
-        assert exc.dependency == dependency
-        assert instructions in exc.message
+    def test_no_internet_connection_default_message(self) -> None:
+        """Test NoInternetConnection with default message."""
+        exc = exceptions.NoInternetConnection()
+        assert exc.message == "There is currently no internet connection."
 
 
 class TestNeedsAdditionalArgument:
@@ -105,41 +89,57 @@ class TestNeedsEnvironmentVariable:
         assert exc.env_var == env_var
 
 
-class TestBaseExceptions:
-    """Tests for base exception classes."""
+class TestNeedsExtraInstalled:
+    """Tests for the NeedsExtraInstalled exception."""
 
-    def test_invalid_benchmark_default_message(self) -> None:
-        """Test InvalidBenchmark with default message."""
-        exc = exceptions.InvalidBenchmark()
-        assert exc.message == "This model cannot be benchmarked on the given dataset."
+    def test_needs_extra_installed_message_format(self) -> None:
+        """Test that message contains extra name."""
+        extra_name = "test-extra"
+        exc = exceptions.NeedsExtraInstalled(extra=extra_name)
 
-    def test_invalid_benchmark_custom_message(self) -> None:
-        """Test InvalidBenchmark with custom message."""
-        custom_msg = "Custom error message"
-        exc = exceptions.InvalidBenchmark(message=custom_msg)
-        assert exc.message == custom_msg
+        assert extra_name in exc.message
+        assert "euroeval" in exc.message
+        assert extra_name in exc.message
+        assert exc.extra == extra_name
 
-    def test_invalid_model_default_message(self) -> None:
-        """Test InvalidModel with default message."""
-        exc = exceptions.InvalidModel()
-        assert exc.message == "The model cannot be benchmarked on any datasets."
 
-    def test_invalid_task_default_message(self) -> None:
-        """Test InvalidTask with default message."""
-        exc = exceptions.InvalidTask()
-        assert exc.message == "The task is invalid."
+class TestNeedsManualDependency:
+    """Tests for the NeedsManualDependency exception."""
 
-    def test_hugging_face_hub_down_default_message(self) -> None:
-        """Test HuggingFaceHubDown with default message."""
-        exc = exceptions.HuggingFaceHubDown()
-        assert exc.message == "The Hugging Face Hub is currently down."
+    def test_needs_manual_dependency_message_format(self) -> None:
+        """Test that message contains package name."""
+        package_name = "test-package"
+        exc = exceptions.NeedsManualDependency(package=package_name)
 
-    def test_no_internet_connection_default_message(self) -> None:
-        """Test NoInternetConnection with default message."""
-        exc = exceptions.NoInternetConnection()
-        assert exc.message == "There is currently no internet connection."
+        assert package_name in exc.message
+        assert "pip install" in exc.message
+        assert exc.package == package_name
 
-    def test_nan_value_in_model_output_default_message(self) -> None:
-        """Test NaNValueInModelOutput with default message."""
-        exc = exceptions.NaNValueInModelOutput()
-        assert exc.message == "There is a NaN value in the model output."
+
+class TestNeedsSystemDependency:
+    """Tests for the NeedsSystemDependency exception."""
+
+    def test_needs_system_dependency_message_format(self) -> None:
+        """Test that message contains dependency and instructions."""
+        dependency = "test-dependency"
+        instructions = "Please install it using your package manager."
+        exc = exceptions.NeedsSystemDependency(
+            dependency=dependency, instructions=instructions
+        )
+
+        assert dependency in exc.message
+        assert instructions in exc.message
+        assert exc.dependency == dependency
+        assert instructions in exc.message
+
+
+def test_all_classes_are_exceptions() -> None:
+    """Test that all classes in `exceptions` are exceptions."""
+    all_classes = [
+        getattr(exceptions, obj_name)
+        for obj_name in dir(exceptions)
+        if not obj_name.startswith("_")
+        and inspect.isclass(getattr(exceptions, obj_name))
+    ]
+    for obj in all_classes:
+        assert issubclass(obj, Exception), f"Class {obj.__name__} is not an exception."

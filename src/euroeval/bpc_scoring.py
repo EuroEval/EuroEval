@@ -17,6 +17,68 @@ from .logging_utils import log_once
 from .types import Tokeniser
 
 
+def compute_bpc_scores_for_vllm_outputs(
+    raw_outputs: c.Sequence["RequestOutput"], inputs: dict, tokeniser: Tokeniser
+) -> list[float] | None:
+    """Compute BPC scores from vLLM outputs.
+
+    High-level wrapper that reads the pre-computed gold answer texts and computes BPC
+    scores.
+
+    Args:
+        raw_outputs: Raw outputs from vLLM with prompt_logprobs.
+        inputs:
+            Model inputs containing the ``bpc_prompt``, ``bpc_answer_start``,
+            ``bpc_answer_text`` and ``bpc_answer_char_count`` columns produced during
+            dataset preparation.
+        tokeniser: Tokeniser for tokenisation.
+
+    Returns:
+        BPC scores, or None if there are no answer texts to score.
+
+    Raises:
+        InvalidModel:
+            If the active vLLM backend does not return per-token prompt logprobs,
+            which are mandatory for BPC scoring (e.g. the Apple Metal plugin).
+    """
+    # The gold answer texts are derived once during dataset preparation and carried in
+    # the `bpc_answer_text` column, guaranteeing they match the answers appended to
+    # `bpc_prompt`. An absent column or all-empty texts means the task group has no
+    # scoreable answer, so BPC is skipped.
+    answer_texts = inputs.get("bpc_answer_text")
+    if not answer_texts or all(answer == "" for answer in answer_texts):
+        return None
+
+    # Per-token prompt logprobs are mandatory for BPC. Some vLLM backends (notably the
+    # Apple Metal plugin `vllm_metal`) do not compute them and return an empty or
+    # degenerate structure (e.g. a single placeholder entry for a multi-token prompt),
+    # so detect that and fail fast with clear guidance instead of silently reporting
+    # infinite scores.
+    backend_provides_prompt_logprobs = all(
+        raw_output.prompt_logprobs is not None
+        and raw_output.prompt_token_ids is not None
+        and len(raw_output.prompt_logprobs) >= len(raw_output.prompt_token_ids)
+        for raw_output in raw_outputs
+    )
+    if not backend_provides_prompt_logprobs:
+        raise InvalidModel(
+            "Bits-per-character (BPC) scoring requires per-token prompt logprobs, but "
+            "the active vLLM backend did not return them. This is a known limitation "
+            "of the Apple Metal plugin (`vllm_metal`), which does not compute prompt "
+            "logprobs; BPC scoring is currently only supported on the CUDA vLLM "
+            "backend."
+        )
+
+    return compute_bpc_scores(
+        raw_outputs=raw_outputs,
+        prompts=inputs["bpc_prompt"],
+        answer_texts=answer_texts,
+        answer_start_indices=inputs["bpc_answer_start"],
+        tokeniser=tokeniser,
+        answer_char_counts=inputs.get("bpc_answer_char_count"),
+    )
+
+
 def compute_bpc_scores(
     raw_outputs: c.Sequence["RequestOutput"],
     prompts: c.Sequence[str],
@@ -144,65 +206,3 @@ def compute_bpc_scores(
         bpc_scores.append(bpc)
 
     return bpc_scores
-
-
-def compute_bpc_scores_for_vllm_outputs(
-    raw_outputs: c.Sequence["RequestOutput"], inputs: dict, tokeniser: Tokeniser
-) -> list[float] | None:
-    """Compute BPC scores from vLLM outputs.
-
-    High-level wrapper that reads the pre-computed gold answer texts and computes BPC
-    scores.
-
-    Args:
-        raw_outputs: Raw outputs from vLLM with prompt_logprobs.
-        inputs:
-            Model inputs containing the ``bpc_prompt``, ``bpc_answer_start``,
-            ``bpc_answer_text`` and ``bpc_answer_char_count`` columns produced during
-            dataset preparation.
-        tokeniser: Tokeniser for tokenisation.
-
-    Returns:
-        BPC scores, or None if there are no answer texts to score.
-
-    Raises:
-        InvalidModel:
-            If the active vLLM backend does not return per-token prompt logprobs,
-            which are mandatory for BPC scoring (e.g. the Apple Metal plugin).
-    """
-    # The gold answer texts are derived once during dataset preparation and carried in
-    # the `bpc_answer_text` column, guaranteeing they match the answers appended to
-    # `bpc_prompt`. An absent column or all-empty texts means the task group has no
-    # scoreable answer, so BPC is skipped.
-    answer_texts = inputs.get("bpc_answer_text")
-    if not answer_texts or all(answer == "" for answer in answer_texts):
-        return None
-
-    # Per-token prompt logprobs are mandatory for BPC. Some vLLM backends (notably the
-    # Apple Metal plugin `vllm_metal`) do not compute them and return an empty or
-    # degenerate structure (e.g. a single placeholder entry for a multi-token prompt),
-    # so detect that and fail fast with clear guidance instead of silently reporting
-    # infinite scores.
-    backend_provides_prompt_logprobs = all(
-        raw_output.prompt_logprobs is not None
-        and raw_output.prompt_token_ids is not None
-        and len(raw_output.prompt_logprobs) >= len(raw_output.prompt_token_ids)
-        for raw_output in raw_outputs
-    )
-    if not backend_provides_prompt_logprobs:
-        raise InvalidModel(
-            "Bits-per-character (BPC) scoring requires per-token prompt logprobs, but "
-            "the active vLLM backend did not return them. This is a known limitation "
-            "of the Apple Metal plugin (`vllm_metal`), which does not compute prompt "
-            "logprobs; BPC scoring is currently only supported on the CUDA vLLM "
-            "backend."
-        )
-
-    return compute_bpc_scores(
-        raw_outputs=raw_outputs,
-        prompts=inputs["bpc_prompt"],
-        answer_texts=answer_texts,
-        answer_start_indices=inputs["bpc_answer_start"],
-        tokeniser=tokeniser,
-        answer_char_counts=inputs.get("bpc_answer_char_count"),
-    )

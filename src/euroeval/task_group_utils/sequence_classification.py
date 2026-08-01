@@ -5,7 +5,6 @@ import logging
 import re
 import typing as t
 
-import numpy as np
 from transformers.trainer_utils import EvalPrediction
 
 from ..closest_match import get_closest_match
@@ -13,7 +12,8 @@ from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark
 from ..string_utils import extract_multiple_choice_labels
 from ..types import Predictions
-from ..utils import log_once, raise_if_model_output_contains_nan_values
+from ..utils import log_once
+from ._common import compute_simple_metrics, normalise_model_outputs
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -51,21 +51,11 @@ def compute_metrics(
         A dictionary with the names of the metrics as keys and the metric values as
         values.
     """
-    model_outputs, labels = model_outputs_and_labels
+    _, labels, predictions = normalise_model_outputs(
+        model_outputs_and_labels=model_outputs_and_labels
+    )
+
     label2id = {label: idx for idx, label in dataset_config.id2label.items()}
-
-    # If the model outputs is a pair, then the first element corresponds to the model
-    # predictions
-    if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
-        model_outputs = model_outputs[0]
-
-    model_output_dtype = np.asarray(model_outputs).dtype
-    if model_output_dtype in [np.float16, np.float32, np.float64]:
-        predictions = np.asarray(model_outputs).argmax(axis=-1)
-    else:
-        predictions = model_outputs
-
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     prompt_label_to_label_mapping = {
         prompt_label: label
@@ -99,22 +89,13 @@ def compute_metrics(
         label2id[label.lower()] if isinstance(label, str) else label for label in labels
     ]
 
-    results: dict[str, float] = dict()
-    for metric in dataset_config.task.metrics:
-        score: float | None = metric(
-            predictions=predictions,
-            references=label_ids,
-            dataset=dataset,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-        )
-
-        # The metric returns None if we are running on multi-GPU and the current
-        # process is not the main process
-        if score is not None:
-            results[metric.name] = score
-
-    return results
+    return compute_simple_metrics(
+        predictions=predictions,  # ty: ignore[invalid-argument-type]
+        references=label_ids,  # ty: ignore[invalid-argument-type]
+        dataset=dataset,
+        dataset_config=dataset_config,
+        benchmark_config=benchmark_config,
+    )
 
 
 def extract_labels_from_generation(

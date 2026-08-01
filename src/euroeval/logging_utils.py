@@ -24,86 +24,26 @@ from .caching_utils import cache_arguments
 logger = logging.getLogger("euroeval")
 
 
-def get_pbar(*tqdm_args, **tqdm_kwargs) -> tqdm:
-    """Get a progress bar for vLLM with custom hard-coded arguments.
+def adjust_logging_level(verbose: bool, ignore_testing: bool = False) -> int:
+    """Adjust the logging level based on verbosity.
 
     Args:
-        *tqdm_args:
-            Positional arguments to pass to tqdm.
-        **tqdm_kwargs:
-            Additional keyword arguments to pass to tqdm.
+        verbose:
+            Whether to output additional output.
+        ignore_testing:
+            Whether to ignore the testing flag.
 
     Returns:
-        A tqdm progress bar.
+        The logging level that was set.
     """
-    tqdm_kwargs = dict(colour="yellow", ascii="—▰", leave=False) | tqdm_kwargs
-    tqdm_kwargs["desc"] = colored(
-        text=tqdm_kwargs.get("desc", "Processing"), color="light_yellow"
-    )
-    return tqdm(*tqdm_args, **tqdm_kwargs)
-
-
-def log(message: str, level: int, colour: str | None = None) -> None:
-    """Log a message.
-
-    Args:
-        message:
-            The message to log.
-        level:
-            The logging level. Defaults to logging.INFO.
-        colour:
-            The colour to use for the message. If None, a default colour will be used
-            based on the logging level.
-
-    Raises:
-        ValueError:
-            If the logging level is invalid.
-    """
-    match level:
-        case logging.DEBUG:
-            message = colored(
-                text=(
-                    "[DEBUG] "
-                    + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    + f" · {message}"
-                ),
-                color=colour or "light_blue",
-            )
-            logger.debug(message)
-        case logging.INFO:
-            if colour is not None:
-                message = colored(text=message, color=colour)
-            logger.info(message)
-        case logging.WARNING:
-            message = colored(text=message, color=colour or "light_red")
-            logger.warning(message)
-        case logging.ERROR:
-            message = colored(text=message, color=colour or "red")
-            logger.error(message)
-        case logging.CRITICAL:
-            message = colored(text=message, color=colour or "red")
-            logger.critical(message)
-        case _:
-            raise ValueError(f"Invalid logging level: {level}")
-
-
-@cache_arguments("message")
-def log_once(message: str, level: int, prefix: str = "") -> None:
-    """Log a message once.
-
-    This is ensured by caching the "message" argument and only logging it the first time
-    this function is called with that message.
-
-    Args:
-        message:
-            The message to log.
-        level:
-            The logging level. Defaults to logging.INFO.
-        prefix:
-            A prefix to add to the message, which is not considered when determining if
-            the message has been logged before.
-    """
-    log(message=prefix + message, level=level)
+    if hasattr(sys, "_called_from_test") and not ignore_testing:
+        logging_level = logging.CRITICAL
+    elif verbose:
+        logging_level = logging.DEBUG
+    else:
+        logging_level = logging.INFO
+    logger.setLevel(logging_level)
+    return logging_level
 
 
 def block_terminal_output() -> None:
@@ -178,6 +118,25 @@ def block_terminal_output() -> None:
     logging.getLogger("accelerate").setLevel(logging.CRITICAL)
 
 
+def get_pbar(*tqdm_args, **tqdm_kwargs) -> tqdm:
+    """Get a progress bar for vLLM with custom hard-coded arguments.
+
+    Args:
+        *tqdm_args:
+            Positional arguments to pass to tqdm.
+        **tqdm_kwargs:
+            Additional keyword arguments to pass to tqdm.
+
+    Returns:
+        A tqdm progress bar.
+    """
+    tqdm_kwargs = dict(colour="yellow", ascii="—▰", leave=False) | tqdm_kwargs
+    tqdm_kwargs["desc"] = colored(
+        text=tqdm_kwargs.get("desc", "Processing"), color="light_yellow"
+    )
+    return tqdm(*tqdm_args, **tqdm_kwargs)
+
+
 class no_terminal_output:
     """Context manager that suppresses all terminal output."""
 
@@ -192,14 +151,6 @@ class no_terminal_output:
         self.devnull_file: TextIOWrapper | None = None
         self._original_stdout_fd: int | None = None
         self._original_stderr_fd: int | None = None
-
-    def _log_windows_warning(self) -> None:
-        """Log a warning about Windows not supporting blocking terminal output."""
-        log_once(
-            "Your operating system (probably Windows) does not support blocking "
-            "terminal output, so expect more messy output - sorry!",
-            level=logging.WARNING,
-        )
 
     def __enter__(self) -> None:
         """Suppress all terminal output."""
@@ -252,24 +203,73 @@ class no_terminal_output:
             if self.devnull_file is not None:
                 self.devnull_file.close()
 
+    def _log_windows_warning(self) -> None:
+        """Log a warning about Windows not supporting blocking terminal output."""
+        log_once(
+            "Your operating system (probably Windows) does not support blocking "
+            "terminal output, so expect more messy output - sorry!",
+            level=logging.WARNING,
+        )
 
-def adjust_logging_level(verbose: bool, ignore_testing: bool = False) -> int:
-    """Adjust the logging level based on verbosity.
+
+@cache_arguments("message")
+def log_once(message: str, level: int, prefix: str = "") -> None:
+    """Log a message once.
+
+    This is ensured by caching the "message" argument and only logging it the first time
+    this function is called with that message.
 
     Args:
-        verbose:
-            Whether to output additional output.
-        ignore_testing:
-            Whether to ignore the testing flag.
-
-    Returns:
-        The logging level that was set.
+        message:
+            The message to log.
+        level:
+            The logging level. Defaults to logging.INFO.
+        prefix:
+            A prefix to add to the message, which is not considered when determining if
+            the message has been logged before.
     """
-    if hasattr(sys, "_called_from_test") and not ignore_testing:
-        logging_level = logging.CRITICAL
-    elif verbose:
-        logging_level = logging.DEBUG
-    else:
-        logging_level = logging.INFO
-    logger.setLevel(logging_level)
-    return logging_level
+    log(message=prefix + message, level=level)
+
+
+def log(message: str, level: int, colour: str | None = None) -> None:
+    """Log a message.
+
+    Args:
+        message:
+            The message to log.
+        level:
+            The logging level. Defaults to logging.INFO.
+        colour:
+            The colour to use for the message. If None, a default colour will be used
+            based on the logging level.
+
+    Raises:
+        ValueError:
+            If the logging level is invalid.
+    """
+    match level:
+        case logging.DEBUG:
+            message = colored(
+                text=(
+                    "[DEBUG] "
+                    + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    + f" · {message}"
+                ),
+                color=colour or "light_blue",
+            )
+            logger.debug(message)
+        case logging.INFO:
+            if colour is not None:
+                message = colored(text=message, color=colour)
+            logger.info(message)
+        case logging.WARNING:
+            message = colored(text=message, color=colour or "light_red")
+            logger.warning(message)
+        case logging.ERROR:
+            message = colored(text=message, color=colour or "red")
+            logger.error(message)
+        case logging.CRITICAL:
+            message = colored(text=message, color=colour or "red")
+            logger.critical(message)
+        case _:
+            raise ValueError(f"Invalid logging level: {level}")

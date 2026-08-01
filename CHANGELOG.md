@@ -9,21 +9,50 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added support for evaluating encoder models on multiple-choice tasks using the native
+  `AutoModelForMultipleChoice` head (with `DataCollatorForMultipleChoice`). Encoder
+  models are now enabled on knowledge, multiple-choice-reading-comprehension,
+  common-sense-reasoning, european-values, multiple-choice-stereotype-bias, and
+  multiple-choice tasks. This was contributed by @pariidanDKE ✨
 - Added full support for hallucination detection for all languages now, and now marked
   as official.
+- Added the knowledge datasets `eu-mmlu-cs`, `eu-mmlu-de`, `eu-mmlu-el`, `eu-mmlu-fr`,
+  `eu-mmlu-hr`, `eu-mmlu-hu`, `eu-mmlu-it`, `eu-mmlu-lt`, `eu-mmlu-nl`, `eu-mmlu-pl`,
+  `eu-mmlu-pt`, `eu-mmlu-ro`, `eu-mmlu-sk` and `eu-mmlu-sl`, based on the
+  [EU-MMLU dataset](https://huggingface.co/datasets/EC-DGT-AI/EU-MMLU). Unlike the
+  existing `mmlu-*` and `global-mmlu-*` datasets, these were translated by professional
+  translators at the European Commission's Directorate-General for Translation and by
+  students from the European Master's in Translation network, rather than by machine
+  translation. They are marked as `unofficial` for now.
 
 ### Changed
 
-Swapped official datasets for four languages (all performed by the
-`swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
-
-- Croatian: `mmlu-hr` → `include-hr`
-- Dutch: `scala-nl` → `dutch-cola`
-- Dutch: `mmlu-nl` → `include-nl`, `multiloko-nl`
-- Dutch: `hellaswag-nl` → `winogrande-nl`
+- Bumped minimum `transformers` version to 5.14.0 (required for XLMRoberta/Camembert
+  `ForMultipleChoice` heads; see huggingface/transformers#47147).
+- Swapped official datasets for four languages (all performed by the
+  `swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
+  - Croatian: `mmlu-hr` → `include-hr`
+  - Dutch: `scala-nl` → `dutch-cola`, `mmlu-nl` → `include-nl`, `multiloko-nl`
+  - French: `mmlu-fr` → `include-fr`, `multiloko-fr`
+  - German: `hellaswag-de` → `winogrande-de`, `mmlu-de` → `include-de`, `multiloko-de`
+  - Greek: `global-mmlu-el` → `greek-mmlu`
+  - Hungarian: `mmlu-hu` → `include-hu`
+  - Portuguese: `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
 
 ### Fixed
 
+- Fixed loading of Mixture-of-Experts models whose expert intermediate size is not a
+  multiple of 128 after being sharded across multiple GPUs (e.g.
+  `JetBrains/Mellum2-12B-A2.5B-Base` on Blackwell GPUs), which previously crashed vLLM
+  with a "second dimension of weights must be a multiple of 128" error during memory
+  profiling. EuroEval now reduces the tensor parallel size up front so the per-GPU
+  expert intermediate size stays 128-aligned, as the crash originates in a worker
+  subprocess and never surfaces to be retried reactively.
+- Fixed a model ID error for hallucination detection models.
+- Fixed detection of models that report `temperature` as an unsupported parameter via a
+  `does not support parameters: [...'temperature'...]` error message. Such models now
+  have `temperature` removed and are retried, consistent with the existing handling of
+  `stop`, `logprobs` and `top_logprobs`.
 - Fixed `ValueError` in `prepare_train_examples` when the CLS token ID is not present
   in tokenised input IDs for certain tokenisers (e.g. Qwen3 embedding models,
   codefuse-ai/F2LLM-v2-0.6B). Falls back to position 0 with a debug log message.
@@ -31,6 +60,21 @@ Swapped official datasets for four languages (all performed by the
   parameters (e.g. `#thinking` vs `#no-thinking`). The cache file now includes the
   parameter in the filename, preventing incorrect cache reuse when using the `--debug`
   flag.
+- vLLM model loading now automatically falls back to single-GPU tensor parallelism when
+  loading models whose attention head count is not divisible by the default tensor
+  parallel size. This fixes evaluation failures for models like SmolLM series (9/15
+  heads) on multi-GPU setups, which previously raised errors like "Total number of
+  attention heads (X) must be divisible by tensor parallel size (Y)".
+- Fixed `KeyError: 'rope_theta'` when loading models whose `config.json` still uses the
+  legacy top-level `rope_theta`/`rope_scaling` fields with a vLLM implementation that
+  expects the nested `rope_parameters` structure introduced in transformers 5.x (e.g.
+  OLMo-3 models such as `allenai/Olmo-3-1125-32B`). The model config now transcribes the
+  legacy fields into the nested structure, applied to an explicit allowlist of confirmed
+  model families.
+- Fixed handling of OLMo-3 models with the nested `rope_parameters` format from
+  transformers 5.x (containing `full_attention` and `sliding_attention` sub-dicts). The
+  override now flattens `full_attention` contents with top-level `rope_theta` for vLLM
+  compatibility, while preserving already-flat `rope_parameters` without modification.
 
 ## [v17.7.0] - 2026-07-22
 

@@ -13,6 +13,21 @@ from euroeval.metrics import (
 )
 
 
+def test_accuracy_ambig_accepts_numpy_ints(
+    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
+) -> None:
+    """Accept numpy integer predictions."""
+    ds = make_dataset("ambig", [1, 2, 0], None, 3)
+    preds = np.array([0, 0, 0], dtype=np.int64)
+    assert accuracy_ambig_metric(
+        predictions=preds,  # ty: ignore[invalid-argument-type]
+        references=[],
+        dataset=ds,
+        dataset_config=None,
+        benchmark_config=None,
+    ) == pytest.approx(1.0)
+
+
 @pytest.fixture(scope="module")
 def make_dataset() -> Callable[[str, Sequence[int], int | None, int], Dataset]:
     """Build small datasets with the columns needed by bias metrics.
@@ -56,43 +71,7 @@ def make_dataset() -> Callable[[str, Sequence[int], int | None, int], Dataset]:
     return _make
 
 
-# --- BiasA tests (ambiguous contexts) ---
-
-
-def test_biasa_all_unknowns(
-    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
-) -> None:
-    """Return zero bias when only unknown predictions appear."""
-    ds = make_dataset("ambig", [1, 2, 0], None, 3)
-    preds = [0, 0, 0]
-    # references arg is ignored by the metric, so we can pass an empty list
-    assert bias_ambig_metric(preds, [], ds, None, None) == pytest.approx(0.0)
-
-
-def test_biasa_stereo_and_counter(
-    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
-) -> None:
-    """Compute bias from the difference between stereo and counter picks."""
-    ds = make_dataset("ambig", [1, 2, 0], None, 5)
-    preds = [1, 1, 1, 2, 2]  # three stereotype picks, two counter
-    assert bias_ambig_metric(preds, [], ds, None, None) == pytest.approx((3 - 2) / 5)
-
-
-def test_biasa_ignores_undetectable(
-    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
-) -> None:
-    """Ignore predictions that are not present in label mappings."""
-    # one prediction not in label mapping => discarded,
-    # but still counts toward n_ambiguous
-    ds = make_dataset("ambig", [1, 2, 0], None, 3)
-    preds = [1, "X", 2]
-    # stereo=1, counter=2 => (1-1)/3 = 0.0
-    assert bias_ambig_metric(preds, [], ds, None, None) == pytest.approx(0.0)
-
-
 # --- AccuracyA tests (ambiguous contexts) ---
-
-
 def test_accuracy_ambig_all_unknown(
     make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
 ) -> None:
@@ -109,39 +88,6 @@ def test_accuracy_ambig_mixed(
     ds = make_dataset("ambig", [1, 2, 0], None, 4)
     preds = [0, 1, 0, 2]  # two correct 'unknown', two wrong
     assert accuracy_ambig_metric(preds, [], ds, None, None) == pytest.approx(0.5)
-
-
-def test_accuracy_ambig_accepts_numpy_ints(
-    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
-) -> None:
-    """Accept numpy integer predictions."""
-    ds = make_dataset("ambig", [1, 2, 0], None, 3)
-    preds = np.array([0, 0, 0], dtype=np.int64)
-    assert accuracy_ambig_metric(
-        predictions=preds,  # ty: ignore[invalid-argument-type]
-        references=[],
-        dataset=ds,
-        dataset_config=None,
-        benchmark_config=None,
-    ) == pytest.approx(1.0)
-
-
-# --- Bias-adjusted accuracy metrics ---
-
-
-def test_bias_adjusted_accuracy_ambig_zero_at_chance(
-    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
-) -> None:
-    """Keep accuracy unchanged when bias is zero at chance."""
-    ds = make_dataset("ambig", [1, 2, 0], None, 3)
-    preds = [
-        0,
-        1,
-        2,
-    ]  # 1 correct unknown, one stereo, one counter => acc = 1/3, bias = 0
-    assert bias_adjusted_accuracy_ambig_metric(
-        preds, [], ds, None, None
-    ) == pytest.approx(1 / 3)
 
 
 def test_bias_adjusted_accuracy_ambig_above_chance_low_bias(
@@ -166,3 +112,51 @@ def test_bias_adjusted_accuracy_ambig_penalizes_bias(
     assert bias_adjusted_accuracy_ambig_metric(
         preds, [], ds, None, None
     ) == pytest.approx(0.0)
+
+
+# --- Bias-adjusted accuracy metrics ---
+def test_bias_adjusted_accuracy_ambig_zero_at_chance(
+    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
+) -> None:
+    """Keep accuracy unchanged when bias is zero at chance."""
+    ds = make_dataset("ambig", [1, 2, 0], None, 3)
+    preds = [
+        0,
+        1,
+        2,
+    ]  # 1 correct unknown, one stereo, one counter => acc = 1/3, bias = 0
+    assert bias_adjusted_accuracy_ambig_metric(
+        preds, [], ds, None, None
+    ) == pytest.approx(1 / 3)
+
+
+# --- BiasA tests (ambiguous contexts) ---
+def test_biasa_all_unknowns(
+    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
+) -> None:
+    """Return zero bias when only unknown predictions appear."""
+    ds = make_dataset("ambig", [1, 2, 0], None, 3)
+    preds = [0, 0, 0]
+    # references arg is ignored by the metric, so we can pass an empty list
+    assert bias_ambig_metric(preds, [], ds, None, None) == pytest.approx(0.0)
+
+
+def test_biasa_ignores_undetectable(
+    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
+) -> None:
+    """Ignore predictions that are not present in label mappings."""
+    # one prediction not in label mapping => discarded,
+    # but still counts toward n_ambiguous
+    ds = make_dataset("ambig", [1, 2, 0], None, 3)
+    preds = [1, "X", 2]
+    # stereo=1, counter=2 => (1-1)/3 = 0.0
+    assert bias_ambig_metric(preds, [], ds, None, None) == pytest.approx(0.0)
+
+
+def test_biasa_stereo_and_counter(
+    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
+) -> None:
+    """Compute bias from the difference between stereo and counter picks."""
+    ds = make_dataset("ambig", [1, 2, 0], None, 5)
+    preds = [1, 1, 1, 2, 2]  # three stereotype picks, two counter
+    assert bias_ambig_metric(preds, [], ds, None, None) == pytest.approx((3 - 2) / 5)

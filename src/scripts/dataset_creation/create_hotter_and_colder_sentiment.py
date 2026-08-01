@@ -24,10 +24,6 @@ import joblib
 import pandas as pd
 import requests as rq
 from bs4 import BeautifulSoup, NavigableString, Tag
-
-# These constants are used only inside pandas .query() strings, so the linter
-# cannot see the use.
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa: F401
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm

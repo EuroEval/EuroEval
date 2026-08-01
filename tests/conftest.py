@@ -31,7 +31,7 @@ def pytest_unconfigure() -> None:
     delattr(sys, "_called_from_test")
 
 
-if os.environ.get("CHECK_DATASET") is not None:
+if os.environ.get("CHECK_DATASET"):
     dataset_configs = [
         dataset_config
         for dataset_config in get_all_dataset_configs(
@@ -59,20 +59,51 @@ else:
 
 
 @pytest.fixture(scope="session")
-def auth() -> Generator[str | bool, None, None]:
+def auth() -> Generator[str | None, None, None]:
     """Yields the authentication token to the Hugging Face Hub.
 
     Yields:
-        The authentication token to the Hugging Face Hub.
+        The authentication token to the Hugging Face Hub, or None for unauthenticated
+        access.
     """
     # Get the authentication token to the Hugging Face Hub
-    auth = os.environ.get("HUGGINGFACE_API_KEY", True)
+    auth = os.environ.get("HUGGINGFACE_API_KEY")
 
-    # Ensure that the token does not contain quotes or whitespace
-    if isinstance(auth, str):
+    # Treat empty strings as missing token (use unauthenticated access)
+    if not auth:
+        auth = None
+    elif isinstance(auth, str):
+        # Ensure that the token does not contain quotes or whitespace
         auth = auth.strip(" \"'")
 
     yield auth
+
+
+@pytest.fixture(scope="module")
+def cli_params() -> Generator[dict[str | None, ParamType], None, None]:
+    """Yields a dictionary of the CLI parameters.
+
+    Yields:
+        A dictionary of the CLI parameters.
+    """
+    ctx = benchmark.make_context(info_name="testing", args=["--model", "test-model"])
+    yield {p.name: p.type for p in benchmark.get_params(ctx)}
+
+
+@pytest.fixture(scope="session")
+def dataset_config() -> c.Generator[DatasetConfig, None, None]:
+    """Yields a dataset configuration used in tests.
+
+    Yields:
+        A dataset configuration used in tests.
+    """
+    yield DatasetConfig(
+        name="dataset",
+        pretty_name="Dataset",
+        source="dataset_id",
+        task=SENT,
+        languages=[DANISH],
+    )
 
 
 @pytest.fixture(scope="session")
@@ -141,6 +172,50 @@ def benchmark_config(
 
 
 @pytest.fixture(scope="session")
+def encoder_model_id() -> Generator[str, None, None]:
+    """Yields a model ID used in tests.
+
+    Yields:
+        A model ID used in tests.
+    """
+    yield "jonfd/electra-small-nordic"
+
+
+@pytest.fixture(scope="session")
+def generative_adapter_model_id() -> Generator[str, None, None]:
+    """Yields a generative adapter model ID used in tests.
+
+    Yields:
+        A generative adapter model ID used in tests.
+    """
+    yield "jekunz/smollm-135m-lora-fineweb-swedish"
+
+
+@pytest.fixture(scope="session")
+def generative_model_id() -> Generator[str, None, None]:
+    """Yields a generative model ID used in tests.
+
+    Yields:
+        A generative model ID used in tests.
+    """
+    yield "HuggingFaceTB/SmolLM2-135M"
+
+
+@pytest.fixture(
+    scope="session",
+    params=list(ACTIVE_LANGUAGES.values()),
+    ids=list(ACTIVE_LANGUAGES.keys()),
+)
+def language(request: pytest.FixtureRequest) -> Generator[str, None, None]:
+    """Yields a language used in tests.
+
+    Yields:
+        A language used in tests.
+    """
+    yield request.param
+
+
+@pytest.fixture(scope="session")
 def metric() -> Generator[HuggingFaceMetric, None, None]:
     """Yields a metric configuration used in tests.
 
@@ -153,6 +228,48 @@ def metric() -> Generator[HuggingFaceMetric, None, None]:
         huggingface_id="metric_id",
         results_key="metric_key",
     )
+
+
+@pytest.fixture(scope="session")
+def model_config() -> Generator[ModelConfig, None, None]:
+    """Yields a model configuration used in tests.
+
+    Yields:
+        A model configuration used in tests.
+    """
+    yield ModelConfig(
+        model_id="model_id",
+        revision="revision",
+        param=None,
+        task="task",
+        languages=[DANISH],
+        merge=False,
+        inference_backend=InferenceBackend.TRANSFORMERS,
+        model_type=ModelType.ENCODER,
+        fresh=True,
+        model_cache_dir="cache_dir",
+        adapter_base_model_id=None,
+    )
+
+
+@pytest.fixture(scope="session")
+def ollama_model_id() -> Generator[str, None, None]:
+    """Yields an Ollama model ID used in tests.
+
+    Yields:
+        An Ollama model ID used in tests.
+    """
+    yield "ollama_chat/smollm2:135m"
+
+
+@pytest.fixture(scope="session")
+def openai_model_id() -> Generator[str, None, None]:
+    """Yields an OpenAI model ID used in tests.
+
+    Yields:
+        An OpenAI model ID used in tests.
+    """
+    yield "gpt-4o-mini"
 
 
 @pytest.fixture(
@@ -179,116 +296,3 @@ def task(request: pytest.FixtureRequest) -> Generator[Task, None, None]:
         A dataset task used in tests.
     """
     yield request.param
-
-
-@pytest.fixture(
-    scope="session",
-    params=list(ACTIVE_LANGUAGES.values()),
-    ids=list(ACTIVE_LANGUAGES.keys()),
-)
-def language(request: pytest.FixtureRequest) -> Generator[str, None, None]:
-    """Yields a language used in tests.
-
-    Yields:
-        A language used in tests.
-    """
-    yield request.param
-
-
-@pytest.fixture(scope="session")
-def encoder_model_id() -> Generator[str, None, None]:
-    """Yields a model ID used in tests.
-
-    Yields:
-        A model ID used in tests.
-    """
-    yield "jonfd/electra-small-nordic"
-
-
-@pytest.fixture(scope="session")
-def generative_model_id() -> Generator[str, None, None]:
-    """Yields a generative model ID used in tests.
-
-    Yields:
-        A generative model ID used in tests.
-    """
-    yield "HuggingFaceTB/SmolLM2-135M"
-
-
-@pytest.fixture(scope="session")
-def generative_adapter_model_id() -> Generator[str, None, None]:
-    """Yields a generative adapter model ID used in tests.
-
-    Yields:
-        A generative adapter model ID used in tests.
-    """
-    yield "jekunz/smollm-135m-lora-fineweb-swedish"
-
-
-@pytest.fixture(scope="session")
-def openai_model_id() -> Generator[str, None, None]:
-    """Yields an OpenAI model ID used in tests.
-
-    Yields:
-        An OpenAI model ID used in tests.
-    """
-    yield "gpt-4o-mini"
-
-
-@pytest.fixture(scope="session")
-def ollama_model_id() -> Generator[str, None, None]:
-    """Yields an Ollama model ID used in tests.
-
-    Yields:
-        An Ollama model ID used in tests.
-    """
-    yield "ollama_chat/smollm2:135m"
-
-
-@pytest.fixture(scope="session")
-def model_config() -> Generator[ModelConfig, None, None]:
-    """Yields a model configuration used in tests.
-
-    Yields:
-        A model configuration used in tests.
-    """
-    yield ModelConfig(
-        model_id="model_id",
-        revision="revision",
-        param=None,
-        task="task",
-        languages=[DANISH],
-        merge=False,
-        inference_backend=InferenceBackend.TRANSFORMERS,
-        model_type=ModelType.ENCODER,
-        fresh=True,
-        model_cache_dir="cache_dir",
-        adapter_base_model_id=None,
-    )
-
-
-@pytest.fixture(scope="module")
-def cli_params() -> Generator[dict[str | None, ParamType], None, None]:
-    """Yields a dictionary of the CLI parameters.
-
-    Yields:
-        A dictionary of the CLI parameters.
-    """
-    ctx = benchmark.make_context(info_name="testing", args=["--model", "test-model"])
-    yield {p.name: p.type for p in benchmark.get_params(ctx)}
-
-
-@pytest.fixture(scope="session")
-def dataset_config() -> c.Generator[DatasetConfig, None, None]:
-    """Yields a dataset configuration used in tests.
-
-    Yields:
-        A dataset configuration used in tests.
-    """
-    yield DatasetConfig(
-        name="dataset",
-        pretty_name="Dataset",
-        source="dataset_id",
-        task=SENT,
-        languages=[DANISH],
-    )

@@ -12,29 +12,13 @@ from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 
 
-def format_row(row: dict[str, str]) -> dict[str, str]:
-    """Format the raw dataset into the columns needed for EuroEval.
-
-    Args:
-        row:
-            A row of the dataset as presented by HF Dataset.map().
-
-    Returns:
-        the row formatted for EuroEval
-    """
-    return {
-        "text": f"Zin 1: {row['sentence_A']}.\nZin 2: {row['sentence_B']}.",
-        "label": row[
-            "entailment_label"
-        ].lower(),  # labels already in the correct format
-        "split": {"TRAIN": "train", "TRIAL": "val", "TEST": "test"}[row["SemEval_set"]],
-    }
-
-
 def main() -> None:
     """Create the Dutch SICK-NL Entailment dataset and upload it to the HF Hub."""
     raw = Dataset.from_csv(
-        "https://raw.githubusercontent.com/gijswijnholds/sick_nl/refs/heads/master/data/tasks/sick_nl/SICK_NL.txt",
+        (
+            "https://raw.githubusercontent.com/gijswijnholds/sick_nl/"
+            "refs/heads/master/data/tasks/sick_nl/SICK_NL.txt"
+        ),
         sep="\t",
     )
     processed = raw.map(format_row, remove_columns=raw.column_names)
@@ -55,6 +39,25 @@ def main() -> None:
     dataset_id = "EuroEval/sick-nl"
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
+
+
+def format_row(row: dict[str, str]) -> dict[str, str]:
+    """Format the raw dataset into the columns needed for EuroEval.
+
+    Args:
+        row:
+            A row of the dataset as presented by HF Dataset.map().
+
+    Returns:
+        the row formatted for EuroEval
+    """
+    return {
+        "text": f"Zin 1: {row['sentence_A']}.\nZin 2: {row['sentence_B']}.",
+        "label": row[
+            "entailment_label"
+        ].lower(),  # labels already in the correct format
+        "split": {"TRAIN": "train", "TRIAL": "val", "TEST": "test"}[row["SemEval_set"]],
+    }
 
 
 if __name__ == "__main__":

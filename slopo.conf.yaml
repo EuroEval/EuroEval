@@ -1,0 +1,38 @@
+# Slopo configuration for EuroEval
+# Run: uv run slopo index && uv run slopo embed && uv run slopo analyze
+#
+# Before running, start the llama.cpp server:
+#   llama-server \
+#     --embedding \
+#     -m ~/local-models/jina-code-embeddings-0.5b-IQ4_XS.gguf \
+#     --port 8080 \
+#     --ctx-size 32768 \
+#     --pooling last
+#
+# Set environment variable (required for llama.cpp OpenAI compatibility):
+#   export LITELLM_DROP_PARAMS=true
+
+source_dir: src
+source_dir_exclude:
+  - "**/tests/**"
+  - "**/__pycache__/**"
+  - "**/*.pyc"
+  - "**/frontend/**"
+
+db_file: .slopo/slopo.db
+report_dir: .slopo/report
+ignore_file: .slopo/slopo.ignore.txt
+
+# Local embeddings with llama.cpp server
+# Model: jina-code-embeddings-0.5b-IQ4_XS (896 dimensions)
+embedding_model: openai/jina-code-embeddings-0.5b
+embedding_dimensions: 896
+embedding_api_base: http://localhost:8080/v1
+embedding_api_key: ""
+
+# Optional tuning (defaults shown)
+# similarity_threshold: 0.92
+# rerank_threshold: 0.94
+# body_node_count_threshold: 10
+# embedding_batch_size: 100
+# embedding_batch_chars: 100000

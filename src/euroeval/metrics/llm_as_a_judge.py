@@ -85,6 +85,49 @@ class LLMAsAJudgeMetric(Metric):
         # Add response format to the generation kwargs
         self.judge_kwargs["response_format"] = self.response_format
 
+    def _get_batch_scoring_fn(
+        self,
+        scoring_fn: ScoringFunction | None,
+        batch_scoring_fn: BatchScoringFunction | None,
+    ) -> BatchScoringFunction:
+        """Get the batch scoring function.
+
+        Args:
+            scoring_fn:
+                The scoring function to use.
+            batch_scoring_fn:
+                The batch scoring function to use.
+
+        Returns:
+            The batch scoring function.
+
+        Raises:
+            InvalidBenchmark:
+                If both or neither of the scoring functions are provided.
+        """
+        if scoring_fn is not None and batch_scoring_fn is not None:
+            raise InvalidBenchmark(
+                "Both `scoring_fn` and `batch_scoring_fn` are provided. Please "
+                "provide only one of them."
+            )
+        if scoring_fn is not None:
+            scoring_fn_nonnull = scoring_fn
+
+            def batch_fn(
+                outputs: list[BaseModel], dataset: "Dataset | None" = None
+            ) -> float:
+                return sum(scoring_fn_nonnull(output) for output in outputs) / len(
+                    outputs
+                )
+
+            return batch_fn
+        if batch_scoring_fn is not None:
+            return batch_scoring_fn
+        raise InvalidBenchmark(
+            "Neither `scoring_fn` nor `batch_scoring_fn` are provided. Please "
+            "provide one of them."
+        )
+
     def __call__(
         self,
         predictions: c.Sequence,
@@ -255,49 +298,6 @@ class LLMAsAJudgeMetric(Metric):
                 prediction=prediction, condition=self.condition_formatting_fn(condition)
             )
         return self.user_prompt.format(prediction=prediction)
-
-    def _get_batch_scoring_fn(
-        self,
-        scoring_fn: ScoringFunction | None,
-        batch_scoring_fn: BatchScoringFunction | None,
-    ) -> BatchScoringFunction:
-        """Get the batch scoring function.
-
-        Args:
-            scoring_fn:
-                The scoring function to use.
-            batch_scoring_fn:
-                The batch scoring function to use.
-
-        Returns:
-            The batch scoring function.
-
-        Raises:
-            InvalidBenchmark:
-                If both or neither of the scoring functions are provided.
-        """
-        if scoring_fn is not None and batch_scoring_fn is not None:
-            raise InvalidBenchmark(
-                "Both `scoring_fn` and `batch_scoring_fn` are provided. Please "
-                "provide only one of them."
-            )
-        if scoring_fn is not None:
-            scoring_fn_nonnull = scoring_fn
-
-            def batch_fn(
-                outputs: list[BaseModel], dataset: "Dataset | None" = None
-            ) -> float:
-                return sum(scoring_fn_nonnull(output) for output in outputs) / len(
-                    outputs
-                )
-
-            return batch_fn
-        if batch_scoring_fn is not None:
-            return batch_scoring_fn
-        raise InvalidBenchmark(
-            "Neither `scoring_fn` nor `batch_scoring_fn` are provided. Please "
-            "provide one of them."
-        )
 
 
 fluency_metric = LLMAsAJudgeMetric(

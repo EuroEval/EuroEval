@@ -512,6 +512,78 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-sl
 ```
 
+### Unofficial: EU-MMLU-sl
+
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 7 of the original
+57 subjects: college biology, college chemistry, college physics, global facts,
+international law, management and sociology. Unlike the other MMLU variants in EuroEval
+it was not machine translated - the translation was carried out by professional
+translators at the European Commission's Directorate-General for Translation, together
+with master's students from the European Master's in Translation network, as described
+in [this paper](https://arxiv.org/abs/2607.18432).
+
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 34 / 91 / 859 samples for training,
+validation and testing, respectively (so 984 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Napovejte število spektralnih črt v spektru EPR raztopine izotopno (13C) označenega metilnega radikala (13CH3•), ob predpostavki, da se črte ne prekrivajo.\nMožnosti:\na. 4\nb. 3\nc. 6\nd. 24",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Kolikšen delež Američanov se leta 2019 strinja, da se pri vodenju države gleda na korist vseh ljudi?\nMožnosti:\na. 31 %\nb. 46 %\nc. 61 %\nd. 76 %",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "V določeni populaciji ima eden od 400 ljudi raka, ki ga povzroča popolnoma recesivni alel b. Ob predpostavki, da je populacija v Hardy-Weinbergovem ravnovesju, kateri od naslednjih je pričakovani delež posameznikov, ki so nosilci alela b, vendar se pri njih ne pričakuje razvoj raka?\nMožnosti:\na. 1/400\nb. 19/400\nc. 20/400\nd. 38/400",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Naslednja so vprašanja z več možnostmi (z odgovori).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vprašanje: {text}
+  Odgovor: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vprašanje: {text}
+
+  Odgovorite na navedeno vprašanje z uporabo {labels_str}, in nič drugega.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset eu-mmlu-sl
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-sl

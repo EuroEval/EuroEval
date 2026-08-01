@@ -89,15 +89,26 @@ VALEU_PT_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
-RAGTRUTH_PT_CONFIG = DatasetConfig(
-    name="ragtruth-pt",
-    pretty_name="RAGTruth-pt",
-    source="EuroEval/ragtruth-translated-hallucinations-pt-mini",
-    task=HALLU,
-    languages=[PORTUGUESE],
-    train_split=None,
+
+ALBA_MCQ_PT_CONFIG = DatasetConfig(
+    name="alba-mcq-pt",
+    pretty_name="ALBA-MCQ",
+    source="EuroEval/euroeval-amalia-alba-mcq-pt",
+    task=KNOW,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    labels=["a", "b", "c"],
+    val_split=None,
 )
 
+CULTURA_VIVA_PT_CONFIG = DatasetConfig(
+    name="cultura-viva-pt",
+    pretty_name="CulturaVivaPT",
+    source="EuroEval/euroeval-amalia-cultura-viva-pt",
+    task=KNOW,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+)
+
+# Unofficial datasets ###
 
 MMLU_PT_CONFIG = DatasetConfig(
     name="mmlu-pt",
@@ -105,9 +116,8 @@ MMLU_PT_CONFIG = DatasetConfig(
     source="EuroEval/mmlu-pt-mini",
     task=KNOW,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    unofficial=True,
 )
-
-# Unofficial datasets ###
 
 IFEVAL_PT_CONFIG = DatasetConfig(
     name="ifeval-pt",
@@ -193,22 +203,21 @@ PT_COMPLETIONS_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-ALBA_MCQ_PT_CONFIG = DatasetConfig(
-    name="alba-mcq-pt",
-    pretty_name="ALBA-MCQ",
-    source="EuroEval/euroeval-amalia-alba-mcq-pt",
+EU_MMLU_PT_CONFIG = DatasetConfig(
+    name="eu-mmlu-pt",
+    pretty_name="EU-MMLU-pt",
+    source="EuroEval/eu-mmlu-pt",
     task=KNOW,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-    labels=["a", "b", "c"],
-    val_split=None,
     unofficial=True,
 )
 
-CULTURA_VIVA_PT_CONFIG = DatasetConfig(
-    name="cultura-viva-pt",
-    pretty_name="CulturaVivaPT",
-    source="EuroEval/euroeval-amalia-cultura-viva-pt",
-    task=KNOW,
-    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+RAGTRUTH_PT_CONFIG = DatasetConfig(
+    name="ragtruth-pt",
+    pretty_name="RAGTruth-pt",
+    source="EuroEval/ragtruth-translated-hallucinations-pt-mini",
+    task=HALLU,
+    languages=[PORTUGUESE],
+    train_split=None,
     unofficial=True,
 )

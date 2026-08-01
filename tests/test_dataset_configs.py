@@ -27,18 +27,18 @@ class TestGetAllDatasetConfigs:
             run_with_cli=True,
         )
 
-    def test_dataset_configs_is_dict(
-        self, dataset_configs: dict[str, DatasetConfig]
-    ) -> None:
-        """Test that the dataset configs are a dict."""
-        assert isinstance(dataset_configs, dict)
-
     def test_dataset_configs_are_objects(
         self, dataset_configs: dict[str, DatasetConfig]
     ) -> None:
         """Test that the dataset configs are `DatasetConfig` objects."""
         for dataset_config in dataset_configs.values():
             assert isinstance(dataset_config, DatasetConfig)
+
+    def test_dataset_configs_is_dict(
+        self, dataset_configs: dict[str, DatasetConfig]
+    ) -> None:
+        """Test that the dataset configs are a dict."""
+        assert isinstance(dataset_configs, dict)
 
 
 def test_no_duplicate_dataset_config_variable_names() -> None:

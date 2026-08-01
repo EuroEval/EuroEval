@@ -46,19 +46,6 @@ class ThermalConfig:
     poll_interval_seconds: float = 15.0
 
 
-def lower_process_priority() -> None:
-    """Nice the process so SSH and other interactive work stay responsive.
-
-    A niceness bump of 10 keeps the heavy euroeval subprocess out of the
-    way of sshd, the shell, and similar low-CPU interactive workloads
-    without starving the evaluation itself when the box is otherwise idle.
-    """
-    try:
-        os.nice(10)
-    except OSError as e:
-        logger.warning(f"Could not lower process priority: {e}")
-
-
 def cool_down_between_issues(config: ThermalConfig) -> None:
     """Pause between issues, extending the pause until the GPU has cooled.
 
@@ -143,3 +130,16 @@ def read_gpu_temperature_c() -> float | None:
         except ValueError:
             continue
     return max(temps) if temps else None
+
+
+def lower_process_priority() -> None:
+    """Nice the process so SSH and other interactive work stay responsive.
+
+    A niceness bump of 10 keeps the heavy euroeval subprocess out of the
+    way of sshd, the shell, and similar low-CPU interactive workloads
+    without starving the evaluation itself when the box is otherwise idle.
+    """
+    try:
+        os.nice(10)
+    except OSError as e:
+        logger.warning(f"Could not lower process priority: {e}")

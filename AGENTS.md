@@ -74,18 +74,6 @@ this directory are _persistent_ scripts. One-off scripts don't belong in the rep
 
 - if you need to run a one-off script, store it in /tmp or in-memory.
 
-- **Dataset creation scripts** — Preserve upstream split boundaries when the source
-  dataset already has splits. Do not concatenate train/dev/validation/test and
-  regenerate new splits unless there is no source split information. Never let source
-  training samples end up in validation or test splits. Cap every dataset by capping
-  each source split independently at 1,024 train, 256 validation, and 2,048 test
-  samples. Add a `-mini` suffix to the Hugging Face repo ID and `DatasetConfig.source`
-  only when these caps truncate at least one split.
-- **`create_language_spider_plot.py`** — Generate Plotly spider/radial plots comparing
-  models across languages. Output is a PNG file (`language-spider-plot.png`). Use when
-  asked to create a radial/spider plot for language performance comparison.
-  `uv run src/scripts/create_language_spider_plot.py -m MODEL [-l LANGUAGE]`
-
 ### Tests
 
 All evaluation framework tests are in `tests` and can be run with `make test`. This
@@ -97,6 +85,7 @@ have changed. There are no tests for the frontend or leaderboard generation.
 All checks are run with `make check`, which runs all the pre-commit hooks. The following
 tools are used:
 
+- **funcsort** — Python function sorting
 - **Ruff** — Python formatter and linter (includes Jupyter notebook support)
 - **ty** — Python type checker
 - **markdownlint-cli2** — Markdown linting
@@ -104,6 +93,32 @@ tools are used:
 
 The pre-commit hooks also include basic quality checks (end-of-file fixer, trailing
 whitespace, debug statements, type annotation enforcement, and notebook stripping).
+
+### Code Duplication Detection (Slopo)
+
+[Slopo](https://github.com/rafal-qa/slopo) detects semantic code duplicates using
+embeddings. Configured in `slopo.conf.yaml` to use local llama.cpp server with Jina
+embeddings.
+
+The duplication check runs automatically as part of `make check`. If duplicates are
+found, the check **fails**. Review the report in `.slopo/report/index.md` to inspect
+duplicate clusters. Not all duplicates need to be fixed:
+
+- **To ignore irrelevant duplicates:** Add their hashes to `.slopo/slopo.ignore.txt`
+- **To fix duplicates:** Refactor the flagged code
+- **If unsure:** Ask the user whether to proceed with a refactor or ignore the cluster
+
+- **Dataset creation scripts** — Preserve upstream split boundaries when the source
+  dataset already has splits. Do not concatenate train/dev/validation/test and
+  regenerate new splits unless there is no source split information. Never let source
+  training samples end up in validation or test splits. Cap every dataset by capping
+  each source split independently at 1,024 train, 256 validation, and 2,048 test
+  samples. Add a `-mini` suffix to the Hugging Face repo ID and `DatasetConfig.source`
+  only when these caps truncate at least one split.
+- **`create_language_spider_plot.py`** — Generate Plotly spider/radial plots comparing
+  models across languages. Output is a PNG file (`language-spider-plot.png`). Use when
+  asked to create a radial/spider plot for language performance comparison.
+  `uv run src/scripts/create_language_spider_plot.py -m MODEL [-l LANGUAGE]`
 
 ## Changelog
 

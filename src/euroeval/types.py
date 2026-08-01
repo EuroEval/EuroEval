@@ -45,6 +45,27 @@ Tokeniser: t.TypeAlias = (
 Relation: t.TypeAlias = t.Literal["less than", "at least"]
 
 
+class BatchScoringFunction(t.Protocol):
+    """A function used to compute batch scores from model outputs."""
+
+    def __call__(
+        self, outputs: list["BaseModel"], dataset: "Dataset | None" = None
+    ) -> float:
+        """Compute a batch score from model outputs.
+
+        Args:
+            outputs:
+                List of model outputs (Pydantic models) from the judge.
+            dataset:
+                Optional dataset used for evaluation. Can be used for additional
+                context when computing the score.
+
+        Returns:
+            A float score computed from the batch of outputs.
+        """
+        ...
+
+
 class ComputeMetricsFunction(t.Protocol):
     """A function used to compute the metrics."""
 
@@ -107,27 +128,6 @@ class ScoringFunction(t.Protocol):
 
         Returns:
             A float score computed from the output.
-        """
-        ...
-
-
-class BatchScoringFunction(t.Protocol):
-    """A function used to compute batch scores from model outputs."""
-
-    def __call__(
-        self, outputs: list["BaseModel"], dataset: "Dataset | None" = None
-    ) -> float:
-        """Compute a batch score from model outputs.
-
-        Args:
-            outputs:
-                List of model outputs (Pydantic models) from the judge.
-            dataset:
-                Optional dataset used for evaluation. Can be used for additional
-                context when computing the score.
-
-        Returns:
-            A float score computed from the batch of outputs.
         """
         ...
 
