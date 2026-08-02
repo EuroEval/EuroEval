@@ -546,33 +546,3 @@ class TestRegressionForReportedIssue:
                 f"{model_id} Albanian score mismatch: mono={albanian_mono}, "
                 f"multi={albanian_multi}"
             )
-
-
-def _make_partial_results(
-    model_id: str,
-    dataset_ids: list[str],
-    missing_datasets: list[str],
-    base_score: float = 0.7,
-    noise: float = 0.01,
-) -> dict[str, list[tuple[list[float], float, float]]]:
-    """Create dummy results for a model missing some datasets.
-
-    Returns:
-        Dict mapping dataset_id -> [(raw_scores, mean, std_err)] for
-        non-missing datasets only.
-    """
-    rng = np.random.default_rng(42)
-    results: dict[str, list[tuple[list[float], float, float]]] = {}
-
-    for dataset_id in dataset_ids:
-        if dataset_id in missing_datasets:
-            continue
-        model_offset = rng.uniform(-0.05, 0.05)
-        raw_scores = (
-            rng.uniform(0, 1, 100) * noise + base_score + model_offset
-        ).tolist()
-        mean_score = float(np.mean(raw_scores))
-        std_err = float(np.std(raw_scores) / np.sqrt(len(raw_scores)))
-        results[dataset_id] = [(raw_scores, mean_score, std_err)]
-
-    return results
