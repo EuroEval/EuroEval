@@ -129,6 +129,10 @@ def main(
     if not skip_core_models_check:
         _maybe_refresh_core_models()
 
+    language_rank_cache: dict[
+        tuple[str, str, tuple[str, ...], tuple[str, ...]], dict
+    ] = {}
+
     # Monolingual leaderboards are derived directly from the lib: one per
     # language that has at least one official leaderboard dataset.
     for language in languages_with_official_datasets():
@@ -137,6 +141,7 @@ def main(
             language_names=[language],
             categories=list(categories),
             force=force,
+            language_rank_cache=language_rank_cache,
         )
     # Multilingual leaderboards stay yaml-configured since they encode a
     # curated grouping (e.g. Scandinavian, Slavic).
@@ -148,6 +153,7 @@ def main(
             language_names=list(config["languages"]),
             categories=list(categories),
             force=force,
+            language_rank_cache=language_rank_cache,
         )
 
     # Keep the frontend's task -> metric-names map in sync with euroeval.

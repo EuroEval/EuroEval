@@ -31,6 +31,8 @@ def generate_leaderboard(
     language_names: list[str],
     categories: list[t.Literal["generative", "all_models"]],
     force: bool,
+    language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
+    | None = None,
 ) -> None:
     """Generate leaderboard CSV files from the EuroEval results.
 
@@ -47,6 +49,8 @@ def generate_leaderboard(
             "generative" and/or "all_models".
         force:
             Force the generation of the leaderboard, even if no updates are found.
+        language_rank_cache (optional):
+            Shared cache for monolingual rank-score confidence intervals.
     """
     leaderboard_title = leaderboard_name.replace("_", " ").title()
 
@@ -93,6 +97,7 @@ def generate_leaderboard(
         categories=categories,
         leaderboard_configs=configs,
         include_dataset_columns=include_dataset_columns,
+        language_rank_cache=language_rank_cache,
     )
 
     for category, df_pair in zip(categories, df_pairs):
@@ -377,6 +382,8 @@ def _generate_dataframe(
     categories: list[t.Literal["generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
     include_dataset_columns: bool,
+    language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
+    | None = None,
 ) -> list[tuple[pd.DataFrame, pd.DataFrame]]:
     """Generate DataFrames from the model results.
 
@@ -391,6 +398,8 @@ def _generate_dataframe(
             The leaderboard configurations.
         include_dataset_columns:
             Whether to include dataset columns in the DataFrame.
+        language_rank_cache (optional):
+            Shared cache for monolingual rank-score confidence intervals.
 
     Returns:
         A list of pairs (df, df_simplified), where df is the full leaderboard DataFrame
@@ -417,6 +426,7 @@ def _generate_dataframe(
             category_to_datasets=category_to_datasets,
             category_to_orthogonal_datasets=category_to_orthogonal_datasets,
             leaderboard_configs=leaderboard_configs,
+            language_rank_cache=language_rank_cache,
         )
 
         orthogonal_scores_by_plain = _collect_orthogonal_scores(
@@ -809,6 +819,8 @@ def _compute_eligible_models_and_ranks(
     category_to_datasets: dict[str, list[str]],
     category_to_orthogonal_datasets: dict[str, dict[str, str]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
+    language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
+    | None = None,
 ) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, list[str]], dict, dict]":  # noqa: E501
     """Compute eligible models and bootstrap ranks for a category.
 
@@ -832,6 +844,8 @@ def _compute_eligible_models_and_ranks(
             Category to orthogonal datasets mapping.
         leaderboard_configs:
             The leaderboard configurations.
+        language_rank_cache (optional):
+            Shared cache for monolingual rank-score confidence intervals.
 
     Returns:
         Tuple of (eligible_model_results, language_to_required_datasets,
@@ -879,29 +893,47 @@ def _compute_eligible_models_and_ranks(
         bootstrap_scores=bootstrap_scores, alpha=0.05
     )
 
+    if language_rank_cache is None:
+        language_rank_cache = {}
+    if len(leaderboard_configs) == 1:
+        language = next(iter(leaderboard_configs))
+        cache_key = _language_rank_cache_key(
+            language=language,
+            category=category,
+            required_datasets=required_datasets,
+            eligible_model_results=eligible_model_results,
+        )
+        language_rank_cache[cache_key] = ranks
+
     # For multilingual leaderboards, compute per-language rank scores using
     # each language's monolingual eligible set. This ensures the per-language
     # columns match the corresponding monolingual leaderboards.
     if len(leaderboard_configs) > 1:
         for language, lang_config in leaderboard_configs.items():
             lang_required = language_to_required_datasets[language]
-            # Eligible models for this language only (monolingual eligibility).
             lang_eligible = {
                 mid: model_results[mid]
                 for mid in sorted(model_results.keys())
                 if all(ds in model_results[mid] for ds in lang_required)
             }
-            # Single-language config for bootstrap.
-            single_lang_config = {language: lang_config}
-            # Compute bootstrap for this language.
-            lang_bootstrap = bootstrap_rank_scores(
-                model_results=lang_eligible,
-                configs=single_lang_config,
-                n_bootstraps=NUM_BOOTSTRAPS,
-                seed=42,
-                categories=(category,),
+            cache_key = _language_rank_cache_key(
+                language=language,
+                category=category,
+                required_datasets=lang_required,
+                eligible_model_results=lang_eligible,
             )
-            lang_ranks = bootstrap_confidence_intervals(lang_bootstrap)
+            if cache_key not in language_rank_cache:
+                lang_bootstrap = bootstrap_rank_scores(
+                    model_results=lang_eligible,
+                    configs={language: lang_config},
+                    n_bootstraps=NUM_BOOTSTRAPS,
+                    seed=42,
+                    categories=(category,),
+                )
+                language_rank_cache[cache_key] = bootstrap_confidence_intervals(
+                    bootstrap_scores=lang_bootstrap
+                )
+            lang_ranks = language_rank_cache[cache_key]
             # Merge per-language scores into ranks.
             for model_id, model_data in lang_ranks.items():
                 if model_id not in ranks:
@@ -917,6 +949,38 @@ def _compute_eligible_models_and_ranks(
         language_to_required_datasets,
         ranks,
         all_standard_ranks,
+    )
+
+
+def _language_rank_cache_key(
+    language: str,
+    category: str,
+    required_datasets: list[str],
+    eligible_model_results: dict[
+        str, dict[str, list[tuple[list[float], float, float]]]
+    ],
+) -> tuple[str, str, tuple[str, ...], tuple[str, ...]]:
+    """Create a cache key for monolingual rank-score confidence intervals.
+
+    Args:
+        language:
+            The language name.
+        category:
+            The leaderboard category.
+        required_datasets:
+            The datasets required for monolingual eligibility.
+        eligible_model_results:
+            The eligible model results.
+
+    Returns:
+        A cache key that is stable across monolingual and multilingual calls in
+        the same leaderboard-generation run.
+    """
+    return (
+        language,
+        category,
+        tuple(sorted(required_datasets)),
+        tuple(sorted(eligible_model_results)),
     )
 
 

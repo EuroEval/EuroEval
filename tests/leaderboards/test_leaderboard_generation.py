@@ -231,7 +231,6 @@ class TestMultilingualPerLanguageRankScores:
         assert math.isfinite(model_a_overall["score"])
 
         # model_b should NOT have overall multilingual rank score (not eligible)
-        ranks.get("model_b", {}).get("generative", {}).get("overall", {})
         # model_b is not in the bootstrap at all, so no "overall" key
         assert "overall" not in ranks.get("model_b", {}).get("generative", {})
 
