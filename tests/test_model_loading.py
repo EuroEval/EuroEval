@@ -14,6 +14,28 @@ from euroeval.model_config import get_model_config
 from euroeval.model_loading import load_model
 
 
+def test_load_dummy_model(benchmark_config: BenchmarkConfig) -> None:
+    """Test loading the dummy model.
+
+    Unlike the other model types, this needs no GPU or HF_TOKEN, since it never
+    downloads or runs any real model.
+    """
+    model_config = get_model_config(model_id="dummy", benchmark_config=benchmark_config)
+    model = load_model(
+        model_config=model_config,
+        dataset_config=get_all_dataset_configs(
+            custom_datasets_file=Path("custom_datasets.py"),
+            dataset_ids=[],
+            api_key=os.getenv("HF_TOKEN"),
+            cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
+        )["multi-wiki-qa-da"],
+        benchmark_config=benchmark_config,
+    )
+    assert model is not None
+
+
 @pytest.mark.skipif(
     condition=torch.cuda.is_available() is False, reason="CUDA not available"
 )

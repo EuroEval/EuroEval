@@ -202,6 +202,18 @@ def test_adjust_logging_level(verbose: bool, expected_logging_level: int) -> Non
     assert logging_level == expected_logging_level
 
 
+@pytest.mark.depends(on=["tests/test_model_loading.py::test_load_dummy_model"])
+def test_benchmark_dummy(
+    benchmarker: Benchmarker, task: Task, language: Language
+) -> None:
+    """Test that the dummy model can be benchmarked."""
+    benchmark_result = benchmarker.benchmark(
+        model="dummy", task=task.name, language=language.code
+    )
+    assert isinstance(benchmark_result, list)
+    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
 @pytest.mark.depends(on=["tests/test_model_loading.py::test_load_non_generative_model"])
 def test_benchmark_encoder(
     benchmarker: Benchmarker, task: Task, language: Language, encoder_model_id: str

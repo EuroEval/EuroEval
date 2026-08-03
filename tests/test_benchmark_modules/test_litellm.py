@@ -18,7 +18,7 @@ class TestBPCGating:
     BPC validation happens in load_model() before backend initialization.
     """
 
-    def test_bpc_reJECTED_for_litellm(
+    def test_bpc_rejected_for_litellm(
         self,
         model_config: ModelConfig,
         dataset_config: DatasetConfig,
