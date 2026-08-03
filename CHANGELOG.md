@@ -18,6 +18,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for Faroese LLM
   Understanding", where the model has to pick the antonym of a given Faroese word from
   six options. This was contributed by @Biorrith ✨
+- Added the unofficial Faroese knowledge dataset `faroese-metaphorical-explanations`,
+  from the paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for
+  Faroese LLM Understanding", where the model has to pick the correct explanation of a
+  Faroese idiom from four options. This was contributed by @Biorrith ✨
 - Added the knowledge datasets `eu-mmlu-cs`, `eu-mmlu-de`, `eu-mmlu-el`, `eu-mmlu-fr`,
   `eu-mmlu-hr`, `eu-mmlu-hu`, `eu-mmlu-it`, `eu-mmlu-lt`, `eu-mmlu-nl`, `eu-mmlu-pl`,
   `eu-mmlu-pt`, `eu-mmlu-ro`, `eu-mmlu-sk` and `eu-mmlu-sl`, based on the
@@ -29,10 +33,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   ✨
 - Added full support for hallucination detection for all languages now, and now marked
   as official.
-- Added the unofficial Faroese knowledge dataset `faroese-metaphorical-explanations`,
-  from the paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for
-  Faroese LLM Understanding", where the model has to pick the correct explanation of a
-  Faroese idiom from four options.
 
 ### Changed
 
