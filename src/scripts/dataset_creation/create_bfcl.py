@@ -63,6 +63,33 @@ def main() -> None:
     )
 
 
+def _load_jsonl_from_url(url: str) -> list:
+    """Load jsonl from url.
+
+    Args:
+        url: url to JSONL
+
+    Returns:
+        List of deserialized objects
+    """
+    with urlopen(url) as r:
+        return _load_jsonl(r.read().decode())
+
+
+def _load_jsonl(path: str | Path) -> list:
+    """Load jsonl.
+
+    Args:
+        path: string with serialized JSONL or Path to JSONL file
+
+    Returns:
+        List of deserialized objects
+    """
+    if isinstance(path, Path):
+        path = path.read_text()
+    return [json.loads(line) for line in path.splitlines()]
+
+
 def _split_dataset_to_dict(items: list[dict]) -> DatasetDict:
     """Split dataset into train/validation/test with deterministic random sampling.
 
@@ -92,33 +119,6 @@ def _split_dataset_to_dict(items: list[dict]) -> DatasetDict:
             "test": Dataset.from_list(test_items),
         }
     )
-
-
-def _load_jsonl(path: str | Path) -> list:
-    """Load jsonl.
-
-    Args:
-        path: string with serialized JSONL or Path to JSONL file
-
-    Returns:
-        List of deserialized objects
-    """
-    if isinstance(path, Path):
-        path = path.read_text()
-    return [json.loads(line) for line in path.splitlines()]
-
-
-def _load_jsonl_from_url(url: str) -> list:
-    """Load jsonl from url.
-
-    Args:
-        url: url to JSONL
-
-    Returns:
-        List of deserialized objects
-    """
-    with urlopen(url) as r:
-        return _load_jsonl(r.read().decode())
 
 
 if __name__ == "__main__":

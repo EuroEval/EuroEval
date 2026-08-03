@@ -111,3 +111,12 @@ INCLUDE_LT_CONFIG = DatasetConfig(
     languages=[LITHUANIAN],
     unofficial=True,
 )
+
+EU_MMLU_LT_CONFIG = DatasetConfig(
+    name="eu-mmlu-lt",
+    pretty_name="EU-MMLU-lt",
+    source="EuroEval/eu-mmlu-lt",
+    task=KNOW,
+    languages=[LITHUANIAN],
+    unofficial=True,
+)

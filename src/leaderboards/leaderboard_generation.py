@@ -14,11 +14,12 @@ import pandas as pd
 
 from euroeval.constants import ORTHOGONAL_TASKS
 
+from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
 from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR
 from .link_generation import generate_task_link
 from .records import drop_val_duplicates, get_dataset, plain_model_id
 from .result_loading import load_raw_results
-from .score_computation import compute_ranks_bootstrap, compute_standard_ranks_bootstrap
+from .score_computation import compute_standard_ranks_from_bootstrap_scores
 from .score_extraction import extract_model_metadata, group_results_by_model
 from .task_metadata import category_includes_task, official_datasets_for_language
 
@@ -30,6 +31,8 @@ def generate_leaderboard(
     language_names: list[str],
     categories: list[t.Literal["generative", "all_models"]],
     force: bool,
+    language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
+    | None = None,
 ) -> None:
     """Generate leaderboard CSV files from the EuroEval results.
 
@@ -46,6 +49,8 @@ def generate_leaderboard(
             "generative" and/or "all_models".
         force:
             Force the generation of the leaderboard, even if no updates are found.
+        language_rank_cache (optional):
+            Shared cache for monolingual rank-score confidence intervals.
     """
     leaderboard_title = leaderboard_name.replace("_", " ").title()
 
@@ -77,28 +82,22 @@ def generate_leaderboard(
     )
     model_results = drop_val_duplicates(model_results=model_results)
 
-    # Use bootstrap-based CIs for the displayed "Rank score ± margin" column.
-    # Bootstrap resamples datasets with replacement (stratified by task),
-    # recomputes the full hierarchy, and returns percentile CIs.
-    ranks = compute_ranks_bootstrap(
-        model_results=model_results,
-        configs=configs,
-        n_bootstraps=NUM_BOOTSTRAPS,
-        seed=42,
-    )
     metadata_dict = extract_model_metadata(results=results)
 
     # Only include dataset columns in monolingual leaderboards
     include_dataset_columns = len(configs) == 1
 
-    # Generate the leaderboard and store it to disk
-    df_pairs = generate_dataframe(
+    # Generate the leaderboard and store it to disk.
+    # Ranks are computed per-category from the eligible model set, ensuring
+    # that displayed "Rank score" and ordinal "Rank" are derived from the
+    # same bootstrap distribution.
+    df_pairs = _generate_dataframe(
         model_results=model_results,
-        ranks=ranks,
         metadata_dict=metadata_dict,
         categories=categories,
         leaderboard_configs=configs,
         include_dataset_columns=include_dataset_columns,
+        language_rank_cache=language_rank_cache,
     )
 
     for category, df_pair in zip(categories, df_pairs):
@@ -118,8 +117,8 @@ def generate_leaderboard(
         # model as "updated":
         #   * the ordinal "Rank" column (a position relative to the pool);
         #   * the "Rank score" column and the per-language rank columns
-        #     (bootstrap scores computed over the whole pool, so they shift for
-        #     everyone when the set of models changes);
+        #     (bootstrap scores are population-relative, so they shift when the
+        #     eligible model set changes);
         #   * the per-dataset "_version"/"_failures"/"_scored" companion columns.
         # The remaining columns are the per-dataset scores, which only change
         # when the model itself is re-evaluated — and additions/removals are
@@ -238,7 +237,7 @@ def generate_leaderboard(
         ]
 
         if should_write:
-            top_header, second_header = create_leaderboard_headers(
+            top_header, second_header = _create_leaderboard_headers(
                 df=df, leaderboard_configs=configs
             )
 
@@ -280,7 +279,7 @@ def generate_leaderboard(
             )
 
 
-def create_leaderboard_headers(
+def _create_leaderboard_headers(
     df: pd.DataFrame | pd.Series, leaderboard_configs: dict[str, dict[str, list[str]]]
 ) -> tuple[list[str], list[str]]:
     """Create the leaderboard headers.
@@ -377,21 +376,20 @@ def create_leaderboard_headers(
     return top_header, second_header
 
 
-def generate_dataframe(
+def _generate_dataframe(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
     metadata_dict: dict[str, dict],
     categories: list[t.Literal["generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
     include_dataset_columns: bool,
+    language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
+    | None = None,
 ) -> list[tuple[pd.DataFrame, pd.DataFrame]]:
     """Generate DataFrames from the model results.
 
     Args:
         model_results:
             The model results.
-        ranks:
-            The ranks of the models (from compute_ranks).
         metadata_dict:
             The metadata.
         categories:
@@ -400,23 +398,189 @@ def generate_dataframe(
             The leaderboard configurations.
         include_dataset_columns:
             Whether to include dataset columns in the DataFrame.
+        language_rank_cache (optional):
+            Shared cache for monolingual rank-score confidence intervals.
 
     Returns:
         A list of pairs (df, df_simplified), where df is the full leaderboard DataFrame
         and df_simplified is the simplified version.
-
-    Raises:
-        ValueError:
-            If a model has more than two scores for a single dataset, which
-            indicates that duplicate records survived deduplication.
     """
     if model_results == {}:
         logger.error("No model results found, skipping leaderboard generation.")
         return []
 
-    # The "generative" leaderboard includes all tasks; the "all_models"
-    # leaderboard is restricted to NLU tasks so non-generative models can be
-    # compared.
+    category_to_datasets, category_to_orthogonal_datasets = (
+        _build_category_dataset_maps(categories, leaderboard_configs)
+    )
+
+    dfs: list[tuple[pd.DataFrame, pd.DataFrame]] = []
+    for category in categories:
+        (
+            eligible_model_results,
+            language_to_required_datasets,
+            ranks,
+            all_standard_ranks,
+        ) = _compute_eligible_models_and_ranks(
+            model_results=model_results,
+            category=category,
+            category_to_datasets=category_to_datasets,
+            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+            leaderboard_configs=leaderboard_configs,
+            language_rank_cache=language_rank_cache,
+        )
+
+        orthogonal_scores_by_plain = _collect_orthogonal_scores(
+            model_results=model_results,
+            category=category,
+            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+        )
+
+        data_dict: dict[str, list] = defaultdict(list)
+        for model_id, results in model_results.items():
+            model_values = _build_model_row_data(
+                model_id=model_id,
+                results=results,
+                eligible_model_results=eligible_model_results,
+                all_standard_ranks=all_standard_ranks,
+                ranks=ranks,
+                category=category,
+                language_to_required_datasets=language_to_required_datasets,
+                leaderboard_configs=leaderboard_configs,
+                category_to_datasets=category_to_datasets,
+                category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+                orthogonal_scores_by_plain=orthogonal_scores_by_plain,
+                metadata_dict=metadata_dict,
+            )
+            for key, value in model_values.items():
+                data_dict[key].append(value)
+
+            assert len({len(values) for values in data_dict.values()}) == 1, (
+                f"Length of data_dict values must be equal, but got "
+                f"{ {key: len(values) for key, values in data_dict.items()} }."
+            )
+
+        df = (
+            pd.DataFrame(data_dict)
+            .sort_values(by="rank", na_position="last")
+            .reset_index(drop=True)
+        )
+
+        rank_cols = ["rank", "mean_rank_score"]
+        if len(leaderboard_configs) > 1:
+            rank_cols += list(leaderboard_configs.keys())
+
+        df = _format_ordinal_rank_column(df, rank_cols)
+
+        df.columns = df.columns.str.replace("-", "_")
+
+        orthogonal_cols = list(
+            {
+                orthogonal_task.replace("-", "_")
+                for orthogonal_task in category_to_orthogonal_datasets[
+                    category
+                ].values()
+            }
+        )
+        dataset_cols = [
+            dataset.replace("-", "_")
+            for dataset in category_to_datasets[category]
+            if dataset not in category_to_orthogonal_datasets[category]
+        ]
+        df = _reorder_columns(
+            df=df,
+            category=category,
+            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+            category_to_datasets=category_to_datasets,
+            rank_cols=rank_cols,
+            include_dataset_columns=include_dataset_columns,
+        )
+
+        df = _filter_orthogonal_only_models(
+            df=df,
+            category=category,
+            orthogonal_cols=orthogonal_cols,
+            dataset_cols=dataset_cols,
+            rank_cols=rank_cols,
+        )
+
+        df = _apply_display_transforms(
+            df=df,
+            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+            category=category,
+        )
+
+        df, df_simplified = _create_simplified_and_rename(
+            df=df,
+            rank_cols=rank_cols,
+            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+            category=category,
+        )
+
+        assert isinstance(df, pd.DataFrame)
+        dfs.append((df, df_simplified))
+
+    return dfs
+
+
+def _apply_display_transforms(
+    df: pd.DataFrame,
+    category_to_orthogonal_datasets: dict[str, dict[str, str]],
+    category: str,
+) -> pd.DataFrame:
+    """Apply display transforms: booleans to symbols, generative_type to emojis.
+
+    Args:
+        df:
+            The DataFrame to transform.
+        category_to_orthogonal_datasets:
+            Category to orthogonal datasets mapping.
+        category:
+            The current category.
+
+    Returns:
+        The transformed DataFrame.
+    """
+    boolean_columns = ["commercial", "merge", "open", "trained_from_scratch"]
+    for col in boolean_columns:
+        df[col] = df[col].apply(lambda x: "✓" if x else "✗")
+
+    for orthogonal_task in category_to_orthogonal_datasets[category].values():
+        col_name = orthogonal_task.replace("-", "_")
+        df[col_name] = df.apply(
+            lambda row: (
+                row[col_name]
+                if row.generative_type in ["instruction_tuned", "reasoning"]
+                else "N/A"
+            ),
+            axis=1,
+        )
+
+    generative_type_emoji_mapping = {
+        "base": "🧠",
+        "instruction_tuned": "📝",
+        "reasoning": "🤔",
+    }
+    df["generative_type"] = df.generative_type.map(
+        lambda x: generative_type_emoji_mapping.get(x, "🔍")
+    )
+    return df
+
+
+def _build_category_dataset_maps(
+    categories: list[t.Literal["generative", "all_models"]],
+    leaderboard_configs: dict[str, dict[str, list[str]]],
+) -> "tuple[dict[str, list[str]], dict[str, dict[str, str]]]":
+    """Build category to datasets and orthogonal datasets mappings.
+
+    Args:
+        categories:
+            The categories of leaderboards to generate.
+        leaderboard_configs:
+            The leaderboard configurations.
+
+    Returns:
+        Tuple of (category_to_datasets, category_to_orthogonal_datasets).
+    """
     category_to_datasets = {
         category: [
             dataset
@@ -440,369 +604,163 @@ def generate_dataframe(
         for category in categories
     }
 
-    dfs: list[tuple[pd.DataFrame, pd.DataFrame]] = []
-    for category in categories:
-        # Standard (dense) ranks are computed per category over the models
-        # eligible for display — i.e. those holding every non-orthogonal
-        # dataset for this category. Ranking the full set and then hiding
-        # ineligible rows would leave gaps in the 1, 2, 3, … sequence.
-        required_datasets = [
-            ds
-            for ds in category_to_datasets[category]
-            if ds not in category_to_orthogonal_datasets[category]
-        ]
-        eligible_model_results = {
-            mid: r
-            for mid, r in model_results.items()
-            if all(ds in r for ds in required_datasets)
-        }
+    return (  # ty: ignore[invalid-return-type]
+        category_to_datasets,
+        category_to_orthogonal_datasets,
+    )
 
-        # Per-language required (non-orthogonal) datasets for this category. A
-        # model only earns a per-language score if it holds every one of that
-        # language's datasets, mirroring the eligibility rule used for the
-        # standalone single-language leaderboards.
-        language_to_required_datasets = {
-            language: [
-                dataset
-                for task, task_datasets in config.items()
-                for dataset in task_datasets
-                if category_includes_task(category=category, task=task)
-                and task not in ORTHOGONAL_TASKS
-            ]
-            for language, config in leaderboard_configs.items()
-        }
 
-        # Bootstrap-based tie detection: walks the sorted list and tests
-        # each model against the current anchor using a one-sided bootstrap
-        # test (α=0.05). Models that are not significantly better share the
-        # anchor's rank; otherwise a new rank group begins.
-        all_standard_ranks = compute_standard_ranks_bootstrap(
-            model_results=eligible_model_results,
-            configs=leaderboard_configs,
-            n_bootstraps=NUM_BOOTSTRAPS,
-            seed=42,
-        )
+def _build_model_row_data(
+    model_id: str,
+    results: dict[str, list[tuple[list[float], float, float]]],
+    eligible_model_results: dict[
+        str, dict[str, list[tuple[list[float], float, float]]]
+    ],
+    all_standard_ranks: dict,
+    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
+    category: str,
+    language_to_required_datasets: dict[str, list[str]],
+    leaderboard_configs: dict[str, dict[str, list[str]]],
+    category_to_datasets: dict[str, list[str]],
+    category_to_orthogonal_datasets: dict[str, dict[str, str]],
+    orthogonal_scores_by_plain: dict[str, dict[str, float]],
+    metadata_dict: dict[str, dict],
+) -> dict[str, t.Any]:
+    """Build the data dictionary entry for a single model row.
 
-        # Orthogonal-task results (e.g. European Values) are evaluated once per
-        # model, independent of the few-shot / validation-split configuration, so
-        # their records carry no variant suffix and live under the bare model id.
-        # Collect them keyed by the config-independent plain model id so that
-        # every variant row of a model (e.g. "model (zero-shot, val)") can display
-        # the score, not just the row whose config happens to match the bare id.
-        orthogonal_scores_by_plain: dict[str, dict[str, float]] = defaultdict(dict)
-        for other_model_id, other_results in model_results.items():
-            other_plain_id = plain_model_id(other_model_id)
-            for dataset in category_to_orthogonal_datasets[category]:
-                if dataset not in other_results:
-                    continue
-                main_score = other_results[dataset][0][1]
-                if not math.isnan(main_score):
-                    orthogonal_scores_by_plain[other_plain_id][dataset] = main_score
+    Args:
+        model_id:
+            The model id.
+        results:
+            The model results for this model.
+        eligible_model_results:
+            The eligible model results.
+        all_standard_ranks:
+            The standard ranks.
+        ranks:
+            The ranks dictionary.
+        category:
+            The current category.
+        language_to_required_datasets:
+            Language to required datasets mapping.
+        leaderboard_configs:
+            The leaderboard configurations.
+        category_to_datasets:
+            Category to datasets mapping.
+        category_to_orthogonal_datasets:
+            Category to orthogonal datasets mapping.
+        orthogonal_scores_by_plain:
+            Orthogonal scores by plain model id.
+        metadata_dict:
+            The metadata dictionary.
 
-        data_dict: dict[str, list] = defaultdict(list)
-        for model_id, results in model_results.items():
-            has_all_datasets = model_id in eligible_model_results
+    Returns:
+        Dictionary with all values for this model row.
 
-            # Get the overall rank for the model (standard ordinal rank)
-            rank = all_standard_ranks.get(model_id, {}).get(category, math.nan)
-            # Get the mean rank score with CI
-            cat_ranks = ranks.get(model_id, {}).get(category, {})
-            rank_data = cat_ranks.get("overall", {})
-            mean_rank_score_str = (
-                _format_rank_score(rank_data) if has_all_datasets else "-"
-            )
-            if mean_rank_score_str == "-":
-                rank = math.nan
-            language_ranks = cat_ranks.copy()
-            language_ranks.pop("overall", None)
+    Raises:
+        ValueError:
+            If duplicate records are found for a dataset.
+    """
+    has_all_datasets = model_id in eligible_model_results
 
-            # Ensure all languages are present (even if missing for this model).
-            # An empty entry renders as "-" via ``_format_rank_score``, matching the
-            # missing-score sentinel while keeping the value type a rank dict.
-            for lang in leaderboard_configs:
-                if lang not in language_ranks:
-                    language_ranks[lang] = {}
+    rank = all_standard_ranks.get(model_id, {}).get(category, math.nan)
+    cat_ranks = ranks.get(model_id, {}).get(category, {})
+    rank_data = cat_ranks.get("overall", {})
+    mean_rank_score_str = _format_rank_score(rank_data) if has_all_datasets else "-"
+    if mean_rank_score_str == "-":
+        rank = math.nan
+    language_ranks = cat_ranks.copy()
+    language_ranks.pop("overall", None)
 
-            # Format per-language entries as "score ± margin" strings, matching
-            # the overall mean rank score column. A language only gets a score
-            # if the model holds every one of that language's datasets;
-            # otherwise it renders as "-", just like the missing-score sentinel.
-            language_ranks_scores = {
-                lang: _format_rank_score(entry)
-                if all(
-                    ds in results for ds in language_to_required_datasets.get(lang, [])
+    for lang in leaderboard_configs:
+        if lang not in language_ranks:
+            language_ranks[lang] = {}
+
+    language_ranks_scores = {
+        lang: _format_rank_score(entry)
+        if all(ds in results for ds in language_to_required_datasets.get(lang, []))
+        else "-"
+        for lang, entry in language_ranks.items()
+    }
+
+    default_dataset_values = (
+        {ds: float("nan") for ds in category_to_datasets[category]}
+        | {f"{ds}_version": "-" for ds in category_to_datasets[category]}
+        | {f"{ds}_failures": "-" for ds in category_to_datasets[category]}
+        | {f"{ds}_scored": "-" for ds in category_to_datasets[category]}
+    )
+    default_orthogonal_values = {
+        task: float("nan")
+        for task in category_to_orthogonal_datasets[category].values()
+    }
+
+    plain_id = plain_model_id(model_id)
+    orthogonal_scores = defaultdict(list)
+    for dataset, orthogonal_main_score in orthogonal_scores_by_plain.get(
+        plain_id, {}
+    ).items():
+        orthogonal_task = category_to_orthogonal_datasets[category][dataset]
+        orthogonal_scores[orthogonal_task].append(orthogonal_main_score)
+
+    total_results = {}
+    for dataset in category_to_datasets[category]:
+        if dataset in results:
+            scores = results[dataset]
+            if len(scores) > 2:
+                raise ValueError(
+                    f"Model {model_id!r} has {len(scores)} scores for "
+                    f"dataset {dataset!r} (expected at most 2, one per "
+                    f"metric): {[score for _, score, _ in scores]}. This "
+                    "indicates duplicate records survived deduplication."
                 )
-                else "-"
-                for lang, entry in language_ranks.items()
-            }
-
-            # Get the default values for the dataset columns
-            default_dataset_values = (
-                {ds: float("nan") for ds in category_to_datasets[category]}
-                | {f"{ds}_version": "-" for ds in category_to_datasets[category]}
-                | {f"{ds}_failures": "-" for ds in category_to_datasets[category]}
-                | {f"{ds}_scored": "-" for ds in category_to_datasets[category]}
+        else:
+            scores = [(list(), float("nan"), 0)]
+        main_score = scores[0][1]
+        if not math.isnan(main_score):
+            score_str = " / ".join(
+                f"{total_score:,.2f} ± {std_err:,.2f}"
+                for _, total_score, std_err in scores
             )
-            default_orthogonal_values = {
-                task: float("nan")
-                for task in category_to_orthogonal_datasets[category].values()
-            }
+        else:
+            score_str = "-"
+        total_results[dataset] = score_str
 
-            # Orthogonal scores are keyed by the config-independent plain model
-            # id, so a model's European Values score shows on every variant row
-            # (e.g. zero-shot / validation-split runs), regardless of which config
-            # the orthogonal evaluation itself was recorded under.
-            plain_id = plain_model_id(model_id)
-            orthogonal_scores = defaultdict(list)  # task -> list of scores
-            for dataset, orthogonal_main_score in orthogonal_scores_by_plain.get(
-                plain_id, {}
-            ).items():
-                orthogonal_task = category_to_orthogonal_datasets[category][dataset]
-                orthogonal_scores[orthogonal_task].append(orthogonal_main_score)
+    orthogonal_task_scores = {
+        task: np.mean(score_list).item() if len(score_list) > 0 else float("nan")
+        for task, score_list in orthogonal_scores.items()
+    }
 
-            # Get individual dataset scores for the model
-            total_results = {}
-            for dataset in category_to_datasets[category]:
-                if dataset in results:
-                    scores = results[dataset]
-                    # A dataset cell holds at most the primary and secondary
-                    # metric (rendered "primary / secondary"), so anything beyond
-                    # two entries means duplicate records survived deduplication —
-                    # fail loudly rather than emit a garbled multi-slash cell.
-                    if len(scores) > 2:
-                        raise ValueError(
-                            f"Model {model_id!r} has {len(scores)} scores for "
-                            f"dataset {dataset!r} (expected at most 2, one per "
-                            f"metric): {[score for _, score, _ in scores]}. This "
-                            "indicates duplicate records survived deduplication."
-                        )
-                else:
-                    scores = [(list(), float("nan"), 0)]
-                main_score = scores[0][1]
-                if not math.isnan(main_score):
-                    score_str = " / ".join(
-                        f"{total_score:,.2f} ± {std_err:,.2f}"
-                        for _, total_score, std_err in scores
-                    )
-                else:
-                    score_str = "-"
-                total_results[dataset] = score_str
+    metadata = {
+        key: value
+        for key, value in metadata_dict[model_id].items()
+        if not key.endswith(("_version", "_failures", "_scored"))
+        or key.removesuffix("_version")
+        .removesuffix("_failures")
+        .removesuffix("_scored")
+        in category_to_datasets[category]
+    }
 
-            # Aggregate orthogonal scores by taking their mean
-            orthogonal_task_scores = {
-                task: np.mean(score_list).item()
-                if len(score_list) > 0
-                else float("nan")
-                for task, score_list in orthogonal_scores.items()
-            }
+    model_url = metadata.get("model_url")
+    display_model = f"<a href='{model_url}'>{model_id}</a>" if model_url else model_id
 
-            # Filter metadata dict to only keep the per-dataset companion columns
-            # (versions and failure counts) belonging to the category.
-            metadata = {
-                key: value
-                for key, value in metadata_dict[model_id].items()
-                if not key.endswith(("_version", "_failures", "_scored"))
-                or key.removesuffix("_version")
-                .removesuffix("_failures")
-                .removesuffix("_scored")
-                in category_to_datasets[category]
-            }
+    model_values = (
+        dict(model=display_model, rank=rank, mean_rank_score=mean_rank_score_str)
+        | default_orthogonal_values
+        | default_dataset_values
+        | orthogonal_task_scores
+        | metadata
+        | language_ranks_scores
+        | total_results
+    )
+    for key, value in model_values.items():
+        if isinstance(value, float):
+            model_values[key] = round(value, 2)
 
-            # Create anchor tag if model_url is available
-            model_url = metadata.get("model_url")
-            if model_url:
-                display_model = f"<a href='{model_url}'>{model_id}</a>"
-            else:
-                display_model = model_id
-
-            # Add all the model values to the data dictionary
-            model_values = (
-                dict(
-                    model=display_model, rank=rank, mean_rank_score=mean_rank_score_str
-                )
-                | default_orthogonal_values
-                | default_dataset_values
-                | orthogonal_task_scores
-                | metadata
-                | language_ranks_scores
-                | total_results
-            )
-            for key, value in model_values.items():
-                if isinstance(value, float):
-                    value = round(value, 2)
-                data_dict[key].append(value)
-
-            # Sanity check that all values have the same length
-            assert len({len(values) for values in data_dict.values()}) == 1, (
-                f"Length of data_dict values must be equal, but got "
-                f"{ {key: len(values) for key, values in data_dict.items()} }."
-            )
-
-        # Create dataframe and sort by rank (numeric, NaN sinks to the bottom)
-        df = (
-            pd.DataFrame(data_dict)
-            .sort_values(by="rank", na_position="last")
-            .reset_index(drop=True)
-        )
-
-        rank_cols = ["rank", "mean_rank_score"]
-        if len(leaderboard_configs) > 1:
-            rank_cols += list(leaderboard_configs.keys())
-
-        # Format the ordinal rank column with a "-" sentinel for NaN. The
-        # "mean_rank_score" column and any per-language columns are already
-        # formatted upstream as a score with a plus-minus margin (or "-"), so
-        # keep those values as-is, replacing anything else with "-".
-        df["rank"] = [
-            str(int(value))
-            if isinstance(value, (int, float)) and math.isfinite(value)
-            else "-"
-            for value in df["rank"]
-        ]
-        for col in rank_cols[1:]:
-            df[col] = [v if isinstance(v, str) and v != "-" else "-" for v in df[col]]
-
-        # Replace dashes with underlines in all column names
-        df.columns = df.columns.str.replace("-", "_")
-
-        # Reorder columns
-        orthogonal_cols = list(
-            {
-                orthogonal_task.replace("-", "_")
-                for orthogonal_task in category_to_orthogonal_datasets[
-                    category
-                ].values()
-            }
-        )
-        dataset_cols = [
-            dataset.replace("-", "_")
-            for dataset in category_to_datasets[category]
-            if dataset not in category_to_orthogonal_datasets[category]
-        ]
-        cols = (
-            ["rank", "model", "mean_rank_score"]
-            + orthogonal_cols
-            + [
-                "generative_type",
-                "open",
-                "commercial",
-                "merge",
-                "trained_from_scratch",
-                "parameters",
-                "vocabulary_size",
-                "context",
-            ]
-            + rank_cols[2:]
-        )
-        if include_dataset_columns:
-            cols += dataset_cols
-            cols += [f"{dataset}_version" for dataset in dataset_cols]
-            cols += [f"{dataset}_failures" for dataset in dataset_cols]
-            cols += [f"{dataset}_scored" for dataset in dataset_cols]
-        df = df[cols]
-
-        # If a model has only orthogonal values, we remove it from the leaderboard
-        num_before = len(df)
-        value_cols = [col for col in dataset_cols + rank_cols[1:] if col in df.columns]
-        model_ids_with_dataset_values = df.query(
-            " or ".join([f"({col} != '-')" for col in value_cols])
-        ).model.tolist()
-        model_ids_with_orthogonal_values = df[
-            df[orthogonal_cols].notna().any(axis=1)
-        ].model.tolist()
-        model_ids_to_drop = set(model_ids_with_orthogonal_values) - set(
-            model_ids_with_dataset_values
-        )
-        df = df[~df.model.isin(model_ids_to_drop)].reset_index(drop=True)
-        num_after = len(df)
-        if num_after < num_before:
-            logger.info(
-                f"Dropped {num_before - num_after:,} models from the {category!r} "
-                "leaderboard that had only orthogonal scores but no dataset scores."
-            )
-
-        # Replace Boolean values by ✓ and ✗
-        boolean_columns = ["commercial", "merge", "open", "trained_from_scratch"]
-        for col in boolean_columns:
-            df[col] = df[col].apply(lambda x: "✓" if x else "✗")
-
-        # Orthogonal values only makes sense for instruction-tuned and reasoning models,
-        # so we set the value to "N/A" for other model types
-        for orthogonal_task in category_to_orthogonal_datasets[category].values():
-            col_name = orthogonal_task.replace("-", "_")
-            df[col_name] = df.apply(
-                lambda row: (
-                    row[col_name]
-                    if row.generative_type in ["instruction_tuned", "reasoning"]
-                    else "N/A"
-                ),
-                axis=1,
-            )
-
-        # Replace generative_type with emojis
-        generative_type_emoji_mapping = {
-            "base": "🧠",
-            "instruction_tuned": "📝",
-            "reasoning": "🤔",
-        }
-        df["generative_type"] = df.generative_type.map(
-            lambda x: generative_type_emoji_mapping.get(x, "🔍")
-        )
-
-        # Create the simplified leaderboard
-        df_simplified = df[
-            [
-                "rank",
-                "model",
-                "mean_rank_score",
-                "generative_type",
-                "open",
-                "commercial",
-                "merge",
-                "trained_from_scratch",
-                "parameters",
-                "vocabulary_size",
-                "context",
-            ]
-        ]
-        df_simplified = df_simplified.query("rank != '-'")
-        df_simplified = df_simplified.convert_dtypes()
-
-        # Format headers for display
-        renaming_dict = (
-            {
-                "model": "Model",
-                "generative_type": "Type",
-                "rank": "Rank",
-                "parameters": "Parameters",
-                "vocabulary_size": "Vocabulary",
-                "context": "Context",
-                "commercial": "Commercial",
-                "merge": "Merge",
-                "open": "Open",
-                "trained_from_scratch": "Trained from scratch",
-            }
-            | {"mean_rank_score": "Rank score"}
-            | {rank_col: rank_col.title() for rank_col in rank_cols[2:]}
-            | {
-                orthogonal_task.replace("-", "_"): orthogonal_task.replace(
-                    "-", " "
-                ).title()
-                for orthogonal_task in category_to_orthogonal_datasets[
-                    category
-                ].values()
-            }
-        )
-        df = df.rename(renaming_dict, axis="columns")
-
-        assert isinstance(df, pd.DataFrame)
-        dfs.append((df, df_simplified))
-
-    return dfs
+    return model_values
 
 
 def _format_rank_score(entry: object) -> str:
-    """Render a {"score", "ci_upper", ...} dict as "score ± margin", or "-".
+    """Render a {"score", "ci_upper", ...} dict as "score +/- margin", or "-".
 
     Args:
         entry:
@@ -823,3 +781,397 @@ def _format_rank_score(entry: object) -> str:
         else 0.0
     )
     return f"{score:.2f} \u00b1 {margin:.2f}"
+
+
+def _collect_orthogonal_scores(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    category: str,
+    category_to_orthogonal_datasets: dict[str, dict[str, str]],
+) -> dict[str, dict[str, float]]:
+    """Collect orthogonal scores keyed by plain model id.
+
+    Args:
+        model_results:
+            The model results.
+        category:
+            The current category.
+        category_to_orthogonal_datasets:
+            Category to orthogonal datasets mapping.
+
+    Returns:
+        Dictionary mapping plain model ids to orthogonal scores.
+    """
+    orthogonal_scores_by_plain: dict[str, dict[str, float]] = defaultdict(dict)
+    for other_model_id, other_results in model_results.items():
+        other_plain_id = plain_model_id(other_model_id)
+        for dataset in category_to_orthogonal_datasets[category]:
+            if dataset not in other_results:
+                continue
+            main_score = other_results[dataset][0][1]
+            if not math.isnan(main_score):
+                orthogonal_scores_by_plain[other_plain_id][dataset] = main_score
+    return orthogonal_scores_by_plain
+
+
+def _compute_eligible_models_and_ranks(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    category: str,
+    category_to_datasets: dict[str, list[str]],
+    category_to_orthogonal_datasets: dict[str, dict[str, str]],
+    leaderboard_configs: dict[str, dict[str, list[str]]],
+    language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
+    | None = None,
+) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, list[str]], dict, dict]":  # noqa: E501
+    """Compute eligible models and bootstrap ranks for a category.
+
+    Computes both displayed rank scores (for the "Rank score" column) and
+    ordinal ranks from the SAME bootstrap distribution over the eligible model
+    set, ensuring consistency between the two.
+
+    For multilingual leaderboards, per-language rank score columns are computed
+    using each language's monolingual eligible set, matching the corresponding
+    monolingual leaderboard. The overall "Rank score" and ordinal "Rank" remain
+    pan-leaderboard.
+
+    Args:
+        model_results:
+            The model results.
+        category:
+            The current category.
+        category_to_datasets:
+            Category to datasets mapping.
+        category_to_orthogonal_datasets:
+            Category to orthogonal datasets mapping.
+        leaderboard_configs:
+            The leaderboard configurations.
+        language_rank_cache (optional):
+            Shared cache for monolingual rank-score confidence intervals.
+
+    Returns:
+        Tuple of (eligible_model_results, language_to_required_datasets,
+        ranks, all_standard_ranks). Ranks are the displayed rank scores
+        (model_id -> category -> language -> {"score", "ci_lower", "ci_upper"}),
+        all_standard_ranks are the ordinal ranks (model_id -> category -> int).
+    """
+    required_datasets = [
+        ds
+        for ds in sorted(category_to_datasets[category])
+        if ds not in category_to_orthogonal_datasets[category]
+    ]
+    # Sort for deterministic iteration.
+    eligible_model_results = {
+        mid: model_results[mid]
+        for mid in sorted(model_results.keys())
+        if all(ds in model_results[mid] for ds in required_datasets)
+    }
+
+    language_to_required_datasets = {
+        language: [
+            dataset
+            for task, task_datasets in config.items()
+            for dataset in task_datasets
+            if category_includes_task(category=category, task=task)
+            and task not in ORTHOGONAL_TASKS
+        ]
+        for language, config in leaderboard_configs.items()
+    }
+
+    # Compute bootstrap distributions for overall rank score and ordinal ranks.
+    bootstrap_scores = bootstrap_rank_scores(
+        model_results=eligible_model_results,
+        configs=leaderboard_configs,
+        n_bootstraps=NUM_BOOTSTRAPS,
+        seed=42,
+        categories=(category,),
+    )
+
+    # Displayed rank scores (median + percentile CI).
+    ranks = bootstrap_confidence_intervals(bootstrap_scores)
+
+    # Ordinal ranks from paired-bootstrap method.
+    all_standard_ranks = compute_standard_ranks_from_bootstrap_scores(
+        bootstrap_scores=bootstrap_scores, alpha=0.05
+    )
+
+    if language_rank_cache is None:
+        language_rank_cache = {}
+    if len(leaderboard_configs) == 1:
+        language = next(iter(leaderboard_configs))
+        cache_key = _language_rank_cache_key(
+            language=language,
+            category=category,
+            required_datasets=required_datasets,
+            eligible_model_results=eligible_model_results,
+        )
+        language_rank_cache[cache_key] = ranks
+
+    # For multilingual leaderboards, compute per-language rank scores using
+    # each language's monolingual eligible set. This ensures the per-language
+    # columns match the corresponding monolingual leaderboards.
+    if len(leaderboard_configs) > 1:
+        for language, lang_config in leaderboard_configs.items():
+            lang_required = language_to_required_datasets[language]
+            lang_eligible = {
+                mid: model_results[mid]
+                for mid in sorted(model_results.keys())
+                if all(ds in model_results[mid] for ds in lang_required)
+            }
+            cache_key = _language_rank_cache_key(
+                language=language,
+                category=category,
+                required_datasets=lang_required,
+                eligible_model_results=lang_eligible,
+            )
+            if cache_key not in language_rank_cache:
+                lang_bootstrap = bootstrap_rank_scores(
+                    model_results=lang_eligible,
+                    configs={language: lang_config},
+                    n_bootstraps=NUM_BOOTSTRAPS,
+                    seed=42,
+                    categories=(category,),
+                )
+                language_rank_cache[cache_key] = bootstrap_confidence_intervals(
+                    bootstrap_scores=lang_bootstrap
+                )
+            lang_ranks = language_rank_cache[cache_key]
+            # Merge per-language scores into ranks.
+            for model_id, model_data in lang_ranks.items():
+                if model_id not in ranks:
+                    ranks[model_id] = {}
+                if category not in ranks[model_id]:
+                    ranks[model_id][category] = {}
+                # Copy the language-specific rank score (preserves overall).
+                if language in model_data.get(category, {}):
+                    ranks[model_id][category][language] = model_data[category][language]
+
+    return (
+        eligible_model_results,
+        language_to_required_datasets,
+        ranks,
+        all_standard_ranks,
+    )
+
+
+def _language_rank_cache_key(
+    language: str,
+    category: str,
+    required_datasets: list[str],
+    eligible_model_results: dict[
+        str, dict[str, list[tuple[list[float], float, float]]]
+    ],
+) -> tuple[str, str, tuple[str, ...], tuple[str, ...]]:
+    """Create a cache key for monolingual rank-score confidence intervals.
+
+    Args:
+        language:
+            The language name.
+        category:
+            The leaderboard category.
+        required_datasets:
+            The datasets required for monolingual eligibility.
+        eligible_model_results:
+            The eligible model results.
+
+    Returns:
+        A cache key that is stable across monolingual and multilingual calls in
+        the same leaderboard-generation run.
+    """
+    return (
+        language,
+        category,
+        tuple(sorted(required_datasets)),
+        tuple(sorted(eligible_model_results)),
+    )
+
+
+def _create_simplified_and_rename(
+    df: pd.DataFrame,
+    rank_cols: list[str],
+    category_to_orthogonal_datasets: dict[str, dict[str, str]],
+    category: str,
+) -> "tuple[pd.DataFrame, pd.DataFrame]":
+    """Create simplified DataFrame and rename columns for display.
+
+    Args:
+        df:
+            The full DataFrame.
+        rank_cols:
+            The rank column names.
+        category_to_orthogonal_datasets:
+            Category to orthogonal datasets mapping.
+        category:
+            The current category.
+
+    Returns:
+        Tuple of (df, df_simplified) with renamed columns.
+    """
+    df_simplified = df[
+        [
+            "rank",
+            "model",
+            "mean_rank_score",
+            "generative_type",
+            "open",
+            "commercial",
+            "merge",
+            "trained_from_scratch",
+            "parameters",
+            "vocabulary_size",
+            "context",
+        ]
+    ]
+    df_simplified = df_simplified.query("rank != '-'")
+    df_simplified = df_simplified.convert_dtypes()
+
+    renaming_dict = (
+        {
+            "model": "Model",
+            "generative_type": "Type",
+            "rank": "Rank",
+            "parameters": "Parameters",
+            "vocabulary_size": "Vocabulary",
+            "context": "Context",
+            "commercial": "Commercial",
+            "merge": "Merge",
+            "open": "Open",
+            "trained_from_scratch": "Trained from scratch",
+        }
+        | {"mean_rank_score": "Rank score"}
+        | {rank_col: rank_col.title() for rank_col in rank_cols[2:]}
+        | {
+            orthogonal_task.replace("-", "_"): orthogonal_task.replace("-", " ").title()
+            for orthogonal_task in category_to_orthogonal_datasets[category].values()
+        }
+    )
+    df = df.rename(renaming_dict, axis="columns")
+
+    return df, df_simplified
+
+
+def _filter_orthogonal_only_models(
+    df: pd.DataFrame,
+    category: str,
+    orthogonal_cols: list[str],
+    dataset_cols: list[str],
+    rank_cols: list[str],
+) -> pd.DataFrame:
+    """Filter out models with only orthogonal values.
+
+    Args:
+        df:
+            The DataFrame to filter.
+        category:
+            The current category.
+        orthogonal_cols:
+            The orthogonal column names.
+        dataset_cols:
+            The dataset column names.
+        rank_cols:
+            The rank column names.
+
+    Returns:
+        The filtered DataFrame.
+    """
+    num_before = len(df)
+    value_cols = [col for col in dataset_cols + rank_cols[1:] if col in df.columns]
+    model_ids_with_dataset_values = df.query(
+        " or ".join([f"({col} != '-')" for col in value_cols])
+    ).model.tolist()
+    model_ids_with_orthogonal_values = df[
+        df[orthogonal_cols].notna().any(axis=1)
+    ].model.tolist()
+    model_ids_to_drop = set(model_ids_with_orthogonal_values) - set(
+        model_ids_with_dataset_values
+    )
+    df = df[~df.model.isin(model_ids_to_drop)].reset_index(drop=True)
+    num_after = len(df)
+    if num_after < num_before:
+        logger.info(
+            f"Dropped {num_before - num_after:,} models from the {category!r} "
+            "leaderboard that had only orthogonal scores but no dataset scores."
+        )
+    return df
+
+
+def _format_ordinal_rank_column(df: pd.DataFrame, rank_cols: list[str]) -> pd.DataFrame:
+    """Format the ordinal rank column with sentinel for NaN.
+
+    Args:
+        df:
+            The DataFrame to format.
+        rank_cols:
+            The rank column names.
+
+    Returns:
+        The formatted DataFrame.
+    """
+    df["rank"] = [
+        str(int(value))
+        if isinstance(value, (int, float)) and math.isfinite(value)
+        else "-"
+        for value in df["rank"]
+    ]
+    for col in rank_cols[1:]:
+        df[col] = [v if isinstance(v, str) and v != "-" else "-" for v in df[col]]
+    return df
+
+
+def _reorder_columns(
+    df: pd.DataFrame,
+    category: str,
+    category_to_orthogonal_datasets: dict[str, dict[str, str]],
+    category_to_datasets: dict[str, list[str]],
+    rank_cols: list[str],
+    include_dataset_columns: bool,
+) -> pd.DataFrame:
+    """Reorder DataFrame columns to the standard order.
+
+    Args:
+        df:
+            The DataFrame to reorder.
+        category:
+            The current category.
+        category_to_orthogonal_datasets:
+            Category to orthogonal datasets mapping.
+        category_to_datasets:
+            Category to datasets mapping.
+        rank_cols:
+            The rank column names.
+        include_dataset_columns:
+            Whether to include dataset columns.
+
+    Returns:
+        The DataFrame with reordered columns.
+    """
+    orthogonal_cols = list(
+        {
+            orthogonal_task.replace("-", "_")
+            for orthogonal_task in category_to_orthogonal_datasets[category].values()
+        }
+    )
+    dataset_cols = [
+        dataset.replace("-", "_")
+        for dataset in category_to_datasets[category]
+        if dataset not in category_to_orthogonal_datasets[category]
+    ]
+    cols = (
+        ["rank", "model", "mean_rank_score"]
+        + orthogonal_cols
+        + [
+            "generative_type",
+            "open",
+            "commercial",
+            "merge",
+            "trained_from_scratch",
+            "parameters",
+            "vocabulary_size",
+            "context",
+        ]
+        + rank_cols[2:]
+    )
+    if include_dataset_columns:
+        cols += dataset_cols
+        cols += [f"{dataset}_version" for dataset in dataset_cols]
+        cols += [f"{dataset}_failures" for dataset in dataset_cols]
+        cols += [f"{dataset}_scored" for dataset in dataset_cols]
+    return df[cols]

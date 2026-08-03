@@ -33,6 +33,155 @@ from euroeval.enums import InferenceBackend, ModelType
 from euroeval.exceptions import HuggingFaceHubDown
 
 
+class TestClearCacheFn:
+    """Tests related to the `clear_cache_fn` function."""
+
+    def test_clear_existing_cache(self) -> None:
+        """Test that a cache can be cleared."""
+        cache_dir = Path(".test_euroeval_cache")
+        model_cache_dir = cache_dir / "model_cache"
+        example_model_dir = model_cache_dir / "example_model"
+        dir_to_be_deleted = example_model_dir / "dir_to_be_deleted"
+
+        dir_to_be_deleted.mkdir(parents=True, exist_ok=True)
+        assert dir_to_be_deleted.exists()
+
+        clear_model_cache_fn(cache_dir=cache_dir.as_posix())
+        assert not dir_to_be_deleted.exists()
+        assert example_model_dir.exists()
+
+        rmtree(path=cache_dir, ignore_errors=True)
+
+    def test_clear_non_existing_cache(self) -> None:
+        """Test that no errors are thrown when clearing a non-existing cache."""
+        clear_model_cache_fn(cache_dir="does-not-exist")
+        rmtree(path="does-not-exist", ignore_errors=True)
+
+
+class TestDebugStartupVerbosity:
+    """Tests for the --debug startup verbosity bug fix."""
+
+    def test_call_debug_true_suppresses_hint(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that call debug=True suppresses the --verbose hint."""
+        logged_messages: list[str] = []
+        monkeypatch.delenv("FULL_LOG", raising=False)
+
+        def mock_log_once(message: str, level: int, prefix: str = "") -> None:
+            logged_messages.append(message)
+
+        monkeypatch.setattr("euroeval.benchmarker.log_once", mock_log_once)
+        monkeypatch.setattr("euroeval.benchmarker.log", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            "euroeval.benchmarker.adjust_logging_level", lambda *args, **kwargs: None
+        )
+
+        benchmarker = Benchmarker(
+            progress_bar=False,
+            save_results=False,
+            num_iterations=1,
+            debug=False,
+            run_with_cli=True,
+        )
+
+        # Mock the methods that would do real work
+        monkeypatch.setattr(
+            benchmarker, "_fetch_model_configs", lambda *args, **kwargs: []
+        )
+        monkeypatch.setattr(
+            benchmarker, "_create_model_dataset_mapping", lambda *args, **kwargs: {}
+        )
+
+        benchmarker.benchmark(model="test_model", debug=True)
+
+        # Should use the short message (no --verbose hint) when debug=True
+        assert any("Started EuroEval run." in msg for msg in logged_messages)
+        assert not any(
+            "Run with `--verbose` for more information" in msg
+            for msg in logged_messages
+        )
+
+    def test_init_debug_true_suppresses_hint(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that init debug=True suppresses the --verbose hint."""
+        logged_messages: list[str] = []
+        monkeypatch.delenv("FULL_LOG", raising=False)
+
+        def mock_log_once(message: str, level: int, prefix: str = "") -> None:
+            logged_messages.append(message)
+
+        monkeypatch.setattr("euroeval.benchmarker.log_once", mock_log_once)
+        monkeypatch.setattr("euroeval.benchmarker.log", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            "euroeval.benchmarker.adjust_logging_level", lambda *args, **kwargs: None
+        )
+
+        benchmarker = Benchmarker(
+            progress_bar=False,
+            save_results=False,
+            num_iterations=1,
+            debug=True,
+            run_with_cli=True,
+        )
+
+        # Mock the methods that would do real work
+        monkeypatch.setattr(
+            benchmarker, "_fetch_model_configs", lambda *args, **kwargs: []
+        )
+        monkeypatch.setattr(
+            benchmarker, "_create_model_dataset_mapping", lambda *args, **kwargs: {}
+        )
+
+        benchmarker.benchmark(model="test_model")
+
+        # Should use the short message (no --verbose hint) when debug=True
+        assert any("Started EuroEval run." in msg for msg in logged_messages)
+        assert not any(
+            "Run with `--verbose` for more information" in msg
+            for msg in logged_messages
+        )
+
+    def test_non_debug_shows_hint(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that the normal non-debug case still shows the --verbose hint."""
+        logged_messages: list[str] = []
+        monkeypatch.delenv("FULL_LOG", raising=False)
+
+        def mock_log_once(message: str, level: int, prefix: str = "") -> None:
+            logged_messages.append(message)
+
+        monkeypatch.setattr("euroeval.benchmarker.log_once", mock_log_once)
+        monkeypatch.setattr("euroeval.benchmarker.log", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            "euroeval.benchmarker.adjust_logging_level", lambda *args, **kwargs: None
+        )
+
+        benchmarker = Benchmarker(
+            progress_bar=False,
+            save_results=False,
+            num_iterations=1,
+            debug=False,
+            run_with_cli=True,
+        )
+
+        # Mock the methods that would do real work
+        monkeypatch.setattr(
+            benchmarker, "_fetch_model_configs", lambda *args, **kwargs: []
+        )
+        monkeypatch.setattr(
+            benchmarker, "_create_model_dataset_mapping", lambda *args, **kwargs: {}
+        )
+
+        benchmarker.benchmark(model="test_model")
+
+        # Should show the --verbose hint when debug=False
+        assert any(
+            "Run with `--verbose` for more information" in msg
+            for msg in logged_messages
+        )
+
+
 @pytest.fixture(scope="module")
 def benchmarker() -> Generator[Benchmarker, None, None]:
     """A `Benchmarker` instance.
@@ -43,9 +192,14 @@ def benchmarker() -> Generator[Benchmarker, None, None]:
     yield Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
 
 
-def test_benchmark_results_is_a_list(benchmarker: Benchmarker) -> None:
-    """Test that the `benchmark_results` property is a list."""
-    assert isinstance(benchmarker.benchmark_results, list)
+@pytest.mark.parametrize(
+    argnames=["verbose", "expected_logging_level"],
+    argvalues=[(False, logging.INFO), (True, logging.DEBUG)],
+)
+def test_adjust_logging_level(verbose: bool, expected_logging_level: int) -> None:
+    """Test that the logging level is adjusted correctly."""
+    logging_level = adjust_logging_level(verbose=verbose, ignore_testing=True)
+    assert logging_level == expected_logging_level
 
 
 @pytest.mark.depends(on=["tests/test_model_loading.py::test_load_non_generative_model"])
@@ -64,6 +218,20 @@ def test_benchmark_encoder(
             time.sleep(5)
     else:
         pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
+    assert isinstance(benchmark_result, list)
+    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
+@pytest.mark.depends(on=["test_benchmark_encoder"])
+def test_benchmark_encoder_no_internet(
+    task: Task, language: Language, encoder_model_id: str
+) -> None:
+    """Test that encoder models can be benchmarked without internet."""
+    # We need a new benchmarker since we only check for internet once per instance
+    benchmarker = Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
+    benchmark_result = benchmarker.benchmark(
+        model=encoder_model_id, task=task.name, language=language.code
+    )
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
@@ -104,47 +272,21 @@ def test_benchmark_generative_adapter(
 
 
 @pytest.mark.skipif(
-    condition=os.getenv("OPENAI_API_KEY") is None,
-    reason="OpenAI API key is not available.",
+    condition=sys.platform == "linux" and not torch.cuda.is_available(),
+    reason="Running on Ubuntu but no CUDA available",
 )
-def test_benchmark_openai(
-    benchmarker: Benchmarker, task: Task, language: Language, openai_model_id: str
-) -> None:
-    """Test that an OpenAI model can be benchmarked."""
-    benchmark_result = benchmarker.benchmark(
-        model=openai_model_id, task=task.name, language=language.code
-    )
-    assert isinstance(benchmark_result, list)
-    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
-
-
-@pytest.mark.skipif(
-    condition=subprocess.run(
-        ["uv", "run", "ollama", "-v"], capture_output=True
-    ).returncode
-    != 0,
-    reason="Ollama is not available.",
+@pytest.mark.skip(
+    "Benchmarking adapter models without internet access are not implemented yet."
 )
-def test_benchmark_ollama(
-    benchmarker: Benchmarker, task: Task, language: Language, ollama_model_id: str
+@pytest.mark.depends(on=["test_benchmark_generative_adapter"])
+def test_benchmark_generative_adapter_no_internet(
+    task: Task, language: Language, generative_adapter_model_id: str
 ) -> None:
-    """Test that an Ollama model can be benchmarked."""
-    benchmark_result = benchmarker.benchmark(
-        model=ollama_model_id, task=task.name, language=language.code
-    )
-    assert isinstance(benchmark_result, list)
-    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
-
-
-@pytest.mark.depends(on=["test_benchmark_encoder"])
-def test_benchmark_encoder_no_internet(
-    task: Task, language: Language, encoder_model_id: str
-) -> None:
-    """Test that encoder models can be benchmarked without internet."""
+    """Test that generative adapter models can be benchmarked without internet."""
     # We need a new benchmarker since we only check for internet once per instance
     benchmarker = Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
     benchmark_result = benchmarker.benchmark(
-        model=encoder_model_id, task=task.name, language=language.code
+        model=generative_adapter_model_id, task=task.name, language=language.code
     )
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
@@ -169,24 +311,40 @@ def test_benchmark_generative_no_internet(
 
 
 @pytest.mark.skipif(
-    condition=sys.platform == "linux" and not torch.cuda.is_available(),
-    reason="Running on Ubuntu but no CUDA available",
+    condition=subprocess.run(
+        ["uv", "run", "ollama", "-v"], capture_output=True
+    ).returncode
+    != 0,
+    reason="Ollama is not available.",
 )
-@pytest.mark.skip(
-    "Benchmarking adapter models without internet access are not implemented yet."
-)
-@pytest.mark.depends(on=["test_benchmark_generative_adapter"])
-def test_benchmark_generative_adapter_no_internet(
-    task: Task, language: Language, generative_adapter_model_id: str
+def test_benchmark_ollama(
+    benchmarker: Benchmarker, task: Task, language: Language, ollama_model_id: str
 ) -> None:
-    """Test that generative adapter models can be benchmarked without internet."""
-    # We need a new benchmarker since we only check for internet once per instance
-    benchmarker = Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
+    """Test that an Ollama model can be benchmarked."""
     benchmark_result = benchmarker.benchmark(
-        model=generative_adapter_model_id, task=task.name, language=language.code
+        model=ollama_model_id, task=task.name, language=language.code
     )
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
+@pytest.mark.skipif(
+    condition=not os.getenv("OPENAI_API_KEY"), reason="OpenAI API key is not available."
+)
+def test_benchmark_openai(
+    benchmarker: Benchmarker, task: Task, language: Language, openai_model_id: str
+) -> None:
+    """Test that an OpenAI model can be benchmarked."""
+    benchmark_result = benchmarker.benchmark(
+        model=openai_model_id, task=task.name, language=language.code
+    )
+    assert isinstance(benchmark_result, list)
+    assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
+def test_benchmark_results_is_a_list(benchmarker: Benchmarker) -> None:
+    """Test that the `benchmark_results` property is a list."""
+    assert isinstance(benchmarker.benchmark_results, list)
 
 
 def test_download_only_does_not_instantiate_model(
@@ -521,38 +679,3 @@ def test_get_record(
         is not None
     )
     assert benchmarked == expected
-
-
-@pytest.mark.parametrize(
-    argnames=["verbose", "expected_logging_level"],
-    argvalues=[(False, logging.INFO), (True, logging.DEBUG)],
-)
-def test_adjust_logging_level(verbose: bool, expected_logging_level: int) -> None:
-    """Test that the logging level is adjusted correctly."""
-    logging_level = adjust_logging_level(verbose=verbose, ignore_testing=True)
-    assert logging_level == expected_logging_level
-
-
-class TestClearCacheFn:
-    """Tests related to the `clear_cache_fn` function."""
-
-    def test_clear_non_existing_cache(self) -> None:
-        """Test that no errors are thrown when clearing a non-existing cache."""
-        clear_model_cache_fn(cache_dir="does-not-exist")
-        rmtree(path="does-not-exist", ignore_errors=True)
-
-    def test_clear_existing_cache(self) -> None:
-        """Test that a cache can be cleared."""
-        cache_dir = Path(".test_euroeval_cache")
-        model_cache_dir = cache_dir / "model_cache"
-        example_model_dir = model_cache_dir / "example_model"
-        dir_to_be_deleted = example_model_dir / "dir_to_be_deleted"
-
-        dir_to_be_deleted.mkdir(parents=True, exist_ok=True)
-        assert dir_to_be_deleted.exists()
-
-        clear_model_cache_fn(cache_dir=cache_dir.as_posix())
-        assert not dir_to_be_deleted.exists()
-        assert example_model_dir.exists()
-
-        rmtree(path=cache_dir, ignore_errors=True)

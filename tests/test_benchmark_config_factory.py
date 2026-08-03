@@ -29,6 +29,26 @@ from euroeval.languages import (
 from euroeval.tasks import LA
 
 
+class TestBitsPerCharacterGating:
+    """Tests for the BPC scoring-method gating inside `build_benchmark_config`."""
+
+    def test_bpc_on_mcq_dataset_passes(self) -> None:
+        """BPC on a multiple-choice dataset builds a config without raising."""
+        benchmarker = Benchmarker(dataset="belebele-nl", use_bits_per_character=True)
+        assert benchmarker.benchmark_config.use_bits_per_character is True
+
+    def test_bpc_on_non_mcq_dataset_logs_debug(self) -> None:
+        """BPC on a non-MCQ dataset logs a debug message."""
+        benchmarker = Benchmarker(dataset="dala", use_bits_per_character=True)
+        # Non-MCQ tasks still set the flag but log a debug message
+        assert benchmarker.benchmark_config.use_bits_per_character is True
+
+    def test_mcf_default(self) -> None:
+        """MCF is the default when use_bits_per_character is not set."""
+        benchmarker = Benchmarker(dataset="belebele-nl")
+        assert benchmarker.benchmark_config.use_bits_per_character is False
+
+
 @pytest.fixture(scope="module")
 def all_official_dataset_configs() -> Generator[list[DatasetConfig], None, None]:
     """Fixture for all official dataset configurations.
@@ -69,44 +89,6 @@ def all_official_la_dataset_configs() -> Generator[list[DatasetConfig], None, No
         ).values()
         if LA == cfg.task and not cfg.unofficial
     ]
-
-
-@pytest.mark.parametrize(
-    argnames=["input_language_codes", "input_language", "expected_language"],
-    argvalues=[
-        ("da", None, [DANISH]),
-        (["da"], None, [DANISH]),
-        (["da", "no"], ["da"], [DANISH]),
-        (["da", "en"], None, [DANISH, ENGLISH]),
-        ("no", None, [NORWEGIAN, NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK]),
-        (["nb"], None, [NORWEGIAN_BOKMÅL, NORWEGIAN]),
-        ("all", None, list(get_all_languages().values())),
-    ],
-    ids=[
-        "single language",
-        "single language as list",
-        "language takes precedence over model language",
-        "multiple languages",
-        "no -> no + nb + nn",
-        "nb -> nb + no",
-        "all -> all languages",
-    ],
-)
-def test_prepare_languages(
-    input_language_codes: str | list[str],
-    input_language: list[str] | None,
-    expected_language: list[Language],
-) -> None:
-    """Test the output of `prepare_languages`."""
-    prepared_language_codes = get_correct_language_codes(
-        language_codes=input_language_codes
-    )
-    model_languages = prepare_languages(
-        language_codes=input_language, default_language_codes=prepared_language_codes
-    )
-    model_languages = sorted(model_languages, key=lambda x: x.code)
-    expected_language = sorted(expected_language, key=lambda x: x.code)
-    assert model_languages == expected_language
 
 
 @pytest.mark.parametrize(
@@ -210,22 +192,10 @@ def test_prepare_dataset_configs(
     assert set(prepared_dataset_configs) == set(expected_dataset_configs)
 
 
-def test_prepare_dataset_configs_invalid_task() -> None:
-    """Test that an invalid task raises an error."""
-    with pytest.raises(SystemExit) as exc_info:
-        prepare_dataset_configs(
-            task="invalid-task",
-            dataset=None,
-            languages=[DANISH],
-            custom_datasets_file=Path("custom_datasets.py"),
-            api_key=os.getenv("HF_TOKEN"),
-            cache_dir=Path(".euroeval_cache"),
-            trust_remote_code=True,
-            run_with_cli=True,
-        )
-    assert exc_info.value.code == 1
-
-
+@pytest.mark.skipif(
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for dataset config loading",
+)
 def test_prepare_dataset_configs_invalid_dataset() -> None:
     """Test that an invalid dataset raises an error."""
     with pytest.raises(SystemExit) as exc_info:
@@ -242,24 +212,20 @@ def test_prepare_dataset_configs_invalid_dataset() -> None:
     assert exc_info.value.code == 1
 
 
-class TestBitsPerCharacterGating:
-    """Tests for the BPC scoring-method gating inside `build_benchmark_config`."""
-
-    def test_bpc_on_mcq_dataset_passes(self) -> None:
-        """BPC on a multiple-choice dataset builds a config without raising."""
-        benchmarker = Benchmarker(dataset="belebele-nl", use_bits_per_character=True)
-        assert benchmarker.benchmark_config.use_bits_per_character is True
-
-    def test_bpc_on_non_mcq_dataset_logs_debug(self) -> None:
-        """BPC on a non-MCQ dataset logs a debug message."""
-        benchmarker = Benchmarker(dataset="dala", use_bits_per_character=True)
-        # Non-MCQ tasks still set the flag but log a debug message
-        assert benchmarker.benchmark_config.use_bits_per_character is True
-
-    def test_mcf_default(self) -> None:
-        """MCF is the default when use_bits_per_character is not set."""
-        benchmarker = Benchmarker(dataset="belebele-nl")
-        assert benchmarker.benchmark_config.use_bits_per_character is False
+def test_prepare_dataset_configs_invalid_task() -> None:
+    """Test that an invalid task raises an error."""
+    with pytest.raises(SystemExit) as exc_info:
+        prepare_dataset_configs(
+            task="invalid-task",
+            dataset=None,
+            languages=[DANISH],
+            custom_datasets_file=Path("custom_datasets.py"),
+            api_key=os.getenv("HF_TOKEN"),
+            cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
+        )
+    assert exc_info.value.code == 1
 
 
 @pytest.mark.parametrize(
@@ -285,3 +251,41 @@ def test_prepare_device(device: Device, expected_device: torch.device) -> None:
     """Test the output of `prepare_device`."""
     prepared_device = prepare_device(device=device)
     assert prepared_device == expected_device
+
+
+@pytest.mark.parametrize(
+    argnames=["input_language_codes", "input_language", "expected_language"],
+    argvalues=[
+        ("da", None, [DANISH]),
+        (["da"], None, [DANISH]),
+        (["da", "no"], ["da"], [DANISH]),
+        (["da", "en"], None, [DANISH, ENGLISH]),
+        ("no", None, [NORWEGIAN, NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK]),
+        (["nb"], None, [NORWEGIAN_BOKMÅL, NORWEGIAN]),
+        ("all", None, list(get_all_languages().values())),
+    ],
+    ids=[
+        "single language",
+        "single language as list",
+        "language takes precedence over model language",
+        "multiple languages",
+        "no -> no + nb + nn",
+        "nb -> nb + no",
+        "all -> all languages",
+    ],
+)
+def test_prepare_languages(
+    input_language_codes: str | list[str],
+    input_language: list[str] | None,
+    expected_language: list[Language],
+) -> None:
+    """Test the output of `prepare_languages`."""
+    prepared_language_codes = get_correct_language_codes(
+        language_codes=input_language_codes
+    )
+    model_languages = prepare_languages(
+        language_codes=input_language, default_language_codes=prepared_language_codes
+    )
+    model_languages = sorted(model_languages, key=lambda x: x.code)
+    expected_language = sorted(expected_language, key=lambda x: x.code)
+    assert model_languages == expected_language

@@ -474,7 +474,76 @@ euroeval --model <model-id> --dataset multi-wiki-qa-hu
 
 ## Knowledge
 
-### MMLU-hu
+### INCLUDE-hu
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+  "text": "Melyik hormon szabályozza a tejleadást?\nVálaszlehetőségek:\na. az oxitocin\nb. a progeszteron\nc. az ösztrogén\nd. az adrenalin",
+  "label": "a",
+  "subject": "Agriculture"
+}
+```
+
+```json
+{
+  "text": "Melyik hazánk legszelesebb tája?\nVálaszlehetőségek:\na. Tiszántúl\nb. Kisalföld\nc. Északi-középhegység\nd. Duna−Tisza köze",
+  "label": "b",
+  "subject": "Environmental studies and forestry"
+}
+```
+
+```json
+{
+  "text": "Melyik igaz az alábbi állítások közül?\nVálaszlehetőségek:\na. Az RNS hidrolízise aldohexózt is eredményez.\nb. Az amidok vizes oldatban erős bázisként viselkednek.\nc. Az adenin, citozin és a guanin a DNS- és RNS-molekulák hidrolízisének termékei.\nd. A fehérjék savas hidrolízisében foszforsav is keletkezik.",
+  "label": "c",
+  "subject": "Chemistry"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Az alábbiakban több választási lehetőséget tartalmazó kérdések találhatók (válaszokkal együtt).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Kérdés: {text}
+  Válasz: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Kérdés: {text}
+
+  Válaszoljon a fenti kérdésre az elérhető lehetőségek közül {labels_str} használatával, és semmi mással.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-hu
+```
+
+### Unofficial: MMLU-hu
 
 This dataset is a machine translated version of the English
 [MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
@@ -547,41 +616,43 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-hu
 ```
 
-### Unofficial: INCLUDE-hu
+### Unofficial: EU-MMLU-hu
 
-This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
-comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
-LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
-academic and professional exams, covering 57 topics including regional knowledge.
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 7 of the original
+57 subjects: college biology, college chemistry, college physics, global facts,
+international law, management and sociology. Unlike the other MMLU variants in EuroEval
+it was not machine translated - the translation was carried out by professional
+translators at the European Commission's Directorate-General for Translation, together
+with master's students from the European Master's in Translation network, as described
+in [this paper](https://arxiv.org/abs/2607.18432).
 
-The original dataset consists of a 'validation' split used as training data and a 'test'
-split. We use the 'validation' split as the training split, which has 25 samples. We
-sample 64 samples from the 'test' split for the validation split, and use the remaining
-512 samples for the test split. The sampling is done stratified by the subject column.
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 34 / 91 / 616 samples for training,
+validation and testing, respectively (so 741 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
 
-Here are a few examples from the dataset:
+Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Melyik hormon szabályozza a tejleadást?\nVálaszlehetőségek:\na. az oxitocin\nb. a progeszteron\nc. az ösztrogén\nd. az adrenalin",
-  "label": "a",
-  "subject": "Agriculture"
+  "text": "Melyik nem kulcsfontosságú sajátossága a vezetés nyílt rendszerként való felfogásának?\nVálaszlehetőségek:\na. Morál\nb. Innováció\nc. Fejlődéshez szükséges erőforrások\nd. Adaptáció",
+  "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Melyik hazánk legszelesebb tája?\nVálaszlehetőségek:\na. Tiszántúl\nb. Kisalföld\nc. Északi-középhegység\nd. Duna−Tisza köze",
-  "label": "b",
-  "subject": "Environmental studies and forestry"
+  "text": "Mit használ Berger (1963) a társadalmi valóság metaforájaként?\nVálaszlehetőségek:\na. egy vidámparki játékot\nb. egy cirkuszt\nc. egy bábszínházat\nd. egy balettet",
+  "label": "c"
 }
 ```
 
 ```json
 {
-  "text": "Melyik igaz az alábbi állítások közül?\nVálaszlehetőségek:\na. Az RNS hidrolízise aldohexózt is eredményez.\nb. Az amidok vizes oldatban erős bázisként viselkednek.\nc. Az adenin, citozin és a guanin a DNS- és RNS-molekulák hidrolízisének termékei.\nd. A fehérjék savas hidrolízisében foszforsav is keletkezik.",
-  "label": "c",
-  "subject": "Chemistry"
+  "text": "Egy adott populációban minden 400. embernél előfordulegy teljesen recesszív, b allél által okozott rosszindulatú daganatos megbetegedés. Ha feltételezzük, hogy a populáció Hardy-Weinberg-egyensúlyban van, adja meg azoknak a várható arányát, akik hordozzák a b allélt, de várhatóan nem alakul ki náluk daganatos megbetegedés.\nVálaszlehetőségek:\na. 1/400\nb. 19/400\nc. 20/400\nd. 38/400",
+  "label": "d"
 }
 ```
 
@@ -589,6 +660,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -613,7 +685,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset include-hu
+euroeval --model <model-id> --dataset eu-mmlu-hu
 ```
 
 ## Common-sense Reasoning

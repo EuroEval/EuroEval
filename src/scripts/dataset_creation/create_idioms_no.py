@@ -19,6 +19,7 @@ import logging
 import os
 import random
 import re
+from pathlib import Path
 
 import pandas as pd
 from constants import CHOICES_MAPPING
@@ -31,20 +32,10 @@ from pydantic import BaseModel
 from tqdm.auto import tqdm
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
-logger = logging.getLogger("create_idioms_no")
-
 
 load_dotenv()
 
-
-class CandidateAnswers(BaseModel):
-    """Candidate answers from the OpenAI API."""
-
-    first: str
-    second: str
-    third: str
-
-
+logger = logging.getLogger("create_idioms_no")
 LABELS = ["a", "b", "c", "d"]
 
 
@@ -104,28 +95,6 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def drop_duplicate_idioms(dataset: Dataset) -> Dataset:
-    """Drop duplicate idioms from the dataset.
-
-    Args:
-        dataset:
-            The dataset to drop duplicates from.
-
-    Returns:
-        The dataset without duplicates.
-    """
-    df = dataset.to_pandas()
-    assert isinstance(df, pd.DataFrame)
-
-    # Strip all leading and trailing whitespace
-    df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
-
-    # Drop duplicates based on idiom_start
-    df = df.drop_duplicates(subset="idiom_start")
-
-    return Dataset.from_pandas(df)
-
-
 def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
     """Build the knowledge dataset using a language model.
 
@@ -141,8 +110,8 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
     assert isinstance(df, pd.DataFrame)
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-    cache_file = "norwegian_idioms_cache.json"
-    if os.path.exists(cache_file):
+    cache_file = Path("norwegian_idioms_cache.json")
+    if cache_file.exists():
         with open(cache_file, "r") as f:
             cache = json.load(f)
     else:
@@ -250,6 +219,36 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
         {"text": texts, "label": correct_labels, "language": languages}
     )
     return df_llm
+
+
+def drop_duplicate_idioms(dataset: Dataset) -> Dataset:
+    """Drop duplicate idioms from the dataset.
+
+    Args:
+        dataset:
+            The dataset to drop duplicates from.
+
+    Returns:
+        The dataset without duplicates.
+    """
+    df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
+
+    # Strip all leading and trailing whitespace
+    df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
+
+    # Drop duplicates based on idiom_start
+    df = df.drop_duplicates(subset="idiom_start")
+
+    return Dataset.from_pandas(df)
+
+
+class CandidateAnswers(BaseModel):
+    """Candidate answers from the OpenAI API."""
+
+    first: str
+    second: str
+    third: str
 
 
 if __name__ == "__main__":

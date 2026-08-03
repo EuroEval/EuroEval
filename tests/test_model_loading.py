@@ -14,29 +14,6 @@ from euroeval.model_config import get_model_config
 from euroeval.model_loading import load_model
 
 
-def test_load_non_generative_model(
-    encoder_model_id: str, benchmark_config: BenchmarkConfig
-) -> None:
-    """Test loading a non-generative model."""
-    model_config = get_model_config(
-        model_id=encoder_model_id, benchmark_config=benchmark_config
-    )
-    model = load_model(
-        model_config=model_config,
-        dataset_config=get_all_dataset_configs(
-            custom_datasets_file=Path("custom_datasets.py"),
-            dataset_ids=[],
-            api_key=os.getenv("HF_TOKEN"),
-            cache_dir=Path(".euroeval_cache"),
-            trust_remote_code=True,
-            run_with_cli=True,
-        )["multi-wiki-qa-da"],
-        benchmark_config=benchmark_config,
-    )
-    assert model is not None
-    rmtree(path=Path(benchmark_config.cache_dir, "model_cache"), ignore_errors=True)
-
-
 @pytest.mark.skipif(
     condition=torch.cuda.is_available() is False, reason="CUDA not available"
 )
@@ -63,6 +40,37 @@ def test_load_generative_model(
     rmtree(path=Path(benchmark_config.cache_dir, "model_cache"), ignore_errors=True)
 
 
+@pytest.mark.skipif(
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for model loading",
+)
+def test_load_non_generative_model(
+    encoder_model_id: str, benchmark_config: BenchmarkConfig
+) -> None:
+    """Test loading a non-generative model."""
+    model_config = get_model_config(
+        model_id=encoder_model_id, benchmark_config=benchmark_config
+    )
+    model = load_model(
+        model_config=model_config,
+        dataset_config=get_all_dataset_configs(
+            custom_datasets_file=Path("custom_datasets.py"),
+            dataset_ids=[],
+            api_key=os.getenv("HF_TOKEN"),
+            cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
+        )["multi-wiki-qa-da"],
+        benchmark_config=benchmark_config,
+    )
+    assert model is not None
+    rmtree(path=Path(benchmark_config.cache_dir, "model_cache"), ignore_errors=True)
+
+
+@pytest.mark.skipif(
+    condition=not os.getenv("HF_TOKEN"),
+    reason="HF_TOKEN not set, required for model loading",
+)
 def test_load_non_generative_model_with_generative_data(
     encoder_model_id: str, benchmark_config: BenchmarkConfig
 ) -> None:

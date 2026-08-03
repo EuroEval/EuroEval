@@ -26,20 +26,6 @@ from euroeval.tasks import get_all_tasks
 from .constants import LEADERBOARD_TASKS, NLU_TASK_GROUPS
 
 
-def task_category(task_name: str) -> str:
-    """Return ``"nlu"`` or ``"nlg"`` for ``task_name``.
-
-    Args:
-        task_name:
-            The task slug to classify.
-
-    Returns:
-        ``"nlu"`` if the task's group is an NLU group, else ``"nlg"``.
-    """
-    task = get_all_tasks()[task_name]
-    return "nlu" if task.task_group in NLU_TASK_GROUPS else "nlg"
-
-
 def category_includes_task(category: str, task: str) -> bool:
     """Check whether a task is scored within a leaderboard category.
 
@@ -55,58 +41,53 @@ def category_includes_task(category: str, task: str) -> bool:
     return category == "generative" or task_category(task) == "nlu"
 
 
-def task_metric_names(task_name: str) -> tuple[str, str | None]:
-    """Return ``(primary, secondary)`` metric slugs for a task.
-
-    Secondary is ``None`` for single-metric tasks (e.g. ``european-values``).
+def task_category(task_name: str) -> str:
+    """Return ``"nlu"`` or ``"nlg"`` for ``task_name``.
 
     Args:
         task_name:
-            The task slug whose metrics to look up.
+            The task slug to classify.
 
     Returns:
-        The primary metric slug and the secondary slug, or ``None`` when
-        the task has a single metric.
+        ``"nlu"`` if the task's group is an NLU group, else ``"nlg"``.
     """
-    metrics = get_all_tasks()[task_name].metrics
-    primary = metrics[0].name
-    secondary = metrics[1].name if len(metrics) > 1 else None
-    return primary, secondary
+    task = get_all_tasks()[task_name]
+    return "nlu" if task.task_group in NLU_TASK_GROUPS else "nlg"
 
 
-def task_metric_pretty_names(task_name: str) -> tuple[str, str | None]:
-    """Return ``(primary, secondary)`` human-readable metric names.
+@cache
+def dataset_sources() -> dict[str, str]:
+    """Map each dataset name to its Hugging Face source id.
 
-    Args:
-        task_name:
-            The task slug whose metrics to look up.
+    Datasets whose source is not a plain Hugging Face id string (the rare
+    multi-source form) are omitted.
 
     Returns:
-        The primary metric's pretty name and the secondary's, or ``None``
-        when the task has a single metric.
+        A mapping of dataset name (e.g. ``"conll-nl"``) to its source dataset id
+        (e.g. ``"EuroEval/conll-nl-mini"``).
     """
-    metrics = get_all_tasks()[task_name].metrics
-    primary = metrics[0].pretty_name
-    secondary = metrics[1].pretty_name if len(metrics) > 1 else None
-    return primary, secondary
-
-
-def language_name_to_codes(name: str) -> set[str]:
-    """Resolve a leaderboard yaml language name (e.g. ``"danish"``) to codes.
-
-    Args:
-        name:
-            The language name as written in a leaderboard yaml.
-
-    Returns:
-        The set of language codes matching the given name.
-    """
-    target = name.strip().lower()
     return {
-        lang.code
-        for lang in get_all_languages().values()
-        if lang.name.lower() == target
+        cfg.name: cfg.source
+        for cfg in _iter_all_dataset_configs()
+        if isinstance(cfg.source, str)
     }
+
+
+@cache
+def _iter_all_dataset_configs() -> tuple[DatasetConfig, ...]:
+    """Collect every ``DatasetConfig`` defined in ``euroeval.dataset_configs``.
+
+    All built-in configs are re-exported into the ``euroeval.dataset_configs``
+    namespace, so we read them straight off the module. Cached because the
+    leaderboard pipeline calls into this module once per language and the set is
+    fixed per process.
+
+    Returns:
+        Every ``DatasetConfig`` exported by the lib.
+    """
+    return tuple(
+        value for value in vars(_ds_module).values() if isinstance(value, DatasetConfig)
+    )
 
 
 def languages_with_official_datasets() -> list[str]:
@@ -175,36 +156,55 @@ def official_datasets_for_language(language_name: str) -> OrderedDict[str, list[
     )
 
 
-@cache
-def dataset_sources() -> dict[str, str]:
-    """Map each dataset name to its Hugging Face source id.
+def language_name_to_codes(name: str) -> set[str]:
+    """Resolve a leaderboard yaml language name (e.g. ``"danish"``) to codes.
 
-    Datasets whose source is not a plain Hugging Face id string (the rare
-    multi-source form) are omitted.
+    Args:
+        name:
+            The language name as written in a leaderboard yaml.
 
     Returns:
-        A mapping of dataset name (e.g. ``"conll-nl"``) to its source dataset id
-        (e.g. ``"EuroEval/conll-nl-mini"``).
+        The set of language codes matching the given name.
     """
+    target = name.strip().lower()
     return {
-        cfg.name: cfg.source
-        for cfg in _iter_all_dataset_configs()
-        if isinstance(cfg.source, str)
+        lang.code
+        for lang in get_all_languages().values()
+        if lang.name.lower() == target
     }
 
 
-@cache
-def _iter_all_dataset_configs() -> tuple[DatasetConfig, ...]:
-    """Collect every ``DatasetConfig`` defined in ``euroeval.dataset_configs``.
+def task_metric_names(task_name: str) -> tuple[str, str | None]:
+    """Return ``(primary, secondary)`` metric slugs for a task.
 
-    All built-in configs are re-exported into the ``euroeval.dataset_configs``
-    namespace, so we read them straight off the module. Cached because the
-    leaderboard pipeline calls into this module once per language and the set is
-    fixed per process.
+    Secondary is ``None`` for single-metric tasks (e.g. ``european-values``).
+
+    Args:
+        task_name:
+            The task slug whose metrics to look up.
 
     Returns:
-        Every ``DatasetConfig`` exported by the lib.
+        The primary metric slug and the secondary slug, or ``None`` when
+        the task has a single metric.
     """
-    return tuple(
-        value for value in vars(_ds_module).values() if isinstance(value, DatasetConfig)
-    )
+    metrics = get_all_tasks()[task_name].metrics
+    primary = metrics[0].name
+    secondary = metrics[1].name if len(metrics) > 1 else None
+    return primary, secondary
+
+
+def task_metric_pretty_names(task_name: str) -> tuple[str, str | None]:
+    """Return ``(primary, secondary)`` human-readable metric names.
+
+    Args:
+        task_name:
+            The task slug whose metrics to look up.
+
+    Returns:
+        The primary metric's pretty name and the secondary's, or ``None``
+        when the task has a single metric.
+    """
+    metrics = get_all_tasks()[task_name].metrics
+    primary = metrics[0].pretty_name
+    secondary = metrics[1].pretty_name if len(metrics) > 1 else None
+    return primary, secondary

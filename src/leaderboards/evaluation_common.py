@@ -15,6 +15,7 @@ sync.
 from __future__ import annotations
 
 import collections.abc as c
+import dataclasses
 import fcntl
 import json
 import logging
@@ -51,248 +52,189 @@ from .constants import DTYPE_BYTES, GPU_FIT_OVERHEAD, LANGUAGE_GROUP_CODES
 logger = logging.getLogger(__name__)
 
 
-def run_euroeval(
-    model_id: str,
-    languages: c.Sequence[str],
-    datasets: c.Sequence[str] | None = None,
-    evaluate_test_split: bool = True,
-    zero_shot: bool = False,
-    trust_remote_code: bool = True,
-    clear_model_cache: bool = True,
-    gpu_memory_utilization: float | None = None,
-    stream_output: bool = True,
-    log_file: Path | t.IO[bytes] | None = None,
-) -> tuple[int, str]:
-    """Run the euroeval CLI for the given model, languages, and datasets.
+@dataclasses.dataclass(frozen=True)
+class Provider:
+    """An API provider: its short name, required env var, and id predicate.
 
-    Output is streamed live to stderr (so the operator can follow progress
-    on long evaluations) while also being captured for post-run inspection.
+    Attributes:
+        name:
+            The provider's short name (e.g. "openai", "anthropic").
+        env_var:
+            The environment variable holding the API key.
+        matches:
+            A callable that returns True when a model id belongs to this
+            provider.
+    """
+
+    name: str
+    env_var: str
+    matches: c.Callable[[str], bool]
+
+
+PROVIDERS: list[Provider] = [
+    Provider(
+        name="openai",
+        env_var="OPENAI_API_KEY",
+        matches=lambda m: m.startswith(("openai/", "gpt-")),
+    ),
+    Provider(
+        name="anthropic",
+        env_var="ANTHROPIC_API_KEY",
+        matches=lambda m: m.startswith(("claude-", "anthropic/")),
+    ),
+    Provider(
+        name="google",
+        env_var="GEMINI_API_KEY",
+        matches=lambda m: m.startswith(("gemini/", "gemini-")),
+    ),
+    Provider(
+        name="xai",
+        env_var="XAI_API_KEY",
+        matches=lambda m: m.startswith(("xai/", "grok-")),
+    ),
+]
+PROVIDERS_BY_NAME: dict[str, Provider] = {p.name: p for p in PROVIDERS}
+
+
+def extract_language_groups(body: str | None) -> list[str]:
+    """Return the language-group labels that are ticked in an issue body.
 
     Args:
-        model_id:
-            The model identifier to evaluate.
-        languages:
-            ISO codes to pass via repeated ``--language`` flags.
-        datasets (optional):
-            Dataset ids to pass via repeated ``--dataset`` flags. When
-            None or empty, no ``--dataset`` flag is passed and the CLI
-            uses its language-driven default. Defaults to None.
-        evaluate_test_split (optional):
-            When True pass ``--evaluate-test-split``; when False pass
-            ``--evaluate-val-split``. Defaults to True.
-        zero_shot (optional):
-            When True pass ``--zero-shot``; otherwise omit (CLI default
-            is few-shot). Defaults to False.
-        trust_remote_code (optional):
-            Pass ``--trust-remote-code``. Defaults to True.
-        clear_model_cache (optional):
-            Pass ``--clear-model-cache``. Defaults to True.
-        gpu_memory_utilization (optional):
-            When set, pass ``--gpu-memory-utilization VALUE``. When None,
-            omit the flag so the euroeval CLI's default applies. Defaults
-            to None.
-        stream_output (optional):
-            When True, stream subprocess output live to stderr and force
-            ``FULL_LOG=1`` for maximum verbosity. When False, suppress
-            terminal output (subprocess writes go to /dev/null) and leave
-            verbosity at the CLI default. Defaults to True.
-        log_file (optional):
-            When provided, write subprocess output to this file (or file-like
-            object) as it arrives. Accepts a :class:`Path` (opened in append
-            binary mode) or a binary file-like object with a ``write()`` method.
-            Terminal output behaviour is still controlled by ``stream_output``.
-            Defaults to None.
+        body:
+            The markdown body of a model-evaluation-request issue, or None.
 
     Returns:
-        A ``(returncode, combined_output)`` pair. A returncode of 127
-        signals that the CLI was not found on PATH.
+        The labels (keys of ``LANGUAGE_GROUP_CODES``) whose checkbox is ticked.
     """
-    cmd: list[str] = ["euroeval", "--model", model_id]
-    if clear_model_cache:
-        cmd.append("--clear-model-cache")
-    if trust_remote_code:
-        cmd.append("--trust-remote-code")
-    cmd.append(
-        "--evaluate-test-split" if evaluate_test_split else "--evaluate-val-split"
+    if not body:
+        return []
+    selected: list[str] = []
+    for group in LANGUAGE_GROUP_CODES:
+        pattern = re.compile(rf"-\s*\[[xX]\]\s*{re.escape(group)}")
+        if pattern.search(body):
+            selected.append(group)
+    return selected
+
+
+def gpu_total_memory_bytes() -> int | None:
+    """Return the memory available for model weights on this host.
+
+    Honours ``EUROEVAL_GPU_MEMORY_BYTES`` for overrides. Otherwise: when CUDA
+    is available and the host is not flagged as ``UNIFIED_MEMORY=1``, report
+    the largest CUDA device's free memory; otherwise report available system
+    RAM via ``psutil``.
+
+    Returns:
+        The available memory in bytes, or None if the override is unparseable.
+    """
+    override = os.environ.get("EUROEVAL_GPU_MEMORY_BYTES")
+    if override:
+        try:
+            return int(override)
+        except ValueError:
+            logger.warning(f"Ignoring invalid EUROEVAL_GPU_MEMORY_BYTES={override!r}.")
+
+    # Deferred: see the module-level note on avoiding heavy import cost.
+    import psutil  # noqa: PLC0415
+    import torch  # noqa: PLC0415
+
+    unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
+    if torch.cuda.is_available() and not unified:
+        total_free: int = 0
+        for device_id in range(torch.cuda.device_count()):
+            free, _ = torch.cuda.mem_get_info(device_id)
+            total_free += free
+        return total_free
+
+    # Use available (not total) system RAM for CPU-only or unified memory hosts.
+    return int(psutil.virtual_memory().available)
+
+
+def missing_official_dataset_language_pairs(
+    lines: c.Iterable[str], requested_languages: c.Iterable[str]
+) -> set[tuple[str, str]]:
+    """Return missing official dataset/language pairs for the requested languages.
+
+    Only counts results from the validation split (or validation_split=None for
+    backwards compatibility) as "complete" for queue purposes. Test-split results
+    do not count towards completion.
+
+    Args:
+        lines:
+            Benchmark-result JSONL lines that have already been produced.
+        requested_languages:
+            The language codes the leaderboard requested.
+
+    Returns:
+        The set of official (dataset, language) pairs that have no result yet.
+    """
+    requested = set(requested_languages)
+    expected_pairs = {
+        pair for pair in official_dataset_language_pairs() if pair[1] in requested
+    }
+    observed_triples = result_dataset_language_pairs(lines=lines)
+    # Only count validation-split (True) or None (backwards compatibility) as complete
+    observed_pairs: set[tuple[str, str]] = {
+        (dataset, lang)
+        for dataset, lang, validation_split in observed_triples
+        if validation_split is True or validation_split is None
+    }
+    return expected_pairs - observed_pairs
+
+
+@lru_cache(maxsize=1)
+def official_dataset_language_pairs() -> set[tuple[str, str]]:
+    """Return all official dataset/language pairs used by EuroEval.
+
+    Returns:
+        The ``(dataset_name, language_code)`` pairs for every official
+        (i.e. non-unofficial) dataset in :mod:`euroeval.dataset_configs`.
+    """
+    # Deferred: see the module-level note on avoiding heavy euroeval import cost.
+    from euroeval.dataset_configs import get_all_dataset_configs  # noqa: PLC0415
+
+    all_dataset_configs = get_all_dataset_configs(
+        custom_datasets_file=Path(""),
+        dataset_ids=[],
+        api_key=None,
+        cache_dir=Path(".cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
     )
-    if zero_shot:
-        cmd.append("--zero-shot")
-    for lang in languages:
-        cmd += ["--language", lang]
-    for dataset in datasets or []:
-        cmd += ["--dataset", dataset]
-    if gpu_memory_utilization is not None:
-        cmd += ["--gpu-memory-utilization", str(gpu_memory_utilization)]
-    if stream_output:
-        logger.info(f"Running: {' '.join(cmd)}")
-    else:
-        logger.debug(f"Running: {' '.join(cmd)}")
-
-    env = os.environ.copy()
-    if stream_output:
-        env["FULL_LOG"] = "1"
-    token = resolve_hf_token()
-    if token:
-        env.setdefault("HF_TOKEN", token)
-        env.setdefault("HUGGINGFACE_API_KEY", token)
-
-    # Import here to preserve deferred import pattern for lightweight callers
-    from euroeval.logging_utils import no_terminal_output  # noqa: PLC0415
-
-    parent_fd, child_fd = pty.openpty()
-    _set_pty_window_size(fd=child_fd)
-    spawned_pgid: int | None = None
-    try:
-        # Safe: ``cmd`` is a fixed argument list run without a shell; only the
-        # known euroeval CLI flags and operator-controlled model/language ids
-        # are interpolated, never untrusted shell input.
-        proc = subprocess.Popen(  # noqa: S603
-            cmd,
-            stdin=child_fd,
-            stdout=child_fd,
-            stderr=child_fd,
-            close_fds=True,
-            env=env,
-            preexec_fn=os.setsid,  # New process group for scoped cleanup
-        )
-        spawned_pgid = os.getpgid(proc.pid)
-    except FileNotFoundError:
-        os.close(parent_fd)
-        os.close(child_fd)
-        logger.error("`euroeval` CLI not found on PATH. Is it installed?")
-        return 127, "`euroeval` CLI not found on PATH."
-    os.close(child_fd)
-
-    # Open log file if a Path was provided
-    log_fh: t.IO[bytes] | None = None
-    if isinstance(log_file, Path):
-        log_fh = open(log_file, "ab")
-    elif log_file is not None:
-        # Assume it's already a file-like object
-        log_fh = log_file
-
-    captured: list[bytes] = []
-    MAX_DRAIN_TIME_AFTER_EXIT = 2.0  # Fixed deadline after parent exit
-    with no_terminal_output(disable=stream_output):
-        parent_exit_time: float | None = None
-        try:
-            while True:
-                # Check deadline first: once parent exits, bound the drain time
-                # regardless of whether bytes are available. This prevents a
-                # chatty descendant from keeping the loop alive forever.
-                if parent_exit_time is not None:
-                    elapsed = time.monotonic() - parent_exit_time
-                    if elapsed > MAX_DRAIN_TIME_AFTER_EXIT:
-                        break
-
-                ready, _, _ = select.select([parent_fd], [], [], 0.1)
-                try:
-                    chunk = os.read(parent_fd, 4096) if ready else b""
-                except OSError:
-                    break
-
-                if chunk:
-                    if stream_output:
-                        sys.stderr.buffer.write(chunk)
-                        sys.stderr.buffer.flush()
-                    if log_fh is not None:
-                        log_fh.write(chunk)
-                        log_fh.flush()
-                    captured.append(chunk)
-                    # Parent may have exited while we read; start deadline
-                    if proc.poll() is not None and parent_exit_time is None:
-                        parent_exit_time = time.monotonic()
-                elif proc.poll() is not None:
-                    # Parent exited and no more bytes immediately available.
-                    # Start deadline timer if not already set.
-                    if parent_exit_time is None:
-                        parent_exit_time = time.monotonic()
-                # else: process still running, continue waiting
-        finally:
-            os.close(parent_fd)
-            # Kill process group for scoped cleanup (no broad pkill/killall)
-            if spawned_pgid is not None:
-                try:
-                    os.killpg(spawned_pgid, signal.SIGTERM)
-                except (ProcessLookupError, OSError):
-                    pass
-            if log_fh is not None and isinstance(log_file, Path):
-                # Only close if we opened it
-                log_fh.close()
-        proc.wait()
-    output = b"".join(captured).decode("utf-8", errors="replace")
-    note = _killed_by_signal_note(proc.returncode)
-    if note:
-        output += f"\n{note}\n"
-    return proc.returncode, output
+    return {
+        (dataset_config.name, language.code)
+        for dataset_config in all_dataset_configs.values()
+        if not dataset_config.unofficial
+        for language in dataset_config.languages
+    }
 
 
-def _killed_by_signal_note(returncode: int | None) -> str | None:
-    """Return a diagnostic note when a subprocess was killed by a signal.
-
-    A negative ``returncode`` (as reported by ``subprocess.Popen``) means the
-    process was terminated by a signal rather than exiting normally. Such
-    deaths leave no Python traceback, so without this note the failure
-    comment falls back to "(no output captured)". Resolving the signal to a
-    name gives the operator a cause; SIGKILL is flagged as a likely
-    out-of-memory kill, the common failure mode for large model evaluations.
+def result_dataset_language_pairs(
+    lines: c.Iterable[str],
+) -> set[tuple[str, str, bool | None]]:
+    """Return dataset/language/validation_split triples from benchmark results.
 
     Args:
-        returncode:
-            The ``Popen.returncode`` to interpret.
+        lines:
+            Benchmark-result JSONL lines to parse.
 
     Returns:
-        A diagnostic line, or None when ``returncode`` is not a signal death.
+        The set of (dataset, language, validation_split) triples found in the lines.
     """
-    if returncode is None or returncode >= 0:
-        return None
-    signum = abs(returncode)
-    try:
-        name = signal.Signals(signum).name
-    except ValueError:
-        return (
-            f"Process was killed by signal {signum} - likely out of memory."
-            if signum == signal.SIGKILL
-            else f"Process was killed by signal {signum}."
-        )
-    if signum == signal.SIGKILL:
-        return f"Process was killed by signal {signum} ({name}) - likely out of memory."
-    return f"Process was killed by signal {signum} ({name})."
+    # Deferred: see the module-level note on avoiding heavy euroeval import cost.
+    from euroeval.data_models import BenchmarkResult  # noqa: PLC0415
 
-
-def _set_pty_window_size(fd: int) -> None:
-    """Give a freshly-opened pty a sensible window size.
-
-    ``pty.openpty()`` creates the slave with a default window size of 0 rows by
-    0 columns. Progress bars (tqdm, driven by vLLM) can't render a bar in 0
-    columns, so they fall back to emitting a bare newline on every refresh --
-    flooding the captured output and the tmux panes with blank lines. Setting a
-    real window size makes tqdm render a single in-place-updating line instead.
-
-    The size is inherited from this process's own controlling terminal when it
-    has one (so the bar matches the operator's pane), falling back to a roomy
-    80x200 default for non-interactive runs (cron, redirected output).
-
-    Args:
-        fd:
-            The pty file descriptor whose window size should be set.
-    """
-    rows, cols = 50, 200
-    for stream in (sys.stderr, sys.stdout, sys.stdin):
+    pairs: set[tuple[str, str, bool | None]] = set()
+    for line in lines:
         try:
-            packed = fcntl.ioctl(
-                stream.fileno(), termios.TIOCGWINSZ, struct.pack("HHHH", 0, 0, 0, 0)
-            )
-            src_rows, src_cols, _, _ = struct.unpack("HHHH", packed)
-        except (OSError, ValueError, AttributeError):
+            parsed = BenchmarkResult.from_dict(config=json.loads(line))
+        except (TypeError, ValueError, json.JSONDecodeError):
             continue
-        if src_rows > 0 and src_cols > 0:
-            rows, cols = src_rows, src_cols
-            break
-    try:
-        fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
-    except OSError as e:
-        logger.debug(f"Could not set pty window size: {e}")
+        pairs.update(
+            (parsed.dataset, language, parsed.validation_split)
+            for language in parsed.languages
+        )
+    return pairs
 
 
 def model_fits_locally(model_id: str, gpu_bytes: int | None) -> tuple[bool, int | None]:
@@ -388,145 +330,226 @@ def _dtype_bits(dtype: str) -> int | None:
     return None
 
 
-def gpu_total_memory_bytes() -> int | None:
-    """Return the memory available for model weights on this host.
+def provider_for_model_id(
+    model_id: str, providers: c.Sequence[Provider]
+) -> Provider | None:
+    """Return the API provider that owns a model id, or None.
 
-    Honours ``EUROEVAL_GPU_MEMORY_BYTES`` for overrides. Otherwise: when CUDA
-    is available and the host is not flagged as ``UNIFIED_MEMORY=1``, report
-    the largest CUDA device's free memory; otherwise report available system
-    RAM via ``psutil``.
+    Scans the provided provider list and returns the first provider whose
+    :attr:`Provider.matches` predicate accepts the model id.
 
-    Returns:
-        The available memory in bytes, or None if the override is unparseable.
-    """
-    override = os.environ.get("EUROEVAL_GPU_MEMORY_BYTES")
-    if override:
-        try:
-            return int(override)
-        except ValueError:
-            logger.warning(f"Ignoring invalid EUROEVAL_GPU_MEMORY_BYTES={override!r}.")
-
-    # Deferred: see the module-level note on avoiding heavy import cost.
-    import psutil  # noqa: PLC0415
-    import torch  # noqa: PLC0415
-
-    unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
-    if torch.cuda.is_available() and not unified:
-        total_free: int = 0
-        for device_id in range(torch.cuda.device_count()):
-            free, _ = torch.cuda.mem_get_info(device_id)
-            total_free += free
-        return total_free
-
-    # Use available (not total) system RAM for CPU-only or unified memory hosts.
-    return int(psutil.virtual_memory().available)
-
-
-@lru_cache(maxsize=1)
-def official_dataset_language_pairs() -> set[tuple[str, str]]:
-    """Return all official dataset/language pairs used by EuroEval.
+    Args:
+        model_id:
+            The model id to classify (e.g. "openai/gpt-4", "claude-3-opus").
+        providers:
+            The sequence of providers to check, in priority order.
 
     Returns:
-        The ``(dataset_name, language_code)`` pairs for every official
-        (i.e. non-unofficial) dataset in :mod:`euroeval.dataset_configs`.
+        The matching :class:`Provider`, or None when no provider claims the id
+        (i.e. the model is not an API model).
     """
-    # Deferred: see the module-level note on avoiding heavy euroeval import cost.
-    from euroeval.dataset_configs import get_all_dataset_configs  # noqa: PLC0415
+    for provider in providers:
+        if provider.matches(model_id):
+            return provider
+    return None
 
-    all_dataset_configs = get_all_dataset_configs(
-        custom_datasets_file=Path(""),
-        dataset_ids=[],
-        api_key=None,
-        cache_dir=Path(".cache"),
-        trust_remote_code=False,
-        run_with_cli=False,
+
+def run_euroeval(
+    model_id: str,
+    languages: c.Sequence[str],
+    datasets: c.Sequence[str] | None = None,
+    evaluate_test_split: bool = True,
+    zero_shot: bool = False,
+    trust_remote_code: bool = True,
+    clear_model_cache: bool = True,
+    gpu_memory_utilization: float | None = None,
+    stream_output: bool = True,
+    log_file: Path | t.IO[bytes] | None = None,
+) -> tuple[int, str]:
+    """Run the euroeval CLI for the given model, languages, and datasets.
+
+    Output is streamed live to stderr (so the operator can follow progress
+    on long evaluations) while also being captured for post-run inspection.
+
+    Args:
+        model_id:
+            The model identifier to evaluate.
+        languages:
+            ISO codes to pass via repeated ``--language`` flags.
+        datasets (optional):
+            Dataset ids to pass via repeated ``--dataset`` flags. When
+            None or empty, no ``--dataset`` flag is passed and the CLI
+            uses its language-driven default. Defaults to None.
+        evaluate_test_split (optional):
+            When True pass ``--evaluate-test-split``; when False pass
+            ``--evaluate-val-split``. Defaults to True.
+        zero_shot (optional):
+            When True pass ``--zero-shot``; otherwise omit (CLI default
+            is few-shot). Defaults to False.
+        trust_remote_code (optional):
+            Pass ``--trust-remote-code``. Defaults to True.
+        clear_model_cache (optional):
+            Pass ``--clear-model-cache``. Defaults to True.
+        gpu_memory_utilization (optional):
+            When set, pass ``--gpu-memory-utilization VALUE``. When None,
+            omit the flag so the euroeval CLI's default applies. Defaults
+            to None.
+        stream_output (optional):
+            When True, stream subprocess output live to stderr and force
+            ``FULL_LOG=1`` for maximum verbosity. When False, suppress
+            terminal output (subprocess writes go to /dev/null) and leave
+            verbosity at the CLI default. Defaults to True.
+        log_file (optional):
+            When provided, write subprocess output to this file (or file-like
+            object) as it arrives. Accepts a :class:`Path` (opened in append
+            binary mode) or a binary file-like object with a ``write()`` method.
+            Terminal output behaviour is still controlled by ``stream_output``.
+            Defaults to None.
+
+    Returns:
+        A ``(returncode, combined_output)`` pair. A returncode of 127
+        signals that the CLI was not found on PATH.
+    """
+    cmd = _build_euroeval_cmd(
+        model_id=model_id,
+        languages=languages,
+        datasets=datasets,
+        evaluate_test_split=evaluate_test_split,
+        zero_shot=zero_shot,
+        gpu_memory_utilization=gpu_memory_utilization,
+        clear_model_cache=clear_model_cache,
+        trust_remote_code=trust_remote_code,
     )
-    return {
-        (dataset_config.name, language.code)
-        for dataset_config in all_dataset_configs.values()
-        if not dataset_config.unofficial
-        for language in dataset_config.languages
-    }
+    if stream_output:
+        logger.info(f"Running: {' '.join(cmd)}")
+    else:
+        logger.debug(f"Running: {' '.join(cmd)}")
 
+    env = _build_euroeval_env(stream_output=stream_output)
 
-def extract_language_groups(body: str | None) -> list[str]:
-    """Return the language-group labels that are ticked in an issue body.
+    # Import here to preserve deferred import pattern for lightweight callers
+    from euroeval.logging_utils import no_terminal_output  # noqa: PLC0415
 
-    Args:
-        body:
-            The markdown body of a model-evaluation-request issue, or None.
-
-    Returns:
-        The labels (keys of ``LANGUAGE_GROUP_CODES``) whose checkbox is ticked.
-    """
-    if not body:
-        return []
-    selected: list[str] = []
-    for group in LANGUAGE_GROUP_CODES:
-        pattern = re.compile(rf"-\s*\[[xX]\]\s*{re.escape(group)}")
-        if pattern.search(body):
-            selected.append(group)
-    return selected
-
-
-def result_dataset_language_pairs(
-    lines: c.Iterable[str],
-) -> set[tuple[str, str, bool | None]]:
-    """Return dataset/language/validation_split triples from benchmark results.
-
-    Args:
-        lines:
-            Benchmark-result JSONL lines to parse.
-
-    Returns:
-        The set of (dataset, language, validation_split) triples found in the lines.
-    """
-    # Deferred: see the module-level note on avoiding heavy euroeval import cost.
-    from euroeval.data_models import BenchmarkResult  # noqa: PLC0415
-
-    pairs: set[tuple[str, str, bool | None]] = set()
-    for line in lines:
-        try:
-            parsed = BenchmarkResult.from_dict(config=json.loads(line))
-        except (TypeError, ValueError, json.JSONDecodeError):
-            continue
-        pairs.update(
-            (parsed.dataset, language, parsed.validation_split)
-            for language in parsed.languages
+    parent_fd, child_fd = pty.openpty()
+    _set_pty_window_size(fd=child_fd)
+    spawned_pgid: int | None = None
+    try:
+        proc = subprocess.Popen(  # noqa: S603
+            cmd,
+            stdin=child_fd,
+            stdout=child_fd,
+            stderr=child_fd,
+            close_fds=True,
+            env=env,
+            preexec_fn=os.setsid,
         )
-    return pairs
+        spawned_pgid = os.getpgid(proc.pid)
+    except FileNotFoundError:
+        os.close(parent_fd)
+        os.close(child_fd)
+        logger.error("`euroeval` CLI not found on PATH. Is it installed?")
+        return 127, "`euroeval` CLI not found on PATH."
+    os.close(child_fd)
+
+    log_fh: t.IO[bytes] | None = None
+    if isinstance(log_file, Path):
+        log_fh = open(log_file, "ab")
+    elif log_file is not None:
+        log_fh = log_file
+
+    with no_terminal_output(disable=stream_output):
+        try:
+            captured = _run_pty_loop(
+                parent_fd=parent_fd,
+                proc=proc,
+                stream_output=stream_output,
+                log_fh=log_fh,
+            )
+        finally:
+            _cleanup_pty_process(
+                parent_fd=parent_fd,
+                spawned_pgid=spawned_pgid,
+                log_fh=log_fh,
+                log_file=log_file,
+            )
+        proc.wait()
+    output = b"".join(captured).decode("utf-8", errors="replace")
+    note = _killed_by_signal_note(proc.returncode)
+    if note:
+        output += f"\n{note}\n"
+    return proc.returncode, output
 
 
-def missing_official_dataset_language_pairs(
-    lines: c.Iterable[str], requested_languages: c.Iterable[str]
-) -> set[tuple[str, str]]:
-    """Return missing official dataset/language pairs for the requested languages.
-
-    Only counts results from the validation split (or validation_split=None for
-    backwards compatibility) as "complete" for queue purposes. Test-split results
-    do not count towards completion.
+def _build_euroeval_cmd(
+    model_id: str,
+    languages: c.Sequence[str],
+    datasets: c.Sequence[str] | None,
+    evaluate_test_split: bool,
+    zero_shot: bool,
+    gpu_memory_utilization: float | None,
+    clear_model_cache: bool,
+    trust_remote_code: bool,
+) -> list[str]:
+    """Build the euroeval CLI command list.
 
     Args:
-        lines:
-            Benchmark-result JSONL lines that have already been produced.
-        requested_languages:
-            The language codes the leaderboard requested.
+        model_id:
+            The model ID.
+        languages:
+            The languages to evaluate.
+        datasets:
+            The datasets to evaluate, or None for all.
+        evaluate_test_split:
+            Whether to evaluate the test split.
+        zero_shot:
+            Whether to use zero-shot evaluation.
+        gpu_memory_utilization:
+            The GPU memory utilization.
+        clear_model_cache:
+            Whether to clear the model cache.
+        trust_remote_code:
+            Whether to trust remote code.
 
     Returns:
-        The set of official (dataset, language) pairs that have no result yet.
+        The command list.
     """
-    requested = set(requested_languages)
-    expected_pairs = {
-        pair for pair in official_dataset_language_pairs() if pair[1] in requested
-    }
-    observed_triples = result_dataset_language_pairs(lines=lines)
-    # Only count validation-split (True) or None (backwards compatibility) as complete
-    observed_pairs: set[tuple[str, str]] = {
-        (dataset, lang)
-        for dataset, lang, validation_split in observed_triples
-        if validation_split is True or validation_split is None
-    }
-    return expected_pairs - observed_pairs
+    cmd: list[str] = ["euroeval", "--model", model_id]
+    if clear_model_cache:
+        cmd.append("--clear-model-cache")
+    if trust_remote_code:
+        cmd.append("--trust-remote-code")
+    cmd.append(
+        "--evaluate-test-split" if evaluate_test_split else "--evaluate-val-split"
+    )
+    if zero_shot:
+        cmd.append("--zero-shot")
+    for lang in languages:
+        cmd += ["--language", lang]
+    for dataset in datasets or []:
+        cmd += ["--dataset", dataset]
+    if gpu_memory_utilization is not None:
+        cmd += ["--gpu-memory-utilization", str(gpu_memory_utilization)]
+    return cmd
+
+
+def _build_euroeval_env(stream_output: bool) -> dict[str, str]:
+    """Build the environment for the euroeval CLI subprocess.
+
+    Args:
+        stream_output:
+            Whether to stream output.
+
+    Returns:
+        The environment dictionary.
+    """
+    env = os.environ.copy()
+    if stream_output:
+        env["FULL_LOG"] = "1"
+    token = resolve_hf_token()
+    if token:
+        env.setdefault("HF_TOKEN", token)
+        env.setdefault("HUGGINGFACE_API_KEY", token)
+    return env
 
 
 def resolve_hf_token() -> str | None:
@@ -536,3 +559,142 @@ def resolve_hf_token() -> str | None:
         The token string, or None if neither env nor cache yields one.
     """
     return os.environ.get("HF_TOKEN") or get_token()
+
+
+def _cleanup_pty_process(
+    parent_fd: int,
+    spawned_pgid: int | None,
+    log_fh: t.IO[bytes] | None,
+    log_file: Path | t.IO[bytes] | None,
+) -> None:
+    """Clean up PTY file descriptor and kill process group."""
+    os.close(parent_fd)
+    if spawned_pgid is not None:
+        try:
+            os.killpg(spawned_pgid, signal.SIGTERM)
+        except (ProcessLookupError, OSError):
+            pass
+    if log_fh is not None and isinstance(log_file, Path):
+        log_fh.close()
+
+
+def _killed_by_signal_note(returncode: int | None) -> str | None:
+    """Return a diagnostic note when a subprocess was killed by a signal.
+
+    A negative ``returncode`` (as reported by ``subprocess.Popen``) means the
+    process was terminated by a signal rather than exiting normally. Such
+    deaths leave no Python traceback, so without this note the failure
+    comment falls back to "(no output captured)". Resolving the signal to a
+    name gives the operator a cause; SIGKILL is flagged as a likely
+    out-of-memory kill, the common failure mode for large model evaluations.
+
+    Args:
+        returncode:
+            The ``Popen.returncode`` to interpret.
+
+    Returns:
+        A diagnostic line, or None when ``returncode`` is not a signal death.
+    """
+    if returncode is None or returncode >= 0:
+        return None
+    signum = abs(returncode)
+    try:
+        name = signal.Signals(signum).name
+    except ValueError:
+        return (
+            f"Process was killed by signal {signum} - likely out of memory."
+            if signum == signal.SIGKILL
+            else f"Process was killed by signal {signum}."
+        )
+    if signum == signal.SIGKILL:
+        return f"Process was killed by signal {signum} ({name}) - likely out of memory."
+    return f"Process was killed by signal {signum} ({name})."
+
+
+def _run_pty_loop(
+    parent_fd: int,
+    proc: subprocess.Popen[bytes],
+    stream_output: bool,
+    log_fh: t.IO[bytes] | None,
+) -> list[bytes]:
+    """Read from PTY until subprocess exits, with drain timeout.
+
+    Args:
+        parent_fd:
+            The parent file descriptor.
+        proc:
+            The subprocess.
+        stream_output:
+            Whether to stream output.
+        log_fh:
+            The log file handle.
+
+    Returns:
+        The captured output as bytes.
+    """
+    captured: list[bytes] = []
+    MAX_DRAIN_TIME_AFTER_EXIT = 2.0
+    parent_exit_time: float | None = None
+
+    while True:
+        if parent_exit_time is not None:
+            elapsed = time.monotonic() - parent_exit_time
+            if elapsed > MAX_DRAIN_TIME_AFTER_EXIT:
+                break
+
+        ready, _, _ = select.select([parent_fd], [], [], 0.1)
+        try:
+            chunk = os.read(parent_fd, 4096) if ready else b""
+        except OSError:
+            break
+
+        if chunk:
+            if stream_output:
+                sys.stderr.buffer.write(chunk)
+                sys.stderr.buffer.flush()
+            if log_fh is not None:
+                log_fh.write(chunk)
+                log_fh.flush()
+            captured.append(chunk)
+            if proc.poll() is not None and parent_exit_time is None:
+                parent_exit_time = time.monotonic()
+        elif proc.poll() is not None:
+            if parent_exit_time is None:
+                parent_exit_time = time.monotonic()
+
+    return captured
+
+
+def _set_pty_window_size(fd: int) -> None:
+    """Give a freshly-opened pty a sensible window size.
+
+    ``pty.openpty()`` creates the slave with a default window size of 0 rows by
+    0 columns. Progress bars (tqdm, driven by vLLM) can't render a bar in 0
+    columns, so they fall back to emitting a bare newline on every refresh --
+    flooding the captured output and the tmux panes with blank lines. Setting a
+    real window size makes tqdm render a single in-place-updating line instead.
+
+    The size is inherited from this process's own controlling terminal when it
+    has one (so the bar matches the operator's pane), falling back to a roomy
+    80x200 default for non-interactive runs (cron, redirected output).
+
+    Args:
+        fd:
+            The pty file descriptor whose window size should be set.
+    """
+    rows, cols = 50, 200
+    for stream in (sys.stderr, sys.stdout, sys.stdin):
+        try:
+            packed = fcntl.ioctl(
+                stream.fileno(), termios.TIOCGWINSZ, struct.pack("HHHH", 0, 0, 0, 0)
+            )
+            src_rows, src_cols, _, _ = struct.unpack("HHHH", packed)
+        except (OSError, ValueError, AttributeError):
+            continue
+        if src_rows > 0 and src_cols > 0:
+            rows, cols = src_rows, src_cols
+            break
+    try:
+        fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
+    except OSError as e:
+        logger.debug(f"Could not set pty window size: {e}")

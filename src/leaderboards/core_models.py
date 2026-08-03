@@ -55,16 +55,6 @@ from .task_metadata import (
 logger = logging.getLogger(__name__)
 
 
-class ModelType(enum.StrEnum):
-    """The architectural / training-stage category of a core model."""
-
-    ENCODER = "encoder"
-    BASE_DECODER = "base_decoder"
-    INSTRUCTION_TUNED_DECODER = "instruction_tuned_decoder"
-    REASONING_DECODER = "reasoning_decoder"
-    API = "api"
-
-
 class SizeBucket(enum.StrEnum):
     """Bucket label used to group models in the GitHub issue."""
 
@@ -74,6 +64,16 @@ class SizeBucket(enum.StrEnum):
     MEDIUM = "medium"
     LARGE = "large"
     XLARGE = "xlarge"
+    API = "api"
+
+
+class ModelType(enum.StrEnum):
+    """The architectural / training-stage category of a core model."""
+
+    ENCODER = "encoder"
+    BASE_DECODER = "base_decoder"
+    INSTRUCTION_TUNED_DECODER = "instruction_tuned_decoder"
+    REASONING_DECODER = "reasoning_decoder"
     API = "api"
 
 
@@ -117,8 +117,6 @@ class CoreModel:
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
-
-
 def build_core_model_list(
     eu_patterns: list[str],
     api_model_ids: list[str] | None = None,
@@ -247,11 +245,6 @@ def build_core_model_list(
     return core
 
 
-# ---------------------------------------------------------------------------
-# Model classification helpers
-# ---------------------------------------------------------------------------
-
-
 def _classify_model(model_id: str, metadata: dict) -> ModelType:
     """Return the architectural/training type for a model.
 
@@ -274,40 +267,9 @@ def _classify_model(model_id: str, metadata: dict) -> ModelType:
     return ModelType(model_type) if model_type is not None else ModelType.BASE_DECODER
 
 
-def _size_bucket(model_type: ModelType, parameters: float) -> SizeBucket:
-    """Map a model's type and parameter count to a bucket for the issue.
-
-    Args:
-        model_type:
-            The classification from `_classify_model`.
-        parameters:
-            Number of parameters; NaN for API/unknown.
-
-    Returns:
-        The bucket label used to group models in the issue body.
-    """
-    if model_type == ModelType.ENCODER:
-        return SizeBucket.ENCODER
-    if model_type == ModelType.API:
-        return SizeBucket.API
-    if not math.isfinite(parameters):
-        return SizeBucket.XLARGE
-    if parameters < 2_000_000_000:
-        return SizeBucket.TINY
-    if parameters < 10_000_000_000:
-        return SizeBucket.SMALL
-    if parameters < 40_000_000_000:
-        return SizeBucket.MEDIUM
-    if parameters < 80_000_000_000:
-        return SizeBucket.LARGE
-    return SizeBucket.XLARGE
-
-
 # ---------------------------------------------------------------------------
 # Pareto frontier
 # ---------------------------------------------------------------------------
-
-
 def _pareto_languages_per_model(
     ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
     metadata: dict[str, dict],
@@ -364,30 +326,119 @@ def _pareto_languages_per_model(
     pareto: dict[str, set[str]] = defaultdict(set)
     for model_type, members in by_type.items():
         for category in categories_for_type[model_type]:
-            for language in languages:
-                # Cache (model_id, params, rank) for this (type, category,
-                # language) so the inner check is O(n^2) within the type
-                # rather than O(n^2) globally.
-                sized_ranked: list[tuple[str, float, float]] = []
-                for model_id, params in members:
-                    rank_entry = (
-                        ranks.get(model_id, {})
-                        .get(category, {})
-                        .get(language, {})
-                        .get("score")
-                    )
-                    if rank_entry is None or not math.isfinite(rank_entry):
-                        continue
-                    sized_ranked.append((model_id, params, rank_entry))
-
-                for model_id, params, rank in sized_ranked:
-                    dominated = any(
-                        other_params <= params and other_rank < rank
-                        for other_id, other_params, other_rank in sized_ranked
-                        if other_id != model_id
-                    )
-                    if not dominated:
-                        pareto[model_id].add(language)
+            _process_pareto_for_category(
+                model_type=model_type,
+                category=category,
+                members=members,
+                languages=languages,
+                ranks=ranks,
+                pareto=pareto,
+            )
 
     logger.info("Fetched the Pareto frontier languages for each model.")
     return {model_id: sorted(langs) for model_id, langs in pareto.items()}
+
+
+def _process_pareto_for_category(
+    model_type: ModelType,
+    category: str,
+    members: list[tuple[str, float]],
+    languages: list[str],
+    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
+    pareto: dict[str, set[str]],
+) -> None:
+    """Process Pareto frontier for a single model type and category.
+
+    Args:
+        model_type:
+            The model type being processed.
+        category:
+            The category (e.g. "generative" or "all_models").
+        members:
+            List of (model_id, params) tuples for this model type.
+        languages:
+            Languages to consider.
+        ranks:
+            Output of `compute_ranks`.
+        pareto:
+            Accumulator dict to update.
+    """
+    for language in languages:
+        # Collect sized&ranked models for this (type, category, language)
+        sized_ranked: list[tuple[str, float, float]] = []
+        for model_id, params in members:
+            rank_entry = (
+                ranks.get(model_id, {}).get(category, {}).get(language, {}).get("score")
+            )
+            if rank_entry is None or not math.isfinite(rank_entry):
+                continue
+            sized_ranked.append((model_id, params, rank_entry))
+
+        for model_id, params, rank in sized_ranked:
+            if _is_on_pareto_frontier(
+                model_id=model_id, params=params, rank=rank, sized_ranked=sized_ranked
+            ):
+                pareto[model_id].add(language)
+
+
+def _is_on_pareto_frontier(
+    model_id: str,
+    params: float,
+    rank: float,
+    sized_ranked: list[tuple[str, float, float]],
+) -> bool:
+    """Check if a model is on the Pareto frontier.
+
+    A model is on the Pareto frontier if no other model with <= parameters
+    has a strictly better (lower) rank score.
+
+    Args:
+        model_id:
+            The model ID to check.
+        params:
+            The model's parameter count.
+        rank:
+            The model's rank score.
+        sized_ranked:
+            List of (model_id, params, rank) tuples for all comparable models.
+
+    Returns:
+        True if the model is on the Pareto frontier.
+    """
+    return not any(
+        other_params <= params and other_rank < rank
+        for other_id, other_params, other_rank in sized_ranked
+        if other_id != model_id
+    )
+
+
+# ---------------------------------------------------------------------------
+# Model classification helpers
+# ---------------------------------------------------------------------------
+def _size_bucket(model_type: ModelType, parameters: float) -> SizeBucket:
+    """Map a model's type and parameter count to a bucket for the issue.
+
+    Args:
+        model_type:
+            The classification from `_classify_model`.
+        parameters:
+            Number of parameters; NaN for API/unknown.
+
+    Returns:
+        The bucket label used to group models in the issue body.
+    """
+    if model_type == ModelType.ENCODER:
+        return SizeBucket.ENCODER
+    if model_type == ModelType.API:
+        return SizeBucket.API
+    if not math.isfinite(parameters):
+        return SizeBucket.XLARGE
+    if parameters < 2_000_000_000:
+        return SizeBucket.TINY
+    if parameters < 10_000_000_000:
+        return SizeBucket.SMALL
+    if parameters < 40_000_000_000:
+        return SizeBucket.MEDIUM
+    if parameters < 80_000_000_000:
+        return SizeBucket.LARGE
+    return SizeBucket.XLARGE

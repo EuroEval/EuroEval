@@ -51,25 +51,6 @@ class ChrF(Metric):
         self.language_detector = language_detector
         self.metric = CHRF(char_order=6, word_order=self.word_order, beta=self.beta)
 
-    def download(
-        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
-    ) -> "ChrF":
-        """Download the language detection model if needed.
-
-        Args:
-            cache_dir:
-                The directory where the metric will be downloaded to.
-            dataset_config (optional):
-                The dataset configuration. Unused by this metric.
-                Defaults to None.
-
-        Returns:
-            The metric object itself.
-        """
-        if self.language_detector is not None:
-            self.language_detector.download()
-        return self
-
     def __call__(
         self,
         predictions: c.Sequence,
@@ -113,6 +94,25 @@ class ChrF(Metric):
             scores = [s * p for s, p in zip(scores, penalties)]
 
         return sum(scores) / len(scores)
+
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
+    ) -> "ChrF":
+        """Download the language detection model if needed.
+
+        Args:
+            cache_dir:
+                The directory where the metric will be downloaded to.
+            dataset_config (optional):
+                The dataset configuration. Unused by this metric.
+                Defaults to None.
+
+        Returns:
+            The metric object itself.
+        """
+        if self.language_detector is not None:
+            self.language_detector.download()
+        return self
 
 
 chrf2_metric = ChrF(language_detector=language_detector)

@@ -53,31 +53,6 @@ def main() -> None:
     dataset_dict.push_to_hub(dataset_id, private=True)
 
 
-def process(df: pd.DataFrame) -> pd.DataFrame:
-    """Process the dataframe.
-
-    Args:
-        df: The dataframe to process.
-
-    Returns:
-        The processed dataframe.
-    """
-    # Map labels
-    label_mapping = {
-        "molt bo": "positive",
-        "bo": "positive",
-        "regular": "neutral",
-        "dolent": "negative",
-        "molt dolent": "negative",
-    }
-    df["label"] = df["label"].map(lambda x: label_mapping[x])
-
-    # Keep only text and label columns
-    keep_columns = ["text", "label"]
-    df = df.loc[keep_columns]
-    return df
-
-
 def make_splits(
     train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -120,6 +95,31 @@ def make_splits(
     assert isinstance(test_df_final, pd.DataFrame)
 
     return train_df_final, val_df_final, test_df_final
+
+
+def process(df: pd.DataFrame) -> pd.DataFrame:
+    """Process the dataframe.
+
+    Args:
+        df: The dataframe to process.
+
+    Returns:
+        The processed dataframe.
+    """
+    # Map labels
+    label_mapping = {
+        "molt bo": "positive",
+        "bo": "positive",
+        "regular": "neutral",
+        "dolent": "negative",
+        "molt dolent": "negative",
+    }
+    df["label"] = df["label"].map(lambda x: label_mapping[x])
+
+    # Keep only text and label columns
+    keep_columns = ["text", "label"]
+    df = df.loc[keep_columns]
+    return df
 
 
 if __name__ == "__main__":

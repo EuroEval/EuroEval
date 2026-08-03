@@ -69,11 +69,10 @@ PERMISSIVE_LICENSES: frozenset[str] = frozenset(
     }
 )
 
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-
-
 def _env_path(name: str, default: Path) -> Path:
     """Return the path from environment variable ``name``, or ``default``.
 
@@ -116,6 +115,10 @@ REPO_ROOT: Path = PACKAGE_DIR.parent.parent
 
 # Generated CSVs are written directly into the frontend bundle.
 OUTPUT_DIR: Path = REPO_ROOT / "src" / "frontend" / "csv"
+
+# Generated list of leaderboard model ids, uploaded to the leaderboard HF
+# Space so it shows up under "Spaces using this model" on each model's page.
+MODELS_PY_PATH: Path = REPO_ROOT / "hf_space" / "models.py"
 
 # Off-repo backup location for compressed snapshots of the results
 # directory. Snapshots are timestamped and pruned when exceeding limits.

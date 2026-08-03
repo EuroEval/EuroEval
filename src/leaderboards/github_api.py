@@ -22,68 +22,6 @@ from .constants import FAILED_LABEL, GATED_LABEL, REPO, RESULTS_READY_LABEL, USE
 logger = logging.getLogger(__name__)
 
 
-def comment_on_issue(number: int, body: str) -> None:
-    """Post a comment on the issue with the given number.
-
-    Args:
-        number:
-            The issue number to comment on.
-        body:
-            The markdown body of the new comment.
-    """
-    gh_request(
-        path=f"/repos/{REPO}/issues/{number}/comments",
-        method="POST",
-        body={"body": body},
-    )
-
-
-def close_issue(number: int) -> None:
-    """Mark the issue as closed with reason ``completed``.
-
-    Args:
-        number:
-            The issue number to close.
-    """
-    gh_request(
-        path=f"/repos/{REPO}/issues/{number}",
-        method="PATCH",
-        body={"state": "closed", "state_reason": "completed"},
-    )
-
-
-def assign_issue(number: int, assignee: str) -> None:
-    """Assign the issue to ``assignee``.
-
-    Args:
-        number:
-            The issue number to claim.
-        assignee:
-            The GitHub login to assign.
-    """
-    gh_request(
-        path=f"/repos/{REPO}/issues/{number}/assignees",
-        method="POST",
-        body={"assignees": [assignee]},
-    )
-
-
-def unassign_issue(number: int, assignee: str) -> None:
-    """Remove ``assignee`` so the issue returns to the unassigned pool.
-
-    Args:
-        number:
-            The issue number to release.
-        assignee:
-            The GitHub login to remove.
-    """
-    gh_request(
-        path=f"/repos/{REPO}/issues/{number}/assignees",
-        method="DELETE",
-        body={"assignees": [assignee]},
-    )
-
-
 def add_failed_label(number: int) -> None:
     """Attach the ``evaluation-failed`` label to an issue.
 
@@ -99,113 +37,6 @@ def add_failed_label(number: int) -> None:
         )
     except urllib.error.HTTPError as e:
         logger.warning(f"#{number}: could not add {FAILED_LABEL!r} label: {e}")
-
-
-def remove_failed_label(number: int) -> None:
-    """Remove the ``evaluation-failed`` label from an issue if present.
-
-    Args:
-        number:
-            The issue number to unlabel.
-    """
-    try:
-        gh_request(
-            path=f"/repos/{REPO}/issues/{number}/labels/"
-            + urllib.parse.quote(FAILED_LABEL),
-            method="DELETE",
-        )
-    except urllib.error.HTTPError as e:
-        if e.code != 404:
-            logger.warning(f"#{number}: could not remove {FAILED_LABEL!r} label: {e}")
-
-
-def add_gated_label(number: int) -> None:
-    """Attach the ``gated`` label to an issue.
-
-    Args:
-        number:
-            The issue number to label.
-    """
-    gh_request(
-        path=f"/repos/{REPO}/issues/{number}/labels",
-        method="POST",
-        body={"labels": [GATED_LABEL]},
-    )
-
-
-def remove_gated_label(number: int) -> None:
-    """Remove the ``gated`` label from an issue if present.
-
-    Args:
-        number:
-            The issue number to unlabel.
-
-    Raises:
-        HTTPError:
-            If the DELETE request fails for a reason other than label not present.
-    """
-    try:
-        gh_request(
-            path=f"/repos/{REPO}/issues/{number}/labels/"
-            + urllib.parse.quote(GATED_LABEL),
-            method="DELETE",
-        )
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            logger.debug(f"#{number}: label {GATED_LABEL!r} not present.")
-        else:
-            raise
-
-
-def add_results_ready_label(number: int) -> None:
-    """Attach the ``results-ready`` label to an issue.
-
-    Args:
-        number:
-            The issue number to label.
-    """
-    try:
-        gh_request(
-            path=f"/repos/{REPO}/issues/{number}/labels",
-            method="POST",
-            body={"labels": [RESULTS_READY_LABEL]},
-        )
-    except urllib.error.HTTPError as e:
-        logger.warning(f"#{number}: could not add {RESULTS_READY_LABEL!r} label: {e}")
-
-
-def fetch_issue_body(number: int) -> str:
-    """Return the current body of an issue, or empty string on failure.
-
-    Args:
-        number:
-            The issue number to fetch.
-
-    Returns:
-        The issue body, or an empty string if the lookup failed.
-    """
-    try:
-        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
-    except urllib.error.HTTPError as e:
-        logger.warning(f"#{number}: could not fetch issue body: {e}")
-        return ""
-    if isinstance(current, dict):
-        return current.get("body") or ""
-    return ""
-
-
-def patch_issue_body(number: int, body: str) -> None:
-    """Replace the body of an issue with ``body`` via a PATCH.
-
-    Args:
-        number:
-            The issue number to update.
-        body:
-            The new markdown body.
-    """
-    gh_request(
-        path=f"/repos/{REPO}/issues/{number}", method="PATCH", body={"body": body}
-    )
 
 
 def gh_request(
@@ -262,3 +93,172 @@ def _token() -> str:
         logger.error("GITHUB_TOKEN env var is required.")
         sys.exit(1)
     return token
+
+
+def add_gated_label(number: int) -> None:
+    """Attach the ``gated`` label to an issue.
+
+    Args:
+        number:
+            The issue number to label.
+    """
+    gh_request(
+        path=f"/repos/{REPO}/issues/{number}/labels",
+        method="POST",
+        body={"labels": [GATED_LABEL]},
+    )
+
+
+def add_results_ready_label(number: int) -> None:
+    """Attach the ``results-ready`` label to an issue.
+
+    Args:
+        number:
+            The issue number to label.
+    """
+    try:
+        gh_request(
+            path=f"/repos/{REPO}/issues/{number}/labels",
+            method="POST",
+            body={"labels": [RESULTS_READY_LABEL]},
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not add {RESULTS_READY_LABEL!r} label: {e}")
+
+
+def assign_issue(number: int, assignee: str) -> None:
+    """Assign the issue to ``assignee``.
+
+    Args:
+        number:
+            The issue number to claim.
+        assignee:
+            The GitHub login to assign.
+    """
+    gh_request(
+        path=f"/repos/{REPO}/issues/{number}/assignees",
+        method="POST",
+        body={"assignees": [assignee]},
+    )
+
+
+def close_issue(number: int) -> None:
+    """Mark the issue as closed with reason ``completed``.
+
+    Args:
+        number:
+            The issue number to close.
+    """
+    gh_request(
+        path=f"/repos/{REPO}/issues/{number}",
+        method="PATCH",
+        body={"state": "closed", "state_reason": "completed"},
+    )
+
+
+def comment_on_issue(number: int, body: str) -> None:
+    """Post a comment on the issue with the given number.
+
+    Args:
+        number:
+            The issue number to comment on.
+        body:
+            The markdown body of the new comment.
+    """
+    gh_request(
+        path=f"/repos/{REPO}/issues/{number}/comments",
+        method="POST",
+        body={"body": body},
+    )
+
+
+def fetch_issue_body(number: int) -> str:
+    """Return the current body of an issue, or empty string on failure.
+
+    Args:
+        number:
+            The issue number to fetch.
+
+    Returns:
+        The issue body, or an empty string if the lookup failed.
+    """
+    try:
+        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not fetch issue body: {e}")
+        return ""
+    if isinstance(current, dict):
+        return current.get("body") or ""
+    return ""
+
+
+def patch_issue_body(number: int, body: str) -> None:
+    """Replace the body of an issue with ``body`` via a PATCH.
+
+    Args:
+        number:
+            The issue number to update.
+        body:
+            The new markdown body.
+    """
+    gh_request(
+        path=f"/repos/{REPO}/issues/{number}", method="PATCH", body={"body": body}
+    )
+
+
+def remove_failed_label(number: int) -> None:
+    """Remove the ``evaluation-failed`` label from an issue if present.
+
+    Args:
+        number:
+            The issue number to unlabel.
+    """
+    try:
+        gh_request(
+            path=f"/repos/{REPO}/issues/{number}/labels/"
+            + urllib.parse.quote(FAILED_LABEL),
+            method="DELETE",
+        )
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            logger.warning(f"#{number}: could not remove {FAILED_LABEL!r} label: {e}")
+
+
+def remove_gated_label(number: int) -> None:
+    """Remove the ``gated`` label from an issue if present.
+
+    Args:
+        number:
+            The issue number to unlabel.
+
+    Raises:
+        HTTPError:
+            If the DELETE request fails for a reason other than label not present.
+    """
+    try:
+        gh_request(
+            path=f"/repos/{REPO}/issues/{number}/labels/"
+            + urllib.parse.quote(GATED_LABEL),
+            method="DELETE",
+        )
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            logger.debug(f"#{number}: label {GATED_LABEL!r} not present.")
+        else:
+            raise
+
+
+def unassign_issue(number: int, assignee: str) -> None:
+    """Remove ``assignee`` so the issue returns to the unassigned pool.
+
+    Args:
+        number:
+            The issue number to release.
+        assignee:
+            The GitHub login to remove.
+    """
+    gh_request(
+        path=f"/repos/{REPO}/issues/{number}/assignees",
+        method="DELETE",
+        body={"assignees": [assignee]},
+    )

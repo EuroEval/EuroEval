@@ -427,9 +427,7 @@ euroeval --model <model-id> --dataset boolq-pt
 
 ## Knowledge
 
-### Unofficial: ALBA-MCQ
-
-> This dataset is **unofficial** — results do not count toward the Portuguese leaderboard.
+### ALBA-MCQ
 
 [ALBA-MCQ](https://huggingface.co/datasets/amalia-llm/alba_mcq) is the multiple-choice
 adaptation of ALBA, an expert-created benchmark introduced in the
@@ -507,9 +505,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset alba-mcq-pt
 ```
 
-### Unofficial: CulturaVivaPT
-
-> This dataset is **unofficial** — results do not count toward the Portuguese leaderboard.
+### CulturaVivaPT
 
 [CulturaVivaPT](https://huggingface.co/datasets/amalia-llm/cultura-viva-pt-mcq),
 released as part of the [AMALIA project](https://aclanthology.org/2026.propor-1.38/),
@@ -587,7 +583,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset cultura-viva-pt
 ```
 
-### MMLU-pt
+### Unofficial: MMLU-pt
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.08928)
 and is a machine translated version of the English
@@ -1019,6 +1015,78 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset pt-completions
+```
+
+### Unofficial: EU-MMLU-pt
+
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 7 of the original
+57 subjects: college biology, college chemistry, college physics, global facts,
+international law, management and sociology. Unlike the other MMLU variants in EuroEval
+it was not machine translated - the translation was carried out by professional
+translators at the European Commission's Directorate-General for Translation, together
+with master's students from the European Master's in Translation network, as described
+in [this paper](https://arxiv.org/abs/2607.18432).
+
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 34 / 91 / 772 samples for training,
+validation and testing, respectively (so 897 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Em 2017, quantas das crianças com 1 ano de idade em todo o mundo já tinham sido vacinadas contra alguma doença? *\nOpções:\na. 80%\nb. 60%\nc. 40%\nd. 20%",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Em qual dos seguintes processos termodinâmicos o aumento da energia interna de um gás ideal é igual ao calor adicionado ao gás?\nOpções:\na. Temperatura constante\nb. Volume constante.\nc. Pressão constante.\nd. Adiabática.",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Como se podem descrever as estruturas organizacionais caracterizadas por estilos de gestão democráticos e inclusivos?\nOpções:\na. Hierárquicas.\nb. Burocráticas.\nc. Horizontais.\nd. Funcionais.",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+
+  Responde à pergunta acima usando só {labels_str}, e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset eu-mmlu-pt
 ```
 
 ## Common-sense Reasoning

@@ -60,22 +60,6 @@ MLSUM_DE_CONFIG = DatasetConfig(
     languages=[GERMAN],
 )
 
-MMLU_DE_CONFIG = DatasetConfig(
-    name="mmlu-de",
-    pretty_name="MMLU-de",
-    source="EuroEval/mmlu-de-mini",
-    task=KNOW,
-    languages=[GERMAN],
-)
-
-HELLASWAG_DE_CONFIG = DatasetConfig(
-    name="hellaswag-de",
-    pretty_name="HellaSwag-de",
-    source="EuroEval/hellaswag-de-mini",
-    task=COMMON_SENSE,
-    languages=[GERMAN],
-)
-
 MULTI_IFEVAL_DE_CONFIG = DatasetConfig(
     name="multi-ifeval-de",
     pretty_name="MultiIFEval-de",
@@ -106,17 +90,52 @@ ZEBRA_PUZZLE_EASY_DE_CONFIG = DatasetConfig(
     languages=[GERMAN],
 )
 
-RAGTRUTH_DE_CONFIG = DatasetConfig(
-    name="ragtruth-de",
-    pretty_name="RAGTruth-de",
-    source="EuroEval/ragtruth-translated-hallucinations-de-mini",
-    task=HALLU,
+
+WINOGRANDE_DE_CONFIG = DatasetConfig(
+    name="winogrande-de",
+    pretty_name="Winogrande-de",
+    source="EuroEval/winogrande-de",
+    task=COMMON_SENSE,
     languages=[GERMAN],
-    train_split=None,
+    labels=["a", "b"],
 )
 
+INCLUDE_DE_CONFIG = DatasetConfig(
+    name="include-de",
+    pretty_name="INCLUDE-de",
+    source="EuroEval/include-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
+)
+
+MULTILOKO_DE_CONFIG = DatasetConfig(
+    name="multiloko-de",
+    pretty_name="MultiLoKo-de",
+    source="EuroEval/multiloko-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
+    val_split=None,
+)
 
 # Unofficial datasets ###
+
+MMLU_DE_CONFIG = DatasetConfig(
+    name="mmlu-de",
+    pretty_name="MMLU-de",
+    source="EuroEval/mmlu-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
+    unofficial=True,
+)
+
+HELLASWAG_DE_CONFIG = DatasetConfig(
+    name="hellaswag-de",
+    pretty_name="HellaSwag-de",
+    source="EuroEval/hellaswag-de-mini",
+    task=COMMON_SENSE,
+    languages=[GERMAN],
+    unofficial=True,
+)
 
 IFEVAL_DE_CONFIG = DatasetConfig(
     name="ifeval-de",
@@ -174,35 +193,6 @@ GOLDENSWAG_DE_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-WINOGRANDE_DE_CONFIG = DatasetConfig(
-    name="winogrande-de",
-    pretty_name="Winogrande-de",
-    source="EuroEval/winogrande-de",
-    task=COMMON_SENSE,
-    languages=[GERMAN],
-    labels=["a", "b"],
-    unofficial=True,
-)
-
-INCLUDE_DE_CONFIG = DatasetConfig(
-    name="include-de",
-    pretty_name="INCLUDE-de",
-    source="EuroEval/include-de-mini",
-    task=KNOW,
-    languages=[GERMAN],
-    unofficial=True,
-)
-
-MULTILOKO_DE_CONFIG = DatasetConfig(
-    name="multiloko-de",
-    pretty_name="MultiLoKo-de",
-    source="EuroEval/multiloko-de-mini",
-    task=KNOW,
-    languages=[GERMAN],
-    val_split=None,
-    unofficial=True,
-)
-
 GERLANGMOD_DE_CONFIG = DatasetConfig(
     name="gerlangmod-de",
     pretty_name="GerLangMod-de",
@@ -218,5 +208,24 @@ ZEBRA_PUZZLE_HARD_DE_CONFIG = DatasetConfig(
     source="EuroEval/zebra-puzzles-hard-de",
     task=LOGIC,
     languages=[GERMAN],
+    unofficial=True,
+)
+
+EU_MMLU_DE_CONFIG = DatasetConfig(
+    name="eu-mmlu-de",
+    pretty_name="EU-MMLU-de",
+    source="EuroEval/eu-mmlu-de",
+    task=KNOW,
+    languages=[GERMAN],
+    unofficial=True,
+)
+
+RAGTRUTH_DE_CONFIG = DatasetConfig(
+    name="ragtruth-de",
+    pretty_name="RAGTruth-de",
+    source="EuroEval/ragtruth-translated-hallucinations-de-mini",
+    task=HALLU,
+    languages=[GERMAN],
+    train_split=None,
     unofficial=True,
 )

@@ -56,14 +56,6 @@ HUNSUM_CONFIG = DatasetConfig(
     languages=[HUNGARIAN],
 )
 
-MMLU_HU_CONFIG = DatasetConfig(
-    name="mmlu-hu",
-    pretty_name="MMLU-hu",
-    source="EuroEval/mmlu-hu-mini",
-    task=KNOW,
-    languages=[HUNGARIAN],
-)
-
 WINOGRANDE_HU_CONFIG = DatasetConfig(
     name="winogrande-hu",
     pretty_name="Winogrande-hu",
@@ -93,12 +85,29 @@ RAGTRUTH_HU_CONFIG = DatasetConfig(
 )
 
 
-# Unofficial datasets ###
-
 INCLUDE_HU_CONFIG = DatasetConfig(
     name="include-hu",
     pretty_name="INCLUDE-hu",
     source="EuroEval/include-hu-mini",
+    task=KNOW,
+    languages=[HUNGARIAN],
+)
+
+# Unofficial datasets ###
+
+MMLU_HU_CONFIG = DatasetConfig(
+    name="mmlu-hu",
+    pretty_name="MMLU-hu",
+    source="EuroEval/mmlu-hu-mini",
+    task=KNOW,
+    languages=[HUNGARIAN],
+    unofficial=True,
+)
+
+EU_MMLU_HU_CONFIG = DatasetConfig(
+    name="eu-mmlu-hu",
+    pretty_name="EU-MMLU-hu",
+    source="EuroEval/eu-mmlu-hu",
     task=KNOW,
     languages=[HUNGARIAN],
     unofficial=True,

@@ -12,6 +12,19 @@ from euroeval.metrics.pipeline import european_values_preprocessing_fn
 NUM_QUESTIONS = 53
 
 
+def test_invalid_prediction_does_not_raise(
+    make_ev_dataset: c.Callable[[list[dict]], Dataset],
+) -> None:
+    """An out-of-range prediction should be handled gracefully (no exception)."""
+    three_choices = {"0": 1, "1": 2, "2": 3}
+    dataset = make_ev_dataset([three_choices] * NUM_QUESTIONS)
+
+    # Prediction 8 is not a valid index for a question with choices {0, 1, 2}
+    predictions = [0] * (NUM_QUESTIONS - 1) + [8]
+    result = european_values_preprocessing_fn(predictions=predictions, dataset=dataset)
+    assert len(result) == NUM_QUESTIONS
+
+
 @pytest.fixture(scope="module")
 def make_ev_dataset() -> c.Generator[c.Callable[[list[dict]], Dataset], None, None]:
     """Create a European Values dataset with a given idx_to_choice per question.
@@ -29,26 +42,21 @@ def make_ev_dataset() -> c.Generator[c.Callable[[list[dict]], Dataset], None, No
     yield _make
 
 
-def test_valid_predictions(make_ev_dataset: c.Callable[[list[dict]], Dataset]) -> None:
-    """All valid predictions should be processed without error."""
-    three_choices = {"0": 1, "1": 2, "2": 3}
-    dataset = make_ev_dataset([three_choices] * NUM_QUESTIONS)
-    predictions = [1] * NUM_QUESTIONS
-    result = european_values_preprocessing_fn(predictions=predictions, dataset=dataset)
-    assert len(result) == NUM_QUESTIONS
-
-
-def test_invalid_prediction_does_not_raise(
-    make_ev_dataset: c.Callable[[list[dict]], Dataset],
+def test_invalid_prediction_logs_warning(
+    make_ev_dataset: c.Callable[[list[dict]], Dataset], caplog: LogCaptureFixture
 ) -> None:
-    """An out-of-range prediction should be handled gracefully (no exception)."""
+    """A warning should be logged when an invalid prediction is encountered."""
     three_choices = {"0": 1, "1": 2, "2": 3}
     dataset = make_ev_dataset([three_choices] * NUM_QUESTIONS)
+    # Use a unique value (99) to avoid being deduplicated by log_once's cache
+    predictions = [99] + [0] * (NUM_QUESTIONS - 1)
 
-    # Prediction 8 is not a valid index for a question with choices {0, 1, 2}
-    predictions = [0] * (NUM_QUESTIONS - 1) + [8]
-    result = european_values_preprocessing_fn(predictions=predictions, dataset=dataset)
-    assert len(result) == NUM_QUESTIONS
+    with caplog.at_level(logging.WARNING, logger="euroeval"):
+        european_values_preprocessing_fn(predictions=predictions, dataset=dataset)
+
+    assert any("not a valid index" in record.message for record in caplog.records), (
+        "Expected a warning about the invalid prediction index"
+    )
 
 
 def test_invalid_prediction_uses_first_valid_index(
@@ -70,18 +78,10 @@ def test_invalid_prediction_uses_first_valid_index(
     assert result[0] == 0
 
 
-def test_invalid_prediction_logs_warning(
-    make_ev_dataset: c.Callable[[list[dict]], Dataset], caplog: LogCaptureFixture
-) -> None:
-    """A warning should be logged when an invalid prediction is encountered."""
+def test_valid_predictions(make_ev_dataset: c.Callable[[list[dict]], Dataset]) -> None:
+    """All valid predictions should be processed without error."""
     three_choices = {"0": 1, "1": 2, "2": 3}
     dataset = make_ev_dataset([three_choices] * NUM_QUESTIONS)
-    # Use a unique value (99) to avoid being deduplicated by log_once's cache
-    predictions = [99] + [0] * (NUM_QUESTIONS - 1)
-
-    with caplog.at_level(logging.WARNING, logger="euroeval"):
-        european_values_preprocessing_fn(predictions=predictions, dataset=dataset)
-
-    assert any("not a valid index" in record.message for record in caplog.records), (
-        "Expected a warning about the invalid prediction index"
-    )
+    predictions = [1] * NUM_QUESTIONS
+    result = european_values_preprocessing_fn(predictions=predictions, dataset=dataset)
+    assert len(result) == NUM_QUESTIONS

@@ -134,3 +134,12 @@ INCLUDE_PL_CONFIG = DatasetConfig(
     languages=[POLISH],
     unofficial=True,
 )
+
+EU_MMLU_PL_CONFIG = DatasetConfig(
+    name="eu-mmlu-pl",
+    pretty_name="EU-MMLU-pl",
+    source="EuroEval/eu-mmlu-pl",
+    task=KNOW,
+    languages=[POLISH],
+    unofficial=True,
+)

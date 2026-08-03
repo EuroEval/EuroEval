@@ -128,6 +128,43 @@ WIC = Task(
     uses_logprobs=True,
 )
 
+
+KNOW = Task(
+    name="knowledge",
+    task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+    template_dict=MULTIPLE_CHOICE_TEMPLATES,
+    metrics=[m.mcc_metric, m.accuracy_metric],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
+    default_labels=["a", "b", "c", "d"],
+    uses_logprobs=True,
+)
+
+
+MCRC = Task(
+    name="multiple-choice-reading-comprehension",
+    task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+    template_dict=MULTIPLE_CHOICE_TEMPLATES,
+    metrics=[m.mcc_metric, m.accuracy_metric],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
+    default_labels=["a", "b", "c", "d"],
+    uses_logprobs=True,
+)
+
+
+COMMON_SENSE = Task(
+    name="common-sense-reasoning",
+    task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+    template_dict=MULTIPLE_CHOICE_TEMPLATES,
+    metrics=[m.mcc_metric, m.accuracy_metric],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
+    default_labels=["a", "b", "c", "d"],
+    uses_logprobs=True,
+)
+
+
 # Tasks that can be run for generative models only
 
 SIMPL = Task(
@@ -162,6 +199,7 @@ LOGIC = Task(
     default_max_generated_tokens=256,
     default_labels=[],
     uses_structured_output=True,
+    default_allowed_model_types=[ModelType.GENERATIVE],
 )
 
 
@@ -176,44 +214,6 @@ TRANSLATION = Task(
     default_allowed_model_types=[ModelType.GENERATIVE],
 )
 
-
-KNOW = Task(
-    name="knowledge",
-    task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-    template_dict=MULTIPLE_CHOICE_TEMPLATES,
-    metrics=[m.mcc_metric, m.accuracy_metric],
-    default_num_few_shot_examples=5,
-    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
-    default_labels=["a", "b", "c", "d"],
-    default_allowed_model_types=[ModelType.GENERATIVE],
-    uses_logprobs=True,
-)
-
-
-MCRC = Task(
-    name="multiple-choice-reading-comprehension",
-    task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-    template_dict=MULTIPLE_CHOICE_TEMPLATES,
-    metrics=[m.mcc_metric, m.accuracy_metric],
-    default_num_few_shot_examples=5,
-    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
-    default_labels=["a", "b", "c", "d"],
-    default_allowed_model_types=[ModelType.GENERATIVE],
-    uses_logprobs=True,
-)
-
-
-COMMON_SENSE = Task(
-    name="common-sense-reasoning",
-    task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-    template_dict=MULTIPLE_CHOICE_TEMPLATES,
-    metrics=[m.mcc_metric, m.accuracy_metric],
-    default_num_few_shot_examples=5,
-    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
-    default_labels=["a", "b", "c", "d"],
-    default_allowed_model_types=[ModelType.GENERATIVE],
-    uses_logprobs=True,
-)
 
 # Tasks for instruction-tuned models only
 
@@ -255,6 +255,16 @@ TOOL_CALLING = Task(
 
 # Orthogonal tasks, which measures things not related to 'raw' language modelling
 
+SPEED = Task(
+    name="speed",
+    task_group=TaskGroup.SPEED,
+    template_dict={},
+    metrics=[m.speed_metric, m.speed_short_metric],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=5,
+    default_labels=[],
+)
+
 EUROPEAN_VALUES = Task(
     name="european-values",
     task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
@@ -295,16 +305,6 @@ MCSTEREO = Task(
     uses_logprobs=True,
 )
 
-
-SPEED = Task(
-    name="speed",
-    task_group=TaskGroup.SPEED,
-    template_dict={},
-    metrics=[m.speed_metric, m.speed_short_metric],
-    default_num_few_shot_examples=0,
-    default_max_generated_tokens=5,
-    default_labels=[],
-)
 
 HALLU = Task(
     name="hallucination",
@@ -354,7 +354,6 @@ MULTIPLE_CHOICE = Task(
     default_num_few_shot_examples=5,
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=None,
-    default_allowed_model_types=[ModelType.GENERATIVE],
     uses_logprobs=True,
 )
 

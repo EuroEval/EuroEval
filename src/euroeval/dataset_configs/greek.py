@@ -57,14 +57,6 @@ GREEK_WIKIPEDIA_CONFIG = DatasetConfig(
     languages=[GREEK],
 )
 
-GLOBAL_MMLU_EL_CONFIG = DatasetConfig(
-    name="global-mmlu-el",
-    pretty_name="GlobalMMLU-el",
-    source="EuroEval/global-mmlu-el-mini",
-    task=KNOW,
-    languages=[GREEK],
-)
-
 WINOGRANDE_EL_CONFIG = DatasetConfig(
     name="winogrande-el",
     pretty_name="Winogrande-el",
@@ -93,7 +85,24 @@ RAGTRUTH_EL_CONFIG = DatasetConfig(
 )
 
 
+GREEK_MMLU_CONFIG = DatasetConfig(
+    name="greek-mmlu",
+    pretty_name="GreekMMLU",
+    source="EuroEval/greek-mmlu-mini",
+    task=KNOW,
+    languages=[GREEK],
+)
+
 # Unofficial datasets ###
+
+GLOBAL_MMLU_EL_CONFIG = DatasetConfig(
+    name="global-mmlu-el",
+    pretty_name="GlobalMMLU-el",
+    source="EuroEval/global-mmlu-el-mini",
+    task=KNOW,
+    languages=[GREEK],
+    unofficial=True,
+)
 
 MULTI_IFEVAL_EL_CONFIG = DatasetConfig(
     name="multi-ifeval-el",
@@ -115,10 +124,10 @@ INCLUDE_EL_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-GREEK_MMLU_CONFIG = DatasetConfig(
-    name="greek-mmlu",
-    pretty_name="GreekMMLU",
-    source="EuroEval/greek-mmlu-mini",
+EU_MMLU_EL_CONFIG = DatasetConfig(
+    name="eu-mmlu-el",
+    pretty_name="EU-MMLU-el",
+    source="EuroEval/eu-mmlu-el",
     task=KNOW,
     languages=[GREEK],
     unofficial=True,

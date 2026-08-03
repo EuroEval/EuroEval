@@ -7,7 +7,6 @@
 # ]
 # ///
 
-
 """Create a Dutch proverbs dataset from the GPT-NL proverb dataset."""
 
 import random

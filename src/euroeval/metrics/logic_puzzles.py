@@ -1,5 +1,6 @@
 """Metrics for logic puzzle evaluation."""
 
+import abc
 import collections.abc as c
 import itertools
 import typing as t
@@ -172,8 +173,6 @@ class LogicPuzzleMetric(Metric):
     ) -> float:
         """Compare a prediction and a label and compute a metric.
 
-        This method must be implemented by subclasses.
-
         Args:
             prediction:
                 The model predictions as a dictionary.
@@ -183,9 +182,44 @@ class LogicPuzzleMetric(Metric):
         Returns:
             The metric result.
         """
-        raise NotImplementedError(
-            "Subclasses must implement _compare_prediction_and_label"
+        prediction_sets, label_sets, n_keys, n_elements_per_key = self._prepare_data(
+            prediction, label
         )
+        return float(
+            self._compute_score(
+                prediction=prediction_sets,
+                label=label_sets,
+                n_keys=n_keys,
+                n_elements_per_key=n_elements_per_key,
+            )
+        )
+
+    @abc.abstractmethod
+    def _compute_score(
+        self,
+        prediction: dict[str, set],
+        label: dict[str, set],
+        n_keys: int,
+        n_elements_per_key: int,
+    ) -> float:
+        """Compute the score for a single prediction-label pair.
+
+        Subclasses must implement this method to define their specific scoring logic.
+
+        Args:
+            prediction:
+                The prediction as a dictionary of sets.
+            label:
+                The label as a dictionary of sets.
+            n_keys:
+                Number of keys in the label.
+            n_elements_per_key:
+                Number of elements per key in the label.
+
+        Returns:
+            The computed score as a float.
+        """
+        ...
 
     @staticmethod
     def _prepare_data(
@@ -221,71 +255,68 @@ class LogicPuzzleMetric(Metric):
         return prediction_sets, label_sets, n_keys, n_elements_per_key
 
 
-class PuzzleLevelAccuracyMetric(LogicPuzzleMetric):
-    """Puzzle-level accuracy metric."""
+class BestPermutedCellWiseAccuracyMetric(LogicPuzzleMetric):
+    """Best permuted cell-wise accuracy metric."""
 
     def __init__(self) -> None:
-        """Initialise the puzzle-level accuracy metric."""
+        """Initialise the best permuted cell-wise accuracy metric."""
         super().__init__(
-            name="puzzle_level_accuracy",
-            pretty_name="Puzzle-level Accuracy",
+            name="best_permuted_cell_wise_accuracy",
+            pretty_name="Best Permuted Cell-wise Accuracy",
             postprocessing_fn=None,
         )
+        # Use CellWiseAccuracyMetric's _compute_score method
+        self._cell_score_computer = CellWiseAccuracyMetric()
 
-    def _compare_prediction_and_label(
-        self, prediction: dict[str, list[str]], label: dict[str, list[str]]
+    def _compute_score(
+        self,
+        prediction: dict[str, set],
+        label: dict[str, set],
+        n_keys: int,
+        n_elements_per_key: int,
     ) -> float:
-        """Compare a prediction and a label and compute the puzzle score.
-
-        Args:
-            prediction:
-                The model predictions as a dictionary.
-            label:
-                The true labels as a dictionary.
-
-        Returns:
-            The puzzle score.
-        """
-        prediction_sets, label_sets, _, _ = self._prepare_data(prediction, label)
-
-        return float(
-            self._compute_puzzle_score(prediction=prediction_sets, label=label_sets)
-        )
-
-    def _compute_puzzle_score(
-        self, prediction: dict[str, set], label: dict[str, set]
-    ) -> int:
-        """Compute the puzzle score.
+        """Compute the best permuted cell score.
 
         Args:
             prediction: The prediction as a dictionary.
             label: The label as a dictionary.
+            n_keys: Number of keys in the label.
+            n_elements_per_key: Number of elements per key in the label.
 
         Returns:
-            The puzzle score as an integer (1 if correct, 0 otherwise).
+            The best permuted cell score as a float.
         """
-        # Sort the prediction and label by object keys to ensure consistent order
-        prediction = dict(sorted(prediction.items()))
-        label = dict(sorted(label.items()))
+        best_permuted_cell_score = 0.0
+        objects = list(prediction.keys())
 
-        # Reject predictions with wrong key counts
-        if len(prediction) != len(label):
-            return 0
+        # Create all permutations of the objects where each object appears exactly once
+        object_permutations = list(itertools.permutations(objects))
 
-        if prediction == label:
-            return 1
+        # Evaluate each permutation
+        for object_permutation in object_permutations:
+            # Create a new prediction with the objects permuted
+            prediction_permuted = {
+                obj: prediction[perm_obj]
+                for obj, perm_obj in zip(objects, object_permutation)
+            }
 
-        # Check if all rows are correct
-        for attributes_pred, attributes_label in zip(
-            prediction.values(), label.values()
-        ):
-            # strip whitespace (coerce to str to handle non-string attributes)
-            attributes_pred = {str(attr).strip() for attr in attributes_pred}
-            attributes_label = {str(attr).strip() for attr in attributes_label}
-            if attributes_pred != attributes_label:
-                return 0
+            # Compare the permuted prediction to the label
+            permuted_cell_score = self._cell_score_computer._compute_score(
+                prediction=prediction_permuted,
+                label=label,
+                n_keys=n_keys,
+                n_elements_per_key=n_elements_per_key,
+            )
 
-        return 1
+            # No need to continue if we have a perfect score
+            if permuted_cell_score == 1.0:
+                return 1.0
+
+            # Update the best permuted cell score
+            if permuted_cell_score > best_permuted_cell_score:
+                best_permuted_cell_score = permuted_cell_score
+
+        return best_permuted_cell_score
 
 
 class CellWiseAccuracyMetric(LogicPuzzleMetric):
@@ -299,31 +330,7 @@ class CellWiseAccuracyMetric(LogicPuzzleMetric):
             postprocessing_fn=None,
         )
 
-    def _compare_prediction_and_label(
-        self, prediction: dict[str, list[str]], label: dict[str, list[str]]
-    ) -> float:
-        """Compare a prediction and a label and compute the cell score.
-
-        Args:
-            prediction:
-                The model predictions as a dictionary.
-            label:
-                The true labels as a dictionary.
-
-        Returns:
-            The cell score.
-        """
-        prediction_sets, label_sets, n_keys, n_elements_per_key = self._prepare_data(
-            prediction, label
-        )
-        return self._compute_cell_score(
-            prediction=prediction_sets,
-            label=label_sets,
-            n_keys=n_keys,
-            n_elements_per_key=n_elements_per_key,
-        )
-
-    def _compute_cell_score(
+    def _compute_score(
         self,
         prediction: dict[str, set],
         label: dict[str, set],
@@ -368,92 +375,59 @@ class CellWiseAccuracyMetric(LogicPuzzleMetric):
         return cell_score
 
 
-class BestPermutedCellWiseAccuracyMetric(LogicPuzzleMetric):
-    """Best permuted cell-wise accuracy metric."""
+class PuzzleLevelAccuracyMetric(LogicPuzzleMetric):
+    """Puzzle-level accuracy metric."""
 
     def __init__(self) -> None:
-        """Initialise the best permuted cell-wise accuracy metric."""
+        """Initialise the puzzle-level accuracy metric."""
         super().__init__(
-            name="best_permuted_cell_wise_accuracy",
-            pretty_name="Best Permuted Cell-wise Accuracy",
+            name="puzzle_level_accuracy",
+            pretty_name="Puzzle-level Accuracy",
             postprocessing_fn=None,
         )
-        # Use CellWiseAccuracyMetric's _compute_cell_score method
-        self._cell_score_computer = CellWiseAccuracyMetric()
 
-    def _compare_prediction_and_label(
-        self, prediction: dict[str, list[str]], label: dict[str, list[str]]
-    ) -> float:
-        """Compare a prediction and a label and compute the best permuted score.
-
-        Args:
-            prediction:
-                The model predictions as a dictionary.
-            label:
-                The true labels as a dictionary.
-
-        Returns:
-            The best permuted cell score.
-        """
-        prediction_sets, label_sets, n_keys, n_elements_per_key = self._prepare_data(
-            prediction, label
-        )
-        return self._compute_best_permuted_cell_score(
-            prediction=prediction_sets,
-            label=label_sets,
-            n_keys=n_keys,
-            n_elements_per_key=n_elements_per_key,
-        )
-
-    def _compute_best_permuted_cell_score(
+    def _compute_score(
         self,
         prediction: dict[str, set],
         label: dict[str, set],
         n_keys: int,
         n_elements_per_key: int,
     ) -> float:
-        """Compute the best permuted cell score.
+        """Compute the puzzle score.
 
         Args:
             prediction: The prediction as a dictionary.
             label: The label as a dictionary.
-            n_keys: Number of keys in the label.
-            n_elements_per_key: Number of elements per key in the label.
+            n_keys:
+                Number of keys in the label. Ignored.
+            n_elements_per_key:
+                Number of elements per key in the label. Ignored.
 
         Returns:
-            The best permuted cell score as a float.
+            The puzzle score as an integer (1 if correct, 0 otherwise).
         """
-        best_permuted_cell_score = 0.0
-        objects = list(prediction.keys())
+        # Sort the prediction and label by object keys to ensure consistent order
+        prediction = dict(sorted(prediction.items()))
+        label = dict(sorted(label.items()))
 
-        # Create all permutations of the objects where each object appears exactly once
-        object_permutations = list(itertools.permutations(objects))
+        # Reject predictions with wrong key counts
+        if len(prediction) != len(label):
+            return 0
 
-        # Evaluate each permutation
-        for object_permutation in object_permutations:
-            # Create a new prediction with the objects permuted
-            prediction_permuted = {
-                obj: prediction[perm_obj]
-                for obj, perm_obj in zip(objects, object_permutation)
-            }
+        if prediction == label:
+            return 1
 
-            # Compare the permuted prediction to the label
-            permuted_cell_score = self._cell_score_computer._compute_cell_score(
-                prediction=prediction_permuted,
-                label=label,
-                n_keys=n_keys,
-                n_elements_per_key=n_elements_per_key,
-            )
+        # Check if all rows are correct
+        for attributes_pred, attributes_label in zip(
+            prediction.values(), label.values()
+        ):
+            # strip whitespace (coerce to str to handle non-string attributes)
+            attributes_pred = {str(attr).strip() for attr in attributes_pred}
+            attributes_label = {str(attr).strip() for attr in attributes_label}
+            if attributes_pred != attributes_label:
+                return 0
 
-            # No need to continue if we have a perfect score
-            if permuted_cell_score == 1.0:
-                return 1.0
-
-            # Update the best permuted cell score
-            if permuted_cell_score > best_permuted_cell_score:
-                best_permuted_cell_score = permuted_cell_score
-
-        return best_permuted_cell_score
+        return 1
 
 
 puzzle_level_accuracy_metric = PuzzleLevelAccuracyMetric()

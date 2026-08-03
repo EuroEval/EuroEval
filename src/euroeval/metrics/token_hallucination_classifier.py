@@ -40,33 +40,6 @@ class TokenHallucinationMetric(Metric):
         """
         super().__init__(name=name, pretty_name=pretty_name, postprocessing_fn=None)
 
-    def download(
-        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
-    ) -> "TokenHallucinationMetric":
-        """Pre-download hallucination detection models.
-
-        The hallucination detection model is language-specific. When a dataset
-        configuration is provided, only the model(s) for the relevant language(s)
-        are downloaded. Otherwise, all hallucination detection models referenced
-        by built-in dataset configurations are fetched for offline benchmarking.
-
-        Args:
-            cache_dir:
-                The directory where the models will be downloaded to.
-            dataset_config (optional):
-                The dataset configuration, used to filter which hallucination
-                detection models to download based on language. When None, all
-                models are downloaded. Defaults to None.
-
-        Returns:
-            The metric object itself.
-        """
-        for model_id in _hallucination_model_ids(
-            cache_dir=cache_dir, dataset_config=dataset_config
-        ):
-            snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
-        return self
-
     def __call__(
         self,
         predictions: c.Iterable[dict[str, t.Any]],
@@ -98,30 +71,64 @@ class TokenHallucinationMetric(Metric):
         Returns:
             The hallucination rate (hallucinated_tokens/total_tokens).
         """
+        # Extract language code from dataset config
+        main_language = dataset_config.main_language
+        language_code: str = (
+            main_language[1].code
+            if isinstance(main_language, tuple)
+            else main_language.code
+        )
+
         hallucination_rate = detect_hallucinations(
             dataset=dataset,
             predictions=predictions,
-            model=_hallucination_model_id(dataset_config=dataset_config),
+            model=_hallucination_model_id(language_code=language_code),
             device=Device(benchmark_config.device.type),
             cache_dir=benchmark_config.cache_dir,
         )
         return hallucination_rate
 
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
+    ) -> "TokenHallucinationMetric":
+        """Pre-download hallucination detection models.
 
-def _hallucination_model_id(dataset_config: "DatasetConfig") -> str:
+        The hallucination detection model is language-specific. When a dataset
+        configuration is provided, only the model(s) for the relevant language(s)
+        are downloaded. Otherwise, all hallucination detection models referenced
+        by built-in dataset configurations are fetched for offline benchmarking.
+
+        Args:
+            cache_dir:
+                The directory where the models will be downloaded to.
+            dataset_config (optional):
+                The dataset configuration, used to filter which hallucination
+                detection models to download based on language. When None, all
+                models are downloaded. Defaults to None.
+
+        Returns:
+            The metric object itself.
+        """
+        for model_id in _hallucination_model_ids(
+            cache_dir=cache_dir, dataset_config=dataset_config
+        ):
+            snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
+        return self
+
+
+def _hallucination_model_id(language_code: str) -> str:
     """Build the hallucination detection model ID for a dataset.
 
     Args:
-        dataset_config:
-            The dataset configuration, whose main language determines the
-            language-specific hallucination detection model.
+        language_code:
+            The language code of the dataset.
 
     Returns:
         The Hugging Face Hub repository ID of the hallucination detection model.
     """
     return (
         "alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-"
-        f"ragtruth-{dataset_config.main_language.code}"
+        f"ragtruth-{language_code}"
     )
 
 
@@ -149,22 +156,15 @@ def _hallucination_model_ids(
         Otherwise, contains all models referenced by built-in dataset
         configurations.
     """
+    # Extract language(s) from the provided dataset configuration if available
     if dataset_config is not None:
-        # Extract language(s) from the provided dataset configuration
         main_language = dataset_config.main_language
-        if isinstance(main_language, tuple):
-            # Translation task: use target language (second element) since that's
-            # what the model outputs and what we check for hallucinations
-            return {
-                "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
-                f"{main_language[1].code}"
-            }
-        else:
-            # Single language
-            return {
-                "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
-                f"{main_language.code}"
-            }
+        language_code: str = (
+            main_language[1].code
+            if isinstance(main_language, tuple)
+            else main_language.code
+        )
+        return {_hallucination_model_id(language_code=language_code)}
 
     # Imported here rather than at module level to avoid a circular import, since
     # the dataset configurations import this metric module via the task registry.
@@ -184,7 +184,13 @@ def _hallucination_model_ids(
             isinstance(metric, TokenHallucinationMetric)
             for metric in dataset_config.task.metrics
         ):
-            model_ids.add(_hallucination_model_id(dataset_config=dataset_config))
+            main_language = dataset_config.main_language
+            language_code: str = (
+                main_language[1].code
+                if isinstance(main_language, tuple)
+                else main_language.code
+            )
+            model_ids.add(_hallucination_model_id(language_code=language_code))
     return model_ids
 
 

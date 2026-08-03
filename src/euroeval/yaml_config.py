@@ -237,6 +237,65 @@ def load_dataset_config_from_yaml(
     return DatasetConfig(task=task_obj, languages=language_objs, **kwargs)  # ty: ignore[invalid-argument-type]
 
 
+def parse_languages(
+    raw: dict[str, object], fallback_codes: list[str] | None, yaml_path: Path
+) -> list[Language] | None:
+    """Parse language codes from YAML or use fallbacks.
+
+    Args:
+        raw:
+            The parsed YAML data.
+        fallback_codes:
+            ISO 639-1 language codes to use as a fallback.
+        yaml_path:
+            Path to the YAML config file (for error messages).
+
+    Returns:
+        A list of Language objects, or None if validation failed.
+    """
+    language_map = get_all_languages()
+    raw_languages = raw.get("languages")
+
+    if isinstance(raw_languages, list) and raw_languages:
+        language_codes: list[str] = [str(c) for c in raw_languages]
+    elif fallback_codes:
+        log_once(
+            message=(
+                f"YAML config at {yaml_path} does not contain a 'languages' key. "
+                "Using language(s) from the repository metadata: "
+                f"{fallback_codes}."
+            ),
+            level=logging.DEBUG,
+        )
+        language_codes = fallback_codes
+    else:
+        log_once(
+            message=(
+                f"YAML config at {yaml_path} does not contain a 'languages' key and "
+                "no language metadata could be found for this repository. Defaulting "
+                "to English. Add a top-level 'languages' key to the YAML file "
+                "(e.g. 'languages: [en]') to override this."
+            ),
+            level=logging.WARNING,
+        )
+        language_codes = ["en"]
+
+    language_objs: list[Language] = []
+    for code in language_codes:
+        lang = language_map.get(code)
+        if lang is None:
+            log_once(
+                message=(
+                    f"Unknown language code '{code}' in YAML config at {yaml_path}."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+        language_objs.append(lang)
+
+    return language_objs
+
+
 def promote_field_spec_fields(raw: dict[str, object]) -> None:
     """Promote column names from field_spec to top-level keys.
 
@@ -385,65 +444,6 @@ def infer_task_from_inspect_ai(
     return None
 
 
-def parse_languages(
-    raw: dict[str, object], fallback_codes: list[str] | None, yaml_path: Path
-) -> list[Language] | None:
-    """Parse language codes from YAML or use fallbacks.
-
-    Args:
-        raw:
-            The parsed YAML data.
-        fallback_codes:
-            ISO 639-1 language codes to use as a fallback.
-        yaml_path:
-            Path to the YAML config file (for error messages).
-
-    Returns:
-        A list of Language objects, or None if validation failed.
-    """
-    language_map = get_all_languages()
-    raw_languages = raw.get("languages")
-
-    if isinstance(raw_languages, list) and raw_languages:
-        language_codes: list[str] = [str(c) for c in raw_languages]
-    elif fallback_codes:
-        log_once(
-            message=(
-                f"YAML config at {yaml_path} does not contain a 'languages' key. "
-                "Using language(s) from the repository metadata: "
-                f"{fallback_codes}."
-            ),
-            level=logging.DEBUG,
-        )
-        language_codes = fallback_codes
-    else:
-        log_once(
-            message=(
-                f"YAML config at {yaml_path} does not contain a 'languages' key and "
-                "no language metadata could be found for this repository. Defaulting "
-                "to English. Add a top-level 'languages' key to the YAML file "
-                "(e.g. 'languages: [en]') to override this."
-            ),
-            level=logging.WARNING,
-        )
-        language_codes = ["en"]
-
-    language_objs: list[Language] = []
-    for code in language_codes:
-        lang = language_map.get(code)
-        if lang is None:
-            log_once(
-                message=(
-                    f"Unknown language code '{code}' in YAML config at {yaml_path}."
-                ),
-                level=logging.ERROR,
-            )
-            return None
-        language_objs.append(lang)
-
-    return language_objs
-
-
 DatasetKwargs = dict[str, str | int | bool | list[str] | dict[str, str]]
 
 
@@ -535,37 +535,6 @@ def build_kwargs(raw: dict[str, object], yaml_path: Path) -> DatasetKwargs | Non
     return kwargs
 
 
-def parse_string_field(
-    raw: dict[str, object], field_name: str, yaml_path: Path
-) -> str | None:
-    """Parse and validate a string field from YAML.
-
-    Args:
-        raw:
-            The parsed YAML data.
-        field_name:
-            The name of the field to parse.
-        yaml_path:
-            Path to the YAML config file (for error messages).
-
-    Returns:
-        The field value as a string, or None if validation failed.
-    """
-    value = raw.get(field_name)
-    if value is not None:
-        if not isinstance(value, str):
-            log_once(
-                message=(
-                    f"Field '{field_name}' in YAML config at {yaml_path} must be a "
-                    "string."
-                ),
-                level=logging.ERROR,
-            )
-            return None
-        return value
-    return None
-
-
 def parse_int_field(
     raw: dict[str, object], field_name: str, yaml_path: Path
 ) -> int | None:
@@ -589,6 +558,37 @@ def parse_int_field(
                 message=(
                     f"Field '{field_name}' in YAML config at {yaml_path} must be an "
                     "integer."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+        return value
+    return None
+
+
+def parse_string_field(
+    raw: dict[str, object], field_name: str, yaml_path: Path
+) -> str | None:
+    """Parse and validate a string field from YAML.
+
+    Args:
+        raw:
+            The parsed YAML data.
+        field_name:
+            The name of the field to parse.
+        yaml_path:
+            Path to the YAML config file (for error messages).
+
+    Returns:
+        The field value as a string, or None if validation failed.
+    """
+    value = raw.get(field_name)
+    if value is not None:
+        if not isinstance(value, str):
+            log_once(
+                message=(
+                    f"Field '{field_name}' in YAML config at {yaml_path} must be a "
+                    "string."
                 ),
                 level=logging.ERROR,
             )

@@ -17,16 +17,26 @@ def bump_major() -> None:
     set_new_version(major + 1, 0, 0)
 
 
-def bump_minor() -> None:
-    """Add one to the minor version."""
-    major, minor, _ = get_current_version()
-    set_new_version(major, minor + 1, 0)
+def get_current_version() -> tuple[int, int, int]:
+    """Fetch the current version of the package.
 
+    Returns:
+        The current version, separated into major, minor and patch versions.
 
-def bump_patch() -> None:
-    """Add one to the patch version."""
-    major, minor, patch = get_current_version()
-    set_new_version(major, minor, patch + 1)
+    Raises:
+        RuntimeError:
+            If no version can be found in the `pyproject.toml` file.
+    """
+    version_candidates = re.search(
+        r'(?<=version = ")[^"]+(?=")',
+        Path("pyproject.toml").read_text(encoding="utf-8"),
+    )
+    if version_candidates is None:
+        raise RuntimeError("No version found in pyproject.toml.")
+
+    version_str = version_candidates.group(0).replace(".dev", "")
+    major, minor, patch = map(int, version_str.split("."))
+    return major, minor, patch
 
 
 def set_new_version(major: int, minor: int, patch: int) -> None:
@@ -59,7 +69,7 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     new_changelog = re.sub(
         r"\[Unreleased\].*", f"[Unreleased]\n\n## [v{version}] - {today}", changelog
     )
-    changelog_path.write_text(new_changelog, encoding="utf-8")
+    changelog_path.write_text(data=new_changelog, encoding="utf-8")
 
     # Update the version in the `pyproject.toml` file
     pyproject_path = Path("pyproject.toml")
@@ -67,43 +77,33 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     pyproject = re.sub(
         r'version = "[^"]+"', f'version = "{version}"', pyproject, count=1
     )
-    pyproject_path.write_text(pyproject, encoding="utf-8")
+    pyproject_path.write_text(data=pyproject, encoding="utf-8")
 
     # Install newest project. check=True so a failed step aborts before we tag
     # and push a release.
-    subprocess.run(["make", "install"], check=True)
+    subprocess.run(args=["make", "install"], check=True)
 
     # Add to version control
-    subprocess.run(["git", "add", ".pre-commit-config.yaml"], check=True)
-    subprocess.run(["git", "add", "CHANGELOG.md"], check=True)
-    subprocess.run(["git", "add", "pyproject.toml"], check=True)
-    subprocess.run(["git", "add", "uv.lock"], check=True)
-    subprocess.run(["git", "commit", "-m", f"feat: v{version}"], check=True)
-    subprocess.run(["git", "tag", f"v{version}"], check=True)
-    subprocess.run(["git", "push"], check=True)
-    subprocess.run(["git", "push", "--tags"], check=True)
+    subprocess.run(args=["git", "add", ".pre-commit-config.yaml"], check=True)
+    subprocess.run(args=["git", "add", "CHANGELOG.md"], check=True)
+    subprocess.run(args=["git", "add", "pyproject.toml"], check=True)
+    subprocess.run(args=["git", "add", "uv.lock"], check=True)
+    subprocess.run(args=["git", "commit", "-m", f"feat: v{version}"], check=True)
+    subprocess.run(args=["git", "tag", f"v{version}"], check=True)
+    subprocess.run(args=["git", "push"], check=True)
+    subprocess.run(args=["git", "push", "--tags"], check=True)
 
 
-def get_current_version() -> tuple[int, int, int]:
-    """Fetch the current version of the package.
+def bump_minor() -> None:
+    """Add one to the minor version."""
+    major, minor, _ = get_current_version()
+    set_new_version(major, minor + 1, 0)
 
-    Returns:
-        The current version, separated into major, minor and patch versions.
 
-    Raises:
-        RuntimeError:
-            If no version can be found in the `pyproject.toml` file.
-    """
-    version_candidates = re.search(
-        r'(?<=version = ")[^"]+(?=")',
-        Path("pyproject.toml").read_text(encoding="utf-8"),
-    )
-    if version_candidates is None:
-        raise RuntimeError("No version found in pyproject.toml.")
-
-    version_str = version_candidates.group(0).replace(".dev", "")
-    major, minor, patch = map(int, version_str.split("."))
-    return major, minor, patch
+def bump_patch() -> None:
+    """Add one to the patch version."""
+    major, minor, patch = get_current_version()
+    set_new_version(major, minor, patch + 1)
 
 
 if __name__ == "__main__":

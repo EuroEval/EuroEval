@@ -125,42 +125,6 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def read_files_from_tar(tar_file: tarfile.TarFile) -> dict[str, list[str]]:
-    """Read the files from the tar archive.
-
-    Args:
-        tar_file: The tar archive to read the files from.
-
-    Returns:
-        A dictionary with the split names as keys and the lines as values.
-    """
-    # Read the files from the tar archive
-    # The structure needs to be checked - typically there are train/test/dev files
-    file_members = tar_file.getmembers()
-
-    # Extract and parse the IOB2 files
-    # This is a placeholder - we need to see the actual structure first
-    data = {}
-    for member in file_members:
-        if member.isfile() and not member.name.startswith("."):
-            content = tar_file.extractfile(member)
-            if content:
-                text = content.read().decode("utf-8")
-                # Determine split name from filename
-                if "train" in member.name.lower():
-                    split_name = "train"
-                elif "test" in member.name.lower():
-                    split_name = "test"
-                elif "dev" in member.name.lower() or "val" in member.name.lower():
-                    split_name = "val"
-                else:
-                    split_name = member.name
-
-                data[split_name] = text.split("\n")
-
-    return data
-
-
 def parse_iob2(data: dict[str, list[str]]) -> dict[str, pd.DataFrame]:
     """Parse the IOB2 format.
 
@@ -218,6 +182,42 @@ def parse_iob2(data: dict[str, list[str]]) -> dict[str, pd.DataFrame]:
         dfs[split_name] = df
 
     return dfs
+
+
+def read_files_from_tar(tar_file: tarfile.TarFile) -> dict[str, list[str]]:
+    """Read the files from the tar archive.
+
+    Args:
+        tar_file: The tar archive to read the files from.
+
+    Returns:
+        A dictionary with the split names as keys and the lines as values.
+    """
+    # Read the files from the tar archive
+    # The structure needs to be checked - typically there are train/test/dev files
+    file_members = tar_file.getmembers()
+
+    # Extract and parse the IOB2 files
+    # This is a placeholder - we need to see the actual structure first
+    data = {}
+    for member in file_members:
+        if member.isfile() and not member.name.startswith("."):
+            content = tar_file.extractfile(member)
+            if content:
+                text = content.read().decode("utf-8")
+                # Determine split name from filename
+                if "train" in member.name.lower():
+                    split_name = "train"
+                elif "test" in member.name.lower():
+                    split_name = "test"
+                elif "dev" in member.name.lower() or "val" in member.name.lower():
+                    split_name = "val"
+                else:
+                    split_name = member.name
+
+                data[split_name] = text.split("\n")
+
+    return data
 
 
 if __name__ == "__main__":

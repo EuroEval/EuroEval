@@ -10,18 +10,6 @@ from euroeval.hf_hub_utils import _repo_exists
 class TestRepoExists:
     """Tests for the `_repo_exists` function."""
 
-    def test_returns_true_when_repo_exists(self) -> None:
-        """Test that ``_repo_exists`` returns True when the repo exists."""
-        hf_api = MagicMock()
-        hf_api.repo_exists.return_value = True
-        assert _repo_exists(hf_api=hf_api, dataset_id="some/dataset-exists") is True
-
-    def test_returns_false_when_repo_missing(self) -> None:
-        """Test that ``_repo_exists`` returns False when the repo is missing."""
-        hf_api = MagicMock()
-        hf_api.repo_exists.return_value = False
-        assert _repo_exists(hf_api=hf_api, dataset_id="some/dataset-missing") is False
-
     def test_returns_false_when_offline_mode_enabled(self) -> None:
         """Returns False rather than raising when ``HF_HUB_OFFLINE=1`` is set.
 
@@ -36,3 +24,15 @@ class TestRepoExists:
             "offline mode is enabled."
         )
         assert _repo_exists(hf_api=hf_api, dataset_id="some/dataset-offline") is False
+
+    def test_returns_false_when_repo_missing(self) -> None:
+        """Test that ``_repo_exists`` returns False when the repo is missing."""
+        hf_api = MagicMock()
+        hf_api.repo_exists.return_value = False
+        assert _repo_exists(hf_api=hf_api, dataset_id="some/dataset-missing") is False
+
+    def test_returns_true_when_repo_exists(self) -> None:
+        """Test that ``_repo_exists`` returns True when the repo exists."""
+        hf_api = MagicMock()
+        hf_api.repo_exists.return_value = True
+        assert _repo_exists(hf_api=hf_api, dataset_id="some/dataset-exists") is True

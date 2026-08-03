@@ -12,6 +12,16 @@ from src.scripts import collect_evaluation_results
 class FakeHfApi:
     """Fake HfApi that mocks sync_bucket and batch_bucket_files calls."""
 
+    def batch_bucket_files(
+        self,
+        bucket_id: str,
+        add: list[tuple[str | Path | bytes, str]] | None = None,
+        delete: list[str] | None = None,
+        **kwargs,
+    ) -> None:
+        """No-op batch upload for testing."""
+        pass
+
     def sync_bucket(
         self,
         source: str,
@@ -21,16 +31,6 @@ class FakeHfApi:
         **kwargs,
     ) -> None:
         """No-op sync for testing."""
-        pass
-
-    def batch_bucket_files(
-        self,
-        bucket_id: str,
-        add: list[tuple[str | Path | bytes, str]] | None = None,
-        delete: list[str] | None = None,
-        **kwargs,
-    ) -> None:
-        """No-op batch upload for testing."""
         pass
 
 
@@ -99,133 +99,6 @@ def test_upload_results_to_hf_collision_leaves_results_dir_unmutated(
     assert existing_record_file.exists(), "Existing record was incorrectly deleted"
     content = json.loads(existing_record_file.read_text(encoding="utf-8"))
     assert content == existing_record
-
-
-def test_upload_results_to_hf_same_identity_keeps_newer_record(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Same-identity duplicate keeps the NEWER record.
-
-    When two records share the same identity, the newer one wins (by euroeval_version,
-    then retrieved_timestamp).
-    """
-    results_dir = tmp_path / "results"
-    results_dir.mkdir()
-
-    # Create existing record with older version
-    model_dir = results_dir / "foo_bar"
-    model_dir.mkdir()
-    existing_record_file = model_dir / "dataset__test__zeroshot.json"
-    older_record = {
-        "model_info": {"id": "foo/bar"},
-        "eval_library": {
-            "additional_details": {
-                "dataset": "dataset",
-                "few_shot": False,
-                "validation_split": False,
-            },
-            "version": "1.0.0",
-        },
-        "retrieved_timestamp": 1704067200,  # 2024-01-01T00:00:00Z
-    }
-    existing_record_file.write_text(json.dumps(older_record), encoding="utf-8")
-
-    # Create new results file with newer version (same identity)
-    new_results_file = tmp_path / "new_results.jsonl"
-    newer_record = {
-        "model_info": {"id": "foo/bar"},
-        "eval_library": {
-            "additional_details": {
-                "dataset": "dataset",
-                "few_shot": False,
-                "validation_split": False,
-            },
-            "version": "2.0.0",  # Newer version
-        },
-        "retrieved_timestamp": 1704067200,  # 2024-01-01T00:00:00Z
-    }
-    new_results_file.write_text(json.dumps(newer_record), encoding="utf-8")
-
-    # Monkeypatch RESULTS_DIR and HfApi
-    monkeypatch.setattr(
-        target=collect_evaluation_results, name="RESULTS_DIR", value=results_dir
-    )
-    monkeypatch.setattr(
-        target=collect_evaluation_results, name="HfApi", value=FakeHfApi
-    )
-
-    # Should succeed
-    result = collect_evaluation_results.upload_results_to_hf(
-        new_results_path=new_results_file
-    )
-    assert result is True
-
-    # The newer record should be written
-    content = json.loads(existing_record_file.read_text(encoding="utf-8"))
-    assert content["eval_library"]["version"] == "2.0.0"
-
-
-def test_upload_results_to_hf_same_identity_uses_timestamp_tiebreaker(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Same-identity with same version uses retrieved_timestamp as tiebreaker.
-
-    When versions are equal, the record with newer retrieved_timestamp wins.
-    """
-    results_dir = tmp_path / "results"
-    results_dir.mkdir()
-
-    # Create existing record with older timestamp
-    model_dir = results_dir / "foo_bar"
-    model_dir.mkdir()
-    existing_record_file = model_dir / "dataset__test__zeroshot.json"
-    older_record = {
-        "model_info": {"id": "foo/bar"},
-        "eval_library": {
-            "additional_details": {
-                "dataset": "dataset",
-                "few_shot": False,
-                "validation_split": False,
-            },
-            "version": "1.0.0",
-        },
-        "retrieved_timestamp": 1704067200,  # 2024-01-01T00:00:00Z
-    }
-    existing_record_file.write_text(json.dumps(older_record), encoding="utf-8")
-
-    # Create new results file with newer timestamp (same version)
-    new_results_file = tmp_path / "new_results.jsonl"
-    newer_record = {
-        "model_info": {"id": "foo/bar"},
-        "eval_library": {
-            "additional_details": {
-                "dataset": "dataset",
-                "few_shot": False,
-                "validation_split": False,
-            },
-            "version": "1.0.0",  # Same version
-        },
-        "retrieved_timestamp": 1704153600,  # 2024-01-02T00:00:00Z (newer)
-    }
-    new_results_file.write_text(json.dumps(newer_record), encoding="utf-8")
-
-    # Monkeypatch RESULTS_DIR and HfApi
-    monkeypatch.setattr(
-        target=collect_evaluation_results, name="RESULTS_DIR", value=results_dir
-    )
-    monkeypatch.setattr(
-        target=collect_evaluation_results, name="HfApi", value=FakeHfApi
-    )
-
-    # Should succeed
-    result = collect_evaluation_results.upload_results_to_hf(
-        new_results_path=new_results_file
-    )
-    assert result is True
-
-    # The newer record (by timestamp) should be written
-    content = json.loads(existing_record_file.read_text(encoding="utf-8"))
-    assert content["retrieved_timestamp"] == 1704153600
 
 
 def test_upload_results_to_hf_deletes_stale_jsonl_in_results_dir(
@@ -364,3 +237,130 @@ def test_upload_results_to_hf_does_not_touch_repo_root_jsonl(
     )
     assert new_results_file.read_text(encoding="utf-8") == '{"data": "new"}'
     assert benchmark_results_file.read_text(encoding="utf-8") == '{"data": "benchmark"}'
+
+
+def test_upload_results_to_hf_same_identity_keeps_newer_record(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Same-identity duplicate keeps the NEWER record.
+
+    When two records share the same identity, the newer one wins (by euroeval_version,
+    then retrieved_timestamp).
+    """
+    results_dir = tmp_path / "results"
+    results_dir.mkdir()
+
+    # Create existing record with older version
+    model_dir = results_dir / "foo_bar"
+    model_dir.mkdir()
+    existing_record_file = model_dir / "dataset__test__zeroshot.json"
+    older_record = {
+        "model_info": {"id": "foo/bar"},
+        "eval_library": {
+            "additional_details": {
+                "dataset": "dataset",
+                "few_shot": False,
+                "validation_split": False,
+            },
+            "version": "1.0.0",
+        },
+        "retrieved_timestamp": 1704067200,  # 2024-01-01T00:00:00Z
+    }
+    existing_record_file.write_text(json.dumps(older_record), encoding="utf-8")
+
+    # Create new results file with newer version (same identity)
+    new_results_file = tmp_path / "new_results.jsonl"
+    newer_record = {
+        "model_info": {"id": "foo/bar"},
+        "eval_library": {
+            "additional_details": {
+                "dataset": "dataset",
+                "few_shot": False,
+                "validation_split": False,
+            },
+            "version": "2.0.0",  # Newer version
+        },
+        "retrieved_timestamp": 1704067200,  # 2024-01-01T00:00:00Z
+    }
+    new_results_file.write_text(json.dumps(newer_record), encoding="utf-8")
+
+    # Monkeypatch RESULTS_DIR and HfApi
+    monkeypatch.setattr(
+        target=collect_evaluation_results, name="RESULTS_DIR", value=results_dir
+    )
+    monkeypatch.setattr(
+        target=collect_evaluation_results, name="HfApi", value=FakeHfApi
+    )
+
+    # Should succeed
+    result = collect_evaluation_results.upload_results_to_hf(
+        new_results_path=new_results_file
+    )
+    assert result is True
+
+    # The newer record should be written
+    content = json.loads(existing_record_file.read_text(encoding="utf-8"))
+    assert content["eval_library"]["version"] == "2.0.0"
+
+
+def test_upload_results_to_hf_same_identity_uses_timestamp_tiebreaker(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Same-identity with same version uses retrieved_timestamp as tiebreaker.
+
+    When versions are equal, the record with newer retrieved_timestamp wins.
+    """
+    results_dir = tmp_path / "results"
+    results_dir.mkdir()
+
+    # Create existing record with older timestamp
+    model_dir = results_dir / "foo_bar"
+    model_dir.mkdir()
+    existing_record_file = model_dir / "dataset__test__zeroshot.json"
+    older_record = {
+        "model_info": {"id": "foo/bar"},
+        "eval_library": {
+            "additional_details": {
+                "dataset": "dataset",
+                "few_shot": False,
+                "validation_split": False,
+            },
+            "version": "1.0.0",
+        },
+        "retrieved_timestamp": 1704067200,  # 2024-01-01T00:00:00Z
+    }
+    existing_record_file.write_text(json.dumps(older_record), encoding="utf-8")
+
+    # Create new results file with newer timestamp (same version)
+    new_results_file = tmp_path / "new_results.jsonl"
+    newer_record = {
+        "model_info": {"id": "foo/bar"},
+        "eval_library": {
+            "additional_details": {
+                "dataset": "dataset",
+                "few_shot": False,
+                "validation_split": False,
+            },
+            "version": "1.0.0",  # Same version
+        },
+        "retrieved_timestamp": 1704153600,  # 2024-01-02T00:00:00Z (newer)
+    }
+    new_results_file.write_text(json.dumps(newer_record), encoding="utf-8")
+
+    # Monkeypatch RESULTS_DIR and HfApi
+    monkeypatch.setattr(
+        target=collect_evaluation_results, name="RESULTS_DIR", value=results_dir
+    )
+    monkeypatch.setattr(
+        target=collect_evaluation_results, name="HfApi", value=FakeHfApi
+    )
+
+    # Should succeed
+    result = collect_evaluation_results.upload_results_to_hf(
+        new_results_path=new_results_file
+    )
+    assert result is True
+
+    # The newer record (by timestamp) should be written
+    content = json.loads(existing_record_file.read_text(encoding="utf-8"))
+    assert content["retrieved_timestamp"] == 1704153600

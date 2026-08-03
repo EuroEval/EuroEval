@@ -12,27 +12,23 @@ class TestGetNumParamsFromSafetensorsMetadata:
 
     @patch("euroeval.safetensors_utils.get_hf_token")
     @patch("euroeval.safetensors_utils.get_safetensors_metadata")
-    def test_single_parameter_count_entry(
+    def test_empty_parameter_count(
         self, mock_get_metadata: MagicMock, mock_get_hf_token: MagicMock
     ) -> None:
-        """Test getting number of parameters with a single entry."""
+        """Test handling of models with empty parameter count dictionary."""
         # Mock the token retrieval
         mock_get_hf_token.return_value = False
 
-        # Mock the metadata with a single parameter count entry
+        # Mock the metadata with an empty parameter count dictionary
         mock_metadata = MagicMock()
-        mock_metadata.parameter_count = {"BF16": 1000000}
+        mock_metadata.parameter_count = {}
         mock_get_metadata.return_value = mock_metadata
 
         result = get_num_params_from_safetensors_metadata(
-            model_id="test/model", revision="main", api_key=None
+            model_id="test/broken-model", revision="main", api_key=None
         )
 
-        assert result == 1000000
-        mock_get_hf_token.assert_called_once_with(api_key=None)
-        mock_get_metadata.assert_called_once_with(
-            repo_id="test/model", revision="main", token=False
-        )
+        assert result is None
 
     @patch("euroeval.safetensors_utils.get_hf_token")
     @patch("euroeval.safetensors_utils.get_safetensors_metadata")
@@ -80,23 +76,27 @@ class TestGetNumParamsFromSafetensorsMetadata:
 
     @patch("euroeval.safetensors_utils.get_hf_token")
     @patch("euroeval.safetensors_utils.get_safetensors_metadata")
-    def test_empty_parameter_count(
+    def test_single_parameter_count_entry(
         self, mock_get_metadata: MagicMock, mock_get_hf_token: MagicMock
     ) -> None:
-        """Test handling of models with empty parameter count dictionary."""
+        """Test getting number of parameters with a single entry."""
         # Mock the token retrieval
         mock_get_hf_token.return_value = False
 
-        # Mock the metadata with an empty parameter count dictionary
+        # Mock the metadata with a single parameter count entry
         mock_metadata = MagicMock()
-        mock_metadata.parameter_count = {}
+        mock_metadata.parameter_count = {"BF16": 1000000}
         mock_get_metadata.return_value = mock_metadata
 
         result = get_num_params_from_safetensors_metadata(
-            model_id="test/broken-model", revision="main", api_key=None
+            model_id="test/model", revision="main", api_key=None
         )
 
-        assert result is None
+        assert result == 1000000
+        mock_get_hf_token.assert_called_once_with(api_key=None)
+        mock_get_metadata.assert_called_once_with(
+            repo_id="test/model", revision="main", token=False
+        )
 
     @patch("euroeval.safetensors_utils.get_hf_token")
     @patch("euroeval.safetensors_utils.get_safetensors_metadata")

@@ -30,46 +30,147 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def _cleanup_empty_bucket_files(hf_token: str) -> None:
-    """Delete 0-byte JSON files from the Hugging Face bucket.
-
-    Lists all files in the bucket, identifies empty JSON files by size,
-    and removes them via batch operation.
+def _sort_key(record: dict) -> tuple[str, str]:
+    """Extract sort key from a record for deterministic ordering.
 
     Args:
-        hf_token:
-            Hugging Face authentication token.
+        record:
+            A result record in EEE format.
+
+    Returns:
+        Tuple of (model_id, dataset) for sorting.
     """
-    api = HfApi()
-    empty_files: list[str] = []
+    model_info = record.get("model_info", {})
+    eval_lib = record.get("eval_library", {})
+    additional = eval_lib.get("additional_details", {})
+    model_id = model_info.get("id") or model_info.get("name", "")
+    dataset = additional.get("dataset", "")
+    return (model_id, dataset)
 
-    try:
-        # List all files in the bucket
-        files = list_bucket_tree(
-            bucket_id=HF_RESULTS_BUCKET, token=hf_token, recursive=True
+
+def download_missing_bucket_files() -> int:
+    """Download bucket result files that are absent from the local directory.
+
+    Lists the bucket tree and downloads only the files whose relative path does
+    not already exist under ``RESULTS_DIR``. Existing local files are never
+    re-downloaded or deleted, so this is a safe union-style incremental fetch.
+    It deliberately avoids huggingface_hub's own ``sync_bucket``, whose size
+    comparison has historically re-fetched the entire bucket (a multi-hour
+    operation) even when the local copy was already up to date.
+
+    Because each logical result has a distinct storage path
+    (``<model>/<dataset>__<split>__<shot>.json``), presence-by-path is a
+    sufficient freshness test for newly added results.
+
+    Returns:
+        The number of files downloaded.
+
+    Raises:
+        RuntimeError:
+            If no Hugging Face token is available.
+    """
+    hf_token = resolve_hf_token()
+    if not hf_token:
+        raise RuntimeError(
+            "HF_TOKEN not set. Cannot sync results from Hugging Face bucket. "
+            "Run 'hf auth login' or set the HF_TOKEN environment variable."
         )
-        for file_info in files:
-            # Check if it's a JSON file with size 0
-            if isinstance(file_info, BucketFile):
-                if file_info.path.endswith(".json") and file_info.size == 0:
-                    empty_files.append(file_info.path)
-            elif isinstance(file_info, dict):
-                # Handle dict format if API returns that
-                path = str(file_info.get("path", ""))
-                size = file_info.get("size", 0)
-                if path.endswith(".json") and size == 0:
-                    empty_files.append(path)
-    except HfHubHTTPError as e:
-        logger.error(f"Failed to list bucket files: {e}")
-        return
 
-    if empty_files:
-        logger.info(f"Found {len(empty_files)} empty file(s) in bucket, deleting...")
-        try:
-            api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, delete=empty_files)
-            logger.info(f"Deleted {len(empty_files)} empty file(s) from bucket.")
-        except HfHubHTTPError as e:
-            logger.error(f"Failed to delete empty bucket files: {e}")
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    api = HfApi()
+
+    logger.info(f"Listing bucket {HF_RESULTS_BUCKET} to find new files...")
+    to_download: list[tuple[str | BucketFile, str | Path]] = []
+    for entry in api.list_bucket_tree(
+        HF_RESULTS_BUCKET, recursive=True, token=hf_token
+    ):
+        if not isinstance(entry, BucketFile):
+            continue
+        local_path = RESULTS_DIR / entry.path
+        if not local_path.exists():
+            local_path.parent.mkdir(parents=True, exist_ok=True)
+            to_download.append((entry, local_path))
+
+    if not to_download:
+        logger.info("Local results already up to date with bucket.")
+        return 0
+
+    logger.info(f"Downloading {len(to_download):,} new file(s) from the bucket...")
+    api.download_bucket_files(
+        bucket_id=HF_RESULTS_BUCKET, files=to_download, token=hf_token
+    )
+    return len(to_download)
+
+
+def merge_results(results_file: Path) -> int:
+    """Merge per-record JSON tree into a single JSONL file.
+
+    Reads all ``results/*/*.json`` files and existing records from the JSONL
+    file itself, then writes a deduplicated JSONL file. Deduplication uses
+    canonical result identity ``(model_id, dataset, validation_split, few_shot)``
+    with newer records winning based on ``eval_library.version`` and
+    ``retrieved_timestamp``.
+
+    Args:
+        results_file:
+            Path to the merged JSONL file to write.
+
+    Returns:
+        Number of unique results written.
+    """
+    existing: dict[ResultIdentity, dict] = {}
+
+    # PHASE 1: Read existing records from the JSONL file (if it exists)
+    # This preserves results that haven't been synced to the tree yet
+    if results_file.exists():
+        logger.info(f"Reading existing records from {results_file}...")
+        with results_file.open("r", encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    record = json.loads(line)
+                    identity = identity_from_eee_record(record)
+                    if identity not in existing:
+                        existing[identity] = record
+                    else:
+                        # Deduplicate: keep newer record (tree records in Phase 2
+                        # will override via dedup_newer_record)
+                        existing[identity] = dedup_newer_record(
+                            record_a=existing[identity], record_b=record
+                        )
+                except (json.JSONDecodeError, ValueError, KeyError, TypeError) as e:
+                    logger.debug(f"Skipping invalid JSONL line in {results_file}: {e}")
+
+    # Remove empty JSON files before processing
+    remove_empty_json_files(RESULTS_DIR)
+
+    # PHASE 2: Read all record files from the tree (these override existing)
+    if RESULTS_DIR.exists():
+        for record_file in RESULTS_DIR.rglob("*.json"):
+            if not record_file.is_file():
+                continue
+            try:
+                record = json.loads(record_file.read_text(encoding="utf-8"))
+                identity = identity_from_eee_record(record)
+                if identity in existing:
+                    existing[identity] = dedup_newer_record(
+                        record_a=existing[identity], record_b=record
+                    )
+                else:
+                    existing[identity] = record
+            except (json.JSONDecodeError, ValueError, KeyError) as e:
+                logger.debug(f"Skipping invalid record {record_file}: {e}")
+
+    if not existing:
+        logger.warning("No results found to merge")
+        return 0
+
+    results_file.parent.mkdir(parents=True, exist_ok=True)
+    with results_file.open("w", encoding="utf-8") as f:
+        for record in sorted(existing.values(), key=_sort_key):
+            f.write(json.dumps(record) + "\n")
+    return len(existing)
 
 
 def remove_empty_json_files(results_dir: Path) -> list[str]:
@@ -105,11 +206,11 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
     - Path collisions between distinct identities raise an error.
 
     Args:
-        ignore_sizes:
+        ignore_sizes (optional):
             When True, skip file size comparison during sync. Works around
             huggingface_hub bug reporting wrong sizes, making sync compare by
-            mtime only.
-        delete_empty:
+            mtime only. Defaults to False.
+        delete_empty (optional):
             When True, scan both local directory and bucket for 0-byte JSON
             files and delete them. Defaults to True.
 
@@ -185,7 +286,9 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
 
             if local_identity == bucket_identity:
                 # Same identity - keep the newer record
-                winner = dedup_newer_record(local_record, bucket_record)
+                winner = dedup_newer_record(
+                    record_a=local_record, record_b=bucket_record
+                )
                 if winner is local_record:
                     logger.debug(f"Local record newer for {rel_path}, restoring")
                     file_path.write_bytes(local_raw)
@@ -207,122 +310,46 @@ def sync_bucket(ignore_sizes: bool = False, delete_empty: bool = True) -> None:
     logger.info(f"Synced bucket {HF_RESULTS_BUCKET}.")
 
 
-def download_missing_bucket_files() -> int:
-    """Download bucket result files that are absent from the local directory.
+def _cleanup_empty_bucket_files(hf_token: str) -> None:
+    """Delete 0-byte JSON files from the Hugging Face bucket.
 
-    Lists the bucket tree and downloads only the files whose relative path does
-    not already exist under ``RESULTS_DIR``. Existing local files are never
-    re-downloaded or deleted, so this is a safe union-style incremental fetch.
-    It deliberately avoids huggingface_hub's own ``sync_bucket``, whose size
-    comparison has historically re-fetched the entire bucket (a multi-hour
-    operation) even when the local copy was already up to date.
+    Lists all files in the bucket, identifies empty JSON files by size,
+    and removes them via batch operation.
 
-    Because each logical result has a distinct storage path
-    (``<model>/<dataset>__<split>__<shot>.json``), presence-by-path is a
-    sufficient freshness test for newly added results.
-
-    Returns:
-        The number of files downloaded.
-
-    Raises:
-        RuntimeError:
-            If no Hugging Face token is available.
+    Args:
+        hf_token:
+            Hugging Face authentication token.
     """
-    hf_token = resolve_hf_token()
-    if not hf_token:
-        raise RuntimeError(
-            "HF_TOKEN not set. Cannot sync results from Hugging Face bucket. "
-            "Run 'hf auth login' or set the HF_TOKEN environment variable."
-        )
-
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     api = HfApi()
+    empty_files: list[str] = []
 
-    logger.info(f"Listing bucket {HF_RESULTS_BUCKET} to find new files...")
-    to_download: list[tuple[str | BucketFile, str | Path]] = []
-    for entry in api.list_bucket_tree(
-        HF_RESULTS_BUCKET, recursive=True, token=hf_token
-    ):
-        if not isinstance(entry, BucketFile):
-            continue
-        local_path = RESULTS_DIR / entry.path
-        if not local_path.exists():
-            local_path.parent.mkdir(parents=True, exist_ok=True)
-            to_download.append((entry, local_path))
+    try:
+        # List all files in the bucket
+        files = list_bucket_tree(
+            bucket_id=HF_RESULTS_BUCKET, token=hf_token, recursive=True
+        )
+        for file_info in files:
+            # Check if it's a JSON file with size 0
+            if isinstance(file_info, BucketFile):
+                if file_info.path.endswith(".json") and file_info.size == 0:
+                    empty_files.append(file_info.path)
+            elif isinstance(file_info, dict):
+                # Handle dict format if API returns that
+                path = str(file_info.get("path", ""))
+                size = file_info.get("size", 0)
+                if path.endswith(".json") and size == 0:
+                    empty_files.append(path)
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to list bucket files: {e}")
+        return
 
-    if not to_download:
-        logger.info("Local results already up to date with bucket.")
-        return 0
-
-    logger.info(f"Downloading {len(to_download):,} new file(s) from the bucket...")
-    api.download_bucket_files(
-        bucket_id=HF_RESULTS_BUCKET, files=to_download, token=hf_token
-    )
-    return len(to_download)
-
-
-def _sort_key(record: dict) -> tuple[str, str]:
-    """Extract sort key from a record for deterministic ordering.
-
-    Args:
-        record:
-            A result record in EEE format.
-
-    Returns:
-        Tuple of (model_id, dataset) for sorting.
-    """
-    model_info = record.get("model_info", {})
-    eval_lib = record.get("eval_library", {})
-    additional = eval_lib.get("additional_details", {})
-    model_id = model_info.get("id") or model_info.get("name", "")
-    dataset = additional.get("dataset", "")
-    return (model_id, dataset)
-
-
-def merge_results(results_file: Path) -> int:
-    """Merge per-record JSON tree into a single JSONL file.
-
-    Reads all ``results/*/*.json`` files and writes a deduplicated JSONL file.
-    Deduplication uses canonical result identity
-    ``(model_id, dataset, validation_split, few_shot)`` with newer records
-    winning based on ``eval_library.version`` and ``retrieved_timestamp``.
-
-    Args:
-        results_file:
-            Path to the merged JSONL file to write.
-
-    Returns:
-        Number of unique results written.
-    """
-    existing: dict[ResultIdentity, dict] = {}
-
-    # Remove empty JSON files before processing
-    remove_empty_json_files(RESULTS_DIR)
-
-    # Read all record files from the tree
-    if RESULTS_DIR.exists():
-        for record_file in RESULTS_DIR.rglob("*.json"):
-            if not record_file.is_file():
-                continue
-            try:
-                record = json.loads(record_file.read_text(encoding="utf-8"))
-                identity = identity_from_eee_record(record)
-                if identity in existing:
-                    existing[identity] = dedup_newer_record(existing[identity], record)
-                else:
-                    existing[identity] = record
-            except (json.JSONDecodeError, ValueError, KeyError) as e:
-                logger.debug(f"Skipping invalid record {record_file}: {e}")
-
-    if not existing:
-        logger.warning("No results found to merge")
-        return 0
-
-    results_file.parent.mkdir(parents=True, exist_ok=True)
-    with results_file.open("w", encoding="utf-8") as f:
-        for record in sorted(existing.values(), key=_sort_key):
-            f.write(json.dumps(record) + "\n")
-    return len(existing)
+    if empty_files:
+        logger.info(f"Found {len(empty_files)} empty file(s) in bucket, deleting...")
+        try:
+            api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, delete=empty_files)
+            logger.info(f"Deleted {len(empty_files)} empty file(s) from bucket.")
+        except HfHubHTTPError as e:
+            logger.error(f"Failed to delete empty bucket files: {e}")
 
 
 def upload_results_to_bucket(results_file: Path) -> None:

@@ -63,6 +63,26 @@ _WORKERPROC_FAILED_RE = re.compile(r"WorkerProc initialization failed", re.IGNOR
 _MAX_LINE_CHARS = 600
 
 
+def completed_languages(lines: list[str], requested_languages: list[str]) -> list[str]:
+    """Return requested languages whose official pair coverage is complete.
+
+    Args:
+        lines:
+            The accumulated JSONL result lines.
+        requested_languages:
+            The flattened language codes selected on the issue.
+
+    Returns:
+        The subset of ``requested_languages`` for which no official
+        dataset/language pair is still missing.
+    """
+    missing = missing_official_dataset_language_pairs(
+        lines=lines, requested_languages=requested_languages
+    )
+    incomplete = {lang for _, lang in missing}
+    return [lang for lang in requested_languages if lang not in incomplete]
+
+
 def extract_model_id(title: str, body: str | None = None) -> str | None:
     """Return the model id for an issue, preferring the body's Model ID section.
 
@@ -92,6 +112,25 @@ def extract_model_id(title: str, body: str | None = None) -> str | None:
         return None
     rest = title[len(prefix) :].strip()
     return rest if rest and rest != "<model-name>" else None
+
+
+def format_dataset_language_pairs(dataset_language_pairs: set[tuple[str, str]]) -> str:
+    """Return a compact stable string representation of dataset/language pairs.
+
+    Args:
+        dataset_language_pairs:
+            The set of ``(dataset_name, language_code)`` pairs to format.
+
+    Returns:
+        A comma-separated string showing up to the first ten pairs, with
+        a ``(+N more)`` suffix when truncated.
+    """
+    sorted_pairs = sorted(dataset_language_pairs)
+    preview = [f"{dataset}/{language}" for dataset, language in sorted_pairs[:10]]
+    suffix = ""
+    if len(sorted_pairs) > 10:
+        suffix = f" (+{len(sorted_pairs) - 10} more)"
+    return ", ".join(preview) + suffix
 
 
 def num_errored_benchmarks(output: str) -> int:
@@ -130,6 +169,141 @@ def num_skipped_benchmarks(output: str) -> int:
     for m in SKIPPED_BENCHMARKS_RE.finditer(output):
         last = int(m.group(1))
     return last
+
+
+def read_jsonl_lines(path: Path) -> list[str]:
+    """Return the non-empty lines of a JSONL file, or an empty list if absent.
+
+    Args:
+        path:
+            Path to the JSONL file.
+
+    Returns:
+        The stripped lines that contain at least one non-whitespace
+        character.
+    """
+    if not path.is_file():
+        return []
+    return [
+        line.rstrip("\n")
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+
+def result_lines_for_model(lines: list[str], model_id: str) -> list[str]:
+    """Return the subset of ``lines`` whose parsed ``model`` matches ``model_id``.
+
+    Args:
+        lines:
+            The JSONL lines to filter.
+        model_id:
+            The model id to match.
+
+    Returns:
+        The lines whose ``BenchmarkResult.model`` equals ``model_id``.
+    """
+    out: list[str] = []
+    for line in lines:
+        try:
+            parsed = BenchmarkResult.from_dict(config=json.loads(line))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+        # Only standard accuracy runs (not BPC) count towards leaderboard completion
+        is_standard = not getattr(parsed, "use_bits_per_character", False)
+        if parsed.model == model_id and is_standard:
+            out.append(line)
+    return out
+
+
+def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
+    """Extract the meaningful error from a euroeval subprocess's output.
+
+    The queue runs euroeval with ``FULL_LOG=1``, so the raw output is dominated
+    by serialised result records, training-progress dicts and giant parameter
+    lists. A blind tail of that output almost never shows the real error (and is
+    frequently identical across unrelated models), so this scans the whole
+    output for the informative error text: a Python traceback, a model-load or
+    gating error, and the ``errored N benchmarks`` summary line.
+
+    Args:
+        output:
+            The full captured combined-output of the euroeval subprocess.
+        max_chars (optional):
+            The maximum length of the returned summary. Defaults to 4000.
+
+    Returns:
+        A compact human-readable error summary, or ``"(no output captured)"``
+        when nothing usable is found.
+    """
+    text = _ANSI_ESCAPE_RE.sub("", output)
+    lines: list[str] = []
+    for raw_line in text.splitlines():
+        if not raw_line.strip() or _is_noise_line(raw_line):
+            continue
+        line = raw_line.rstrip()
+        if len(line) > _MAX_LINE_CHARS:
+            line = line[:_MAX_LINE_CHARS] + " …(truncated)"
+        lines.append(line)
+
+    if not lines:
+        return "(no output captured)"
+
+    worker_block = _worker_errors(lines=lines)
+    traceback = _last_traceback(lines=lines)
+    parts = _build_error_summary_parts(
+        lines=lines, worker_block=worker_block, traceback=traceback
+    )
+
+    # Fall back to tail when no marker found
+    if not parts:
+        parts = [line.strip() for line in lines[-20:]]
+
+    # De-duplicate while preserving order (a traceback may repeat the summary).
+    summary = "\n".join(dict.fromkeys(part for part in parts if part)).strip()
+    if len(summary) > max_chars:
+        summary = summary[-max_chars:].strip()
+    return summary or "(no output captured)"
+
+
+def _build_error_summary_parts(
+    lines: list[str], worker_block: str | None, traceback: str | None
+) -> list[str]:
+    """Build error summary parts from worker errors and traceback.
+
+    Args:
+        lines:
+            Cleaned output lines.
+        worker_block:
+            Worker error block from _worker_errors.
+        traceback:
+            Traceback from _last_traceback.
+
+    Returns:
+        List of summary parts.
+    """
+    parts: list[str] = []
+    # Prefer worker block unless a genuine traceback was captured
+    if worker_block and (traceback is None or _WORKERPROC_FAILED_RE.search(traceback)):
+        parts.append(worker_block)
+    elif traceback:
+        parts.append(traceback)
+
+    # Add load error (skip vLLM excuse line if traceback present)
+    for line in reversed(lines):
+        if _LOAD_ERROR_RE.search(line):
+            if traceback and "did not mention exactly what" in line:
+                break
+            parts.append(line.strip())
+            break
+
+    # Add summary line if found
+    for line in reversed(lines):
+        if _SUMMARY_LINE_RE.search(line):
+            parts.append(line.strip())
+            break
+
+    return parts
 
 
 def _is_noise_line(line: str) -> bool:
@@ -208,156 +382,3 @@ def _worker_errors(lines: list[str]) -> str | None:
             break
         end = i
     return "\n".join(lines[start : end + 1]).strip()
-
-
-def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
-    """Extract the meaningful error from a euroeval subprocess's output.
-
-    The queue runs euroeval with ``FULL_LOG=1``, so the raw output is dominated
-    by serialised result records, training-progress dicts and giant parameter
-    lists. A blind tail of that output almost never shows the real error (and is
-    frequently identical across unrelated models), so this scans the whole
-    output for the informative error text: a Python traceback, a model-load or
-    gating error, and the ``errored N benchmarks`` summary line.
-
-    Args:
-        output:
-            The full captured combined-output of the euroeval subprocess.
-        max_chars:
-            The maximum length of the returned summary. Defaults to 4000.
-
-    Returns:
-        A compact human-readable error summary, or ``"(no output captured)"``
-        when nothing usable is found.
-    """
-    text = _ANSI_ESCAPE_RE.sub("", output)
-    lines: list[str] = []
-    for raw_line in text.splitlines():
-        if not raw_line.strip() or _is_noise_line(raw_line):
-            continue
-        line = raw_line.rstrip()
-        if len(line) > _MAX_LINE_CHARS:
-            line = line[:_MAX_LINE_CHARS] + " …(truncated)"
-        lines.append(line)
-
-    if not lines:
-        return "(no output captured)"
-
-    worker_block = _worker_errors(lines=lines)
-    traceback = _last_traceback(lines=lines)
-    parts: list[str] = []
-    # The main process only re-raises a generic "WorkerProc initialization
-    # failed" exception; the real cause is in the worker-prefixed ERROR lines,
-    # so prefer the worker block unless a genuine traceback was captured.
-    if worker_block and (traceback is None or _WORKERPROC_FAILED_RE.search(traceback)):
-        parts.append(worker_block)
-    elif traceback:
-        parts.append(traceback)
-    for line in reversed(lines):
-        if _LOAD_ERROR_RE.search(line):
-            # When a real traceback was already surfaced, the vLLM generic
-            # "could not be loaded, but vLLM did not mention exactly what
-            # happened" excuse line only buries the actual exception, so skip
-            # it rather than appending it on top of the traceback.
-            if traceback and "did not mention exactly what" in line:
-                break
-            parts.append(line.strip())
-            break
-    for line in reversed(lines):
-        if _SUMMARY_LINE_RE.search(line):
-            parts.append(line.strip())
-            break
-
-    # Fall back to the tail of the cleaned output when no marker was found.
-    if not parts:
-        parts = [line.strip() for line in lines[-20:]]
-
-    # De-duplicate while preserving order (a traceback may repeat the summary).
-    summary = "\n".join(dict.fromkeys(part for part in parts if part)).strip()
-    if len(summary) > max_chars:
-        summary = summary[-max_chars:].strip()
-    return summary or "(no output captured)"
-
-
-def format_dataset_language_pairs(dataset_language_pairs: set[tuple[str, str]]) -> str:
-    """Return a compact stable string representation of dataset/language pairs.
-
-    Args:
-        dataset_language_pairs:
-            The set of ``(dataset_name, language_code)`` pairs to format.
-
-    Returns:
-        A comma-separated string showing up to the first ten pairs, with
-        a ``(+N more)`` suffix when truncated.
-    """
-    sorted_pairs = sorted(dataset_language_pairs)
-    preview = [f"{dataset}/{language}" for dataset, language in sorted_pairs[:10]]
-    suffix = ""
-    if len(sorted_pairs) > 10:
-        suffix = f" (+{len(sorted_pairs) - 10} more)"
-    return ", ".join(preview) + suffix
-
-
-def read_jsonl_lines(path: Path) -> list[str]:
-    """Return the non-empty lines of a JSONL file, or an empty list if absent.
-
-    Args:
-        path:
-            Path to the JSONL file.
-
-    Returns:
-        The stripped lines that contain at least one non-whitespace
-        character.
-    """
-    if not path.is_file():
-        return []
-    return [
-        line.rstrip("\n")
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
-
-
-def result_lines_for_model(lines: list[str], model_id: str) -> list[str]:
-    """Return the subset of ``lines`` whose parsed ``model`` matches ``model_id``.
-
-    Args:
-        lines:
-            The JSONL lines to filter.
-        model_id:
-            The model id to match.
-
-    Returns:
-        The lines whose ``BenchmarkResult.model`` equals ``model_id``.
-    """
-    out: list[str] = []
-    for line in lines:
-        try:
-            parsed = BenchmarkResult.from_dict(config=json.loads(line))
-        except (TypeError, ValueError, json.JSONDecodeError):
-            continue
-        # Only standard accuracy runs (not BPC) count towards leaderboard completion
-        is_standard = not getattr(parsed, "use_bits_per_character", False)
-        if parsed.model == model_id and is_standard:
-            out.append(line)
-    return out
-
-
-def completed_languages(lines: list[str], requested_languages: list[str]) -> list[str]:
-    """Return requested languages whose official pair coverage is complete.
-
-    Args:
-        lines:
-            The accumulated JSONL result lines.
-        requested_languages:
-            The flattened language codes selected on the issue.
-
-    Returns:
-        The subset of ``requested_languages`` for which no official
-        dataset/language pair is still missing.
-    """
-    missing = missing_official_dataset_language_pairs(
-        lines=lines, requested_languages=requested_languages
-    )
-    incomplete = {lang for _, lang in missing}
-    return [lang for lang in requested_languages if lang not in incomplete]

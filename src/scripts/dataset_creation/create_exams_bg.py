@@ -57,6 +57,43 @@ def main() -> None:
         dataset.push_to_hub(dataset_id, private=True)
 
 
+def create_splits(
+    train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Create splits for the dataset.
+
+    Args:
+        train_df: The training dataframe.
+        val_df: The validation dataframe.
+        test_df: The test dataframe.
+
+    Returns:
+        The final training, validation, and test dataframes.
+    """
+    train_size = 1024
+    test_size = 2048
+
+    final_train_df = train_df.sample(n=train_size, random_state=4242)
+    remaining_train_df = train_df.drop(final_train_df.index.tolist())
+    test_df_with_remaining_train_samples = pd.concat(
+        [test_df, remaining_train_df], ignore_index=True
+    )
+
+    n_missing_samples = test_size - len(test_df_with_remaining_train_samples)
+    additional_val_samples = val_df.sample(n=n_missing_samples, random_state=4242)
+    final_test_df = pd.concat(
+        [test_df_with_remaining_train_samples, additional_val_samples],
+        ignore_index=True,
+    )
+    final_val_df = val_df.drop(additional_val_samples.index.tolist())
+
+    final_train_df = final_train_df.reset_index(drop=True)
+    final_val_df = final_val_df.reset_index(drop=True)
+    final_test_df = final_test_df.reset_index(drop=True)
+
+    return final_train_df, final_val_df, final_test_df
+
+
 def download_dataset(url: str, temp_path: Path) -> Path:
     """Download the dataset.
 
@@ -155,43 +192,6 @@ def process_split(df: pd.DataFrame) -> pd.DataFrame:
     result_df = result_df.drop_duplicates(subset="text").reset_index(drop=True)
 
     return result_df
-
-
-def create_splits(
-    train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create splits for the dataset.
-
-    Args:
-        train_df: The training dataframe.
-        val_df: The validation dataframe.
-        test_df: The test dataframe.
-
-    Returns:
-        The final training, validation, and test dataframes.
-    """
-    train_size = 1024
-    test_size = 2048
-
-    final_train_df = train_df.sample(n=train_size, random_state=4242)
-    remaining_train_df = train_df.drop(final_train_df.index.tolist())
-    test_df_with_remaining_train_samples = pd.concat(
-        [test_df, remaining_train_df], ignore_index=True
-    )
-
-    n_missing_samples = test_size - len(test_df_with_remaining_train_samples)
-    additional_val_samples = val_df.sample(n=n_missing_samples, random_state=4242)
-    final_test_df = pd.concat(
-        [test_df_with_remaining_train_samples, additional_val_samples],
-        ignore_index=True,
-    )
-    final_val_df = val_df.drop(additional_val_samples.index.tolist())
-
-    final_train_df = final_train_df.reset_index(drop=True)
-    final_val_df = final_val_df.reset_index(drop=True)
-    final_test_df = final_test_df.reset_index(drop=True)
-
-    return final_train_df, final_val_df, final_test_df
 
 
 if __name__ == "__main__":

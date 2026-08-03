@@ -67,7 +67,7 @@ def add_missing_entries(
     if "generative" not in model_additional:
         model_additional["generative"] = False
     if "generative_type" not in model_additional:
-        model_additional["generative_type"] = get_generative_type(
+        model_additional["generative_type"] = _get_generative_type(
             record=record, cache=cache
         )
     if "merge" not in model_additional:
@@ -86,14 +86,14 @@ def add_missing_entries(
             cache=cache,
         )
     if "model_url" not in model_additional or model_additional["model_url"] is None:
-        model_additional["model_url"] = generate_model_url_with_cache(
+        model_additional["model_url"] = _generate_model_url_with_cache(
             model_id=plain_model_id(get_model_name(record=record)), cache=cache
         )
 
     return record
 
 
-def generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
+def _generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
     """Generates a model URL using a cache.
 
     When no URL can be generated, the operator is asked whether to drop the
@@ -136,87 +136,7 @@ def _remove_model_results(model_id: str) -> None:
     logger.info(f"Removed result directory {model_dir.name} for {model_id}.")
 
 
-def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any]:
-    """Fixes metadata in a record.
-
-    Args:
-        record:
-            A record from the JSONL file.
-
-    Returns:
-        The record with fixed metadata.
-    """
-    # Copy the record to avoid modifying the original
-    record = deepcopy(record)
-
-    task = get_task(record)
-    if task == "question-answering":
-        record["eval_library"]["additional_details"]["task"] = "reading-comprehension"
-    if task == "european-values":
-        record["eval_library"]["additional_details"]["validation_split"] = None
-        record["eval_library"]["additional_details"]["few_shot"] = None
-
-    return record
-
-
-def record_is_valid(
-    record: dict,
-    min_version: str,
-    banned_versions: list[str],
-    banned_model_patterns: list[re.Pattern],
-    api_model_patterns: list[re.Pattern],
-) -> bool:
-    """Determine if a record is valid.
-
-    Args:
-        record:
-            The record to validate.
-        min_version:
-            The minimum EuroEval version to consider.
-        banned_versions:
-            The EuroEval versions to ban.
-        banned_model_patterns:
-            The model IDs to ban.
-        api_model_patterns:
-            Regex patterns identifying models accessed via API.
-
-    Returns:
-        True if the record is valid, False otherwise.
-    """
-    # Remove anchors from model ID, for logging purposes
-    inner_anchor_match = re.search(pattern=r">(.+?)<", string=get_model_name(record))
-    inner_model_id = (
-        inner_anchor_match.group(1) if inner_anchor_match else get_model_name(record)
-    )
-
-    # Remove records with disallowed EuroEval versions
-    version = get_version(record)
-    if version is None or version in banned_versions or version < min_version:
-        return False
-
-    # Remove banned models
-    if any(
-        re.search(pattern=pattern, string=inner_model_id)
-        for pattern in banned_model_patterns
-    ):
-        return False
-
-    # Do not allow few-shot evaluation for API models
-    few_shot = get_few_shot(record)
-    if (
-        any(
-            re.fullmatch(pattern=pattern, string=inner_model_id)
-            for pattern in api_model_patterns
-        )
-        and few_shot
-    ):
-        return False
-
-    # Otherwise, the record is valid
-    return True
-
-
-def get_generative_type(record: dict, cache: Cache) -> str | None:
+def _get_generative_type(record: dict, cache: Cache) -> str | None:
     """Asks for the generative type of a model.
 
     Args:
@@ -230,101 +150,104 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
     """
     raw_model_id = _model_id_from_record(record=record)
 
+    # Check special suffixes first
     if "#thinking" in raw_model_id:
         cache.generative_type[raw_model_id] = "reasoning"
         return "reasoning"
-    elif "#no-thinking" in raw_model_id:
+    if "#no-thinking" in raw_model_id:
         cache.generative_type[raw_model_id] = "instruction_tuned"
         return "instruction_tuned"
 
-    # Remove revisions and parameters from the model ID, and strip variant suffixes.
+    # Normalise model ID
     model_id = split_model_id(model_id=plain_model_id(raw_model_id)).model_id
 
     while True:
+        # Check cache
         if model_id in cache.generative_type:
             return cache.generative_type[model_id]
 
-        # Pre-fill the generative type from keyword matches in the model id.
-        for keywords, gen_type in GENERATIVE_TYPE_KEYWORDS:
-            if any(
-                re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
-                for keyword in keywords
-            ):
-                cache.generative_type[model_id] = gen_type
-                return gen_type
+        # Try keyword inference
+        inferred_type = _get_generative_type_from_keywords(model_id=model_id)
+        if inferred_type is not None:
+            cache.generative_type[model_id] = inferred_type
+            return inferred_type
 
+        # Ask user
         msg = f"What is the generative type of {model_id!r}?"
         if "/" in model_id:
             msg += f" (https://hf.co/{model_id})"
         msg += " [0=null, 1=base, 2=instruction_tuned, 3=reasoning] "
         user_input = input(msg)
-        if user_input.lower() in {"0", "null"}:
+        parsed = _parse_generative_type_input(user_input)
+        if parsed == "EXPLICIT_NULL":
             cache.generative_type[model_id] = None
-        elif user_input.lower() in {"1", "base"}:
-            cache.generative_type[model_id] = "base"
-        elif user_input.lower() in {"2", "instruction_tuned"}:
-            cache.generative_type[model_id] = "instruction_tuned"
-        elif user_input.lower() in {"3", "reasoning"}:
-            cache.generative_type[model_id] = "reasoning"
-        else:
-            logger.error("Invalid input. Please try again.")
+            return None
+        if parsed is not None:
+            cache.generative_type[model_id] = parsed
+            return parsed
+        logger.error("Invalid input. Please try again.")
 
 
-def _infer_commercial_from_hf_licence(
-    model_id: str, licence_cache: dict[str, bool | None]
-) -> bool | None:
-    """Infer commercial licence status from HF model info.
-
-    Best-effort function that checks the Hugging Face model page for a
-    permissive licence tag. Returns ``True`` for permissive licences
-    (MIT, Apache-2.0, BSD, etc.), ``None`` for unknown/non-permissive
-    licences or on any HF/network/auth error. Never crashes.
-
-    Caches lookups per model_id to avoid repeated API calls.
+def _get_generative_type_from_keywords(model_id: str) -> str | None:
+    """Try to infer generative type from model ID keywords.
 
     Args:
         model_id:
-            The Hugging Face model ID (e.g. ``BAAI/bge-m3``).
-        licence_cache:
-            Cache dict mapping model IDs to inferred licence status.
+            The model ID to check.
 
     Returns:
-        ``True`` if licence is permissive, ``False`` if explicitly
-        non-permissive (not possible with current logic), or ``None``
-        if unknown or on error.
+        The inferred generative type or None.
     """
-    if model_id in licence_cache:
-        return licence_cache[model_id]
+    for keywords, gen_type in GENERATIVE_TYPE_KEYWORDS:
+        if any(
+            re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
+            for keyword in keywords
+        ):
+            return gen_type
+    return None
 
-    try:
-        api = HfApi()
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UserWarning)
-            model_info = api.model_info(repo_id=model_id)
-    except (
-        GatedRepoError,
-        LocalTokenNotFoundError,
-        RepositoryNotFoundError,
-        HFValidationError,
-        RequestException,
-        OSError,
-        httpx.HTTPError,
-        httpx.TransportError,
-    ):
-        licence_cache[model_id] = None
-        return None
 
-    # Extract licence from tags (format: "license:apache-2.0")
-    licence: str | None = None
-    if model_info.tags:
-        for tag in model_info.tags:
-            if tag.startswith("license:"):
-                licence = tag.removeprefix("license:").lower()
-                break
+def _model_id_from_record(record: dict) -> str:
+    """Return the model id from a record, unwrapping an HTML anchor tag.
 
-    result = licence in PERMISSIVE_LICENSES if licence else None
-    licence_cache[model_id] = result
-    return result
+    Args:
+        record:
+            A record from the JSONL file.
+
+    Returns:
+        The model id, with any surrounding anchor tag stripped.
+    """
+    model_id = get_model_name(record)
+    if model_id.startswith("<a href="):
+        model_id_match = re.search(r">(.+?)<", model_id)
+        if model_id_match:
+            return model_id_match.group(1)
+    return model_id
+
+
+def _parse_generative_type_input(
+    user_input: str,
+) -> str | None | t.Literal["EXPLICIT_NULL"]:
+    """Parse user input for generative type.
+
+    Args:
+        user_input:
+            The raw user input string.
+
+    Returns:
+        The parsed generative type, "EXPLICIT_NULL" for 0/null input, or None if
+        invalid.
+    """
+    input_lower = user_input.lower()
+    if input_lower in {"0", "null"}:
+        return "EXPLICIT_NULL"
+    if input_lower in {"1", "base"}:
+        return "base"
+    if input_lower in {"2", "instruction_tuned"}:
+        return "instruction_tuned"
+    if input_lower in {"3", "reasoning"}:
+        return "reasoning"
+    return None
 
 
 def is_commercially_licensed(record: dict, cache: Cache) -> bool:
@@ -382,57 +305,61 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
         logger.error("Invalid input. Please try again.")
 
 
-def is_trained_from_scratch(
-    record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
-) -> bool:
-    """Determine if a model was trained from scratch or fine-tuned.
+def _infer_commercial_from_hf_licence(
+    model_id: str, licence_cache: dict[str, bool | None]
+) -> bool | None:
+    """Infer commercial licence status from HF model info.
+
+    Best-effort function that checks the Hugging Face model page for a
+    permissive licence tag. Returns ``True`` for permissive licences
+    (MIT, Apache-2.0, BSD, etc.), ``None`` for unknown/non-permissive
+    licences or on any HF/network/auth error. Never crashes.
+
+    Caches lookups per model_id to avoid repeated API calls.
 
     Args:
-        record:
-            A record from the JSONL file.
-        trained_from_scratch_patterns:
-            A list of regex patterns for trained-from-scratch models.
-        cache:
-            The cache.
+        model_id:
+            The Hugging Face model ID (e.g. ``BAAI/bge-m3``).
+        licence_cache:
+            Cache dict mapping model IDs to inferred licence status.
 
     Returns:
-        True if the model was trained from scratch.
+        ``True`` if licence is permissive, ``False`` if explicitly
+        non-permissive (not possible with current logic), or ``None``
+        if unknown or on error.
     """
-    model_id = split_model_id(
-        model_id=plain_model_id(_model_id_from_record(record=record))
-    ).model_id
+    if model_id in licence_cache:
+        return licence_cache[model_id]
 
-    if model_id in cache.trained_from_scratch:
-        return cache.trained_from_scratch[model_id]
-
-    # Check if model is open or closed
-    model_openness = cache.open.get(model_id)
-
-    # For closed models, auto-return "scratch" without prompting
-    if model_openness is False:
-        cache.trained_from_scratch[model_id] = True
-        return True
-
-    # If it matches any of the trained-from-scratch patterns, set it automatically
-    if any(
-        pattern.match(model_id) is not None for pattern in trained_from_scratch_patterns
+    try:
+        api = HfApi()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            model_info = api.model_info(repo_id=model_id)
+    except (
+        GatedRepoError,
+        LocalTokenNotFoundError,
+        RepositoryNotFoundError,
+        HFValidationError,
+        RequestException,
+        OSError,
+        httpx.HTTPError,
+        httpx.TransportError,
     ):
-        return True
+        licence_cache[model_id] = None
+        return None
 
-    # For open models, prompt user
-    while True:
-        msg = f"Was {model_id!r} trained from scratch? "
-        if "/" in model_id:
-            msg += f" (https://hf.co/{model_id})"
-        msg += " [y/n] "
-        user_input = input(msg)
-        if user_input.lower() in {"y", "yes"}:
-            cache.trained_from_scratch[model_id] = True
-            return True
-        if user_input.lower() in {"n", "no"}:
-            cache.trained_from_scratch[model_id] = False
-            return False
-        logger.error("Invalid input. Please try again.")
+    # Extract licence from tags (format: "license:apache-2.0")
+    licence: str | None = None
+    if model_info.tags:
+        for tag in model_info.tags:
+            if tag.startswith("license:"):
+                licence = tag.removeprefix("license:").lower()
+                break
+
+    result = licence in PERMISSIVE_LICENSES if licence else None
+    licence_cache[model_id] = result
+    return result
 
 
 def is_merge(record: dict, cache: Cache) -> bool:
@@ -513,19 +440,134 @@ def is_open(record: dict, cache: Cache) -> bool:
     return True
 
 
-def _model_id_from_record(record: dict) -> str:
-    """Return the model id from a record, unwrapping an HTML anchor tag.
+def is_trained_from_scratch(
+    record: dict, trained_from_scratch_patterns: list[re.Pattern], cache: Cache
+) -> bool:
+    """Determine if a model was trained from scratch or fine-tuned.
+
+    Args:
+        record:
+            A record from the JSONL file.
+        trained_from_scratch_patterns:
+            A list of regex patterns for trained-from-scratch models.
+        cache:
+            The cache.
+
+    Returns:
+        True if the model was trained from scratch.
+    """
+    model_id = split_model_id(
+        model_id=plain_model_id(_model_id_from_record(record=record))
+    ).model_id
+
+    if model_id in cache.trained_from_scratch:
+        return cache.trained_from_scratch[model_id]
+
+    # Check if model is open or closed
+    model_openness = cache.open.get(model_id)
+
+    # For closed models, auto-return "scratch" without prompting
+    if model_openness is False:
+        cache.trained_from_scratch[model_id] = True
+        return True
+
+    # If it matches any of the trained-from-scratch patterns, set it automatically
+    if any(
+        pattern.match(model_id) is not None for pattern in trained_from_scratch_patterns
+    ):
+        return True
+
+    # For open models, prompt user
+    while True:
+        msg = f"Was {model_id!r} trained from scratch? "
+        if "/" in model_id:
+            msg += f" (https://hf.co/{model_id})"
+        msg += " [y/n] "
+        user_input = input(msg)
+        if user_input.lower() in {"y", "yes"}:
+            cache.trained_from_scratch[model_id] = True
+            return True
+        if user_input.lower() in {"n", "no"}:
+            cache.trained_from_scratch[model_id] = False
+            return False
+        logger.error("Invalid input. Please try again.")
+
+
+def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any]:
+    """Fixes metadata in a record.
 
     Args:
         record:
             A record from the JSONL file.
 
     Returns:
-        The model id, with any surrounding anchor tag stripped.
+        The record with fixed metadata.
     """
-    model_id = get_model_name(record)
-    if model_id.startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", model_id)
-        if model_id_match:
-            return model_id_match.group(1)
-    return model_id
+    # Copy the record to avoid modifying the original
+    record = deepcopy(record)
+
+    task = get_task(record)
+    if task == "question-answering":
+        record["eval_library"]["additional_details"]["task"] = "reading-comprehension"
+    if task == "european-values":
+        record["eval_library"]["additional_details"]["validation_split"] = None
+        record["eval_library"]["additional_details"]["few_shot"] = None
+
+    return record
+
+
+def record_is_valid(
+    record: dict,
+    min_version: str,
+    banned_versions: list[str],
+    banned_model_patterns: list[re.Pattern],
+    api_model_patterns: list[re.Pattern],
+) -> bool:
+    """Determine if a record is valid.
+
+    Args:
+        record:
+            The record to validate.
+        min_version:
+            The minimum EuroEval version to consider.
+        banned_versions:
+            The EuroEval versions to ban.
+        banned_model_patterns:
+            The model IDs to ban.
+        api_model_patterns:
+            Regex patterns identifying models accessed via API.
+
+    Returns:
+        True if the record is valid, False otherwise.
+    """
+    # Remove anchors from model ID, for logging purposes
+    inner_anchor_match = re.search(pattern=r">(.+?)<", string=get_model_name(record))
+    inner_model_id = (
+        inner_anchor_match.group(1) if inner_anchor_match else get_model_name(record)
+    )
+
+    # Remove records with disallowed EuroEval versions
+    version = get_version(record)
+    if version is None or version in banned_versions or version < min_version:
+        return False
+
+    # Remove banned models
+    if any(
+        re.search(pattern=pattern, string=inner_model_id)
+        for pattern in banned_model_patterns
+    ):
+        return False
+
+    # Do not allow few-shot evaluation for API models
+    few_shot = get_few_shot(record)
+    if (
+        any(
+            re.fullmatch(pattern=pattern, string=inner_model_id)
+            for pattern in api_model_patterns
+        )
+        and few_shot
+    ):
+        return False
+
+    # Otherwise, the record is valid
+    return True

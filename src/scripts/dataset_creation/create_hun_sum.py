@@ -25,16 +25,7 @@ from pydantic import BaseModel
 load_dotenv()
 
 CACHE_FILE = "summary_cache.json"
-
-
-class SummaryValidation(BaseModel):
-    """Structured output for the summary validation.
-
-    Args:
-        is_valid_summary: True if the summary aligns with the text, False otherwise.
-    """
-
-    is_valid_summary: bool
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 def load_cache() -> dict:
@@ -50,15 +41,7 @@ def load_cache() -> dict:
         return {}
 
 
-def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE."""
-    with open(CACHE_FILE, "w") as cache_file:
-        json.dump(cache, cache_file, indent=4)
-
-
 summary_cache = load_cache()
-
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 def main() -> None:
@@ -122,72 +105,6 @@ def main() -> None:
     mini_dataset.push_to_hub(mini_dataset_id, private=True)
 
 
-def process(df: pd.DataFrame) -> pd.DataFrame:
-    """Process the dataframe.
-
-    Args:
-        df: The dataframe to process.
-
-    Returns:
-        The processed dataframe.
-    """
-    # Validate samples using an LLM
-    df["is_valid_summary"] = df.apply(_text_summary_alignment, axis=1)
-    df = df.loc[df["is_valid_summary"]]
-
-    keep_columns = ["text", "target_text"]
-    df = df[keep_columns]
-
-    # Only work with samples where the text is not very large or small
-    lengths = df.text.str.len()
-    lower_bound = MIN_NUM_CHARS_IN_ARTICLE
-    upper_bound = MAX_NUM_CHARS_IN_ARTICLE
-    df = df[lengths.between(lower_bound, upper_bound)]
-    df = df.reset_index(drop=True)
-    return df
-
-
-def _text_summary_alignment(row: pd.Series) -> bool:
-    """Check if the summary aligns with the text using an LLM, with caching.
-
-    Args:
-        row: A row from the dataframe.
-
-    Returns:
-        True if the summary aligns with the text, False otherwise.
-
-    Raises:
-        ValueError: If the summary is not in the cache and the LLM could not
-    """
-    text = row["text"]
-    summary = row["target_text"]
-    if summary in summary_cache:
-        return summary_cache[summary]
-
-    messages: list[ChatCompletionUserMessageParam] = list()
-    user_message = ChatCompletionUserMessageParam(
-        role="user",
-        content=(
-            f"Does the summary <summary>{summary}</summary> align with the text "
-            f"<text>{text}</text> and represent a true summary?"
-        ),
-    )
-    messages.append(user_message)
-    completion = client.beta.chat.completions.parse(
-        model="gpt-4o", messages=messages, response_format=SummaryValidation
-    )
-    parsed = completion.choices[0].message.parsed
-    if parsed is None:
-        raise ValueError("Parsed response is None")
-    is_valid_summary = parsed.is_valid_summary
-
-    # Cache the result
-    summary_cache[summary] = is_valid_summary
-    save_cache(cache=summary_cache)
-
-    return is_valid_summary
-
-
 def create_splits(
     train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -237,6 +154,88 @@ def create_splits(
     assert isinstance(test_df_final, pd.DataFrame)
 
     return train_df_final, val_df_final, test_df_final
+
+
+def process(df: pd.DataFrame) -> pd.DataFrame:
+    """Process the dataframe.
+
+    Args:
+        df: The dataframe to process.
+
+    Returns:
+        The processed dataframe.
+    """
+    # Validate samples using an LLM
+    df["is_valid_summary"] = df.apply(_text_summary_alignment, axis=1)
+    df = df.loc[df["is_valid_summary"]]
+
+    keep_columns = ["text", "target_text"]
+    df = df[keep_columns]
+
+    # Only work with samples where the text is not very large or small
+    lengths = df.text.str.len()
+    lower_bound = MIN_NUM_CHARS_IN_ARTICLE
+    upper_bound = MAX_NUM_CHARS_IN_ARTICLE
+    df = df[lengths.between(lower_bound, upper_bound)]
+    df = df.reset_index(drop=True)
+    return df
+
+
+class SummaryValidation(BaseModel):
+    """Structured output for the summary validation.
+
+    Args:
+        is_valid_summary: True if the summary aligns with the text, False otherwise.
+    """
+
+    is_valid_summary: bool
+
+
+def _text_summary_alignment(row: pd.Series) -> bool:
+    """Check if the summary aligns with the text using an LLM, with caching.
+
+    Args:
+        row: A row from the dataframe.
+
+    Returns:
+        True if the summary aligns with the text, False otherwise.
+
+    Raises:
+        ValueError: If the summary is not in the cache and the LLM could not
+    """
+    text = row["text"]
+    summary = row["target_text"]
+    if summary in summary_cache:
+        return summary_cache[summary]
+
+    messages: list[ChatCompletionUserMessageParam] = list()
+    user_message = ChatCompletionUserMessageParam(
+        role="user",
+        content=(
+            f"Does the summary <summary>{summary}</summary> align with the text "
+            f"<text>{text}</text> and represent a true summary?"
+        ),
+    )
+    messages.append(user_message)
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o", messages=messages, response_format=SummaryValidation
+    )
+    parsed = completion.choices[0].message.parsed
+    if parsed is None:
+        raise ValueError("Parsed response is None")
+    is_valid_summary = parsed.is_valid_summary
+
+    # Cache the result
+    summary_cache[summary] = is_valid_summary
+    save_cache(cache=summary_cache)
+
+    return is_valid_summary
+
+
+def save_cache(cache: dict) -> None:
+    """Save cache to CACHE_FILE."""
+    with open(CACHE_FILE, "w") as cache_file:
+        json.dump(cache, cache_file, indent=4)
 
 
 if __name__ == "__main__":
