@@ -47,6 +47,7 @@ a653617439bf  # scripts/dataset_creation/create_wic.py
 d37d12a12202  # scripts/dataset_creation/create_commitmentbank.py
 71fc771b060f  # scripts/dataset_creation/create_wnli.py
 308c086cfeda  # scripts/dataset_creation/create_mrpc.py
+32cc1b4cf483  # scripts/dataset_creation/create_faroese_semantic_relations.py, scripts/dataset_creation/create_faroese_metaphorical_explanations.py
 ac81abca3ab6  # scripts/dataset_creation/create_qnli.py
 97384c51d04e  # scripts/dataset_creation/create_mnli.py
 608baeb94734  # scripts/dataset_creation/create_qqp.py
