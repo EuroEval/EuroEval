@@ -24,6 +24,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   translators at the European Commission's Directorate-General for Translation and by
   students from the European Master's in Translation network, rather than by machine
   translation. They are marked as `unofficial` for now.
+- Added the unofficial Faroese knowledge dataset `faroese-metaphorical-explanations`,
+  from the paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for
+  Faroese LLM Understanding", where the model has to pick the correct explanation of a
+  Faroese idiom from four options.
 
 ### Changed
 
@@ -107,10 +111,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for Faroese LLM
   Understanding", where the model has to pick the antonym of a given Faroese word from
   six options.
-- Added the unofficial Faroese knowledge dataset `faroese-metaphorical-explanations`,
-  from the paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for
-  Faroese LLM Understanding", where the model has to pick the correct explanation of a
-  Faroese idiom from four options.
 - Added Faroese prompt templates for multiple-choice tasks, enabling Faroese datasets
   for all tasks in the multiple-choice classification task group (knowledge,
   common-sense reasoning, and more).
