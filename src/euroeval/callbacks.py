@@ -24,33 +24,6 @@ class NeverLeaveProgressCallback(ProgressCallback):
         self.training_bar: tqdm | None = None
         self.prediction_bar: tqdm | None = None
 
-    def on_train_begin(
-        self,
-        args: "TrainingArguments",
-        state: "TrainerState",
-        control: "TrainerControl",
-        **kwargs: str,
-    ) -> None:
-        """Callback actions when training begins."""
-        if state.is_local_process_zero:
-            desc = "Finetuning model"
-            self.training_bar = get_pbar(
-                total=None, desc=desc, disable=hasattr(sys, "_called_from_test")
-            )
-        self.current_step = 0
-
-    def on_step_end(
-        self,
-        args: "TrainingArguments",
-        state: "TrainerState",
-        control: "TrainerControl",
-        **kwargs: str,
-    ) -> None:
-        """Callback actions when a training step ends."""
-        if state.is_local_process_zero and self.training_bar is not None:
-            self.training_bar.update(state.global_step - self.current_step)
-            self.current_step = state.global_step
-
     def on_prediction_step(
         self,
         args: "TrainingArguments",
@@ -72,3 +45,30 @@ class NeverLeaveProgressCallback(ProgressCallback):
                     disable=hasattr(sys, "_called_from_test"),
                 )
             self.prediction_bar.update(1)
+
+    def on_step_end(
+        self,
+        args: "TrainingArguments",
+        state: "TrainerState",
+        control: "TrainerControl",
+        **kwargs: str,
+    ) -> None:
+        """Callback actions when a training step ends."""
+        if state.is_local_process_zero and self.training_bar is not None:
+            self.training_bar.update(state.global_step - self.current_step)
+            self.current_step = state.global_step
+
+    def on_train_begin(
+        self,
+        args: "TrainingArguments",
+        state: "TrainerState",
+        control: "TrainerControl",
+        **kwargs: str,
+    ) -> None:
+        """Callback actions when training begins."""
+        if state.is_local_process_zero:
+            desc = "Finetuning model"
+            self.training_bar = get_pbar(
+                total=None, desc=desc, disable=hasattr(sys, "_called_from_test")
+            )
+        self.current_step = 0

@@ -32,10 +32,10 @@ DBRD_CONFIG = DatasetConfig(
     labels=["negative", "positive"],
 )
 
-SCALA_NL_CONFIG = DatasetConfig(
-    name="scala-nl",
-    pretty_name="ScaLA-nl",
-    source="EuroEval/scala-nl",
+DUTCH_COLA_CONFIG = DatasetConfig(
+    name="dutch-cola",
+    pretty_name="Dutch CoLA",
+    source="EuroEval/dutch-cola",
     task=LA,
     languages=[DUTCH],
 )
@@ -61,14 +61,6 @@ WIKI_LINGUA_NL_CONFIG = DatasetConfig(
     pretty_name="WikiLingua-nl",
     source="EuroEval/wiki-lingua-nl-mini",
     task=SUMM,
-    languages=[DUTCH],
-)
-
-MMLU_NL_CONFIG = DatasetConfig(
-    name="mmlu-nl",
-    pretty_name="MMLU-nl",
-    source="EuroEval/mmlu-nl-mini",
-    task=KNOW,
     languages=[DUTCH],
 )
 
@@ -128,6 +120,51 @@ RAGTRUTH_NL_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+HELLASWAG_NL_CONFIG = DatasetConfig(
+    name="hellaswag-nl",
+    pretty_name="HellaSwag-nl",
+    source="EuroEval/hellaswag-nl-mini",
+    task=COMMON_SENSE,
+    languages=[DUTCH],
+)
+
+
+INCLUDE_NL_CONFIG = DatasetConfig(
+    name="include-nl",
+    pretty_name="INCLUDE-nl",
+    source="EuroEval/include-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+)
+
+MULTILOKO_NL_CONFIG = DatasetConfig(
+    name="multiloko-nl",
+    pretty_name="MultiLoKo-nl",
+    source="EuroEval/multiloko-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+    val_split=None,
+)
+
+# Unofficial datasets ###
+
+MMLU_NL_CONFIG = DatasetConfig(
+    name="mmlu-nl",
+    pretty_name="MMLU-nl",
+    source="EuroEval/mmlu-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+    unofficial=True,
+)
+
+SCALA_NL_CONFIG = DatasetConfig(
+    name="scala-nl",
+    pretty_name="ScaLA-nl",
+    source="EuroEval/scala-nl",
+    task=LA,
+    languages=[DUTCH],
+    unofficial=True,
+)
 
 WINOGRANDE_NL_CONFIG = DatasetConfig(
     name="winogrande-nl",
@@ -136,25 +173,6 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DUTCH],
     labels=["a", "b"],
-)
-
-# Unofficial datasets ###
-
-HELLASWAG_NL_CONFIG = DatasetConfig(
-    name="hellaswag-nl",
-    pretty_name="HellaSwag-nl",
-    source="EuroEval/hellaswag-nl-mini",
-    task=COMMON_SENSE,
-    languages=[DUTCH],
-    unofficial=True,
-)
-
-DUTCH_COLA_CONFIG = DatasetConfig(
-    name="dutch-cola",
-    pretty_name="Dutch CoLA",
-    source="EuroEval/dutch-cola",
-    task=LA,
-    languages=[DUTCH],
     unofficial=True,
 )
 
@@ -224,25 +242,6 @@ GOLDENSWAG_NL_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-INCLUDE_NL_CONFIG = DatasetConfig(
-    name="include-nl",
-    pretty_name="INCLUDE-nl",
-    source="EuroEval/include-nl-mini",
-    task=KNOW,
-    languages=[DUTCH],
-    unofficial=True,
-)
-
-MULTILOKO_NL_CONFIG = DatasetConfig(
-    name="multiloko-nl",
-    pretty_name="MultiLoKo-nl",
-    source="EuroEval/multiloko-nl-mini",
-    task=KNOW,
-    languages=[DUTCH],
-    val_split=None,
-    unofficial=True,
-)
-
 GERLANGMOD_NL_CONFIG = DatasetConfig(
     name="gerlangmod-nl",
     pretty_name="GerLangMod-nl",
@@ -266,6 +265,15 @@ ZEBRA_PUZZLE_HARD_NL_CONFIG = DatasetConfig(
     pretty_name="ZebraPuzzlesHard-nl",
     source="EuroEval/zebra-puzzles-hard-nl",
     task=LOGIC,
+    languages=[DUTCH],
+    unofficial=True,
+)
+
+EU_MMLU_NL_CONFIG = DatasetConfig(
+    name="eu-mmlu-nl",
+    pretty_name="EU-MMLU-nl",
+    source="EuroEval/eu-mmlu-nl",
+    task=KNOW,
     languages=[DUTCH],
     unofficial=True,
 )

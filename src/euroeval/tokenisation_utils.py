@@ -28,138 +28,6 @@ if t.TYPE_CHECKING:
     from .data_models import DatasetConfig, ModelConfig
 
 
-def get_special_token_metadata(tokeniser: "PreTrainedTokenizerBase") -> dict:
-    """Get the special token metadata for a tokeniser.
-
-    Args:
-        tokeniser:
-            The tokeniser.
-
-    Returns:
-        The special token metadata.
-    """
-    # Create some test input IDs, to check if the tokeniser is adding special tokens
-    test_input_ids = tokeniser("Test").input_ids
-
-    # Extract the CLS token IDs from the tokeniser, if it's using them
-    has_cls_token = True
-    if tokeniser.cls_token_id in test_input_ids:
-        cls_token_id = tokeniser.cls_token_id
-        cls_token = tokeniser.cls_token
-    elif tokeniser.bos_token_id in test_input_ids:
-        cls_token_id = tokeniser.bos_token_id
-        cls_token = tokeniser.bos_token
-    elif tokeniser.cls_token is not None:
-        cls_token_id = tokeniser.cls_token_id
-        cls_token = tokeniser.cls_token
-        has_cls_token = False
-    else:
-        cls_token_id = tokeniser.bos_token_id
-        cls_token = tokeniser.bos_token
-        has_cls_token = False
-
-    # Extract the SEP token IDs from the tokeniser, if it's using them
-    has_sep_token = True
-    if tokeniser.sep_token_id in test_input_ids:
-        sep_token = tokeniser.sep_token
-    elif tokeniser.eos_token_id in test_input_ids:
-        sep_token = tokeniser.eos_token
-    elif tokeniser.sep_token is not None:
-        sep_token = tokeniser.sep_token
-        has_sep_token = False
-    else:
-        sep_token = tokeniser.eos_token
-        has_sep_token = False
-
-    return dict(
-        cls_token_id=cls_token_id,
-        cls_token=cls_token,
-        sep_token=sep_token,
-        has_cls_token=has_cls_token,
-        has_sep_token=has_sep_token,
-    )
-
-
-def should_prompts_be_stripped(
-    labels_to_be_generated: c.Sequence[str], tokeniser: Tokeniser
-) -> bool:
-    """Determine if we should strip the prompts for few-shot evaluation.
-
-    This is the case if the tokeniser needs to include the space as part of the label
-    token. The strategy is thus to tokenise a label with a preceeding colon (as in the
-    prompts), i.e., ": positive", and check if the tokenisation starts with the tokens
-    of ": ". If this is the case, then we should not strip the prompts, since the
-    tokeniser produces the whitespace token separately.
-
-    Args:
-        labels_to_be_generated:
-            The labels that are to be generated.
-        tokeniser:
-            The tokeniser used to tokenise the labels.
-
-    Returns:
-        Whether we should strip the prompts.
-    """
-    strip_prompts = True
-    for label in labels_to_be_generated:
-        colon_tokens = tokeniser(": ", add_special_tokens=False).input_ids
-        label_tokens = tokeniser(": " + label, add_special_tokens=False).input_ids
-
-        if isinstance(colon_tokens, torch.Tensor):
-            colon_tokens = list(colon_tokens.squeeze(0))
-        if isinstance(label_tokens, torch.Tensor):
-            label_tokens = list(label_tokens.squeeze(0))
-
-        label_tokens_start_with_colon_tokens = (
-            label_tokens[: len(colon_tokens)] == colon_tokens
-        )
-        if label_tokens_start_with_colon_tokens:
-            strip_prompts = False
-
-    return strip_prompts
-
-
-def should_prefix_space_be_added_to_labels(
-    labels_to_be_generated: c.Sequence[str], tokeniser: Tokeniser
-) -> bool:
-    """Determine if we should add a prefix space to the labels.
-
-    This is the case if the prompts are stripped and the tokeniser doesn't
-    automatically add prefix whitespaces to the labels.
-
-    Args:
-        labels_to_be_generated:
-            The labels that are to be generated.
-        tokeniser:
-            The tokeniser used to tokenise the labels.
-
-    Returns:
-        Whether we should add a prefix space to the labels.
-    """
-    if not should_prompts_be_stripped(
-        labels_to_be_generated=labels_to_be_generated, tokeniser=tokeniser
-    ):
-        return False
-
-    whitespace_token = tokeniser.convert_ids_to_tokens(
-        ids=tokeniser(" ", add_special_tokens=False).input_ids[0]
-    )[0]
-
-    add_prefix_space = True
-    for label in labels_to_be_generated:
-        label_tokens = tokeniser(label, add_special_tokens=False).input_ids
-        if isinstance(label_tokens, torch.Tensor):
-            label_tokens = list(label_tokens.squeeze(0))
-        first_label_token: int = int(label_tokens[0])
-        first_character_of_label = tokeniser.convert_ids_to_tokens(first_label_token)[0]
-        has_prefix_space = first_character_of_label == whitespace_token
-        if has_prefix_space:
-            add_prefix_space = False
-            break
-
-    return add_prefix_space
-
-
 def get_bos_token(tokeniser: Tokeniser) -> tuple[str, int] | tuple[None, None]:
     """Get the beginning-of-sequence token from a tokeniser.
 
@@ -196,117 +64,6 @@ def get_bos_token(tokeniser: Tokeniser) -> tuple[str, int] | tuple[None, None]:
         level=logging.DEBUG,
     )
     return bos_token, bos_token_id
-
-
-def get_eos_token(tokeniser: Tokeniser) -> tuple[str, int] | tuple[None, None]:
-    """Get the end-of-sequence token from a tokeniser.
-
-    Args:
-        tokeniser:
-            The tokeniser.
-
-    Returns:
-        A pair (token, token_id) representing the end-of-sequence token and its token
-        ID, or (None, None) if no EOS token is found.
-    """
-    if isinstance(tokeniser.eos_token, str) and isinstance(tokeniser.eos_token_id, int):
-        return tokeniser.eos_token, tokeniser.eos_token_id
-
-    vocab: dict[str, int] = tokeniser.get_vocab()
-
-    for candidate_eos_token in EOS_TOKENS:
-        if candidate_eos_token in vocab:
-            eos_token = candidate_eos_token
-            eos_token_id = vocab[eos_token]
-            break
-    else:
-        log_once(
-            "The model does not have an end-of-sequence token. Please ensure that this "
-            "has been set in the tokeniser's configuration. Using no EOS token. This "
-            "may lead to unexpected behavior in the model.",
-            level=logging.WARNING,
-        )
-        return None, None
-
-    log_once(
-        f"End-of-sequence token was not set, but detected it as {eos_token!r} with "
-        f"ID {eos_token_id}.",
-        level=logging.WARNING,
-    )
-    return eos_token, eos_token_id
-
-
-def get_pad_token(tokeniser: Tokeniser) -> tuple[str, int] | tuple[None, None]:
-    """Get the padding token from a tokeniser.
-
-    Args:
-        tokeniser:
-            The tokeniser.
-
-    Returns:
-        A pair (token, token_id) representing the padding token and its token ID, or
-        (None, None) if no padding token is found.
-    """
-    # If the tokeniser already has a padding token, return it
-    if tokeniser.pad_token is not None and tokeniser.pad_token_id is not None:
-        assert isinstance(tokeniser.pad_token, str), (
-            "Expected tokeniser.pad_token to be a string, but got "
-            f"{type(tokeniser.pad_token)}."
-        )
-        assert isinstance(tokeniser.pad_token_id, int), (
-            "Expected tokeniser.pad_token_id to be an integer, but got "
-            f"{type(tokeniser.pad_token_id)}."
-        )
-        return (tokeniser.pad_token, tokeniser.pad_token_id)
-
-    # If the tokeniser has a BOS token, use it as the padding token
-    if tokeniser.bos_token is not None and tokeniser.bos_token_id is not None:
-        assert isinstance(tokeniser.bos_token, str), (
-            "Expected tokeniser.bos_token to be a string, but got "
-            f"{type(tokeniser.bos_token)}."
-        )
-        assert isinstance(tokeniser.bos_token_id, int), (
-            "Expected tokeniser.bos_token_id to be an integer, but got "
-            f"{type(tokeniser.bos_token_id)}."
-        )
-        pad_token = tokeniser.bos_token
-        pad_token_id = tokeniser.bos_token_id
-
-    # If the tokeniser has an EOS token, use it as the padding token
-    elif tokeniser.eos_token is not None and tokeniser.eos_token_id is not None:
-        assert isinstance(tokeniser.eos_token, str), (
-            "Expected tokeniser.eos_token to be a string, but got "
-            f"{type(tokeniser.eos_token)}."
-        )
-        assert isinstance(tokeniser.eos_token_id, int), (
-            "Expected tokeniser.eos_token_id to be an integer, but got "
-            f"{type(tokeniser.eos_token_id)}."
-        )
-        pad_token = tokeniser.eos_token
-        pad_token_id = tokeniser.eos_token_id
-
-    # Otherwise, try to find a candidate padding token in the vocabulary
-    else:
-        for candidate in PAD_TOKENS:
-            if candidate in tokeniser.get_vocab():
-                pad_token = candidate
-                pad_token_id = tokeniser.get_vocab()[candidate]
-                break
-        else:
-            log_once(
-                "Could not identify a padding token for the model. Please ensure that "
-                "this has been set in the tokeniser's configuration. Using no padding "
-                "token. This may lead to unexpected behavior in the model.",
-                level=logging.WARNING,
-            )
-            return None, None
-
-    log_once(
-        f"Padding token was not set, but detected it as {pad_token!r} with ID "
-        f"{pad_token_id}.",
-        level=logging.DEBUG,
-    )
-    return pad_token, pad_token_id
 
 
 def get_end_of_chat_token_ids(
@@ -382,6 +139,134 @@ def get_end_of_chat_token_ids(
         level=logging.DEBUG,
     )
     return end_of_chat_tokens
+
+
+def apply_chat_template(
+    conversation: list[dict[str, str]],
+    tokeniser: Tokeniser,
+    tokenise: bool,
+    add_generation_prompt: bool,
+    **extra_kwargs,
+) -> str | list[int]:
+    """Apply the chat template to a prompt.
+
+    Args:
+        conversation:
+            The conversation to apply the chat template to.
+        tokeniser:
+            The tokeniser.
+        tokenise:
+            Whether to tokenise the resulting prompt, returning a list of token IDs
+            instead of a string.
+        add_generation_prompt:
+            Whether to add a generation prompt at the end of the conversation. This is
+            only relevant for regular Hugging Face tokenisers, as Mistral tokenisers
+            always add a generation prompt.
+        **extra_kwargs:
+            Extra keyword arguments to pass to the tokeniser's `apply_chat_template`
+            method. Only relevant for regular Hugging Face tokenisers.
+
+    Returns:
+        The prompt with the chat template applied, either as a string or a list of
+        token IDs, depending on the value of `tokenise`.
+
+    Raises:
+        InvalidModel:
+            If the tokeniser does not have a chat template.
+    """
+    # Ensure that the first user message is not empty, as this can cause issues with
+    # Jinja2
+    conversation[0]["content"] = conversation[0]["content"] or " "
+
+    if not has_chat_template(tokeniser=tokeniser):
+        raise InvalidModel(
+            "The tokeniser does not have a chat template, so cannot apply it."
+        )
+    elif isinstance(tokeniser, MistralCommonTokenizer):
+        templated_prompt = tokeniser.apply_chat_template(
+            conversation=conversation, tokenize=tokenise
+        )
+    else:
+        templated_prompt = tokeniser.apply_chat_template(
+            conversation=conversation,
+            add_generation_prompt=add_generation_prompt,
+            tokenize=tokenise,
+            **extra_kwargs,
+        )
+    return templated_prompt  # ty: ignore[invalid-return-type]
+
+
+def has_chat_template(tokeniser: Tokeniser) -> bool:
+    """Check if a tokeniser has a chat template.
+
+    Args:
+        tokeniser:
+            The tokeniser.
+
+    Returns:
+        Whether the tokeniser has a chat template.
+    """
+    if isinstance(tokeniser, MistralCommonTokenizer):
+        log_once(
+            "The tokeniser is a Mistral tokeniser, so assuming that the model is "
+            "instruction tuned.",
+            level=logging.DEBUG,
+        )
+        return True
+    elif hasattr(tokeniser, "chat_template"):
+        has_template = tokeniser.chat_template is not None
+        if has_template:
+            log_once(
+                "The tokeniser has a chat template, so assuming that the model is "
+                "instruction tuned.",
+                level=logging.DEBUG,
+            )
+        return has_template
+    else:
+        log_once(
+            "We cannot find a chat template for the tokeniser, so assuming that the "
+            "model isn't instruction tuned.",
+            level=logging.DEBUG,
+        )
+        return False
+
+
+def get_eos_token(tokeniser: Tokeniser) -> tuple[str, int] | tuple[None, None]:
+    """Get the end-of-sequence token from a tokeniser.
+
+    Args:
+        tokeniser:
+            The tokeniser.
+
+    Returns:
+        A pair (token, token_id) representing the end-of-sequence token and its token
+        ID, or (None, None) if no EOS token is found.
+    """
+    if isinstance(tokeniser.eos_token, str) and isinstance(tokeniser.eos_token_id, int):
+        return tokeniser.eos_token, tokeniser.eos_token_id
+
+    vocab: dict[str, int] = tokeniser.get_vocab()
+
+    for candidate_eos_token in EOS_TOKENS:
+        if candidate_eos_token in vocab:
+            eos_token = candidate_eos_token
+            eos_token_id = vocab[eos_token]
+            break
+    else:
+        log_once(
+            "The model does not have an end-of-sequence token. Please ensure that this "
+            "has been set in the tokeniser's configuration. Using no EOS token. This "
+            "may lead to unexpected behavior in the model.",
+            level=logging.WARNING,
+        )
+        return None, None
+
+    log_once(
+        f"End-of-sequence token was not set, but detected it as {eos_token!r} with "
+        f"ID {eos_token_id}.",
+        level=logging.WARNING,
+    )
+    return eos_token, eos_token_id
 
 
 @cache_arguments("dataset_config", "model_config")
@@ -538,91 +423,206 @@ def get_first_label_token_mapping(
         return False
 
 
-def has_chat_template(tokeniser: Tokeniser) -> bool:
-    """Check if a tokeniser has a chat template.
+def should_prefix_space_be_added_to_labels(
+    labels_to_be_generated: c.Sequence[str], tokeniser: Tokeniser
+) -> bool:
+    """Determine if we should add a prefix space to the labels.
+
+    This is the case if the prompts are stripped and the tokeniser doesn't
+    automatically add prefix whitespaces to the labels.
 
     Args:
+        labels_to_be_generated:
+            The labels that are to be generated.
         tokeniser:
-            The tokeniser.
+            The tokeniser used to tokenise the labels.
 
     Returns:
-        Whether the tokeniser has a chat template.
+        Whether we should add a prefix space to the labels.
     """
-    if isinstance(tokeniser, MistralCommonTokenizer):
-        log_once(
-            "The tokeniser is a Mistral tokeniser, so assuming that the model is "
-            "instruction tuned.",
-            level=logging.DEBUG,
-        )
-        return True
-    elif hasattr(tokeniser, "chat_template"):
-        has_template = tokeniser.chat_template is not None
-        if has_template:
-            log_once(
-                "The tokeniser has a chat template, so assuming that the model is "
-                "instruction tuned.",
-                level=logging.DEBUG,
-            )
-        return has_template
-    else:
-        log_once(
-            "We cannot find a chat template for the tokeniser, so assuming that the "
-            "model isn't instruction tuned.",
-            level=logging.DEBUG,
-        )
+    if not should_prompts_be_stripped(
+        labels_to_be_generated=labels_to_be_generated, tokeniser=tokeniser
+    ):
         return False
 
+    whitespace_token = tokeniser.convert_ids_to_tokens(
+        ids=tokeniser(" ", add_special_tokens=False).input_ids[0]
+    )[0]
 
-def apply_chat_template(
-    conversation: list[dict[str, str]],
-    tokeniser: Tokeniser,
-    tokenise: bool,
-    add_generation_prompt: bool,
-    **extra_kwargs,
-) -> str | list[int]:
-    """Apply the chat template to a prompt.
+    add_prefix_space = True
+    for label in labels_to_be_generated:
+        label_tokens = tokeniser(label, add_special_tokens=False).input_ids
+        if isinstance(label_tokens, torch.Tensor):
+            label_tokens = list(label_tokens.squeeze(0))
+        first_label_token: int = int(label_tokens[0])
+        first_character_of_label = tokeniser.convert_ids_to_tokens(first_label_token)[0]
+        has_prefix_space = first_character_of_label == whitespace_token
+        if has_prefix_space:
+            add_prefix_space = False
+            break
+
+    return add_prefix_space
+
+
+def should_prompts_be_stripped(
+    labels_to_be_generated: c.Sequence[str], tokeniser: Tokeniser
+) -> bool:
+    """Determine if we should strip the prompts for few-shot evaluation.
+
+    This is the case if the tokeniser needs to include the space as part of the label
+    token. The strategy is thus to tokenise a label with a preceeding colon (as in the
+    prompts), i.e., ": positive", and check if the tokenisation starts with the tokens
+    of ": ". If this is the case, then we should not strip the prompts, since the
+    tokeniser produces the whitespace token separately.
 
     Args:
-        conversation:
-            The conversation to apply the chat template to.
+        labels_to_be_generated:
+            The labels that are to be generated.
         tokeniser:
-            The tokeniser.
-        tokenise:
-            Whether to tokenise the resulting prompt, returning a list of token IDs
-            instead of a string.
-        add_generation_prompt:
-            Whether to add a generation prompt at the end of the conversation. This is
-            only relevant for regular Hugging Face tokenisers, as Mistral tokenisers
-            always add a generation prompt.
-        **extra_kwargs:
-            Extra keyword arguments to pass to the tokeniser's `apply_chat_template`
-            method. Only relevant for regular Hugging Face tokenisers.
+            The tokeniser used to tokenise the labels.
 
     Returns:
-        The prompt with the chat template applied, either as a string or a list of
-        token IDs, depending on the value of `tokenise`.
-
-    Raises:
-        InvalidModel:
-            If the tokeniser does not have a chat template.
+        Whether we should strip the prompts.
     """
-    # Ensure that the first user message is not empty, as this can cause issues with
-    # Jinja2
-    conversation[0]["content"] = conversation[0]["content"] or " "
+    strip_prompts = True
+    for label in labels_to_be_generated:
+        colon_tokens = tokeniser(": ", add_special_tokens=False).input_ids
+        label_tokens = tokeniser(": " + label, add_special_tokens=False).input_ids
 
-    if not has_chat_template(tokeniser=tokeniser):
-        raise InvalidModel(
-            "The tokeniser does not have a chat template, so cannot apply it."
+        if isinstance(colon_tokens, torch.Tensor):
+            colon_tokens = list(colon_tokens.squeeze(0))
+        if isinstance(label_tokens, torch.Tensor):
+            label_tokens = list(label_tokens.squeeze(0))
+
+        label_tokens_start_with_colon_tokens = (
+            label_tokens[: len(colon_tokens)] == colon_tokens
         )
-    elif isinstance(tokeniser, MistralCommonTokenizer):
-        templated_prompt = tokeniser.apply_chat_template(
-            conversation=conversation, tokenize=tokenise
+        if label_tokens_start_with_colon_tokens:
+            strip_prompts = False
+
+    return strip_prompts
+
+
+def get_pad_token(tokeniser: Tokeniser) -> tuple[str, int] | tuple[None, None]:
+    """Get the padding token from a tokeniser.
+
+    Args:
+        tokeniser:
+            The tokeniser.
+
+    Returns:
+        A pair (token, token_id) representing the padding token and its token ID, or
+        (None, None) if no padding token is found.
+    """
+    # If the tokeniser already has a padding token, return it
+    if tokeniser.pad_token is not None and tokeniser.pad_token_id is not None:
+        assert isinstance(tokeniser.pad_token, str), (
+            "Expected tokeniser.pad_token to be a string, but got "
+            f"{type(tokeniser.pad_token)}."
         )
+        assert isinstance(tokeniser.pad_token_id, int), (
+            "Expected tokeniser.pad_token_id to be an integer, but got "
+            f"{type(tokeniser.pad_token_id)}."
+        )
+        return (tokeniser.pad_token, tokeniser.pad_token_id)
+
+    # If the tokeniser has a BOS token, use it as the padding token
+    if tokeniser.bos_token is not None and tokeniser.bos_token_id is not None:
+        assert isinstance(tokeniser.bos_token, str), (
+            "Expected tokeniser.bos_token to be a string, but got "
+            f"{type(tokeniser.bos_token)}."
+        )
+        assert isinstance(tokeniser.bos_token_id, int), (
+            "Expected tokeniser.bos_token_id to be an integer, but got "
+            f"{type(tokeniser.bos_token_id)}."
+        )
+        pad_token = tokeniser.bos_token
+        pad_token_id = tokeniser.bos_token_id
+
+    # If the tokeniser has an EOS token, use it as the padding token
+    elif tokeniser.eos_token is not None and tokeniser.eos_token_id is not None:
+        assert isinstance(tokeniser.eos_token, str), (
+            "Expected tokeniser.eos_token to be a string, but got "
+            f"{type(tokeniser.eos_token)}."
+        )
+        assert isinstance(tokeniser.eos_token_id, int), (
+            "Expected tokeniser.eos_token_id to be an integer, but got "
+            f"{type(tokeniser.eos_token_id)}."
+        )
+        pad_token = tokeniser.eos_token
+        pad_token_id = tokeniser.eos_token_id
+
+    # Otherwise, try to find a candidate padding token in the vocabulary
     else:
-        templated_prompt = tokeniser.apply_chat_template(
-            conversation=conversation,
-            add_generation_prompt=add_generation_prompt,
-            tokenize=tokenise,
-            **extra_kwargs,
-        )
-    return templated_prompt  # ty: ignore[invalid-return-type]
+        for candidate in PAD_TOKENS:
+            if candidate in tokeniser.get_vocab():
+                pad_token = candidate
+                pad_token_id = tokeniser.get_vocab()[candidate]
+                break
+        else:
+            log_once(
+                "Could not identify a padding token for the model. Please ensure that "
+                "this has been set in the tokeniser's configuration. Using no padding "
+                "token. This may lead to unexpected behavior in the model.",
+                level=logging.WARNING,
+            )
+            return None, None
+
+    log_once(
+        f"Padding token was not set, but detected it as {pad_token!r} with ID "
+        f"{pad_token_id}.",
+        level=logging.DEBUG,
+    )
+    return pad_token, pad_token_id
+
+
+def get_special_token_metadata(tokeniser: "PreTrainedTokenizerBase") -> dict:
+    """Get the special token metadata for a tokeniser.
+
+    Args:
+        tokeniser:
+            The tokeniser.
+
+    Returns:
+        The special token metadata.
+    """
+    # Create some test input IDs, to check if the tokeniser is adding special tokens
+    test_input_ids = tokeniser("Test").input_ids
+
+    # Extract the CLS token IDs from the tokeniser, if it's using them
+    has_cls_token = True
+    if tokeniser.cls_token_id in test_input_ids:
+        cls_token_id = tokeniser.cls_token_id
+        cls_token = tokeniser.cls_token
+    elif tokeniser.bos_token_id in test_input_ids:
+        cls_token_id = tokeniser.bos_token_id
+        cls_token = tokeniser.bos_token
+    elif tokeniser.cls_token is not None:
+        cls_token_id = tokeniser.cls_token_id
+        cls_token = tokeniser.cls_token
+        has_cls_token = False
+    else:
+        cls_token_id = tokeniser.bos_token_id
+        cls_token = tokeniser.bos_token
+        has_cls_token = False
+
+    # Extract the SEP token IDs from the tokeniser, if it's using them
+    has_sep_token = True
+    if tokeniser.sep_token_id in test_input_ids:
+        sep_token = tokeniser.sep_token
+    elif tokeniser.eos_token_id in test_input_ids:
+        sep_token = tokeniser.eos_token
+    elif tokeniser.sep_token is not None:
+        sep_token = tokeniser.sep_token
+        has_sep_token = False
+    else:
+        sep_token = tokeniser.eos_token
+        has_sep_token = False
+
+    return dict(
+        cls_token_id=cls_token_id,
+        cls_token=cls_token,
+        sep_token=sep_token,
+        has_cls_token=has_cls_token,
+        has_sep_token=has_sep_token,
+    )

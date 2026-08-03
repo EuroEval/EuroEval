@@ -91,71 +91,6 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def process_endings(raw_endings: str) -> list[str] | None:
-    """Process the endings of the HellaSwag-fi dataset.
-
-    Args:
-        raw_endings: The endings of the HellaSwag-fi dataset.
-
-    Returns:
-        The processed endings, or None if the endings couldn't be extracted properly.
-    """
-    # Remove starting/ending square brackets and quotes
-    raw_endings = raw_endings[2:-2]
-
-    # Most endings are separated by newline characters
-    endings = raw_endings.split("\n")
-
-    # If not, try a more hacky approach
-    if len(endings) != 4:
-        endings = [
-            ending
-            for newline_ending in endings
-            for ending in _extract_endings(string=newline_ending)
-        ]
-    if len(endings) != 4:
-        return None
-
-    return [ending.strip(" '\"") for ending in endings]
-
-
-def _extract_endings(string: str) -> list[str]:
-    """Extract endings from the HellaSwag-fi dataset.
-
-    This strategy is used for samples where the endings are not simply separated by
-    newline characters.
-
-    Args:
-        string: The endings of the HellaSwag-fi dataset.
-
-    Returns:
-        The processed endings.
-    """
-    endings: list[str] = []
-    i: int = 0
-    start: int = 0
-    while i < len(string) - 2:
-        if string[i].isalpha() or string[i] == "[":
-            start = i
-
-            while i < len(string) - 2:
-                # An ending seems to end with one of the following char combinations
-                ends = ['."', ".'", "'.", '".', ".\n"]
-                if string[i : i + 2] in ends:
-                    ending = string[start : i + 1].strip()
-                    endings.append(ending)
-                    i += 1
-                    break
-                i += 1
-        else:
-            i += 1
-
-    # Last ending
-    ending = string[start:].strip()
-    endings.append(ending)
-    return endings
-
-
 def process_split(df: pd.DataFrame, split: str) -> pd.DataFrame:
     """Process the split of the HellaSwag-fi dataset.
 
@@ -271,6 +206,71 @@ def _print_filtering_stats(df: pd.DataFrame, split: str) -> None:
         "Samples with infrequent activity labels: "
         f"{infrequent_label_count} ({infrequent_label_count / len(df):.2%})"
     )
+
+
+def process_endings(raw_endings: str) -> list[str] | None:
+    """Process the endings of the HellaSwag-fi dataset.
+
+    Args:
+        raw_endings: The endings of the HellaSwag-fi dataset.
+
+    Returns:
+        The processed endings, or None if the endings couldn't be extracted properly.
+    """
+    # Remove starting/ending square brackets and quotes
+    raw_endings = raw_endings[2:-2]
+
+    # Most endings are separated by newline characters
+    endings = raw_endings.split("\n")
+
+    # If not, try a more hacky approach
+    if len(endings) != 4:
+        endings = [
+            ending
+            for newline_ending in endings
+            for ending in _extract_endings(string=newline_ending)
+        ]
+    if len(endings) != 4:
+        return None
+
+    return [ending.strip(" '\"") for ending in endings]
+
+
+def _extract_endings(string: str) -> list[str]:
+    """Extract endings from the HellaSwag-fi dataset.
+
+    This strategy is used for samples where the endings are not simply separated by
+    newline characters.
+
+    Args:
+        string: The endings of the HellaSwag-fi dataset.
+
+    Returns:
+        The processed endings.
+    """
+    endings: list[str] = []
+    i: int = 0
+    start: int = 0
+    while i < len(string) - 2:
+        if string[i].isalpha() or string[i] == "[":
+            start = i
+
+            while i < len(string) - 2:
+                # An ending seems to end with one of the following char combinations
+                ends = ['."', ".'", "'.", '".', ".\n"]
+                if string[i : i + 2] in ends:
+                    ending = string[start : i + 1].strip()
+                    endings.append(ending)
+                    i += 1
+                    break
+                i += 1
+        else:
+            i += 1
+
+    # Last ending
+    ending = string[start:].strip()
+    endings.append(ending)
+    return endings
 
 
 if __name__ == "__main__":

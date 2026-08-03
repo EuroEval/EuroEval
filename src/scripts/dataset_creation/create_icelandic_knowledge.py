@@ -19,6 +19,7 @@ import logging
 import os
 import random
 import re
+from pathlib import Path
 
 import pandas as pd
 from constants import CHOICES_MAPPING
@@ -31,20 +32,10 @@ from pydantic import BaseModel
 from tqdm.auto import tqdm
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
-logger = logging.getLogger("create_icelandic_knowledge")
-
 
 load_dotenv()
 
-
-class CandidateAnswers(BaseModel):
-    """Candidate answers from the OpenAI API."""
-
-    first: str
-    second: str
-    third: str
-
-
+logger = logging.getLogger("create_icelandic_knowledge")
 LABELS = ["a", "b", "c", "d"]
 
 
@@ -104,31 +95,6 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def drop_duplicate_questions(dataset: Dataset) -> Dataset:
-    """Drop duplicate questions from the dataset.
-
-    Args:
-        dataset:
-            The dataset to drop duplicates from.
-
-    Returns:
-        The dataset without duplicates.
-    """
-    df = dataset.to_pandas()
-    assert isinstance(df, pd.DataFrame)
-
-    # Strip all leading and trailing whitespace
-    df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
-
-    # Remove trailing periods
-    df["answer"] = df["answer"].str.rstrip(".")
-
-    # Drop duplicates
-    df = df.drop_duplicates(subset="question")
-
-    return Dataset.from_pandas(df)
-
-
 def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
     """Build the knowledge dataset using a language model.
 
@@ -144,8 +110,8 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
     assert isinstance(df, pd.DataFrame)
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-    cache_file = "icelandic_qa_scandeval_cache.json"
-    if os.path.exists(cache_file):
+    cache_file = Path("icelandic_qa_scandeval_cache.json")
+    if cache_file.exists():
         with open(cache_file, "r") as f:
             cache = json.load(f)
     else:
@@ -234,6 +200,39 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
 
     df_llm = pd.DataFrame({"text": texts, "label": correct_labels})
     return df_llm
+
+
+def drop_duplicate_questions(dataset: Dataset) -> Dataset:
+    """Drop duplicate questions from the dataset.
+
+    Args:
+        dataset:
+            The dataset to drop duplicates from.
+
+    Returns:
+        The dataset without duplicates.
+    """
+    df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
+
+    # Strip all leading and trailing whitespace
+    df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
+
+    # Remove trailing periods
+    df["answer"] = df["answer"].str.rstrip(".")
+
+    # Drop duplicates
+    df = df.drop_duplicates(subset="question")
+
+    return Dataset.from_pandas(df)
+
+
+class CandidateAnswers(BaseModel):
+    """Candidate answers from the OpenAI API."""
+
+    first: str
+    second: str
+    third: str
 
 
 if __name__ == "__main__":

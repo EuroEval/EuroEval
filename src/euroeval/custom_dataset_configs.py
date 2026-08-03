@@ -21,44 +21,6 @@ from .utils import get_hf_token
 from .yaml_config import load_yaml_config
 
 
-def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None:
-    """Load the custom datasets module if it exists.
-
-    Args:
-        custom_datasets_file:
-            The path to the custom datasets module.
-
-    Returns:
-        The custom datasets module, or None if it does not exist.
-    """
-    if custom_datasets_file.is_file():
-        spec = importlib.util.spec_from_file_location(
-            name="custom_datasets_module", location=str(custom_datasets_file.resolve())
-        )
-        if spec is None:
-            log_once(
-                message=(
-                    "Could not load the spec for the custom datasets file from "
-                    f"{custom_datasets_file.resolve()}."
-                ),
-                level=logging.ERROR,
-            )
-            return None
-        module = importlib.util.module_from_spec(spec=spec)
-        if spec.loader is None:
-            log_once(
-                message=(
-                    "Could not load the module for the custom datasets file from "
-                    f"{custom_datasets_file.resolve()}."
-                ),
-                level=logging.ERROR,
-            )
-            return None
-        spec.loader.exec_module(module)
-        return module
-    return None
-
-
 def try_get_dataset_config_from_repo(
     dataset_id: str,
     api_key: str | None,
@@ -239,3 +201,41 @@ def load_python_config(
     repo_dataset_config.test_split = test_split
 
     return repo_dataset_config
+
+
+def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None:
+    """Load the custom datasets module if it exists.
+
+    Args:
+        custom_datasets_file:
+            The path to the custom datasets module.
+
+    Returns:
+        The custom datasets module, or None if it does not exist.
+    """
+    if custom_datasets_file.is_file():
+        spec = importlib.util.spec_from_file_location(
+            name="custom_datasets_module", location=str(custom_datasets_file.resolve())
+        )
+        if spec is None:
+            log_once(
+                message=(
+                    "Could not load the spec for the custom datasets file from "
+                    f"{custom_datasets_file.resolve()}."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+        module = importlib.util.module_from_spec(spec=spec)
+        if spec.loader is None:
+            log_once(
+                message=(
+                    "Could not load the module for the custom datasets file from "
+                    f"{custom_datasets_file.resolve()}."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+        spec.loader.exec_module(module)
+        return module
+    return None

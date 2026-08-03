@@ -27,7 +27,6 @@ from huggingface_hub import HfApi
 # Split sizes for train and val (drawn from SuperGLUE train split, stratified on label)
 TRAIN_SIZE = 1024
 VAL_SIZE = 256
-
 assert TRAIN_SIZE % 2 == 0, "TRAIN_SIZE must be even to allow per-class balancing."
 assert VAL_SIZE % 2 == 0, "VAL_SIZE must be even to allow per-class balancing."
 
@@ -55,42 +54,6 @@ def main() -> None:
     dataset_id = "EuroEval/wic"
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
-
-
-def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    """Process the raw WiC dataframe into the benchmark format.
-
-    Combines the target word and two context sentences into a single ``text`` column
-    structured as::
-
-        Word: {word}
-        Context 1: {sentence1}
-        Context 2: {sentence2}
-
-    Args:
-        df:
-            The raw dataframe from the SuperGLUE WiC dataset.
-
-    Returns:
-        A dataframe with ``text`` and ``label`` columns.
-    """
-    df = df.copy()
-
-    df["text"] = (
-        "Word: "
-        + df["word"].str.strip().astype(str)
-        + "\nContext 1: "
-        + df["sentence1"].str.strip().astype(str)
-        + "\nContext 2: "
-        + df["sentence2"].str.strip().astype(str)
-    )
-
-    # Map labels: 1 → same_sense, 0 → different_sense
-    df["label"] = df["label"].map({1: "same_sense", 0: "different_sense"})
-
-    df = df[["text", "label"]].copy()
-    df = df.drop_duplicates().reset_index(drop=True)
-    return df
 
 
 def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -133,6 +96,42 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     )
 
     return train_df, val_df
+
+
+def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Process the raw WiC dataframe into the benchmark format.
+
+    Combines the target word and two context sentences into a single ``text`` column
+    structured as::
+
+        Word: {word}
+        Context 1: {sentence1}
+        Context 2: {sentence2}
+
+    Args:
+        df:
+            The raw dataframe from the SuperGLUE WiC dataset.
+
+    Returns:
+        A dataframe with ``text`` and ``label`` columns.
+    """
+    df = df.copy()
+
+    df["text"] = (
+        "Word: "
+        + df["word"].str.strip().astype(str)
+        + "\nContext 1: "
+        + df["sentence1"].str.strip().astype(str)
+        + "\nContext 2: "
+        + df["sentence2"].str.strip().astype(str)
+    )
+
+    # Map labels: 1 → same_sense, 0 → different_sense
+    df["label"] = df["label"].map({1: "same_sense", 0: "different_sense"})
+
+    df = df[["text", "label"]].copy()
+    df = df.drop_duplicates().reset_index(drop=True)
+    return df
 
 
 if __name__ == "__main__":

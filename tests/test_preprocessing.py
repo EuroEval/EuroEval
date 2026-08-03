@@ -8,11 +8,51 @@ from euroeval.exceptions import InvalidBenchmark
 from euroeval.preprocessing import build_preprocessing_func, merge_input_and_choices
 
 
-class TestMergeInputAndChoices:
-    """Tests for the merge_input_and_choices function."""
+class TestBareInputAndRawChoicesPreserved:
+    """Tests that the auxiliary CF columns survive preprocessing.
 
-    def test_merge_input_and_choices_with_string_choices_column(self) -> None:
-        """Test merging input with a single choices column (string)."""
+    `merge_input_and_choices` writes `bare_input` and `raw_choices` alongside the
+    merged `text` column, and `build_preprocessing_func` must not drop them — Cloze
+    Formulation evaluation needs them to score raw answer texts as continuations.
+    """
+
+    def test_merge_strips_newlines_in_bare_input(self) -> None:
+        """Newlines inside the input are flattened in `bare_input`."""
+        example = {"input": "Line 1\nLine 2", "choices": ["x", "y"]}
+        result = merge_input_and_choices(
+            example=example,
+            input_column="input",
+            choices_column="choices",
+            choices_label="Choices",
+        )
+        assert result["bare_input"] == "Line 1 Line 2"
+
+    def test_merge_strips_newlines_in_choices(self) -> None:
+        """Newlines inside choices are flattened in `raw_choices`, matching `text`."""
+        example = {"input": "Q?", "choices": ["one\ntwo", "three"]}
+        result = merge_input_and_choices(
+            example=example,
+            input_column="input",
+            choices_column="choices",
+            choices_label="Choices",
+        )
+        assert result["raw_choices"] == ["one two", "three"]
+        # The merged text uses the same cleaned form.
+        assert "a. one two" in result["text"]
+
+    def test_merge_with_list_of_choices_columns(self) -> None:
+        """`raw_choices` reflects the per-column form when choices are split out."""
+        example = {"input": "Q?", "choice_a": "alpha", "choice_b": "beta"}
+        result = merge_input_and_choices(
+            example=example,
+            input_column="input",
+            choices_column=["choice_a", "choice_b"],
+            choices_label="Choices",
+        )
+        assert result["raw_choices"] == ["alpha", "beta"]
+
+    def test_merge_writes_bare_input_and_raw_choices(self) -> None:
+        """The merge helper emits both auxiliary columns."""
         example = {
             "input": "What is the capital of Denmark?",
             "choices": ["Copenhagen", "Aarhus", "Odense"],
@@ -23,62 +63,45 @@ class TestMergeInputAndChoices:
             choices_column="choices",
             choices_label="Choices",
         )
-        assert "text" in result
-        assert "What is the capital of Denmark?" in result["text"]
-        assert "Choices:" in result["text"]
-        assert "a. Copenhagen" in result["text"]
-        assert "b. Aarhus" in result["text"]
-        assert "c. Odense" in result["text"]
+        assert result["bare_input"] == "What is the capital of Denmark?"
+        assert result["raw_choices"] == ["Copenhagen", "Aarhus", "Odense"]
 
-    def test_merge_input_and_choices_with_list_of_choices_columns(self) -> None:
-        """Test merging input with a list of choices columns."""
-        example = {
-            "input": "What is the capital of Denmark?",
-            "choice_a": "Copenhagen",
-            "choice_b": "Aarhus",
-            "choice_c": "Odense",
-        }
-        result = merge_input_and_choices(
-            example=example,
-            input_column="input",
-            choices_column=["choice_a", "choice_b", "choice_c"],
-            choices_label="Choices",
-        )
-        assert "text" in result
-        assert "What is the capital of Denmark?" in result["text"]
-        assert "Choices:" in result["text"]
-        assert "a. Copenhagen" in result["text"]
-        assert "b. Aarhus" in result["text"]
-        assert "c. Odense" in result["text"]
+    def test_pipeline_preserves_auxiliary_columns(self) -> None:
+        """The full preprocessing pipeline keeps `bare_input` and `raw_choices`.
 
-
-class TestBuildPreprocessingFunc:
-    """Tests for the build_preprocessing_func function."""
-
-    def test_build_preprocessing_func_with_choices_merging(self) -> None:
-        """Test full preprocessing pipeline with choices merging."""
+        This is the regression guard: `build_preprocessing_func` was previously
+        dropping every column except `text`, which would silently break CF.
+        """
         dataset = DatasetDict(
             {
                 "train": Dataset.from_dict(
                     {
-                        "input": ["What is 2+2?", "What is 3+3?"],
-                        "choices": [["4", "5", "6"], ["6", "7", "8"]],
-                        "label": [0, 0],
+                        "input": ["What is 2+2?"],
+                        "choices": [["4", "5", "6"]],
+                        "label": [0],
                     }
                 )
             }
         )
         preprocessing = build_preprocessing_func(
             dataset_name="test_dataset",
-            task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
+            task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
             input_column="input",
             target_column="label",
             choices_column="choices",
             choices_label="Choices",
         )
         result = preprocessing(dataset)
-        assert "text" in result["train"].column_names
-        assert "label" in result["train"].column_names
+        assert "bare_input" in result["train"].column_names
+        assert "raw_choices" in result["train"].column_names
+        assert result["train"]["bare_input"] == ["What is 2+2?"]
+        assert result["train"]["raw_choices"] == [["4", "5", "6"]]
+        # The original `input` column is still dropped (it's not in the preserved set).
+        assert "input" not in result["train"].column_names
+
+
+class TestBuildPreprocessingFunc:
+    """Tests for the build_preprocessing_func function."""
 
     def test_build_preprocessing_func_renames_input_column(self) -> None:
         """Test that non-'text' input columns are renamed."""
@@ -101,6 +124,27 @@ class TestBuildPreprocessingFunc:
         assert "text" in result["train"].column_names
         assert "question" not in result["train"].column_names
         assert result["train"]["text"] == ["What is 2+2?", "What is 3+3?"]
+
+    def test_build_preprocessing_func_renames_target_column_to_label(self) -> None:
+        """Test classification target column becomes 'label'."""
+        dataset = DatasetDict(
+            {
+                "train": Dataset.from_dict(
+                    {"text": ["Hello world", "Test sentence"], "category": [0, 1]}
+                )
+            }
+        )
+        preprocessing = build_preprocessing_func(
+            dataset_name="test_dataset",
+            task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
+            input_column="text",
+            target_column="category",
+            choices_column=None,
+            choices_label="Choices",
+        )
+        result = preprocessing(dataset)
+        assert "label" in result["train"].column_names
+        assert "category" not in result["train"].column_names
 
     def test_build_preprocessing_func_renames_target_column_to_labels(self) -> None:
         """Test token classification target column becomes 'labels'."""
@@ -149,26 +193,21 @@ class TestBuildPreprocessingFunc:
         assert "target_text" in result["train"].column_names
         assert "translation" not in result["train"].column_names
 
-    def test_build_preprocessing_func_renames_target_column_to_label(self) -> None:
-        """Test classification target column becomes 'label'."""
+    def test_build_preprocessing_func_validates_choices_columns_exist(self) -> None:
+        """Test that InvalidBenchmark is raised if choices columns don't exist."""
         dataset = DatasetDict(
-            {
-                "train": Dataset.from_dict(
-                    {"text": ["Hello world", "Test sentence"], "category": [0, 1]}
-                )
-            }
+            {"train": Dataset.from_dict({"input": ["What is 2+2?"], "label": [0]})}
         )
         preprocessing = build_preprocessing_func(
             dataset_name="test_dataset",
             task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
-            input_column="text",
-            target_column="category",
-            choices_column=None,
+            input_column="input",
+            target_column="label",
+            choices_column="nonexistent_column",
             choices_label="Choices",
         )
-        result = preprocessing(dataset)
-        assert "label" in result["train"].column_names
-        assert "category" not in result["train"].column_names
+        with pytest.raises(InvalidBenchmark):
+            preprocessing(dataset)
 
     def test_build_preprocessing_func_validates_input_column_exists(self) -> None:
         """Test that InvalidBenchmark is raised if input_column doesn't exist."""
@@ -185,22 +224,6 @@ class TestBuildPreprocessingFunc:
             input_column="nonexistent_column",
             target_column="label",
             choices_column=None,
-            choices_label="Choices",
-        )
-        with pytest.raises(InvalidBenchmark):
-            preprocessing(dataset)
-
-    def test_build_preprocessing_func_validates_choices_columns_exist(self) -> None:
-        """Test that InvalidBenchmark is raised if choices columns don't exist."""
-        dataset = DatasetDict(
-            {"train": Dataset.from_dict({"input": ["What is 2+2?"], "label": [0]})}
-        )
-        preprocessing = build_preprocessing_func(
-            dataset_name="test_dataset",
-            task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
-            input_column="input",
-            target_column="label",
-            choices_column="nonexistent_column",
             choices_label="Choices",
         )
         with pytest.raises(InvalidBenchmark):
@@ -225,6 +248,31 @@ class TestBuildPreprocessingFunc:
         )
         with pytest.raises(InvalidBenchmark):
             preprocessing(dataset)
+
+    def test_build_preprocessing_func_with_choices_merging(self) -> None:
+        """Test full preprocessing pipeline with choices merging."""
+        dataset = DatasetDict(
+            {
+                "train": Dataset.from_dict(
+                    {
+                        "input": ["What is 2+2?", "What is 3+3?"],
+                        "choices": [["4", "5", "6"], ["6", "7", "8"]],
+                        "label": [0, 0],
+                    }
+                )
+            }
+        )
+        preprocessing = build_preprocessing_func(
+            dataset_name="test_dataset",
+            task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
+            input_column="input",
+            target_column="label",
+            choices_column="choices",
+            choices_label="Choices",
+        )
+        result = preprocessing(dataset)
+        assert "text" in result["train"].column_names
+        assert "label" in result["train"].column_names
 
     def test_build_preprocessing_func_with_multiple_choices_columns(self) -> None:
         """Test merging when choices_column is a list of column names."""
@@ -256,16 +304,32 @@ class TestBuildPreprocessingFunc:
         assert "b. 5" in result["train"]["text"][0]
 
 
-class TestBareInputAndRawChoicesPreserved:
-    """Tests that the auxiliary CF columns survive preprocessing.
+class TestMergeInputAndChoices:
+    """Tests for the merge_input_and_choices function."""
 
-    `merge_input_and_choices` writes `bare_input` and `raw_choices` alongside the
-    merged `text` column, and `build_preprocessing_func` must not drop them — Cloze
-    Formulation evaluation needs them to score raw answer texts as continuations.
-    """
+    def test_merge_input_and_choices_with_list_of_choices_columns(self) -> None:
+        """Test merging input with a list of choices columns."""
+        example = {
+            "input": "What is the capital of Denmark?",
+            "choice_a": "Copenhagen",
+            "choice_b": "Aarhus",
+            "choice_c": "Odense",
+        }
+        result = merge_input_and_choices(
+            example=example,
+            input_column="input",
+            choices_column=["choice_a", "choice_b", "choice_c"],
+            choices_label="Choices",
+        )
+        assert "text" in result
+        assert "What is the capital of Denmark?" in result["text"]
+        assert "Choices:" in result["text"]
+        assert "a. Copenhagen" in result["text"]
+        assert "b. Aarhus" in result["text"]
+        assert "c. Odense" in result["text"]
 
-    def test_merge_writes_bare_input_and_raw_choices(self) -> None:
-        """The merge helper emits both auxiliary columns."""
+    def test_merge_input_and_choices_with_string_choices_column(self) -> None:
+        """Test merging input with a single choices column (string)."""
         example = {
             "input": "What is the capital of Denmark?",
             "choices": ["Copenhagen", "Aarhus", "Odense"],
@@ -276,73 +340,9 @@ class TestBareInputAndRawChoicesPreserved:
             choices_column="choices",
             choices_label="Choices",
         )
-        assert result["bare_input"] == "What is the capital of Denmark?"
-        assert result["raw_choices"] == ["Copenhagen", "Aarhus", "Odense"]
-
-    def test_merge_strips_newlines_in_choices(self) -> None:
-        """Newlines inside choices are flattened in `raw_choices`, matching `text`."""
-        example = {"input": "Q?", "choices": ["one\ntwo", "three"]}
-        result = merge_input_and_choices(
-            example=example,
-            input_column="input",
-            choices_column="choices",
-            choices_label="Choices",
-        )
-        assert result["raw_choices"] == ["one two", "three"]
-        # The merged text uses the same cleaned form.
-        assert "a. one two" in result["text"]
-
-    def test_merge_strips_newlines_in_bare_input(self) -> None:
-        """Newlines inside the input are flattened in `bare_input`."""
-        example = {"input": "Line 1\nLine 2", "choices": ["x", "y"]}
-        result = merge_input_and_choices(
-            example=example,
-            input_column="input",
-            choices_column="choices",
-            choices_label="Choices",
-        )
-        assert result["bare_input"] == "Line 1 Line 2"
-
-    def test_merge_with_list_of_choices_columns(self) -> None:
-        """`raw_choices` reflects the per-column form when choices are split out."""
-        example = {"input": "Q?", "choice_a": "alpha", "choice_b": "beta"}
-        result = merge_input_and_choices(
-            example=example,
-            input_column="input",
-            choices_column=["choice_a", "choice_b"],
-            choices_label="Choices",
-        )
-        assert result["raw_choices"] == ["alpha", "beta"]
-
-    def test_pipeline_preserves_auxiliary_columns(self) -> None:
-        """The full preprocessing pipeline keeps `bare_input` and `raw_choices`.
-
-        This is the regression guard: `build_preprocessing_func` was previously
-        dropping every column except `text`, which would silently break CF.
-        """
-        dataset = DatasetDict(
-            {
-                "train": Dataset.from_dict(
-                    {
-                        "input": ["What is 2+2?"],
-                        "choices": [["4", "5", "6"]],
-                        "label": [0],
-                    }
-                )
-            }
-        )
-        preprocessing = build_preprocessing_func(
-            dataset_name="test_dataset",
-            task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-            input_column="input",
-            target_column="label",
-            choices_column="choices",
-            choices_label="Choices",
-        )
-        result = preprocessing(dataset)
-        assert "bare_input" in result["train"].column_names
-        assert "raw_choices" in result["train"].column_names
-        assert result["train"]["bare_input"] == ["What is 2+2?"]
-        assert result["train"]["raw_choices"] == [["4", "5", "6"]]
-        # The original `input` column is still dropped (it's not in the preserved set).
-        assert "input" not in result["train"].column_names
+        assert "text" in result
+        assert "What is the capital of Denmark?" in result["text"]
+        assert "Choices:" in result["text"]
+        assert "a. Copenhagen" in result["text"]
+        assert "b. Aarhus" in result["text"]
+        assert "c. Odense" in result["text"]

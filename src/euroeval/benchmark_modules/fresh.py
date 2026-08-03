@@ -8,11 +8,13 @@ from json import JSONDecodeError
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.models.electra import (
+    ElectraForMultipleChoice,
     ElectraForQuestionAnswering,
     ElectraForSequenceClassification,
     ElectraForTokenClassification,
 )
 from transformers.models.xlm_roberta import (
+    XLMRobertaForMultipleChoice,
     XLMRobertaForQuestionAnswering,
     XLMRobertaForSequenceClassification,
     XLMRobertaForTokenClassification,
@@ -92,6 +94,10 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
             tokeniser=self._tokeniser,
             model_max_length=self.model_max_length,
             raise_errors=benchmark_config.raise_errors,
+            is_multiple_choice=(
+                dataset_config.task.task_group
+                == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+            ),
         )
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
@@ -102,6 +108,76 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
             benchmark_config=benchmark_config,
             log_metadata=log_metadata,
         )
+
+    @classmethod
+    def get_model_config(
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> "ModelConfig":
+        """Fetch the model configuration.
+
+        Args:
+            model_id:
+                The model ID.
+            benchmark_config:
+                The benchmark configuration.
+
+        Returns:
+            The model configuration.
+        """
+        return ModelConfig(
+            model_id=model_id,
+            revision="main",
+            param=None,
+            task="fill-mask",
+            languages=list(),
+            merge=False,
+            inference_backend=InferenceBackend.TRANSFORMERS,
+            model_type=ModelType.ENCODER,
+            fresh=True,
+            model_cache_dir=create_model_cache_dir(
+                cache_dir=benchmark_config.cache_dir, model_id=model_id
+            ),
+            adapter_base_model_id=None,
+        )
+
+    @classmethod
+    def model_exists(
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
+        """Check if a model exists.
+
+        Args:
+            model_id:
+                The model ID.
+            benchmark_config:
+                The benchmark configuration.
+
+        Returns:
+            Whether the model exists, or an error describing why we cannot check
+            whether the model exists.
+        """
+        valid_models = ["fresh-electra-small", "fresh-xlm-roberta-base"]
+        return model_id in valid_models
+
+    @cached_property
+    def model_max_length(self) -> int:
+        """The maximum context length of the model.
+
+        Returns:
+            The maximum context length of the model.
+        """
+        if self.benchmark_config.max_context_length is not None:
+            return self.benchmark_config.max_context_length
+        match self.model_config.model_id:
+            case "fresh-xlm-roberta-base":
+                return 512
+            case "fresh-electra-small":
+                return 128
+            case _:
+                raise NotImplementedError(
+                    f"Maximum context length for model {self.model_config.model_id} is "
+                    "not implemented."
+                )
 
     @cached_property
     def num_params(self) -> int:
@@ -140,76 +216,6 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
                     f"Vocabulary size for model {self.model_config.model_id} is not "
                     "implemented."
                 )
-
-    @cached_property
-    def model_max_length(self) -> int:
-        """The maximum context length of the model.
-
-        Returns:
-            The maximum context length of the model.
-        """
-        if self.benchmark_config.max_context_length is not None:
-            return self.benchmark_config.max_context_length
-        match self.model_config.model_id:
-            case "fresh-xlm-roberta-base":
-                return 512
-            case "fresh-electra-small":
-                return 128
-            case _:
-                raise NotImplementedError(
-                    f"Maximum context length for model {self.model_config.model_id} is "
-                    "not implemented."
-                )
-
-    @classmethod
-    def model_exists(
-        cls, model_id: str, benchmark_config: "BenchmarkConfig"
-    ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
-        """Check if a model exists.
-
-        Args:
-            model_id:
-                The model ID.
-            benchmark_config:
-                The benchmark configuration.
-
-        Returns:
-            Whether the model exists, or an error describing why we cannot check
-            whether the model exists.
-        """
-        valid_models = ["fresh-electra-small", "fresh-xlm-roberta-base"]
-        return model_id in valid_models
-
-    @classmethod
-    def get_model_config(
-        cls, model_id: str, benchmark_config: "BenchmarkConfig"
-    ) -> "ModelConfig":
-        """Fetch the model configuration.
-
-        Args:
-            model_id:
-                The model ID.
-            benchmark_config:
-                The benchmark configuration.
-
-        Returns:
-            The model configuration.
-        """
-        return ModelConfig(
-            model_id=model_id,
-            revision="main",
-            param=None,
-            task="fill-mask",
-            languages=list(),
-            merge=False,
-            inference_backend=InferenceBackend.TRANSFORMERS,
-            model_type=ModelType.ENCODER,
-            fresh=True,
-            model_cache_dir=create_model_cache_dir(
-                cache_dir=benchmark_config.cache_dir, model_id=model_id
-            ),
-            adapter_base_model_id=None,
-        )
 
 
 def load_model_and_tokeniser(
@@ -251,14 +257,15 @@ def load_model_and_tokeniser(
     real_model_id = fresh_to_real_model_id_mapping[model_id]
 
     match dataset_config.task.task_group:
-        case (
-            TaskGroup.SEQUENCE_CLASSIFICATION
-            | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-            | TaskGroup.SPEED
-        ):
+        case TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.SPEED:
             model_cls_mapping = dict(
                 fresh_xlm_roberta_base=XLMRobertaForSequenceClassification,
                 fresh_electra_small=ElectraForSequenceClassification,
+            )
+        case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+            model_cls_mapping = dict(
+                fresh_xlm_roberta_base=XLMRobertaForMultipleChoice,
+                fresh_electra_small=ElectraForMultipleChoice,
             )
         case TaskGroup.TOKEN_CLASSIFICATION:
             model_cls_mapping = dict(
@@ -279,10 +286,7 @@ def load_model_and_tokeniser(
 
     # Special case where there is a mismatch between the labels during training and
     # testing
-    if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-        id2label = {0: "0", 1: "1"}
-    else:
-        id2label = dataset_config.id2label
+    id2label = dataset_config.id2label
 
     config = AutoConfig.from_pretrained(
         real_model_id,
@@ -322,6 +326,9 @@ def load_model_and_tokeniser(
         tokeniser=tokeniser,
         model_max_length=model_max_length,
         raise_errors=benchmark_config.raise_errors,
+        is_multiple_choice=(
+            dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        ),
     )
 
     return model, tokeniser

@@ -94,28 +94,6 @@ class PipelineMetric(Metric):
         self.pipeline: "Pipeline | None" = None
         self.preprocessing_fn = preprocessing_fn
 
-    def download(
-        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
-    ) -> "PipelineMetric":
-        """Initiates the download of the pipeline if needed.
-
-        Args:
-            cache_dir:
-                The directory where the pipeline will be downloaded to.
-            dataset_config (optional):
-                The dataset configuration. Unused by this metric.
-                Defaults to None.
-
-        Returns:
-            The metric object itself.
-        """
-        if self.pipeline is not None:
-            return self
-        pipeline_cache_dir = Path(cache_dir) / "pipelines"
-        pipeline_cache_dir.mkdir(parents=True, exist_ok=True)
-        self.pipeline = self._download_pipeline(cache_dir=pipeline_cache_dir.as_posix())
-        return self
-
     def __call__(
         self,
         predictions: c.Sequence,
@@ -153,6 +131,28 @@ class PipelineMetric(Metric):
             )
         return self.pipeline_scoring_function(self.pipeline, predictions)
 
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
+    ) -> "PipelineMetric":
+        """Initiates the download of the pipeline if needed.
+
+        Args:
+            cache_dir:
+                The directory where the pipeline will be downloaded to.
+            dataset_config (optional):
+                The dataset configuration. Unused by this metric.
+                Defaults to None.
+
+        Returns:
+            The metric object itself.
+        """
+        if self.pipeline is not None:
+            return self
+        pipeline_cache_dir = Path(cache_dir) / "pipelines"
+        pipeline_cache_dir.mkdir(parents=True, exist_ok=True)
+        self.pipeline = self._download_pipeline(cache_dir=pipeline_cache_dir.as_posix())
+        return self
+
     def _download_pipeline(self, cache_dir: str) -> "Pipeline":
         """Download the scikit-learn pipeline from the given URL.
 
@@ -187,8 +187,6 @@ class PipelineMetric(Metric):
 
 
 # European Values Metric ###
-
-
 def european_values_preprocessing_fn(
     predictions: c.Sequence[int], dataset: "Dataset"
 ) -> c.Sequence[int]:

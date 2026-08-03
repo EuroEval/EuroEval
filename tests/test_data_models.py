@@ -13,43 +13,54 @@ from euroeval.data_models import BenchmarkConfig, BenchmarkConfigParams, Benchma
 from euroeval.metrics import HuggingFaceMetric, Metric
 
 
-class TestMetric:
-    """Tests for the `Metric` class."""
+class TestBenchmarkParametersAreConsistent:
+    """Test that the same benchmark parameters are used everywhere."""
 
-    def test_metric_is_object(self, metric: HuggingFaceMetric) -> None:
-        """Test that the metric config is a `Metric` object."""
-        assert isinstance(metric, Metric)
+    def test_config_params_is_the_same_as_benchmark_config(self) -> None:
+        """Test that `BenchmarkConfigParams` agrees with `BenchmarkConfig`."""
+        benchmark_config_params = set(
+            inspect.signature(BenchmarkConfigParams).parameters.keys()
+        ) - {"dataset", "task", "language", "custom_datasets_file"}
+        benchmark_config_fields = set(
+            inspect.signature(BenchmarkConfig).parameters.keys()
+        ) - {"datasets", "tasks", "languages"}
+        assert benchmark_config_params == benchmark_config_fields
 
-    def test_attributes_correspond_to_arguments(
-        self, metric: HuggingFaceMetric
+    def test_config_params_is_the_same_as_benchmark_method(self) -> None:
+        """Test that `BenchmarkConfigParams` agrees with `Benchmarker.benchmark`."""
+        benchmark_config_params = set(
+            inspect.signature(BenchmarkConfigParams).parameters.keys()
+        ) - {"run_with_cli"}
+        benchmark_method_params = set(
+            inspect.signature(Benchmarker.benchmark).parameters.keys()
+        ) - {"self", "model", "batch_size", "dataset_language", "model_language"}
+        assert benchmark_config_params == benchmark_method_params
+
+    def test_config_params_is_the_same_as_benchmarker_init(self) -> None:
+        """Test that `BenchmarkConfigParams` agrees with `Benchmarker.__init__`."""
+        benchmark_config_params = set(
+            inspect.signature(BenchmarkConfigParams).parameters.keys()
+        )
+        benchmarker_init_params = set(
+            inspect.signature(Benchmarker.__init__).parameters.keys()
+        ) - {"self", "batch_size", "dataset_language", "model_language"}
+        assert benchmark_config_params == benchmarker_init_params
+
+    def test_config_params_is_the_same_as_cli(
+        self, cli_params: dict[str, ParamType]
     ) -> None:
-        """Test that the metric config attributes correspond to the arguments."""
-        assert metric.name == "metric_name"
-        assert metric.pretty_name == "Metric name"
-        assert metric.huggingface_id == "metric_id"
-        assert metric.results_key == "metric_key"
-
-    def test_default_value_of_compute_kwargs(self, metric: HuggingFaceMetric) -> None:
-        """Test that the default value of `compute_kwargs` is an empty dictionary."""
-        assert metric.compute_kwargs == dict()
-
-    @pytest.mark.parametrize(
-        "inputs,expected",
-        [
-            (0.5, (50.0, "50.00%")),
-            (0.123456, (12.3456, "12.35%")),
-            (0.0, (0.0, "0.00%")),
-            (1.0, (100.0, "100.00%")),
-            (0.999999, (99.9999, "100.00%")),
-            (2.0, (200.0, "200.00%")),
-            (-1.0, (-100.0, "-100.00%")),
-        ],
-    )
-    def test_default_value_of_postprocessing_fn(
-        self, metric: Metric, inputs: float, expected: tuple[float, str]
-    ) -> None:
-        """Test that the default value of `postprocessing_fn` is correct."""
-        assert metric.postprocessing_fn(inputs) == expected
+        """Test that `BenchmarkConfigParams` agrees with the CLI."""
+        benchmark_config_params = set(
+            inspect.signature(BenchmarkConfigParams).parameters.keys()
+        ) - {"run_with_cli"}
+        cli_benchmark_params = set(cli_params.keys()) - {
+            "model",
+            "batch_size",
+            "dataset_language",
+            "model_language",
+            "help",
+        }
+        assert benchmark_config_params == cli_benchmark_params
 
 
 class TestBenchmarkResult:
@@ -240,51 +251,40 @@ class TestBenchmarkResult:
         assert BenchmarkResult.from_dict(config) == expected
 
 
-class TestBenchmarkParametersAreConsistent:
-    """Test that the same benchmark parameters are used everywhere."""
+class TestMetric:
+    """Tests for the `Metric` class."""
 
-    def test_config_params_is_the_same_as_benchmarker_init(self) -> None:
-        """Test that `BenchmarkConfigParams` agrees with `Benchmarker.__init__`."""
-        benchmark_config_params = set(
-            inspect.signature(BenchmarkConfigParams).parameters.keys()
-        )
-        benchmarker_init_params = set(
-            inspect.signature(Benchmarker.__init__).parameters.keys()
-        ) - {"self", "batch_size", "dataset_language", "model_language"}
-        assert benchmark_config_params == benchmarker_init_params
-
-    def test_config_params_is_the_same_as_benchmark_method(self) -> None:
-        """Test that `BenchmarkConfigParams` agrees with `Benchmarker.benchmark`."""
-        benchmark_config_params = set(
-            inspect.signature(BenchmarkConfigParams).parameters.keys()
-        ) - {"run_with_cli"}
-        benchmark_method_params = set(
-            inspect.signature(Benchmarker.benchmark).parameters.keys()
-        ) - {"self", "model", "batch_size", "dataset_language", "model_language"}
-        assert benchmark_config_params == benchmark_method_params
-
-    def test_config_params_is_the_same_as_cli(
-        self, cli_params: dict[str, ParamType]
+    def test_attributes_correspond_to_arguments(
+        self, metric: HuggingFaceMetric
     ) -> None:
-        """Test that `BenchmarkConfigParams` agrees with the CLI."""
-        benchmark_config_params = set(
-            inspect.signature(BenchmarkConfigParams).parameters.keys()
-        ) - {"run_with_cli"}
-        cli_benchmark_params = set(cli_params.keys()) - {
-            "model",
-            "batch_size",
-            "dataset_language",
-            "model_language",
-            "help",
-        }
-        assert benchmark_config_params == cli_benchmark_params
+        """Test that the metric config attributes correspond to the arguments."""
+        assert metric.name == "metric_name"
+        assert metric.pretty_name == "Metric name"
+        assert metric.huggingface_id == "metric_id"
+        assert metric.results_key == "metric_key"
 
-    def test_config_params_is_the_same_as_benchmark_config(self) -> None:
-        """Test that `BenchmarkConfigParams` agrees with `BenchmarkConfig`."""
-        benchmark_config_params = set(
-            inspect.signature(BenchmarkConfigParams).parameters.keys()
-        ) - {"dataset", "task", "language", "custom_datasets_file"}
-        benchmark_config_fields = set(
-            inspect.signature(BenchmarkConfig).parameters.keys()
-        ) - {"datasets", "tasks", "languages"}
-        assert benchmark_config_params == benchmark_config_fields
+    def test_default_value_of_compute_kwargs(self, metric: HuggingFaceMetric) -> None:
+        """Test that the default value of `compute_kwargs` is an empty dictionary."""
+        assert metric.compute_kwargs == dict()
+
+    @pytest.mark.parametrize(
+        "inputs,expected",
+        [
+            (0.5, (50.0, "50.00%")),
+            (0.123456, (12.3456, "12.35%")),
+            (0.0, (0.0, "0.00%")),
+            (1.0, (100.0, "100.00%")),
+            (0.999999, (99.9999, "100.00%")),
+            (2.0, (200.0, "200.00%")),
+            (-1.0, (-100.0, "-100.00%")),
+        ],
+    )
+    def test_default_value_of_postprocessing_fn(
+        self, metric: Metric, inputs: float, expected: tuple[float, str]
+    ) -> None:
+        """Test that the default value of `postprocessing_fn` is correct."""
+        assert metric.postprocessing_fn(inputs) == expected
+
+    def test_metric_is_object(self, metric: HuggingFaceMetric) -> None:
+        """Test that the metric config is a `Metric` object."""
+        assert isinstance(metric, Metric)

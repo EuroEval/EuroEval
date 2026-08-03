@@ -96,20 +96,6 @@ def main() -> None:
         mini_dataset.push_to_hub(mini_dataset_id, private=True)
 
 
-def make_columns(sample: dict) -> dict:
-    """Map the dataset to have the text and target_text columns.
-
-    Args:
-        sample: A sample from the dataset.
-
-    Returns:
-        A sample with the text and target_text columns.
-    """
-    sample["text"] = f"{sample['title']}\n\n{sample['text']}"
-    sample["target_text"] = sample["summary"]
-    return sample
-
-
 def process_df(df: pd.DataFrame) -> pd.DataFrame:
     """Process the dataframe.
 
@@ -129,6 +115,20 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.reset_index(drop=True)
     return df
+
+
+def make_columns(sample: dict) -> dict:
+    """Map the dataset to have the text and target_text columns.
+
+    Args:
+        sample: A sample from the dataset.
+
+    Returns:
+        A sample with the text and target_text columns.
+    """
+    sample["text"] = f"{sample['title']}\n\n{sample['text']}"
+    sample["target_text"] = sample["summary"]
+    return sample
 
 
 if __name__ == "__main__":

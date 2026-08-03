@@ -12,7 +12,6 @@
 # ]
 # ///
 
-
 """Create a Swedish knowledge dataset based on liu-nlp/swedish-facts-v1."""
 
 import json
@@ -20,6 +19,7 @@ import logging
 import os
 import random
 import re
+from pathlib import Path
 
 import pandas as pd
 from constants import CHOICES_MAPPING
@@ -32,20 +32,10 @@ from pydantic import BaseModel
 from tqdm.auto import tqdm
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
-logger = logging.getLogger("create_swedish_knowledge")
-
 
 load_dotenv()
 
-
-class CandidateAnswers(BaseModel):
-    """Candidate answers from the OpenAI API."""
-
-    first: str
-    second: str
-    third: str
-
-
+logger = logging.getLogger("create_swedish_knowledge")
 LABELS = ["a", "b", "c", "d"]
 
 
@@ -104,39 +94,6 @@ def main() -> None:
     dataset_dict.push_to_hub(dataset_id, private=True)
 
 
-def drop_duplicate_questions(dataset: Dataset) -> Dataset:
-    """Normalise text fields and drop duplicate questions from the dataset.
-
-    Args:
-        dataset:
-            The dataset to normalise and drop duplicates from.
-
-    Returns:
-        A dataset with canonical 'question' and 'answer' columns and no duplicates.
-    """
-    df = dataset.to_pandas()
-    assert isinstance(df, pd.DataFrame)
-
-    # Strip all leading and trailing whitespace
-    df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
-
-    question_col, answer_col = "Question (Swedish)", "Answer (Swedish)"
-
-    # Remove trailing periods from answers
-    df[answer_col] = df[answer_col].str.rstrip(".")
-
-    # Rename to canonical column names
-    df = df.rename(columns={question_col: "question", answer_col: "answer"})
-
-    # Drop duplicates
-    df = df.drop_duplicates(subset="question")
-
-    # Keep only the relevant columns
-    df = df[["question", "answer"]]
-
-    return Dataset.from_pandas(df)
-
-
 def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
     """Build the Swedish knowledge dataset using a language model.
 
@@ -152,8 +109,8 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
     assert isinstance(df, pd.DataFrame)
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-    cache_file = "swedish_facts_cache.json"
-    if os.path.exists(cache_file):
+    cache_file = Path("swedish_facts_cache.json")
+    if cache_file.exists():
         with open(cache_file, "r") as f:
             cache = json.load(f)
     else:
@@ -242,6 +199,47 @@ def build_dataset_with_llm(dataset: Dataset) -> pd.DataFrame:
 
     df_llm = pd.DataFrame({"text": texts, "label": correct_labels})
     return df_llm
+
+
+def drop_duplicate_questions(dataset: Dataset) -> Dataset:
+    """Normalise text fields and drop duplicate questions from the dataset.
+
+    Args:
+        dataset:
+            The dataset to normalise and drop duplicates from.
+
+    Returns:
+        A dataset with canonical 'question' and 'answer' columns and no duplicates.
+    """
+    df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
+
+    # Strip all leading and trailing whitespace
+    df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
+
+    question_col, answer_col = "Question (Swedish)", "Answer (Swedish)"
+
+    # Remove trailing periods from answers
+    df[answer_col] = df[answer_col].str.rstrip(".")
+
+    # Rename to canonical column names
+    df = df.rename(columns={question_col: "question", answer_col: "answer"})
+
+    # Drop duplicates
+    df = df.drop_duplicates(subset="question")
+
+    # Keep only the relevant columns
+    df = df[["question", "answer"]]
+
+    return Dataset.from_pandas(df)
+
+
+class CandidateAnswers(BaseModel):
+    """Candidate answers from the OpenAI API."""
+
+    first: str
+    second: str
+    third: str
 
 
 if __name__ == "__main__":

@@ -85,3 +85,12 @@ MMLU_HR_CONFIG = DatasetConfig(
     languages=[CROATIAN],
     unofficial=True,
 )
+
+EU_MMLU_HR_CONFIG = DatasetConfig(
+    name="eu-mmlu-hr",
+    pretty_name="EU-MMLU-hr",
+    source="EuroEval/eu-mmlu-hr",
+    task=KNOW,
+    languages=[CROATIAN],
+    unofficial=True,
+)

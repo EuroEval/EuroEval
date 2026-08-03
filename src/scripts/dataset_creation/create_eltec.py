@@ -16,9 +16,11 @@
 import io
 import json
 import logging
+import os
 import re
 import warnings
 from collections import defaultdict
+from pathlib import Path
 from zipfile import ZipFile
 
 import nltk
@@ -30,10 +32,18 @@ from tqdm.auto import tqdm
 from urllib3.exceptions import InsecureRequestWarning
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
+
+# Set NLTK_DATA before importing nltk to ensure cache location is correct
+project_root = Path(__file__).parent.parent.parent.parent.absolute()
+nltk_data_dir = project_root / ".euroeval_cache" / "nltk_data"
+nltk_data_dir.mkdir(parents=True, exist_ok=True)
+os.environ["NLTK_DATA"] = str(nltk_data_dir)
+
+
+nltk.data.path = [str(nltk_data_dir)]
+nltk.download("punkt_tab", quiet=True)
+
 logger = logging.getLogger("create_eltec")
-
-
-nltk.download("punkt_tab")
 
 
 def main() -> None:

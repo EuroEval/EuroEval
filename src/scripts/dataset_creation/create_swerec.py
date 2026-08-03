@@ -15,10 +15,6 @@ import io
 
 import pandas as pd
 import requests
-
-# These constants are used only inside pandas .query() strings, so the linter
-# cannot see the use.
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa: F401
 from datasets import Split
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict

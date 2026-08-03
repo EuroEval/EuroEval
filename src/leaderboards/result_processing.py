@@ -132,9 +132,7 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
     Raises:
         RuntimeError:
             If HF_TOKEN is not set or bucket sync fails.
-        ValueError:
-            If distinct identities sanitise to the same relative path.
-    """  # noqa: DOC502
+    """
     hf_token = resolve_hf_token()
     if not hf_token:
         raise RuntimeError(
@@ -183,34 +181,11 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
 
     logger.info("Writing result files...")
     for relative_path, (record, _) in records_by_path.items():
-        file_path = RESULTS_DIR / relative_path
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        # Use canonical JSON serialization for consistent comparison
-        canonical_content = json.dumps(
-            record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        result = _write_record_file(
+            relative_path=relative_path, record=record, results_dir=RESULTS_DIR
         )
-
-        # Only write if file doesn't exist or content differs (semantic comparison)
-        if file_path.exists():
-            try:
-                existing_content = file_path.read_text(encoding="utf-8").strip()
-                # Parse and compare dicts for semantic equality
-                existing_record = json.loads(existing_content)
-                canonical_existing = json.dumps(
-                    existing_record,
-                    sort_keys=True,
-                    separators=(",", ":"),
-                    ensure_ascii=False,
-                )
-                if canonical_existing == canonical_content:
-                    continue  # Skip unchanged files
-            except (json.JSONDecodeError, OSError):
-                pass  # If we can't parse existing, overwrite it
-
-        file_path.write_text(canonical_content + "\n", encoding="utf-8")
-        # Skip empty files
-        if file_path.stat().st_size > 0:
-            written_files.append((file_path, str(relative_path)))
+        if result is not None:
+            written_files.append(result)
 
     api = HfApi()
     # Upload only the written files to the bucket
@@ -221,3 +196,50 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
 
     if dropped_count > 0:
         logger.info(f"Dropped {dropped_count:,} records with unresolvable identities.")
+
+
+def _write_record_file(
+    relative_path: Path, record: dict[str, t.Any], results_dir: Path
+) -> tuple[Path, str] | None:
+    """Write a single record file if it doesn't exist or content differs.
+
+    Args:
+        relative_path:
+            Relative path for the record file.
+        record:
+            The record dict to serialize.
+        results_dir:
+            The results directory.
+
+    Returns:
+        Tuple of (file_path, relative_path_str) if written, None if skipped.
+    """
+    file_path = results_dir / relative_path
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Use canonical JSON serialization for consistent comparison
+    canonical_content = json.dumps(
+        record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
+
+    # Only write if file doesn't exist or content differs
+    if file_path.exists():
+        try:
+            existing_content = file_path.read_text(encoding="utf-8").strip()
+            existing_record = json.loads(existing_content)
+            canonical_existing = json.dumps(
+                existing_record,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            )
+            if canonical_existing == canonical_content:
+                return None  # Skip unchanged files
+        except (json.JSONDecodeError, OSError):
+            pass  # If we can't parse existing, overwrite it
+
+    file_path.write_text(canonical_content + "\n", encoding="utf-8")
+    # Skip empty files
+    if file_path.stat().st_size > 0:
+        return (file_path, str(relative_path))
+    return None

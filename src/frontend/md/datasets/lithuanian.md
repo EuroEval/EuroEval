@@ -538,6 +538,78 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-lt
 ```
 
+### Unofficial: EU-MMLU-lt
+
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 7 of the original
+57 subjects: college biology, college chemistry, college physics, global facts,
+international law, management and sociology. Unlike the other MMLU variants in EuroEval
+it was not machine translated - the translation was carried out by professional
+translators at the European Commission's Directorate-General for Translation, together
+with master's students from the European Master's in Translation network, as described
+in [this paper](https://arxiv.org/abs/2607.18432).
+
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 34 / 91 / 859 samples for training,
+validation and testing, respectively (so 984 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "2017 m. duomenimis, kiek vienmečių vaikų visame pasaulyje yra paskiepyti nuo kokios nors ligos?\nPasirinkimai:\na. 80 %\nb. 60 %\nc. 40 %\nd. 20 %",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Kuriame iš toliau nurodytų termodinaminių procesų idealiųjų dujų vidaus energijos padidėjimas yra lygus į dujas pridėtai šilumai?\nPasirinkimai:\na. Pastovios temperatūros\nb. Pastovaus tūrio\nc. Pastovaus slėgio\nd. Adiabatinio",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Kokios yra organizacinės struktūros, kurioms būdingi demokratinis ir įtraukusis vadovavimo stiliai?\nPasirinkimai:\na. Hierarchinės\nb. Biurokratinės\nc. Horizontalios\nd. Funkcinės",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Toliau pateikti daugiavariančiai klausimai (su atsakymais).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Klausimas: {text}
+  Atsakymas: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Klausimas: {text}
+
+  Atsakykite į aukščiau pateiktą klausimą atsakydami {labels_str}, ir nieko daugiau.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset eu-mmlu-lt
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-lt

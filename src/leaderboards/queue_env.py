@@ -29,6 +29,57 @@ from .github_api import gh_request
 logger = logging.getLogger(__name__)
 
 
+def acquire_single_instance_lock(lock_path: Path) -> int:
+    """Acquire an exclusive flock on ``lock_path`` or exit with an error.
+
+    The returned file descriptor must be kept alive for the lock to hold;
+    the kernel releases the lock when the process exits, so no stale lock
+    file is left behind.
+
+    Args:
+        lock_path:
+            The on-disk lock file path.
+
+    Returns:
+        The open file descriptor holding the lock.
+    """
+    try:
+        # Open (or create) the lock file as read/write so we can both lock it
+        # and update its contents with the current process PID.
+        fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o644)
+    except OSError as e:
+        logger.error(f"Failed to open lock file {lock_path}: {e}")
+        sys.exit(1)
+    try:
+        # Request a non-blocking exclusive lock: fail immediately instead of
+        # waiting if another process already holds the queue lock.
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        existing_pid = "unknown"
+        try:
+            existing_pid = lock_path.read_text(encoding="utf-8").strip() or "unknown"
+        except OSError:
+            pass
+        os.close(fd)
+        logger.error(
+            f"Another process_evaluation_queue.py is already running "
+            f"(pid {existing_pid}); aborting. Pass --lock-path with a different "
+            f"path if you need to run a second instance."
+        )
+        sys.exit(1)
+
+    # Truncate the lock file first so stale bytes from a longer old PID are
+    # removed before writing the current PID.
+    os.ftruncate(fd, 0)
+    os.write(fd, f"{os.getpid()}\n".encode())
+
+    # Flush file contents to disk so other processes can reliably read the PID
+    # associated with the lock holder.
+    os.fsync(fd)
+
+    return fd
+
+
 def load_dotenv_into_environ(env_path: Path) -> None:
     """Populate ``os.environ`` from ``env_path`` for keys not already set.
 
@@ -107,7 +158,7 @@ def prompt_and_persist_env_var(
             logger.error(f"Aborted while reading {name}.")
             sys.exit(1)
         if not value:
-            print("Value cannot be empty; please try again.", file=sys.stderr)
+            logger.error("Value cannot be empty; please try again.")
     persist_env_var(env_path=env_path, name=name, value=value)
     return value
 
@@ -144,6 +195,19 @@ def persist_env_var(env_path: Path, name: str, value: str) -> None:
         logger.info(f"Saved {name} to {env_path}.")
     except OSError as e:
         logger.warning(f"Could not persist {name} to {env_path}: {e}")
+
+
+def resolve_assignee_from_token() -> str:
+    """Return the GitHub login of the ``GITHUB_TOKEN`` owner, or exit on failure."""
+    try:
+        user = gh_request(path="/user")
+    except urllib.error.HTTPError as e:
+        logger.error(f"Could not resolve GITHUB_TOKEN owner via /user: {e}")
+        sys.exit(1)
+    if not isinstance(user, dict) or not user.get("login"):
+        logger.error("GITHUB_TOKEN /user response did not include a login.")
+        sys.exit(1)
+    return str(user["login"])
 
 
 def resolve_vm_id(env_path: Path) -> str:
@@ -198,67 +262,3 @@ def resolve_vm_id(env_path: Path) -> str:
             f"Using ephemeral vm-id {generated!r}."
         )
     return generated
-
-
-def resolve_assignee_from_token() -> str:
-    """Return the GitHub login of the ``GITHUB_TOKEN`` owner, or exit on failure."""
-    try:
-        user = gh_request(path="/user")
-    except urllib.error.HTTPError as e:
-        logger.error(f"Could not resolve GITHUB_TOKEN owner via /user: {e}")
-        sys.exit(1)
-    if not isinstance(user, dict) or not user.get("login"):
-        logger.error("GITHUB_TOKEN /user response did not include a login.")
-        sys.exit(1)
-    return str(user["login"])
-
-
-def acquire_single_instance_lock(lock_path: Path) -> int:
-    """Acquire an exclusive flock on ``lock_path`` or exit with an error.
-
-    The returned file descriptor must be kept alive for the lock to hold;
-    the kernel releases the lock when the process exits, so no stale lock
-    file is left behind.
-
-    Args:
-        lock_path:
-            The on-disk lock file path.
-
-    Returns:
-        The open file descriptor holding the lock.
-    """
-    try:
-        # Open (or create) the lock file as read/write so we can both lock it
-        # and update its contents with the current process PID.
-        fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o644)
-    except OSError as e:
-        logger.error(f"Failed to open lock file {lock_path}: {e}")
-        sys.exit(1)
-    try:
-        # Request a non-blocking exclusive lock: fail immediately instead of
-        # waiting if another process already holds the queue lock.
-        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
-        existing_pid = "unknown"
-        try:
-            existing_pid = lock_path.read_text(encoding="utf-8").strip() or "unknown"
-        except OSError:
-            pass
-        os.close(fd)
-        logger.error(
-            f"Another process_evaluation_queue.py is already running "
-            f"(pid {existing_pid}); aborting. Pass --lock-path with a different "
-            f"path if you need to run a second instance."
-        )
-        sys.exit(1)
-
-    # Truncate the lock file first so stale bytes from a longer old PID are
-    # removed before writing the current PID.
-    os.ftruncate(fd, 0)
-    os.write(fd, f"{os.getpid()}\n".encode())
-
-    # Flush file contents to disk so other processes can reliably read the PID
-    # associated with the lock holder.
-    os.fsync(fd)
-
-    return fd

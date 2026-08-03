@@ -510,7 +510,77 @@ euroeval --model <model-id> --dataset multi-wiki-qa-el
 
 ## Knowledge
 
-### Global-MMLU-el
+### GreekMMLU
+
+GreekMMLU was published in [this paper](https://doi.org/10.48550/arXiv.2602.05150) and
+is a native Greek benchmark for massive multitask language understanding, comprising
+multiple-choice questions across 45 subject areas sourced from academic, professional,
+and governmental exams in Greece. Unlike machine-translated benchmarks, all questions
+are originally authored or sourced in Greek.
+
+The publicly released dataset includes a 'dev' split and a 'test' split. We use the
+'dev' split as the training split, which has 215 samples after filtering. We sample 256
+/ 2,048 samples from the 'test' split for our validation and test splits, stratified by
+subject.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Ποια είναι η βαθύτερη λίμνη της Γης;\nΕπιλογές:\na. Βαϊκάλη\nb. Κασπία\nc. Βικτώρια\nd. Νεκρά Θάλασσα",
+  "label": "a",
+  "subject": "Geography"
+}
+```
+
+```json
+{
+  "text": "Στο CorelDraw για να κάνουμε zoom in στην απεικόνιση της οθόνης χρησιμοποιούμε τη συντόμευση \"Ctrl + +\".\nΕπιλογές:\na. Σωστό\nb. Λάθος",
+  "label": "b",
+  "subject": "Art"
+}
+```
+
+```json
+{
+  "text": "Ποιο είναι το αντίθετο του επιθέτου «ομαλός»;\nΕπιλογές:\na. λεία\nb. ομαλός\nc. ανώμαλος\nd. δυνατός",
+  "label": "c",
+  "subject": "Modern Greek Language"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Ακολουθούν ερωτήσεις πολλαπλών επιλογών (με απαντήσεις).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Ερώτηση: {text}
+  Απάντηση: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Ερώτηση: {text}
+
+  Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας 'a', 'b', 'c' ή 'd', και τίποτα άλλο.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset greek-mmlu
+```
+
+### Unofficial: Global-MMLU-el
 
 Global-MMLU is a machine translated version of the English
 [MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
@@ -646,42 +716,43 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-el
 ```
 
-### Unofficial: GreekMMLU
+### Unofficial: EU-MMLU-el
 
-GreekMMLU was published in [this paper](https://doi.org/10.48550/arXiv.2602.05150) and
-is a native Greek benchmark for massive multitask language understanding, comprising
-multiple-choice questions across 45 subject areas sourced from academic, professional,
-and governmental exams in Greece. Unlike machine-translated benchmarks, all questions
-are originally authored or sourced in Greek.
+This dataset is a human-translated subset of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ), covering 8 of the original
+57 subjects: college biology, college chemistry, college physics, global facts, high
+school European history, international law, management and sociology. Unlike the other
+MMLU variants in EuroEval it was not machine translated - the translation was carried
+out by professional translators at the European Commission's Directorate-General for
+Translation, together with master's students from the European Master's in Translation
+network, as described in [this paper](https://arxiv.org/abs/2607.18432).
 
-The publicly released dataset includes a 'dev' split and a 'test' split. We use the
-'dev' split as the training split, which has 215 samples after filtering. We sample 256
-/ 2,048 samples from the 'test' split for our validation and test splits, stratified by
-subject.
+The original English subset consists of 1,185 samples in total. We keep the original
+MMLU splits rather than creating new ones, giving 39 / 109 / 1,032 samples for training,
+validation and testing, respectively (so 1,180 samples in total). The translation is a
+work in progress and not every subject has been translated into every language yet, so
+the splits are smaller for some languages than for others.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Ποια είναι η βαθύτερη λίμνη της Γης;\nΕπιλογές:\na. Βαϊκάλη\nb. Κασπία\nc. Βικτώρια\nd. Νεκρά Θάλασσα",
-  "label": "a",
-  "subject": "Geography"
+  "text": "Ποιο δεν είναι βασικό χαρακτηριστικό του μοντέλου των \"ανοιχτών συστημάτων\" στη διοίκηση;\nΕπιλογές:\na. το Ηθικό\nb. η Καινοτομία\nc. ο Πόρος ανάπτυξης\nd. η Προσαρμογή",
+  "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Στο CorelDraw για να κάνουμε zoom in στην απεικόνιση της οθόνης χρησιμοποιούμε τη συντόμευση \"Ctrl + +\".\nΕπιλογές:\na. Σωστό\nb. Λάθος",
-  "label": "b",
-  "subject": "Art"
+  "text": "Τι περιγράφει ο Berger (1963) ως μια μεταφορά για την κοινωνική πραγματικότητα;\nΕπιλογές:\na. Μια βόλτα σε λούνα-παρκ\nb. Ένα τσίρκο\nc. Ένα κουκλοθέατρο\nd. Ένα μπαλέτο",
+  "label": "c"
 }
 ```
 
 ```json
 {
-  "text": "Ποιο είναι το αντίθετο του επιθέτου «ομαλός»;\nΕπιλογές:\na. λεία\nb. ομαλός\nc. ανώμαλος\nd. δυνατός",
-  "label": "c",
-  "subject": "Modern Greek Language"
+  "text": "Σε έναν δεδομένο πληθυσμό, 1 στους 400 ανθρώπους παρουσιάζει έναν καρκίνο που προκαλείται από ένα πλήρως υπολειπόμενο αλληλόμορφο, b. Υποθέτοντας ότι ο πληθυσμός βρίσκεται σε ισορροπία Hardy-Weinberg, ποια από τις ακόλουθες είναι η αναμενόμενη αναλογία των ατόμων που φέρουν το αλληλόμορφο b, αλλά δεν αναμένεται να αναπτύξουν τον καρκίνο;\nΕπιλογές:\na. 1/400\nb. 19/400\nc. 20/400\nd. 38/400",
+  "label": "d"
 }
 ```
 
@@ -689,6 +760,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -707,13 +779,13 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Ερώτηση: {text}
 
-  Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας 'a', 'b', 'c' ή 'd', και τίποτα άλλο.
+  Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας {labels_str}, και τίποτα άλλο.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset greek-mmlu
+euroeval --model <model-id> --dataset eu-mmlu-el
 ```
 
 ## Common-sense Reasoning

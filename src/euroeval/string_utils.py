@@ -18,39 +18,6 @@ if t.TYPE_CHECKING:
     from .data_models import ModelIdComponents
 
 
-def scramble(text: str) -> str:
-    """Scramble a string in a bijective manner.
-
-    Args:
-        text:
-            The string to scramble.
-
-    Returns:
-        The scrambled string.
-    """
-    rng = np.random.default_rng(seed=4242)
-    permutation = rng.permutation(x=len(text))
-    scrambled = "".join(text[i] for i in permutation)
-    return scrambled
-
-
-def unscramble(scrambled_text: str) -> str:
-    """Unscramble a string in a bijective manner.
-
-    Args:
-        scrambled_text:
-            The scrambled string to unscramble.
-
-    Returns:
-        The unscrambled string.
-    """
-    rng = np.random.default_rng(seed=4242)
-    permutation = rng.permutation(x=len(scrambled_text))
-    inverse_permutation = np.argsort(permutation)
-    unscrambled = "".join(scrambled_text[i] for i in inverse_permutation)
-    return unscrambled
-
-
 def extract_json_dict_from_string(s: str) -> dict | None:
     """Extract a JSON dictionary from a string.
 
@@ -141,6 +108,22 @@ def extract_multiple_choice_labels(
     return sample_candidate_labels
 
 
+def scramble(text: str) -> str:
+    """Scramble a string in a bijective manner.
+
+    Args:
+        text:
+            The string to scramble.
+
+    Returns:
+        The scrambled string.
+    """
+    rng = np.random.default_rng(seed=4242)
+    permutation = rng.permutation(x=len(text))
+    scrambled = "".join(text[i] for i in permutation)
+    return scrambled
+
+
 def split_model_id(model_id: str) -> "ModelIdComponents":
     """Split a model ID into its components.
 
@@ -172,3 +155,20 @@ def split_model_id(model_id: str) -> "ModelIdComponents":
     revision = revision_match.group(1) if revision_match is not None else "main"
     param = param_match.group(1) if param_match is not None else None
     return ModelIdComponents(model_id=model_id, revision=revision, param=param)
+
+
+def unscramble(scrambled_text: str) -> str:
+    """Unscramble a string in a bijective manner.
+
+    Args:
+        scrambled_text:
+            The scrambled string to unscramble.
+
+    Returns:
+        The unscrambled string.
+    """
+    rng = np.random.default_rng(seed=4242)
+    permutation = rng.permutation(x=len(scrambled_text))
+    inverse_permutation = np.argsort(permutation)
+    unscrambled = "".join(scrambled_text[i] for i in inverse_permutation)
+    return unscrambled

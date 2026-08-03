@@ -30,32 +30,6 @@ from .constants import (
 logger = logging.getLogger(__name__)
 
 
-class _OsaiEntry(t.TypedDict):
-    """A single parsed OSAI model entry.
-
-    Attributes:
-        name:
-            The model's system name.
-        endmodelname:
-            The end-model name.
-        type:
-            The model type (e.g. ``"text"``).
-        open_count:
-            Number of openness ranking fields marked open.
-        required_open:
-            Whether trainingcode and datasources_basemodel are both open.
-        weight_links:
-            Mapping from each open weights field name to its HF URL.
-    """
-
-    name: str
-    endmodelname: str
-    type: str
-    open_count: int
-    required_open: bool
-    weight_links: dict[str, str]
-
-
 def osai_top_models(
     limit: int = 10, overrides: list[str] | None = None
 ) -> list[tuple[str, int]]:
@@ -127,6 +101,26 @@ def osai_top_models(
     return ranked
 
 
+def _hf_url_to_model_id(url: str) -> str | None:
+    """Convert an HF URL to a `org/repo` model identifier.
+
+    Args:
+        url:
+            A URL like ``https://huggingface.co/org/repo`` (with optional
+            trailing path, blob link, etc.).
+
+    Returns:
+        The ``org/repo`` slug, or None if the URL doesn't match that shape.
+    """
+    m = re.match(r"https://huggingface\.co/([^/]+)/([^/?#]+)", url)
+    if not m:
+        return None
+    org, repo = m.group(1), m.group(2)
+    if org in {"datasets", "spaces", "docs", "blog", "collections"}:
+        return None
+    return f"{org}/{repo}"
+
+
 def _osai_bundle() -> str | None:
     """Discover the current Nuxt JS bundle that contains the model database.
 
@@ -174,6 +168,68 @@ def _osai_bundle() -> str | None:
             return body
     logger.warning("OSAI: no chunk contained the model-entry marker.")
     return None
+
+
+def _fetch(url: str, timeout: float = 20.0) -> str:
+    """Fetch a URL as text.
+
+    Args:
+        url:
+            The URL to fetch.
+        timeout (optional):
+            Socket timeout in seconds. Defaults to 20.0.
+
+    Returns:
+        The response body as text.
+    """
+    req = urllib.request.Request(url, headers={"User-Agent": "EuroEval-CoreModels/1"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf-8", errors="replace")
+
+
+def _overrides_to_ranked(
+    overrides: list[str] | None, limit: int
+) -> list[tuple[str, int]]:
+    """Convert a flat override list into ranked tuples.
+
+    Args:
+        overrides:
+            Manually-curated list of model IDs in rank order.
+        limit:
+            Max length of the returned list.
+
+    Returns:
+        `[(model_id, rank), ...]` up to `limit` entries.
+    """
+    if not overrides:
+        return []
+    return [(model_id, rank) for rank, model_id in enumerate(overrides[:limit], 1)]
+
+
+class _OsaiEntry(t.TypedDict):
+    """A single parsed OSAI model entry.
+
+    Attributes:
+        name:
+            The model's system name.
+        endmodelname:
+            The end-model name.
+        type:
+            The model type (e.g. ``"text"``).
+        open_count:
+            Number of openness ranking fields marked open.
+        required_open:
+            Whether trainingcode and datasources_basemodel are both open.
+        weight_links:
+            Mapping from each open weights field name to its HF URL.
+    """
+
+    name: str
+    endmodelname: str
+    type: str
+    open_count: int
+    required_open: bool
+    weight_links: dict[str, str]
 
 
 def _parse_osai_models(bundle: str) -> list[_OsaiEntry]:
@@ -233,59 +289,3 @@ def _parse_osai_models(bundle: str) -> list[_OsaiEntry]:
             )
         )
     return entries
-
-
-def _hf_url_to_model_id(url: str) -> str | None:
-    """Convert an HF URL to a `org/repo` model identifier.
-
-    Args:
-        url:
-            A URL like ``https://huggingface.co/org/repo`` (with optional
-            trailing path, blob link, etc.).
-
-    Returns:
-        The ``org/repo`` slug, or None if the URL doesn't match that shape.
-    """
-    m = re.match(r"https://huggingface\.co/([^/]+)/([^/?#]+)", url)
-    if not m:
-        return None
-    org, repo = m.group(1), m.group(2)
-    if org in {"datasets", "spaces", "docs", "blog", "collections"}:
-        return None
-    return f"{org}/{repo}"
-
-
-def _overrides_to_ranked(
-    overrides: list[str] | None, limit: int
-) -> list[tuple[str, int]]:
-    """Convert a flat override list into ranked tuples.
-
-    Args:
-        overrides:
-            Manually-curated list of model IDs in rank order.
-        limit:
-            Max length of the returned list.
-
-    Returns:
-        `[(model_id, rank), ...]` up to `limit` entries.
-    """
-    if not overrides:
-        return []
-    return [(model_id, rank) for rank, model_id in enumerate(overrides[:limit], 1)]
-
-
-def _fetch(url: str, timeout: float = 20.0) -> str:
-    """Fetch a URL as text.
-
-    Args:
-        url:
-            The URL to fetch.
-        timeout (optional):
-            Socket timeout in seconds. Defaults to 20.0.
-
-    Returns:
-        The response body as text.
-    """
-    req = urllib.request.Request(url, headers={"User-Agent": "EuroEval-CoreModels/1"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read().decode("utf-8", errors="replace")

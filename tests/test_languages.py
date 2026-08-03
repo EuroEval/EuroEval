@@ -16,10 +16,6 @@ class TestGetAllLanguages:
         """Yields all languages."""
         yield get_all_languages()
 
-    def test_languages_is_dict(self, languages: dict[str, Language]) -> None:
-        """Tests that `languages` is a dictionary."""
-        assert isinstance(languages, dict)
-
     def test_languages_are_objects(self, languages: dict[str, Language]) -> None:
         """Tests that the values of `languages` are `Language` objects."""
         for language in languages.values():
@@ -39,6 +35,10 @@ class TestGetAllLanguages:
         assert "de" in languages
         assert "nl" in languages
         assert "en" in languages
+
+    def test_languages_is_dict(self, languages: dict[str, Language]) -> None:
+        """Tests that `languages` is a dictionary."""
+        assert isinstance(languages, dict)
 
 
 @pytest.mark.parametrize(

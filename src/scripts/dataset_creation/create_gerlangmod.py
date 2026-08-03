@@ -75,58 +75,6 @@ _DATASET_IDS = {
 }
 
 
-def _convert_labels(raw_labels: list[str]) -> list[str]:
-    """Convert GerLangMod O/C/F labels to IOB2 O/B-ERR/I-ERR format.
-
-    Args:
-        raw_labels: List of raw labels ('O', 'C', or 'F').
-
-    Returns:
-        List of IOB2 labels. 'O' and 'C' become 'O'. The first 'F' in a
-        consecutive run becomes 'B-ERR' and subsequent 'F's become 'I-ERR'.
-    """
-    iob2 = []
-    prev = "O"
-    for label in raw_labels:
-        if label == "F":
-            iob2.append("I-ERR" if prev == "F" else "B-ERR")
-        else:
-            iob2.append("O")
-        prev = label
-    return iob2
-
-
-def _download_tsv(lang: str, treebank: str, split: str) -> pd.DataFrame:
-    """Download a single TSV file and return it as a DataFrame.
-
-    Returns:
-        DataFrame with raw GerLangMod columns.
-    """
-    prefix = _FILE_PREFIX_OVERRIDES.get((lang, treebank), lang)
-    url = _BASE_URL.format(lang=lang, prefix=prefix, treebank=treebank, split=split)
-    response = requests.get(url)
-    response.raise_for_status()
-    df = pd.read_csv(io.StringIO(response.text), sep="\t", dtype=str, na_filter=False)
-    return df
-
-
-def _process_df(df: pd.DataFrame) -> pd.DataFrame:
-    """Extract tokens and IOB2 labels from a raw GerLangMod DataFrame.
-
-    Returns:
-        DataFrame with 'tokens' (list of str) and 'labels' (list of str) columns.
-    """
-    records = []
-    for _, row in df.iterrows():
-        tokens = row["no_punc_lower_permuted"].split()
-        raw_labels = row["permuted_gold"].split()
-        if len(tokens) != len(raw_labels):
-            continue
-        labels = _convert_labels(raw_labels)
-        records.append({"tokens": tokens, "labels": labels})
-    return pd.DataFrame.from_records(records)
-
-
 def main() -> None:
     """Create the GerLangMod GED datasets and upload them to the HF Hub."""
     for lang in tqdm(_LANG_FILES, desc="Languages"):
@@ -180,6 +128,58 @@ def main() -> None:
         dataset_id = _DATASET_IDS[lang]
         HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
         dataset.push_to_hub(dataset_id, private=True)
+
+
+def _download_tsv(lang: str, treebank: str, split: str) -> pd.DataFrame:
+    """Download a single TSV file and return it as a DataFrame.
+
+    Returns:
+        DataFrame with raw GerLangMod columns.
+    """
+    prefix = _FILE_PREFIX_OVERRIDES.get((lang, treebank), lang)
+    url = _BASE_URL.format(lang=lang, prefix=prefix, treebank=treebank, split=split)
+    response = requests.get(url)
+    response.raise_for_status()
+    df = pd.read_csv(io.StringIO(response.text), sep="\t", dtype=str, na_filter=False)
+    return df
+
+
+def _process_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Extract tokens and IOB2 labels from a raw GerLangMod DataFrame.
+
+    Returns:
+        DataFrame with 'tokens' (list of str) and 'labels' (list of str) columns.
+    """
+    records = []
+    for _, row in df.iterrows():
+        tokens = row["no_punc_lower_permuted"].split()
+        raw_labels = row["permuted_gold"].split()
+        if len(tokens) != len(raw_labels):
+            continue
+        labels = _convert_labels(raw_labels)
+        records.append({"tokens": tokens, "labels": labels})
+    return pd.DataFrame.from_records(records)
+
+
+def _convert_labels(raw_labels: list[str]) -> list[str]:
+    """Convert GerLangMod O/C/F labels to IOB2 O/B-ERR/I-ERR format.
+
+    Args:
+        raw_labels: List of raw labels ('O', 'C', or 'F').
+
+    Returns:
+        List of IOB2 labels. 'O' and 'C' become 'O'. The first 'F' in a
+        consecutive run becomes 'B-ERR' and subsequent 'F's become 'I-ERR'.
+    """
+    iob2 = []
+    prev = "O"
+    for label in raw_labels:
+        if label == "F":
+            iob2.append("I-ERR" if prev == "F" else "B-ERR")
+        else:
+            iob2.append("O")
+        prev = label
+    return iob2
 
 
 if __name__ == "__main__":

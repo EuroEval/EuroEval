@@ -102,3 +102,12 @@ SCALA_CS_CONFIG = DatasetConfig(
     languages=[CZECH],
     unofficial=True,
 )
+
+EU_MMLU_CS_CONFIG = DatasetConfig(
+    name="eu-mmlu-cs",
+    pretty_name="EU-MMLU-cs",
+    source="EuroEval/eu-mmlu-cs",
+    task=KNOW,
+    languages=[CZECH],
+    unofficial=True,
+)

@@ -30,17 +30,6 @@ class LanguageDetector:
         """Initialize the language detector."""
         self.model: "LinguaLanguageDetector | None" = None
 
-    def download(self) -> None:
-        """Download and initialize the language detection model."""
-        if self.model is not None:
-            return
-
-        self.model = (
-            LanguageDetectorBuilder.from_all_spoken_languages()
-            .with_preloaded_language_models()
-            .build()
-        )
-
     def __call__(
         self, predictions: c.Sequence, dataset_config: "DatasetConfig"
     ) -> list[float]:
@@ -159,6 +148,17 @@ class LanguageDetector:
             )
             scores.append(1.0 if lang_confidence > MIN_LANG_CONFIDENCE_SCORE else 0.0)
         return scores
+
+    def download(self) -> None:
+        """Download and initialize the language detection model."""
+        if self.model is not None:
+            return
+
+        self.model = (
+            LanguageDetectorBuilder.from_all_spoken_languages()
+            .with_preloaded_language_models()
+            .build()
+        )
 
 
 language_detector = LanguageDetector()

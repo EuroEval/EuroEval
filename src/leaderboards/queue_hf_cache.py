@@ -24,32 +24,6 @@ from .constants import HF_CACHE_PATH, HF_CACHE_TTL_SECONDS
 logger = logging.getLogger(__name__)
 
 
-def is_generative_model(info: ModelInfo) -> bool:
-    """Return whether a model_info result describes a generative model.
-
-    Mirrors euroeval's own classification (see ``get_model_repo_info`` in
-    ``euroeval.benchmark_modules.hf``): a model is generative when its pipeline
-    tag is one of :data:`GENERATIVE_PIPELINE_TAGS`, or -- when no pipeline tag is
-    set -- when its architecture is a causal or sequence-to-sequence LM. Anything
-    else (fill-mask, feature-extraction, sentence-similarity, ...) is an encoder.
-
-    Args:
-        info:
-            The model info returned by ``HfApi.model_info``.
-
-    Returns:
-        Whether the repo is a generative model.
-    """
-    pipeline_tag = getattr(info, "pipeline_tag", None)
-    if pipeline_tag is not None:
-        return pipeline_tag in GENERATIVE_PIPELINE_TAGS
-    architectures = (getattr(info, "config", None) or {}).get("architectures") or []
-    return any(
-        "ForCausalLM" in arch or "ForConditionalGeneration" in arch
-        for arch in architectures
-    )
-
-
 def cached_model_summary(model_id: str) -> dict | None:
     """Return a ``{param_count, gated, gguf, generative}`` summary for a model id.
 
@@ -129,41 +103,6 @@ def cached_model_summary(model_id: str) -> dict | None:
     }
 
 
-def is_gguf_model(info: ModelInfo) -> bool:
-    """Return whether a model_info result describes a GGUF-only repo.
-
-    The evaluation queue cannot load ``.gguf`` weights, but many repos ship
-    GGUF quants *alongside* safetensors (e.g. ``norallm/normistral-11b-warm``)
-    and are perfectly runnable from the safetensors. So a repo counts as GGUF
-    only when it has ``.gguf`` weights and *no* safetensors.
-
-    The GGUF signal uses three independent indicators so it survives the many
-    ways GGUF repos are laid out (per-quant subfolders, sharded files, names
-    without a quant suffix): the ``gguf`` tag the Hub sets automatically on any
-    repo containing a ``.gguf`` file, a ``library_name`` of ``gguf``, and the
-    presence of any ``.gguf`` file in ``siblings`` (which enumerates the repo
-    recursively).
-
-    Args:
-        info:
-            The model info returned by ``HfApi.model_info``.
-
-    Returns:
-        Whether the repo is a GGUF-only model.
-    """
-    filenames = [(s.rfilename or "").lower() for s in (info.siblings or [])]
-    tags = info.tags or []
-    has_gguf = (
-        any(tag.lower() == "gguf" for tag in tags)
-        or (info.library_name or "").lower() == "gguf"
-        or any(name.endswith(".gguf") for name in filenames)
-    )
-    has_safetensors = getattr(info, "safetensors", None) is not None or any(
-        name.endswith(".safetensors") for name in filenames
-    )
-    return has_gguf and not has_safetensors
-
-
 def _load_hf_cache() -> dict[str, dict]:
     """Read the on-disk HF Hub lookup cache, or return an empty dict.
 
@@ -205,3 +144,64 @@ def _write_hf_cache(cache: dict[str, dict]) -> None:
         tmp.replace(HF_CACHE_PATH)
     except OSError as e:
         logger.warning(f"Could not write HF cache to {HF_CACHE_PATH}: {e}")
+
+
+def is_generative_model(info: ModelInfo) -> bool:
+    """Return whether a model_info result describes a generative model.
+
+    Mirrors euroeval's own classification (see ``get_model_repo_info`` in
+    ``euroeval.benchmark_modules.hf``): a model is generative when its pipeline
+    tag is one of :data:`GENERATIVE_PIPELINE_TAGS`, or -- when no pipeline tag is
+    set -- when its architecture is a causal or sequence-to-sequence LM. Anything
+    else (fill-mask, feature-extraction, sentence-similarity, ...) is an encoder.
+
+    Args:
+        info:
+            The model info returned by ``HfApi.model_info``.
+
+    Returns:
+        Whether the repo is a generative model.
+    """
+    pipeline_tag = getattr(info, "pipeline_tag", None)
+    if pipeline_tag is not None:
+        return pipeline_tag in GENERATIVE_PIPELINE_TAGS
+    architectures = (getattr(info, "config", None) or {}).get("architectures") or []
+    return any(
+        "ForCausalLM" in arch or "ForConditionalGeneration" in arch
+        for arch in architectures
+    )
+
+
+def is_gguf_model(info: ModelInfo) -> bool:
+    """Return whether a model_info result describes a GGUF-only repo.
+
+    The evaluation queue cannot load ``.gguf`` weights, but many repos ship
+    GGUF quants *alongside* safetensors (e.g. ``norallm/normistral-11b-warm``)
+    and are perfectly runnable from the safetensors. So a repo counts as GGUF
+    only when it has ``.gguf`` weights and *no* safetensors.
+
+    The GGUF signal uses three independent indicators so it survives the many
+    ways GGUF repos are laid out (per-quant subfolders, sharded files, names
+    without a quant suffix): the ``gguf`` tag the Hub sets automatically on any
+    repo containing a ``.gguf`` file, a ``library_name`` of ``gguf``, and the
+    presence of any ``.gguf`` file in ``siblings`` (which enumerates the repo
+    recursively).
+
+    Args:
+        info:
+            The model info returned by ``HfApi.model_info``.
+
+    Returns:
+        Whether the repo is a GGUF-only model.
+    """
+    filenames = [(s.rfilename or "").lower() for s in (info.siblings or [])]
+    tags = info.tags or []
+    has_gguf = (
+        any(tag.lower() == "gguf" for tag in tags)
+        or (info.library_name or "").lower() == "gguf"
+        or any(name.endswith(".gguf") for name in filenames)
+    )
+    has_safetensors = getattr(info, "safetensors", None) is not None or any(
+        name.endswith(".safetensors") for name in filenames
+    )
+    return has_gguf and not has_safetensors

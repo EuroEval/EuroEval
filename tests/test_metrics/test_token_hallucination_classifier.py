@@ -30,18 +30,6 @@ def _mock_hf_api() -> t.Generator[None, None, None]:
         yield
 
 
-class DummyLanguage:
-    """Dummy language for testing."""
-
-    code = "da"
-
-
-class DummyDatasetConfig:
-    """Dummy dataset config for testing."""
-
-    main_language = DummyLanguage()
-
-
 class DummyDevice:
     """Dummy device for testing."""
 
@@ -56,15 +44,25 @@ class DummyBenchmarkConfig:
 
 
 @pytest.fixture
-def metric() -> t.Generator[TokenHallucinationMetric, None, None]:
-    """Yield a fresh TokenHallucinationMetric instance for each test.
+def benchmark_config() -> t.Generator[DummyBenchmarkConfig, None, None]:
+    """Yield a dummy benchmark config.
 
     Yields:
-        A new TokenHallucinationMetric instance.
+        A DummyBenchmarkConfig instance.
     """
-    yield TokenHallucinationMetric(
-        name="hallucination_rate", pretty_name="Hallucination rate"
-    )
+    yield DummyBenchmarkConfig()
+
+
+class DummyLanguage:
+    """Dummy language for testing."""
+
+    code = "da"
+
+
+class DummyDatasetConfig:
+    """Dummy dataset config for testing."""
+
+    main_language = DummyLanguage()
 
 
 @pytest.fixture
@@ -77,30 +75,28 @@ def dataset_config() -> t.Generator[DummyDatasetConfig, None, None]:
     yield DummyDatasetConfig()
 
 
-@pytest.fixture
-def benchmark_config() -> t.Generator[DummyBenchmarkConfig, None, None]:
-    """Yield a dummy benchmark config.
-
-    Yields:
-        A DummyBenchmarkConfig instance.
-    """
-    yield DummyBenchmarkConfig()
-
-
-@pytest.fixture
-def make_dataset() -> t.Callable[[list[str]], Dataset]:
-    """Return a factory that builds datasets from contexts.
-
-    Returns:
-        A function that creates datasets from lists of contexts.
-    """
-
-    def _make(contexts: list[str]) -> Dataset:
-        return Dataset.from_list(
-            [{"id": str(idx), "context": ctx} for idx, ctx in enumerate(contexts)]
+def test_all_hallucinations_returns_one(
+    metric: TokenHallucinationMetric,
+    dataset_config: DummyDatasetConfig,
+    benchmark_config: DummyBenchmarkConfig,
+    make_dataset: t.Callable[[list[str]], Dataset],
+) -> None:
+    """Return 1.0 when every token is flagged as hallucinated."""
+    detector = _make_detector(predict_return=[{"pred": 1}])
+    dataset = make_dataset(["ctx1", "ctx2"])
+    predictions = [
+        {"id": "0", "prediction_text": "hallucinated1", "no_answer_probability": 0.0},
+        {"id": "1", "prediction_text": "hallucinated2", "no_answer_probability": 0.0},
+    ]
+    with patch(DETECTOR_PATH, return_value=detector):
+        result = metric(
+            predictions=predictions,
+            references=[],
+            dataset=dataset,
+            dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+            benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
         )
-
-    return _make
+    assert result == pytest.approx(1.0)
 
 
 def _make_detector(
@@ -130,6 +126,66 @@ def _make_detector(
     else:
         detector.predict_prompt.return_value = predict_return
     return detector
+
+
+@pytest.fixture
+def make_dataset() -> t.Callable[[list[str]], Dataset]:
+    """Return a factory that builds datasets from contexts.
+
+    Returns:
+        A function that creates datasets from lists of contexts.
+    """
+
+    def _make(contexts: list[str]) -> Dataset:
+        return Dataset.from_list(
+            [{"id": str(idx), "context": ctx} for idx, ctx in enumerate(contexts)]
+        )
+
+    return _make
+
+
+@pytest.fixture
+def metric() -> t.Generator[TokenHallucinationMetric, None, None]:
+    """Yield a fresh TokenHallucinationMetric instance for each test.
+
+    Yields:
+        A new TokenHallucinationMetric instance.
+    """
+    yield TokenHallucinationMetric(
+        name="hallucination_rate", pretty_name="Hallucination rate"
+    )
+
+
+def test_detector_uses_correct_model_id(
+    metric: TokenHallucinationMetric,
+    dataset_config: DummyDatasetConfig,
+    benchmark_config: DummyBenchmarkConfig,
+    make_dataset: t.Callable[[list[str]], Dataset],
+) -> None:
+    """Verify the model ID is built from dataset_config.main_language.code."""
+    detector = _make_detector(predict_return=[{"pred": 0}])
+    dataset = make_dataset(["ctx1"])
+    with patch(DETECTOR_PATH, return_value=detector) as mock_cls:
+        metric(
+            predictions=[
+                {"id": "0", "prediction_text": "answer", "no_answer_probability": 0.0}
+            ],
+            references=[],
+            dataset=dataset,
+            dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+            benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
+        )
+
+    expected_model_id = (
+        "alexandrainst/"
+        "mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-da"
+    )
+    mock_cls.assert_called_once_with(
+        method="transformer",
+        model_path=expected_model_id,
+        device=Device.CPU,
+        cache_dir=".euroeval_cache",
+    )
 
 
 def test_metric_initialization(metric: TokenHallucinationMetric) -> None:
@@ -171,28 +227,27 @@ def test_no_hallucinations_returns_zero(
     assert result == pytest.approx(0.0)
 
 
-def test_all_hallucinations_returns_one(
+def test_no_tokens_raises_invalid_benchmark(
     metric: TokenHallucinationMetric,
     dataset_config: DummyDatasetConfig,
     benchmark_config: DummyBenchmarkConfig,
     make_dataset: t.Callable[[list[str]], Dataset],
 ) -> None:
-    """Return 1.0 when every token is flagged as hallucinated."""
-    detector = _make_detector(predict_return=[{"pred": 1}])
-    dataset = make_dataset(["ctx1", "ctx2"])
+    """Raise InvalidBenchmark when no tokens are found in the predictions."""
+    detector = _make_detector(predict_return=[])
+    dataset = make_dataset(["ctx1"])
     predictions = [
-        {"id": "0", "prediction_text": "hallucinated1", "no_answer_probability": 0.0},
-        {"id": "1", "prediction_text": "hallucinated2", "no_answer_probability": 0.0},
+        {"id": "0", "prediction_text": "answer", "no_answer_probability": 0.0}
     ]
     with patch(DETECTOR_PATH, return_value=detector):
-        result = metric(
-            predictions=predictions,
-            references=[],
-            dataset=dataset,
-            dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
-            benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
-        )
-    assert result == pytest.approx(1.0)
+        with pytest.raises(InvalidBenchmark):
+            metric(
+                predictions=predictions,
+                references=[],
+                dataset=dataset,
+                dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+                benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
+            )
 
 
 def test_partial_hallucinations_returns_correct_rate(
@@ -226,58 +281,3 @@ def test_partial_hallucinations_returns_correct_rate(
             benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
         )
     assert result == pytest.approx(0.5)
-
-
-def test_no_tokens_raises_invalid_benchmark(
-    metric: TokenHallucinationMetric,
-    dataset_config: DummyDatasetConfig,
-    benchmark_config: DummyBenchmarkConfig,
-    make_dataset: t.Callable[[list[str]], Dataset],
-) -> None:
-    """Raise InvalidBenchmark when no tokens are found in the predictions."""
-    detector = _make_detector(predict_return=[])
-    dataset = make_dataset(["ctx1"])
-    predictions = [
-        {"id": "0", "prediction_text": "answer", "no_answer_probability": 0.0}
-    ]
-    with patch(DETECTOR_PATH, return_value=detector):
-        with pytest.raises(InvalidBenchmark):
-            metric(
-                predictions=predictions,
-                references=[],
-                dataset=dataset,
-                dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
-                benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
-            )
-
-
-def test_detector_uses_correct_model_id(
-    metric: TokenHallucinationMetric,
-    dataset_config: DummyDatasetConfig,
-    benchmark_config: DummyBenchmarkConfig,
-    make_dataset: t.Callable[[list[str]], Dataset],
-) -> None:
-    """Verify the model ID is built from dataset_config.main_language.code."""
-    detector = _make_detector(predict_return=[{"pred": 0}])
-    dataset = make_dataset(["ctx1"])
-    with patch(DETECTOR_PATH, return_value=detector) as mock_cls:
-        metric(
-            predictions=[
-                {"id": "0", "prediction_text": "answer", "no_answer_probability": 0.0}
-            ],
-            references=[],
-            dataset=dataset,
-            dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
-            benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
-        )
-
-    expected_model_id = (
-        "alexandrainst/"
-        "mmbert-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-da"
-    )
-    mock_cls.assert_called_once_with(
-        method="transformer",
-        model_path=expected_model_id,
-        device=Device.CPU,
-        cache_dir=".euroeval_cache",
-    )

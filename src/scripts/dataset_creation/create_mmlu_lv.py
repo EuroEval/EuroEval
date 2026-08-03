@@ -151,6 +151,26 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
+def download_subject_data(subject_info: dict[str, str]) -> list[dict[str, t.Any]]:
+    """Download and parse data for a specific MMLU subject.
+
+    Args:
+        subject_info: Dictionary with subject name and download URL
+
+    Returns:
+        List of question dictionaries
+    """
+    response = requests.get(subject_info["download_url"])
+    response.raise_for_status()
+    data = response.json()
+
+    # Add subject category to each question
+    for item in data:
+        item["category"] = subject_info["name"]
+
+    return data
+
+
 def get_mmlu_subjects_from_github() -> list[dict[str, str]]:
     """Get all MMLU subject files from the VTI-Data repository.
 
@@ -179,26 +199,6 @@ def get_mmlu_subjects_from_github() -> list[dict[str, str]]:
     json_files = [f for f in json_files if f["name"] != "sociology"]
 
     return sorted(json_files, key=lambda x: x["name"])
-
-
-def download_subject_data(subject_info: dict[str, str]) -> list[dict[str, t.Any]]:
-    """Download and parse data for a specific MMLU subject.
-
-    Args:
-        subject_info: Dictionary with subject name and download URL
-
-    Returns:
-        List of question dictionaries
-    """
-    response = requests.get(subject_info["download_url"])
-    response.raise_for_status()
-    data = response.json()
-
-    # Add subject category to each question
-    for item in data:
-        item["category"] = subject_info["name"]
-
-    return data
 
 
 def process_mmlu_data(data: list[dict[str, t.Any]]) -> pd.DataFrame:

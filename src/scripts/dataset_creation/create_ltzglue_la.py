@@ -17,9 +17,9 @@ import requests
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 
-logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+logger = logging.getLogger(__name__)
 BASE_URL_BIN = (
     "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/la/binary"
 )
@@ -130,24 +130,6 @@ def _cap_split(df: pd.DataFrame, max_size: int) -> pd.DataFrame:
     return df.iloc[:max_size].reset_index(drop=True)
 
 
-def _download_split(base_url: str, split: str) -> list[dict]:
-    """Download a single split from GitHub.
-
-    Args:
-        base_url:
-            Base URL for the dataset.
-        split:
-            Split name (train, dev, test).
-
-    Returns:
-        List of records from the JSON file.
-    """
-    url = f"{base_url}/{split}.json"
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    return response.json()
-
-
 def _create_binary_df(data: list[dict]) -> pd.DataFrame:
     """Create binary LA dataset (correct/incorrect).
 
@@ -185,6 +167,24 @@ def _create_multi_df(data: list[dict]) -> pd.DataFrame:
             for item in data
         ]
     )
+
+
+def _download_split(base_url: str, split: str) -> list[dict]:
+    """Download a single split from GitHub.
+
+    Args:
+        base_url:
+            Base URL for the dataset.
+        split:
+            Split name (train, dev, test).
+
+    Returns:
+        List of records from the JSON file.
+    """
+    url = f"{base_url}/{split}.json"
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    return response.json()
 
 
 if __name__ == "__main__":
