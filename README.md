@@ -256,6 +256,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for pariidanDKE"
     />
 </a>
+<a href="https://github.com/Biorrith">
+    <img
+        src="https://avatars.githubusercontent.com/u/60431319"
+        width=50
+        alt="Contributor avatar for Biorrith"
+    />
+</a>
 
 ### Contribute to EuroEval
 
