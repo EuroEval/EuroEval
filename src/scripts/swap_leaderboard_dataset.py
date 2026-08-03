@@ -45,7 +45,7 @@ import subprocess
 import tempfile
 import typing as t
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -78,7 +78,14 @@ from leaderboards.jsonl_io import (
     load_records_from_jsonl_files,
     load_records_from_result_tree,
 )
-from leaderboards.records import get_bool_field, get_dataset, plain_model_id
+from leaderboards.records import (
+    get_bool_field,
+    get_dataset,
+    plain_model_id,
+    strip_anchor,
+    strip_val_suffix,
+)
+from leaderboards.result_identity import normalise_bool_value
 from leaderboards.task_metadata import (
     category_includes_task,
     official_datasets_for_language,
@@ -1183,6 +1190,8 @@ def run_evaluations(
         include_api=include_api,
         selected_providers=selected_providers,
         force=force,
+        swapped_task=swapped_task,
+        language_codes=target_codes,
     )
     logger.debug(f"Planned {len(jobs)} evaluation(s) before the size check.")
     jobs, skipped_too_large = apply_size_filter(
@@ -1580,15 +1589,45 @@ def mirror_eval_config(config: _ObsConfig | None, is_api: bool) -> tuple[bool, b
 
 @dataclass(frozen=True)
 class _Corpus:
-    """Parsed results indexed for ranked-model selection and mirroring."""
+    """Parsed results indexed for ranked-model selection and mirroring.
+
+    Attributes:
+        datasets_by_language:
+            ``{language: {plain_model: {dataset, ...}}}`` for ranked-model
+            selection.
+        api_model_ids:
+            Set of plain model ids that are API models.
+        observations:
+            Set of ``(plain_model_id, dataset, language)`` triples seen.
+        eval_configs:
+            Collapsed configs keyed by ``(plain_model_id, dataset, language)``,
+            preferring test-split when both exist (for backwards compatibility
+            and replacement mode).
+        exact_observations:
+            Set of ``(plain_model_id, dataset, language, validation_split, few_shot)``
+            for exact variant-aware skip checks.
+        variant_coverage:
+            ``{variant_model_id: {language: {dataset, ...}}}`` tracking dataset
+            coverage per displayed/variant model row (after val-row pruning).
+        variant_configs:
+            Configs keyed by ``(variant_model_id, dataset, language)`` for
+            deriving eval config from actual leaderboard rows.
+    """
 
     datasets_by_language: dict[str, dict[str, set[str]]]
     api_model_ids: set[str]
     observations: set[tuple[str, str, str]]
     eval_configs: dict[tuple[str, str, str], _ObsConfig]
+    exact_observations: set[tuple[str, str, str, bool, bool]] = field(
+        default_factory=set
+    )
+    variant_coverage: dict[str, dict[str, set[str]]] = field(default_factory=dict)
+    variant_configs: dict[tuple[str, str, str], _ObsConfig] = field(
+        default_factory=dict
+    )
 
 
-def build_eval_jobs(
+def build_eval_jobs(  # noqa: C901, PLR0912
     ranked: set[tuple[str, str]],
     old_dataset: str | None,
     new_datasets: tuple[str, ...],
@@ -1596,8 +1635,18 @@ def build_eval_jobs(
     include_api: bool,
     selected_providers: set[str],
     force: bool,
+    swapped_task: str,
+    language_codes: set[str],
 ) -> tuple[list[Job], list[str], int]:
     """Turn ranked pairs into evaluation jobs, mirroring each model's setup.
+
+    In swap mode (old_dataset set), mirrors the split/prompting from the old
+    dataset. In add-only mode (old_dataset is None), finds the actual variant
+    row(s) for the plain model whose pruned dataset coverage includes the required
+    official datasets, and derives the config from those variant rows. The
+    existing-result skip is exact: it matches on
+    ``(plain_model_id, dataset, language, validation_split, few_shot)``, so a
+    wrong split or wrong prompting does not skip.
 
     Args:
         ranked:
@@ -1616,6 +1665,10 @@ def build_eval_jobs(
             from another provider is skipped.
         force:
             When True, keep pairs already holding a new-dataset result.
+        swapped_task:
+            The task both datasets belong to (used to compute required datasets).
+        language_codes:
+            The affected language codes (used to compute required datasets).
 
     Returns:
         Tuple of jobs to run, sorted unique list of API model ids skipped, and
@@ -1626,6 +1679,43 @@ def build_eval_jobs(
     by_model: dict[tuple[str, bool, bool, bool], list[str]] = defaultdict(list)
     skipped_api_set: set[str] = set()
     skipped_existing_count: int = 0
+
+    # Precompute the required official datasets per language (same logic as
+    # ranked_model_language_pairs). In add-only mode, these are the datasets
+    # whose configs we mirror.
+    languages = get_all_languages()
+    affected = [
+        category
+        for category in LEADERBOARD_CATEGORIES
+        if category_includes_task(category=category, task=swapped_task)
+    ]
+    required_by_language: dict[str, set[str]] = {}
+    for code in sorted(language_codes):
+        language = languages.get(code)
+        if language is None:
+            continue
+        name = language.name.lower()
+        if " " in name:
+            continue
+        try:
+            by_task = official_datasets_for_language(name)
+        except ValueError:
+            continue
+        required: set[str] = set()
+        for category in affected:
+            required |= {
+                dataset
+                for task, task_datasets in by_task.items()
+                if task not in ORTHOGONAL_TASKS
+                and category_includes_task(category=category, task=task)
+                for dataset in task_datasets
+            }
+        for nds in new_datasets:
+            required.discard(nds)
+        if old_dataset:
+            required.add(old_dataset)
+        required_by_language[code] = required
+
     for model_id, code in sorted(ranked):
         is_api = model_id in corpus.api_model_ids
         if is_api:
@@ -1636,17 +1726,131 @@ def build_eval_jobs(
             if provider is not None and provider.name not in selected_providers:
                 skipped_api_set.add(model_id)
                 continue
-        # Skip if any new dataset already has a result for this (model, language)
-        if not force and any(
-            (model_id, nds, code) in corpus.observations for nds in new_datasets
-        ):
-            skipped_existing_count += 1
-            continue
-        config = corpus.eval_configs.get((model_id, old_dataset, code))
-        evaluate_test_split, zero_shot = mirror_eval_config(
-            config=config, is_api=is_api
-        )
-        by_model[(model_id, is_api, evaluate_test_split, zero_shot)].append(code)
+
+        # Determine the desired config:
+        # - Swap mode (old_dataset set): mirror from old dataset (existing behavior)
+        # - Add-only mode (old_dataset is None): find actual variant row(s) whose
+        #   pruned dataset coverage includes the required official datasets
+        config_dataset = old_dataset
+        variant_configs: list[_ObsConfig] = []
+
+        if config_dataset is None:
+            # In add-only mode, find variant rows that cover required datasets
+            required = required_by_language.get(code, set())
+
+            # Find all variant rows for this plain model in this language
+            matching_variants: list[tuple[str, _ObsConfig]] = []
+            model_has_variant_rows = False
+            for variant_id, lang_datasets in corpus.variant_coverage.items():
+                # Extract plain model from variant_id using plain_model_id()
+                variant_plain = plain_model_id(variant_id)
+
+                if variant_plain != model_id:
+                    continue
+
+                variant_datasets = lang_datasets.get(code, set())
+                if not variant_datasets:
+                    continue
+                model_has_variant_rows = True
+
+                # Check if this variant covers required datasets for this language
+                if not required <= variant_datasets:
+                    continue
+
+                # Get config from this variant row (use any dataset it covers)
+                for ds in sorted(variant_datasets & required):
+                    var_key = (variant_id, ds, code)
+                    if var_key in corpus.variant_configs:
+                        matching_variants.append(
+                            (variant_id, corpus.variant_configs[var_key])
+                        )
+                        break
+
+            if matching_variants:
+                # Use configs from matching variant rows
+                # Deduplicate by config values (same config = same job)
+                seen_configs: set[tuple[bool, bool, bool]] = set()
+                for _, cfg in matching_variants:
+                    cfg_key = (cfg.validation_split, cfg.few_shot, cfg.generative)
+                    if cfg_key not in seen_configs:
+                        seen_configs.add(cfg_key)
+                        variant_configs.append(cfg)
+            elif model_has_variant_rows:
+                # The plain model's collapsed union can cover the required datasets
+                # even when no actual displayed leaderboard row does. In that case
+                # there is no ranked row to mirror, so do not schedule a job.
+                continue
+            else:
+                # Fallback for tests or legacy corpora without variant indexes.
+                models_datasets = corpus.datasets_by_language.get(code, {}).get(
+                    model_id, set()
+                )
+                for ds in sorted(required & models_datasets):
+                    if (model_id, ds, code) in corpus.eval_configs:
+                        config_dataset = ds
+                        break
+
+        # Process each distinct config (in add-only mode with multiple variants)
+        configs_to_process: list[_ObsConfig | None] = []
+        if variant_configs:
+            # Add-only mode with variant rows: process each distinct config
+            seen_configs: set[tuple[bool, bool, bool]] = set()
+            for cfg in variant_configs:
+                cfg_key = (cfg.validation_split, cfg.few_shot, cfg.generative)
+                if cfg_key not in seen_configs:
+                    seen_configs.add(cfg_key)
+                    configs_to_process.append(cfg)
+        else:
+            # Swap mode or fallback: use single collapsed config
+            config = corpus.eval_configs.get((model_id, config_dataset, code))
+            configs_to_process.append(config)
+
+        for config in configs_to_process:
+            desired_eval_test_split, desired_zero_shot = mirror_eval_config(
+                config=config, is_api=is_api
+            )
+
+            # Skip if an exact new-dataset observation exists with matching config.
+            # When config is None (fallback), use model-type defaults for comparison.
+            if not force:
+                should_skip = False
+                # Determine expected validation_split from desired config
+                expected_validation_split = not desired_eval_test_split
+                # Determine expected few_shot from desired config.
+                # For non-API gen models: zero_shot = generative and not few_shot.
+                # For API models: few_shot is stored directly.
+                for nds in new_datasets:
+                    if config is not None:
+                        # Use config's actual values
+                        exact_key = (
+                            model_id,
+                            nds,
+                            code,
+                            config.validation_split,
+                            config.few_shot,
+                        )
+                    else:
+                        # Fallback: use model-type defaults for comparison.
+                        # API defaults: validation_split=True, few_shot=False.
+                        # Non-API defaults: validation_split=False, few_shot=True.
+                        fallback_few_shot = not is_api
+                        exact_key = (
+                            model_id,
+                            nds,
+                            code,
+                            expected_validation_split,
+                            fallback_few_shot,
+                        )
+                    if exact_key in corpus.exact_observations:
+                        should_skip = True
+                        break
+                if should_skip:
+                    skipped_existing_count += 1
+                    continue
+
+            by_model[
+                (model_id, is_api, desired_eval_test_split, desired_zero_shot)
+            ].append(code)
 
     jobs: list[Job] = []
     for (model_id, is_api, evaluate_test_split, zero_shot), codes in by_model.items():
@@ -1674,6 +1878,13 @@ def load_corpus() -> _Corpus:
     leaderboard variant (split + prompting), preferring the test-split record
     when both exist (that is the row the leaderboard shows).
 
+    Builds variant-aware indexes:
+    - ``exact_observations`` keyed by ``(plain_model_id, dataset, language,
+      validation_split, few_shot)`` for exact skip checks.
+    - ``variant_coverage`` keyed by displayed/variant model id (after val-row
+      pruning) for add-only config derivation.
+    - ``variant_configs`` keyed by ``(variant_model_id, dataset, language)``.
+
     Returns:
         The parsed corpus.
 
@@ -1700,44 +1911,178 @@ def load_corpus() -> _Corpus:
     api_model_ids: set[str] = set()
     observations: set[tuple[str, str, str]] = set()
     eval_configs: dict[tuple[str, str, str], _ObsConfig] = {}
+    exact_observations: set[tuple[str, str, str, bool, bool]] = set()
+
+    # For variant-aware indexing: collect raw variant data first
+    # variant_coverage_raw: {variant_model_id: {language: {dataset}}}
+    variant_coverage_raw: dict[str, dict[str, set[str]]] = defaultdict(
+        lambda: defaultdict(set)
+    )
+    variant_configs_raw: dict[tuple[str, str, str], _ObsConfig] = {}
+    split_agnostic_datasets: dict[str, dict[str, set[str]]] = defaultdict(
+        lambda: defaultdict(set)
+    )
+
     for record in records:
         model_info = t.cast(dict[str, object], record.get("model_info", {}))
         # Fall back to model_info.id when name is missing (valid for EEE records)
-        model = plain_model_id(str(model_info.get("name") or model_info.get("id", "")))
+        plain_model = plain_model_id(
+            str(model_info.get("name") or model_info.get("id", ""))
+        )
         dataset = get_dataset(record=record)
-        if not model or not dataset:
+        if not plain_model or not dataset:
             continue
         if record_is_api(model_info=model_info):
-            api_model_ids.add(model)
+            api_model_ids.add(plain_model)
+
+        validation_split, split_agnostic = _record_validation_split(record=record)
+        few_shot = get_bool_field(record, "few_shot", True)
         config = _ObsConfig(
-            validation_split=get_bool_field(record, "validation_split", False),
-            few_shot=get_bool_field(record, "few_shot", True),
+            validation_split=validation_split,
+            few_shot=few_shot,
             generative=str(
                 model_info.get("additional_details", {}).get("generative")
             ).lower()
             == "true",
         )
+        variant_ids = _record_variant_ids(
+            model_info=model_info, validation_split=validation_split, few_shot=few_shot
+        )
+
         for language in _record_languages(record=record):
-            datasets_by_language[language][model].add(str(dataset))
-            key = (model, str(dataset), language)
-            observations.add(key)
-            existing = eval_configs.get(key)
+            # Collapsed indexes (existing behavior for backwards compatibility)
+            datasets_by_language[language][plain_model].add(str(dataset))
+            collapsed_key = (plain_model, str(dataset), language)
+            observations.add(collapsed_key)
+            existing = eval_configs.get(collapsed_key)
             # Prefer the test-split record: when a model has both, the
             # leaderboard row shows the test-split variant.
             if existing is None or (
                 not config.validation_split and existing.validation_split
             ):
-                eval_configs[key] = config
+                eval_configs[collapsed_key] = config
+
+            # Exact observation for skip checks. Split-agnostic records apply to
+            # both split variants, matching leaderboard score extraction.
+            exact_observations.add(
+                (plain_model, str(dataset), language, validation_split, few_shot)
+            )
+            if split_agnostic:
+                exact_observations.add(
+                    (plain_model, str(dataset), language, True, few_shot)
+                )
+
+            # Variant-aware indexes
+            for variant_id in variant_ids:
+                variant_coverage_raw[variant_id][language].add(str(dataset))
+                variant_key = (variant_id, str(dataset), language)
+                # Store config for this variant (each variant is distinct)
+                if variant_key not in variant_configs_raw:
+                    variant_configs_raw[variant_key] = config
+                if split_agnostic:
+                    split_agnostic_datasets[variant_id][language].add(str(dataset))
+
+    _mirror_split_agnostic_variant_coverage(
+        variant_coverage_raw=variant_coverage_raw,
+        variant_configs_raw=variant_configs_raw,
+        split_agnostic_datasets=split_agnostic_datasets,
+    )
+    variant_coverage = _prune_val_variant_coverage(
+        variant_coverage_raw=variant_coverage_raw
+    )
+
     logger.info(
         f"Loaded results for {len(datasets_by_language):,} language(s) "
-        f"({len(api_model_ids):,} API model(s))."
+        f"({len(api_model_ids):,} API model(s), {len(variant_coverage)} variant rows)."
     )
     return _Corpus(
         datasets_by_language=datasets_by_language,
         api_model_ids=api_model_ids,
         observations=observations,
         eval_configs=eval_configs,
+        exact_observations=exact_observations,
+        variant_coverage=variant_coverage,
+        variant_configs=variant_configs_raw,
     )
+
+
+def _mirror_split_agnostic_variant_coverage(
+    variant_coverage_raw: dict[str, dict[str, set[str]]],
+    variant_configs_raw: dict[tuple[str, str, str], _ObsConfig],
+    split_agnostic_datasets: dict[str, dict[str, set[str]]],
+) -> None:
+    for variant_id in list(variant_coverage_raw):
+        test_variant_id = strip_val_suffix(variant_id)
+        if test_variant_id is None:
+            continue
+        for language, datasets in split_agnostic_datasets.get(
+            test_variant_id, {}
+        ).items():
+            for dataset in datasets:
+                test_datasets = variant_coverage_raw[test_variant_id].get(
+                    language, set()
+                )
+                if dataset not in test_datasets:
+                    continue
+                variant_coverage_raw[variant_id][language].add(dataset)
+                test_config = variant_configs_raw.get(
+                    (test_variant_id, dataset, language)
+                )
+                if test_config is not None:
+                    variant_configs_raw[(variant_id, dataset, language)] = _ObsConfig(
+                        validation_split=True,
+                        few_shot=test_config.few_shot,
+                        generative=test_config.generative,
+                    )
+
+
+def _prune_val_variant_coverage(
+    variant_coverage_raw: dict[str, dict[str, set[str]]],
+) -> dict[str, dict[str, set[str]]]:
+    variant_coverage: dict[str, dict[str, set[str]]] = {}
+    for variant_id, lang_datasets in variant_coverage_raw.items():
+        non_val_equiv = strip_val_suffix(variant_id)
+        if non_val_equiv is not None and non_val_equiv in variant_coverage_raw:
+            non_val_coverage = variant_coverage_raw[non_val_equiv]
+            pruned_lang_datasets: dict[str, set[str]] = {}
+            for lang, datasets in lang_datasets.items():
+                non_val_datasets = non_val_coverage.get(lang, set())
+                if len(non_val_datasets) < len(datasets):
+                    pruned_lang_datasets[lang] = datasets
+            if pruned_lang_datasets:
+                variant_coverage[variant_id] = pruned_lang_datasets
+        else:
+            variant_coverage[variant_id] = dict(lang_datasets)
+    return variant_coverage
+
+
+def _record_validation_split(record: dict[str, object]) -> tuple[bool, bool]:
+    eval_library = t.cast(dict[str, object], record.get("eval_library", {}))
+    eval_additional = t.cast(
+        dict[str, object], eval_library.get("additional_details", {})
+    )
+    if "validation_split" not in eval_additional:
+        return False, False
+    validation_split_norm = normalise_bool_value(
+        t.cast(bool | str | None, eval_additional["validation_split"])
+    )
+    if validation_split_norm is None:
+        return False, True
+    return validation_split_norm, False
+
+
+def _record_variant_ids(
+    model_info: dict[str, object], validation_split: bool, few_shot: bool
+) -> list[str]:
+    variant_model = strip_anchor(
+        str(model_info.get("name") or model_info.get("id", ""))
+    )
+    note = [] if few_shot else ["zero-shot"]
+    if validation_split:
+        note.append("val")
+    if not note:
+        return [variant_model]
+    return [f"{variant_model} ({', '.join(note)})"]
 
 
 def record_is_api(model_info: dict[str, object]) -> bool:

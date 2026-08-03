@@ -75,6 +75,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   transformers 5.x (containing `full_attention` and `sliding_attention` sub-dicts). The
   override now flattens `full_attention` contents with top-level `rope_theta` for vLLM
   compatibility, while preserving already-flat `rope_parameters` without modification.
+- Fixed startup verbosity to correctly respect the effective debug value (method
+  argument if provided, otherwise initializer default), ensuring the `--verbose` hint
+  is suppressed when debug mode is active via either path.
 
 ## [v17.7.0] - 2026-07-22
 
