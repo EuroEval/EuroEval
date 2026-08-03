@@ -29,16 +29,15 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   existing `mmlu-*` and `global-mmlu-*` datasets, these were translated by professional
   translators at the European Commission's Directorate-General for Translation and by
   students from the European Master's in Translation network, rather than by machine
-  translation. They are marked as `unofficial` for now.
+  translation. They are marked as `unofficial` for now. This was added by @Rijgersberg
+  ✨
 - Added a built-in `dummy` model backend (`--model dummy`) for debugging EuroEval
   setups without downloading or running any real model. For tasks with a fixed set
   of possible answers (e.g. classification, multiple-choice), it predicts a uniform
   probability across all of them, for named entity recognition it predicts no
   entities, for everything else it returns a generic placeholder answer. Either way,
-  failures point to dataset/task code rather than the model or inference
-  framework.
-  translation. They are marked as `unofficial` for now. This was added by @Rijgersberg
-  ✨
+  failures point to dataset/task code rather than the model or inference framework. This
+  was added by @viggo-gascou ✨
 - Added full support for hallucination detection for all languages now, and now marked
   as official.
 
