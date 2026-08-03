@@ -3,6 +3,7 @@
 # dependencies = [
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
+#     "numpy==1.26.0",
 #     "pandas==2.2.0",
 #     "scikit-learn<1.6.0",
 # ]
@@ -14,6 +15,7 @@ import logging
 import random
 import sys
 
+import numpy as np
 import pandas as pd
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, load_dataset
@@ -32,7 +34,7 @@ def main(source: str) -> None:
     The source dataset contains Faroese words, each with its correct antonym and
     five distractor words. We build a multiple-choice dataset where the model must
     pick the correct antonym of the word out of six candidates, with the answer
-    options shuffled deterministically per sample.
+    options shuffled deterministically.
 
     Args:
         source:
@@ -50,17 +52,18 @@ def main(source: str) -> None:
     logger.info(f"Loaded {len(df)} samples from {source}.")
 
     # Build the multiple-choice samples, shuffling the answer options
-    # deterministically per sample
+    # deterministically
     rng = random.Random(4242)
     records: list[dict[str, str]] = []
     num_skipped = 0
     for _, row in df.iterrows():
         word = str(row["orð"]).replace("\n", " ").strip()
         antonym = str(row["andheiti"]).replace("\n", " ").strip()
-        distractors = [
-            str(outlier).replace("\n", " ").strip()
-            for outlier in row["random_outliers"]
-        ]
+        outliers = row["random_outliers"]
+        if not isinstance(outliers, (list, tuple, np.ndarray)):
+            num_skipped += 1
+            continue
+        distractors = [str(outlier).replace("\n", " ").strip() for outlier in outliers]
         if not word or not antonym or len(distractors) != 5:
             num_skipped += 1
             continue
