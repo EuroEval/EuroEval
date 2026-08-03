@@ -157,7 +157,77 @@ euroeval --model <model-id> --dataset mim-gold-ner
 
 ## Linguistic Acceptability
 
-### ScaLA-is
+### IceEC
+
+This dataset was published [here](https://github.com/antonkarl/iceErrorCorpus) and
+consists of texts in modern Icelandic from student essays, online news texts and
+Wikipedia articles, annotated for mistakes related to spelling, grammar, and other
+issues.
+
+The original full dataset consists of 58,200 / 5,270 samples for training and testing,
+respectively. We use a 1,024 / 256 / 2,048 split for training, validation and testing,
+where the training and testing splits are subsets of the original training and testing
+splits, and the validation split is a disjoint subset of the training split.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Kannski erum við með meiri sölu í öðrum skrokkhlutum en síðum t.d., “ segir Steinþór.",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Þó svo að hann sé leiðinlegur og ekkert tívolí gaman, þá er miðlar hann þekkingu til okkar og án hans mundi enginn menntun vera.",
+  "label": "incorrect"
+}
+```
+
+```json
+{
+  "text": "Síminn er hvers manns ábyrgð.",
+  "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Setning: {text}
+  Málfræðilega rétt: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Setning: {text}
+
+  Greindu hvort setningin er málfræðilega rétt. Svaraðu með 'já' ef setningin er rétt og 'nei' ef hún er það ekki.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `já`
+  - `incorrect` ➡️ `nei`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ice-ec
+```
+
+### Unofficial: ScaLA-is
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
 and was automatically created from the
@@ -228,76 +298,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset scala-is
-```
-
-### Unofficial: IceEC
-
-This dataset was published [here](https://github.com/antonkarl/iceErrorCorpus) and
-consists of texts in modern Icelandic from student essays, online news texts and
-Wikipedia articles, annotated for mistakes related to spelling, grammar, and other
-issues.
-
-The original full dataset consists of 58,200 / 5,270 samples for training and testing,
-respectively. We use a 1,024 / 256 / 2,048 split for training, validation and testing,
-where the training and testing splits are subsets of the original training and testing
-splits, and the validation split is a disjoint subset of the training split.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Kannski erum við með meiri sölu í öðrum skrokkhlutum en síðum t.d., “ segir Steinþór.",
-  "label": "correct"
-}
-```
-
-```json
-{
-  "text": "Þó svo að hann sé leiðinlegur og ekkert tívolí gaman, þá er miðlar hann þekkingu til okkar og án hans mundi enginn menntun vera.",
-  "label": "incorrect"
-}
-```
-
-```json
-{
-  "text": "Síminn er hvers manns ábyrgð.",
-  "label": "incorrect"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 12
-- Prefix prompt:
-
-  ```text
-  Hér fyrir neðan eru setningar ásamt mati á því hvort þær eru málfræðilega réttar.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Setning: {text}
-  Málfræðilega rétt: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Setning: {text}
-
-  Greindu hvort setningin er málfræðilega rétt. Svaraðu með 'já' ef setningin er rétt og 'nei' ef hún er það ekki.
-  ```
-
-- Label mapping:
-  - `correct` ➡️ `já`
-  - `incorrect` ➡️ `nei`
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset ice-ec
 ```
 
 ### Unofficial: IceLinguistic

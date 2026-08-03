@@ -28,14 +28,6 @@ HOTTER_AND_COLDER_SENTIMENT_CONFIG = DatasetConfig(
     languages=[ICELANDIC],
 )
 
-SCALA_IS_CONFIG = DatasetConfig(
-    name="scala-is",
-    pretty_name="ScaLA-is",
-    source="EuroEval/scala-is",
-    task=LA,
-    languages=[ICELANDIC],
-)
-
 MIM_GOLD_NER_CONFIG = DatasetConfig(
     name="mim-gold-ner",
     pretty_name="MIM-GOLD-NER",
@@ -117,12 +109,20 @@ RAGTRUTH_IS_CONFIG = DatasetConfig(
 )
 
 
-# Unofficial datasets ###
-
 ICE_EC_CONFIG = DatasetConfig(
     name="ice-ec",
     pretty_name="ICE-EC",
     source="EuroEval/ice-ec",
+    task=LA,
+    languages=[ICELANDIC],
+)
+
+# Unofficial datasets ###
+
+SCALA_IS_CONFIG = DatasetConfig(
+    name="scala-is",
+    pretty_name="ScaLA-is",
+    source="EuroEval/scala-is",
     task=LA,
     languages=[ICELANDIC],
     unofficial=True,
