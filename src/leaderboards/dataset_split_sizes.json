@@ -380,6 +380,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/greek-mmlu-mini": {
+    "test": 2048,
+    "train": 215,
+    "val": 256
+  },
   "EuroEval/greek-sa-mini": {
     "test": 2048,
     "train": 1024,
@@ -529,6 +534,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/include-de-mini": {
+    "test": 65,
+    "train": 15,
+    "val": 64
+  },
   "EuroEval/include-fr-mini": {
     "test": 318,
     "train": 22,
@@ -537,6 +547,16 @@
   "EuroEval/include-hr-mini": {
     "test": 474,
     "train": 15,
+    "val": 64
+  },
+  "EuroEval/include-hu-mini": {
+    "test": 408,
+    "train": 13,
+    "val": 64
+  },
+  "EuroEval/include-lt-mini": {
+    "test": 430,
+    "train": 25,
     "val": 64
   },
   "EuroEval/include-nl-mini": {
@@ -837,6 +857,10 @@
     "test": 2048,
     "train": 1024,
     "val": 256
+  },
+  "EuroEval/multiloko-de-mini": {
+    "test": 233,
+    "train": 16
   },
   "EuroEval/multiloko-fr-mini": {
     "test": 234,

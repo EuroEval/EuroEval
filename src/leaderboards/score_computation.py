@@ -67,13 +67,15 @@ def compute_ranks(
     )
 
     # Step 2: Aggregate dataset -> task -> language -> overall.
+    # Sort for deterministic iteration order.
     model_task_ranks = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
 
-    for model_id in model_dataset_ranks:
-        for category in categories:
+    for model_id in sorted(model_dataset_ranks.keys()):
+        for category in sorted(categories):
             if category not in model_dataset_ranks[model_id]:
                 continue
-            for language, config in configs.items():
+            for language in sorted(configs.keys()):
+                config = configs[language]
                 task_results = _aggregate_to_task_level(
                     model_id=model_id,
                     category=category,
@@ -87,10 +89,11 @@ def compute_ranks(
                         model_task_ranks[model_id][category][language][task] = task_data
 
     # Step 3: Aggregate task -> language -> overall.
+    # Sort for deterministic iteration order.
     final: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
 
-    for model_id in model_dataset_ranks:
-        for category in categories:
+    for model_id in sorted(model_dataset_ranks.keys()):
+        for category in sorted(categories):
             if category not in model_dataset_ranks[model_id]:
                 continue
 
@@ -144,10 +147,12 @@ def _aggregate_to_language_level(
     lang_scores: dict[str, dict[str, float]] = {}
     overall_entries: list[dict[str, float]] = []
 
-    for language, config in configs.items():
+    # Sort for deterministic iteration order.
+    for language in sorted(configs.keys()):
+        config = configs[language]
         task_entries = [
             model_task_ranks[model_id][category][language].get(task)
-            for task in config
+            for task in sorted(config.keys())
             if task not in orthogonal_tasks
             and category_includes_task(category=category, task=task)
         ]
@@ -211,7 +216,9 @@ def _aggregate_to_task_level(
         Dict of task -> {score, ci_lower, ci_upper} or None.
     """
     task_results: dict[str, dict[str, float]] = {}
-    for task, task_datasets in config.items():
+    # Sort for deterministic iteration order.
+    for task in sorted(config.keys()):
+        task_datasets = config[task]
         if task in orthogonal_tasks:
             continue
         if not category_includes_task(category=category, task=task):
@@ -219,7 +226,7 @@ def _aggregate_to_task_level(
 
         entries = [
             model_dataset_ranks[model_id][category][ds]
-            for ds in task_datasets
+            for ds in sorted(task_datasets)
             if ds in model_dataset_ranks[model_id][category]
         ]
         if not entries:
@@ -266,18 +273,22 @@ def compute_dataset_ranks_bootstrap(
         lambda: defaultdict(dict)
     )
 
-    for _language, config in configs.items():
-        for category in LEADERBOARD_CATEGORIES:
+    # Sort for deterministic iteration order (RNG consumption must be
+    # deterministic across runs with the same seed).
+    for language in sorted(configs.keys()):
+        config = configs[language]
+        for category in sorted(LEADERBOARD_CATEGORIES):
             datasets = [
                 ds
-                for task, task_ds in config.items()
-                for ds in task_ds
+                for task in sorted(config.keys())
+                for ds in sorted(config[task])
                 if task not in ORTHOGONAL_TASKS
                 and category_includes_task(category, task)
             ]
             for dataset in datasets:
                 model_scores: dict[str, tuple[float, list[float]]] = {}
-                for model_id, results in model_results.items():
+                for model_id in sorted(model_results.keys()):
+                    results = model_results[model_id]
                     if dataset in results and results[dataset]:
                         raw, mean_sc, _ = results[dataset][0]
                         if np.isfinite(mean_sc):
@@ -395,31 +406,28 @@ def compute_standard_ranks_bootstrap(
     seed: int | None = None,
     alpha: float = 0.05,
 ) -> dict[str, dict[str, int]]:
-    """Compute ordinal ranks (1, 2, 3...) with ties via bootstrap CIs.
+    """Compute ordinal ranks with ties from paired bootstrap differences.
 
-    Sorts by overall mean rank score ascending (lower = better). Walks down
-    the list; for each model, compares its CI against the current anchor's CI.
-    If the candidate's lower CI bound is strictly above the anchor's upper CI
-    bound (no overlap), it starts a new rank group. Otherwise it shares the
-    anchor's rank.
-
-    CIs are computed from the bootstrap distributions themselves (percentile
-    method), so the Rank column is consistent with the statistical uncertainty
-    captured by the bootstrap - rather than using a bootstrap hypothesis test
-    which operates on raw distributions and can disagree with the displayed CIs.
+    Sorts models by median rank score (lower = better). A candidate starts a
+    worse rank group only when the lower bound of the paired bootstrap CI for
+    ``candidate - anchor`` is strictly above zero for every model in the current
+    rank group.
 
     Args:
-        model_results: The model results.
-        configs: Per-language task -> dataset mappings.
-        n_bootstraps: Number of bootstrap replicates.
-        seed: Random seed for reproducibility.
-        alpha (optional): Significance level for the bootstrap CI. Defaults to
-            0.05.
+        model_results:
+            The model results.
+        configs:
+            Per-language task -> dataset mappings.
+        n_bootstraps:
+            Number of bootstrap replicates.
+        seed:
+            Random seed for reproducibility.
+        alpha (optional):
+            Significance level for the paired bootstrap CI. Defaults to 0.05.
 
     Returns:
         model_id -> category -> int rank.
     """
-    # Step 1: Compute bootstrap distributions.
     bootstrap_scores = bootstrap_rank_scores(
         model_results=model_results,
         configs=configs,
@@ -427,41 +435,89 @@ def compute_standard_ranks_bootstrap(
         seed=seed,
     )
 
-    # Step 2: Compute CIs from bootstrap distributions and sort models.
+    return compute_standard_ranks_from_bootstrap_scores(
+        bootstrap_scores=bootstrap_scores, alpha=alpha
+    )
+
+
+def compute_standard_ranks_from_bootstrap_scores(
+    bootstrap_scores: dict[str, dict[str, dict[str, np.ndarray]]], alpha: float = 0.05
+) -> dict[str, dict[str, int]]:
+    """Compute ordinal ranks from pre-computed bootstrap score distributions.
+
+    Uses a paired-bootstrap approach: for each pair of models, computes the
+    distribution of differences (model_a - model_b) across bootstrap samples,
+    then determines whether model_a is significantly worse than model_b by
+    checking if the (1-alpha) percentile of the difference distribution is
+    strictly positive.
+
+    Models are grouped into rank groups: two models share the same rank if
+    neither is significantly worse than the other. Ranks are assigned in
+    order of median bootstrap score (lower = better).
+
+    This method is more statistically principled than the CI-overlap heuristic
+    because it directly uses the paired difference distribution.
+
+    Args:
+        bootstrap_scores: Pre-computed bootstrap distributions from
+            ``bootstrap_rank_scores``. Structure: model_id -> category ->
+            language -> np.ndarray of bootstrap scores.
+        alpha (optional): Significance level. Defaults to 0.05.
+
+    Returns:
+        model_id -> category -> int rank.
+    """
     ranks: dict[str, dict[str, int]] = {}
 
-    for category in LEADERBOARD_CATEGORIES:
-        scored: list[tuple[float, str, float, float]] = []
-        for model_id in model_results:
+    categories = sorted(
+        {
+            category
+            for model_scores in bootstrap_scores.values()
+            for category in model_scores
+        }
+    )
+    for category in categories:
+        scored: list[tuple[float, str, np.ndarray]] = []
+        for model_id in sorted(bootstrap_scores.keys()):
             if (
-                model_id in bootstrap_scores
-                and category in bootstrap_scores[model_id]
+                category in bootstrap_scores[model_id]
                 and "overall" in bootstrap_scores[model_id][category]
             ):
                 samples = bootstrap_scores[model_id][category]["overall"]
-                mean_score = float(np.median(samples))
-                ci_lower = float(np.percentile(samples, alpha * 50))
-                ci_upper = float(np.percentile(samples, (1 - alpha) * 100))
-                scored.append((mean_score, model_id, ci_lower, ci_upper))
-
-        scored.sort(key=lambda x: x[0])
+                median_score = float(np.median(samples))
+                scored.append((median_score, model_id, samples))
 
         if not scored:
             continue
 
-        # Step 3: Walk down and assign ranks via CI overlap. Two models share a
-        # rank iff their bootstrap CIs overlap; a strictly higher lower bound
-        # starts a new rank group.
-        current_rank = 1
-        anchor_idx = 0
-        ranks.setdefault(scored[0][1], {})[category] = 1
+        scored.sort(key=lambda x: x[0])
 
-        for i in range(1, len(scored)):
-            candidate_ci_lower = scored[i][2]
-            anchor_ci_upper = scored[anchor_idx][3]
-            if candidate_ci_lower > anchor_ci_upper:
-                current_rank += 1
-                anchor_idx = i
-            ranks.setdefault(scored[i][1], {})[category] = current_rank
+        n_models = len(scored)
+        is_worse: list[list[bool]] = [[False] * n_models for _ in range(n_models)]
+
+        for i in range(n_models):
+            for j in range(i + 1, n_models):
+                diff = scored[j][2] - scored[i][2]
+                lower_bound = np.percentile(diff, 100 * alpha / 2)
+                is_worse[j][i] = lower_bound > 0
+
+        rank_groups: list[list[int]] = [[0]]
+
+        for i in range(1, n_models):
+            current_group = rank_groups[-1]
+            group_anchor = current_group[0]
+
+            if is_worse[i][group_anchor]:
+                rank_groups.append([i])
+            else:
+                rank_groups[-1].append(i)
+
+        # Flatten rank groups to model -> rank mapping.
+        current_rank = 1
+        for group in rank_groups:
+            for idx in group:
+                model_id = scored[idx][1]
+                ranks.setdefault(model_id, {})[category] = current_rank
+            current_rank += 1
 
     return ranks

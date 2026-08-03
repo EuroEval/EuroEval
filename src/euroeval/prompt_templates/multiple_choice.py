@@ -14,6 +14,7 @@ from ..languages import (
     DUTCH,
     ENGLISH,
     ESTONIAN,
+    FAROESE,
     FINNISH,
     FRENCH,
     GERMAN,
@@ -170,6 +171,13 @@ MULTIPLE_CHOICE_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Pergunta: {text}\nResposta: {label}",
         default_instruction_prompt="Pergunta: {text}\n\nResponde à pergunta "
         "acima usando só {labels_str}, e nada mais.",
+        default_prompt_label_mapping="auto",
+    ),
+    FAROESE: PromptConfig(
+        default_prompt_prefix="Hetta eru fleirvalsspurningar (við svarum).",
+        default_prompt_template="Spurningur: {text}\nSvar: {label}",
+        default_instruction_prompt="Spurningur: {text}\n\nSvara spurninginum "
+        "omanfyri við {labels_str}, og ongum øðrum.",
         default_prompt_label_mapping="auto",
     ),
     FINNISH: PromptConfig(

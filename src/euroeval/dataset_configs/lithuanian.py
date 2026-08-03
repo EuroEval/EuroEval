@@ -92,6 +92,14 @@ RAGTRUTH_LT_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+INCLUDE_LT_CONFIG = DatasetConfig(
+    name="include-lt",
+    pretty_name="INCLUDE-lt",
+    source="EuroEval/include-lt-mini",
+    task=KNOW,
+    languages=[LITHUANIAN],
+)
+
 # Unofficial datasets ###
 
 LITHUANIAN_EMOTIONS_CONFIG = DatasetConfig(
@@ -99,15 +107,6 @@ LITHUANIAN_EMOTIONS_CONFIG = DatasetConfig(
     pretty_name="Lithuanian Emotions",
     source="EuroEval/lithuanian-emotions-mini",
     task=SENT,
-    languages=[LITHUANIAN],
-    unofficial=True,
-)
-
-INCLUDE_LT_CONFIG = DatasetConfig(
-    name="include-lt",
-    pretty_name="INCLUDE-lt",
-    source="EuroEval/include-lt-mini",
-    task=KNOW,
     languages=[LITHUANIAN],
     unofficial=True,
 )

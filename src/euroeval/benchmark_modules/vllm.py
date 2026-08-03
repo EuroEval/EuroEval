@@ -2225,19 +2225,21 @@ def _prepare_hf_overrides(
 def _get_rope_parameters_override(
     model_id: str, hf_model_config: "PretrainedConfig"
 ) -> dict[str, str | int | float] | None:
-    """Build a nested ``rope_parameters`` override from legacy top-level rope fields.
+    """Build a flat ``rope_parameters`` override for OLMo-3 models.
 
-    Transformers 5.x consolidated rope configuration into a single nested
-    ``rope_parameters`` dict, and vLLM model implementations written against that
-    schema (e.g. ``olmo2.py``, which OLMo-3 reuses) read from it. Many models,
-    however, still ship a ``config.json`` with the legacy top-level ``rope_theta`` and
-    ``rope_scaling`` fields, causing vLLM to raise ``KeyError: 'rope_theta'``. This
-    helper transcribes the legacy fields into the nested structure vLLM expects.
+    vLLM's olmo2.py implementation (reused by OLMo-3) expects a flat ``rope_parameters``
+    dict with fields like ``rope_theta``, ``rope_type``, ``factor``, etc. However, the
+    config schema has evolved:
 
-    The transcription itself is model-agnostic, but we only apply it to an explicit
-    allowlist of model families that we have confirmed need it, to avoid injecting a
-    (possibly mis-transcribed) override into models whose vLLM implementation reads the
-    top-level fields correctly today.
+    1. **Legacy OLMo-3 configs**: Top-level ``rope_theta`` and ``rope_scaling`` fields,
+       no ``rope_parameters``. We build a flat dict from these.
+    2. **Transformers 5.x OLMo-3 configs**: Nested ``rope_parameters`` containing
+       ``full_attention`` and ``sliding_attention`` sub-dicts. We flatten by extracting
+       from ``full_attention`` and merging with top-level ``rope_theta``.
+    3. **Already-flat OLMo-3 configs**: ``rope_parameters`` is already flat (has
+       ``rope_type`` at top level). No override needed.
+
+    The override is only applied to OLMo-3 models (by model_type or architecture).
 
     Args:
         model_id:
@@ -2246,38 +2248,65 @@ def _get_rope_parameters_override(
             The Hugging Face model configuration.
 
     Returns:
-        A rope_parameters dict if the model is in the allowlist and lacks existing
-        rope_parameters; otherwise None.
+        A flat rope_parameters dict if the model is OLMo-3 and needs an override;
+        otherwise None.
     """
-    # Families confirmed to require the legacy -> nested rope_parameters conversion,
-    # as (model_type, architecture) signals. Extend this list as new ones surface.
+    # Only apply to OLMo-3 models (by model_type or architecture).
     needs_override = getattr(hf_model_config, "model_type", None) == "olmo3" or (
         hf_model_config.architectures
         and "Olmo3ForCausalLM" in hf_model_config.architectures
     )
-    if not needs_override or getattr(hf_model_config, "rope_parameters", None):
+    if not needs_override:
         return None
 
     rope_theta = getattr(hf_model_config, "rope_theta", 10000)
-    rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
-    rope_parameters: dict[str, str | int | float] = {
-        "rope_theta": rope_theta,
-        "rope_type": rope_scaling.get("rope_type", "default"),
-    }
-    for key in [
-        "factor",
-        "original_max_position_embeddings",
-        "attention_factor",
-        "beta_fast",
-        "beta_slow",
-        "short_factor",
-        "long_factor",
-    ]:
-        if key in rope_scaling:
-            rope_parameters[key] = rope_scaling[key]
+    rope_params = getattr(hf_model_config, "rope_parameters", None)
+
+    # Case 1: No rope_parameters at all -> build from legacy top-level rope_scaling
+    if rope_params is None:
+        rope_scaling = getattr(hf_model_config, "rope_scaling", None) or {}
+        rope_parameters: dict[str, str | int | float] = {
+            "rope_theta": rope_theta,
+            "rope_type": rope_scaling.get("rope_type", "default"),
+        }
+        for key in [
+            "factor",
+            "original_max_position_embeddings",
+            "attention_factor",
+            "beta_fast",
+            "beta_slow",
+            "short_factor",
+            "long_factor",
+        ]:
+            if key in rope_scaling:
+                rope_parameters[key] = rope_scaling[key]
+
+        log_once(
+            f"Adding rope_parameters override for model {model_id!r} (legacy): "
+            f"{rope_parameters!r}",
+            level=logging.DEBUG,
+        )
+        return rope_parameters
+
+    # Case 2: rope_parameters exists but is nested (Transformers 5.x format)
+    # Nested format has full_attention and/or sliding_attention sub-dicts.
+    # Already-flat format has rope_type at the top level.
+    if "rope_type" in rope_params:
+        # Already flat -> no override needed
+        return None
+
+    # Nested format -> flatten from full_attention + top-level rope_theta
+    full_attention = rope_params.get("full_attention", {})
+    if not full_attention:
+        # No useful nested data -> no override
+        return None
+
+    rope_parameters = {"rope_theta": rope_theta}
+    rope_parameters.update(full_attention)
 
     log_once(
-        f"Adding rope_parameters override for model {model_id!r}: {rope_parameters!r}",
+        f"Adding rope_parameters override for model {model_id!r} (nested->flat): "
+        f"{rope_parameters!r}",
         level=logging.DEBUG,
     )
     return rope_parameters

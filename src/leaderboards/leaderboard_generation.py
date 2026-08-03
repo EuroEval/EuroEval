@@ -14,11 +14,12 @@ import pandas as pd
 
 from euroeval.constants import ORTHOGONAL_TASKS
 
+from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
 from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR
 from .link_generation import generate_task_link
 from .records import drop_val_duplicates, get_dataset, plain_model_id
 from .result_loading import load_raw_results
-from .score_computation import compute_ranks_bootstrap, compute_standard_ranks_bootstrap
+from .score_computation import compute_standard_ranks_from_bootstrap_scores
 from .score_extraction import extract_model_metadata, group_results_by_model
 from .task_metadata import category_includes_task, official_datasets_for_language
 
@@ -30,6 +31,8 @@ def generate_leaderboard(
     language_names: list[str],
     categories: list[t.Literal["generative", "all_models"]],
     force: bool,
+    language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
+    | None = None,
 ) -> None:
     """Generate leaderboard CSV files from the EuroEval results.
 
@@ -46,6 +49,8 @@ def generate_leaderboard(
             "generative" and/or "all_models".
         force:
             Force the generation of the leaderboard, even if no updates are found.
+        language_rank_cache (optional):
+            Shared cache for monolingual rank-score confidence intervals.
     """
     leaderboard_title = leaderboard_name.replace("_", " ").title()
 
@@ -77,28 +82,22 @@ def generate_leaderboard(
     )
     model_results = drop_val_duplicates(model_results=model_results)
 
-    # Use bootstrap-based CIs for the displayed "Rank score ± margin" column.
-    # Bootstrap resamples datasets with replacement (stratified by task),
-    # recomputes the full hierarchy, and returns percentile CIs.
-    ranks = compute_ranks_bootstrap(
-        model_results=model_results,
-        configs=configs,
-        n_bootstraps=NUM_BOOTSTRAPS,
-        seed=42,
-    )
     metadata_dict = extract_model_metadata(results=results)
 
     # Only include dataset columns in monolingual leaderboards
     include_dataset_columns = len(configs) == 1
 
-    # Generate the leaderboard and store it to disk
+    # Generate the leaderboard and store it to disk.
+    # Ranks are computed per-category from the eligible model set, ensuring
+    # that displayed "Rank score" and ordinal "Rank" are derived from the
+    # same bootstrap distribution.
     df_pairs = _generate_dataframe(
         model_results=model_results,
-        ranks=ranks,
         metadata_dict=metadata_dict,
         categories=categories,
         leaderboard_configs=configs,
         include_dataset_columns=include_dataset_columns,
+        language_rank_cache=language_rank_cache,
     )
 
     for category, df_pair in zip(categories, df_pairs):
@@ -118,8 +117,8 @@ def generate_leaderboard(
         # model as "updated":
         #   * the ordinal "Rank" column (a position relative to the pool);
         #   * the "Rank score" column and the per-language rank columns
-        #     (bootstrap scores computed over the whole pool, so they shift for
-        #     everyone when the set of models changes);
+        #     (bootstrap scores are population-relative, so they shift when the
+        #     eligible model set changes);
         #   * the per-dataset "_version"/"_failures"/"_scored" companion columns.
         # The remaining columns are the per-dataset scores, which only change
         # when the model itself is re-evaluated — and additions/removals are
@@ -379,19 +378,18 @@ def _create_leaderboard_headers(
 
 def _generate_dataframe(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
     metadata_dict: dict[str, dict],
     categories: list[t.Literal["generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
     include_dataset_columns: bool,
+    language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
+    | None = None,
 ) -> list[tuple[pd.DataFrame, pd.DataFrame]]:
     """Generate DataFrames from the model results.
 
     Args:
         model_results:
             The model results.
-        ranks:
-            The ranks of the models (from compute_ranks).
         metadata_dict:
             The metadata.
         categories:
@@ -400,6 +398,8 @@ def _generate_dataframe(
             The leaderboard configurations.
         include_dataset_columns:
             Whether to include dataset columns in the DataFrame.
+        language_rank_cache (optional):
+            Shared cache for monolingual rank-score confidence intervals.
 
     Returns:
         A list of pairs (df, df_simplified), where df is the full leaderboard DataFrame
@@ -415,14 +415,18 @@ def _generate_dataframe(
 
     dfs: list[tuple[pd.DataFrame, pd.DataFrame]] = []
     for category in categories:
-        (eligible_model_results, language_to_required_datasets, all_standard_ranks) = (
-            _compute_eligible_models_and_ranks(
-                model_results=model_results,
-                category=category,
-                category_to_datasets=category_to_datasets,
-                category_to_orthogonal_datasets=category_to_orthogonal_datasets,
-                leaderboard_configs=leaderboard_configs,
-            )
+        (
+            eligible_model_results,
+            language_to_required_datasets,
+            ranks,
+            all_standard_ranks,
+        ) = _compute_eligible_models_and_ranks(
+            model_results=model_results,
+            category=category,
+            category_to_datasets=category_to_datasets,
+            category_to_orthogonal_datasets=category_to_orthogonal_datasets,
+            leaderboard_configs=leaderboard_configs,
+            language_rank_cache=language_rank_cache,
         )
 
         orthogonal_scores_by_plain = _collect_orthogonal_scores(
@@ -815,8 +819,19 @@ def _compute_eligible_models_and_ranks(
     category_to_datasets: dict[str, list[str]],
     category_to_orthogonal_datasets: dict[str, dict[str, str]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
-) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, list[str]], dict]":  # noqa: E501
+    language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
+    | None = None,
+) -> "tuple[dict[str, dict[str, list[tuple[list[float], float, float]]]], dict[str, list[str]], dict, dict]":  # noqa: E501
     """Compute eligible models and bootstrap ranks for a category.
+
+    Computes both displayed rank scores (for the "Rank score" column) and
+    ordinal ranks from the SAME bootstrap distribution over the eligible model
+    set, ensuring consistency between the two.
+
+    For multilingual leaderboards, per-language rank score columns are computed
+    using each language's monolingual eligible set, matching the corresponding
+    monolingual leaderboard. The overall "Rank score" and ordinal "Rank" remain
+    pan-leaderboard.
 
     Args:
         model_results:
@@ -829,20 +844,25 @@ def _compute_eligible_models_and_ranks(
             Category to orthogonal datasets mapping.
         leaderboard_configs:
             The leaderboard configurations.
+        language_rank_cache (optional):
+            Shared cache for monolingual rank-score confidence intervals.
 
     Returns:
         Tuple of (eligible_model_results, language_to_required_datasets,
-        all_standard_ranks).
+        ranks, all_standard_ranks). Ranks are the displayed rank scores
+        (model_id -> category -> language -> {"score", "ci_lower", "ci_upper"}),
+        all_standard_ranks are the ordinal ranks (model_id -> category -> int).
     """
     required_datasets = [
         ds
-        for ds in category_to_datasets[category]
+        for ds in sorted(category_to_datasets[category])
         if ds not in category_to_orthogonal_datasets[category]
     ]
+    # Sort for deterministic iteration.
     eligible_model_results = {
-        mid: r
-        for mid, r in model_results.items()
-        if all(ds in r for ds in required_datasets)
+        mid: model_results[mid]
+        for mid in sorted(model_results.keys())
+        if all(ds in model_results[mid] for ds in required_datasets)
     }
 
     language_to_required_datasets = {
@@ -856,14 +876,112 @@ def _compute_eligible_models_and_ranks(
         for language, config in leaderboard_configs.items()
     }
 
-    all_standard_ranks = compute_standard_ranks_bootstrap(
+    # Compute bootstrap distributions for overall rank score and ordinal ranks.
+    bootstrap_scores = bootstrap_rank_scores(
         model_results=eligible_model_results,
         configs=leaderboard_configs,
         n_bootstraps=NUM_BOOTSTRAPS,
         seed=42,
+        categories=(category,),
     )
 
-    return eligible_model_results, language_to_required_datasets, all_standard_ranks
+    # Displayed rank scores (median + percentile CI).
+    ranks = bootstrap_confidence_intervals(bootstrap_scores)
+
+    # Ordinal ranks from paired-bootstrap method.
+    all_standard_ranks = compute_standard_ranks_from_bootstrap_scores(
+        bootstrap_scores=bootstrap_scores, alpha=0.05
+    )
+
+    if language_rank_cache is None:
+        language_rank_cache = {}
+    if len(leaderboard_configs) == 1:
+        language = next(iter(leaderboard_configs))
+        cache_key = _language_rank_cache_key(
+            language=language,
+            category=category,
+            required_datasets=required_datasets,
+            eligible_model_results=eligible_model_results,
+        )
+        language_rank_cache[cache_key] = ranks
+
+    # For multilingual leaderboards, compute per-language rank scores using
+    # each language's monolingual eligible set. This ensures the per-language
+    # columns match the corresponding monolingual leaderboards.
+    if len(leaderboard_configs) > 1:
+        for language, lang_config in leaderboard_configs.items():
+            lang_required = language_to_required_datasets[language]
+            lang_eligible = {
+                mid: model_results[mid]
+                for mid in sorted(model_results.keys())
+                if all(ds in model_results[mid] for ds in lang_required)
+            }
+            cache_key = _language_rank_cache_key(
+                language=language,
+                category=category,
+                required_datasets=lang_required,
+                eligible_model_results=lang_eligible,
+            )
+            if cache_key not in language_rank_cache:
+                lang_bootstrap = bootstrap_rank_scores(
+                    model_results=lang_eligible,
+                    configs={language: lang_config},
+                    n_bootstraps=NUM_BOOTSTRAPS,
+                    seed=42,
+                    categories=(category,),
+                )
+                language_rank_cache[cache_key] = bootstrap_confidence_intervals(
+                    bootstrap_scores=lang_bootstrap
+                )
+            lang_ranks = language_rank_cache[cache_key]
+            # Merge per-language scores into ranks.
+            for model_id, model_data in lang_ranks.items():
+                if model_id not in ranks:
+                    ranks[model_id] = {}
+                if category not in ranks[model_id]:
+                    ranks[model_id][category] = {}
+                # Copy the language-specific rank score (preserves overall).
+                if language in model_data.get(category, {}):
+                    ranks[model_id][category][language] = model_data[category][language]
+
+    return (
+        eligible_model_results,
+        language_to_required_datasets,
+        ranks,
+        all_standard_ranks,
+    )
+
+
+def _language_rank_cache_key(
+    language: str,
+    category: str,
+    required_datasets: list[str],
+    eligible_model_results: dict[
+        str, dict[str, list[tuple[list[float], float, float]]]
+    ],
+) -> tuple[str, str, tuple[str, ...], tuple[str, ...]]:
+    """Create a cache key for monolingual rank-score confidence intervals.
+
+    Args:
+        language:
+            The language name.
+        category:
+            The leaderboard category.
+        required_datasets:
+            The datasets required for monolingual eligibility.
+        eligible_model_results:
+            The eligible model results.
+
+    Returns:
+        A cache key that is stable across monolingual and multilingual calls in
+        the same leaderboard-generation run.
+    """
+    return (
+        language,
+        category,
+        tuple(sorted(required_datasets)),
+        tuple(sorted(eligible_model_results)),
+    )
 
 
 def _create_simplified_and_rename(

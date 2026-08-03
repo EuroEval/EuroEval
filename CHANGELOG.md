@@ -14,8 +14,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   models are now enabled on knowledge, multiple-choice-reading-comprehension,
   common-sense-reasoning, european-values, multiple-choice-stereotype-bias, and
   multiple-choice tasks. This was contributed by @pariidanDKE ✨
-- Added full support for hallucination detection for all languages now, and now marked
-  as official.
+- Added the unofficial Faroese knowledge dataset `faroese-semantic-relations`, from the
+  paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for Faroese LLM
+  Understanding", where the model has to pick the antonym of a given Faroese word from
+  six options. This was contributed by @Biorrith ✨
 - Added the knowledge datasets `eu-mmlu-cs`, `eu-mmlu-de`, `eu-mmlu-el`, `eu-mmlu-fr`,
   `eu-mmlu-hr`, `eu-mmlu-hu`, `eu-mmlu-it`, `eu-mmlu-lt`, `eu-mmlu-nl`, `eu-mmlu-pl`,
   `eu-mmlu-pt`, `eu-mmlu-ro`, `eu-mmlu-sk` and `eu-mmlu-sl`, based on the
@@ -31,6 +33,14 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   entities, for everything else it returns a generic placeholder answer. Either way,
   failures point to dataset/task code rather than the model or inference
   framework.
+  translation. They are marked as `unofficial` for now. This was added by @Rijgersberg
+  ✨
+- Added full support for hallucination detection for all languages now, and now marked
+  as official.
+- Added the unofficial Faroese knowledge dataset `faroese-metaphorical-explanations`,
+  from the paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for
+  Faroese LLM Understanding", where the model has to pick the correct explanation of a
+  Faroese idiom from four options.
 
 ### Changed
 
@@ -41,7 +51,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Croatian: `mmlu-hr` → `include-hr`
   - Dutch: `scala-nl` → `dutch-cola`, `mmlu-nl` → `include-nl`, `multiloko-nl`
   - French: `mmlu-fr` → `include-fr`, `multiloko-fr`
-  - German: `hellaswag-de` → `winogrande-de`
+  - German: `hellaswag-de` → `winogrande-de`, `mmlu-de` → `include-de`, `multiloko-de`
+  - Greek: `global-mmlu-el` → `greek-mmlu`
+  - Hungarian: `mmlu-hu` → `include-hu`
+  - Lithuanian: `include-lt`
   - Portuguese: `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
 
 ### Fixed
@@ -76,6 +89,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   OLMo-3 models such as `allenai/Olmo-3-1125-32B`). The model config now transcribes the
   legacy fields into the nested structure, applied to an explicit allowlist of confirmed
   model families.
+- Fixed handling of OLMo-3 models with the nested `rope_parameters` format from
+  transformers 5.x (containing `full_attention` and `sliding_attention` sub-dicts). The
+  override now flattens `full_attention` contents with top-level `rope_theta` for vLLM
+  compatibility, while preserving already-flat `rope_parameters` without modification.
+- Fixed startup verbosity to correctly respect the effective debug value (method
+  argument if provided, otherwise initializer default), ensuring the `--verbose` hint
+  is suppressed when debug mode is active via either path.
 
 ## [v17.7.0] - 2026-07-22
 
@@ -101,6 +121,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   included.
 - Added the `alx/` provider, being the Danish [ALX
   Platform](https://platform.alexandra.dk/).
+- Added Faroese prompt templates for multiple-choice tasks, enabling Faroese datasets
+  for all tasks in the multiple-choice classification task group (knowledge,
+  common-sense reasoning, and more).
 
 ### Changed
 

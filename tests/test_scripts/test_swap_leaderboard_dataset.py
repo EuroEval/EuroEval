@@ -492,6 +492,373 @@ class TestExecuteJobsResultDetection:
 class TestLoadCorpusAndBuildEvalJobs:
     """Tests for load_corpus and build_eval_jobs functions."""
 
+    def test_build_eval_jobs_add_only_does_not_rank_collapsed_union(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Add-only must not rank a model only completed by variant union."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        required_datasets = {
+            "dala",
+            "dansk",
+            "angry-tweets",
+            "multi-wiki-qa-da",
+            "nordjylland-news",
+            "danish-citizen-tests",
+            "winogrande-da",
+            "danske-talemaader",
+        }
+        test_variant_datasets = required_datasets - {"danske-talemaader"}
+        val_variant_datasets = required_datasets - {"dala"}
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": required_datasets}},
+            api_model_ids=set(),
+            observations=set(),
+            eval_configs={},
+            exact_observations=set(),
+            variant_coverage={
+                "test-model": {"da": test_variant_datasets},
+                "test-model (val)": {"da": val_variant_datasets},
+            },
+            variant_configs={
+                ("test-model", "dala", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                ),
+                ("test-model (val)", "dansk", "da"): ObsConfig(
+                    validation_split=True, few_shot=True, generative=False
+                ),
+            },
+        )
+
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked={("test-model", "da")},
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=True,
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+        )
+
+        assert jobs == []
+        assert skipped_api == []
+        assert skipped_count == 0
+
+    def test_build_eval_jobs_add_only_falls_back_to_defaults(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """In add-only mode, fall back to defaults with no official-dataset results."""
+        Corpus = swap_leaderboard_dataset._Corpus
+
+        # Create a corpus where the model has no official-dataset results
+        # (only listed in datasets_by_language but no eval_configs entry)
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": set()}},
+            api_model_ids=set(),
+            observations=set(),
+            eval_configs={},
+        )
+
+        ranked = {("test-model", "da")}
+
+        # Add-only mode (old_dataset=None), open-weight model (is_api=False)
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked=ranked,
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=False,
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+        )
+
+        # Should create a job with open-weight defaults (test split, few-shot)
+        assert len(jobs) == 1
+        assert jobs[0].model_id == "test-model"
+        # Open-weight default: test split, few-shot
+        assert jobs[0].evaluate_test_split is True
+        assert jobs[0].zero_shot is False
+        assert skipped_count == 0
+
+    def test_build_eval_jobs_add_only_mirrors_official_dataset_config(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """In add-only mode, mirror config from official dataset."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        # Create a corpus where the model has an official-dataset result
+        # (e.g., "dala" is a required official dataset for the leaderboard)
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": {"dala"}}},
+            api_model_ids=set(),
+            observations={("test-model", "dala", "da")},
+            eval_configs={
+                # Official dataset has validation split, zero-shot config
+                ("test-model", "dala", "da"): ObsConfig(
+                    validation_split=True, few_shot=False, generative=True
+                )
+            },
+        )
+
+        ranked = {("test-model", "da")}
+
+        # Add-only mode (old_dataset=None)
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked=ranked,
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=True,  # Force re-run to test config mirroring
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+        )
+
+        # Should create a job mirroring the official dataset's config
+        assert len(jobs) == 1
+        assert jobs[0].model_id == "test-model"
+        # validation_split=True -> evaluate_test_split=False
+        assert jobs[0].evaluate_test_split is False
+        # few_shot=False, generative=True -> zero_shot=True
+        assert jobs[0].zero_shot is True
+        assert skipped_count == 0
+
+    def test_build_eval_jobs_add_only_multiple_variants_schedule_both(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Multiple ranked variants for same plain model schedule distinct jobs."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        # Model has TWO variants that both cover the full required dataset set:
+        # - test-model (few-shot test split): covers required datasets
+        # - test-model (zero-shot val split): also covers required datasets
+        # Both should be scheduled as separate jobs.
+        required_datasets = {
+            "dala",
+            "dansk",
+            "angry-tweets",
+            "multi-wiki-qa-da",
+            "nordjylland-news",
+            "danish-citizen-tests",
+            "winogrande-da",
+            "danske-talemaader",
+        }
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": required_datasets}},
+            api_model_ids=set(),
+            observations=set(),
+            eval_configs={},
+            exact_observations=set(),
+            variant_coverage={
+                # Both variants cover ALL required datasets
+                "test-model": {"da": required_datasets},
+                "test-model (zero-shot, val)": {"da": required_datasets},
+            },
+            variant_configs={
+                # Few-shot test-split config
+                ("test-model", "dala", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                ),
+                # Zero-shot val-split config
+                ("test-model (zero-shot, val)", "dala", "da"): ObsConfig(
+                    validation_split=True, few_shot=False, generative=True
+                ),
+            },
+        )
+
+        ranked = {("test-model", "da")}
+
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked=ranked,
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=True,  # Force to test both variants are scheduled
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+        )
+
+        # Should create TWO jobs for the two distinct variants
+        assert len(jobs) == 2
+        # One job: test-split, few-shot
+        # Other job: val-split, zero-shot
+        configs = {(j.evaluate_test_split, j.zero_shot) for j in jobs}
+        assert (True, False) in configs  # test-split, few-shot
+        assert (False, True) in configs  # val-split, zero-shot
+
+    def test_build_eval_jobs_add_only_ranked_via_non_default_variant(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Model ranked via non-default official variant, no new-dataset result."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        # Model is ranked via official dataset with validation-split (non-default)
+        # No new-dataset result exists -> should create a job with val-split config
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": {"dala"}}},
+            api_model_ids=set(),
+            observations={("test-model", "dala", "da")},
+            eval_configs={
+                # Official dataset: validation-split, zero-shot (non-default)
+                ("test-model", "dala", "da"): ObsConfig(
+                    validation_split=True, few_shot=False, generative=True
+                )
+            },
+        )
+
+        ranked = {("test-model", "da")}
+
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked=ranked,
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=False,
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+        )
+
+        # Should create a job mirroring the official dataset's non-default config
+        assert len(jobs) == 1
+        assert jobs[0].model_id == "test-model"
+        # validation_split=True -> evaluate_test_split=False
+        assert jobs[0].evaluate_test_split is False
+        # few_shot=False, generative=True -> zero_shot=True
+        assert jobs[0].zero_shot is True
+        assert skipped_count == 0
+
+    def test_build_eval_jobs_add_only_uses_variant_row_config(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Add-only mode derives config from variant row."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        # Model has two official dataset variants with DIFFERENT configs.
+        # The val variant covers the full required official dataset set.
+        # Required datasets for Danish "linguistic-acceptability":
+        required_datasets = {
+            "dala",
+            "dansk",
+            "angry-tweets",
+            "multi-wiki-qa-da",
+            "nordjylland-news",
+            "danish-citizen-tests",
+            "winogrande-da",
+            "danske-talemaader",
+        }
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": required_datasets}},
+            api_model_ids=set(),
+            observations={("test-model", "dala", "da")},
+            eval_configs={
+                # Collapsed: prefers test-split (existing behavior)
+                ("test-model", "dala", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                )
+            },
+            exact_observations=set(),
+            variant_coverage={
+                # Val variant covers ALL required datasets
+                "test-model (val)": {"da": required_datasets}
+            },
+            variant_configs={
+                # Val variant's config for any required dataset
+                ("test-model (val)", "dala", "da"): ObsConfig(
+                    validation_split=True, few_shot=False, generative=True
+                )
+            },
+        )
+
+        ranked = {("test-model", "da")}
+
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked=ranked,
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=True,  # Force to test config derivation
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+        )
+
+        # Should use variant row's config (val-split, zero-shot) not collapsed config
+        assert len(jobs) == 1
+        assert jobs[0].model_id == "test-model"
+        # validation_split=True -> evaluate_test_split=False
+        assert jobs[0].evaluate_test_split is False
+        # few_shot=False, generative=True -> zero_shot=True
+        assert jobs[0].zero_shot is True
+
+    def test_build_eval_jobs_add_only_wrong_variant_must_not_skip(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """New dataset has only wrong variant -> must not skip, must create job."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        # Model ranked via official dataset with test-split (default).
+        # New dataset has validation-split result (wrong variant) -> must not skip.
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": {"dala", "new-dataset"}}},
+            api_model_ids=set(),
+            observations={
+                ("test-model", "dala", "da"),
+                ("test-model", "new-dataset", "da"),
+            },
+            eval_configs={
+                # Official dataset: test-split, few-shot (desired config)
+                ("test-model", "dala", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                ),
+                # New dataset: validation-split (wrong variant, should not skip)
+                ("test-model", "new-dataset", "da"): ObsConfig(
+                    validation_split=True, few_shot=True, generative=False
+                ),
+            },
+            exact_observations={
+                # Exact observation for new-dataset has WRONG validation_split
+                ("test-model", "new-dataset", "da", True, True)
+            },
+            variant_coverage={},
+            variant_configs={},
+        )
+
+        ranked = {("test-model", "da")}
+
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked=ranked,
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=False,
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+        )
+
+        # Should create a job because the existing config differs from desired
+        assert len(jobs) == 1
+        assert jobs[0].evaluate_test_split is True  # test split (desired)
+        assert jobs[0].zero_shot is False  # few-shot (desired)
+        assert skipped_count == 0
+
     def test_build_eval_jobs_runs_when_observation_missing(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -521,6 +888,8 @@ class TestLoadCorpusAndBuildEvalJobs:
             include_api=True,
             selected_providers=set(),
             force=False,
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
         )
 
         # Should create a job since no existing observation
@@ -529,26 +898,148 @@ class TestLoadCorpusAndBuildEvalJobs:
         assert jobs[0].languages == ("da",)
         assert skipped_count == 0
 
-    def test_build_eval_jobs_skips_existing_observations(
+    def test_build_eval_jobs_skip_ignores_non_leaderboard_variant(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Skip (model, language) pairs with results for new dataset."""
+        """Existing-result skip ignores variants not shown on leaderboard."""
         Corpus = swap_leaderboard_dataset._Corpus
         ObsConfig = swap_leaderboard_dataset._ObsConfig
 
-        # Create a corpus with an existing observation
+        # In add-only mode, the desired config is derived from official datasets.
+        # The new-dataset result has a different config (validation-split), so
+        # it should NOT be skipped (we still need to create the test-split result).
         corpus = Corpus(
-            datasets_by_language={"da": {"test-model": {"old-dataset"}}},
+            datasets_by_language={"da": {"test-model": {"dala", "new-dataset"}}},
             api_model_ids=set(),
-            observations={("test-model", "new-dataset", "da")},  # Already exists
-            eval_configs={
-                ("test-model", "old-dataset", "da"): ObsConfig(
-                    validation_split=False, few_shot=True, generative=False
-                )
+            observations={
+                ("test-model", "dala", "da"),
+                ("test-model", "new-dataset", "da"),
             },
+            eval_configs={
+                # Official dataset has test-split config (desired config)
+                ("test-model", "dala", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                ),
+                # New dataset has validation-split config (different from desired)
+                ("test-model", "new-dataset", "da"): ObsConfig(
+                    validation_split=True, few_shot=True, generative=False
+                ),
+            },
+            exact_observations={
+                # Exact observation for new-dataset has WRONG validation_split
+                ("test-model", "new-dataset", "da", True, True)
+            },
+            variant_coverage={},
+            variant_configs={},
         )
 
-        # Ranked pairs include the model that already has results
+        ranked = {("test-model", "da")}
+
+        # Should NOT skip because the existing new-dataset config doesn't match
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked=ranked,
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=False,
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+        )
+
+        # Should create a job because the existing config differs from desired
+        assert len(jobs) == 1
+        assert jobs[0].evaluate_test_split is True  # test split
+        assert jobs[0].zero_shot is False  # few-shot
+        assert skipped_count == 0
+
+    def test_build_eval_jobs_skip_is_variant_aware(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Existing-result skip compares config values, not just key existence."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        # Add-only mode: desired config from official dataset.
+        # New-dataset has matching config -> should skip.
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": {"dala", "new-dataset"}}},
+            api_model_ids=set(),
+            observations={
+                ("test-model", "dala", "da"),
+                ("test-model", "new-dataset", "da"),
+            },
+            eval_configs={
+                # Official dataset: test-split, few-shot (desired config)
+                ("test-model", "dala", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                ),
+                # New dataset: same config as desired -> should skip
+                ("test-model", "new-dataset", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                ),
+            },
+            exact_observations={
+                # Exact observation for new-dataset matches desired config
+                ("test-model", "new-dataset", "da", False, True)
+            },
+            variant_coverage={},
+            variant_configs={},
+        )
+
+        ranked = {("test-model", "da")}
+
+        # Should skip because the existing config matches the desired config
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked=ranked,
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=False,
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+        )
+
+        assert len(jobs) == 0
+        assert skipped_count == 1
+
+    def test_build_eval_jobs_skips_existing_observations(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Skip when new-dataset config matches desired config."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        # Swap mode: desired config from old_dataset.
+        # New-dataset has matching config -> should skip.
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": {"old-dataset", "new-dataset"}}},
+            api_model_ids=set(),
+            observations={
+                ("test-model", "old-dataset", "da"),
+                ("test-model", "new-dataset", "da"),
+            },
+            eval_configs={
+                # Old dataset: test-split, few-shot (desired config)
+                ("test-model", "old-dataset", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                ),
+                # New dataset: same config as desired -> should skip
+                ("test-model", "new-dataset", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                ),
+            },
+            exact_observations={
+                # Exact observation for new-dataset matches desired config
+                ("test-model", "new-dataset", "da", False, True)
+            },
+            variant_coverage={},
+            variant_configs={},
+        )
+
         ranked = {("test-model", "da")}
 
         jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
@@ -559,9 +1050,11 @@ class TestLoadCorpusAndBuildEvalJobs:
             include_api=True,
             selected_providers=set(),
             force=False,
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
         )
 
-        # Should skip the existing observation
+        # Should skip because the existing config matches the desired config
         assert len(jobs) == 0
         assert skipped_count == 1
 
@@ -601,6 +1094,8 @@ class TestLoadCorpusAndBuildEvalJobs:
         corpus = swap_leaderboard_dataset.load_corpus()
         # plain_model_id strips variants, so "test/org-model" stays as-is
         assert ("test/org-model", "test-dataset", "da") in corpus.observations
+        assert "test/org-model" in corpus.variant_coverage
+        assert "unknown" not in corpus.variant_coverage
 
     def test_load_corpus_handles_missing_benchmark_results(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -638,6 +1133,83 @@ class TestLoadCorpusAndBuildEvalJobs:
         corpus = swap_leaderboard_dataset.load_corpus()
         assert ("test-model", "test-dataset", "da") in corpus.observations
 
+    def test_load_corpus_id_only_variants_do_not_rank_collapsed_union(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """ID-only records must still build usable variant coverage."""
+        results_dir = tmp_path / "results"
+        model_dir = results_dir / "test-model"
+        model_dir.mkdir(parents=True)
+        required_datasets = {
+            "dala",
+            "dansk",
+            "angry-tweets",
+            "multi-wiki-qa-da",
+            "nordjylland-news",
+            "danish-citizen-tests",
+            "winogrande-da",
+            "danske-talemaader",
+        }
+        test_variant_datasets = required_datasets - {"dansk", "danske-talemaader"}
+        val_variant_datasets = required_datasets - {"dala"}
+
+        for dataset in sorted(test_variant_datasets):
+            record = {
+                "model_info": {"id": "test-model"},
+                "eval_library": {
+                    "additional_details": {
+                        "dataset": dataset,
+                        "languages": ["da"],
+                        "validation_split": False,
+                    }
+                },
+            }
+            (model_dir / f"{dataset}__test__none.json").write_text(
+                json.dumps(record), encoding="utf-8"
+            )
+        for dataset in sorted(val_variant_datasets):
+            record = {
+                "model_info": {"id": "test-model"},
+                "eval_library": {
+                    "additional_details": {
+                        "dataset": dataset,
+                        "languages": ["da"],
+                        "validation_split": True,
+                    }
+                },
+            }
+            (model_dir / f"{dataset}__val__none.json").write_text(
+                json.dumps(record), encoding="utf-8"
+            )
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="EUROEVAL_BENCHMARK_RESULTS_PATH",
+            value=tmp_path / "euroeval_benchmark_results.jsonl",
+        )
+
+        corpus = swap_leaderboard_dataset.load_corpus()
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked={("test-model", "da")},
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=True,
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+        )
+
+        assert required_datasets <= corpus.datasets_by_language["da"]["test-model"]
+        assert "unknown" not in corpus.variant_coverage
+        assert jobs == []
+        assert skipped_api == []
+        assert skipped_count == 0
+
     def test_load_corpus_includes_euroeval_benchmark_results(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -672,6 +1244,82 @@ class TestLoadCorpusAndBuildEvalJobs:
 
         # Verify the record is in observations
         assert ("test-model", "test-dataset", "da") in corpus.observations
+
+    def test_load_corpus_split_agnostic_completes_val_variant(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Split-agnostic datasets should count on matching val rows."""
+        results_dir = tmp_path / "results"
+        model_dir = results_dir / "test-model"
+        model_dir.mkdir(parents=True)
+        required_datasets = {
+            "dala",
+            "dansk",
+            "angry-tweets",
+            "multi-wiki-qa-da",
+            "nordjylland-news",
+            "danish-citizen-tests",
+            "winogrande-da",
+            "danske-talemaader",
+        }
+        split_agnostic_dataset = "dala"
+
+        split_agnostic_record = {
+            "model_info": {"name": "test-model"},
+            "eval_library": {
+                "additional_details": {
+                    "dataset": split_agnostic_dataset,
+                    "languages": ["da"],
+                    "validation_split": None,
+                }
+            },
+        }
+        (model_dir / "dala__none__none.json").write_text(
+            json.dumps(split_agnostic_record), encoding="utf-8"
+        )
+        for dataset in sorted(required_datasets - {split_agnostic_dataset}):
+            record = {
+                "model_info": {"name": "test-model"},
+                "eval_library": {
+                    "additional_details": {
+                        "dataset": dataset,
+                        "languages": ["da"],
+                        "validation_split": True,
+                    }
+                },
+            }
+            (model_dir / f"{dataset}__val__none.json").write_text(
+                json.dumps(record), encoding="utf-8"
+            )
+
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset, name="RESULTS_DIR", value=results_dir
+        )
+        monkeypatch.setattr(
+            target=swap_leaderboard_dataset,
+            name="EUROEVAL_BENCHMARK_RESULTS_PATH",
+            value=tmp_path / "euroeval_benchmark_results.jsonl",
+        )
+
+        corpus = swap_leaderboard_dataset.load_corpus()
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked={("test-model", "da")},
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=True,
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+        )
+
+        assert required_datasets <= corpus.variant_coverage["test-model (val)"]["da"]
+        assert len(jobs) == 1
+        assert jobs[0].evaluate_test_split is False
+        assert jobs[0].zero_shot is False
+        assert skipped_api == []
+        assert skipped_count == 0
 
 
 class TestSyncResults:
