@@ -471,8 +471,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-fo
 This dataset was published in [this paper](https://doi.org/10.63317/4u4i99hc8co8)
 and tests knowledge of Faroese semantic relations. Each sample presents a Faroese
 word, and the model has to pick the word's antonym from six options: the true antonym
-and five randomly sampled unrelated words. The dataset is currently not publicly
-available, pending permission from the creators.
+and five randomly sampled unrelated words.
 
 The original full dataset consists of 1,131 samples. We use a 348 / 87 / 696 split for
 training, validation and testing, respectively (so 1,131 samples used in total),
