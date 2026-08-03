@@ -18,8 +18,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for Faroese LLM
   Understanding", where the model has to pick the antonym of a given Faroese word from
   six options. This was contributed by @Biorrith ✨
-- Added full support for hallucination detection for all languages now, and now marked
-  as official.
 - Added the knowledge datasets `eu-mmlu-cs`, `eu-mmlu-de`, `eu-mmlu-el`, `eu-mmlu-fr`,
   `eu-mmlu-hr`, `eu-mmlu-hu`, `eu-mmlu-it`, `eu-mmlu-lt`, `eu-mmlu-nl`, `eu-mmlu-pl`,
   `eu-mmlu-pt`, `eu-mmlu-ro`, `eu-mmlu-sk` and `eu-mmlu-sl`, based on the
@@ -27,7 +25,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   existing `mmlu-*` and `global-mmlu-*` datasets, these were translated by professional
   translators at the European Commission's Directorate-General for Translation and by
   students from the European Master's in Translation network, rather than by machine
-  translation. They are marked as `unofficial` for now.
+  translation. They are marked as `unofficial` for now. This was added by @Rijgersberg
+  ✨
+- Added full support for hallucination detection for all languages now, and now marked
+  as official.
 
 ### Changed
 
