@@ -84,16 +84,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   parallel size. This fixes evaluation failures for models like SmolLM series (9/15
   heads) on multi-GPU setups, which previously raised errors like "Total number of
   attention heads (X) must be divisible by tensor parallel size (Y)".
-- Fixed `KeyError: 'rope_theta'` when loading models whose `config.json` still uses the
-  legacy top-level `rope_theta`/`rope_scaling` fields with a vLLM implementation that
-  expects the nested `rope_parameters` structure introduced in transformers 5.x (e.g.
-  OLMo-3 models such as `allenai/Olmo-3-1125-32B`). The model config now transcribes the
-  legacy fields into the nested structure, applied to an explicit allowlist of confirmed
-  model families.
-- Fixed handling of OLMo-3 models with the nested `rope_parameters` format from
-  transformers 5.x (containing `full_attention` and `sliding_attention` sub-dicts). The
-  override now flattens `full_attention` contents with top-level `rope_theta` for vLLM
-  compatibility, while preserving already-flat `rope_parameters` without modification.
+- Fixed vLLM RoPE config compatibility for OLMo-3 models across both legacy
+  top-level `rope_theta`/`rope_scaling` fields and the nested `rope_parameters`
+  format introduced in transformers 5.x. Legacy fields are transcribed into the
+  nested structure for an explicit allowlist of confirmed model families, and
+  nested `full_attention` contents are flattened with top-level `rope_theta`
+  for vLLM compatibility while already-flat `rope_parameters` are preserved.
 - Fixed startup verbosity to correctly respect the effective debug value (method
   argument if provided, otherwise initializer default), ensuring the `--verbose` hint
   is suppressed when debug mode is active via either path.
