@@ -14,8 +14,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   models are now enabled on knowledge, multiple-choice-reading-comprehension,
   common-sense-reasoning, european-values, multiple-choice-stereotype-bias, and
   multiple-choice tasks. This was contributed by @pariidanDKE ✨
-- Added full support for hallucination detection for all languages now, and now marked
-  as official.
+- Added the unofficial Faroese knowledge dataset `faroese-semantic-relations`, from the
+  paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for Faroese LLM
+  Understanding", where the model has to pick the antonym of a given Faroese word from
+  six options. This was contributed by @Biorrith ✨
 - Added the knowledge datasets `eu-mmlu-cs`, `eu-mmlu-de`, `eu-mmlu-el`, `eu-mmlu-fr`,
   `eu-mmlu-hr`, `eu-mmlu-hu`, `eu-mmlu-it`, `eu-mmlu-lt`, `eu-mmlu-nl`, `eu-mmlu-pl`,
   `eu-mmlu-pt`, `eu-mmlu-ro`, `eu-mmlu-sk` and `eu-mmlu-sl`, based on the
@@ -23,7 +25,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   existing `mmlu-*` and `global-mmlu-*` datasets, these were translated by professional
   translators at the European Commission's Directorate-General for Translation and by
   students from the European Master's in Translation network, rather than by machine
-  translation. They are marked as `unofficial` for now.
+  translation. They are marked as `unofficial` for now. This was added by @Rijgersberg
+  ✨
+- Added full support for hallucination detection for all languages now, and now marked
+  as official.
 - Added the unofficial Faroese knowledge dataset `faroese-metaphorical-explanations`,
   from the paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for
   Faroese LLM Understanding", where the model has to pick the correct explanation of a
@@ -41,6 +46,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - German: `hellaswag-de` → `winogrande-de`, `mmlu-de` → `include-de`, `multiloko-de`
   - Greek: `global-mmlu-el` → `greek-mmlu`
   - Hungarian: `mmlu-hu` → `include-hu`
+  - Lithuanian: `include-lt`
   - Portuguese: `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
 
 ### Fixed
@@ -107,10 +113,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   included.
 - Added the `alx/` provider, being the Danish [ALX
   Platform](https://platform.alexandra.dk/).
-- Added the unofficial Faroese knowledge dataset `faroese-semantic-relations`, from the
-  paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for Faroese LLM
-  Understanding", where the model has to pick the antonym of a given Faroese word from
-  six options.
 - Added Faroese prompt templates for multiple-choice tasks, enabling Faroese datasets
   for all tasks in the multiple-choice classification task group (knowledge,
   common-sense reasoning, and more).

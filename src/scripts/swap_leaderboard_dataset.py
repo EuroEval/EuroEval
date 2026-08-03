@@ -598,7 +598,7 @@ def _update_changelog(
         lang_list = ", ".join(sorted([lang.name for lang in old_config.languages]))
         new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
         entry = (
-            f"- Swapped official dataset for {lang_list}:\n"
+            f"- Swapped official dataset for {lang_list}:\n  "
             f"`{old_dataset}` → {new_ds_str}."
         )
     else:
@@ -613,7 +613,7 @@ def _update_changelog(
         )
         new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
         entry = (
-            f"- Added official datasets for {lang_list}: {new_ds_str}. The script "
+            f"- Added official datasets for {lang_list}: {new_ds_str}. The script \n  "
             "`swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md "
             "when performing dataset swaps."
         )
