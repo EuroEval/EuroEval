@@ -554,6 +554,11 @@
     "train": 13,
     "val": 64
   },
+  "EuroEval/include-lt-mini": {
+    "test": 430,
+    "train": 25,
+    "val": 64
+  },
   "EuroEval/include-nl-mini": {
     "test": 469,
     "train": 24,

@@ -469,7 +469,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset lt-history
 ```
 
-### Unofficial: INCLUDE-lt
+### INCLUDE-lt
 
 This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
 comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
