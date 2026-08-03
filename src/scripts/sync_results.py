@@ -9,8 +9,8 @@ import logging
 from pathlib import Path
 
 from leaderboards.bucket_sync import (
+    download_missing_bucket_files,
     merge_results,
-    sync_bucket,
     upload_results_to_bucket,
 )
 
@@ -22,11 +22,11 @@ RESULTS_FILE = Path("euroeval_benchmark_results.jsonl")
 def main() -> None:
     """Main entry point.
 
-    Syncs results from the Hugging Face bucket, merges them into a single
-    JSONL file, and uploads any new local results back to the bucket.
+    Downloads missing results from the Hugging Face bucket, merges them into a
+    single JSONL file, and uploads any new local results back to the bucket.
     """
     logging.basicConfig(level=logging.INFO)
-    sync_bucket()
+    download_missing_bucket_files()
 
     n_results = merge_results(results_file=RESULTS_FILE)
     if n_results > 0:
