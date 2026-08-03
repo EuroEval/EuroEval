@@ -111,7 +111,7 @@ dev = [
     "tqdm-stubs>=0.2.1",
     "pre-commit>=4.5.1",
     "plotly>=6.9.0",
-    "slopo",
+    "slopo>=0.4.0",
     "vulture>=2.16",
 ]
 
