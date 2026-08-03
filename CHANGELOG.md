@@ -38,16 +38,15 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   existing `mmlu-*` and `global-mmlu-*` datasets, these were translated by professional
   translators at the European Commission's Directorate-General for Translation and by
   students from the European Master's in Translation network, rather than by machine
-  translation. They are marked as `unofficial` for now.
+  translation. They are marked as `unofficial` for now. This was added by @Rijgersberg
+  ✨
 - Added a built-in `dummy` model backend (`--model dummy`) for debugging EuroEval
   setups without downloading or running any real model. For tasks with a fixed set
   of possible answers (e.g. classification, multiple-choice), it predicts a uniform
   probability across all of them, for named entity recognition it predicts no
   entities, for everything else it returns a generic placeholder answer. Either way,
-  failures point to dataset/task code rather than the model or inference
-  framework.
-  translation. They are marked as `unofficial` for now. This was added by @Rijgersberg
-  ✨
+  failures point to dataset/task code rather than the model or inference framework. This
+  was added by @viggo-gascou ✨
 - Added full support for hallucination detection for all languages now, and now marked
   as official.
 
@@ -63,6 +62,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - German: `hellaswag-de` → `winogrande-de`, `mmlu-de` → `include-de`, `multiloko-de`
   - Greek: `global-mmlu-el` → `greek-mmlu`
   - Hungarian: `mmlu-hu` → `include-hu`
+  - Icelandic: `scala-is` → `ice-ec`
   - Lithuanian: `include-lt`
   - Portuguese: `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
 
@@ -92,16 +92,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   parallel size. This fixes evaluation failures for models like SmolLM series (9/15
   heads) on multi-GPU setups, which previously raised errors like "Total number of
   attention heads (X) must be divisible by tensor parallel size (Y)".
-- Fixed `KeyError: 'rope_theta'` when loading models whose `config.json` still uses the
-  legacy top-level `rope_theta`/`rope_scaling` fields with a vLLM implementation that
-  expects the nested `rope_parameters` structure introduced in transformers 5.x (e.g.
-  OLMo-3 models such as `allenai/Olmo-3-1125-32B`). The model config now transcribes the
-  legacy fields into the nested structure, applied to an explicit allowlist of confirmed
-  model families.
-- Fixed handling of OLMo-3 models with the nested `rope_parameters` format from
-  transformers 5.x (containing `full_attention` and `sliding_attention` sub-dicts). The
-  override now flattens `full_attention` contents with top-level `rope_theta` for vLLM
-  compatibility, while preserving already-flat `rope_parameters` without modification.
+- Fixed vLLM RoPE config compatibility for OLMo-3 models across both legacy
+  top-level `rope_theta`/`rope_scaling` fields and the nested `rope_parameters`
+  format introduced in transformers 5.x. Legacy fields are transcribed into the
+  nested structure for an explicit allowlist of confirmed model families, and
+  nested `full_attention` contents are flattened with top-level `rope_theta`
+  for vLLM compatibility while already-flat `rope_parameters` are preserved.
 - Fixed startup verbosity to correctly respect the effective debug value (method
   argument if provided, otherwise initializer default), ensuring the `--verbose` hint
   is suppressed when debug mode is active via either path.

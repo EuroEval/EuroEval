@@ -480,6 +480,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/ice-ec": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/icelandic-knowledge": {
     "test": 1024,
     "train": 842,
