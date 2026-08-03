@@ -1277,7 +1277,7 @@ dev = [
     { name = "readme-coverage-badger", specifier = ">=0.1.2" },
     { name = "ruff", specifier = ">=0.7.1" },
     { name = "setuptools", specifier = ">=75.6.0" },
-    { name = "slopo" },
+    { name = "slopo", specifier = ">=0.4.0" },
     { name = "tqdm-stubs", specifier = ">=0.2.1" },
     { name = "ty", specifier = ">=0.0.40" },
     { name = "types-aiofiles", specifier = ">=24.1.0.20241221" },
