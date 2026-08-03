@@ -58,6 +58,130 @@ class TestClearCacheFn:
         rmtree(path="does-not-exist", ignore_errors=True)
 
 
+class TestDebugStartupVerbosity:
+    """Tests for the --debug startup verbosity bug fix."""
+
+    def test_call_debug_true_suppresses_hint(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that call debug=True suppresses the --verbose hint."""
+        logged_messages: list[str] = []
+        monkeypatch.delenv("FULL_LOG", raising=False)
+
+        def mock_log_once(message: str, level: int, prefix: str = "") -> None:
+            logged_messages.append(message)
+
+        monkeypatch.setattr("euroeval.benchmarker.log_once", mock_log_once)
+        monkeypatch.setattr("euroeval.benchmarker.log", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            "euroeval.benchmarker.adjust_logging_level", lambda *args, **kwargs: None
+        )
+
+        benchmarker = Benchmarker(
+            progress_bar=False,
+            save_results=False,
+            num_iterations=1,
+            debug=False,
+            run_with_cli=True,
+        )
+
+        # Mock the methods that would do real work
+        monkeypatch.setattr(
+            benchmarker, "_fetch_model_configs", lambda *args, **kwargs: []
+        )
+        monkeypatch.setattr(
+            benchmarker, "_create_model_dataset_mapping", lambda *args, **kwargs: {}
+        )
+
+        benchmarker.benchmark(model="test_model", debug=True)
+
+        # Should use the short message (no --verbose hint) when debug=True
+        assert any("Started EuroEval run." in msg for msg in logged_messages)
+        assert not any(
+            "Run with `--verbose` for more information" in msg
+            for msg in logged_messages
+        )
+
+    def test_init_debug_true_suppresses_hint(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that init debug=True suppresses the --verbose hint."""
+        logged_messages: list[str] = []
+        monkeypatch.delenv("FULL_LOG", raising=False)
+
+        def mock_log_once(message: str, level: int, prefix: str = "") -> None:
+            logged_messages.append(message)
+
+        monkeypatch.setattr("euroeval.benchmarker.log_once", mock_log_once)
+        monkeypatch.setattr("euroeval.benchmarker.log", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            "euroeval.benchmarker.adjust_logging_level", lambda *args, **kwargs: None
+        )
+
+        benchmarker = Benchmarker(
+            progress_bar=False,
+            save_results=False,
+            num_iterations=1,
+            debug=True,
+            run_with_cli=True,
+        )
+
+        # Mock the methods that would do real work
+        monkeypatch.setattr(
+            benchmarker, "_fetch_model_configs", lambda *args, **kwargs: []
+        )
+        monkeypatch.setattr(
+            benchmarker, "_create_model_dataset_mapping", lambda *args, **kwargs: {}
+        )
+
+        benchmarker.benchmark(model="test_model")
+
+        # Should use the short message (no --verbose hint) when debug=True
+        assert any("Started EuroEval run." in msg for msg in logged_messages)
+        assert not any(
+            "Run with `--verbose` for more information" in msg
+            for msg in logged_messages
+        )
+
+    def test_non_debug_shows_hint(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that the normal non-debug case still shows the --verbose hint."""
+        logged_messages: list[str] = []
+        monkeypatch.delenv("FULL_LOG", raising=False)
+
+        def mock_log_once(message: str, level: int, prefix: str = "") -> None:
+            logged_messages.append(message)
+
+        monkeypatch.setattr("euroeval.benchmarker.log_once", mock_log_once)
+        monkeypatch.setattr("euroeval.benchmarker.log", lambda *args, **kwargs: None)
+        monkeypatch.setattr(
+            "euroeval.benchmarker.adjust_logging_level", lambda *args, **kwargs: None
+        )
+
+        benchmarker = Benchmarker(
+            progress_bar=False,
+            save_results=False,
+            num_iterations=1,
+            debug=False,
+            run_with_cli=True,
+        )
+
+        # Mock the methods that would do real work
+        monkeypatch.setattr(
+            benchmarker, "_fetch_model_configs", lambda *args, **kwargs: []
+        )
+        monkeypatch.setattr(
+            benchmarker, "_create_model_dataset_mapping", lambda *args, **kwargs: {}
+        )
+
+        benchmarker.benchmark(model="test_model")
+
+        # Should show the --verbose hint when debug=False
+        assert any(
+            "Run with `--verbose` for more information" in msg
+            for msg in logged_messages
+        )
+
+
 @pytest.fixture(scope="module")
 def benchmarker() -> Generator[Benchmarker, None, None]:
     """A `Benchmarker` instance.

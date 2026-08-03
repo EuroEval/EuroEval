@@ -76,6 +76,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   transformers 5.x (containing `full_attention` and `sliding_attention` sub-dicts). The
   override now flattens `full_attention` contents with top-level `rope_theta` for vLLM
   compatibility, while preserving already-flat `rope_parameters` without modification.
+- Fixed startup verbosity to correctly respect the effective debug value (method
+  argument if provided, otherwise initializer default), ensuring the `--verbose` hint
+  is suppressed when debug mode is active via either path.
 
 ## [v17.7.0] - 2026-07-22
 
@@ -101,6 +104,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   included.
 - Added the `alx/` provider, being the Danish [ALX
   Platform](https://platform.alexandra.dk/).
+- Added the unofficial Faroese knowledge dataset `faroese-semantic-relations`, from the
+  paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for Faroese LLM
+  Understanding", where the model has to pick the antonym of a given Faroese word from
+  six options.
+- Added Faroese prompt templates for multiple-choice tasks, enabling Faroese datasets
+  for all tasks in the multiple-choice classification task group (knowledge,
+  common-sense reasoning, and more).
 
 ### Changed
 

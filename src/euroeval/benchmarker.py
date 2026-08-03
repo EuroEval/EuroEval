@@ -419,7 +419,10 @@ class Benchmarker:
             if verbose is not None
             else self.benchmark_config_default_params.verbose
         )
-        if os.getenv("FULL_LOG", "0") == "1" or debug:
+        effective_debug = (
+            debug if debug is not None else self.benchmark_config_default_params.debug
+        )
+        if os.getenv("FULL_LOG", "0") == "1" or effective_debug:
             is_verbose = True
 
         log_once(
