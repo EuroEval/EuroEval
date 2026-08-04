@@ -51,14 +51,6 @@ XLSUM_FI_CONFIG = DatasetConfig(
     languages=[FINNISH],
 )
 
-HELLASWAG_FI_CONFIG = DatasetConfig(
-    name="hellaswag-fi",
-    pretty_name="HellaSwag-fi",
-    source="EuroEval/hellaswag-fi-mini",
-    task=COMMON_SENSE,
-    languages=[FINNISH],
-)
-
 SCALA_FI_CONFIG = DatasetConfig(
     name="scala-fi",
     pretty_name="ScaLA-fi",
@@ -99,7 +91,25 @@ RAGTRUTH_FI_CONFIG = DatasetConfig(
 )
 
 
+WINOGRANDE_FI_CONFIG = DatasetConfig(
+    name="winogrande-fi",
+    pretty_name="Winogrande-fi",
+    source="EuroEval/winogrande-fi",
+    task=COMMON_SENSE,
+    languages=[FINNISH],
+    labels=["a", "b"],
+)
+
 # Unofficial datasets ###
+
+HELLASWAG_FI_CONFIG = DatasetConfig(
+    name="hellaswag-fi",
+    pretty_name="HellaSwag-fi",
+    source="EuroEval/hellaswag-fi-mini",
+    task=COMMON_SENSE,
+    languages=[FINNISH],
+    unofficial=True,
+)
 
 BELEBELE_FI_CONFIG = DatasetConfig(
     name="belebele-fi",
@@ -125,16 +135,6 @@ GOLDENSWAG_FI_CONFIG = DatasetConfig(
     source="EuroEval/goldenswag-fi-mini",
     task=COMMON_SENSE,
     languages=[FINNISH],
-    unofficial=True,
-)
-
-WINOGRANDE_FI_CONFIG = DatasetConfig(
-    name="winogrande-fi",
-    pretty_name="Winogrande-fi",
-    source="EuroEval/winogrande-fi",
-    task=COMMON_SENSE,
-    languages=[FINNISH],
-    labels=["a", "b"],
     unofficial=True,
 )
 
