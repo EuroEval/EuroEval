@@ -22,6 +22,15 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   from the paper "Of Words and Meaning: A Grammatical and Semantic Benchmark for
   Faroese LLM Understanding", where the model has to pick the correct explanation of a
   Faroese idiom from four options. This was contributed by @Biorrith ✨
+- Added a new grammatical error correction (GEC) task, where the model is given a
+  sentence containing grammatical errors and has to generate a corrected version of it,
+  evaluated with exact match. A corresponding exact match metric fitting the
+  text-to-text task group was added.
+- Added the unofficial Faroese grammatical error correction dataset
+  `faroese-grammatical-correctness`, from the paper "Of Words and Meaning: A
+  Grammatical and Semantic Benchmark for Faroese LLM Understanding", consisting of
+  minimal pairs of ungrammatical and corrected sentences compiled from high school
+  essays.
 - Added the knowledge datasets `eu-mmlu-cs`, `eu-mmlu-de`, `eu-mmlu-el`, `eu-mmlu-fr`,
   `eu-mmlu-hr`, `eu-mmlu-hu`, `eu-mmlu-it`, `eu-mmlu-lt`, `eu-mmlu-nl`, `eu-mmlu-pl`,
   `eu-mmlu-pt`, `eu-mmlu-ro`, `eu-mmlu-sk` and `eu-mmlu-sl`, based on the

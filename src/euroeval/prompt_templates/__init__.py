@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import get_all_languages
 from .classification import CLASSIFICATION_TEMPLATES
+from .grammatical_error_correction import GEC_TEMPLATES
 from .grammatical_error_detection import GED_TEMPLATES
 from .linguistic_acceptability import LA_TEMPLATES
 from .logical_reasoning import LOGIC_TEMPLATES
