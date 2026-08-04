@@ -17,15 +17,19 @@ const props = defineProps<{
 
 type TabId =
   | "generative"
+  | "instruct"
   | "all_models"
   | "generative-scatter"
+  | "instruct-scatter"
   | "all_models-scatter";
 
 const tab = ref<TabId>("generative");
 
 const generativeTable = ref<LBTable | null>(null);
+const instructTable = ref<LBTable | null>(null);
 const allModelsTable = ref<LBTable | null>(null);
 const generativeMetadata = ref<LeaderboardMetadata | null>(null);
+const instructMetadata = ref<LeaderboardMetadata | null>(null);
 const allModelsMetadata = ref<LeaderboardMetadata | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
@@ -34,19 +38,25 @@ const loadFor = async (stem: string) => {
   loading.value = true;
   error.value = null;
   generativeTable.value = null;
+  instructTable.value = null;
   allModelsTable.value = null;
   generativeMetadata.value = null;
+  instructMetadata.value = null;
   allModelsMetadata.value = null;
   try {
-    const [g, a, gMeta, aMeta] = await Promise.all([
+    const [g, c, a, gMeta, cMeta, aMeta] = await Promise.all([
       loadLeaderboard(`${stem}_generative`),
+      loadLeaderboard(`${stem}_instruct`),
       loadLeaderboard(`${stem}_all_models`),
       loadLeaderboardMetadata(`${stem}_generative`),
+      loadLeaderboardMetadata(`${stem}_instruct`),
       loadLeaderboardMetadata(`${stem}_all_models`),
     ]);
     generativeTable.value = g ?? null;
+    instructTable.value = c ?? null;
     allModelsTable.value = a ?? null;
     generativeMetadata.value = gMeta ?? null;
+    instructMetadata.value = cMeta ?? null;
     allModelsMetadata.value = aMeta ?? null;
     if (!g && !a) {
       error.value = `Leaderboard for ${stem.charAt(0).toUpperCase() + stem.slice(1)} is on the way!`
@@ -70,12 +80,16 @@ watch(
 const activeTable = computed<LBTable | null>(() => {
   if (tab.value === "generative" || tab.value === "generative-scatter")
     return generativeTable.value;
+  else if (tab.value === "instruct" || tab.value === "instruct-scatter")
+    return instructTable.value;
   return allModelsTable.value;
 });
 
 const activeMetadata = computed<LeaderboardMetadata | null>(() => {
   if (tab.value === "generative" || tab.value === "generative-scatter")
     return generativeMetadata.value;
+  else if (tab.value === "instruct" || tab.value === "instruct-scatter")
+    return instructMetadata.value;
   return allModelsMetadata.value;
 });
 
@@ -126,17 +140,20 @@ const isMultilingual = computed(() => MULTILINGUAL_STEMS.has(props.stem));
 const tabs: { id: TabId; label: string }[] = [
   { id: "generative", label: "Generative Leaderboard" },
   { id: "generative-scatter", label: "Generative Scatter Plot" },
+  { id: "instruct", label: "Instruct Leaderboard" },
+  { id: "instruct-scatter", label: "Instruct Scatter Plot" },
   { id: "all_models", label: "NLU Leaderboard" },
   { id: "all_models-scatter", label: "NLU Scatter Plot" },
 ];
 
 // Which CSV stem the current tab corresponds to, for the download button.
 const activeStem = computed<string>(() => {
-  const suffix =
-    tab.value === "generative" || tab.value === "generative-scatter"
-      ? "generative"
-      : "all_models";
-  return `${props.stem}_${suffix}`;
+  if (tab.value === "generative" || tab.value === "generative-scatter")
+    return `${props.stem}_generative`;
+  else if (tab.value === "instruct" || tab.value === "instruct-scatter")
+    return `${props.stem}_instruct`;
+  else
+    return `${props.stem}_all_models`;
 });
 
 const downloading = ref(false);
@@ -257,15 +274,16 @@ const downloadCsv = async () => {
 
     <div v-if="loading" class="lb-status">Loading leaderboard…</div>
     <div v-else-if="error" class="lb-status error">{{ error }}</div>
-    <template v-else>       <template v-if="tab === 'generative' || tab === 'all_models'">
-         <LeaderboardTable
-           v-if="activeTable"
-           :table="activeTable"
-           :heatmap-score-cols="isMultilingual"
-           :leaderboard-name="title"
-           :last-updated="lastUpdated"
-         >
-           <template #actions>
+    <template v-else>
+      <template v-if="tab === 'generative' || tab === 'instruct' || tab === 'all_models'">
+        <LeaderboardTable
+          v-if="activeTable"
+          :table="activeTable"
+          :heatmap-score-cols="isMultilingual"
+          :leaderboard-name="title"
+          :last-updated="lastUpdated"
+        >
+          <template #actions>
             <button
               class="lb-download"
               type="button"
