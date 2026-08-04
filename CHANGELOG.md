@@ -64,6 +64,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Greek: `global-mmlu-el` → `greek-mmlu`
   - Hungarian: `mmlu-hu` → `include-hu`
   - Icelandic: `scala-is` → `ice-ec`
+  - Italian: `hellaswag-it` → `winogrande-it`
   - Lithuanian: `include-lt`
   - Portuguese: `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
 
