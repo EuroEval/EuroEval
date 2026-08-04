@@ -100,6 +100,14 @@ WINOGRANDE_FI_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
+INCLUDE_FI_CONFIG = DatasetConfig(
+    name="include-fi",
+    pretty_name="INCLUDE-fi",
+    source="EuroEval/include-fi-mini",
+    task=KNOW,
+    languages=[FINNISH],
+)
+
 # Unofficial datasets ###
 
 HELLASWAG_FI_CONFIG = DatasetConfig(
@@ -146,14 +154,5 @@ IFEVAL_FI_CONFIG = DatasetConfig(
     languages=[FINNISH],
     train_split=None,
     val_split=None,
-    unofficial=True,
-)
-
-INCLUDE_FI_CONFIG = DatasetConfig(
-    name="include-fi",
-    pretty_name="INCLUDE-fi",
-    source="EuroEval/include-fi-mini",
-    task=KNOW,
-    languages=[FINNISH],
     unofficial=True,
 )
