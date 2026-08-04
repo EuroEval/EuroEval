@@ -56,6 +56,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Renamed the previous LLM-as-a-judge `open-ended-qa` task to `reference-free-qa`, and
+  added a new reference-based `open-ended-qa` task using translation-style text-to-text
+  metrics.
 - Bumped minimum `transformers` version to 5.14.0 (required for XLMRoberta/Camembert
   `ForMultipleChoice` heads; see huggingface/transformers#47147).
 - Swapped official datasets for four languages (all performed by the
