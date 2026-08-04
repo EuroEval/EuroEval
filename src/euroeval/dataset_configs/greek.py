@@ -9,6 +9,7 @@ from ..tasks import (
     KNOW,
     LA,
     NER,
+    OPEN_ENDED_QA,
     RC,
     SENT,
     SUMM,
@@ -131,4 +132,18 @@ EU_MMLU_EL_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[GREEK],
     unofficial=True,
+)
+
+CULTURAQA_CONFIG = DatasetConfig(
+    name="culturaqa",
+    pretty_name="CulturaQA",
+    source="EuroEval/culturaqa-mini",
+    task=OPEN_ENDED_QA,
+    languages=[GREEK],
+    unofficial=True,
+    prompt_prefix="Ακολουθούν ερωτήσεις με τις αντίστοιχες απαντήσεις.",
+    prompt_template="Ερώτηση: {text}\nΑπάντηση: {target_text}",
+    instruction_prompt=(
+        "Απαντήστε στην παρακάτω ερώτηση με ακρίβεια και συντομία.\n\nΕρώτηση: {text}"
+    ),
 )

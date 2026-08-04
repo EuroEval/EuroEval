@@ -867,11 +867,11 @@ class TestRealWorldYamlConfigs:
         assert config.test_split == "train"
         assert config.preprocessing_func is not None
 
-    def test_gsm8k_format_infers_open_ended_qa(self, tmp_path: Path) -> None:
-        """The GSM8K eval.yaml with model_graded_fact scorer yields open-ended-qa.
+    def test_gsm8k_format_infers_reference_free_qa(self, tmp_path: Path) -> None:
+        """The GSM8K eval.yaml with model_graded_fact scorer yields reference-free-qa.
 
         GSM8K uses the `model_graded_fact` scorer without an explicit `task` key.
-        EuroEval detects the scorer and infers the `open-ended-qa` task.
+        EuroEval detects the scorer and infers the `reference-free-qa` task.
         Source: https://huggingface.co/datasets/openai/gsm8k/blob/main/eval.yaml
         """
         yaml_file = tmp_path / "eval.yaml"
@@ -905,7 +905,7 @@ class TestRealWorldYamlConfigs:
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
-        assert config.task.name == "open-ended-qa"
+        assert config.task.name == "reference-free-qa"
         assert config.test_split == "test"
 
     def test_gsm8k_format_no_task_no_scorer_returns_none(
@@ -978,7 +978,7 @@ class TestRealWorldYamlConfigs:
 
         Source: https://huggingface.co/datasets/cais/hle/blob/main/eval.yaml
         Notable features: `model_graded_fact` scorer with a judge model ID, which
-        triggers the `open-ended-qa` task with an LLM-as-a-judge metric.
+        triggers the `reference-free-qa` task with an LLM-as-a-judge metric.
         """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
@@ -1021,14 +1021,14 @@ class TestRealWorldYamlConfigs:
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
-        assert config.task.name == "open-ended-qa"
+        assert config.task.name == "reference-free-qa"
         assert len(config.task.metrics) == 1
         assert config.task.metrics[0].name == "model_graded_fact"
         assert config.task.metrics[0].judge_id == "openai/o3-mini"
         assert config.test_split == "test"
 
     def test_hle_model_graded_fact_without_judge_model(self, tmp_path: Path) -> None:
-        """model_graded_fact without a judge model uses the OPEN_ENDED_QA default."""
+        """Test model_graded_fact without a judge uses REFERENCE_FREE_QA."""
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             textwrap.dedent(
@@ -1050,7 +1050,7 @@ class TestRealWorldYamlConfigs:
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
-        assert config.task.name == "open-ended-qa"
+        assert config.task.name == "reference-free-qa"
 
     def test_infer_task_from_inspect_ai_multiple_scorers(self, tmp_path: Path) -> None:
         """Test task inference when multiple scorers are present."""
@@ -1077,7 +1077,7 @@ class TestRealWorldYamlConfigs:
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
-        assert config.task.name == "open-ended-qa"
+        assert config.task.name == "reference-free-qa"
         assert config.task.metrics[0].judge_id == "openai/gpt-4"
 
     def test_infer_task_from_model_graded_fact_scorer_with_judge_model(
@@ -1107,7 +1107,7 @@ class TestRealWorldYamlConfigs:
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
-        assert config.task.name == "open-ended-qa"
+        assert config.task.name == "reference-free-qa"
         assert len(config.task.metrics) == 1
         assert config.task.metrics[0].judge_id == "openai/gpt-4"
 
