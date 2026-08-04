@@ -89,11 +89,22 @@ load_dotenv()
         "leaderboard generation when results haven't changed."
     ),
 )
+@click.option(
+    "--upload/--no-upload",
+    default=False,
+    show_default=True,
+    help=(
+        "Whether to sync processed results to the Hugging Face results bucket. "
+        "Leave disabled to process results and regenerate leaderboards locally "
+        "without touching the shared bucket."
+    ),
+)
 def main(
     categories: tuple[t.Literal["generative", "all_models"], ...],
     force: bool,
     skip_core_models_check: bool,
     skip_results_processing: bool,
+    upload: bool,
 ) -> None:
     """Generate all leaderboards.
 
@@ -109,6 +120,9 @@ def main(
         skip_results_processing (optional):
             If True, skip processing evaluation results from JSONL. Assumes the
             results directory already contains processed results.
+        upload (optional):
+            Whether to sync processed results to the Hugging Face results
+            bucket. Defaults to False.
     """
     # If the results directory isn't populated, restore the newest backup.
     restore_from_backup_if_missing()
@@ -121,6 +135,7 @@ def main(
             banned_model_patterns=BANNED_MODEL_PATTERNS,
             api_model_patterns=API_MODEL_PATTERNS,
             trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            upload_to_bucket=upload,
         )
 
     # Offer to refresh the core-model list if it hasn't been touched in
