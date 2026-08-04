@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FAROESE
-from ..tasks import GED, HALLU, INSTRUCTION_FOLLOWING, KNOW, LA, LOGIC, NER, RC, SENT
+from ..tasks import (
+    GEC,
+    GED,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    LOGIC,
+    NER,
+    RC,
+    SENT,
+)
 
 # Official datasets ###
 
@@ -87,6 +98,16 @@ FAROESE_METAPHORICAL_EXPLANATIONS_CONFIG = DatasetConfig(
     languages=[FAROESE],
     unofficial=True,
 )
+
+FAROESE_GRAMMATICAL_CORRECTNESS_CONFIG = DatasetConfig(
+    name="faroese-grammatical-correctness",
+    pretty_name="Faroese Grammatical Correctness",
+    source="EuroEval/faroese-grammatical-correctness",
+    task=GEC,
+    languages=[FAROESE],
+    unofficial=True,
+)
+
 
 WIKIANN_FO_CONFIG = DatasetConfig(
     name="wikiann-fo",
