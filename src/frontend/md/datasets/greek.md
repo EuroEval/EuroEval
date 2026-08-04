@@ -580,6 +580,81 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset greek-mmlu
 ```
 
+### Unofficial: CulturaQA
+
+CulturaQA is a Greek open-ended question answering dataset that captures knowledge from
+Greek culture. It spans many domains: Greek art, history, mythology, politics, economy,
+tourism, food, health, science, sports, education and law, providing a valuable resource
+for training, validating and evaluating models on the nuances of Greek culture.
+
+The original dataset from [IMISLab/CulturaQA](https://huggingface.co/datasets/IMISLab/CulturaQA)
+includes train, validation, and test splits. We preserve the original upstream split
+boundaries, capping each split independently according to the EuroEval dataset rules. The
+resulting dataset has 1,024 samples for training, 200 for validation, and 500 for testing.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "id": "4feec6fc28e4b4b352fc5d339265a9741141da6e649c36a90d5417d87f8398ee65266b3006cd843a8f0af3bb3b2e2d3b4a957adf700e45ef8477710a27a02f70",
+  "text": "Πώς εντάσσονται το Πρόγραμμα Δημοσίων Επενδύσεων και οι χρηματοδοτήσεις της Ευρωπαϊκής Ένωσης (π.χ. ΕΣΠΑ, Ταμείο Ανάκαμψης) στον κρατικό προϋπολογισμό και ποιοι ειδικοί κανόνες ισχύουν για την εκτέλεσή τους;",
+  "target_text": "Πώς εντάσσονται στον κρατικό προϋπολογισμό\n- Ο Κρατικός Προϋπολογισμός έχει δύο σκέλη: Τακτικός Προϋπολογισμός (ΤΠ) και Προϋπολογισμός Δημοσίων Επενδύσεων (ΠΔΕ). Το ΠΔΕ εγγράφεται ως διακριτό σκέλος στον ετήσιο Νόμο του Προϋπολογισμού και στο ΜΠΔΣ (ν. 4270/2014).\n- Το ΠΔΕ διακρίνεται σε συγχρηματοδοτούμενο σκέλος (ΕΣΠΑ/διαρθρωτικά ταμεία, CEF κ.ά.) και εθνικό σκέλος (αμιγώς εθνική χρηματοδότηση).\n- Οι χρηματοδοτήσεις ΕΕ εμφανίζονται στο σκέλος εσόδων του Κρατικού Προϋπολογισμού.\n\nΕιδικοί κανόνες εκτέλεσης\n- Πλαίσιο: ν. 4270/2014 (δημοσιονομικοί κανόνες), ν. 4914/2022 και Κανονισμός (ΕΕ) 2021/1060 για ΕΣΠΑ 2021–2027.",
+  "category": "δίκαιο"
+}
+```
+
+```json
+{
+  "id": "6c96ed6f3f7f42109311263ed3882e0f44e7ad523816c65a435b4a6189bf359e947a48d65222c7916ba091f9f5ff25d5361e82cee7c75f6237639aca989c1068",
+  "text": "Τι είναι το Μεταξά και σε τι διαφέρει από άλλα ελληνικά αποστάγματα;",
+  "target_text": "Το Μεταξά είναι επώνυμο ελληνικό απόσταγμα (δημιούργημα του Σπύρου Μεταξά, 1888). Πρόκειται ουσιαστικά για ένα σύμμειγμα: παλαιωμένα αποστάγματα σταφυλιού (μπράντι) αναμιγμένα με παλαιωμένα γλυκά κρασιά μοσχάτου και ένα μυστικό μίγμα αρωματικών. Το τελικό προϊόν ωριμάζει σε δρύινα βαρέλια και κυκλοφορεί σε διάφορες παλαιώσεις (3, 5, 7, 12, 15, 20, 25, 30 ετών).",
+  "category": "φαγητό"
+}
+```
+
+```json
+{
+  "id": "7fed007a331e6100cb5e21b00f92197924947dd3a13ebcec32fd9d253225e6fdecf5722e04b01eeb9196e08f771be38e2d44a014d0111c36b09a6c42f902861a",
+  "text": "Ποιες μάχες και ναυμαχίες υπήρξαν καθοριστικές για την εξέλιξη της Ελληνικής Επανάστασης έως την ανεξαρτησία;",
+  "target_text": "Χερσαίες μάχες\n- Χάνι της Γραβιάς (8/5/1821) — ανέκοψε την οθωμανική προέλαση στη Ρούμελη και έδωσε κρίσιμο χρόνο στην Επανάσταση.\n- Βαλτέτσι (12–13/5/1821) — στερέωσε την πολιορκία της Τριπολιτσάς.\n- Άλωση της Τριπολιτσάς (23/9/1821) — καθοριστικό πλήγμα στην οθωμανική διοίκηση του Μοριά.",
+  "category": "ιστορία"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0 (zero-shot only)
+- Prefix prompt:
+
+  ```text
+
+  ```
+
+- Base prompt template:
+
+  ```text
+  Ερώτηση: {text}
+  Απάντηση: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Απαντήστε στην παρακάτω ερώτηση με ακρίβεια και συντομία.
+
+  Ερώτηση: {text}
+  ```
+
+The metric used is `model_graded_fact`, which uses a judge model to evaluate whether the
+model's generated answer contains the same factual content as the reference answer.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset culturaqa
+```
+
 ### Unofficial: Global-MMLU-el
 
 Global-MMLU is a machine translated version of the English
