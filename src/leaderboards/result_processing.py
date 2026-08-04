@@ -125,7 +125,7 @@ def process_results(
 def _upload_per_model_files(
     processed_records: list[dict[str, t.Any]], upload_to_bucket: bool = False
 ) -> None:
-    """Write one JSON file per logical result and sync to the HF bucket.
+    """Write one JSON file per logical result and optionally sync to the HF bucket.
 
     Each record is written to
     ``results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json``.

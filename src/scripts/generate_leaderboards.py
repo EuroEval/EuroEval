@@ -94,9 +94,9 @@ load_dotenv()
     default=False,
     show_default=True,
     help=(
-        "Whether to sync processed results to the Hugging Face results bucket. "
+        "Whether to upload processed results to the Hugging Face results bucket. "
         "Leave disabled to process results and regenerate leaderboards locally "
-        "without touching the shared bucket."
+        "without uploading to the shared bucket."
     ),
 )
 def main(
