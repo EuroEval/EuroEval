@@ -10,70 +10,78 @@
 """Create the CulturaQA dataset and upload it to the HF Hub."""
 
 import pandas as pd
-from datasets.arrow_dataset import Dataset
-from datasets.dataset_dict import DatasetDict
-from datasets.load import load_dataset
-from datasets.splits import Split
-from huggingface_hub.hf_api import HfApi
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from huggingface_hub import HfApi
 
-MAX_TRAIN_SIZE = 1_024
-EXPECTED_SOURCE_SPLIT_SIZES = dict(train=2_000, val=200, test=500)
+MAX_SPLIT_SIZES = dict(train=1_024, val=256, test=2_048)
+RANDOM_SEED = 4242
+REQUIRED_SPLITS = frozenset(MAX_SPLIT_SIZES)
+SOURCE_COLUMNS = ["id", "question", "answer", "category"]
+COLUMN_RENAMES = dict(question="text", answer="target_text")
 
 
 def main() -> None:
     """Create the CulturaQA dataset and upload it to the HF Hub."""
-    dataset_id = "IMISLab/CulturaQA"
+    source_dataset_id = "IMISLab/CulturaQA"
+    target_dataset_id = "EuroEval/culturaqa-mini"
 
-    # Load the dataset with 'all' config
-    raw_dataset = load_dataset(dataset_id, "all", token=True)
+    raw_dataset = load_dataset(path=source_dataset_id, name="all", token=True)
     assert isinstance(raw_dataset, DatasetDict)
 
-    # Verify original split sizes
-    split_sizes = {split: len(raw_dataset[split]) for split in raw_dataset}
-    assert split_sizes == EXPECTED_SOURCE_SPLIT_SIZES, (
-        f"Expected split sizes {EXPECTED_SOURCE_SPLIT_SIZES}, got {split_sizes}"
-    )
+    missing_splits = REQUIRED_SPLITS.difference(raw_dataset)
+    assert not missing_splits, f"Missing source splits: {sorted(missing_splits)}"
 
-    # Transform each split: question -> text, answer -> target_text
-    train_df = raw_dataset["train"].to_pandas()
-    val_df = raw_dataset["val"].to_pandas()
-    test_df = raw_dataset["test"].to_pandas()
-    assert isinstance(train_df, pd.DataFrame)
-    assert isinstance(val_df, pd.DataFrame)
-    assert isinstance(test_df, pd.DataFrame)
+    train_df = process_split(dataset=raw_dataset["train"], split_name="train")
+    val_df = process_split(dataset=raw_dataset["val"], split_name="val")
+    test_df = process_split(dataset=raw_dataset["test"], split_name="test")
 
-    # Select and rename columns to EuroEval format
-    train_df = train_df[["id", "question", "answer", "category"]].rename(
-        columns={"question": "text", "answer": "target_text"}
-    )
-    val_df = val_df[["id", "question", "answer", "category"]].rename(
-        columns={"question": "text", "answer": "target_text"}
-    )
-    test_df = test_df[["id", "question", "answer", "category"]].rename(
-        columns={"question": "text", "answer": "target_text"}
-    )
-
-    train_df = train_df.head(MAX_TRAIN_SIZE).reset_index(drop=True)
-    val_df = val_df.reset_index(drop=True)
-    test_df = test_df.reset_index(drop=True)
-
-    train_dataset = Dataset.from_pandas(train_df, split=Split.TRAIN)
-    val_dataset = Dataset.from_pandas(val_df, split=Split.VALIDATION)
-    test_dataset = Dataset.from_pandas(test_df, split=Split.TEST)
-
-    # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        {"train": train_dataset, "val": val_dataset, "test": test_dataset}
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
-    # Create dataset ID
-    euroeval_dataset_id = "EuroEval/culturaqa-mini"
+    HfApi().delete_repo(target_dataset_id, repo_type="dataset", missing_ok=True)
+    dataset.push_to_hub(target_dataset_id, private=True)
 
-    # Remove the dataset from Hugging Face Hub if it already exists
-    HfApi().delete_repo(euroeval_dataset_id, repo_type="dataset", missing_ok=True)
 
-    # Push the dataset to the Hugging Face Hub
-    dataset.push_to_hub(euroeval_dataset_id, private=True)
+def process_split(dataset: Dataset, split_name: str) -> pd.DataFrame:
+    """Convert one source split to EuroEval format and apply the split cap.
+
+    Args:
+        dataset:
+            The source dataset split.
+        split_name:
+            The source split name.
+
+    Returns:
+        The processed and capped split dataframe.
+    """
+    df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
+
+    df = df[SOURCE_COLUMNS].rename(columns=COLUMN_RENAMES)
+    return cap_split(df=df, split_name=split_name).reset_index(drop=True)
+
+
+def cap_split(df: pd.DataFrame, split_name: str) -> pd.DataFrame:
+    """Cap a split deterministically according to the EuroEval dataset rules.
+
+    Args:
+        df:
+            The split dataframe.
+        split_name:
+            The source split name.
+
+    Returns:
+        The capped split dataframe.
+    """
+    max_size = MAX_SPLIT_SIZES[split_name]
+    if len(df) <= max_size:
+        return df
+    return df.sample(n=max_size, random_state=RANDOM_SEED)
 
 
 if __name__ == "__main__":

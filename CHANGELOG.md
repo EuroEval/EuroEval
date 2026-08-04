@@ -51,8 +51,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   as official.
 - Added the unofficial Greek open-ended QA dataset `culturaqa`, based on
   [IMISLab/CulturaQA](https://huggingface.co/datasets/IMISLab/CulturaQA), using
-  summarisation-style text-to-text metrics with original split boundaries preserved and
-  split sizes 1,024 / 200 / 500. This was contributed by @saattrupdan ✨
+  translation-style text-to-text metrics with original split boundaries preserved and
+  split sizes 1,024 / 200 / 500.
 
 ### Changed
 
