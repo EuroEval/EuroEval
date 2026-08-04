@@ -1364,6 +1364,11 @@
     "train": 64,
     "val": 128
   },
+  "EuroEval/winogrande-it": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
   "EuroEval/winogrande-lt": {
     "test": 1085,
     "train": 47,
