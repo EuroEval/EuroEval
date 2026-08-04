@@ -59,7 +59,7 @@ class TestUploadPerModelFilesPerRecordTree:
             ):
                 with caplog.at_level("WARNING"):
                     result_processing._upload_per_model_files(
-                        processed_records=[invalid_record]
+                        processed_records=[invalid_record], upload_to_bucket=True
                     )
 
         # No files should be written
@@ -108,7 +108,9 @@ class TestUploadPerModelFilesPerRecordTree:
                 "leaderboards.result_processing.resolve_hf_token",
                 return_value="test_token",
             ):
-                result_processing._upload_per_model_files(processed_records=[record])
+                result_processing._upload_per_model_files(
+                    processed_records=[record], upload_to_bucket=True
+                )
 
         model_dir = tmp_path / "org_model"
         result_file = model_dir / "mmlu__test__zeroshot.json"
@@ -190,7 +192,8 @@ class TestUploadPerModelFilesPerRecordTree:
                 return_value="test_token",
             ):
                 result_processing._upload_per_model_files(
-                    processed_records=[older_record, newer_record]
+                    processed_records=[older_record, newer_record],
+                    upload_to_bucket=True,
                 )
 
         # Only one file should exist
@@ -265,7 +268,7 @@ class TestUploadPerModelFilesPerRecordTree:
             ):
                 with pytest.raises(ValueError, match="Identity collision detected"):
                     result_processing._upload_per_model_files(
-                        processed_records=[record_a, record_b]
+                        processed_records=[record_a, record_b], upload_to_bucket=True
                     )
 
         # No files should be written on collision
@@ -303,7 +306,9 @@ class TestUploadPerModelFilesPerRecordTree:
                 "leaderboards.result_processing.resolve_hf_token",
                 return_value="test_token",
             ):
-                result_processing._upload_per_model_files(processed_records=[record])
+                result_processing._upload_per_model_files(
+                    processed_records=[record], upload_to_bucket=True
+                )
 
         # Check directory structure
         model_dir = tmp_path / "org_Qwen3-0.6B"
@@ -347,7 +352,9 @@ def test_cache_freshness_load_before_cache_construction(
     monkeypatch.setattr(result_processing, "load_raw_results", fake_load_raw_results)
     monkeypatch.setattr(Cache, "from_results_dir", fake_cache_from_results_dir)
     monkeypatch.setattr(
-        result_processing, "_upload_per_model_files", lambda processed_records: None
+        result_processing,
+        "_upload_per_model_files",
+        lambda processed_records, upload_to_bucket=False: None,
     )
 
     result_processing.process_results(
@@ -393,7 +400,9 @@ def test_process_results_clears_cache_after_upload(
     monkeypatch.setattr(result_processing, "load_raw_results", fake_load_raw_results)
     monkeypatch.setattr(Cache, "from_results_dir", fake_cache_from_results_dir)
     monkeypatch.setattr(
-        result_processing, "_upload_per_model_files", lambda processed_records: None
+        result_processing,
+        "_upload_per_model_files",
+        lambda processed_records, upload_to_bucket=False: None,
     )
 
     result_processing.process_results(
@@ -474,7 +483,9 @@ def test_upload_per_model_files_passes_hf_token(
         with patch(
             "leaderboards.result_processing.resolve_hf_token", return_value="test_token"
         ):
-            result_processing._upload_per_model_files(processed_records=[record])
+            result_processing._upload_per_model_files(
+                processed_records=[record], upload_to_bucket=True
+            )
 
     mock_api.batch_bucket_files.assert_called_once()
     call_kwargs = mock_api.batch_bucket_files.call_args.kwargs
@@ -498,7 +509,9 @@ def test_upload_per_model_files_raises_on_sync_failure(
             "leaderboards.result_processing.resolve_hf_token", return_value="test_token"
         ):
             with pytest.raises(HfHubHTTPError, match="Bucket sync failed"):
-                result_processing._upload_per_model_files(processed_records=[])
+                result_processing._upload_per_model_files(
+                    processed_records=[], upload_to_bucket=True
+                )
 
 
 def test_upload_per_model_files_raises_without_hf_token(
@@ -514,7 +527,9 @@ def test_upload_per_model_files_raises_without_hf_token(
     # Patch resolve_hf_token to return None (simulating missing HF_TOKEN)
     with patch("leaderboards.result_processing.resolve_hf_token", return_value=None):
         with pytest.raises(RuntimeError, match="HF_TOKEN not set"):
-            result_processing._upload_per_model_files(processed_records=[])
+            result_processing._upload_per_model_files(
+                processed_records=[], upload_to_bucket=True
+            )
 
 
 def test_upload_results_to_bucket_passes_hf_token(
