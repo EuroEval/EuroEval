@@ -189,12 +189,17 @@ LEADERBOARD_TASKS: list[str] = [
     "common-sense-reasoning",
     "simplification",
     "european-values",
+    "instruction-following",
+    "tool-calling",
+    "multiple-choice-stereotype-bias",
 ]
 
-# The two leaderboard categories that every model is ranked within. The
-# "generative" variant scores all tasks; "all_models" only scores NLU tasks so
-# non-generative models can compete.
-LEADERBOARD_CATEGORIES: tuple[str, str] = ("generative", "all_models")
+# The three leaderboard categories that every model is ranked within. The
+# "generative" variant scores all tasks except the instruct-exclusive ones;
+# "instruct" scores every task and only ranks instruction-tuned/reasoning
+# models; "all_models" only scores NLU tasks so non-generative models can
+# compete.
+LEADERBOARD_CATEGORIES: tuple[str, str, str] = ("generative", "instruct", "all_models")
 
 # TaskGroup -> "nlu"/"nlg". The "all_models" leaderboard variant only
 # scores NLU tasks so non-generative models can compete.
