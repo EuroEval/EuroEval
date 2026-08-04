@@ -404,6 +404,12 @@ def test_download_only_does_not_instantiate_model(
         source="test/source",
     )
 
+    def mock_metric_download(*_args, **_kwargs) -> None:
+        pass
+
+    for metric in dataset_config.task.metrics:
+        monkeypatch.setattr(metric, "download", mock_metric_download)
+
     model_config = ModelConfig(
         model_id=encoder_model_id,
         revision="main",

@@ -49,9 +49,16 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   was added by @viggo-gascou ✨
 - Added full support for hallucination detection for all languages now, and now marked
   as official.
+- Added the unofficial Greek open-ended QA dataset `culturaqa`, based on
+  [IMISLab/CulturaQA](https://huggingface.co/datasets/IMISLab/CulturaQA), using
+  translation-style text-to-text metrics with original split boundaries preserved and
+  split sizes 1,024 / 200 / 500.
 
 ### Changed
 
+- Renamed the previous LLM-as-a-judge `open-ended-qa` task to `reference-free-qa`, and
+  added a new reference-based `open-ended-qa` task using translation-style text-to-text
+  metrics.
 - Bumped minimum `transformers` version to 5.14.0 (required for XLMRoberta/Camembert
   `ForMultipleChoice` heads; see huggingface/transformers#47147).
 - Swapped official datasets for four languages (all performed by the

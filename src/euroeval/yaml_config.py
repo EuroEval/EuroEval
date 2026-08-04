@@ -18,7 +18,7 @@ from .languages import Language, get_all_languages
 from .logging_utils import log_once
 from .metrics.llm_as_a_judge import create_model_graded_fact_metric
 from .split_utils import get_repo_splits
-from .tasks import OPEN_ENDED_QA, get_all_tasks
+from .tasks import REFERENCE_FREE_QA, get_all_tasks
 
 
 def load_yaml_config(
@@ -392,9 +392,9 @@ def infer_task_from_inspect_ai(
       -> `multiple-choice`
     * A `choices` key in `tasks[0].field_spec` -> `multiple-choice`
     * A scorer with `name: model_graded_fact` in `tasks[0].scorers`
-      -> `open-ended-qa` task with an LLM-as-a-judge metric.
+      -> `reference-free-qa` task with an LLM-as-a-judge metric.
       The judge model is read from `scorers[0].args.model`; when absent, the
-      default judge defined in `OPEN_ENDED_QA` is used.
+      default judge defined in `REFERENCE_FREE_QA` is used.
 
     Args:
         raw:
@@ -434,8 +434,8 @@ def infer_task_from_inspect_ai(
                             judge_id = model_val
                     if judge_id is not None:
                         metric = create_model_graded_fact_metric(judge_id=judge_id)
-                        return dataclasses.replace(OPEN_ENDED_QA, metrics=[metric])
-                    return OPEN_ENDED_QA
+                        return dataclasses.replace(REFERENCE_FREE_QA, metrics=[metric])
+                    return REFERENCE_FREE_QA
 
     field_spec = first_task.get("field_spec")
     if isinstance(field_spec, dict) and "choices" in field_spec:
