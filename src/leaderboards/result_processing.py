@@ -43,6 +43,7 @@ def process_results(
     banned_model_patterns: list[re.Pattern],
     api_model_patterns: list[re.Pattern],
     trained_from_scratch_patterns: list[re.Pattern],
+    upload_to_bucket: bool = False,
 ) -> None:
     """Process EuroEval records from a JSONL file.
 
@@ -60,6 +61,9 @@ def process_results(
             A list of regex patterns for API inference models.
         trained_from_scratch_patterns:
             A list of regex patterns for trained-from-scratch models.
+        upload_to_bucket (optional):
+            Whether to sync the processed per-model files to the Hugging Face
+            results bucket. Defaults to False.
     """
     # Load raw results first so per-model files in RESULTS_DIR are synced.
     records = load_raw_results()
@@ -111,13 +115,17 @@ def process_results(
         for record in tqdm(processed_records, desc="Adding missing entries")
     ]
 
-    _upload_per_model_files(processed_records=processed_records)
+    _upload_per_model_files(
+        processed_records=processed_records, upload_to_bucket=upload_to_bucket
+    )
     load_raw_results.cache_clear()
     logger.info("Cleared load_raw_results cache.")
 
 
-def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
-    """Write one JSON file per logical result and sync to the HF bucket.
+def _upload_per_model_files(
+    processed_records: list[dict[str, t.Any]], upload_to_bucket: bool = False
+) -> None:
+    """Write one JSON file per logical result and optionally sync to the HF bucket.
 
     Each record is written to
     ``results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json``.
@@ -128,13 +136,17 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
     Args:
         processed_records:
             The processed records to upload.
+        upload_to_bucket (optional):
+            Whether to sync the written files to the Hugging Face results
+            bucket. If False, files are only written locally to RESULTS_DIR,
+            and no HF_TOKEN is required. Defaults to False.
 
     Raises:
         RuntimeError:
-            If HF_TOKEN is not set or bucket sync fails.
+            If HF_TOKEN is not set or bucket sync fails, when uploading.
     """
-    hf_token = resolve_hf_token()
-    if not hf_token:
+    hf_token = resolve_hf_token() if upload_to_bucket else None
+    if upload_to_bucket and not hf_token:
         raise RuntimeError(
             "HF_TOKEN not set. Cannot upload results to Hugging Face bucket. "
             "Run 'hf auth login' or set the HF_TOKEN environment variable."
@@ -187,12 +199,20 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
         if result is not None:
             written_files.append(result)
 
-    api = HfApi()
-    # Upload only the written files to the bucket
-    api.batch_bucket_files(
-        bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token
-    )
-    logger.info(f"Uploaded {len(written_files):,} result files to {hf_results_bucket}.")
+    if upload_to_bucket:
+        api = HfApi()
+        # Upload only the written files to the bucket
+        api.batch_bucket_files(
+            bucket_id=HF_RESULTS_BUCKET, add=written_files, token=hf_token
+        )
+        logger.info(
+            f"Uploaded {len(written_files):,} result files to {hf_results_bucket}."
+        )
+    else:
+        logger.info(
+            f"Skipped uploading {len(written_files):,} result file(s) to "
+            f"{hf_results_bucket} (upload_to_bucket=False)."
+        )
 
     if dropped_count > 0:
         logger.info(f"Dropped {dropped_count:,} records with unresolvable identities.")
