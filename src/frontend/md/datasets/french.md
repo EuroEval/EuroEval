@@ -1395,7 +1395,7 @@ euroeval --model <model-id> --dataset ragtruth-fr
 
 ## Translation
 
-### Unofficial: WMT24++ French to English
+### WMT24++ Français to English
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -1403,33 +1403,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the French translation pair from the dataset, where the source text is in
+We use the french translation pair from the dataset, where the source text is in
 Français and the target text is in English.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Je n'ai pas de télémesure pour la batterie.",
-  "target_text": "I don't have any telemetry for the battery. This is something I might add in a future revision."
+  "text": "Bonjour, comment vas-tu?",
+  "target_text": "Hello, how are you?"
 }
 ```
 
 ```json
 {
   "text": "Le renard brun saute par-dessus le chien paresseux.",
-  "target_text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month."
+  "target_text": "The brown fox jumps over the lazy dog."
 }
 ```
 
 ```json
 {
-  "text": ""Bonjour" dit-elle.",
-  "target_text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered."
+  "text": "Paris est la capitale de la France.",
+  "target_text": "Paris is the capital of France."
 }
 ```
 
@@ -1464,7 +1464,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset wmt24pp-fr-en
 ```
 
-### Unofficial: WMT24++ English to French
+### WMT24++ English to Français
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -1472,33 +1472,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the French translation pair from the dataset, where the source text is in
+We use the french translation pair from the dataset, where the source text is in
 English and the target text is in Français.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
-  "target_text": "Je n'ai pas de télémesure pour la batterie."
+  "text": "Hello, how are you?",
+  "target_text": "Bonjour, comment vas-tu?"
 }
 ```
 
 ```json
 {
-  "text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month.",
+  "text": "The brown fox jumps over the lazy dog.",
   "target_text": "Le renard brun saute par-dessus le chien paresseux."
 }
 ```
 
 ```json
 {
-  "text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered.",
-  "target_text": ""Bonjour" dit-elle."
+  "text": "Paris is the capital of France.",
+  "target_text": "Paris est la capitale de la France."
 }
 ```
 
@@ -1524,7 +1524,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into français.
+  Translate the above text into Français.
   ```
 
 You can evaluate this dataset directly as follows:

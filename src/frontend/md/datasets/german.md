@@ -1767,7 +1767,7 @@ euroeval --model <model-id> --dataset ragtruth-de
 
 ## Translation
 
-### Unofficial: WMT24++ German to English
+### WMT24++ Deutsch to English
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -1775,33 +1775,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the German translation pair from the dataset, where the source text is in
+We use the german translation pair from the dataset, where the source text is in
 Deutsch and the target text is in English.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Ich habe keine Telemetrie für die Batterie.",
-  "target_text": "I don't have any telemetry for the battery. This is something I might add in a future revision."
+  "text": "Hallo, wie geht es dir?",
+  "target_text": "Hello, how are you?"
 }
 ```
 
 ```json
 {
   "text": "Der braune Fuchs springt über den faulen Hund.",
-  "target_text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month."
+  "target_text": "The brown fox jumps over the lazy dog."
 }
 ```
 
 ```json
 {
-  "text": ""Hallo" sagte sie.",
-  "target_text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered."
+  "text": "Berlin ist die Hauptstadt von Deutschland.",
+  "target_text": "Berlin is the capital of Germany."
 }
 ```
 
@@ -1836,7 +1836,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset wmt24pp-de-en
 ```
 
-### Unofficial: WMT24++ English to German
+### WMT24++ English to Deutsch
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -1844,33 +1844,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the German translation pair from the dataset, where the source text is in
+We use the german translation pair from the dataset, where the source text is in
 English and the target text is in Deutsch.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
-  "target_text": "Ich habe keine Telemetrie für die Batterie."
+  "text": "Hello, how are you?",
+  "target_text": "Hallo, wie geht es dir?"
 }
 ```
 
 ```json
 {
-  "text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month.",
+  "text": "The brown fox jumps over the lazy dog.",
   "target_text": "Der braune Fuchs springt über den faulen Hund."
 }
 ```
 
 ```json
 {
-  "text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered.",
-  "target_text": ""Hallo" sagte sie."
+  "text": "Berlin is the capital of Germany.",
+  "target_text": "Berlin ist die Hauptstadt von Deutschland."
 }
 ```
 

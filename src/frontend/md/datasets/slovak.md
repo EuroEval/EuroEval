@@ -728,7 +728,7 @@ euroeval --model <model-id> --dataset ragtruth-sk
 
 ## Translation
 
-### Unofficial: WMT24++ Slovak to English
+### WMT24++ Slovenčina to English
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -736,33 +736,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the Slovak translation pair from the dataset, where the source text is in
+We use the slovak translation pair from the dataset, where the source text is in
 Slovenčina and the target text is in English.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Nemám telemetriu pre batériu.",
-  "target_text": "I don't have any telemetry for the battery. This is something I might add in a future revision."
+  "text": "Ahoj, ako sa máš?",
+  "target_text": "Hello, how are you?"
 }
 ```
 
 ```json
 {
-  "text": "Hnedá líška preskakuje cez lenivého psa.",
-  "target_text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month."
+  "text": "Hnedá líška skáče cez lenivého psa.",
+  "target_text": "The brown fox jumps over the lazy dog."
 }
 ```
 
 ```json
 {
-  "text": ""Ahoj" povedala.",
-  "target_text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered."
+  "text": "Bratislava je hlavné mesto Slovenska.",
+  "target_text": "Bratislava is the capital of Slovakia."
 }
 ```
 
@@ -797,7 +797,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset wmt24pp-sk-en
 ```
 
-### Unofficial: WMT24++ English to Slovak
+### WMT24++ English to Slovenčina
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -805,33 +805,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the Slovak translation pair from the dataset, where the source text is in
+We use the slovak translation pair from the dataset, where the source text is in
 English and the target text is in Slovenčina.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
-  "target_text": "Nemám telemetriu pre batériu."
+  "text": "Hello, how are you?",
+  "target_text": "Ahoj, ako sa máš?"
 }
 ```
 
 ```json
 {
-  "text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month.",
-  "target_text": "Hnedá líška preskakuje cez lenivého psa."
+  "text": "The brown fox jumps over the lazy dog.",
+  "target_text": "Hnedá líška skáče cez lenivého psa."
 }
 ```
 
 ```json
 {
-  "text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered.",
-  "target_text": ""Ahoj" povedala."
+  "text": "Bratislava is the capital of Slovakia.",
+  "target_text": "Bratislava je hlavné mesto Slovenska."
 }
 ```
 
@@ -857,7 +857,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into slovenčina.
+  Translate the above text into Slovenčina.
   ```
 
 You can evaluate this dataset directly as follows:

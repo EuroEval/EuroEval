@@ -756,7 +756,7 @@ euroeval --model <model-id> --dataset ragtruth-bg
 
 ## Translation
 
-### Unofficial: WMT24++ Bulgarian to English
+### WMT24++ Български to English
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -764,33 +764,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the Bulgarian translation pair from the dataset, where the source text is in
+We use the bulgarian translation pair from the dataset, where the source text is in
 Български and the target text is in English.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "У мене няма телеметрия за батерията.",
-  "target_text": "I don't have any telemetry for the battery. This is something I might add in a future revision."
+  "text": "Здравей, как си?",
+  "target_text": "Hello, how are you?"
 }
 ```
 
 ```json
 {
   "text": "Кафявата лисица скача над мързеливото куче.",
-  "target_text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month."
+  "target_text": "The brown fox jumps over the lazy dog."
 }
 ```
 
 ```json
 {
-  "text": ""Здравей" каза тя.",
-  "target_text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered."
+  "text": "София е столицата на България.",
+  "target_text": "Sofia is the capital of Bulgaria."
 }
 ```
 
@@ -825,7 +825,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset wmt24pp-bg-en
 ```
 
-### Unofficial: WMT24++ English to Bulgarian
+### WMT24++ English to Български
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -833,33 +833,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the Bulgarian translation pair from the dataset, where the source text is in
+We use the bulgarian translation pair from the dataset, where the source text is in
 English and the target text is in Български.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
-  "target_text": "У мене няма телеметрия за батерията."
+  "text": "Hello, how are you?",
+  "target_text": "Здравей, как си?"
 }
 ```
 
 ```json
 {
-  "text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month.",
+  "text": "The brown fox jumps over the lazy dog.",
   "target_text": "Кафявата лисица скача над мързеливото куче."
 }
 ```
 
 ```json
 {
-  "text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered.",
-  "target_text": ""Здравей" каза тя."
+  "text": "Sofia is the capital of Bulgaria.",
+  "target_text": "София е столицата на България."
 }
 ```
 
@@ -885,7 +885,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into български.
+  Translate the above text into Български.
   ```
 
 You can evaluate this dataset directly as follows:
