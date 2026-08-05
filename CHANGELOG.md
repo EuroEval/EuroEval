@@ -56,9 +56,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Swapped official dataset for European Portuguese, Portuguese:
-  `goldenswag-pt` → `winogrande-pt`.
-
 - Renamed the previous LLM-as-a-judge `open-ended-qa` task to `reference-free-qa`, and
   added a new reference-based `open-ended-qa` task using translation-style text-to-text
   metrics.
@@ -67,16 +64,22 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Swapped official datasets for four languages (all performed by the
   `swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
   - Croatian: `mmlu-hr` → `include-hr`
-  - Dutch: `scala-nl` → `dutch-cola`, `mmlu-nl` → `include-nl`, `multiloko-nl`
+  - Dutch:
+    - `scala-nl` → `dutch-cola`
+    - `mmlu-nl` → `include-nl`, `multiloko-nl`
   - Finnish: `hellaswag-fi` → `winogrande-fi`
   - French: `mmlu-fr` → `include-fr`, `multiloko-fr`
-  - German: `hellaswag-de` → `winogrande-de`, `mmlu-de` → `include-de`, `multiloko-de`
+  - German:
+    - `hellaswag-de` → `winogrande-de`
+    - `mmlu-de` → `include-de`, `multiloko-de`
   - Greek: `global-mmlu-el` → `greek-mmlu`
   - Hungarian: `mmlu-hu` → `include-hu`
   - Icelandic: `scala-is` → `ice-ec`
   - Italian: `hellaswag-it` → `winogrande-it`
   - Lithuanian: `include-lt`
-  - Portuguese: `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
+  - Portuguese:
+    - `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
+    - `goldenswag-pt` → `winogrande-pt`
 
 ### Fixed
 
