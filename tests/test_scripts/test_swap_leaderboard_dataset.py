@@ -508,6 +508,8 @@ class TestLoadCorpusAndBuildEvalJobs:
             "danish-citizen-tests",
             "winogrande-da",
             "danske-talemaader",
+            "wmt24pp-da-en",
+            "wmt24pp-en-da",
         }
         test_variant_datasets = required_datasets - {"danske-talemaader"}
         val_variant_datasets = required_datasets - {"dala"}
@@ -650,6 +652,8 @@ class TestLoadCorpusAndBuildEvalJobs:
             "danish-citizen-tests",
             "winogrande-da",
             "danske-talemaader",
+            "wmt24pp-da-en",
+            "wmt24pp-en-da",
         }
         corpus = Corpus(
             datasets_by_language={"da": {"test-model": required_datasets}},
@@ -759,6 +763,8 @@ class TestLoadCorpusAndBuildEvalJobs:
             "danish-citizen-tests",
             "winogrande-da",
             "danske-talemaader",
+            "wmt24pp-da-en",
+            "wmt24pp-en-da",
         }
         corpus = Corpus(
             datasets_by_language={"da": {"test-model": required_datasets}},
@@ -1149,6 +1155,8 @@ class TestLoadCorpusAndBuildEvalJobs:
             "danish-citizen-tests",
             "winogrande-da",
             "danske-talemaader",
+            "wmt24pp-da-en",
+            "wmt24pp-en-da",
         }
         test_variant_datasets = required_datasets - {"dansk", "danske-talemaader"}
         val_variant_datasets = required_datasets - {"dala"}
@@ -1261,6 +1269,8 @@ class TestLoadCorpusAndBuildEvalJobs:
             "danish-citizen-tests",
             "winogrande-da",
             "danske-talemaader",
+            "wmt24pp-da-en",
+            "wmt24pp-en-da",
         }
         split_agnostic_dataset = "dala"
 
