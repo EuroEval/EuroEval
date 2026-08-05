@@ -67,7 +67,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Dutch:
     - `scala-nl` → `dutch-cola`
     - `mmlu-nl` → `include-nl`, `multiloko-nl`
-  - Finnish: `hellaswag-fi` → `winogrande-fi`
+  - Finnish:
+    - `hellaswag-fi` → `winogrande-fi`
+    - `include-fi`
   - French: `mmlu-fr` → `include-fr`, `multiloko-fr`
   - German:
     - `hellaswag-de` → `winogrande-de`
@@ -185,14 +187,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
     Values metric)
   - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
     the pipeline
-- Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
-- Added the `google-cloud-aiplatform` dependency, as it's required to run
-  Gemini-3.1-pro.
-- Added the Multi-Zebra-Logic datasets for 9 language variants: Danish (da), Dutch
-  (nl), English (en), Faroese (fo), German (de), Icelandic (is), Norwegian Bokmål (nb),
-  Norwegian Nynorsk (nn), and Swedish (sv). Each variant has an easy (2 objects × 3
-  attributes, easy variants now official) and hard (4 objects × 5 attributes,
-  unofficial) version. This was contributed by @sofiehb ✨
+- Added the Danish zebra puzzle dataset
+  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
+  is given by 128 / 1,024 samples for train / test, respectively. It is marked as
+  `unofficial` for now. This was contributed by @sofiehb ✨
 
 ### Fixed
 
@@ -201,20 +199,62 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed the parameter count derived from safetensors metadata when a model has multiple
   dtype entries. The `parameter_count` dict maps each dtype to the number of parameters
   stored in that dtype, so the total is the sum across entries — previously only the
-  largest entry was used, undercounting models with weights split across multiple
-  dtypes.
+  largest entry was used, undercounting models with weights split across multiple dtypes.
 - Fixed the finetuning NaN-retry not actually switching to fp32. When NaN values were
-  detected under mixed precision, the retry disabled autocast but reloaded the model via
-  `get_dtype`, which is hardware-driven and kept returning bf16/fp16 on CUDA — so the
-  weights stayed in the same NaN-producing dtype and the retry was a no-op (notably for
-  embedding-finetuned encoders like `intfloat/multilingual-e5-large-instruct`, whose
-  CUDA fused-attention backward NaNs in bf16). The retry now threads a `dtype_override`
-  down to model loading so the weights are genuinely reloaded in fp32.
+  detected under mixed precision, the retry disabled autocast but reloaded the model
+  via `get_dtype`, which is hardware-driven and kept returning bf16/fp16 on CUDA — so
+  the weights stayed in the same NaN-producing dtype and the retry was a no-op (notably
+  for embedding-finetuned encoders like `intfloat/multilingual-e5-large-instruct`,
+  whose CUDA fused-attention backward NaNs in bf16). The retry now threads a
+  `dtype_override` down to model loading so the weights are genuinely reloaded in fp32.
+
+## [v17.5.0] - 2026-06-19
+
+### Added
+
+- Added `--use-bits-per-character`/`-bpc` flag for base decoder models to enable
+  bits-per-character (BPC) scoring on all tasks. For multiple-choice tasks, this uses a
+  cloze formulation with question + full answer text. BPC runs are excluded from
+  official leaderboards. Only the vLLM backend supports BPC; HF encoder and LiteLLM
+  backends raise `InvalidModel`, as do instruction-tuned models in vLLM. Thanks to
+  @tvosch for the contribution!
+- Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
+- Added the `google-cloud-aiplatform` dependency, as it's required to run
+  Gemini-3.1-pro.
+
+### Fixed
+
+- vLLM device out-of-memory errors during generation (common on shared-memory devices
+  such as Apple Metal, where the default GPU memory utilization leaves no room for
+  per-step allocations) are now caught and reported with clear guidance to re-run with a
+  lower `--gpu-memory-utilization`, instead of an opaque crash.
+- Fixed vLLM benchmarking crashing or hanging on non-CUDA platforms (e.g. Apple Metal).
+  The multiprocessing executor was forced even for a single non-CUDA device, and its
+  worker rejected the `mps` device; single non-CUDA devices now use vLLM's in-process
+  executor. Additionally, vLLM's engine-core gloo rendezvous defaulted to the host's
+  primary IP, which is often unreachable from the host on macOS and hung indefinitely,
+  so `VLLM_HOST_IP` is now pinned to loopback for these devices (unless explicitly set).
+- Fixed a single failing iteration aborting an entire evaluation. When a model refuses
+  to answer in a way that produces no valid label (e.g. on the European Values task,
+  which doesn't allow invalid model outputs), that iteration is now skipped and the
+  scores of the remaining successful iterations are reported. The evaluation only fails
+  if every iteration fails.
+- Fixed vLLM benchmarking crashing on models whose context window is too small to fit
+  both the prompt and the dataset's full generation budget (e.g. a 2,048-token model on
+  IFEval, which reserves 2,048 generation tokens). Previously the prompt budget
+  collapsed to a single token and truncation raised "Truncation of prompts failed". The
+  generation budget is now shrunk (down to half the context) so the prompt retains room,
+  and zero-shot instruction-tuned prompts that still don't fit are hard-truncated as a
+  last resort instead of failing the benchmark.
+- Fixed `BenchmarkResult.append_to_results` writing records with a leading newline and
+  no trailing newline, which left results files without a final newline and could glue
+  two records onto a single line. Records are now written self-terminated, with a
+  separating newline added first if the existing file doesn't already end in one.
 - Added `download()` method to `PipelineMetric` class
   - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
     Values metric)
-  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
-    the pipeline
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and
+      caching the pipeline
 - Fixed `BenchmarkResult.from_dict()` failing to parse legacy results from Hugging Face
   bucket where `results.raw` contained nested dicts (e.g. `{"test": [{"mcc": 0.5}]}`)
   instead of flattened format (`{"test_mcc": 0.5}`)
@@ -272,6 +312,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `EMBEDDIA/litlat-bert`) that raised
   `TypeError: argument 'vocab': 'dict' object cannot be converted to 'Sequence'`. The
   tokenizer loader now falls back to `use_fast=False` when this error occurs.
+
+## [v17.3.0] - 2026-05-31
+
+### Added
 
 - Added the "Dutch Proverbs" dataset. The dataset consists of brief scenarios and two
   possible proverbs for the LLM to select from. The dataset was created manually and
