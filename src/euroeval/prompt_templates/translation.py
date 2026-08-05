@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     ALBANIAN,
+    BELARUSIAN,
     BOSNIAN,
     BULGARIAN,
     CATALAN,
@@ -14,6 +15,7 @@ from ..languages import (
     DUTCH,
     ENGLISH,
     ESTONIAN,
+    FAROESE,
     FINNISH,
     FRENCH,
     GERMAN,
@@ -23,6 +25,7 @@ from ..languages import (
     ITALIAN,
     LATVIAN,
     LITHUANIAN,
+    LUXEMBOURGISH,
     NORWEGIAN,
     POLISH,
     PORTUGUESE,
@@ -584,5 +587,62 @@ TRANSLATION_TEMPLATES: dict[tuple["Language", "Language"], PromptConfig] = {
         )
         for language in get_all_languages().values()
         if language != UKRAINIAN
+    },
+    **{
+        (BELARUSIAN, language): PromptConfig(
+            default_prompt_prefix=(
+                "Ніжэй прыведзены беларускія тэксты з адпаведнымі перакладамі на "
+                f"{language.name}."
+            ),
+            default_prompt_template=(
+                "Беларускі тэкст: {text}\n"
+                f"Пераклад на {language.name}: {{target_text}}"
+            ),
+            default_instruction_prompt=(
+                "Беларускі тэкст: {text}\n\n"
+                f"Перакладзіце прыведзены вышэй тэкст на {language.name}."
+            ),
+            default_prompt_label_mapping=dict(),
+        )
+        for language in get_all_languages().values()
+        if language != BELARUSIAN
+    },
+    **{
+        (FAROESE, language): PromptConfig(
+            default_prompt_prefix=(
+                "Niðanfyri eru føroyskir tekstir við tilhoyrandi týðingum til "
+                f"{language.name}."
+            ),
+            default_prompt_template=(
+                f"Føroyskur tekstur: {{text}}\nTýðing til {language.name}: "
+                "{target_text}"
+            ),
+            default_instruction_prompt=(
+                "Føroyskur tekstur: {text}\n\n"
+                f"Týð tekstin her omanfyri til {language.name}."
+            ),
+            default_prompt_label_mapping=dict(),
+        )
+        for language in get_all_languages().values()
+        if language != FAROESE
+    },
+    **{
+        (LUXEMBOURGISH, language): PromptConfig(
+            default_prompt_prefix=(
+                "Hei ënnendrënner sinn lëtzebuergesch Texter mat de entspriechenden "
+                f"Iwwersetzungen op {language.name}."
+            ),
+            default_prompt_template=(
+                "Lëtzebuergeschen Text: {text}\n"
+                f"Iwwersetzung op {language.name}: {{target_text}}"
+            ),
+            default_instruction_prompt=(
+                "Lëtzebuergeschen Text: {text}\n\n"
+                f"Iwwersetzt den Text hei uewen op {language.name}."
+            ),
+            default_prompt_label_mapping=dict(),
+        )
+        for language in get_all_languages().values()
+        if language != LUXEMBOURGISH
     },
 }

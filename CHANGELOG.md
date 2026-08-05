@@ -60,6 +60,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   has both `wmt24pp-en-{code}` and `wmt24pp-{code}-en` official datasets.
 - Added translation task to the leaderboard task list so translation datasets are scored
   and displayed on leaderboards.
+- Added translation prompt templates for Belarusian, Faroese and Luxembourgish as source
+  languages, so that all official languages now have translation prompt templates.
 
 ### Changed
 
