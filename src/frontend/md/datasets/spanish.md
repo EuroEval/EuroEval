@@ -819,7 +819,77 @@ euroeval --model <model-id> --dataset multinrc-es
 
 ## Common-sense Reasoning
 
-### HellaSwag-es
+### Winogrande-es
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
+training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Joseph tenía que tener las uñas bien cuidadas para el trabajo, pero no Kevin, porque _ trabajaba en un banco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Joseph\nb. Kevin",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Craig realmente ama limpiar todo el tiempo pero Derrick no porque _ es muy ordenado. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Craig\nb. Derrick",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Una vez en Polonia, Dennis disfrutó del viaje más que Jason porque _ tenía un conocimiento superficial del idioma polaco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Dennis\nb. Jason",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Las siguientes son preguntas de opción múltiple (con respuestas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pregunta: {text}
+  Opciones:
+  a. {option_a}
+  b. {option_b}
+  Respuesta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pregunta: {text}
+  Opciones:
+  a. {option_a}
+  b. {option_b}
+
+  Responda la pregunta anterior usando solo 'a' o 'b', y nada más.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset winogrande-es
+```
+
+### Unofficial: HellaSwag-es
 
 This dataset is a machine translated version of the English
 [HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
@@ -970,76 +1040,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset goldenswag-es
-```
-
-### Unofficial: Winogrande-es
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English
-[Winogrande dataset](https://doi.org/10.1145/3474381).
-
-The original full dataset consists of 47 / 1,210 samples for training and testing, and
-we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
-training, validation and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Joseph tenía que tener las uñas bien cuidadas para el trabajo, pero no Kevin, porque _ trabajaba en un banco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Joseph\nb. Kevin",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Craig realmente ama limpiar todo el tiempo pero Derrick no porque _ es muy ordenado. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Craig\nb. Derrick",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Una vez en Polonia, Dennis disfrutó del viaje más que Jason porque _ tenía un conocimiento superficial del idioma polaco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Dennis\nb. Jason",
-  "label": "b"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Las siguientes son preguntas de opción múltiple (con respuestas).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Pregunta: {text}
-  Opciones:
-  a. {option_a}
-  b. {option_b}
-  Respuesta: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Pregunta: {text}
-  Opciones:
-  a. {option_a}
-  b. {option_b}
-
-  Responda la pregunta anterior usando solo 'a' o 'b', y nada más.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset winogrande-es
 ```
 
 ## Summarisation
