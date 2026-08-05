@@ -63,12 +63,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Updated WMT24++ translation configs to contain only the non-English language in their
-  singleton `languages` list, while translation direction is inferred from the dataset
-  identifier.
-- Updated language detection for singleton translation configs to use the inferred
-  target language, correctly penalising predictions in the source language (including
-  English for reverse translation directions).
 - Renamed the previous LLM-as-a-judge `open-ended-qa` task to `reference-free-qa`, and
   added a new reference-based `open-ended-qa` task using translation-style text-to-text
   metrics.
