@@ -105,6 +105,18 @@ class TestTranslationDatasetConfig:
         assert config.main_language == (BULGARIAN, ENGLISH)
 
 
+def test_include_sr_uses_cyrillic_prompt() -> None:
+    """INCLUDE-sr content is Cyrillic, so it overrides the Latin KNOW template."""
+    config = dc_module.INCLUDE_SR_CONFIG
+    assert _has_cyrillic(config.prompt_prefix)
+    assert _has_cyrillic(config.instruction_prompt)
+
+
+def _has_cyrillic(text: str) -> bool:
+    """Return whether the text contains any Cyrillic characters."""
+    return any("Ѐ" <= ch <= "ӿ" for ch in text)
+
+
 def test_no_duplicate_dataset_config_variable_names() -> None:
     """Test that there are no duplicate variable names for dataset configs."""
     submodules = [
@@ -133,6 +145,13 @@ def test_no_duplicate_dataset_config_variable_names() -> None:
         f"Duplicate dataset config variable names found: {duplicate_variable_names}. "
         "Please ensure that each dataset config variable has a unique name."
     )
+
+
+def test_serbian_translation_prompt_is_cyrillic() -> None:
+    """The Serbian source translation prompt matches the Cyrillic source text."""
+    config = dc_module.WMT24PP_SR_EN_CONFIG
+    assert _has_cyrillic(config.prompt_prefix)
+    assert _has_cyrillic(config.instruction_prompt)
 
 
 def test_translation_not_included_in_english_leaderboard() -> None:

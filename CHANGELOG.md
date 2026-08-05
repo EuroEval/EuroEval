@@ -62,6 +62,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   and displayed on leaderboards.
 - Added translation prompt templates for Belarusian, Faroese and Luxembourgish as source
   languages, so that all official languages now have translation prompt templates.
+- Added a transliteration engine (`euroeval.transliteration`) and a `multiple_scripts`
+  boolean on the `Language` object. When a translation dataset targets a language written
+  in multiple scripts (e.g. Serbian, written in both Cyrillic and Latin), the ChrF
+  metrics now transliterate both predictions and references to a single canonical script
+  before scoring, so a correct translation is no longer penalised for choosing a valid
+  script that differs from the reference's. This uses the `cyrtranslit` package and
+  currently covers Serbian and Bosnian.
 
 ### Changed
 
@@ -94,8 +101,23 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Serbian: `mmlu-sr` → `include-sr`
   - Spanish: `hellaswag-es` → `winogrande-es`
 
+### Removed
+
+- Removed the language-identification penalty from the ChrF metrics, along with the
+  `lingua-language-detector` dependency and the `metrics.language_detection` module. The
+  penalty was a holdover from when translation was scored with BERTScore (embedding-based,
+  so it could reward correct content written in the wrong language); with character-based
+  ChrF a wrong-language output already scores low on its own. In practice the penalty was
+  wrongly zeroing large fractions of correct references (e.g. ~58% of gold Croatian and
+  ~24% of gold English), depressing valid scores far more than it caught genuine errors.
+
 ### Fixed
 
+- Fixed the prompt script for Serbian datasets whose content is written in Cyrillic. The
+  `include-sr` knowledge dataset now uses a Cyrillic prompt (overriding the shared Latin
+  knowledge template still used by the Latin-script `mmlu-sr`, `mms-sr` and
+  `winogrande-sr`), and the Serbian-source translation prompt template is now Cyrillic to
+  match the Cyrillic source text of `wmt24pp-sr-en`.
 - Fixed loading of Mixture-of-Experts models whose expert intermediate size is not a
   multiple of 128 after being sharded across multiple GPUs (e.g.
   `JetBrains/Mellum2-12B-A2.5B-Base` on Blackwell GPUs), which previously crashed vLLM

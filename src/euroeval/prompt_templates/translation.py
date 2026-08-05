@@ -459,16 +459,16 @@ TRANSLATION_TEMPLATES: dict[tuple["Language", "Language"], PromptConfig] = {
     **{
         (SERBIAN, language): PromptConfig(
             default_prompt_prefix=(
-                "Slede tekstovi na srpskom sa odgovarajućim prevodima "
-                f"na {language.name}."
+                "Следе текстови на српском са одговарајућим преводима "
+                f"на {language.name}."
             ),
             default_prompt_template=(
-                "Tekst na srpskom: {text}\n"
-                f"Prevod na {language.name}: {{target_text}}"
+                "Текст на српском: {text}\n"
+                f"Превод на {language.name}: {{target_text}}"
             ),
             default_instruction_prompt=(
-                "Tekst na srpskom: {text}\n\n"
-                f"Prevedite gornji tekst na {language.name}."
+                "Текст на српском: {text}\n\n"
+                f"Преведите горњи текст на {language.name}."
             ),
             default_prompt_label_mapping=dict(),
         )

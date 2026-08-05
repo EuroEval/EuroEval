@@ -92,6 +92,15 @@ INCLUDE_SR_CONFIG = DatasetConfig(
     source="EuroEval/include-sr-mini",
     task=KNOW,
     languages=[SERBIAN],
+    # Unlike the other Serbian knowledge datasets (which are in Latin), INCLUDE-sr is
+    # written in Cyrillic, so we override the shared Latin KNOW template with a Cyrillic
+    # one to keep the prompt in the same script as the content.
+    prompt_prefix="Следе питања вишеструког избора (са одговорима).",
+    prompt_template="Питање: {text}\nОдговор: {label}",
+    instruction_prompt=(
+        "Питање: {text}\n\nОдговорите на наведено питање користећи "
+        "{labels_str}, и ништа друго."
+    ),
 )
 
 WMT24PP_EN_SR_CONFIG = TranslationDatasetConfig(
