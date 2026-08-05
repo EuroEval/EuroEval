@@ -1028,9 +1028,10 @@ class DatasetConfig:
                 )
 
         raise InvalidBenchmark(
-            f"Could not infer translation direction for dataset {self.name!r}. "
-            "Translation configs with a single language must end their dataset name "
-            "or Hugging Face source with '<source-language>-<target-language>'."
+            f"Could not infer translation direction for dataset "
+            f"{dataset_identifier!r}. Translation configs with a single language must "
+            "end their dataset name or Hugging Face source with "
+            "'<source-language>-<target-language>'."
         )
 
     @property
