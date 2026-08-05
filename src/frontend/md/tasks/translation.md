@@ -5,19 +5,6 @@
 Translation is a task of translating a text from one language to another. The model
 receives a text in one language and has to generate a text in another language.
 
-In EuroEval, we support bidirectional translation evaluation between English and 25
-European languages using the WMT24++ dataset. This allows you to evaluate both:
-
-- **English to European language**: Translating from English into a target European
-  language (e.g., English to Danish)
-- **European language to English**: Translating from a European language into English
-  (e.g., Danish to English)
-
-The supported languages are: Bulgarian, Catalan, Czech, Danish, German, Greek, Estonian,
-Finnish, French, Croatian, Hungarian, Icelandic, Italian, Lithuanian, Latvian, Dutch,
-Norwegian, Polish, Portuguese, Romanian, Slovak, Slovene, Serbian, Swedish, and
-Ukrainian.
-
 When evaluating generative models, we allow the model to generate 256 tokens on this
 task.
 
