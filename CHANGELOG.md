@@ -57,20 +57,18 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   (Bulgarian, Catalan, Croatian, Czech, Danish, Dutch, Estonian, Finnish, French,
   German, Greek, Hungarian, Icelandic, Italian, Latvian, Lithuanian, Norwegian, Polish,
   Portuguese, Romanian, Serbian, Slovak, Slovene, Swedish, Ukrainian). Each language now
-  has both `wmt24pp-en-{code}` and `wmt24pp-{code}-en` official datasets with explicit
-  source/target language metadata.
+  has both `wmt24pp-en-{code}` and `wmt24pp-{code}-en` official datasets.
 - Added translation task to the leaderboard task list so translation datasets are scored
   and displayed on leaderboards.
 
 ### Changed
 
-- Updated `DatasetConfig` to accept a single `Language` object for the `languages`
-  parameter (internally normalised to a list for backward compatibility). Translation
-  configs now use this to specify only the non-English language, with explicit
-  `source_language` and `target_language` arguments for translation direction metadata.
-- Updated language detection metric to use explicit `target_language` for translation
-  tasks, correctly penalising predictions in the source language (including English for
-  reverse translation directions).
+- Updated WMT24++ translation configs to contain only the non-English language in their
+  singleton `languages` list, while translation direction is inferred from the dataset
+  identifier.
+- Updated language detection for singleton translation configs to use the inferred
+  target language, correctly penalising predictions in the source language (including
+  English for reverse translation directions).
 - Renamed the previous LLM-as-a-judge `open-ended-qa` task to `reference-free-qa`, and
   added a new reference-based `open-ended-qa` task using translation-style text-to-text
   metrics.

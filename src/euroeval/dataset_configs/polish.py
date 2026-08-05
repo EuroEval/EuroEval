@@ -1,7 +1,7 @@
 """All Polish dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import ENGLISH, POLISH
+from ..languages import POLISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -14,28 +14,6 @@ from ..tasks import (
     SENT,
     SUMM,
     TRANSLATION,
-)
-
-# WMT24++ translation datasets ###
-
-WMT24PP_EN_PL_CONFIG = DatasetConfig(
-    name="wmt24pp-en-pl",
-    pretty_name="WMT24++-pl",
-    source="EuroEval/wmt24pp-en-pl",
-    task=TRANSLATION,
-    languages=POLISH,
-    source_language=ENGLISH,
-    target_language=POLISH,
-)
-
-WMT24PP_PL_EN_CONFIG = DatasetConfig(
-    name="wmt24pp-pl-en",
-    pretty_name="WMT24++-pl-en",
-    source="EuroEval/wmt24pp-pl-en",
-    task=TRANSLATION,
-    languages=POLISH,
-    source_language=POLISH,
-    target_language=ENGLISH,
 )
 
 # Official datasets ###
@@ -126,6 +104,23 @@ RAGTRUTH_PL_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[POLISH],
     train_split=None,
+)
+
+
+WMT24PP_EN_PL_CONFIG = DatasetConfig(
+    name="wmt24pp-en-pl",
+    pretty_name="WMT24++-en-pl",
+    source="EuroEval/wmt24pp-en-pl",
+    task=TRANSLATION,
+    languages=[POLISH],
+)
+
+WMT24PP_PL_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-pl-en",
+    pretty_name="WMT24++-pl-en",
+    source="EuroEval/wmt24pp-pl-en",
+    task=TRANSLATION,
+    languages=[POLISH],
 )
 
 

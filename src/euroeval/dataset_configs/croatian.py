@@ -1,7 +1,7 @@
 """All Croatian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import CROATIAN, ENGLISH
+from ..languages import CROATIAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -12,28 +12,6 @@ from ..tasks import (
     RC,
     SENT,
     TRANSLATION,
-)
-
-# WMT24++ translation datasets ###
-
-WMT24PP_EN_HR_CONFIG = DatasetConfig(
-    name="wmt24pp-en-hr",
-    pretty_name="WMT24++-hr",
-    source="EuroEval/wmt24pp-en-hr",
-    task=TRANSLATION,
-    languages=CROATIAN,
-    source_language=ENGLISH,
-    target_language=CROATIAN,
-)
-
-WMT24PP_HR_EN_CONFIG = DatasetConfig(
-    name="wmt24pp-hr-en",
-    pretty_name="WMT24++-hr-en",
-    source="EuroEval/wmt24pp-hr-en",
-    task=TRANSLATION,
-    languages=CROATIAN,
-    source_language=CROATIAN,
-    target_language=ENGLISH,
 )
 
 # Official datasets ###
@@ -106,6 +84,23 @@ INCLUDE_HR_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[CROATIAN],
 )
+
+WMT24PP_EN_HR_CONFIG = DatasetConfig(
+    name="wmt24pp-en-hr",
+    pretty_name="WMT24++-en-hr",
+    source="EuroEval/wmt24pp-en-hr",
+    task=TRANSLATION,
+    languages=[CROATIAN],
+)
+
+WMT24PP_HR_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-hr-en",
+    pretty_name="WMT24++-hr-en",
+    source="EuroEval/wmt24pp-hr-en",
+    task=TRANSLATION,
+    languages=[CROATIAN],
+)
+
 
 # Unofficial datasets ###
 

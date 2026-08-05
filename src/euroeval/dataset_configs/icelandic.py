@@ -1,7 +1,7 @@
 """All Icelandic dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import ENGLISH, ICELANDIC
+from ..languages import ICELANDIC
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -17,28 +17,6 @@ from ..tasks import (
     SENT,
     SUMM,
     TRANSLATION,
-)
-
-# WMT24++ translation datasets ###
-
-WMT24PP_EN_IS_CONFIG = DatasetConfig(
-    name="wmt24pp-en-is",
-    pretty_name="WMT24++-is",
-    source="EuroEval/wmt24pp-en-is",
-    task=TRANSLATION,
-    languages=ICELANDIC,
-    source_language=ENGLISH,
-    target_language=ICELANDIC,
-)
-
-WMT24PP_IS_EN_CONFIG = DatasetConfig(
-    name="wmt24pp-is-en",
-    pretty_name="WMT24++-is-en",
-    source="EuroEval/wmt24pp-is-en",
-    task=TRANSLATION,
-    languages=ICELANDIC,
-    source_language=ICELANDIC,
-    target_language=ENGLISH,
 )
 
 # Official datasets ###
@@ -139,6 +117,23 @@ ICE_EC_CONFIG = DatasetConfig(
     task=LA,
     languages=[ICELANDIC],
 )
+
+WMT24PP_EN_IS_CONFIG = DatasetConfig(
+    name="wmt24pp-en-is",
+    pretty_name="WMT24++-en-is",
+    source="EuroEval/wmt24pp-en-is",
+    task=TRANSLATION,
+    languages=[ICELANDIC],
+)
+
+WMT24PP_IS_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-is-en",
+    pretty_name="WMT24++-is-en",
+    source="EuroEval/wmt24pp-is-en",
+    task=TRANSLATION,
+    languages=[ICELANDIC],
+)
+
 
 # Unofficial datasets ###
 

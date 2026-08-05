@@ -1,7 +1,7 @@
 """All Danish dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import DANISH, ENGLISH
+from ..languages import DANISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -19,28 +19,6 @@ from ..tasks import (
     SUMM,
     TRANSLATION,
     WIC,
-)
-
-# WMT24++ translation datasets ###
-
-WMT24PP_EN_DA_CONFIG = DatasetConfig(
-    name="wmt24pp-en-da",
-    pretty_name="WMT24++-da",
-    source="EuroEval/wmt24pp-en-da",
-    task=TRANSLATION,
-    languages=DANISH,
-    source_language=ENGLISH,
-    target_language=DANISH,
-)
-
-WMT24PP_DA_EN_CONFIG = DatasetConfig(
-    name="wmt24pp-da-en",
-    pretty_name="WMT24++-da-en",
-    source="EuroEval/wmt24pp-da-en",
-    task=TRANSLATION,
-    languages=DANISH,
-    source_language=DANISH,
-    target_language=ENGLISH,
 )
 
 # Official datasets ###
@@ -144,6 +122,23 @@ ZEBRA_PUZZLE_EASY_DA_CONFIG = DatasetConfig(
     task=LOGIC,
     languages=[DANISH],
 )
+
+WMT24PP_EN_DA_CONFIG = DatasetConfig(
+    name="wmt24pp-en-da",
+    pretty_name="WMT24++-en-da",
+    source="EuroEval/wmt24pp-en-da",
+    task=TRANSLATION,
+    languages=[DANISH],
+)
+
+WMT24PP_DA_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-da-en",
+    pretty_name="WMT24++-da-en",
+    source="EuroEval/wmt24pp-da-en",
+    task=TRANSLATION,
+    languages=[DANISH],
+)
+
 
 # Unofficial datasets ###
 

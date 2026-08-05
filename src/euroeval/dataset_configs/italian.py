@@ -1,7 +1,7 @@
 """All Italian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import ENGLISH, ITALIAN
+from ..languages import ITALIAN
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -16,28 +16,6 @@ from ..tasks import (
     SUMM,
     TRANSLATION,
     WIC,
-)
-
-# WMT24++ translation datasets ###
-
-WMT24PP_EN_IT_CONFIG = DatasetConfig(
-    name="wmt24pp-en-it",
-    pretty_name="WMT24++-it",
-    source="EuroEval/wmt24pp-en-it",
-    task=TRANSLATION,
-    languages=ITALIAN,
-    source_language=ENGLISH,
-    target_language=ITALIAN,
-)
-
-WMT24PP_IT_EN_CONFIG = DatasetConfig(
-    name="wmt24pp-it-en",
-    pretty_name="WMT24++-it-en",
-    source="EuroEval/wmt24pp-it-en",
-    task=TRANSLATION,
-    languages=ITALIAN,
-    source_language=ITALIAN,
-    target_language=ENGLISH,
 )
 
 # Official datasets ###
@@ -130,6 +108,23 @@ WINOGRANDE_IT_CONFIG = DatasetConfig(
     languages=[ITALIAN],
     labels=["a", "b"],
 )
+
+WMT24PP_EN_IT_CONFIG = DatasetConfig(
+    name="wmt24pp-en-it",
+    pretty_name="WMT24++-en-it",
+    source="EuroEval/wmt24pp-en-it",
+    task=TRANSLATION,
+    languages=[ITALIAN],
+)
+
+WMT24PP_IT_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-it-en",
+    pretty_name="WMT24++-it-en",
+    source="EuroEval/wmt24pp-it-en",
+    task=TRANSLATION,
+    languages=[ITALIAN],
+)
+
 
 # Unofficial datasets ###
 

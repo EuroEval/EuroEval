@@ -15,81 +15,8 @@ from euroeval.languages import BULGARIAN, ENGLISH
 from euroeval.tasks import TRANSLATION
 
 
-class TestDatasetConfigInvariants:
-    """Tests for DatasetConfig invariants."""
-
-    def test_source_target_both_none_is_valid(self) -> None:
-        """Test that both source_language and target_language being None is valid."""
-        config = DatasetConfig(
-            name="test",
-            pretty_name="Test",
-            source="test",
-            task=TRANSLATION,
-            languages=[ENGLISH, BULGARIAN],
-        )
-        assert config._source_language is None
-        assert config._target_language is None
-
-    def test_source_target_both_provided_is_valid(self) -> None:
-        """Test that both source_language and target_language provided is valid."""
-        config = DatasetConfig(
-            name="wmt24pp-en-bg",
-            pretty_name="WMT24++-bg",
-            source="EuroEval/wmt24pp-en-bg",
-            task=TRANSLATION,
-            languages=BULGARIAN,
-            source_language=ENGLISH,
-            target_language=BULGARIAN,
-        )
-        assert config._source_language == ENGLISH
-        assert config._target_language == BULGARIAN
-
-    def test_source_target_on_non_translation_raises(self) -> None:
-        """Test that providing source/target on non-translation raises."""
-        from euroeval.tasks import TEXT_CLASSIFICATION  # noqa: PLC0415
-
-        with pytest.raises(InvalidBenchmark, match="TRANSLATION tasks"):
-            DatasetConfig(
-                name="test",
-                pretty_name="Test",
-                source="test",
-                task=TEXT_CLASSIFICATION,
-                languages=[BULGARIAN],
-                source_language=ENGLISH,
-                target_language=BULGARIAN,
-            )
-
-    def test_source_without_target_raises(self) -> None:
-        """Test that providing source_language without target_language raises."""
-        with pytest.raises(
-            InvalidBenchmark, match="source_language and target_language"
-        ):
-            DatasetConfig(
-                name="test",
-                pretty_name="Test",
-                source="test",
-                task=TRANSLATION,
-                languages=[BULGARIAN],
-                source_language=ENGLISH,
-            )
-
-    def test_target_without_source_raises(self) -> None:
-        """Test that providing target_language without source_language raises."""
-        with pytest.raises(
-            InvalidBenchmark, match="source_language and target_language"
-        ):
-            DatasetConfig(
-                name="test",
-                pretty_name="Test",
-                source="test",
-                task=TRANSLATION,
-                languages=[BULGARIAN],
-                target_language=BULGARIAN,
-            )
-
-
-class TestDatasetConfigLanguageNormalisation:
-    """Tests for DatasetConfig language normalisation."""
+class TestDatasetConfigLanguageLists:
+    """Tests for DatasetConfig language lists."""
 
     def test_sequence_of_languages_is_preserved(self) -> None:
         """Test that a sequence of languages is preserved as a list."""
@@ -104,19 +31,6 @@ class TestDatasetConfigLanguageNormalisation:
         assert len(config.languages) == 2
         assert config.languages[0] == ENGLISH
         assert config.languages[1] == BULGARIAN
-
-    def test_single_language_object_is_normalised_to_list(self) -> None:
-        """Test that a single Language object is normalised to a list."""
-        config = DatasetConfig(
-            name="test",
-            pretty_name="Test",
-            source="test",
-            task=TRANSLATION,
-            languages=BULGARIAN,
-        )
-        assert isinstance(config.languages, list)
-        assert len(config.languages) == 1
-        assert config.languages[0] == BULGARIAN
 
 
 class TestGetAllDatasetConfigs:
@@ -148,11 +62,11 @@ class TestGetAllDatasetConfigs:
         assert isinstance(dataset_configs, dict)
 
 
-class TestTranslationDirectionMetadata:
-    """Tests for explicit translation direction metadata."""
+class TestTranslationDirectionInference:
+    """Tests for translation direction inference."""
 
-    def test_backward_compatibility_without_explicit_direction(self) -> None:
-        """Test backward compatibility when explicit direction is not provided."""
+    def test_backward_compatibility_for_two_language_configs(self) -> None:
+        """Test translation configs with two languages keep their direction."""
         config = DatasetConfig(
             name="test",
             pretty_name="Test",
@@ -160,50 +74,47 @@ class TestTranslationDirectionMetadata:
             task=TRANSLATION,
             languages=[ENGLISH, BULGARIAN],
         )
-        main_lang = config.main_language
-        assert isinstance(main_lang, tuple)
-        assert main_lang[0] == ENGLISH
-        assert main_lang[1] == BULGARIAN
+        assert config.main_language == (ENGLISH, BULGARIAN)
 
-    def test_main_language_returns_reverse_tuple(self) -> None:
-        """Test that main_language returns correct tuple for reverse translation."""
+    def test_main_language_infers_forward_wmt24pp_direction(self) -> None:
+        """Test that main_language infers a forward WMT24++ direction."""
+        config = DatasetConfig(
+            name="wmt24pp-en-bg",
+            pretty_name="WMT24++-en-bg",
+            source="EuroEval/wmt24pp-en-bg",
+            task=TRANSLATION,
+            languages=[BULGARIAN],
+        )
+        assert config.main_language == (ENGLISH, BULGARIAN)
+
+    def test_main_language_infers_reverse_wmt24pp_direction(self) -> None:
+        """Test that main_language infers a reverse WMT24++ direction."""
         config = DatasetConfig(
             name="wmt24pp-bg-en",
             pretty_name="WMT24++-bg-en",
             source="EuroEval/wmt24pp-bg-en",
             task=TRANSLATION,
-            languages=BULGARIAN,
-            source_language=BULGARIAN,
-            target_language=ENGLISH,
+            languages=[BULGARIAN],
         )
-        main_lang = config.main_language
-        assert isinstance(main_lang, tuple)
-        assert len(main_lang) == 2
-        assert main_lang[0] == BULGARIAN
-        assert main_lang[1] == ENGLISH
+        assert config.main_language == (BULGARIAN, ENGLISH)
 
-    def test_main_language_returns_tuple_with_explicit_direction(self) -> None:
-        """Test that main_language returns correct tuple with explicit source/target."""
-        config = DatasetConfig(
-            name="wmt24pp-en-bg",
-            pretty_name="WMT24++-bg",
-            source="EuroEval/wmt24pp-en-bg",
-            task=TRANSLATION,
-            languages=BULGARIAN,
-            source_language=ENGLISH,
-            target_language=BULGARIAN,
-        )
-        main_lang = config.main_language
-        assert isinstance(main_lang, tuple)
-        assert len(main_lang) == 2
-        assert main_lang[0] == ENGLISH
-        assert main_lang[1] == BULGARIAN
+    def test_main_language_raises_if_singleton_direction_is_unknown(self) -> None:
+        """Test singleton translation configs need an inferable direction."""
+        with pytest.raises(InvalidBenchmark, match="Could not infer"):
+            DatasetConfig(
+                name="translation-test",
+                pretty_name="Translation Test",
+                source="EuroEval/translation-test",
+                task=TRANSLATION,
+                languages=[BULGARIAN],
+                prompt_prefix="",
+                prompt_template="",
+                instruction_prompt="",
+            )
 
 
 def test_no_duplicate_dataset_config_variable_names() -> None:
     """Test that there are no duplicate variable names for dataset configs."""
-    # Create a mapping from language name to list of variable names for the dataset
-    # configs of that language
     submodules = [
         value
         for value in dc_module.__dict__.values()
@@ -218,13 +129,11 @@ def test_no_duplicate_dataset_config_variable_names() -> None:
         for submodule in submodules
     }
 
-    # Count the number of occurences of each dataset config variable name
     dataset_variable_name_counts: dict[str, int] = defaultdict(int)
     for var_names in language_to_dataset_vars.values():
         for var_name in var_names:
             dataset_variable_name_counts[var_name] += 1
 
-    # Raise an error if any variable name occurs more than once
     duplicate_variable_names = [
         name for name, count in dataset_variable_name_counts.items() if count > 1
     ]
@@ -236,38 +145,31 @@ def test_no_duplicate_dataset_config_variable_names() -> None:
 
 def test_translation_not_included_in_english_leaderboard() -> None:
     """Test that WMT24++ configs don't accidentally pollute English selection."""
-    # Check that there's no WMT24PP config with English as the only language
     all_configs = [
         cfg for cfg in vars(dc_module).values() if isinstance(cfg, DatasetConfig)
     ]
-    wmt24pp_en_configs = [
+    wmt24pp_configs = [
         cfg
         for cfg in all_configs
-        if cfg.name.startswith("wmt24pp-en-") and cfg.task == TRANSLATION
+        if cfg.name.startswith("wmt24pp-") and cfg.task == TRANSLATION
     ]
-    # All en-X configs should have non-English language in their languages field
-    for config in wmt24pp_en_configs:
+    for config in wmt24pp_configs:
         assert ENGLISH not in config.languages
         assert len(config.languages) == 1
 
 
 def test_wmt24pp_configs_for_both_directions() -> None:
     """Test that WMT24++ configs exist for both directions."""
-    # Check that English->Bulgarian exists
     assert hasattr(dc_module, "WMT24PP_EN_BG_CONFIG")
     en_bg_config = dc_module.WMT24PP_EN_BG_CONFIG
-    assert en_bg_config.source_language == ENGLISH
-    assert en_bg_config.target_language == BULGARIAN
+    assert en_bg_config.main_language == (ENGLISH, BULGARIAN)
     assert en_bg_config.languages == [BULGARIAN]
 
-    # Check that Bulgarian->English exists
     assert hasattr(dc_module, "WMT24PP_BG_EN_CONFIG")
     bg_en_config = dc_module.WMT24PP_BG_EN_CONFIG
-    assert bg_en_config.source_language == BULGARIAN
-    assert bg_en_config.target_language == ENGLISH
+    assert bg_en_config.main_language == (BULGARIAN, ENGLISH)
     assert bg_en_config.languages == [BULGARIAN]
 
-    # Check both are official
     assert en_bg_config.unofficial is False
     assert bg_en_config.unofficial is False
 

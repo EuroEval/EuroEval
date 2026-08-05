@@ -1,7 +1,7 @@
 """All Serbian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import ENGLISH, SERBIAN
+from ..languages import SERBIAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -13,28 +13,6 @@ from ..tasks import (
     SENT,
     SUMM,
     TRANSLATION,
-)
-
-# WMT24++ translation datasets ###
-
-WMT24PP_EN_SR_CONFIG = DatasetConfig(
-    name="wmt24pp-en-sr",
-    pretty_name="WMT24++-sr",
-    source="EuroEval/wmt24pp-en-sr",
-    task=TRANSLATION,
-    languages=SERBIAN,
-    source_language=ENGLISH,
-    target_language=SERBIAN,
-)
-
-WMT24PP_SR_EN_CONFIG = DatasetConfig(
-    name="wmt24pp-sr-en",
-    pretty_name="WMT24++-sr-en",
-    source="EuroEval/wmt24pp-sr-en",
-    task=TRANSLATION,
-    languages=SERBIAN,
-    source_language=SERBIAN,
-    target_language=ENGLISH,
 )
 
 # Official datasets ###
@@ -115,6 +93,23 @@ INCLUDE_SR_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[SERBIAN],
 )
+
+WMT24PP_EN_SR_CONFIG = DatasetConfig(
+    name="wmt24pp-en-sr",
+    pretty_name="WMT24++-en-sr",
+    source="EuroEval/wmt24pp-en-sr",
+    task=TRANSLATION,
+    languages=[SERBIAN],
+)
+
+WMT24PP_SR_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-sr-en",
+    pretty_name="WMT24++-sr-en",
+    source="EuroEval/wmt24pp-sr-en",
+    task=TRANSLATION,
+    languages=[SERBIAN],
+)
+
 
 # Unofficial datasets ###
 

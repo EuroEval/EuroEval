@@ -1,7 +1,7 @@
 """All Latvian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import ENGLISH, LATVIAN
+from ..languages import LATVIAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -13,28 +13,6 @@ from ..tasks import (
     SENT,
     SUMM,
     TRANSLATION,
-)
-
-# WMT24++ translation datasets ###
-
-WMT24PP_EN_LV_CONFIG = DatasetConfig(
-    name="wmt24pp-en-lv",
-    pretty_name="WMT24++-lv",
-    source="EuroEval/wmt24pp-en-lv",
-    task=TRANSLATION,
-    languages=LATVIAN,
-    source_language=ENGLISH,
-    target_language=LATVIAN,
-)
-
-WMT24PP_LV_EN_CONFIG = DatasetConfig(
-    name="wmt24pp-lv-en",
-    pretty_name="WMT24++-lv-en",
-    source="EuroEval/wmt24pp-lv-en",
-    task=TRANSLATION,
-    languages=LATVIAN,
-    source_language=LATVIAN,
-    target_language=ENGLISH,
 )
 
 # Official datasets ###
@@ -114,6 +92,23 @@ RAGTRUTH_LV_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[LATVIAN],
     train_split=None,
+)
+
+
+WMT24PP_EN_LV_CONFIG = DatasetConfig(
+    name="wmt24pp-en-lv",
+    pretty_name="WMT24++-en-lv",
+    source="EuroEval/wmt24pp-en-lv",
+    task=TRANSLATION,
+    languages=[LATVIAN],
+)
+
+WMT24PP_LV_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-lv-en",
+    pretty_name="WMT24++-lv-en",
+    source="EuroEval/wmt24pp-lv-en",
+    task=TRANSLATION,
+    languages=[LATVIAN],
 )
 
 

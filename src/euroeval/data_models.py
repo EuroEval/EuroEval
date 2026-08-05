@@ -32,6 +32,7 @@ from .languages import (
     NORWEGIAN_NYNORSK,
     PORTUGUESE,
     Language,
+    get_all_languages,
 )
 from .logging_utils import log_once
 from .metrics.base import Metric
@@ -597,7 +598,7 @@ class DatasetConfig:
     def __init__(
         self,
         task: Task,
-        languages: c.Sequence[Language] | Language,
+        languages: c.Sequence[Language],
         name: str | None = None,
         pretty_name: str | None = None,
         source: str | dict[str, str] | None = None,
@@ -620,8 +621,6 @@ class DatasetConfig:
         target_column: str | None = None,
         choices_column: str | list[str] | None = None,
         preprocessing_func: c.Callable[[DatasetDict], DatasetDict] | None = None,
-        source_language: Language | None = None,
-        target_language: Language | None = None,
     ) -> None:
         """Initialise a DatasetConfig object.
 
@@ -629,18 +628,7 @@ class DatasetConfig:
             task:
                 The task of the dataset.
             languages:
-                The ISO 639-1 language codes of the entries in the dataset. Can be a
-                single Language object or a sequence of Language objects. For
-                translation tasks with explicit source/target, should contain only the
-                non-English language.
-            source_language (optional):
-                The source language for translation tasks. If provided, task must be
-                TRANSLATION and this specifies the language being translated from.
-                Defaults to None.
-            target_language (optional):
-                The target language for translation tasks. If provided, task must be
-                TRANSLATION and this specifies the language being translated to.
-                Defaults to None.
+                The ISO 639-1 language codes of the entries in the dataset.
             name (optional):
                 The name of the dataset. Must be lower case with no spaces. Can be None
                 if and only if the dataset config resides directly in the Hugging Face
@@ -730,39 +718,12 @@ class DatasetConfig:
                 A custom preprocessing function that takes a DatasetDict and returns a
                 DatasetDict. If set together with any of the column arguments, a warning
                 is logged and `preprocessing_func` takes precedence. Defaults to None.
-
-        Raises:
-            InvalidBenchmark:
-                If source_language and target_language are not both set or both None, or
-                if they are provided for a non-translation task.
         """
         self._name = name
         self._pretty_name = pretty_name
         self._source = source
         self.task = task
-
-        # Normalise languages to a list for backward compatibility
-        if isinstance(languages, Language):
-            self.languages: list[Language] = [languages]
-        else:
-            self.languages = list(languages)
-
-        # Validate source_language and target_language invariants
-        from .tasks import TRANSLATION  # noqa: PLC0415
-
-        if (source_language is None) != (target_language is None):
-            raise InvalidBenchmark(
-                "DatasetConfig: source_language and target_language must both be set "
-                "or both be None."
-            )
-        if source_language is not None and task != TRANSLATION:
-            raise InvalidBenchmark(
-                "DatasetConfig: source/target only allowed for TRANSLATION tasks."
-            )
-
-        # Store explicit translation direction metadata
-        self._source_language = source_language
-        self._target_language = target_language
+        self.languages = list(languages)
 
         template = self.task.template_dict.get(self.main_language)
         self.prompt_prefix = (
@@ -895,6 +856,15 @@ class DatasetConfig:
             pass
         return f"DatasetConfig({', '.join(parts)})"
 
+    @property
+    def _translation_dataset_identifier(self) -> str | None:
+        """The dataset identifier used to infer translation direction."""
+        if self._name is not None:
+            return self._name
+        if isinstance(self._source, str):
+            return self._source.rsplit("/", maxsplit=1)[-1]
+        return None
+
     def get_labels_str(self, labels: c.Sequence[str] | None = None) -> str:
         """Converts a set of labels to a natural string, in the specified language.
 
@@ -999,10 +969,10 @@ class DatasetConfig:
         """The main language of the dataset.
 
         Returns:
-            The main language or languages of the dataset. For translation tasks with
-            explicit source/target metadata, returns (source_language, target_language).
-            For translation tasks without explicit metadata, returns
-            (languages[0], languages[1]). For other tasks, returns the primary language.
+            The main language or languages of the dataset. For translation tasks,
+            returns the source and target languages if these are available from either
+            the language list or the dataset identifier. For other tasks, returns the
+            primary language.
 
         Raises:
             InvalidBenchmark:
@@ -1011,13 +981,11 @@ class DatasetConfig:
         # Importing here to avoid circular imports
         from .tasks import TRANSLATION  # noqa: PLC0415
 
-        # Special case for translation tasks with explicit source/target
         if self.task == TRANSLATION:
-            if self._source_language is not None and self._target_language is not None:
-                return (self._source_language, self._target_language)
-            # Fallback to old behavior for backward compatibility
             if len(self.languages) >= 2:
                 return (self.languages[0], self.languages[1])
+            if len(self.languages) == 1:
+                return self._infer_translation_language_pair()
 
         match len(self.languages):
             case 0:
@@ -1035,6 +1003,35 @@ class DatasetConfig:
                     return PORTUGUESE
                 else:
                     return self.languages[0]
+
+    def _infer_translation_language_pair(self) -> tuple[Language, Language]:
+        """Infer the translation direction from the dataset identifier.
+
+        Returns:
+            The inferred source and target languages.
+
+        Raises:
+            InvalidBenchmark:
+                If the dataset identifier does not end with a recognised source and
+                target language pair.
+        """
+        language_map = get_all_languages()
+        dataset_identifier = self._translation_dataset_identifier
+        if dataset_identifier is not None:
+            language_codes = dataset_identifier.split("-")[-2:]
+            if len(language_codes) == 2 and all(
+                language_code in language_map for language_code in language_codes
+            ):
+                return (
+                    language_map[language_codes[0]],
+                    language_map[language_codes[1]],
+                )
+
+        raise InvalidBenchmark(
+            f"Could not infer translation direction for dataset {self.name!r}. "
+            "Translation configs with a single language must end their dataset name "
+            "or Hugging Face source with '<source-language>-<target-language>'."
+        )
 
     @property
     def name(self) -> str:
@@ -1115,24 +1112,6 @@ class DatasetConfig:
                 The new source of the dataset.
         """
         self._source = value
-
-    @property
-    def source_language(self) -> Language | None:
-        """The source language for translation tasks.
-
-        Returns:
-            The source language, or None if not set.
-        """
-        return self._source_language
-
-    @property
-    def target_language(self) -> Language | None:
-        """The target language for translation tasks.
-
-        Returns:
-            The target language, or None if not set.
-        """
-        return self._target_language
 
 
 @dataclass

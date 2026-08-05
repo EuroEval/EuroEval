@@ -1,7 +1,7 @@
 """All CATALAN dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import CATALAN, ENGLISH
+from ..languages import CATALAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -13,28 +13,6 @@ from ..tasks import (
     SENT,
     SUMM,
     TRANSLATION,
-)
-
-# WMT24++ translation datasets ###
-
-WMT24PP_EN_CA_CONFIG = DatasetConfig(
-    name="wmt24pp-en-ca",
-    pretty_name="WMT24++-ca",
-    source="EuroEval/wmt24pp-en-ca",
-    task=TRANSLATION,
-    languages=CATALAN,
-    source_language=ENGLISH,
-    target_language=CATALAN,
-)
-
-WMT24PP_CA_EN_CONFIG = DatasetConfig(
-    name="wmt24pp-ca-en",
-    pretty_name="WMT24++-ca-en",
-    source="EuroEval/wmt24pp-ca-en",
-    task=TRANSLATION,
-    languages=CATALAN,
-    source_language=CATALAN,
-    target_language=ENGLISH,
 )
 
 # Official datasets ###
@@ -114,6 +92,23 @@ RAGTRUTH_CA_CONFIG = DatasetConfig(
     languages=[CATALAN],
     train_split=None,
 )
+
+WMT24PP_EN_CA_CONFIG = DatasetConfig(
+    name="wmt24pp-en-ca",
+    pretty_name="WMT24++-en-ca",
+    source="EuroEval/wmt24pp-en-ca",
+    task=TRANSLATION,
+    languages=[CATALAN],
+)
+
+WMT24PP_CA_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-ca-en",
+    pretty_name="WMT24++-ca-en",
+    source="EuroEval/wmt24pp-ca-en",
+    task=TRANSLATION,
+    languages=[CATALAN],
+)
+
 
 # Unofficial datasets ###
 
