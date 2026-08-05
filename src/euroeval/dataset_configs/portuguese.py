@@ -1,7 +1,7 @@
 """All Portuguese dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import EUROPEAN_PORTUGUESE, PORTUGUESE
+from ..languages import ENGLISH, EUROPEAN_PORTUGUESE, PORTUGUESE
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -14,6 +14,29 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
+)
+
+# WMT24++ translation datasets ###
+
+WMT24PP_EN_PT_CONFIG = DatasetConfig(
+    name="wmt24pp-en-pt",
+    pretty_name="WMT24++-pt",
+    source="EuroEval/wmt24pp-en-pt",
+    task=TRANSLATION,
+    languages=PORTUGUESE,
+    source_language=ENGLISH,
+    target_language=PORTUGUESE,
+)
+
+WMT24PP_PT_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-pt-en",
+    pretty_name="WMT24++-pt-en",
+    source="EuroEval/wmt24pp-pt-en",
+    task=TRANSLATION,
+    languages=PORTUGUESE,
+    source_language=PORTUGUESE,
+    target_language=ENGLISH,
 )
 
 # Official datasets ###

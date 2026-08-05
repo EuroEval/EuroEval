@@ -1,7 +1,7 @@
 """All Greek dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import GREEK
+from ..languages import ENGLISH, GREEK
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -13,6 +13,29 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
+)
+
+# WMT24++ translation datasets ###
+
+WMT24PP_EN_EL_CONFIG = DatasetConfig(
+    name="wmt24pp-en-el",
+    pretty_name="WMT24++-el",
+    source="EuroEval/wmt24pp-en-el",
+    task=TRANSLATION,
+    languages=GREEK,
+    source_language=ENGLISH,
+    target_language=GREEK,
+)
+
+WMT24PP_EL_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-el-en",
+    pretty_name="WMT24++-el-en",
+    source="EuroEval/wmt24pp-el-en",
+    task=TRANSLATION,
+    languages=GREEK,
+    source_language=GREEK,
+    target_language=ENGLISH,
 )
 
 # Official datasets ###

@@ -1,7 +1,7 @@
 """All Finnish dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import FINNISH
+from ..languages import ENGLISH, FINNISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -14,6 +14,29 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
+)
+
+# WMT24++ translation datasets ###
+
+WMT24PP_EN_FI_CONFIG = DatasetConfig(
+    name="wmt24pp-en-fi",
+    pretty_name="WMT24++-fi",
+    source="EuroEval/wmt24pp-en-fi",
+    task=TRANSLATION,
+    languages=FINNISH,
+    source_language=ENGLISH,
+    target_language=FINNISH,
+)
+
+WMT24PP_FI_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-fi-en",
+    pretty_name="WMT24++-fi-en",
+    source="EuroEval/wmt24pp-fi-en",
+    task=TRANSLATION,
+    languages=FINNISH,
+    source_language=FINNISH,
+    target_language=ENGLISH,
 )
 
 # Official datasets ###

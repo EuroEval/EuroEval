@@ -1,7 +1,7 @@
 """All German dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import GERMAN
+from ..languages import ENGLISH, GERMAN
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -16,6 +16,29 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
+)
+
+# WMT24++ translation datasets ###
+
+WMT24PP_EN_DE_CONFIG = DatasetConfig(
+    name="wmt24pp-en-de",
+    pretty_name="WMT24++-de",
+    source="EuroEval/wmt24pp-en-de",
+    task=TRANSLATION,
+    languages=GERMAN,
+    source_language=ENGLISH,
+    target_language=GERMAN,
+)
+
+WMT24PP_DE_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-de-en",
+    pretty_name="WMT24++-de-en",
+    source="EuroEval/wmt24pp-de-en",
+    task=TRANSLATION,
+    languages=GERMAN,
+    source_language=GERMAN,
+    target_language=ENGLISH,
 )
 
 # Official datasets ###

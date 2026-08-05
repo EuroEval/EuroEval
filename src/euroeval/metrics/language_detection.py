@@ -56,12 +56,16 @@ class LanguageDetector:
         if danish_and_norwegian & dataset_languages:
             dataset_languages |= danish_and_norwegian
 
-        # Exclude the source language for translation tasks
-        # as it is tuple for translation tasks, otherwise a single language is returned
-        main_lang = dataset_config.main_language
-        if isinstance(main_lang, tuple):
-            source_lang, _ = main_lang
-            dataset_languages.discard(source_lang)
+        # For translation tasks, penalise against the target language
+        if dataset_config._target_language is not None:
+            # Use explicit target language if provided
+            dataset_languages = {dataset_config._target_language}
+        else:
+            # Fallback to old behavior: exclude source language from main_language tuple
+            main_lang = dataset_config.main_language
+            if isinstance(main_lang, tuple):
+                source_lang, _ = main_lang
+                dataset_languages.discard(source_lang)
 
         target_language_codes = get_correct_language_codes(
             language_codes=[lang.code for lang in dataset_languages]

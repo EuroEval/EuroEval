@@ -185,6 +185,7 @@ LEADERBOARD_TASKS: list[str] = [
     "linguistic-acceptability",
     "reading-comprehension",
     "summarization",
+    "translation",
     "knowledge",
     "common-sense-reasoning",
     "simplification",
