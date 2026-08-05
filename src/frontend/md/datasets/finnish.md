@@ -1145,89 +1145,19 @@ euroeval --model <model-id> --dataset ragtruth-fi
 
 ## Translation
 
-### WMT24++ Suomi to English
+### WMT24++ English to Finnish
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Finnish translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the finnish translation pair from the dataset, where the source text is in
-Suomi and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Hei, miten menee?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "Ruskea kettu hyppää laiskan koiran yli.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "Helsinki on Suomen pääkaupunki.",
-  "target_text": "Helsinki is the capital of Finland."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are suomi texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  suomi text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  suomi text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-fi-en
-```
-
-### WMT24++ English to Suomi
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the finnish translation pair from the dataset, where the source text is in
-English and the target text is in Suomi.
+We use the Finnish translation pair from the dataset, where the source text is in
+English and the target text is in Finnish.
 
 Here are a few examples from the training split:
 
@@ -1259,14 +1189,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding suomi translations.
+  The following are English texts with corresponding Finnish translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  suomi translation: {target_text}
+  Finnish translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -1274,11 +1204,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Suomi.
+  Translate the above text into Finnish.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-fi
+```
+
+### WMT24++ Finnish to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Finnish translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Finnish translation pair from the dataset, where the source text is in
+Finnish and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hei, miten menee?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Ruskea kettu hyppää laiskan koiran yli.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Helsinki on Suomen pääkaupunki.",
+  "target_text": "Helsinki is the capital of Finland."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Seuraavassa on suomenkielisiä tekstejä ja niiden käännökset kielelle English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Suomenkielinen teksti: {text}
+  Käännös kielelle English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Suomenkielinen teksti: {text}
+
+  Käännä yllä oleva teksti kielelle English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-fi-en
 ```

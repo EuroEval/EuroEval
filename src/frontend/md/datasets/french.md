@@ -1395,89 +1395,19 @@ euroeval --model <model-id> --dataset ragtruth-fr
 
 ## Translation
 
-### WMT24++ Français to English
+### WMT24++ English to French
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-French translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the french translation pair from the dataset, where the source text is in
-Français and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Bonjour, comment vas-tu?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "Le renard brun saute par-dessus le chien paresseux.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "Paris est la capitale de la France.",
-  "target_text": "Paris is the capital of France."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are français texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  français text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  français text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-fr-en
-```
-
-### WMT24++ English to Français
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the french translation pair from the dataset, where the source text is in
-English and the target text is in Français.
+We use the French translation pair from the dataset, where the source text is in English
+and the target text is in French.
 
 Here are a few examples from the training split:
 
@@ -1509,14 +1439,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding français translations.
+  The following are English texts with corresponding French translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  français translation: {target_text}
+  French translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -1524,11 +1454,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Français.
+  Translate the above text into French.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-fr
+```
+
+### WMT24++ French to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-French translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the French translation pair from the dataset, where the source text is in French
+and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Bonjour, comment vas-tu?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Le renard brun saute par-dessus le chien paresseux.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Paris est la capitale de la France.",
+  "target_text": "Paris is the capital of France."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Ce qui suit sont des textes en français avec les traductions correspondantes en English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Texte en français: {text}
+  Traduction en English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Texte en français : {text}
+
+  Traduisez le texte ci-dessus en English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-fr-en
 ```

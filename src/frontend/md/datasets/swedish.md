@@ -1845,89 +1845,19 @@ euroeval --model <model-id> --dataset ragtruth-sv
 
 ## Translation
 
-### WMT24++ Svenska to English
+### WMT24++ English to Swedish
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Swedish translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the swedish translation pair from the dataset, where the source text is in
-Svenska and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Hej, hur mår du?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "Den bruna räven hoppar över den lata hunden.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "Stockholm är Sveriges huvudstad.",
-  "target_text": "Stockholm is the capital of Sweden."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are svenska texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  svenska text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  svenska text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-sv-en
-```
-
-### WMT24++ English to Svenska
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the swedish translation pair from the dataset, where the source text is in
-English and the target text is in Svenska.
+We use the Swedish translation pair from the dataset, where the source text is in
+English and the target text is in Swedish.
 
 Here are a few examples from the training split:
 
@@ -1959,14 +1889,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding svenska translations.
+  The following are English texts with corresponding Swedish translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  svenska translation: {target_text}
+  Swedish translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -1974,11 +1904,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Svenska.
+  Translate the above text into Swedish.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-sv
+```
+
+### WMT24++ Swedish to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Swedish translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Swedish translation pair from the dataset, where the source text is in
+Swedish and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hej, hur mår du?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Den bruna räven hoppar över den lata hunden.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Stockholm är Sveriges huvudstad.",
+  "target_text": "Stockholm is the capital of Sweden."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Följande är svenska texter med motsvarande översättningar till English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Svensk text: {text}
+  Översättning till English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Svensk text: {text}
+
+  Översätt texten ovan till English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-sv-en
 ```

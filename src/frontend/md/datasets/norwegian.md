@@ -2787,89 +2787,19 @@ euroeval --model <model-id> --dataset ragtruth-no
 
 ## Translation
 
-### WMT24++ Norsk to English
+### WMT24++ English to Norwegian
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Norwegian translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the norwegian translation pair from the dataset, where the source text is in
-Norsk and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Hei, hvordan har du det?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "Den brune reven hopper over den late hunden.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "Oslo er hovedstaden i Norge.",
-  "target_text": "Oslo is the capital of Norway."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are norsk texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  norsk text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  norsk text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-no-en
-```
-
-### WMT24++ English to Norsk
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the norwegian translation pair from the dataset, where the source text is in
-English and the target text is in Norsk.
+We use the Norwegian translation pair from the dataset, where the source text is in
+English and the target text is in Norwegian.
 
 Here are a few examples from the training split:
 
@@ -2901,14 +2831,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding norsk translations.
+  The following are English texts with corresponding Norwegian translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  norsk translation: {target_text}
+  Norwegian translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -2916,11 +2846,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Norsk.
+  Translate the above text into Norwegian.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-no
+```
+
+### WMT24++ Norwegian to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Norwegian translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Norwegian translation pair from the dataset, where the source text is in
+Norwegian and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hei, hvordan har du det?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Den brune reven hopper over den late hunden.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Oslo er hovedstaden i Norge.",
+  "target_text": "Oslo is the capital of Norway."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Følgende er norske tekster med tilsvarende oversettelser til English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Norsk tekst: {text}
+  Oversettelse til English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Norsk tekst: {text}
+
+  Oversett teksten ovenfor til English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-no-en
 ```

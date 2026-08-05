@@ -761,89 +761,19 @@ euroeval --model <model-id> --dataset ragtruth-ca
 
 ## Translation
 
-### WMT24++ Català to English
+### WMT24++ English to Catalan
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Catalan translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the catalan translation pair from the dataset, where the source text is in
-Català and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Hola, com estàs?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "La guineu marró salta sobre el gos mandrós.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "Barcelona és una ciutat de Catalunya.",
-  "target_text": "Barcelona is a city in Catalonia."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are català texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  català text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  català text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-ca-en
-```
-
-### WMT24++ English to Català
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the catalan translation pair from the dataset, where the source text is in
-English and the target text is in Català.
+We use the Catalan translation pair from the dataset, where the source text is in
+English and the target text is in Catalan.
 
 Here are a few examples from the training split:
 
@@ -875,14 +805,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding català translations.
+  The following are English texts with corresponding Catalan translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  català translation: {target_text}
+  Catalan translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -890,11 +820,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Català.
+  Translate the above text into Catalan.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-ca
+```
+
+### WMT24++ Catalan to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Catalan translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Catalan translation pair from the dataset, where the source text is in
+Catalan and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hola, com estàs?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "La guineu marró salta sobre el gos mandrós.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Barcelona és una ciutat de Catalunya.",
+  "target_text": "Barcelona is a city in Catalonia."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  A continuació es mostren textos en català amb les traduccions corresponents a English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Text en català: {text}
+  Traducció a English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Text en català: {text}
+
+  Traduïu el text anterior a English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-ca-en
 ```

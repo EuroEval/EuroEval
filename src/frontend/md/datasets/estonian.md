@@ -1395,89 +1395,19 @@ euroeval --model <model-id> --dataset ragtruth-et
 
 ## Translation
 
-### WMT24++ Eesti to English
+### WMT24++ English to Estonian
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Estonian translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the estonian translation pair from the dataset, where the source text is in
-Eesti and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Tere, kuidas sul läheb?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "Pruun rebane hüppab üle laisa koera.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "Tallinn on Eesti pealinn.",
-  "target_text": "Tallinn is the capital of Estonia."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are eesti texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  eesti text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  eesti text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-et-en
-```
-
-### WMT24++ English to Eesti
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the estonian translation pair from the dataset, where the source text is in
-English and the target text is in Eesti.
+We use the Estonian translation pair from the dataset, where the source text is in
+English and the target text is in Estonian.
 
 Here are a few examples from the training split:
 
@@ -1509,14 +1439,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding eesti translations.
+  The following are English texts with corresponding Estonian translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  eesti translation: {target_text}
+  Estonian translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -1524,11 +1454,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Eesti.
+  Translate the above text into Estonian.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-et
+```
+
+### WMT24++ Estonian to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Estonian translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Estonian translation pair from the dataset, where the source text is in
+Estonian and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Tere, kuidas sul läheb?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Pruun rebane hüppab üle laisa koera.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Tallinn on Eesti pealinn.",
+  "target_text": "Tallinn is the capital of Estonia."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Järgnevad on eestikeelsed tekstid koos vastavate tõlgetega keelde English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Eestikeelne tekst: {text}
+  Tõlge keelde English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Eestikeelne tekst: {text}
+
+  Tõlkige ülaltoodud tekst keelde English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-et-en
 ```

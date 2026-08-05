@@ -1053,89 +1053,19 @@ euroeval --model <model-id> --dataset ragtruth-pl
 
 ## Translation
 
-### WMT24++ Polski to English
+### WMT24++ English to Polish
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Polish translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the polish translation pair from the dataset, where the source text is in
-Polski and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Cześć, jak się masz?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "Brązowy lis skacze nad leniwym psem.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "Warszawa to stolica Polski.",
-  "target_text": "Warsaw is the capital of Poland."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are polski texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  polski text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  polski text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-pl-en
-```
-
-### WMT24++ English to Polski
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the polish translation pair from the dataset, where the source text is in
-English and the target text is in Polski.
+We use the Polish translation pair from the dataset, where the source text is in English
+and the target text is in Polish.
 
 Here are a few examples from the training split:
 
@@ -1167,14 +1097,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding polski translations.
+  The following are English texts with corresponding Polish translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  polski translation: {target_text}
+  Polish translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -1182,11 +1112,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Polski.
+  Translate the above text into Polish.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-pl
+```
+
+### WMT24++ Polish to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Polish translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Polish translation pair from the dataset, where the source text is in Polish
+and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Cześć, jak się masz?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Brązowy lis skacze nad leniwym psem.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Warszawa to stolica Polski.",
+  "target_text": "Warsaw is the capital of Poland."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Poniżej znajdują się teksty w języku polskim wraz z odpowiednimi tłumaczeniami na English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Tekst w języku polskim: {text}
+  Tłumaczenie na English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Tekst w języku polskim: {text}
+
+  Przetłumacz powyższy tekst na English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-pl-en
 ```

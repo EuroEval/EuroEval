@@ -756,89 +756,19 @@ euroeval --model <model-id> --dataset ragtruth-bg
 
 ## Translation
 
-### WMT24++ Български to English
+### WMT24++ English to Bulgarian
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Bulgarian translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the bulgarian translation pair from the dataset, where the source text is in
-Български and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Здравей, как си?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "Кафявата лисица скача над мързеливото куче.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "София е столицата на България.",
-  "target_text": "Sofia is the capital of Bulgaria."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are български texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  български text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  български text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-bg-en
-```
-
-### WMT24++ English to Български
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the bulgarian translation pair from the dataset, where the source text is in
-English and the target text is in Български.
+We use the Bulgarian translation pair from the dataset, where the source text is in
+English and the target text is in Bulgarian.
 
 Here are a few examples from the training split:
 
@@ -870,14 +800,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding български translations.
+  The following are English texts with corresponding Bulgarian translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  български translation: {target_text}
+  Bulgarian translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -885,11 +815,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Български.
+  Translate the above text into Bulgarian.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-bg
+```
+
+### WMT24++ Bulgarian to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Bulgarian translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Bulgarian translation pair from the dataset, where the source text is in
+Bulgarian and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Здравей, как си?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Кафявата лисица скача над мързеливото куче.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "София е столицата на България.",
+  "target_text": "Sofia is the capital of Bulgaria."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  По-долу са текстове на български език със съответните преводи на English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Текст на български: {text}
+  Превод на English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Текст на български: {text}
+
+  Преведете горния текст на English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-bg-en
 ```

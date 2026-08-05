@@ -814,89 +814,19 @@ euroeval --model <model-id> --dataset ragtruth-lv
 
 ## Translation
 
-### WMT24++ Latviešu to English
+### WMT24++ English to Latvian
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Latvian translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the latvian translation pair from the dataset, where the source text is in
-Latviešu and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Sveiki, kā iet?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "Brūnā lapsa lec pāri slinkajam sunim.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "Rīga ir Latvijas galvaspilsēta.",
-  "target_text": "Riga is the capital of Latvia."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are latviešu texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  latviešu text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  latviešu text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-lv-en
-```
-
-### WMT24++ English to Latviešu
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the latvian translation pair from the dataset, where the source text is in
-English and the target text is in Latviešu.
+We use the Latvian translation pair from the dataset, where the source text is in
+English and the target text is in Latvian.
 
 Here are a few examples from the training split:
 
@@ -928,14 +858,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding latviešu translations.
+  The following are English texts with corresponding Latvian translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  latviešu translation: {target_text}
+  Latvian translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -943,11 +873,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Latviešu.
+  Translate the above text into Latvian.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-lv
+```
+
+### WMT24++ Latvian to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Latvian translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Latvian translation pair from the dataset, where the source text is in
+Latvian and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Sveiki, kā iet?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Brūnā lapsa lec pāri slinkajam sunim.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Rīga ir Latvijas galvaspilsēta.",
+  "target_text": "Riga is the capital of Latvia."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Tālāk ir doti teksti latviešu valodā ar atbilstošiem tulkojumiem English valodā.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Teksts latviešu valodā: {text}
+  Tulkojums English valodā: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Teksts latviešu valodā: {text}
+
+  Tulkojiet iepriekš minēto tekstu English valodā.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-lv-en
 ```

@@ -792,89 +792,19 @@ euroeval --model <model-id> --dataset ragtruth-sl
 
 ## Translation
 
-### WMT24++ Slovenščina to English
+### WMT24++ English to Slovene
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Slovene translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the slovene translation pair from the dataset, where the source text is in
-Slovenščina and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Živjo, kako si?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "Rjava lisica skače čez lenega psa.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "Ljubljana je glavno mesto Slovenije.",
-  "target_text": "Ljubljana is the capital of Slovenia."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are slovenščina texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  slovenščina text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  slovenščina text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-sl-en
-```
-
-### WMT24++ English to Slovenščina
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the slovene translation pair from the dataset, where the source text is in
-English and the target text is in Slovenščina.
+We use the Slovene translation pair from the dataset, where the source text is in
+English and the target text is in Slovene.
 
 Here are a few examples from the training split:
 
@@ -906,14 +836,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding slovenščina translations.
+  The following are English texts with corresponding Slovene translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  slovenščina translation: {target_text}
+  Slovene translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -921,11 +851,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Slovenščina.
+  Translate the above text into Slovene.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-sl
+```
+
+### WMT24++ Slovene to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Slovene translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Slovene translation pair from the dataset, where the source text is in
+Slovene and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Živjo, kako si?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Rjava lisica skače čez lenega psa.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Ljubljana je glavno mesto Slovenije.",
+  "target_text": "Ljubljana is the capital of Slovenia."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Spodaj so besedila v slovenščini z ustreznimi prevodi v English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Besedilo v slovenščini: {text}
+  Prevod v English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Besedilo v slovenščini: {text}
+
+  Prevedite zgornje besedilo v English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-sl-en
 ```

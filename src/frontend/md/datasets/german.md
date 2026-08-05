@@ -1767,89 +1767,19 @@ euroeval --model <model-id> --dataset ragtruth-de
 
 ## Translation
 
-### WMT24++ Deutsch to English
+### WMT24++ English to German
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-German translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the german translation pair from the dataset, where the source text is in
-Deutsch and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Hallo, wie geht es dir?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "Der braune Fuchs springt über den faulen Hund.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "Berlin ist die Hauptstadt von Deutschland.",
-  "target_text": "Berlin is the capital of Germany."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are Deutsch texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Deutsch text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Deutsch text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-de-en
-```
-
-### WMT24++ English to Deutsch
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the german translation pair from the dataset, where the source text is in
-English and the target text is in Deutsch.
+We use the German translation pair from the dataset, where the source text is in English
+and the target text is in German.
 
 Here are a few examples from the training split:
 
@@ -1881,14 +1811,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding Deutsch translations.
+  The following are English texts with corresponding German translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  Deutsch translation: {target_text}
+  German translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -1896,11 +1826,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Deutsch.
+  Translate the above text into German.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-de
+```
+
+### WMT24++ German to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-German translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the German translation pair from the dataset, where the source text is in German
+and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hallo, wie geht es dir?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Der braune Fuchs springt über den faulen Hund.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Berlin ist die Hauptstadt von Deutschland.",
+  "target_text": "Berlin is the capital of Germany."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Im Folgenden finden Sie deutsche Texte mit entsprechenden Übersetzungen ins English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Deutscher Text: {text}
+  Übersetzung ins English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Deutscher Text: {text}
+
+  Übersetzen Sie den oben stehenden Text ins English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-de-en
 ```

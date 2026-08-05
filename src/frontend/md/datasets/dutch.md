@@ -2036,89 +2036,19 @@ euroeval --model <model-id> --dataset ragtruth-nl
 
 ## Translation
 
-### WMT24++ Nederlands to English
+### WMT24++ English to Dutch
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Dutch translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the dutch translation pair from the dataset, where the source text is in
-Nederlands and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Hallo, hoe gaat het?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "De bruine vos springt over de luie hond.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "Amsterdam is de hoofdstad van Nederland.",
-  "target_text": "Amsterdam is the capital of the Netherlands."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are Nederlands texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Nederlands text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Nederlands text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-nl-en
-```
-
-### WMT24++ English to Nederlands
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the dutch translation pair from the dataset, where the source text is in
-English and the target text is in Nederlands.
+We use the Dutch translation pair from the dataset, where the source text is in English
+and the target text is in Dutch.
 
 Here are a few examples from the training split:
 
@@ -2150,14 +2080,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding Nederlands translations.
+  The following are English texts with corresponding Dutch translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  Nederlands translation: {target_text}
+  Dutch translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -2165,11 +2095,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Nederlands.
+  Translate the above text into Dutch.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-nl
+```
+
+### WMT24++ Dutch to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Dutch translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Dutch translation pair from the dataset, where the source text is in Dutch
+and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hallo, hoe gaat het?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "De bruine vos springt over de luie hond.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Amsterdam is de hoofdstad van Nederland.",
+  "target_text": "Amsterdam is the capital of the Netherlands."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hieronder volgen Nederlandse teksten met bijbehorende vertalingen in het English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Nederlandse tekst: {text}
+  Vertaling in het English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Nederlandse tekst: {text}
+
+  Vertaal de bovenstaande tekst naar het English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-nl-en
 ```

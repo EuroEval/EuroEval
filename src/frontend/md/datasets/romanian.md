@@ -1079,89 +1079,19 @@ euroeval --model <model-id> --dataset ragtruth-ro
 
 ## Translation
 
-### WMT24++ Română to English
+### WMT24++ English to Romanian
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Romanian translation pair.
 
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
 
-We use the romanian translation pair from the dataset, where the source text is in
-Română and the target text is in English.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Salut, ce mai faci?",
-  "target_text": "Hello, how are you?"
-}
-```
-
-```json
-{
-  "text": "Vulpea maronie sare peste câinele leneș.",
-  "target_text": "The brown fox jumps over the lazy dog."
-}
-```
-
-```json
-{
-  "text": "București este capitala României.",
-  "target_text": "Bucharest is the capital of Romania."
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  The following are română texts with corresponding English translations.
-  ```
-
-- Base prompt template:
-
-  ```text
-  română text: {text}
-  English translation: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  română text: {text}
-
-  Translate the above text into English.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset wmt24pp-ro-en
-```
-
-### WMT24++ English to Română
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
-and is an extension of the original WMT24 dataset. It covers translation pairs from
-English to 55 languages, where 9 of them are post-edited from the original dataset.
-These are all manually translated.
-
-The original full dataset consists of 998 samples for each language. A small portion of
-the samples were marked as bad, however, and we exclude those. We use 64 samples for
-the training split, 128 samples for the validation split, and the rest for the test
-split.
-
-We use the romanian translation pair from the dataset, where the source text is in
-English and the target text is in Română.
+We use the Romanian translation pair from the dataset, where the source text is in
+English and the target text is in Romanian.
 
 Here are a few examples from the training split:
 
@@ -1193,14 +1123,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding română translations.
+  The following are English texts with corresponding Romanian translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  română translation: {target_text}
+  Romanian translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -1208,11 +1138,79 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into Română.
+  Translate the above text into Romanian.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-en-ro
+```
+
+### WMT24++ Romanian to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Romanian translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Romanian translation pair from the dataset, where the source text is in
+Romanian and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Salut, ce mai faci?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Vulpea maronie sare peste câinele leneș.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "București este capitala României.",
+  "target_text": "Bucharest is the capital of Romania."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Următoarele sunt texte în limba română cu traduceri corespunzătoare în English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Text în română: {text}
+  Traducere în English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Text în română: {text}
+
+  Traduceți textul de mai sus în English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-ro-en
 ```
