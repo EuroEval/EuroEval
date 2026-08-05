@@ -10,8 +10,82 @@ import pytest
 from euroeval import dataset_configs as dc_module
 from euroeval.data_models import DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
+from euroeval.exceptions import InvalidBenchmark
 from euroeval.languages import BULGARIAN, ENGLISH
 from euroeval.tasks import TRANSLATION
+
+
+class TestDatasetConfigInvariants:
+    """Tests for DatasetConfig invariants."""
+
+    def test_source_target_both_none_is_valid(self) -> None:
+        """Test that both source_language and target_language being None is valid."""
+        config = DatasetConfig(
+            name="test",
+            pretty_name="Test",
+            source="test",
+            task=TRANSLATION,
+            languages=[ENGLISH, BULGARIAN],
+        )
+        assert config._source_language is None
+        assert config._target_language is None
+
+    def test_source_target_both_provided_is_valid(self) -> None:
+        """Test that both source_language and target_language provided is valid."""
+        config = DatasetConfig(
+            name="wmt24pp-en-bg",
+            pretty_name="WMT24++-bg",
+            source="EuroEval/wmt24pp-en-bg",
+            task=TRANSLATION,
+            languages=BULGARIAN,
+            source_language=ENGLISH,
+            target_language=BULGARIAN,
+        )
+        assert config._source_language == ENGLISH
+        assert config._target_language == BULGARIAN
+
+    def test_source_target_on_non_translation_raises(self) -> None:
+        """Test that providing source/target on non-translation raises."""
+        from euroeval.tasks import TEXT_CLASSIFICATION  # noqa: PLC0415
+
+        with pytest.raises(InvalidBenchmark, match="TRANSLATION tasks"):
+            DatasetConfig(
+                name="test",
+                pretty_name="Test",
+                source="test",
+                task=TEXT_CLASSIFICATION,
+                languages=[BULGARIAN],
+                source_language=ENGLISH,
+                target_language=BULGARIAN,
+            )
+
+    def test_source_without_target_raises(self) -> None:
+        """Test that providing source_language without target_language raises."""
+        with pytest.raises(
+            InvalidBenchmark, match="source_language and target_language"
+        ):
+            DatasetConfig(
+                name="test",
+                pretty_name="Test",
+                source="test",
+                task=TRANSLATION,
+                languages=[BULGARIAN],
+                source_language=ENGLISH,
+            )
+
+    def test_target_without_source_raises(self) -> None:
+        """Test that providing target_language without source_language raises."""
+        with pytest.raises(
+            InvalidBenchmark, match="source_language and target_language"
+        ):
+            DatasetConfig(
+                name="test",
+                pretty_name="Test",
+                source="test",
+                task=TRANSLATION,
+                languages=[BULGARIAN],
+                target_language=BULGARIAN,
+            )
 
 
 class TestDatasetConfigLanguageNormalisation:

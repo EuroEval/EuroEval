@@ -730,6 +730,11 @@ class DatasetConfig:
                 A custom preprocessing function that takes a DatasetDict and returns a
                 DatasetDict. If set together with any of the column arguments, a warning
                 is logged and `preprocessing_func` takes precedence. Defaults to None.
+
+        Raises:
+            InvalidBenchmark:
+                If source_language and target_language are not both set or both None, or
+                if they are provided for a non-translation task.
         """
         self._name = name
         self._pretty_name = pretty_name
@@ -741,6 +746,19 @@ class DatasetConfig:
             self.languages: list[Language] = [languages]
         else:
             self.languages = list(languages)
+
+        # Validate source_language and target_language invariants
+        from .tasks import TRANSLATION  # noqa: PLC0415
+
+        if (source_language is None) != (target_language is None):
+            raise InvalidBenchmark(
+                "DatasetConfig: source_language and target_language must both be set "
+                "or both be None."
+            )
+        if source_language is not None and task != TRANSLATION:
+            raise InvalidBenchmark(
+                "DatasetConfig: source/target only allowed for TRANSLATION tasks."
+            )
 
         # Store explicit translation direction metadata
         self._source_language = source_language
