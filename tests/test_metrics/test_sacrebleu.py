@@ -21,19 +21,26 @@ from euroeval.tasks import SUMM
 
 
 @pytest.fixture(autouse=True)
-def disable_chrf_language_detector() -> None:
+def disable_chrf_language_detector() -> c.Generator[None, None, None]:
     """Disable language detection for all ChrF metrics during tests."""
     # We disable the language detector and thereby language penalization in tests
-    # because the sentences are too short to detect language reliably
-    for metric in [
+    # because the sentences are too short to detect language reliably.
+    metrics = [
         chrf2_metric,
         chrf3_metric,
         chrf4_metric,
         chrf2pp_metric,
         chrf3pp_metric,
         chrf4pp_metric,
-    ]:
+    ]
+    original_language_detectors = [metric.language_detector for metric in metrics]
+    for metric in metrics:
         metric.language_detector = None
+
+    yield
+
+    for metric, language_detector in zip(metrics, original_language_detectors):
+        metric.language_detector = language_detector
 
 
 class DummyBenchmarkConfig:
