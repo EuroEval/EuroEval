@@ -45,20 +45,3 @@ benchmark your favorite model on the translation task like so:
 ```bash
 euroeval --model <model-id> --task translation
 ```
-
-This runs all WMT24++ translation datasets (both directions for all 25 languages). You
-can also evaluate on a specific dataset direction:
-
-```bash
-# English to Danish
-euroeval --model <model-id> --dataset wmt24pp-en-da
-
-# Danish to English
-euroeval --model <model-id> --dataset wmt24pp-da-en
-```
-
-To see all available translation datasets:
-
-```bash
-euroeval --list-datasets | grep wmt24pp
-```
