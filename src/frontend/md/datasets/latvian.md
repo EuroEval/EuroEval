@@ -814,7 +814,7 @@ euroeval --model <model-id> --dataset ragtruth-lv
 
 ## Translation
 
-### Unofficial: WMT24++ Latvian to English
+### WMT24++ Latviešu to English
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -822,33 +822,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the Latvian translation pair from the dataset, where the source text is in
+We use the latvian translation pair from the dataset, where the source text is in
 Latviešu and the target text is in English.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Man nav telemetrijas akumulatoram.",
-  "target_text": "I don't have any telemetry for the battery. This is something I might add in a future revision."
+  "text": "Sveiki, kā iet?",
+  "target_text": "Hello, how are you?"
 }
 ```
 
 ```json
 {
   "text": "Brūnā lapsa lec pāri slinkajam sunim.",
-  "target_text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month."
+  "target_text": "The brown fox jumps over the lazy dog."
 }
 ```
 
 ```json
 {
-  "text": ""Sveiki" teica viņa.",
-  "target_text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered."
+  "text": "Rīga ir Latvijas galvaspilsēta.",
+  "target_text": "Riga is the capital of Latvia."
 }
 ```
 
@@ -883,7 +883,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset wmt24pp-lv-en
 ```
 
-### Unofficial: WMT24++ English to Latvian
+### WMT24++ English to Latviešu
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -891,33 +891,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the Latvian translation pair from the dataset, where the source text is in
+We use the latvian translation pair from the dataset, where the source text is in
 English and the target text is in Latviešu.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
-  "target_text": "Man nav telemetrijas akumulatoram."
+  "text": "Hello, how are you?",
+  "target_text": "Sveiki, kā iet?"
 }
 ```
 
 ```json
 {
-  "text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month.",
+  "text": "The brown fox jumps over the lazy dog.",
   "target_text": "Brūnā lapsa lec pāri slinkajam sunim."
 }
 ```
 
 ```json
 {
-  "text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered.",
-  "target_text": ""Sveiki" teica viņa."
+  "text": "Riga is the capital of Latvia.",
+  "target_text": "Rīga ir Latvijas galvaspilsēta."
 }
 ```
 
@@ -943,7 +943,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into latviešu.
+  Translate the above text into Latviešu.
   ```
 
 You can evaluate this dataset directly as follows:

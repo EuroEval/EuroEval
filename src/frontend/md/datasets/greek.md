@@ -1214,7 +1214,7 @@ euroeval --model <model-id> --dataset ragtruth-el
 
 ## Translation
 
-### Unofficial: WMT24++ Greek to English
+### WMT24++ Ελληνικά to English
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -1222,33 +1222,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the Greek translation pair from the dataset, where the source text is in
+We use the greek translation pair from the dataset, where the source text is in
 Ελληνικά and the target text is in English.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Δεν έχω τηλεμετρία για την μπαταρία.",
-  "target_text": "I don't have any telemetry for the battery. This is something I might add in a future revision."
+  "text": "Γεια σου, πώς είσαι;",
+  "target_text": "Hello, how are you?"
 }
 ```
 
 ```json
 {
-  "text": "Η καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί.",
-  "target_text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month."
+  "text": "Η καφέ αλεπού πηδά πάνω από το τεμπέλικο σκυλί.",
+  "target_text": "The brown fox jumps over the lazy dog."
 }
 ```
 
 ```json
 {
-  "text": ""Γεια" είπε εκείνη.",
-  "target_text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered."
+  "text": "Η Αθήνα είναι η πρωτεύουσα της Ελλάδας.",
+  "target_text": "Athens is the capital of Greece."
 }
 ```
 
@@ -1283,7 +1283,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset wmt24pp-el-en
 ```
 
-### Unofficial: WMT24++ English to Greek
+### WMT24++ English to Ελληνικά
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -1291,33 +1291,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the Greek translation pair from the dataset, where the source text is in
+We use the greek translation pair from the dataset, where the source text is in
 English and the target text is in Ελληνικά.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
-  "target_text": "Δεν έχω τηλεμετρία για την μπαταρία."
+  "text": "Hello, how are you?",
+  "target_text": "Γεια σου, πώς είσαι;"
 }
 ```
 
 ```json
 {
-  "text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month.",
-  "target_text": "Η καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί."
+  "text": "The brown fox jumps over the lazy dog.",
+  "target_text": "Η καφέ αλεπού πηδά πάνω από το τεμπέλικο σκυλί."
 }
 ```
 
 ```json
 {
-  "text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered.",
-  "target_text": ""Γεια" είπε εκείνη."
+  "text": "Athens is the capital of Greece.",
+  "target_text": "Η Αθήνα είναι η πρωτεύουσα της Ελλάδας."
 }
 ```
 
@@ -1343,7 +1343,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into ελληνικά.
+  Translate the above text into Ελληνικά.
   ```
 
 You can evaluate this dataset directly as follows:

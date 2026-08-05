@@ -994,7 +994,7 @@ euroeval --model <model-id> --dataset ragtruth-uk
 
 ## Translation
 
-### Unofficial: WMT24++ Ukrainian to English
+### WMT24++ Українська to English
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -1002,33 +1002,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the Ukrainian translation pair from the dataset, where the source text is in
+We use the ukrainian translation pair from the dataset, where the source text is in
 Українська and the target text is in English.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "У мене немає телеметрії для батареї.",
-  "target_text": "I don't have any telemetry for the battery. This is something I might add in a future revision."
+  "text": "Привіт, як справи?",
+  "target_text": "Hello, how are you?"
 }
 ```
 
 ```json
 {
-  "text": "Коричнева лисиця стрибає через ледачого собаку.",
-  "target_text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month."
+  "text": "Коричнева лисиця стрибає через лінивого собаку.",
+  "target_text": "The brown fox jumps over the lazy dog."
 }
 ```
 
 ```json
 {
-  "text": ""Привіт" сказала вона.",
-  "target_text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered."
+  "text": "Київ — столиця України.",
+  "target_text": "Kyiv is the capital of Ukraine."
 }
 ```
 
@@ -1039,20 +1039,20 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are українська texts with corresponding English translations.
+  The following are ukrainian texts with corresponding English translations.
   ```
 
 - Base prompt template:
 
   ```text
-  українська text: {text}
+  ukrainian text: {text}
   English translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  українська text: {text}
+  ukrainian text: {text}
 
   Translate the above text into English.
   ```
@@ -1063,7 +1063,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset wmt24pp-uk-en
 ```
 
-### Unofficial: WMT24++ English to Ukrainian
+### WMT24++ English to Українська
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -1071,33 +1071,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the Ukrainian translation pair from the dataset, where the source text is in
+We use the ukrainian translation pair from the dataset, where the source text is in
 English and the target text is in Українська.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
-  "target_text": "У мене немає телеметрії для батареї."
+  "text": "Hello, how are you?",
+  "target_text": "Привіт, як справи?"
 }
 ```
 
 ```json
 {
-  "text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month.",
-  "target_text": "Коричнева лисиця стрибає через ледачого собаку."
+  "text": "The brown fox jumps over the lazy dog.",
+  "target_text": "Коричнева лисиця стрибає через лінивого собаку."
 }
 ```
 
 ```json
 {
-  "text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered.",
-  "target_text": ""Привіт" сказала вона."
+  "text": "Kyiv is the capital of Ukraine.",
+  "target_text": "Київ — столиця України."
 }
 ```
 
@@ -1108,14 +1108,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  The following are English texts with corresponding українська translations.
+  The following are English texts with corresponding ukrainian translations.
   ```
 
 - Base prompt template:
 
   ```text
   English text: {text}
-  українська translation: {target_text}
+  ukrainian translation: {target_text}
   ```
 
 - Instruction-tuned prompt template:
@@ -1123,7 +1123,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into українська.
+  Translate the above text into Українська.
   ```
 
 You can evaluate this dataset directly as follows:

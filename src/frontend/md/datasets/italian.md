@@ -1503,7 +1503,7 @@ euroeval --model <model-id> --dataset ragtruth-it
 
 ## Translation
 
-### Unofficial: WMT24++ Italian to English
+### WMT24++ Italiano to English
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -1511,33 +1511,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the Italian translation pair from the dataset, where the source text is in
+We use the italian translation pair from the dataset, where the source text is in
 Italiano and the target text is in English.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Non ho telemetria per la batteria.",
-  "target_text": "I don't have any telemetry for the battery. This is something I might add in a future revision."
+  "text": "Ciao, come stai?",
+  "target_text": "Hello, how are you?"
 }
 ```
 
 ```json
 {
   "text": "La volpe marrone salta sopra il cane pigro.",
-  "target_text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month."
+  "target_text": "The brown fox jumps over the lazy dog."
 }
 ```
 
 ```json
 {
-  "text": ""Ciao" ha detto.",
-  "target_text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered."
+  "text": "Roma è la capitale d'Italia.",
+  "target_text": "Rome is the capital of Italy."
 }
 ```
 
@@ -1572,7 +1572,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset wmt24pp-it-en
 ```
 
-### Unofficial: WMT24++ English to Italian
+### WMT24++ English to Italiano
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It covers translation pairs from
@@ -1580,33 +1580,33 @@ English to 55 languages, where 9 of them are post-edited from the original datas
 These are all manually translated.
 
 The original full dataset consists of 998 samples for each language. A small portion of
-the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the samples were marked as bad, however, and we exclude those. We use 64 samples for
 the training split, 128 samples for the validation split, and the rest for the test
 split.
 
-We use the Italian translation pair from the dataset, where the source text is in
+We use the italian translation pair from the dataset, where the source text is in
 English and the target text is in Italiano.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
-  "target_text": "Non ho telemetria per la batteria."
+  "text": "Hello, how are you?",
+  "target_text": "Ciao, come stai?"
 }
 ```
 
 ```json
 {
-  "text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month.",
+  "text": "The brown fox jumps over the lazy dog.",
   "target_text": "La volpe marrone salta sopra il cane pigro."
 }
 ```
 
 ```json
 {
-  "text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered.",
-  "target_text": ""Ciao" ha detto."
+  "text": "Rome is the capital of Italy.",
+  "target_text": "Roma è la capitale d'Italia."
 }
 ```
 
@@ -1632,7 +1632,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   English text: {text}
 
-  Translate the above text into italiano.
+  Translate the above text into Italiano.
   ```
 
 You can evaluate this dataset directly as follows:
