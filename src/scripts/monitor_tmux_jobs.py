@@ -2,6 +2,7 @@
 # requires-python = ">=3.12"
 # dependencies = [
 #   "click>=8.1.7",
+#   "python-dotenv>=1.1.2",
 # ]
 # ///
 
@@ -25,6 +26,7 @@ import urllib.parse
 import urllib.request
 
 import click
+from dotenv import load_dotenv
 
 REMOTE_STATUS_SCRIPT = r"""
 while IFS='|' read -r sess target dead pid cmd; do
@@ -56,6 +58,8 @@ echo "TAIL_BEGIN"
 tmux capture-pane -t "$sess" -p 2>/dev/null | tail -"$2" || true
 echo "TAIL_END"
 """
+
+load_dotenv()
 
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})
