@@ -56,14 +56,6 @@ LR_SUM_SR_CONFIG = DatasetConfig(
     languages=[SERBIAN],
 )
 
-MMLU_SR_CONFIG = DatasetConfig(
-    name="mmlu-sr",
-    pretty_name="MMLU-sr",
-    source="EuroEval/mmlu-sr-mini",
-    task=KNOW,
-    languages=[SERBIAN],
-)
-
 WINOGRANDE_SR_CONFIG = DatasetConfig(
     name="winogrande-sr",
     pretty_name="Winogrande-sr",
@@ -93,12 +85,20 @@ RAGTRUTH_SR_CONFIG = DatasetConfig(
 )
 
 
-# Unofficial datasets ###
-
 INCLUDE_SR_CONFIG = DatasetConfig(
     name="include-sr",
     pretty_name="INCLUDE-sr",
     source="EuroEval/include-sr-mini",
+    task=KNOW,
+    languages=[SERBIAN],
+)
+
+# Unofficial datasets ###
+
+MMLU_SR_CONFIG = DatasetConfig(
+    name="mmlu-sr",
+    pretty_name="MMLU-sr",
+    source="EuroEval/mmlu-sr-mini",
     task=KNOW,
     languages=[SERBIAN],
     unofficial=True,
