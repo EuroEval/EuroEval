@@ -32,7 +32,6 @@ from .languages import (
     NORWEGIAN_NYNORSK,
     PORTUGUESE,
     Language,
-    get_all_languages,
 )
 from .logging_utils import log_once
 from .metrics.base import Metric
@@ -856,15 +855,6 @@ class DatasetConfig:
             pass
         return f"DatasetConfig({', '.join(parts)})"
 
-    @property
-    def _translation_dataset_identifier(self) -> str | None:
-        """The dataset identifier used to infer translation direction."""
-        if self._name is not None:
-            return self._name
-        if isinstance(self._source, str):
-            return self._source.rsplit("/", maxsplit=1)[-1]
-        return None
-
     def get_labels_str(self, labels: c.Sequence[str] | None = None) -> str:
         """Converts a set of labels to a natural string, in the specified language.
 
@@ -965,28 +955,18 @@ class DatasetConfig:
         )
 
     @property
-    def main_language(self) -> Language | tuple[Language, Language]:
+    def main_language(self) -> "Language | tuple[Language, Language]":
         """The main language of the dataset.
 
         Returns:
-            The main language or languages of the dataset. For translation tasks,
-            returns the source and target languages if these are available from either
-            the language list or the dataset identifier. For other tasks, returns the
-            primary language.
+            The main language of the dataset. For the translation task, the
+            `TranslationDatasetConfig` subclass overrides this to return the
+            (source, target) language pair.
 
         Raises:
             InvalidBenchmark:
                 If the dataset has no languages.
         """
-        # Importing here to avoid circular imports
-        from .tasks import TRANSLATION  # noqa: PLC0415
-
-        if self.task == TRANSLATION:
-            if len(self.languages) >= 2:
-                return (self.languages[0], self.languages[1])
-            if len(self.languages) == 1:
-                return self._infer_translation_language_pair()
-
         match len(self.languages):
             case 0:
                 raise InvalidBenchmark(
@@ -1003,36 +983,6 @@ class DatasetConfig:
                     return PORTUGUESE
                 else:
                     return self.languages[0]
-
-    def _infer_translation_language_pair(self) -> tuple[Language, Language]:
-        """Infer the translation direction from the dataset identifier.
-
-        Returns:
-            The inferred source and target languages.
-
-        Raises:
-            InvalidBenchmark:
-                If the dataset identifier does not end with a recognised source and
-                target language pair.
-        """
-        language_map = get_all_languages()
-        dataset_identifier = self._translation_dataset_identifier
-        if dataset_identifier is not None:
-            language_codes = dataset_identifier.split("-")[-2:]
-            if len(language_codes) == 2 and all(
-                language_code in language_map for language_code in language_codes
-            ):
-                return (
-                    language_map[language_codes[0]],
-                    language_map[language_codes[1]],
-                )
-
-        raise InvalidBenchmark(
-            f"Could not infer translation direction for dataset "
-            f"{dataset_identifier!r}. Translation configs with a single language must "
-            "end their dataset name or Hugging Face source with "
-            "'<source-language>-<target-language>'."
-        )
 
     @property
     def name(self) -> str:
@@ -1280,3 +1230,54 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     max_context_length: int | None
     vocabulary_size: int | None
     use_bits_per_character: bool = False
+
+
+class TranslationDatasetConfig(DatasetConfig):
+    """Configuration for a translation dataset.
+
+    Translation datasets evaluate translation from a source language into a target
+    language. Those two languages are kept on this dedicated subclass rather than on
+    `DatasetConfig`, since they are only meaningful for the translation task and would
+    otherwise bloat every dataset config. The `languages` attribute continues to hold
+    the single leaderboard language (the non-English side), so translation datasets are
+    never selected for or filed under the English leaderboard.
+    """
+
+    def __init__(
+        self,
+        task: Task,
+        languages: c.Sequence[Language],
+        source_language: Language,
+        target_language: Language,
+        **kwargs,
+    ) -> None:
+        """Initialise a TranslationDatasetConfig object.
+
+        Args:
+            task:
+                The task of the dataset.
+            languages:
+                The ISO 639-1 language codes of the entries in the dataset. This is the
+                leaderboard language (the non-English side of the translation), not the
+                source/target pair.
+            source_language:
+                The language to translate from.
+            target_language:
+                The language to translate into.
+            **kwargs:
+                Additional keyword arguments passed on to `DatasetConfig`.
+        """
+        # Set before calling super().__init__, as the base initialiser reads
+        # `main_language` (overridden below) to select the prompt template.
+        self.source_language = source_language
+        self.target_language = target_language
+        super().__init__(task=task, languages=languages, **kwargs)
+
+    @property
+    def main_language(self) -> tuple[Language, Language]:
+        """The source and target languages of the translation dataset.
+
+        Returns:
+            The (source, target) language pair.
+        """
+        return (self.source_language, self.target_language)

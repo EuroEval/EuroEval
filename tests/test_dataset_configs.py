@@ -8,9 +8,8 @@ from typing import Generator
 import pytest
 
 from euroeval import dataset_configs as dc_module
-from euroeval.data_models import DatasetConfig
+from euroeval.data_models import DatasetConfig, TranslationDatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.exceptions import InvalidBenchmark
 from euroeval.languages import BULGARIAN, ENGLISH
 from euroeval.tasks import TRANSLATION
 
@@ -62,55 +61,48 @@ class TestGetAllDatasetConfigs:
         assert isinstance(dataset_configs, dict)
 
 
-class TestTranslationDirectionInference:
-    """Tests for translation direction inference."""
+class TestTranslationDatasetConfig:
+    """Tests for the `TranslationDatasetConfig` subclass."""
 
-    def test_backward_compatibility_for_two_language_configs(self) -> None:
-        """Test translation configs with two languages keep their direction."""
-        config = DatasetConfig(
-            name="test",
-            pretty_name="Test",
-            source="test",
-            task=TRANSLATION,
-            languages=[ENGLISH, BULGARIAN],
-        )
-        assert config.main_language == (ENGLISH, BULGARIAN)
-
-    def test_main_language_infers_forward_wmt24pp_direction(self) -> None:
-        """Test that main_language infers a forward WMT24++ direction."""
-        config = DatasetConfig(
+    def test_is_a_dataset_config(self) -> None:
+        """Test that a TranslationDatasetConfig is also a DatasetConfig."""
+        config = TranslationDatasetConfig(
             name="wmt24pp-en-bg",
             pretty_name="WMT24++-en-bg",
             source="EuroEval/wmt24pp-en-bg",
             task=TRANSLATION,
             languages=[BULGARIAN],
+            source_language=ENGLISH,
+            target_language=BULGARIAN,
+        )
+        assert isinstance(config, DatasetConfig)
+        assert config.languages == [BULGARIAN]
+
+    def test_main_language_returns_forward_direction(self) -> None:
+        """Test that main_language returns the explicit forward direction."""
+        config = TranslationDatasetConfig(
+            name="wmt24pp-en-bg",
+            pretty_name="WMT24++-en-bg",
+            source="EuroEval/wmt24pp-en-bg",
+            task=TRANSLATION,
+            languages=[BULGARIAN],
+            source_language=ENGLISH,
+            target_language=BULGARIAN,
         )
         assert config.main_language == (ENGLISH, BULGARIAN)
 
-    def test_main_language_infers_reverse_wmt24pp_direction(self) -> None:
-        """Test that main_language infers a reverse WMT24++ direction."""
-        config = DatasetConfig(
+    def test_main_language_returns_reverse_direction(self) -> None:
+        """Test that main_language returns the explicit reverse direction."""
+        config = TranslationDatasetConfig(
             name="wmt24pp-bg-en",
             pretty_name="WMT24++-bg-en",
             source="EuroEval/wmt24pp-bg-en",
             task=TRANSLATION,
             languages=[BULGARIAN],
+            source_language=BULGARIAN,
+            target_language=ENGLISH,
         )
         assert config.main_language == (BULGARIAN, ENGLISH)
-
-    def test_main_language_raises_if_singleton_direction_is_unknown(self) -> None:
-        """Test singleton translation configs need an inferable direction."""
-        with pytest.raises(InvalidBenchmark, match="Could not infer"):
-            DatasetConfig(
-                name="translation-test",
-                pretty_name="Translation Test",
-                source="EuroEval/translation-test",
-                task=TRANSLATION,
-                languages=[BULGARIAN],
-                prompt_prefix="",
-                prompt_template="",
-                instruction_prompt="",
-            )
 
 
 def test_no_duplicate_dataset_config_variable_names() -> None:
