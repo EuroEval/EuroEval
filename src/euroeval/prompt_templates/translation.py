@@ -6,7 +6,9 @@ from ..data_models import PromptConfig
 from ..languages import (
     ALBANIAN,
     BOSNIAN,
+    BULGARIAN,
     CATALAN,
+    CROATIAN,
     CZECH,
     DANISH,
     DUTCH,
@@ -26,6 +28,8 @@ from ..languages import (
     PORTUGUESE,
     ROMANIAN,
     SERBIAN,
+    SLOVAK,
+    SLOVENE,
     SPANISH,
     SWEDISH,
     UKRAINIAN,
@@ -109,6 +113,25 @@ TRANSLATION_TEMPLATES: dict[tuple["Language", "Language"], PromptConfig] = {
         )
         for language in get_all_languages().values()
         if language != BOSNIAN
+    },
+    **{
+        (BULGARIAN, language): PromptConfig(
+            default_prompt_prefix=(
+                "По-долу са текстове на български език със съответните преводи на "
+                f"{language.name}."
+            ),
+            default_prompt_template=(
+                "Текст на български: {text}\n"
+                f"Превод на {language.name}: {{target_text}}"
+            ),
+            default_instruction_prompt=(
+                "Текст на български: {text}\n\n"
+                f"Преведете горния текст на {language.name}."
+            ),
+            default_prompt_label_mapping=dict(),
+        )
+        for language in get_all_languages().values()
+        if language != BULGARIAN
     },
     **{
         (CATALAN, language): PromptConfig(
@@ -450,6 +473,25 @@ TRANSLATION_TEMPLATES: dict[tuple["Language", "Language"], PromptConfig] = {
         if language != SERBIAN
     },
     **{
+        (CROATIAN, language): PromptConfig(
+            default_prompt_prefix=(
+                "Sljedeći tekstovi su na hrvatskom jeziku s odgovarajućim prijevodima "
+                f"na {language.name}."
+            ),
+            default_prompt_template=(
+                "Tekst na hrvatskom: {text}\n"
+                f"Prijevod na {language.name}: {{target_text}}"
+            ),
+            default_instruction_prompt=(
+                "Tekst na hrvatskom: {text}\n\n"
+                f"Prevedite gornji tekst na {language.name}."
+            ),
+            default_prompt_label_mapping=dict(),
+        )
+        for language in get_all_languages().values()
+        if language != CROATIAN
+    },
+    **{
         (SPANISH, language): PromptConfig(
             default_prompt_prefix=(
                 "A continuación se presentan textos en español con las "
@@ -467,6 +509,44 @@ TRANSLATION_TEMPLATES: dict[tuple["Language", "Language"], PromptConfig] = {
         )
         for language in get_all_languages().values()
         if language != SPANISH
+    },
+    **{
+        (SLOVAK, language): PromptConfig(
+            default_prompt_prefix=(
+                "Nasledujú texty v slovenčine s príslušnými prekladmi do "
+                f"{language.name}."
+            ),
+            default_prompt_template=(
+                "Text v slovenčine: {text}\n"
+                f"Preklad do {language.name}: {{target_text}}"
+            ),
+            default_instruction_prompt=(
+                "Text v slovenčine: {text}\n\n"
+                f"Preložte vyššie uvedený text do {language.name}."
+            ),
+            default_prompt_label_mapping=dict(),
+        )
+        for language in get_all_languages().values()
+        if language != SLOVAK
+    },
+    **{
+        (SLOVENE, language): PromptConfig(
+            default_prompt_prefix=(
+                "Spodaj so besedila v slovenščini z ustreznimi prevodi v "
+                f"{language.name}."
+            ),
+            default_prompt_template=(
+                "Besedilo v slovenščini: {text}\n"
+                f"Prevod v {language.name}: {{target_text}}"
+            ),
+            default_instruction_prompt=(
+                "Besedilo v slovenščini: {text}\n\n"
+                f"Prevedite zgornje besedilo v {language.name}."
+            ),
+            default_prompt_label_mapping=dict(),
+        )
+        for language in get_all_languages().values()
+        if language != SLOVENE
     },
     **{
         (SWEDISH, language): PromptConfig(

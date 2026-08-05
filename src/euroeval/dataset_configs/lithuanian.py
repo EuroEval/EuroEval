@@ -1,7 +1,7 @@
 """All Lithuanian dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import LITHUANIAN
+from ..languages import ENGLISH, LITHUANIAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -12,6 +12,29 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
+)
+
+# WMT24++ translation datasets ###
+
+WMT24PP_EN_LT_CONFIG = DatasetConfig(
+    name="wmt24pp-en-lt",
+    pretty_name="WMT24++-lt",
+    source="EuroEval/wmt24pp-en-lt",
+    task=TRANSLATION,
+    languages=LITHUANIAN,
+    source_language=ENGLISH,
+    target_language=LITHUANIAN,
+)
+
+WMT24PP_LT_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-lt-en",
+    pretty_name="WMT24++-lt-en",
+    source="EuroEval/wmt24pp-lt-en",
+    task=TRANSLATION,
+    languages=LITHUANIAN,
+    source_language=LITHUANIAN,
+    target_language=ENGLISH,
 )
 
 # Official datasets ###

@@ -1,7 +1,7 @@
 """All Czech dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import CZECH
+from ..languages import CZECH, ENGLISH
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -12,6 +12,29 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
+)
+
+# WMT24++ translation datasets ###
+
+WMT24PP_EN_CS_CONFIG = DatasetConfig(
+    name="wmt24pp-en-cs",
+    pretty_name="WMT24++-cs",
+    source="EuroEval/wmt24pp-en-cs",
+    task=TRANSLATION,
+    languages=CZECH,
+    source_language=ENGLISH,
+    target_language=CZECH,
+)
+
+WMT24PP_CS_EN_CONFIG = DatasetConfig(
+    name="wmt24pp-cs-en",
+    pretty_name="WMT24++-cs-en",
+    source="EuroEval/wmt24pp-cs-en",
+    task=TRANSLATION,
+    languages=CZECH,
+    source_language=CZECH,
+    target_language=ENGLISH,
 )
 
 # Official datasets ###
