@@ -1211,3 +1211,143 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-el
 ```
+
+## Translation
+
+### Unofficial: WMT24++ Greek to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It covers translation pairs from
+English to 55 languages, where 9 of them are post-edited from the original dataset.
+These are all manually translated.
+
+The original full dataset consists of 998 samples for each language. A small portion of
+the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the training split, 128 samples for the validation split, and the rest for the test
+split.
+
+We use the Greek translation pair from the dataset, where the source text is in
+Ελληνικά and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Δεν έχω τηλεμετρία για την μπαταρία.",
+  "target_text": "I don't have any telemetry for the battery. This is something I might add in a future revision."
+}
+```
+
+```json
+{
+  "text": "Η καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί.",
+  "target_text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month."
+}
+```
+
+```json
+{
+  "text": ""Γεια" είπε εκείνη.",
+  "target_text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are ελληνικά texts with corresponding English translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  ελληνικά text: {text}
+  English translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  ελληνικά text: {text}
+
+  Translate the above text into English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-el-en
+```
+
+### Unofficial: WMT24++ English to Greek
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It covers translation pairs from
+English to 55 languages, where 9 of them are post-edited from the original dataset.
+These are all manually translated.
+
+The original full dataset consists of 998 samples for each language. A small portion of
+the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the training split, 128 samples for the validation split, and the rest for the test
+split.
+
+We use the Greek translation pair from the dataset, where the source text is in
+English and the target text is in Ελληνικά.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
+  "target_text": "Δεν έχω τηλεμετρία για την μπαταρία."
+}
+```
+
+```json
+{
+  "text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month.",
+  "target_text": "Η καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί."
+}
+```
+
+```json
+{
+  "text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered.",
+  "target_text": ""Γεια" είπε εκείνη."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding ελληνικά translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  ελληνικά translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into ελληνικά.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-en-el
+```
