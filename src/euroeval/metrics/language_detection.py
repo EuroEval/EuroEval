@@ -50,22 +50,23 @@ class LanguageDetector:
         # difficult to distinguish, even for humans, and some sentences can be
         # identical across them.
         danish_and_norwegian = {DANISH, NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK}
-        dataset_languages = set(dataset_config.languages)
 
-        # extend with danish_and_norwegian if any are present
-        if danish_and_norwegian & dataset_languages:
-            dataset_languages |= danish_and_norwegian
-
-        # For translation tasks, penalise against the target language
-        if dataset_config._target_language is not None:
+        # For translation tasks, start with the target language set
+        if dataset_config.target_language is not None:
             # Use explicit target language if provided
-            dataset_languages = {dataset_config._target_language}
+            dataset_languages = {dataset_config.target_language}
         else:
-            # Fallback to old behavior: exclude source language from main_language tuple
+            # Fallback to old behavior: use languages from config
+            dataset_languages = set(dataset_config.languages)
+            # Exclude source language from main_language tuple for old-style configs
             main_lang = dataset_config.main_language
             if isinstance(main_lang, tuple):
                 source_lang, _ = main_lang
                 dataset_languages.discard(source_lang)
+
+        # extend with danish_and_norwegian if any are present
+        if danish_and_norwegian & dataset_languages:
+            dataset_languages |= danish_and_norwegian
 
         target_language_codes = get_correct_language_codes(
             language_codes=[lang.code for lang in dataset_languages]
