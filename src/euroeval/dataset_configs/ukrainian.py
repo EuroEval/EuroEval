@@ -1,7 +1,7 @@
 """All Ukrainian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import UKRAINIAN
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, UKRAINIAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -94,20 +94,24 @@ RAGTRUTH_UK_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_UK_CONFIG = DatasetConfig(
+WMT24PP_EN_UK_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-en-uk",
     pretty_name="WMT24++-en-uk",
     source="EuroEval/wmt24pp-en-uk",
     task=TRANSLATION,
     languages=[UKRAINIAN],
+    source_language=ENGLISH,
+    target_language=UKRAINIAN,
 )
 
-WMT24PP_UK_EN_CONFIG = DatasetConfig(
+WMT24PP_UK_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-uk-en",
     pretty_name="WMT24++-uk-en",
     source="EuroEval/wmt24pp-uk-en",
     task=TRANSLATION,
     languages=[UKRAINIAN],
+    source_language=UKRAINIAN,
+    target_language=ENGLISH,
 )
 
 

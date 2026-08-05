@@ -1,7 +1,7 @@
 """All Slovak dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import SLOVAK
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, SLOVAK
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -84,20 +84,24 @@ RAGTRUTH_SK_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_SK_CONFIG = DatasetConfig(
+WMT24PP_EN_SK_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-en-sk",
     pretty_name="WMT24++-en-sk",
     source="EuroEval/wmt24pp-en-sk",
     task=TRANSLATION,
     languages=[SLOVAK],
+    source_language=ENGLISH,
+    target_language=SLOVAK,
 )
 
-WMT24PP_SK_EN_CONFIG = DatasetConfig(
+WMT24PP_SK_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-sk-en",
     pretty_name="WMT24++-sk-en",
     source="EuroEval/wmt24pp-sk-en",
     task=TRANSLATION,
     languages=[SLOVAK],
+    source_language=SLOVAK,
+    target_language=ENGLISH,
 )
 
 

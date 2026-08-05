@@ -1,7 +1,7 @@
 """All Norwegian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import NORWEGIAN, NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, NORWEGIAN, NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -162,20 +162,24 @@ RAGTRUTH_NO_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_NO_CONFIG = DatasetConfig(
+WMT24PP_EN_NO_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-en-no",
     pretty_name="WMT24++-en-no",
     source="EuroEval/wmt24pp-en-no",
     task=TRANSLATION,
     languages=[NORWEGIAN],
+    source_language=ENGLISH,
+    target_language=NORWEGIAN,
 )
 
-WMT24PP_NO_EN_CONFIG = DatasetConfig(
+WMT24PP_NO_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-no-en",
     pretty_name="WMT24++-no-en",
     source="EuroEval/wmt24pp-no-en",
     task=TRANSLATION,
     languages=[NORWEGIAN],
+    source_language=NORWEGIAN,
+    target_language=ENGLISH,
 )
 
 

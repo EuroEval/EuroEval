@@ -1,7 +1,7 @@
 """All Dutch dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import DUTCH
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import DUTCH, ENGLISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -147,20 +147,24 @@ MULTILOKO_NL_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-WMT24PP_EN_NL_CONFIG = DatasetConfig(
+WMT24PP_EN_NL_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-en-nl",
     pretty_name="WMT24++-en-nl",
     source="EuroEval/wmt24pp-en-nl",
     task=TRANSLATION,
     languages=[DUTCH],
+    source_language=ENGLISH,
+    target_language=DUTCH,
 )
 
-WMT24PP_NL_EN_CONFIG = DatasetConfig(
+WMT24PP_NL_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-nl-en",
     pretty_name="WMT24++-nl-en",
     source="EuroEval/wmt24pp-nl-en",
     task=TRANSLATION,
     languages=[DUTCH],
+    source_language=DUTCH,
+    target_language=ENGLISH,
 )
 
 

@@ -1,7 +1,7 @@
 """All Estonian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import ESTONIAN
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, ESTONIAN
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -112,20 +112,24 @@ RAGTRUTH_ET_CONFIG = DatasetConfig(
     train_split=None,
 )
 
-WMT24PP_EN_ET_CONFIG = DatasetConfig(
+WMT24PP_EN_ET_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-en-et",
     pretty_name="WMT24++-en-et",
     source="EuroEval/wmt24pp-en-et",
     task=TRANSLATION,
     languages=[ESTONIAN],
+    source_language=ENGLISH,
+    target_language=ESTONIAN,
 )
 
-WMT24PP_ET_EN_CONFIG = DatasetConfig(
+WMT24PP_ET_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-et-en",
     pretty_name="WMT24++-et-en",
     source="EuroEval/wmt24pp-et-en",
     task=TRANSLATION,
     languages=[ESTONIAN],
+    source_language=ESTONIAN,
+    target_language=ENGLISH,
 )
 
 

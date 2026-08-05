@@ -1,7 +1,7 @@
 """All Hungarian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import HUNGARIAN
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, HUNGARIAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -94,20 +94,24 @@ INCLUDE_HU_CONFIG = DatasetConfig(
     languages=[HUNGARIAN],
 )
 
-WMT24PP_EN_HU_CONFIG = DatasetConfig(
+WMT24PP_EN_HU_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-en-hu",
     pretty_name="WMT24++-en-hu",
     source="EuroEval/wmt24pp-en-hu",
     task=TRANSLATION,
     languages=[HUNGARIAN],
+    source_language=ENGLISH,
+    target_language=HUNGARIAN,
 )
 
-WMT24PP_HU_EN_CONFIG = DatasetConfig(
+WMT24PP_HU_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-hu-en",
     pretty_name="WMT24++-hu-en",
     source="EuroEval/wmt24pp-hu-en",
     task=TRANSLATION,
     languages=[HUNGARIAN],
+    source_language=HUNGARIAN,
+    target_language=ENGLISH,
 )
 
 

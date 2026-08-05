@@ -1,7 +1,7 @@
 """All French dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import FRENCH
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, FRENCH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -118,20 +118,24 @@ MULTILOKO_FR_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-WMT24PP_EN_FR_CONFIG = DatasetConfig(
+WMT24PP_EN_FR_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-en-fr",
     pretty_name="WMT24++-en-fr",
     source="EuroEval/wmt24pp-en-fr",
     task=TRANSLATION,
     languages=[FRENCH],
+    source_language=ENGLISH,
+    target_language=FRENCH,
 )
 
-WMT24PP_FR_EN_CONFIG = DatasetConfig(
+WMT24PP_FR_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-fr-en",
     pretty_name="WMT24++-fr-en",
     source="EuroEval/wmt24pp-fr-en",
     task=TRANSLATION,
     languages=[FRENCH],
+    source_language=FRENCH,
+    target_language=ENGLISH,
 )
 
 
