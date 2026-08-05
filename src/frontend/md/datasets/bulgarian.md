@@ -753,3 +753,143 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-bg
 ```
+
+## Translation
+
+### Unofficial: WMT24++ Bulgarian to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It covers translation pairs from
+English to 55 languages, where 9 of them are post-edited from the original dataset.
+These are all manually translated.
+
+The original full dataset consists of 998 samples for each language. A small portion of
+the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the training split, 128 samples for the validation split, and the rest for the test
+split.
+
+We use the Bulgarian translation pair from the dataset, where the source text is in
+Български and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "У мене няма телеметрия за батерията.",
+  "target_text": "I don't have any telemetry for the battery. This is something I might add in a future revision."
+}
+```
+
+```json
+{
+  "text": "Кафявата лисица скача над мързеливото куче.",
+  "target_text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month."
+}
+```
+
+```json
+{
+  "text": ""Здравей" каза тя.",
+  "target_text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are български texts with corresponding English translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  български text: {text}
+  English translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  български text: {text}
+
+  Translate the above text into English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-bg-en
+```
+
+### Unofficial: WMT24++ English to Bulgarian
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It covers translation pairs from
+English to 55 languages, where 9 of them are post-edited from the original dataset.
+These are all manually translated.
+
+The original full dataset consists of 998 samples for each language. A small portion of
+the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the training split, 128 samples for the validation split, and the rest for the test
+split.
+
+We use the Bulgarian translation pair from the dataset, where the source text is in
+English and the target text is in Български.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
+  "target_text": "У мене няма телеметрия за батерията."
+}
+```
+
+```json
+{
+  "text": "Still to do: hallway floor, all the skirtings. Decorator is coming in a month.",
+  "target_text": "Кафявата лисица скача над мързеливото куче."
+}
+```
+
+```json
+{
+  "text": ""You mean... the horrible thing that we helped kill?" Tenuk stuttered.",
+  "target_text": ""Здравей" каза тя."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding български translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  български translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into български.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-en-bg
+```
