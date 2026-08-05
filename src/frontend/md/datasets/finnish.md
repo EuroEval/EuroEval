@@ -472,7 +472,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-fi
 
 ## Knowledge
 
-### Unofficial: INCLUDE-fi
+### INCLUDE-fi
 
 This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
 comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
