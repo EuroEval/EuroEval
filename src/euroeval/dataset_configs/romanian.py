@@ -126,3 +126,26 @@ EU_MMLU_RO_CONFIG = DatasetConfig(
     languages=[ROMANIAN],
     unofficial=True,
 )
+
+
+FLORES_EN_RO_CONFIG = TranslationDatasetConfig(
+    name="flores-en-ro",
+    pretty_name="FLORES-en-ro",
+    source="EuroEval/flores-en-ro",
+    task=TRANSLATION,
+    languages=[ROMANIAN],
+    source_language=ENGLISH,
+    target_language=ROMANIAN,
+    unofficial=True,
+)
+
+FLORES_RO_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-ro-en",
+    pretty_name="FLORES-ro-en",
+    source="EuroEval/flores-ro-en",
+    task=TRANSLATION,
+    languages=[ROMANIAN],
+    source_language=ROMANIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)

@@ -169,3 +169,26 @@ CULTURAQA_CONFIG = DatasetConfig(
         "Απαντήστε στην παρακάτω ερώτηση με ακρίβεια και συντομία.\n\nΕρώτηση: {text}"
     ),
 )
+
+
+FLORES_EN_EL_CONFIG = TranslationDatasetConfig(
+    name="flores-en-el",
+    pretty_name="FLORES-en-el",
+    source="EuroEval/flores-en-el",
+    task=TRANSLATION,
+    languages=[GREEK],
+    source_language=ENGLISH,
+    target_language=GREEK,
+    unofficial=True,
+)
+
+FLORES_EL_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-el-en",
+    pretty_name="FLORES-el-en",
+    source="EuroEval/flores-el-en",
+    task=TRANSLATION,
+    languages=[GREEK],
+    source_language=GREEK,
+    target_language=ENGLISH,
+    unofficial=True,
+)

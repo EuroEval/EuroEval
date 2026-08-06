@@ -182,3 +182,26 @@ INCLUDE_ET_CONFIG = DatasetConfig(
     languages=[ESTONIAN],
     unofficial=True,
 )
+
+
+FLORES_EN_ET_CONFIG = TranslationDatasetConfig(
+    name="flores-en-et",
+    pretty_name="FLORES-en-et",
+    source="EuroEval/flores-en-et",
+    task=TRANSLATION,
+    languages=[ESTONIAN],
+    source_language=ENGLISH,
+    target_language=ESTONIAN,
+    unofficial=True,
+)
+
+FLORES_ET_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-et-en",
+    pretty_name="FLORES-et-en",
+    source="EuroEval/flores-et-en",
+    task=TRANSLATION,
+    languages=[ESTONIAN],
+    source_language=ESTONIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)

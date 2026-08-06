@@ -10,7 +10,7 @@ import pytest
 from euroeval import dataset_configs as dc_module
 from euroeval.data_models import DatasetConfig, TranslationDatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.languages import BULGARIAN, ENGLISH
+from euroeval.languages import BULGARIAN, ENGLISH, FAROESE
 from euroeval.tasks import TRANSLATION
 
 
@@ -103,6 +103,26 @@ class TestTranslationDatasetConfig:
             target_language=ENGLISH,
         )
         assert config.main_language == (BULGARIAN, ENGLISH)
+
+
+def test_flores_gap_language_configs_are_official() -> None:
+    """FLORES+ fills the WMT24++ gaps, so those configs are official."""
+    en_fo = dc_module.FLORES_EN_FO_CONFIG
+    assert en_fo.main_language == (ENGLISH, FAROESE)
+    assert en_fo.languages == [FAROESE]
+    assert en_fo.unofficial is False
+
+    fo_en = dc_module.FLORES_FO_EN_CONFIG
+    assert fo_en.main_language == (FAROESE, ENGLISH)
+    assert fo_en.unofficial is False
+
+
+def test_flores_wmt24pp_language_configs_are_unofficial() -> None:
+    """For languages WMT24++ already covers, FLORES+ is added as unofficial."""
+    en_de = dc_module.FLORES_EN_DE_CONFIG
+    assert en_de.main_language[0] == ENGLISH
+    assert en_de.unofficial is True
+    assert dc_module.FLORES_DE_EN_CONFIG.unofficial is True
 
 
 def test_include_sr_uses_cyrillic_prompt() -> None:

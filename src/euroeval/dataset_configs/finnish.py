@@ -178,3 +178,26 @@ IFEVAL_FI_CONFIG = DatasetConfig(
     val_split=None,
     unofficial=True,
 )
+
+
+FLORES_EN_FI_CONFIG = TranslationDatasetConfig(
+    name="flores-en-fi",
+    pretty_name="FLORES-en-fi",
+    source="EuroEval/flores-en-fi",
+    task=TRANSLATION,
+    languages=[FINNISH],
+    source_language=ENGLISH,
+    target_language=FINNISH,
+    unofficial=True,
+)
+
+FLORES_FI_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-fi-en",
+    pretty_name="FLORES-fi-en",
+    source="EuroEval/flores-fi-en",
+    task=TRANSLATION,
+    languages=[FINNISH],
+    source_language=FINNISH,
+    target_language=ENGLISH,
+    unofficial=True,
+)

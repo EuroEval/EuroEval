@@ -125,3 +125,26 @@ EU_MMLU_HR_CONFIG = DatasetConfig(
     languages=[CROATIAN],
     unofficial=True,
 )
+
+
+FLORES_EN_HR_CONFIG = TranslationDatasetConfig(
+    name="flores-en-hr",
+    pretty_name="FLORES-en-hr",
+    source="EuroEval/flores-en-hr",
+    task=TRANSLATION,
+    languages=[CROATIAN],
+    source_language=ENGLISH,
+    target_language=CROATIAN,
+    unofficial=True,
+)
+
+FLORES_HR_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-hr-en",
+    pretty_name="FLORES-hr-en",
+    source="EuroEval/flores-hr-en",
+    task=TRANSLATION,
+    languages=[CROATIAN],
+    source_language=CROATIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)

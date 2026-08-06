@@ -134,3 +134,26 @@ EU_MMLU_HU_CONFIG = DatasetConfig(
     languages=[HUNGARIAN],
     unofficial=True,
 )
+
+
+FLORES_EN_HU_CONFIG = TranslationDatasetConfig(
+    name="flores-en-hu",
+    pretty_name="FLORES-en-hu",
+    source="EuroEval/flores-en-hu",
+    task=TRANSLATION,
+    languages=[HUNGARIAN],
+    source_language=ENGLISH,
+    target_language=HUNGARIAN,
+    unofficial=True,
+)
+
+FLORES_HU_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-hu-en",
+    pretty_name="FLORES-hu-en",
+    source="EuroEval/flores-hu-en",
+    task=TRANSLATION,
+    languages=[HUNGARIAN],
+    source_language=HUNGARIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)

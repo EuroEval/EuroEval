@@ -136,3 +136,26 @@ WINOGRANDE_LV_CONFIG = DatasetConfig(
     labels=["a", "b"],
     unofficial=True,
 )
+
+
+FLORES_EN_LV_CONFIG = TranslationDatasetConfig(
+    name="flores-en-lv",
+    pretty_name="FLORES-en-lv",
+    source="EuroEval/flores-en-lv",
+    task=TRANSLATION,
+    languages=[LATVIAN],
+    source_language=ENGLISH,
+    target_language=LATVIAN,
+    unofficial=True,
+)
+
+FLORES_LV_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-lv-en",
+    pretty_name="FLORES-lv-en",
+    source="EuroEval/flores-lv-en",
+    task=TRANSLATION,
+    languages=[LATVIAN],
+    source_language=LATVIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)

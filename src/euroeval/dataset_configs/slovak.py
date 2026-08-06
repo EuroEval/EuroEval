@@ -115,3 +115,26 @@ EU_MMLU_SK_CONFIG = DatasetConfig(
     languages=[SLOVAK],
     unofficial=True,
 )
+
+
+FLORES_EN_SK_CONFIG = TranslationDatasetConfig(
+    name="flores-en-sk",
+    pretty_name="FLORES-en-sk",
+    source="EuroEval/flores-en-sk",
+    task=TRANSLATION,
+    languages=[SLOVAK],
+    source_language=ENGLISH,
+    target_language=SLOVAK,
+    unofficial=True,
+)
+
+FLORES_SK_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-sk-en",
+    pretty_name="FLORES-sk-en",
+    source="EuroEval/flores-sk-en",
+    task=TRANSLATION,
+    languages=[SLOVAK],
+    source_language=SLOVAK,
+    target_language=ENGLISH,
+    unofficial=True,
+)

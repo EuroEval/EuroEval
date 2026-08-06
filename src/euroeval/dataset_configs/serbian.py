@@ -134,3 +134,26 @@ MMLU_SR_CONFIG = DatasetConfig(
     languages=[SERBIAN],
     unofficial=True,
 )
+
+
+FLORES_EN_SR_CONFIG = TranslationDatasetConfig(
+    name="flores-en-sr",
+    pretty_name="FLORES-en-sr",
+    source="EuroEval/flores-en-sr",
+    task=TRANSLATION,
+    languages=[SERBIAN],
+    source_language=ENGLISH,
+    target_language=SERBIAN,
+    unofficial=True,
+)
+
+FLORES_SR_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-sr-en",
+    pretty_name="FLORES-sr-en",
+    source="EuroEval/flores-sr-en",
+    task=TRANSLATION,
+    languages=[SERBIAN],
+    source_language=SERBIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)

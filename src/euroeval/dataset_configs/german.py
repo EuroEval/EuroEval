@@ -251,3 +251,26 @@ RAGTRUTH_DE_CONFIG = DatasetConfig(
     train_split=None,
     unofficial=True,
 )
+
+
+FLORES_EN_DE_CONFIG = TranslationDatasetConfig(
+    name="flores-en-de",
+    pretty_name="FLORES-en-de",
+    source="EuroEval/flores-en-de",
+    task=TRANSLATION,
+    languages=[GERMAN],
+    source_language=ENGLISH,
+    target_language=GERMAN,
+    unofficial=True,
+)
+
+FLORES_DE_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-de-en",
+    pretty_name="FLORES-de-en",
+    source="EuroEval/flores-de-en",
+    task=TRANSLATION,
+    languages=[GERMAN],
+    source_language=GERMAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)

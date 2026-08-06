@@ -1,8 +1,8 @@
 """All Bosnian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import BOSNIAN
-from ..tasks import HALLU, INSTRUCTION_FOLLOWING, NER, RC, SENT, SUMM
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import BOSNIAN, ENGLISH
+from ..tasks import HALLU, INSTRUCTION_FOLLOWING, NER, RC, SENT, SUMM, TRANSLATION
 
 # Official datasets ###
 
@@ -55,4 +55,24 @@ RAGTRUTH_BS_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[BOSNIAN],
     train_split=None,
+)
+
+FLORES_EN_BS_CONFIG = TranslationDatasetConfig(
+    name="flores-en-bs",
+    pretty_name="FLORES-en-bs",
+    source="EuroEval/flores-en-bs",
+    task=TRANSLATION,
+    languages=[BOSNIAN],
+    source_language=ENGLISH,
+    target_language=BOSNIAN,
+)
+
+FLORES_BS_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-bs-en",
+    pretty_name="FLORES-bs-en",
+    source="EuroEval/flores-bs-en",
+    task=TRANSLATION,
+    languages=[BOSNIAN],
+    source_language=BOSNIAN,
+    target_language=ENGLISH,
 )

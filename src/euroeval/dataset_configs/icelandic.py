@@ -259,3 +259,26 @@ ZEBRA_PUZZLE_HARD_IS_CONFIG = DatasetConfig(
     languages=[ICELANDIC],
     unofficial=True,
 )
+
+
+FLORES_EN_IS_CONFIG = TranslationDatasetConfig(
+    name="flores-en-is",
+    pretty_name="FLORES-en-is",
+    source="EuroEval/flores-en-is",
+    task=TRANSLATION,
+    languages=[ICELANDIC],
+    source_language=ENGLISH,
+    target_language=ICELANDIC,
+    unofficial=True,
+)
+
+FLORES_IS_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-is-en",
+    pretty_name="FLORES-is-en",
+    source="EuroEval/flores-is-en",
+    task=TRANSLATION,
+    languages=[ICELANDIC],
+    source_language=ICELANDIC,
+    target_language=ENGLISH,
+    unofficial=True,
+)

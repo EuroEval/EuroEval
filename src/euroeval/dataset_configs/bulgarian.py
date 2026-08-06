@@ -115,3 +115,26 @@ INCLUDE_BG_CONFIG = DatasetConfig(
     languages=[BULGARIAN],
     unofficial=True,
 )
+
+
+FLORES_EN_BG_CONFIG = TranslationDatasetConfig(
+    name="flores-en-bg",
+    pretty_name="FLORES-en-bg",
+    source="EuroEval/flores-en-bg",
+    task=TRANSLATION,
+    languages=[BULGARIAN],
+    source_language=ENGLISH,
+    target_language=BULGARIAN,
+    unofficial=True,
+)
+
+FLORES_BG_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-bg-en",
+    pretty_name="FLORES-bg-en",
+    source="EuroEval/flores-bg-en",
+    task=TRANSLATION,
+    languages=[BULGARIAN],
+    source_language=BULGARIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)

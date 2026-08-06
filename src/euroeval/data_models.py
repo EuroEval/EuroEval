@@ -869,10 +869,15 @@ class DatasetConfig:
         Returns:
             The natural string representation of the labels in specified language.
         """
+        main_language = self.main_language
+        if not isinstance(main_language, Language):
+            # Translation datasets have a (source, target) tuple; the labels, if any,
+            # belong to the target language.
+            _, main_language = main_language
         if self.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
-            sep_word = self.main_language.and_separator
+            sep_word = main_language.and_separator
         else:
-            sep_word = self.main_language.or_separator
+            sep_word = main_language.or_separator
 
         if labels is None:
             labels = list()

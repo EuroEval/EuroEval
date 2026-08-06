@@ -58,6 +58,15 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   German, Greek, Hungarian, Icelandic, Italian, Latvian, Lithuanian, Norwegian, Polish,
   Portuguese, Romanian, Serbian, Slovak, Slovene, Swedish, Ukrainian). Each language now
   has both `wmt24pp-en-{code}` and `wmt24pp-{code}-en` official datasets.
+- Added bidirectional FLORES+ translation datasets for all official languages, built
+  from the multi-way parallel professional-translation benchmark
+  [openlanguagedata/flores_plus](https://huggingface.co/datasets/openlanguagedata/flores_plus).
+  Each language has both `flores-en-{code}` and `flores-{code}-en` datasets, with the
+  train/validation splits drawn from the FLORES+ `dev` split and the test split from
+  `devtest` (128 / 256 / up to 1,024 samples). For the six official languages that
+  WMT24++ does not cover (Albanian, Belarusian, Bosnian, Faroese, Luxembourgish and
+  Spanish) these are the official translation datasets; for the 25 WMT24++ languages they
+  are added as `unofficial` companions.
 - Added translation task to the leaderboard task list so translation datasets are scored
   and displayed on leaderboards.
 - Added translation prompt templates for Belarusian, Faroese and Luxembourgish as source

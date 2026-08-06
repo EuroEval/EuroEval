@@ -215,3 +215,26 @@ EU_MMLU_FR_CONFIG = DatasetConfig(
     languages=[FRENCH],
     unofficial=True,
 )
+
+
+FLORES_EN_FR_CONFIG = TranslationDatasetConfig(
+    name="flores-en-fr",
+    pretty_name="FLORES-en-fr",
+    source="EuroEval/flores-en-fr",
+    task=TRANSLATION,
+    languages=[FRENCH],
+    source_language=ENGLISH,
+    target_language=FRENCH,
+    unofficial=True,
+)
+
+FLORES_FR_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-fr-en",
+    pretty_name="FLORES-fr-en",
+    source="EuroEval/flores-fr-en",
+    task=TRANSLATION,
+    languages=[FRENCH],
+    source_language=FRENCH,
+    target_language=ENGLISH,
+    unofficial=True,
+)

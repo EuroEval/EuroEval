@@ -1,7 +1,7 @@
 """All Spanish dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import SPANISH
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, SPANISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -14,6 +14,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
@@ -106,6 +107,27 @@ WINOGRANDE_ES_CONFIG = DatasetConfig(
     languages=[SPANISH],
     labels=["a", "b"],
 )
+
+FLORES_EN_ES_CONFIG = TranslationDatasetConfig(
+    name="flores-en-es",
+    pretty_name="FLORES-en-es",
+    source="EuroEval/flores-en-es",
+    task=TRANSLATION,
+    languages=[SPANISH],
+    source_language=ENGLISH,
+    target_language=SPANISH,
+)
+
+FLORES_ES_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-es-en",
+    pretty_name="FLORES-es-en",
+    source="EuroEval/flores-es-en",
+    task=TRANSLATION,
+    languages=[SPANISH],
+    source_language=SPANISH,
+    target_language=ENGLISH,
+)
+
 
 # Unofficial datasets ###
 

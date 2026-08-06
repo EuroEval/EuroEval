@@ -126,3 +126,26 @@ MULTI_IFEVAL_CA_CONFIG = DatasetConfig(
     val_split=None,
     unofficial=True,
 )
+
+
+FLORES_EN_CA_CONFIG = TranslationDatasetConfig(
+    name="flores-en-ca",
+    pretty_name="FLORES-en-ca",
+    source="EuroEval/flores-en-ca",
+    task=TRANSLATION,
+    languages=[CATALAN],
+    source_language=ENGLISH,
+    target_language=CATALAN,
+    unofficial=True,
+)
+
+FLORES_CA_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-ca-en",
+    pretty_name="FLORES-ca-en",
+    source="EuroEval/flores-ca-en",
+    task=TRANSLATION,
+    languages=[CATALAN],
+    source_language=CATALAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)

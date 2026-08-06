@@ -266,3 +266,26 @@ ZEBRA_PUZZLE_HARD_SV_CONFIG = DatasetConfig(
     languages=[SWEDISH],
     unofficial=True,
 )
+
+
+FLORES_EN_SV_CONFIG = TranslationDatasetConfig(
+    name="flores-en-sv",
+    pretty_name="FLORES-en-sv",
+    source="EuroEval/flores-en-sv",
+    task=TRANSLATION,
+    languages=[SWEDISH],
+    source_language=ENGLISH,
+    target_language=SWEDISH,
+    unofficial=True,
+)
+
+FLORES_SV_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-sv-en",
+    pretty_name="FLORES-sv-en",
+    source="EuroEval/flores-sv-en",
+    task=TRANSLATION,
+    languages=[SWEDISH],
+    source_language=SWEDISH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
