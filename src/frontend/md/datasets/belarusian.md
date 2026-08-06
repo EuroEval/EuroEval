@@ -524,3 +524,143 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-be
 ```
+
+## Translation
+
+### FLORES+ English to Belarusian
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Belarusian direction, where the source text is in English and the
+target text is in Belarusian.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Улічваючы вялікую адлегласць паміж многімі індзейскімі пасяленнямі, знайсці начныя забавы за межамі Альбукерке ці Санта-Фе будзе не так проста."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Дзеці, напрыклад, якія ідэнтыфікуюць сябе з такой расавай меншасцю, прадстаўнікі якой, згодна стэрэатыпу, дрэнна вучацца ў школе, як толькі дазнаюцца пра гэты расавы стэрэатып, як правіла, пачынаюць дрэнна вучыцца ў школе."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "Яна ўяўляе сабой зацвярдзелы снег з засыпанымі і пазначанымі сцяжкамі расколінамі. Праехаць тут можна толькі на спецыяльных трактарах, якія цягнуць за сабой сані з палівам, прыпасамі і правіянтам."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Belarusian translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Belarusian translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Belarusian.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-be
+```
+
+### FLORES+ Belarusian to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Belarusian-to-English direction, where the source text is in Belarusian and
+the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Улічваючы вялікую адлегласць паміж многімі індзейскімі пасяленнямі, знайсці начныя забавы за межамі Альбукерке ці Санта-Фе будзе не так проста.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Дзеці, напрыклад, якія ідэнтыфікуюць сябе з такой расавай меншасцю, прадстаўнікі якой, згодна стэрэатыпу, дрэнна вучацца ў школе, як толькі дазнаюцца пра гэты расавы стэрэатып, як правіла, пачынаюць дрэнна вучыцца ў школе.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "Яна ўяўляе сабой зацвярдзелы снег з засыпанымі і пазначанымі сцяжкамі расколінамі. Праехаць тут можна толькі на спецыяльных трактарах, якія цягнуць за сабой сані з палівам, прыпасамі і правіянтам.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Ніжэй прыведзены беларускія тэксты з адпаведнымі перакладамі на English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Беларускі тэкст: {text}
+  Пераклад на English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Беларускі тэкст: {text}
+
+  Перакладзіце прыведзены вышэй тэкст на English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-be-en
+```

@@ -1,7 +1,7 @@
 """All CATALAN dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import CATALAN
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import CATALAN, ENGLISH
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -12,6 +12,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
@@ -92,6 +93,27 @@ RAGTRUTH_CA_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+WMT24PP_EN_CA_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-ca",
+    pretty_name="WMT24++-en-ca",
+    source="EuroEval/wmt24pp-en-ca",
+    task=TRANSLATION,
+    languages=[CATALAN],
+    source_language=ENGLISH,
+    target_language=CATALAN,
+)
+
+WMT24PP_CA_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-ca-en",
+    pretty_name="WMT24++-ca-en",
+    source="EuroEval/wmt24pp-ca-en",
+    task=TRANSLATION,
+    languages=[CATALAN],
+    source_language=CATALAN,
+    target_language=ENGLISH,
+)
+
+
 # Unofficial datasets ###
 
 MULTI_IFEVAL_CA_CONFIG = DatasetConfig(
@@ -102,5 +124,28 @@ MULTI_IFEVAL_CA_CONFIG = DatasetConfig(
     languages=[CATALAN],
     train_split=None,
     val_split=None,
+    unofficial=True,
+)
+
+
+FLORES_EN_CA_CONFIG = TranslationDatasetConfig(
+    name="flores-en-ca",
+    pretty_name="FLORES-en-ca",
+    source="EuroEval/flores-en-ca",
+    task=TRANSLATION,
+    languages=[CATALAN],
+    source_language=ENGLISH,
+    target_language=CATALAN,
+    unofficial=True,
+)
+
+FLORES_CA_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-ca-en",
+    pretty_name="FLORES-ca-en",
+    source="EuroEval/flores-ca-en",
+    task=TRANSLATION,
+    languages=[CATALAN],
+    source_language=CATALAN,
+    target_language=ENGLISH,
     unofficial=True,
 )

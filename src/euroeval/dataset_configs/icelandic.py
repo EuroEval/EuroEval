@@ -1,7 +1,7 @@
 """All Icelandic dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import ICELANDIC
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, ICELANDIC
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -16,6 +16,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
@@ -116,6 +117,27 @@ ICE_EC_CONFIG = DatasetConfig(
     task=LA,
     languages=[ICELANDIC],
 )
+
+WMT24PP_EN_IS_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-is",
+    pretty_name="WMT24++-en-is",
+    source="EuroEval/wmt24pp-en-is",
+    task=TRANSLATION,
+    languages=[ICELANDIC],
+    source_language=ENGLISH,
+    target_language=ICELANDIC,
+)
+
+WMT24PP_IS_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-is-en",
+    pretty_name="WMT24++-is-en",
+    source="EuroEval/wmt24pp-is-en",
+    task=TRANSLATION,
+    languages=[ICELANDIC],
+    source_language=ICELANDIC,
+    target_language=ENGLISH,
+)
+
 
 # Unofficial datasets ###
 
@@ -235,5 +257,28 @@ ZEBRA_PUZZLE_HARD_IS_CONFIG = DatasetConfig(
     source="EuroEval/zebra-puzzles-hard-is",
     task=LOGIC,
     languages=[ICELANDIC],
+    unofficial=True,
+)
+
+
+FLORES_EN_IS_CONFIG = TranslationDatasetConfig(
+    name="flores-en-is",
+    pretty_name="FLORES-en-is",
+    source="EuroEval/flores-en-is",
+    task=TRANSLATION,
+    languages=[ICELANDIC],
+    source_language=ENGLISH,
+    target_language=ICELANDIC,
+    unofficial=True,
+)
+
+FLORES_IS_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-is-en",
+    pretty_name="FLORES-is-en",
+    source="EuroEval/flores-is-en",
+    task=TRANSLATION,
+    languages=[ICELANDIC],
+    source_language=ICELANDIC,
+    target_language=ENGLISH,
     unofficial=True,
 )

@@ -1,8 +1,18 @@
 """All Bulgarian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import BULGARIAN
-from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import BULGARIAN, ENGLISH
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    TRANSLATION,
+)
 
 # Official datasets ###
 
@@ -74,6 +84,27 @@ RAGTRUTH_BG_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+WMT24PP_EN_BG_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-bg",
+    pretty_name="WMT24++-en-bg",
+    source="EuroEval/wmt24pp-en-bg",
+    task=TRANSLATION,
+    languages=[BULGARIAN],
+    source_language=ENGLISH,
+    target_language=BULGARIAN,
+)
+
+WMT24PP_BG_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-bg-en",
+    pretty_name="WMT24++-bg-en",
+    source="EuroEval/wmt24pp-bg-en",
+    task=TRANSLATION,
+    languages=[BULGARIAN],
+    source_language=BULGARIAN,
+    target_language=ENGLISH,
+)
+
+
 # Unofficial datasets ###
 
 INCLUDE_BG_CONFIG = DatasetConfig(
@@ -82,5 +113,28 @@ INCLUDE_BG_CONFIG = DatasetConfig(
     source="EuroEval/include-bg-mini",
     task=KNOW,
     languages=[BULGARIAN],
+    unofficial=True,
+)
+
+
+FLORES_EN_BG_CONFIG = TranslationDatasetConfig(
+    name="flores-en-bg",
+    pretty_name="FLORES-en-bg",
+    source="EuroEval/flores-en-bg",
+    task=TRANSLATION,
+    languages=[BULGARIAN],
+    source_language=ENGLISH,
+    target_language=BULGARIAN,
+    unofficial=True,
+)
+
+FLORES_BG_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-bg-en",
+    pretty_name="FLORES-bg-en",
+    source="EuroEval/flores-bg-en",
+    task=TRANSLATION,
+    languages=[BULGARIAN],
+    source_language=BULGARIAN,
+    target_language=ENGLISH,
     unofficial=True,
 )

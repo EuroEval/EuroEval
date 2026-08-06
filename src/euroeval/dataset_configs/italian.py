@@ -1,7 +1,7 @@
 """All Italian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import ITALIAN
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, ITALIAN
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -14,6 +14,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
     WIC,
 )
 
@@ -108,6 +109,27 @@ WINOGRANDE_IT_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
+WMT24PP_EN_IT_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-it",
+    pretty_name="WMT24++-en-it",
+    source="EuroEval/wmt24pp-en-it",
+    task=TRANSLATION,
+    languages=[ITALIAN],
+    source_language=ENGLISH,
+    target_language=ITALIAN,
+)
+
+WMT24PP_IT_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-it-en",
+    pretty_name="WMT24++-it-en",
+    source="EuroEval/wmt24pp-it-en",
+    task=TRANSLATION,
+    languages=[ITALIAN],
+    source_language=ITALIAN,
+    target_language=ENGLISH,
+)
+
+
 # Unofficial datasets ###
 
 HELLASWAG_IT_CONFIG = DatasetConfig(
@@ -200,5 +222,28 @@ EU_MMLU_IT_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-it",
     task=KNOW,
     languages=[ITALIAN],
+    unofficial=True,
+)
+
+
+FLORES_EN_IT_CONFIG = TranslationDatasetConfig(
+    name="flores-en-it",
+    pretty_name="FLORES-en-it",
+    source="EuroEval/flores-en-it",
+    task=TRANSLATION,
+    languages=[ITALIAN],
+    source_language=ENGLISH,
+    target_language=ITALIAN,
+    unofficial=True,
+)
+
+FLORES_IT_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-it-en",
+    pretty_name="FLORES-it-en",
+    source="EuroEval/flores-it-en",
+    task=TRANSLATION,
+    languages=[ITALIAN],
+    source_language=ITALIAN,
+    target_language=ENGLISH,
     unofficial=True,
 )

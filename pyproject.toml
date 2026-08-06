@@ -45,7 +45,7 @@ dependencies = [
     "nltk>=3.9.1",
     "langdetect>=1.0.9",
     "pyyaml>=6.0",
-    "lingua-language-detector>=2.2.0",
+    "cyrtranslit>=1.2.0",
     "google-cloud-aiplatform>=1.157.0",
     "kaleido>=1.3.0",
 ]

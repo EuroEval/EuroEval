@@ -1,7 +1,7 @@
 """All Albanian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import ALBANIAN
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ALBANIAN, ENGLISH
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -12,6 +12,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
@@ -83,6 +84,27 @@ INCLUDE_SQ_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[ALBANIAN],
 )
+
+FLORES_EN_SQ_CONFIG = TranslationDatasetConfig(
+    name="flores-en-sq",
+    pretty_name="FLORES-en-sq",
+    source="EuroEval/flores-en-sq",
+    task=TRANSLATION,
+    languages=[ALBANIAN],
+    source_language=ENGLISH,
+    target_language=ALBANIAN,
+)
+
+FLORES_SQ_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-sq-en",
+    pretty_name="FLORES-sq-en",
+    source="EuroEval/flores-sq-en",
+    task=TRANSLATION,
+    languages=[ALBANIAN],
+    source_language=ALBANIAN,
+    target_language=ENGLISH,
+)
+
 
 # Unofficial datasets ###
 

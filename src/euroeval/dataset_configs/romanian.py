@@ -1,7 +1,7 @@
 """All Romanian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import ROMANIAN
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, ROMANIAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -12,6 +12,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
@@ -94,6 +95,27 @@ RAGTRUTH_RO_CONFIG = DatasetConfig(
 )
 
 
+WMT24PP_EN_RO_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-ro",
+    pretty_name="WMT24++-en-ro",
+    source="EuroEval/wmt24pp-en-ro",
+    task=TRANSLATION,
+    languages=[ROMANIAN],
+    source_language=ENGLISH,
+    target_language=ROMANIAN,
+)
+
+WMT24PP_RO_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-ro-en",
+    pretty_name="WMT24++-ro-en",
+    source="EuroEval/wmt24pp-ro-en",
+    task=TRANSLATION,
+    languages=[ROMANIAN],
+    source_language=ROMANIAN,
+    target_language=ENGLISH,
+)
+
+
 # Unofficial datasets ###
 
 EU_MMLU_RO_CONFIG = DatasetConfig(
@@ -102,5 +124,28 @@ EU_MMLU_RO_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-ro",
     task=KNOW,
     languages=[ROMANIAN],
+    unofficial=True,
+)
+
+
+FLORES_EN_RO_CONFIG = TranslationDatasetConfig(
+    name="flores-en-ro",
+    pretty_name="FLORES-en-ro",
+    source="EuroEval/flores-en-ro",
+    task=TRANSLATION,
+    languages=[ROMANIAN],
+    source_language=ENGLISH,
+    target_language=ROMANIAN,
+    unofficial=True,
+)
+
+FLORES_RO_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-ro-en",
+    pretty_name="FLORES-ro-en",
+    source="EuroEval/flores-ro-en",
+    task=TRANSLATION,
+    languages=[ROMANIAN],
+    source_language=ROMANIAN,
+    target_language=ENGLISH,
     unofficial=True,
 )

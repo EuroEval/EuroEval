@@ -1,7 +1,7 @@
 """All Lithuanian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import LITHUANIAN
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, LITHUANIAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -12,6 +12,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
@@ -100,6 +101,27 @@ INCLUDE_LT_CONFIG = DatasetConfig(
     languages=[LITHUANIAN],
 )
 
+WMT24PP_EN_LT_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-lt",
+    pretty_name="WMT24++-en-lt",
+    source="EuroEval/wmt24pp-en-lt",
+    task=TRANSLATION,
+    languages=[LITHUANIAN],
+    source_language=ENGLISH,
+    target_language=LITHUANIAN,
+)
+
+WMT24PP_LT_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-lt-en",
+    pretty_name="WMT24++-lt-en",
+    source="EuroEval/wmt24pp-lt-en",
+    task=TRANSLATION,
+    languages=[LITHUANIAN],
+    source_language=LITHUANIAN,
+    target_language=ENGLISH,
+)
+
+
 # Unofficial datasets ###
 
 LITHUANIAN_EMOTIONS_CONFIG = DatasetConfig(
@@ -117,5 +139,28 @@ EU_MMLU_LT_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-lt",
     task=KNOW,
     languages=[LITHUANIAN],
+    unofficial=True,
+)
+
+
+FLORES_EN_LT_CONFIG = TranslationDatasetConfig(
+    name="flores-en-lt",
+    pretty_name="FLORES-en-lt",
+    source="EuroEval/flores-en-lt",
+    task=TRANSLATION,
+    languages=[LITHUANIAN],
+    source_language=ENGLISH,
+    target_language=LITHUANIAN,
+    unofficial=True,
+)
+
+FLORES_LT_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-lt-en",
+    pretty_name="FLORES-lt-en",
+    source="EuroEval/flores-lt-en",
+    task=TRANSLATION,
+    languages=[LITHUANIAN],
+    source_language=LITHUANIAN,
+    target_language=ENGLISH,
     unofficial=True,
 )

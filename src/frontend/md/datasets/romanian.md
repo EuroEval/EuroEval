@@ -1076,3 +1076,279 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-ro
 ```
+
+## Translation
+
+### WMT24++ English to Romanian
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Romanian translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Romanian translation pair from the dataset, where the source text is in
+English and the target text is in Romanian.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hello, how are you?",
+  "target_text": "Salut, ce mai faci?"
+}
+```
+
+```json
+{
+  "text": "The brown fox jumps over the lazy dog.",
+  "target_text": "Vulpea maronie sare peste câinele leneș."
+}
+```
+
+```json
+{
+  "text": "Bucharest is the capital of Romania.",
+  "target_text": "București este capitala României."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Romanian translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Romanian translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Romanian.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-en-ro
+```
+
+### WMT24++ Romanian to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Romanian translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Romanian translation pair from the dataset, where the source text is in
+Romanian and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Salut, ce mai faci?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Vulpea maronie sare peste câinele leneș.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "București este capitala României.",
+  "target_text": "Bucharest is the capital of Romania."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Următoarele sunt texte în limba română cu traduceri corespunzătoare în English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Text în română: {text}
+  Traducere în English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Text în română: {text}
+
+  Traduceți textul de mai sus în English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-ro-en
+```
+
+### Unofficial: FLORES+ English to Romanian
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Romanian direction, where the source text is in English and the
+target text is in Romanian.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Având în vedere cât de izolate sunt multe dintre sate, nu vei putea găsi prea multă viață nocturnă fără a merge în Albuquerque sau Santa Fe."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Spre exemplu, copiii care se identifică cu o minoritate rasială stereotipizată ca una care nu are rezultate bune la învățătură, tind să nu se descurce bine la școală, o dată ce află despre stereotipul asociat cu rasa lor."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "Este formată din zăpadă compactată, cu crevasele umplute și marcată cu steaguri. Poate fi străbătută doar de tractoare specializate, ce trag sănii cu carburant și provizii."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Romanian translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Romanian translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Romanian.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-ro
+```
+
+### Unofficial: FLORES+ Romanian to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Romanian-to-English direction, where the source text is in Romanian and the
+target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Având în vedere cât de izolate sunt multe dintre sate, nu vei putea găsi prea multă viață nocturnă fără a merge în Albuquerque sau Santa Fe.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Spre exemplu, copiii care se identifică cu o minoritate rasială stereotipizată ca una care nu are rezultate bune la învățătură, tind să nu se descurce bine la școală, o dată ce află despre stereotipul asociat cu rasa lor.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "Este formată din zăpadă compactată, cu crevasele umplute și marcată cu steaguri. Poate fi străbătută doar de tractoare specializate, ce trag sănii cu carburant și provizii.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Următoarele sunt texte în limba română cu traduceri corespunzătoare în English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Text în română: {text}
+  Traducere în English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Text în română: {text}
+
+  Traduceți textul de mai sus în English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-ro-en
+```

@@ -1,7 +1,7 @@
 """All Latvian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import LATVIAN
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, LATVIAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -12,6 +12,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
@@ -94,6 +95,27 @@ RAGTRUTH_LV_CONFIG = DatasetConfig(
 )
 
 
+WMT24PP_EN_LV_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-lv",
+    pretty_name="WMT24++-en-lv",
+    source="EuroEval/wmt24pp-en-lv",
+    task=TRANSLATION,
+    languages=[LATVIAN],
+    source_language=ENGLISH,
+    target_language=LATVIAN,
+)
+
+WMT24PP_LV_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-lv-en",
+    pretty_name="WMT24++-lv-en",
+    source="EuroEval/wmt24pp-lv-en",
+    task=TRANSLATION,
+    languages=[LATVIAN],
+    source_language=LATVIAN,
+    target_language=ENGLISH,
+)
+
+
 # Unofficial datasets ###
 
 WIKIANN_LV_CONFIG = DatasetConfig(
@@ -112,5 +134,28 @@ WINOGRANDE_LV_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[LATVIAN],
     labels=["a", "b"],
+    unofficial=True,
+)
+
+
+FLORES_EN_LV_CONFIG = TranslationDatasetConfig(
+    name="flores-en-lv",
+    pretty_name="FLORES-en-lv",
+    source="EuroEval/flores-en-lv",
+    task=TRANSLATION,
+    languages=[LATVIAN],
+    source_language=ENGLISH,
+    target_language=LATVIAN,
+    unofficial=True,
+)
+
+FLORES_LV_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-lv-en",
+    pretty_name="FLORES-lv-en",
+    source="EuroEval/flores-lv-en",
+    task=TRANSLATION,
+    languages=[LATVIAN],
+    source_language=LATVIAN,
+    target_language=ENGLISH,
     unofficial=True,
 )

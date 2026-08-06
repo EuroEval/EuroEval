@@ -1,7 +1,7 @@
 """All Polish dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import POLISH
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, POLISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -13,6 +13,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
@@ -106,6 +107,27 @@ RAGTRUTH_PL_CONFIG = DatasetConfig(
 )
 
 
+WMT24PP_EN_PL_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-pl",
+    pretty_name="WMT24++-en-pl",
+    source="EuroEval/wmt24pp-en-pl",
+    task=TRANSLATION,
+    languages=[POLISH],
+    source_language=ENGLISH,
+    target_language=POLISH,
+)
+
+WMT24PP_PL_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-pl-en",
+    pretty_name="WMT24++-pl-en",
+    source="EuroEval/wmt24pp-pl-en",
+    task=TRANSLATION,
+    languages=[POLISH],
+    source_language=POLISH,
+    target_language=ENGLISH,
+)
+
+
 # Unofficial datasets ###
 
 MULTI_WIKI_QA_PL_CONFIG = DatasetConfig(
@@ -141,5 +163,28 @@ EU_MMLU_PL_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-pl",
     task=KNOW,
     languages=[POLISH],
+    unofficial=True,
+)
+
+
+FLORES_EN_PL_CONFIG = TranslationDatasetConfig(
+    name="flores-en-pl",
+    pretty_name="FLORES-en-pl",
+    source="EuroEval/flores-en-pl",
+    task=TRANSLATION,
+    languages=[POLISH],
+    source_language=ENGLISH,
+    target_language=POLISH,
+    unofficial=True,
+)
+
+FLORES_PL_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-pl-en",
+    pretty_name="FLORES-pl-en",
+    source="EuroEval/flores-pl-en",
+    task=TRANSLATION,
+    languages=[POLISH],
+    source_language=POLISH,
+    target_language=ENGLISH,
     unofficial=True,
 )

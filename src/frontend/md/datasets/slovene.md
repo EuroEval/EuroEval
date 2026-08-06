@@ -789,3 +789,279 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-sl
 ```
+
+## Translation
+
+### WMT24++ English to Slovene
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Slovene translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Slovene translation pair from the dataset, where the source text is in
+English and the target text is in Slovene.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hello, how are you?",
+  "target_text": "Živjo, kako si?"
+}
+```
+
+```json
+{
+  "text": "The brown fox jumps over the lazy dog.",
+  "target_text": "Rjava lisica skače čez lenega psa."
+}
+```
+
+```json
+{
+  "text": "Ljubljana is the capital of Slovenia.",
+  "target_text": "Ljubljana je glavno mesto Slovenije."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Slovene translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Slovene translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Slovene.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-en-sl
+```
+
+### WMT24++ Slovene to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Slovene translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Slovene translation pair from the dataset, where the source text is in
+Slovene and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Živjo, kako si?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Rjava lisica skače čez lenega psa.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Ljubljana je glavno mesto Slovenije.",
+  "target_text": "Ljubljana is the capital of Slovenia."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Spodaj so besedila v slovenščini z ustreznimi prevodi v English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Besedilo v slovenščini: {text}
+  Prevod v English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Besedilo v slovenščini: {text}
+
+  Prevedite zgornje besedilo v English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-sl-en
+```
+
+### Unofficial: FLORES+ English to Slovene
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Slovene direction, where the source text is in English and the
+target text is in Slovene.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Ker so nekateri pueblosi tako odročni, omembe vrednega nočnega življenja ne boste našli drugje kot v Albuquerqueju ali Santa Feju."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Denimo, otroci, ki se poistovetijo z rasno manjšino, ki se stereotipno v šoli ne odreže najbolje, so v šoli pogosto manj uspešni, potem ko slišijo za stereotip, povezan z njihovo raso."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "Gre za utrjen sneg z razpokami, ki so zapolnjene in označene z zastavami. Cesta je prevozna samo s posebnimi traktorji, ki za sabo vlečejo gorivo in zaloge."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Slovene translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Slovene translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Slovene.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-sl
+```
+
+### Unofficial: FLORES+ Slovene to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Slovene-to-English direction, where the source text is in Slovene and the
+target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Ker so nekateri pueblosi tako odročni, omembe vrednega nočnega življenja ne boste našli drugje kot v Albuquerqueju ali Santa Feju.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Denimo, otroci, ki se poistovetijo z rasno manjšino, ki se stereotipno v šoli ne odreže najbolje, so v šoli pogosto manj uspešni, potem ko slišijo za stereotip, povezan z njihovo raso.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "Gre za utrjen sneg z razpokami, ki so zapolnjene in označene z zastavami. Cesta je prevozna samo s posebnimi traktorji, ki za sabo vlečejo gorivo in zaloge.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Spodaj so besedila v slovenščini z ustreznimi prevodi v English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Besedilo v slovenščini: {text}
+  Prevod v English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Besedilo v slovenščini: {text}
+
+  Prevedite zgornje besedilo v English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-sl-en
+```

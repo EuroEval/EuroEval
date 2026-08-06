@@ -1,7 +1,7 @@
 """All Portuguese dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import EUROPEAN_PORTUGUESE, PORTUGUESE
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, EUROPEAN_PORTUGUESE, PORTUGUESE
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -14,6 +14,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
@@ -108,6 +109,27 @@ WINOGRANDE_PT_CONFIG = DatasetConfig(
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     labels=["a", "b"],
 )
+
+WMT24PP_EN_PT_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-pt",
+    pretty_name="WMT24++-en-pt",
+    source="EuroEval/wmt24pp-en-pt",
+    task=TRANSLATION,
+    languages=[PORTUGUESE],
+    source_language=ENGLISH,
+    target_language=PORTUGUESE,
+)
+
+WMT24PP_PT_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-pt-en",
+    pretty_name="WMT24++-pt-en",
+    source="EuroEval/wmt24pp-pt-en",
+    task=TRANSLATION,
+    languages=[PORTUGUESE],
+    source_language=PORTUGUESE,
+    target_language=ENGLISH,
+)
+
 
 # Unofficial datasets ###
 
@@ -219,5 +241,28 @@ RAGTRUTH_PT_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[PORTUGUESE],
     train_split=None,
+    unofficial=True,
+)
+
+
+FLORES_EN_PT_CONFIG = TranslationDatasetConfig(
+    name="flores-en-pt",
+    pretty_name="FLORES-en-pt",
+    source="EuroEval/flores-en-pt",
+    task=TRANSLATION,
+    languages=[PORTUGUESE],
+    source_language=ENGLISH,
+    target_language=PORTUGUESE,
+    unofficial=True,
+)
+
+FLORES_PT_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-pt-en",
+    pretty_name="FLORES-pt-en",
+    source="EuroEval/flores-pt-en",
+    task=TRANSLATION,
+    languages=[PORTUGUESE],
+    source_language=PORTUGUESE,
+    target_language=ENGLISH,
     unofficial=True,
 )

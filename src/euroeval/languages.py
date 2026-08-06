@@ -21,12 +21,18 @@ class Language:
             The word 'and' in the language.
         or_separator (optional):
             The word 'or' in the language.
+        multiple_scripts (optional):
+            Whether the language is written in more than one script (e.g., Serbian,
+            which is written in both Cyrillic and Latin). This is used by the
+            transliteration engine to normalise text to a single canonical script
+            before character-based metrics are computed. Defaults to False.
     """
 
     code: str
     name: str
     _and_separator: str | None = field(repr=False, default=None)
     _or_separator: str | None = field(repr=False, default=None)
+    multiple_scripts: bool = False
 
     def __hash__(self) -> int:
         """Return a hash of the language."""
@@ -177,7 +183,11 @@ BISLAMA: Language = Language(
     code="bi", name="Bislama", _and_separator="mo", _or_separator="o"
 )
 BOSNIAN: Language = Language(
-    code="bs", name="Bosnian", _and_separator="i", _or_separator="ili"
+    code="bs",
+    name="Bosnian",
+    _and_separator="i",
+    _or_separator="ili",
+    multiple_scripts=True,
 )
 BRETON: Language = Language(
     code="br", name="Breton", _and_separator="ha", _or_separator="pe"
@@ -533,7 +543,11 @@ SARDINIAN: Language = Language(
     code="sc", name="Sardinian", _and_separator="e", _or_separator="o"
 )
 SERBIAN: Language = Language(
-    code="sr", name="Serbian", _and_separator="и", _or_separator="или"
+    code="sr",
+    name="Serbian",
+    _and_separator="и",
+    _or_separator="или",
+    multiple_scripts=True,
 )
 SHONA: Language = Language(
     code="sn", name="Shona", _and_separator="uye", _or_separator="kana"

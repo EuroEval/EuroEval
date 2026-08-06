@@ -8,8 +8,28 @@ from typing import Generator
 import pytest
 
 from euroeval import dataset_configs as dc_module
-from euroeval.data_models import DatasetConfig
+from euroeval.data_models import DatasetConfig, TranslationDatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
+from euroeval.languages import BULGARIAN, ENGLISH, FAROESE
+from euroeval.tasks import TRANSLATION
+
+
+class TestDatasetConfigLanguageLists:
+    """Tests for DatasetConfig language lists."""
+
+    def test_sequence_of_languages_is_preserved(self) -> None:
+        """Test that a sequence of languages is preserved as a list."""
+        config = DatasetConfig(
+            name="test",
+            pretty_name="Test",
+            source="test",
+            task=TRANSLATION,
+            languages=[ENGLISH, BULGARIAN],
+        )
+        assert isinstance(config.languages, list)
+        assert len(config.languages) == 2
+        assert config.languages[0] == ENGLISH
+        assert config.languages[1] == BULGARIAN
 
 
 class TestGetAllDatasetConfigs:
@@ -41,10 +61,84 @@ class TestGetAllDatasetConfigs:
         assert isinstance(dataset_configs, dict)
 
 
+class TestTranslationDatasetConfig:
+    """Tests for the `TranslationDatasetConfig` subclass."""
+
+    def test_is_a_dataset_config(self) -> None:
+        """Test that a TranslationDatasetConfig is also a DatasetConfig."""
+        config = TranslationDatasetConfig(
+            name="wmt24pp-en-bg",
+            pretty_name="WMT24++-en-bg",
+            source="EuroEval/wmt24pp-en-bg",
+            task=TRANSLATION,
+            languages=[BULGARIAN],
+            source_language=ENGLISH,
+            target_language=BULGARIAN,
+        )
+        assert isinstance(config, DatasetConfig)
+        assert config.languages == [BULGARIAN]
+
+    def test_main_language_returns_forward_direction(self) -> None:
+        """Test that main_language returns the explicit forward direction."""
+        config = TranslationDatasetConfig(
+            name="wmt24pp-en-bg",
+            pretty_name="WMT24++-en-bg",
+            source="EuroEval/wmt24pp-en-bg",
+            task=TRANSLATION,
+            languages=[BULGARIAN],
+            source_language=ENGLISH,
+            target_language=BULGARIAN,
+        )
+        assert config.main_language == (ENGLISH, BULGARIAN)
+
+    def test_main_language_returns_reverse_direction(self) -> None:
+        """Test that main_language returns the explicit reverse direction."""
+        config = TranslationDatasetConfig(
+            name="wmt24pp-bg-en",
+            pretty_name="WMT24++-bg-en",
+            source="EuroEval/wmt24pp-bg-en",
+            task=TRANSLATION,
+            languages=[BULGARIAN],
+            source_language=BULGARIAN,
+            target_language=ENGLISH,
+        )
+        assert config.main_language == (BULGARIAN, ENGLISH)
+
+
+def test_flores_gap_language_configs_are_official() -> None:
+    """FLORES+ fills the WMT24++ gaps, so those configs are official."""
+    en_fo = dc_module.FLORES_EN_FO_CONFIG
+    assert en_fo.main_language == (ENGLISH, FAROESE)
+    assert en_fo.languages == [FAROESE]
+    assert en_fo.unofficial is False
+
+    fo_en = dc_module.FLORES_FO_EN_CONFIG
+    assert fo_en.main_language == (FAROESE, ENGLISH)
+    assert fo_en.unofficial is False
+
+
+def test_flores_wmt24pp_language_configs_are_unofficial() -> None:
+    """For languages WMT24++ already covers, FLORES+ is added as unofficial."""
+    en_de = dc_module.FLORES_EN_DE_CONFIG
+    assert en_de.main_language[0] == ENGLISH
+    assert en_de.unofficial is True
+    assert dc_module.FLORES_DE_EN_CONFIG.unofficial is True
+
+
+def test_include_sr_uses_cyrillic_prompt() -> None:
+    """INCLUDE-sr content is Cyrillic, so it overrides the Latin KNOW template."""
+    config = dc_module.INCLUDE_SR_CONFIG
+    assert _has_cyrillic(config.prompt_prefix)
+    assert _has_cyrillic(config.instruction_prompt)
+
+
+def _has_cyrillic(text: str) -> bool:
+    """Return whether the text contains any Cyrillic characters."""
+    return any("Ѐ" <= ch <= "ӿ" for ch in text)
+
+
 def test_no_duplicate_dataset_config_variable_names() -> None:
     """Test that there are no duplicate variable names for dataset configs."""
-    # Create a mapping from language name to list of variable names for the dataset
-    # configs of that language
     submodules = [
         value
         for value in dc_module.__dict__.values()
@@ -59,13 +153,11 @@ def test_no_duplicate_dataset_config_variable_names() -> None:
         for submodule in submodules
     }
 
-    # Count the number of occurences of each dataset config variable name
     dataset_variable_name_counts: dict[str, int] = defaultdict(int)
     for var_names in language_to_dataset_vars.values():
         for var_name in var_names:
             dataset_variable_name_counts[var_name] += 1
 
-    # Raise an error if any variable name occurs more than once
     duplicate_variable_names = [
         name for name, count in dataset_variable_name_counts.items() if count > 1
     ]
@@ -73,3 +165,59 @@ def test_no_duplicate_dataset_config_variable_names() -> None:
         f"Duplicate dataset config variable names found: {duplicate_variable_names}. "
         "Please ensure that each dataset config variable has a unique name."
     )
+
+
+def test_serbian_translation_prompt_is_cyrillic() -> None:
+    """The Serbian source translation prompt matches the Cyrillic source text."""
+    config = dc_module.WMT24PP_SR_EN_CONFIG
+    assert _has_cyrillic(config.prompt_prefix)
+    assert _has_cyrillic(config.instruction_prompt)
+
+
+def test_translation_not_included_in_english_leaderboard() -> None:
+    """Test that WMT24++ configs don't accidentally pollute English selection."""
+    all_configs = [
+        cfg for cfg in vars(dc_module).values() if isinstance(cfg, DatasetConfig)
+    ]
+    wmt24pp_configs = [
+        cfg
+        for cfg in all_configs
+        if cfg.name.startswith("wmt24pp-") and cfg.task == TRANSLATION
+    ]
+    for config in wmt24pp_configs:
+        assert ENGLISH not in config.languages
+        assert len(config.languages) == 1
+
+
+def test_wmt24pp_configs_for_both_directions() -> None:
+    """Test that WMT24++ configs exist for both directions."""
+    assert hasattr(dc_module, "WMT24PP_EN_BG_CONFIG")
+    en_bg_config = dc_module.WMT24PP_EN_BG_CONFIG
+    assert en_bg_config.main_language == (ENGLISH, BULGARIAN)
+    assert en_bg_config.languages == [BULGARIAN]
+
+    assert hasattr(dc_module, "WMT24PP_BG_EN_CONFIG")
+    bg_en_config = dc_module.WMT24PP_BG_EN_CONFIG
+    assert bg_en_config.main_language == (BULGARIAN, ENGLISH)
+    assert bg_en_config.languages == [BULGARIAN]
+
+    assert en_bg_config.unofficial is False
+    assert bg_en_config.unofficial is False
+
+
+def test_wmt24pp_configs_for_croatian() -> None:
+    """Test WMT24++ configs for Croatian."""
+    assert hasattr(dc_module, "WMT24PP_EN_HR_CONFIG")
+    assert hasattr(dc_module, "WMT24PP_HR_EN_CONFIG")
+
+
+def test_wmt24pp_configs_for_slovak() -> None:
+    """Test WMT24++ configs for Slovak."""
+    assert hasattr(dc_module, "WMT24PP_EN_SK_CONFIG")
+    assert hasattr(dc_module, "WMT24PP_SK_EN_CONFIG")
+
+
+def test_wmt24pp_configs_for_slovene() -> None:
+    """Test WMT24++ configs for Slovene."""
+    assert hasattr(dc_module, "WMT24PP_EN_SL_CONFIG")
+    assert hasattr(dc_module, "WMT24PP_SL_EN_CONFIG")
