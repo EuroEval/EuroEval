@@ -1349,3 +1349,141 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-el-en
 ```
+
+### Unofficial: FLORES+ English to Greek
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Greek direction, where the source text is in English and the
+target text is in Greek.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Καθώς πολλά από τα πουέμπλος είναι αρκετά απομακρυσμένα, δεν θα μπορέσετε να συναντήσετε ιδιαίτερη νυχτερινή ζωή αν δεν ταξιδέψετε στο Αλμπουκέρκι ή την Σάντα Φε."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Για παράδειγμα, τα παιδιά που ταυτίζονται με μια φυλετική μειονότητα που υπόκειται σε στερεοτυπικές αντιλήψεις όπως το ότι δεν διαθέτουν καλές επιδόσεις στο σχολείο, τείνουν να μην έχουν καλές επιδόσεις πράγματι από τη στιγμή που μάθουν για το στερεότυπο που σχετίζεται με τη φυλή τους."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "Είναι συμπυκνωμένο χιόνι γεμάτο σχισμές και σημαδεμένο με σημαίες. Μπορεί κάποιος να ταξιδέψει σε αυτό μόνο με ειδικούς ελκυστήρες, σέρνοντας έλκηθρα φορτωμένα με καύσιμα και προμήθειες."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Greek translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Greek translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Greek.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-el
+```
+
+### Unofficial: FLORES+ Greek to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Greek-to-English direction, where the source text is in Greek and the target
+text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Καθώς πολλά από τα πουέμπλος είναι αρκετά απομακρυσμένα, δεν θα μπορέσετε να συναντήσετε ιδιαίτερη νυχτερινή ζωή αν δεν ταξιδέψετε στο Αλμπουκέρκι ή την Σάντα Φε.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Για παράδειγμα, τα παιδιά που ταυτίζονται με μια φυλετική μειονότητα που υπόκειται σε στερεοτυπικές αντιλήψεις όπως το ότι δεν διαθέτουν καλές επιδόσεις στο σχολείο, τείνουν να μην έχουν καλές επιδόσεις πράγματι από τη στιγμή που μάθουν για το στερεότυπο που σχετίζεται με τη φυλή τους.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "Είναι συμπυκνωμένο χιόνι γεμάτο σχισμές και σημαδεμένο με σημαίες. Μπορεί κάποιος να ταξιδέψει σε αυτό μόνο με ειδικούς ελκυστήρες, σέρνοντας έλκηθρα φορτωμένα με καύσιμα και προμήθειες.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Ακολουθούν ελληνικά κείμενα με αντίστοιχες μεταφράσεις στα English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Ελληνικό κείμενο: {text}
+  Μετάφραση στα English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Ελληνικό κείμενο: {text}
+
+  Μεταφράστε το παραπάνω κείμενο στα English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-el-en
+```

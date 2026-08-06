@@ -1980,3 +1980,141 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-sv-en
 ```
+
+### Unofficial: FLORES+ English to Swedish
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Swedish direction, where the source text is in English and the
+target text is in Swedish.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Många byar ligger långt bort, så det finns inget riktigt nattliv om man inte åker till Albuquerque eller Santa Fe."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Till exempel, barn som identifierar sig med en rasminoritet där stereotypen är att de inte gör bra ifrån sig i skolan tenderar att inte prestera bra i skolan när de väl får reda på stereotypen som är kopplad till deras ras."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "Det är komprimerad snö med sprickor, fyllda och markerade med flaggor. Man kan endast färdas där med specialtraktorer, släp med bränslen och förnödenheter."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Swedish translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Swedish translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Swedish.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-sv
+```
+
+### Unofficial: FLORES+ Swedish to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Swedish-to-English direction, where the source text is in Swedish and the
+target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Många byar ligger långt bort, så det finns inget riktigt nattliv om man inte åker till Albuquerque eller Santa Fe.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Till exempel, barn som identifierar sig med en rasminoritet där stereotypen är att de inte gör bra ifrån sig i skolan tenderar att inte prestera bra i skolan när de väl får reda på stereotypen som är kopplad till deras ras.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "Det är komprimerad snö med sprickor, fyllda och markerade med flaggor. Man kan endast färdas där med specialtraktorer, släp med bränslen och förnödenheter.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Följande är svenska texter med motsvarande översättningar till English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Svensk text: {text}
+  Översättning till English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Svensk text: {text}
+
+  Översätt texten ovan till English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-sv-en
+```

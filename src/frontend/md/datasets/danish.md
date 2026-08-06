@@ -2395,3 +2395,141 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-da-en
 ```
+
+### Unofficial: FLORES+ English to Danish
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Danish direction, where the source text is in English and the
+target text is in Danish.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Fordi mange af puebloerne er så afsides, vil du ikke finde noget betydeligt natteliv medmindre du rejser til Albuquerque eller Santa Fe."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "For eksempel vil børn, der identificeres med en raceminoritet, der stereotypt opfattes som klarende sig dårligt i skolen, klarer sig dårligt i skolen, når de lærer om den stereotyp, der er associeret med deres race."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "Det er komprimeret sne med sprækker, der er fyldt og markeret med flag. Det eneste, der kan bevæge sig på den, er specialiserede traktorer, der trækker slæder med brændstof og forsyninger."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Danish translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Danish translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Danish.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-da
+```
+
+### Unofficial: FLORES+ Danish to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Danish-to-English direction, where the source text is in Danish and the
+target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Fordi mange af puebloerne er så afsides, vil du ikke finde noget betydeligt natteliv medmindre du rejser til Albuquerque eller Santa Fe.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "For eksempel vil børn, der identificeres med en raceminoritet, der stereotypt opfattes som klarende sig dårligt i skolen, klarer sig dårligt i skolen, når de lærer om den stereotyp, der er associeret med deres race.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "Det er komprimeret sne med sprækker, der er fyldt og markeret med flag. Det eneste, der kan bevæge sig på den, er specialiserede traktorer, der trækker slæder med brændstof og forsyninger.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Nedenfor er danske tekster med tilhørende English oversættelser.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Dansk tekst: {text}
+  English oversættelse: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Dansk tekst: {text}
+
+  Oversæt den ovenstående tekst til English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-da-en
+```

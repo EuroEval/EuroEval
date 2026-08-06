@@ -1902,3 +1902,141 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-de-en
 ```
+
+### Unofficial: FLORES+ English to German
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-German direction, where the source text is in English and the
+target text is in German.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Wenn man bedenkt, wie abgelegen viele der Pueblos sind, werden Sie kein nennenswertes Nachtleben finden, wenn Sie nicht nach Albuquerque oder Santa Fe reisen."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Zum Beispiel neigen Kinder, die sich mit einer ethnischen Minderheit identifizieren, von der man sagt, dass sie in der Schule nicht gut abschneidet, dazu, in der Schule schlecht zu sein, sobald sie Kenntnis von dem mit ihrer Ethnie verbundenen Stereotyp erhalten."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "Der Straßenbelag ist planierter Schnee. Spalten sind mit Schnee gefüllt und mit Flaggen markiert. Die Straße kann nur von speziellen Zugmaschinen befahren werden, die Schlitten mit Treibstoff und Vorräten hinter sich herziehen."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding German translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  German translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into German.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-de
+```
+
+### Unofficial: FLORES+ German to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the German-to-English direction, where the source text is in German and the
+target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Wenn man bedenkt, wie abgelegen viele der Pueblos sind, werden Sie kein nennenswertes Nachtleben finden, wenn Sie nicht nach Albuquerque oder Santa Fe reisen.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Zum Beispiel neigen Kinder, die sich mit einer ethnischen Minderheit identifizieren, von der man sagt, dass sie in der Schule nicht gut abschneidet, dazu, in der Schule schlecht zu sein, sobald sie Kenntnis von dem mit ihrer Ethnie verbundenen Stereotyp erhalten.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "Der Straßenbelag ist planierter Schnee. Spalten sind mit Schnee gefüllt und mit Flaggen markiert. Die Straße kann nur von speziellen Zugmaschinen befahren werden, die Schlitten mit Treibstoff und Vorräten hinter sich herziehen.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Im Folgenden finden Sie deutsche Texte mit entsprechenden Übersetzungen ins English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Deutscher Text: {text}
+  Übersetzung ins English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Deutscher Text: {text}
+
+  Übersetzen Sie den oben stehenden Text ins English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-de-en
+```

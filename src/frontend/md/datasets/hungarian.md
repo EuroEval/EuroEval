@@ -1096,3 +1096,141 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset wmt24pp-hu-en
 ```
+
+### Unofficial: FLORES+ English to Hungarian
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Hungarian direction, where the source text is in English and the
+target text is in Hungarian.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Tekintettel arra, hogy sok puebló távol van, nem fog pezsgő éjszakai életet találni anélkül, hogy Albuquerque-be vagy Santa Fe-be nem utazna."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Például azok a gyerekek, akik azonosulnak egy faji kisebbséggel, amelyhez olyan sztereotípiák társulnak, miszerint nem teljesítenek jól az iskolában, ha megismerik a kisebbségükhöz kapcsolódó sztereotípiát, hajlamosak nem jól teljesíteni az iskolában."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "Ez tömör hó gleccserszakadékokkal, melyeket zászlókkal jelöltek meg. Csak speciális traktorokkal lehet rajta közlekedni, amelyet üzemanyaggal és ellátmánnyal megrakott szánkókat vontatnak."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Hungarian translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Hungarian translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Hungarian.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-hu
+```
+
+### Unofficial: FLORES+ Hungarian to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Hungarian-to-English direction, where the source text is in Hungarian and the
+target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Tekintettel arra, hogy sok puebló távol van, nem fog pezsgő éjszakai életet találni anélkül, hogy Albuquerque-be vagy Santa Fe-be nem utazna.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Például azok a gyerekek, akik azonosulnak egy faji kisebbséggel, amelyhez olyan sztereotípiák társulnak, miszerint nem teljesítenek jól az iskolában, ha megismerik a kisebbségükhöz kapcsolódó sztereotípiát, hajlamosak nem jól teljesíteni az iskolában.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "Ez tömör hó gleccserszakadékokkal, melyeket zászlókkal jelöltek meg. Csak speciális traktorokkal lehet rajta közlekedni, amelyet üzemanyaggal és ellátmánnyal megrakott szánkókat vontatnak.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Az alábbiak magyar szövegek a megfelelő English fordításokkal.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Magyar szöveg: {text}
+  English fordítás: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Magyar szöveg: {text}
+
+  Fordítsa le a fenti szöveget English nyelvre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-hu-en
+```
