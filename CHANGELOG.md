@@ -83,7 +83,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
     - `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
     - `goldenswag-pt` → `winogrande-pt`
   - Serbian: `mmlu-sr` → `include-sr`
-  - Spanish: `hellaswag-es` → `winogrande-es`
+  - Spanish:
+    - `hellaswag-es` → `winogrande-es`
+    - `mmlu-es` → `include-es`, `multiloko-es`
 
 ### Fixed
 
