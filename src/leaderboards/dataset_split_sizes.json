@@ -544,6 +544,11 @@
     "train": 15,
     "val": 64
   },
+  "EuroEval/include-es-mini": {
+    "test": 474,
+    "train": 20,
+    "val": 64
+  },
   "EuroEval/include-fi-mini": {
     "test": 467,
     "train": 24,
@@ -875,6 +880,10 @@
   },
   "EuroEval/multiloko-de-mini": {
     "test": 233,
+    "train": 16
+  },
+  "EuroEval/multiloko-es-mini": {
+    "test": 234,
     "train": 16
   },
   "EuroEval/multiloko-fr-mini": {
