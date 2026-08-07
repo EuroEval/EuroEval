@@ -847,7 +847,77 @@ euroeval --model <model-id> --dataset multiloko-sv
 
 ## Common-sense Reasoning
 
-### HellaSwag-sv
+### Winogrande-sv
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
+training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Sushin ruttnade på disken om den inte placerades i kylen, eftersom _ utsatte den för kontaminering. Vad syftar tomrummet _ på?\nSvarsalternativ:\na. Alternativ A: disken\nb. Alternativ B: kylen",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Elena skulle ta deras lager i butikens baksida för Megan att sälja varje gång eftersom _ var en affärsperson. Vad syftar tomrummet _ på?\nSvarsalternativ:\na. Alternativ A: Elena\nb. Alternativ B: Megan",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Att hantera nödsituationer var aldrig särskilt svårt för Kevin men det var det för Nelson eftersom _ inte kunde förbli lugn under press. Vad syftar tomrummet _ på?\nSvarsalternativ:\na. Alternativ A: Kevin\nb. Alternativ B: Nelson",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Följande är flervalsfrågor (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+
+  Besvara följande fråga med 'a' eller 'b', och inget annat.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset winogrande-sv
+```
+
+### Unofficial: HellaSwag-sv
 
 This dataset is a machine translated version of the English
 [HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
@@ -998,76 +1068,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset goldenswag-sv
-```
-
-### Unofficial: Winogrande-sv
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English
-[Winogrande dataset](https://doi.org/10.1145/3474381).
-
-The original full dataset consists of 47 / 1,210 samples for training and testing, and
-we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
-training, validation and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Sushin ruttnade på disken om den inte placerades i kylen, eftersom _ utsatte den för kontaminering. Vad syftar tomrummet _ på?\nSvarsalternativ:\na. Alternativ A: disken\nb. Alternativ B: kylen",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Elena skulle ta deras lager i butikens baksida för Megan att sälja varje gång eftersom _ var en affärsperson. Vad syftar tomrummet _ på?\nSvarsalternativ:\na. Alternativ A: Elena\nb. Alternativ B: Megan",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Att hantera nödsituationer var aldrig särskilt svårt för Kevin men det var det för Nelson eftersom _ inte kunde förbli lugn under press. Vad syftar tomrummet _ på?\nSvarsalternativ:\na. Alternativ A: Kevin\nb. Alternativ B: Nelson",
-  "label": "b"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Följande är flervalsfrågor (med svar).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Fråga: {text}
-  Svarsalternativ:
-  a. {option_a}
-  b. {option_b}
-  Svar: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Fråga: {text}
-  Svarsalternativ:
-  a. {option_a}
-  b. {option_b}
-
-  Besvara följande fråga med 'a' eller 'b', och inget annat.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset winogrande-sv
 ```
 
 ## Summarisation
