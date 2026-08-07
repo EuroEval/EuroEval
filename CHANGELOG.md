@@ -56,9 +56,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Swapped official dataset for Swedish:
-  `hellaswag-sv` → `winogrande-sv`.
-
 - Renamed the previous LLM-as-a-judge `open-ended-qa` task to `reference-free-qa`, and
   added a new reference-based `open-ended-qa` task using translation-style text-to-text
   metrics.
@@ -89,6 +86,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Spanish:
     - `hellaswag-es` → `winogrande-es`
     - `mmlu-es` → `include-es`, `multiloko-es`
+  - Swedish: `hellaswag-sv` → `winogrande-sv`
 
 ### Fixed
 
