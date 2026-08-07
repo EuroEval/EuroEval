@@ -69,7 +69,7 @@ watch(
   (s) => {
     // Reset the category on language switch, but keep the user's table/scatter
     // preference - switching language shouldn't kick you out of scatter view.
-    activeCategory.value = "generative";
+    activeCategory.value = "instruct";
     loadFor(s);
   },
   { immediate: true },
