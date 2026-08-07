@@ -437,9 +437,14 @@ def _generate_dataframe(
 
         data_dict: dict[str, list] = defaultdict(list)
         for model_id, results in model_results.items():
-            if category == "instruct" and metadata_dict.get(model_id, {}).get(
-                "generative_type"
-            ) not in ("instruction_tuned", "reasoning"):
+            generative_type = metadata_dict.get(model_id, {}).get("generative_type")
+            if category == "instruct" and generative_type not in (
+                "instruction_tuned",
+                "reasoning",
+            ):
+                continue
+            # Skip encoders (generative_type is None) for generative category
+            if category == "generative" and generative_type is None:
                 continue
             model_values = _build_model_row_data(
                 model_id=model_id,
