@@ -15,7 +15,7 @@ import pandas as pd
 from euroeval.constants import ORTHOGONAL_TASKS
 
 from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
-from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR
+from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR, VARIANT_SUFFIX_RE
 from .link_generation import generate_task_link
 from .records import drop_val_duplicates, get_dataset, plain_model_id
 from .result_loading import load_raw_results
@@ -438,11 +438,17 @@ def _generate_dataframe(
         data_dict: dict[str, list] = defaultdict(list)
         for model_id, results in model_results.items():
             generative_type = metadata_dict.get(model_id, {}).get("generative_type")
-            if category == "instruct" and generative_type not in (
-                "instruction_tuned",
-                "reasoning",
-            ):
-                continue
+            if category == "instruct":
+                # Only include zero-shot rows for Instruct category
+                suffix_match = VARIANT_SUFFIX_RE.search(model_id)
+                is_zero_shot_row = (
+                    suffix_match is not None and "zero-shot" in suffix_match.group()
+                )
+                if (
+                    generative_type not in ("instruction_tuned", "reasoning")
+                    or not is_zero_shot_row
+                ):
+                    continue
             # Skip encoders (generative_type is None) for generative category
             if category == "generative" and generative_type is None:
                 continue
