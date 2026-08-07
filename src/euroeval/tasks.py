@@ -213,6 +213,10 @@ LOGIC = Task(
     default_labels=[],
     uses_structured_output=True,
     default_allowed_model_types=[ModelType.GENERATIVE],
+    default_allowed_generative_types=[
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    ],
 )
 
 
