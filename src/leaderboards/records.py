@@ -94,7 +94,7 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     # two leaderboard rows. The anchor is re-applied at render time.
     model_id = strip_anchor(get_model_name(record))
 
-    few_shot = get_bool_field(record, "few_shot", True)
+    few_shot = is_few_shot_record(record)
     validation_split = get_bool_field(record, "validation_split", False)
 
     note = [] if few_shot else ["zero-shot"]
@@ -146,6 +146,33 @@ def get_model_name(record: dict) -> str:
     return record.get("model_info", {}).get("name", "unknown")
 
 
+def is_few_shot_record(record: dict) -> bool:
+    """Whether a record represents a few-shot evaluation.
+
+    An explicit ``null`` (task-forced zero-shot) counts as zero-shot here,
+    unlike a field that's simply absent, which falls back to the legacy
+    "assume few-shot" default.
+
+    Args:
+        record:
+            A result record in EEE format.
+
+    Returns:
+        True if the record is a few-shot evaluation, False if zero-shot.
+    """
+    additional = record.get("eval_library", {}).get("additional_details", {})
+    if "few_shot" not in additional:
+        return True
+    val = additional["few_shot"]
+    if val is None:
+        return False
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, str):
+        return val.lower() == "true"
+    return True
+
+
 def strip_anchor(model_id: str) -> str:
     """Strip any surrounding HTML anchor tag from a model id.
 
@@ -195,7 +222,7 @@ def get_record_hash(record: dict) -> str:
     if dataset is None:
         raise ValueError(f"No dataset found in record: {record}")
     validation_split = get_bool_field(record, "validation_split", False)
-    few_shot = get_bool_field(record, "few_shot", True)
+    few_shot = is_few_shot_record(record)
     return f"{model}{dataset}{int(validation_split)}{int(few_shot)}"
 
 
