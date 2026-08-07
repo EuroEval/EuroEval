@@ -18,6 +18,10 @@
     "Micro-average F1-score without MISC tags",
     "Micro-average F1-score"
   ],
+  "natural-language-inference": [
+    "Matthew's Correlation Coefficient",
+    "Macro-average F1-score"
+  ],
   "reading-comprehension": [
     "F1-score",
     "Exact Match"
