@@ -192,6 +192,7 @@ LEADERBOARD_TASKS: list[str] = [
     "european-values",
     "instruction-following",
     "tool-calling",
+    "logical-reasoning",
     "multiple-choice-stereotype-bias",
 ]
 
