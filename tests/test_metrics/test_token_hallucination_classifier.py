@@ -177,8 +177,7 @@ def test_detector_uses_correct_model_id(
         )
 
     expected_model_id = (
-        "alexandrainst/"
-        "mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-da"
+        "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-da"
     )
     mock_cls.assert_called_once_with(
         method="transformer",

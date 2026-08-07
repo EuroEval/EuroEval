@@ -375,6 +375,18 @@ OPEN_ENDED_QA = Task(
     name="open-ended-qa",
     task_group=TaskGroup.TEXT_TO_TEXT,
     template_dict=EMPTY_TEMPLATES,
+    metrics=[m.chrf3pp_metric, m.chrf4pp_metric],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=256,
+    default_labels=[],
+    default_allowed_model_types=[ModelType.GENERATIVE],
+)
+
+
+REFERENCE_FREE_QA = Task(
+    name="reference-free-qa",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=EMPTY_TEMPLATES,
     metrics=[create_model_graded_fact_metric()],
     default_num_few_shot_examples=0,
     default_max_generated_tokens=2048,

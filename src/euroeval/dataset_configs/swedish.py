@@ -68,14 +68,6 @@ MMLU_SV_CONFIG = DatasetConfig(
     languages=[SWEDISH],
 )
 
-HELLASWAG_SV_CONFIG = DatasetConfig(
-    name="hellaswag-sv",
-    pretty_name="HellaSwag-sv",
-    source="EuroEval/hellaswag-sv-mini",
-    task=COMMON_SENSE,
-    languages=[SWEDISH],
-)
-
 MULTI_IFEVAL_SV_CONFIG = DatasetConfig(
     name="multi-ifeval-sv",
     pretty_name="MultiIFEval-sv",
@@ -116,7 +108,25 @@ RAGTRUTH_SV_CONFIG = DatasetConfig(
 )
 
 
+WINOGRANDE_SV_CONFIG = DatasetConfig(
+    name="winogrande-sv",
+    pretty_name="Winogrande-sv",
+    source="EuroEval/winogrande-sv",
+    task=COMMON_SENSE,
+    languages=[SWEDISH],
+    labels=["a", "b"],
+)
+
 # Unofficial datasets ###
+
+HELLASWAG_SV_CONFIG = DatasetConfig(
+    name="hellaswag-sv",
+    pretty_name="HellaSwag-sv",
+    source="EuroEval/hellaswag-sv-mini",
+    task=COMMON_SENSE,
+    languages=[SWEDISH],
+    unofficial=True,
+)
 
 IFEVAL_SV_CONFIG = DatasetConfig(
     name="ifeval-sv",
@@ -186,16 +196,6 @@ GOLDENSWAG_SV_CONFIG = DatasetConfig(
     source="EuroEval/goldenswag-sv-mini",
     task=COMMON_SENSE,
     languages=[SWEDISH],
-    unofficial=True,
-)
-
-WINOGRANDE_SV_CONFIG = DatasetConfig(
-    name="winogrande-sv",
-    pretty_name="Winogrande-sv",
-    source="EuroEval/winogrande-sv",
-    task=COMMON_SENSE,
-    languages=[SWEDISH],
-    labels=["a", "b"],
     unofficial=True,
 )
 

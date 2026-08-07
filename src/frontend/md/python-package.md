@@ -703,6 +703,9 @@ your own bespoke dataset:
 - `RC`, for reading comprehension datasets in the SQuAD format.
 - `SENT`, for sentiment classification datasets.
 - `SUMM`, for text summarisation datasets.
+- `OPEN_ENDED_QA`, for reference-based open-ended question answering datasets.
+- `REFERENCE_FREE_QA`, for reference-free question answering datasets evaluated with
+  an LLM-as-a-judge metric.
 - `KNOW`, for multiple-choice knowledge datasets (e.g., MMLU).
 - `MCRC`, for multiple-choice reading comprehension datasets (e.g., Belebele).
 - `COMMON_SENSE`, for multiple-choice common-sense reasoning datasets (e.g., HellaSwag).
@@ -992,8 +995,11 @@ MY_DATASET = DatasetConfig(
 **Required dataset columns**: `text` (string), `target_text` (string)
 
 The `text` column is the input to the model, and `target_text` is the expected output.
-This covers tasks such as summarization, translation, simplification, and free-form text
-generation.
+This covers tasks such as summarization, translation, simplification, reference-based
+open-ended question answering, and free-form text generation. Use `OPEN_ENDED_QA` when
+comparing generated answers against reference answers with text-overlap metrics, and
+`REFERENCE_FREE_QA` when answers should be judged without reference-overlap metrics using
+an LLM-as-a-judge scorer.
 
 **Available placeholders** in `PromptConfig`:
 

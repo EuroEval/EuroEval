@@ -59,14 +59,6 @@ PUBLICO_CONFIG = DatasetConfig(
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
 )
 
-GOLDENSWAG_PT_CONFIG = DatasetConfig(
-    name="goldenswag-pt",
-    pretty_name="GoldenSwag-pt",
-    source="EuroEval/goldenswag-pt-mini",
-    task=COMMON_SENSE,
-    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-)
-
 MULTI_IFEVAL_PT_CONFIG = DatasetConfig(
     name="multi-ifeval-pt",
     pretty_name="MultiIFEval-pt",
@@ -108,7 +100,25 @@ CULTURA_VIVA_PT_CONFIG = DatasetConfig(
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
 )
 
+WINOGRANDE_PT_CONFIG = DatasetConfig(
+    name="winogrande-pt",
+    pretty_name="Winogrande-pt",
+    source="EuroEval/winogrande-pt",
+    task=COMMON_SENSE,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    labels=["a", "b"],
+)
+
 # Unofficial datasets ###
+
+GOLDENSWAG_PT_CONFIG = DatasetConfig(
+    name="goldenswag-pt",
+    pretty_name="GoldenSwag-pt",
+    source="EuroEval/goldenswag-pt-mini",
+    task=COMMON_SENSE,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    unofficial=True,
+)
 
 MMLU_PT_CONFIG = DatasetConfig(
     name="mmlu-pt",
@@ -136,16 +146,6 @@ BOOLQ_PT_CONFIG = DatasetConfig(
     source="EuroEval/boolq-pt",
     task=MCRC,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-    unofficial=True,
-)
-
-WINOGRANDE_PT_CONFIG = DatasetConfig(
-    name="winogrande-pt",
-    pretty_name="Winogrande-pt",
-    source="EuroEval/winogrande-pt",
-    task=COMMON_SENSE,
-    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-    labels=["a", "b"],
     unofficial=True,
 )
 

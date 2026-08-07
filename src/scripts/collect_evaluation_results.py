@@ -768,7 +768,7 @@ def regenerate_leaderboards(force: bool = False) -> bool:
         True if the subprocess exited cleanly, otherwise False.
     """
     script_path = Path(__file__).resolve().parent / "generate_leaderboards.py"
-    cmd = [sys.executable, str(script_path)]
+    cmd = [sys.executable, str(script_path), "--upload"]
     if force:
         cmd.append("--force")
     logger.info(f"Running: {' '.join(cmd)}")

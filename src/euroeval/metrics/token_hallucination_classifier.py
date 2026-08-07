@@ -127,7 +127,7 @@ def _hallucination_model_id(language_code: str) -> str:
         The Hugging Face Hub repository ID of the hallucination detection model.
     """
     return (
-        "alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-"
+        "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-"
         f"ragtruth-{language_code}"
     )
 

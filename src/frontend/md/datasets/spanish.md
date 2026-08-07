@@ -540,7 +540,142 @@ euroeval --model <model-id> --dataset multi-wiki-qa-es
 
 ## Knowledge
 
-### MMLU-es
+### INCLUDE-es
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+  "text": "Hormona que actúa sobre el metabolismo de agua, sodio, potasio y cloruro de sodio:\nOpciones:\na. Aldosterona\nb. Cortisol\nc. Corticosterona\nd. Cortisona",
+  "label": "a",
+  "subject": "Medicine"
+}
+```
+
+```json
+{
+  "text": "Nervio que inerva a los músculos esternocleidomastoideo y trapecio:\nOpciones:\na. Hipogloso\nb. Espinal\nc. Vago\nd. Acústico",
+  "label": "b",
+  "subject": "Medicine"
+}
+```
+
+```json
+{
+  "text": "Si el precio del bien sustituto disminuye, la curva de la demanda se\nOpciones:\na. expandirá\nb. incrementará\nc. desplazará hacia la izquierda\nd. mantendrá constante",
+  "label": "c",
+  "subject": "Economics"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Las siguientes son preguntas de opción múltiple (con respuestas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pregunta: {text}
+  Respuesta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pregunta: {text}
+
+  Responda la pregunta anterior usando solo {labels_str}, y nada más.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-es
+```
+
+### MultiLoKo-es
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The
+Spanish questions are separately sourced and designed to target locally relevant topics
+for Spanish-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer
+as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
+per question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "¿En qué país fue patentado el \"birome\" antecesor del actual bolígrafo?\nOpciones:\na. Argentina\nb. España\nc. Estados Unidos\nd. México",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "¿En qué siglo viajó Isabel Zendal desde el puerto de La Coruña en La Real Expedición Filantrópica de la Vacuna, expedición que llevaría la vacuna de la viruela a América?\nOpciones:\na. Siglo XVIII\nb. Siglo XIX\nc. Siglo XVII\nd. Siglo XX",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "¿Quién es la madre del primer hijo de Camilo Echeverri?\nOpciones:\na. Greeicy Rendón\nb. Tini Stoessel\nc. Evaluna Montaner\nd. Karol G",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Las siguientes son preguntas de opción múltiple (con respuestas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pregunta: {text}
+  Respuesta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pregunta: {text}
+
+  Responda la pregunta anterior usando solo 'a', 'b', 'c' o 'd', y nada más.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-es
+```
+
+### Unofficial: MMLU-es
 
 This dataset is a machine translated version of the English
 [MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
@@ -618,141 +753,6 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-es
 ```
 
-### Unofficial: INCLUDE-es
-
-This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
-comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
-LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
-academic and professional exams, covering 57 topics including regional knowledge.
-
-The original dataset consists of a 'validation' split used as training data and a 'test'
-split. We use the 'validation' split as the training split, which has 25 samples. We
-sample 64 samples from the 'test' split for the validation split, and use the remaining
-512 samples for the test split. The sampling is done stratified by the subject column.
-
-Here are a few examples from the dataset:
-
-```json
-{
-  "text": "Hormona que actúa sobre el metabolismo de agua, sodio, potasio y cloruro de sodio:\nOpciones:\na. Aldosterona\nb. Cortisol\nc. Corticosterona\nd. Cortisona",
-  "label": "a",
-  "subject": "Medicine"
-}
-```
-
-```json
-{
-  "text": "Nervio que inerva a los músculos esternocleidomastoideo y trapecio:\nOpciones:\na. Hipogloso\nb. Espinal\nc. Vago\nd. Acústico",
-  "label": "b",
-  "subject": "Medicine"
-}
-```
-
-```json
-{
-  "text": "Si el precio del bien sustituto disminuye, la curva de la demanda se\nOpciones:\na. expandirá\nb. incrementará\nc. desplazará hacia la izquierda\nd. mantendrá constante",
-  "label": "c",
-  "subject": "Economics"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Las siguientes son preguntas de opción múltiple (con respuestas).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Pregunta: {text}
-  Respuesta: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Pregunta: {text}
-
-  Responda la pregunta anterior usando solo {labels_str}, y nada más.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset include-es
-```
-
-### Unofficial: MultiLoKo-es
-
-This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The
-Spanish questions are separately sourced and designed to target locally relevant topics
-for Spanish-speaking populations.
-
-We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
-questions with correct answers in the 'targets' column. We use the first target answer
-as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
-per question. We create a 16 / 234 split for training and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "¿En qué país fue patentado el \"birome\" antecesor del actual bolígrafo?\nOpciones:\na. Argentina\nb. España\nc. Estados Unidos\nd. México",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "¿En qué siglo viajó Isabel Zendal desde el puerto de La Coruña en La Real Expedición Filantrópica de la Vacuna, expedición que llevaría la vacuna de la viruela a América?\nOpciones:\na. Siglo XVIII\nb. Siglo XIX\nc. Siglo XVII\nd. Siglo XX",
-  "label": "b"
-}
-```
-
-```json
-{
-  "text": "¿Quién es la madre del primer hijo de Camilo Echeverri?\nOpciones:\na. Greeicy Rendón\nb. Tini Stoessel\nc. Evaluna Montaner\nd. Karol G",
-  "label": "c"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Las siguientes son preguntas de opción múltiple (con respuestas).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Pregunta: {text}
-  Respuesta: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Pregunta: {text}
-
-  Responda la pregunta anterior usando solo 'a', 'b', 'c' o 'd', y nada más.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset multiloko-es
-```
-
 ### Unofficial: MultiNRC-es
 
 This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2507.17476)
@@ -819,7 +819,77 @@ euroeval --model <model-id> --dataset multinrc-es
 
 ## Common-sense Reasoning
 
-### HellaSwag-es
+### Winogrande-es
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
+
+The original full dataset consists of 47 / 1,210 samples for training and testing, and
+we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
+training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Joseph tenía que tener las uñas bien cuidadas para el trabajo, pero no Kevin, porque _ trabajaba en un banco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Joseph\nb. Kevin",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Craig realmente ama limpiar todo el tiempo pero Derrick no porque _ es muy ordenado. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Craig\nb. Derrick",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Una vez en Polonia, Dennis disfrutó del viaje más que Jason porque _ tenía un conocimiento superficial del idioma polaco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Dennis\nb. Jason",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Las siguientes son preguntas de opción múltiple (con respuestas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pregunta: {text}
+  Opciones:
+  a. {option_a}
+  b. {option_b}
+  Respuesta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pregunta: {text}
+  Opciones:
+  a. {option_a}
+  b. {option_b}
+
+  Responda la pregunta anterior usando solo 'a' o 'b', y nada más.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset winogrande-es
+```
+
+### Unofficial: HellaSwag-es
 
 This dataset is a machine translated version of the English
 [HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
@@ -970,76 +1040,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset goldenswag-es
-```
-
-### Unofficial: Winogrande-es
-
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English
-[Winogrande dataset](https://doi.org/10.1145/3474381).
-
-The original full dataset consists of 47 / 1,210 samples for training and testing, and
-we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
-training, validation and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Joseph tenía que tener las uñas bien cuidadas para el trabajo, pero no Kevin, porque _ trabajaba en un banco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Joseph\nb. Kevin",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Craig realmente ama limpiar todo el tiempo pero Derrick no porque _ es muy ordenado. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Craig\nb. Derrick",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Una vez en Polonia, Dennis disfrutó del viaje más que Jason porque _ tenía un conocimiento superficial del idioma polaco. ¿A qué se refiere el espacio en blanco _?\nOpciones:\na. Dennis\nb. Jason",
-  "label": "b"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Las siguientes son preguntas de opción múltiple (con respuestas).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Pregunta: {text}
-  Opciones:
-  a. {option_a}
-  b. {option_b}
-  Respuesta: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Pregunta: {text}
-  Opciones:
-  a. {option_a}
-  b. {option_b}
-
-  Responda la pregunta anterior usando solo 'a' o 'b', y nada más.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset winogrande-es
 ```
 
 ## Summarisation
