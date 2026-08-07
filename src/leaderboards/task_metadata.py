@@ -19,7 +19,9 @@ from collections import OrderedDict
 from functools import cache
 
 from euroeval import dataset_configs as _ds_module
+from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
+from euroeval.enums import GenerativeType
 from euroeval.languages import get_all_languages
 from euroeval.tasks import get_all_tasks
 
@@ -38,20 +40,38 @@ def category_includes_task(category: str, task: str) -> bool:
     Returns:
         True if the task is scored within the category.
     """
-    return category == "generative" or task_category(task) == "nlu"
+    if category == "instruct":
+        return True
+    if category == "generative":
+        return task_category(task) != "instruct_exclusive"
+    return task_category(task) == "nlu"
 
 
 def task_category(task_name: str) -> str:
-    """Return ``"nlu"`` or ``"nlg"`` for ``task_name``.
+    """Return ``"nlu"``, ``"nlg"``, or ``"instruct_exclusive"`` for ``task_name``.
+
+    A task is "instruct_exclusive" when it's restricted to instruction-tuned/
+    reasoning models (`GenerativeType.BASE` isn't in its
+    `default_allowed_generative_types`), unless it's also in
+    `euroeval.constants.ORTHOGONAL_TASKS` — that flag means the task should
+    keep its existing bonus-column treatment on Generative/All-models (e.g.
+    european-values) rather than being excluded from them entirely.
 
     Args:
         task_name:
             The task slug to classify.
 
     Returns:
-        ``"nlu"`` if the task's group is an NLU group, else ``"nlg"``.
+        ``"nlu"`` if the task's group is an NLU group, ``"instruct_exclusive"``
+        if it's restricted to instruction-tuned/reasoning models and not
+        orthogonal, else ``"nlg"``.
     """
     task = get_all_tasks()[task_name]
+    if (
+        task_name not in ORTHOGONAL_TASKS
+        and GenerativeType.BASE not in task.default_allowed_generative_types
+    ):
+        return "instruct_exclusive"
     return "nlu" if task.task_group in NLU_TASK_GROUPS else "nlg"
 
 

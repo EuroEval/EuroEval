@@ -56,11 +56,11 @@ load_dotenv()
 @click.option(
     "--categories",
     "-c",
-    default=("generative", "all_models"),
+    default=("instruct", "generative", "all_models"),
     multiple=True,
     help=(
-        "Categories to generate leaderboards for. Defaults to 'generative' and "
-        "'all_models'."
+        "Categories to generate leaderboards for. Defaults to 'instruct', "
+        "'generative', and 'all_models'."
     ),
 )
 @click.option(
@@ -100,7 +100,7 @@ load_dotenv()
     ),
 )
 def main(
-    categories: tuple[t.Literal["generative", "all_models"], ...],
+    categories: tuple[t.Literal["instruct", "generative", "all_models"], ...],
     force: bool,
     skip_core_models_check: bool,
     skip_results_processing: bool,
@@ -110,8 +110,8 @@ def main(
 
     Args:
         categories (optional):
-            Categories to generate leaderboards for. Defaults to 'generative' and
-            'all_models'.
+            Categories to generate leaderboards for. Defaults to 'instruct',
+            'generative', and 'all_models'.
         force (optional):
             Whether to force the generation of the leaderboard, even if no updates
             are found. Defaults to False.

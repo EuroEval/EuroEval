@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import LeaderboardTable from "@/components/LeaderboardTable.vue";
 import LeaderboardScatter from "@/components/LeaderboardScatter.vue";
 import {
@@ -15,17 +15,17 @@ const props = defineProps<{
   title: string;
 }>();
 
-type TabId =
-  | "generative"
-  | "all_models"
-  | "generative-scatter"
-  | "all_models-scatter";
+type CategoryId = "generative" | "instruct" | "all_models";
+type ViewId = "table" | "scatter";
 
-const tab = ref<TabId>("generative");
+const activeCategory = ref<CategoryId>("generative");
+const activeView = ref<ViewId>("table");
 
 const generativeTable = ref<LBTable | null>(null);
+const instructTable = ref<LBTable | null>(null);
 const allModelsTable = ref<LBTable | null>(null);
 const generativeMetadata = ref<LeaderboardMetadata | null>(null);
+const instructMetadata = ref<LeaderboardMetadata | null>(null);
 const allModelsMetadata = ref<LeaderboardMetadata | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
@@ -34,21 +34,27 @@ const loadFor = async (stem: string) => {
   loading.value = true;
   error.value = null;
   generativeTable.value = null;
+  instructTable.value = null;
   allModelsTable.value = null;
   generativeMetadata.value = null;
+  instructMetadata.value = null;
   allModelsMetadata.value = null;
   try {
-    const [g, a, gMeta, aMeta] = await Promise.all([
+    const [g, c, a, gMeta, cMeta, aMeta] = await Promise.all([
       loadLeaderboard(`${stem}_generative`),
+      loadLeaderboard(`${stem}_instruct`),
       loadLeaderboard(`${stem}_all_models`),
       loadLeaderboardMetadata(`${stem}_generative`),
+      loadLeaderboardMetadata(`${stem}_instruct`),
       loadLeaderboardMetadata(`${stem}_all_models`),
     ]);
     generativeTable.value = g ?? null;
+    instructTable.value = c ?? null;
     allModelsTable.value = a ?? null;
     generativeMetadata.value = gMeta ?? null;
+    instructMetadata.value = cMeta ?? null;
     allModelsMetadata.value = aMeta ?? null;
-    if (!g && !a) {
+    if (!g && !c && !a) {
       error.value = `Leaderboard for ${stem.charAt(0).toUpperCase() + stem.slice(1)} is on the way!`
     }
   } catch (e) {
@@ -61,21 +67,23 @@ const loadFor = async (stem: string) => {
 watch(
   () => props.stem,
   (s) => {
-    tab.value = "generative";
+    // Reset the category on language switch, but keep the user's table/scatter
+    // preference - switching language shouldn't kick you out of scatter view.
+    activeCategory.value = "instruct";
     loadFor(s);
   },
   { immediate: true },
 );
 
 const activeTable = computed<LBTable | null>(() => {
-  if (tab.value === "generative" || tab.value === "generative-scatter")
-    return generativeTable.value;
+  if (activeCategory.value === "generative") return generativeTable.value;
+  if (activeCategory.value === "instruct") return instructTable.value;
   return allModelsTable.value;
 });
 
 const activeMetadata = computed<LeaderboardMetadata | null>(() => {
-  if (tab.value === "generative" || tab.value === "generative-scatter")
-    return generativeMetadata.value;
+  if (activeCategory.value === "generative") return generativeMetadata.value;
+  if (activeCategory.value === "instruct") return instructMetadata.value;
   return allModelsMetadata.value;
 });
 
@@ -123,20 +131,65 @@ const MULTILINGUAL_STEMS = new Set([
 ]);
 const isMultilingual = computed(() => MULTILINGUAL_STEMS.has(props.stem));
 
-const tabs: { id: TabId; label: string }[] = [
-  { id: "generative", label: "Generative Leaderboard" },
-  { id: "generative-scatter", label: "Generative Scatter Plot" },
-  { id: "all_models", label: "NLU Leaderboard" },
-  { id: "all_models-scatter", label: "NLU Scatter Plot" },
+const categoryTabs: { id: CategoryId; label: string }[] = [
+  { id: "instruct", label: "Chat" },
+  { id: "generative", label: "Generative" },
+  { id: "all_models", label: "All Models" },
 ];
 
-// Which CSV stem the current tab corresponds to, for the download button.
+const viewTabs: { id: ViewId; label: string }[] = [
+  { id: "table", label: "Leaderboard" },
+  { id: "scatter", label: "Scatter Plot" },
+];
+
+// Sliding-pill indicators for the two tab groups. Each indicator is a
+// separate absolutely-positioned element measured off the active button's
+// own layout, so it works regardless of label width - a plain CSS
+// transition can't do this on its own since the buttons aren't fixed-width.
+const categoryTabRefs = ref<HTMLButtonElement[]>([]);
+const viewTabRefs = ref<HTMLButtonElement[]>([]);
+const categoryIndicator = ref({ left: "0px", width: "0px" });
+const viewIndicator = ref({ left: "0px", width: "0px" });
+
+const measureIndicator = (
+  buttons: HTMLButtonElement[],
+  activeIndex: number,
+  target: { left: string; width: string },
+) => {
+  const el = buttons[activeIndex];
+  if (!el) return;
+  target.left = `${el.offsetLeft}px`;
+  target.width = `${el.offsetWidth}px`;
+};
+
+const syncIndicators = async () => {
+  await nextTick();
+  measureIndicator(
+    categoryTabRefs.value,
+    categoryTabs.findIndex((t) => t.id === activeCategory.value),
+    categoryIndicator.value,
+  );
+  measureIndicator(
+    viewTabRefs.value,
+    viewTabs.findIndex((t) => t.id === activeView.value),
+    viewIndicator.value,
+  );
+};
+
+watch([activeCategory, activeView], syncIndicators);
+onMounted(() => {
+  syncIndicators();
+  window.addEventListener("resize", syncIndicators);
+});
+onUnmounted(() => {
+  window.removeEventListener("resize", syncIndicators);
+});
+
+// Which CSV stem the current category corresponds to, for the download button.
 const activeStem = computed<string>(() => {
-  const suffix =
-    tab.value === "generative" || tab.value === "generative-scatter"
-      ? "generative"
-      : "all_models";
-  return `${props.stem}_${suffix}`;
+  if (activeCategory.value === "generative") return `${props.stem}_generative`;
+  if (activeCategory.value === "instruct") return `${props.stem}_instruct`;
+  return `${props.stem}_all_models`;
 });
 
 const downloading = ref(false);
@@ -213,18 +266,59 @@ const downloadCsv = async () => {
     </aside>
 
     <nav class="lb-tabs" role="tablist">
+      <span class="lb-tab-indicator" :style="categoryIndicator" />
       <button
-        v-for="t in tabs"
+        v-for="t in categoryTabs"
+        ref="categoryTabRefs"
         :key="t.id"
         type="button"
         role="tab"
-        :aria-selected="tab === t.id"
-        :class="['lb-tab', { active: tab === t.id }]"
-        @click="tab = t.id"
+        :aria-selected="activeCategory === t.id"
+        :class="['lb-tab', { active: activeCategory === t.id }]"
+        @click="activeCategory = t.id"
       >
         {{ t.label }}
       </button>
     </nav>
+
+    <div class="lb-view-toggle" role="tablist">
+      <span class="lb-view-indicator" :style="viewIndicator" />
+      <button
+        v-for="v in viewTabs"
+        ref="viewTabRefs"
+        :key="v.id"
+        type="button"
+        role="tab"
+        :aria-selected="activeView === v.id"
+        :class="['lb-view-option', { active: activeView === v.id }]"
+        @click="activeView = v.id"
+      >
+        <svg
+          v-if="v.id === 'table'"
+          class="lb-view-icon"
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+        >
+          <rect x="1" y="6" width="3" height="8" rx="0.5" fill="currentColor" />
+          <rect x="6.5" y="3" width="3" height="11" rx="0.5" fill="currentColor" />
+          <rect x="12" y="8" width="3" height="6" rx="0.5" fill="currentColor" />
+        </svg>
+        <svg v-else class="lb-view-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <path
+            d="M2 2v11a1 1 0 0 0 1 1h11"
+            stroke="currentColor"
+            stroke-width="1.3"
+            fill="none"
+            stroke-linecap="round"
+          />
+          <circle cx="5.5" cy="9" r="1.1" fill="currentColor" />
+          <circle cx="9" cy="5.5" r="1.1" fill="currentColor" />
+          <circle cx="12" cy="8" r="1.1" fill="currentColor" />
+          <circle cx="7" cy="11.5" r="1.1" fill="currentColor" />
+        </svg>
+        {{ v.label }}
+      </button>
+    </div>
 
     <div v-if="embedOpen" class="embed-modal" @click.self="embedOpen = false">
       <div class="embed-dialog" role="dialog" aria-labelledby="embed-title">
@@ -257,15 +351,16 @@ const downloadCsv = async () => {
 
     <div v-if="loading" class="lb-status">Loading leaderboard…</div>
     <div v-else-if="error" class="lb-status error">{{ error }}</div>
-    <template v-else>       <template v-if="tab === 'generative' || tab === 'all_models'">
-         <LeaderboardTable
-           v-if="activeTable"
-           :table="activeTable"
-           :heatmap-score-cols="isMultilingual"
-           :leaderboard-name="title"
-           :last-updated="lastUpdated"
-         >
-           <template #actions>
+    <template v-else>
+      <template v-if="activeView === 'table'">
+        <LeaderboardTable
+          v-if="activeTable"
+          :table="activeTable"
+          :heatmap-score-cols="isMultilingual"
+          :leaderboard-name="title"
+          :last-updated="lastUpdated"
+        >
+          <template #actions>
             <button
               class="lb-download"
               type="button"
@@ -377,24 +472,47 @@ const downloadCsv = async () => {
 }
 
 .lb-tabs {
-  display: flex;
-  gap: 0.5rem;
-  border-bottom: 1px solid var(--color-border);
+  position: relative;
+  display: inline-flex;
+  gap: 0.2rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.25rem;
   margin-top: 0.5rem;
+  width: fit-content;
+  max-width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
 }
 
+.lb-tab-indicator {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  left: 0;
+  border-radius: 999px;
+  background: var(--color-link);
+  filter: brightness(0.85);
+  transition:
+    left 0.25s ease,
+    width 0.25s ease;
+}
+
 .lb-tab {
+  position: relative;
+  z-index: 1;
   background: transparent;
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-radius: 999px;
   color: var(--color-muted);
-  padding: 0.6rem 0.75rem;
+  padding: 0.4rem 0.85rem;
   cursor: pointer;
   font: inherit;
   font-size: 0.85rem;
+  font-weight: 500;
   white-space: nowrap;
+  transition: color 0.2s ease;
 }
 
 .lb-tab:hover {
@@ -402,9 +520,59 @@ const downloadCsv = async () => {
 }
 
 .lb-tab.active {
-  color: var(--color-link);
-  border-bottom-color: var(--color-link);
-  font-weight: 500;
+  color: #fff;
+}
+
+/* Deliberately quieter than .lb-tabs above - the category is the primary
+   choice, this is just "how to look at it". Plain underline tabs, not
+   pills, so it doesn't compete visually with the category selector. */
+.lb-view-toggle {
+  position: relative;
+  display: inline-flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-top: 0.7rem;
+}
+
+.lb-view-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--color-muted);
+  transition:
+    left 0.25s ease,
+    width 0.25s ease;
+}
+
+.lb-view-option {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: 0;
+  color: var(--color-muted);
+  padding: 0.35rem 0.1rem 0.5rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  transition: color 0.2s ease;
+}
+
+.lb-view-icon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+.lb-view-option:hover {
+  color: var(--color-text);
+}
+
+.lb-view-option.active {
+  color: var(--color-text);
 }
 
 .lb-download {

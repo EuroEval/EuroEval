@@ -15,7 +15,7 @@ import pandas as pd
 from euroeval.constants import ORTHOGONAL_TASKS
 
 from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
-from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR
+from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR, VARIANT_SUFFIX_RE
 from .link_generation import generate_task_link
 from .records import drop_val_duplicates, get_dataset, plain_model_id
 from .result_loading import load_raw_results
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 def generate_leaderboard(
     leaderboard_name: str,
     language_names: list[str],
-    categories: list[t.Literal["generative", "all_models"]],
+    categories: list[t.Literal["instruct", "generative", "all_models"]],
     force: bool,
     language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
     | None = None,
@@ -379,7 +379,7 @@ def _create_leaderboard_headers(
 def _generate_dataframe(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     metadata_dict: dict[str, dict],
-    categories: list[t.Literal["generative", "all_models"]],
+    categories: list[t.Literal["instruct", "generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
     include_dataset_columns: bool,
     language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
@@ -437,6 +437,21 @@ def _generate_dataframe(
 
         data_dict: dict[str, list] = defaultdict(list)
         for model_id, results in model_results.items():
+            generative_type = metadata_dict.get(model_id, {}).get("generative_type")
+            if category == "instruct":
+                # Only include zero-shot rows for Instruct category
+                suffix_match = VARIANT_SUFFIX_RE.search(model_id)
+                is_zero_shot_row = (
+                    suffix_match is not None and "zero-shot" in suffix_match.group()
+                )
+                if (
+                    generative_type not in ("instruction_tuned", "reasoning")
+                    or not is_zero_shot_row
+                ):
+                    continue
+            # Skip encoders (generative_type is None) for generative category
+            if category == "generative" and generative_type is None:
+                continue
             model_values = _build_model_row_data(
                 model_id=model_id,
                 results=results,
@@ -567,7 +582,7 @@ def _apply_display_transforms(
 
 
 def _build_category_dataset_maps(
-    categories: list[t.Literal["generative", "all_models"]],
+    categories: list[t.Literal["instruct", "generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
 ) -> "tuple[dict[str, list[str]], dict[str, dict[str, str]]]":
     """Build category to datasets and orthogonal datasets mappings.

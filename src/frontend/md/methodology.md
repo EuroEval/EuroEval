@@ -307,11 +307,15 @@ display standard accuracy scores for consistency.
 The public leaderboards add a few rules on top of the per-model evaluation described
 above:
 
-- **Model categories.** Each language has a *generative* leaderboard, covering every
-  task, and an *all models* leaderboard restricted to the NLU tasks, so that encoder
-  models can be compared on an equal footing. Models also carry metadata — generative
-  type, open vs. closed weights, commercial-use permission, whether the model is a merge,
-  parameter count and context length — which can be filtered on the site.
+- **Model categories.** Each language has a *chat* leaderboard, restricted to
+  instruction-tuned and reasoning models and covering every task, including a handful
+  that only make sense for these kinds of models (e.g. instruction following, tool use,
+  bias evaluation); a *generative* leaderboard, covering the standard NLU and NLG tasks
+  and open to any generative model; and an *all models* leaderboard restricted to the
+  NLU tasks, so that encoder models can be compared on an equal footing. Models also
+  carry metadata - generative type, open vs. closed weights, commercial-use permission,
+  whether the model is a merge, parameter count and context length - which can be
+  filtered on the site.
 - **One result per model.** When several result records exist for the same model and
   dataset, EuroEval keeps the one produced by the newest framework version and drops
   validation-split results whenever a test-split result is available, so no model is
