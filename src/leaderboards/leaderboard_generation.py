@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 def generate_leaderboard(
     leaderboard_name: str,
     language_names: list[str],
-    categories: list[t.Literal["generative", "instruct", "all_models"]],
+    categories: list[t.Literal["instruct", "generative", "all_models"]],
     force: bool,
     language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
     | None = None,
@@ -379,7 +379,7 @@ def _create_leaderboard_headers(
 def _generate_dataframe(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     metadata_dict: dict[str, dict],
-    categories: list[t.Literal["generative", "instruct", "all_models"]],
+    categories: list[t.Literal["instruct", "generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
     include_dataset_columns: bool,
     language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
@@ -571,7 +571,7 @@ def _apply_display_transforms(
 
 
 def _build_category_dataset_maps(
-    categories: list[t.Literal["generative", "instruct", "all_models"]],
+    categories: list[t.Literal["instruct", "generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
 ) -> "tuple[dict[str, list[str]], dict[str, dict[str, str]]]":
     """Build category to datasets and orthogonal datasets mappings.
