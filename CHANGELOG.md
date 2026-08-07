@@ -86,6 +86,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Spanish:
     - `hellaswag-es` → `winogrande-es`
     - `mmlu-es` → `include-es`, `multiloko-es`
+  - Swedish: `hellaswag-sv` → `winogrande-sv`
 
 ### Fixed
 

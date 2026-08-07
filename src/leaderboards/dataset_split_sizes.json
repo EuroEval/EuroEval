@@ -649,6 +649,21 @@
     "train": 64,
     "val": 32
   },
+  "EuroEval/ltzglue-la-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/ltzglue-ner-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/ltzglue-sa-mini": {
+    "test": 926,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/mbbq-nl": {
     "test": 2044,
     "val": 255
@@ -824,6 +839,11 @@
     "val": 256
   },
   "EuroEval/multi-wiki-qa-hu-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-lb-mini": {
     "test": 2048,
     "train": 1024,
     "val": 256
@@ -1434,6 +1454,11 @@
     "val": 128
   },
   "EuroEval/winogrande-sr": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-sv": {
     "test": 1085,
     "train": 47,
     "val": 128
