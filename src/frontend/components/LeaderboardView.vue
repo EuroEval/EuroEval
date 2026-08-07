@@ -54,7 +54,7 @@ const loadFor = async (stem: string) => {
     generativeMetadata.value = gMeta ?? null;
     instructMetadata.value = cMeta ?? null;
     allModelsMetadata.value = aMeta ?? null;
-    if (!g && !a) {
+    if (!g && !c && !a) {
       error.value = `Leaderboard for ${stem.charAt(0).toUpperCase() + stem.slice(1)} is on the way!`
     }
   } catch (e) {
