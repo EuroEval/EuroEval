@@ -10,13 +10,17 @@ left menu to see the results.</span>
 
 ## 🏷️ Types of Leaderboards
 
-Each language has two leaderboards:
+Each language has three leaderboards:
 
+- **Chat Leaderboard**: This leaderboard shows the performance of instruction-tuned and
+  reasoning models, evaluated on _all_ [tasks](/tasks) - both the standard NLU and NLG
+  tasks and a handful of additional tasks that only make sense for these kinds of models
+  (e.g. instruction following, tool use, bias evaluation).
 - **Generative Leaderboard**: This leaderboard shows the performance of models that can
-  generate text. These models have been evaluated on _all_ [tasks](/tasks), both NLU and
-  NLG.
-- **NLU Leaderboard**: This leaderboard shows the performance of models that can
-  understand text, which includes both generative and non-generative models.
+  generate text, evaluated on the standard set of NLU and NLG [tasks](/tasks). Any
+  generative model can appear here, whether base, instruction-tuned, or reasoning.
+- **All Models Leaderboard**: This leaderboard shows the performance of models that
+  can understand text, which includes both generative and non-generative models.
 
 ## 📊 How to Read the Leaderboards
 
