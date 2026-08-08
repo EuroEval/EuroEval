@@ -758,3 +758,239 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-ca
 ```
+
+## Logical Reasoning
+
+### ZebraPuzzleEasy-ca
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Una fila de cases està numerada de l'1 al 2 d'esquerra a dreta.\n\nA cada casa hi viu una persona amb un atribut únic en cadascuna de les categories següents:\n\nNacionalitats: Islàndia i Regne Unit.\nProfessions: infermer i programador.\nBegudes: cafè i te.\n\nTambé sabem el següent:\n\n1. Totes les cases del carrer tenen jardins bonics.\n2. Qui beu cafè sap que totes les cases tenen finestres grans.\n3. Qui beu cafè no viu a la casa número 2.\n4. L'infermer no viu a la casa número 1.\n5. El britànic viu a la casa número 1.\n6. Els arengs són peixos.\n7. L'islandès viu al costat de qui estima la física.\n8. L'infermer sap que el sistema solar es mou a una velocitat d'uns 200 km/s al voltant del centre de la galàxia.",
+  "target_text": {
+    "object_1": [
+      "Regne Unit",
+      "programador",
+      "cafè"
+    ],
+    "object_2": [
+      "Islàndia",
+      "infermer",
+      "te"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Una fila de cases està numerada de l'1 al 2 d'esquerra a dreta.\n\nA cada casa hi viu una persona amb un atribut únic en cadascuna de les categories següents:\n\nProfessions: forner i ministre.\nGèneres literaris favorits: ciència-ficció i fantasia.\nFruites favorites: plàtan i taronja.\n\nTambé sabem el següent:\n\n1. Qui llegeix fantasia viu a la dreta de qui estima els plàtans.\n2. Qui llegeix ciència-ficció té una mascota vella per a la seva espècie.\n3. Qui juga a videojocs no viu a la casa número 2.\n4. Qui porta ulleres viu a la casa número 1.\n5. Qui té el cabell vermell viu a la casa número 2.\n6. El forner no viu a la casa número 2.\n7. Qui llegeix fantasia és molt amic de qui té una germana.",
+  "target_text": {
+    "object_1": [
+      "forner",
+      "ciència-ficció",
+      "plàtan"
+    ],
+    "object_2": [
+      "ministre",
+      "fantasia",
+      "taronja"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Una fila de cases està numerada de l'1 al 2 d'esquerra a dreta.\n\nA cada casa hi viu una persona amb un atribut únic en cadascuna de les categories següents:\n\nNacionalitats: Dinamarca i Islàndia.\nProfessions: dependent i infermer.\nAficions: futbol i ganxet.\n\nTambé sabem el següent:\n\n1. El dependent sap que hi ha molts cotxes al carrer.\n2. L'islandès viu a l'esquerra de l'infermer.\n3. L'infermer veu salts d'esquí.\n4. Qui té una germana viu a la casa número 2.\n5. L'islandès estima la física.\n6. El dependent viu a l'esquerra de qui juga al futbol.\n7. L'islandès sap que totes les cases tenen finestres grans.",
+  "target_text": {
+    "object_1": [
+      "Islàndia",
+      "dependent",
+      "ganxet"
+    ],
+    "object_2": [
+      "Dinamarca",
+      "infermer",
+      "futbol"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Aquí teniu un enigma:
+  <riddle>
+  {text}
+  </riddle>
+
+  Qui té quines característiques i viu en quina casa?
+
+  Si us plau, proporcioneu la vostra resposta com un JSON dictionary. Cada key ha de ser object_X on X és el número de la casa. Cada value ha de ser una llista de les característiques de les categories anteriors que pertanyen a la persona de la casa número X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-ca
+```
+
+### Unofficial: ZebraPuzzleHard-ca
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Una fila de cases està numerada de l'1 al 4 d'esquerra a dreta.\n\nA cada casa hi viu una persona amb un atribut únic en cadascuna de les categories següents:\n\nNacionalitats: Dinamarca, França, Letònia i Regne Unit.\nProfessions: dependent, ministre, policia i programador.\nBegudes: batut, llet, refresc i suc.\nGèneres literaris favorits: fantasia, novel·la negra, novel·la romàntica i poesia.\nAficions: escalada en bloc, handbol, jocs de taula i tennis.\n\nTambé sabem el següent:\n\n1. Qui toca la guitarra viu a la casa número 1.\n2. Els cargols són mol·luscs.\n3. Entre el britànic i qui beu suc hi ha 2 cases.\n4. Qui beu refresc sap que diverses cases tenen una porta verda.\n5. Qui llegeix novel·la romàntica viu a la dreta de qui juga a handbol.\n6. Qui llegeix fantasia viu entre el programador i qui juga a jocs de taula.\n7. El danès és ministre.\n8. Entre el letó i qui beu llet hi ha una casa.\n9. Qui llegeix poesia viu a la casa número 4.\n10. El francès viu al costat de qui juga a jocs de taula.\n11. El dependent beu batuts.\n12. Qui té un cactus té el cabell vermell.\n13. Qui beu refresc sap que els arengs són peixos.\n14. El dependent llegeix novel·la negra.\n15. El dependent viu immediatament a l'esquerra del policia.\n16. El programador practica escalada en bloc.",
+  "target_text": {
+    "object_1": [
+      "Regne Unit",
+      "dependent",
+      "batut",
+      "novel·la negra",
+      "jocs de taula"
+    ],
+    "object_2": [
+      "França",
+      "policia",
+      "llet",
+      "fantasia",
+      "handbol"
+    ],
+    "object_3": [
+      "Dinamarca",
+      "ministre",
+      "refresc",
+      "novel·la romàntica",
+      "tennis"
+    ],
+    "object_4": [
+      "Letònia",
+      "programador",
+      "suc",
+      "poesia",
+      "escalada en bloc"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Una fila de cases està numerada de l'1 al 4 d'esquerra a dreta.\n\nA cada casa hi viu una persona amb un atribut únic en cadascuna de les categories següents:\n\nNacionalitats: Dinamarca, Noruega, Països Baixos i Suècia.\nProfessions: forner, infermer, policia i programador.\nMascotes: cargol, gat, gos i periquito.\nBegudes: batut, cacau, cafè i refresc.\nFruites favorites: grosella negra, pera, plàtan i poma.\n\nTambé sabem el següent:\n\n1. El suec no viu entre el danès i el propietari del cargol, i són tres persones diferents.\n2. El policia viu entre el danès i qui beu cafè.\n3. Els cargols són mol·luscs.\n4. El suec viu a la casa número 4.\n5. El sistema solar es mou a una velocitat d'uns 200 km/s al voltant del centre de la galàxia.\n6. El propietari del periquito no viu al costat de qui beu cacau, i són persones diferents.\n7. Qui estima les peres viu entre qui beu cacau i qui estima les pomes.\n8. Qui beu batuts viu a la dreta de qui estima els plàtans.\n9. El forner viu entre el noruec i qui estima les groselles negres.\n10. El forner viu al costat de qui té un cobai.\n11. L'infermer viu immediatament a la dreta de qui estima les pomes.\n12. El forner és molt amic de qui ha visitat el Canadà.\n13. Hi ha molts cotxes al carrer.\n14. El suec té un gos.\n15. El forner viu immediatament a la dreta de qui beu cacau.\n16. El propietari del gat no beu batuts.",
+  "target_text": {
+    "object_1": [
+      "Noruega",
+      "programador",
+      "cargol",
+      "cacau",
+      "plàtan"
+    ],
+    "object_2": [
+      "Dinamarca",
+      "forner",
+      "gat",
+      "refresc",
+      "pera"
+    ],
+    "object_3": [
+      "Països Baixos",
+      "policia",
+      "periquito",
+      "batut",
+      "poma"
+    ],
+    "object_4": [
+      "Suècia",
+      "infermer",
+      "gos",
+      "cafè",
+      "grosella negra"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Una fila de cases està numerada de l'1 al 4 d'esquerra a dreta.\n\nA cada casa hi viu una persona amb un atribut únic en cadascuna de les categories següents:\n\nProfessions: dependent, forner, policia i professor.\nMascotes: gos, insecte pal, periquito i zebra.\nBegudes: batut, refresc, suc i te.\nGèneres literaris favorits: divulgació, fantasia, novel·la romàntica i terror.\nFruites favorites: maduixa, maduixa de bosc, plàtan i poma.\n\nTambé sabem el següent:\n\n1. Entre qui beu refresc i qui llegeix fantasia hi ha 2 cases.\n2. El propietari de l'insecte pal és molt amic de qui té una mascota vella per a la seva espècie.\n3. El propietari de la zebra viu al costat de qui porta ulleres.\n4. El propietari del periquito viu al costat de qui toca la guitarra.\n5. Qui llegeix fantasia viu immediatament a l'esquerra de qui estima les pomes.\n6. Qui beu batuts viu immediatament a l'esquerra de qui beu suc.\n7. Qui estima els plàtans no viu a la casa número 3.\n8. El forner llegeix terror.\n9. Qui beu suc no viu a la casa número 2.\n10. Qui estima les maduixes de bosc li agrada resoldre trencaclosques.\n11. El propietari del gos no beu suc.\n12. Entre el propietari del periquito i el propietari de la zebra hi ha 2 cases.\n13. El professor no viu entre el policia i qui llegeix fantasia, i són tres persones diferents.\n14. El propietari del periquito estima les maduixes.\n15. Qui beu refresc sap que totes les cases del carrer tenen jardins bonics.\n16. Entre qui llegeix fantasia i qui llegeix divulgació hi ha una casa.\n17. Entre qui beu refresc i qui llegeix terror hi ha una casa.\n18. El propietari del periquito viu a la casa número 4.",
+  "target_text": {
+    "object_1": [
+      "dependent",
+      "zebra",
+      "te",
+      "fantasia",
+      "plàtan"
+    ],
+    "object_2": [
+      "forner",
+      "gos",
+      "batut",
+      "terror",
+      "poma"
+    ],
+    "object_3": [
+      "policia",
+      "insecte pal",
+      "suc",
+      "divulgació",
+      "maduixa de bosc"
+    ],
+    "object_4": [
+      "professor",
+      "periquito",
+      "refresc",
+      "novel·la romàntica",
+      "maduixa"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Aquí teniu un enigma:
+  <riddle>
+  {text}
+  </riddle>
+
+  Qui té quines característiques i viu en quina casa?
+
+  Si us plau, proporcioneu la vostra resposta com un JSON dictionary. Cada key ha de ser object_X on X és el número de la casa. Cada value ha de ser una llista de les característiques de les categories anteriors que pertanyen a la persona de la casa número X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-ca
+```

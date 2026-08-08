@@ -811,3 +811,239 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-lv
 ```
+
+## Logical Reasoning
+
+### ZebraPuzzleEasy-lv
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Māju rinda ir numurēta no 1 līdz 2 no kreisās uz labo pusi.\n\nKatrā mājā dzīvo cilvēks ar unikālu īpašību katrā no šīm kategorijām:\n\nProfesijas: maiznieks un pārdevējs.\nMājdzīvnieki: kaķis un undulāts.\nDzērieni: kafija un kakao.\n\nMēs arī zinām sekojošo:\n\n1. Kakao dzērājs un jūrascūciņas saimnieks ir labi draugi.\n2. Kafijas dzērājs dzīvo mājā nr. 1.\n3. Videospēļu spēlētājs nēsā brilles.\n4. Fizikas mīļotājs spēlē ģitāru.\n5. Cilvēks, kurš bieži burā, nedzīvo mājā nr. 2.\n6. Maiznieks dzīvo mājā nr. 2.\n7. Kafija satur kofeīnu.\n8. Undulāta saimnieks dzīvo pa kreisi no kaķa saimnieka.",
+  "target_text": {
+    "object_1": [
+      "pārdevējs",
+      "undulāts",
+      "kafija"
+    ],
+    "object_2": [
+      "maiznieks",
+      "kaķis",
+      "kakao"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Māju rinda ir numurēta no 1 līdz 2 no kreisās uz labo pusi.\n\nKatrā mājā dzīvo cilvēks ar unikālu īpašību katrā no šīm kategorijām:\n\nProfesijas: policists un skolotājs.\nMājdzīvnieki: gliemezis un undulāts.\nDzērieni: kakao un piens.\n\nMēs arī zinām sekojošo:\n\n1. Cilvēks, kurš seko tramplīnlēkšanai, dzīvo mājā nr. 2.\n2. Visām ielas mājām ir skaisti dārzi.\n3. Skolotājs dzīvo mājā nr. 1.\n4. Ģitāras spēlētājs ir ar māsu.\n5. Skolotājs un cilvēks, kurš bieži burā, ir labi draugi.\n6. Undulāta saimnieks nedzīvo mājā nr. 2.\n7. Velosipēda īpašnieks mīl fiziku.\n8. Piena dzērājs nedzīvo mājā nr. 1.",
+  "target_text": {
+    "object_1": [
+      "skolotājs",
+      "undulāts",
+      "kakao"
+    ],
+    "object_2": [
+      "policists",
+      "gliemezis",
+      "piens"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Māju rinda ir numurēta no 1 līdz 2 no kreisās uz labo pusi.\n\nKatrā mājā dzīvo cilvēks ar unikālu īpašību katrā no šīm kategorijām:\n\nTautības: Dānija un Spānija.\nProfesijas: pārdevējs un skolotājs.\nHobiji: gleznošana un teniss.\n\nMēs arī zinām sekojošo:\n\n1. Siļķe ir zivs.\n2. Velosipēda īpašnieks nedzīvo mājā nr. 2.\n3. Dānis un cilvēks, kurš uzskata, ka mango ir otrais labākais auglis, ir labi draugi.\n4. Cilvēks, kurš bieži burā, nedzīvo mājā nr. 1.\n5. Briļļu nēsātājs dzīvo mājā nr. 2.\n6. Gleznošanas cienītājs dzīvo mājā nr. 2.\n7. Spānis dzīvo pa labi no skolotāja.",
+  "target_text": {
+    "object_1": [
+      "Dānija",
+      "skolotājs",
+      "teniss"
+    ],
+    "object_2": [
+      "Spānija",
+      "pārdevējs",
+      "gleznošana"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Lūk mīkla:
+  <riddle>
+  {text}
+  </riddle>
+
+  Kam ir kādas īpašības un kurš dzīvo kurā mājā?
+
+  Lūdzu, sniedziet savu atbildi kā JSON dictionary. Katrai key jābūt object_X, kur X ir mājas numurs. Katrai value jābūt sarakstam ar īpašībām no augstāk minētajām kategorijām, kas pieder personai mājas numurā X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-lv
+```
+
+### Unofficial: ZebraPuzzleHard-lv
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Māju rinda ir numurēta no 1 līdz 4 no kreisās uz labo pusi.\n\nKatrā mājā dzīvo cilvēks ar unikālu īpašību katrā no šīm kategorijām:\n\nProfesijas: maiznieks, ministrs, policists un skolotājs.\nMājdzīvnieki: gliemezis, suns, trusis un undulāts.\nLiterārie žanri: detektīvromāns, dzeja, fantāzija un zinātniskā fantastika.\nHobiji: boulderings, galda spēles, handbols un teniss.\nIecienītākie augļi: apelsīns, banāns, upene un zemene.\n\nMēs arī zinām sekojošo:\n\n1. Cilvēks ar māsu, ir sarkanmatains.\n2. Detektīvromānu lasītājs nedzīvo zinātniskās fantastikas lasītāja un zemenu cienītāja starpā, un tās ir trīs dažādas personas.\n3. Policists dzīvo blakus apelsīnu cienītājam.\n4. Fantāzijas lasītājs dzīvo pa labi no apelsīnu cienītāja.\n5. Tenisa spēlētājs dzīvo policista un banānu cienītāja starpā.\n6. Policists dzīvo pa labi no dzejas lasītāja.\n7. Cilvēks, kurš seko tramplīnlēkšanai, dzīvo mājā nr. 4.\n8. Policists dzīvo blakus tenisa spēlētājam.\n9. Undulāta saimnieks dzīvo blakus cilvēkam, kura mājdzīvnieks ir savai sugai vecs.\n10. Detektīvromānu lasītājs dzīvo blakus tenisa spēlētājam.\n11. Cilvēks, kurš uzskata, ka mango ir otrais labākais auglis, nedzīvo mājā nr. 1.\n12. Upeņu cienītājs dzīvo blakus apelsīnu cienītājam.\n13. Dzejas lasītāja un boulderinga entuziasta starpā ir viena māja.\n14. Truša saimnieka un suņa saimnieka starpā ir viena māja.\n15. Maiznieks dzīvo pa kreisi no apelsīnu cienītāja.\n16. Undulāta saimnieks dzīvo mājā nr. 2.\n17. Truša saimnieks nedzīvo blakus galda spēļu cienītājam un tās ir dažādas personas.\n18. Visām ielas mājām ir skaisti dārzi.\n19. Skolotājs nedzīvo blakus galda spēļu cienītājam un tās ir dažādas personas.",
+  "target_text": {
+    "object_1": [
+      "maiznieks",
+      "suns",
+      "detektīvromāns",
+      "galda spēles",
+      "banāns"
+    ],
+    "object_2": [
+      "ministrs",
+      "undulāts",
+      "dzeja",
+      "teniss",
+      "apelsīns"
+    ],
+    "object_3": [
+      "policists",
+      "trusis",
+      "zinātniskā fantastika",
+      "handbols",
+      "upene"
+    ],
+    "object_4": [
+      "skolotājs",
+      "gliemezis",
+      "fantāzija",
+      "boulderings",
+      "zemene"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Māju rinda ir numurēta no 1 līdz 4 no kreisās uz labo pusi.\n\nKatrā mājā dzīvo cilvēks ar unikālu īpašību katrā no šīm kategorijām:\n\nTautības: Fēru salas, Latvija, Norvēģija un Zviedrija.\nProfesijas: medmāsa, ministrs, programmētājs un skolotājs.\nDzērieni: kakao, piens, smūtijs un tēja.\nLiterārie žanri: dzeja, publicistika, zinātniskā fantastika un šausmu literatūra.\nHobiji: boulderings, galda spēles, handbols un teniss.\n\nMēs arī zinām sekojošo:\n\n1. Programmētājs dzīvo blakus smūtija dzērājam.\n2. Dzejas lasītājs dzīvo pa labi no šausmu literatūras lasītāja.\n3. Publicistikas lasītājs spēlē tenisu.\n4. Latvietis un cilvēks ar matemātikas maģistra grādu, ir labi draugi.\n5. Programmētājs un tetovēts cilvēks ir labi draugi.\n6. Latvietis nedzīvo blakus programmētājam un tās ir dažādas personas.\n7. Piena dzērājs lasa zinātnisko fantastiku.\n8. Zviedrs dzīvo pa labi no ministra.\n9. Gliemeži ir mīkstmiesi.\n10. Norvēģis dzīvo tieši pa kreisi no kakao dzērāja.\n11. Gurķis ir oga.\n12. Skolotājs nodarbojas ar bouldereringu.\n13. Cilvēks, kuram nav kaktusa, mīl fiziku.\n14. Smūtija dzērājs dzīvo tieši pa kreisi no tenisa spēlētāja.\n15. Ministra un galda spēļu cienītāja starpā ir 2 mājas.\n16. Kakao dzērājs nodarbojas ar bouldereringu.",
+  "target_text": {
+    "object_1": [
+      "Fēru salas",
+      "ministrs",
+      "smūtijs",
+      "šausmu literatūra",
+      "handbols"
+    ],
+    "object_2": [
+      "Norvēģija",
+      "programmētājs",
+      "tēja",
+      "publicistika",
+      "teniss"
+    ],
+    "object_3": [
+      "Zviedrija",
+      "skolotājs",
+      "kakao",
+      "dzeja",
+      "boulderings"
+    ],
+    "object_4": [
+      "Latvija",
+      "medmāsa",
+      "piens",
+      "zinātniskā fantastika",
+      "galda spēles"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Māju rinda ir numurēta no 1 līdz 4 no kreisās uz labo pusi.\n\nKatrā mājā dzīvo cilvēks ar unikālu īpašību katrā no šīm kategorijām:\n\nProfesijas: maiznieks, ministrs, policists un skolotājs.\nMājdzīvnieki: gliemezis, kaķis, undulāts un zebra.\nDzērieni: kafija, kakao, smūtijs un tēja.\nHobiji: futbols, galda spēles, handbols un teniss.\nIecienītākie augļi: apelsīns, meža zemene, upene un ābols.\n\nMēs arī zinām sekojošo:\n\n1. Policista un galda spēļu cienītāja starpā ir viena māja.\n2. Cilvēks ar māsu, nedzīvo mājā nr. 2.\n3. Ministrs ieguvis matemātikas maģistra grādu.\n4. Apelsīnu cienītājs dzīvo blakus ģitāras spēlētājam.\n5. Undulāta saimnieks dzīvo tieši pa labi no tenisa spēlētāja.\n6. Zebras saimnieks dzīvo pa kreisi no futbola spēlētāja.\n7. Kakao dzērājs dod priekšroku āboliem.\n8. Kafijas dzērājs nedzīvo blakus ābolu cienītājam un tās ir dažādas personas.\n9. Futbola spēlētājs dzīvo maiznieka un handbolista starpā.\n10. Skolotājs nedzīvo tējas dzērāja un upeņu cienītāja starpā, un tās ir trīs dažādas personas.\n11. Maiznieks nedzīvo gliemeža saimnieka un kaķa saimnieka starpā, un tās ir trīs dažādas personas.\n12. Handbolists zina, ka gliemeži ir mīkstmiesi.\n13. Kaķa saimnieks dzīvo tieši pa kreisi no galda spēļu cienītāja.\n14. Maiznieks dzīvo blakus meža zemenu cienītājam.\n15. Kafijas dzērāja un tenisa spēlētāja starpā ir 2 mājas.\n16. Skolotājs dzīvo blakus cilvēkam, kurš seko tramplīnlēkšanai.",
+  "target_text": {
+    "object_1": [
+      "maiznieks",
+      "zebra",
+      "kakao",
+      "teniss",
+      "ābols"
+    ],
+    "object_2": [
+      "policists",
+      "undulāts",
+      "tēja",
+      "futbols",
+      "meža zemene"
+    ],
+    "object_3": [
+      "ministrs",
+      "kaķis",
+      "smūtijs",
+      "handbols",
+      "upene"
+    ],
+    "object_4": [
+      "skolotājs",
+      "gliemezis",
+      "kafija",
+      "galda spēles",
+      "apelsīns"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Lūk mīkla:
+  <riddle>
+  {text}
+  </riddle>
+
+  Kam ir kādas īpašības un kurš dzīvo kurā mājā?
+
+  Lūdzu, sniedziet savu atbildi kā JSON dictionary. Katrai key jābūt object_X, kur X ir mājas numurs. Katrai value jābūt sarakstam ar īpašībām no augstāk minētajām kategorijām, kas pieder personai mājas numurā X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-lv
+```
