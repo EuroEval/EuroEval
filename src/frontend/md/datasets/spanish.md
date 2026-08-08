@@ -1483,3 +1483,239 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-es
 ```
+
+## Logical Reasoning
+
+### ZebraPuzzleEasy-es
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Una fila de casas está numerada del 1 al 2 de izquierda a derecha.\n\nEn cada casa vive una persona con un atributo único en cada una de las siguientes categorías:\n\nNacionalidades: Dinamarca y Italia.\nMascotas: caracol y perro.\nBebidas: café y té.\n\nTambién sabemos lo siguiente:\n\n1. El italiano vive en la casa número 1.\n2. El dueño del caracol sabe que todas las casas tienen ventanas grandes.\n3. El danés ama la física.\n4. Quien bebe té es muy amigo de quien lleva gafas.\n5. El italiano no bebe café.\n6. Quien bebe café es muy amigo de quien tiene un máster en matemáticas.\n7. El danés sabe que los arenques son peces.\n8. El dueño del caracol bebe café.",
+  "target_text": {
+    "object_1": [
+      "Italia",
+      "perro",
+      "té"
+    ],
+    "object_2": [
+      "Dinamarca",
+      "caracol",
+      "café"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Una fila de casas está numerada del 1 al 2 de izquierda a derecha.\n\nEn cada casa vive una persona con un atributo único en cada una de las siguientes categorías:\n\nProfesiones: dependiente y policía.\nBebidas: refresco y té.\nAficiones: fútbol y juegos de mesa.\n\nTambién sabemos lo siguiente:\n\n1. Quien bebe té es muy amigo de quien cree que la segunda mejor fruta es el mango.\n2. El dependiente sabe que todas las casas tienen ventanas grandes.\n3. Quien juega a juegos de mesa sabe que los caracoles son moluscos.\n4. El dependiente no vive en la casa número 2.\n5. Quien tiene un cactus vive en la casa número 1.\n6. Quien tiene una bicicleta no vive en la casa número 2.\n7. Quien bebe refresco vive a la izquierda de quien juega a juegos de mesa.",
+  "target_text": {
+    "object_1": [
+      "dependiente",
+      "refresco",
+      "fútbol"
+    ],
+    "object_2": [
+      "policía",
+      "té",
+      "juegos de mesa"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Una fila de casas está numerada del 1 al 2 de izquierda a derecha.\n\nEn cada casa vive una persona con un atributo único en cada una de las siguientes categorías:\n\nNacionalidades: Dinamarca y Noruega.\nMascotas: insecto palo y perro.\nGéneros literarios favoritos: fantasía y novela romántica.\n\nTambién sabemos lo siguiente:\n\n1. Quien tiene una hermana no vive en la casa número 1.\n2. Quien lee fantasía no vive en la casa número 2.\n3. Quien lee fantasía sabe que el pepino es una baya.\n4. Quien lee fantasía vive al lado de quien juega a videojuegos.\n5. El noruego vive al lado de quien tiene una bicicleta.\n6. El noruego tiene un perro.\n7. El noruego vive a la derecha del danés.\n8. Quien cree que la segunda mejor fruta es el mango vive en la casa número 2.",
+  "target_text": {
+    "object_1": [
+      "Dinamarca",
+      "insecto palo",
+      "fantasía"
+    ],
+    "object_2": [
+      "Noruega",
+      "perro",
+      "novela romántica"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Aquí hay un acertijo:
+  <riddle>
+  {text}
+  </riddle>
+
+  ¿Quién tiene qué atributos y vive en qué casa?
+
+  Por favor, proporciona tu respuesta como un JSON dictionary. Cada key debe ser object_X donde X es el número de la casa. Cada value debe ser una lista de los atributos de las categorías anteriores que pertenecen a la persona en la casa número X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-es
+```
+
+### Unofficial: ZebraPuzzleHard-es
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Una fila de casas está numerada del 1 al 4 de izquierda a derecha.\n\nEn cada casa vive una persona con un atributo único en cada una de las siguientes categorías:\n\nNacionalidades: Dinamarca, Letonia, Noruega y Países Bajos.\nBebidas: batido, café, leche y zumo.\nGéneros literarios favoritos: ciencia ficción, novela negra, poesía y terror.\nAficiones: balonmano, escalada en bloque, juegos de mesa y pintura.\nFrutas favoritas: fresa, grosella negra, manzana y plátano.\n\nTambién sabemos lo siguiente:\n\n1. Quien lee poesía vive inmediatamente a la izquierda de quien juega a juegos de mesa.\n2. Quien bebe batidos no vive entre quien juega al balonmano y quien ama las fresas, y son tres personas distintas.\n3. Entre quien lee novela negra y quien lee terror hay 2 casas.\n4. Quien lee poesía vive inmediatamente a la derecha de quien ama las manzanas.\n5. Entre quien bebe café y quien practica escalada en bloque hay 2 casas.\n6. Quien lee poesía vive entre el letón y quien ama las fresas.\n7. Quien lee terror vive al lado de quien tiene un cobaya.\n8. Quien ama las fresas no vive en la casa número 3.\n9. Quien lee poesía vive al lado de quien tiene el pelo rojo.\n10. Quien bebe zumo vive inmediatamente a la derecha de quien lee novela negra.\n11. Quien juega a videojuegos no tiene cactus.\n12. El sistema solar se mueve a una velocidad de unos 200 km/s alrededor del centro de la galaxia.\n13. Entre el danés y quien bebe batidos hay 2 casas.\n14. Quien lee novela negra vive inmediatamente a la izquierda de quien ama las grosellas negras.\n15. Quien juega a juegos de mesa lleva gafas.\n16. Entre el noruego y quien practica escalada en bloque hay una casa.",
+  "target_text": {
+    "object_1": [
+      "Letonia",
+      "batido",
+      "novela negra",
+      "escalada en bloque",
+      "manzana"
+    ],
+    "object_2": [
+      "Países Bajos",
+      "zumo",
+      "poesía",
+      "balonmano",
+      "grosella negra"
+    ],
+    "object_3": [
+      "Noruega",
+      "leche",
+      "ciencia ficción",
+      "juegos de mesa",
+      "plátano"
+    ],
+    "object_4": [
+      "Dinamarca",
+      "café",
+      "terror",
+      "pintura",
+      "fresa"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Una fila de casas está numerada del 1 al 4 de izquierda a derecha.\n\nEn cada casa vive una persona con un atributo único en cada una de las siguientes categorías:\n\nNacionalidades: Dinamarca, Islas Feroe, Letonia y Países Bajos.\nProfesiones: dependiente, enfermero, ministro y programador.\nMascotas: caracol, cebra, conejo y periquito.\nGéneros literarios favoritos: divulgación, fantasía, novela negra y terror.\nAficiones: escalada en bloque, fútbol, ganchillo y juegos de mesa.\n\nTambién sabemos lo siguiente:\n\n1. El danés vive al lado de quien tiene una mascota mayor de lo habitual para su especie.\n2. El enfermero no vive al lado de quien lee divulgación, y son personas distintas.\n3. El programador no vive entre el dependiente y el dueño del caracol, y son tres personas distintas.\n4. El dueño del periquito lee terror.\n5. El enfermero no vive entre el dependiente y el programador, y son tres personas distintas.\n6. Quien juega a juegos de mesa vive a la izquierda de quien juega al fútbol.\n7. Quien juega al fútbol vive al lado de quien tiene una bicicleta.\n8. Quien tiene el pelo rojo tiene un máster en matemáticas.\n9. El dueño del conejo no tiene cactus.\n10. El dueño de la cebra es muy amigo de quien ha visitado Canadá.\n11. El ministro no vive entre quien lee novela negra y quien lee terror, y son tres personas distintas.\n12. Entre el letón y quien lee novela negra hay una casa.\n13. Entre el neerlandés y quien juega a juegos de mesa hay 2 casas.\n14. Quien lee novela negra vive entre el letón y quien juega al fútbol.\n15. El dueño del conejo vive al lado de quien juega a juegos de mesa.\n16. El dueño del conejo no hace ganchillo.\n17. El feroés vive inmediatamente a la derecha del programador.",
+  "target_text": {
+    "object_1": [
+      "Letonia",
+      "enfermero",
+      "periquito",
+      "terror",
+      "juegos de mesa"
+    ],
+    "object_2": [
+      "Dinamarca",
+      "programador",
+      "conejo",
+      "fantasía",
+      "escalada en bloque"
+    ],
+    "object_3": [
+      "Islas Feroe",
+      "dependiente",
+      "cebra",
+      "novela negra",
+      "ganchillo"
+    ],
+    "object_4": [
+      "Países Bajos",
+      "ministro",
+      "caracol",
+      "divulgación",
+      "fútbol"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Una fila de casas está numerada del 1 al 4 de izquierda a derecha.\n\nEn cada casa vive una persona con un atributo único en cada una de las siguientes categorías:\n\nNacionalidades: Francia, Islas Feroe, Noruega y Países Bajos.\nBebidas: cacao, leche, refresco y zumo.\nGéneros literarios favoritos: ciencia ficción, divulgación, novela romántica y poesía.\nAficiones: escalada en bloque, juegos de mesa, pintura y tenis.\nFrutas favoritas: manzana, naranja, pera y plátano.\n\nTambién sabemos lo siguiente:\n\n1. Quien lee divulgación pinta.\n2. Quien bebe leche no vive entre quien ama las peras y quien ama las naranjas, y son tres personas distintas.\n3. El francés tiene el pelo rojo.\n4. Quien ama la física no vive en la casa número 4.\n5. Quien juega al tenis ama las manzanas.\n6. Quien ama las peras vive al lado de quien ha visitado Canadá.\n7. Quien lleva gafas no vive en la casa número 2.\n8. Todas las casas de la calle tienen jardines bonitos.\n9. Entre quien lee poesía y quien lee ciencia ficción hay una casa.\n10. Entre el neerlandés y quien practica escalada en bloque hay una casa.\n11. El neerlandés no vive entre quien bebe leche y quien lee poesía, y son tres personas distintas.\n12. El feroés vive inmediatamente a la derecha de quien juega al tenis.\n13. Quien lee ciencia ficción vive entre quien bebe cacao y quien ama las manzanas.\n14. El noruego no vive entre quien bebe refresco y quien practica escalada en bloque, y son tres personas distintas.\n15. El francés vive inmediatamente a la izquierda de quien ama las naranjas.",
+  "target_text": {
+    "object_1": [
+      "Noruega",
+      "zumo",
+      "poesía",
+      "tenis",
+      "manzana"
+    ],
+    "object_2": [
+      "Islas Feroe",
+      "leche",
+      "novela romántica",
+      "escalada en bloque",
+      "plátano"
+    ],
+    "object_3": [
+      "Francia",
+      "refresco",
+      "ciencia ficción",
+      "juegos de mesa",
+      "pera"
+    ],
+    "object_4": [
+      "Países Bajos",
+      "cacao",
+      "divulgación",
+      "pintura",
+      "naranja"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Aquí hay un acertijo:
+  <riddle>
+  {text}
+  </riddle>
+
+  ¿Quién tiene qué atributos y vive en qué casa?
+
+  Por favor, proporciona tu respuesta como un JSON dictionary. Cada key debe ser object_X donde X es el número de la casa. Cada value debe ser una lista de los atributos de las categorías anteriores que pertenecen a la persona en la casa número X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-es
+```

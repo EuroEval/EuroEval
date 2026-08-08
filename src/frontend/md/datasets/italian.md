@@ -560,7 +560,142 @@ euroeval --model <model-id> --dataset multi-wiki-qa-it
 
 ## Knowledge
 
-### MMLU-it
+### INCLUDE-it
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+  "text": "Quale dei seguenti processi fisiologici distingue i vegetali dagli animali?\nScelte:\na. Fotosintesi\nb. Assorbimento di sostanze nutritive esogene\nc. Metabolismo anaerobico\nd. Fermentazione",
+  "label": "a",
+  "subject": "Medicine"
+}
+```
+
+```json
+{
+  "text": "Kojoj religiji pripada učenje o četirima plemenitim istinama i osmerostrukome putu oslobođenja od patnje?\nScelte:\na. kršćanstvu\nb. budizmu\nc. islamu\nd. židovstvu",
+  "label": "b",
+  "subject": "Philosophy"
+}
+```
+
+```json
+{
+  "text": "Conclusione, interpretazione e adempimento del contratto - Adempimento del contratto   Può il creditore rifiutare l'adempimento parziale di una prestazione pecuniaria divisibile?\nScelte:\na. No, a meno che la prestazione principale sia eseguita con gli interessi e la rivalutazione monetaria\nb. No, se si oppone il coniuge del creditore in regime di comunione legale\nc. Sì, salvo che la legge e gli usi dispongano diversamente\nd. No, mai",
+  "label": "c",
+  "subject": "Professional certification"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Le seguenti sono domande a scelta multipla (con relative risposte).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Domanda: {text}
+  Risposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Domanda: {text}
+
+  Rispondete alla domanda precedente con {labels_str}, e nient'altro.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-it
+```
+
+### MultiLoKo-it
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The
+Italian questions are separately sourced and designed to target locally relevant topics
+for Italian-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer
+as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
+per question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Per quale squadra Leonardo Pavoletti ha segnato 24 gol nel campionato di Serie A 2013-2014?\nScelte:\na. Città di Varese SSD a RL\nb. US Sassuolo Calcio\nc. AS Livorno Calcio\nd. Modena FC",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Chi era il presidente dei Giallorossi nel 1932?\nScelte:\na. Francesco Marini Dettina\nb. Renato Sacerdoti\nc. Italo Foschi\nd. Piero Boldrini",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Quale è la candidatura di riconoscimento mondiale che Emma Marrone ha ricevuto durante la sua carriera musicale?\nScelte:\na. Grammy Award\nb. MTV Europe Music Award\nc. World Music Award\nd. Brit Award",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Le seguenti sono domande a scelta multipla (con risposte).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Domanda: {text}
+  Risposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Domanda: {text}
+
+  Rispondete alla domanda precedente con 'a', 'b', 'c' o 'd' e nient'altro.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-it
+```
+
+### Unofficial: MMLU-it
 
 This dataset is a machine translated version of the English
 [MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
@@ -636,141 +771,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset mmlu-it
-```
-
-### Unofficial: INCLUDE-it
-
-This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
-comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
-LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
-academic and professional exams, covering 57 topics including regional knowledge.
-
-The original dataset consists of a 'validation' split used as training data and a 'test'
-split. We use the 'validation' split as the training split, which has 25 samples. We
-sample 64 samples from the 'test' split for the validation split, and use the remaining
-512 samples for the test split. The sampling is done stratified by the subject column.
-
-Here are a few examples from the dataset:
-
-```json
-{
-  "text": "Quale dei seguenti processi fisiologici distingue i vegetali dagli animali?\nScelte:\na. Fotosintesi\nb. Assorbimento di sostanze nutritive esogene\nc. Metabolismo anaerobico\nd. Fermentazione",
-  "label": "a",
-  "subject": "Medicine"
-}
-```
-
-```json
-{
-  "text": "Kojoj religiji pripada učenje o četirima plemenitim istinama i osmerostrukome putu oslobođenja od patnje?\nScelte:\na. kršćanstvu\nb. budizmu\nc. islamu\nd. židovstvu",
-  "label": "b",
-  "subject": "Philosophy"
-}
-```
-
-```json
-{
-  "text": "Conclusione, interpretazione e adempimento del contratto - Adempimento del contratto   Può il creditore rifiutare l'adempimento parziale di una prestazione pecuniaria divisibile?\nScelte:\na. No, a meno che la prestazione principale sia eseguita con gli interessi e la rivalutazione monetaria\nb. No, se si oppone il coniuge del creditore in regime di comunione legale\nc. Sì, salvo che la legge e gli usi dispongano diversamente\nd. No, mai",
-  "label": "c",
-  "subject": "Professional certification"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Le seguenti sono domande a scelta multipla (con relative risposte).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Domanda: {text}
-  Risposta: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Domanda: {text}
-
-  Rispondete alla domanda precedente con {labels_str}, e nient'altro.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset include-it
-```
-
-### Unofficial: MultiLoKo-it
-
-This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The
-Italian questions are separately sourced and designed to target locally relevant topics
-for Italian-speaking populations.
-
-We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
-questions with correct answers in the 'targets' column. We use the first target answer
-as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
-per question. We create a 16 / 234 split for training and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Per quale squadra Leonardo Pavoletti ha segnato 24 gol nel campionato di Serie A 2013-2014?\nScelte:\na. Città di Varese SSD a RL\nb. US Sassuolo Calcio\nc. AS Livorno Calcio\nd. Modena FC",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Chi era il presidente dei Giallorossi nel 1932?\nScelte:\na. Francesco Marini Dettina\nb. Renato Sacerdoti\nc. Italo Foschi\nd. Piero Boldrini",
-  "label": "b"
-}
-```
-
-```json
-{
-  "text": "Quale è la candidatura di riconoscimento mondiale che Emma Marrone ha ricevuto durante la sua carriera musicale?\nScelte:\na. Grammy Award\nb. MTV Europe Music Award\nc. World Music Award\nd. Brit Award",
-  "label": "c"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Le seguenti sono domande a scelta multipla (con risposte).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Domanda: {text}
-  Risposta: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Domanda: {text}
-
-  Rispondete alla domanda precedente con 'a', 'b', 'c' o 'd' e nient'altro.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset multiloko-it
 ```
 
 ### Unofficial: EU-MMLU-it
@@ -1499,4 +1499,240 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset ragtruth-it
+```
+
+## Logical Reasoning
+
+### ZebraPuzzleEasy-it
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Una fila di case è numerata da 1 a 2 da sinistra a destra.\n\nIn ogni casa abita una persona con attributi unici in ciascuna delle seguenti categorie:\n\nNazionalità: Lettonia e Paesi Bassi.\nAnimali domestici: cane e cocorita.\nGeneri letterari preferiti: fantasy e poesia.\n\nSappiamo anche quanto segue:\n\n1. Tutte le case hanno grandi finestre.\n2. Il neerlandese e chi ama la fisica sono buoni amici.\n3. Il proprietario di un cane ha i capelli rossi.\n4. Il laureato in matematica ha una sorella.\n5. Chi pensa che il secondo miglior frutto sia il mango abita nella casa numero 2.\n6. Il lettone legge fantasy.\n7. Il proprietario di un cane abita a sinistra di chi legge poesia.",
+  "target_text": {
+    "object_1": [
+      "Lettonia",
+      "cane",
+      "fantasy"
+    ],
+    "object_2": [
+      "Paesi Bassi",
+      "cocorita",
+      "poesia"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Una fila di case è numerata da 1 a 2 da sinistra a destra.\n\nIn ogni casa abita una persona con attributi unici in ciascuna delle seguenti categorie:\n\nBevande: caffè e gassosa.\nGeneri letterari preferiti: giallo e saggistica.\nFrutta preferita: pera e ribes nero.\n\nSappiamo anche quanto segue:\n\n1. Chi beve gassosa non ama il ribes nero.\n2. Tutte le case nella strada hanno bei giardini.\n3. Chi legge gialli non abita nella casa numero 2.\n4. Chi beve gassosa abita accanto al proprietario di un animale vecchio per la sua specie.\n5. Chi ha i capelli rossi pensa che il secondo miglior frutto sia il mango.\n6. Chi beve caffè abita nella casa numero 1.\n7. Il laureato in matematica ha un tatuaggio.\n8. Chi ama le pere abita accanto al proprietario di un porcellino d'India.",
+  "target_text": {
+    "object_1": [
+      "caffè",
+      "giallo",
+      "ribes nero"
+    ],
+    "object_2": [
+      "gassosa",
+      "saggistica",
+      "pera"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Una fila di case è numerata da 1 a 2 da sinistra a destra.\n\nIn ogni casa abita una persona con attributi unici in ciascuna delle seguenti categorie:\n\nBevande: gassosa e tè.\nHobby: calcio e tennis.\nFrutta preferita: banana e ribes nero.\n\nSappiamo anche quanto segue:\n\n1. Chi beve tè sa che alcune case hanno una porta verde.\n2. Il proprietario di una bicicletta abita nella casa numero 2.\n3. Chi gioca a calcio abita accanto a chi gioca ai videogiochi.\n4. Chi ama le banane abita accanto al laureato in matematica.\n5. Chi ama le banane non ha un cactus.\n6. Chi gioca a calcio non ama il ribes nero.\n7. Chi gioca a tennis non abita nella casa numero 2.\n8. Chi beve tè abita nella casa numero 1.",
+  "target_text": {
+    "object_1": [
+      "tè",
+      "tennis",
+      "ribes nero"
+    ],
+    "object_2": [
+      "gassosa",
+      "calcio",
+      "banana"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Ecco un indovinello:
+  <riddle>
+  {text}
+  </riddle>
+
+  Chi ha quali attributi e vive in quale casa?
+
+  Fornisci la tua risposta come JSON dictionary. Ogni key dovrebbe essere object_X dove X è il numero della casa. Ogni value dovrebbe essere un elenco degli attributi dalle categorie sopra che appartengono alla persona nella casa numero X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-it
+```
+
+### Unofficial: ZebraPuzzleHard-it
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Una fila di case è numerata da 1 a 4 da sinistra a destra.\n\nIn ogni casa abita una persona con attributi unici in ciascuna delle seguenti categorie:\n\nProfessioni: insegnante, ministro, panettiere e poliziotto.\nAnimali domestici: cocorita, coniglio, gatto e zebra.\nBevande: caffè, gassosa, smoothie e tè.\nHobby: calcio, giochi da tavolo, pallamano e tennis.\nFrutta preferita: arancia, fragola, mela e pera.\n\nSappiamo anche quanto segue:\n\n1. Chi ha visitato il Canada abita nella casa numero 1.\n2. Chi beve caffè abita immediatamente a sinistra di chi beve smoothie.\n3. Chi gioca ai giochi da tavolo abita tra chi beve gassosa e chi ama le pere.\n4. Chi gioca a calcio abita tra il proprietario di un gatto e chi ama le arance.\n5. Il poliziotto abita accanto a chi guarda il salto con gli sci.\n6. Tra il proprietario di un coniglio e chi ama le pere ci sono 2 case.\n7. Il proprietario di una cocorita ama le mele.\n8. Chi gioca a calcio sa che il caffè contiene caffeina.\n9. Chi porta gli occhiali abita nella casa numero 4.\n10. Il poliziotto abita a sinistra di chi gioca a calcio.\n11. Chi beve caffè ha una laurea magistrale in matematica.\n12. Chi beve gassosa abita a sinistra di chi ama le pere.\n13. Il panettiere non abita tra il ministro e chi ama le fragole, e sono tre persone diverse.\n14. Tra il proprietario di un gatto e chi ama le arance c'è una casa.\n15. Il proprietario di un coniglio abita accanto a chi beve gassosa.\n16. Il panettiere non abita tra chi gioca a tennis e chi gioca a calcio, e sono tre persone diverse.",
+  "target_text": {
+    "object_1": [
+      "poliziotto",
+      "coniglio",
+      "tè",
+      "tennis",
+      "arancia"
+    ],
+    "object_2": [
+      "ministro",
+      "cocorita",
+      "gassosa",
+      "calcio",
+      "mela"
+    ],
+    "object_3": [
+      "insegnante",
+      "gatto",
+      "caffè",
+      "giochi da tavolo",
+      "fragola"
+    ],
+    "object_4": [
+      "panettiere",
+      "zebra",
+      "smoothie",
+      "pallamano",
+      "pera"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Una fila di case è numerata da 1 a 4 da sinistra a destra.\n\nIn ogni casa abita una persona con attributi unici in ciascuna delle seguenti categorie:\n\nNazionalità: Francia, Isole Fær Øer, Norvegia e Paesi Bassi.\nAnimali domestici: cocorita, gatto, insetto stecco e zebra.\nBevande: cioccolata calda, latte, smoothie e succo.\nGeneri letterari preferiti: fantascienza, fantasy, horror e saggistica.\nHobby: bouldering, pallamano, pittura e uncinetto.\n\nSappiamo anche quanto segue:\n\n1. Chi beve latte abita tra chi beve cioccolata calda e chi legge fantasy.\n2. Il laureato in matematica porta gli occhiali.\n3. Chi legge horror abita accanto a chi dipinge.\n4. Il neerlandese abita nella casa numero 3.\n5. Chi beve succo abita accanto a chi legge saggistica.\n6. Chi legge horror abita tra il proprietario di un insetto stecco e chi gioca a pallamano.\n7. Chi beve succo ha i capelli rossi.\n8. Il tatuato guarda il salto con gli sci.\n9. Il norvegese non abita tra il francese e chi pratica bouldering, e sono tre persone diverse.\n10. Chi beve succo e il proprietario di un porcellino d'India sono buoni amici.\n11. Tra il francese e chi legge horror c'è una casa.\n12. Chi beve cioccolata calda abita accanto a chi legge fantascienza.\n13. Il proprietario di una zebra non abita accanto a chi legge saggistica, e sono persone diverse.\n14. Chi dipinge e chi ha una sorella sono buoni amici.\n15. Il proprietario di una cocorita abita a destra di chi legge fantasy.\n16. Tra il proprietario di una zebra e il proprietario di un gatto c'è una casa.\n17. Il proprietario di una cocorita abita tra il francese e chi legge fantascienza.",
+  "target_text": {
+    "object_1": [
+      "Francia",
+      "insetto stecco",
+      "succo",
+      "fantasy",
+      "uncinetto"
+    ],
+    "object_2": [
+      "Isole Fær Øer",
+      "gatto",
+      "latte",
+      "saggistica",
+      "pittura"
+    ],
+    "object_3": [
+      "Paesi Bassi",
+      "cocorita",
+      "cioccolata calda",
+      "horror",
+      "bouldering"
+    ],
+    "object_4": [
+      "Norvegia",
+      "zebra",
+      "smoothie",
+      "fantascienza",
+      "pallamano"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Una fila di case è numerata da 1 a 4 da sinistra a destra.\n\nIn ogni casa abita una persona con attributi unici in ciascuna delle seguenti categorie:\n\nNazionalità: Islanda, Paesi Bassi, Spagna e Svezia.\nProfessioni: commesso, infermiere, panettiere e poliziotto.\nAnimali domestici: cane, coniglio, gatto e insetto stecco.\nGeneri letterari preferiti: horror, poesia, romanzo d'amore e saggistica.\nHobby: bouldering, giochi da tavolo, pallamano e pittura.\n\nSappiamo anche quanto segue:\n\n1. L'islandese abita immediatamente a destra di chi legge horror.\n2. Il poliziotto abita a destra di chi pratica bouldering.\n3. Chi ama la fisica ha una sorella.\n4. Chi guarda il salto con gli sci abita nella casa numero 4.\n5. Il proprietario di un gatto abita immediatamente a destra di chi gioca ai giochi da tavolo.\n6. Il proprietario di un coniglio e il proprietario di un porcellino d'India sono buoni amici.\n7. Il proprietario di un insetto stecco non pratica bouldering.\n8. Tra lo spagnolo e il proprietario di un gatto ci sono 2 case.\n9. Il proprietario di un cane e chi porta gli occhiali sono buoni amici.\n10. Il panettiere abita a sinistra di chi legge horror.\n11. Lo spagnolo non abita tra chi legge saggistica e chi dipinge, e sono tre persone diverse.\n12. Lo spagnolo non è panettiere.\n13. Il proprietario di una bicicletta non abita nella casa numero 3.\n14. Il neerlandese legge poesia.\n15. Il poliziotto abita tra l'infermiere e chi pratica bouldering.\n16. Il neerlandese abita immediatamente a sinistra del proprietario di un cane.",
+  "target_text": {
+    "object_1": [
+      "Spagna",
+      "commesso",
+      "coniglio",
+      "romanzo d'amore",
+      "bouldering"
+    ],
+    "object_2": [
+      "Paesi Bassi",
+      "panettiere",
+      "insetto stecco",
+      "poesia",
+      "pittura"
+    ],
+    "object_3": [
+      "Svezia",
+      "poliziotto",
+      "cane",
+      "horror",
+      "giochi da tavolo"
+    ],
+    "object_4": [
+      "Islanda",
+      "infermiere",
+      "gatto",
+      "saggistica",
+      "pallamano"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Ecco un indovinello:
+  <riddle>
+  {text}
+  </riddle>
+
+  Chi ha quali attributi e vive in quale casa?
+
+  Fornisci la tua risposta come JSON dictionary. Ogni key dovrebbe essere object_X dove X è il numero della casa. Ogni value dovrebbe essere un elenco degli attributi dalle categorie sopra che appartengono alla persona nella casa numero X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-it
 ```

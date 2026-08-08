@@ -1392,3 +1392,239 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-et
 ```
+
+## Logical Reasoning
+
+### ZebraPuzzleEasy-et
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Majad on nummerdatud 1-st 2-ni vasakult paremale.\n\nIgas majas elab inimene, kellel on igas järgmises kategoorias unikaalne atribuut:\n\nLemmikloomad: kepuputukas ja sebra.\nLemmikkirjandus: armukirjandus ja tõsielukirjandus.\nLemmikviljad: banaan ja maasikas.\n\nLisaks teame järgmist:\n\n1. Armukirjanduse lugeja elab isiku, kes eelistab maasikaid, paremal.\n2. Kepuputukapidaja teab, et Päikesesüsteem liigub galaktika keskuse ümber kiirusega umbes 200 km/s.\n3. Prillide kandja elab majas number 1.\n4. Isik, kes ei oma kaktust, elab majas number 1.\n5. Kepuputukapidaja teab, et heeringas on kala.\n6. Kepuputukapidaja on jalgrattaomanik.\n7. Kepuputukapidaja ei loe tõsielukirjandust.",
+  "target_text": {
+    "object_1": [
+      "sebra",
+      "tõsielukirjandus",
+      "maasikas"
+    ],
+    "object_2": [
+      "kepuputukas",
+      "armukirjandus",
+      "banaan"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Majad on nummerdatud 1-st 2-ni vasakult paremale.\n\nIgas majas elab inimene, kellel on igas järgmises kategoorias unikaalne atribuut:\n\nAmetid: pagar ja õpetaja.\nJoogid: karastusjook ja kohv.\nLemmikkirjandus: armukirjandus ja ulme.\n\nLisaks teame järgmist:\n\n1. Karastusjoogijooija elab videomängude mängija kõrval.\n2. Isik, kes armastab füüsikat, ei ela majas number 1.\n3. Isik, kes ei oma kaktust, on punapäine.\n4. Õpetaja arvab, et mango on teine parim puuvili.\n5. Armukirjanduse lugeja ja isik, kes purjetab sageli, on head sõbrad.\n6. Kohvijooija elab armukirjanduse lugeja vasakul.\n7. Õpetaja loeb armukirjandust.",
+  "target_text": {
+    "object_1": [
+      "pagar",
+      "kohv",
+      "ulme"
+    ],
+    "object_2": [
+      "õpetaja",
+      "karastusjook",
+      "armukirjandus"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Majad on nummerdatud 1-st 2-ni vasakult paremale.\n\nIgas majas elab inimene, kellel on igas järgmises kategoorias unikaalne atribuut:\n\nRahvused: Island ja Madalmaad.\nLemmikloomad: koer ja undulaad.\nJoogid: piim ja tee.\n\nLisaks teame järgmist:\n\n1. Madalmaalane elab piimajooija paremal.\n2. Koerapidaja ei joo teed.\n3. Undulaadipidaja teab, et kurk on mari.\n4. Koerapidaja peab merisigu.\n5. Jalgrattaomanik elab majas number 1.\n6. Isik, kes jälgib suusahüppeid, ei ela majas number 2.\n7. Koerapidaja ja isik, kelle arvates on mango teine parim puuvili, on head sõbrad.",
+  "target_text": {
+    "object_1": [
+      "Island",
+      "koer",
+      "piim"
+    ],
+    "object_2": [
+      "Madalmaad",
+      "undulaad",
+      "tee"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Siin on mõistatus:
+  <riddle>
+  {text}
+  </riddle>
+
+  Kellel on millised omadused ja kes elab millises majas?
+
+  Palun esitage oma vastus JSON dictionary. Iga key peaks olema object_X, kus X on maja number. Iga value peaks olema loend omadustest ülaltoodud kategooriatest, mis kuuluvad majas nummer X elavale isikule.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-et
+```
+
+### Unofficial: ZebraPuzzleHard-et
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Majad on nummerdatud 1-st 4-ni vasakult paremale.\n\nIgas majas elab inimene, kellel on igas järgmises kategoorias unikaalne atribuut:\n\nAmetid: meditsiiniõde, politseinik, tarkvaraarendaja ja õpetaja.\nLemmikloomad: kass, kepuputukas, koer ja sebra.\nJoogid: karastusjook, kohv, mahl ja piim.\nLemmikkirjandus: armukirjandus, tõsielukirjandus, ulme ja õuduskirjandus.\nLemmikviljad: banaan, maasikas, mustsõstar ja pirn.\n\nLisaks teame järgmist:\n\n1. Armukirjanduse lugeja ei ela isiku, kes eelistab mustsõstraid, ja isiku, kes eelistab pirne, vahel ning nad on kolm eri inimest.\n2. Isik, kes eelistab pirne, teab, et heeringas on kala.\n3. Koerapidaja elab politseiniku ja isiku, kes eelistab mustsõstraid, vahel.\n4. Isik, kes jälgib suusahüppeid, elab majas number 2.\n5. Politseiniku ja kassapidaja vahel on 2 maja.\n6. Piimajooija ja isiku, kes eelistab maasikaid, vahel on üks maja.\n7. Tarkvaraarendaja ei ela kepuputukapidaja kõrval ning nad ei ole sama inimene.\n8. Õpetaja peab merisigu.\n9. Tarkvaraarendaja ei ela politseiniku ja mahlajooija vahel ning nad on kolm eri inimest.\n10. Kassapidaja ja õuduskirjanduse lugeja vahel on 2 maja.\n11. Meditsiiniõde elab isiku, kes armastab füüsikat, kõrval.\n12. Meditsiiniõde eelistab pirne.\n13. Õpetaja elab vahetult ulmelugeja vasakul.\n14. Kepuputukapidaja ja isik, kellel on matemaatika magistrikraad, on head sõbrad.\n15. Koerapidaja elab vahetult mahlajooija vasakul.\n16. Õpetaja ei joo karastusjooki.",
+  "target_text": {
+    "object_1": [
+      "politseinik",
+      "kepuputukas",
+      "karastusjook",
+      "õuduskirjandus",
+      "banaan"
+    ],
+    "object_2": [
+      "õpetaja",
+      "koer",
+      "kohv",
+      "armukirjandus",
+      "maasikas"
+    ],
+    "object_3": [
+      "meditsiiniõde",
+      "sebra",
+      "mahl",
+      "ulme",
+      "pirn"
+    ],
+    "object_4": [
+      "tarkvaraarendaja",
+      "kass",
+      "piim",
+      "tõsielukirjandus",
+      "mustsõstar"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Majad on nummerdatud 1-st 4-ni vasakult paremale.\n\nIgas majas elab inimene, kellel on igas järgmises kategoorias unikaalne atribuut:\n\nAmetid: minister, pagar, tarkvaraarendaja ja õpetaja.\nLemmikloomad: kass, koer, küülik ja undulaad.\nJoogid: karastusjook, kohv, piim ja tee.\nLemmikkirjandus: armukirjandus, kriminaalromaan, ulme ja õuduskirjandus.\nHobid: bouldering, käsipall, lauamängud ja maalimine.\n\nLisaks teame järgmist:\n\n1. Tarkvaraarendaja elab boulderinguga tegeleja paremal.\n2. Minister loeb õuduskirjandust.\n3. Isik, kelle lemmikloom on oma liigi kohta vana, ei oma kaktust.\n4. Õpetaja elab maalija paremal.\n5. Õuduskirjanduse lugeja elab isiku, kes armastab füüsikat, kõrval.\n6. Tarkvaraarendaja ja koerapidaja vahel on 2 maja.\n7. Ulmelugeja ja punapäine inimene on head sõbrad.\n8. Pagar elab isiku, kelle arvates on mango teine parim puuvili, kõrval.\n9. Õpetaja elab undulaadipidaja kõrval.\n10. Undulaadipidaja ei loe kriminaalromaane.\n11. Õpetaja elab kohvijooija vasakul.\n12. Teejooija elab majas number 2.\n13. Armukirjanduse lugeja elab käsipallimängija kõrval.\n14. Kassapidaja ja maalija vahel on üks maja.\n15. Kassapidaja on jalgrattaomanik.\n16. Õpetaja elab vahetult kriminaalromaani lugeja paremal.\n17. Piimajooija ja armukirjanduse lugeja vahel on 2 maja.",
+  "target_text": {
+    "object_1": [
+      "minister",
+      "koer",
+      "piim",
+      "õuduskirjandus",
+      "maalimine"
+    ],
+    "object_2": [
+      "pagar",
+      "küülik",
+      "tee",
+      "kriminaalromaan",
+      "bouldering"
+    ],
+    "object_3": [
+      "õpetaja",
+      "kass",
+      "karastusjook",
+      "ulme",
+      "käsipall"
+    ],
+    "object_4": [
+      "tarkvaraarendaja",
+      "undulaad",
+      "kohv",
+      "armukirjandus",
+      "lauamängud"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Majad on nummerdatud 1-st 4-ni vasakult paremale.\n\nIgas majas elab inimene, kellel on igas järgmises kategoorias unikaalne atribuut:\n\nRahvused: Fääri saared, Island, Läti ja Madalmaad.\nAmetid: meditsiiniõde, minister, müüja ja õpetaja.\nJoogid: karastusjook, mahl, piim ja tee.\nLemmikkirjandus: armukirjandus, fantaasia, kriminaalromaan ja õuduskirjandus.\nHobid: bouldering, heegeldamine, jalgpall ja tennis.\n\nLisaks teame järgmist:\n\n1. Fäärlane elab õpetaja kõrval.\n2. Kriminaalromaani lugeja ei heegelda.\n3. Armukirjanduse lugeja elab vahetult boulderinguga tegeleja vasakul.\n4. Punapäine inimene elab majas number 2.\n5. Tennisemängija teab, et kõikidel tänava majadel on ilusad aiad.\n6. Isik, kellel on matemaatika magistrikraad, mängib kitarri.\n7. Fantaasialugeja elab tätoveeritud inimese kõrval.\n8. Meditsiiniõde ei ela karastusjoogijooija kõrval ning nad ei ole sama inimene.\n9. Madalmaalane elab vahetult armukirjanduse lugeja paremal.\n10. Meditsiiniõde joob mahla.\n11. Karastusjoogijooija ei ela majas number 4.\n12. Piimajooija tegeleb boulderinguga.\n13. Meditsiiniõde elab fäärlase ja tennisemängija vahel.\n14. Lätlase ja jalgpallimängija vahel on 2 maja.\n15. Lätlane ei ela õpetaja ja ministri vahel ning nad on kolm eri inimest.\n16. Karastusjoogijooija teab, et tänaval on palju autosid.\n17. Minister elab õuduskirjanduse lugeja kõrval.",
+  "target_text": {
+    "object_1": [
+      "Fääri saared",
+      "minister",
+      "karastusjook",
+      "armukirjandus",
+      "jalgpall"
+    ],
+    "object_2": [
+      "Madalmaad",
+      "õpetaja",
+      "piim",
+      "õuduskirjandus",
+      "bouldering"
+    ],
+    "object_3": [
+      "Island",
+      "meditsiiniõde",
+      "mahl",
+      "fantaasia",
+      "heegeldamine"
+    ],
+    "object_4": [
+      "Läti",
+      "müüja",
+      "tee",
+      "kriminaalromaan",
+      "tennis"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Siin on mõistatus:
+  <riddle>
+  {text}
+  </riddle>
+
+  Kellel on millised omadused ja kes elab millises majas?
+
+  Palun esitage oma vastus JSON dictionary. Iga key peaks olema object_X, kus X on maja number. Iga value peaks olema loend omadustest ülaltoodud kategooriatest, mis kuuluvad majas nummer X elavale isikule.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-et
+```

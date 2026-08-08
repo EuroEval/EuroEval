@@ -738,3 +738,239 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-sq
 ```
+
+## Logical Reasoning
+
+### ZebraPuzzleEasy-sq
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Një rresht shtëpish ka numrat 1 deri në 2 nga e majta në të djathtë.\n\nNë çdo shtëpi jeton një person me atribut unik në secilën nga kategoritë e mëposhtme:\n\nProfesione: mësues dhe oficer policie.\nZhanre të preferuara letrare: jofiksion dhe roman dashurie.\nPije: kakao dhe lëng.\n\nNe gjithashtu dimë sa vijon:\n\n1. Kafja përmban kafeinë.\n2. Mësuesi di që të gjitha shtëpitë kanë dritare të mëdha.\n3. Lexuesi i romaneve të dashurisë pi lëng.\n4. Ai me kaktus ka master në matematikë.\n5. Ai që pi kakao dhe ai që luan kitarë janë miq të mirë.\n6. Ai me flokë të kuqe do fizikën.\n7. Mësuesi jeton në të djathtë të lexuesit të romaneve të dashurisë.",
+  "target_text": {
+    "object_1": [
+      "oficer policie",
+      "roman dashurie",
+      "lëng"
+    ],
+    "object_2": [
+      "mësues",
+      "jofiksion",
+      "kakao"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Një rresht shtëpish ka numrat 1 deri në 2 nga e majta në të djathtë.\n\nNë çdo shtëpi jeton një person me atribut unik në secilën nga kategoritë e mëposhtme:\n\nKombësi: Danimarka dhe Suedia.\nHobi: lojëra tavoline dhe pikturë.\nFruta të preferuara: kasis dhe luleshtrydhe e egër.\n\nNe gjithashtu dimë sa vijon:\n\n1. Ai që pikturon dhe ai me syze janë miq të mirë.\n2. Suedezi jeton pranë atij me biçikletë.\n3. Ka shumë makina në rrugë.\n4. Ai që do kasisin jeton pranë atij me motër.\n5. Suedezi jeton në të djathtë të atij që do luleshtrydhët e egra.\n6. Danezi jeton në të majtë të atij që luan lojëra tavoline.\n7. Ai që do luleshtrydhët e egra dhe ai që ka vizituar Kanadanë janë miq të mirë.",
+  "target_text": {
+    "object_1": [
+      "Danimarka",
+      "pikturë",
+      "luleshtrydhe e egër"
+    ],
+    "object_2": [
+      "Suedia",
+      "lojëra tavoline",
+      "kasis"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Një rresht shtëpish ka numrat 1 deri në 2 nga e majta në të djathtë.\n\nNë çdo shtëpi jeton një person me atribut unik në secilën nga kategoritë e mëposhtme:\n\nKafshë shtëpie: insekt-shkop dhe zebër.\nHobi: grep dhe lojëra tavoline.\nFruta të preferuara: dardhë dhe kasis.\n\nNe gjithashtu dimë sa vijon:\n\n1. Ai që luan kitarë nuk jeton në shtëpinë numër 1.\n2. Kafja përmban kafeinë.\n3. Pronari i zebrës di që ka shumë makina në rrugë.\n4. Heringet janë peshq.\n5. Ai që luan lojëra video nuk jeton në shtëpinë numër 2.\n6. Pronari i zebrës jeton në të majtë të atij që thurr me grep.\n7. Ai që luan lojëra tavoline do dardhët.",
+  "target_text": {
+    "object_1": [
+      "zebër",
+      "lojëra tavoline",
+      "dardhë"
+    ],
+    "object_2": [
+      "insekt-shkop",
+      "grep",
+      "kasis"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Ja një enigmë:
+  <riddle>
+  {text}
+  </riddle>
+
+  Kush ka cilat karakteristika dhe banon në cilin shtëpi?
+
+  Ju lutemi jepni përgjigjen tuaj si një JSON dictionary. Çdo key duhet të jetë object_X ku X është numri i shtëpisë. Çdo value duhet të jetë një listë e karakteristikave nga kategoritë e mësipërme që i përkasin personit në shtëpinë nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-sq
+```
+
+### Unofficial: ZebraPuzzleHard-sq
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Një rresht shtëpish ka numrat 1 deri në 4 nga e majta në të djathtë.\n\nNë çdo shtëpi jeton një person me atribut unik në secilën nga kategoritë e mëposhtme:\n\nProfesione: ministër, mësues, oficer policie dhe shitës.\nZhanre të preferuara letrare: fantashkencë, poezi, roman dashurie dhe roman kriminal.\nPije: kakao, lëng, qumësht dhe çaj.\nHobi: futboll, grep, lojëra tavoline dhe tenis.\nFruta të preferuara: dardhë, luleshtrydhe, luleshtrydhe e egër dhe mollë.\n\nNe gjithashtu dimë sa vijon:\n\n1. Ai që pi çaj jeton në shtëpinë numër 4.\n2. Ai që pi qumësht jeton menjëherë në të djathtë të atij që do dardhët.\n3. Ai që pi lëng jeton ndërmjet lexuesit të poezisë dhe atij që do luleshtrydhët.\n4. Ai që do luleshtrydhët e egra jeton pranë atij me syze.\n5. Ai me kaktus ka vizituar Kanadanë.\n6. Shitësi jeton menjëherë në të djathtë të atij që do dardhët.\n7. Lexuesi i fantashkencës nuk jeton ndërmjet lexuesit të romaneve të dashurisë dhe atij që do luleshtrydhët e egra, dhe janë tre njerëz të ndryshëm.\n8. Disa shtëpi kanë derë të gjelbër.\n9. Ai që luan kitarë jeton në shtëpinë numër 3.\n10. Lexuesi i fantashkencës jeton menjëherë në të djathtë të atij që luan tenis.\n11. Shitësi jeton menjëherë në të majtë të atij që luan lojëra tavoline.\n12. Mësuesi jeton pranë atij që do luleshtrydhët e egra.\n13. Ndërmjet oficerit të policisë dhe lexuesit të romaneve të dashurisë ka 2 shtëpi.\n14. Ai me tatuazh mendon se fruti i dytë më i mirë është mango.\n15. Ndërmjet lexuesit të poezisë dhe atij që thurr me grep ka 2 shtëpi.",
+  "target_text": {
+    "object_1": [
+      "oficer policie",
+      "poezi",
+      "kakao",
+      "tenis",
+      "dardhë"
+    ],
+    "object_2": [
+      "shitës",
+      "fantashkencë",
+      "qumësht",
+      "futboll",
+      "mollë"
+    ],
+    "object_3": [
+      "ministër",
+      "roman kriminal",
+      "lëng",
+      "lojëra tavoline",
+      "luleshtrydhe e egër"
+    ],
+    "object_4": [
+      "mësues",
+      "roman dashurie",
+      "çaj",
+      "grep",
+      "luleshtrydhe"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Një rresht shtëpish ka numrat 1 deri në 4 nga e majta në të djathtë.\n\nNë çdo shtëpi jeton një person me atribut unik në secilën nga kategoritë e mëposhtme:\n\nKombësi: Holanda, Italia, Letonia dhe Norvegjia.\nProfesione: furrtar, infermier, ministër dhe shitës.\nPije: kakao, lëng, qumësht dhe smoothie.\nHobi: bouldering, hendboll, lojëra tavoline dhe tenis.\nFruta të preferuara: luleshtrydhe, luleshtrydhe e egër, mollë dhe portokall.\n\nNe gjithashtu dimë sa vijon:\n\n1. Ai që do luleshtrydhët dhe ai me biçikletë janë miq të mirë.\n2. Ministri jeton menjëherë në të djathtë të atij që bën bouldering.\n3. Ndërmjet atij që pi qumësht dhe atij që do luleshtrydhët ka një shtëpi.\n4. Furrtari jeton pranë atij që do portokallet.\n5. Holandezi jeton pranë atij që luan lojëra video.\n6. Italiani nuk jeton pranë atij që do mollët, dhe janë njerëz të ndryshëm.\n7. Italiani jeton ndërmjet letonit dhe furrtarit.\n8. Holandezi luan lojëra tavoline.\n9. Ai që do luleshtrydhët di që sistemi diellor lëviz me rreth 200 km/s rreth qendrës së galaktikës.\n10. Ndërmjet atij që pi lëng dhe atij që do portokallet ka një shtëpi.\n11. Ministri ka gungaçe.\n12. Furrtari jeton menjëherë në të majtë të atij që luan tenis.\n13. Ai që do luleshtrydhët jeton pranë atij me flokë të kuqe.\n14. Ndërmjet norvegjezit dhe atij që pi kakao ka një shtëpi.\n15. Infermieri jeton në të djathtë të atij që pi lëng.",
+  "target_text": {
+    "object_1": [
+      "Holanda",
+      "shitës",
+      "lëng",
+      "lojëra tavoline",
+      "mollë"
+    ],
+    "object_2": [
+      "Norvegjia",
+      "furrtar",
+      "qumësht",
+      "bouldering",
+      "luleshtrydhe e egër"
+    ],
+    "object_3": [
+      "Italia",
+      "ministër",
+      "smoothie",
+      "tenis",
+      "portokall"
+    ],
+    "object_4": [
+      "Letonia",
+      "infermier",
+      "kakao",
+      "hendboll",
+      "luleshtrydhe"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Një rresht shtëpish ka numrat 1 deri në 4 nga e majta në të djathtë.\n\nNë çdo shtëpi jeton një person me atribut unik në secilën nga kategoritë e mëposhtme:\n\nKombësi: Holanda, Italia, Letonia dhe Mbretëria e Bashkuar.\nKafshë shtëpie: insekt-shkop, mace, papagall bisht gjatë dhe qen.\nZhanre të preferuara letrare: fantashkencë, horror, jofiksion dhe roman dashurie.\nHobi: futboll, lojëra tavoline, pikturë dhe tenis.\nFruta të preferuara: banane, dardhë, kasis dhe luleshtrydhe.\n\nNe gjithashtu dimë sa vijon:\n\n1. Ai që pikturon jeton menjëherë në të majtë të atij që do kasisin.\n2. Kafja përmban kafeinë.\n3. Holandezi jeton pranë atij që do luleshtrydhët.\n4. Të gjitha shtëpitë kanë dritare të mëdha.\n5. Britaniku jeton menjëherë në të djathtë të lexuesit të jofiksionit.\n6. Britaniku jeton në të majtë të lexuesit të horrorit.\n7. Pronari i insektit-shkop nuk jeton pranë atij që luan futboll, dhe janë njerëz të ndryshëm.\n8. Italiani jeton në të majtë të pronarit të maces.\n9. Lexuesi i romaneve të dashurisë jeton ndërmjet pronarit të papagallit bisht gjatë dhe atij që luan lojëra tavoline.\n10. Holandezi nuk jeton pranë lexuesit të horrorit, dhe janë njerëz të ndryshëm.\n11. Lexuesi i jofiksionit jeton pranë atij që lundron shpesh.\n12. Lexuesi i fantashkencës do dardhët.\n13. Pronari i papagallit bisht gjatë nuk jeton pranë atij që pikturon, dhe janë njerëz të ndryshëm.\n14. Ai që luan lojëra video jeton në shtëpinë numër 4.\n15. Lexuesi i jofiksionit nuk jeton pranë atij që do dardhët, dhe janë njerëz të ndryshëm.\n16. Ai që do fizikën ka tatuazh.",
+  "target_text": {
+    "object_1": [
+      "Holanda",
+      "papagall bisht gjatë",
+      "jofiksion",
+      "futboll",
+      "banane"
+    ],
+    "object_2": [
+      "Mbretëria e Bashkuar",
+      "qen",
+      "roman dashurie",
+      "tenis",
+      "luleshtrydhe"
+    ],
+    "object_3": [
+      "Italia",
+      "insekt-shkop",
+      "fantashkencë",
+      "pikturë",
+      "dardhë"
+    ],
+    "object_4": [
+      "Letonia",
+      "mace",
+      "horror",
+      "lojëra tavoline",
+      "kasis"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Ja një enigmë:
+  <riddle>
+  {text}
+  </riddle>
+
+  Kush ka cilat karakteristika dhe banon në cilin shtëpi?
+
+  Ju lutemi jepni përgjigjen tuaj si një JSON dictionary. Çdo key duhet të jetë object_X ku X është numri i shtëpisë. Çdo value duhet të jetë një listë e karakteristikave nga kategoritë e mësipërme që i përkasin personit në shtëpinë nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-sq
+```

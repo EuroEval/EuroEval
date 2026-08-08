@@ -1050,3 +1050,239 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-pl
 ```
+
+## Logical Reasoning
+
+### ZebraPuzzleEasy-pl
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Rząd domów jest ponumerowany od 1 do 2 od lewej do prawej.\n\nW każdym domu mieszka osoba z unikalną cechą w każdej z następujących kategorii:\n\nNarodowości: Hiszpania i Niderlandy.\nUlubiony gatunek książek: fantastyka naukowa i poezja.\nHobby: gry planszowe i szydełkowanie.\n\nWiemy również co następuje:\n\n1. Osoba z Niderlandów nie szydełkuje.\n2. Osoba z Niderlandów mieszka w domu numer 2.\n3. Właściciel zwierzaka starego jak na swój gatunek kocha fizykę.\n4. Rozwiązywanie zagadek jest ciekawe.\n5. Oglądający skoki narciarskie nosi okulary.\n6. Czytający fantastykę naukową nie mieszka w domu numer 2.\n7. Grający w gry planszowe wie, że ślimaki to mięczaki.\n8. Szydełkujący i właściciel świnki morskiej są dobrymi przyjaciółmi.",
+  "target_text": {
+    "object_1": [
+      "Hiszpania",
+      "fantastyka naukowa",
+      "szydełkowanie"
+    ],
+    "object_2": [
+      "Niderlandy",
+      "poezja",
+      "gry planszowe"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Rząd domów jest ponumerowany od 1 do 2 od lewej do prawej.\n\nW każdym domu mieszka osoba z unikalną cechą w każdej z następujących kategorii:\n\nZwierzęta domowe: kot i ślimak.\nUlubiony gatunek książek: fantasy i kryminał.\nHobby: gry planszowe i piłka nożna.\n\nWiemy również co następuje:\n\n1. Grający w gry planszowe mieszka w domu numer 2.\n2. Kochający fizykę ma tatuaż.\n3. Mający siostrę nie mieszka w domu numer 2.\n4. Ogórek jest jagodą.\n5. Czytający kryminały nie gra w gry planszowe.\n6. Właściciel ślimaka mieszka na prawo od właściciela kota.\n7. Czytający kryminały często żegluje.\n8. Na drodze jest dużo samochodów.",
+  "target_text": {
+    "object_1": [
+      "kot",
+      "kryminał",
+      "piłka nożna"
+    ],
+    "object_2": [
+      "ślimak",
+      "fantasy",
+      "gry planszowe"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Rząd domów jest ponumerowany od 1 do 2 od lewej do prawej.\n\nW każdym domu mieszka osoba z unikalną cechą w każdej z następujących kategorii:\n\nUlubiony gatunek książek: literatura faktu i romans.\nHobby: bouldering i malowanie.\nUlubione owoce: banan i jabłko.\n\nWiemy również co następuje:\n\n1. Czytający literaturę faktu mieszka na lewo od lubiącego banany.\n2. Uprawiający bouldering i mający dyplom magistra z matematyki są dobrymi przyjaciółmi.\n3. Właściciel roweru nie mieszka w domu numer 2.\n4. Lubiący jabłka wie, że na drodze jest dużo samochodów.\n5. Grający w gry wideo mieszka w domu numer 2.\n6. Malujący nie lubi jabłek.\n7. Niemający kaktusa mieszka w domu numer 1.",
+  "target_text": {
+    "object_1": [
+      "literatura faktu",
+      "bouldering",
+      "jabłko"
+    ],
+    "object_2": [
+      "romans",
+      "malowanie",
+      "banan"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Oto zagadka:
+  <riddle>
+  {text}
+  </riddle>
+
+  Kto ma jakie cechy i mieszka w którym domu?
+
+  Proszę podać odpowiedź jako JSON dictionary. Każdy key powinien być object_X, gdzie X to numer domu. Każda value powinna być listą cech z powyższych kategorii, które należą do osoby w domu numer X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-pl
+```
+
+### Unofficial: ZebraPuzzleHard-pl
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Rząd domów jest ponumerowany od 1 do 4 od lewej do prawej.\n\nW każdym domu mieszka osoba z unikalną cechą w każdej z następujących kategorii:\n\nNarodowości: Niderlandy, Norwegia, Szwecja i Wyspy Owcze.\nZawody: medyk, minister, nauczyciel i piekarz.\nNapoje: kakao, mleko, napój gazowany i smoothie.\nHobby: malowanie, piłka ręczna, szydełkowanie i tenis.\nUlubione owoce: banan, gruszka, jabłko i pomarańcza.\n\nWiemy również co następuje:\n\n1. Grający w gry wideo ma świnkę morską.\n2. Osoba z Norwegii nie mieszka obok medyka, i to są różne osoby.\n3. Grający w tenisa mieszka obok grającego w piłkę ręczną.\n4. Między medykiem a szydełkującym jest jeden dom.\n5. Pijący smoothie uważa mango za drugi najlepszy owoc.\n6. Między nauczycielem a lubiącym gruszki są 2 domy.\n7. Pijący mleko lubi banany.\n8. Właściciel roweru nie mieszka w domu numer 2.\n9. Pijący napoje gazowane nie mieszka w domu numer 1.\n10. Lubiący gruszki mieszka obok właściciela zwierzaka starego jak na swój gatunek.\n11. Osoba ze Szwecji nie mieszka między grającym w tenisa a lubiącym banany, i to są trzy różne osoby.\n12. Minister mieszka bezpośrednio na lewo od grającego w piłkę ręczną.\n13. Piekarz mieszka w domu numer 3.\n14. Osoba z Wysp Owczych nie mieszka między pijącym kakao a lubiącym jabłka, i to są trzy różne osoby.\n15. Osoba z Wysp Owczych lubi banany.\n16. Szydełkujący wie, że Układ Słoneczny porusza się z prędkością około 200 km/s wokół centrum galaktyki.\n17. Minister mieszka na prawo od lubiącego jabłka.\n18. Osoba ze Szwecji nie mieszka między szydełkującym a grającym w piłkę ręczną, i to są trzy różne osoby.",
+  "target_text": {
+    "object_1": [
+      "Szwecja",
+      "nauczyciel",
+      "smoothie",
+      "malowanie",
+      "jabłko"
+    ],
+    "object_2": [
+      "Norwegia",
+      "minister",
+      "kakao",
+      "szydełkowanie",
+      "pomarańcza"
+    ],
+    "object_3": [
+      "Wyspy Owcze",
+      "piekarz",
+      "mleko",
+      "piłka ręczna",
+      "banan"
+    ],
+    "object_4": [
+      "Niderlandy",
+      "medyk",
+      "napój gazowany",
+      "tenis",
+      "gruszka"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Rząd domów jest ponumerowany od 1 do 4 od lewej do prawej.\n\nW każdym domu mieszka osoba z unikalną cechą w każdej z następujących kategorii:\n\nNarodowości: Islandia, Norwegia, Wielka Brytania i Włochy.\nZwierzęta domowe: kot, papużka falista, patyczak i zebra.\nUlubiony gatunek książek: fantastyka naukowa, horror, kryminał i romans.\nHobby: gry planszowe, malowanie, piłka nożna i tenis.\nUlubione owoce: czarna porzeczka, gruszka, pomarańcza i poziomka.\n\nWiemy również co następuje:\n\n1. Właściciel kota mieszka bezpośrednio na prawo od grającego w piłkę nożną.\n2. Osoba z Włoch mieszka między osobą z Wielkiej Brytanii a grającym w gry planszowe.\n3. Osoba z Wielkiej Brytanii lubi pomarańcze.\n4. Kochający fizykę ma rude włosy.\n5. Czytający kryminały mieszka bezpośrednio na lewo od lubiącego czarne porzeczki.\n6. Malujący mieszka obok noszącego okulary.\n7. Właściciel papużki falistej mieszka w domu numer 4.\n8. Właściciel patyczaka nie lubi gruszek.\n9. Czytający fantastykę naukową mieszka obok grającego w gry wideo.\n10. Osoba z Islandii nie mieszka między właścicielem papużki falistej a lubiącym gruszki, i to są trzy różne osoby.\n11. Malujący mieszka na lewo od lubiącego gruszki.\n12. Czytający horrory i często żeglujący są dobrymi przyjaciółmi.\n13. Właściciel patyczaka mieszka na lewo od czytającego fantastykę naukową.\n14. Właściciel patyczaka nie mieszka między czytającym romanse a lubiącym pomarańcze, i to są trzy różne osoby.\n15. Grający w piłkę nożną nie mieszka między lubiącym czarne porzeczki a lubiącym pomarańcze, i to są trzy różne osoby.\n16. Uważający mango za drugi najlepszy owoc nie mieszka w domu numer 1.",
+  "target_text": {
+    "object_1": [
+      "Islandia",
+      "patyczak",
+      "horror",
+      "piłka nożna",
+      "poziomka"
+    ],
+    "object_2": [
+      "Wielka Brytania",
+      "kot",
+      "fantastyka naukowa",
+      "malowanie",
+      "pomarańcza"
+    ],
+    "object_3": [
+      "Włochy",
+      "zebra",
+      "kryminał",
+      "tenis",
+      "gruszka"
+    ],
+    "object_4": [
+      "Norwegia",
+      "papużka falista",
+      "romans",
+      "gry planszowe",
+      "czarna porzeczka"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Rząd domów jest ponumerowany od 1 do 4 od lewej do prawej.\n\nW każdym domu mieszka osoba z unikalną cechą w każdej z następujących kategorii:\n\nNarodowości: Islandia, Niderlandy, Norwegia i Włochy.\nZwierzęta domowe: papużka falista, patyczak, pies i zebra.\nUlubiony gatunek książek: fantastyka naukowa, kryminał, literatura faktu i poezja.\nHobby: gry planszowe, malowanie, szydełkowanie i tenis.\nUlubione owoce: banan, czarna porzeczka, jabłko i pomarańcza.\n\nWiemy również co następuje:\n\n1. Osoba z Norwegii nie lubi jabłek.\n2. Czytający fantastykę naukową lubi banany.\n3. Między właścicielem papużki falistej a czytającym literaturę faktu jest jeden dom.\n4. Wszystkie domy przy ulicy mają piękne ogrody.\n5. Czytający poezję lubi jabłka.\n6. Właściciel patyczaka nie mieszka w domu numer 3.\n7. Osoba z Islandii gra w gry planszowe.\n8. Mający dyplom magistra z matematyki mieszka w domu numer 3.\n9. Osoba z Włoch mieszka na lewo od szydełkującego.\n10. Osoba z Islandii czyta fantastykę naukową.\n11. Grający w gry planszowe wie, że ślimaki to mięczaki.\n12. Czytający fantastykę naukową mieszka w domu numer 3.\n13. Osoba z Islandii odwiedza Kanadę.\n14. Między osobą z Włoch a grającym w tenisa są 2 domy.\n15. Uważający mango za drugi najlepszy owoc nie mieszka w domu numer 1.\n16. Między osobą z Norwegii a lubiącym pomarańcze są 2 domy.\n17. Właściciel zebry mieszka bezpośrednio na lewo od właściciela papużki falistej.\n18. Właściciel papużki falistej lubi jabłka.",
+  "target_text": {
+    "object_1": [
+      "Włochy",
+      "zebra",
+      "kryminał",
+      "malowanie",
+      "pomarańcza"
+    ],
+    "object_2": [
+      "Niderlandy",
+      "papużka falista",
+      "poezja",
+      "szydełkowanie",
+      "jabłko"
+    ],
+    "object_3": [
+      "Islandia",
+      "pies",
+      "fantastyka naukowa",
+      "gry planszowe",
+      "banan"
+    ],
+    "object_4": [
+      "Norwegia",
+      "patyczak",
+      "literatura faktu",
+      "tenis",
+      "czarna porzeczka"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Oto zagadka:
+  <riddle>
+  {text}
+  </riddle>
+
+  Kto ma jakie cechy i mieszka w którym domu?
+
+  Proszę podać odpowiedź jako JSON dictionary. Każdy key powinien być object_X, gdzie X to numer domu. Każda value powinna być listą cech z powyższych kategorii, które należą do osoby w domu numer X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-pl
+```

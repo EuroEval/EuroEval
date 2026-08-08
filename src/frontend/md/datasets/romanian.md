@@ -1076,3 +1076,239 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-ro
 ```
+
+## Logical Reasoning
+
+### ZebraPuzzleEasy-ro
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Un șir de case are numerele 1 până la 2 de la stânga la dreapta.\n\nÎn fiecare casă locuiește o persoană cu un atribut unic în fiecare din următoarele categorii:\n\nNaționalități: Italia și Regatul Unit.\nMeserii: asistent medical și polițist.\nHobby-uri: croșetă și jocuri de societate.\n\nDe asemenea, știm următoarele:\n\n1. Italianul este asistent medical.\n2. Cel cu bicicletă locuiește în casa numărul 2.\n3. Toate casele de pe stradă au grădini frumoase.\n4. Cel cu cactus locuiește în casa numărul 1.\n5. Cel care face croșetă locuiește la stânga celui care joacă jocuri de societate.\n6. Cel al cărui animal de companie este bătrân pentru specia sa locuiește în casa numărul 1.\n7. Cel care poartă ochelari nu locuiește în casa numărul 1.\n8. Britanicul nu locuiește în casa numărul 1.",
+  "target_text": {
+    "object_1": [
+      "Italia",
+      "asistent medical",
+      "croșetă"
+    ],
+    "object_2": [
+      "Regatul Unit",
+      "polițist",
+      "jocuri de societate"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Un șir de case are numerele 1 până la 2 de la stânga la dreapta.\n\nÎn fiecare casă locuiește o persoană cu un atribut unic în fiecare din următoarele categorii:\n\nNaționalități: Insulele Feroe și Spania.\nAnimale de companie: iepure și insectă-băț.\nGenuri literare preferate: non-ficțiune și poezie.\n\nDe asemenea, știm următoarele:\n\n1. Proprietarul iepurelui navighează des.\n2. Faroezul are un tatuaj.\n3. Cel care cântă la chitară are un animal de companie bătrân pentru specia sa.\n4. Spaniolul citește poezie.\n5. Proprietarul insectei-băț și cel cu cactus sunt buni prieteni.\n6. Există multe mașini pe stradă.\n7. Spaniolul locuiește la stânga proprietarului iepurelui.",
+  "target_text": {
+    "object_1": [
+      "Spania",
+      "insectă-băț",
+      "poezie"
+    ],
+    "object_2": [
+      "Insulele Feroe",
+      "iepure",
+      "non-ficțiune"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Un șir de case are numerele 1 până la 2 de la stânga la dreapta.\n\nÎn fiecare casă locuiește o persoană cu un atribut unic în fiecare din următoarele categorii:\n\nMeserii: brutar și polițist.\nAnimale de companie: insectă-băț și pisică.\nFructe preferate: coacăz negru și căpșună.\n\nDe asemenea, știm următoarele:\n\n1. Cel care urmărește săriturile cu schiuri locuiește în casa numărul 2.\n2. Cel care joacă jocuri video cântă la chitară.\n3. Brutarul nu locuiește în casa numărul 2.\n4. Polițistul are o pisică.\n5. Brutarul nu iubește coacăzele negre.\n6. Iubitorul de coacăze negre are un animal de companie bătrân pentru specia sa.\n7. Castravetele este o bacă.\n8. Cel care navighează des are un tatuaj.",
+  "target_text": {
+    "object_1": [
+      "brutar",
+      "insectă-băț",
+      "căpșună"
+    ],
+    "object_2": [
+      "polițist",
+      "pisică",
+      "coacăz negru"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Iată o ghicitoare:
+  <riddle>
+  {text}
+  </riddle>
+
+  Cine are ce atribute și locuiește în care casă?
+
+  Vă rugăm să furnizați răspunsul dvs. ca un JSON dictionary. Fiecare key trebuie să fie object_X unde X este numărul casei. Fiecare value trebuie să fie o listă a atributelor din categoriile de mai sus care aparțin persoanei din casa numărul X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-ro
+```
+
+### Unofficial: ZebraPuzzleHard-ro
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Un șir de case are numerele 1 până la 4 de la stânga la dreapta.\n\nÎn fiecare casă locuiește o persoană cu un atribut unic în fiecare din următoarele categorii:\n\nNaționalități: Franța, Letonia, Norvegia și Spania.\nMeserii: asistent medical, brutar, polițist și programator.\nAnimale de companie: câine, iepure, melc și peruș.\nBăuturi: cafea, ceai, răcoritoare și smoothie.\nGenuri literare preferate: fantasy, horror, romane polițiste și science fiction.\n\nDe asemenea, știm următoarele:\n\n1. Polițistul nu locuiește între brutarul și proprietarul iepurelui, și sunt trei persoane diferite.\n2. Proprietarul iepurelui nu locuiește lângă cititorul de fantasy, și sunt persoane diferite.\n3. Cel cu tatuaj nu are un cactus.\n4. Programatorul locuiește în casa numărul 3.\n5. Proprietarul câinelui bea răcoritoare.\n6. Asistentul medical locuiește la stânga brutarului.\n7. Băutorul de smoothie știe că cafeaua conține cofeină.\n8. Spaniolul locuiește la dreapta băutorului de răcoritoare.\n9. Programatorul nu bea ceai.\n10. Letonul locuiește imediat la stânga proprietarului melcului.\n11. Polițistul și cel care navighează des sunt buni prieteni.\n12. Este o casă între francezul și băutorul de ceai.\n13. Băutorul de răcoritoare și cel al cărui animal de companie este bătrân pentru specia sa sunt buni prieteni.\n14. Sunt 2 case între asistentul medical și băutorul de smoothie.\n15. Proprietarul perușului nu locuiește lângă cititorul de romane polițiste, și sunt persoane diferite.\n16. Brutarul citește science fiction.\n17. Cel cu bicicletă urmărește săriturile cu schiuri.\n18. Spaniolul citește romane polițiste.",
+  "target_text": {
+    "object_1": [
+      "Letonia",
+      "asistent medical",
+      "câine",
+      "răcoritoare",
+      "fantasy"
+    ],
+    "object_2": [
+      "Spania",
+      "polițist",
+      "melc",
+      "ceai",
+      "romane polițiste"
+    ],
+    "object_3": [
+      "Norvegia",
+      "programator",
+      "iepure",
+      "cafea",
+      "horror"
+    ],
+    "object_4": [
+      "Franța",
+      "brutar",
+      "peruș",
+      "smoothie",
+      "science fiction"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Un șir de case are numerele 1 până la 4 de la stânga la dreapta.\n\nÎn fiecare casă locuiește o persoană cu un atribut unic în fiecare din următoarele categorii:\n\nNaționalități: Italia, Letonia, Norvegia și Suedia.\nMeserii: brutar, ministru, profesor și programator.\nBăuturi: cacao caldă, lapte, răcoritoare și smoothie.\nHobby-uri: bouldering, croșetă, fotbal și pictură.\nFructe preferate: coacăz negru, căpșună, fragi și pară.\n\nDe asemenea, știm următoarele:\n\n1. Profesorul locuiește imediat la stânga iubitorului de pere.\n2. Este o casă între ministrul și cel care face bouldering.\n3. Este o casă între băutorul de lapte și cel care pictează.\n4. Suedezul nu face bouldering.\n5. Cafeaua conține cofeină.\n6. Băutorul de cacao caldă nu locuiește lângă iubitorul de fragi, și sunt persoane diferite.\n7. Sunt 2 case între norvegianul și băutorul de cacao caldă.\n8. Există multe mașini pe stradă.\n9. Programatorul locuiește imediat la stânga iubitorului de căpșuni.\n10. Letonul locuiește imediat la dreapta italianului.\n11. Suedezul are un cobai.\n12. Cel care urmărește săriturile cu schiuri locuiește în casa numărul 1.\n13. Cel care face bouldering iubește căpșunile.\n14. Băutorul de smoothie locuiește lângă băutorul de lapte.\n15. Cel care pictează iubește perele.\n16. Cel cu masterat în matematică are un animal de companie bătrân pentru specia sa.\n17. Sunt 2 case între cel care face croșetă și iubitorul de fragi.",
+  "target_text": {
+    "object_1": [
+      "Norvegia",
+      "programator",
+      "lapte",
+      "fotbal",
+      "fragi"
+    ],
+    "object_2": [
+      "Italia",
+      "profesor",
+      "smoothie",
+      "bouldering",
+      "căpșună"
+    ],
+    "object_3": [
+      "Letonia",
+      "brutar",
+      "răcoritoare",
+      "pictură",
+      "pară"
+    ],
+    "object_4": [
+      "Suedia",
+      "ministru",
+      "cacao caldă",
+      "croșetă",
+      "coacăz negru"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Un șir de case are numerele 1 până la 4 de la stânga la dreapta.\n\nÎn fiecare casă locuiește o persoană cu un atribut unic în fiecare din următoarele categorii:\n\nMeserii: asistent medical, polițist, profesor și vânzător.\nAnimale de companie: iepure, insectă-băț, peruș și zebră.\nBăuturi: cacao caldă, lapte, răcoritoare și smoothie.\nGenuri literare preferate: horror, non-ficțiune, romane de dragoste și romane polițiste.\nFructe preferate: căpșună, fragi, pară și portocală.\n\nDe asemenea, știm următoarele:\n\n1. Proprietarul perușului locuiește imediat la stânga cititorului de romane de dragoste.\n2. Băutorul de lapte locuiește imediat la dreapta iubitorului de pere.\n3. Polițistul locuiește la dreapta iubitorului de căpșuni.\n4. Proprietarul zebrei nu bea cacao caldă.\n5. Vânzătorul locuiește imediat la stânga proprietarului zebrei.\n6. Vânzătorul urmărește săriturile cu schiuri.\n7. Cititorul de horror are un masterat în matematică.\n8. Cel al cărui animal de companie este bătrân pentru specia sa navighează des.\n9. Sunt 2 case între băutorul de răcoritoare și cititorul de non-ficțiune.\n10. Profesorul nu locuiește lângă proprietarul perușului, și sunt persoane diferite.\n11. Proprietarul insectei-băț locuiește imediat la stânga băutorului de cacao caldă.\n12. Proprietarul zebrei nu locuiește între băutorul de smoothie și cititorul de romane polițiste, și sunt trei persoane diferite.\n13. Asistentul medical și cel care a vizitat Canada sunt buni prieteni.\n14. Iubitorul de portocale locuiește în casa numărul 2.\n15. Proprietarul cobaiului nu locuiește în casa numărul 3.\n16. Proprietarul perușului locuiește la stânga cititorului de horror.",
+  "target_text": {
+    "object_1": [
+      "asistent medical",
+      "peruș",
+      "răcoritoare",
+      "romane polițiste",
+      "căpșună"
+    ],
+    "object_2": [
+      "polițist",
+      "insectă-băț",
+      "smoothie",
+      "romane de dragoste",
+      "portocală"
+    ],
+    "object_3": [
+      "vânzător",
+      "iepure",
+      "cacao caldă",
+      "horror",
+      "pară"
+    ],
+    "object_4": [
+      "profesor",
+      "zebră",
+      "lapte",
+      "non-ficțiune",
+      "fragi"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Iată o ghicitoare:
+  <riddle>
+  {text}
+  </riddle>
+
+  Cine are ce atribute și locuiește în care casă?
+
+  Vă rugăm să furnizați răspunsul dvs. ca un JSON dictionary. Fiecare key trebuie să fie object_X unde X este numărul casei. Fiecare value trebuie să fie o listă a atributelor din categoriile de mai sus care aparțin persoanei din casa numărul X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-ro
+```

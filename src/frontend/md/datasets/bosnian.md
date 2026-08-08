@@ -473,3 +473,239 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-bs
 ```
+
+## Logical Reasoning
+
+### ZebraPuzzleEasy-bs
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Niz kuća numeriran je od 1 do 2 s lijeva na desno.\n\nU svakoj kući živi osoba s jedinstvenim atributom u svakoj od sljedećih kategorija:\n\nOmiljeni književni žanrovi: naučna fantastika i nefikcija.\nOmiljeno voće: jagoda i kruška.\nPića: gazirani napitak i mlijeko.\n\nTakođer znamo sljedeće:\n\n1. Čitalac nefikcije ne pije gazirani napitak.\n2. Onaj ko igra video igre ne živi u kući broj 2.\n3. Ljubitelj krušaka ne pije gazirani napitak.\n4. Onaj ko redovito jedri živi u kući broj 2.\n5. Onaj ko smatra da je mango drugo najbolje voće, živi u kući broj 2.\n6. Čitalac naučne fantastike voli rješavati zagonetke.\n7. Vlasnik zamorčeta ima tetovažu.\n8. Onaj ko pije mlijeko živi u kući broj 2.",
+  "target_text": {
+    "object_1": [
+      "naučna fantastika",
+      "jagoda",
+      "gazirani napitak"
+    ],
+    "object_2": [
+      "nefikcija",
+      "kruška",
+      "mlijeko"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Niz kuća numeriran je od 1 do 2 s lijeva na desno.\n\nU svakoj kući živi osoba s jedinstvenim atributom u svakoj od sljedećih kategorija:\n\nNacionalnosti: Norveška i Španija.\nOmiljeno voće: jabuka i šumska jagoda.\nPića: kafa i mlijeko.\n\nTakođer znamo sljedeće:\n\n1. Španac živi lijevo od Norvežanina.\n2. Vlasnik bicikla ne živi u kući broj 2.\n3. Ljubitelj šumskih jagoda živi lijevo od onog ko pije kafu.\n4. Ljubitelj jabuka i vlasnik starog ljubimca za svoju vrstu, su dobri prijatelji.\n5. Sve kuće imaju velike prozore.\n6. Onaj ko prati skijaške skokove ima sestru.\n7. Puževi su mekušci.",
+  "target_text": {
+    "object_1": [
+      "Španija",
+      "šumska jagoda",
+      "mlijeko"
+    ],
+    "object_2": [
+      "Norveška",
+      "jabuka",
+      "kafa"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Niz kuća numeriran je od 1 do 2 s lijeva na desno.\n\nU svakoj kući živi osoba s jedinstvenim atributom u svakoj od sljedećih kategorija:\n\nOmiljeni književni žanrovi: kriminalistički roman i ljubavni roman.\nOmiljeno voće: kruška i šumska jagoda.\nPića: gazirani napitak i sok.\n\nTakođer znamo sljedeće:\n\n1. Onaj ko igra video igre ne živi u kući broj 2.\n2. Čitalac kriminalističkih romana zna da kafa sadrži kofein.\n3. Čitalac ljubavnih romana voli kruške.\n4. Vlasnik kaktusa živi u kući broj 2.\n5. Onaj ko pije sok živi pored onog ko je posjetio Kanadu.\n6. Ljubitelj šumskih jagoda živi u kući broj 1.\n7. Onaj ko smatra da je mango drugo najbolje voće, ne živi u kući broj 1.\n8. Čitalac kriminalističkih romana ne pije gazirani napitak.",
+  "target_text": {
+    "object_1": [
+      "kriminalistički roman",
+      "šumska jagoda",
+      "sok"
+    ],
+    "object_2": [
+      "ljubavni roman",
+      "kruška",
+      "gazirani napitak"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Evo zagonetke:
+  <riddle>
+  {text}
+  </riddle>
+
+  Tko ima koje osobine i živi u kojoj kući?
+
+  Molimo da svoj odgovor date kao JSON dictionary. Svaki key treba biti object_X gdje je X broj kuće. Svaka value treba biti popis osobina iz gornjih kategorija koje pripadaju osobi u kući broj X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-bs
+```
+
+### Unofficial: ZebraPuzzleHard-bs
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Niz kuća numeriran je od 1 do 4 s lijeva na desno.\n\nU svakoj kući živi osoba s jedinstvenim atributom u svakoj od sljedećih kategorija:\n\nNacionalnosti: Danska, Island, Italija i Letonija.\nZanimanja: medicinska sestra, ministar, pekar i prodavač.\nKućni ljubimci: pas, puž, zebra i štapasti insekt.\nOmiljeno voće: banana, jabuka, jagoda i kruška.\nHobiji: heklanje, rukomet, slikanje i tenis.\n\nTakođer znamo sljedeće:\n\n1. Islanđanin ne živi pored onog ko hekla, a oni su različite osobe.\n2. Ljubitelj jagoda živi između vlasnika psa i onog ko igra rukomet.\n3. Rješavanje zagonetki je zabavno.\n4. Talijan živi neposredno lijevo od ministra.\n5. Vlasnik psa živi neposredno lijevo od onog ko igra tenis.\n6. Ministar živi između prodavača i onog ko igra rukomet.\n7. Vlasnik puža živi neposredno lijevo od ljubitelja banana.\n8. Vlasnik puža ne živi pored onog ko slika, a oni su različite osobe.\n9. Medicinska sestra živi neposredno desno od onog ko igra tenis.\n10. Vlasnik psa živi pored onog ko ima sestru.\n11. Između Talijana i vlasnika puža nalazi se jedna kuća.\n12. Kafa sadrži kofein.\n13. Medicinska sestra živi desno od vlasnika štapastog insekta.\n14. Ljubitelj krušaka živi u kući broj 2.\n15. Vlasnik kaktusa redovito jedri.\n16. Danac živi desno od ljubitelja krušaka.\n17. Haringe su ribe.",
+  "target_text": {
+    "object_1": [
+      "Italija",
+      "prodavač",
+      "štapasti insekt",
+      "jabuka",
+      "slikanje"
+    ],
+    "object_2": [
+      "Letonija",
+      "ministar",
+      "pas",
+      "kruška",
+      "heklanje"
+    ],
+    "object_3": [
+      "Danska",
+      "pekar",
+      "puž",
+      "jagoda",
+      "tenis"
+    ],
+    "object_4": [
+      "Island",
+      "medicinska sestra",
+      "zebra",
+      "banana",
+      "rukomet"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Niz kuća numeriran je od 1 do 4 s lijeva na desno.\n\nU svakoj kući živi osoba s jedinstvenim atributom u svakoj od sljedećih kategorija:\n\nNacionalnosti: Danska, Island, Ujedinjeno Kraljevstvo i Švedska.\nZanimanja: ministar, prodavač, programer i učitelj.\nOmiljeni književni žanrovi: fantazija, horor, kriminalistički roman i ljubavni roman.\nOmiljeno voće: banana, jagoda, narandža i šumska jagoda.\nPića: gazirani napitak, mlijeko, smuti i čaj.\n\nTakođer znamo sljedeće:\n\n1. Između učitelja i ljubitelja šumskih jagoda nalazi se jedna kuća.\n2. Britanac voli narandže.\n3. Čitalac fantazije i onaj ko svira gitaru su dobri prijatelji.\n4. Islanđanin ne živi pored ljubitelja banana, a oni su različite osobe.\n5. Onaj ko pije smuti ima tetovažu.\n6. Islanđanin živi neposredno lijevo od programera.\n7. Ministar čita kriminalističke romane.\n8. Učitelj ne živi između onog ko pije smuti i onog ko pije čaj, a oni su tri različite osobe.\n9. Ministar ne živi pored onog ko pije čaj, a oni su različite osobe.\n10. Onaj ko redovito jedri ne živi u kući broj 3.\n11. Danac živi neposredno lijevo od onog ko pije mlijeko.\n12. Između Danca i učitelja ima 2 kuće.\n13. Programer čita ljubavne romane.\n14. Čitalac fantazije ne živi pored ljubitelja jagoda, a oni su različite osobe.\n15. Onaj ko ima sestru je posjetio Kanadu.\n16. Magistar matematike igra video igre.",
+  "target_text": {
+    "object_1": [
+      "Danska",
+      "ministar",
+      "kriminalistički roman",
+      "jagoda",
+      "smuti"
+    ],
+    "object_2": [
+      "Island",
+      "prodavač",
+      "horor",
+      "šumska jagoda",
+      "mlijeko"
+    ],
+    "object_3": [
+      "Ujedinjeno Kraljevstvo",
+      "programer",
+      "ljubavni roman",
+      "narandža",
+      "čaj"
+    ],
+    "object_4": [
+      "Švedska",
+      "učitelj",
+      "fantazija",
+      "banana",
+      "gazirani napitak"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Niz kuća numeriran je od 1 do 4 s lijeva na desno.\n\nU svakoj kući živi osoba s jedinstvenim atributom u svakoj od sljedećih kategorija:\n\nNacionalnosti: Danska, Italija, Norveška i Švedska.\nOmiljeni književni žanrovi: fantazija, kriminalistički roman, naučna fantastika i nefikcija.\nOmiljeno voće: banana, jabuka, narandža i šumska jagoda.\nPića: kafa, mlijeko, smuti i čaj.\nHobiji: fudbal, rukomet, slikanje i tenis.\n\nTakođer znamo sljedeće:\n\n1. Norvežanin ne živi u kući broj 1.\n2. Šveđanin živi lijevo od ljubitelja jabuka.\n3. Onaj ko pije mlijeko zna da sve kuće imaju velike prozore.\n4. Talijan ne živi između čitaoca kriminalističkih romana i čitaoca nefikcije, a oni su tri različite osobe.\n5. Onaj ko redovito jedri živi u kući broj 2.\n6. Između Talijana i onog ko pije mlijeko nalazi se jedna kuća.\n7. Šveđanin zna da sve kuće u ulici imaju lijepe vrtove.\n8. Talijan živi pored vlasnika starog ljubimca za svoju vrstu.\n9. Između Norvežanina i ljubitelja jabuka nalazi se jedna kuća.\n10. Čitalac nefikcije živi neposredno lijevo od onog ko pije kafu.\n11. Između čitaoca naučne fantastike i ljubitelja narandži nalazi se jedna kuća.\n12. Ljubitelj šumskih jagoda živi između čitaoca kriminalističkih romana i onog ko igra tenis.\n13. Norvežanin ne živi pored čitaoca naučne fantastike, a oni su različite osobe.\n14. Između čitaoca naučne fantastike i onog ko igra fudbal nalazi se jedna kuća.\n15. Čitalac nefikcije živi neposredno lijevo od onog ko slika.\n16. Ljubitelj jabuka zna da kafa sadrži kofein.\n17. Talijan živi neposredno lijevo od onog ko pije čaj.",
+  "target_text": {
+    "object_1": [
+      "Švedska",
+      "kriminalistički roman",
+      "banana",
+      "mlijeko",
+      "rukomet"
+    ],
+    "object_2": [
+      "Norveška",
+      "nefikcija",
+      "narandža",
+      "smuti",
+      "fudbal"
+    ],
+    "object_3": [
+      "Italija",
+      "fantazija",
+      "šumska jagoda",
+      "kafa",
+      "slikanje"
+    ],
+    "object_4": [
+      "Danska",
+      "naučna fantastika",
+      "jabuka",
+      "čaj",
+      "tenis"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Evo zagonetke:
+  <riddle>
+  {text}
+  </riddle>
+
+  Tko ima koje osobine i živi u kojoj kući?
+
+  Molimo da svoj odgovor date kao JSON dictionary. Svaki key treba biti object_X gdje je X broj kuće. Svaka value treba biti popis osobina iz gornjih kategorija koje pripadaju osobi u kući broj X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-bs
+```

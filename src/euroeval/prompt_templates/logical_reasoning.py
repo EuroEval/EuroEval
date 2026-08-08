@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     ALBANIAN,
+    BASQUE,
     BELARUSIAN,
     BOSNIAN,
     BULGARIAN,
@@ -22,21 +23,27 @@ from ..languages import (
     GREEK,
     HUNGARIAN,
     ICELANDIC,
+    IRISH,
     ITALIAN,
     LATVIAN,
     LITHUANIAN,
+    LUXEMBOURGISH,
+    MACEDONIAN,
     NORWEGIAN,
     NORWEGIAN_BOKMÅL,
     NORWEGIAN_NYNORSK,
     POLISH,
     PORTUGUESE,
     ROMANIAN,
+    RUSSIAN,
+    SCOTS,
     SERBIAN,
     SLOVAK,
     SLOVENE,
     SPANISH,
     SWEDISH,
     UKRAINIAN,
+    WESTERN_FRISIAN,
 )
 
 if t.TYPE_CHECKING:
@@ -52,6 +59,18 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         "jetë object_X ku X është numri i shtëpisë. Çdo value duhet të jetë një listë "
         "e karakteristikave nga kategoritë e mësipërme që i përkasin personit në "
         "shtëpinë nr. X.",
+        default_prompt_label_mapping=dict(),
+    ),
+    BASQUE: PromptConfig(
+        default_prompt_prefix="",
+        default_prompt_template="",
+        default_instruction_prompt="Hona hemen asmakizun bat:\n"
+        "<riddle>\n{text}\n</riddle>\n\n"
+        "Nork zein atributu ditu eta zein etxetan bizi da?\n\n"
+        "Mesedez, eman zure erantzuna JSON dictionary gisa. Key bakoitza object_X "
+        "izan behar da, non X etxeko zenbakia den. Value bakoitza goiko kategorietako "
+        "atributuen zerrenda bat izan behar da, X. zenbakiko etxeko pertsonari "
+        "dagozkionak.",
         default_prompt_label_mapping=dict(),
     ),
     BELARUSIAN: PromptConfig(
@@ -236,6 +255,17 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         " úr áðurnefndum flokkum sem tilheyra einstaklingnum í húsi nr. X.",
         default_prompt_label_mapping=dict(),
     ),
+    IRISH: PromptConfig(
+        default_prompt_prefix="",
+        default_prompt_template="",
+        default_instruction_prompt="Seo tomhas duit:\n<riddle>\n{text}\n</riddle>\n\n"
+        "Cé a bhfuil na tréithe seo aige agus a chónaíonn i cén teach?\n\n"
+        "Cuir do fhreagra isteach le do thoil mar fhoclóir JSON. Caithfidh gach key "
+        "a bheith object_X áit a bhfuil X mar uimhir an tí. Caithfidh gach value "
+        "a bheith ina liosta de na tréithe ó na catagóirí thuasluaite a bhaineann "
+        "leis an duine i dteach uimhir X.",
+        default_prompt_label_mapping=dict(),
+    ),
     ITALIAN: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
@@ -266,6 +296,28 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         "Prašom pateikti savo atsakymą kaip JSON dictionary. Kiekvienas key turi būti "
         "object_X, kur X yra namo numeris. Kiekviena value turi būti savybių iš "
         "aukščiau nurodytų kategorijų, priklausančių asmeniui name numeriu X, sąrašas.",
+        default_prompt_label_mapping=dict(),
+    ),
+    LUXEMBOURGISH: PromptConfig(
+        default_prompt_prefix="",
+        default_prompt_template="",
+        default_instruction_prompt="Hei ass e Rätsel:\n<riddle>\n{text}\n</riddle>\n\n"
+        "Wien huet wéi eng Eegenschaften a wunnt an wéi engem Haus?\n\n"
+        "Gitt w.e.g. Är Äntwert als e JSON dictionary un. All key muss object_X sinn, "
+        "wou X d'Hausnummer ass. All value muss eng Lëscht vun den Eegenschaften aus "
+        "den uewe genannte Kategorien sinn, déi zu der Persoun am Haus Nr. X "
+        "gehéieren.",
+        default_prompt_label_mapping=dict(),
+    ),
+    MACEDONIAN: PromptConfig(
+        default_prompt_prefix="",
+        default_prompt_template="",
+        default_instruction_prompt="Еве загатка:\n<riddle>\n{text}\n</riddle>\n\n"
+        "Кој има кои особини и живее во која куќа?\n\n"
+        "Ве молиме, дајте го вашиот одговор како JSON dictionary. Секој key мора "
+        "да биде object_X каде X е бројот на куќата. Секоја value мора да биде "
+        "листа на особините од наведените категории кои припаѓаат на лицето во "
+        "куќа број X.",
         default_prompt_label_mapping=dict(),
     ),
     NORWEGIAN_BOKMÅL: PromptConfig(
@@ -330,6 +382,27 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         "din casa numărul X.",
         default_prompt_label_mapping=dict(),
     ),
+    RUSSIAN: PromptConfig(
+        default_prompt_prefix="",
+        default_prompt_template="",
+        default_instruction_prompt="Вот загадка:\n<riddle>\n{text}\n</riddle>\n\n"
+        "У кого какие атрибуты и кто живёт в каком доме?\n\n"
+        "Пожалуйста, предоставьте ваш ответ в виде JSON dictionary. Каждый key "
+        "должен быть object_X, где X — номер дома. Каждая value должна быть "
+        "списком атрибутов из вышеуказанных категорий, которые принадлежат "
+        "человеку в доме номер X.",
+        default_prompt_label_mapping=dict(),
+    ),
+    SCOTS: PromptConfig(
+        default_prompt_prefix="",
+        default_prompt_template="",
+        default_instruction_prompt="Here's a raivel:\n<riddle>\n{text}\n</riddle>\n\n"
+        "Whae has whit attributes and bides in whit hoose?\n\n"
+        "Please gie yer answer as a JSON dictionary. Ilka key maun be object_X "
+        "whaur X is the hoose nummer. Ilka value maun be a leet o the attributes "
+        "frae the forsaid categories that belang tae the body in hoose nummer X.",
+        default_prompt_label_mapping=dict(),
+    ),
     SERBIAN: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
@@ -391,6 +464,17 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         "object_X, де X — номер будинку. Кожне value має бути списком "
         "характеристик з вищевказаних категорій, які належать особі в будинку "
         "номер X.",
+        default_prompt_label_mapping=dict(),
+    ),
+    WESTERN_FRISIAN: PromptConfig(
+        default_prompt_prefix="",
+        default_prompt_template="",
+        default_instruction_prompt="Hjir is in riedling:\n"
+        "<riddle>\n{text}\n</riddle>\n\n"
+        "Wa hat hokker attributen en wennet yn hokker hûs?\n\n"
+        "Leverje jo antwurd as in JSON dictionary. Elk key moat object_X wêze, "
+        "wêr X it hûsnûmer is. Elk value moat in list wêze fan de attributen út "
+        "de neamde kategoryen dy't heart by de persoan yn hûs nr. X.",
         default_prompt_label_mapping=dict(),
     ),
 }

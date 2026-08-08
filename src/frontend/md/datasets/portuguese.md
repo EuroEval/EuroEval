@@ -1594,3 +1594,239 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-pt
 ```
+
+## Logical Reasoning
+
+### ZebraPuzzleEasy-pt
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Uma fila de casas tem os números 1 a 2 da esquerda para a direita.\n\nEm cada casa vive uma pessoa com um atributo único em cada uma das seguintes categorias:\n\nGéneros de livros preferidos: não-ficção e terror.\nPassatempos: andebol e jogos de mesa.\nFrutas preferidas: laranja e morango silvestre.\n\nTambém sabemos o seguinte:\n\n1. Os caracóis são moluscos.\n2. O jogador de andebol gosta de física.\n3. O jogador de videojogos mora na casa número 2.\n4. O amante de vela não mora na casa número 1.\n5. O apreciador de morangos silvestres sabe que os arenques são peixes.\n6. O leitor de não-ficção mora à direita do jogador de jogos de mesa.\n7. O apreciador de laranjas mora na casa número 2.",
+  "target_text": {
+    "object_1": [
+      "terror",
+      "jogos de mesa",
+      "morango silvestre"
+    ],
+    "object_2": [
+      "não-ficção",
+      "andebol",
+      "laranja"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Uma fila de casas tem os números 1 a 2 da esquerda para a direita.\n\nEm cada casa vive uma pessoa com um atributo único em cada uma das seguintes categorias:\n\nNacionalidades: Países Baixos e Reino Unido.\nProfissões: enfermeiro e professor.\nFrutas preferidas: banana e morango silvestre.\n\nTambém sabemos o seguinte:\n\n1. O neerlandês mora à direita do apreciador de morangos silvestres.\n2. O utilizador de óculos mora na casa número 1.\n3. O professor mora ao lado do detentor de um mestrado em matemática.\n4. O apreciador de bananas tem um animal de estimação velho para a sua espécie.\n5. O neerlandês sabe que o café tem cafeína.\n6. O enfermeiro não gosta de morangos silvestres.\n7. O indivíduo com uma irmã mora na casa número 1.",
+  "target_text": {
+    "object_1": [
+      "Reino Unido",
+      "professor",
+      "morango silvestre"
+    ],
+    "object_2": [
+      "Países Baixos",
+      "enfermeiro",
+      "banana"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Uma fila de casas tem os números 1 a 2 da esquerda para a direita.\n\nEm cada casa vive uma pessoa com um atributo único em cada uma das seguintes categorias:\n\nAnimais de estimação: gato e zebra.\nGéneros de livros preferidos: ficção científica e não-ficção.\nPassatempos: andebol e jogos de mesa.\n\nTambém sabemos o seguinte:\n\n1. O jogador de andebol tem um porquinho-da-índia.\n2. O leitor de ficção científica mora à esquerda do jogador de jogos de mesa.\n3. O guitarrista gosta de física.\n4. O dono de um gato não lê não-ficção.\n5. O indivíduo cujo animal de estimação é velho para a sua espécie joga videojogos.\n6. O dono de uma bicicleta não mora na casa número 2.\n7. O dono de uma zebra e o amante de salto de esqui são muito próximos.",
+  "target_text": {
+    "object_1": [
+      "gato",
+      "ficção científica",
+      "andebol"
+    ],
+    "object_2": [
+      "zebra",
+      "não-ficção",
+      "jogos de mesa"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Aqui está um enigma:
+  <riddle>
+  {text}
+  </riddle>
+
+  Quem tem quais atributos e vive em qual casa?
+
+  Por favor, forneça sua resposta como um JSON dictionary. Cada key deve ser object_X onde X é o número da casa. Cada value deve ser uma lista dos atributos das categorias acima que pertencem à pessoa na casa número X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-pt
+```
+
+### Unofficial: ZebraPuzzleHard-pt
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Uma fila de casas tem os números 1 a 4 da esquerda para a direita.\n\nEm cada casa vive uma pessoa com um atributo único em cada uma das seguintes categorias:\n\nNacionalidades: França, Ilhas Faroé, Noruega e Países Baixos.\nAnimais de estimação: caracol, cão, inseto-pau e zebra.\nBebidas: batido, café, chá e leite.\nPassatempos: andebol, crochet, escalada de bloc e jogos de mesa.\nFrutas preferidas: banana, cássis, laranja e morango.\n\nTambém sabemos o seguinte:\n\n1. Os caracóis são moluscos.\n2. O boulderista mora entre o neerlandês e o apreciador de bananas.\n3. O dono de um cão não mora entre o praticante de crochet e o apreciador de laranjas, e os três são pessoas diferentes.\n4. O dono de um cão mora imediatamente à esquerda do apreciador de morangos.\n5. O dono de um caracol mora ao lado do ruivo.\n6. O bebedor de batido mora na casa número 1.\n7. O jogador de jogos de mesa mora na casa número 3.\n8. Há 2 casas entre o bebedor de batido e o bebedor de leite.\n9. O apreciador de morangos sabe que o sistema solar desloca-se a cerca de 200 km/s em torno do centro da galáxia.\n10. O norueguês mora na casa número 4.\n11. O faroês mora imediatamente à esquerda do dono de um inseto-pau.\n12. O dono de uma bicicleta não mora na casa número 3.\n13. Há uma casa entre o dono de uma zebra e o bebedor de café.\n14. O dono de uma zebra mora à direita do praticante de crochet.\n15. O utilizador de óculos não mora na casa número 2.",
+  "target_text": {
+    "object_1": [
+      "Ilhas Faroé",
+      "caracol",
+      "batido",
+      "crochet",
+      "banana"
+    ],
+    "object_2": [
+      "França",
+      "inseto-pau",
+      "café",
+      "escalada de bloc",
+      "laranja"
+    ],
+    "object_3": [
+      "Países Baixos",
+      "cão",
+      "chá",
+      "jogos de mesa",
+      "cássis"
+    ],
+    "object_4": [
+      "Noruega",
+      "zebra",
+      "leite",
+      "andebol",
+      "morango"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Uma fila de casas tem os números 1 a 4 da esquerda para a direita.\n\nEm cada casa vive uma pessoa com um atributo único em cada uma das seguintes categorias:\n\nProfissões: balconista, ministro, padeiro e professor.\nAnimais de estimação: caracol, cão, inseto-pau e periquito.\nBebidas: batido, café, leite e sumo.\nGéneros de livros preferidos: ficção científica, romance, romance policial e terror.\nPassatempos: andebol, escalada de bloc, futebol e ténis.\n\nTambém sabemos o seguinte:\n\n1. O jogador de andebol mora ao lado do indivíduo que acha que a segunda melhor fruta é a manga.\n2. Há uma casa entre o dono de um caracol e o leitor de terror.\n3. Há uma casa entre o padeiro e o jogador de futebol.\n4. O padeiro mora imediatamente à esquerda do bebedor de batido.\n5. Há uma casa entre o jogador de andebol e o boulderista.\n6. O dono de um cão mora imediatamente à direita do leitor de romances de amor.\n7. O ministro não lê terror.\n8. O bebedor de leite mora ao lado do dono de um cacto.\n9. O bebedor de sumo mora na casa número 1.\n10. O bebedor de café mora na casa número 4.\n11. O amante de salto de esqui toca guitarra.\n12. O bebedor de leite e o amante de física são muito próximos.\n13. O dono de um periquito mora à esquerda do leitor de romances policiais.\n14. O dono de um periquito joga futebol.\n15. O leitor de terror tem uma tatuagem.\n16. O ministro mora entre o balconista e o boulderista.\n17. Há uma casa entre o bebedor de batido e o boulderista.",
+  "target_text": {
+    "object_1": [
+      "padeiro",
+      "inseto-pau",
+      "sumo",
+      "romance",
+      "ténis"
+    ],
+    "object_2": [
+      "balconista",
+      "cão",
+      "batido",
+      "terror",
+      "andebol"
+    ],
+    "object_3": [
+      "ministro",
+      "periquito",
+      "leite",
+      "ficção científica",
+      "futebol"
+    ],
+    "object_4": [
+      "professor",
+      "caracol",
+      "café",
+      "romance policial",
+      "escalada de bloc"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Uma fila de casas tem os números 1 a 4 da esquerda para a direita.\n\nEm cada casa vive uma pessoa com um atributo único em cada uma das seguintes categorias:\n\nProfissões: balconista, enfermeiro, polícia e professor.\nAnimais de estimação: coelho, gato, inseto-pau e zebra.\nGéneros de livros preferidos: ficção científica, não-ficção, romance e romance policial.\nPassatempos: andebol, crochet, futebol e jogos de mesa.\nFrutas preferidas: cássis, laranja, morango e pera.\n\nTambém sabemos o seguinte:\n\n1. O apreciador de laranjas sabe que várias das casas têm uma porta verde.\n2. O amante de física mora na casa número 2.\n3. Todas as casas têm janelas grandes.\n4. O apreciador de peras mora entre o jogador de jogos de mesa e o apreciador de morangos.\n5. O dono de um inseto-pau não mora entre o jogador de jogos de mesa e o jogador de futebol, e os três são pessoas diferentes.\n6. Há 2 casas entre o jogador de futebol e o apreciador de cássis.\n7. O leitor de não-ficção mora entre o dono de um gato e o leitor de ficção científica.\n8. O dono de um coelho mora ao lado do apreciador de morangos.\n9. O professor mora ao lado do apreciador de peras.\n10. Há 2 casas entre o balconista e o jogador de futebol.\n11. O leitor de romances de amor pratica crochet.\n12. O polícia mora à esquerda do apreciador de cássis.\n13. Os caracóis são moluscos.\n14. O professor mora ao lado do amante de vela.\n15. O polícia não mora ao lado do leitor de romances policiais, e são pessoas diferentes.\n16. O professor não joga futebol.",
+  "target_text": {
+    "object_1": [
+      "polícia",
+      "zebra",
+      "ficção científica",
+      "futebol",
+      "morango"
+    ],
+    "object_2": [
+      "enfermeiro",
+      "coelho",
+      "não-ficção",
+      "andebol",
+      "pera"
+    ],
+    "object_3": [
+      "professor",
+      "gato",
+      "romance policial",
+      "jogos de mesa",
+      "laranja"
+    ],
+    "object_4": [
+      "balconista",
+      "inseto-pau",
+      "romance",
+      "crochet",
+      "cássis"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Aqui está um enigma:
+  <riddle>
+  {text}
+  </riddle>
+
+  Quem tem quais atributos e vive em qual casa?
+
+  Por favor, forneça sua resposta como um JSON dictionary. Cada key deve ser object_X onde X é o número da casa. Cada value deve ser uma lista dos atributos das categorias acima que pertencem à pessoa na casa número X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-pt
+```

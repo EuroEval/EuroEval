@@ -725,3 +725,239 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-sk
 ```
+
+## Logical Reasoning
+
+### ZebraPuzzleEasy-sk
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Rad domov je číslovaný od 1 do 2 zľava doprava.\n\nV každom dome žije osoba s jedinečnou vlastnosťou v každej z nasledujúcich kategórií:\n\nDomáce zvieratá: mačka a zebra.\nNápoje: mlieko a čaj.\nZáľuby: bouldering a hádzaná.\n\nTiež vieme nasledovné:\n\n1. Slede sú ryby.\n2. Káva obsahuje kofeín.\n3. Ten, kto hrá hádzanú, býva vedľa toho, kto hrá videohry.\n4. Všetky domy majú veľké okná.\n5. Slnečná sústava sa pohybuje rýchlosťou asi 200 km/s okolo stredu galaxie.\n6. Majiteľ zebry nebýva v dome číslo 1.\n7. Ten, kto hrá hádzanú, býva v dome číslo 1.\n8. Ten, kto pije čaj, býva v dome číslo 1.",
+  "target_text": {
+    "object_1": [
+      "mačka",
+      "čaj",
+      "hádzaná"
+    ],
+    "object_2": [
+      "zebra",
+      "mlieko",
+      "bouldering"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Rad domov je číslovaný od 1 do 2 zľava doprava.\n\nV každom dome žije osoba s jedinečnou vlastnosťou v každej z nasledujúcich kategórií:\n\nNárodnosti: Taliansko a Španielsko.\nPovolania: predavač a programátor.\nObľúbené literárne žánre: horor a vedecká fantastika.\n\nTiež vieme nasledovné:\n\n1. Vytetovaný nebýva v dome číslo 1.\n2. Španiel vie, že slimáky sú mäkkýše.\n3. Niektoré domy majú zelené dvere.\n4. Talian nebýva v dome číslo 2.\n5. Programátor považuje riešenie hádaniek za zábavné.\n6. Programátor býva napravo od čitateľa hororov.\n7. Čitateľ vedeckej fantastiky býva vedľa majiteľa kaktusa.",
+  "target_text": {
+    "object_1": [
+      "Taliansko",
+      "predavač",
+      "horor"
+    ],
+    "object_2": [
+      "Španielsko",
+      "programátor",
+      "vedecká fantastika"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Rad domov je číslovaný od 1 do 2 zľava doprava.\n\nV každom dome žije osoba s jedinečnou vlastnosťou v každej z nasledujúcich kategórií:\n\nNárodnosti: Francúzsko a Spojené kráľovstvo.\nObľúbené ovocie: jablko a čierna ríbezľa.\nZáľuby: futbal a tenis.\n\nTiež vieme nasledovné:\n\n1. Brit býva vedľa toho, kto hrá na gitare.\n2. Brit býva v dome číslo 2.\n3. Milovník čiernych ríbezlí býva naľavo od toho, kto hrá tenis.\n4. Ten, kto hrá videohry, býva v dome číslo 2.\n5. Milovník jabĺk vie, že uhorka je bobula.\n6. Ten, kto považuje mango za druhé najlepšie ovocie, nebýva v dome číslo 1.\n7. Brit vie, že všetky domy na ulici majú krásne záhrady.",
+  "target_text": {
+    "object_1": [
+      "Francúzsko",
+      "čierna ríbezľa",
+      "futbal"
+    ],
+    "object_2": [
+      "Spojené kráľovstvo",
+      "jablko",
+      "tenis"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Tu je hádanka:
+  <riddle>
+  {text}
+  </riddle>
+
+  Kto má aké vlastnosti a býva v ktorom dome?
+
+  Prosím, uveďte svoju odpoveď ako JSON dictionary. Každý key by mal byť object_X, kde X je číslo domu. Každá value by mala byť zoznamom vlastností z vyššie uvedených kategórií, ktoré patria osobe v dome číslo X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-sk
+```
+
+### Unofficial: ZebraPuzzleHard-sk
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Rad domov je číslovaný od 1 do 4 zľava doprava.\n\nV každom dome žije osoba s jedinečnou vlastnosťou v každej z nasledujúcich kategórií:\n\nNárodnosti: Dánsko, Lotyšsko, Spojené kráľovstvo a Španielsko.\nPovolania: minister, predavač, programátor a učiteľ.\nDomáce zvieratá: andulka, mačka, pes a slimák.\nObľúbené ovocie: banán, hruška, jahoda a čierna ríbezľa.\nNápoje: kakao, limonáda, mlieko a čaj.\n\nTiež vieme nasledovné:\n\n1. Majiteľ andulky pije limonádu.\n2. Ten, kto miluje fyziku, býva v dome číslo 3.\n3. Učiteľ býva vedľa majiteľa kaktusa.\n4. Medzi programátorom a tým, kto pije limonádu, sú 2 domy.\n5. Medzi ministrom a tým, kto pije čaj, sú 2 domy.\n6. Majiteľ bicykla hrá na gitare.\n7. Minister vie, že všetky domy na ulici majú krásne záhrady.\n8. Španiel býva napravo od Brita.\n9. Medzi milovníkom banánov a tým, kto pije kakao, je jeden dom.\n10. Majiteľ mačky býva napravo od milovníka jahôd.\n11. Majiteľ psa býva medzi predavačom a tým, kto pije limonádu.\n12. Milovník jahôd nebýva vedľa toho, kto pije limonádu, a sú to rôzne osoby.\n13. Španiel nebýva medzi Dánom a milovníkom banánov, a sú to tri rôzne osoby.\n14. Majiteľ mačky býva vedľa majiteľa zvieraťa starého na svoju rasu.\n15. Lotyš býva tesne naľavo od majiteľa slimáka.\n16. Lotyš nemá rád hrušky.",
+  "target_text": {
+    "object_1": [
+      "Spojené kráľovstvo",
+      "minister",
+      "andulka",
+      "banán",
+      "limonáda"
+    ],
+    "object_2": [
+      "Lotyšsko",
+      "učiteľ",
+      "pes",
+      "čierna ríbezľa",
+      "mlieko"
+    ],
+    "object_3": [
+      "Dánsko",
+      "predavač",
+      "slimák",
+      "jahoda",
+      "kakao"
+    ],
+    "object_4": [
+      "Španielsko",
+      "programátor",
+      "mačka",
+      "hruška",
+      "čaj"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Rad domov je číslovaný od 1 do 4 zľava doprava.\n\nV každom dome žije osoba s jedinečnou vlastnosťou v každej z nasledujúcich kategórií:\n\nDomáce zvieratá: andulka, králik, mačka a zebra.\nObľúbené literárne žánre: horor, literatúra faktu, poézia a vedecká fantastika.\nObľúbené ovocie: banán, jahoda, lesná jahoda a pomaranč.\nNápoje: džús, káva, mlieko a smoothie.\nZáľuby: bouldering, futbal, háčkovanie a spoločenské hry.\n\nTiež vieme nasledovné:\n\n1. Milovník jahôd býva tesne napravo od toho, kto pije kávu.\n2. Ten, kto navštívil Kanadu, má bicykel.\n3. Čitateľ vedeckej fantastiky býva vedľa toho, kto miluje fyziku.\n4. Ten, kto hrá videohry, má ryšavé vlasy.\n5. Majiteľ zebry býva medzi majiteľom mačky a čitateľom poézie.\n6. Milovník jahôd býva naľavo od toho, kto pije mlieko.\n7. Čitateľ hororov býva vedľa toho, kto pije mlieko.\n8. Milovník banánov býva naľavo od toho, kto hrá futbal.\n9. Magister matematiky nebýva v dome číslo 4.\n10. Medzi majiteľom andulky a čitateľom vedeckej fantastiky sú 2 domy.\n11. Medzi čitateľom poézie a tým, kto sa venuje boulderingu, je jeden dom.\n12. Milovník lesných jahôd býva medzi majiteľom zebry a tým, kto pije džús.\n13. Ten, kto hrá na gitare, býva v dome číslo 3.\n14. Čitateľ literatúry faktu býva medzi čitateľom vedeckej fantastiky a čitateľom hororov.\n15. Majiteľ zebry býva tesne napravo od milovníka banánov.\n16. Majiteľ mačky háčkuje.",
+  "target_text": {
+    "object_1": [
+      "andulka",
+      "poézia",
+      "banán",
+      "káva",
+      "spoločenské hry"
+    ],
+    "object_2": [
+      "zebra",
+      "horor",
+      "jahoda",
+      "smoothie",
+      "futbal"
+    ],
+    "object_3": [
+      "králik",
+      "literatúra faktu",
+      "lesná jahoda",
+      "mlieko",
+      "bouldering"
+    ],
+    "object_4": [
+      "mačka",
+      "vedecká fantastika",
+      "pomaranč",
+      "džús",
+      "háčkovanie"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Rad domov je číslovaný od 1 do 4 zľava doprava.\n\nV každom dome žije osoba s jedinečnou vlastnosťou v každej z nasledujúcich kategórií:\n\nDomáce zvieratá: andulka, králik, pes a zebra.\nObľúbené literárne žánre: detektívky, fantasy, horor a literatúra faktu.\nObľúbené ovocie: banán, jablko, jahoda a čierna ríbezľa.\nNápoje: džús, káva, limonáda a čaj.\nZáľuby: futbal, háčkovanie, maľovanie a tenis.\n\nTiež vieme nasledovné:\n\n1. Čitateľ literatúry faktu nebýva medzi tým, kto pije kávu, a tým, kto pije džús, a sú to tri rôzne osoby.\n2. Čitateľ detektívok býva medzi majiteľom zebry a tým, kto maľuje.\n3. Majiteľ psa býva tesne naľavo od čitateľa literatúry faktu.\n4. Medzi milovníkom jahôd a tým, kto maľuje, je jeden dom.\n5. Ten, kto maľuje, býva vedľa toho, kto hrá videohry.\n6. Medzi tým, kto pije džús, a tým, kto pije kávu, je jeden dom.\n7. Ten, kto pravidelne plachí, má tetovanie.\n8. Ten, kto háčkuje, vie, že na ulici je veľa áut.\n9. Čitateľ detektívok nebýva medzi tým, kto maľuje, a tým, kto hrá tenis, a sú to tri rôzne osoby.\n10. Majiteľ králika nebýva v dome číslo 2.\n11. Ten, kto pije kávu, býva medzi milovníkom banánov a tým, kto maľuje.\n12. Ten, kto hrá futbal, má sestru.\n13. Milovník čiernych ríbezlí býva medzi čitateľom hororov a tým, kto hrá futbal.\n14. Ten, kto pije čaj, býva tesne napravo od toho, kto hrá futbal.\n15. Ten, kto miluje fyziku, nebýva v dome číslo 2.",
+  "target_text": {
+    "object_1": [
+      "králik",
+      "horor",
+      "jablko",
+      "džús",
+      "maľovanie"
+    ],
+    "object_2": [
+      "andulka",
+      "fantasy",
+      "čierna ríbezľa",
+      "limonáda",
+      "tenis"
+    ],
+    "object_3": [
+      "pes",
+      "detektívky",
+      "jahoda",
+      "káva",
+      "futbal"
+    ],
+    "object_4": [
+      "zebra",
+      "literatúra faktu",
+      "banán",
+      "čaj",
+      "háčkovanie"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Tu je hádanka:
+  <riddle>
+  {text}
+  </riddle>
+
+  Kto má aké vlastnosti a býva v ktorom dome?
+
+  Prosím, uveďte svoju odpoveď ako JSON dictionary. Každý key by mal byť object_X, kde X je číslo domu. Každá value by mala byť zoznamom vlastností z vyššie uvedených kategórií, ktoré patria osobe v dome číslo X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-sk
+```

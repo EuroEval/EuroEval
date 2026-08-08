@@ -958,3 +958,239 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-hu
 ```
+
+## Logical Reasoning
+
+### ZebraPuzzleEasy-hu
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Egy sor ház 1-től 2-ig van számozva balról jobbra.\n\nMinden házban egy személy él, akinek egyedi jellemzője van a következő kategóriák mindegyikében:\n\nFoglalkozások: pék és szoftverfejlesztő.\nItalok: kávé és tej.\nKedvenc gyümölcsök: alma és banán.\n\nEzenkívül a következőket tudjuk:\n\n1. A kaktuszos az 1. számú házban lakik.\n2. A pék az 1. számú házban lakik.\n3. Az almakedvelő a tengerimalac gazdája mellett lakik.\n4. A heringek halak.\n5. A kávéivó a banánkedvelő bal oldalán lakik.\n6. Az, aki matematikaból mesterfokozatot szerzett, a 2. számú házban lakik.\n7. A szoftverfejlesztő és a vörös hajú nagyon jóban vannak.",
+  "target_text": {
+    "object_1": [
+      "pék",
+      "kávé",
+      "alma"
+    ],
+    "object_2": [
+      "szoftverfejlesztő",
+      "tej",
+      "banán"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Egy sor ház 1-től 2-ig van számozva balról jobbra.\n\nMinden házban egy személy él, akinek egyedi jellemzője van a következő kategóriák mindegyikében:\n\nNemzetiségek: Dánia és Franciaország.\nHáziállatok: csiga és hullámos papagáj.\nHobbik: horgolás és tenisz.\n\nEzenkívül a következőket tudjuk:\n\n1. A dán nem tart csigát.\n2. Az utcán sok autó van.\n3. A dán vörös hajú.\n4. A csiga gazdája a fizikarajongó mellett lakik.\n5. A horgolásrajongó és a kaktuszos nagyon jóban vannak.\n6. A csiga gazdája nem teniszezik.\n7. A csiga gazdája a 2. számú házban lakik.\n8. A francia tudja, hogy a naprendszer kb. 200 km/s sebességgel kering a galaxis középpontja körül.",
+  "target_text": {
+    "object_1": [
+      "Dánia",
+      "hullámos papagáj",
+      "tenisz"
+    ],
+    "object_2": [
+      "Franciaország",
+      "csiga",
+      "horgolás"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Egy sor ház 1-től 2-ig van számozva balról jobbra.\n\nMinden házban egy személy él, akinek egyedi jellemzője van a következő kategóriák mindegyikében:\n\nItalok: tej és turmix.\nHobbik: festés és társasjáték.\nKedvenc gyümölcsök: alma és eper.\n\nEzenkívül a következőket tudjuk:\n\n1. A szemüveges nem lakik a 2. számú házban.\n2. Az almakedvelő matematikaból mesterfokozatot szerzett.\n3. A turmixivó az almakedvelő jobb oldalán lakik.\n4. A turmixivó a festő jobb oldalán lakik.\n5. A tejivó és az, aki gyakran vitorlázik, nagyon jóban vannak.\n6. A síugrásrajongó járt Kanadában.\n7. A kávé koffeint tartalmaz.",
+  "target_text": {
+    "object_1": [
+      "tej",
+      "festés",
+      "alma"
+    ],
+    "object_2": [
+      "turmix",
+      "társasjáték",
+      "eper"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Íme egy találós kérdés:
+  <riddle>
+  {text}
+  </riddle>
+
+  Kinek milyen tulajdonságai vannak és melyik házban lakik?
+
+  Kérjük, adja meg válaszát JSON dictionary. Minden key object_X legyen, ahol X a ház száma. Minden value legyen lista a fenti kategóriákból származó tulajdonságokkal, amelyek az X. számú házban lakó személyhez tartoznak.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-hu
+```
+
+### Unofficial: ZebraPuzzleHard-hu
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Egy sor ház 1-től 4-ig van számozva balról jobbra.\n\nMinden házban egy személy él, akinek egyedi jellemzője van a következő kategóriák mindegyikében:\n\nNemzetiségek: Dánia, Lettország, Spanyolország és Svédország.\nItalok: kakaó, szóda, tea és turmix.\nKedvenc könyvműfajok: horror, ismeretterjesztő, költészet és romantikus regény.\nHobbik: bouldering, foci, horgolás és társasjáték.\nKedvenc gyümölcsök: banán, eper, fekete ribizli és narancs.\n\nEzenkívül a következőket tudjuk:\n\n1. A romantikusregény-olvasó közvetlenül a boulderező bal oldalán lakik.\n2. Az ismeretterjesztő-olvasó közvetlenül a horgolásrajongó bal oldalán lakik.\n3. A turmixivó közvetlenül a horrorolvasó bal oldalán lakik.\n4. A fizikarajongó a 4. számú házban lakik.\n5. Az, akinek háziállata öreg a fajtájához képest, nem lakik a 2. számú házban.\n6. A kerékpáros a 3. számú házban lakik.\n7. A lett a focista bal oldalán lakik.\n8. A svéd közvetlenül a kakaóivó bal oldalán lakik.\n9. A feketeribizli-kedvelő a banánkedvelő mellett lakik.\n10. A teaivó a spanyol és a feketeribizli-kedvelő között lakik.\n11. A dán a lett bal oldalán lakik.\n12. A focista az, aki szerint a mangó a második legjobb gyümölcs, mellett lakik.\n13. A romantikusregény-olvasó a tetovált mellett lakik.\n14. A dán nem lakik a kakaóivó és az eperkedvelő között, és ők hárman különböző személyek.\n15. Az ismeretterjesztő-olvasó a boulderező mellett lakik.\n16. A szódaivó és a horrorolvasó között 2 ház van.",
+  "target_text": {
+    "object_1": [
+      "Dánia",
+      "szóda",
+      "romantikus regény",
+      "társasjáték",
+      "fekete ribizli"
+    ],
+    "object_2": [
+      "Lettország",
+      "tea",
+      "költészet",
+      "bouldering",
+      "banán"
+    ],
+    "object_3": [
+      "Svédország",
+      "turmix",
+      "ismeretterjesztő",
+      "foci",
+      "eper"
+    ],
+    "object_4": [
+      "Spanyolország",
+      "kakaó",
+      "horror",
+      "horgolás",
+      "narancs"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Egy sor ház 1-től 4-ig van számozva balról jobbra.\n\nMinden házban egy személy él, akinek egyedi jellemzője van a következő kategóriák mindegyikében:\n\nNemzetiségek: Egyesült Királyság, Franciaország, Izland és Svédország.\nHáziállatok: botsáska, csiga, hullámos papagáj és macska.\nItalok: gyümölcslé, kávé, tea és turmix.\nKedvenc könyvműfajok: fantasy, ismeretterjesztő, krimi és költészet.\nHobbik: bouldering, festés, foci és társasjáték.\n\nEzenkívül a következőket tudjuk:\n\n1. A brit nem lakik a verskedvelő mellett, és különböző személyek.\n2. A francia nem boulderezik.\n3. A turmixivó társasjátékot játszik.\n4. A gyümölcsléivó a macska gazdája és a kávéivó között lakik.\n5. A fantasyolvasó és a verskedvelő között egy ház van.\n6. A fizikarajongó nem lakik a 2. számú házban.\n7. A turmixivó a tengerimalac gazdája mellett lakik.\n8. A csiga gazdája és a verskedvelő között egy ház van.\n9. Az izlandi a vörös hajú mellett lakik.\n10. Az izlandi és a hullámos papagáj gazdája között egy ház van.\n11. A fantasyolvasó az, aki járt Kanadában, mellett lakik.\n12. A kávéivó focizik.\n13. A csiga gazdája közvetlenül az ismeretterjesztő-olvasó bal oldalán lakik.\n14. A tetovált nem lakik az 1. számú házban.\n15. A macska gazdája a teaivó jobb oldalán lakik.\n16. A francia és a teaivó között egy ház van.\n17. A csiga gazdája nem lakik a teaivó mellett, és különböző személyek.",
+  "target_text": {
+    "object_1": [
+      "Svédország",
+      "botsáska",
+      "tea",
+      "költészet",
+      "bouldering"
+    ],
+    "object_2": [
+      "Izland",
+      "macska",
+      "turmix",
+      "krimi",
+      "társasjáték"
+    ],
+    "object_3": [
+      "Franciaország",
+      "csiga",
+      "gyümölcslé",
+      "fantasy",
+      "festés"
+    ],
+    "object_4": [
+      "Egyesült Királyság",
+      "hullámos papagáj",
+      "kávé",
+      "ismeretterjesztő",
+      "foci"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Egy sor ház 1-től 4-ig van számozva balról jobbra.\n\nMinden házban egy személy él, akinek egyedi jellemzője van a következő kategóriák mindegyikében:\n\nFoglalkozások: eladó, pék, rendőr és tanár.\nHáziállatok: botsáska, hullámos papagáj, macska és zebra.\nItalok: kakaó, szóda, tej és turmix.\nKedvenc könyvműfajok: ismeretterjesztő, krimi, költészet és romantikus regény.\nHobbik: bouldering, horgolás, tenisz és társasjáték.\n\nEzenkívül a következőket tudjuk:\n\n1. A horgolásrajongó a 4. számú házban lakik.\n2. A tanár nem lakik a zebra gazdája és a társasjátékos között, és ők hárman különböző személyek.\n3. A tejivó az, aki járt Kanadában, mellett lakik.\n4. A kaktuszos a 2. számú házban lakik.\n5. A tanár közvetlenül az ismeretterjesztő-olvasó bal oldalán lakik.\n6. A videojátékos gyakran vitorlázik.\n7. A tejivó a boulderező bal oldalán lakik.\n8. A rendőr verset olvas.\n9. A macska gazdája és a társasjátékos között 2 ház van.\n10. A boulderező a 3. számú házban lakik.\n11. Az eladó turmixot iszik.\n12. A botsáska gazdája közvetlenül a szódaivó jobb oldalán lakik.\n13. A társasjátékos tudja, hogy több háznak is zöld ajtaja van.\n14. Az, aki matematikaból mesterfokozatot szerzett, az 1. számú házban lakik.\n15. A verskedvelő a macska gazdája és a romantikusregény-olvasó között lakik.",
+  "target_text": {
+    "object_1": [
+      "pék",
+      "hullámos papagáj",
+      "tej",
+      "romantikus regény",
+      "társasjáték"
+    ],
+    "object_2": [
+      "rendőr",
+      "zebra",
+      "szóda",
+      "költészet",
+      "tenisz"
+    ],
+    "object_3": [
+      "tanár",
+      "botsáska",
+      "kakaó",
+      "krimi",
+      "bouldering"
+    ],
+    "object_4": [
+      "eladó",
+      "macska",
+      "turmix",
+      "ismeretterjesztő",
+      "horgolás"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Íme egy találós kérdés:
+  <riddle>
+  {text}
+  </riddle>
+
+  Kinek milyen tulajdonságai vannak és melyik házban lakik?
+
+  Kérjük, adja meg válaszát JSON dictionary. Minden key object_X legyen, ahol X a ház száma. Minden value legyen lista a fenti kategóriákból származó tulajdonságokkal, amelyek az X. számú házban lakó személyhez tartoznak.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-hu
+```
