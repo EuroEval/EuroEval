@@ -589,6 +589,11 @@
     "train": 15,
     "val": 64
   },
+  "EuroEval/include-uk-mini": {
+    "test": 442,
+    "train": 14,
+    "val": 64
+  },
   "EuroEval/kpwr-ner": {
     "test": 2048,
     "train": 1024,

@@ -89,6 +89,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Swedish:
     - `hellaswag-sv` → `winogrande-sv`
     - `mmlu-sv` → `skolprov`, `swedish-facts`
+  - Ukrainian: `global-mmlu-uk` → `include-uk`
 
 ### Fixed
 
