@@ -9,6 +9,7 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
+    LOGIC,
     NER,
     RC,
     SENT,
@@ -111,6 +112,14 @@ RAGTRUTH_ET_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+ZEBRA_PUZZLE_EASY_ET_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-et",
+    pretty_name="ZebraPuzzlesEasy-et",
+    source="EuroEval/zebra-puzzles-easy-et",
+    task=LOGIC,
+    languages=[ESTONIAN],
+)
+
 # Unofficial datasets ###
 
 MULTI_IFEVAL_ET_CONFIG = DatasetConfig(
@@ -157,6 +166,15 @@ INCLUDE_ET_CONFIG = DatasetConfig(
     pretty_name="INCLUDE-et",
     source="EuroEval/include-et-mini",
     task=KNOW,
+    languages=[ESTONIAN],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_HARD_ET_CONFIG = DatasetConfig(
+    name="zebra-puzzles-hard-et",
+    pretty_name="ZebraPuzzlesHard-et",
+    source="EuroEval/zebra-puzzles-hard-et",
+    task=LOGIC,
     languages=[ESTONIAN],
     unofficial=True,
 )

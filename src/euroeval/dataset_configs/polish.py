@@ -9,6 +9,7 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
+    LOGIC,
     NER,
     RC,
     SENT,
@@ -106,6 +107,14 @@ RAGTRUTH_PL_CONFIG = DatasetConfig(
 )
 
 
+ZEBRA_PUZZLE_EASY_PL_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-pl",
+    pretty_name="ZebraPuzzlesEasy-pl",
+    source="EuroEval/zebra-puzzles-easy-pl",
+    task=LOGIC,
+    languages=[POLISH],
+)
+
 # Unofficial datasets ###
 
 MULTI_WIKI_QA_PL_CONFIG = DatasetConfig(
@@ -140,6 +149,15 @@ EU_MMLU_PL_CONFIG = DatasetConfig(
     pretty_name="EU-MMLU-pl",
     source="EuroEval/eu-mmlu-pl",
     task=KNOW,
+    languages=[POLISH],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_HARD_PL_CONFIG = DatasetConfig(
+    name="zebra-puzzles-hard-pl",
+    pretty_name="ZebraPuzzlesHard-pl",
+    source="EuroEval/zebra-puzzles-hard-pl",
+    task=LOGIC,
     languages=[POLISH],
     unofficial=True,
 )

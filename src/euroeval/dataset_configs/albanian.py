@@ -8,6 +8,7 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
+    LOGIC,
     NER,
     RC,
     SENT,
@@ -84,6 +85,14 @@ INCLUDE_SQ_CONFIG = DatasetConfig(
     languages=[ALBANIAN],
 )
 
+ZEBRA_PUZZLE_EASY_SQ_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-sq",
+    pretty_name="ZebraPuzzlesEasy-sq",
+    source="EuroEval/zebra-puzzles-easy-sq",
+    task=LOGIC,
+    languages=[ALBANIAN],
+)
+
 # Unofficial datasets ###
 
 GLOBAL_MMLU_LITE_SQ_CONFIG = DatasetConfig(
@@ -102,5 +111,14 @@ RAGTRUTH_SQ_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[ALBANIAN],
     train_split=None,
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_HARD_SQ_CONFIG = DatasetConfig(
+    name="zebra-puzzles-hard-sq",
+    pretty_name="ZebraPuzzlesHard-sq",
+    source="EuroEval/zebra-puzzles-hard-sq",
+    task=LOGIC,
+    languages=[ALBANIAN],
     unofficial=True,
 )
