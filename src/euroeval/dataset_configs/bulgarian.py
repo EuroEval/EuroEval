@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BULGARIAN
-from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    LOGIC,
+    NER,
+    RC,
+    SENT,
+)
 
 # Official datasets ###
 
@@ -74,6 +84,14 @@ RAGTRUTH_BG_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+ZEBRA_PUZZLE_EASY_BG_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-bg",
+    pretty_name="ZebraPuzzlesEasy-bg",
+    source="EuroEval/zebra-puzzles-easy-bg",
+    task=LOGIC,
+    languages=[BULGARIAN],
+)
+
 # Unofficial datasets ###
 
 INCLUDE_BG_CONFIG = DatasetConfig(
@@ -81,6 +99,15 @@ INCLUDE_BG_CONFIG = DatasetConfig(
     pretty_name="INCLUDE-bg",
     source="EuroEval/include-bg-mini",
     task=KNOW,
+    languages=[BULGARIAN],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_HARD_BG_CONFIG = DatasetConfig(
+    name="zebra-puzzles-hard-bg",
+    pretty_name="ZebraPuzzlesHard-bg",
+    source="EuroEval/zebra-puzzles-hard-bg",
+    task=LOGIC,
     languages=[BULGARIAN],
     unofficial=True,
 )

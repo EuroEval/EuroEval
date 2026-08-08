@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BOSNIAN
-from ..tasks import HALLU, INSTRUCTION_FOLLOWING, NER, RC, SENT, SUMM
+from ..tasks import HALLU, INSTRUCTION_FOLLOWING, LOGIC, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -55,4 +55,23 @@ RAGTRUTH_BS_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[BOSNIAN],
     train_split=None,
+)
+
+ZEBRA_PUZZLE_EASY_BS_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-bs",
+    pretty_name="ZebraPuzzlesEasy-bs",
+    source="EuroEval/zebra-puzzles-easy-bs",
+    task=LOGIC,
+    languages=[BOSNIAN],
+)
+
+# Unofficial datasets ###
+
+ZEBRA_PUZZLE_HARD_BS_CONFIG = DatasetConfig(
+    name="zebra-puzzles-hard-bs",
+    pretty_name="ZebraPuzzlesHard-bs",
+    source="EuroEval/zebra-puzzles-hard-bs",
+    task=LOGIC,
+    languages=[BOSNIAN],
+    unofficial=True,
 )

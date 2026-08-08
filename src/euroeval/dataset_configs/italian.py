@@ -9,6 +9,7 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
+    LOGIC,
     MCRC,
     NER,
     RC,
@@ -59,14 +60,6 @@ ILPOST_SUM_CONFIG = DatasetConfig(
     languages=[ITALIAN],
 )
 
-MMLU_IT_CONFIG = DatasetConfig(
-    name="mmlu-it",
-    pretty_name="MMLU-it",
-    source="EuroEval/mmlu-it-mini",
-    task=KNOW,
-    languages=[ITALIAN],
-)
-
 MULTI_IFEVAL_IT_CONFIG = DatasetConfig(
     name="multi-ifeval-it",
     pretty_name="MultiIFEval-it",
@@ -108,7 +101,41 @@ WINOGRANDE_IT_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
+INCLUDE_IT_CONFIG = DatasetConfig(
+    name="include-it",
+    pretty_name="INCLUDE-it",
+    source="EuroEval/include-it-mini",
+    task=KNOW,
+    languages=[ITALIAN],
+)
+
+MULTILOKO_IT_CONFIG = DatasetConfig(
+    name="multiloko-it",
+    pretty_name="MultiLoKo-it",
+    source="EuroEval/multiloko-it-mini",
+    task=KNOW,
+    languages=[ITALIAN],
+    val_split=None,
+)
+
+ZEBRA_PUZZLE_EASY_IT_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-it",
+    pretty_name="ZebraPuzzlesEasy-it",
+    source="EuroEval/zebra-puzzles-easy-it",
+    task=LOGIC,
+    languages=[ITALIAN],
+)
+
 # Unofficial datasets ###
+
+MMLU_IT_CONFIG = DatasetConfig(
+    name="mmlu-it",
+    pretty_name="MMLU-it",
+    source="EuroEval/mmlu-it-mini",
+    task=KNOW,
+    languages=[ITALIAN],
+    unofficial=True,
+)
 
 HELLASWAG_IT_CONFIG = DatasetConfig(
     name="hellaswag-it",
@@ -166,25 +193,6 @@ GOLDENSWAG_IT_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-INCLUDE_IT_CONFIG = DatasetConfig(
-    name="include-it",
-    pretty_name="INCLUDE-it",
-    source="EuroEval/include-it-mini",
-    task=KNOW,
-    languages=[ITALIAN],
-    unofficial=True,
-)
-
-MULTILOKO_IT_CONFIG = DatasetConfig(
-    name="multiloko-it",
-    pretty_name="MultiLoKo-it",
-    source="EuroEval/multiloko-it-mini",
-    task=KNOW,
-    languages=[ITALIAN],
-    val_split=None,
-    unofficial=True,
-)
-
 WIC_ITA_CONFIG = DatasetConfig(
     name="wic-ita",
     pretty_name="WiC-ITA",
@@ -199,6 +207,15 @@ EU_MMLU_IT_CONFIG = DatasetConfig(
     pretty_name="EU-MMLU-it",
     source="EuroEval/eu-mmlu-it",
     task=KNOW,
+    languages=[ITALIAN],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_HARD_IT_CONFIG = DatasetConfig(
+    name="zebra-puzzles-hard-it",
+    pretty_name="ZebraPuzzlesHard-it",
+    source="EuroEval/zebra-puzzles-hard-it",
+    task=LOGIC,
     languages=[ITALIAN],
     unofficial=True,
 )
