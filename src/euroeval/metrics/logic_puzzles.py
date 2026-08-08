@@ -365,8 +365,10 @@ class CellWiseAccuracyMetric(LogicPuzzleMetric):
             prediction.values(), label.values()
         ):
             # strip whitespace (coerce to str to handle non-string attributes)
-            attributes_pred = {str(attr).strip() for attr in attributes_pred}
-            attributes_label = {str(attr).strip() for attr in attributes_label}
+            attributes_pred = {str(attr).strip().casefold() for attr in attributes_pred}
+            attributes_label = {
+                str(attr).strip().casefold() for attr in attributes_label
+            }
 
             # Count the number of correct attributes
             n_correct_attributes += len(attributes_pred.intersection(attributes_label))
@@ -422,8 +424,10 @@ class PuzzleLevelAccuracyMetric(LogicPuzzleMetric):
             prediction.values(), label.values()
         ):
             # strip whitespace (coerce to str to handle non-string attributes)
-            attributes_pred = {str(attr).strip() for attr in attributes_pred}
-            attributes_label = {str(attr).strip() for attr in attributes_label}
+            attributes_pred = {str(attr).strip().casefold() for attr in attributes_pred}
+            attributes_label = {
+                str(attr).strip().casefold() for attr in attributes_label
+            }
             if attributes_pred != attributes_label:
                 return 0
 
