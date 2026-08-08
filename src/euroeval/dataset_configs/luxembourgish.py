@@ -6,7 +6,6 @@ from ..tasks import (
     HALLU,
     INSTRUCTION_FOLLOWING,
     LA,
-    LOGIC,
     NER,
     NLI,
     RC,
@@ -121,13 +120,6 @@ MULTI_IFEVAL_LB_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-ZEBRA_PUZZLE_EASY_LB_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-lb",
-    pretty_name="ZebraPuzzlesEasy-lb",
-    source="EuroEval/zebra-puzzles-easy-lb",
-    task=LOGIC,
-    languages=[LUXEMBOURGISH],
-)
 
 # Unofficial datasets ###
 
@@ -156,14 +148,5 @@ RAGTRUTH_LB_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[LUXEMBOURGISH],
     train_split=None,
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_HARD_LB_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-lb",
-    pretty_name="ZebraPuzzlesHard-lb",
-    source="EuroEval/zebra-puzzles-hard-lb",
-    task=LOGIC,
-    languages=[LUXEMBOURGISH],
     unofficial=True,
 )

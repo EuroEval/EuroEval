@@ -53,13 +53,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   [IMISLab/CulturaQA](https://huggingface.co/datasets/IMISLab/CulturaQA), using
   translation-style text-to-text metrics with original split boundaries preserved and
   split sizes 1,024 / 200 / 500.
-- Added zebra-puzzle logical-reasoning datasets (`zebra-puzzles-easy-*` and
-  `zebra-puzzles-hard-*`) for 30 languages: Albanian, Belarusian, Basque, Bosnian,
-  Bulgarian, Catalan, Croatian, Czech, Estonian, Finnish, Western Frisian, French,
-  Greek, Hungarian, Irish, Italian, Latvian, Lithuanian, Luxembourgish, Macedonian,
-  Polish, Portuguese, Romanian, Russian, Scots, Serbian, Slovak, Slovene, Spanish,
-  Ukrainian, plus logical-reasoning prompt templates for the six languages that were
-  newly supported (Basque, Western Frisian, Irish, Macedonian, Russian, Scots).
+- Added logical-reasoning prompt templates for Basque, Western Frisian, Irish, Macedonian,
+  Russian, Scots, and Luxembourgish.
 
 ### Changed
 

@@ -8,7 +8,6 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
-    LOGIC,
     NER,
     OPEN_ENDED_QA,
     RC,
@@ -95,13 +94,6 @@ GREEK_MMLU_CONFIG = DatasetConfig(
     languages=[GREEK],
 )
 
-ZEBRA_PUZZLE_EASY_EL_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-el",
-    pretty_name="ZebraPuzzlesEasy-el",
-    source="EuroEval/zebra-puzzles-easy-el",
-    task=LOGIC,
-    languages=[GREEK],
-)
 
 # Unofficial datasets ###
 
@@ -155,13 +147,4 @@ CULTURAQA_CONFIG = DatasetConfig(
     instruction_prompt=(
         "Απαντήστε στην παρακάτω ερώτηση με ακρίβεια και συντομία.\n\nΕρώτηση: {text}"
     ),
-)
-
-ZEBRA_PUZZLE_HARD_EL_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-el",
-    pretty_name="ZebraPuzzlesHard-el",
-    source="EuroEval/zebra-puzzles-hard-el",
-    task=LOGIC,
-    languages=[GREEK],
-    unofficial=True,
 )

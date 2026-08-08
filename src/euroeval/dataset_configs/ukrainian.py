@@ -8,7 +8,6 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
-    LOGIC,
     NER,
     RC,
     SENT,
@@ -94,13 +93,6 @@ INCLUDE_UK_CONFIG = DatasetConfig(
     languages=[UKRAINIAN],
 )
 
-ZEBRA_PUZZLE_EASY_UK_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-uk",
-    pretty_name="ZebraPuzzlesEasy-uk",
-    source="EuroEval/zebra-puzzles-easy-uk",
-    task=LOGIC,
-    languages=[UKRAINIAN],
-)
 
 # Unofficial datasets ###
 
@@ -121,14 +113,5 @@ IFEVAL_UK_CONFIG = DatasetConfig(
     languages=[UKRAINIAN],
     train_split=None,
     val_split=None,
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_HARD_UK_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-uk",
-    pretty_name="ZebraPuzzlesHard-uk",
-    source="EuroEval/zebra-puzzles-hard-uk",
-    task=LOGIC,
-    languages=[UKRAINIAN],
     unofficial=True,
 )

@@ -8,7 +8,6 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
-    LOGIC,
     NER,
     RC,
     SENT,
@@ -95,14 +94,6 @@ RAGTRUTH_LV_CONFIG = DatasetConfig(
 )
 
 
-ZEBRA_PUZZLE_EASY_LV_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-lv",
-    pretty_name="ZebraPuzzlesEasy-lv",
-    source="EuroEval/zebra-puzzles-easy-lv",
-    task=LOGIC,
-    languages=[LATVIAN],
-)
-
 # Unofficial datasets ###
 
 WIKIANN_LV_CONFIG = DatasetConfig(
@@ -121,14 +112,5 @@ WINOGRANDE_LV_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[LATVIAN],
     labels=["a", "b"],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_HARD_LV_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-lv",
-    pretty_name="ZebraPuzzlesHard-lv",
-    source="EuroEval/zebra-puzzles-hard-lv",
-    task=LOGIC,
-    languages=[LATVIAN],
     unofficial=True,
 )

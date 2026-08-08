@@ -2,17 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SLOVENE
-from ..tasks import (
-    COMMON_SENSE,
-    HALLU,
-    INSTRUCTION_FOLLOWING,
-    KNOW,
-    LA,
-    LOGIC,
-    NER,
-    RC,
-    SENT,
-)
+from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT
 
 # Official datasets ###
 
@@ -85,14 +75,6 @@ RAGTRUTH_SL_CONFIG = DatasetConfig(
 )
 
 
-ZEBRA_PUZZLE_EASY_SL_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-sl",
-    pretty_name="ZebraPuzzlesEasy-sl",
-    source="EuroEval/zebra-puzzles-easy-sl",
-    task=LOGIC,
-    languages=[SLOVENE],
-)
-
 # Unofficial datasets ###
 
 EU_MMLU_SL_CONFIG = DatasetConfig(
@@ -100,15 +82,6 @@ EU_MMLU_SL_CONFIG = DatasetConfig(
     pretty_name="EU-MMLU-sl",
     source="EuroEval/eu-mmlu-sl",
     task=KNOW,
-    languages=[SLOVENE],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_HARD_SL_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-sl",
-    pretty_name="ZebraPuzzlesHard-sl",
-    source="EuroEval/zebra-puzzles-hard-sl",
-    task=LOGIC,
     languages=[SLOVENE],
     unofficial=True,
 )

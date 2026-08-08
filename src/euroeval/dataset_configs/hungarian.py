@@ -8,7 +8,6 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
-    LOGIC,
     NER,
     RC,
     SENT,
@@ -94,13 +93,6 @@ INCLUDE_HU_CONFIG = DatasetConfig(
     languages=[HUNGARIAN],
 )
 
-ZEBRA_PUZZLE_EASY_HU_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-hu",
-    pretty_name="ZebraPuzzlesEasy-hu",
-    source="EuroEval/zebra-puzzles-easy-hu",
-    task=LOGIC,
-    languages=[HUNGARIAN],
-)
 
 # Unofficial datasets ###
 
@@ -118,15 +110,6 @@ EU_MMLU_HU_CONFIG = DatasetConfig(
     pretty_name="EU-MMLU-hu",
     source="EuroEval/eu-mmlu-hu",
     task=KNOW,
-    languages=[HUNGARIAN],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_HARD_HU_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-hu",
-    pretty_name="ZebraPuzzlesHard-hu",
-    source="EuroEval/zebra-puzzles-hard-hu",
-    task=LOGIC,
     languages=[HUNGARIAN],
     unofficial=True,
 )

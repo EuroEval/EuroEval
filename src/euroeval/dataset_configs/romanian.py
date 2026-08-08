@@ -8,7 +8,6 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
-    LOGIC,
     NER,
     RC,
     SENT,
@@ -95,14 +94,6 @@ RAGTRUTH_RO_CONFIG = DatasetConfig(
 )
 
 
-ZEBRA_PUZZLE_EASY_RO_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-ro",
-    pretty_name="ZebraPuzzlesEasy-ro",
-    source="EuroEval/zebra-puzzles-easy-ro",
-    task=LOGIC,
-    languages=[ROMANIAN],
-)
-
 # Unofficial datasets ###
 
 EU_MMLU_RO_CONFIG = DatasetConfig(
@@ -110,15 +101,6 @@ EU_MMLU_RO_CONFIG = DatasetConfig(
     pretty_name="EU-MMLU-ro",
     source="EuroEval/eu-mmlu-ro",
     task=KNOW,
-    languages=[ROMANIAN],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_HARD_RO_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-ro",
-    pretty_name="ZebraPuzzlesHard-ro",
-    source="EuroEval/zebra-puzzles-hard-ro",
-    task=LOGIC,
     languages=[ROMANIAN],
     unofficial=True,
 )

@@ -9,7 +9,6 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
-    LOGIC,
     MCRC,
     NER,
     RC,
@@ -109,13 +108,6 @@ INCLUDE_FI_CONFIG = DatasetConfig(
     languages=[FINNISH],
 )
 
-ZEBRA_PUZZLE_EASY_FI_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-fi",
-    pretty_name="ZebraPuzzlesEasy-fi",
-    source="EuroEval/zebra-puzzles-easy-fi",
-    task=LOGIC,
-    languages=[FINNISH],
-)
 
 # Unofficial datasets ###
 
@@ -163,14 +155,5 @@ IFEVAL_FI_CONFIG = DatasetConfig(
     languages=[FINNISH],
     train_split=None,
     val_split=None,
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_HARD_FI_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-fi",
-    pretty_name="ZebraPuzzlesHard-fi",
-    source="EuroEval/zebra-puzzles-hard-fi",
-    task=LOGIC,
-    languages=[FINNISH],
     unofficial=True,
 )

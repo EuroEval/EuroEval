@@ -9,7 +9,6 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
-    LOGIC,
     MCRC,
     NER,
     RC,
@@ -118,13 +117,6 @@ MULTILOKO_FR_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-ZEBRA_PUZZLE_EASY_FR_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-fr",
-    pretty_name="ZebraPuzzlesEasy-fr",
-    source="EuroEval/zebra-puzzles-easy-fr",
-    task=LOGIC,
-    languages=[FRENCH],
-)
 
 # Unofficial datasets ###
 
@@ -199,15 +191,6 @@ EU_MMLU_FR_CONFIG = DatasetConfig(
     pretty_name="EU-MMLU-fr",
     source="EuroEval/eu-mmlu-fr",
     task=KNOW,
-    languages=[FRENCH],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_HARD_FR_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-fr",
-    pretty_name="ZebraPuzzlesHard-fr",
-    source="EuroEval/zebra-puzzles-hard-fr",
-    task=LOGIC,
     languages=[FRENCH],
     unofficial=True,
 )

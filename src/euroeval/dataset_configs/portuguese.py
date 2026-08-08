@@ -9,7 +9,6 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
-    LOGIC,
     MCRC,
     NER,
     RC,
@@ -110,13 +109,6 @@ WINOGRANDE_PT_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
-ZEBRA_PUZZLE_EASY_PT_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-pt",
-    pretty_name="ZebraPuzzlesEasy-pt",
-    source="EuroEval/zebra-puzzles-easy-pt",
-    task=LOGIC,
-    languages=[PORTUGUESE],
-)
 
 # Unofficial datasets ###
 
@@ -228,14 +220,5 @@ RAGTRUTH_PT_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[PORTUGUESE],
     train_split=None,
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_HARD_PT_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-pt",
-    pretty_name="ZebraPuzzlesHard-pt",
-    source="EuroEval/zebra-puzzles-hard-pt",
-    task=LOGIC,
-    languages=[PORTUGUESE],
     unofficial=True,
 )

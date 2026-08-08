@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BELARUSIAN
-from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, LA, LOGIC, NER, RC, SENT
+from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, LA, NER, RC, SENT
 
 # Official datasets ###
 
@@ -56,13 +56,6 @@ MULTI_IFEVAL_BE_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-ZEBRA_PUZZLE_EASY_BE_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-be",
-    pretty_name="ZebraPuzzlesEasy-be",
-    source="EuroEval/zebra-puzzles-easy-be",
-    task=LOGIC,
-    languages=[BELARUSIAN],
-)
 
 # Unofficial datasets ###
 
@@ -73,14 +66,5 @@ RAGTRUTH_BE_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[BELARUSIAN],
     train_split=None,
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_HARD_BE_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-be",
-    pretty_name="ZebraPuzzlesHard-be",
-    source="EuroEval/zebra-puzzles-hard-be",
-    task=LOGIC,
-    languages=[BELARUSIAN],
     unofficial=True,
 )

@@ -8,7 +8,6 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
-    LOGIC,
     NER,
     RC,
     SENT,
@@ -93,13 +92,6 @@ RAGTRUTH_CA_CONFIG = DatasetConfig(
     train_split=None,
 )
 
-ZEBRA_PUZZLE_EASY_CA_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-ca",
-    pretty_name="ZebraPuzzlesEasy-ca",
-    source="EuroEval/zebra-puzzles-easy-ca",
-    task=LOGIC,
-    languages=[CATALAN],
-)
 
 # Unofficial datasets ###
 
@@ -111,14 +103,5 @@ MULTI_IFEVAL_CA_CONFIG = DatasetConfig(
     languages=[CATALAN],
     train_split=None,
     val_split=None,
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_HARD_CA_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-ca",
-    pretty_name="ZebraPuzzlesHard-ca",
-    source="EuroEval/zebra-puzzles-hard-ca",
-    task=LOGIC,
-    languages=[CATALAN],
     unofficial=True,
 )

@@ -8,7 +8,6 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
-    LOGIC,
     NER,
     RC,
     SENT,
@@ -94,13 +93,6 @@ INCLUDE_SR_CONFIG = DatasetConfig(
     languages=[SERBIAN],
 )
 
-ZEBRA_PUZZLE_EASY_SR_CONFIG = DatasetConfig(
-    name="zebra-puzzles-easy-sr",
-    pretty_name="ZebraPuzzlesEasy-sr",
-    source="EuroEval/zebra-puzzles-easy-sr",
-    task=LOGIC,
-    languages=[SERBIAN],
-)
 
 # Unofficial datasets ###
 
@@ -109,15 +101,6 @@ MMLU_SR_CONFIG = DatasetConfig(
     pretty_name="MMLU-sr",
     source="EuroEval/mmlu-sr-mini",
     task=KNOW,
-    languages=[SERBIAN],
-    unofficial=True,
-)
-
-ZEBRA_PUZZLE_HARD_SR_CONFIG = DatasetConfig(
-    name="zebra-puzzles-hard-sr",
-    pretty_name="ZebraPuzzlesHard-sr",
-    source="EuroEval/zebra-puzzles-hard-sr",
-    task=LOGIC,
     languages=[SERBIAN],
     unofficial=True,
 )
