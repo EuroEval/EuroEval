@@ -576,25 +576,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-  "text": "Quale dei seguenti processi fisiologici distingue i vegetali dagli animali?\nScelte:\na. Fotosintesi\nb. Assorbimento di sostanze nutritive esogene\nc. Metabolismo anaerobico\nd. Fermentazione",
+  "text": "Un pacchetto azionario, del valore iniziale di 50.000 euro, ha fruttato il primo anno il 50%, il secondo il 10% e il terzo il 20%. Qual è il valore finale del pacchetto?\nScelte:\na. 99.000 euro\nb. 90.750 euro\nc. 115.500 euro\nd. 49.000 euro",
   "label": "a",
-  "subject": "Medicine"
+  "subject": "Logic"
 }
 ```
 
 ```json
 {
-  "text": "Kojoj religiji pripada učenje o četirima plemenitim istinama i osmerostrukome putu oslobođenja od patnje?\nScelte:\na. kršćanstvu\nb. budizmu\nc. islamu\nd. židovstvu",
+  "text": "Quale, fra i seguenti composti, ha legami con maggiore carattere ionico?\nScelte:\na. NaCl\nb. HCl\nc. CCl_4\nd. AlCl_3",
+  "label": "a",
+  "subject": "Agriculture"
+}
+```
+
+```json
+{
+  "text": "Che cosa si identifica comunemente con la sigla PM10?\nScelte:\na. I 10 metalli più pesanti\nb. Le polveri atmosferiche\nc. Il Praseodimio\nd. Il peso molecolare dell’acqua",
   "label": "b",
-  "subject": "Philosophy"
-}
-```
-
-```json
-{
-  "text": "Conclusione, interpretazione e adempimento del contratto - Adempimento del contratto   Può il creditore rifiutare l'adempimento parziale di una prestazione pecuniaria divisibile?\nScelte:\na. No, a meno che la prestazione principale sia eseguita con gli interessi e la rivalutazione monetaria\nb. No, se si oppone il coniuge del creditore in regime di comunione legale\nc. Sì, salvo che la legge e gli usi dispongano diversamente\nd. No, mai",
-  "label": "c",
-  "subject": "Professional certification"
+  "subject": "Medicine"
 }
 ```
 
