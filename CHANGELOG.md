@@ -56,9 +56,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Swapped official dataset for Italian:
-  `mmlu-it` → `include-it`, `multiloko-it`.
-
 - Renamed the previous LLM-as-a-judge `open-ended-qa` task to `reference-free-qa`, and
   added a new reference-based `open-ended-qa` task using translation-style text-to-text
   metrics.
@@ -80,7 +77,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Greek: `global-mmlu-el` → `greek-mmlu`
   - Hungarian: `mmlu-hu` → `include-hu`
   - Icelandic: `scala-is` → `ice-ec`
-  - Italian: `hellaswag-it` → `winogrande-it`
+  - Italian:
+    - `hellaswag-it` → `winogrande-it`
+    - `mmlu-it` → `include-it`, `multiloko-it`
   - Lithuanian: `include-lt`
   - Portuguese:
     - `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
@@ -89,7 +88,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Spanish:
     - `hellaswag-es` → `winogrande-es`
     - `mmlu-es` → `include-es`, `multiloko-es`
-  - Swedish: `hellaswag-sv` → `winogrande-sv`
+  - Swedish:
+    - `hellaswag-sv` → `winogrande-sv`
+    - `mmlu-sv` → `skolprov`, `swedish-facts`
+  - Ukrainian: `global-mmlu-uk` → `include-uk`
 
 ### Fixed
 
