@@ -56,14 +56,6 @@ LR_SUM_UK_CONFIG = DatasetConfig(
     languages=[UKRAINIAN],
 )
 
-GLOBAL_MMLU_UK_CONFIG = DatasetConfig(
-    name="global-mmlu-uk",
-    pretty_name="GlobalMMLU-uk",
-    source="EuroEval/global-mmlu-uk-mini",
-    task=KNOW,
-    languages=[UKRAINIAN],
-)
-
 WINOGRANDE_UK_CONFIG = DatasetConfig(
     name="winogrande-uk",
     pretty_name="Winogrande-uk",
@@ -93,7 +85,24 @@ RAGTRUTH_UK_CONFIG = DatasetConfig(
 )
 
 
+INCLUDE_UK_CONFIG = DatasetConfig(
+    name="include-uk",
+    pretty_name="INCLUDE-uk",
+    source="EuroEval/include-uk-mini",
+    task=KNOW,
+    languages=[UKRAINIAN],
+)
+
 # Unofficial datasets ###
+
+GLOBAL_MMLU_UK_CONFIG = DatasetConfig(
+    name="global-mmlu-uk",
+    pretty_name="GlobalMMLU-uk",
+    source="EuroEval/global-mmlu-uk-mini",
+    task=KNOW,
+    languages=[UKRAINIAN],
+    unofficial=True,
+)
 
 IFEVAL_UK_CONFIG = DatasetConfig(
     name="ifeval-uk",
@@ -103,14 +112,5 @@ IFEVAL_UK_CONFIG = DatasetConfig(
     languages=[UKRAINIAN],
     train_split=None,
     val_split=None,
-    unofficial=True,
-)
-
-INCLUDE_UK_CONFIG = DatasetConfig(
-    name="include-uk",
-    pretty_name="INCLUDE-uk",
-    source="EuroEval/include-uk-mini",
-    task=KNOW,
-    languages=[UKRAINIAN],
     unofficial=True,
 )
