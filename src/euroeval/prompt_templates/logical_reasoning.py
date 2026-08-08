@@ -27,6 +27,7 @@ from ..languages import (
     ITALIAN,
     LATVIAN,
     LITHUANIAN,
+    LUXEMBOURGISH,
     MACEDONIAN,
     NORWEGIAN,
     NORWEGIAN_BOKMÅL,
@@ -295,6 +296,17 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         "Prašom pateikti savo atsakymą kaip JSON dictionary. Kiekvienas key turi būti "
         "object_X, kur X yra namo numeris. Kiekviena value turi būti savybių iš "
         "aukščiau nurodytų kategorijų, priklausančių asmeniui name numeriu X, sąrašas.",
+        default_prompt_label_mapping=dict(),
+    ),
+    LUXEMBOURGISH: PromptConfig(
+        default_prompt_prefix="",
+        default_prompt_template="",
+        default_instruction_prompt="Hei ass e Rätsel:\n<riddle>\n{text}\n</riddle>\n\n"
+        "Wien huet wéi eng Eegenschaften a wunnt an wéi engem Haus?\n\n"
+        "Gitt w.e.g. Är Äntwert als e JSON dictionary un. All key muss object_X sinn, "
+        "wou X d'Hausnummer ass. All value muss eng Lëscht vun den Eegenschaften aus "
+        "den uewe genannte Kategorien sinn, déi zu der Persoun am Haus Nr. X "
+        "gehéieren.",
         default_prompt_label_mapping=dict(),
     ),
     MACEDONIAN: PromptConfig(
