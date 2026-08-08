@@ -53,6 +53,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   [IMISLab/CulturaQA](https://huggingface.co/datasets/IMISLab/CulturaQA), using
   translation-style text-to-text metrics with original split boundaries preserved and
   split sizes 1,024 / 200 / 500.
+- Added zebra-puzzle logical-reasoning datasets (`zebra-puzzles-easy-*` and
+  `zebra-puzzles-hard-*`) for Basque, Western Frisian, Irish, Macedonian, Russian and
+  Scots.
 
 ### Changed
 
@@ -78,7 +81,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Greek: `global-mmlu-el` → `greek-mmlu`
   - Hungarian: `mmlu-hu` → `include-hu`
   - Icelandic: `scala-is` → `ice-ec`
-  - Italian: `hellaswag-it` → `winogrande-it`
+  - Italian:
+    - `hellaswag-it` → `winogrande-it`
+    - `mmlu-it` → `include-it`, `multiloko-it`
   - Lithuanian: `include-lt`
   - Portuguese:
     - `mmlu-pt` → `alba-mcq-pt`, `cultura-viva-pt`
@@ -87,7 +92,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Spanish:
     - `hellaswag-es` → `winogrande-es`
     - `mmlu-es` → `include-es`, `multiloko-es`
-  - Swedish: `hellaswag-sv` → `winogrande-sv`
+  - Swedish:
+    - `hellaswag-sv` → `winogrande-sv`
+    - `mmlu-sv` → `skolprov`, `swedish-facts`
+  - Ukrainian: `global-mmlu-uk` → `include-uk`
 
 ### Fixed
 

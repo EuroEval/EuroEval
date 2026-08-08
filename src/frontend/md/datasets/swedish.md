@@ -481,7 +481,161 @@ euroeval --model <model-id> --dataset belebele-sv
 
 ## Knowledge
 
-### MMLU-sv
+### Skolprov
+
+This dataset contains data from six Swedish knowledge tests and was published at
+[this HuggingFace repository](https://huggingface.co/datasets/Ekgren/swedish_skolprov).
+The dataset features multiple-choice questions from official Swedish examinations
+including the Swedish Scholastic Aptitude Test (högskoleprovet), medical doctor test
+(kunskapsprov läkare), dentist test (kunskapsprov tandläkare), audiologist test
+(kunskapsprov audionom), pharmacist test (kunskapsprov apotekare), and mathematics and
+physics test (matematik och fysikprovet).
+
+The original dataset consists of 545 samples, which we filter down to 474 samples. We
+use a 32 / 32 / 410 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "En man, 63 år, har en skelett-, lymfkörtel-, och levermetastaserad prostatacancer där aktiv onkologisk behandling är avslutad. Han är inskriven i ett specialiserat palliativt hemsjukvårdsteam. Han har en långverkande smärtlindring med T. oxykodon 20 mg morgon och kväll. Nu söker han akut vård på grund av buksmärta och ihållande kräkningar. Vad bör du ordinera mot mannens smärtor?\nSvarsalternativ:\na. Tablett kortverkande oxykodon 5 mg peroralt\nb. Tablett ibuprofen 400 mg peroralt\nc. Tablett kortverkande oxykodon 20 mg peroralt\nd. Inj. 5 mg kortverkande oxykodon subkutant\ne. Paracetamol 1 g intravenöst",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Vilken typ av hörapparat är att föredra för barn under 3 år med en permenent sensorineural hörselnedsättning?\nSvarsalternativ:\na. RIC (reciever in the canal) med öppen dome\nb. benledd hörapparat\nc. bakom-örat-apparat med individuellt anpassad insats\nd. endast mikrofonsystem för att förbättra signal/brus förhållandet",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Varför är det viktigt med utredande samtal?\nSvarsalternativ:\na. Det kan etablera ett ömsesidigt förtroende mellan audionom och patient som underlag inför utförandet av en individuell, kvalitativ rehabilitering.\nb. Det ger audionomen möjlighet att observera patientens kommunikation som underlag inför utförandet av en individuell, kvalitativ rehabilitering.\nc. Det kan förbättra taluppfattningen som en del i utförandet av en individuell, kvalitativ rehabilitering.\nd. Det samlar nödvändig information om patienten, som underlag inför utförandet av en individuell, kvalitativ rehabilitering.",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Följande är flervalsfrågor (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvara följande fråga med 'a', 'b', 'c' eller 'd', och inget annat.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset skolprov
+```
+
+### SwedishFacts
+
+This is a benchmark for factual knowledge about Sweden. The questions are based on
+topics related to the hosts of the Swedish radio program
+[Sommar i P1](https://www.sverigesradio.se/sommar-i-p1) as well as Swedish sporting
+events, such as those featured in [En Svensk Klassiker](https://ensvenskklassiker.se).
+In the [dataset card](https://huggingface.co/datasets/liu-nlp/swedish-facts-v1) it is
+mentioned that a paper with more information is coming soon.
+
+Since the dataset does not include candidate answers, we generate them using GPT-4o. The
+original dataset consists of 1,289 samples. We use a 128 / 64 / 1,097 split for
+training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hur många gånger befodrades Micael Bydén till en högre militär grad under 1990-talet?\nSvarsalternativ:\na. Tre, 3\nb. Fyra\nc. Fem\nd. Två",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Vad heter skivbolaget Titiyo Jah kontrakt med år 1988?\nSvarsalternativ:\na. Virgin Records\nb. Telegram\nc. Sony Music\nd. Warner Music",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "I vilken ort föddes PM Nilsson?\nSvarsalternativ:\na. Göteborg\nb. Lund\nc. Helsingborg\nd. Malmö",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Följande är flervalsfrågor (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvara följande fråga med 'a', 'b', 'c' eller 'd', och inget annat.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset swedish-facts
+```
+
+### Unofficial: MMLU-sv
 
 This dataset is a machine translated version of the English
 [MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
@@ -623,160 +777,6 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset arc-sv
-```
-
-### Unofficial: Skolprov
-
-This dataset contains data from six Swedish knowledge tests and was published at
-[this HuggingFace repository](https://huggingface.co/datasets/Ekgren/swedish_skolprov).
-The dataset features multiple-choice questions from official Swedish examinations
-including the Swedish Scholastic Aptitude Test (högskoleprovet), medical doctor test
-(kunskapsprov läkare), dentist test (kunskapsprov tandläkare), audiologist test
-(kunskapsprov audionom), pharmacist test (kunskapsprov apotekare), and mathematics and
-physics test (matematik och fysikprovet).
-
-The original dataset consists of 545 samples, which we filter down to 474 samples. We
-use a 32 / 32 / 410 split for training, validation and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "En man, 63 år, har en skelett-, lymfkörtel-, och levermetastaserad prostatacancer där aktiv onkologisk behandling är avslutad. Han är inskriven i ett specialiserat palliativt hemsjukvårdsteam. Han har en långverkande smärtlindring med T. oxykodon 20 mg morgon och kväll. Nu söker han akut vård på grund av buksmärta och ihållande kräkningar. Vad bör du ordinera mot mannens smärtor?\nSvarsalternativ:\na. Tablett kortverkande oxykodon 5 mg peroralt\nb. Tablett ibuprofen 400 mg peroralt\nc. Tablett kortverkande oxykodon 20 mg peroralt\nd. Inj. 5 mg kortverkande oxykodon subkutant\ne. Paracetamol 1 g intravenöst",
-  "label": "d"
-}
-```
-
-```json
-{
-  "text": "Vilken typ av hörapparat är att föredra för barn under 3 år med en permenent sensorineural hörselnedsättning?\nSvarsalternativ:\na. RIC (reciever in the canal) med öppen dome\nb. benledd hörapparat\nc. bakom-örat-apparat med individuellt anpassad insats\nd. endast mikrofonsystem för att förbättra signal/brus förhållandet",
-  "label": "c"
-}
-```
-
-```json
-{
-  "text": "Varför är det viktigt med utredande samtal?\nSvarsalternativ:\na. Det kan etablera ett ömsesidigt förtroende mellan audionom och patient som underlag inför utförandet av en individuell, kvalitativ rehabilitering.\nb. Det ger audionomen möjlighet att observera patientens kommunikation som underlag inför utförandet av en individuell, kvalitativ rehabilitering.\nc. Det kan förbättra taluppfattningen som en del i utförandet av en individuell, kvalitativ rehabilitering.\nd. Det samlar nödvändig information om patienten, som underlag inför utförandet av en individuell, kvalitativ rehabilitering.",
-  "label": "d"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Följande är flervalsfrågor (med svar).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Fråga: {text}
-  Svarsalternativ:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-  Svar: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Fråga: {text}
-  Svarsalternativ:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-
-  Besvara följande fråga med 'a', 'b', 'c' eller 'd', och inget annat.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset skolprov
-```
-
-### Unofficial: SwedishFacts
-
-This is a benchmark for factual knowledge about Sweden. The questions are based on
-topics related to the hosts of the Swedish radio program
-[Sommar i P1](https://www.sverigesradio.se/sommar-i-p1) as well as Swedish sporting
-events, such as those featured in [En Svensk Klassiker](https://ensvenskklassiker.se).
-In the [dataset card](https://huggingface.co/datasets/liu-nlp/swedish-facts-v1) it is
-mentioned that a paper with more information is coming soon.
-
-Since the dataset does not include candidate answers, we generate them using GPT-4o. The
-original dataset consists of 1,289 samples. We use a 128 / 64 / 1,097 split for
-training, validation and testing, respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Hur många gånger befodrades Micael Bydén till en högre militär grad under 1990-talet?\nSvarsalternativ:\na. Tre, 3\nb. Fyra\nc. Fem\nd. Två",
-  "label": "a"
-}
-```
-
-```json
-{
-  "text": "Vad heter skivbolaget Titiyo Jah kontrakt med år 1988?\nSvarsalternativ:\na. Virgin Records\nb. Telegram\nc. Sony Music\nd. Warner Music",
-  "label": "b"
-}
-```
-
-```json
-{
-  "text": "I vilken ort föddes PM Nilsson?\nSvarsalternativ:\na. Göteborg\nb. Lund\nc. Helsingborg\nd. Malmö",
-  "label": "b"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Följande är flervalsfrågor (med svar).
-  ```
-
-- Base prompt template:
-
-  ```text
-  Fråga: {text}
-  Svarsalternativ:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-  Svar: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Fråga: {text}
-  Svarsalternativ:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
-
-  Besvara följande fråga med 'a', 'b', 'c' eller 'd', och inget annat.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset swedish-facts
 ```
 
 ### Unofficial: MultiLoKo-sv
