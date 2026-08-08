@@ -589,6 +589,11 @@
     "train": 15,
     "val": 64
   },
+  "EuroEval/include-uk-mini": {
+    "test": 442,
+    "train": 14,
+    "val": 64
+  },
   "EuroEval/kpwr-ner": {
     "test": 2048,
     "train": 1024,
@@ -658,6 +663,11 @@
     "test": 2048,
     "train": 1024,
     "val": 256
+  },
+  "EuroEval/ltzglue-rte-mini": {
+    "test": 626,
+    "train": 1024,
+    "val": 197
   },
   "EuroEval/ltzglue-sa-mini": {
     "test": 926,
