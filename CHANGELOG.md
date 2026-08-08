@@ -70,6 +70,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - Dutch:
     - `scala-nl` → `dutch-cola`
     - `mmlu-nl` → `include-nl`, `multiloko-nl`
+    - `hellaswag-nl` → `winogrande-nl`
   - Finnish:
     - `hellaswag-fi` → `winogrande-fi`
     - `include-fi`
