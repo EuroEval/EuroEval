@@ -1,4 +1,6 @@
-# 🇪🇺 Basque
+<!-- markdownlint-disable MD013 -->
+
+# <img src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 28" width="1000" height="560"><path d="M0,0 v28 h50 v-28 z" fill="#D52B1E"/><path d="M0,0 L50,28 M50,0 L0,28" stroke="#009B48" stroke-width="4.3"/><path d="M25,0 v28 M0,14 h50" stroke="#fff" stroke-width="4.3"/></svg>' alt='' style='height:0.9em;vertical-align:-0.05em;display:inline-block'> Basque
 
 This is an overview of all the datasets used in the Basque part of EuroEval. The
 datasets are grouped by their task – see the [task overview](/tasks) for more
