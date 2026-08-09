@@ -98,10 +98,11 @@ def test_preview_in_dev_server_starts_and_stops_fixed_port(
         return process
 
     socket_instance = Mock()
-    socket_instance.connect_ex.return_value = 0
     socket_factory = Mock(return_value=socket_instance)
     monkeypatch.setattr(collect_evaluation_results.subprocess, "Popen", fake_popen)
-    monkeypatch.setattr(collect_evaluation_results.socket, "socket", socket_factory)
+    monkeypatch.setattr(
+        collect_evaluation_results.socket, "create_connection", socket_factory
+    )
     monkeypatch.setattr(collect_evaluation_results.time, "time", lambda: 0.0)
     monkeypatch.setattr(collect_evaluation_results.time, "sleep", lambda _: None)
     monkeypatch.setattr("builtins.input", lambda _: "y")
@@ -121,11 +122,7 @@ def test_preview_in_dev_server_starts_and_stops_fixed_port(
             },
         )
     ]
-    socket_factory.assert_called_once_with(
-        collect_evaluation_results.socket.AF_INET,
-        collect_evaluation_results.socket.SOCK_STREAM,
-    )
-    socket_instance.connect_ex.assert_called_once_with(("127.0.0.1", 5173))
+    socket_factory.assert_called_once_with(("localhost", 5173), timeout=1)
     socket_instance.close.assert_called_once_with()
     assert process.signals == [signal.SIGTERM]
     assert process.wait_timeouts == [10]

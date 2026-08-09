@@ -695,15 +695,13 @@ def preview_in_dev_server() -> bool:
         # Give it a moment
         time.sleep(2)
 
-        # Try to connect to localhost:5173 (default Vite dev port)
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Resolve localhost so this works with IPv4- or IPv6-only dev servers.
         try:
-            result = sock.connect_ex(("127.0.0.1", 5173))
+            sock = socket.create_connection(("localhost", 5173), timeout=1)
             sock.close()
-            if result == 0:
-                ready = True
-                break
-        except Exception:
+            ready = True
+            break
+        except OSError:
             pass
 
     if not ready:
