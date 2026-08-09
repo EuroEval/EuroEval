@@ -59,9 +59,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Added official datasets for Greek: `culturaqa`. The script 
-  `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing dataset swaps.
-
 - Renamed the previous LLM-as-a-judge `open-ended-qa` task to `reference-free-qa`, and
   added a new reference-based `open-ended-qa` task using translation-style text-to-text
   metrics.
@@ -81,7 +78,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - German:
     - `hellaswag-de` → `winogrande-de`
     - `mmlu-de` → `include-de`, `multiloko-de`
-  - Greek: `global-mmlu-el` → `greek-mmlu`
+  - Greek:
+    - `global-mmlu-el` → `greek-mmlu`
+    - `culturaqa`
   - Hungarian: `mmlu-hu` → `include-hu`
   - Icelandic: `scala-is` → `ice-ec`
   - Italian:
