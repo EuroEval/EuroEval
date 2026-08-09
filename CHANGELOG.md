@@ -79,7 +79,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - German:
     - `hellaswag-de` → `winogrande-de`
     - `mmlu-de` → `include-de`, `multiloko-de`
-  - Greek: `global-mmlu-el` → `greek-mmlu`
+  - Greek:
+    - `global-mmlu-el` → `greek-mmlu`
+    - `culturaqa`
   - Hungarian: `mmlu-hu` → `include-hu`
   - Icelandic: `scala-is` → `ice-ec`
   - Italian:

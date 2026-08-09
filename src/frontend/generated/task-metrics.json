@@ -22,6 +22,10 @@
     "Matthew's Correlation Coefficient",
     "Macro-average F1-score"
   ],
+  "open-ended-qa": [
+    "ChrF3++",
+    "ChrF4++"
+  ],
   "reading-comprehension": [
     "F1-score",
     "Exact Match"

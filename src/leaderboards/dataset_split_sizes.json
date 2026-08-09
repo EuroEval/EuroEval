@@ -129,6 +129,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/culturaqa-mini": {
+    "test": 500,
+    "train": 1024,
+    "val": 200
+  },
   "EuroEval/czech-news-mini": {
     "test": 2048,
     "train": 1024,
