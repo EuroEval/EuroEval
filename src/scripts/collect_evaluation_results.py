@@ -668,11 +668,8 @@ def preview_in_dev_server() -> bool:
     # Start vercel dev as a subprocess
     try:
         dev_process = subprocess.Popen(
-            ["vercel", "dev", "--yes", "--non-interactive"],
+            ["vercel", "dev", "--yes", "--non-interactive", "--listen", "3000"],
             cwd=REPO_ROOT,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
         )
     except FileNotFoundError:
         logger.error("`vercel` CLI not found on PATH. Install with `npm i -g vercel`.")
@@ -685,10 +682,10 @@ def preview_in_dev_server() -> bool:
 
     print("\nWaiting for dev server to start...")
     while time.time() - start_time < timeout:
-        if dev_process.poll() is not None:
+        return_code = dev_process.poll()
+        if return_code is not None:
             # Process exited unexpectedly
-            output = dev_process.stdout.read()
-            logger.error(f"Dev server exited unexpectedly: {output}")
+            logger.error("Dev server exited unexpectedly with code %s.", return_code)
             return False
 
         # Give it a moment
@@ -715,10 +712,10 @@ def preview_in_dev_server() -> bool:
         return False
 
     logger.info("=" * 60)
-    logger.info("✓ Dev server is running at http://localhost:5174")
+    logger.info("✓ Dev server is running at http://localhost:3000")
     logger.info("=" * 60)
     print(
-        "\nPlease open http://localhost:5174 in your browser and check the "
+        "\nPlease open http://localhost:3000 in your browser and check the "
         "leaderboards.\n"
     )
 
