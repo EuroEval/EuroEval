@@ -59,9 +59,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Added official datasets for Danish: `danwic`. The script 
-  `swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md when performing dataset swaps.
-
 - Renamed the previous LLM-as-a-judge `open-ended-qa` task to `reference-free-qa`, and
   added a new reference-based `open-ended-qa` task using translation-style text-to-text
   metrics.
@@ -70,6 +67,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Swapped official datasets for four languages (all performed by the
   `swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
   - Croatian: `mmlu-hr` → `include-hr`
+  - Danish: `danwic`
   - Dutch:
     - `scala-nl` → `dutch-cola`
     - `mmlu-nl` → `include-nl`, `multiloko-nl`

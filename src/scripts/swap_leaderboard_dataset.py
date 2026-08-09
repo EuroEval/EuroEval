@@ -552,11 +552,7 @@ def _update_changelog(
             )
         )
         new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
-        entry = (
-            f"- Added official datasets for {lang_list}: {new_ds_str}. The script \n  "
-            "`swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md "
-            "when performing dataset swaps."
-        )
+        entry = f"- Added official datasets for {lang_list}: {new_ds_str}."
 
     # Insert a blank line after "### Changed", then the entry
     lines.insert(changed_idx + 1, "")
