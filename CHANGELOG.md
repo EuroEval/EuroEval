@@ -53,8 +53,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   [IMISLab/CulturaQA](https://huggingface.co/datasets/IMISLab/CulturaQA), using
   translation-style text-to-text metrics with original split boundaries preserved and
   split sizes 1,024 / 200 / 500.
-- Added logical-reasoning prompt templates for Basque, Western Frisian, Irish, Macedonian,
-  Russian, Scots, and Luxembourgish.
+- Added zebra-puzzle logical-reasoning datasets (`zebra-puzzles-easy-*` and
+  `zebra-puzzles-hard-*`) for Basque, Western Frisian, Irish, Macedonian, Russian and
+  Scots.
 
 ### Changed
 
@@ -67,9 +68,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Swapped official datasets for four languages (all performed by the
   `swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
   - Croatian: `mmlu-hr` → `include-hr`
+  - Danish: `danwic`
   - Dutch:
     - `scala-nl` → `dutch-cola`
     - `mmlu-nl` → `include-nl`, `multiloko-nl`
+    - `hellaswag-nl` → `winogrande-nl`
   - Finnish:
     - `hellaswag-fi` → `winogrande-fi`
     - `include-fi`
@@ -77,7 +80,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - German:
     - `hellaswag-de` → `winogrande-de`
     - `mmlu-de` → `include-de`, `multiloko-de`
-  - Greek: `global-mmlu-el` → `greek-mmlu`
+  - Greek:
+    - `global-mmlu-el` → `greek-mmlu`
+    - `culturaqa`
   - Hungarian: `mmlu-hu` → `include-hu`
   - Icelandic: `scala-is` → `ice-ec`
   - Italian:

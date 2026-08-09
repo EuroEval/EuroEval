@@ -147,6 +147,13 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     "plain run never spends money.",
 )
 @click.option(
+    "--generative-only/--no-generative-only",
+    is_flag=True,
+    default=False,
+    help="Only evaluate rows whose mirrored leaderboard config is generative. "
+    "Useful for add-only generative datasets where encoder rows cannot run.",
+)
+@click.option(
     "--api-providers",
     default=None,
     help="Comma-separated provider names to run (openai, anthropic, google, xai). "
@@ -209,6 +216,7 @@ def main(
     branch: str | None,
     add_only: bool,
     include_api: bool,
+    generative_only: bool,
     api_providers: str | None,
     gpu_memory_utilization: float | None,
     skip_eval: bool,
@@ -291,6 +299,7 @@ def main(
             else new_configs[0].task.name,
             target_codes=target_codes,
             include_api=include_api,
+            generative_only=generative_only,
             api_providers_arg=api_providers,
             gpu_memory_utilization=gpu_memory_utilization,
             force=force,
@@ -543,11 +552,7 @@ def _update_changelog(
             )
         )
         new_ds_str = ", ".join(f"`{ds}`" for ds in new_datasets)
-        entry = (
-            f"- Added official datasets for {lang_list}: {new_ds_str}. The script \n  "
-            "`swap_leaderboard_dataset.py` now automatically updates CHANGELOG.md "
-            "when performing dataset swaps."
-        )
+        entry = f"- Added official datasets for {lang_list}: {new_ds_str}."
 
     # Insert a blank line after "### Changed", then the entry
     lines.insert(changed_idx + 1, "")
@@ -1060,6 +1065,7 @@ def run_evaluations(
     swapped_task: str,
     target_codes: set[str],
     include_api: bool,
+    generative_only: bool,
     api_providers_arg: str | None,
     gpu_memory_utilization: float | None,
     force: bool,
@@ -1078,6 +1084,8 @@ def run_evaluations(
             The affected language codes.
         include_api:
             Whether to evaluate API models.
+        generative_only:
+            Whether to skip mirrored leaderboard configs that are not generative.
         api_providers_arg:
             Optional comma-separated provider filter.
         gpu_memory_utilization:
@@ -1123,6 +1131,7 @@ def run_evaluations(
         force=force,
         swapped_task=swapped_task,
         language_codes=target_codes,
+        generative_only=generative_only,
     )
     logger.debug(f"Planned {len(jobs)} evaluation(s) before the size check.")
     jobs, skipped_too_large = apply_size_filter(
@@ -1568,6 +1577,7 @@ def build_eval_jobs(  # noqa: C901, PLR0912
     force: bool,
     swapped_task: str,
     language_codes: set[str],
+    generative_only: bool = False,
 ) -> tuple[list[Job], list[str], int]:
     """Turn ranked pairs into evaluation jobs, mirroring each model's setup.
 
@@ -1600,6 +1610,8 @@ def build_eval_jobs(  # noqa: C901, PLR0912
             The task both datasets belong to (used to compute required datasets).
         language_codes:
             The affected language codes (used to compute required datasets).
+        generative_only (optional):
+            Whether to skip mirrored leaderboard configs that are not generative.
 
     Returns:
         Tuple of jobs to run, sorted unique list of API model ids skipped, and
@@ -1737,6 +1749,12 @@ def build_eval_jobs(  # noqa: C901, PLR0912
             configs_to_process.append(config)
 
         for config in configs_to_process:
+            if generative_only:
+                if config is None and not is_api:
+                    continue
+                if config is not None and not config.generative:
+                    continue
+
             desired_eval_test_split, desired_zero_shot = mirror_eval_config(
                 config=config, is_api=is_api
             )
