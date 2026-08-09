@@ -668,8 +668,12 @@ def preview_in_dev_server() -> bool:
     # Start vercel dev as a subprocess
     try:
         dev_process = subprocess.Popen(
-            ["vercel", "dev", "--yes", "--non-interactive", "--listen", "3000"],
+            ["vercel", "dev", "--yes", "--non-interactive"],
             cwd=REPO_ROOT,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
         )
     except FileNotFoundError:
         logger.error("`vercel` CLI not found on PATH. Install with `npm i -g vercel`.")
@@ -682,19 +686,19 @@ def preview_in_dev_server() -> bool:
 
     print("\nWaiting for dev server to start...")
     while time.time() - start_time < timeout:
-        return_code = dev_process.poll()
-        if return_code is not None:
+        if dev_process.poll() is not None:
             # Process exited unexpectedly
-            logger.error("Dev server exited unexpectedly with code %s.", return_code)
+            output = dev_process.stdout.read() if dev_process.stdout else ""
+            logger.error("Dev server exited unexpectedly: %s", output)
             return False
 
         # Give it a moment
         time.sleep(2)
 
-        # Try to connect to localhost:3000 (default Vercel dev port)
+        # Try to connect to localhost:5173 (default Vite dev port)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            result = sock.connect_ex(("127.0.0.1", 3000))
+            result = sock.connect_ex(("127.0.0.1", 5173))
             sock.close()
             if result == 0:
                 ready = True
@@ -712,10 +716,10 @@ def preview_in_dev_server() -> bool:
         return False
 
     logger.info("=" * 60)
-    logger.info("✓ Dev server is running at http://localhost:3000")
+    logger.info("✓ Dev server is running at http://localhost:5173")
     logger.info("=" * 60)
     print(
-        "\nPlease open http://localhost:3000 in your browser and check the "
+        "\nPlease open http://localhost:5173 in your browser and check the "
         "leaderboards.\n"
     )
 

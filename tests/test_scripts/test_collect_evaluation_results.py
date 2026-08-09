@@ -36,10 +36,10 @@ class FakeHfApi:
         pass
 
 
-def test_preview_in_dev_server_handles_early_exit_without_pipe(
+def test_preview_in_dev_server_handles_early_exit(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """An early server exit is reported without attempting to read stdout."""
+    """An early server exit is reported without failing on missing output."""
     process = FakeDevProcess(return_code=1)
 
     monkeypatch.setattr(
@@ -49,7 +49,7 @@ def test_preview_in_dev_server_handles_early_exit_without_pipe(
 
     assert collect_evaluation_results.preview_in_dev_server() is False
 
-    assert "Dev server exited unexpectedly with code 1." in caplog.text
+    assert "Dev server exited unexpectedly:" in caplog.text
 
 
 class FakeDevProcess:
@@ -89,7 +89,7 @@ def test_preview_in_dev_server_starts_and_stops_fixed_port(
     caplog: pytest.LogCaptureFixture,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Preview uses the fixed Vercel port and terminates the server afterwards."""
+    """Preview uses the fixed Vite port and terminates the server afterwards."""
     process = FakeDevProcess()
     popen_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
 
@@ -111,20 +111,26 @@ def test_preview_in_dev_server_starts_and_stops_fixed_port(
 
     assert popen_calls == [
         (
-            (["vercel", "dev", "--yes", "--non-interactive", "--listen", "3000"],),
-            {"cwd": collect_evaluation_results.REPO_ROOT},
+            (["vercel", "dev", "--yes", "--non-interactive"],),
+            {
+                "cwd": collect_evaluation_results.REPO_ROOT,
+                "stdin": collect_evaluation_results.subprocess.DEVNULL,
+                "stdout": collect_evaluation_results.subprocess.PIPE,
+                "stderr": collect_evaluation_results.subprocess.STDOUT,
+                "text": True,
+            },
         )
     ]
     socket_factory.assert_called_once_with(
         collect_evaluation_results.socket.AF_INET,
         collect_evaluation_results.socket.SOCK_STREAM,
     )
-    socket_instance.connect_ex.assert_called_once_with(("127.0.0.1", 3000))
+    socket_instance.connect_ex.assert_called_once_with(("127.0.0.1", 5173))
     socket_instance.close.assert_called_once_with()
     assert process.signals == [signal.SIGTERM]
     assert process.wait_timeouts == [10]
-    assert "http://localhost:3000" in capsys.readouterr().out
-    assert "http://localhost:3000" in caplog.text
+    assert "http://localhost:5173" in capsys.readouterr().out
+    assert "http://localhost:5173" in caplog.text
 
 
 def test_upload_results_to_hf_collision_leaves_results_dir_unmutated(
