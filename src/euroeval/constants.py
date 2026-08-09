@@ -19,7 +19,7 @@ MAX_CONTEXT_LENGTH = 8_192
 
 # We need to raise the amount of tokens generated for reasoning models, to give them
 # time to think
-REASONING_MAX_TOKENS = 8_192
+REASONING_MAX_TOKENS = 16_384
 
 # The Hugging Face Hub pipeline tags used to classify models as generative
 GENERATIVE_PIPELINE_TAGS = [
