@@ -1,7 +1,9 @@
 """Tests for the collect_evaluation_results script, focusing on upload_results_to_hf."""
 
 import json
+import signal
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -32,6 +34,97 @@ class FakeHfApi:
     ) -> None:
         """No-op sync for testing."""
         pass
+
+
+def test_preview_in_dev_server_handles_early_exit_without_pipe(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """An early server exit is reported without attempting to read stdout."""
+    process = FakeDevProcess(return_code=1)
+
+    monkeypatch.setattr(
+        collect_evaluation_results.subprocess, "Popen", lambda *args, **kwargs: process
+    )
+    caplog.set_level("INFO", logger="collect_evaluation_results")
+
+    assert collect_evaluation_results.preview_in_dev_server() is False
+
+    assert "Dev server exited unexpectedly with code 1." in caplog.text
+
+
+class FakeDevProcess:
+    """Fake Vercel process used to test preview lifecycle handling."""
+
+    stdout: None = None
+
+    def __init__(self, return_code: int | None = None) -> None:
+        """Initialise the fake process with an optional exit code."""
+        self.return_code = return_code
+        self.signals: list[signal.Signals] = []
+        self.wait_timeouts: list[float | None] = []
+
+    def kill(self) -> None:
+        """Fail if the test unexpectedly needs to kill the process.
+
+        Raises:
+            AssertionError: Always, because killing is unexpected in these tests.
+        """
+        raise AssertionError("The fake process should not need to be killed.")
+
+    def poll(self) -> int | None:
+        """Return the configured process exit code."""
+        return self.return_code
+
+    def send_signal(self, sig: signal.Signals) -> None:
+        """Record a signal sent to the process."""
+        self.signals.append(sig)
+
+    def wait(self, timeout: float | None = None) -> None:
+        """Record the timeout used while waiting for the process."""
+        self.wait_timeouts.append(timeout)
+
+
+def test_preview_in_dev_server_starts_and_stops_fixed_port(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Preview uses the fixed Vercel port and terminates the server afterwards."""
+    process = FakeDevProcess()
+    popen_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+    def fake_popen(*args: object, **kwargs: object) -> FakeDevProcess:
+        popen_calls.append((args, kwargs))
+        return process
+
+    socket_instance = Mock()
+    socket_instance.connect_ex.return_value = 0
+    socket_factory = Mock(return_value=socket_instance)
+    monkeypatch.setattr(collect_evaluation_results.subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(collect_evaluation_results.socket, "socket", socket_factory)
+    monkeypatch.setattr(collect_evaluation_results.time, "time", lambda: 0.0)
+    monkeypatch.setattr(collect_evaluation_results.time, "sleep", lambda _: None)
+    monkeypatch.setattr("builtins.input", lambda _: "y")
+    caplog.set_level("INFO", logger="collect_evaluation_results")
+
+    assert collect_evaluation_results.preview_in_dev_server() is True
+
+    assert popen_calls == [
+        (
+            (["vercel", "dev", "--yes", "--non-interactive", "--listen", "3000"],),
+            {"cwd": collect_evaluation_results.REPO_ROOT},
+        )
+    ]
+    socket_factory.assert_called_once_with(
+        collect_evaluation_results.socket.AF_INET,
+        collect_evaluation_results.socket.SOCK_STREAM,
+    )
+    socket_instance.connect_ex.assert_called_once_with(("127.0.0.1", 3000))
+    socket_instance.close.assert_called_once_with()
+    assert process.signals == [signal.SIGTERM]
+    assert process.wait_timeouts == [10]
+    assert "http://localhost:3000" in capsys.readouterr().out
+    assert "http://localhost:3000" in caplog.text
 
 
 def test_upload_results_to_hf_collision_leaves_results_dir_unmutated(
