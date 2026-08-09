@@ -37,5 +37,9 @@
   "summarization": [
     "ChrF3++",
     "ChrF4++"
+  ],
+  "word-in-context": [
+    "Matthew's Correlation Coefficient",
+    "Macro-average F1-score"
   ]
 }
