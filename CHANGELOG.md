@@ -67,6 +67,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Swapped official datasets for four languages (all performed by the
   `swap_leaderboard_dataset.py` script, which now automatically updates this changelog):
   - Croatian: `mmlu-hr` → `include-hr`
+  - Danish: `danwic`
   - Dutch:
     - `scala-nl` → `dutch-cola`
     - `mmlu-nl` → `include-nl`, `multiloko-nl`

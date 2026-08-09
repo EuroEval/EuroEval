@@ -122,6 +122,14 @@ ZEBRA_PUZZLE_EASY_DA_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
+DANWIC_CONFIG = DatasetConfig(
+    name="danwic",
+    pretty_name="DanWiC",
+    source="EuroEval/danwic",
+    task=WIC,
+    languages=[DANISH],
+)
+
 # Unofficial datasets ###
 
 HELLASWAG_DA_CONFIG = DatasetConfig(
@@ -227,15 +235,6 @@ DANISH_LEXICAL_INFERENCE_CONFIG = DatasetConfig(
     task=NLI,
     languages=[DANISH],
     labels=["entailment", "contradiction"],
-    unofficial=True,
-)
-
-DANWIC_CONFIG = DatasetConfig(
-    name="danwic",
-    pretty_name="DanWiC",
-    source="EuroEval/danwic",
-    task=WIC,
-    languages=[DANISH],
     unofficial=True,
 )
 
