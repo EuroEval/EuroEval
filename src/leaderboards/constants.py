@@ -186,6 +186,7 @@ LEADERBOARD_TASKS: list[str] = [
     "reading-comprehension",
     "natural-language-inference",
     "word-in-context",
+    "open-ended-qa",
     "summarization",
     "knowledge",
     "common-sense-reasoning",
