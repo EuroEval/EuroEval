@@ -13,6 +13,7 @@ from ..languages import get_all_languages
 from ..logging_utils import log_once
 from ..tasks import SPEED
 from .albanian import *  # noqa: F403
+from .basque import *  # noqa: F403
 from .belarusian import *  # noqa: F403
 from .bosnian import *  # noqa: F403
 from .bulgarian import *  # noqa: F403
@@ -26,18 +27,23 @@ from .estonian import *  # noqa: F403
 from .faroese import *  # noqa: F403
 from .finnish import *  # noqa: F403
 from .french import *  # noqa: F403
+from .frisian import *  # noqa: F403
 from .german import *  # noqa: F403
 from .greek import *  # noqa: F403
 from .hungarian import *  # noqa: F403
 from .icelandic import *  # noqa: F403
+from .irish import *  # noqa: F403
 from .italian import *  # noqa: F403
 from .latvian import *  # noqa: F403
 from .lithuanian import *  # noqa: F403
 from .luxembourgish import *  # noqa: F403
+from .macedonian import *  # noqa: F403
 from .norwegian import *  # noqa: F403
 from .polish import *  # noqa: F403
 from .portuguese import *  # noqa: F403
 from .romanian import *  # noqa: F403
+from .russian import *  # noqa: F403
+from .scots import *  # noqa: F403
 from .serbian import *  # noqa: F403
 from .slovak import *  # noqa: F403
 from .slovene import *  # noqa: F403

@@ -120,14 +120,6 @@ RAGTRUTH_NL_CONFIG = DatasetConfig(
     train_split=None,
 )
 
-HELLASWAG_NL_CONFIG = DatasetConfig(
-    name="hellaswag-nl",
-    pretty_name="HellaSwag-nl",
-    source="EuroEval/hellaswag-nl-mini",
-    task=COMMON_SENSE,
-    languages=[DUTCH],
-)
-
 
 INCLUDE_NL_CONFIG = DatasetConfig(
     name="include-nl",
@@ -146,7 +138,25 @@ MULTILOKO_NL_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+WINOGRANDE_NL_CONFIG = DatasetConfig(
+    name="winogrande-nl",
+    pretty_name="Winogrande-nl",
+    source="EuroEval/winogrande-nl",
+    task=COMMON_SENSE,
+    languages=[DUTCH],
+    labels=["a", "b"],
+)
+
 # Unofficial datasets ###
+
+HELLASWAG_NL_CONFIG = DatasetConfig(
+    name="hellaswag-nl",
+    pretty_name="HellaSwag-nl",
+    source="EuroEval/hellaswag-nl-mini",
+    task=COMMON_SENSE,
+    languages=[DUTCH],
+    unofficial=True,
+)
 
 MMLU_NL_CONFIG = DatasetConfig(
     name="mmlu-nl",
@@ -163,16 +173,6 @@ SCALA_NL_CONFIG = DatasetConfig(
     source="EuroEval/scala-nl",
     task=LA,
     languages=[DUTCH],
-    unofficial=True,
-)
-
-WINOGRANDE_NL_CONFIG = DatasetConfig(
-    name="winogrande-nl",
-    pretty_name="Winogrande-nl",
-    source="EuroEval/winogrande-nl",
-    task=COMMON_SENSE,
-    languages=[DUTCH],
-    labels=["a", "b"],
     unofficial=True,
 )
 

@@ -129,6 +129,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/culturaqa-mini": {
+    "test": 500,
+    "train": 1024,
+    "val": 200
+  },
   "EuroEval/czech-news-mini": {
     "test": 2048,
     "train": 1024,
@@ -569,6 +574,11 @@
     "train": 13,
     "val": 64
   },
+  "EuroEval/include-it-mini": {
+    "test": 421,
+    "train": 27,
+    "val": 64
+  },
   "EuroEval/include-lt-mini": {
     "test": 430,
     "train": 25,
@@ -917,6 +927,10 @@
     "train": 16
   },
   "EuroEval/multiloko-fr-mini": {
+    "test": 234,
+    "train": 16
+  },
+  "EuroEval/multiloko-it-mini": {
     "test": 234,
     "train": 16
   },
