@@ -309,6 +309,22 @@
     "train": 1024,
     "val": 94
   },
+  "EuroEval/faroese-grammatical-correctness": {
+    "full_train": 4289,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/faroese-metaphorical-explanations": {
+    "test": 282,
+    "train": 140,
+    "val": 35
+  },
+  "EuroEval/faroese-semantic-relations": {
+    "test": 696,
+    "train": 348,
+    "val": 87
+  },
   "EuroEval/fone-mini": {
     "test": 2048,
     "train": 1024,
