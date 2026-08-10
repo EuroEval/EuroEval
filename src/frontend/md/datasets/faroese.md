@@ -691,7 +691,7 @@ euroeval --model <model-id> --dataset gerlangmod-fo
 
 ## Grammatical Error Correction
 
-### Unofficial: Faroese Grammatical Correctness
+### Faroese Grammatical Correctness
 
 This dataset was published in [this paper](https://doi.org/10.63317/4u4i99hc8co8)
 and consists of minimal pairs of an ungrammatical Faroese sentence and its
