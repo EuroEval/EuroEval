@@ -78,8 +78,6 @@ RAGTRUTH_FO_CONFIG = DatasetConfig(
 )
 
 
-# Unofficial datasets ###
-
 FAROESE_SEMANTIC_RELATIONS_CONFIG = DatasetConfig(
     name="faroese-semantic-relations",
     pretty_name="Faroese Semantic Relations",
@@ -87,7 +85,6 @@ FAROESE_SEMANTIC_RELATIONS_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[FAROESE],
     labels=["a", "b", "c", "d", "e", "f"],
-    unofficial=True,
 )
 
 FAROESE_METAPHORICAL_EXPLANATIONS_CONFIG = DatasetConfig(
@@ -96,8 +93,9 @@ FAROESE_METAPHORICAL_EXPLANATIONS_CONFIG = DatasetConfig(
     source="EuroEval/faroese-metaphorical-explanations",
     task=KNOW,
     languages=[FAROESE],
-    unofficial=True,
 )
+
+# Unofficial datasets ###
 
 FAROESE_GRAMMATICAL_CORRECTNESS_CONFIG = DatasetConfig(
     name="faroese-grammatical-correctness",
