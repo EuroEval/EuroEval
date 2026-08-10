@@ -650,6 +650,7 @@ class TestLoadCorpusAndBuildEvalJobs:
             "danish-citizen-tests",
             "winogrande-da",
             "danske-talemaader",
+            "danwic",
         }
         corpus = Corpus(
             datasets_by_language={"da": {"test-model": required_datasets}},
@@ -759,6 +760,7 @@ class TestLoadCorpusAndBuildEvalJobs:
             "danish-citizen-tests",
             "winogrande-da",
             "danske-talemaader",
+            "danwic",
         }
         corpus = Corpus(
             datasets_by_language={"da": {"test-model": required_datasets}},
@@ -875,6 +877,7 @@ class TestLoadCorpusAndBuildEvalJobs:
             "danish-citizen-tests",
             "winogrande-da",
             "danske-talemaader",
+            "danwic",
         }
         corpus = Corpus(
             datasets_by_language={"da": {"test-model": required_datasets}},
@@ -1317,6 +1320,7 @@ class TestLoadCorpusAndBuildEvalJobs:
             "danish-citizen-tests",
             "winogrande-da",
             "danske-talemaader",
+            "danwic",
         }
         split_agnostic_dataset = "dala"
 

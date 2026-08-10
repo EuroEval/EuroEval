@@ -466,7 +466,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-fo
 
 ## Knowledge
 
-### Unofficial: Faroese Semantic Relations
+### Faroese Semantic Relations
 
 This dataset was published in [this paper](https://doi.org/10.63317/4u4i99hc8co8)
 and tests knowledge of Faroese semantic relations. Each sample presents a Faroese
@@ -545,7 +545,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset faroese-semantic-relations
 ```
 
-### Unofficial: Faroese Metaphorical Explanations
+### Faroese Metaphorical Explanations
 
 This dataset was published in [this paper](https://doi.org/10.63317/4u4i99hc8co8)
 and tests comprehension of Faroese idioms. Each sample presents a Faroese
@@ -691,7 +691,7 @@ euroeval --model <model-id> --dataset gerlangmod-fo
 
 ## Grammatical Error Correction
 
-### Unofficial: Faroese Grammatical Correctness
+### Faroese Grammatical Correctness
 
 This dataset was published in [this paper](https://doi.org/10.63317/4u4i99hc8co8)
 and consists of minimal pairs of an ungrammatical Faroese sentence and its
