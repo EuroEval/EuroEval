@@ -111,6 +111,7 @@ RAGTRUTH_ET_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+
 # Unofficial datasets ###
 
 MULTI_IFEVAL_ET_CONFIG = DatasetConfig(

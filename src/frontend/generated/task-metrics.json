@@ -6,6 +6,12 @@
   "european-values": [
     "European Values"
   ],
+  "grammatical-error-correction": [
+    "Exact Match"
+  ],
+  "grammatical-error-detection": [
+    "Micro-average F1-score"
+  ],
   "knowledge": [
     "Matthew's Correlation Coefficient",
     "Accuracy"

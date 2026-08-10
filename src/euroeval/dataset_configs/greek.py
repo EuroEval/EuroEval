@@ -107,6 +107,7 @@ CULTURAQA_CONFIG = DatasetConfig(
     ),
 )
 
+
 # Unofficial datasets ###
 
 GLOBAL_MMLU_EL_CONFIG = DatasetConfig(

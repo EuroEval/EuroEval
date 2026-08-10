@@ -93,6 +93,7 @@ INCLUDE_HU_CONFIG = DatasetConfig(
     languages=[HUNGARIAN],
 )
 
+
 # Unofficial datasets ###
 
 MMLU_HU_CONFIG = DatasetConfig(

@@ -117,6 +117,7 @@ MULTILOKO_FR_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+
 # Unofficial datasets ###
 
 MMLU_FR_CONFIG = DatasetConfig(
