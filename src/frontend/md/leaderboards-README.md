@@ -20,7 +20,8 @@ Each language has three leaderboards:
   generate text, evaluated on the standard set of NLU and NLG [tasks](/tasks). Any
   generative model can appear here, whether base, instruction-tuned, or reasoning.
 - **All Models Leaderboard**: This leaderboard shows the performance of models that
-  can understand text, which includes both generative and non-generative models.
+  can understand text (but not necessarily generate it), which includes both
+  generative and non-generative models.
 
 ## 📊 How to Read the Leaderboards
 
