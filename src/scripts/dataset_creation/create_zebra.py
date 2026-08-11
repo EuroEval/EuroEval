@@ -22,21 +22,93 @@ from huggingface_hub.utils import HfHubHTTPError
 # All themes except Danish smørrebrød variants
 # Format: (theme, language_code, difficulty)
 THEMES = [
+    # Arabic
+    ("ar_manazil_2x3_5rh", "ar", "easy"),
+    ("ar_manazil_4x5_5rh", "ar", "hard"),
+    # Belarusian
+    ("be_damy_2x3_5rh", "be", "easy"),
+    ("be_damy_4x5_5rh", "be", "hard"),
+    # Bulgarian
+    ("bg_kashti_2x3_5rh", "bg", "easy"),
+    ("bg_kashti_4x5_5rh", "bg", "hard"),
+    # Bosnian
+    ("bs_kuce_2x3_5rh", "bs", "easy"),
+    ("bs_kuce_4x5_5rh", "bs", "hard"),
+    # Catalan
+    ("ca_cases_2x3_5rh", "ca", "easy"),
+    ("ca_cases_4x5_5rh", "ca", "hard"),
+    # Czech
+    ("cs_domy_2x3_5rh", "cs", "easy"),
+    ("cs_domy_4x5_5rh", "cs", "hard"),
     # Danish (house theme)
     ("da_huse_2x3_5rh", "da", "easy"),
     ("da_huse_4x5_5rh", "da", "hard"),
     # German
     ("de_hauser_2x3_5rh", "de", "easy"),
     ("de_hauser_4x5_5rh", "de", "hard"),
+    # Greek
+    ("el_spitia_2x3_5rh", "el", "easy"),
+    ("el_spitia_4x5_5rh", "el", "hard"),
     # English
     ("en_houses_2x3_5rh", "en", "easy"),
     ("en_houses_4x5_5rh", "en", "hard"),
+    # Spanish
+    ("es_casas_2x3_5rh", "es", "easy"),
+    ("es_casas_4x5_5rh", "es", "hard"),
+    # Estonian
+    ("et_majad_2x3_5rh", "et", "easy"),
+    ("et_majad_4x5_5rh", "et", "hard"),
+    # Basque
+    ("eu_etxeak_2x3_5rh", "eu", "easy"),
+    ("eu_etxeak_4x5_5rh", "eu", "hard"),
+    # Finnish
+    ("fi_talot_2x3_5rh", "fi", "easy"),
+    ("fi_talot_4x5_5rh", "fi", "hard"),
     # Faroese
     ("fo_hus_2x3_5rh", "fo", "easy"),
     ("fo_hus_4x5_5rh", "fo", "hard"),
+    # French
+    ("fr_maisons_2x3_5rh", "fr", "easy"),
+    ("fr_maisons_4x5_5rh", "fr", "hard"),
+    # Frisian
+    ("fy_huzen_2x3_5rh", "fy", "easy"),
+    ("fy_huzen_4x5_5rh", "fy", "hard"),
+    # Irish
+    ("ga_tithe_2x3_5rh", "ga", "easy"),
+    ("ga_tithe_4x5_5rh", "ga", "hard"),
+    # Hindi
+    ("hi_ghar_2x3_5rh", "hi", "easy"),
+    ("hi_ghar_4x5_5rh", "hi", "hard"),
+    # Croatian
+    ("hr_kuce_2x3_5rh", "hr", "easy"),
+    ("hr_kuce_4x5_5rh", "hr", "hard"),
+    # Hungarian
+    ("hu_hazak_2x3_5rh", "hu", "easy"),
+    ("hu_hazak_4x5_5rh", "hu", "hard"),
     # Icelandic
     ("is_husum_2x3_5rh", "is", "easy"),
     ("is_husum_4x5_5rh", "is", "hard"),
+    # Italian
+    ("it_case_2x3_5rh", "it", "easy"),
+    ("it_case_4x5_5rh", "it", "hard"),
+    # Japanese
+    ("ja_ie_2x3_5rh", "ja", "easy"),
+    ("ja_ie_4x5_5rh", "ja", "hard"),
+    # Luxembourgish
+    ("lb_haiser_2x3_5rh", "lb", "easy"),
+    ("lb_haiser_4x5_5rh", "lb", "hard"),
+    # Lithuanian
+    ("lt_namai_2x3_5rh", "lt", "easy"),
+    ("lt_namai_4x5_5rh", "lt", "hard"),
+    # Latvian
+    ("lv_majas_2x3_5rh", "lv", "easy"),
+    ("lv_majas_4x5_5rh", "lv", "hard"),
+    # Macedonian
+    ("mk_kukji_2x3_5rh", "mk", "easy"),
+    ("mk_kukji_4x5_5rh", "mk", "hard"),
+    # Marathi
+    ("mr_ghare_2x3_5rh", "mr", "easy"),
+    ("mr_ghare_4x5_5rh", "mr", "hard"),
     # Norwegian Bokmål
     ("nb_hus_2x3_5rh", "nb", "easy"),
     ("nb_hus_4x5_5rh", "nb", "hard"),
@@ -46,9 +118,42 @@ THEMES = [
     # Norwegian Nynorsk
     ("nn_hus_2x3_5rh", "nn", "easy"),
     ("nn_hus_4x5_5rh", "nn", "hard"),
+    # Polish
+    ("pl_domy_2x3_5rh", "pl", "easy"),
+    ("pl_domy_4x5_5rh", "pl", "hard"),
+    # Portuguese
+    ("pt_casas_2x3_5rh", "pt", "easy"),
+    ("pt_casas_4x5_5rh", "pt", "hard"),
+    # Romanian
+    ("ro_case_2x3_5rh", "ro", "easy"),
+    ("ro_case_4x5_5rh", "ro", "hard"),
+    # Russian
+    ("ru_doma_2x3_5rh", "ru", "easy"),
+    ("ru_doma_4x5_5rh", "ru", "hard"),
+    # Scots
+    ("sco_hooses_2x3_5rh", "sco", "easy"),
+    ("sco_hooses_4x5_5rh", "sco", "hard"),
+    # Slovak
+    ("sk_domy_2x3_5rh", "sk", "easy"),
+    ("sk_domy_4x5_5rh", "sk", "hard"),
+    # Slovenian
+    ("sl_hise_2x3_5rh", "sl", "easy"),
+    ("sl_hise_4x5_5rh", "sl", "hard"),
+    # Albanian
+    ("sq_shtepi_2x3_5rh", "sq", "easy"),
+    ("sq_shtepi_4x5_5rh", "sq", "hard"),
+    # Serbian
+    ("sr_kuce_2x3_5rh", "sr", "easy"),
+    ("sr_kuce_4x5_5rh", "sr", "hard"),
     # Swedish
     ("sv_hus_2x3_5rh", "sv", "easy"),
     ("sv_hus_4x5_5rh", "sv", "hard"),
+    # Ukrainian
+    ("uk_budynky_2x3_5rh", "uk", "easy"),
+    ("uk_budynky_4x5_5rh", "uk", "hard"),
+    # Chinese (Simplified — no bare 'zh' Language in languages.py; using zh-cn)
+    ("zh_fangzi_2x3_5rh", "zh-cn", "easy"),
+    ("zh_fangzi_4x5_5rh", "zh-cn", "hard"),
 ]
 # Split sizes from original dataset (arXiv:2511.03553)
 n_train = 128

@@ -84,26 +84,6 @@ RAGTRUTH_BG_CONFIG = DatasetConfig(
     train_split=None,
 )
 
-WMT24PP_EN_BG_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-bg",
-    pretty_name="WMT24++-en-bg",
-    source="EuroEval/wmt24pp-en-bg",
-    task=TRANSLATION,
-    languages=[BULGARIAN],
-    source_language=ENGLISH,
-    target_language=BULGARIAN,
-)
-
-WMT24PP_BG_EN_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-bg-en",
-    pretty_name="WMT24++-bg-en",
-    source="EuroEval/wmt24pp-bg-en",
-    task=TRANSLATION,
-    languages=[BULGARIAN],
-    source_language=BULGARIAN,
-    target_language=ENGLISH,
-)
-
 
 # Unofficial datasets ###
 

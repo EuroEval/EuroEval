@@ -123,26 +123,13 @@ ZEBRA_PUZZLE_EASY_DA_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
-WMT24PP_EN_DA_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-da",
-    pretty_name="WMT24++-en-da",
-    source="EuroEval/wmt24pp-en-da",
-    task=TRANSLATION,
+DANWIC_CONFIG = DatasetConfig(
+    name="danwic",
+    pretty_name="DanWiC",
+    source="EuroEval/danwic",
+    task=WIC,
     languages=[DANISH],
-    source_language=ENGLISH,
-    target_language=DANISH,
 )
-
-WMT24PP_DA_EN_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-da-en",
-    pretty_name="WMT24++-da-en",
-    source="EuroEval/wmt24pp-da-en",
-    task=TRANSLATION,
-    languages=[DANISH],
-    source_language=DANISH,
-    target_language=ENGLISH,
-)
-
 
 # Unofficial datasets ###
 
@@ -249,15 +236,6 @@ DANISH_LEXICAL_INFERENCE_CONFIG = DatasetConfig(
     task=NLI,
     languages=[DANISH],
     labels=["entailment", "contradiction"],
-    unofficial=True,
-)
-
-DANWIC_CONFIG = DatasetConfig(
-    name="danwic",
-    pretty_name="DanWiC",
-    source="EuroEval/danwic",
-    task=WIC,
-    languages=[DANISH],
     unofficial=True,
 )
 

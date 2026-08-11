@@ -110,26 +110,6 @@ WINOGRANDE_PT_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
-WMT24PP_EN_PT_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-pt",
-    pretty_name="WMT24++-en-pt",
-    source="EuroEval/wmt24pp-en-pt",
-    task=TRANSLATION,
-    languages=[PORTUGUESE],
-    source_language=ENGLISH,
-    target_language=PORTUGUESE,
-)
-
-WMT24PP_PT_EN_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-pt-en",
-    pretty_name="WMT24++-pt-en",
-    source="EuroEval/wmt24pp-pt-en",
-    task=TRANSLATION,
-    languages=[PORTUGUESE],
-    source_language=PORTUGUESE,
-    target_language=ENGLISH,
-)
-
 
 # Unofficial datasets ###
 

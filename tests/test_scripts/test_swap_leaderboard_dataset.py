@@ -654,6 +654,7 @@ class TestLoadCorpusAndBuildEvalJobs:
             "danske-talemaader",
             "wmt24pp-da-en",
             "wmt24pp-en-da",
+            "danwic",
         }
         corpus = Corpus(
             datasets_by_language={"da": {"test-model": required_datasets}},
@@ -765,6 +766,7 @@ class TestLoadCorpusAndBuildEvalJobs:
             "danske-talemaader",
             "wmt24pp-da-en",
             "wmt24pp-en-da",
+            "danwic",
         }
         corpus = Corpus(
             datasets_by_language={"da": {"test-model": required_datasets}},
@@ -864,6 +866,63 @@ class TestLoadCorpusAndBuildEvalJobs:
         assert jobs[0].evaluate_test_split is True  # test split (desired)
         assert jobs[0].zero_shot is False  # few-shot (desired)
         assert skipped_count == 0
+
+    def test_build_eval_jobs_generative_only_skips_encoders(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Generative-only mode drops non-generative variant configs."""
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        required_datasets = {
+            "dala",
+            "dansk",
+            "angry-tweets",
+            "multi-wiki-qa-da",
+            "nordjylland-news",
+            "danish-citizen-tests",
+            "winogrande-da",
+            "danske-talemaader",
+            "danwic",
+        }
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": required_datasets}},
+            api_model_ids=set(),
+            observations=set(),
+            eval_configs={},
+            exact_observations=set(),
+            variant_coverage={
+                "test-model": {"da": required_datasets},
+                "test-model (zero-shot, val)": {"da": required_datasets},
+            },
+            variant_configs={
+                ("test-model", "dala", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                ),
+                ("test-model (zero-shot, val)", "dala", "da"): ObsConfig(
+                    validation_split=True, few_shot=False, generative=True
+                ),
+            },
+        )
+
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked={("test-model", "da")},
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=True,
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+            generative_only=True,
+        )
+
+        assert skipped_api == []
+        assert skipped_count == 0
+        assert len(jobs) == 1
+        assert jobs[0].evaluate_test_split is False
+        assert jobs[0].zero_shot is True
 
     def test_build_eval_jobs_runs_when_observation_missing(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -1271,6 +1330,7 @@ class TestLoadCorpusAndBuildEvalJobs:
             "danske-talemaader",
             "wmt24pp-da-en",
             "wmt24pp-en-da",
+            "danwic",
         }
         split_agnostic_dataset = "dala"
 

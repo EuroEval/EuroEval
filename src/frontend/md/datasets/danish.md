@@ -627,7 +627,7 @@ euroeval --model <model-id> --dataset danish-lexical-inference
 
 ## Word in Context
 
-### Unofficial: DanWiC
+### DanWiC
 
 This dataset was published in
 [this paper](https://aclanthology.org/2024.lrec-main.1421/) and is based on the semantic

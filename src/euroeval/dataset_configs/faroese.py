@@ -1,7 +1,7 @@
 """All Faroese dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig, TranslationDatasetConfig
-from ..languages import ENGLISH, FAROESE
+from ..data_models import DatasetConfig
+from ..languages import FAROESE
 from ..tasks import (
     GEC,
     GED,
@@ -13,7 +13,6 @@ from ..tasks import (
     NER,
     RC,
     SENT,
-    TRANSLATION,
 )
 
 # Official datasets ###
@@ -79,28 +78,13 @@ RAGTRUTH_FO_CONFIG = DatasetConfig(
 )
 
 
-FLORES_EN_FO_CONFIG = TranslationDatasetConfig(
-    name="flores-en-fo",
-    pretty_name="FLORES-en-fo",
-    source="EuroEval/flores-en-fo",
-    task=TRANSLATION,
+FAROESE_GRAMMATICAL_CORRECTNESS_CONFIG = DatasetConfig(
+    name="faroese-grammatical-correctness",
+    pretty_name="Faroese Grammatical Correctness",
+    source="EuroEval/faroese-grammatical-correctness",
+    task=GEC,
     languages=[FAROESE],
-    source_language=ENGLISH,
-    target_language=FAROESE,
 )
-
-FLORES_FO_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-fo-en",
-    pretty_name="FLORES-fo-en",
-    source="EuroEval/flores-fo-en",
-    task=TRANSLATION,
-    languages=[FAROESE],
-    source_language=FAROESE,
-    target_language=ENGLISH,
-)
-
-
-# Unofficial datasets ###
 
 FAROESE_SEMANTIC_RELATIONS_CONFIG = DatasetConfig(
     name="faroese-semantic-relations",
@@ -109,7 +93,6 @@ FAROESE_SEMANTIC_RELATIONS_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[FAROESE],
     labels=["a", "b", "c", "d", "e", "f"],
-    unofficial=True,
 )
 
 FAROESE_METAPHORICAL_EXPLANATIONS_CONFIG = DatasetConfig(
@@ -118,18 +101,10 @@ FAROESE_METAPHORICAL_EXPLANATIONS_CONFIG = DatasetConfig(
     source="EuroEval/faroese-metaphorical-explanations",
     task=KNOW,
     languages=[FAROESE],
-    unofficial=True,
 )
 
-FAROESE_GRAMMATICAL_CORRECTNESS_CONFIG = DatasetConfig(
-    name="faroese-grammatical-correctness",
-    pretty_name="Faroese Grammatical Correctness",
-    source="EuroEval/faroese-grammatical-correctness",
-    task=GEC,
-    languages=[FAROESE],
-    unofficial=True,
-)
 
+# Unofficial datasets ###
 
 WIKIANN_FO_CONFIG = DatasetConfig(
     name="wikiann-fo",

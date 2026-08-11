@@ -60,14 +60,6 @@ ILPOST_SUM_CONFIG = DatasetConfig(
     languages=[ITALIAN],
 )
 
-MMLU_IT_CONFIG = DatasetConfig(
-    name="mmlu-it",
-    pretty_name="MMLU-it",
-    source="EuroEval/mmlu-it-mini",
-    task=KNOW,
-    languages=[ITALIAN],
-)
-
 MULTI_IFEVAL_IT_CONFIG = DatasetConfig(
     name="multi-ifeval-it",
     pretty_name="MultiIFEval-it",
@@ -109,28 +101,34 @@ WINOGRANDE_IT_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
-WMT24PP_EN_IT_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-it",
-    pretty_name="WMT24++-en-it",
-    source="EuroEval/wmt24pp-en-it",
-    task=TRANSLATION,
+INCLUDE_IT_CONFIG = DatasetConfig(
+    name="include-it",
+    pretty_name="INCLUDE-it",
+    source="EuroEval/include-it-mini",
+    task=KNOW,
     languages=[ITALIAN],
-    source_language=ENGLISH,
-    target_language=ITALIAN,
 )
 
-WMT24PP_IT_EN_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-it-en",
-    pretty_name="WMT24++-it-en",
-    source="EuroEval/wmt24pp-it-en",
-    task=TRANSLATION,
+MULTILOKO_IT_CONFIG = DatasetConfig(
+    name="multiloko-it",
+    pretty_name="MultiLoKo-it",
+    source="EuroEval/multiloko-it-mini",
+    task=KNOW,
     languages=[ITALIAN],
-    source_language=ITALIAN,
-    target_language=ENGLISH,
+    val_split=None,
 )
 
 
 # Unofficial datasets ###
+
+MMLU_IT_CONFIG = DatasetConfig(
+    name="mmlu-it",
+    pretty_name="MMLU-it",
+    source="EuroEval/mmlu-it-mini",
+    task=KNOW,
+    languages=[ITALIAN],
+    unofficial=True,
+)
 
 HELLASWAG_IT_CONFIG = DatasetConfig(
     name="hellaswag-it",
@@ -185,25 +183,6 @@ GOLDENSWAG_IT_CONFIG = DatasetConfig(
     source="EuroEval/goldenswag-it-mini",
     task=COMMON_SENSE,
     languages=[ITALIAN],
-    unofficial=True,
-)
-
-INCLUDE_IT_CONFIG = DatasetConfig(
-    name="include-it",
-    pretty_name="INCLUDE-it",
-    source="EuroEval/include-it-mini",
-    task=KNOW,
-    languages=[ITALIAN],
-    unofficial=True,
-)
-
-MULTILOKO_IT_CONFIG = DatasetConfig(
-    name="multiloko-it",
-    pretty_name="MultiLoKo-it",
-    source="EuroEval/multiloko-it-mini",
-    task=KNOW,
-    languages=[ITALIAN],
-    val_split=None,
     unofficial=True,
 )
 

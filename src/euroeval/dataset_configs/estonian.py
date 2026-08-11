@@ -112,26 +112,6 @@ RAGTRUTH_ET_CONFIG = DatasetConfig(
     train_split=None,
 )
 
-WMT24PP_EN_ET_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-et",
-    pretty_name="WMT24++-en-et",
-    source="EuroEval/wmt24pp-en-et",
-    task=TRANSLATION,
-    languages=[ESTONIAN],
-    source_language=ENGLISH,
-    target_language=ESTONIAN,
-)
-
-WMT24PP_ET_EN_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-et-en",
-    pretty_name="WMT24++-et-en",
-    source="EuroEval/wmt24pp-et-en",
-    task=TRANSLATION,
-    languages=[ESTONIAN],
-    source_language=ESTONIAN,
-    target_language=ENGLISH,
-)
-
 
 # Unofficial datasets ###
 

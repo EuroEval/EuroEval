@@ -85,26 +85,6 @@ INCLUDE_HR_CONFIG = DatasetConfig(
     languages=[CROATIAN],
 )
 
-WMT24PP_EN_HR_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-hr",
-    pretty_name="WMT24++-en-hr",
-    source="EuroEval/wmt24pp-en-hr",
-    task=TRANSLATION,
-    languages=[CROATIAN],
-    source_language=ENGLISH,
-    target_language=CROATIAN,
-)
-
-WMT24PP_HR_EN_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-hr-en",
-    pretty_name="WMT24++-hr-en",
-    source="EuroEval/wmt24pp-hr-en",
-    task=TRANSLATION,
-    languages=[CROATIAN],
-    source_language=CROATIAN,
-    target_language=ENGLISH,
-)
-
 
 # Unofficial datasets ###
 

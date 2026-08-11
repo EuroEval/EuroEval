@@ -1,7 +1,7 @@
 """All Ukrainian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig, TranslationDatasetConfig
-from ..languages import ENGLISH, UKRAINIAN
+from ..data_models import DatasetConfig
+from ..languages import UKRAINIAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -12,7 +12,6 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
-    TRANSLATION,
 )
 
 # Official datasets ###
@@ -57,14 +56,6 @@ LR_SUM_UK_CONFIG = DatasetConfig(
     languages=[UKRAINIAN],
 )
 
-GLOBAL_MMLU_UK_CONFIG = DatasetConfig(
-    name="global-mmlu-uk",
-    pretty_name="GlobalMMLU-uk",
-    source="EuroEval/global-mmlu-uk-mini",
-    task=KNOW,
-    languages=[UKRAINIAN],
-)
-
 WINOGRANDE_UK_CONFIG = DatasetConfig(
     name="winogrande-uk",
     pretty_name="Winogrande-uk",
@@ -94,28 +85,25 @@ RAGTRUTH_UK_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_UK_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-uk",
-    pretty_name="WMT24++-en-uk",
-    source="EuroEval/wmt24pp-en-uk",
-    task=TRANSLATION,
+INCLUDE_UK_CONFIG = DatasetConfig(
+    name="include-uk",
+    pretty_name="INCLUDE-uk",
+    source="EuroEval/include-uk-mini",
+    task=KNOW,
     languages=[UKRAINIAN],
-    source_language=ENGLISH,
-    target_language=UKRAINIAN,
-)
-
-WMT24PP_UK_EN_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-uk-en",
-    pretty_name="WMT24++-uk-en",
-    source="EuroEval/wmt24pp-uk-en",
-    task=TRANSLATION,
-    languages=[UKRAINIAN],
-    source_language=UKRAINIAN,
-    target_language=ENGLISH,
 )
 
 
 # Unofficial datasets ###
+
+GLOBAL_MMLU_UK_CONFIG = DatasetConfig(
+    name="global-mmlu-uk",
+    pretty_name="GlobalMMLU-uk",
+    source="EuroEval/global-mmlu-uk-mini",
+    task=KNOW,
+    languages=[UKRAINIAN],
+    unofficial=True,
+)
 
 IFEVAL_UK_CONFIG = DatasetConfig(
     name="ifeval-uk",
@@ -125,37 +113,5 @@ IFEVAL_UK_CONFIG = DatasetConfig(
     languages=[UKRAINIAN],
     train_split=None,
     val_split=None,
-    unofficial=True,
-)
-
-INCLUDE_UK_CONFIG = DatasetConfig(
-    name="include-uk",
-    pretty_name="INCLUDE-uk",
-    source="EuroEval/include-uk-mini",
-    task=KNOW,
-    languages=[UKRAINIAN],
-    unofficial=True,
-)
-
-
-FLORES_EN_UK_CONFIG = TranslationDatasetConfig(
-    name="flores-en-uk",
-    pretty_name="FLORES-en-uk",
-    source="EuroEval/flores-en-uk",
-    task=TRANSLATION,
-    languages=[UKRAINIAN],
-    source_language=ENGLISH,
-    target_language=UKRAINIAN,
-    unofficial=True,
-)
-
-FLORES_UK_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-uk-en",
-    pretty_name="FLORES-uk-en",
-    source="EuroEval/flores-uk-en",
-    task=TRANSLATION,
-    languages=[UKRAINIAN],
-    source_language=UKRAINIAN,
-    target_language=ENGLISH,
     unofficial=True,
 )

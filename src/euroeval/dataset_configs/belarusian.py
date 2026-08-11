@@ -1,17 +1,8 @@
 """All Belarusian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig, TranslationDatasetConfig
-from ..languages import BELARUSIAN, ENGLISH
-from ..tasks import (
-    COMMON_SENSE,
-    HALLU,
-    INSTRUCTION_FOLLOWING,
-    LA,
-    NER,
-    RC,
-    SENT,
-    TRANSLATION,
-)
+from ..data_models import DatasetConfig
+from ..languages import BELARUSIAN
+from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, LA, NER, RC, SENT
 
 # Official datasets ###
 
@@ -63,26 +54,6 @@ MULTI_IFEVAL_BE_CONFIG = DatasetConfig(
     languages=[BELARUSIAN],
     train_split=None,
     val_split=None,
-)
-
-FLORES_EN_BE_CONFIG = TranslationDatasetConfig(
-    name="flores-en-be",
-    pretty_name="FLORES-en-be",
-    source="EuroEval/flores-en-be",
-    task=TRANSLATION,
-    languages=[BELARUSIAN],
-    source_language=ENGLISH,
-    target_language=BELARUSIAN,
-)
-
-FLORES_BE_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-be-en",
-    pretty_name="FLORES-be-en",
-    source="EuroEval/flores-be-en",
-    task=TRANSLATION,
-    languages=[BELARUSIAN],
-    source_language=BELARUSIAN,
-    target_language=ENGLISH,
 )
 
 

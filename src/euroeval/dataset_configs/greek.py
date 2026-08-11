@@ -1,7 +1,7 @@
 """All Greek dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig, TranslationDatasetConfig
-from ..languages import ENGLISH, GREEK
+from ..data_models import DatasetConfig
+from ..languages import GREEK
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -13,7 +13,6 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
-    TRANSLATION,
 )
 
 # Official datasets ###
@@ -95,24 +94,17 @@ GREEK_MMLU_CONFIG = DatasetConfig(
     languages=[GREEK],
 )
 
-WMT24PP_EN_EL_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-el",
-    pretty_name="WMT24++-en-el",
-    source="EuroEval/wmt24pp-en-el",
-    task=TRANSLATION,
+CULTURAQA_CONFIG = DatasetConfig(
+    name="culturaqa",
+    pretty_name="CulturaQA",
+    source="EuroEval/culturaqa-mini",
+    task=OPEN_ENDED_QA,
     languages=[GREEK],
-    source_language=ENGLISH,
-    target_language=GREEK,
-)
-
-WMT24PP_EL_EN_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-el-en",
-    pretty_name="WMT24++-el-en",
-    source="EuroEval/wmt24pp-el-en",
-    task=TRANSLATION,
-    languages=[GREEK],
-    source_language=GREEK,
-    target_language=ENGLISH,
+    prompt_prefix="Ακολουθούν ερωτήσεις με τις αντίστοιχες απαντήσεις.",
+    prompt_template="Ερώτηση: {text}\nΑπάντηση: {target_text}",
+    instruction_prompt=(
+        "Απαντήστε στην παρακάτω ερώτηση με ακρίβεια και συντομία.\n\nΕρώτηση: {text}"
+    ),
 )
 
 
@@ -153,42 +145,5 @@ EU_MMLU_EL_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-el",
     task=KNOW,
     languages=[GREEK],
-    unofficial=True,
-)
-
-CULTURAQA_CONFIG = DatasetConfig(
-    name="culturaqa",
-    pretty_name="CulturaQA",
-    source="EuroEval/culturaqa-mini",
-    task=OPEN_ENDED_QA,
-    languages=[GREEK],
-    unofficial=True,
-    prompt_prefix="Ακολουθούν ερωτήσεις με τις αντίστοιχες απαντήσεις.",
-    prompt_template="Ερώτηση: {text}\nΑπάντηση: {target_text}",
-    instruction_prompt=(
-        "Απαντήστε στην παρακάτω ερώτηση με ακρίβεια και συντομία.\n\nΕρώτηση: {text}"
-    ),
-)
-
-
-FLORES_EN_EL_CONFIG = TranslationDatasetConfig(
-    name="flores-en-el",
-    pretty_name="FLORES-en-el",
-    source="EuroEval/flores-en-el",
-    task=TRANSLATION,
-    languages=[GREEK],
-    source_language=ENGLISH,
-    target_language=GREEK,
-    unofficial=True,
-)
-
-FLORES_EL_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-el-en",
-    pretty_name="FLORES-el-en",
-    source="EuroEval/flores-el-en",
-    task=TRANSLATION,
-    languages=[GREEK],
-    source_language=GREEK,
-    target_language=ENGLISH,
     unofficial=True,
 )

@@ -6,6 +6,12 @@
   "european-values": [
     "European Values"
   ],
+  "grammatical-error-correction": [
+    "Exact Match"
+  ],
+  "grammatical-error-detection": [
+    "Micro-average F1-score"
+  ],
   "knowledge": [
     "Matthew's Correlation Coefficient",
     "Accuracy"
@@ -17,6 +23,14 @@
   "named-entity-recognition": [
     "Micro-average F1-score without MISC tags",
     "Micro-average F1-score"
+  ],
+  "natural-language-inference": [
+    "Matthew's Correlation Coefficient",
+    "Macro-average F1-score"
+  ],
+  "open-ended-qa": [
+    "ChrF3++",
+    "ChrF4++"
   ],
   "reading-comprehension": [
     "F1-score",
@@ -33,5 +47,9 @@
   "summarization": [
     "ChrF3++",
     "ChrF4++"
+  ],
+  "word-in-context": [
+    "Matthew's Correlation Coefficient",
+    "Macro-average F1-score"
   ]
 }

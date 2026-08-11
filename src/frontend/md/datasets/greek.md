@@ -586,7 +586,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset greek-mmlu
 ```
 
-### Unofficial: CulturaQA
+### CulturaQA
 
 CulturaQA is a Greek open-ended question answering dataset that captures knowledge from
 Greek culture. It spans many domains: Greek art, history, mythology, politics, economy,

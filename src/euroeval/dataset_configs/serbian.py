@@ -103,26 +103,6 @@ INCLUDE_SR_CONFIG = DatasetConfig(
     ),
 )
 
-WMT24PP_EN_SR_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-sr",
-    pretty_name="WMT24++-en-sr",
-    source="EuroEval/wmt24pp-en-sr",
-    task=TRANSLATION,
-    languages=[SERBIAN],
-    source_language=ENGLISH,
-    target_language=SERBIAN,
-)
-
-WMT24PP_SR_EN_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-sr-en",
-    pretty_name="WMT24++-sr-en",
-    source="EuroEval/wmt24pp-sr-en",
-    task=TRANSLATION,
-    languages=[SERBIAN],
-    source_language=SERBIAN,
-    target_language=ENGLISH,
-)
-
 
 # Unofficial datasets ###
 
