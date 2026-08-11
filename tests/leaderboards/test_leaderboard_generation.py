@@ -12,7 +12,10 @@ import math
 import numpy as np
 
 from src.leaderboards.enums import LeaderboardCategory
-from src.leaderboards.leaderboard_generation import _compute_eligible_models_and_ranks
+from src.leaderboards.leaderboard_generation import (
+    _build_category_dataset_maps,
+    _compute_eligible_models_and_ranks,
+)
 
 
 class TestMultilingualPerLanguageRankScores:
@@ -427,6 +430,33 @@ def _make_dummy_results(
             results[model_id][dataset_id] = [(raw_scores, mean_score, std_err)]
 
     return results
+
+
+class TestOrthogonalDatasetsByCategory:
+    """Tests for orthogonal bonus-column scoping in _build_category_dataset_maps."""
+
+    def test_orthogonal_datasets_only_populated_for_chat(self) -> None:
+        """Orthogonal datasets are only mapped for chat; other categories get {}."""
+        leaderboard_configs = {
+            "danish": {
+                "sentiment-classification": ["angry-tweets"],
+                "european-values": ["valeu-da"],
+            }
+        }
+        _, category_to_orthogonal_datasets = _build_category_dataset_maps(
+            categories=[
+                LeaderboardCategory.CHAT,
+                LeaderboardCategory.GENERATIVE,
+                LeaderboardCategory.ALL_MODELS,
+            ],
+            leaderboard_configs=leaderboard_configs,
+        )
+
+        assert category_to_orthogonal_datasets[LeaderboardCategory.CHAT] == {
+            "valeu-da": "european-values"
+        }
+        assert category_to_orthogonal_datasets[LeaderboardCategory.GENERATIVE] == {}
+        assert category_to_orthogonal_datasets[LeaderboardCategory.ALL_MODELS] == {}
 
 
 class TestPerLanguageRankScoreFormat:

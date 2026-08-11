@@ -608,6 +608,8 @@ def _build_category_dataset_maps(
         for category in categories
     }
 
+    # Orthogonal bonus columns only show on chat, since only chat-ranked
+    # models can ever score on them.
     category_to_orthogonal_datasets = {
         category: {
             dataset: task
@@ -615,8 +617,9 @@ def _build_category_dataset_maps(
             for task, task_datasets in config.items()
             for dataset in task_datasets
             if task in ORTHOGONAL_TASKS
-            and category_includes_task(category=category, task=task)
         }
+        if category == LeaderboardCategory.CHAT
+        else {}
         for category in categories
     }
 
