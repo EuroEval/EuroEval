@@ -15,17 +15,17 @@ const props = defineProps<{
   title: string;
 }>();
 
-type CategoryId = "generative" | "instruct" | "all_models";
+type CategoryId = "chat" | "generative" | "all_models";
 type ViewId = "table" | "scatter";
 
 const activeCategory = ref<CategoryId>("generative");
 const activeView = ref<ViewId>("table");
 
+const chatTable = ref<LBTable | null>(null);
 const generativeTable = ref<LBTable | null>(null);
-const instructTable = ref<LBTable | null>(null);
 const allModelsTable = ref<LBTable | null>(null);
+const chatMetadata = ref<LeaderboardMetadata | null>(null);
 const generativeMetadata = ref<LeaderboardMetadata | null>(null);
-const instructMetadata = ref<LeaderboardMetadata | null>(null);
 const allModelsMetadata = ref<LeaderboardMetadata | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
@@ -33,28 +33,28 @@ const error = ref<string | null>(null);
 const loadFor = async (stem: string) => {
   loading.value = true;
   error.value = null;
+  chatTable.value = null;
   generativeTable.value = null;
-  instructTable.value = null;
   allModelsTable.value = null;
+  chatMetadata.value = null;
   generativeMetadata.value = null;
-  instructMetadata.value = null;
   allModelsMetadata.value = null;
   try {
-    const [g, c, a, gMeta, cMeta, aMeta] = await Promise.all([
+    const [c, g, a, cMeta, gMeta, aMeta] = await Promise.all([
+      loadLeaderboard(`${stem}_chat`),
       loadLeaderboard(`${stem}_generative`),
-      loadLeaderboard(`${stem}_instruct`),
       loadLeaderboard(`${stem}_all_models`),
+      loadLeaderboardMetadata(`${stem}_chat`),
       loadLeaderboardMetadata(`${stem}_generative`),
-      loadLeaderboardMetadata(`${stem}_instruct`),
       loadLeaderboardMetadata(`${stem}_all_models`),
     ]);
+    chatTable.value = c ?? null;
     generativeTable.value = g ?? null;
-    instructTable.value = c ?? null;
     allModelsTable.value = a ?? null;
+    chatMetadata.value = cMeta ?? null;
     generativeMetadata.value = gMeta ?? null;
-    instructMetadata.value = cMeta ?? null;
     allModelsMetadata.value = aMeta ?? null;
-    if (!g && !c && !a) {
+    if (!c && !g && !a) {
       error.value = `Leaderboard for ${stem.charAt(0).toUpperCase() + stem.slice(1)} is on the way!`
     }
   } catch (e) {
@@ -69,21 +69,21 @@ watch(
   (s) => {
     // Reset the category on language switch, but keep the user's table/scatter
     // preference - switching language shouldn't kick you out of scatter view.
-    activeCategory.value = "instruct";
+    activeCategory.value = "chat";
     loadFor(s);
   },
   { immediate: true },
 );
 
 const activeTable = computed<LBTable | null>(() => {
+  if (activeCategory.value === "chat") return chatTable.value;
   if (activeCategory.value === "generative") return generativeTable.value;
-  if (activeCategory.value === "instruct") return instructTable.value;
   return allModelsTable.value;
 });
 
 const activeMetadata = computed<LeaderboardMetadata | null>(() => {
+  if (activeCategory.value === "chat") return chatMetadata.value;
   if (activeCategory.value === "generative") return generativeMetadata.value;
-  if (activeCategory.value === "instruct") return instructMetadata.value;
   return allModelsMetadata.value;
 });
 
@@ -132,7 +132,7 @@ const MULTILINGUAL_STEMS = new Set([
 const isMultilingual = computed(() => MULTILINGUAL_STEMS.has(props.stem));
 
 const categoryTabs: { id: CategoryId; label: string }[] = [
-  { id: "instruct", label: "Chat" },
+  { id: "chat", label: "Chat" },
   { id: "generative", label: "Generative" },
   { id: "all_models", label: "All Models" },
 ];
@@ -187,8 +187,8 @@ onUnmounted(() => {
 
 // Which CSV stem the current category corresponds to, for the download button.
 const activeStem = computed<string>(() => {
+  if (activeCategory.value === "chat") return `${props.stem}_chat`;
   if (activeCategory.value === "generative") return `${props.stem}_generative`;
-  if (activeCategory.value === "instruct") return `${props.stem}_instruct`;
   return `${props.stem}_all_models`;
 });
 
