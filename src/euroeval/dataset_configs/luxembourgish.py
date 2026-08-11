@@ -1,5 +1,7 @@
 """All Luxembourgish dataset configurations used in EuroEval."""
 
+from euroeval.enums import ModelType
+
 from ..data_models import DatasetConfig
 from ..languages import LUXEMBOURGISH
 from ..tasks import (
@@ -90,6 +92,7 @@ LTZGLUE_ID_CONFIG = DatasetConfig(
     task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
     train_split=None,
+    allowed_model_types=[ModelType.GENERATIVE],
     num_few_shot_examples=0,
     labels=[
         "addtoplaylist",
