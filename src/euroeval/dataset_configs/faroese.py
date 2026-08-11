@@ -78,7 +78,13 @@ RAGTRUTH_FO_CONFIG = DatasetConfig(
 )
 
 
-# Unofficial datasets ###
+FAROESE_GRAMMATICAL_CORRECTNESS_CONFIG = DatasetConfig(
+    name="faroese-grammatical-correctness",
+    pretty_name="Faroese Grammatical Correctness",
+    source="EuroEval/faroese-grammatical-correctness",
+    task=GEC,
+    languages=[FAROESE],
+)
 
 FAROESE_SEMANTIC_RELATIONS_CONFIG = DatasetConfig(
     name="faroese-semantic-relations",
@@ -87,7 +93,6 @@ FAROESE_SEMANTIC_RELATIONS_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[FAROESE],
     labels=["a", "b", "c", "d", "e", "f"],
-    unofficial=True,
 )
 
 FAROESE_METAPHORICAL_EXPLANATIONS_CONFIG = DatasetConfig(
@@ -96,18 +101,10 @@ FAROESE_METAPHORICAL_EXPLANATIONS_CONFIG = DatasetConfig(
     source="EuroEval/faroese-metaphorical-explanations",
     task=KNOW,
     languages=[FAROESE],
-    unofficial=True,
 )
 
-FAROESE_GRAMMATICAL_CORRECTNESS_CONFIG = DatasetConfig(
-    name="faroese-grammatical-correctness",
-    pretty_name="Faroese Grammatical Correctness",
-    source="EuroEval/faroese-grammatical-correctness",
-    task=GEC,
-    languages=[FAROESE],
-    unofficial=True,
-)
 
+# Unofficial datasets ###
 
 WIKIANN_FO_CONFIG = DatasetConfig(
     name="wikiann-fo",

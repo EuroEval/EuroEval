@@ -129,6 +129,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/culturaqa-mini": {
+    "test": 500,
+    "train": 1024,
+    "val": 200
+  },
   "EuroEval/czech-news-mini": {
     "test": 2048,
     "train": 1024,
@@ -303,6 +308,22 @@
     "test": 2048,
     "train": 1024,
     "val": 94
+  },
+  "EuroEval/faroese-grammatical-correctness": {
+    "full_train": 4289,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/faroese-metaphorical-explanations": {
+    "test": 282,
+    "train": 140,
+    "val": 35
+  },
+  "EuroEval/faroese-semantic-relations": {
+    "test": 696,
+    "train": 348,
+    "val": 87
   },
   "EuroEval/fone-mini": {
     "test": 2048,
@@ -569,6 +590,11 @@
     "train": 13,
     "val": 64
   },
+  "EuroEval/include-it-mini": {
+    "test": 421,
+    "train": 27,
+    "val": 64
+  },
   "EuroEval/include-lt-mini": {
     "test": 430,
     "train": 25,
@@ -587,6 +613,11 @@
   "EuroEval/include-sr-mini": {
     "test": 478,
     "train": 15,
+    "val": 64
+  },
+  "EuroEval/include-uk-mini": {
+    "test": 442,
+    "train": 14,
     "val": 64
   },
   "EuroEval/kpwr-ner": {
@@ -658,6 +689,11 @@
     "test": 2048,
     "train": 1024,
     "val": 256
+  },
+  "EuroEval/ltzglue-rte-mini": {
+    "test": 626,
+    "train": 1024,
+    "val": 197
   },
   "EuroEval/ltzglue-sa-mini": {
     "test": 926,
@@ -907,6 +943,10 @@
     "train": 16
   },
   "EuroEval/multiloko-fr-mini": {
+    "test": 234,
+    "train": 16
+  },
+  "EuroEval/multiloko-it-mini": {
     "test": 234,
     "train": 16
   },
@@ -1223,6 +1263,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/skolprov": {
+    "test": 410,
+    "train": 32,
+    "val": 32
+  },
   "EuroEval/sqad-mini": {
     "test": 2048,
     "train": 1024,
@@ -1267,6 +1312,11 @@
     "test": 2048,
     "train": 1024,
     "val": 256
+  },
+  "EuroEval/swedish-facts": {
+    "test": 1097,
+    "train": 128,
+    "val": 64
   },
   "EuroEval/swedn-mini": {
     "test": 2048,

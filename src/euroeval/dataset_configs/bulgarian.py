@@ -74,6 +74,7 @@ RAGTRUTH_BG_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+
 # Unofficial datasets ###
 
 INCLUDE_BG_CONFIG = DatasetConfig(

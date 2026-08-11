@@ -60,14 +60,6 @@ SWEDN_CONFIG = DatasetConfig(
     languages=[SWEDISH],
 )
 
-MMLU_SV_CONFIG = DatasetConfig(
-    name="mmlu-sv",
-    pretty_name="MMLU-sv",
-    source="EuroEval/mmlu-sv-mini",
-    task=KNOW,
-    languages=[SWEDISH],
-)
-
 MULTI_IFEVAL_SV_CONFIG = DatasetConfig(
     name="multi-ifeval-sv",
     pretty_name="MultiIFEval-sv",
@@ -117,7 +109,32 @@ WINOGRANDE_SV_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
+SKOLPROV_CONFIG = DatasetConfig(
+    name="skolprov",
+    pretty_name="Skolprov",
+    source="EuroEval/skolprov",
+    task=KNOW,
+    languages=[SWEDISH],
+)
+
+SWEDISH_FACTS_CONFIG = DatasetConfig(
+    name="swedish-facts",
+    pretty_name="Swedish Facts",
+    source="EuroEval/swedish-facts",
+    task=KNOW,
+    languages=[SWEDISH],
+)
+
 # Unofficial datasets ###
+
+MMLU_SV_CONFIG = DatasetConfig(
+    name="mmlu-sv",
+    pretty_name="MMLU-sv",
+    source="EuroEval/mmlu-sv-mini",
+    task=KNOW,
+    languages=[SWEDISH],
+    unofficial=True,
+)
 
 HELLASWAG_SV_CONFIG = DatasetConfig(
     name="hellaswag-sv",
@@ -195,24 +212,6 @@ GOLDENSWAG_SV_CONFIG = DatasetConfig(
     pretty_name="GoldenSwag-sv",
     source="EuroEval/goldenswag-sv-mini",
     task=COMMON_SENSE,
-    languages=[SWEDISH],
-    unofficial=True,
-)
-
-SKOLPROV_CONFIG = DatasetConfig(
-    name="skolprov",
-    pretty_name="Skolprov",
-    source="EuroEval/skolprov",
-    task=KNOW,
-    languages=[SWEDISH],
-    unofficial=True,
-)
-
-SWEDISH_FACTS_CONFIG = DatasetConfig(
-    name="swedish-facts",
-    pretty_name="Swedish Facts",
-    source="EuroEval/swedish-facts",
-    task=KNOW,
     languages=[SWEDISH],
     unofficial=True,
 )

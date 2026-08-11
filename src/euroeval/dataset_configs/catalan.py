@@ -92,6 +92,7 @@ RAGTRUTH_CA_CONFIG = DatasetConfig(
     train_split=None,
 )
 
+
 # Unofficial datasets ###
 
 MULTI_IFEVAL_CA_CONFIG = DatasetConfig(
