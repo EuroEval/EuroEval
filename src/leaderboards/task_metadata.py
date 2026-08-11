@@ -41,6 +41,8 @@ def category_includes_task(category: LeaderboardCategory, task: str) -> bool:
     Returns:
         True if the task is scored within the category.
     """
+    if task in ORTHOGONAL_TASKS:
+        return category == LeaderboardCategory.CHAT
     if category == LeaderboardCategory.CHAT:
         return True
     if category == LeaderboardCategory.GENERATIVE:

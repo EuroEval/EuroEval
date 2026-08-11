@@ -25,21 +25,30 @@ def test_category_includes_task_chat_includes_everything() -> None:
 
 
 def test_category_includes_task_generative_excludes_instruct_exclusive() -> None:
-    """Generative drops instruct-exclusive tasks but keeps orthogonal ones visible."""
+    """Generative drops instruct-exclusive tasks."""
     assert not category_includes_task(
         category=LeaderboardCategory.GENERATIVE, task="instruction-following"
     )
-    assert category_includes_task(
+
+
+def test_category_includes_task_only_chat_shows_orthogonal_tasks() -> None:
+    """Orthogonal tasks (e.g. european-values) only show on chat."""
+    assert not category_includes_task(
         category=LeaderboardCategory.GENERATIVE, task="european-values"
+    )
+    assert not category_includes_task(
+        category=LeaderboardCategory.ALL_MODELS, task="european-values"
     )
 
 
 def test_task_category_european_values_is_exempt_from_instruct_exclusive() -> None:
     """european-values is restricted to instruction-tuned/reasoning models too.
 
-    But its ``ORTHOGONAL_TASKS`` membership keeps it out of
-    "instruct_exclusive", so it stays a bonus column on every leaderboard
-    category instead of being dropped from Generative/All-models.
+    But its ``ORTHOGONAL_TASKS`` membership keeps it out of the
+    "instruct_exclusive" classification here (that classification only
+    drives the generative/all_models nlu/nlg split); which categories
+    actually show orthogonal tasks is handled separately in
+    ``category_includes_task``.
     """
     assert task_category("european-values") == "nlg"
 
