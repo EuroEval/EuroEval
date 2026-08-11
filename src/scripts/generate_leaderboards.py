@@ -6,7 +6,6 @@ import json
 import logging
 import subprocess
 import sys
-import typing as t
 import warnings
 from pathlib import Path
 
@@ -22,6 +21,7 @@ from leaderboards.constants import (
     BANNED_VERSIONS,
     CORE_MODELS_CONFIG,
     CORE_MODELS_STALE_DAYS,
+    LEADERBOARD_CATEGORIES,
     LEADERBOARD_CONFIGS_DIR,
     LEADERBOARD_TASKS,
     MINIMUM_NUMBER_OF_MODEL_RECORDS,
@@ -31,6 +31,7 @@ from leaderboards.constants import (
     REPO_ROOT,
     TRAINED_FROM_SCRATCH_PATTERNS,
 )
+from leaderboards.enums import LeaderboardCategory
 from leaderboards.leaderboard_generation import generate_leaderboard
 from leaderboards.records import plain_model_id
 from leaderboards.result_processing import process_results
@@ -56,10 +57,10 @@ load_dotenv()
 @click.option(
     "--categories",
     "-c",
-    default=("instruct", "generative", "all_models"),
+    default=LEADERBOARD_CATEGORIES,
     multiple=True,
     help=(
-        "Categories to generate leaderboards for. Defaults to 'instruct', "
+        "Categories to generate leaderboards for. Defaults to 'chat', "
         "'generative', and 'all_models'."
     ),
 )
@@ -100,7 +101,7 @@ load_dotenv()
     ),
 )
 def main(
-    categories: tuple[t.Literal["instruct", "generative", "all_models"], ...],
+    categories: tuple[LeaderboardCategory, ...],
     force: bool,
     skip_core_models_check: bool,
     skip_results_processing: bool,
@@ -110,7 +111,7 @@ def main(
 
     Args:
         categories (optional):
-            Categories to generate leaderboards for. Defaults to 'instruct',
+            Categories to generate leaderboards for. Defaults to 'chat',
             'generative', and 'all_models'.
         force (optional):
             Whether to force the generation of the leaderboard, even if no updates

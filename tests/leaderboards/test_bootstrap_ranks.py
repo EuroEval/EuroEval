@@ -12,6 +12,7 @@ from src.leaderboards.bootstrap_cis import (
     bootstrap_confidence_intervals,
     bootstrap_rank_scores,
 )
+from src.leaderboards.enums import LeaderboardCategory
 from src.leaderboards.score_computation import (
     compute_dataset_ranks_bootstrap,
     compute_standard_ranks_bootstrap,
@@ -280,7 +281,7 @@ class TestEligibleSetConsistency:
             configs=configs,
             n_bootstraps=200,
             seed=42,
-            categories=("all_models",),
+            categories=(LeaderboardCategory.ALL_MODELS,),
         )
 
         # Derive both rank score and ordinal rank from same distribution

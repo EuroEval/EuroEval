@@ -1,30 +1,37 @@
 """Tests for the `leaderboards.task_metadata` module."""
 
+from leaderboards.enums import LeaderboardCategory
 from leaderboards.task_metadata import category_includes_task, task_category
 
 
 def test_category_includes_task_all_models_only_scores_nlu() -> None:
     """all_models only scores tasks whose task group is an NLU group."""
     assert category_includes_task(
-        category="all_models", task="sentiment-classification"
+        category=LeaderboardCategory.ALL_MODELS, task="sentiment-classification"
     )
-    assert not category_includes_task(category="all_models", task="summarization")
+    assert not category_includes_task(
+        category=LeaderboardCategory.ALL_MODELS, task="summarization"
+    )
+
+
+def test_category_includes_task_chat_includes_everything() -> None:
+    """The chat category scores every task unconditionally, orthogonal or not."""
+    assert category_includes_task(
+        category=LeaderboardCategory.CHAT, task="multiple-choice-stereotype-bias"
+    )
+    assert category_includes_task(
+        category=LeaderboardCategory.CHAT, task="european-values"
+    )
 
 
 def test_category_includes_task_generative_excludes_instruct_exclusive() -> None:
     """Generative drops instruct-exclusive tasks but keeps orthogonal ones visible."""
     assert not category_includes_task(
-        category="generative", task="instruction-following"
+        category=LeaderboardCategory.GENERATIVE, task="instruction-following"
     )
-    assert category_includes_task(category="generative", task="european-values")
-
-
-def test_category_includes_task_instruct_includes_everything() -> None:
-    """The instruct category scores every task unconditionally, orthogonal or not."""
     assert category_includes_task(
-        category="instruct", task="multiple-choice-stereotype-bias"
+        category=LeaderboardCategory.GENERATIVE, task="european-values"
     )
-    assert category_includes_task(category="instruct", task="european-values")
 
 
 def test_task_category_european_values_is_exempt_from_instruct_exclusive() -> None:

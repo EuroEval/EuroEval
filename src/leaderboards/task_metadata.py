@@ -26,23 +26,24 @@ from euroeval.languages import get_all_languages
 from euroeval.tasks import get_all_tasks
 
 from .constants import LEADERBOARD_TASKS, NLU_TASK_GROUPS
+from .enums import LeaderboardCategory
 
 
-def category_includes_task(category: str, task: str) -> bool:
+def category_includes_task(category: LeaderboardCategory, task: str) -> bool:
     """Check whether a task is scored within a leaderboard category.
 
     Args:
         category:
-            Leaderboard category name.
+            Leaderboard category.
         task:
             Task slug.
 
     Returns:
         True if the task is scored within the category.
     """
-    if category == "instruct":
+    if category == LeaderboardCategory.CHAT:
         return True
-    if category == "generative":
+    if category == LeaderboardCategory.GENERATIVE:
         return task_category(task) != "instruct_exclusive"
     return task_category(task) == "nlu"
 
@@ -53,8 +54,8 @@ def task_category(task_name: str) -> str:
     A task is "instruct_exclusive" when it's restricted to instruction-tuned/
     reasoning models (`GenerativeType.BASE` isn't in its
     `default_allowed_generative_types`), unless it's also in
-    `euroeval.constants.ORTHOGONAL_TASKS` — that flag means the task should
-    keep its existing bonus-column treatment on Generative/All-models (e.g.
+    `euroeval.constants.ORTHOGONAL_TASKS`, in which case it keeps its
+    existing bonus-column treatment on Generative/All-models (e.g.
     european-values) rather than being excluded from them entirely.
 
     Args:

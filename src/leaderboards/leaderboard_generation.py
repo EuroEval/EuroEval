@@ -16,6 +16,7 @@ from euroeval.constants import ORTHOGONAL_TASKS
 
 from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
 from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR, VARIANT_SUFFIX_RE
+from .enums import LeaderboardCategory
 from .link_generation import generate_task_link
 from .records import drop_val_duplicates, get_dataset, plain_model_id
 from .result_loading import load_raw_results
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 def generate_leaderboard(
     leaderboard_name: str,
     language_names: list[str],
-    categories: list[t.Literal["instruct", "generative", "all_models"]],
+    categories: list[LeaderboardCategory],
     force: bool,
     language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
     | None = None,
@@ -379,7 +380,7 @@ def _create_leaderboard_headers(
 def _generate_dataframe(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     metadata_dict: dict[str, dict],
-    categories: list[t.Literal["instruct", "generative", "all_models"]],
+    categories: list[LeaderboardCategory],
     leaderboard_configs: dict[str, dict[str, list[str]]],
     include_dataset_columns: bool,
     language_rank_cache: dict[tuple[str, str, tuple[str, ...], tuple[str, ...]], dict]
@@ -438,8 +439,8 @@ def _generate_dataframe(
         data_dict: dict[str, list] = defaultdict(list)
         for model_id, results in model_results.items():
             generative_type = metadata_dict.get(model_id, {}).get("generative_type")
-            if category == "instruct":
-                # Only include zero-shot rows for Instruct category
+            if category == LeaderboardCategory.CHAT:
+                # Only include zero-shot rows for the Chat category
                 suffix_match = VARIANT_SUFFIX_RE.search(model_id)
                 is_zero_shot_row = (
                     suffix_match is not None and "zero-shot" in suffix_match.group()
@@ -450,7 +451,7 @@ def _generate_dataframe(
                 ):
                     continue
             # Skip encoders (generative_type is None) for generative category
-            if category == "generative" and generative_type is None:
+            if category == LeaderboardCategory.GENERATIVE and generative_type is None:
                 continue
             model_values = _build_model_row_data(
                 model_id=model_id,
@@ -582,7 +583,7 @@ def _apply_display_transforms(
 
 
 def _build_category_dataset_maps(
-    categories: list[t.Literal["instruct", "generative", "all_models"]],
+    categories: list[LeaderboardCategory],
     leaderboard_configs: dict[str, dict[str, list[str]]],
 ) -> "tuple[dict[str, list[str]], dict[str, dict[str, str]]]":
     """Build category to datasets and orthogonal datasets mappings.
@@ -830,7 +831,7 @@ def _collect_orthogonal_scores(
 
 def _compute_eligible_models_and_ranks(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    category: str,
+    category: LeaderboardCategory,
     category_to_datasets: dict[str, list[str]],
     category_to_orthogonal_datasets: dict[str, dict[str, str]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
