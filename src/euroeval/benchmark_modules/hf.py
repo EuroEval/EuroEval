@@ -1340,7 +1340,7 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
             token_type_embeddings.weight.data = torch.cat(
                 tensors=(
                     token_type_embedding_tensor,
-                    torch.rand_like(tensor=token_type_embedding_tensor),
+                    torch.rand_like(token_type_embedding_tensor),
                 ),
                 dim=0,
             )

@@ -106,6 +106,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed `TypeError` in `setup_model_for_question_answering` when expanding token type
+  embeddings from shape (1, ...) to (2, ...) for models like `fresh-xlm-roberta-base`
+  that only have a single token type embedding. The bug was caused by passing `tensor=`
+  as a keyword argument to `torch.rand_like`, which expects `input` as its first
+  positional argument.
 - Fixed loading of Mixture-of-Experts models whose expert intermediate size is not a
   multiple of 128 after being sharded across multiple GPUs (e.g.
   `JetBrains/Mellum2-12B-A2.5B-Base` on Blackwell GPUs), which previously crashed vLLM
