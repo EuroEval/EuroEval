@@ -136,6 +136,7 @@ WMT24PP_DE_EN_CONFIG = TranslationDatasetConfig(
     languages=[GERMAN],
     source_language=GERMAN,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 

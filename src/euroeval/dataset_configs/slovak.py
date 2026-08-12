@@ -102,6 +102,7 @@ WMT24PP_SK_EN_CONFIG = TranslationDatasetConfig(
     languages=[SLOVAK],
     source_language=SLOVAK,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 

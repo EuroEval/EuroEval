@@ -113,6 +113,7 @@ WMT24PP_LV_EN_CONFIG = TranslationDatasetConfig(
     languages=[LATVIAN],
     source_language=LATVIAN,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 

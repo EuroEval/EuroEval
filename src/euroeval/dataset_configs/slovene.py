@@ -103,6 +103,7 @@ WMT24PP_SL_EN_CONFIG = TranslationDatasetConfig(
     languages=[SLOVENE],
     source_language=SLOVENE,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 

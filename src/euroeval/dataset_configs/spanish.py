@@ -118,6 +118,7 @@ FLORES_ES_EN_CONFIG = TranslationDatasetConfig(
     languages=[SPANISH],
     source_language=SPANISH,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 INCLUDE_ES_CONFIG = DatasetConfig(

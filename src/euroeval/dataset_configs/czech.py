@@ -111,6 +111,7 @@ WMT24PP_CS_EN_CONFIG = TranslationDatasetConfig(
     languages=[CZECH],
     source_language=CZECH,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 

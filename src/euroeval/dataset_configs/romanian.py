@@ -113,6 +113,7 @@ WMT24PP_RO_EN_CONFIG = TranslationDatasetConfig(
     languages=[ROMANIAN],
     source_language=ROMANIAN,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 

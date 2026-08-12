@@ -103,6 +103,7 @@ FLORES_SQ_EN_CONFIG = TranslationDatasetConfig(
     languages=[ALBANIAN],
     source_language=ALBANIAN,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 

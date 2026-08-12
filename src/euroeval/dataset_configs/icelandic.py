@@ -136,6 +136,7 @@ WMT24PP_IS_EN_CONFIG = TranslationDatasetConfig(
     languages=[ICELANDIC],
     source_language=ICELANDIC,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 

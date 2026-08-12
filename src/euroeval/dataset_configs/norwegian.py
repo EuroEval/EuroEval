@@ -180,6 +180,7 @@ WMT24PP_NO_EN_CONFIG = TranslationDatasetConfig(
     languages=[NORWEGIAN],
     source_language=NORWEGIAN,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 
