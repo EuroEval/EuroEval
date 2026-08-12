@@ -13,11 +13,13 @@ from transformers.models.xlm_roberta import (
 )
 
 from euroeval.benchmark_modules.hf import (
+    _load_model_from_pretrained,
     get_dtype,
     get_model_repo_info,
     setup_model_for_question_answering,
 )
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
+from euroeval.enums import TaskGroup
 from euroeval.exceptions import InvalidModel
 from euroeval.model_loading import load_model
 
@@ -73,6 +75,40 @@ def test_get_dtype(
         )
         == expected
     )
+
+
+def test_load_model_from_pretrained_keyerror_retry_and_message() -> None:
+    """Test KeyError retry and final message for _load_model_from_pretrained.
+
+    KeyError('default') is retried once with ignore_mismatched_sizes, and the final
+    InvalidModel includes the model ID, exception repr, and cause.
+
+    Regression test for the EuroBERT/EuroBERT-210m transformers 5 RoPE loading bug.
+    """
+    mock_model_cls = MagicMock()
+    # First call raises KeyError('default'), second call (with retry) also raises it.
+    side_effects = [KeyError("default"), KeyError("default")]
+    mock_model_cls.from_pretrained.side_effect = side_effects
+
+    with pytest.raises(InvalidModel) as exc_info:
+        _load_model_from_pretrained(
+            model_cls=mock_model_cls,
+            model_id="EuroBERT/EuroBERT-210m",
+            model_kwargs={},
+            task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
+        )
+
+    # Verify the final error message contains model ID, exception repr, and cause.
+    message = str(exc_info.value)
+    assert "EuroBERT/EuroBERT-210m" in message
+    assert "KeyError('default')" in message
+
+    # Verify the exception chain is preserved.
+    assert exc_info.value.__cause__ is not None
+    assert isinstance(exc_info.value.__cause__, KeyError)
+
+    # Verify from_pretrained was called twice: initial attempt + one retry.
+    assert mock_model_cls.from_pretrained.call_count == 2
 
 
 @pytest.mark.parametrize(
