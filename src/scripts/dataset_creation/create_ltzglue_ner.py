@@ -26,6 +26,7 @@ BASE_URL = "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/n
 MAX_TRAIN = 1024
 MAX_VAL = 256
 MAX_TEST = 2048
+DATE_LABELS = frozenset({"B-DATE", "I-DATE"})
 
 
 def main() -> None:
@@ -114,7 +115,15 @@ def _load_split(data: list[dict]) -> pd.DataFrame:
         DataFrame with tokens and labels columns.
     """
     return pd.DataFrame(
-        [{"tokens": item["tokens"], "labels": item["ner_tags"]} for item in data]
+        [
+            {
+                "tokens": item["tokens"],
+                "labels": [
+                    "O" if label in DATE_LABELS else label for label in item["ner_tags"]
+                ],
+            }
+            for item in data
+        ]
     )
 
 
