@@ -117,6 +117,16 @@ MULTILOKO_DE_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+RAGTRUTH_DE_CONFIG = DatasetConfig(
+    name="ragtruth-de",
+    pretty_name="RAGTruth-de",
+    source="EuroEval/ragtruth-translated-hallucinations-de-mini",
+    task=HALLU,
+    languages=[GERMAN],
+    train_split=None,
+)
+
+
 # Unofficial datasets ###
 
 MMLU_DE_CONFIG = DatasetConfig(
@@ -218,13 +228,4 @@ EU_MMLU_DE_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[GERMAN],
     unofficial=True,
-)
-
-RAGTRUTH_DE_CONFIG = DatasetConfig(
-    name="ragtruth-de",
-    pretty_name="RAGTruth-de",
-    source="EuroEval/ragtruth-translated-hallucinations-de-mini",
-    task=HALLU,
-    languages=[GERMAN],
-    train_split=None,
 )

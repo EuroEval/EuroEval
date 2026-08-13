@@ -763,7 +763,7 @@ euroeval --model <model-id> --dataset multi-ifeval-lb
 
 ## Hallucination Detection
 
-### RAGTruth-lb
+### Unofficial: RAGTruth-lb
 
 This dataset is a Luxembourgish version of the
 [RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which

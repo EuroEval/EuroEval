@@ -151,4 +151,5 @@ RAGTRUTH_LB_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[LUXEMBOURGISH],
     train_split=None,
+    unofficial=True,
 )
