@@ -15,7 +15,7 @@ DUMMY_FILL_VALUE = 100
 # benchmark. We will still report the models' true maximum context length in the
 # metadata, but we won't use it for evaluation, as vLLM needs to allocate memory for
 # all tokens in the context.
-MAX_CONTEXT_LENGTH = 8_192
+MAX_CONTEXT_LENGTH = 16_384
 
 # We need to raise the amount of tokens generated for reasoning models, to give them
 # time to think
