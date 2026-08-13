@@ -103,5 +103,4 @@ RAGTRUTH_SQ_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[ALBANIAN],
     train_split=None,
-    unofficial=True,
 )

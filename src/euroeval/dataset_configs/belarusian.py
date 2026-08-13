@@ -66,5 +66,4 @@ RAGTRUTH_BE_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[BELARUSIAN],
     train_split=None,
-    unofficial=True,
 )
