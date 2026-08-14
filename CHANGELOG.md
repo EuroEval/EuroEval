@@ -7,6 +7,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v18.0.0] - 2026-08-14
+
 ### Added
 
 - Added support for evaluating encoder models on multiple-choice tasks using the native
