@@ -7,6 +7,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v18.0.0] - 2026-08-14
+
 ### Added
 
 - Added support for evaluating encoder models on multiple-choice tasks using the native
@@ -106,6 +108,16 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed `_load_model_from_pretrained` final error message for `KeyError`/`RuntimeError`
+  after retry exhaustion. The raised `InvalidModel` now includes the model ID and
+  exception repr (e.g. `The model 'EuroBERT/EuroBERT-210m' could not be loaded. The
+  error was KeyError('default').`), making it consistent with the `OSError`/`ValueError`
+  handling branch.
+- Fixed `TypeError` in `setup_model_for_question_answering` when expanding token type
+  embeddings from shape (1, ...) to (2, ...) for models like `fresh-xlm-roberta-base`
+  that only have a single token type embedding. The bug was caused by passing `tensor=`
+  as a keyword argument to `torch.rand_like`, which expects `input` as its first
+  positional argument.
 - Fixed loading of Mixture-of-Experts models whose expert intermediate size is not a
   multiple of 128 after being sharded across multiple GPUs (e.g.
   `JetBrains/Mellum2-12B-A2.5B-Base` on Blackwell GPUs), which previously crashed vLLM

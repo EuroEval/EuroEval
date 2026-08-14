@@ -17,7 +17,7 @@ sections:
       - { group: Multilingual, csv: germanic, slug: germanic, title: "🇩🇰🇳🇱🇬🇧🇫🇴🇩🇪🇮🇸🇳🇴🇸🇪 Germanic" }
       - { group: Multilingual, csv: romance, slug: romance, title: "🇫🇷🇮🇹🇵🇹🇷🇴🇪🇸 Romance" }
       - { group: Multilingual, csv: scandinavian, slug: scandinavian, title: "🇩🇰🇫🇴🇮🇸🇳🇴🇸🇪 Scandinavian" }
-      - { group: Multilingual, csv: slavic, slug: slavic, title: "🇧🇦🇧🇬🇭🇷🇨🇿🇵🇱🇷🇸🇸🇰🇸🇮🇺🇦 Slavic" }
+      - { group: Multilingual, csv: slavic, slug: slavic, title: "🇧🇾🇧🇦🇧🇬🇭🇷🇨🇿🇵🇱🇷🇸🇸🇰🇸🇮🇺🇦 Slavic" }
       - { group: Multilingual, csv: west_germanic, slug: west-germanic, title: "🇳🇱🇬🇧🇩🇪 West Germanic" }
       # Monolingual
       - { group: Monolingual, csv: albanian, title: "🇦🇱 Albanian" }

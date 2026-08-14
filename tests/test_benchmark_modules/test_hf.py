@@ -7,9 +7,19 @@ from unittest.mock import MagicMock, patch
 import pytest
 import torch
 from huggingface_hub.hf_api import HfApi
+from transformers.models.xlm_roberta import (
+    XLMRobertaConfig,
+    XLMRobertaForQuestionAnswering,
+)
 
-from euroeval.benchmark_modules.hf import get_dtype, get_model_repo_info
+from euroeval.benchmark_modules.hf import (
+    _load_model_from_pretrained,
+    get_dtype,
+    get_model_repo_info,
+    setup_model_for_question_answering,
+)
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
+from euroeval.enums import TaskGroup
 from euroeval.exceptions import InvalidModel
 from euroeval.model_loading import load_model
 
@@ -67,6 +77,40 @@ def test_get_dtype(
     )
 
 
+def test_load_model_from_pretrained_keyerror_retry_and_message() -> None:
+    """Test KeyError retry and final message for _load_model_from_pretrained.
+
+    KeyError('default') is retried once with ignore_mismatched_sizes, and the final
+    InvalidModel includes the model ID, exception repr, and cause.
+
+    Regression test for the EuroBERT/EuroBERT-210m transformers 5 RoPE loading bug.
+    """
+    mock_model_cls = MagicMock()
+    # First call raises KeyError('default'), second call (with retry) also raises it.
+    side_effects = [KeyError("default"), KeyError("default")]
+    mock_model_cls.from_pretrained.side_effect = side_effects
+
+    with pytest.raises(InvalidModel) as exc_info:
+        _load_model_from_pretrained(
+            model_cls=mock_model_cls,
+            model_id="EuroBERT/EuroBERT-210m",
+            model_kwargs={},
+            task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
+        )
+
+    # Verify the final error message contains model ID, exception repr, and cause.
+    message = str(exc_info.value)
+    assert "EuroBERT/EuroBERT-210m" in message
+    assert "KeyError('default')" in message
+
+    # Verify the exception chain is preserved.
+    assert exc_info.value.__cause__ is not None
+    assert isinstance(exc_info.value.__cause__, KeyError)
+
+    # Verify from_pretrained was called twice: initial attempt + one retry.
+    assert mock_model_cls.from_pretrained.call_count == 2
+
+
 @pytest.mark.parametrize(
     argnames=["repo_files", "requires_safetensors", "model_exists"],
     argvalues=[
@@ -111,3 +155,42 @@ def test_safetensors_check(
             run_with_cli=benchmark_config.run_with_cli,
         )
         assert (result is not None) == model_exists
+
+
+def test_setup_model_for_qa_expands_single_row_token_type_embeddings() -> None:
+    """Test setup_model_for_qa expands single-row token-type embeddings to two rows.
+
+    Regression test for the fresh-xlm-roberta-base bug: the model's token-type
+    embeddings have shape (1, hidden_size) and must be expanded to (2, hidden_size).
+    """
+    config = XLMRobertaConfig(
+        vocab_size=1000,
+        hidden_size=64,
+        num_hidden_layers=2,
+        num_attention_heads=2,
+        intermediate_size=128,
+        type_vocab_size=1,
+    )
+    model = XLMRobertaForQuestionAnswering(config)
+
+    # Verify initial state: single-row token-type embeddings
+    assert model.config.type_vocab_size == 1
+    token_type_embeddings = model.roberta.embeddings.token_type_embeddings
+    assert token_type_embeddings.weight.data.shape[0] == 1
+    original_row = token_type_embeddings.weight.data[0].clone()
+
+    # Run the setup function
+    result = setup_model_for_question_answering(model)
+
+    # Assert the same model object is returned
+    assert result is model
+
+    # Assert token-type embeddings expanded to two rows
+    assert token_type_embeddings.weight.data.shape[0] == 2
+
+    # Assert the original row is preserved
+    assert torch.equal(token_type_embeddings.weight.data[0], original_row)
+
+    # Assert config and embedding sizes are updated
+    assert model.config.type_vocab_size == 2
+    assert token_type_embeddings.num_embeddings == 2
