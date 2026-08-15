@@ -7,6 +7,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `#no-thinking` LiteLLM evaluations when providers reject a zero thinking budget
+  and require an explicit `thinking.type` of `disabled`.
+
 ## [v18.0.0] - 2026-08-14
 
 ### Added

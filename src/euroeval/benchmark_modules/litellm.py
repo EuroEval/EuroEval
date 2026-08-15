@@ -1032,9 +1032,15 @@ class LiteLLMModel(BenchmarkModule):
             return generation_kwargs, 0
 
         # Thinking disabled required
+        thinking_disabled_messages = [
+            "thinking.type: field required",
+            "thinking.adaptive.budget_tokens: extra inputs are not permitted",
+        ]
+        thinking = generation_kwargs.get("thinking")
         if (
-            "thinking.type: field required" in error_msg
-            and self.generative_type != GenerativeType.REASONING
+            any(message in error_msg for message in thinking_disabled_messages)
+            and isinstance(thinking, dict)
+            and thinking.get("budget_tokens") == 0
         ):
             log_once(
                 f"The model {model_id!r} requires the `thinking.type` field to be "
