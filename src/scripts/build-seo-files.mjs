@@ -199,8 +199,8 @@ const STEM_TO_GROUP = {
     " Polish, Serbian, Slovak, Slovenian, Ukrainian)",
   danish:
     "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)",
-  dutch: "West Germanic languages (Dutch, English, German)",
-  english: "West Germanic languages (Dutch, English, German)",
+  dutch: "West Germanic languages (Dutch, English, German, Luxembourgish)",
+  english: "West Germanic languages (Dutch, English, German, Luxembourgish)",
   estonian: "Finnic languages (Estonian, Finnish)",
   faroese:
     "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)",
@@ -208,8 +208,9 @@ const STEM_TO_GROUP = {
   french:
     "Romance languages (Catalan, French, Italian, Portuguese, Romanian," +
     " Spanish)",
-  german: "West Germanic languages (Dutch, English, German)",
+  german: "West Germanic languages (Dutch, English, German, Luxembourgish)",
   greek: "Greek",
+  luxembourgish: "West Germanic languages (Dutch, English, German, Luxembourgish)",
   hungarian: "Hungarian",
   icelandic:
     "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)",
