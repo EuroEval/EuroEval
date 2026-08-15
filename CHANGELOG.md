@@ -141,6 +141,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed `#no-thinking` LiteLLM evaluations when providers reject a zero thinking budget
+  and require an explicit `thinking.type` of `disabled`.
 - Fixed the prompt script for Serbian datasets whose content is written in Cyrillic. The
   `include-sr` knowledge dataset now uses a Cyrillic prompt (overriding the shared Latin
   knowledge template still used by the Latin-script `mmlu-sr`, `mms-sr` and
