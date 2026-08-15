@@ -182,6 +182,9 @@ async function copyCsvsTo(distDir) {
 // used in the model-evaluation-request issue template).
 const STEM_TO_GROUP = {
   albanian: "Albanian",
+  belarusian:
+    "Slavic languages (Belarusian, Bulgarian, Bosnian, Croatian, Czech," +
+    " Polish, Serbian, Slovak, Slovenian, Ukrainian)",
   bosnian:
     "Slavic languages (Belarusian, Bulgarian, Bosnian, Croatian, Czech," +
     " Polish, Serbian, Slovak, Slovenian, Ukrainian)",
