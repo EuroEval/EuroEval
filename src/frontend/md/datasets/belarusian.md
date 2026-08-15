@@ -472,7 +472,7 @@ euroeval --model <model-id> --dataset multi-ifeval-be
 
 ## Hallucination Detection
 
-### Unofficial: RAGTruth-be
+### RAGTruth-be
 
 This dataset is a Belarusian translation of the
 [RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which

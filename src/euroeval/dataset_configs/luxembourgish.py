@@ -123,6 +123,15 @@ MULTI_IFEVAL_LB_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+RAGTRUTH_LB_CONFIG = DatasetConfig(
+    name="ragtruth-lb",
+    pretty_name="RAGTruth-lb",
+    source="EuroEval/ragtruth-translated-hallucinations-lb-mini",
+    task=HALLU,
+    languages=[LUXEMBOURGISH],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -141,15 +150,5 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     "Wuert-Reiefolleg), 'agreement' (Subject-Verb oder Determiner-Noun Stëmmung net "
     "korrekt), 'morphology' (falsch Wortform), oder 'other'. Äntwert nëmme mat engem "
     "vun dësen Etiketten: {labels_str}.",
-    unofficial=True,
-)
-
-RAGTRUTH_LB_CONFIG = DatasetConfig(
-    name="ragtruth-lb",
-    pretty_name="RAGTruth-lb",
-    source="EuroEval/ragtruth-translated-hallucinations-lb-mini",
-    task=HALLU,
-    languages=[LUXEMBOURGISH],
-    train_split=None,
     unofficial=True,
 )
