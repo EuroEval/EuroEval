@@ -419,8 +419,8 @@ class TestGroupResultsByModel:
         """Extract both hallucination metrics in the task's declared order."""
         primary, secondary = task_metric_names("hallucination")
         assert (primary, secondary) == (
-            "hallucination_rate",
             "sample_hallucination_rate",
+            "hallucination_rate",
         )
 
         record = {
@@ -451,10 +451,34 @@ class TestGroupResultsByModel:
 
         result = group_results_by_model(results=[record])
 
-        assert result["org/model"]["hallucination-da"] == [
+        assert result["org/model (zero-shot)"]["hallucination-da"] == [
             ([25.0], 25.0, 0.0),
             ([50.0], 50.0, 0.0),
         ]
+
+    def test_legacy_token_only_hallucination_record_is_not_mislabeled(self) -> None:
+        """Do not place a legacy token score in the new primary slot."""
+        record = {
+            "model_info": {"name": "org/model"},
+            "eval_library": {
+                "version": "17.6.0",
+                "additional_details": {
+                    "dataset": "hallucination-da",
+                    "task": "hallucination",
+                    "few_shot": "false",
+                    "validation_split": False,
+                    "raw_results": [{"test_hallucination_rate": 0.5}],
+                },
+            },
+            "evaluation_results": [
+                {
+                    "evaluation_name": "test_hallucination_rate",
+                    "score_details": {"score": 50.0},
+                }
+            ],
+        }
+
+        assert group_results_by_model(results=[record]) == {}
 
     def test_split_agnostic_dataset_mirrored_onto_val_variant(self) -> None:
         """Regression: a no-validation-split dataset shows on both variant rows.

@@ -194,8 +194,9 @@ class SampleHallucinationMetric(_HallucinationMetric):
 
     def _score_detection(self, detection: _HallucinationDetection) -> float:
         """Return the sample-level hallucination rate."""
-        evaluated_samples = [tokens for tokens in detection.token_predictions if tokens]
-        return sum(any(tokens) for tokens in evaluated_samples) / len(evaluated_samples)
+        return sum(any(tokens) for tokens in detection.token_predictions) / len(
+            detection.token_predictions
+        )
 
 
 class TokenHallucinationMetric(_HallucinationMetric):
@@ -442,6 +443,6 @@ sample_hallucination_metric = SampleHallucinationMetric(
     name="sample_hallucination_rate", pretty_name="Sample hallucination rate"
 )
 
-hallucination_metric = TokenHallucinationMetric(
+token_hallucination_metric = TokenHallucinationMetric(
     name="hallucination_rate", pretty_name="Token hallucination rate"
 )

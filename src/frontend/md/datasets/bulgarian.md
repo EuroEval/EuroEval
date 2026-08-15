@@ -713,8 +713,11 @@ generates tokens that are not grounded in the provided context.
 The hallucination detection is performed using the
 [LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
 [transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
-hallucination at the token level. The metric reported is the hallucination rate,
-computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+hallucination at the token level. The primary metric is the sample hallucination
+rate: the proportion of generated answers containing at least one predicted
+hallucinated token. The token hallucination rate, computed as the ratio of
+hallucinated tokens to total tokens in the generated answers, is reported as a
+secondary metric.
 
 Here are a few examples from the test split:
 
