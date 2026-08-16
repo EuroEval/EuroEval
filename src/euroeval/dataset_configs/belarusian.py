@@ -68,3 +68,12 @@ RAGTRUTH_BE_CONFIG = DatasetConfig(
     train_split=None,
     unofficial=True,
 )
+
+BELACOLA_CONFIG = DatasetConfig(
+    name="belacola",
+    pretty_name="BelaCoLA",
+    source="EuroEval/belacola-mini",
+    task=LA,
+    languages=[BELARUSIAN],
+    unofficial=True,
+)

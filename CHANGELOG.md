@@ -9,6 +9,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added the unofficial Belarusian linguistic acceptability dataset `belacola`, based on
+  the BelaCoLA dataset from BelarusianGLUE.
 - Added the sample hallucination rate metric as the primary hallucination score, while
   retaining the token hallucination rate as a secondary score.
 
