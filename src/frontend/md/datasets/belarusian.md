@@ -240,6 +240,80 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset scala-be
 ```
 
+### Unofficial: BelaCoLA
+
+BelaCoLA is a Belarusian linguistic acceptability corpus from the
+[BelarusianGLUE benchmark](https://huggingface.co/datasets/maaxap/BelarusianGLUE),
+introduced in [Aparovich et al. (2025)](https://aclanthology.org/2025.acl-long.25/).
+It is similar to CoLA and RuCoLA: Belarusian sentences are labelled as acceptable or
+unacceptable by three fluent Belarusian-speaking linguists. The in-domain data comes
+from translated RuCoLA sentences, Belarusian normative sources, and Common Voice.
+
+The source `belacola_in_domain` configuration contains 1,992 / 300 / 300 samples for
+training, validation and testing, respectively. We preserve these source split
+boundaries and select the first 1,024 / 256 / 300 samples from them for EuroEval. The
+source data is already shuffled, and selecting rows in order makes this conversion
+deterministic. The resulting labels are `correct` for source label `1` (acceptable) and
+`incorrect` for source label `0` (unacceptable).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "М.С. Міхалкоў нядаўна яшчэ раз выказаў сваё жаданне быць пахаваны тут.",
+  "label": "incorrect"
+}
+```
+
+```json
+{
+  "text": "Загад адступаць быў аддадзены салдатам камандзірам.",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Бальніцу прынёс абозу загад камбата заняць чарговы дзень.",
+  "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Ніжэй прыведзены сказы і ці з'яўляюцца яны граматычна правільнымі.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Сказ: {text}
+  Граматычна правільны: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Сказ: {text}
+
+  Вызначце, ці сказ граматычна правільны ці не. Адкажыце толькі {labels_str}, і нічога іншага.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `так`
+  - `incorrect` ➡️ `не`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset belacola
+```
+
 ## Reading Comprehension
 
 ### MultiWikiQA-be
