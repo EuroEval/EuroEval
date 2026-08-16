@@ -43,6 +43,9 @@ d008f8ed6c93  # scripts/dataset_creation/create_gsm8k.py
 4899b96e6cfd  # scripts/dataset_creation/create_piqa.py
 d81eb68f2948  # scripts/dataset_creation/create_copa.py
 a653617439bf  # scripts/dataset_creation/create_wic.py
+b21ad08cd2de  # scripts/dataset_creation/create_belacola.py, scripts/dataset_creation/create_bewic.py
+2cb2bc995f08  # scripts/dataset_creation/create_belacola.py, scripts/dataset_creation/create_bewic.py
+2289bf101c6b  # scripts/dataset_creation/create_belacola.py, scripts/dataset_creation/create_bewic.py
 4c57aef481fb  # scripts/dataset_creation/create_boolq.py
 d37d12a12202  # scripts/dataset_creation/create_commitmentbank.py
 71fc771b060f  # scripts/dataset_creation/create_wnli.py
@@ -62,6 +65,7 @@ ac81abca3ab6  # scripts/dataset_creation/create_qnli.py
 01d1b47f0981  # euroeval/benchmark_modules/hf.py, euroeval/benchmark_modules/vllm.py
 06bf2c0c305a  # euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/litellm.py
 0964ffc78620  # euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/litellm.py
+29a4b5a07f71  # euroeval/benchmark_modules/dummy.py, euroeval/benchmark_modules/litellm.py, euroeval/benchmark_modules/vllm.py
 a52d4598fe08  # euroeval/task_group_utils/question_answering.py, euroeval/task_group_utils/sequence_classification.py
 
 

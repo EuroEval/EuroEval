@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BELARUSIAN
-from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, LA, NER, NLI, RC, SENT
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    LA,
+    NER,
+    NLI,
+    RC,
+    SENT,
+    WIC,
+)
 
 # Official datasets ###
 
@@ -90,6 +100,15 @@ BELACOLA_CONFIG = DatasetConfig(
     pretty_name="BelaCoLA",
     source="EuroEval/belacola-mini",
     task=LA,
+    languages=[BELARUSIAN],
+    unofficial=True,
+)
+
+BEWIC_CONFIG = DatasetConfig(
+    name="bewic",
+    pretty_name="BeWiC",
+    source="EuroEval/bewic-mini",
+    task=WIC,
     languages=[BELARUSIAN],
     unofficial=True,
 )

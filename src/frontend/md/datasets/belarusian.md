@@ -464,6 +464,81 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multi-wiki-qa-be
 ```
 
+## Word in Context
+
+### Unofficial: BeWiC
+
+BeWiC is the Belarusian Word-in-Context dataset from the
+[BelarusianGLUE benchmark](https://huggingface.co/datasets/maaxap/BelarusianGLUE),
+introduced in [Aparovich et al. (2025)](https://aclanthology.org/2025.acl-long.25/). It
+measures the ability to distinguish word meanings or senses in context: given one target
+word in two Belarusian sentences, the task is to determine whether it has the same sense
+in both contexts.
+
+The original `bewic` configuration consists of 5,626 / 400 / 400 samples in its train,
+validation and test splits. We preserve these source split boundaries and select the first
+1,024 / 256 / 400 samples for EuroEval. The source data is already shuffled, and selecting
+rows in order makes this conversion deterministic. Source label `1` means `same_sense`,
+while source label `0` means `different_sense`.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Слова: чуць\nКантэкст 1: Стаіць Іван пад дубам, аж чуе — пішчаць на дубе ў гняздзе птушаняты.\nКантэкст 2: Толькі спрактыкаваны чалавек мог намацаць пад рудой тванню цвёрдую палоску насцілу: чуць збочыў — і плюхнешся ў тарфяную калатушу.",
+  "label": "different_sense"
+}
+```
+
+```json
+{
+  "text": "Слова: прыз\nКантэкст 1: Дог, якога вы бачылі, мае два міжнародныя прызы.\nКантэкст 2: Здавалася, перад Сяргеем быў адзін з тых атлетаў, якія прывыклі браць прызы па падыманню цяжараў на спартыўных спаборніцтвах.",
+  "label": "same_sense"
+}
+```
+
+```json
+{
+  "text": "Слова: стан\nКантэкст 1: Снапы ў Любы былі цяжкія, але зграбныя, з тонкім станам і роўнымі гузырамі.\nКантэкст 2: Сцяпан пачаў у галаве складаць гэтае пісьмо, падбіраць такія словы і выразы, якія б дакладна адлюстравалі яго душэўны стан, яго радасць.",
+  "label": "different_sense"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Ніжэй прыведзены прыклады слоў, якія выкарыстоўваюцца ў двух кантэкстах, і ці маюць яны аднолькавае значэнне.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}
+  Аднолькавае значэнне: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+
+  Ці мае слова аднолькавае значэнне ў абодвух кантэкстах? Адкажыце толькі {labels_str}, і нічога іншага.
+  ```
+
+- Label mapping:
+  - `same_sense` ➡️ `так`
+  - `different_sense` ➡️ `не`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset bewic
+```
+
 ## Common-sense Reasoning
 
 ### BE-WSC
