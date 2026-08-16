@@ -314,6 +314,76 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset belacola
 ```
 
+## Natural Language Inference
+
+### Unofficial: BeRTE-WD
+
+[BeRTE-WD](https://huggingface.co/datasets/maaxap/BelarusianGLUE) is the
+Belarusian textual entailment dataset from the BelarusianGLUE collection. Each sample
+contains a premise and a hypothesis, and the task is to determine whether the hypothesis
+follows from the premise. The source labels are binary: 1 means entailment and 0 means
+non-entailment. EuroEval represents the latter as `non_entailment`; this dataset does
+not distinguish between contradiction and neutral cases.
+
+The source has 1,080 / 360 / 360 samples in its train, validation and test splits. We
+preserve those split boundaries and take the first 1,024 training samples, first 256
+validation samples and all 360 test samples, resulting in a 1,024 / 256 / 360 split.
+
+Here are three representative examples from the training split:
+
+```json
+{
+  "text": "Перадумова: Прынцэса Эавін мела 1 дзіця.\nГіпотэза: Прынцэса Эавін не мела іншых дзяцей, акрамя двух.",
+  "label": "non_entailment"
+}
+```
+
+```json
+{
+  "text": "Перадумова: Стэпавы арол мае размах крылаў 203 см.\nГіпотэза: Стэпавы арол мае размах крылаў блізу двух метраў.",
+  "label": "entailment"
+}
+```
+
+```json
+{
+  "text": "Перадумова: Яўхім Фёдаравіч Карскі валодаў рускай мовай.\nГіпотэза: Яўхім Фёдаравіч Карскі мог разумець тэксты на рускай мове.",
+  "label": "entailment"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Ніжэй прыведзены пары сцвярджэнняў. Вызначце, ці вынікае другое сцвярджэнне з першага. Адказ можа быць 'праўда' або 'не вынікае'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}\nІмплікацыя: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}\n\nВызначце, ці вынікае другое сцвярджэнне з першага. Адкажыце толькі 'праўда' або 'не вынікае', і нічога іншага.
+  ```
+
+- Label mapping:
+  - `entailment` ➡️ `праўда`
+  - `non_entailment` ➡️ `не вынікае`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset berte-wd
+```
+
 ## Reading Comprehension
 
 ### MultiWikiQA-be
