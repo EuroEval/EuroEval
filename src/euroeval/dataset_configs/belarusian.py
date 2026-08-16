@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BELARUSIAN
-from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, LA, NER, NLI, RC, SENT, WIC
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    LA,
+    NER,
+    NLI,
+    RC,
+    SENT,
+    WIC,
+)
 
 # Official datasets ###
 
