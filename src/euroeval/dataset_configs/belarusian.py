@@ -75,6 +75,22 @@ BERTE_WD_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+BEWSC_NLI_CONFIG = DatasetConfig(
+    name="bewsc-nli",
+    pretty_name="BeWSC-NLI",
+    source="EuroEval/bewsc-nli",
+    task=NLI,
+    languages=[BELARUSIAN],
+    labels=["entailment", "non_entailment"],
+    prompt_label_mapping=dict(entailment="праўда", non_entailment="не вынікае"),
+    prompt_prefix="Ніжэй прыведзены пары сцвярджэнняў. Вызначце, ці вынікае "
+    "другое сцвярджэнне з першага. Адказ можа быць {labels_str}.",
+    prompt_template="{text}\nІмплікацыя: {label}",
+    instruction_prompt="{text}\n\nВызначце, ці вынікае другое сцвярджэнне з "
+    "першага. Адкажыце толькі {labels_str}, і нічога іншага.",
+    unofficial=True,
+)
+
 RAGTRUTH_BE_CONFIG = DatasetConfig(
     name="ragtruth-be",
     pretty_name="RAGTruth-be",

@@ -384,6 +384,77 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset berte-wd
 ```
 
+### Unofficial: BeWSC-NLI
+
+[BeWSC-NLI](https://huggingface.co/datasets/maaxap/BelarusianGLUE) is the Belarusian
+binary natural language inference version of the BeWSC data from the BelarusianGLUE
+collection. It uses the source `bewsc_as_wnli` configuration: given a premise and a
+hypothesis, the task is to determine whether the hypothesis follows from the premise.
+This is distinct from the official `be-wsc` dataset, which is a WSC-style
+common-sense reasoning benchmark with multiple-choice coreference questions. The
+official WSC dataset is unchanged by this NLI conversion.
+
+The source contains 570 / 200 / 200 samples in its train, validation and test splits,
+respectively. EuroEval preserves all three source split boundaries and uses the same
+570 / 200 / 200 split; no split is truncated. Source label 1 means entailment and
+source label 0 means non-entailment. The binary task does not distinguish between
+neutral and contradiction cases.
+
+Here are three examples from the training split:
+
+```json
+{
+  "text": "Перадумова: Аліса шукала ў натоўпе сваю сяброўку Надзю. З-за таго, што яна заўсёды носіць чырвоны каптур, Аліса хутка заўважыла яе.\nГіпотэза: З-за таго, што Надзя заўсёды носіць чырвоны каптур, Аліса хутка заўважыла яе.",
+  "label": "entailment"
+}
+```
+
+```json
+{
+  "text": "Перадумова: Дзяніс растлумачыў сваю тэорыю Марку, але ён не пераканаў яго.\nГіпотэза: Дзяніс не пераканаў Марка.",
+  "label": "entailment"
+}
+```
+
+```json
+{
+  "text": "Перадумова: Мужчына ўзяў заплаканага хлопчыка за руку. Яго далонь была вялікай і цёплай.\nГіпотэза: Далонь заплаканага хлопчыка была вялікай і цёплай.",
+  "label": "non_entailment"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Ніжэй прыведзены пары сцвярджэнняў. Вызначце, ці вынікае другое сцвярджэнне з першага. Адказ можа быць 'праўда' або 'не вынікае'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}\nІмплікацыя: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}\n\nВызначце, ці вынікае другое сцвярджэнне з першага. Адкажыце толькі 'праўда' або 'не вынікае', і нічога іншага.
+  ```
+
+- Label mapping:
+  - `entailment` ➡️ `праўда`
+  - `non_entailment` ➡️ `не вынікае`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset bewsc-nli
+```
+
 ## Reading Comprehension
 
 ### MultiWikiQA-be
