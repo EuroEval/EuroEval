@@ -7,7 +7,7 @@ from src.scripts.dataset_creation.create_berte_wd import _map_label, process_dat
 
 
 @pytest.mark.parametrize(
-    ("source_label", "expected_label"), [(0, "contradiction"), (1, "entailment")]
+    ("source_label", "expected_label"), [(0, "non_entailment"), (1, "entailment")]
 )
 def test_map_label(source_label: int, expected_label: str) -> None:
     """Source labels map to the two EuroEval NLI labels."""
@@ -71,6 +71,6 @@ def test_process_dataset_formats_pairs_and_maps_labels() -> None:
 
     assert result["train"][0] == {
         "text": "Перадумова: перадумова 0\nГіпотэза: гіпотэза 0",
-        "label": "contradiction",
+        "label": "non_entailment",
     }
     assert result["train"][1]["label"] == "entailment"

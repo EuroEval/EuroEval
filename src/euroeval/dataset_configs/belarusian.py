@@ -65,8 +65,8 @@ BERTE_WD_CONFIG = DatasetConfig(
     source="EuroEval/berte-wd-mini",
     task=NLI,
     languages=[BELARUSIAN],
-    labels=["entailment", "contradiction"],
-    prompt_label_mapping=dict(entailment="праўда", contradiction="хлусня"),
+    labels=["entailment", "non_entailment"],
+    prompt_label_mapping=dict(entailment="праўда", non_entailment="не вынікае"),
     prompt_prefix="Ніжэй прыведзены пары сцвярджэнняў. Вызначце, ці вынікае "
     "другое сцвярджэнне з першага. Адказ можа быць {labels_str}.",
     prompt_template="{text}\nІмплікацыя: {label}",

@@ -93,7 +93,7 @@ def _map_label(label: int) -> str:
     if label == 1:
         return "entailment"
     if label == 0:
-        return "contradiction"
+        return "non_entailment"
     raise ValueError(f"Unexpected BeRTE-WD label: {label}")
 
 
