@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BELARUSIAN
-from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, LA, NER, NLI, RC, SENT
 
 # Official datasets ###
 
@@ -58,6 +58,22 @@ MULTI_IFEVAL_BE_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+BERTE_WD_CONFIG = DatasetConfig(
+    name="berte-wd",
+    pretty_name="BeRTE-WD",
+    source="EuroEval/berte-wd-mini",
+    task=NLI,
+    languages=[BELARUSIAN],
+    labels=["entailment", "contradiction"],
+    prompt_label_mapping=dict(entailment="праўда", contradiction="хлусня"),
+    prompt_prefix="Ніжэй прыведзены пары сцвярджэнняў. Вызначце, ці вынікае "
+    "другое сцвярджэнне з першага. Адказ можа быць {labels_str}.",
+    prompt_template="{text}\nІмплікацыя: {label}",
+    instruction_prompt="{text}\n\nВызначце, ці вынікае другое сцвярджэнне з "
+    "першага. Адкажыце толькі {labels_str}, і нічога іншага.",
+    unofficial=True,
+)
 
 RAGTRUTH_BE_CONFIG = DatasetConfig(
     name="ragtruth-be",
