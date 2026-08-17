@@ -680,6 +680,15 @@
     "train": 64,
     "val": 32
   },
+  "EuroEval/ltzglue-hc-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/ltzglue-id-mini": {
+    "test": 66,
+    "val": 53
+  },
   "EuroEval/ltzglue-la-mini": {
     "test": 2048,
     "train": 1024,
@@ -697,6 +706,11 @@
   },
   "EuroEval/ltzglue-sa-mini": {
     "test": 926,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/ltzglue-tc-mini": {
+    "test": 1245,
     "train": 1024,
     "val": 256
   },

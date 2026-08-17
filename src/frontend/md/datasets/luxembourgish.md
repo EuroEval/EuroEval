@@ -613,7 +613,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset ltzglue-tc
 ```
 
-### ltzGLUE-ID
+### Unofficial: ltzGLUE-ID
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976).
 
