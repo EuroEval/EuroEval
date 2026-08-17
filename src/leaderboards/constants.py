@@ -182,6 +182,7 @@ BACKUP_ARCHIVE_ROOT = "results"
 # Tasks displayed on every EuroEval leaderboard, in column order.
 LEADERBOARD_TASKS: list[str] = [
     "sentiment-classification",
+    "classification",
     "named-entity-recognition",
     "linguistic-acceptability",
     "reading-comprehension",

@@ -1,4 +1,8 @@
 {
+  "classification": [
+    "Matthew's Correlation Coefficient",
+    "Macro-average F1-score"
+  ],
   "common-sense-reasoning": [
     "Matthew's Correlation Coefficient",
     "Accuracy"
