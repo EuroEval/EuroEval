@@ -9,28 +9,6 @@ from datasets import Dataset
 from euroeval.generation_utils import _extract_token_classification_examples
 
 
-class _Timeout:
-    """Context manager that raises if the wrapped block runs too long.
-
-    Used so an infinite loop surfaces as a test failure rather than a hang.
-    """
-
-    def __init__(self, seconds: int) -> None:
-        self.seconds = seconds
-
-    def __enter__(self) -> "_Timeout":
-        signal.signal(signal.SIGALRM, self._raise)
-        signal.alarm(self.seconds)
-        return self
-
-    def __exit__(self, *exc: object) -> None:
-        signal.alarm(0)
-
-    @staticmethod
-    def _raise(*_: object) -> None:
-        raise TimeoutError("timed out — likely an infinite loop")
-
-
 def test_token_classification_few_shot_terminates_with_sparse_entities() -> None:
     """Few-shot extraction must terminate when entity examples are scarce.
 
@@ -58,3 +36,25 @@ def test_token_classification_few_shot_terminates_with_sparse_entities() -> None
     # Only one entity-bearing example exists, so it must return at most that one
     # (and, crucially, return at all).
     assert len(result) <= 1
+
+
+class _Timeout:
+    """Context manager that raises if the wrapped block runs too long.
+
+    Used so an infinite loop surfaces as a test failure rather than a hang.
+    """
+
+    def __init__(self, seconds: int) -> None:
+        self.seconds = seconds
+
+    def __enter__(self) -> "_Timeout":
+        signal.signal(signal.SIGALRM, self._raise)
+        signal.alarm(self.seconds)
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        signal.alarm(0)
+
+    @staticmethod
+    def _raise(*_: object) -> None:
+        raise TimeoutError("timed out — likely an infinite loop")
