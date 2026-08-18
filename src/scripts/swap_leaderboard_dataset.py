@@ -83,7 +83,7 @@ from leaderboards.records import (
     get_dataset,
     plain_model_id,
     strip_anchor,
-    strip_val_suffix,
+    strip_note_item,
 )
 from leaderboards.result_identity import normalise_bool_value
 from leaderboards.task_metadata import (
@@ -1969,7 +1969,7 @@ def _mirror_split_agnostic_variant_coverage(
     split_agnostic_datasets: dict[str, dict[str, set[str]]],
 ) -> None:
     for variant_id in list(variant_coverage_raw):
-        test_variant_id = strip_val_suffix(variant_id)
+        test_variant_id = strip_note_item(model_id=variant_id, note_item="val")
         if test_variant_id is None:
             continue
         for language, datasets in split_agnostic_datasets.get(
@@ -1998,7 +1998,7 @@ def _prune_val_variant_coverage(
 ) -> dict[str, dict[str, set[str]]]:
     variant_coverage: dict[str, dict[str, set[str]]] = {}
     for variant_id, lang_datasets in variant_coverage_raw.items():
-        non_val_equiv = strip_val_suffix(variant_id)
+        non_val_equiv = strip_note_item(model_id=variant_id, note_item="val")
         if non_val_equiv is not None and non_val_equiv in variant_coverage_raw:
             non_val_coverage = variant_coverage_raw[non_val_equiv]
             pruned_lang_datasets: dict[str, set[str]] = {}

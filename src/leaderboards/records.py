@@ -43,7 +43,7 @@ def drop_val_duplicates(
     """
     filtered: dict[str, dict[str, list[tuple[list[float], float, float]]]] = {}
     for model_id, results in model_results.items():
-        equivalent = strip_val_suffix(model_id=model_id)
+        equivalent = strip_note_item(model_id=model_id, note_item="val")
         if equivalent is not None and equivalent in model_results:
             # Only drop the (val) version if the test-split version has >= datasets
             equivalent_count = len(model_results[equivalent])
@@ -53,26 +53,28 @@ def drop_val_duplicates(
     return filtered
 
 
-def strip_val_suffix(model_id: str) -> str | None:
-    """Return the model ID with the 'val' note removed, or None if absent.
+def strip_note_item(model_id: str, note_item: str) -> str | None:
+    """Return the model ID with a single note item removed, or None if absent.
 
     Args:
         model_id:
             The model ID, possibly wrapped in an anchor tag and possibly
             carrying a parenthesised note like ``(val)`` or ``(zero-shot, val)``.
+        note_item:
+            The note item to remove, e.g. ``"val"`` or ``"zero-shot"``.
 
     Returns:
-        The model ID with ``val`` removed from its note, or ``None`` if the
-        model ID did not contain a ``val`` note.
+        The model ID with ``note_item`` removed from its note, or ``None`` if
+        the model ID did not carry that note item.
     """
     match = re.match(r"^(.*)\s*\(([^()]+)\)(\s*</a>)?$", model_id)
     if not match:
         return None
     prefix, note, suffix = match.group(1), match.group(2), match.group(3) or ""
-    items = [item.strip() for item in note.split(",")]
-    if "val" not in items:
+    items = [i.strip() for i in note.split(",")]
+    if note_item not in items:
         return None
-    items = [item for item in items if item != "val"]
+    items = [i for i in items if i != note_item]
     if not items:
         return f"{prefix.rstrip()}{suffix}"
     return f"{prefix.rstrip()} ({', '.join(items)}){suffix}"

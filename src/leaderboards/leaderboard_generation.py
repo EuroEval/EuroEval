@@ -18,7 +18,7 @@ from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
 from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR, VARIANT_SUFFIX_RE
 from .enums import LeaderboardCategory
 from .link_generation import generate_task_link
-from .records import drop_val_duplicates, get_dataset, plain_model_id
+from .records import drop_val_duplicates, get_dataset, plain_model_id, strip_note_item
 from .result_loading import load_raw_results
 from .score_computation import compute_standard_ranks_from_bootstrap_scores
 from .score_extraction import extract_model_metadata, group_results_by_model
@@ -757,7 +757,18 @@ def _build_model_row_data(
     }
 
     model_url = metadata.get("model_url")
-    display_model = f"<a href='{model_url}'>{model_id}</a>" if model_url else model_id
+    # Every Chat row is zero-shot by construction (filtered above), so the
+    # note would be redundant there; drop it from the displayed id only.
+    display_model_id = (
+        strip_note_item(model_id=model_id, note_item="zero-shot") or model_id
+        if category == LeaderboardCategory.CHAT
+        else model_id
+    )
+    display_model = (
+        f"<a href='{model_url}'>{display_model_id}</a>"
+        if model_url
+        else display_model_id
+    )
 
     model_values = (
         dict(model=display_model, rank=rank, mean_rank_score=mean_rank_score_str)
