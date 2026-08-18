@@ -1712,7 +1712,7 @@ euroeval --model <model-id> --dataset zebra-puzzles-hard-de
 
 ## Hallucination Detection
 
-### Unofficial: RAGTruth-de
+### RAGTruth-de
 
 This dataset is a German translation of the
 [RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
