@@ -6,6 +6,16 @@ from ..tasks import HALLU, INSTRUCTION_FOLLOWING, NER, RC, SENT, SUMM, TRANSLATI
 
 # Official datasets ###
 
+FLORES_EN_BS_CONFIG = TranslationDatasetConfig(
+    name="flores-en-bs",
+    pretty_name="FLORES-en-bs",
+    source="EuroEval/flores-en-bs",
+    task=TRANSLATION,
+    languages=[BOSNIAN],
+    source_language=ENGLISH,
+    target_language=BOSNIAN,
+)
+
 MMS_BS_CONFIG = DatasetConfig(
     name="mms-bs",
     pretty_name="MMS-bs",
@@ -58,15 +68,7 @@ RAGTRUTH_BS_CONFIG = DatasetConfig(
 )
 
 
-FLORES_EN_BS_CONFIG = TranslationDatasetConfig(
-    name="flores-en-bs",
-    pretty_name="FLORES-en-bs",
-    source="EuroEval/flores-en-bs",
-    task=TRANSLATION,
-    languages=[BOSNIAN],
-    source_language=ENGLISH,
-    target_language=BOSNIAN,
-)
+# Unofficial datasets ###
 
 FLORES_BS_EN_CONFIG = TranslationDatasetConfig(
     name="flores-bs-en",
@@ -78,6 +80,3 @@ FLORES_BS_EN_CONFIG = TranslationDatasetConfig(
     target_language=ENGLISH,
     unofficial=True,
 )
-
-
-# Unofficial datasets ###

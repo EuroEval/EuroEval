@@ -17,6 +17,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_LT_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-lt",
+    pretty_name="WMT24++-en-lt",
+    source="EuroEval/wmt24pp-en-lt",
+    task=TRANSLATION,
+    languages=[LITHUANIAN],
+    source_language=ENGLISH,
+    target_language=LITHUANIAN,
+)
+
+FLORES_EN_LT_CONFIG = TranslationDatasetConfig(
+    name="flores-en-lt",
+    pretty_name="FLORES-en-lt",
+    source="EuroEval/flores-en-lt",
+    task=TRANSLATION,
+    languages=[LITHUANIAN],
+    source_language=ENGLISH,
+    target_language=LITHUANIAN,
+)
+
 ATSILIEPIMAI_CONFIG = DatasetConfig(
     name="atsiliepimai",
     pretty_name="Atsiliepimai",
@@ -102,15 +122,7 @@ INCLUDE_LT_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_LT_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-lt",
-    pretty_name="WMT24++-en-lt",
-    source="EuroEval/wmt24pp-en-lt",
-    task=TRANSLATION,
-    languages=[LITHUANIAN],
-    source_language=ENGLISH,
-    target_language=LITHUANIAN,
-)
+# Unofficial datasets ###
 
 WMT24PP_LT_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-lt-en",
@@ -123,8 +135,16 @@ WMT24PP_LT_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_LT_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-lt-en",
+    pretty_name="FLORES-lt-en",
+    source="EuroEval/flores-lt-en",
+    task=TRANSLATION,
+    languages=[LITHUANIAN],
+    source_language=LITHUANIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 LITHUANIAN_EMOTIONS_CONFIG = DatasetConfig(
     name="lithuanian-emotions",
@@ -141,27 +161,5 @@ EU_MMLU_LT_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-lt",
     task=KNOW,
     languages=[LITHUANIAN],
-    unofficial=True,
-)
-
-
-FLORES_EN_LT_CONFIG = TranslationDatasetConfig(
-    name="flores-en-lt",
-    pretty_name="FLORES-en-lt",
-    source="EuroEval/flores-en-lt",
-    task=TRANSLATION,
-    languages=[LITHUANIAN],
-    source_language=ENGLISH,
-    target_language=LITHUANIAN,
-)
-
-FLORES_LT_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-lt-en",
-    pretty_name="FLORES-lt-en",
-    source="EuroEval/flores-lt-en",
-    task=TRANSLATION,
-    languages=[LITHUANIAN],
-    source_language=LITHUANIAN,
-    target_language=ENGLISH,
     unofficial=True,
 )

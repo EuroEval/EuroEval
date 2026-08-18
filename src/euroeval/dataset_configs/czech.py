@@ -17,6 +17,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_CS_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-cs",
+    pretty_name="WMT24++-en-cs",
+    source="EuroEval/wmt24pp-en-cs",
+    task=TRANSLATION,
+    languages=[CZECH],
+    source_language=ENGLISH,
+    target_language=CZECH,
+)
+
+FLORES_EN_CS_CONFIG = TranslationDatasetConfig(
+    name="flores-en-cs",
+    pretty_name="FLORES-en-cs",
+    source="EuroEval/flores-en-cs",
+    task=TRANSLATION,
+    languages=[CZECH],
+    source_language=ENGLISH,
+    target_language=CZECH,
+)
+
 CSFD_SENTIMENT_CONFIG = DatasetConfig(
     name="csfd-sentiment",
     pretty_name="CSFD Sentiment",
@@ -93,15 +113,7 @@ RAGTRUTH_CS_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_CS_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-cs",
-    pretty_name="WMT24++-en-cs",
-    source="EuroEval/wmt24pp-en-cs",
-    task=TRANSLATION,
-    languages=[CZECH],
-    source_language=ENGLISH,
-    target_language=CZECH,
-)
+# Unofficial datasets ###
 
 WMT24PP_CS_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-cs-en",
@@ -114,8 +126,16 @@ WMT24PP_CS_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_CS_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-cs-en",
+    pretty_name="FLORES-cs-en",
+    source="EuroEval/flores-cs-en",
+    task=TRANSLATION,
+    languages=[CZECH],
+    source_language=CZECH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 SCALA_CS_CONFIG = DatasetConfig(
     name="scala-cs",
@@ -132,27 +152,5 @@ EU_MMLU_CS_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-cs",
     task=KNOW,
     languages=[CZECH],
-    unofficial=True,
-)
-
-
-FLORES_EN_CS_CONFIG = TranslationDatasetConfig(
-    name="flores-en-cs",
-    pretty_name="FLORES-en-cs",
-    source="EuroEval/flores-en-cs",
-    task=TRANSLATION,
-    languages=[CZECH],
-    source_language=ENGLISH,
-    target_language=CZECH,
-)
-
-FLORES_CS_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-cs-en",
-    pretty_name="FLORES-cs-en",
-    source="EuroEval/flores-cs-en",
-    task=TRANSLATION,
-    languages=[CZECH],
-    source_language=CZECH,
-    target_language=ENGLISH,
     unofficial=True,
 )

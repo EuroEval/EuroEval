@@ -19,6 +19,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_PT_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-pt",
+    pretty_name="WMT24++-en-pt",
+    source="EuroEval/wmt24pp-en-pt",
+    task=TRANSLATION,
+    languages=[PORTUGUESE],
+    source_language=ENGLISH,
+    target_language=PORTUGUESE,
+)
+
+FLORES_EN_PT_CONFIG = TranslationDatasetConfig(
+    name="flores-en-pt",
+    pretty_name="FLORES-en-pt",
+    source="EuroEval/flores-en-pt",
+    task=TRANSLATION,
+    languages=[PORTUGUESE],
+    source_language=ENGLISH,
+    target_language=PORTUGUESE,
+)
+
 SST2_PT_CONFIG = DatasetConfig(
     name="sst2-pt",
     pretty_name="SST2-pt",
@@ -120,15 +140,7 @@ RAGTRUTH_PT_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_PT_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-pt",
-    pretty_name="WMT24++-en-pt",
-    source="EuroEval/wmt24pp-en-pt",
-    task=TRANSLATION,
-    languages=[PORTUGUESE],
-    source_language=ENGLISH,
-    target_language=PORTUGUESE,
-)
+# Unofficial datasets ###
 
 WMT24PP_PT_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-pt-en",
@@ -141,8 +153,16 @@ WMT24PP_PT_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_PT_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-pt-en",
+    pretty_name="FLORES-pt-en",
+    source="EuroEval/flores-pt-en",
+    task=TRANSLATION,
+    languages=[PORTUGUESE],
+    source_language=PORTUGUESE,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 GOLDENSWAG_PT_CONFIG = DatasetConfig(
     name="goldenswag-pt",
@@ -242,40 +262,5 @@ EU_MMLU_PT_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-pt",
     task=KNOW,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-    unofficial=True,
-)
-
-RAGTRUTH_PT_CONFIG = DatasetConfig(
-    name="ragtruth-pt",
-    pretty_name="RAGTruth-pt",
-    source="EuroEval/ragtruth-translated-hallucinations-pt-mini",
-    task=HALLU,
-    languages=[PORTUGUESE],
-    train_split=None,
-    unofficial=True,
-)
-
-
-FLORES_EN_PT_CONFIG = TranslationDatasetConfig(
-    name="flores-en-pt",
-    pretty_name="FLORES-en-pt",
-    source="EuroEval/flores-en-pt",
-    task=TRANSLATION,
-    languages=[PORTUGUESE],
-    source_language=ENGLISH,
-    target_language=PORTUGUESE,
-)
-
-
-# Unofficial datasets ###
-
-FLORES_PT_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-pt-en",
-    pretty_name="FLORES-pt-en",
-    source="EuroEval/flores-pt-en",
-    task=TRANSLATION,
-    languages=[PORTUGUESE],
-    source_language=PORTUGUESE,
-    target_language=ENGLISH,
     unofficial=True,
 )

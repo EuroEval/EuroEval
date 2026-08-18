@@ -17,6 +17,16 @@ from ..tasks import (
 
 # Official datasets ###
 
+FLORES_EN_BE_CONFIG = TranslationDatasetConfig(
+    name="flores-en-be",
+    pretty_name="FLORES-en-be",
+    source="EuroEval/flores-en-be",
+    task=TRANSLATION,
+    languages=[BELARUSIAN],
+    source_language=ENGLISH,
+    target_language=BELARUSIAN,
+)
+
 BESLS_CONFIG = DatasetConfig(
     name="besls",
     pretty_name="BeSLS",
@@ -67,15 +77,8 @@ MULTI_IFEVAL_BE_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-FLORES_EN_BE_CONFIG = TranslationDatasetConfig(
-    name="flores-en-be",
-    pretty_name="FLORES-en-be",
-    source="EuroEval/flores-en-be",
-    task=TRANSLATION,
-    languages=[BELARUSIAN],
-    source_language=ENGLISH,
-    target_language=BELARUSIAN,
-)
+
+# Unofficial datasets ###
 
 FLORES_BE_EN_CONFIG = TranslationDatasetConfig(
     name="flores-be-en",
@@ -87,9 +90,6 @@ FLORES_BE_EN_CONFIG = TranslationDatasetConfig(
     target_language=ENGLISH,
     unofficial=True,
 )
-
-
-# Unofficial datasets ###
 
 BERTE_WD_CONFIG = DatasetConfig(
     name="berte-wd",

@@ -17,6 +17,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_RO_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-ro",
+    pretty_name="WMT24++-en-ro",
+    source="EuroEval/wmt24pp-en-ro",
+    task=TRANSLATION,
+    languages=[ROMANIAN],
+    source_language=ENGLISH,
+    target_language=ROMANIAN,
+)
+
+FLORES_EN_RO_CONFIG = TranslationDatasetConfig(
+    name="flores-en-ro",
+    pretty_name="FLORES-en-ro",
+    source="EuroEval/flores-en-ro",
+    task=TRANSLATION,
+    languages=[ROMANIAN],
+    source_language=ENGLISH,
+    target_language=ROMANIAN,
+)
+
 ROSENT_CONFIG = DatasetConfig(
     name="ro-sent",
     pretty_name="RoSent",
@@ -95,15 +115,7 @@ RAGTRUTH_RO_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_RO_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-ro",
-    pretty_name="WMT24++-en-ro",
-    source="EuroEval/wmt24pp-en-ro",
-    task=TRANSLATION,
-    languages=[ROMANIAN],
-    source_language=ENGLISH,
-    target_language=ROMANIAN,
-)
+# Unofficial datasets ###
 
 WMT24PP_RO_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-ro-en",
@@ -116,29 +128,6 @@ WMT24PP_RO_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
-
-EU_MMLU_RO_CONFIG = DatasetConfig(
-    name="eu-mmlu-ro",
-    pretty_name="EU-MMLU-ro",
-    source="EuroEval/eu-mmlu-ro",
-    task=KNOW,
-    languages=[ROMANIAN],
-    unofficial=True,
-)
-
-
-FLORES_EN_RO_CONFIG = TranslationDatasetConfig(
-    name="flores-en-ro",
-    pretty_name="FLORES-en-ro",
-    source="EuroEval/flores-en-ro",
-    task=TRANSLATION,
-    languages=[ROMANIAN],
-    source_language=ENGLISH,
-    target_language=ROMANIAN,
-)
-
 FLORES_RO_EN_CONFIG = TranslationDatasetConfig(
     name="flores-ro-en",
     pretty_name="FLORES-ro-en",
@@ -147,5 +136,14 @@ FLORES_RO_EN_CONFIG = TranslationDatasetConfig(
     languages=[ROMANIAN],
     source_language=ROMANIAN,
     target_language=ENGLISH,
+    unofficial=True,
+)
+
+EU_MMLU_RO_CONFIG = DatasetConfig(
+    name="eu-mmlu-ro",
+    pretty_name="EU-MMLU-ro",
+    source="EuroEval/eu-mmlu-ro",
+    task=KNOW,
+    languages=[ROMANIAN],
     unofficial=True,
 )

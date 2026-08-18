@@ -1,5 +1,6 @@
 """Tests for the `dataset_configs` module."""
 
+import ast
 import os
 import re
 from collections import defaultdict
@@ -164,6 +165,36 @@ def test_include_sr_uses_cyrillic_prompt() -> None:
 def _has_cyrillic(text: str) -> bool:
     """Return whether the text contains any Cyrillic characters."""
     return any("Ѐ" <= ch <= "ӿ" for ch in text)
+
+
+def test_no_duplicate_dataset_config_assignments() -> None:
+    """Dataset config names are assigned only once in each module."""
+    config_dir = Path(__file__).parents[1] / "src/euroeval/dataset_configs"
+    duplicate_assignments: dict[str, list[str]] = {}
+
+    for path in config_dir.glob("*.py"):
+        assignment_counts: dict[str, int] = defaultdict(int)
+        tree = ast.parse(path.read_text())
+        for node in tree.body:
+            if not isinstance(node, ast.Assign):
+                continue
+            if not isinstance(node.value, ast.Call):
+                continue
+            if not isinstance(node.value.func, ast.Name):
+                continue
+            if node.value.func.id not in {"DatasetConfig", "TranslationDatasetConfig"}:
+                continue
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    assignment_counts[target.id] += 1
+
+        for name, count in assignment_counts.items():
+            if count > 1:
+                duplicate_assignments[name] = [path.name, str(count)]
+
+    assert not duplicate_assignments, (
+        f"Duplicate dataset config assignments found: {duplicate_assignments}"
+    )
 
 
 def test_no_duplicate_dataset_config_variable_names() -> None:

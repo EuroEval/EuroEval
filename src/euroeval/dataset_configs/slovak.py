@@ -16,6 +16,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_SK_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-sk",
+    pretty_name="WMT24++-en-sk",
+    source="EuroEval/wmt24pp-en-sk",
+    task=TRANSLATION,
+    languages=[SLOVAK],
+    source_language=ENGLISH,
+    target_language=SLOVAK,
+)
+
+FLORES_EN_SK_CONFIG = TranslationDatasetConfig(
+    name="flores-en-sk",
+    pretty_name="FLORES-en-sk",
+    source="EuroEval/flores-en-sk",
+    task=TRANSLATION,
+    languages=[SLOVAK],
+    source_language=ENGLISH,
+    target_language=SLOVAK,
+)
+
 CSFD_SENTIMENT_SK_CONFIG = DatasetConfig(
     name="csfd-sentiment-sk",
     pretty_name="CSFD Sentiment SK",
@@ -84,15 +104,7 @@ RAGTRUTH_SK_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_SK_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-sk",
-    pretty_name="WMT24++-en-sk",
-    source="EuroEval/wmt24pp-en-sk",
-    task=TRANSLATION,
-    languages=[SLOVAK],
-    source_language=ENGLISH,
-    target_language=SLOVAK,
-)
+# Unofficial datasets ###
 
 WMT24PP_SK_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-sk-en",
@@ -105,29 +117,6 @@ WMT24PP_SK_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
-
-EU_MMLU_SK_CONFIG = DatasetConfig(
-    name="eu-mmlu-sk",
-    pretty_name="EU-MMLU-sk",
-    source="EuroEval/eu-mmlu-sk",
-    task=KNOW,
-    languages=[SLOVAK],
-    unofficial=True,
-)
-
-
-FLORES_EN_SK_CONFIG = TranslationDatasetConfig(
-    name="flores-en-sk",
-    pretty_name="FLORES-en-sk",
-    source="EuroEval/flores-en-sk",
-    task=TRANSLATION,
-    languages=[SLOVAK],
-    source_language=ENGLISH,
-    target_language=SLOVAK,
-)
-
 FLORES_SK_EN_CONFIG = TranslationDatasetConfig(
     name="flores-sk-en",
     pretty_name="FLORES-sk-en",
@@ -136,5 +125,14 @@ FLORES_SK_EN_CONFIG = TranslationDatasetConfig(
     languages=[SLOVAK],
     source_language=SLOVAK,
     target_language=ENGLISH,
+    unofficial=True,
+)
+
+EU_MMLU_SK_CONFIG = DatasetConfig(
+    name="eu-mmlu-sk",
+    pretty_name="EU-MMLU-sk",
+    source="EuroEval/eu-mmlu-sk",
+    task=KNOW,
+    languages=[SLOVAK],
     unofficial=True,
 )

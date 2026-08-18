@@ -18,6 +18,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_ET_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-et",
+    pretty_name="WMT24++-en-et",
+    source="EuroEval/wmt24pp-en-et",
+    task=TRANSLATION,
+    languages=[ESTONIAN],
+    source_language=ENGLISH,
+    target_language=ESTONIAN,
+)
+
+FLORES_EN_ET_CONFIG = TranslationDatasetConfig(
+    name="flores-en-et",
+    pretty_name="FLORES-en-et",
+    source="EuroEval/flores-en-et",
+    task=TRANSLATION,
+    languages=[ESTONIAN],
+    source_language=ENGLISH,
+    target_language=ESTONIAN,
+)
+
 ESTONIAN_VALENCE_CONFIG = DatasetConfig(
     name="estonian-valence",
     pretty_name="Estonian Valence",
@@ -113,15 +133,7 @@ RAGTRUTH_ET_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_ET_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-et",
-    pretty_name="WMT24++-en-et",
-    source="EuroEval/wmt24pp-en-et",
-    task=TRANSLATION,
-    languages=[ESTONIAN],
-    source_language=ENGLISH,
-    target_language=ESTONIAN,
-)
+# Unofficial datasets ###
 
 WMT24PP_ET_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-et-en",
@@ -134,8 +146,16 @@ WMT24PP_ET_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_ET_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-et-en",
+    pretty_name="FLORES-et-en",
+    source="EuroEval/flores-et-en",
+    task=TRANSLATION,
+    languages=[ESTONIAN],
+    source_language=ESTONIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 MULTI_IFEVAL_ET_CONFIG = DatasetConfig(
     name="multi-ifeval-et",
@@ -182,27 +202,5 @@ INCLUDE_ET_CONFIG = DatasetConfig(
     source="EuroEval/include-et-mini",
     task=KNOW,
     languages=[ESTONIAN],
-    unofficial=True,
-)
-
-
-FLORES_EN_ET_CONFIG = TranslationDatasetConfig(
-    name="flores-en-et",
-    pretty_name="FLORES-en-et",
-    source="EuroEval/flores-en-et",
-    task=TRANSLATION,
-    languages=[ESTONIAN],
-    source_language=ENGLISH,
-    target_language=ESTONIAN,
-)
-
-FLORES_ET_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-et-en",
-    pretty_name="FLORES-et-en",
-    source="EuroEval/flores-et-en",
-    task=TRANSLATION,
-    languages=[ESTONIAN],
-    source_language=ESTONIAN,
-    target_language=ENGLISH,
     unofficial=True,
 )

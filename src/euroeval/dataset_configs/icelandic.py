@@ -21,6 +21,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_IS_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-is",
+    pretty_name="WMT24++-en-is",
+    source="EuroEval/wmt24pp-en-is",
+    task=TRANSLATION,
+    languages=[ICELANDIC],
+    source_language=ENGLISH,
+    target_language=ICELANDIC,
+)
+
+FLORES_EN_IS_CONFIG = TranslationDatasetConfig(
+    name="flores-en-is",
+    pretty_name="FLORES-en-is",
+    source="EuroEval/flores-en-is",
+    task=TRANSLATION,
+    languages=[ICELANDIC],
+    source_language=ENGLISH,
+    target_language=ICELANDIC,
+)
+
 HOTTER_AND_COLDER_SENTIMENT_CONFIG = DatasetConfig(
     name="hotter-and-colder-sentiment",
     pretty_name="Hotter and Colder Sentiment",
@@ -118,15 +138,8 @@ ICE_EC_CONFIG = DatasetConfig(
     languages=[ICELANDIC],
 )
 
-WMT24PP_EN_IS_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-is",
-    pretty_name="WMT24++-en-is",
-    source="EuroEval/wmt24pp-en-is",
-    task=TRANSLATION,
-    languages=[ICELANDIC],
-    source_language=ENGLISH,
-    target_language=ICELANDIC,
-)
+
+# Unofficial datasets ###
 
 WMT24PP_IS_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-is-en",
@@ -139,8 +152,16 @@ WMT24PP_IS_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_IS_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-is-en",
+    pretty_name="FLORES-is-en",
+    source="EuroEval/flores-is-en",
+    task=TRANSLATION,
+    languages=[ICELANDIC],
+    source_language=ICELANDIC,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 SCALA_IS_CONFIG = DatasetConfig(
     name="scala-is",
@@ -258,27 +279,5 @@ ZEBRA_PUZZLE_HARD_IS_CONFIG = DatasetConfig(
     source="EuroEval/zebra-puzzles-hard-is",
     task=LOGIC,
     languages=[ICELANDIC],
-    unofficial=True,
-)
-
-
-FLORES_EN_IS_CONFIG = TranslationDatasetConfig(
-    name="flores-en-is",
-    pretty_name="FLORES-en-is",
-    source="EuroEval/flores-en-is",
-    task=TRANSLATION,
-    languages=[ICELANDIC],
-    source_language=ENGLISH,
-    target_language=ICELANDIC,
-)
-
-FLORES_IS_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-is-en",
-    pretty_name="FLORES-is-en",
-    source="EuroEval/flores-is-en",
-    task=TRANSLATION,
-    languages=[ICELANDIC],
-    source_language=ICELANDIC,
-    target_language=ENGLISH,
     unofficial=True,
 )

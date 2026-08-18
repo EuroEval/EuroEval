@@ -17,6 +17,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_SR_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-sr",
+    pretty_name="WMT24++-en-sr",
+    source="EuroEval/wmt24pp-en-sr",
+    task=TRANSLATION,
+    languages=[SERBIAN],
+    source_language=ENGLISH,
+    target_language=SERBIAN,
+)
+
+FLORES_EN_SR_CONFIG = TranslationDatasetConfig(
+    name="flores-en-sr",
+    pretty_name="FLORES-en-sr",
+    source="EuroEval/flores-en-sr",
+    task=TRANSLATION,
+    languages=[SERBIAN],
+    source_language=ENGLISH,
+    target_language=SERBIAN,
+)
+
 MMS_SR_CONFIG = DatasetConfig(
     name="mms-sr",
     pretty_name="MMS-sr",
@@ -104,15 +124,7 @@ INCLUDE_SR_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_SR_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-sr",
-    pretty_name="WMT24++-en-sr",
-    source="EuroEval/wmt24pp-en-sr",
-    task=TRANSLATION,
-    languages=[SERBIAN],
-    source_language=ENGLISH,
-    target_language=SERBIAN,
-)
+# Unofficial datasets ###
 
 WMT24PP_SR_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-sr-en",
@@ -125,29 +137,6 @@ WMT24PP_SR_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
-
-MMLU_SR_CONFIG = DatasetConfig(
-    name="mmlu-sr",
-    pretty_name="MMLU-sr",
-    source="EuroEval/mmlu-sr-mini",
-    task=KNOW,
-    languages=[SERBIAN],
-    unofficial=True,
-)
-
-
-FLORES_EN_SR_CONFIG = TranslationDatasetConfig(
-    name="flores-en-sr",
-    pretty_name="FLORES-en-sr",
-    source="EuroEval/flores-en-sr",
-    task=TRANSLATION,
-    languages=[SERBIAN],
-    source_language=ENGLISH,
-    target_language=SERBIAN,
-)
-
 FLORES_SR_EN_CONFIG = TranslationDatasetConfig(
     name="flores-sr-en",
     pretty_name="FLORES-sr-en",
@@ -156,5 +145,14 @@ FLORES_SR_EN_CONFIG = TranslationDatasetConfig(
     languages=[SERBIAN],
     source_language=SERBIAN,
     target_language=ENGLISH,
+    unofficial=True,
+)
+
+MMLU_SR_CONFIG = DatasetConfig(
+    name="mmlu-sr",
+    pretty_name="MMLU-sr",
+    source="EuroEval/mmlu-sr-mini",
+    task=KNOW,
+    languages=[SERBIAN],
     unofficial=True,
 )

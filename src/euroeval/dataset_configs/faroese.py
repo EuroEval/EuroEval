@@ -18,6 +18,16 @@ from ..tasks import (
 
 # Official datasets ###
 
+FLORES_EN_FO_CONFIG = TranslationDatasetConfig(
+    name="flores-en-fo",
+    pretty_name="FLORES-en-fo",
+    source="EuroEval/flores-en-fo",
+    task=TRANSLATION,
+    languages=[FAROESE],
+    source_language=ENGLISH,
+    target_language=FAROESE,
+)
+
 FOSENT_CONFIG = DatasetConfig(
     name="fosent",
     pretty_name="FoSent",
@@ -105,15 +115,7 @@ FAROESE_METAPHORICAL_EXPLANATIONS_CONFIG = DatasetConfig(
 )
 
 
-FLORES_EN_FO_CONFIG = TranslationDatasetConfig(
-    name="flores-en-fo",
-    pretty_name="FLORES-en-fo",
-    source="EuroEval/flores-en-fo",
-    task=TRANSLATION,
-    languages=[FAROESE],
-    source_language=ENGLISH,
-    target_language=FAROESE,
-)
+# Unofficial datasets ###
 
 FLORES_FO_EN_CONFIG = TranslationDatasetConfig(
     name="flores-fo-en",
@@ -125,9 +127,6 @@ FLORES_FO_EN_CONFIG = TranslationDatasetConfig(
     target_language=ENGLISH,
     unofficial=True,
 )
-
-
-# Unofficial datasets ###
 
 WIKIANN_FO_CONFIG = DatasetConfig(
     name="wikiann-fo",

@@ -17,6 +17,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_HU_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-hu",
+    pretty_name="WMT24++-en-hu",
+    source="EuroEval/wmt24pp-en-hu",
+    task=TRANSLATION,
+    languages=[HUNGARIAN],
+    source_language=ENGLISH,
+    target_language=HUNGARIAN,
+)
+
+FLORES_EN_HU_CONFIG = TranslationDatasetConfig(
+    name="flores-en-hu",
+    pretty_name="FLORES-en-hu",
+    source="EuroEval/flores-en-hu",
+    task=TRANSLATION,
+    languages=[HUNGARIAN],
+    source_language=ENGLISH,
+    target_language=HUNGARIAN,
+)
+
 HUSST_CONFIG = DatasetConfig(
     name="husst",
     pretty_name="HuSST",
@@ -95,15 +115,7 @@ INCLUDE_HU_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_HU_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-hu",
-    pretty_name="WMT24++-en-hu",
-    source="EuroEval/wmt24pp-en-hu",
-    task=TRANSLATION,
-    languages=[HUNGARIAN],
-    source_language=ENGLISH,
-    target_language=HUNGARIAN,
-)
+# Unofficial datasets ###
 
 WMT24PP_HU_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-hu-en",
@@ -116,8 +128,16 @@ WMT24PP_HU_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_HU_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-hu-en",
+    pretty_name="FLORES-hu-en",
+    source="EuroEval/flores-hu-en",
+    task=TRANSLATION,
+    languages=[HUNGARIAN],
+    source_language=HUNGARIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 MMLU_HU_CONFIG = DatasetConfig(
     name="mmlu-hu",
@@ -134,27 +154,5 @@ EU_MMLU_HU_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-hu",
     task=KNOW,
     languages=[HUNGARIAN],
-    unofficial=True,
-)
-
-
-FLORES_EN_HU_CONFIG = TranslationDatasetConfig(
-    name="flores-en-hu",
-    pretty_name="FLORES-en-hu",
-    source="EuroEval/flores-en-hu",
-    task=TRANSLATION,
-    languages=[HUNGARIAN],
-    source_language=ENGLISH,
-    target_language=HUNGARIAN,
-)
-
-FLORES_HU_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-hu-en",
-    pretty_name="FLORES-hu-en",
-    source="EuroEval/flores-hu-en",
-    task=TRANSLATION,
-    languages=[HUNGARIAN],
-    source_language=HUNGARIAN,
-    target_language=ENGLISH,
     unofficial=True,
 )

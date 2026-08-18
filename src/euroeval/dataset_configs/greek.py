@@ -18,6 +18,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_EL_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-el",
+    pretty_name="WMT24++-en-el",
+    source="EuroEval/wmt24pp-en-el",
+    task=TRANSLATION,
+    languages=[GREEK],
+    source_language=ENGLISH,
+    target_language=GREEK,
+)
+
+FLORES_EN_EL_CONFIG = TranslationDatasetConfig(
+    name="flores-en-el",
+    pretty_name="FLORES-en-el",
+    source="EuroEval/flores-en-el",
+    task=TRANSLATION,
+    languages=[GREEK],
+    source_language=ENGLISH,
+    target_language=GREEK,
+)
+
 GREEK_SA_CONFIG = DatasetConfig(
     name="greek-sa",
     pretty_name="Greek Sentiment Analysis",
@@ -109,15 +129,7 @@ CULTURAQA_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_EL_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-el",
-    pretty_name="WMT24++-en-el",
-    source="EuroEval/wmt24pp-en-el",
-    task=TRANSLATION,
-    languages=[GREEK],
-    source_language=ENGLISH,
-    target_language=GREEK,
-)
+# Unofficial datasets ###
 
 WMT24PP_EL_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-el-en",
@@ -130,8 +142,16 @@ WMT24PP_EL_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_EL_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-el-en",
+    pretty_name="FLORES-el-en",
+    source="EuroEval/flores-el-en",
+    task=TRANSLATION,
+    languages=[GREEK],
+    source_language=GREEK,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 GLOBAL_MMLU_EL_CONFIG = DatasetConfig(
     name="global-mmlu-el",
@@ -168,26 +188,5 @@ EU_MMLU_EL_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-el",
     task=KNOW,
     languages=[GREEK],
-    unofficial=True,
-)
-
-FLORES_EN_EL_CONFIG = TranslationDatasetConfig(
-    name="flores-en-el",
-    pretty_name="FLORES-en-el",
-    source="EuroEval/flores-en-el",
-    task=TRANSLATION,
-    languages=[GREEK],
-    source_language=ENGLISH,
-    target_language=GREEK,
-)
-
-FLORES_EL_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-el-en",
-    pretty_name="FLORES-el-en",
-    source="EuroEval/flores-el-en",
-    task=TRANSLATION,
-    languages=[GREEK],
-    source_language=GREEK,
-    target_language=ENGLISH,
     unofficial=True,
 )

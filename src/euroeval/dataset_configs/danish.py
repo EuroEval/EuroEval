@@ -23,6 +23,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_DA_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-da",
+    pretty_name="WMT24++-en-da",
+    source="EuroEval/wmt24pp-en-da",
+    task=TRANSLATION,
+    languages=[DANISH],
+    source_language=ENGLISH,
+    target_language=DANISH,
+)
+
+FLORES_EN_DA_CONFIG = TranslationDatasetConfig(
+    name="flores-en-da",
+    pretty_name="FLORES-en-da",
+    source="EuroEval/flores-en-da",
+    task=TRANSLATION,
+    languages=[DANISH],
+    source_language=ENGLISH,
+    target_language=DANISH,
+)
+
 ANGRY_TWEETS_CONFIG = DatasetConfig(
     name="angry-tweets",
     pretty_name="AngryTweets",
@@ -131,15 +151,8 @@ DANWIC_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
-WMT24PP_EN_DA_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-da",
-    pretty_name="WMT24++-en-da",
-    source="EuroEval/wmt24pp-en-da",
-    task=TRANSLATION,
-    languages=[DANISH],
-    source_language=ENGLISH,
-    target_language=DANISH,
-)
+
+# Unofficial datasets ###
 
 WMT24PP_DA_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-da-en",
@@ -152,8 +165,16 @@ WMT24PP_DA_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_DA_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-da-en",
+    pretty_name="FLORES-da-en",
+    source="EuroEval/flores-da-en",
+    task=TRANSLATION,
+    languages=[DANISH],
+    source_language=DANISH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 HELLASWAG_DA_CONFIG = DatasetConfig(
     name="hellaswag-da",
@@ -296,27 +317,5 @@ MULTI_IFEVAL_DA_CONFIG = DatasetConfig(
     languages=[DANISH],
     train_split=None,
     val_split=None,
-    unofficial=True,
-)
-
-
-FLORES_EN_DA_CONFIG = TranslationDatasetConfig(
-    name="flores-en-da",
-    pretty_name="FLORES-en-da",
-    source="EuroEval/flores-en-da",
-    task=TRANSLATION,
-    languages=[DANISH],
-    source_language=ENGLISH,
-    target_language=DANISH,
-)
-
-FLORES_DA_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-da-en",
-    pretty_name="FLORES-da-en",
-    source="EuroEval/flores-da-en",
-    task=TRANSLATION,
-    languages=[DANISH],
-    source_language=DANISH,
-    target_language=ENGLISH,
     unofficial=True,
 )

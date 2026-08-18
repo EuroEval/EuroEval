@@ -16,6 +16,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_BG_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-bg",
+    pretty_name="WMT24++-en-bg",
+    source="EuroEval/wmt24pp-en-bg",
+    task=TRANSLATION,
+    languages=[BULGARIAN],
+    source_language=ENGLISH,
+    target_language=BULGARIAN,
+)
+
+FLORES_EN_BG_CONFIG = TranslationDatasetConfig(
+    name="flores-en-bg",
+    pretty_name="FLORES-en-bg",
+    source="EuroEval/flores-en-bg",
+    task=TRANSLATION,
+    languages=[BULGARIAN],
+    source_language=ENGLISH,
+    target_language=BULGARIAN,
+)
+
 CINEXIO_CONFIG = DatasetConfig(
     name="cinexio",
     pretty_name="Cinexio",
@@ -85,15 +105,7 @@ RAGTRUTH_BG_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_BG_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-bg",
-    pretty_name="WMT24++-en-bg",
-    source="EuroEval/wmt24pp-en-bg",
-    task=TRANSLATION,
-    languages=[BULGARIAN],
-    source_language=ENGLISH,
-    target_language=BULGARIAN,
-)
+# Unofficial datasets ###
 
 WMT24PP_BG_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-bg-en",
@@ -106,29 +118,6 @@ WMT24PP_BG_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
-
-INCLUDE_BG_CONFIG = DatasetConfig(
-    name="include-bg",
-    pretty_name="INCLUDE-bg",
-    source="EuroEval/include-bg-mini",
-    task=KNOW,
-    languages=[BULGARIAN],
-    unofficial=True,
-)
-
-
-FLORES_EN_BG_CONFIG = TranslationDatasetConfig(
-    name="flores-en-bg",
-    pretty_name="FLORES-en-bg",
-    source="EuroEval/flores-en-bg",
-    task=TRANSLATION,
-    languages=[BULGARIAN],
-    source_language=ENGLISH,
-    target_language=BULGARIAN,
-)
-
 FLORES_BG_EN_CONFIG = TranslationDatasetConfig(
     name="flores-bg-en",
     pretty_name="FLORES-bg-en",
@@ -137,5 +126,14 @@ FLORES_BG_EN_CONFIG = TranslationDatasetConfig(
     languages=[BULGARIAN],
     source_language=BULGARIAN,
     target_language=ENGLISH,
+    unofficial=True,
+)
+
+INCLUDE_BG_CONFIG = DatasetConfig(
+    name="include-bg",
+    pretty_name="INCLUDE-bg",
+    source="EuroEval/include-bg-mini",
+    task=KNOW,
+    languages=[BULGARIAN],
     unofficial=True,
 )
