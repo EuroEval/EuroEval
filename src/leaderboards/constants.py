@@ -192,6 +192,7 @@ LEADERBOARD_TASKS: list[str] = [
     "grammatical-error-detection",
     "open-ended-qa",
     "summarization",
+    "translation",
     "knowledge",
     "common-sense-reasoning",
     "simplification",

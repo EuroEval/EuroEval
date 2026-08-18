@@ -1,7 +1,7 @@
 """All Faroese dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import FAROESE
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, FAROESE
 from ..tasks import (
     GEC,
     GED,
@@ -13,9 +13,20 @@ from ..tasks import (
     NER,
     RC,
     SENT,
+    TRANSLATION,
 )
 
 # Official datasets ###
+
+FLORES_EN_FO_CONFIG = TranslationDatasetConfig(
+    name="flores-en-fo",
+    pretty_name="FLORES-en-fo",
+    source="EuroEval/flores-en-fo",
+    task=TRANSLATION,
+    languages=[FAROESE],
+    source_language=ENGLISH,
+    target_language=FAROESE,
+)
 
 FOSENT_CONFIG = DatasetConfig(
     name="fosent",
@@ -105,6 +116,17 @@ FAROESE_METAPHORICAL_EXPLANATIONS_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+FLORES_FO_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-fo-en",
+    pretty_name="FLORES-fo-en",
+    source="EuroEval/flores-fo-en",
+    task=TRANSLATION,
+    languages=[FAROESE],
+    source_language=FAROESE,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 WIKIANN_FO_CONFIG = DatasetConfig(
     name="wikiann-fo",

@@ -722,7 +722,7 @@ class DatasetConfig:
         self._pretty_name = pretty_name
         self._source = source
         self.task = task
-        self.languages = languages
+        self.languages = list(languages)
 
         template = self.task.template_dict.get(self.main_language)
         self.prompt_prefix = (
@@ -869,10 +869,15 @@ class DatasetConfig:
         Returns:
             The natural string representation of the labels in specified language.
         """
+        main_language = self.main_language
+        if not isinstance(main_language, Language):
+            # Translation datasets have a (source, target) tuple; the labels, if any,
+            # belong to the target language.
+            _, main_language = main_language
         if self.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
-            sep_word = self.main_language.and_separator
+            sep_word = main_language.and_separator
         else:
-            sep_word = self.main_language.or_separator
+            sep_word = main_language.or_separator
 
         if labels is None:
             labels = list()
@@ -955,23 +960,18 @@ class DatasetConfig:
         )
 
     @property
-    def main_language(self) -> Language | tuple[Language, Language]:
+    def main_language(self) -> "Language | tuple[Language, Language]":
         """The main language of the dataset.
 
         Returns:
-            The main language or languages of the dataset.
+            The main language of the dataset. For the translation task, the
+            `TranslationDatasetConfig` subclass overrides this to return the
+            (source, target) language pair.
 
         Raises:
             InvalidBenchmark:
                 If the dataset has no languages.
         """
-        # Importing here to avoid circular imports
-        from .tasks import TRANSLATION  # noqa: PLC0415
-
-        # Special case for datasets with multiple languages
-        if self.task == TRANSLATION:
-            return (self.languages[0], self.languages[1])
-
         match len(self.languages):
             case 0:
                 raise InvalidBenchmark(
@@ -1235,3 +1235,54 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     max_context_length: int | None
     vocabulary_size: int | None
     use_bits_per_character: bool = False
+
+
+class TranslationDatasetConfig(DatasetConfig):
+    """Configuration for a translation dataset.
+
+    Translation datasets evaluate translation from a source language into a target
+    language. Those two languages are kept on this dedicated subclass rather than on
+    `DatasetConfig`, since they are only meaningful for the translation task and would
+    otherwise bloat every dataset config. The `languages` attribute continues to hold
+    the single leaderboard language (the non-English side), so translation datasets are
+    never selected for or filed under the English leaderboard.
+    """
+
+    def __init__(
+        self,
+        task: Task,
+        languages: c.Sequence[Language],
+        source_language: Language,
+        target_language: Language,
+        **kwargs,
+    ) -> None:
+        """Initialise a TranslationDatasetConfig object.
+
+        Args:
+            task:
+                The task of the dataset.
+            languages:
+                The ISO 639-1 language codes of the entries in the dataset. This is the
+                leaderboard language (the non-English side of the translation), not the
+                source/target pair.
+            source_language:
+                The language to translate from.
+            target_language:
+                The language to translate into.
+            **kwargs:
+                Additional keyword arguments passed on to `DatasetConfig`.
+        """
+        # Set before calling super().__init__, as the base initialiser reads
+        # `main_language` (overridden below) to select the prompt template.
+        self.source_language = source_language
+        self.target_language = target_language
+        super().__init__(task=task, languages=languages, **kwargs)
+
+    @property
+    def main_language(self) -> tuple[Language, Language]:
+        """The source and target languages of the translation dataset.
+
+        Returns:
+            The (source, target) language pair.
+        """
+        return (self.source_language, self.target_language)

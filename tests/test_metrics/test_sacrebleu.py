@@ -7,7 +7,7 @@ import pytest
 from datasets import Dataset
 
 from euroeval.enums import Device, GenerativeType
-from euroeval.languages import ENGLISH, Language
+from euroeval.languages import BULGARIAN, ENGLISH, SERBIAN, Language
 from euroeval.metrics.sacrebleu import (
     ChrF,
     chrf2_metric,
@@ -17,23 +17,7 @@ from euroeval.metrics.sacrebleu import (
     chrf4_metric,
     chrf4pp_metric,
 )
-from euroeval.tasks import SUMM
-
-
-@pytest.fixture(autouse=True)
-def disable_chrf_language_detector() -> None:
-    """Disable language detection for all ChrF metrics during tests."""
-    # We disable the language detector and thereby language penalization in tests
-    # because the sentences are too short to detect language reliably
-    for metric in [
-        chrf2_metric,
-        chrf3_metric,
-        chrf4_metric,
-        chrf2pp_metric,
-        chrf3pp_metric,
-        chrf4pp_metric,
-    ]:
-        metric.language_detector = None
+from euroeval.tasks import SUMM, TRANSLATION
 
 
 class DummyBenchmarkConfig:
@@ -123,6 +107,66 @@ def make_dataset() -> c.Generator[
         )
 
     yield _make
+
+
+def test_chrf_does_not_transliterate_single_script_translation_target(
+    make_dataset: c.Callable[[list[str], list[str]], Dataset],
+    dummy_benchmark_config: DummyBenchmarkConfig,
+) -> None:
+    """A target not flagged as multi-script (Bulgarian) is not transliterated."""
+    # Same content as the Serbian case, but Bulgarian is single-script, so the Latin
+    # prediction and Cyrillic reference share almost no characters and score low.
+    predictions: list[str] = ["Srećna vam subota."]
+    references: list[str] = ["Срећна вам субота."]
+    dataset: Dataset = make_dataset(predictions, references)
+
+    score = chrf3pp_metric(
+        predictions=predictions,
+        references=references,
+        dataset=dataset,
+        dataset_config=DummyTranslationDatasetConfig(target=BULGARIAN),  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # ty: ignore[invalid-argument-type]
+    )
+
+    assert score is not None
+    assert score < 10.0
+
+
+class DummyTranslationDatasetConfig:
+    """Dummy translation dataset config targeting a given language."""
+
+    def __init__(self, target: Language) -> None:
+        """Initialise with the translation target language."""
+        self.task = TRANSLATION
+        self.languages: list[Language] = [target]
+        self._target = target
+
+    @property
+    def main_language(self) -> tuple[Language, Language]:
+        """The (source, target) language pair of the translation dataset."""
+        return (ENGLISH, self._target)
+
+
+def test_chrf_transliterates_multi_script_translation_target(
+    make_dataset: c.Callable[[list[str], list[str]], Dataset],
+    dummy_benchmark_config: DummyBenchmarkConfig,
+) -> None:
+    """A Latin-script Serbian prediction should match its Cyrillic reference."""
+    predictions: list[str] = ["Srećna vam subota."]
+    references: list[str] = ["Срећна вам субота."]
+    dataset: Dataset = make_dataset(predictions, references)
+
+    score = chrf3pp_metric(
+        predictions=predictions,
+        references=references,
+        dataset=dataset,
+        dataset_config=DummyTranslationDatasetConfig(target=SERBIAN),  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # ty: ignore[invalid-argument-type]
+    )
+
+    assert score is not None
+    # After transliterating both sides to Latin the texts are identical.
+    assert score == pytest.approx(100.0, abs=0.01)
 
 
 def test_chrff_different_word_orders(

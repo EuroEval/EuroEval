@@ -70,6 +70,31 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   [IMISLab/CulturaQA](https://huggingface.co/datasets/IMISLab/CulturaQA), using
   translation-style text-to-text metrics with original split boundaries preserved and
   split sizes 1,024 / 200 / 500.
+- Added bidirectional WMT24++ translation datasets for 25 non-English languages
+  (Bulgarian, Catalan, Croatian, Czech, Danish, Dutch, Estonian, Finnish, French,
+  German, Greek, Hungarian, Icelandic, Italian, Latvian, Lithuanian, Norwegian, Polish,
+  Portuguese, Romanian, Serbian, Slovak, Slovene, Swedish, Ukrainian). Each language now
+  has both `wmt24pp-en-{code}` and `wmt24pp-{code}-en` datasets: English-to-local
+  datasets are official, while local-to-English datasets are unofficial.
+- Added bidirectional FLORES+ translation datasets for all official languages, built
+  from the multi-way parallel professional-translation benchmark
+  [openlanguagedata/flores_plus](https://huggingface.co/datasets/openlanguagedata/flores_plus).
+  Each language has both `flores-en-{code}` and `flores-{code}-en` datasets, with the
+  train/validation splits drawn from the FLORES+ `dev` split and the test split from
+  `devtest` (128 / 256 / up to 1,024 samples). The English-to-local datasets are
+  official, while the local-to-English datasets are unofficial. This applies to both
+  the six languages not covered by WMT24++ and the 25 WMT24++ languages.
+- Added translation task to the leaderboard task list so translation datasets are scored
+  and displayed on leaderboards.
+- Added translation prompt templates for Belarusian, Faroese and Luxembourgish as source
+  languages, so that all official languages now have translation prompt templates.
+- Added a transliteration engine (`euroeval.transliteration`) and a `multiple_scripts`
+  boolean on the `Language` object. When a translation dataset targets a language written
+  in multiple scripts (e.g. Serbian, written in both Cyrillic and Latin), the ChrF
+  metrics now transliterate both predictions and references to a single canonical script
+  before scoring, so a correct translation is no longer penalised for choosing a valid
+  script that differs from the reference's. This uses the `cyrtranslit` package and
+  currently covers Serbian and Bosnian.
 - Added zebra-puzzle logical-reasoning datasets (`zebra-puzzles-easy-*` and
   `zebra-puzzles-hard-*`) for Basque, Western Frisian, Irish, Macedonian, Russian and
   Scots.
@@ -121,8 +146,23 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
     - `mmlu-sv` → `skolprov`, `swedish-facts`
   - Ukrainian: `global-mmlu-uk` → `include-uk`
 
+### Removed
+
+- Removed the language-identification penalty from the ChrF metrics, along with the
+  `lingua-language-detector` dependency and the `metrics.language_detection` module. The
+  penalty was a holdover from when translation was scored with BERTScore (embedding-based,
+  so it could reward correct content written in the wrong language); with character-based
+  ChrF a wrong-language output already scores low on its own. In practice the penalty was
+  wrongly zeroing large fractions of correct references (e.g. ~58% of gold Croatian and
+  ~24% of gold English), depressing valid scores far more than it caught genuine errors.
+
 ### Fixed
 
+- Fixed the prompt script for Serbian datasets whose content is written in Cyrillic. The
+  `include-sr` knowledge dataset now uses a Cyrillic prompt (overriding the shared Latin
+  knowledge template still used by the Latin-script `mmlu-sr`, `mms-sr` and
+  `winogrande-sr`), and the Serbian-source translation prompt template is now Cyrillic to
+  match the Cyrillic source text of `wmt24pp-sr-en`.
 - Fixed `_load_model_from_pretrained` final error message for `KeyError`/`RuntimeError`
   after retry exhaustion. The raised `InvalidModel` now includes the model ID and
   exception repr (e.g. `The model 'EuroBERT/EuroBERT-210m' could not be loaded. The
