@@ -2,8 +2,8 @@
 
 from euroeval.enums import ModelType
 
-from ..data_models import DatasetConfig
-from ..languages import LUXEMBOURGISH
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, LUXEMBOURGISH
 from ..tasks import (
     HALLU,
     INSTRUCTION_FOLLOWING,
@@ -13,6 +13,7 @@ from ..tasks import (
     RC,
     SENT,
     TEXT_CLASSIFICATION,
+    TRANSLATION,
 )
 
 # Official datasets ###
@@ -93,6 +94,27 @@ MULTI_IFEVAL_LB_CONFIG = DatasetConfig(
     languages=[LUXEMBOURGISH],
     train_split=None,
     val_split=None,
+)
+
+
+FLORES_EN_LB_CONFIG = TranslationDatasetConfig(
+    name="flores-en-lb",
+    pretty_name="FLORES-en-lb",
+    source="EuroEval/flores-en-lb",
+    task=TRANSLATION,
+    languages=[LUXEMBOURGISH],
+    source_language=ENGLISH,
+    target_language=LUXEMBOURGISH,
+)
+
+FLORES_LB_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-lb-en",
+    pretty_name="FLORES-lb-en",
+    source="EuroEval/flores-lb-en",
+    task=TRANSLATION,
+    languages=[LUXEMBOURGISH],
+    source_language=LUXEMBOURGISH,
+    target_language=ENGLISH,
 )
 
 
