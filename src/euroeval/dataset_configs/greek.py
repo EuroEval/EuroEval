@@ -1,7 +1,7 @@
 """All Greek dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import GREEK
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, GREEK
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -13,6 +13,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
@@ -145,5 +146,27 @@ EU_MMLU_EL_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-el",
     task=KNOW,
     languages=[GREEK],
+    unofficial=True,
+)
+
+FLORES_EN_EL_CONFIG = TranslationDatasetConfig(
+    name="flores-en-el",
+    pretty_name="FLORES-en-el",
+    source="EuroEval/flores-en-el",
+    task=TRANSLATION,
+    languages=[GREEK],
+    source_language=ENGLISH,
+    target_language=GREEK,
+    unofficial=True,
+)
+
+FLORES_EL_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-el-en",
+    pretty_name="FLORES-el-en",
+    source="EuroEval/flores-el-en",
+    task=TRANSLATION,
+    languages=[GREEK],
+    source_language=GREEK,
+    target_language=ENGLISH,
     unofficial=True,
 )

@@ -1,7 +1,7 @@
 """All Ukrainian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import UKRAINIAN
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, UKRAINIAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -12,6 +12,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
@@ -113,5 +114,27 @@ IFEVAL_UK_CONFIG = DatasetConfig(
     languages=[UKRAINIAN],
     train_split=None,
     val_split=None,
+    unofficial=True,
+)
+
+FLORES_EN_UK_CONFIG = TranslationDatasetConfig(
+    name="flores-en-uk",
+    pretty_name="FLORES-en-uk",
+    source="EuroEval/flores-en-uk",
+    task=TRANSLATION,
+    languages=[UKRAINIAN],
+    source_language=ENGLISH,
+    target_language=UKRAINIAN,
+    unofficial=True,
+)
+
+FLORES_UK_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-uk-en",
+    pretty_name="FLORES-uk-en",
+    source="EuroEval/flores-uk-en",
+    task=TRANSLATION,
+    languages=[UKRAINIAN],
+    source_language=UKRAINIAN,
+    target_language=ENGLISH,
     unofficial=True,
 )
