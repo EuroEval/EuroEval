@@ -138,7 +138,6 @@ FLORES_EN_CA_CONFIG = TranslationDatasetConfig(
     languages=[CATALAN],
     source_language=ENGLISH,
     target_language=CATALAN,
-    unofficial=True,
 )
 
 FLORES_CA_EN_CONFIG = TranslationDatasetConfig(

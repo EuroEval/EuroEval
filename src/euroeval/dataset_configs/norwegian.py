@@ -415,7 +415,6 @@ FLORES_EN_NO_CONFIG = TranslationDatasetConfig(
     languages=[NORWEGIAN],
     source_language=ENGLISH,
     target_language=NORWEGIAN,
-    unofficial=True,
 )
 
 FLORES_NO_EN_CONFIG = TranslationDatasetConfig(

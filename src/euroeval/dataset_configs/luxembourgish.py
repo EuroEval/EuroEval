@@ -115,6 +115,7 @@ FLORES_LB_EN_CONFIG = TranslationDatasetConfig(
     languages=[LUXEMBOURGISH],
     source_language=LUXEMBOURGISH,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 

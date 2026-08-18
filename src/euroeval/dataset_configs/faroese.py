@@ -123,6 +123,7 @@ FLORES_FO_EN_CONFIG = TranslationDatasetConfig(
     languages=[FAROESE],
     source_language=FAROESE,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 

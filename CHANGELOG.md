@@ -74,16 +74,16 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   (Bulgarian, Catalan, Croatian, Czech, Danish, Dutch, Estonian, Finnish, French,
   German, Greek, Hungarian, Icelandic, Italian, Latvian, Lithuanian, Norwegian, Polish,
   Portuguese, Romanian, Serbian, Slovak, Slovene, Swedish, Ukrainian). Each language now
-  has both `wmt24pp-en-{code}` and `wmt24pp-{code}-en` official datasets.
+  has both `wmt24pp-en-{code}` and `wmt24pp-{code}-en` datasets: English-to-local
+  datasets are official, while local-to-English datasets are unofficial.
 - Added bidirectional FLORES+ translation datasets for all official languages, built
   from the multi-way parallel professional-translation benchmark
   [openlanguagedata/flores_plus](https://huggingface.co/datasets/openlanguagedata/flores_plus).
   Each language has both `flores-en-{code}` and `flores-{code}-en` datasets, with the
   train/validation splits drawn from the FLORES+ `dev` split and the test split from
-  `devtest` (128 / 256 / up to 1,024 samples). For the six official languages that
-  WMT24++ does not cover (Albanian, Belarusian, Bosnian, Faroese, Luxembourgish and
-  Spanish) these are the official translation datasets; for the 25 WMT24++ languages they
-  are added as `unofficial` companions.
+  `devtest` (128 / 256 / up to 1,024 samples). The English-to-local datasets are
+  official, while the local-to-English datasets are unofficial. This applies to both
+  the six languages not covered by WMT24++ and the 25 WMT24++ languages.
 - Added translation task to the leaderboard task list so translation datasets are scored
   and displayed on leaderboards.
 - Added translation prompt templates for Belarusian, Faroese and Luxembourgish as source
@@ -698,8 +698,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 - Added a new `translation` task. This uses BERTScore and ROUGE-L as metrics, just like
   the `summarization` task. This was added by @oliverkinch ✨
-- Added 25 translation datasets from the WMT24++ dataset. These all translate from
-  English to the target language. It's added as unofficial for now.
+- Added bidirectional translation datasets from the WMT24++ dataset for 25 languages.
+  The English-to-local datasets are official, while the local-to-English datasets are
+  unofficial.
 - Now supports the `detectable_format:constrained_response_with_argument` IFEval
   constraint, being the same as `detectable_format:constrained_response` but with a list
   of options to check for, rather than a hardcoded list of English options.

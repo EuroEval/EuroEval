@@ -137,7 +137,6 @@ FLORES_EN_RO_CONFIG = TranslationDatasetConfig(
     languages=[ROMANIAN],
     source_language=ENGLISH,
     target_language=ROMANIAN,
-    unofficial=True,
 )
 
 FLORES_RO_EN_CONFIG = TranslationDatasetConfig(

@@ -137,7 +137,6 @@ FLORES_EN_HR_CONFIG = TranslationDatasetConfig(
     languages=[CROATIAN],
     source_language=ENGLISH,
     target_language=CROATIAN,
-    unofficial=True,
 )
 
 FLORES_HR_EN_CONFIG = TranslationDatasetConfig(

@@ -144,7 +144,6 @@ FLORES_EN_CS_CONFIG = TranslationDatasetConfig(
     languages=[CZECH],
     source_language=ENGLISH,
     target_language=CZECH,
-    unofficial=True,
 )
 
 FLORES_CS_EN_CONFIG = TranslationDatasetConfig(

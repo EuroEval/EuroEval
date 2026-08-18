@@ -1556,7 +1556,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset flores-en-es
 ```
 
-### FLORES+ Spanish to English
+### Unofficial: FLORES+ Spanish to English
 
 This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
 Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of

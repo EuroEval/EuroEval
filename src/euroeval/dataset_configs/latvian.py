@@ -147,7 +147,6 @@ FLORES_EN_LV_CONFIG = TranslationDatasetConfig(
     languages=[LATVIAN],
     source_language=ENGLISH,
     target_language=LATVIAN,
-    unofficial=True,
 )
 
 FLORES_LV_EN_CONFIG = TranslationDatasetConfig(

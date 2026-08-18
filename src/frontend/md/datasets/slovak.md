@@ -797,7 +797,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset wmt24pp-en-sk
 ```
 
-### WMT24++ Slovak to English
+### Unofficial: WMT24++ Slovak to English
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
 and is an extension of the original WMT24 dataset. It contains manually translated
@@ -865,7 +865,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset wmt24pp-sk-en
 ```
 
-### Unofficial: FLORES+ English to Slovak
+### FLORES+ English to Slovak
 
 This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
 Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of

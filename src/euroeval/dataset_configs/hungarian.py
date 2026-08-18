@@ -146,7 +146,6 @@ FLORES_EN_HU_CONFIG = TranslationDatasetConfig(
     languages=[HUNGARIAN],
     source_language=ENGLISH,
     target_language=HUNGARIAN,
-    unofficial=True,
 )
 
 FLORES_HU_EN_CONFIG = TranslationDatasetConfig(

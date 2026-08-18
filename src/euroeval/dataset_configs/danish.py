@@ -308,7 +308,6 @@ FLORES_EN_DA_CONFIG = TranslationDatasetConfig(
     languages=[DANISH],
     source_language=ENGLISH,
     target_language=DANISH,
-    unofficial=True,
 )
 
 FLORES_DA_EN_CONFIG = TranslationDatasetConfig(

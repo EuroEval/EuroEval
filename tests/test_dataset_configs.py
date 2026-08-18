@@ -1,6 +1,7 @@
 """Tests for the `dataset_configs` module."""
 
 import os
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Generator
@@ -10,7 +11,7 @@ import pytest
 from euroeval import dataset_configs as dc_module
 from euroeval.data_models import DatasetConfig, TranslationDatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.languages import BULGARIAN, ENGLISH, FAROESE
+from euroeval.languages import BULGARIAN, ENGLISH
 from euroeval.tasks import TRANSLATION
 
 WMT24PP_LANGUAGE_CODES = (
@@ -133,24 +134,24 @@ class TestTranslationDatasetConfig:
         assert config.main_language == (BULGARIAN, ENGLISH)
 
 
-def test_flores_gap_language_configs_are_official() -> None:
-    """FLORES+ fills the WMT24++ gaps, so those configs are official."""
-    en_fo = dc_module.FLORES_EN_FO_CONFIG
-    assert en_fo.main_language == (ENGLISH, FAROESE)
-    assert en_fo.languages == [FAROESE]
-    assert en_fo.unofficial is False
+def test_documented_translation_ids_have_configs() -> None:
+    """Every translation dataset ID used in the documentation has a config."""
+    documented_ids = {
+        match.group(1)
+        for path in (Path(__file__).parents[1] / "src/frontend/md/datasets").glob(
+            "*.md"
+        )
+        for match in re.finditer(
+            r"--dataset ((?:wmt24pp|flores)-[a-z]{2,3}-[a-z]{2,3})", path.read_text()
+        )
+    }
+    configured_ids = {
+        config.name
+        for config in vars(dc_module).values()
+        if isinstance(config, TranslationDatasetConfig)
+    }
 
-    fo_en = dc_module.FLORES_FO_EN_CONFIG
-    assert fo_en.main_language == (FAROESE, ENGLISH)
-    assert fo_en.unofficial is False
-
-
-def test_flores_wmt24pp_language_configs_are_unofficial() -> None:
-    """For languages WMT24++ already covers, FLORES+ is added as unofficial."""
-    en_de = dc_module.FLORES_EN_DE_CONFIG
-    assert en_de.main_language[0] == ENGLISH
-    assert en_de.unofficial is True
-    assert dc_module.FLORES_DE_EN_CONFIG.unofficial is True
+    assert documented_ids <= configured_ids
 
 
 def test_include_sr_uses_cyrillic_prompt() -> None:
@@ -200,6 +201,20 @@ def test_serbian_translation_prompt_is_cyrillic() -> None:
     config = dc_module.WMT24PP_SR_EN_CONFIG
     assert _has_cyrillic(config.prompt_prefix)
     assert _has_cyrillic(config.instruction_prompt)
+
+
+def test_translation_configs_follow_officiality_policy() -> None:
+    """English-to-local configs are official and reverse configs are unofficial."""
+    translation_configs = [
+        config
+        for config in vars(dc_module).values()
+        if isinstance(config, TranslationDatasetConfig)
+    ]
+
+    assert translation_configs
+    for config in translation_configs:
+        assert config.source_language == ENGLISH or config.target_language == ENGLISH
+        assert config.unofficial is (config.target_language == ENGLISH)
 
 
 def test_translation_not_included_in_english_leaderboard() -> None:
