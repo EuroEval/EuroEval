@@ -52,9 +52,7 @@ def test_token_classification_few_shot_terminates_with_sparse_entities() -> None
 
     with _Timeout(seconds=30):
         result = _extract_token_classification_examples(
-            shuffled_train=dataset,
-            num_few_shots=5,
-            dataset_config=dataset_config,
+            shuffled_train=dataset, num_few_shots=5, dataset_config=dataset_config
         )
 
     # Only one entity-bearing example exists, so it must return at most that one
