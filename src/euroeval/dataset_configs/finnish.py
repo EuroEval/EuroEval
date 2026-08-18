@@ -190,7 +190,6 @@ FLORES_EN_FI_CONFIG = TranslationDatasetConfig(
     languages=[FINNISH],
     source_language=ENGLISH,
     target_language=FINNISH,
-    unofficial=True,
 )
 
 FLORES_FI_EN_CONFIG = TranslationDatasetConfig(

@@ -270,7 +270,6 @@ FLORES_EN_IS_CONFIG = TranslationDatasetConfig(
     languages=[ICELANDIC],
     source_language=ENGLISH,
     target_language=ICELANDIC,
-    unofficial=True,
 )
 
 FLORES_IS_EN_CONFIG = TranslationDatasetConfig(

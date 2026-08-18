@@ -76,6 +76,7 @@ FLORES_BS_EN_CONFIG = TranslationDatasetConfig(
     languages=[BOSNIAN],
     source_language=BOSNIAN,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 

@@ -85,6 +85,7 @@ FLORES_BE_EN_CONFIG = TranslationDatasetConfig(
     languages=[BELARUSIAN],
     source_language=BELARUSIAN,
     target_language=ENGLISH,
+    unofficial=True,
 )
 
 

@@ -194,7 +194,6 @@ FLORES_EN_ET_CONFIG = TranslationDatasetConfig(
     languages=[ESTONIAN],
     source_language=ENGLISH,
     target_language=ESTONIAN,
-    unofficial=True,
 )
 
 FLORES_ET_EN_CONFIG = TranslationDatasetConfig(

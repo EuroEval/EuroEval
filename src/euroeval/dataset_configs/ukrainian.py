@@ -147,7 +147,6 @@ FLORES_EN_UK_CONFIG = TranslationDatasetConfig(
     languages=[UKRAINIAN],
     source_language=ENGLISH,
     target_language=UKRAINIAN,
-    unofficial=True,
 )
 
 FLORES_UK_EN_CONFIG = TranslationDatasetConfig(

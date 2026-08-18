@@ -126,7 +126,6 @@ FLORES_EN_SK_CONFIG = TranslationDatasetConfig(
     languages=[SLOVAK],
     source_language=ENGLISH,
     target_language=SLOVAK,
-    unofficial=True,
 )
 
 FLORES_SK_EN_CONFIG = TranslationDatasetConfig(

@@ -816,7 +816,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset flores-en-be
 ```
 
-### FLORES+ Belarusian to English
+### Unofficial: FLORES+ Belarusian to English
 
 This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
 Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
