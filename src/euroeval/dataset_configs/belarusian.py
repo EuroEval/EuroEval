@@ -66,7 +66,6 @@ MULTI_IFEVAL_BE_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-
 # Unofficial datasets ###
 
 BERTE_WD_CONFIG = DatasetConfig(
@@ -92,7 +91,6 @@ RAGTRUTH_BE_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[BELARUSIAN],
     train_split=None,
-    unofficial=True,
 )
 
 BELACOLA_CONFIG = DatasetConfig(
