@@ -17,6 +17,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_LV_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-lv",
+    pretty_name="WMT24++-en-lv",
+    source="EuroEval/wmt24pp-en-lv",
+    task=TRANSLATION,
+    languages=[LATVIAN],
+    source_language=ENGLISH,
+    target_language=LATVIAN,
+)
+
+FLORES_EN_LV_CONFIG = TranslationDatasetConfig(
+    name="flores-en-lv",
+    pretty_name="FLORES-en-lv",
+    source="EuroEval/flores-en-lv",
+    task=TRANSLATION,
+    languages=[LATVIAN],
+    source_language=ENGLISH,
+    target_language=LATVIAN,
+)
+
 LATVIAN_TWITTER_SENTIMENT_CONFIG = DatasetConfig(
     name="latvian-twitter-sentiment",
     pretty_name="Latvian Twitter Sentiment",
@@ -95,15 +115,7 @@ RAGTRUTH_LV_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_LV_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-lv",
-    pretty_name="WMT24++-en-lv",
-    source="EuroEval/wmt24pp-en-lv",
-    task=TRANSLATION,
-    languages=[LATVIAN],
-    source_language=ENGLISH,
-    target_language=LATVIAN,
-)
+# Unofficial datasets ###
 
 WMT24PP_LV_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-lv-en",
@@ -116,8 +128,16 @@ WMT24PP_LV_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_LV_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-lv-en",
+    pretty_name="FLORES-lv-en",
+    source="EuroEval/flores-lv-en",
+    task=TRANSLATION,
+    languages=[LATVIAN],
+    source_language=LATVIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 WIKIANN_LV_CONFIG = DatasetConfig(
     name="wikiann-lv",
@@ -135,27 +155,5 @@ WINOGRANDE_LV_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[LATVIAN],
     labels=["a", "b"],
-    unofficial=True,
-)
-
-
-FLORES_EN_LV_CONFIG = TranslationDatasetConfig(
-    name="flores-en-lv",
-    pretty_name="FLORES-en-lv",
-    source="EuroEval/flores-en-lv",
-    task=TRANSLATION,
-    languages=[LATVIAN],
-    source_language=ENGLISH,
-    target_language=LATVIAN,
-)
-
-FLORES_LV_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-lv-en",
-    pretty_name="FLORES-lv-en",
-    source="EuroEval/flores-lv-en",
-    task=TRANSLATION,
-    languages=[LATVIAN],
-    source_language=LATVIAN,
-    target_language=ENGLISH,
     unofficial=True,
 )

@@ -22,6 +22,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_NO_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-no",
+    pretty_name="WMT24++-en-no",
+    source="EuroEval/wmt24pp-en-no",
+    task=TRANSLATION,
+    languages=[NORWEGIAN],
+    source_language=ENGLISH,
+    target_language=NORWEGIAN,
+)
+
+FLORES_EN_NO_CONFIG = TranslationDatasetConfig(
+    name="flores-en-no",
+    pretty_name="FLORES-en-no",
+    source="EuroEval/flores-en-no",
+    task=TRANSLATION,
+    languages=[NORWEGIAN],
+    source_language=ENGLISH,
+    target_language=NORWEGIAN,
+)
+
 NOREC_CONFIG = DatasetConfig(
     name="norec",
     pretty_name="NoReC",
@@ -162,15 +182,7 @@ RAGTRUTH_NO_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_NO_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-no",
-    pretty_name="WMT24++-en-no",
-    source="EuroEval/wmt24pp-en-no",
-    task=TRANSLATION,
-    languages=[NORWEGIAN],
-    source_language=ENGLISH,
-    target_language=NORWEGIAN,
-)
+# Unofficial datasets ###
 
 WMT24PP_NO_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-no-en",
@@ -183,8 +195,16 @@ WMT24PP_NO_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_NO_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-no-en",
+    pretty_name="FLORES-no-en",
+    source="EuroEval/flores-no-en",
+    task=TRANSLATION,
+    languages=[NORWEGIAN],
+    source_language=NORWEGIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 IFEVAL_NB_CONFIG = DatasetConfig(
     name="ifeval-nb",
@@ -403,27 +423,5 @@ ZEBRA_PUZZLE_HARD_NN_CONFIG = DatasetConfig(
     source="EuroEval/zebra-puzzles-hard-nn",
     task=LOGIC,
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
-    unofficial=True,
-)
-
-
-FLORES_EN_NO_CONFIG = TranslationDatasetConfig(
-    name="flores-en-no",
-    pretty_name="FLORES-en-no",
-    source="EuroEval/flores-en-no",
-    task=TRANSLATION,
-    languages=[NORWEGIAN],
-    source_language=ENGLISH,
-    target_language=NORWEGIAN,
-)
-
-FLORES_NO_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-no-en",
-    pretty_name="FLORES-no-en",
-    source="EuroEval/flores-no-en",
-    task=TRANSLATION,
-    languages=[NORWEGIAN],
-    source_language=NORWEGIAN,
-    target_language=ENGLISH,
     unofficial=True,
 )

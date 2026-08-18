@@ -21,6 +21,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_SV_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-sv",
+    pretty_name="WMT24++-en-sv",
+    source="EuroEval/wmt24pp-en-sv",
+    task=TRANSLATION,
+    languages=[SWEDISH],
+    source_language=ENGLISH,
+    target_language=SWEDISH,
+)
+
+FLORES_EN_SV_CONFIG = TranslationDatasetConfig(
+    name="flores-en-sv",
+    pretty_name="FLORES-en-sv",
+    source="EuroEval/flores-en-sv",
+    task=TRANSLATION,
+    languages=[SWEDISH],
+    source_language=ENGLISH,
+    target_language=SWEDISH,
+)
+
 SWEREC_CONFIG = DatasetConfig(
     name="swerec",
     pretty_name="SweReC",
@@ -126,15 +146,8 @@ SWEDISH_FACTS_CONFIG = DatasetConfig(
     languages=[SWEDISH],
 )
 
-WMT24PP_EN_SV_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-sv",
-    pretty_name="WMT24++-en-sv",
-    source="EuroEval/wmt24pp-en-sv",
-    task=TRANSLATION,
-    languages=[SWEDISH],
-    source_language=ENGLISH,
-    target_language=SWEDISH,
-)
+
+# Unofficial datasets ###
 
 WMT24PP_SV_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-sv-en",
@@ -147,8 +160,16 @@ WMT24PP_SV_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_SV_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-sv-en",
+    pretty_name="FLORES-sv-en",
+    source="EuroEval/flores-sv-en",
+    task=TRANSLATION,
+    languages=[SWEDISH],
+    source_language=SWEDISH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 MMLU_SV_CONFIG = DatasetConfig(
     name="mmlu-sv",
@@ -264,27 +285,5 @@ ZEBRA_PUZZLE_HARD_SV_CONFIG = DatasetConfig(
     source="EuroEval/zebra-puzzles-hard-sv",
     task=LOGIC,
     languages=[SWEDISH],
-    unofficial=True,
-)
-
-
-FLORES_EN_SV_CONFIG = TranslationDatasetConfig(
-    name="flores-en-sv",
-    pretty_name="FLORES-en-sv",
-    source="EuroEval/flores-en-sv",
-    task=TRANSLATION,
-    languages=[SWEDISH],
-    source_language=ENGLISH,
-    target_language=SWEDISH,
-)
-
-FLORES_SV_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-sv-en",
-    pretty_name="FLORES-sv-en",
-    source="EuroEval/flores-sv-en",
-    task=TRANSLATION,
-    languages=[SWEDISH],
-    source_language=SWEDISH,
-    target_language=ENGLISH,
     unofficial=True,
 )

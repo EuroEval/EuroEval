@@ -19,6 +19,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_FI_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-fi",
+    pretty_name="WMT24++-en-fi",
+    source="EuroEval/wmt24pp-en-fi",
+    task=TRANSLATION,
+    languages=[FINNISH],
+    source_language=ENGLISH,
+    target_language=FINNISH,
+)
+
+FLORES_EN_FI_CONFIG = TranslationDatasetConfig(
+    name="flores-en-fi",
+    pretty_name="FLORES-en-fi",
+    source="EuroEval/flores-en-fi",
+    task=TRANSLATION,
+    languages=[FINNISH],
+    source_language=ENGLISH,
+    target_language=FINNISH,
+)
+
 SCANDISENT_FI_CONFIG = DatasetConfig(
     name="scandisent-fi",
     pretty_name="ScandiSent-fi",
@@ -110,15 +130,7 @@ INCLUDE_FI_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_FI_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-fi",
-    pretty_name="WMT24++-en-fi",
-    source="EuroEval/wmt24pp-en-fi",
-    task=TRANSLATION,
-    languages=[FINNISH],
-    source_language=ENGLISH,
-    target_language=FINNISH,
-)
+# Unofficial datasets ###
 
 WMT24PP_FI_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-fi-en",
@@ -131,8 +143,16 @@ WMT24PP_FI_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_FI_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-fi-en",
+    pretty_name="FLORES-fi-en",
+    source="EuroEval/flores-fi-en",
+    task=TRANSLATION,
+    languages=[FINNISH],
+    source_language=FINNISH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 HELLASWAG_FI_CONFIG = DatasetConfig(
     name="hellaswag-fi",
@@ -178,27 +198,5 @@ IFEVAL_FI_CONFIG = DatasetConfig(
     languages=[FINNISH],
     train_split=None,
     val_split=None,
-    unofficial=True,
-)
-
-
-FLORES_EN_FI_CONFIG = TranslationDatasetConfig(
-    name="flores-en-fi",
-    pretty_name="FLORES-en-fi",
-    source="EuroEval/flores-en-fi",
-    task=TRANSLATION,
-    languages=[FINNISH],
-    source_language=ENGLISH,
-    target_language=FINNISH,
-)
-
-FLORES_FI_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-fi-en",
-    pretty_name="FLORES-fi-en",
-    source="EuroEval/flores-fi-en",
-    task=TRANSLATION,
-    languages=[FINNISH],
-    source_language=FINNISH,
-    target_language=ENGLISH,
     unofficial=True,
 )

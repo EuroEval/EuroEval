@@ -19,6 +19,16 @@ from ..tasks import (
 
 # Official datasets ###
 
+FLORES_EN_ES_CONFIG = TranslationDatasetConfig(
+    name="flores-en-es",
+    pretty_name="FLORES-en-es",
+    source="EuroEval/flores-en-es",
+    task=TRANSLATION,
+    languages=[SPANISH],
+    source_language=ENGLISH,
+    target_language=SPANISH,
+)
+
 SENTIMENT_HEADLINES_CONFIG = DatasetConfig(
     name="sentiment-headlines-es",
     pretty_name="Sentiment Headlines ES",
@@ -100,27 +110,6 @@ WINOGRANDE_ES_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
-FLORES_EN_ES_CONFIG = TranslationDatasetConfig(
-    name="flores-en-es",
-    pretty_name="FLORES-en-es",
-    source="EuroEval/flores-en-es",
-    task=TRANSLATION,
-    languages=[SPANISH],
-    source_language=ENGLISH,
-    target_language=SPANISH,
-)
-
-FLORES_ES_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-es-en",
-    pretty_name="FLORES-es-en",
-    source="EuroEval/flores-es-en",
-    task=TRANSLATION,
-    languages=[SPANISH],
-    source_language=SPANISH,
-    target_language=ENGLISH,
-    unofficial=True,
-)
-
 INCLUDE_ES_CONFIG = DatasetConfig(
     name="include-es",
     pretty_name="INCLUDE-es",
@@ -140,6 +129,17 @@ MULTILOKO_ES_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+FLORES_ES_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-es-en",
+    pretty_name="FLORES-es-en",
+    source="EuroEval/flores-es-en",
+    task=TRANSLATION,
+    languages=[SPANISH],
+    source_language=SPANISH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 MMLU_ES_CONFIG = DatasetConfig(
     name="mmlu-es",

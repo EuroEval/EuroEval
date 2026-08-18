@@ -18,6 +18,16 @@ from ..tasks import (
 
 # Official datasets ###
 
+FLORES_EN_LB_CONFIG = TranslationDatasetConfig(
+    name="flores-en-lb",
+    pretty_name="FLORES-en-lb",
+    source="EuroEval/flores-en-lb",
+    task=TRANSLATION,
+    languages=[LUXEMBOURGISH],
+    source_language=ENGLISH,
+    target_language=LUXEMBOURGISH,
+)
+
 LTZGLUE_SA_CONFIG = DatasetConfig(
     name="ltzglue-sa",
     pretty_name="ltzGLUE-SA",
@@ -97,15 +107,7 @@ MULTI_IFEVAL_LB_CONFIG = DatasetConfig(
 )
 
 
-FLORES_EN_LB_CONFIG = TranslationDatasetConfig(
-    name="flores-en-lb",
-    pretty_name="FLORES-en-lb",
-    source="EuroEval/flores-en-lb",
-    task=TRANSLATION,
-    languages=[LUXEMBOURGISH],
-    source_language=ENGLISH,
-    target_language=LUXEMBOURGISH,
-)
+# Unofficial datasets ###
 
 FLORES_LB_EN_CONFIG = TranslationDatasetConfig(
     name="flores-lb-en",
@@ -117,9 +119,6 @@ FLORES_LB_EN_CONFIG = TranslationDatasetConfig(
     target_language=ENGLISH,
     unofficial=True,
 )
-
-
-# Unofficial datasets ###
 
 LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     name="ltzglue-la-multi",

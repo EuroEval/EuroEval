@@ -19,6 +19,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_FR_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-fr",
+    pretty_name="WMT24++-en-fr",
+    source="EuroEval/wmt24pp-en-fr",
+    task=TRANSLATION,
+    languages=[FRENCH],
+    source_language=ENGLISH,
+    target_language=FRENCH,
+)
+
+FLORES_EN_FR_CONFIG = TranslationDatasetConfig(
+    name="flores-en-fr",
+    pretty_name="FLORES-en-fr",
+    source="EuroEval/flores-en-fr",
+    task=TRANSLATION,
+    languages=[FRENCH],
+    source_language=ENGLISH,
+    target_language=FRENCH,
+)
+
 ALLOCINE_CONFIG = DatasetConfig(
     name="allocine",
     pretty_name="AlloCiné",
@@ -119,15 +139,7 @@ MULTILOKO_FR_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_FR_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-fr",
-    pretty_name="WMT24++-en-fr",
-    source="EuroEval/wmt24pp-en-fr",
-    task=TRANSLATION,
-    languages=[FRENCH],
-    source_language=ENGLISH,
-    target_language=FRENCH,
-)
+# Unofficial datasets ###
 
 WMT24PP_FR_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-fr-en",
@@ -140,8 +152,16 @@ WMT24PP_FR_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_FR_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-fr-en",
+    pretty_name="FLORES-fr-en",
+    source="EuroEval/flores-fr-en",
+    task=TRANSLATION,
+    languages=[FRENCH],
+    source_language=FRENCH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 MMLU_FR_CONFIG = DatasetConfig(
     name="mmlu-fr",
@@ -215,27 +235,5 @@ EU_MMLU_FR_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-fr",
     task=KNOW,
     languages=[FRENCH],
-    unofficial=True,
-)
-
-
-FLORES_EN_FR_CONFIG = TranslationDatasetConfig(
-    name="flores-en-fr",
-    pretty_name="FLORES-en-fr",
-    source="EuroEval/flores-en-fr",
-    task=TRANSLATION,
-    languages=[FRENCH],
-    source_language=ENGLISH,
-    target_language=FRENCH,
-)
-
-FLORES_FR_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-fr-en",
-    pretty_name="FLORES-fr-en",
-    source="EuroEval/flores-fr-en",
-    task=TRANSLATION,
-    languages=[FRENCH],
-    source_language=FRENCH,
-    target_language=ENGLISH,
     unofficial=True,
 )

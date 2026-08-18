@@ -24,6 +24,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_NL_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-nl",
+    pretty_name="WMT24++-en-nl",
+    source="EuroEval/wmt24pp-en-nl",
+    task=TRANSLATION,
+    languages=[DUTCH],
+    source_language=ENGLISH,
+    target_language=DUTCH,
+)
+
+FLORES_EN_NL_CONFIG = TranslationDatasetConfig(
+    name="flores-en-nl",
+    pretty_name="FLORES-en-nl",
+    source="EuroEval/flores-en-nl",
+    task=TRANSLATION,
+    languages=[DUTCH],
+    source_language=ENGLISH,
+    target_language=DUTCH,
+)
+
 DBRD_CONFIG = DatasetConfig(
     name="dbrd",
     pretty_name="DBRD",
@@ -148,15 +168,8 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
-WMT24PP_EN_NL_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-nl",
-    pretty_name="WMT24++-en-nl",
-    source="EuroEval/wmt24pp-en-nl",
-    task=TRANSLATION,
-    languages=[DUTCH],
-    source_language=ENGLISH,
-    target_language=DUTCH,
-)
+
+# Unofficial datasets ###
 
 WMT24PP_NL_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-nl-en",
@@ -169,8 +182,16 @@ WMT24PP_NL_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_NL_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-nl-en",
+    pretty_name="FLORES-nl-en",
+    source="EuroEval/flores-nl-en",
+    task=TRANSLATION,
+    languages=[DUTCH],
+    source_language=DUTCH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 HELLASWAG_NL_CONFIG = DatasetConfig(
     name="hellaswag-nl",
@@ -298,27 +319,5 @@ EU_MMLU_NL_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-nl",
     task=KNOW,
     languages=[DUTCH],
-    unofficial=True,
-)
-
-
-FLORES_EN_NL_CONFIG = TranslationDatasetConfig(
-    name="flores-en-nl",
-    pretty_name="FLORES-en-nl",
-    source="EuroEval/flores-en-nl",
-    task=TRANSLATION,
-    languages=[DUTCH],
-    source_language=ENGLISH,
-    target_language=DUTCH,
-)
-
-FLORES_NL_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-nl-en",
-    pretty_name="FLORES-nl-en",
-    source="EuroEval/flores-nl-en",
-    task=TRANSLATION,
-    languages=[DUTCH],
-    source_language=DUTCH,
-    target_language=ENGLISH,
     unofficial=True,
 )

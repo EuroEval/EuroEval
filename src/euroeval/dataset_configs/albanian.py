@@ -17,6 +17,16 @@ from ..tasks import (
 
 # Official datasets ###
 
+FLORES_EN_SQ_CONFIG = TranslationDatasetConfig(
+    name="flores-en-sq",
+    pretty_name="FLORES-en-sq",
+    source="EuroEval/flores-en-sq",
+    task=TRANSLATION,
+    languages=[ALBANIAN],
+    source_language=ENGLISH,
+    target_language=ALBANIAN,
+)
+
 MMS_SQ_CONFIG = DatasetConfig(
     name="mms-sq",
     pretty_name="MMS-sq",
@@ -84,15 +94,8 @@ INCLUDE_SQ_CONFIG = DatasetConfig(
     languages=[ALBANIAN],
 )
 
-FLORES_EN_SQ_CONFIG = TranslationDatasetConfig(
-    name="flores-en-sq",
-    pretty_name="FLORES-en-sq",
-    source="EuroEval/flores-en-sq",
-    task=TRANSLATION,
-    languages=[ALBANIAN],
-    source_language=ENGLISH,
-    target_language=ALBANIAN,
-)
+
+# Unofficial datasets ###
 
 FLORES_SQ_EN_CONFIG = TranslationDatasetConfig(
     name="flores-sq-en",
@@ -104,9 +107,6 @@ FLORES_SQ_EN_CONFIG = TranslationDatasetConfig(
     target_language=ENGLISH,
     unofficial=True,
 )
-
-
-# Unofficial datasets ###
 
 GLOBAL_MMLU_LITE_SQ_CONFIG = DatasetConfig(
     name="global-mmlu-lite-sq",

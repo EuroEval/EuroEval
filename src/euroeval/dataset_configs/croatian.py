@@ -16,6 +16,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_HR_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-hr",
+    pretty_name="WMT24++-en-hr",
+    source="EuroEval/wmt24pp-en-hr",
+    task=TRANSLATION,
+    languages=[CROATIAN],
+    source_language=ENGLISH,
+    target_language=CROATIAN,
+)
+
+FLORES_EN_HR_CONFIG = TranslationDatasetConfig(
+    name="flores-en-hr",
+    pretty_name="FLORES-en-hr",
+    source="EuroEval/flores-en-hr",
+    task=TRANSLATION,
+    languages=[CROATIAN],
+    source_language=ENGLISH,
+    target_language=CROATIAN,
+)
+
 MMS_HR_CONFIG = DatasetConfig(
     name="mms-hr",
     pretty_name="MMS-hr",
@@ -86,15 +106,7 @@ INCLUDE_HR_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_HR_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-hr",
-    pretty_name="WMT24++-en-hr",
-    source="EuroEval/wmt24pp-en-hr",
-    task=TRANSLATION,
-    languages=[CROATIAN],
-    source_language=ENGLISH,
-    target_language=CROATIAN,
-)
+# Unofficial datasets ###
 
 WMT24PP_HR_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-hr-en",
@@ -107,8 +119,16 @@ WMT24PP_HR_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
+FLORES_HR_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-hr-en",
+    pretty_name="FLORES-hr-en",
+    source="EuroEval/flores-hr-en",
+    task=TRANSLATION,
+    languages=[CROATIAN],
+    source_language=CROATIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 MMLU_HR_CONFIG = DatasetConfig(
     name="mmlu-hr",
@@ -125,27 +145,5 @@ EU_MMLU_HR_CONFIG = DatasetConfig(
     source="EuroEval/eu-mmlu-hr",
     task=KNOW,
     languages=[CROATIAN],
-    unofficial=True,
-)
-
-
-FLORES_EN_HR_CONFIG = TranslationDatasetConfig(
-    name="flores-en-hr",
-    pretty_name="FLORES-en-hr",
-    source="EuroEval/flores-en-hr",
-    task=TRANSLATION,
-    languages=[CROATIAN],
-    source_language=ENGLISH,
-    target_language=CROATIAN,
-)
-
-FLORES_HR_EN_CONFIG = TranslationDatasetConfig(
-    name="flores-hr-en",
-    pretty_name="FLORES-hr-en",
-    source="EuroEval/flores-hr-en",
-    task=TRANSLATION,
-    languages=[CROATIAN],
-    source_language=CROATIAN,
-    target_language=ENGLISH,
     unofficial=True,
 )

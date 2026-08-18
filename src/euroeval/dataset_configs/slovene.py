@@ -16,6 +16,26 @@ from ..tasks import (
 
 # Official datasets ###
 
+WMT24PP_EN_SL_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-sl",
+    pretty_name="WMT24++-en-sl",
+    source="EuroEval/wmt24pp-en-sl",
+    task=TRANSLATION,
+    languages=[SLOVENE],
+    source_language=ENGLISH,
+    target_language=SLOVENE,
+)
+
+FLORES_EN_SL_CONFIG = TranslationDatasetConfig(
+    name="flores-en-sl",
+    pretty_name="FLORES-en-sl",
+    source="EuroEval/flores-en-sl",
+    task=TRANSLATION,
+    languages=[SLOVENE],
+    source_language=ENGLISH,
+    target_language=SLOVENE,
+)
+
 SENTINEWS_CONFIG = DatasetConfig(
     name="sentinews",
     pretty_name="Sentinews-sl",
@@ -85,15 +105,7 @@ RAGTRUTH_SL_CONFIG = DatasetConfig(
 )
 
 
-WMT24PP_EN_SL_CONFIG = TranslationDatasetConfig(
-    name="wmt24pp-en-sl",
-    pretty_name="WMT24++-en-sl",
-    source="EuroEval/wmt24pp-en-sl",
-    task=TRANSLATION,
-    languages=[SLOVENE],
-    source_language=ENGLISH,
-    target_language=SLOVENE,
-)
+# Unofficial datasets ###
 
 WMT24PP_SL_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-sl-en",
@@ -106,29 +118,6 @@ WMT24PP_SL_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
-
-# Unofficial datasets ###
-
-EU_MMLU_SL_CONFIG = DatasetConfig(
-    name="eu-mmlu-sl",
-    pretty_name="EU-MMLU-sl",
-    source="EuroEval/eu-mmlu-sl",
-    task=KNOW,
-    languages=[SLOVENE],
-    unofficial=True,
-)
-
-
-FLORES_EN_SL_CONFIG = TranslationDatasetConfig(
-    name="flores-en-sl",
-    pretty_name="FLORES-en-sl",
-    source="EuroEval/flores-en-sl",
-    task=TRANSLATION,
-    languages=[SLOVENE],
-    source_language=ENGLISH,
-    target_language=SLOVENE,
-)
-
 FLORES_SL_EN_CONFIG = TranslationDatasetConfig(
     name="flores-sl-en",
     pretty_name="FLORES-sl-en",
@@ -137,5 +126,14 @@ FLORES_SL_EN_CONFIG = TranslationDatasetConfig(
     languages=[SLOVENE],
     source_language=SLOVENE,
     target_language=ENGLISH,
+    unofficial=True,
+)
+
+EU_MMLU_SL_CONFIG = DatasetConfig(
+    name="eu-mmlu-sl",
+    pretty_name="EU-MMLU-sl",
+    source="EuroEval/eu-mmlu-sl",
+    task=KNOW,
+    languages=[SLOVENE],
     unofficial=True,
 )
