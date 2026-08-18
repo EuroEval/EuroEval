@@ -126,6 +126,28 @@ SWEDISH_FACTS_CONFIG = DatasetConfig(
     languages=[SWEDISH],
 )
 
+WMT24PP_EN_SV_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-sv",
+    pretty_name="WMT24++-en-sv",
+    source="EuroEval/wmt24pp-en-sv",
+    task=TRANSLATION,
+    languages=[SWEDISH],
+    source_language=ENGLISH,
+    target_language=SWEDISH,
+)
+
+WMT24PP_SV_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-sv-en",
+    pretty_name="WMT24++-sv-en",
+    source="EuroEval/wmt24pp-sv-en",
+    task=TRANSLATION,
+    languages=[SWEDISH],
+    source_language=SWEDISH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
+
+
 # Unofficial datasets ###
 
 MMLU_SV_CONFIG = DatasetConfig(

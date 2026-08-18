@@ -94,6 +94,28 @@ RAGTRUTH_CA_CONFIG = DatasetConfig(
 )
 
 
+WMT24PP_EN_CA_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-ca",
+    pretty_name="WMT24++-en-ca",
+    source="EuroEval/wmt24pp-en-ca",
+    task=TRANSLATION,
+    languages=[CATALAN],
+    source_language=ENGLISH,
+    target_language=CATALAN,
+)
+
+WMT24PP_CA_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-ca-en",
+    pretty_name="WMT24++-ca-en",
+    source="EuroEval/wmt24pp-ca-en",
+    task=TRANSLATION,
+    languages=[CATALAN],
+    source_language=CATALAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
+
+
 # Unofficial datasets ###
 
 MULTI_IFEVAL_CA_CONFIG = DatasetConfig(

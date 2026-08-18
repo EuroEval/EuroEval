@@ -131,6 +131,28 @@ DANWIC_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
+WMT24PP_EN_DA_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-da",
+    pretty_name="WMT24++-en-da",
+    source="EuroEval/wmt24pp-en-da",
+    task=TRANSLATION,
+    languages=[DANISH],
+    source_language=ENGLISH,
+    target_language=DANISH,
+)
+
+WMT24PP_DA_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-da-en",
+    pretty_name="WMT24++-da-en",
+    source="EuroEval/wmt24pp-da-en",
+    task=TRANSLATION,
+    languages=[DANISH],
+    source_language=DANISH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
+
+
 # Unofficial datasets ###
 
 HELLASWAG_DA_CONFIG = DatasetConfig(
