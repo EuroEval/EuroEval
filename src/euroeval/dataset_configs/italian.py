@@ -119,6 +119,28 @@ MULTILOKO_IT_CONFIG = DatasetConfig(
 )
 
 
+WMT24PP_EN_IT_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-it",
+    pretty_name="WMT24++-en-it",
+    source="EuroEval/wmt24pp-en-it",
+    task=TRANSLATION,
+    languages=[ITALIAN],
+    source_language=ENGLISH,
+    target_language=ITALIAN,
+)
+
+WMT24PP_IT_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-it-en",
+    pretty_name="WMT24++-it-en",
+    source="EuroEval/wmt24pp-it-en",
+    task=TRANSLATION,
+    languages=[ITALIAN],
+    source_language=ITALIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
+
+
 # Unofficial datasets ###
 
 MMLU_IT_CONFIG = DatasetConfig(
