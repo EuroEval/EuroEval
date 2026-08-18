@@ -9,53 +9,72 @@ import {
   type LeaderboardTable as LBTable,
   type LeaderboardMetadata,
 } from "@/leaderboard";
+import categoryRankedData from "@/generated/category-ranked.json";
 
 const props = defineProps<{
   stem: string;
   title: string;
 }>();
 
-type CategoryId = "chat" | "generative" | "all_models";
+const categoryTabs = [
+  { id: "chat", label: "Chat" },
+  { id: "generative", label: "Generative" },
+  { id: "all_models", label: "All Models" },
+] as const;
+
+type CategoryId = (typeof categoryTabs)[number]["id"];
 type ViewId = "table" | "scatter";
 
-const activeCategory = ref<CategoryId>("generative");
+// Precomputed at leaderboard-generation time (which leaderboards/categories
+// have ranked models) and bundled statically, so it's known synchronously
+// from `stem` alone whether a category has ranked models - no need to wait
+// for that category's leaderboard data to load before deciding whether its
+// tab is clickable. All tabs always render, in a fixed order, for every
+// leaderboard - only ranked-ness varies - so the tab set's shape never
+// changes between languages.
+type CategoryRankedManifest = Record<string, Partial<Record<CategoryId, boolean>>>;
+const categoryRanked = categoryRankedData as CategoryRankedManifest;
+
+const isCategoryRanked = (id: CategoryId): boolean =>
+  categoryRanked[props.stem]?.[id] ?? false;
+
+const firstRankedCategory = (): CategoryId =>
+  categoryTabs.find((t) => isCategoryRanked(t.id))?.id ?? categoryTabs[0].id;
+
+const activeCategory = ref<CategoryId>(categoryTabs[0].id);
 const activeView = ref<ViewId>("table");
 
-const chatTable = ref<LBTable | null>(null);
-const generativeTable = ref<LBTable | null>(null);
-const allModelsTable = ref<LBTable | null>(null);
-const chatMetadata = ref<LeaderboardMetadata | null>(null);
-const generativeMetadata = ref<LeaderboardMetadata | null>(null);
-const allModelsMetadata = ref<LeaderboardMetadata | null>(null);
+type CategoryEntry = { table: LBTable | null; metadata: LeaderboardMetadata | null };
+
+const categoryState = ref<Record<CategoryId, CategoryEntry>>(
+  Object.fromEntries(
+    categoryTabs.map((t) => [t.id, { table: null, metadata: null }]),
+  ) as Record<CategoryId, CategoryEntry>,
+);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
 const loadFor = async (stem: string) => {
   loading.value = true;
   error.value = null;
-  chatTable.value = null;
-  generativeTable.value = null;
-  allModelsTable.value = null;
-  chatMetadata.value = null;
-  generativeMetadata.value = null;
-  allModelsMetadata.value = null;
+  for (const t of categoryTabs) {
+    categoryState.value[t.id] = { table: null, metadata: null };
+  }
   try {
-    const [c, g, a, cMeta, gMeta, aMeta] = await Promise.all([
-      loadLeaderboard(`${stem}_chat`),
-      loadLeaderboard(`${stem}_generative`),
-      loadLeaderboard(`${stem}_all_models`),
-      loadLeaderboardMetadata(`${stem}_chat`),
-      loadLeaderboardMetadata(`${stem}_generative`),
-      loadLeaderboardMetadata(`${stem}_all_models`),
-    ]);
-    chatTable.value = c ?? null;
-    generativeTable.value = g ?? null;
-    allModelsTable.value = a ?? null;
-    chatMetadata.value = cMeta ?? null;
-    generativeMetadata.value = gMeta ?? null;
-    allModelsMetadata.value = aMeta ?? null;
-    if (!c && !g && !a) {
-      error.value = `Leaderboard for ${stem.charAt(0).toUpperCase() + stem.slice(1)} is on the way!`
+    await Promise.all(
+      categoryTabs.map(async (t) => {
+        const [table, metadata] = await Promise.all([
+          loadLeaderboard(`${stem}_${t.id}`),
+          loadLeaderboardMetadata(`${stem}_${t.id}`),
+        ]);
+        categoryState.value[t.id] = {
+          table: table ?? null,
+          metadata: metadata ?? null,
+        };
+      }),
+    );
+    if (categoryTabs.every((t) => !categoryState.value[t.id].table)) {
+      error.value = `Leaderboard for ${stem.charAt(0).toUpperCase() + stem.slice(1)} is on the way!`;
     }
   } catch (e) {
     error.value = (e as Error).message;
@@ -69,23 +88,19 @@ watch(
   (s) => {
     // Reset the category on language switch, but keep the user's table/scatter
     // preference - switching language shouldn't kick you out of scatter view.
-    activeCategory.value = "chat";
+    activeCategory.value = firstRankedCategory();
     loadFor(s);
   },
   { immediate: true },
 );
 
-const activeTable = computed<LBTable | null>(() => {
-  if (activeCategory.value === "chat") return chatTable.value;
-  if (activeCategory.value === "generative") return generativeTable.value;
-  return allModelsTable.value;
-});
+const activeTable = computed<LBTable | null>(
+  () => categoryState.value[activeCategory.value].table,
+);
 
-const activeMetadata = computed<LeaderboardMetadata | null>(() => {
-  if (activeCategory.value === "chat") return chatMetadata.value;
-  if (activeCategory.value === "generative") return generativeMetadata.value;
-  return allModelsMetadata.value;
-});
+const activeMetadata = computed<LeaderboardMetadata | null>(
+  () => categoryState.value[activeCategory.value].metadata,
+);
 
 const lastUpdated = computed<string | null>(() => {
   const notes = activeMetadata.value?.annotate?.notes;
@@ -130,12 +145,6 @@ const MULTILINGUAL_STEMS = new Set([
   "west_germanic",
 ]);
 const isMultilingual = computed(() => MULTILINGUAL_STEMS.has(props.stem));
-
-const categoryTabs: { id: CategoryId; label: string }[] = [
-  { id: "chat", label: "Chat" },
-  { id: "generative", label: "Generative" },
-  { id: "all_models", label: "All Models" },
-];
 
 const viewTabs: { id: ViewId; label: string }[] = [
   { id: "table", label: "Leaderboard" },
@@ -186,11 +195,7 @@ onUnmounted(() => {
 });
 
 // Which CSV stem the current category corresponds to, for the download button.
-const activeStem = computed<string>(() => {
-  if (activeCategory.value === "chat") return `${props.stem}_chat`;
-  if (activeCategory.value === "generative") return `${props.stem}_generative`;
-  return `${props.stem}_all_models`;
-});
+const activeStem = computed<string>(() => `${props.stem}_${activeCategory.value}`);
 
 const downloading = ref(false);
 
@@ -273,11 +278,14 @@ const downloadCsv = async () => {
         :key="t.id"
         type="button"
         role="tab"
+        :disabled="!isCategoryRanked(t.id)"
+        :title="isCategoryRanked(t.id) ? undefined : 'Coming soon'"
         :aria-selected="activeCategory === t.id"
         :class="['lb-tab', { active: activeCategory === t.id }]"
         @click="activeCategory = t.id"
       >
         {{ t.label }}
+        <span v-if="!isCategoryRanked(t.id)" class="lb-tab-soon">Soon</span>
       </button>
     </nav>
 
@@ -502,6 +510,9 @@ const downloadCsv = async () => {
 .lb-tab {
   position: relative;
   z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   background: transparent;
   border: 0;
   border-radius: 999px;
@@ -521,6 +532,25 @@ const downloadCsv = async () => {
 
 .lb-tab.active {
   color: #fff;
+}
+
+.lb-tab:disabled {
+  color: var(--color-muted);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lb-tab-soon {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+  line-height: 1.5;
 }
 
 /* Deliberately quieter than .lb-tabs above - the category is the primary
