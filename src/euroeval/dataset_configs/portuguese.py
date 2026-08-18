@@ -110,6 +110,15 @@ WINOGRANDE_PT_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
+RAGTRUTH_PT_CONFIG = DatasetConfig(
+    name="ragtruth-pt",
+    pretty_name="RAGTruth-pt",
+    source="EuroEval/ragtruth-translated-hallucinations-pt-mini",
+    task=HALLU,
+    languages=[PORTUGUESE],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -233,8 +242,10 @@ FLORES_EN_PT_CONFIG = TranslationDatasetConfig(
     languages=[PORTUGUESE],
     source_language=ENGLISH,
     target_language=PORTUGUESE,
-    unofficial=True,
 )
+
+
+# Unofficial datasets ###
 
 FLORES_PT_EN_CONFIG = TranslationDatasetConfig(
     name="flores-pt-en",

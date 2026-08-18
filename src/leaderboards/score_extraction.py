@@ -482,14 +482,14 @@ def group_results_by_model(
             continue
         primary, secondary = task_metric_names(task)
         metrics = [primary] + ([secondary] if secondary is not None else [])
+        raw_results = get_raw_results(record)
+        if raw_results is None:
+            continue
 
-        for metric_type, metric in zip(("primary", "secondary"), metrics):
-            raw_results = get_raw_results(record)
-            if raw_results is None:
-                continue
-
-            # Raw per-iteration scores are keyed by the bare metric name (e.g.
-            # "mcc"), occasionally with a "test_" prefix.
+        # Raw per-iteration scores are keyed by the bare metric name (e.g.
+        # "mcc"), occasionally with a "test_" prefix.
+        raw_scores_by_metric: dict[str, list[float]] = {}
+        for metric in metrics:
             raw_scores: list[float] = []
             for result_dict in raw_results:
                 if isinstance(result_dict, dict):
@@ -498,7 +498,15 @@ def group_results_by_model(
                     )
                     if score >= 0:
                         raw_scores.append(score)
+            raw_scores_by_metric[metric] = raw_scores
 
+        # A legacy multi-metric record may contain only the old secondary metric.
+        # Skipping it prevents the secondary score from being displayed as primary.
+        if secondary is not None and not raw_scores_by_metric[primary]:
+            continue
+
+        for metric_type, metric in zip(("primary", "secondary"), metrics):
+            raw_scores = raw_scores_by_metric[metric]
             if not raw_scores:
                 continue
 

@@ -76,7 +76,6 @@ MULTI_IFEVAL_SQ_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-
 INCLUDE_SQ_CONFIG = DatasetConfig(
     name="include-sq",
     pretty_name="INCLUDE-sq",

@@ -7,12 +7,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 from datasets import Dataset
 
+from euroeval.constants import MAX_CONTEXT_LENGTH
 from euroeval.enums import Device
 from euroeval.exceptions import InvalidBenchmark
 from euroeval.metrics.token_hallucination_classifier import (
+    SampleHallucinationMetric,
     TokenHallucinationMetric,
-    hallucination_metric,
+    sample_hallucination_metric,
+    token_hallucination_metric,
 )
+from euroeval.tasks import HALLU
 
 DETECTOR_PATH = "euroeval.metrics.token_hallucination_classifier.HallucinationDetector"
 HF_API_PATH = "euroeval.metrics.token_hallucination_classifier.HfApi"
@@ -75,13 +79,18 @@ def dataset_config() -> t.Generator[DummyDatasetConfig, None, None]:
     yield DummyDatasetConfig()
 
 
+@pytest.mark.parametrize(
+    "metric",
+    [token_hallucination_metric, sample_hallucination_metric],
+    ids=lambda m: m.name,
+)
 def test_all_hallucinations_returns_one(
     metric: TokenHallucinationMetric,
     dataset_config: DummyDatasetConfig,
     benchmark_config: DummyBenchmarkConfig,
     make_dataset: t.Callable[[list[str]], Dataset],
 ) -> None:
-    """Return 1.0 when every token is flagged as hallucinated."""
+    """Return 1.0 when every evaluated output is hallucinated."""
     detector = _make_detector(predict_return=[{"pred": 1}])
     dataset = make_dataset(["ctx1", "ctx2"])
     predictions = [
@@ -187,6 +196,36 @@ def test_detector_uses_correct_model_id(
     )
 
 
+def test_empty_detector_output_counts_as_non_hallucination(
+    dataset_config: DummyDatasetConfig,
+    benchmark_config: DummyBenchmarkConfig,
+    make_dataset: t.Callable[[list[str]], Dataset],
+) -> None:
+    """Count an evaluated output with no predicted tokens as binary zero."""
+    dataset = make_dataset(["ctx1", "ctx2"])
+    predictions = [
+        {"id": "0", "prediction_text": "answer1", "no_answer_probability": 0.0},
+        {"id": "1", "prediction_text": "answer2", "no_answer_probability": 0.0},
+    ]
+    responses = iter([[], [{"pred": 1}]])
+
+    def predict_side_effect(prompt: str, answer: str) -> list[dict[str, int]]:
+        del prompt, answer
+        return next(responses)
+
+    detector = _make_detector(predict_side_effect=predict_side_effect)
+    with patch(DETECTOR_PATH, return_value=detector):
+        result = sample_hallucination_metric(
+            predictions=predictions,
+            references=[],
+            dataset=dataset,
+            dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+            benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
+        )
+
+    assert result == pytest.approx(0.5)
+
+
 def test_metric_initialization(metric: TokenHallucinationMetric) -> None:
     """Test that the metric is initialised with correct attributes."""
     assert metric.name == "hallucination_rate"
@@ -197,11 +236,85 @@ def test_metric_initialization(metric: TokenHallucinationMetric) -> None:
     assert score_str == "25.00%"
 
 
-def test_module_level_instance() -> None:
-    """Test that the module-level instance has the correct type."""
-    assert isinstance(hallucination_metric, TokenHallucinationMetric)
+def test_mixed_tokens_distinguish_token_and_sample_rates(
+    dataset_config: DummyDatasetConfig,
+    benchmark_config: DummyBenchmarkConfig,
+    make_dataset: t.Callable[[list[str]], Dataset],
+) -> None:
+    """A mixed output has token-level and binary sample-level rates of 1/3 and 1."""
+    dataset = make_dataset(["ctx1"])
+    predictions = [
+        {"id": "0", "prediction_text": "answer", "no_answer_probability": 0.0}
+    ]
+
+    for metric, expected in (
+        (sample_hallucination_metric, 1.0),
+        (token_hallucination_metric, 1 / 3),
+    ):
+        detector = _make_detector(
+            predict_return=[{"pred": 1}, {"pred": 0}, {"pred": 0}]
+        )
+        with patch(DETECTOR_PATH, return_value=detector):
+            result = metric(
+                predictions=predictions,
+                references=[],
+                dataset=dataset,
+                dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+                benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
+            )
+        assert result == pytest.approx(expected)
 
 
+def test_module_level_instances_and_task_order() -> None:
+    """Expose both hallucination metrics in the task's declared order."""
+    assert isinstance(sample_hallucination_metric, SampleHallucinationMetric)
+    assert isinstance(token_hallucination_metric, TokenHallucinationMetric)
+    assert sample_hallucination_metric.name == "sample_hallucination_rate"
+    assert sample_hallucination_metric.pretty_name == "Sample hallucination rate"
+    assert token_hallucination_metric.name == "hallucination_rate"
+    assert token_hallucination_metric.pretty_name == "Token hallucination rate"
+    assert HALLU.metrics == [sample_hallucination_metric, token_hallucination_metric]
+
+
+def test_multiple_outputs_use_binary_sample_prevalence(
+    dataset_config: DummyDatasetConfig,
+    benchmark_config: DummyBenchmarkConfig,
+    make_dataset: t.Callable[[list[str]], Dataset],
+) -> None:
+    """Only one of two outputs being hallucinated gives a sample rate of 1/2."""
+    dataset = make_dataset(["ctx1", "ctx2"])
+    predictions = [
+        {"id": "0", "prediction_text": "answer1", "no_answer_probability": 0.0},
+        {"id": "1", "prediction_text": "answer2", "no_answer_probability": 0.0},
+    ]
+
+    for metric, expected in (
+        (sample_hallucination_metric, 1 / 2),
+        (token_hallucination_metric, 1 / 4),
+    ):
+        responses = iter([[{"pred": 1}, {"pred": 0}], [{"pred": 0}, {"pred": 0}]])
+
+        def predict_side_effect(prompt: str, answer: str) -> list[dict[str, int]]:
+            del prompt, answer
+            return next(responses)
+
+        detector = _make_detector(predict_side_effect=predict_side_effect)
+        with patch(DETECTOR_PATH, return_value=detector):
+            result = metric(
+                predictions=predictions,
+                references=[],
+                dataset=dataset,
+                dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+                benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
+            )
+        assert result == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    "metric",
+    [token_hallucination_metric, sample_hallucination_metric],
+    ids=lambda m: m.name,
+)
 def test_no_hallucinations_returns_zero(
     metric: TokenHallucinationMetric,
     dataset_config: DummyDatasetConfig,
@@ -226,6 +339,11 @@ def test_no_hallucinations_returns_zero(
     assert result == pytest.approx(0.0)
 
 
+@pytest.mark.parametrize(
+    "metric",
+    [token_hallucination_metric, sample_hallucination_metric],
+    ids=lambda m: m.name,
+)
 def test_no_tokens_raises_invalid_benchmark(
     metric: TokenHallucinationMetric,
     dataset_config: DummyDatasetConfig,
@@ -247,6 +365,39 @@ def test_no_tokens_raises_invalid_benchmark(
                 dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
                 benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
             )
+
+
+def test_overlong_outputs_are_skipped_for_both_rates(
+    dataset_config: DummyDatasetConfig,
+    benchmark_config: DummyBenchmarkConfig,
+    make_dataset: t.Callable[[list[str]], Dataset],
+) -> None:
+    """Ignore overlong outputs while retaining scores from evaluable outputs."""
+    dataset = make_dataset(["ctx1", "ctx2"])
+    predictions = [
+        {"id": "0", "prediction_text": "too long", "no_answer_probability": 0.0},
+        {"id": "1", "prediction_text": "answer", "no_answer_probability": 0.0},
+    ]
+
+    def tokenize(answer: str, add_special_tokens: bool = True) -> dict[str, list[int]]:
+        del add_special_tokens
+        token_count = MAX_CONTEXT_LENGTH - 4 if answer == "too long" else 1
+        return {"input_ids": [1] * token_count}
+
+    detector = _make_detector(predict_return=[{"pred": 1}])
+    detector.detector.tokenizer.side_effect = tokenize
+    with patch(DETECTOR_PATH, return_value=detector):
+        for metric in (sample_hallucination_metric, token_hallucination_metric):
+            result = metric(
+                predictions=predictions,
+                references=[],
+                dataset=dataset,
+                dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+                benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
+            )
+            assert result == pytest.approx(1.0)
+
+    detector.predict_prompt.assert_called_once_with(prompt="ctx2", answer="answer")
 
 
 def test_partial_hallucinations_returns_correct_rate(

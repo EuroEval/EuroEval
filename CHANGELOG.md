@@ -9,6 +9,23 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added the unofficial Belarusian Word-in-Context dataset `bewic`, based on the BeWiC
+  dataset from BelarusianGLUE.
+- Added the unofficial Belarusian linguistic acceptability dataset `belacola`, based on
+  the BelaCoLA dataset from BelarusianGLUE.
+- Added the unofficial Belarusian BeRTE-WD binary natural language inference dataset.
+- Added the sample hallucination rate metric as the primary hallucination score, while
+  retaining the token hallucination rate as a secondary score.
+
+### Fixed
+
+- Fixed `#no-thinking` LiteLLM evaluations when providers reject a zero thinking budget
+  and require an explicit `thinking.type` of `disabled`.
+
+## [v18.0.0] - 2026-08-14
+
+### Added
+
 - Added support for evaluating encoder models on multiple-choice tasks using the native
   `AutoModelForMultipleChoice` head (with `DataCollatorForMultipleChoice`). Encoder
   models are now enabled on knowledge, multiple-choice-reading-comprehension,
@@ -148,6 +165,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   knowledge template still used by the Latin-script `mmlu-sr`, `mms-sr` and
   `winogrande-sr`), and the Serbian-source translation prompt template is now Cyrillic to
   match the Cyrillic source text of `wmt24pp-sr-en`.
+- Fixed `_load_model_from_pretrained` final error message for `KeyError`/`RuntimeError`
+  after retry exhaustion. The raised `InvalidModel` now includes the model ID and
+  exception repr (e.g. `The model 'EuroBERT/EuroBERT-210m' could not be loaded. The
+  error was KeyError('default').`), making it consistent with the `OSError`/`ValueError`
+  handling branch.
 - Fixed `TypeError` in `setup_model_for_question_answering` when expanding token type
   embeddings from shape (1, ...) to (2, ...) for models like `fresh-xlm-roberta-base`
   that only have a single token type embedding. The bug was caused by passing `tensor=`

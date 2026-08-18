@@ -12,6 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 from leaderboards import evaluation_common
+from leaderboards.constants import LANGUAGE_GROUP_CODES
 from leaderboards.evaluation_common import _killed_by_signal_note
 
 
@@ -182,3 +183,19 @@ def test_pty_drain_handles_exited_parent_with_open_grandchild(
     assert line_count < 50, (
         f"Should stop reading after deadline, got {line_count} lines"
     )
+
+
+def test_west_germanic_issue_selection_expands_to_all_languages() -> None:
+    """The issue-template group expands to all four West Germanic languages."""
+    group = "West Germanic languages (Dutch, English, German, Luxembourgish)"
+    body = f"- [x] {group}"
+
+    selected_groups = evaluation_common.extract_language_groups(body=body)
+    languages = [
+        language
+        for selected_group in selected_groups
+        for language in LANGUAGE_GROUP_CODES[selected_group]
+    ]
+
+    assert selected_groups == [group]
+    assert languages == ["nl", "en", "de", "lb"]

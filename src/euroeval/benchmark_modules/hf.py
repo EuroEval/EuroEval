@@ -908,7 +908,9 @@ def _load_model_from_pretrained(
                 )
                 model_kwargs["ignore_mismatched_sizes"] = True
                 continue
-            raise InvalidModel(str(e)) from e
+            raise InvalidModel(
+                f"The model {model_id!r} could not be loaded. The error was {e!r}."
+            ) from e
         except (TimeoutError, RequestError):
             log(
                 f"Couldn't load the model {model_id!r}. Retrying.",

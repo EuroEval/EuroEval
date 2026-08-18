@@ -613,7 +613,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset ltzglue-tc
 ```
 
-### ltzGLUE-ID
+### Unofficial: ltzGLUE-ID
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976).
 
@@ -763,7 +763,7 @@ euroeval --model <model-id> --dataset multi-ifeval-lb
 
 ## Hallucination Detection
 
-### RAGTruth-lb
+### Unofficial: RAGTruth-lb
 
 This dataset is a Luxembourgish version of the
 [RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
@@ -775,8 +775,9 @@ generates tokens that are not grounded in the provided context.
 The hallucination detection is performed using the
 [LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
 [transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
-hallucination at the token level. The metric reported is the hallucination rate,
-computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+hallucination. See the
+[hallucination detection task documentation](/tasks/hallucination-detection) for
+details on the evaluation methodology.
 
 Here are a few examples from the test split:
 

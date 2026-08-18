@@ -240,6 +240,150 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset scala-be
 ```
 
+### Unofficial: BelaCoLA
+
+BelaCoLA is a Belarusian linguistic acceptability corpus from the
+[BelarusianGLUE benchmark](https://huggingface.co/datasets/maaxap/BelarusianGLUE),
+introduced in [Aparovich et al. (2025)](https://aclanthology.org/2025.acl-long.25/).
+It is similar to CoLA and RuCoLA: Belarusian sentences are labelled as acceptable or
+unacceptable by three fluent Belarusian-speaking linguists. The in-domain data comes
+from translated RuCoLA sentences, Belarusian normative sources, and Common Voice.
+
+The source `belacola_in_domain` configuration contains 1,992 / 300 / 300 samples for
+training, validation and testing, respectively. We preserve these source split
+boundaries and select the first 1,024 / 256 / 300 samples from them for EuroEval. The
+source data is already shuffled, and selecting rows in order makes this conversion
+deterministic. The resulting labels are `correct` for source label `1` (acceptable) and
+`incorrect` for source label `0` (unacceptable).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "М.С. Міхалкоў нядаўна яшчэ раз выказаў сваё жаданне быць пахаваны тут.",
+  "label": "incorrect"
+}
+```
+
+```json
+{
+  "text": "Загад адступаць быў аддадзены салдатам камандзірам.",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "Бальніцу прынёс абозу загад камбата заняць чарговы дзень.",
+  "label": "incorrect"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Ніжэй прыведзены сказы і ці з'яўляюцца яны граматычна правільнымі.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Сказ: {text}
+  Граматычна правільны: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Сказ: {text}
+
+  Вызначце, ці сказ граматычна правільны ці не. Адкажыце толькі {labels_str}, і нічога іншага.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `так`
+  - `incorrect` ➡️ `не`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset belacola
+```
+
+## Natural Language Inference
+
+### Unofficial: BeRTE-WD
+
+[BeRTE-WD](https://huggingface.co/datasets/maaxap/BelarusianGLUE) is the
+Belarusian textual entailment dataset from the BelarusianGLUE collection. Each sample
+contains a premise and a hypothesis, and the task is to determine whether the hypothesis
+follows from the premise. The source labels are binary: 1 means entailment and 0 means
+non-entailment. EuroEval represents the latter as `non_entailment`; this dataset does
+not distinguish between contradiction and neutral cases.
+
+The source has 1,080 / 360 / 360 samples in its train, validation and test splits. We
+preserve those split boundaries and take the first 1,024 training samples, first 256
+validation samples and all 360 test samples, resulting in a 1,024 / 256 / 360 split.
+
+Here are three representative examples from the training split:
+
+```json
+{
+  "text": "Перадумова: Прынцэса Эавін мела 1 дзіця.\nГіпотэза: Прынцэса Эавін не мела іншых дзяцей, акрамя двух.",
+  "label": "non_entailment"
+}
+```
+
+```json
+{
+  "text": "Перадумова: Стэпавы арол мае размах крылаў 203 см.\nГіпотэза: Стэпавы арол мае размах крылаў блізу двух метраў.",
+  "label": "entailment"
+}
+```
+
+```json
+{
+  "text": "Перадумова: Яўхім Фёдаравіч Карскі валодаў рускай мовай.\nГіпотэза: Яўхім Фёдаравіч Карскі мог разумець тэксты на рускай мове.",
+  "label": "entailment"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Ніжэй прыведзены пары сцвярджэнняў. Вызначце, ці вынікае другое сцвярджэнне з першага. Адказ можа быць 'праўда' або 'не вынікае'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}\nІмплікацыя: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}\n\nВызначце, ці вынікае другое сцвярджэнне з першага. Адкажыце толькі 'праўда' або 'не вынікае', і нічога іншага.
+  ```
+
+- Label mapping:
+  - `entailment` ➡️ `праўда`
+  - `non_entailment` ➡️ `не вынікае`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset berte-wd
+```
+
 ## Reading Comprehension
 
 ### MultiWikiQA-be
@@ -318,6 +462,81 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset multi-wiki-qa-be
+```
+
+## Word in Context
+
+### Unofficial: BeWiC
+
+BeWiC is the Belarusian Word-in-Context dataset from the
+[BelarusianGLUE benchmark](https://huggingface.co/datasets/maaxap/BelarusianGLUE),
+introduced in [Aparovich et al. (2025)](https://aclanthology.org/2025.acl-long.25/). It
+measures the ability to distinguish word meanings or senses in context: given one target
+word in two Belarusian sentences, the task is to determine whether it has the same sense
+in both contexts.
+
+The original `bewic` configuration consists of 5,626 / 400 / 400 samples in its train,
+validation and test splits. We preserve these source split boundaries and select the first
+1,024 / 256 / 400 samples for EuroEval. The source data is already shuffled, and selecting
+rows in order makes this conversion deterministic. Source label `1` means `same_sense`,
+while source label `0` means `different_sense`.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Слова: чуць\nКантэкст 1: Стаіць Іван пад дубам, аж чуе — пішчаць на дубе ў гняздзе птушаняты.\nКантэкст 2: Толькі спрактыкаваны чалавек мог намацаць пад рудой тванню цвёрдую палоску насцілу: чуць збочыў — і плюхнешся ў тарфяную калатушу.",
+  "label": "different_sense"
+}
+```
+
+```json
+{
+  "text": "Слова: прыз\nКантэкст 1: Дог, якога вы бачылі, мае два міжнародныя прызы.\nКантэкст 2: Здавалася, перад Сяргеем быў адзін з тых атлетаў, якія прывыклі браць прызы па падыманню цяжараў на спартыўных спаборніцтвах.",
+  "label": "same_sense"
+}
+```
+
+```json
+{
+  "text": "Слова: стан\nКантэкст 1: Снапы ў Любы былі цяжкія, але зграбныя, з тонкім станам і роўнымі гузырамі.\nКантэкст 2: Сцяпан пачаў у галаве складаць гэтае пісьмо, падбіраць такія словы і выразы, якія б дакладна адлюстравалі яго душэўны стан, яго радасць.",
+  "label": "different_sense"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Ніжэй прыведзены прыклады слоў, якія выкарыстоўваюцца ў двух кантэкстах, і ці маюць яны аднолькавае значэнне.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}
+  Аднолькавае значэнне: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+
+  Ці мае слова аднолькавае значэнне ў абодвух кантэкстах? Адкажыце толькі {labels_str}, і нічога іншага.
+  ```
+
+- Label mapping:
+  - `same_sense` ➡️ `так`
+  - `different_sense` ➡️ `не`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset bewic
 ```
 
 ## Common-sense Reasoning
@@ -472,7 +691,7 @@ euroeval --model <model-id> --dataset multi-ifeval-be
 
 ## Hallucination Detection
 
-### RAGTruth-be
+### Unofficial: RAGTruth-be
 
 This dataset is a Belarusian translation of the
 [RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
@@ -484,8 +703,9 @@ generates tokens that are not grounded in the provided context.
 The hallucination detection is performed using the
 [LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
 [transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
-hallucination at the token level. The metric reported is the hallucination rate,
-computed as the ratio of hallucinated tokens to total tokens in the generated answers.
+hallucination. See the
+[hallucination detection task documentation](/tasks/hallucination-detection) for
+details on the evaluation methodology.
 
 Here are a few examples from the test split:
 

@@ -14,11 +14,11 @@ sections:
       - { group: Multilingual, csv: european, slug: european, title: "🇪🇺 European" }
       - { group: Multilingual, csv: baltic, slug: baltic, title: "🇱🇻🇱🇹 Baltic" }
       - { group: Multilingual, csv: finnic, slug: finnic, title: "🇫🇮🇪🇪 Finnic" }
-      - { group: Multilingual, csv: germanic, slug: germanic, title: "🇩🇰🇳🇱🇬🇧🇫🇴🇩🇪🇮🇸🇳🇴🇸🇪 Germanic" }
+      - { group: Multilingual, csv: germanic, slug: germanic, title: "🇩🇰🇳🇱🇬🇧🇫🇴🇩🇪🇮🇸🇱🇺🇳🇴🇸🇪 Germanic" }
       - { group: Multilingual, csv: romance, slug: romance, title: "🇫🇷🇮🇹🇵🇹🇷🇴🇪🇸 Romance" }
       - { group: Multilingual, csv: scandinavian, slug: scandinavian, title: "🇩🇰🇫🇴🇮🇸🇳🇴🇸🇪 Scandinavian" }
-      - { group: Multilingual, csv: slavic, slug: slavic, title: "🇧🇦🇧🇬🇭🇷🇨🇿🇵🇱🇷🇸🇸🇰🇸🇮🇺🇦 Slavic" }
-      - { group: Multilingual, csv: west_germanic, slug: west-germanic, title: "🇳🇱🇬🇧🇩🇪 West Germanic" }
+      - { group: Multilingual, csv: slavic, slug: slavic, title: "🇧🇾🇧🇦🇧🇬🇭🇷🇨🇿🇵🇱🇷🇸🇸🇰🇸🇮🇺🇦 Slavic" }
+      - { group: Multilingual, csv: west_germanic, slug: west-germanic, title: "🇳🇱🇬🇧🇩🇪🇱🇺 West Germanic" }
       # Monolingual
       - { group: Monolingual, csv: albanian, title: "🇦🇱 Albanian" }
       - { group: Monolingual, csv: belarusian, title: "🇧🇾 Belarusian" }
@@ -62,6 +62,7 @@ sections:
     indexPath: tasks/README.md
     pages:
       - { path: tasks/bias-detection.md, title: Bias Detection }
+      - { path: tasks/classification.md, title: Classification }
       - { path: tasks/common-sense-reasoning.md, title: Common-sense Reasoning }
       - { path: tasks/european-values.md, title: European Values }
       - { path: tasks/grammatical-error-detection.md, title: Grammatical Error Detection }

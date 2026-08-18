@@ -175,3 +175,6 @@ data/
 # Slopo code duplication detection
 .slopo/*
 !.slopo/slopo.ignore.txt
+
+# Backups
+*.bak

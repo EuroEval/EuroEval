@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import collections.abc as c
+import dataclasses
 import logging
 import typing as t
+import weakref
 from pathlib import Path
 
 from datasets import Dataset
@@ -26,19 +28,84 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig
 
 
-class TokenHallucinationMetric(Metric):
-    """Hallucination metric."""
+@dataclasses.dataclass(frozen=True)
+class _HallucinationDetection:
+    """Token-level detector output grouped by evaluated sample."""
 
-    def __init__(self, name: str, pretty_name: str) -> None:
-        """Initialise the token hallucination metric.
+    token_predictions: tuple[tuple[int, ...], ...]
+
+    @property
+    def hallucinated_tokens(self) -> int:
+        """Number of hallucinated tokens."""
+        return sum(sum(tokens) for tokens in self.token_predictions)
+
+    @property
+    def total_tokens(self) -> int:
+        """Number of detected tokens."""
+        return sum(len(tokens) for tokens in self.token_predictions)
+
+
+_DetectionCacheKey = tuple[str, Device, str, tuple[tuple[str, str], ...]]
+
+
+class _HallucinationDetectionCache:
+    """Cache detector output shared by the hallucination metrics."""
+
+    def __init__(self) -> None:
+        self._cache: weakref.WeakKeyDictionary[
+            Dataset, tuple[_DetectionCacheKey, _HallucinationDetection]
+        ] = weakref.WeakKeyDictionary()
+
+    def get_or_compute(
+        self,
+        dataset: Dataset,
+        predictions: c.Sequence[dict[str, t.Any]],
+        model: str,
+        device: Device,
+        cache_dir: str,
+        compute: c.Callable[[], _HallucinationDetection],
+    ) -> _HallucinationDetection:
+        """Return cached detector output or compute it once for these inputs."""
+        key: _DetectionCacheKey = (
+            model,
+            device,
+            cache_dir,
+            tuple(
+                (str(prediction["id"]), str(prediction["prediction_text"]))
+                for prediction in predictions
+            ),
+        )
+        cached = self._cache.get(dataset)
+        if cached is not None and cached[0] == key:
+            return cached[1]
+
+        detection = compute()
+        self._cache[dataset] = (key, detection)
+        return detection
+
+
+class _HallucinationMetric(Metric):
+    """Base class for metrics sharing one hallucination detector run."""
+
+    def __init__(
+        self,
+        name: str,
+        pretty_name: str,
+        detection_cache: _HallucinationDetectionCache | None = None,
+    ) -> None:
+        """Initialise a hallucination metric.
 
         Args:
             name:
                 The name of the metric in snake_case.
             pretty_name:
                 The pretty name of the metric, used for display purposes.
+            detection_cache (optional):
+                Cache shared by metrics evaluating the same predictions. Defaults to
+                the module-level cache.
         """
         super().__init__(name=name, pretty_name=pretty_name, postprocessing_fn=None)
+        self._detection_cache = detection_cache or _hallucination_detection_cache
 
     def __call__(
         self,
@@ -48,19 +115,14 @@ class TokenHallucinationMetric(Metric):
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
     ) -> float | None:
-        """Compute the token-level hallucination rate for a set of predictions.
-
-        This method wraps `detect_hallucinations` to run a token-level
-        hallucination detector over the provided predictions and dataset contexts,
-        and returns the rate of tokens classified as hallucinated.
+        """Compute a hallucination metric for a set of predictions.
 
         Args:
             predictions:
-                The model predictions. Each prediction must provide a
-                ``"prediction_text"`` field containing the model's answer text.
+                The model predictions. Each prediction must provide ``"id"`` and
+                ``"prediction_text"`` fields.
             references:
-                The ground truth references. Unused by this metric, but accepted
-                for API consistency with the base ``Metric`` interface.
+                The ground truth references. Unused by these metrics.
             dataset:
                 The dataset used for evaluation.
             dataset_config:
@@ -69,42 +131,53 @@ class TokenHallucinationMetric(Metric):
                 The benchmark configuration, used to determine the compute device.
 
         Returns:
-            The hallucination rate (hallucinated_tokens/total_tokens).
+            The hallucination score.
         """
-        # Extract language code from dataset config
+        prediction_list = list(predictions)
         main_language = dataset_config.main_language
         language_code: str = (
             main_language[1].code
             if isinstance(main_language, tuple)
             else main_language.code
         )
-
-        hallucination_rate = detect_hallucinations(
+        model = _hallucination_model_id(language_code=language_code)
+        device = Device(benchmark_config.device.type)
+        detection = self._detection_cache.get_or_compute(
             dataset=dataset,
-            predictions=predictions,
-            model=_hallucination_model_id(language_code=language_code),
-            device=Device(benchmark_config.device.type),
+            predictions=prediction_list,
+            model=model,
+            device=device,
             cache_dir=benchmark_config.cache_dir,
+            compute=lambda: _detect_hallucinations(
+                dataset=dataset,
+                predictions=prediction_list,
+                model=model,
+                device=device,
+                cache_dir=benchmark_config.cache_dir,
+            ),
         )
-        return hallucination_rate
+        return self._score_detection(detection=detection)
+
+    def _score_detection(self, detection: _HallucinationDetection) -> float:
+        """Convert detector output into this metric's score."""
+        raise NotImplementedError
 
     def download(
         self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
-    ) -> "TokenHallucinationMetric":
+    ) -> "_HallucinationMetric":
         """Pre-download hallucination detection models.
 
         The hallucination detection model is language-specific. When a dataset
-        configuration is provided, only the model(s) for the relevant language(s)
-        are downloaded. Otherwise, all hallucination detection models referenced
-        by built-in dataset configurations are fetched for offline benchmarking.
+        configuration is provided, only the model for the relevant language is
+        downloaded. Otherwise, all models referenced by built-in configurations are
+        fetched for offline benchmarking.
 
         Args:
             cache_dir:
                 The directory where the models will be downloaded to.
             dataset_config (optional):
-                The dataset configuration, used to filter which hallucination
-                detection models to download based on language. When None, all
-                models are downloaded. Defaults to None.
+                The dataset configuration, used to filter models by language.
+                Defaults to None.
 
         Returns:
             The metric object itself.
@@ -116,20 +189,25 @@ class TokenHallucinationMetric(Metric):
         return self
 
 
-def _hallucination_model_id(language_code: str) -> str:
-    """Build the hallucination detection model ID for a dataset.
+class SampleHallucinationMetric(_HallucinationMetric):
+    """Metric reporting the proportion of evaluated samples with hallucinations."""
 
-    Args:
-        language_code:
-            The language code of the dataset.
+    def _score_detection(self, detection: _HallucinationDetection) -> float:
+        """Return the sample-level hallucination rate."""
+        return sum(any(tokens) for tokens in detection.token_predictions) / len(
+            detection.token_predictions
+        )
 
-    Returns:
-        The Hugging Face Hub repository ID of the hallucination detection model.
-    """
-    return (
-        "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-"
-        f"ragtruth-{language_code}"
-    )
+
+class TokenHallucinationMetric(_HallucinationMetric):
+    """Metric reporting the proportion of hallucinated tokens."""
+
+    def _score_detection(self, detection: _HallucinationDetection) -> float:
+        """Return the token-level hallucination rate."""
+        return detection.hallucinated_tokens / detection.total_tokens
+
+
+_hallucination_detection_cache = _HallucinationDetectionCache()
 
 
 def _hallucination_model_ids(
@@ -181,7 +259,7 @@ def _hallucination_model_ids(
     model_ids: set[str] = set()
     for dataset_config in dataset_configs.values():
         if any(
-            isinstance(metric, TokenHallucinationMetric)
+            isinstance(metric, _HallucinationMetric)
             for metric in dataset_config.task.metrics
         ):
             main_language = dataset_config.main_language
@@ -194,6 +272,22 @@ def _hallucination_model_ids(
     return model_ids
 
 
+def _hallucination_model_id(language_code: str) -> str:
+    """Build the hallucination detection model ID for a dataset.
+
+    Args:
+        language_code:
+            The language code of the dataset.
+
+    Returns:
+        The Hugging Face Hub repository ID of the hallucination detection model.
+    """
+    return (
+        "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-"
+        f"ragtruth-{language_code}"
+    )
+
+
 def detect_hallucinations(
     dataset: Dataset,
     predictions: c.Iterable[dict[str, t.Any]],
@@ -201,7 +295,7 @@ def detect_hallucinations(
     device: Device,
     cache_dir: str,
 ) -> float:
-    """Load model and detect hallucinations.
+    """Load the detector and return its token-level hallucination rate.
 
     Args:
         dataset:
@@ -223,10 +317,45 @@ def detect_hallucinations(
     Returns:
         A hallucination rate (hallucinated_tokens/total_tokens).
 
+    """
+    detection = _detect_hallucinations(
+        dataset=dataset,
+        predictions=list(predictions),
+        model=model,
+        device=device,
+        cache_dir=cache_dir,
+    )
+    return detection.hallucinated_tokens / detection.total_tokens
+
+
+def _detect_hallucinations(
+    dataset: Dataset,
+    predictions: c.Sequence[dict[str, t.Any]],
+    model: str,
+    device: Device,
+    cache_dir: str,
+) -> _HallucinationDetection:
+    """Run the detector and retain token predictions for multiple aggregations.
+
+    Args:
+        dataset:
+            Hallucination dataset containing ``"id"`` and ``"context"`` fields.
+        predictions:
+            Prediction objects containing matching ``"id"`` and
+            ``"prediction_text"`` fields.
+        model:
+            Path to the hallucination detection model.
+        device:
+            Device to run on.
+        cache_dir:
+            Directory containing the cached detection model.
+
+    Returns:
+        Detector token predictions grouped by evaluated sample.
+
     Raises:
         InvalidBenchmark:
-            If there are no tokens found in predicted answers of the
-            hallucination detection model.
+            If the model does not exist or no prediction tokens are available.
     """
     if not HfApi().repo_exists(repo_id=model):
         raise InvalidBenchmark(
@@ -248,7 +377,7 @@ def detect_hallucinations(
 
     id_to_context = dict(zip(dataset["id"], dataset["context"]))
 
-    hallucinated_tokens = 0
+    token_predictions: list[tuple[int, ...]] = []
     total_tokens = 0
     skipped_samples = 0
 
@@ -263,10 +392,9 @@ def detect_hallucinations(
             continue
 
         predict_answer = detector.predict_prompt(prompt=prompt, answer=predicted_text)
-
-        for token in predict_answer:
-            hallucinated_tokens += token["pred"]
-            total_tokens += 1
+        sample_tokens = tuple(int(token["pred"]) for token in predict_answer)
+        token_predictions.append(sample_tokens)
+        total_tokens += len(sample_tokens)
 
     if skipped_samples > 0:
         logger.warning(
@@ -281,9 +409,7 @@ def detect_hallucinations(
             "(there were no tokens found in predictions)."
         )
 
-    hallucination_rate = hallucinated_tokens / total_tokens
-
-    return hallucination_rate
+    return _HallucinationDetection(token_predictions=tuple(token_predictions))
 
 
 def _answer_too_long(
@@ -313,6 +439,10 @@ def _answer_too_long(
     return answer_token_count >= max_length - 4
 
 
-hallucination_metric = TokenHallucinationMetric(
-    name="hallucination_rate", pretty_name="Hallucination rate"
+sample_hallucination_metric = SampleHallucinationMetric(
+    name="sample_hallucination_rate", pretty_name="Sample hallucination rate"
+)
+
+token_hallucination_metric = TokenHallucinationMetric(
+    name="hallucination_rate", pretty_name="Token hallucination rate"
 )

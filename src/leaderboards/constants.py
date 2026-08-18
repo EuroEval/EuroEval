@@ -35,6 +35,7 @@ from euroeval.languages import (
     ITALIAN,
     LATVIAN,
     LITHUANIAN,
+    LUXEMBOURGISH,
     NORWEGIAN,
     POLISH,
     PORTUGUESE,
@@ -181,6 +182,7 @@ BACKUP_ARCHIVE_ROOT = "results"
 # Tasks displayed on every EuroEval leaderboard, in column order.
 LEADERBOARD_TASKS: list[str] = [
     "sentiment-classification",
+    "classification",
     "named-entity-recognition",
     "linguistic-acceptability",
     "reading-comprehension",
@@ -405,7 +407,7 @@ _SLAVIC = (
     "Slavic languages (Belarusian, Bulgarian, Bosnian, Croatian, Czech, Polish,"
     " Serbian, Slovak, Slovenian, Ukrainian)"
 )
-_WGERMANIC = "West Germanic languages (Dutch, English, German)"
+_WGERMANIC = "West Germanic languages (Dutch, English, German, Luxembourgish)"
 
 LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
     _BALTIC: [LATVIAN.code, LITHUANIAN.code],
@@ -431,7 +433,7 @@ LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
         SLOVENE.code,
         UKRAINIAN.code,
     ],
-    _WGERMANIC: [DUTCH.code, ENGLISH.code, GERMAN.code],
+    _WGERMANIC: [DUTCH.code, ENGLISH.code, GERMAN.code, LUXEMBOURGISH.code],
     "Albanian": [ALBANIAN.code],
     "Greek": [GREEK.code],
     "Hungarian": [HUNGARIAN.code],

@@ -128,6 +128,9 @@ WMT24PP_EN_DE_CONFIG = TranslationDatasetConfig(
     target_language=GERMAN,
 )
 
+
+# Unofficial datasets ###
+
 WMT24PP_DE_EN_CONFIG = TranslationDatasetConfig(
     name="wmt24pp-de-en",
     pretty_name="WMT24++-de-en",
@@ -138,9 +141,6 @@ WMT24PP_DE_EN_CONFIG = TranslationDatasetConfig(
     target_language=ENGLISH,
     unofficial=True,
 )
-
-
-# Unofficial datasets ###
 
 MMLU_DE_CONFIG = DatasetConfig(
     name="mmlu-de",
