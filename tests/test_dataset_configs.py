@@ -13,6 +13,34 @@ from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import BULGARIAN, ENGLISH, FAROESE
 from euroeval.tasks import TRANSLATION
 
+WMT24PP_LANGUAGE_CODES = (
+    "bg",
+    "ca",
+    "cs",
+    "da",
+    "de",
+    "el",
+    "et",
+    "fi",
+    "fr",
+    "hr",
+    "hu",
+    "is",
+    "it",
+    "lt",
+    "lv",
+    "nl",
+    "no",
+    "pl",
+    "pt",
+    "ro",
+    "sk",
+    "sl",
+    "sr",
+    "sv",
+    "uk",
+)
+
 
 class TestDatasetConfigLanguageLists:
     """Tests for DatasetConfig language lists."""
@@ -189,6 +217,17 @@ def test_translation_not_included_in_english_leaderboard() -> None:
         assert len(config.languages) == 1
 
 
+@pytest.mark.parametrize("language_code", WMT24PP_LANGUAGE_CODES)
+def test_wmt24pp_configs_cover_all_documented_languages(language_code: str) -> None:
+    """Test that both WMT24++ directions exist for every documented language."""
+    language_code = language_code.upper()
+    forward_config = getattr(dc_module, f"WMT24PP_EN_{language_code}_CONFIG")
+    reverse_config = getattr(dc_module, f"WMT24PP_{language_code}_EN_CONFIG")
+
+    assert forward_config.unofficial is False
+    assert reverse_config.unofficial is True
+
+
 def test_wmt24pp_configs_for_both_directions() -> None:
     """Test that WMT24++ configs exist for both directions."""
     assert hasattr(dc_module, "WMT24PP_EN_BG_CONFIG")
@@ -202,7 +241,7 @@ def test_wmt24pp_configs_for_both_directions() -> None:
     assert bg_en_config.languages == [BULGARIAN]
 
     assert en_bg_config.unofficial is False
-    assert bg_en_config.unofficial is False
+    assert bg_en_config.unofficial is True
 
 
 def test_wmt24pp_configs_for_croatian() -> None:
