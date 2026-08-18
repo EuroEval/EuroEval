@@ -415,6 +415,71 @@ class TestExtractModelMetadata:
 class TestGroupResultsByModel:
     """Tests for the `group_results_by_model` function."""
 
+    def test_hallucination_metrics_are_extracted_in_task_order(self) -> None:
+        """Extract both hallucination metrics in the task's declared order."""
+        primary, secondary = task_metric_names("hallucination")
+        assert (primary, secondary) == (
+            "sample_hallucination_rate",
+            "hallucination_rate",
+        )
+
+        record = {
+            "model_info": {"name": "org/model"},
+            "eval_library": {
+                "version": "17.6.0",
+                "additional_details": {
+                    "dataset": "hallucination-da",
+                    "task": "hallucination",
+                    "few_shot": "false",
+                    "validation_split": False,
+                    "raw_results": [
+                        {f"test_{secondary}": 0.5, f"test_{primary}": 0.25}
+                    ],
+                },
+            },
+            "evaluation_results": [
+                {
+                    "evaluation_name": f"test_{secondary}",
+                    "score_details": {"score": 50.0},
+                },
+                {
+                    "evaluation_name": f"test_{primary}",
+                    "score_details": {"score": 25.0},
+                },
+            ],
+        }
+
+        result = group_results_by_model(results=[record])
+
+        assert result["org/model (zero-shot)"]["hallucination-da"] == [
+            ([25.0], 25.0, 0.0),
+            ([50.0], 50.0, 0.0),
+        ]
+
+    def test_legacy_token_only_hallucination_record_is_not_mislabeled(self) -> None:
+        """Do not place a legacy token score in the new primary slot."""
+        record = {
+            "model_info": {"name": "org/model"},
+            "eval_library": {
+                "version": "17.6.0",
+                "additional_details": {
+                    "dataset": "hallucination-da",
+                    "task": "hallucination",
+                    "few_shot": "false",
+                    "validation_split": False,
+                    "raw_results": [{"test_hallucination_rate": 0.5}],
+                },
+            },
+            "evaluation_results": [
+                {
+                    "evaluation_name": "test_hallucination_rate",
+                    "score_details": {"score": 50.0},
+                }
+            ],
+        }
+
+        assert group_results_by_model(results=[record]) == {}
+
     def test_split_agnostic_dataset_mirrored_onto_val_variant(self) -> None:
         """Regression: a no-validation-split dataset shows on both variant rows.
 

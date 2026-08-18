@@ -24,11 +24,12 @@ rather than generating entirely new documents. Both encoder and decoder models c
 evaluated on these tasks, enabling you to compare the performance across all language
 models out there. The tasks in this category are:
 
-1. [Sentiment Classification](sentiment-classification.md)
-2. [Named Entity Recognition](named-entity-recognition.md)
-3. [Linguistic Acceptability](linguistic-acceptability.md)
-4. [Reading Comprehension](reading-comprehension.md)
-5. [Natural Language Inference](natural-language-inference.md)
+1. [Classification](classification.md)
+2. [Sentiment Classification](sentiment-classification.md)
+3. [Named Entity Recognition](named-entity-recognition.md)
+4. [Linguistic Acceptability](linguistic-acceptability.md)
+5. [Reading Comprehension](reading-comprehension.md)
+6. [Natural Language Inference](natural-language-inference.md)
 
 ### NLG Tasks
 
