@@ -19,6 +19,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 - Fixed `#no-thinking` LiteLLM evaluations when providers reject a zero thinking budget
   and require an explicit `thinking.type` of `disabled`.
+- The logical-reasoning task is now restricted to instruction-tuned and
+  reasoning models, excluding base models.
 
 ## [v18.0.0] - 2026-08-14
 

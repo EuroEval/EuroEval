@@ -18,6 +18,7 @@ import numpy as np
 from euroeval.constants import ORTHOGONAL_TASKS
 
 from .constants import LEADERBOARD_CATEGORIES
+from .enums import LeaderboardCategory
 from .task_metadata import category_includes_task
 
 
@@ -67,7 +68,7 @@ def bootstrap_rank_scores(
     configs: dict[str, dict[str, list[str]]],
     n_bootstraps: int,
     seed: int | None = None,
-    categories: tuple[str, ...] | None = None,
+    categories: tuple[LeaderboardCategory, ...] | None = None,
 ) -> dict[str, dict[str, dict[str, np.ndarray]]]:
     """Compute bootstrap distributions of overall mean rank scores.
 
@@ -145,9 +146,9 @@ def _bootstrap_single_iteration(
     dataset_models: dict[str, set[str]],
     model_datasets: dict[str, set[str]],
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    dataset_to_category: dict[str, set[str]],
+    dataset_to_category: dict[str, set[LeaderboardCategory]],
     configs: dict[str, dict[str, list[str]]],
-    categories: tuple[str, ...],
+    categories: tuple[LeaderboardCategory, ...],
     rng: np.random.Generator,
 ) -> dict[str, dict[str, dict[str, float]]]:
     """Run a single bootstrap iteration and return aggregated scores.
@@ -222,7 +223,7 @@ def _bootstrap_single_iteration(
 
 def _aggregate_bootstrap_sample(
     model_id: str,
-    categories: tuple[str, ...],
+    categories: tuple[LeaderboardCategory, ...],
     all_rank_scores: dict[str, dict[str, dict[str, list[float]]]],
     configs: dict[str, dict[str, list[str]]],
 ) -> dict[str, dict[str, float | None]]:
@@ -344,7 +345,7 @@ def _compute_rank_scores(
     dataset_models: dict[str, set[str]],
     model_datasets: dict[str, set[str]],
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    dataset_to_category: dict[str, set[str]],
+    dataset_to_category: dict[str, set[LeaderboardCategory]],
     rng: np.random.Generator,
 ) -> dict[str, dict[str, dict[str, list[float]]]]:
     """Compute rank scores for sampled dataset occurrences.
@@ -395,8 +396,9 @@ def _compute_rank_scores(
 
 
 def _build_dataset_mappings(
-    configs: dict[str, dict[str, list[str]]], categories: tuple[str, ...]
-) -> tuple[dict[str, list[str]], dict[str, set[str]]]:
+    configs: dict[str, dict[str, list[str]]],
+    categories: tuple[LeaderboardCategory, ...],
+) -> tuple[dict[str, list[str]], dict[str, set[LeaderboardCategory]]]:
     """Build task->datasets and dataset->categories mappings for bootstrap.
 
     Args:
@@ -424,10 +426,10 @@ def _build_dataset_mappings(
         task = dataset_to_task[ds]
         task_datasets[task].append(ds)
 
-    dataset_to_category: dict[str, set[str]] = {}
+    dataset_to_category: dict[str, set[LeaderboardCategory]] = {}
     for ds in sorted(dataset_to_task.keys()):
         task = dataset_to_task[ds]
-        cats: set[str] = set()
+        cats: set[LeaderboardCategory] = set()
         for category in categories:
             if category_includes_task(category=category, task=task):
                 cats.add(category)

@@ -25,7 +25,7 @@ from .records import (
     get_dataset,
     get_model_name,
     plain_model_id,
-    strip_val_suffix,
+    strip_note_item,
 )
 from .result_identity import normalise_bool_value
 from .split_sizes import get_split_sizes
@@ -567,7 +567,7 @@ def _mirror_split_agnostic_datasets(
     those scores onto the corresponding validation-split variant
     (``... (zero-shot, val)``) whenever it exists, so the ``(val)`` row shows
     the score too. Only the validation dimension is crossed — the few-shot
-    dimension is preserved, since ``strip_val_suffix`` differs only in the
+    dimension is preserved, since ``strip_note_item`` only removes the
     ``val`` note. Mutates ``model_scores`` in place.
 
     Args:
@@ -577,8 +577,8 @@ def _mirror_split_agnostic_datasets(
             Split-agnostic datasets per (test-split variant) model id.
     """
     for model_id in list(model_scores):
-        test_variant_id = strip_val_suffix(model_id=model_id)
-        # ``strip_val_suffix`` returns None unless the id carries a ``val`` note,
+        test_variant_id = strip_note_item(model_id=model_id, note_item="val")
+        # ``strip_note_item`` returns None unless the id carries a ``val`` note,
         # so this only fires for validation-split variant rows.
         if test_variant_id is None:
             continue

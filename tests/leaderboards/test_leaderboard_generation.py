@@ -11,7 +11,11 @@ import math
 
 import numpy as np
 
-from src.leaderboards.leaderboard_generation import _compute_eligible_models_and_ranks
+from src.leaderboards.enums import LeaderboardCategory
+from src.leaderboards.leaderboard_generation import (
+    _build_category_dataset_maps,
+    _compute_eligible_models_and_ranks,
+)
 
 
 class TestMultilingualPerLanguageRankScores:
@@ -42,7 +46,7 @@ class TestMultilingualPerLanguageRankScores:
         multilingual_category_to_datasets = {"generative": all_datasets}
         (_, _, ranks, std_ranks) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=multilingual_category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=multilingual_config,
@@ -101,7 +105,7 @@ class TestMultilingualPerLanguageRankScores:
         # Run twice - should produce identical results
         (_, _, ranks1, std_ranks1) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=category_to_datasets,
             category_to_orthogonal_datasets=category_to_orthogonal,
             leaderboard_configs=config,
@@ -109,7 +113,7 @@ class TestMultilingualPerLanguageRankScores:
 
         (_, _, ranks2, std_ranks2) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=category_to_datasets,
             category_to_orthogonal_datasets=category_to_orthogonal,
             leaderboard_configs=config,
@@ -142,7 +146,7 @@ class TestMultilingualPerLanguageRankScores:
         albanian_category_to_datasets = {"generative": albanian_datasets}
         (_, _, albanian_ranks, _) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=albanian_category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=albanian_config,
@@ -152,7 +156,7 @@ class TestMultilingualPerLanguageRankScores:
         multilingual_category_to_datasets = {"generative": all_datasets}
         (_, _, multilingual_ranks, _) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=multilingual_category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=multilingual_config,
@@ -211,7 +215,7 @@ class TestMultilingualPerLanguageRankScores:
         (eligible, lang_to_datasets, ranks, std_ranks) = (
             _compute_eligible_models_and_ranks(
                 model_results=model_results,
-                category="generative",
+                category=LeaderboardCategory.GENERATIVE,
                 category_to_datasets=multilingual_category_to_datasets,
                 category_to_orthogonal_datasets={"generative": {}},
                 leaderboard_configs=multilingual_config,
@@ -290,7 +294,7 @@ class TestMultilingualPerLanguageRankScores:
             albanian_std_ranks,
         ) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=albanian_category_to_datasets,
             category_to_orthogonal_datasets=albanian_category_to_orthogonal,
             leaderboard_configs=albanian_config,
@@ -302,7 +306,7 @@ class TestMultilingualPerLanguageRankScores:
         (danish_eligible, danish_lang_to_datasets, danish_ranks, danish_std_ranks) = (
             _compute_eligible_models_and_ranks(
                 model_results=model_results,
-                category="generative",
+                category=LeaderboardCategory.GENERATIVE,
                 category_to_datasets=danish_category_to_datasets,
                 category_to_orthogonal_datasets=danish_category_to_orthogonal,
                 leaderboard_configs=danish_config,
@@ -319,7 +323,7 @@ class TestMultilingualPerLanguageRankScores:
             multilingual_std_ranks,
         ) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=multilingual_category_to_datasets,
             category_to_orthogonal_datasets=multilingual_category_to_orthogonal,
             leaderboard_configs=multilingual_config,
@@ -428,6 +432,33 @@ def _make_dummy_results(
     return results
 
 
+class TestOrthogonalDatasetsByCategory:
+    """Tests for orthogonal bonus-column scoping in _build_category_dataset_maps."""
+
+    def test_orthogonal_datasets_only_populated_for_chat(self) -> None:
+        """Orthogonal datasets are only mapped for chat; other categories get {}."""
+        leaderboard_configs = {
+            "danish": {
+                "sentiment-classification": ["angry-tweets"],
+                "european-values": ["valeu-da"],
+            }
+        }
+        _, category_to_orthogonal_datasets = _build_category_dataset_maps(
+            categories=[
+                LeaderboardCategory.CHAT,
+                LeaderboardCategory.GENERATIVE,
+                LeaderboardCategory.ALL_MODELS,
+            ],
+            leaderboard_configs=leaderboard_configs,
+        )
+
+        assert category_to_orthogonal_datasets[LeaderboardCategory.CHAT] == {
+            "valeu-da": "european-values"
+        }
+        assert category_to_orthogonal_datasets[LeaderboardCategory.GENERATIVE] == {}
+        assert category_to_orthogonal_datasets[LeaderboardCategory.ALL_MODELS] == {}
+
+
 class TestPerLanguageRankScoreFormat:
     """Tests for per-language rank score formatting and structure."""
 
@@ -448,7 +479,7 @@ class TestPerLanguageRankScoreFormat:
         multilingual_category_to_datasets = {"generative": all_datasets}
         (_, _, ranks, _) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=multilingual_category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=multilingual_config,
@@ -474,7 +505,7 @@ class TestPerLanguageRankScoreFormat:
         category_to_datasets = {"generative": datasets}
         (_, _, ranks, _) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=config,
@@ -519,7 +550,7 @@ class TestRegressionForReportedIssue:
         albanian_category_to_datasets = {"generative": albanian_datasets}
         (_, _, albanian_ranks, _) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=albanian_category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=albanian_config,
@@ -529,7 +560,7 @@ class TestRegressionForReportedIssue:
         multilingual_category_to_datasets = {"generative": all_datasets}
         (_, _, multilingual_ranks, _) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=multilingual_category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=multilingual_config,

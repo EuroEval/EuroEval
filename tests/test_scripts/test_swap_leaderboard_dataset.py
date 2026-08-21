@@ -861,6 +861,68 @@ class TestLoadCorpusAndBuildEvalJobs:
         assert jobs[0].zero_shot is False  # few-shot (desired)
         assert skipped_count == 0
 
+    def test_build_eval_jobs_generative_coverage_suffices_without_chat(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A variant not fully covering chat still gets a job scheduled.
+
+        Danish "linguistic-acceptability" affects three leaderboard
+        categories: chat, generative, and all_models. Chat additionally
+        requires chat-only datasets that generative and all_models don't. A
+        variant with the datasets generative/all_models require, but
+        missing those chat-only ones, does not qualify for chat, but it
+        does qualify for generative (and, since generative's requirement is
+        a superset of all_models', for all_models too). A job must still
+        get scheduled for it, since a model only needs to satisfy one
+        affected category, not all of them at once.
+        """
+        Corpus = swap_leaderboard_dataset._Corpus
+        ObsConfig = swap_leaderboard_dataset._ObsConfig
+
+        required_datasets = {
+            "dala",
+            "dansk",
+            "angry-tweets",
+            "multi-wiki-qa-da",
+            "nordjylland-news",
+            "danish-citizen-tests",
+            "winogrande-da",
+            "danske-talemaader",
+            "danwic",
+        }
+        corpus = Corpus(
+            datasets_by_language={"da": {"test-model": required_datasets}},
+            api_model_ids=set(),
+            observations=set(),
+            eval_configs={},
+            exact_observations=set(),
+            variant_coverage={
+                # Covers only the generative/all_models set. Deliberately
+                # missing the chat-only datasets.
+                "test-model": {"da": required_datasets}
+            },
+            variant_configs={
+                ("test-model", "dala", "da"): ObsConfig(
+                    validation_split=False, few_shot=True, generative=False
+                )
+            },
+        )
+
+        jobs, skipped_api, skipped_count = swap_leaderboard_dataset.build_eval_jobs(
+            ranked={("test-model", "da")},
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            corpus=corpus,
+            include_api=True,
+            selected_providers=set(),
+            force=True,
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+        )
+
+        assert len(jobs) == 1
+        assert jobs[0].model_id == "test-model"
+
     def test_build_eval_jobs_generative_only_skips_encoders(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -1380,6 +1442,44 @@ class TestLoadCorpusAndBuildEvalJobs:
         assert jobs[0].zero_shot is False
         assert skipped_api == []
         assert skipped_count == 0
+
+
+class TestRankedModelLanguagePairs:
+    """Tests for ranked_model_language_pairs function."""
+
+    def test_generative_coverage_suffices_without_chat(self) -> None:
+        """A model not fully covering chat still counts as ranked.
+
+        Danish "linguistic-acceptability" affects three leaderboard
+        categories: chat, generative, and all_models. Chat additionally
+        requires chat-only datasets that generative and all_models don't. A
+        model with the datasets generative/all_models require, but missing
+        those chat-only ones, isn't eligible for chat, but it is eligible
+        for generative (and, since generative's requirement is a superset
+        of all_models', for all_models too). It must still count as
+        ranked, since a model only needs to be ranked in one affected
+        category, not all of them at once.
+        """
+        required_datasets = {
+            "dala",
+            "dansk",
+            "angry-tweets",
+            "multi-wiki-qa-da",
+            "nordjylland-news",
+            "danish-citizen-tests",
+            "winogrande-da",
+            "danske-talemaader",
+            "danwic",
+        }
+        ranked = swap_leaderboard_dataset.ranked_model_language_pairs(
+            old_dataset=None,
+            new_datasets=("new-dataset",),
+            swapped_task="linguistic-acceptability",
+            language_codes={"da"},
+            datasets_by_language={"da": {"test-model": required_datasets}},
+        )
+
+        assert ("test-model", "da") in ranked
 
 
 class TestSyncResults:

@@ -2,8 +2,9 @@
 
 Centralises every fixed value used by the leaderboard pipeline so the
 constants live in one place rather than being scattered across the modules
-that happen to use them. This module imports only from the standard library
-and ``euroeval``; the rest of the package imports from here.
+that happen to use them. This module imports only from the standard library,
+``euroeval``, and ``leaderboards.enums``; the rest of the package imports
+from here.
 """
 
 from __future__ import annotations
@@ -47,6 +48,8 @@ from euroeval.languages import (
     SWEDISH,
     UKRAINIAN,
 )
+
+from .enums import LeaderboardCategory
 
 # ---------------------------------------------------------------------------
 # Permissive licences
@@ -196,12 +199,22 @@ LEADERBOARD_TASKS: list[str] = [
     "common-sense-reasoning",
     "simplification",
     "european-values",
+    "instruction-following",
+    "tool-calling",
+    "logical-reasoning",
+    "multiple-choice-stereotype-bias",
 ]
 
-# The two leaderboard categories that every model is ranked within. The
-# "generative" variant scores all tasks; "all_models" only scores NLU tasks so
-# non-generative models can compete.
-LEADERBOARD_CATEGORIES: tuple[str, str] = ("generative", "all_models")
+# The three leaderboard categories that every model is ranked within. The
+# "chat" variant scores every task and only ranks instruction-tuned/
+# reasoning models; "generative" scores all tasks except the instruct-
+# exclusive ones; "all_models" only scores NLU tasks so non-generative models
+# can compete.
+LEADERBOARD_CATEGORIES: tuple[LeaderboardCategory, ...] = (
+    LeaderboardCategory.CHAT,
+    LeaderboardCategory.GENERATIVE,
+    LeaderboardCategory.ALL_MODELS,
+)
 
 # TaskGroup -> "nlu"/"nlg". The "all_models" leaderboard variant only
 # scores NLU tasks so non-generative models can compete.

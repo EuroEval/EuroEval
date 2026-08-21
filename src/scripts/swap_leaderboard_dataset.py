@@ -83,7 +83,7 @@ from leaderboards.records import (
     get_dataset,
     plain_model_id,
     strip_anchor,
-    strip_val_suffix,
+    strip_note_item,
 )
 from leaderboards.result_identity import normalise_bool_value
 from leaderboards.task_metadata import (
@@ -1632,7 +1632,7 @@ def build_eval_jobs(  # noqa: C901, PLR0912
         for category in LEADERBOARD_CATEGORIES
         if category_includes_task(category=category, task=swapped_task)
     ]
-    required_by_language: dict[str, set[str]] = {}
+    required_sets_by_language: dict[str, list[set[str]]] = {}
     for code in sorted(language_codes):
         language = languages.get(code)
         if language is None:
@@ -1644,20 +1644,22 @@ def build_eval_jobs(  # noqa: C901, PLR0912
             by_task = official_datasets_for_language(name)
         except ValueError:
             continue
-        required: set[str] = set()
+        required_sets: list[set[str]] = []
         for category in affected:
-            required |= {
+            required = {
                 dataset
                 for task, task_datasets in by_task.items()
                 if task not in ORTHOGONAL_TASKS
                 and category_includes_task(category=category, task=task)
                 for dataset in task_datasets
             }
-        for nds in new_datasets:
-            required.discard(nds)
-        if old_dataset:
-            required.add(old_dataset)
-        required_by_language[code] = required
+            for nds in new_datasets:
+                required.discard(nds)
+            if old_dataset:
+                required.add(old_dataset)
+            if required:
+                required_sets.append(required)
+        required_sets_by_language[code] = required_sets
 
     for model_id, code in sorted(ranked):
         is_api = model_id in corpus.api_model_ids
@@ -1679,7 +1681,7 @@ def build_eval_jobs(  # noqa: C901, PLR0912
 
         if config_dataset is None:
             # In add-only mode, find variant rows that cover required datasets
-            required = required_by_language.get(code, set())
+            required_sets = required_sets_by_language.get(code, [])
 
             # Find all variant rows for this plain model in this language
             matching_variants: list[tuple[str, _ObsConfig]] = []
@@ -1696,12 +1698,15 @@ def build_eval_jobs(  # noqa: C901, PLR0912
                     continue
                 model_has_variant_rows = True
 
-                # Check if this variant covers required datasets for this language
-                if not required <= variant_datasets:
+                # Check if this variant covers any affected category's required set
+                satisfied = next(
+                    (req for req in required_sets if req <= variant_datasets), None
+                )
+                if satisfied is None:
                     continue
 
                 # Get config from this variant row (use any dataset it covers)
-                for ds in sorted(variant_datasets & required):
+                for ds in sorted(variant_datasets & satisfied):
                     var_key = (variant_id, ds, code)
                     if var_key in corpus.variant_configs:
                         matching_variants.append(
@@ -1728,7 +1733,10 @@ def build_eval_jobs(  # noqa: C901, PLR0912
                 models_datasets = corpus.datasets_by_language.get(code, {}).get(
                     model_id, set()
                 )
-                for ds in sorted(required & models_datasets):
+                required_union: set[str] = (
+                    set().union(*required_sets) if required_sets else set()
+                )
+                for ds in sorted(required_union & models_datasets):
                     if (model_id, ds, code) in corpus.eval_configs:
                         config_dataset = ds
                         break
@@ -1961,7 +1969,7 @@ def _mirror_split_agnostic_variant_coverage(
     split_agnostic_datasets: dict[str, dict[str, set[str]]],
 ) -> None:
     for variant_id in list(variant_coverage_raw):
-        test_variant_id = strip_val_suffix(variant_id)
+        test_variant_id = strip_note_item(model_id=variant_id, note_item="val")
         if test_variant_id is None:
             continue
         for language, datasets in split_agnostic_datasets.get(
@@ -1990,7 +1998,7 @@ def _prune_val_variant_coverage(
 ) -> dict[str, dict[str, set[str]]]:
     variant_coverage: dict[str, dict[str, set[str]]] = {}
     for variant_id, lang_datasets in variant_coverage_raw.items():
-        non_val_equiv = strip_val_suffix(variant_id)
+        non_val_equiv = strip_note_item(model_id=variant_id, note_item="val")
         if non_val_equiv is not None and non_val_equiv in variant_coverage_raw:
             non_val_coverage = variant_coverage_raw[non_val_equiv]
             pruned_lang_datasets: dict[str, set[str]] = {}
@@ -2111,25 +2119,27 @@ def ranked_model_language_pairs(
             continue
 
         models_in_language = datasets_by_language.get(code, {})
-        # Compute the union of required datasets across all affected categories.
-        # A model must have all datasets that ANY affected category requires,
-        # ensuring it would have a rank score on the most restrictive leaderboard.
-        required: set[str] = set()
+        # Compute each affected category's own required set separately. A model
+        # is ranked if it satisfies any one category's requirement, not every
+        # affected category's requirement at once.
+        required_sets: list[set[str]] = []
         for category in affected:
-            required |= {
+            required = {
                 dataset
                 for task, task_datasets in by_task.items()
                 if task not in ORTHOGONAL_TASKS
                 and category_includes_task(category=category, task=task)
                 for dataset in task_datasets
             }
-        for nds in new_datasets:
-            required.discard(nds)
-        if old_dataset:
-            required.add(old_dataset)
-        if required:
+            for nds in new_datasets:
+                required.discard(nds)
+            if old_dataset:
+                required.add(old_dataset)
+            if required:
+                required_sets.append(required)
+        if required_sets:
             for model_id, datasets in models_in_language.items():
-                if required <= datasets:
+                if any(required <= datasets for required in required_sets):
                     ranked.add((model_id, code))
     return ranked
 
