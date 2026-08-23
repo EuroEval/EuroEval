@@ -59,6 +59,11 @@
     "train": 256,
     "val": 64
   },
+  "EuroEval/berte-wd-mini": {
+    "test": 360,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/besls": {
     "test": 1616,
     "train": 256,
