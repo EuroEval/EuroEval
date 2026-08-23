@@ -66,8 +66,6 @@ MULTI_IFEVAL_BE_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-# Unofficial datasets ###
-
 BERTE_WD_CONFIG = DatasetConfig(
     name="berte-wd",
     pretty_name="BeRTE-WD",
@@ -81,8 +79,9 @@ BERTE_WD_CONFIG = DatasetConfig(
     prompt_template="{text}\nІмплікацыя: {label}",
     instruction_prompt="{text}\n\nВызначце, ці вынікае другое сцвярджэнне з "
     "першага. Адкажыце толькі {labels_str}, і нічога іншага.",
-    unofficial=True,
 )
+
+# Unofficial datasets ###
 
 RAGTRUTH_BE_CONFIG = DatasetConfig(
     name="ragtruth-be",

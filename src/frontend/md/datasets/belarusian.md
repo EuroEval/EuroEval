@@ -316,7 +316,7 @@ euroeval --model <model-id> --dataset belacola
 
 ## Natural Language Inference
 
-### Unofficial: BeRTE-WD
+### BeRTE-WD
 
 [BeRTE-WD](https://huggingface.co/datasets/maaxap/BelarusianGLUE) is the
 Belarusian textual entailment dataset from the BelarusianGLUE collection. Each sample
