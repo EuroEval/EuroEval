@@ -759,3 +759,279 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-ca
 ```
+
+## Translation
+
+### WMT24++ English to Catalan
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Catalan translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Catalan translation pair from the dataset, where the source text is in
+English and the target text is in Catalan.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hello, how are you?",
+  "target_text": "Hola, com estàs?"
+}
+```
+
+```json
+{
+  "text": "The brown fox jumps over the lazy dog.",
+  "target_text": "La guineu marró salta sobre el gos mandrós."
+}
+```
+
+```json
+{
+  "text": "Barcelona is a city in Catalonia.",
+  "target_text": "Barcelona és una ciutat de Catalunya."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Catalan translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Catalan translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Catalan.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-en-ca
+```
+
+### Unofficial: WMT24++ Catalan to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Catalan translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Catalan translation pair from the dataset, where the source text is in
+Catalan and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hola, com estàs?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "La guineu marró salta sobre el gos mandrós.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Barcelona és una ciutat de Catalunya.",
+  "target_text": "Barcelona is a city in Catalonia."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  A continuació es mostren textos en català amb les traduccions corresponents a English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Text en català: {text}
+  Traducció a English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Text en català: {text}
+
+  Traduïu el text anterior a English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-ca-en
+```
+
+### FLORES+ English to Catalan
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Catalan direction, where the source text is in English and the
+target text is in Catalan.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Atesa la gran distància que hi ha fins a molts dels \"pueblos\", no trobareu gaire vida nocturna tret que visiteu Albuquerque o Santa Fe."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Per exemple, els infants que s'identifiquen amb una minoria racial que porta l'estereotip de no anar bé a escola tendeixen a no anar bé a l'escola una vegada que han après l'estereotip a què s'associa la seva raça."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "És neu compactada amb fissures emplenades i senyalades amb banderes. Només es pot travessar en tractors especialitzats, que arrosseguen trineus amb combustible i subministraments."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Catalan translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Catalan translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Catalan.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-ca
+```
+
+### Unofficial: FLORES+ Catalan to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Catalan-to-English direction, where the source text is in Catalan and the
+target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Atesa la gran distància que hi ha fins a molts dels \"pueblos\", no trobareu gaire vida nocturna tret que visiteu Albuquerque o Santa Fe.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Per exemple, els infants que s'identifiquen amb una minoria racial que porta l'estereotip de no anar bé a escola tendeixen a no anar bé a l'escola una vegada que han après l'estereotip a què s'associa la seva raça.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "És neu compactada amb fissures emplenades i senyalades amb banderes. Només es pot travessar en tractors especialitzats, que arrosseguen trineus amb combustible i subministraments.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  A continuació es mostren textos en català amb les traduccions corresponents a English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Text en català: {text}
+  Traducció a English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Text en català: {text}
+
+  Traduïu el text anterior a English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-ca-en
+```

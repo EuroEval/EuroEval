@@ -1,10 +1,40 @@
 """All Croatian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import CROATIAN
-from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import CROATIAN, ENGLISH
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    TRANSLATION,
+)
 
 # Official datasets ###
+
+WMT24PP_EN_HR_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-hr",
+    pretty_name="WMT24++-en-hr",
+    source="EuroEval/wmt24pp-en-hr",
+    task=TRANSLATION,
+    languages=[CROATIAN],
+    source_language=ENGLISH,
+    target_language=CROATIAN,
+)
+
+FLORES_EN_HR_CONFIG = TranslationDatasetConfig(
+    name="flores-en-hr",
+    pretty_name="FLORES-en-hr",
+    source="EuroEval/flores-en-hr",
+    task=TRANSLATION,
+    languages=[CROATIAN],
+    source_language=ENGLISH,
+    target_language=CROATIAN,
+)
 
 MMS_HR_CONFIG = DatasetConfig(
     name="mms-hr",
@@ -77,6 +107,28 @@ INCLUDE_HR_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+WMT24PP_HR_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-hr-en",
+    pretty_name="WMT24++-hr-en",
+    source="EuroEval/wmt24pp-hr-en",
+    task=TRANSLATION,
+    languages=[CROATIAN],
+    source_language=CROATIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
+
+FLORES_HR_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-hr-en",
+    pretty_name="FLORES-hr-en",
+    source="EuroEval/flores-hr-en",
+    task=TRANSLATION,
+    languages=[CROATIAN],
+    source_language=CROATIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 MMLU_HR_CONFIG = DatasetConfig(
     name="mmlu-hr",

@@ -20,9 +20,7 @@ works well across different languages.
 
 We also report [CHRF4++](https://www.aclweb.org/anthology/W18-2346/), which uses the
 same word-order setting but increases the recall weight to `beta=4`. Both metrics are
-computed using SacreBLEU and are reported as percentages. For both metrics, per-sentence
-scores are penalized if the predicted translation is not in the correct target language,
-in which case the score for that sentence is set to 0.
+computed using SacreBLEU and are reported as percentages.
 
 ## 🛠️ How to run
 

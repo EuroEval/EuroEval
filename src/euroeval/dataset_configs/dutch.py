@@ -1,7 +1,7 @@
 """All Dutch dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import DUTCH
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import DUTCH, ENGLISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -19,9 +19,30 @@ from ..tasks import (
     SENT,
     SIMPL,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
+
+WMT24PP_EN_NL_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-nl",
+    pretty_name="WMT24++-en-nl",
+    source="EuroEval/wmt24pp-en-nl",
+    task=TRANSLATION,
+    languages=[DUTCH],
+    source_language=ENGLISH,
+    target_language=DUTCH,
+)
+
+FLORES_EN_NL_CONFIG = TranslationDatasetConfig(
+    name="flores-en-nl",
+    pretty_name="FLORES-en-nl",
+    source="EuroEval/flores-en-nl",
+    task=TRANSLATION,
+    languages=[DUTCH],
+    source_language=ENGLISH,
+    target_language=DUTCH,
+)
 
 DBRD_CONFIG = DatasetConfig(
     name="dbrd",
@@ -147,7 +168,30 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
+
 # Unofficial datasets ###
+
+WMT24PP_NL_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-nl-en",
+    pretty_name="WMT24++-nl-en",
+    source="EuroEval/wmt24pp-nl-en",
+    task=TRANSLATION,
+    languages=[DUTCH],
+    source_language=DUTCH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
+
+FLORES_NL_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-nl-en",
+    pretty_name="FLORES-nl-en",
+    source="EuroEval/flores-nl-en",
+    task=TRANSLATION,
+    languages=[DUTCH],
+    source_language=DUTCH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 HELLASWAG_NL_CONFIG = DatasetConfig(
     name="hellaswag-nl",

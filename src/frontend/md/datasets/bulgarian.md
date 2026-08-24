@@ -754,3 +754,279 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-bg
 ```
+
+## Translation
+
+### WMT24++ English to Bulgarian
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Bulgarian translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Bulgarian translation pair from the dataset, where the source text is in
+English and the target text is in Bulgarian.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hello, how are you?",
+  "target_text": "Здравей, как си?"
+}
+```
+
+```json
+{
+  "text": "The brown fox jumps over the lazy dog.",
+  "target_text": "Кафявата лисица скача над мързеливото куче."
+}
+```
+
+```json
+{
+  "text": "Sofia is the capital of Bulgaria.",
+  "target_text": "София е столицата на България."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Bulgarian translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Bulgarian translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Bulgarian.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-en-bg
+```
+
+### Unofficial: WMT24++ Bulgarian to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Bulgarian translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Bulgarian translation pair from the dataset, where the source text is in
+Bulgarian and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Здравей, как си?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Кафявата лисица скача над мързеливото куче.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "София е столицата на България.",
+  "target_text": "Sofia is the capital of Bulgaria."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  По-долу са текстове на български език със съответните преводи на English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Текст на български: {text}
+  Превод на English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Текст на български: {text}
+
+  Преведете горния текст на English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-bg-en
+```
+
+### FLORES+ English to Bulgarian
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Bulgarian direction, where the source text is in English and the
+target text is in Bulgarian.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Като се има предвид колко отдалечени са пуеблосите, няма да можете да намерите интензивен нощен живот, без да пътувате до Албакърки или Санта Фе."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Например децата, които се идентифицират с расово малцинство, което е стереотипно, като не добре справящи се в училище, след като научат за стереотипа, свързан с тяхната раса, обикновено не се справят добре в училище."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "Това е компактен сняг и пукнатините са запълнени и маркирани със знамена. Преминаването е възможно само със специализирани влекачи, теглещи шейни с гориво и провизии."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Bulgarian translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Bulgarian translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Bulgarian.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-bg
+```
+
+### Unofficial: FLORES+ Bulgarian to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Bulgarian-to-English direction, where the source text is in Bulgarian and the
+target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Като се има предвид колко отдалечени са пуеблосите, няма да можете да намерите интензивен нощен живот, без да пътувате до Албакърки или Санта Фе.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Например децата, които се идентифицират с расово малцинство, което е стереотипно, като не добре справящи се в училище, след като научат за стереотипа, свързан с тяхната раса, обикновено не се справят добре в училище.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "Това е компактен сняг и пукнатините са запълнени и маркирани със знамена. Преминаването е възможно само със специализирани влекачи, теглещи шейни с гориво и провизии.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  По-долу са текстове на български език със съответните преводи на English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Текст на български: {text}
+  Превод на English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Текст на български: {text}
+
+  Преведете горния текст на English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-bg-en
+```

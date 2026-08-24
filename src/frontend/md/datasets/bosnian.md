@@ -474,3 +474,143 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-bs
 ```
+
+## Translation
+
+### FLORES+ English to Bosnian
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Bosnian direction, where the source text is in English and the
+target text is in Bosnian.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "S obzirom na to koliko su mnogi pueblosi udaljeni, nećete moći naći značajan noćni život ako ne otputujete u Albuquerque ili Santa Fe."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Na primjer, djeca koja se poistovjećuju s rasnom manjinom za koju postoji stereotip da nije uspješna u školi sklona su neuspjehu u školi nakon što saznaju za stereotip povezan s njihovom rasom."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "Radi se o zbijenom snijegu i pukotinama koje su popunjene i označene zastavicama. Na to područje može se putovati samo specijaliziranim traktorima koji vuku sanke s gorivom i zalihama."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Bosnian translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Bosnian translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Bosnian.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-bs
+```
+
+### Unofficial: FLORES+ Bosnian to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Bosnian-to-English direction, where the source text is in Bosnian and the
+target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "S obzirom na to koliko su mnogi pueblosi udaljeni, nećete moći naći značajan noćni život ako ne otputujete u Albuquerque ili Santa Fe.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Na primjer, djeca koja se poistovjećuju s rasnom manjinom za koju postoji stereotip da nije uspješna u školi sklona su neuspjehu u školi nakon što saznaju za stereotip povezan s njihovom rasom.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "Radi se o zbijenom snijegu i pukotinama koje su popunjene i označene zastavicama. Na to područje može se putovati samo specijaliziranim traktorima koji vuku sanke s gorivom i zalihama.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Sljedeći tekstovi su na bosanskom jeziku sa odgovarajućim prevodima na English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Tekst na bosanskom: {text}
+  Prevod na English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Tekst na bosanskom: {text}
+
+  Prevedite gornji tekst na English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-bs-en
+```

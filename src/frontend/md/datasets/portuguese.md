@@ -1595,3 +1595,279 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-pt
 ```
+
+## Translation
+
+### WMT24++ English to Portuguese
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Portuguese translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Portuguese translation pair from the dataset, where the source text is in
+English and the target text is in Portuguese.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hello, how are you?",
+  "target_text": "Olá, como estás?"
+}
+```
+
+```json
+{
+  "text": "The brown fox jumps over the lazy dog.",
+  "target_text": "A raposa castanha salta por cima do cão preguiçoso."
+}
+```
+
+```json
+{
+  "text": "Lisbon is the capital of Portugal.",
+  "target_text": "Lisboa é a capital de Portugal."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Portuguese translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Portuguese translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Portuguese.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-en-pt
+```
+
+### Unofficial: WMT24++ Portuguese to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Portuguese translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Portuguese translation pair from the dataset, where the source text is in
+Portuguese and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Olá, como estás?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "A raposa castanha salta por cima do cão preguiçoso.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Lisboa é a capital de Portugal.",
+  "target_text": "Lisbon is the capital of Portugal."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Abaixo estão textos em português com as traduções correspondentes em English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Texto em português: {text}
+  Tradução em English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Texto em português: {text}
+
+  Traduza o texto acima para English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-pt-en
+```
+
+### FLORES+ English to Portuguese
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Portuguese direction, where the source text is in English and the
+target text is in Portuguese.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Considerando que muitos dos povos são remotos, você não conseguirá encontrar uma quantidade significativa de vida noturna se não viajar para Albuquerque ou Santa Fé."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Por exemplo, crianças que se identificam com uma minoria racial que é estereotipada por não alcançar um bom desempenho na escola tendem a não alcançar um bom desempenho na escola quando ficam sabendo sobre o estereótipo associado à sua raça."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "É neve compactada com fendas preenchidas e marcadas por bandeiras. Só pode ser percorrido por tratores especializados, transportando trenós com combustível e suprimentos."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Portuguese translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Portuguese translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Portuguese.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-pt
+```
+
+### Unofficial: FLORES+ Portuguese to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Portuguese-to-English direction, where the source text is in Portuguese and
+the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Considerando que muitos dos povos são remotos, você não conseguirá encontrar uma quantidade significativa de vida noturna se não viajar para Albuquerque ou Santa Fé.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Por exemplo, crianças que se identificam com uma minoria racial que é estereotipada por não alcançar um bom desempenho na escola tendem a não alcançar um bom desempenho na escola quando ficam sabendo sobre o estereótipo associado à sua raça.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "É neve compactada com fendas preenchidas e marcadas por bandeiras. Só pode ser percorrido por tratores especializados, transportando trenós com combustível e suprimentos.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Abaixo estão textos em português com as traduções correspondentes em English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Texto em português: {text}
+  Tradução em English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Texto em português: {text}
+
+  Traduza o texto acima para English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-pt-en
+```

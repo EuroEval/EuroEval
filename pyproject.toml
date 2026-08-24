@@ -45,7 +45,7 @@ dependencies = [
     "nltk>=3.9.1",
     "langdetect>=1.0.9",
     "pyyaml>=6.0",
-    "lingua-language-detector>=2.2.0",
+    "cyrtranslit>=1.2.0",
     "google-cloud-aiplatform>=1.157.0",
     "kaleido>=1.3.0",
 ]
@@ -119,6 +119,11 @@ dev = [
 # PyPi releases seem to be lagging behind, so we use git sources directly
 vllm-metal = { git = "https://github.com/vllm-project/vllm-metal.git", tag = "v0.2.0-20260531-071330", marker = "platform_system == 'Darwin'" }
 # vLLM has no official wheels for macos arm64 and flashinfer is a default dep from 0.12.0 (which seems to only be x86_64 + cuda)
+# NOTE: vLLM's `setup.py` picks its target device from the *resolving* machine, not from
+# the environment being resolved for, so re-locking on a CUDA host builds this git source
+# as `+cu128` and pulls CUDA-only deps (PyNvVideoCodec, flashinfer, ...) into the macOS
+# split, which then fails to resolve. Set `VLLM_TARGET_DEVICE=cpu` when re-locking off
+# macOS, so that the metadata matches the `+cpu` build a Mac would produce.
 vllm = { git = "https://github.com/vllm-project/vllm.git", tag = "v0.27.1", marker = "platform_system == 'Darwin'" }
 
 [tool.uv]

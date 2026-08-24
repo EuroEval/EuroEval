@@ -53,11 +53,6 @@ MERGE_TAGS = ["merge", "mergekit"]
 # The minimum required CUDA compute capability for using bfloat16 in vLLM
 VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY = 8.0
 
-# Threshold for language confidence scores.
-# When a sample's language confidence score is greater than or equal to this value,
-# its evaluation score is kept as is. Otherwise, the score is set to 0.
-MIN_LANG_CONFIDENCE_SCORE = 0.75
-
 # The candidates for end-of-sequence, beginning-of-sequence and padding tokens
 EOS_TOKENS = ["</s>", "<|end_of_text|>", "<|endoftext|>", "[SEP]", "<|return|>"]
 BOS_TOKENS = ["<s>", "<|begin_of_text|>", "<|startoftext|>", "[CLS]"]

@@ -7,25 +7,20 @@ import typing as t
 
 from sacrebleu.metrics import CHRF
 
+from ..languages import Language
+from ..transliteration import transliterate
 from .base import Metric
-from .language_detection import language_detector
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
 
     from ..data_models import BenchmarkConfig, DatasetConfig
-    from .language_detection import LanguageDetector
 
 
 class ChrF(Metric):
     """The ChrF metric."""
 
-    def __init__(
-        self,
-        word_order: int = 0,
-        beta: int = 2,
-        language_detector: "LanguageDetector | None" = None,
-    ) -> None:
+    def __init__(self, word_order: int = 0, beta: int = 2) -> None:
         """Initialise the ChrF metric.
 
         Args:
@@ -35,11 +30,6 @@ class ChrF(Metric):
             beta (optional):
                 The beta parameter for the ChrF metric. Defaults to 2, which is the
                 original chrF (and chrF++) metric.
-            language_detector (optional):
-                A LanguageDetector instance. If provided, each per-sentence score is
-                multiplied by a binary language penalty (1.0 if the prediction is in
-                the correct language, 0.0 otherwise) before averaging. Defaults to
-                None, which disables language penalization.
         """
         super().__init__(
             name=f"chr_f{beta}" + "p" * word_order,
@@ -48,7 +38,6 @@ class ChrF(Metric):
         )
         self.word_order = word_order
         self.beta = beta
-        self.language_detector = language_detector
         self.metric = CHRF(char_order=6, word_order=self.word_order, beta=self.beta)
 
     def __call__(
@@ -75,8 +64,29 @@ class ChrF(Metric):
                 The benchmark configuration.
 
         Returns:
-            The ChrF score, penalized per-sentence by language correctness.
+            The ChrF score.
         """
+        # For translation into a language written in multiple scripts (e.g. Serbian),
+        # the model may answer in a valid script that differs from the reference's,
+        # which would collapse this character-based metric. We normalise both sides to
+        # a single canonical script first. `main_language` is a (source, target) tuple
+        # only for translation datasets, so this never triggers for other tasks.
+        main_language = dataset_config.main_language
+        # `main_language` is a (source, target) tuple only for translation datasets.
+        # Narrowing by excluding the single-`Language` case (rather than checking
+        # `isinstance(..., tuple)`) preserves the tuple's element types.
+        if not isinstance(main_language, Language):
+            _, target_language = main_language
+            if target_language.multiple_scripts:
+                predictions = [
+                    transliterate(text=prediction, language=target_language)
+                    for prediction in predictions
+                ]
+                references = [
+                    transliterate(text=reference, language=target_language)
+                    for reference in references
+                ]
+
         scores = [
             self.metric.sentence_score(
                 hypothesis=prediction, references=[reference]
@@ -87,37 +97,12 @@ class ChrF(Metric):
         if not scores:
             return 1.0
 
-        if self.language_detector is not None:
-            penalties = self.language_detector(
-                predictions=predictions, dataset_config=dataset_config
-            )
-            scores = [s * p for s, p in zip(scores, penalties)]
-
         return sum(scores) / len(scores)
 
-    def download(
-        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
-    ) -> "ChrF":
-        """Download the language detection model if needed.
 
-        Args:
-            cache_dir:
-                The directory where the metric will be downloaded to.
-            dataset_config (optional):
-                The dataset configuration. Unused by this metric.
-                Defaults to None.
-
-        Returns:
-            The metric object itself.
-        """
-        if self.language_detector is not None:
-            self.language_detector.download()
-        return self
-
-
-chrf2_metric = ChrF(language_detector=language_detector)
-chrf3_metric = ChrF(beta=3, language_detector=language_detector)
-chrf4_metric = ChrF(beta=4, language_detector=language_detector)
-chrf2pp_metric = ChrF(word_order=2, language_detector=language_detector)
-chrf3pp_metric = ChrF(word_order=2, beta=3, language_detector=language_detector)
-chrf4pp_metric = ChrF(word_order=2, beta=4, language_detector=language_detector)
+chrf2_metric = ChrF()
+chrf3_metric = ChrF(beta=3)
+chrf4_metric = ChrF(beta=4)
+chrf2pp_metric = ChrF(word_order=2)
+chrf3pp_metric = ChrF(word_order=2, beta=3)
+chrf4pp_metric = ChrF(word_order=2, beta=4)

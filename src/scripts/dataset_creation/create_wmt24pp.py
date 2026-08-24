@@ -9,6 +9,8 @@
 
 """Create the WMT24++ datasets."""
 
+from copy import deepcopy
+
 from datasets import Dataset, DatasetDict, load_dataset
 from tqdm.auto import tqdm
 
@@ -43,7 +45,7 @@ LANGUAGES = {
 
 def main() -> None:
     """Create the WMT24++ datasets."""
-    target_repo_id = "EuroEval/wmt24pp-en-{target}"
+    target_repo_id = "EuroEval/wmt24pp-{source}-{target}"
 
     for language, subset in tqdm(
         iterable=LANGUAGES.items(), desc="Creating WMT24++ datasets", unit="language"
@@ -69,7 +71,21 @@ def main() -> None:
         assert isinstance(test, Dataset)
 
         new_ds = DatasetDict({"train": train, "val": val, "test": test})
-        new_ds.push_to_hub(target_repo_id.format(target=language), private=True)
+        new_ds_reversed = deepcopy(new_ds).rename_columns(
+            dict(
+                text="target_text",
+                target_text="text",
+                original_target="original_source",
+                is_bad_source="is_bad_target",
+            )
+        )
+
+        new_ds.push_to_hub(
+            target_repo_id.format(source="en", target=language), private=True
+        )
+        new_ds_reversed.push_to_hub(
+            target_repo_id.format(source=language, target="en"), private=True
+        )
 
 
 if __name__ == "__main__":
