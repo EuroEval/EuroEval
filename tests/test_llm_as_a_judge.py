@@ -51,7 +51,9 @@ class TestCreateModelGradedFactMetric:
         metric = create_model_graded_fact_metric(scoring_fn=custom_scoring_fn)  # ty: ignore[invalid-argument-type]
 
         # Verify the custom scoring function is used by testing the behavior
-        CorrectModel = create_model("CorrectModel", correct=(bool, ...))
+        class CorrectModel(BaseModel):
+            correct: bool
+
         correct_output = CorrectModel(correct=True)
         assert metric.batch_scoring_fn([correct_output]) == 2.0  # Custom scoring
 
@@ -99,7 +101,8 @@ class TestCreateModelGradedFactMetric:
         """Test that default scoring function returns correct values."""
         metric = create_model_graded_fact_metric()
 
-        CorrectModel = create_model("CorrectModel", correct=(bool, ...))
+        class CorrectModel(BaseModel):
+            correct: bool
 
         # Test with correct=True
         correct_output = CorrectModel(correct=True)

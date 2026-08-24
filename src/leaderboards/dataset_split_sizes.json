@@ -59,10 +59,20 @@
     "train": 256,
     "val": 64
   },
+  "EuroEval/berte-wd-mini": {
+    "test": 360,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/besls": {
     "test": 1616,
     "train": 256,
     "val": 128
+  },
+  "EuroEval/bewic-mini": {
+    "test": 400,
+    "train": 1024,
+    "val": 256
   },
   "EuroEval/bfcl-v2": {
     "test": 2001,
@@ -914,8 +924,14 @@
   "EuroEval/multi-ifeval-sl": {
     "test": 524
   },
+  "EuroEval/multi-ifeval-sq": {
+    "test": 478
+  },
   "EuroEval/multi-ifeval-sr": {
     "test": 476
+  },
+  "EuroEval/multi-ifeval-sv": {
+    "test": 524
   },
   "EuroEval/multi-ifeval-uk": {
     "test": 476
@@ -1639,7 +1655,22 @@
     "train": 128,
     "val": 128
   },
+  "EuroEval/zebra-puzzles-easy-nb": {
+    "test": 1024,
+    "train": 128,
+    "val": 128
+  },
   "EuroEval/zebra-puzzles-easy-nl": {
+    "test": 1024,
+    "train": 128,
+    "val": 128
+  },
+  "EuroEval/zebra-puzzles-easy-nn": {
+    "test": 1024,
+    "train": 128,
+    "val": 128
+  },
+  "EuroEval/zebra-puzzles-easy-sv": {
     "test": 1024,
     "train": 128,
     "val": 128

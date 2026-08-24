@@ -95,6 +95,15 @@ MULTI_IFEVAL_LB_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+RAGTRUTH_LB_CONFIG = DatasetConfig(
+    name="ragtruth-lb",
+    pretty_name="RAGTruth-lb",
+    source="EuroEval/ragtruth-translated-hallucinations-lb-mini",
+    task=HALLU,
+    languages=[LUXEMBOURGISH],
+    train_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -115,7 +124,6 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     "vun dësen Etiketten: {labels_str}.",
     unofficial=True,
 )
-
 LTZGLUE_ID_CONFIG = DatasetConfig(
     name="ltzglue-id",
     pretty_name="ltzGLUE-ID",
@@ -142,15 +150,5 @@ LTZGLUE_ID_CONFIG = DatasetConfig(
     prompt_template="Ufruff: {text}\nIntentioun: {label}",
     instruction_prompt="Ufruff: {text}\n\nIdentifizéiert d'Intentioun vum Benotzer. "
     "Äntwert nëmme mat engem vun dësen Etiketten: {labels_str}.",
-    unofficial=True,
-)
-
-RAGTRUTH_LB_CONFIG = DatasetConfig(
-    name="ragtruth-lb",
-    pretty_name="RAGTruth-lb",
-    source="EuroEval/ragtruth-translated-hallucinations-lb-mini",
-    task=HALLU,
-    languages=[LUXEMBOURGISH],
-    train_split=None,
     unofficial=True,
 )

@@ -16,6 +16,9 @@
   "grammatical-error-detection": [
     "Micro-average F1-score"
   ],
+  "instruction-following": [
+    "Instruction Accuracy"
+  ],
   "knowledge": [
     "Matthew's Correlation Coefficient",
     "Accuracy"
@@ -23,6 +26,14 @@
   "linguistic-acceptability": [
     "Matthew's Correlation Coefficient",
     "Macro-average F1-score"
+  ],
+  "logical-reasoning": [
+    "Cell-wise Accuracy",
+    "Puzzle-level Accuracy"
+  ],
+  "multiple-choice-stereotype-bias": [
+    "Ambiguous bias-adjusted accuracy",
+    "Ambiguous context bias"
   ],
   "named-entity-recognition": [
     "Micro-average F1-score without MISC tags",
@@ -51,6 +62,9 @@
   "summarization": [
     "ChrF3++",
     "ChrF4++"
+  ],
+  "tool-calling": [
+    "Tool Calling Accuracy"
   ],
   "word-in-context": [
     "Matthew's Correlation Coefficient",

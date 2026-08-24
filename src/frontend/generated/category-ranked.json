@@ -1,0 +1,202 @@
+{
+  "albanian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "baltic": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "belarusian": {
+    "all_models": true,
+    "chat": true,
+    "generative": true
+  },
+  "bosnian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "bulgarian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "catalan": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "croatian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "czech": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "danish": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "dutch": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "english": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "estonian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "european": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "faroese": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "finnic": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "finnish": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "french": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "german": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "germanic": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "greek": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "hungarian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "icelandic": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "italian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "latvian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "lithuanian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "luxembourgish": {
+    "all_models": true,
+    "chat": true,
+    "generative": true
+  },
+  "norwegian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "polish": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "portuguese": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "romance": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "romanian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "scandinavian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "serbian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "slavic": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "slovak": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "slovene": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "spanish": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "swedish": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "ukrainian": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  },
+  "west_germanic": {
+    "all_models": true,
+    "chat": false,
+    "generative": true
+  }
+}

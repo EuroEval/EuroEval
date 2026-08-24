@@ -21,11 +21,9 @@ When evaluating generative models, we allow the model to generate 512 tokens on 
 ## 📊 Metrics
 
 The primary metric used to evaluate the performance of a model on the hallucination
-detection task is the sample hallucination rate: the proportion of generated answers
-containing at least one predicted hallucinated token. The token hallucination rate,
-computed as the ratio of hallucinated tokens to total tokens in the generated answers,
-is reported as a secondary metric. Lower rates indicate that the model generates more
-faithful answers grounded in the provided context.
+detection task is the hallucination rate, computed as the ratio of hallucinated tokens to
+total tokens in the generated answers. A lower hallucination rate indicates that the
+model generates more faithful answers grounded in the provided context.
 
 ## 🛠️ How to run
 

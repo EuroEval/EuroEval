@@ -24,12 +24,13 @@ rather than generating entirely new documents. Both encoder and decoder models c
 evaluated on these tasks, enabling you to compare the performance across all language
 models out there. The tasks in this category are:
 
-1. [Classification](classification.md)
-2. [Sentiment Classification](sentiment-classification.md)
-3. [Named Entity Recognition](named-entity-recognition.md)
-4. [Linguistic Acceptability](linguistic-acceptability.md)
-5. [Reading Comprehension](reading-comprehension.md)
-6. [Natural Language Inference](natural-language-inference.md)
+1. [Classification](/tasks/classification)
+2. [Sentiment Classification](/tasks/sentiment-classification)
+3. [Named Entity Recognition](/tasks/named-entity-recognition)
+4. [Linguistic Acceptability](/tasks/linguistic-acceptability)
+5. [Reading Comprehension](/tasks/reading-comprehension)
+6. [Natural Language Inference](/tasks/natural-language-inference)
+7. [Grammatical Error Detection](/tasks/grammatical-error-detection)
 
 ### NLG Tasks
 
@@ -40,12 +41,20 @@ language models for generating new documents. Only decoder models can be evaluat
 these tasks, as encoder models do not have the capability to generate text. The tasks in
 this category are:
 
-1. [Summarization](summarization.md)
-2. [Knowledge](knowledge.md)
-3. [Common-sense Reasoning](common-sense-reasoning.md)
-4. [Simplification](simplification.md)
-5. [European Values](european-values.md)
-6. [Instruction-following](instruction-following.md)
-7. [Bias Detection](bias-detection.md)
-8. [Hallucination Detection](hallucination-detection.md)
-9. [Logical Reasoning](logical-reasoning.md)
+1. [Summarization](/tasks/summarization)
+2. [Knowledge](/tasks/knowledge)
+3. [Common-sense Reasoning](/tasks/common-sense-reasoning)
+4. [Simplification](/tasks/simplification)
+5. [European Values](/tasks/european-values)
+6. [Instruction-following](/tasks/instruction-following)
+7. [Bias Detection](/tasks/bias-detection)
+8. [Hallucination Detection](/tasks/hallucination-detection)
+9. [Logical Reasoning](/tasks/logical-reasoning)
+10. [Grammatical Error Correction](/tasks/grammatical-error-correction)
+11. [Tool Calling](/tasks/tool-calling)
+12. [Translation](/tasks/translation)
+
+### Other
+
+- [Speed](/tasks/speed): a utility benchmark measuring how quickly a model processes
+  input, rather than an NLU or NLG evaluation.

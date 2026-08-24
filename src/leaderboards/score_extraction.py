@@ -25,7 +25,7 @@ from .records import (
     get_dataset,
     get_model_name,
     plain_model_id,
-    strip_val_suffix,
+    strip_note_item,
 )
 from .result_identity import normalise_bool_value
 from .split_sizes import get_split_sizes
@@ -482,14 +482,14 @@ def group_results_by_model(
             continue
         primary, secondary = task_metric_names(task)
         metrics = [primary] + ([secondary] if secondary is not None else [])
-        raw_results = get_raw_results(record)
-        if raw_results is None:
-            continue
 
-        # Raw per-iteration scores are keyed by the bare metric name (e.g.
-        # "mcc"), occasionally with a "test_" prefix.
-        raw_scores_by_metric: dict[str, list[float]] = {}
-        for metric in metrics:
+        for metric_type, metric in zip(("primary", "secondary"), metrics):
+            raw_results = get_raw_results(record)
+            if raw_results is None:
+                continue
+
+            # Raw per-iteration scores are keyed by the bare metric name (e.g.
+            # "mcc"), occasionally with a "test_" prefix.
             raw_scores: list[float] = []
             for result_dict in raw_results:
                 if isinstance(result_dict, dict):
@@ -498,15 +498,7 @@ def group_results_by_model(
                     )
                     if score >= 0:
                         raw_scores.append(score)
-            raw_scores_by_metric[metric] = raw_scores
 
-        # A legacy multi-metric record may contain only the old secondary metric.
-        # Skipping it prevents the secondary score from being displayed as primary.
-        if secondary is not None and not raw_scores_by_metric[primary]:
-            continue
-
-        for metric_type, metric in zip(("primary", "secondary"), metrics):
-            raw_scores = raw_scores_by_metric[metric]
             if not raw_scores:
                 continue
 
@@ -575,7 +567,7 @@ def _mirror_split_agnostic_datasets(
     those scores onto the corresponding validation-split variant
     (``... (zero-shot, val)``) whenever it exists, so the ``(val)`` row shows
     the score too. Only the validation dimension is crossed — the few-shot
-    dimension is preserved, since ``strip_val_suffix`` differs only in the
+    dimension is preserved, since ``strip_note_item`` only removes the
     ``val`` note. Mutates ``model_scores`` in place.
 
     Args:
@@ -585,8 +577,8 @@ def _mirror_split_agnostic_datasets(
             Split-agnostic datasets per (test-split variant) model id.
     """
     for model_id in list(model_scores):
-        test_variant_id = strip_val_suffix(model_id=model_id)
-        # ``strip_val_suffix`` returns None unless the id carries a ``val`` note,
+        test_variant_id = strip_note_item(model_id=model_id, note_item="val")
+        # ``strip_note_item`` returns None unless the id carries a ``val`` note,
         # so this only fires for validation-split variant rows.
         if test_variant_id is None:
             continue

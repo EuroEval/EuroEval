@@ -27,8 +27,9 @@ ignore_file: .slopo/slopo.ignore.txt
 # Model: jina-code-embeddings-0.5b-IQ4_XS (896 dimensions)
 embedding_model: openai/jina-code-embeddings-0.5b
 embedding_dimensions: 896
-embedding_api_base: http://localhost:8080/v1
 embedding_api_key: ""
+embedding_params:
+  api_base: http://localhost:8080/v1
 
 # Optional tuning (defaults shown)
 # similarity_threshold: 0.92

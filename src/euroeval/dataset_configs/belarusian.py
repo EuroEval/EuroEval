@@ -66,9 +66,6 @@ MULTI_IFEVAL_BE_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-
-# Unofficial datasets ###
-
 BERTE_WD_CONFIG = DatasetConfig(
     name="berte-wd",
     pretty_name="BeRTE-WD",
@@ -82,8 +79,17 @@ BERTE_WD_CONFIG = DatasetConfig(
     prompt_template="{text}\nІмплікацыя: {label}",
     instruction_prompt="{text}\n\nВызначце, ці вынікае другое сцвярджэнне з "
     "першага. Адкажыце толькі {labels_str}, і нічога іншага.",
-    unofficial=True,
 )
+
+BEWIC_CONFIG = DatasetConfig(
+    name="bewic",
+    pretty_name="BeWiC",
+    source="EuroEval/bewic-mini",
+    task=WIC,
+    languages=[BELARUSIAN],
+)
+
+# Unofficial datasets ###
 
 RAGTRUTH_BE_CONFIG = DatasetConfig(
     name="ragtruth-be",
@@ -92,7 +98,6 @@ RAGTRUTH_BE_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[BELARUSIAN],
     train_split=None,
-    unofficial=True,
 )
 
 BELACOLA_CONFIG = DatasetConfig(
@@ -100,15 +105,6 @@ BELACOLA_CONFIG = DatasetConfig(
     pretty_name="BelaCoLA",
     source="EuroEval/belacola-mini",
     task=LA,
-    languages=[BELARUSIAN],
-    unofficial=True,
-)
-
-BEWIC_CONFIG = DatasetConfig(
-    name="bewic",
-    pretty_name="BeWiC",
-    source="EuroEval/bewic-mini",
-    task=WIC,
     languages=[BELARUSIAN],
     unofficial=True,
 )

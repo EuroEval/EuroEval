@@ -65,10 +65,13 @@ sections:
       - { path: tasks/classification.md, title: Classification }
       - { path: tasks/common-sense-reasoning.md, title: Common-sense Reasoning }
       - { path: tasks/european-values.md, title: European Values }
+      - { path: tasks/grammatical-error-correction.md, title: Grammatical Error Correction }
       - { path: tasks/grammatical-error-detection.md, title: Grammatical Error Detection }
+      - { path: tasks/hallucination-detection.md, title: Hallucination Detection }
       - { path: tasks/instruction-following.md, title: Instruction-following }
       - { path: tasks/knowledge.md, title: Knowledge }
       - { path: tasks/linguistic-acceptability.md, title: Linguistic Acceptability }
+      - { path: tasks/logical-reasoning.md, title: Logical Reasoning }
       - { path: tasks/named-entity-recognition.md, title: Named Entity Recognition }
       - { path: tasks/natural-language-inference.md, title: Natural Language Inference }
       - { path: tasks/reading-comprehension.md, title: Reading Comprehension }

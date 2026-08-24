@@ -6,7 +6,7 @@ import json
 import re
 import typing as t
 
-from .records import get_bool_field, get_record_hash
+from .records import get_bool_field, get_record_hash, is_few_shot_record
 
 
 def deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
@@ -117,7 +117,7 @@ def get_few_shot(record: dict) -> bool:
     Returns:
         The few_shot boolean value, defaulting to True.
     """
-    return get_bool_field(record, "few_shot", True)
+    return is_few_shot_record(record)
 
 
 def get_num_failed_instances(record: dict) -> int | None:

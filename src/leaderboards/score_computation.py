@@ -11,6 +11,7 @@ from euroeval.constants import ORTHOGONAL_TASKS
 
 from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
 from .constants import LEADERBOARD_CATEGORIES, Z_SCORE_95
+from .enums import LeaderboardCategory
 from .task_metadata import category_includes_task
 
 logger = logging.getLogger(__name__)
@@ -122,7 +123,7 @@ def compute_ranks(
 
 def _aggregate_to_language_level(
     model_id: str,
-    category: str,
+    category: LeaderboardCategory,
     configs: dict[str, dict[str, list[str]]],
     model_task_ranks: dict,
     orthogonal_tasks: c.Container[str],
@@ -190,7 +191,7 @@ def _compute_margin(entries: list[dict[str, float]]) -> float:
 
 def _aggregate_to_task_level(
     model_id: str,
-    category: str,
+    category: LeaderboardCategory,
     language: str,
     config: dict[str, list[str]],
     model_dataset_ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
@@ -313,7 +314,7 @@ def compute_dataset_ranks_bootstrap(
 def _bootstrap_single_dataset_ranks(
     model_scores: dict[str, tuple[float, list[float]]],
     dataset: str,
-    category: str,
+    category: LeaderboardCategory,
     n_bootstraps: int,
     rng: np.random.Generator,
 ) -> dict[str, dict[str, float]]:

@@ -213,6 +213,10 @@ LOGIC = Task(
     default_labels=[],
     uses_structured_output=True,
     default_allowed_model_types=[ModelType.GENERATIVE],
+    default_allowed_generative_types=[
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    ],
 )
 
 
@@ -323,7 +327,7 @@ HALLU = Task(
     name="hallucination",
     task_group=TaskGroup.QUESTION_ANSWERING,
     template_dict=EMPTY_TEMPLATES,
-    metrics=[m.sample_hallucination_metric, m.token_hallucination_metric],
+    metrics=[m.hallucination_metric],
     default_num_few_shot_examples=0,
     default_max_generated_tokens=512,
     default_labels=[],
