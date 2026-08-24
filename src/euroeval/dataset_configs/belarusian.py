@@ -81,6 +81,14 @@ BERTE_WD_CONFIG = DatasetConfig(
     "першага. Адкажыце толькі {labels_str}, і нічога іншага.",
 )
 
+BEWIC_CONFIG = DatasetConfig(
+    name="bewic",
+    pretty_name="BeWiC",
+    source="EuroEval/bewic-mini",
+    task=WIC,
+    languages=[BELARUSIAN],
+)
+
 # Unofficial datasets ###
 
 RAGTRUTH_BE_CONFIG = DatasetConfig(
@@ -97,15 +105,6 @@ BELACOLA_CONFIG = DatasetConfig(
     pretty_name="BelaCoLA",
     source="EuroEval/belacola-mini",
     task=LA,
-    languages=[BELARUSIAN],
-    unofficial=True,
-)
-
-BEWIC_CONFIG = DatasetConfig(
-    name="bewic",
-    pretty_name="BeWiC",
-    source="EuroEval/bewic-mini",
-    task=WIC,
     languages=[BELARUSIAN],
     unofficial=True,
 )

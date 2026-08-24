@@ -466,7 +466,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-be
 
 ## Word in Context
 
-### Unofficial: BeWiC
+### BeWiC
 
 BeWiC is the Belarusian Word-in-Context dataset from the
 [BelarusianGLUE benchmark](https://huggingface.co/datasets/maaxap/BelarusianGLUE),
