@@ -69,6 +69,11 @@
     "train": 256,
     "val": 128
   },
+  "EuroEval/bewic-mini": {
+    "test": 400,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/bfcl-v2": {
     "test": 2001,
     "train": 250,
