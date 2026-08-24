@@ -33,9 +33,35 @@ def test_token_classification_few_shot_terminates_with_sparse_entities() -> None
             shuffled_train=dataset, num_few_shots=5, dataset_config=dataset_config
         )
 
-    # Only one entity-bearing example exists, so it must return at most that one
-    # (and, crucially, return at all).
-    assert len(result) <= 1
+    # Exactly one entity-bearing example exists, so it must return precisely that
+    # one (and, crucially, return at all).
+    assert len(result) == 1
+
+
+def test_token_classification_few_shot_terminates_with_case_variant_labels() -> None:
+    """Case-variant B labels must not defeat the no-sample termination guard.
+
+    Regression: when `dataset_config.labels` contains case variants of the same
+    entity label (e.g. `b-per` and `B-PER`), lower-casing without deduplication
+    left `b_labels` longer than the set of exhausted labels tracked in
+    `labels_with_no_samples`. The `len(...) == len(...)` guard could then never
+    become true and the loop spun forever once entity examples ran out.
+    """
+    dataset = Dataset.from_dict(
+        {
+            "tokens": [["Alice"], ["the"], ["a"], ["and"], ["of"]],
+            "labels": [["b-per"], ["o"], ["o"], ["o"], ["o"]],
+        }
+    )
+    # Both `b-per` and `B-PER` are present as case variants of the same label.
+    dataset_config: Any = SimpleNamespace(labels=["o", "b-per", "B-PER", "i-per"])
+
+    with _Timeout(seconds=30):
+        result = _extract_token_classification_examples(
+            shuffled_train=dataset, num_few_shots=5, dataset_config=dataset_config
+        )
+
+    assert len(result) == 1
 
 
 class _Timeout:

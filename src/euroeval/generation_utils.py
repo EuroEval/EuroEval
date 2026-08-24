@@ -1104,11 +1104,17 @@ def _extract_token_classification_examples(
         A list of few-shot examples.
     """
     few_shot_examples: list[dict[str, t.Any]] = list()
-    b_labels = [
-        label.lower()
-        for label in dataset_config.labels
-        if label.lower().startswith("b-")
-    ]
+    # Normalise to lower case and drop duplicates, so case variants of the same
+    # label (e.g. `b-per` and `B-PER`) collapse to one entry. Otherwise `b_labels`
+    # could be longer than the set of labels we actually track in
+    # `labels_with_no_samples`, and the termination guard below would never fire.
+    b_labels = list(
+        dict.fromkeys(
+            label.lower()
+            for label in dataset_config.labels
+            if label.lower().startswith("b-")
+        )
+    )
     labels = it.cycle(b_labels)
     labels_with_no_samples: set[str] = set()
     while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
