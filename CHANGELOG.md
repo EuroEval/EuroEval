@@ -17,8 +17,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Added official datasets for Belarusian: `bewic`.
-
 - Upgraded the vLLM dependency to version 0.27.1 or newer.
 - Promoted the unofficial dataset `berte-wd` to official.
 
