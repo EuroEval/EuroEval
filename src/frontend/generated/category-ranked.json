@@ -11,7 +11,7 @@
   },
   "belarusian": {
     "all_models": true,
-    "chat": true,
+    "chat": false,
     "generative": true
   },
   "bosnian": {
@@ -126,7 +126,7 @@
   },
   "luxembourgish": {
     "all_models": true,
-    "chat": true,
+    "chat": false,
     "generative": true
   },
   "norwegian": {

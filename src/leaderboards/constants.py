@@ -215,6 +215,7 @@ LEADERBOARD_CATEGORIES: tuple[LeaderboardCategory, ...] = (
     LeaderboardCategory.GENERATIVE,
     LeaderboardCategory.ALL_MODELS,
 )
+MINIMUM_NUMBER_OF_RANKED_ENTRIES: int = 100
 
 # TaskGroup -> "nlu"/"nlg". The "all_models" leaderboard variant only
 # scores NLU tasks so non-generative models can compete.

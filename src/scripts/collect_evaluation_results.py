@@ -52,6 +52,10 @@ from leaderboards.constants import (
     RESULTS_READY_LABEL,
 )
 from leaderboards.github_api import close_issue, comment_on_issue, gh_request
+from leaderboards.leaderboard_visibility import (
+    count_ranked_entries,
+    leaderboard_should_be_shown,
+)
 from leaderboards.queue_parsing import extract_model_id
 from leaderboards.result_identity import (
     ResultIdentity,
@@ -784,15 +788,15 @@ def verify_leaderboards() -> bool:
 
     Checks:
     - CSV files exist and are non-empty
-    - Row count is reasonable (>100 models)
+    - Leaderboards have at least 100 ranked entries
     - Required columns are present
     - No obvious data corruption (e.g., NaN in critical fields)
 
-    Leaderboards with <50 rows are skipped (not published) instead of failing
-    the entire validation.
+    Leaderboards below the ranked-entry threshold are not published instead of
+    failing the entire validation.
 
     Returns:
-        True if validation completed (even if some leaderboards were skipped),
+        True if validation completed and at least one CSV is publishable,
         False if critical errors occurred.
     """
     output_dir = REPO_ROOT / "src" / "frontend" / "csv"
@@ -806,30 +810,37 @@ def verify_leaderboards() -> bool:
         logger.error("No CSV files found in output directory.")
         return False
 
-    logger.info(f"Found {len(csv_files)} leaderboard CSV(s).")
-
+    leaderboard_stems = {
+        csv_file.stem.removesuffix("_simplified") for csv_file in csv_files
+    }
     skipped_count = 0
+    for stem in leaderboard_stems:
+        simplified_csv_path = output_dir / f"{stem}_simplified.csv"
+        if leaderboard_should_be_shown(simplified_csv_path=simplified_csv_path):
+            continue
+
+        ranked_entries = count_ranked_entries(simplified_csv_path=simplified_csv_path)
+        logger.warning(
+            f"{stem}: Only {ranked_entries} ranked entries. "
+            "Skipping publication (too few results)."
+        )
+        for path in (
+            output_dir / f"{stem}.csv",
+            simplified_csv_path,
+            output_dir / f"{stem}.json",
+        ):
+            path.unlink(missing_ok=True)
+        skipped_count += 1
+
+    csv_files = list(output_dir.glob("*.csv"))
+    logger.info(f"Found {len(csv_files)} publishable leaderboard CSV(s).")
+
     valid_count = 0
     for csv_file in csv_files:
         try:
             with csv_file.open(mode="r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 rows = list(reader)
-
-                if len(rows) < 50:
-                    logger.warning(
-                        f"{csv_file.name}: Only {len(rows)} rows (<50). "
-                        "Skipping publication (too few results)."
-                    )
-                    csv_file.unlink()
-                    skipped_count += 1
-                    continue
-
-                if len(rows) < 100:
-                    logger.warning(
-                        f"{csv_file.name}: Only {len(rows)} rows (<100). "
-                        "Expected for simplified/generative-only."
-                    )
 
                 # Check for critical columns
                 # Some CSVs have HTML headers in row 0, actual headers in row 1
@@ -885,8 +896,8 @@ def verify_leaderboards() -> bool:
 
     if skipped_count > 0:
         logger.info(
-            f"Published {valid_count} leaderboard(s), skipped {skipped_count} "
-            "(too few results)."
+            f"Published {valid_count} leaderboard CSV(s), skipped {skipped_count} "
+            "leaderboard(s) with too few results."
         )
     else:
         logger.info(f"All {valid_count} leaderboard CSVs passed sanity checks.")

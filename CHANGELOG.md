@@ -17,6 +17,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Swapped official dataset for Belarusian: `scala-be` → `belacola`.
 - Upgraded the vLLM dependency to version 0.27.1 or newer.
 - Promoted the unofficial dataset `berte-wd` to official.
 

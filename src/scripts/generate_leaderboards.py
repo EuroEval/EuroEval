@@ -33,6 +33,7 @@ from leaderboards.constants import (
 )
 from leaderboards.enums import LeaderboardCategory
 from leaderboards.leaderboard_generation import generate_leaderboard
+from leaderboards.leaderboard_visibility import leaderboard_should_be_shown
 from leaderboards.records import plain_model_id
 from leaderboards.result_processing import process_results
 from leaderboards.task_metadata import (
@@ -243,11 +244,11 @@ def _maybe_refresh_core_models() -> None:
 
 
 def generate_category_ranked() -> None:
-    """Generate a manifest of which leaderboard categories have ranked models.
+    """Generate a manifest of which leaderboard categories should be shown.
 
     Sourced from the simplified CSVs (already filtered to ranked-only rows),
-    so the frontend can tell which category tabs have ranked models
-    synchronously, without waiting on any per-leaderboard fetch.
+    so the frontend can determine category visibility synchronously without
+    waiting on any per-leaderboard fetch.
     """
     output_path: Path = (
         REPO_ROOT / "src" / "frontend" / "generated" / "category-ranked.json"
@@ -260,10 +261,13 @@ def generate_category_ranked() -> None:
             if not name.endswith(suffix):
                 continue
             leaderboard_name = name.removesuffix(suffix)
-            with path.open(newline="") as f:
-                has_ranked = any(csv.DictReader(f))
-            manifest.setdefault(leaderboard_name, {})[category.value] = has_ranked
+            should_show = leaderboard_should_be_shown(simplified_csv_path=path)
+            manifest.setdefault(leaderboard_name, {})[category.value] = should_show
             break
+
+    for categories in manifest.values():
+        for category in LeaderboardCategory:
+            categories.setdefault(category.value, False)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open(mode="w") as f:
