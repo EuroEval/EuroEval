@@ -24,14 +24,6 @@ BESLS_CONFIG = DatasetConfig(
     languages=[BELARUSIAN],
 )
 
-SCALA_BE_CONFIG = DatasetConfig(
-    name="scala-be",
-    pretty_name="ScaLA-be",
-    source="EuroEval/scala-be",
-    task=LA,
-    languages=[BELARUSIAN],
-)
-
 WIKIANN_BE_CONFIG = DatasetConfig(
     name="wikiann-be",
     pretty_name="WikiANN-be",
@@ -89,7 +81,24 @@ BEWIC_CONFIG = DatasetConfig(
     languages=[BELARUSIAN],
 )
 
+BELACOLA_CONFIG = DatasetConfig(
+    name="belacola",
+    pretty_name="BelaCoLA",
+    source="EuroEval/belacola-mini",
+    task=LA,
+    languages=[BELARUSIAN],
+)
+
 # Unofficial datasets ###
+
+SCALA_BE_CONFIG = DatasetConfig(
+    name="scala-be",
+    pretty_name="ScaLA-be",
+    source="EuroEval/scala-be",
+    task=LA,
+    languages=[BELARUSIAN],
+    unofficial=True,
+)
 
 RAGTRUTH_BE_CONFIG = DatasetConfig(
     name="ragtruth-be",
@@ -98,13 +107,4 @@ RAGTRUTH_BE_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[BELARUSIAN],
     train_split=None,
-)
-
-BELACOLA_CONFIG = DatasetConfig(
-    name="belacola",
-    pretty_name="BelaCoLA",
-    source="EuroEval/belacola-mini",
-    task=LA,
-    languages=[BELARUSIAN],
-    unofficial=True,
 )
