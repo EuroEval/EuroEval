@@ -1146,6 +1146,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/reviews3-mini": {
+    "test": 1042,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/ro-sent-mini": {
     "test": 2048,
     "train": 1024,
@@ -1370,6 +1375,21 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/sk-quad-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/sklep-nli-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/sklep-rte-mini": {
+    "test": 1660,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/skolprov": {
     "test": 410,
     "train": 32,
@@ -1507,6 +1527,11 @@
   },
   "EuroEval/wikiann-sq-mini": {
     "test": 1000,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/wikigoldsk-mini": {
+    "test": 1340,
     "train": 1024,
     "val": 256
   },

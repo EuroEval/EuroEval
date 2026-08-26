@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SLOVAK
-from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    NLI,
+    RC,
+    SENT,
+)
 
 # Official datasets ###
 
@@ -75,6 +85,63 @@ RAGTRUTH_SK_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+SKLEP_NLI_CONFIG = DatasetConfig(
+    name="sklep-nli",
+    pretty_name="SKLEP NLI",
+    source="EuroEval/sklep-nli-mini",
+    task=NLI,
+    languages=[SLOVAK],
+    labels=["entailment", "neutral", "contradiction"],
+    unofficial=True,
+)
+
+SK_QUAD_CONFIG = DatasetConfig(
+    name="sk-quad",
+    pretty_name="SK-QuAD",
+    source="EuroEval/sk-quad-mini",
+    task=RC,
+    languages=[SLOVAK],
+    unofficial=True,
+)
+
+WIKIGOLDSK_CONFIG = DatasetConfig(
+    name="wikigoldsk",
+    pretty_name="WikiGoldSK",
+    source="EuroEval/wikigoldsk-mini",
+    task=NER,
+    languages=[SLOVAK],
+    unofficial=True,
+)
+
+SKLEP_RTE_CONFIG = DatasetConfig(
+    name="sklep-rte",
+    pretty_name="SKLEP RTE",
+    source="EuroEval/sklep-rte-mini",
+    task=NLI,
+    languages=[SLOVAK],
+    labels=["entailment", "not entailment"],
+    prompt_label_mapping={"entailment": "pravda", "not entailment": "nepravda"},
+    prompt_prefix=(
+        "Nasledujú páry tvrdení a ich logická súvislosť, ktorá môže byť {labels_str}."
+    ),
+    prompt_template="{text}\nImplikácia: {label}",
+    instruction_prompt=(
+        "{text}\n\nUrčite, či druhé tvrdenie vyplýva z prvého. Odpovedzte so "
+        "{labels_str}, a nič iné."
+    ),
+    unofficial=True,
+)
+
+REVIEWS3_CONFIG = DatasetConfig(
+    name="reviews3",
+    pretty_name="Reviews3",
+    source="EuroEval/reviews3-mini",
+    task=SENT,
+    languages=[SLOVAK],
+    labels=["negative", "positive"],
+    unofficial=True,
+)
 
 EU_MMLU_SK_CONFIG = DatasetConfig(
     name="eu-mmlu-sk",

@@ -15,6 +15,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   dataset from BelarusianGLUE.
 - Added the unofficial Belarusian linguistic acceptability dataset `belacola`, based on
   the BelaCoLA dataset from BelarusianGLUE.
+- Added five unofficial Slovak datasets derived from SKLEP: SKLEP NLI, SKLEP RTE,
+  SK-QuAD, WikiGoldSK and Reviews3.
 - Added the unofficial Belarusian BeRTE-WD binary natural language inference dataset.
 
 ### Changed
