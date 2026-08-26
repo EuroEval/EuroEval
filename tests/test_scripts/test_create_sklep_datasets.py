@@ -2,6 +2,8 @@
 
 from datasets import Dataset, DatasetDict
 
+from src.euroeval.dataset_configs.slovak import SKLEP_RTE_CONFIG
+from src.euroeval.tasks import NLI
 from src.scripts.dataset_creation.create_reviews3 import (
     process_dataset as process_reviews3,
 )
@@ -21,8 +23,8 @@ def test_each_split_is_capped_independently() -> None:
         {
             "train": Dataset.from_dict(
                 {
-                    "premise": ["p"] * 1025,
-                    "hypothesis": ["h"] * 1025,
+                    "premise": [f"p{idx}" for idx in range(1025)],
+                    "hypothesis": [f"h{idx}" for idx in range(1025)],
                     "label": [0] * 1025,
                 }
             ),
@@ -46,6 +48,13 @@ def test_each_split_is_capped_independently() -> None:
         "val": 256,
         "test": 2048,
     }
+    assert result["train"]["text"][:5] == [
+        "Premise: p73\nHypothesis: h73",
+        "Premise: p963\nHypothesis: h963",
+        "Premise: p836\nHypothesis: h836",
+        "Premise: p683\nHypothesis: h683",
+        "Premise: p494\nHypothesis: h494",
+    ]
 
 
 def test_nli_formats_pairs_and_maps_all_labels() -> None:
@@ -84,6 +93,22 @@ def test_reviews3_maps_binary_sentiment_labels() -> None:
     result = process_reviews3(raw_dataset=source)
 
     assert result["train"]["label"] == ["negative", "positive"]
+
+
+def test_rte_config_supports_binary_encoder_and_generative_evaluation() -> None:
+    """The unofficial RTE config exposes one consistent binary label contract."""
+    assert SKLEP_RTE_CONFIG.task == NLI
+    assert SKLEP_RTE_CONFIG.labels == ["entailment", "not entailment"]
+    assert SKLEP_RTE_CONFIG.prompt_label_mapping == {
+        "entailment": "pravda",
+        "not entailment": "nepravda",
+    }
+    assert SKLEP_RTE_CONFIG.unofficial is True
+    assert SKLEP_RTE_CONFIG.prompt_prefix is not None
+    assert SKLEP_RTE_CONFIG.prompt_template is not None
+    assert SKLEP_RTE_CONFIG.instruction_prompt is not None
+    assert "neutral" not in SKLEP_RTE_CONFIG.prompt_prefix
+    assert "contradiction" not in SKLEP_RTE_CONFIG.instruction_prompt
 
 
 def test_rte_uses_binary_labels() -> None:

@@ -155,8 +155,9 @@ euroeval --model <model-id> --dataset reviews3
 
 [SKLEP](https://github.com/slovak-nlp/sklep) is a Slovak language-understanding
 benchmark described in [this paper](https://aclanthology.org/2025.findings-acl.1371/).
-This dataset is its three-way NLI task. The premise and hypothesis pairs were
-translated from English and post-edited by native Slovak speakers.
+This dataset is its three-way NLI task. The training pairs were automatically
+translated from English without manual correction, while the validation and test
+pairs were post-edited by native Slovak speakers.
 
 The source contains 392,702 / 2,490 / 5,004 train, validation and test samples. We
 sampled each source split independently with seed 4242, resulting in 1,024 / 256 /
@@ -223,10 +224,12 @@ euroeval --model <model-id> --dataset sklep-nli
 
 ### Unofficial: SKLEP RTE
 
-This is SKLEP's binary Recognising Textual Entailment task. It contains translated
-and native-speaker post-edited Slovak premise and hypothesis pairs. The two source
-labels are entailment and not entailment; the latter combines cases that are not
-entailed rather than distinguishing neutral from contradiction.
+This is SKLEP's binary Recognising Textual Entailment task. Its training pairs were
+automatically translated without manual correction, while the validation and test
+pairs were post-edited by native Slovak speakers. The test split was also manually
+relabelled. The two source labels are entailment and not entailment; the latter
+combines cases that are not entailed rather than distinguishing neutral from
+contradiction.
 
 The source contains 2,490 / 277 / 1,660 train, validation and test samples. We
 sampled train and validation independently with seed 4242 and retained the complete
@@ -474,7 +477,7 @@ Here are three examples from the final training split:
 {
   "text": "Morálka žoldnierov , ktorí tvorili jadro armády a po chvatnom ústupe z Rakúska , keď mnohí nedostali vyplatený žold , bola na nízkej úrovni .",
   "tokens": ["Morálka", "žoldnierov", ",", "ktorí", "tvorili", "jadro", "armády", "a", "po", "chvatnom", "ústupe", "z", "Rakúska", ",", "keď", "mnohí", "nedostali", "vyplatený", "žold", ",", "bola", "na", "nízkej", "úrovni", "."],
-  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
