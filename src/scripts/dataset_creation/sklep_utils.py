@@ -45,8 +45,8 @@ def upload_private(dataset: DatasetDict, repository_id: str) -> None:
             If the resulting repository is public.
     """
     api = HfApi()
-    api.delete_repo(repository_id, repo_type="dataset", missing_ok=True)
-    dataset.push_to_hub(repository_id, private=True)
-    repository = api.repo_info(repository_id, repo_type="dataset")
+    api.delete_repo(repo_id=repository_id, repo_type="dataset", missing_ok=True)
+    dataset.push_to_hub(repo_id=repository_id, private=True)
+    repository = api.repo_info(repo_id=repository_id, repo_type="dataset")
     if not repository.private:
         raise RuntimeError(f"Dataset repository {repository_id} is not private")

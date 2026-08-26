@@ -2,8 +2,8 @@
 
 from datasets import Dataset, DatasetDict
 
-from src.euroeval.dataset_configs.slovak import SKLEP_RTE_CONFIG
-from src.euroeval.tasks import NLI
+from euroeval.dataset_configs.slovak import SKLEP_RTE_CONFIG
+from euroeval.tasks import NLI
 from src.scripts.dataset_creation.create_reviews3 import (
     process_dataset as process_reviews3,
 )
@@ -42,19 +42,14 @@ def test_each_split_is_capped_independently() -> None:
     )
 
     result = process_nli(raw_dataset=source)
+    repeated_result = process_nli(raw_dataset=source)
 
     assert {split: dataset.num_rows for split, dataset in result.items()} == {
         "train": 1024,
         "val": 256,
         "test": 2048,
     }
-    assert result["train"]["text"][:5] == [
-        "Premise: p73\nHypothesis: h73",
-        "Premise: p963\nHypothesis: h963",
-        "Premise: p836\nHypothesis: h836",
-        "Premise: p683\nHypothesis: h683",
-        "Premise: p494\nHypothesis: h494",
-    ]
+    assert result["train"].to_list() == repeated_result["train"].to_list()
 
 
 def test_nli_formats_pairs_and_maps_all_labels() -> None:

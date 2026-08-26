@@ -11,10 +11,13 @@
 from datasets import Dataset, DatasetDict, load_dataset
 
 try:
-    from sklep_utils import make_dataset_dict, upload_private
+    from sklep_utils import MAX_TEST, MAX_TRAIN, MAX_VAL, cap_split, upload_private
 except ModuleNotFoundError:
     from src.scripts.dataset_creation.sklep_utils import (
-        make_dataset_dict,
+        MAX_TEST,
+        MAX_TRAIN,
+        MAX_VAL,
+        cap_split,
         upload_private,
     )
 
@@ -37,10 +40,18 @@ def process_dataset(raw_dataset: DatasetDict) -> DatasetDict:
     Returns:
         The processed dataset with independently capped splits.
     """
-    return make_dataset_dict(
-        train=_process_split(raw_dataset["train"]),
-        validation=_process_split(raw_dataset["validation"]),
-        test=_process_split(raw_dataset["test"]),
+    return DatasetDict(
+        {
+            "train": _process_split(
+                cap_split(dataset=raw_dataset["train"], maximum=MAX_TRAIN)
+            ),
+            "val": _process_split(
+                cap_split(dataset=raw_dataset["validation"], maximum=MAX_VAL)
+            ),
+            "test": _process_split(
+                cap_split(dataset=raw_dataset["test"], maximum=MAX_TEST)
+            ),
+        }
     )
 
 
