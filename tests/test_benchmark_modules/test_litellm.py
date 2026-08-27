@@ -6,7 +6,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 from litellm.types.utils import Choices
 
-from euroeval.benchmark_modules.litellm import LiteLLMModel, get_api_model_release_date
+from euroeval.benchmark_modules.litellm import (
+    LiteLLMModel,
+    clean_model_id,
+    get_api_model_release_date,
+)
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.exceptions import InvalidModel
 from euroeval.model_loading import load_model
@@ -147,6 +151,20 @@ class TestCreateModelOutput:
 def test_get_api_model_release_date(model_id: str, expected: str | None) -> None:
     """API aliases and dated model IDs resolve to their release dates."""
     assert get_api_model_release_date(model_id) == expected
+
+
+def test_huggingface_model_id_is_preserved_for_custom_api(
+    benchmark_config: BenchmarkConfig,
+) -> None:
+    """Hugging Face model IDs remain valid for custom OpenAI-compatible APIs."""
+    benchmark_config = dataclasses.replace(
+        benchmark_config, api_base="https://router.huggingface.co/featherless-ai/v1"
+    )
+    model_id = "huggingface/mistralai/Mistral-Small-3.1-24B-Instruct-2503"
+
+    assert (
+        clean_model_id(model_id=model_id, benchmark_config=benchmark_config) == model_id
+    )
 
 
 def test_litellm_model_config_includes_release_date(
