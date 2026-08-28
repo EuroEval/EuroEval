@@ -77,7 +77,7 @@ euroeval --model <model-id> --dataset csfd-sentiment-sk
 
 ### Unofficial: Reviews3
 
-[Reviews3](https://github.com/slovak-nlp/sklep) is the binary sentiment-analysis
+[Reviews3](https://doi.org/10.18653/v1/2025.findings-acl.1371) is the binary sentiment-analysis
 component of SKLEP. It contains manually labelled Slovak customer-service reviews;
 neutral source examples are not part of this binary task.
 
@@ -139,9 +139,8 @@ When evaluating generative models, we use the following setup:
 
 SKLEP declares mixed upstream licences for its components (`other`, CC BY-SA 4.0,
 CC BY-SA 3.0 and MIT) and does not provide a single unified licence. Consult the
-[SKLEP paper](https://aclanthology.org/2025.findings-acl.1371/) and [source
-repository](https://github.com/slovak-nlp/sklep) for attribution and component-specific
-terms.
+[SKLEP paper](https://doi.org/10.18653/v1/2025.findings-acl.1371) for attribution and
+component-specific terms.
 
 You can evaluate this dataset directly as follows:
 
@@ -153,8 +152,8 @@ euroeval --model <model-id> --dataset reviews3
 
 ### Unofficial: SKLEP NLI
 
-[SKLEP](https://github.com/slovak-nlp/sklep) is a Slovak language-understanding
-benchmark described in [this paper](https://aclanthology.org/2025.findings-acl.1371/).
+[SKLEP](https://doi.org/10.18653/v1/2025.findings-acl.1371) is a Slovak language-understanding
+benchmark described in [this paper](https://doi.org/10.18653/v1/2025.findings-acl.1371).
 This dataset is its three-way NLI task. The training pairs were automatically
 translated from English without manual correction, while the validation and test
 pairs were post-edited by native Slovak speakers.
@@ -224,11 +223,12 @@ euroeval --model <model-id> --dataset sklep-nli
 
 ### Unofficial: SKLEP RTE
 
-This is SKLEP's binary Recognising Textual Entailment task. Its training pairs were
-automatically translated without manual correction, while the validation and test
-pairs were post-edited by native Slovak speakers. The test split was also manually
-relabelled. The two source labels are entailment and not entailment; the latter
-combines cases that are not entailed rather than distinguishing neutral from
+This is SKLEP's binary Recognising Textual Entailment task, described in
+[the SKLEP paper](https://doi.org/10.18653/v1/2025.findings-acl.1371). Its training
+pairs were automatically translated without manual correction, while the validation
+and test pairs were post-edited by native Slovak speakers. The test split was also
+manually relabelled. The two source labels are entailment and not entailment; the
+latter combines cases that are not entailed rather than distinguishing neutral from
 contradiction.
 
 The source contains 2,490 / 277 / 1,660 train, validation and test samples. We
@@ -288,8 +288,8 @@ When evaluating generative models, we use the following setup:
   - `not entailment` ➡️ `nepravda`
 
 As with the other SKLEP tasks, the upstream release has mixed component licences and
-no unified licence. See the [SKLEP paper](https://aclanthology.org/2025.findings-acl.1371/)
-and [source repository](https://github.com/slovak-nlp/sklep) for attribution.
+no unified licence. See the [SKLEP paper](https://doi.org/10.18653/v1/2025.findings-acl.1371)
+for attribution.
 
 You can evaluate this dataset directly as follows:
 
@@ -445,7 +445,7 @@ euroeval --model <model-id> --dataset uner-sk
 
 ### Unofficial: WikiGoldSK
 
-[WikiGoldSK](https://github.com/slovak-nlp/sklep) is the WikiGoldSK named
+[WikiGoldSK](https://doi.org/10.18653/v1/2025.findings-acl.1371) is the WikiGoldSK named
 entity-recognition component of SKLEP. It is manually annotated Slovak Wikipedia
 text using the CoNLL-2003 entity types LOC, ORG, PER and MISC, with BIO tags.
 
@@ -512,14 +512,13 @@ When evaluating generative models, we use the following setup:
   - `B/I-MISC` ➡️ `rôzne`
 
 SKLEP declares mixed upstream licences for its components rather than a unified
-licence. See the [SKLEP paper](https://aclanthology.org/2025.findings-acl.1371/) and
-[source repository](https://github.com/slovak-nlp/sklep) for attribution and the
-applicable component terms.
+licence. See the [SKLEP paper](https://doi.org/10.18653/v1/2025.findings-acl.1371) for
+attribution and the applicable component terms.
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset wikigoldsk
+euroeval --model <model-id> --dataset wikigold-sk
 ```
 
 ## Linguistic Acceptability
@@ -676,7 +675,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-sk
 
 ### Unofficial: SK-QuAD
 
-[SK-QuAD](https://github.com/slovak-nlp/sklep) is the extractive question-answering
+[SK-QuAD](https://doi.org/10.18653/v1/2025.findings-acl.1371) is the extractive question-answering
 component of SKLEP. It consists of Slovak Wikipedia contexts and questions created
 and validated by human annotators. This EuroEval version is answerable-only: rows with
 empty answers or answer offsets that do not exactly match their context were removed
@@ -747,9 +746,8 @@ Models receive the context and question and answer in at most three words. No
 answer-label mapping is used.
 
 The SKLEP release declares mixed upstream licences rather than one unified licence.
-See the [SKLEP paper](https://aclanthology.org/2025.findings-acl.1371/) and [source
-repository](https://github.com/slovak-nlp/sklep) for citation and component-specific
-licensing information.
+See the [SKLEP paper](https://doi.org/10.18653/v1/2025.findings-acl.1371) for citation
+and component-specific licensing information.
 
 You can evaluate this dataset directly as follows:
 

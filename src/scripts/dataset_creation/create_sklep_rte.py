@@ -6,14 +6,14 @@
 # ]
 # ///
 
-"""Create the SKLEP binary Slovak RTE mini dataset."""
+"""Create the SKLEP binary Slovakian RTE mini dataset."""
 
 from datasets import Dataset, DatasetDict, load_dataset
 
 try:
-    from sklep_utils import make_dataset_dict, upload_private
+    from dataset_utils import make_dataset_dict, upload_private
 except ModuleNotFoundError:
-    from src.scripts.dataset_creation.sklep_utils import (
+    from src.scripts.dataset_creation.dataset_utils import (
         make_dataset_dict,
         upload_private,
     )

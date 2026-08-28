@@ -6,14 +6,14 @@
 # ]
 # ///
 
-"""Create the SKLEP three-way Slovak NLI mini dataset."""
+"""Create the SKLEP three-way Slovakian NLI mini dataset."""
 
 from datasets import Dataset, DatasetDict, load_dataset
 
 try:
-    from sklep_utils import MAX_TEST, MAX_TRAIN, MAX_VAL, cap_split, upload_private
+    from dataset_utils import MAX_TEST, MAX_TRAIN, MAX_VAL, cap_split, upload_private
 except ModuleNotFoundError:
-    from src.scripts.dataset_creation.sklep_utils import (
+    from src.scripts.dataset_creation.dataset_utils import (
         MAX_TEST,
         MAX_TRAIN,
         MAX_VAL,

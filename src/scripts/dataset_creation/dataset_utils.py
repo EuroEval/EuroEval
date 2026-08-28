@@ -1,4 +1,4 @@
-"""Shared helpers for creating the SKLEP-derived mini datasets."""
+"""Shared helpers for capping dataset splits and uploading them to the Hub."""
 
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi

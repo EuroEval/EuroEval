@@ -92,7 +92,6 @@ SKLEP_NLI_CONFIG = DatasetConfig(
     source="EuroEval/sklep-nli-mini",
     task=NLI,
     languages=[SLOVAK],
-    labels=["entailment", "neutral", "contradiction"],
     unofficial=True,
 )
 
@@ -106,9 +105,9 @@ SK_QUAD_CONFIG = DatasetConfig(
 )
 
 WIKIGOLDSK_CONFIG = DatasetConfig(
-    name="wikigoldsk",
+    name="wikigold-sk",
     pretty_name="WikiGoldSK",
-    source="EuroEval/wikigoldsk-mini",
+    source="EuroEval/wikigold-sk-mini",
     task=NER,
     languages=[SLOVAK],
     unofficial=True,

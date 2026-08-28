@@ -1530,7 +1530,7 @@
     "train": 1024,
     "val": 256
   },
-  "EuroEval/wikigoldsk-mini": {
+  "EuroEval/wikigold-sk-mini": {
     "test": 1340,
     "train": 1024,
     "val": 256
