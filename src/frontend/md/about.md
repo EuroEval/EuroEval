@@ -38,7 +38,8 @@ models. It started as a hobby project including Danish, Swedish and Norwegian, b
 since grown to cover at least one national language in every European country, with
 more on its way.
 
-EuroEval is maintained by [Dan Saattrup Smart](https://www.saattrupdan.com/) from the
-[Alexandra Institute](https://alexandra.dk), and is funded by both the EU project
+EuroEval is maintained by [Dan Saattrup Smart](https://www.saattrupdan.com/). It started
+as a hobby project in 2021, and from 2022 to 2026 it was further developed at the
+[Alexandra Institute](https://alexandra.dk), funded by the EU Horizon project
 [TrustLLM](https://trustllm.eu/) and the [Danish Foundation Models
 project](https://www.foundationmodels.dk/).

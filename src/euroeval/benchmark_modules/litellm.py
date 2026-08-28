@@ -280,6 +280,7 @@ BASE_DECODER_MODELS = [
 ]
 
 CUSTOM_INFERENCE_API_PREFIXES = [
+    "huggingface/",
     "hosted_vllm/",
     "vllm/",
     "ollama/",
