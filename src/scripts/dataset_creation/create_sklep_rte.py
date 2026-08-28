@@ -6,7 +6,7 @@
 # ]
 # ///
 
-"""Create the SKLEP binary Slovakian RTE mini dataset."""
+"""Create the SKLEP binary Slovak RTE mini dataset."""
 
 from datasets import Dataset, DatasetDict, load_dataset
 
@@ -52,7 +52,7 @@ def _process_split(source: Dataset) -> Dataset:
     """
     rows = [
         {
-            "text": f"Premise: {row['text1']}\nHypothesis: {row['text2']}",
+            "text": f"Prvé tvrdenie: {row['text1']}\nDruhé tvrdenie: {row['text2']}",
             "label": LABELS[int(row["label"])],
         }
         for row in source

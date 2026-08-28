@@ -6,7 +6,7 @@
 # ]
 # ///
 
-"""Create the SKLEP three-way Slovakian NLI mini dataset."""
+"""Create the SKLEP three-way Slovak NLI mini dataset."""
 
 from datasets import Dataset, DatasetDict, load_dataset
 
@@ -63,7 +63,9 @@ def _process_split(source: Dataset) -> Dataset:
     """
     rows = [
         {
-            "text": f"Premise: {row['premise']}\nHypothesis: {row['hypothesis']}",
+            "text": (
+                f"Prvé tvrdenie: {row['premise']}\nDruhé tvrdenie: {row['hypothesis']}"
+            ),
             "label": LABELS[int(row["label"])],
         }
         for row in source

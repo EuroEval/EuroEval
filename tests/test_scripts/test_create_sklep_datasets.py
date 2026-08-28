@@ -70,9 +70,9 @@ def test_nli_formats_pairs_and_maps_all_labels() -> None:
     result = process_nli(raw_dataset=source)
 
     assert result["train"].to_list() == [
-        {"text": "Premise: p0\nHypothesis: h0", "label": "entailment"},
-        {"text": "Premise: p1\nHypothesis: h1", "label": "neutral"},
-        {"text": "Premise: p2\nHypothesis: h2", "label": "contradiction"},
+        {"text": "Prvé tvrdenie: p0\nDruhé tvrdenie: h0", "label": "entailment"},
+        {"text": "Prvé tvrdenie: p1\nDruhé tvrdenie: h1", "label": "neutral"},
+        {"text": "Prvé tvrdenie: p2\nDruhé tvrdenie: h2", "label": "contradiction"},
     ]
 
 

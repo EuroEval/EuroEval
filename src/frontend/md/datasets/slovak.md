@@ -153,7 +153,7 @@ euroeval --model <model-id> --dataset reviews3
 ### Unofficial: SKLEP NLI
 
 [SKLEP](https://doi.org/10.18653/v1/2025.findings-acl.1371) is a Slovak language-understanding
-benchmark described in [this paper](https://doi.org/10.18653/v1/2025.findings-acl.1371).
+benchmark.
 This dataset is its three-way NLI task. The training pairs were automatically
 translated from English without manual correction, while the validation and test
 pairs were post-edited by native Slovak speakers.
@@ -167,21 +167,21 @@ Here are three examples from the final training split:
 
 ```json
 {
-  "text": "Premise: Určite neboli účinnejšie ako nemagnetické stabilizátory zápästia , ktoré som si zobral v drogérii .\nHypothesis: Obidva a nemagnetické stabilizátory zápästia boli na hovno!",
+  "text": "Prvé tvrdenie: Určite neboli účinnejšie ako nemagnetické stabilizátory zápästia , ktoré som si zobral v drogérii .\nDruhé tvrdenie: Obidva a nemagnetické stabilizátory zápästia boli na hovno!",
   "label": "contradiction"
 }
 ```
 
 ```json
 {
-  "text": "Premise: Základným predpokladom tejto línie je, že zistenia viery a rozumu nie sú v rozpore – iba ich metódy sú.\nHypothesis: Základným predpokladom tejto línie je, že zistenia viery a rozumu nie sú v rozpore",
+  "text": "Prvé tvrdenie: Základným predpokladom tejto línie je, že zistenia viery a rozumu nie sú v rozpore – iba ich metódy sú.\nDruhé tvrdenie: Základným predpokladom tejto línie je, že zistenia viery a rozumu nie sú v rozpore",
   "label": "entailment"
 }
 ```
 
 ```json
 {
-  "text": "Premise: by mal byť schopný metabolizovať jednu uncu alkoholu za hodinu\nHypothesis: Alkohol sa dá metabolizovať .",
+  "text": "Prvé tvrdenie: by mal byť schopný metabolizovať jednu uncu alkoholu za hodinu\nDruhé tvrdenie: Alkohol sa dá metabolizovať .",
   "label": "entailment"
 }
 ```
@@ -240,21 +240,21 @@ Here are three examples from the final training split:
 
 ```json
 {
-  "text": "Premise: V Bushovej administratíve a globálnych energetických kruhoch narastá sentiment, aby po akejkoľvek vojne poverili ťažbu ropy v ich krajine irackých profesionálov, a to aj napriek tlaku niektorých predstaviteľov, aby Spojené štáty prevzali kontrolu nad lukratívnymi ropnými poliami.\nHypothesis: Spojené štáty pohrozili „najvážnejšími dôsledkami“, ak Irak použije chemické alebo biologické zbrane proti USA, zničí kuvajtské ropné polia alebo sa podieľa na terorizme.",
+  "text": "Prvé tvrdenie: V Bushovej administratíve a globálnych energetických kruhoch narastá sentiment, aby po akejkoľvek vojne poverili ťažbu ropy v ich krajine irackých profesionálov, a to aj napriek tlaku niektorých predstaviteľov, aby Spojené štáty prevzali kontrolu nad lukratívnymi ropnými poliami.\nDruhé tvrdenie: Spojené štáty pohrozili „najvážnejšími dôsledkami“, ak Irak použije chemické alebo biologické zbrane proti USA, zničí kuvajtské ropné polia alebo sa podieľa na terorizme.",
   "label": "not entailment"
 }
 ```
 
 ```json
 {
-  "text": "Premise: Remastrovaná verzia Raňajky u Tiffanyho od Paramountu s Audrey Hepburn v hlavnej úlohe je naplánovaná na 2. novembra za 40 dolárov.\nHypothesis: Audrey Hepburn hrala vo filme \"Raňajky u Tiffanyho\".",
+  "text": "Prvé tvrdenie: Remastrovaná verzia Raňajky u Tiffanyho od Paramountu s Audrey Hepburn v hlavnej úlohe je naplánovaná na 2. novembra za 40 dolárov.\nDruhé tvrdenie: Audrey Hepburn hrala vo filme \"Raňajky u Tiffanyho\".",
   "label": "entailment"
 }
 ```
 
 ```json
 {
-  "text": "Premise: V subsaharskej Afrike je približne jeden z 30 ľudí infikovaný vírusom HIV.\nHypothesis: 30% ľudí infikovaných HIV žije v Afrike.",
+  "text": "Prvé tvrdenie: V subsaharskej Afrike je približne jeden z 30 ľudí infikovaný vírusom HIV.\nDruhé tvrdenie: 30% ľudí infikovaných HIV žije v Afrike.",
   "label": "not entailment"
 }
 ```
