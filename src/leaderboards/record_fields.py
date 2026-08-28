@@ -6,6 +6,8 @@ import json
 import re
 import typing as t
 
+from euroeval.date_utils import normalise_release_date
+
 from .records import get_bool_field, get_record_hash, is_few_shot_record
 
 
@@ -88,8 +90,8 @@ def _metadata_richness_score(record: dict) -> int:
     if additional.get("model_url") is not None:
         score += 1
 
-    # release_date: non-null
-    if additional.get("release_date") is not None:
+    # release_date: valid ISO date
+    if normalise_release_date(additional.get("release_date")) is not None:
         score += 1
 
     return score

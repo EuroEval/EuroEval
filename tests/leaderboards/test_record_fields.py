@@ -2,6 +2,8 @@
 
 import typing as t
 
+import pytest
+
 from leaderboards.record_fields import _metadata_richness_score, deduplicate_records
 
 
@@ -180,6 +182,21 @@ def test_deduplicate_prefers_richer_metadata_same_version() -> None:
     assert additional.get("trained_from_scratch") is True
 
 
+def test_deduplicate_prefers_valid_release_date_over_malformed_value() -> None:
+    """Malformed release metadata does not win over a valid release date."""
+    malformed = _record(version="18.0.0")
+    malformed["model_info"]["additional_details"]["release_date"] = "not-a-date"
+    valid = _record(version="18.0.0")
+    valid["model_info"]["additional_details"]["release_date"] = "2024-02-03"
+
+    deduped = deduplicate_records(records=[malformed, valid])
+
+    assert len(deduped) == 1
+    assert (
+        deduped[0]["model_info"]["additional_details"]["release_date"] == "2024-02-03"
+    )
+
+
 def test_deduplicate_preserves_distinct_datasets() -> None:
     """Records for genuinely distinct rows are all preserved."""
     records = [
@@ -249,6 +266,20 @@ def test_metadata_richness_score_generative_type() -> None:
     record = _record()
     record["model_info"]["additional_details"]["generative_type"] = "instruction_tuned"
     assert _metadata_richness_score(record=record) == 1
+
+
+@pytest.mark.parametrize(
+    "release_date", [None, "", "not-a-date", "2025-02-30", "20240203"]
+)
+def test_metadata_richness_score_ignores_invalid_release_date(
+    release_date: str | None,
+) -> None:
+    """Missing and malformed release dates do not contribute to richness."""
+    record = _record()
+    initial_score = _metadata_richness_score(record)
+    record["model_info"]["additional_details"]["release_date"] = release_date
+
+    assert _metadata_richness_score(record) == initial_score
 
 
 def test_metadata_richness_score_merge() -> None:

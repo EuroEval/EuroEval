@@ -27,6 +27,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed leaderboard deduplication treating malformed model release dates as valid
+  metadata.
 - Fixed Hugging Face Router model IDs being rewritten with an unwanted `openai/` prefix
   when using a custom API base.
 - Fixed an infinite loop in token-classification few-shot example selection when the

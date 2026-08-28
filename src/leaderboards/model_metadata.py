@@ -14,7 +14,6 @@ import typing as t
 import urllib.parse
 import warnings
 from copy import deepcopy
-from datetime import date
 
 import httpx
 from huggingface_hub import HfApi
@@ -28,6 +27,7 @@ from requests.exceptions import RequestException
 
 from euroeval.benchmark_modules.hf import get_model_release_date
 from euroeval.benchmark_modules.litellm import get_api_model_release_date
+from euroeval.date_utils import normalise_release_date
 from euroeval.string_utils import split_model_id
 
 from .cache import Cache
@@ -268,12 +268,9 @@ def _get_release_date(record: dict, cache: Cache) -> str | None:
         The ISO-formatted release date, or None if no date can be determined.
     """
     additional = record["model_info"]["additional_details"]
-    existing = additional.get("release_date")
-    if isinstance(existing, str):
-        try:
-            return date.fromisoformat(existing).isoformat()
-        except ValueError:
-            pass
+    existing = normalise_release_date(additional.get("release_date"))
+    if existing is not None:
+        return existing
 
     model_id = split_model_id(
         model_id=plain_model_id(get_model_name(record=record))
@@ -282,10 +279,11 @@ def _get_release_date(record: dict, cache: Cache) -> str | None:
         cached = cache.release_date[model_id]
         if cached is None:
             return None
-        try:
-            return date.fromisoformat(cached).isoformat()
-        except ValueError:
+        normalised_cached = normalise_release_date(cached)
+        if normalised_cached is None:
             del cache.release_date[model_id]
+        else:
+            return normalised_cached
 
     model_url = additional.get("model_url") or cache.model_url.get(model_id)
     hf_hosts = {"hf.co", "huggingface.co", "www.hf.co", "www.huggingface.co"}
