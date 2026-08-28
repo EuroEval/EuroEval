@@ -284,6 +284,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for jaideeppyne"
     />
 </a>
+<a href="https://github.com/milos-plavsic">
+    <img
+        src="https://avatars.githubusercontent.com/u/225993441"
+        width=50
+        alt="Contributor avatar for milos-plavsic"
+    />
+</a>
 
 ### Contribute to EuroEval
 
