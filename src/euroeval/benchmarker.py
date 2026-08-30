@@ -524,7 +524,12 @@ class Benchmarker:
             self._check_adapter_requirements(model_config, benchmark_config)
 
             loaded_model: "BenchmarkModule | None" = None
+            params_to_revert = {}
             for dataset_config in model_mapping[model_config]:
+                # Revert config changes
+                for param, value in params_to_revert.items():
+                    setattr(benchmark_config, param, value)
+
                 params_to_revert = self._update_benchmark_config_for_dataset(
                     dataset_config, benchmark_config
                 )
@@ -592,12 +597,12 @@ class Benchmarker:
                     )
                 )
 
-                # Revert config changes
-                for param, value in params_to_revert.items():
-                    setattr(benchmark_config, param, value)
-
                 if should_break:
                     break
+
+            # Revert config changes
+            for param, value in params_to_revert.items():
+                setattr(benchmark_config, param, value)
 
             del loaded_model
             if benchmark_config.clear_model_cache:
