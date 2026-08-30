@@ -27,6 +27,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- If errors occured during evaluations that required zero-shot or test-set splits, then
+  subsequent evaluations would also require that rather than reverting to the default
+  few-shot and validation splits. This has been fixed.
 - Fixed leaderboard deduplication treating malformed model release dates as valid
   metadata.
 - Fixed Hugging Face Router model IDs being rewritten with an unwanted `openai/` prefix

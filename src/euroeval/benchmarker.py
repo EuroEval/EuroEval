@@ -591,12 +591,13 @@ class Benchmarker:
                         current_results=current_results,
                     )
                 )
-                if should_break:
-                    break
 
                 # Revert config changes
                 for param, value in params_to_revert.items():
                     setattr(benchmark_config, param, value)
+
+                if should_break:
+                    break
 
             del loaded_model
             if benchmark_config.clear_model_cache:
