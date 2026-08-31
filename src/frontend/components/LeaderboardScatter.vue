@@ -3,9 +3,15 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import type { LeaderboardTable } from "@/leaderboard";
 import { matchesQuery } from "@/filter";
 
-const props = defineProps<{
-  table: LeaderboardTable;
-}>();
+type XAxis = "parameters" | "releaseDate";
+
+const props = withDefaults(
+  defineProps<{
+    table: LeaderboardTable;
+    xAxis?: XAxis;
+  }>(),
+  { xAxis: "parameters" },
+);
 
 type ModelKind = "instruct" | "reasoning" | "base" | "encoder" | "other";
 
@@ -16,6 +22,7 @@ interface MetaItem {
 
 interface Point {
   x: number;
+  xLabel: string;
   y: number;
   label: string;
   icon: string;
@@ -87,9 +94,9 @@ const KIND_COLOR: Record<ModelKind, string> = {
 const colIndex = (key: string) =>
   props.table.columns.findIndex((c) => c.key.toLowerCase() === key.toLowerCase());
 
-const xKey = "Parameters";
-
-const xIdx = computed(() => colIndex(xKey));
+const xIdx = computed(() =>
+  props.xAxis === "parameters" ? colIndex("parameters") : -1,
+);
 const yIdx = computed(() => colIndex("rank score"));
 const modelIdx = computed(() => colIndex("model"));
 const typeIdx = computed(() => colIndex("type"));
@@ -112,7 +119,7 @@ const allPoints = computed<Point[]>(() => {
   const mi = modelIdx.value;
   const ti = typeIdx.value;
   const ci = commercialIdx.value;
-  if (xi < 0 || yi < 0) return [];
+  if ((props.xAxis === "parameters" && xi < 0) || yi < 0) return [];
 
   const out: Point[] = [];
   // Drop rows whose displayed value is a sentinel (e.g. "-", "?", "") —
@@ -122,12 +129,22 @@ const allPoints = computed<Point[]>(() => {
     text !== "" && text !== "-" && text !== "?" && text !== "??";
 
   for (const row of props.table.rows) {
-    const xc = row.cells[xi];
     const yc = row.cells[yi];
-    if (!isRealValue(xc.text) || !isRealValue(yc.text)) continue;
-    const xk = xc.sortKey;
+    if (!isRealValue(yc.text)) continue;
+    let xk: number;
+    let xLabel: string;
+    if (props.xAxis === "releaseDate") {
+      if (!row.releaseDate) continue;
+      xk = Date.parse(`${row.releaseDate}T00:00:00Z`);
+      xLabel = row.releaseDate;
+    } else {
+      const xc = row.cells[xi];
+      if (!isRealValue(xc.text) || typeof xc.sortKey !== "number") continue;
+      xk = xc.sortKey;
+      xLabel = formatCompact(xk);
+    }
     const yk = yc.sortKey;
-    if (typeof xk !== "number" || !Number.isFinite(xk)) continue;
+    if (!Number.isFinite(xk)) continue;
     if (typeof yk !== "number" || !Number.isFinite(yk)) continue;
     const icon = ti >= 0 ? row.cells[ti].text : "";
     const commercialText = ci >= 0 ? row.cells[ci].text : "";
@@ -137,6 +154,7 @@ const allPoints = computed<Point[]>(() => {
     }));
     out.push({
       x: xk,
+      xLabel,
       y: yk,
       label: mi >= 0 ? row.cells[mi].text : "",
       icon,
@@ -206,16 +224,21 @@ const rawXMinMax = computed(() => {
   if (xs.length === 0) return { min: 0, max: 1 };
   const min = Math.min(...xs);
   const max = Math.max(...xs);
-  return min === max ? { min: min - 1, max: max + 1 } : { min, max };
+  if (min !== max) return { min, max };
+  const singleValuePad =
+    props.xAxis === "releaseDate" ? 180 * 24 * 60 * 60 * 1000 : 1;
+  return { min: min - singleValuePad, max: max + singleValuePad };
 });
 
-const useLogX = computed(() => rawXMinMax.value.min > 0);
+const useLogX = computed(
+  () => props.xAxis === "parameters" && rawXMinMax.value.min > 0,
+);
 
-// The x-domain is the model-size range of this plot, padded on both ends so
+// The x-domain is the current horizontal range, padded on both ends so
 // the smallest and largest models sit inside the plot with breathing room
 // rather than clipped against the axis edges. Padding is applied in the same
-// space the axis uses (log10 when all sizes are positive), so it reads as a
-// constant visual margin on each side regardless of how wide the range is.
+// space the axis uses (log10 for model sizes), so it reads as a constant visual
+// margin on each side regardless of how wide the range is.
 const X_PAD = 0.06; // fraction of the (transformed) range, per side
 const xMinMax = computed(() => {
   const { min, max } = rawXMinMax.value;
@@ -252,6 +275,19 @@ const yScale = (v: number) => {
 };
 
 const formatX = (v: number): string => {
+  if (props.xAxis === "releaseDate") {
+    const date = new Date(v);
+    const rangeYears =
+      (rawXMinMax.value.max - rawXMinMax.value.min) /
+      (365.25 * 24 * 60 * 60 * 1000);
+    return rangeYears > 2
+      ? String(date.getUTCFullYear())
+      : date.toLocaleDateString("en", {
+          month: "short",
+          year: "numeric",
+          timeZone: "UTC",
+        });
+  }
   if (Math.abs(v) >= 1e12) return (v / 1e12).toFixed(1) + "T";
   if (Math.abs(v) >= 1e9) return (v / 1e9).toFixed(1) + "B";
   if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + "M";
@@ -266,6 +302,33 @@ interface Tick {
 
 const xTicks = computed<Tick[]>(() => {
   const { min, max } = xMinMax.value;
+  if (props.xAxis === "releaseDate") {
+    const tickMin = rawXMinMax.value.min;
+    const tickMax = rawXMinMax.value.max;
+    const rangeYears =
+      (tickMax - tickMin) / (365.25 * 24 * 60 * 60 * 1000);
+    const ticks: Tick[] = [];
+    if (rangeYears > 2) {
+      const firstYear = new Date(tickMin).getUTCFullYear();
+      const lastYear = new Date(tickMax).getUTCFullYear();
+      const step = Math.max(1, Math.ceil((lastYear - firstYear) / 6));
+      for (let year = firstYear; year <= lastYear; year += step) {
+        const value = Date.UTC(year, 0, 1);
+        if (value >= min && value <= max) ticks.push({ value, major: true });
+      }
+    } else {
+      const first = new Date(tickMin);
+      const last = new Date(tickMax);
+      const firstMonth = first.getUTCFullYear() * 12 + first.getUTCMonth();
+      const lastMonth = last.getUTCFullYear() * 12 + last.getUTCMonth();
+      const step = Math.max(1, Math.ceil((lastMonth - firstMonth) / 6));
+      for (let month = firstMonth; month <= lastMonth; month += step) {
+        const value = Date.UTC(Math.floor(month / 12), month % 12, 1);
+        if (value >= min && value <= max) ticks.push({ value, major: true });
+      }
+    }
+    return ticks;
+  }
   if (useLogX.value) {
     const ticks: Tick[] = [];
     const lo = Math.floor(Math.log10(Math.max(min, 1)));
@@ -405,8 +468,11 @@ const tooltipStyle = computed(() => {
   <div class="scatter">
     <div class="scatter-toolbar">
       <span class="scatter-help">
-        X-axis: Parameters (log). Y-axis: Rank score (lower is better).
-        Showing {{ visiblePoints.length }} of {{ allPoints.length }} models.
+        X-axis:
+        {{ xAxis === "parameters" ? "Parameters (log)" : "Release date" }}.
+        Y-axis: Rank score (lower is better).
+        Showing {{ visiblePoints.length }} of {{ allPoints.length }} models with
+        {{ xAxis === "parameters" ? "parameter counts" : "release dates" }}.
       </span>
       <input
         v-model="searchQuery"
@@ -417,7 +483,7 @@ const tooltipStyle = computed(() => {
       />
     </div>
 
-    <div class="scatter-legend">
+    <div v-if="allPoints.length > 0" class="scatter-legend">
       <button
         v-for="k in presentKinds"
         :key="k"
@@ -461,7 +527,13 @@ const tooltipStyle = computed(() => {
       </button>
     </div>
 
-    <div class="scatter-wrap">
+    <div v-if="allPoints.length === 0" class="scatter-empty" role="status">
+      No ranked models have
+      {{ xAxis === "parameters" ? "parameter counts" : "release dates" }}
+      available yet.
+    </div>
+
+    <div v-else class="scatter-wrap">
       <svg
         :viewBox="`0 0 ${width} ${height}`"
         preserveAspectRatio="xMidYMid meet"
@@ -536,7 +608,9 @@ const tooltipStyle = computed(() => {
           :y="height - 6"
           text-anchor="middle"
         >
-          Parameters{{ useLogX ? " (log)" : "" }}
+          {{ xAxis === "parameters" ? "Parameters" : "Release date" }}{{
+            useLogX ? " (log)" : ""
+          }}
         </text>
         <text
           class="axis-label"
@@ -584,6 +658,10 @@ const tooltipStyle = computed(() => {
           <div class="tt-row">
             <span class="tt-label">Mean rank</span>
             <span class="tt-value">{{ hovered.y.toFixed(2) }}</span>
+          </div>
+          <div v-if="xAxis === 'releaseDate'" class="tt-row">
+            <span class="tt-label">Release date</span>
+            <span class="tt-value">{{ hovered.xLabel }}</span>
           </div>
           <div class="tt-row">
             <span class="tt-label">Kind</span>
@@ -694,6 +772,15 @@ const tooltipStyle = computed(() => {
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 0.5rem;
+}
+
+.scatter-empty {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-muted);
+  padding: 2rem 1rem;
+  text-align: center;
 }
 
 .scatter-svg {

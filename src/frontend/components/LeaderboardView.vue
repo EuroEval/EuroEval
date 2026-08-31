@@ -23,7 +23,7 @@ const categoryTabs = [
 ] as const;
 
 type CategoryId = (typeof categoryTabs)[number]["id"];
-type ViewId = "table" | "scatter";
+type ViewId = "table" | "modelSize" | "releaseDate";
 
 // Precomputed at leaderboard-generation time (which leaderboards/categories
 // have ranked models) and bundled statically, so it's known synchronously
@@ -86,8 +86,7 @@ const loadFor = async (stem: string) => {
 watch(
   () => props.stem,
   (s) => {
-    // Reset the category on language switch, but keep the user's table/scatter
-    // preference - switching language shouldn't kick you out of scatter view.
+    // Reset the category on language switch, but keep the user's selected view.
     activeCategory.value = firstRankedCategory();
     loadFor(s);
   },
@@ -148,7 +147,8 @@ const isMultilingual = computed(() => MULTILINGUAL_STEMS.has(props.stem));
 
 const viewTabs: { id: ViewId; label: string }[] = [
   { id: "table", label: "Leaderboard" },
-  { id: "scatter", label: "Scatter Plot" },
+  { id: "modelSize", label: "Model Size" },
+  { id: "releaseDate", label: "Release Date" },
 ];
 
 // Sliding-pill indicators for the two tab groups. Each indicator is a
@@ -311,7 +311,12 @@ const downloadCsv = async () => {
           <rect x="6.5" y="3" width="3" height="11" rx="0.5" fill="currentColor" />
           <rect x="12" y="8" width="3" height="6" rx="0.5" fill="currentColor" />
         </svg>
-        <svg v-else class="lb-view-icon" viewBox="0 0 16 16" aria-hidden="true">
+        <svg
+          v-else-if="v.id === 'modelSize'"
+          class="lb-view-icon"
+          viewBox="0 0 16 16"
+          aria-hidden="true"
+        >
           <path
             d="M2 2v11a1 1 0 0 0 1 1h11"
             stroke="currentColor"
@@ -323,6 +328,20 @@ const downloadCsv = async () => {
           <circle cx="9" cy="5.5" r="1.1" fill="currentColor" />
           <circle cx="12" cy="8" r="1.1" fill="currentColor" />
           <circle cx="7" cy="11.5" r="1.1" fill="currentColor" />
+        </svg>
+        <svg v-else class="lb-view-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <path
+            d="M2 2v11a1 1 0 0 0 1 1h11M4.5 10.5l2.4-2.4 2.1 1.2 3-4"
+            stroke="currentColor"
+            stroke-width="1.3"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <circle cx="4.5" cy="10.5" r="1" fill="currentColor" />
+          <circle cx="6.9" cy="8.1" r="1" fill="currentColor" />
+          <circle cx="9" cy="9.3" r="1" fill="currentColor" />
+          <circle cx="12" cy="5.3" r="1" fill="currentColor" />
         </svg>
         {{ v.label }}
       </button>
@@ -398,16 +417,22 @@ const downloadCsv = async () => {
               </svg>
               Embed
             </button>
-          </template>         </LeaderboardTable>
-         <div v-else class="lb-status">
-           This leaderboard variant has no data.
-         </div>
-      </template>       <template v-else>
-         <LeaderboardScatter
-           v-if="activeTable"
-           :table="activeTable"
-         />
-       </template>
+          </template>
+        </LeaderboardTable>
+        <div v-else class="lb-status">
+          This leaderboard variant has no data.
+        </div>
+      </template>
+      <template v-else>
+        <LeaderboardScatter
+          v-if="activeTable"
+          :table="activeTable"
+          :x-axis="activeView === 'releaseDate' ? 'releaseDate' : 'parameters'"
+        />
+        <div v-else class="lb-status">
+          This leaderboard variant has no data.
+        </div>
+      </template>
     </template>
   </div>
 </template>
