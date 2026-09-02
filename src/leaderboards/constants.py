@@ -143,6 +143,13 @@ BACKUPS_MAX_BYTES: int = 1_000_000_000  # ~1 GB total size cap
 # machine lost to theft or a dying SSD still has its results elsewhere.
 BACKUPS_ARCHIVE_DIR: str = "backups"
 
+# Seconds to wait for an Archive upload. A ~36 MB snapshot measured 4.5 minutes
+# on a home connection, so the old five-minute budget was already too tight.
+BACKUPS_ARCHIVE_TIMEOUT: int = 1800
+
+# Seconds to wait for the Archive listing used to confirm an upload landed.
+ARCHIVE_LS_TIMEOUT: int = 60
+
 # Incremental jsonl of new benchmark records to fold into the results
 # directory on the next load.
 NEW_RESULTS_PATH: Path = _env_path(
