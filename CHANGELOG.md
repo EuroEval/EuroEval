@@ -32,6 +32,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   few-shot and validation splits. This has been fixed.
 - Fixed leaderboard deduplication treating malformed model release dates as valid
   metadata.
+- Fixed model release dates being missing for most models: a rate-limited Hub request
+  was stored as "no release date" and never asked again, and models without a recorded
+  Hugging Face URL were looked up as API models, which do not know them.
 - Fixed Hugging Face Router model IDs being rewritten with an unwanted `openai/` prefix
   when using a custom API base.
 - Fixed an infinite loop in token-classification few-shot example selection when the

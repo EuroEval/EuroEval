@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import torch
+from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from huggingface_hub.hf_api import HfApi
 from transformers.models.xlm_roberta import (
     XLMRobertaConfig,
@@ -79,12 +80,79 @@ def test_get_dtype(
     )
 
 
+def test_get_model_release_date_avoids_scanning_every_commit() -> None:
+    """A long history is searched, not walked one request per commit.
+
+    Repositories with thousands of commits would otherwise spend the entire
+    Hub request budget on the first few models.
+    """
+    commits = [
+        MagicMock(
+            commit_id=f"c{i}",
+            created_at=datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
+            + datetime.timedelta(days=i),
+        )
+        for i in range(60)
+    ]
+    api = MagicMock()
+    api.list_repo_commits.return_value = list(reversed(commits))
+    api.list_repo_files.side_effect = lambda repo_id, revision, **kw: (
+        ["model.safetensors"] if int(revision[1:]) >= 30 else ["README.md"]
+    )
+
+    assert (
+        get_model_release_date(api, "org/model", "main", None)
+        == commits[30].created_at.date().isoformat()
+    )
+    assert api.list_repo_files.call_count <= 8
+
+
+def test_get_model_release_date_does_not_retry_missing_repos() -> None:
+    """A repository that does not exist is answered once, not retried."""
+    api = MagicMock()
+    api.list_repo_commits.side_effect = RepositoryNotFoundError(
+        "404", response=MagicMock()
+    )
+
+    with patch("euroeval.benchmark_modules.hf.sleep") as mock_sleep:
+        assert get_model_release_date(api, "org/model", "main", None) is None
+
+    mock_sleep.assert_not_called()
+    assert api.list_repo_commits.call_count == 1
+
+
 def test_get_model_release_date_handles_hub_errors() -> None:
     """Release-date lookup remains optional when Hub history is unavailable."""
     api = MagicMock()
     api.list_repo_commits.side_effect = OSError("offline")
 
-    assert get_model_release_date(api, "org/model", "main", None) is None
+    with patch("euroeval.benchmark_modules.hf.sleep") as mock_sleep:
+        assert get_model_release_date(api, "org/model", "main", None) is None
+
+    assert mock_sleep.call_count == 5, "a connection error should be retried"
+
+
+def test_get_model_release_date_retries_rate_limited_lookups() -> None:
+    """A rate-limited lookup is temporary and must not become "no release date".
+
+    Dating the whole results tree asks the Hub for a lot, and giving up on the
+    first 429 is what left most models without a date.
+    """
+    commit = MagicMock(
+        commit_id="weights",
+        created_at=datetime.datetime(2024, 2, 3, tzinfo=datetime.timezone.utc),
+    )
+    api = MagicMock()
+    api.list_repo_commits.side_effect = [
+        HfHubHTTPError("429 Too Many Requests", response=MagicMock()),
+        [commit],
+    ]
+    api.list_repo_files.return_value = ["model-00001-of-00002.safetensors"]
+
+    with patch("euroeval.benchmark_modules.hf.sleep") as mock_sleep:
+        assert get_model_release_date(api, "org/model", "main", None) == "2024-02-03"
+
+    assert mock_sleep.call_count == 1
 
 
 def test_get_model_release_date_returns_none_without_weights() -> None:
@@ -137,13 +205,39 @@ def test_get_model_release_date_uses_first_weights_commit() -> None:
         created_at=datetime.datetime(2024, 3, 1, tzinfo=datetime.timezone.utc),
     )
     api.list_repo_commits.return_value = [newer, released, old]
-    api.list_repo_files.side_effect = [
-        ["README.md"],
-        ["model-00001-of-00002.safetensors"],
-    ]
+    # The file list is the tree at that revision, so the weights remain
+    # present in every later commit
+    api.list_repo_files.side_effect = lambda repo_id, revision, **kw: (
+        ["README.md"] if revision == "scaffold" else ["README.md", "model.safetensors"]
+    )
 
     assert get_model_release_date(api, "org/model", "main", None) == "2024-02-03"
-    assert api.list_repo_files.call_count == 2
+    assert api.list_repo_files.call_count <= 3
+
+
+def test_get_model_release_date_waits_out_the_rate_limit_window() -> None:
+    """The Hub names the window to wait for, so waiting less wastes requests.
+
+    The limit is 1000 requests per five minutes; retrying after a second keeps
+    hitting the same full window and the model ends up without a date.
+    """
+    commit = MagicMock(
+        commit_id="weights",
+        created_at=datetime.datetime(2024, 2, 3, tzinfo=datetime.timezone.utc),
+    )
+    response = MagicMock()
+    response.headers = {"Retry-After": "30"}
+    api = MagicMock()
+    api.list_repo_commits.side_effect = [
+        HfHubHTTPError("429 Too Many Requests", response=response),
+        [commit],
+    ]
+    api.list_repo_files.return_value = ["model.safetensors"]
+
+    with patch("euroeval.benchmark_modules.hf.sleep") as mock_sleep:
+        assert get_model_release_date(api, "org/model", "main", None) == "2024-02-03"
+
+    mock_sleep.assert_called_once_with(30)
 
 
 def test_load_model_from_pretrained_keyerror_retry_and_message() -> None:

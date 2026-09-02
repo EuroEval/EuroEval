@@ -66,6 +66,26 @@ class TestCacheFromResultsDir:
         assert "model/b" in cache.commercially_licensed
         assert cache.commercially_licensed["model/b"] is True
 
+    def test_null_release_date_does_not_shadow_known_one(self, tmp_path: Path) -> None:
+        """A stored null must not outweigh a date recorded elsewhere.
+
+        Records written before the Hub lookup was working carry an explicit
+        null; whichever record happens to be read last used to decide the
+        answer for the whole model.
+        """
+        model_dir = tmp_path / "test_model"
+        model_dir.mkdir()
+        dated = _make_eee_record(model_id="test/model", model_name="test/model")
+        dated["model_info"]["additional_details"]["release_date"] = "2024-02-03"
+        undated = _make_eee_record(model_id="test/model", model_name="test/model")
+        undated["model_info"]["additional_details"]["release_date"] = None
+        (model_dir / "a__test__zeroshot.json").write_text(json.dumps(dated))
+        (model_dir / "b__test__zeroshot.json").write_text(json.dumps(undated))
+
+        cache = Cache.from_results_dir(results_dir=tmp_path)
+
+        assert cache.release_date["test/model"] == "2024-02-03"
+
     def test_preserves_metadata_fields(self, tmp_path: Path) -> None:
         """Should preserve metadata fields in model_info.additional_details."""
         model_dir = tmp_path / "test_model"
@@ -105,6 +125,23 @@ class TestCacheFromResultsDir:
         """Should raise FileNotFoundError for nonexistent directory."""
         with pytest.raises(FileNotFoundError, match="Results directory"):
             Cache.from_results_dir(results_dir=Path("/nonexistent/path"))
+
+    def test_unknown_release_date_leaves_model_uncached(self, tmp_path: Path) -> None:
+        """A model whose only dates are nulls stays out of the cache.
+
+        The cache doubles as a "already asked" marker, so seeding it with nulls
+        makes every later run skip the lookup and permanently freeze the model
+        at "unknown".
+        """
+        model_dir = tmp_path / "test_model"
+        model_dir.mkdir()
+        record = _make_eee_record(model_id="test/model", model_name="test/model")
+        record["model_info"]["additional_details"]["release_date"] = None
+        (model_dir / "ds__test__zeroshot.json").write_text(json.dumps(record))
+
+        cache = Cache.from_results_dir(results_dir=tmp_path)
+
+        assert "test/model" not in cache.release_date
 
 
 def _make_eee_record(

@@ -93,6 +93,13 @@ def _env_path(name: str, default: Path) -> Path:
     return Path(value).expanduser() if value else default
 
 
+# Hosts that serve Hugging Face model pages, so a recorded `model_url` can be
+# told apart from a provider's own documentation/API page.
+HF_URL_HOSTS: frozenset[str] = frozenset(
+    {"hf.co", "huggingface.co", "www.hf.co", "www.huggingface.co"}
+)
+
+
 # This package's directory (`src/leaderboards/`).
 PACKAGE_DIR: Path = Path(__file__).resolve().parent
 

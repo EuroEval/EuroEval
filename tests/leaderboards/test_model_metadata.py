@@ -967,6 +967,76 @@ def _add_missing_entries_with_complete_metadata(record: dict, cache: Cache) -> d
 
 
 @patch("leaderboards.model_metadata.get_model_release_date")
+@patch("leaderboards.model_metadata.get_api_model_release_date")
+def test_add_missing_entries_does_not_query_hub_for_api_models(
+    mock_api_release_date: MagicMock, mock_hub_release_date: MagicMock
+) -> None:
+    """API models keep using the API lookup even though they are not Hub repos."""
+    mock_api_release_date.return_value = "2023-06-13"
+    record = {
+        "model_info": {
+            "name": "openai/gpt-4-0613",
+            "additional_details": {"model_url": "https://openai.com/gpt-4"},
+        }
+    }
+
+    _add_missing_entries_with_complete_metadata(record=record, cache=Cache())
+
+    assert mock_api_release_date.call_count == 1
+    mock_hub_release_date.assert_not_called()
+
+
+@patch("leaderboards.model_metadata.ask_user_to_remove_model")
+@patch("leaderboards.model_metadata.generate_model_url")
+@patch("leaderboards.model_metadata.get_annotated_release_date")
+@patch("leaderboards.model_metadata.get_model_release_date")
+def test_add_missing_entries_falls_back_to_annotations_for_unreadable_repos(
+    mock_release_date: MagicMock,
+    mock_annotated: MagicMock,
+    mock_generate_url: MagicMock,
+    mock_remove: MagicMock,
+) -> None:
+    """A model whose repository is gone falls back to the manual annotations.
+
+    Renamed and deleted repositories are the one class the Hub history cannot
+    answer, and leaving them undated would drop them off a time axis.
+    """
+    mock_release_date.return_value = None
+    mock_generate_url.return_value = None
+    mock_remove.return_value = False
+    mock_annotated.return_value = "2025-01-30"
+    record = {"model_info": {"name": "org/model", "additional_details": {}}}
+
+    _add_missing_entries_with_complete_metadata(record=record, cache=Cache())
+
+    assert record["model_info"]["additional_details"]["release_date"] == "2025-01-30"
+    mock_annotated.assert_called_once_with(model_id="org/model")
+
+
+@patch("leaderboards.model_metadata.ask_user_to_remove_model")
+@patch("leaderboards.model_metadata.generate_model_url")
+@patch("leaderboards.model_metadata.get_model_release_date")
+def test_add_missing_entries_looks_up_hub_history_without_model_url(
+    mock_release_date: MagicMock, mock_generate_url: MagicMock, mock_remove: MagicMock
+) -> None:
+    """A model with no recorded URL is still dated from its Hub history.
+
+    Routing on the stored `model_url` left every model whose URL could not be
+    generated without a date, since the API lookup knows nothing about ordinary
+    Hub repositories.
+    """
+    mock_generate_url.return_value = None
+    mock_remove.return_value = False
+    mock_release_date.return_value = "2024-02-03"
+    record = {"model_info": {"name": "org/model", "additional_details": {}}}
+
+    _add_missing_entries_with_complete_metadata(record=record, cache=Cache())
+
+    assert record["model_info"]["additional_details"]["release_date"] == "2024-02-03"
+    mock_release_date.assert_called_once()
+
+
+@patch("leaderboards.model_metadata.get_model_release_date")
 def test_add_missing_entries_preserves_existing_release_date(
     mock_release_date: MagicMock,
 ) -> None:

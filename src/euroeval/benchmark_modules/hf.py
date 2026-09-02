@@ -21,6 +21,7 @@ from huggingface_hub.errors import (
     LocalTokenNotFoundError,
     RepositoryNotFoundError,
 )
+from huggingface_hub.hf_api import GitCommitInfo as HfApiGitCommitInfo
 from huggingface_hub.hf_api import ModelInfo as HfApiModelInfo
 from peft import PeftConfig
 from requests.exceptions import RequestException
@@ -1790,19 +1791,127 @@ def get_model_release_date(
             for path in files
         )
 
-    try:
-        commits = hf_api.list_repo_commits(
-            repo_id=model_id, revision=revision, token=token
+    def files_at(commit: HfApiGitCommitInfo) -> list[str]:
+        return _query_hub(
+            hf_api.list_repo_files,
+            repo_id=model_id,
+            revision=commit.commit_id,
+            token=token,
+            description=model_id,
         )
-        for commit in reversed(commits):
-            files = hf_api.list_repo_files(
-                repo_id=model_id, revision=commit.commit_id, token=token
+
+    try:
+        commits = list(
+            _query_hub(
+                hf_api.list_repo_commits,
+                repo_id=model_id,
+                revision=revision,
+                token=token,
+                description=model_id,
             )
-            if contains_weights(files):
-                return commit.created_at.date().isoformat()
+        )
+        if not commits:
+            return None
+        # Commits are returned newest first, so reverse them to get the history
+        # in chronological order.
+        ordered = list(reversed(commits))
+        if contains_weights(files_at(ordered[0])):
+            return ordered[0].created_at.date().isoformat()
+        if not contains_weights(files_at(ordered[-1])):
+            return None
+        # Weights appear once and stay, so the release commit is the first
+        # true value of a monotone predicate: search for it rather than
+        # requesting the file list of every single commit, which for a
+        # repository with thousands of commits is what exhausts the rate limit.
+        oldest_without, newest_with = 0, len(ordered) - 1
+        while newest_with - oldest_without > 1:
+            middle = (oldest_without + newest_with) // 2
+            if contains_weights(files_at(ordered[middle])):
+                newest_with = middle
+            else:
+                oldest_without = middle
+        return ordered[newest_with].created_at.date().isoformat()
     except (HfHubHTTPError, HFValidationError, OSError, RequestException) as e:
         log(
             f"Could not determine the release date for {model_id!r}: {e}",
             level=logging.DEBUG,
         )
     return None
+
+
+def _query_hub[T](
+    func: t.Callable[..., T], /, *, description: str, **kwargs: object
+) -> T:
+    """Call a Hub API function, retrying transient failures.
+
+    Dating every model in the results means tens of thousands of Hub requests,
+    which is enough to trip the rate limit. A rate-limited request is a
+    temporary condition, so it is retried rather than reported as "this model
+    has no release date" -- the answer would otherwise be stored and never
+    asked again.
+
+    Args:
+        func:
+            The Hub API function to call.
+        description:
+            What is being looked up, for the warning message.
+        kwargs:
+            Arguments passed to `func`.
+
+    Returns:
+        Whatever `func` returns.
+
+    Raises:
+        RepositoryNotFoundError:
+            If the repository does not exist (not retried).
+        GatedRepoError:
+            If the repository is gated (not retried).
+        HFValidationError:
+            If the model ID is not a valid repository ID (not retried).
+        HfHubHTTPError:
+            If the request still fails after the retries.
+        RequestException:
+            If the connection still fails after the retries.
+        OSError:
+            If the network is unavailable after the retries.
+    """
+    max_attempts = 6
+    attempt = 0
+    while True:
+        try:
+            return func(**kwargs)
+        except (RepositoryNotFoundError, GatedRepoError, HFValidationError):
+            raise
+        except (HfHubHTTPError, RequestException, OSError) as e:
+            if attempt == max_attempts - 1:
+                raise
+            # The rate limit is a window which resets rather than a queue, so
+            # waiting less than the Hub asks for just spends another request.
+            wait_time = max(2**attempt, _retry_after_seconds(exc=e))
+            log(
+                f"Could not query the Hub for {description}: {e}. "
+                f"Retrying in {wait_time}s...",
+                level=logging.WARNING,
+            )
+            sleep(wait_time)
+            attempt += 1
+
+
+def _retry_after_seconds(exc: BaseException) -> int:
+    """The delay the Hub asked us to wait for, if it said one.
+
+    Args:
+        exc:
+            The exception raised by the failed request.
+
+    Returns:
+        The requested number of seconds, or 0 if the response did not say.
+    """
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None)
+    if headers is None:
+        return 0
+    try:
+        return max(0, int(headers.get("Retry-After", 0)))
+    except (TypeError, ValueError):
+        return 0
