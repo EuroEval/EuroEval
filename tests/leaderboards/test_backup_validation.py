@@ -139,6 +139,8 @@ class TestBackupResultsIntegration:
             patch("leaderboards.backup.RESULTS_DIR", temp_results_dir),
             patch("leaderboards.backup.BACKUPS_DIR", backup_dir),
             patch("leaderboards.backup.BACKUPS_MAX_BYTES", 1024 * 1024 * 10),
+            patch("leaderboards.backup._archive_offsite", return_value=True),
+            patch("leaderboards.backup._archived_backups", return_value=[]),
         ):
             # Should not raise - raw results are allowed to miss precious metadata
             backup_path = backup_results(source=temp_results_dir)
