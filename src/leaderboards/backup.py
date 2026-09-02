@@ -18,7 +18,8 @@ import hashlib
 import json
 import logging
 import random
-import sys
+import shutil
+import subprocess
 import tarfile
 from pathlib import Path
 
@@ -27,6 +28,7 @@ from .constants import (
     BACKUP_HASH_LEN,
     BACKUP_PREFIX,
     BACKUP_SUFFIX,
+    BACKUPS_ARCHIVE_DIR,
     BACKUPS_DIR,
     BACKUPS_MAX_BYTES,
     RESULTS_DIR,
@@ -53,30 +55,65 @@ def backup_results(source: Path = RESULTS_DIR) -> Path | None:
 
     Returns:
         The Path of the new backup, or None if nothing was written.
-
-    Raises:
-        OSError:
-            If the backup directory (a pCloud Drive path) is unavailable and
-            stdin is not a TTY, so the operator cannot be prompted to retry.
     """
     # Validate results before backing up
     _validate_results()
 
-    # The backup directory lives on pCloud Drive, which raises OSError when
-    # pCloud is not running. When attached to a terminal, prompt the operator
-    # to start pCloud and retry; otherwise (CI) let the OSError propagate so
-    # the caller's non-interactive safety net handles it.
-    while True:
-        try:
-            return _write_snapshot(source=source)
-        except OSError as exc:
-            if not sys.stdin.isatty():
-                raise
-            logger.warning(f"Backup failed; pCloud may be unavailable: {exc}")
-            input(
-                f"Could not write the backup to {BACKUPS_DIR}. pCloud appears to "
-                "be unavailable. Start pCloud and press Enter to retry..."
-            )
+    backup_path = _write_snapshot(source=source)
+    if backup_path is not None:
+        _archive_offsite(backup_path)
+    return backup_path
+
+
+def _archive_offsite(backup_path: Path) -> None:
+    """Copy a snapshot into the Jottacloud Archive namespace.
+
+    Best-effort by design: losing the off-site copy is worth a warning, not a
+    failed leaderboard run, since the snapshot itself is already on disk.
+
+    Args:
+        backup_path:
+            The snapshot to upload.
+    """
+    cli = _jotta_cli()
+    if cli is None:
+        logger.warning(
+            f"Archived the results backup to {backup_path} only; install the "
+            "Jottacloud command-line tool to keep a copy off-machine."
+        )
+        return
+    try:
+        result = subprocess.run(
+            [str(cli), "archive", str(backup_path), f"--remote={BACKUPS_ARCHIVE_DIR}"],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        logger.warning(f"Could not archive the results backup to Jottacloud: {exc}")
+        return
+    if result.returncode != 0:
+        logger.warning(
+            f"Could not archive the results backup to Jottacloud: "
+            f"{(result.stderr or result.stdout).strip()[:200]}"
+        )
+    else:
+        logger.info(
+            f"Archived {backup_path.name} to Jottacloud Archive/{BACKUPS_ARCHIVE_DIR}/"
+        )
+
+
+def _jotta_cli() -> Path | None:
+    """Locate the Jottacloud command-line client, if it is installed.
+
+    Returns:
+        Path to the client, or None when it is not installed.
+    """
+    found = shutil.which("jotta-cli")
+    if found is not None:
+        return Path(found)
+    bundled = Path("/Applications/Jottacloud.app/Contents/MacOS/jotta-cli")
+    return bundled if bundled.exists() else None
 
 
 def _validate_results() -> None:

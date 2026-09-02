@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import json
+import logging
 import tarfile
 import typing as t
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from leaderboards.backup import (
+    _archive_offsite,
     _content_hash,
     _extract_backup,
     _validate_results,
@@ -19,6 +21,65 @@ from leaderboards.backup import (
     restore_from_backup_if_missing,
 )
 from leaderboards.eee_validation import validate_eee_record
+
+
+class TestArchiveOffsite:
+    """Tests for archiving snapshots into the Jottacloud Archive namespace."""
+
+    def test_failed_upload_warns_without_failing_the_run(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """An unusable client, e.g. one with no device configured, only warns."""
+        snapshot = tmp_path / "results.tar.gz"
+        snapshot.write_bytes(b"x")
+        failure = MagicMock(returncode=1, stdout="", stderr="device name not set")
+        with (
+            patch(
+                "leaderboards.backup._jotta_cli",
+                return_value=Path("/usr/bin/jotta-cli"),
+            ),
+            patch("leaderboards.backup.subprocess.run", return_value=failure),
+            caplog.at_level(logging.WARNING),
+        ):
+            _archive_offsite(snapshot)
+
+        assert any("Jottacloud" in record.message for record in caplog.records)
+
+    def test_missing_client_warns_without_failing_the_run(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Without the Jottacloud tool the local snapshot still counts.
+
+        The snapshot is already on disk, so a missing off-site copy is worth a
+        warning, not a failed leaderboard run.
+        """
+        snapshot = tmp_path / "results.tar.gz"
+        snapshot.write_bytes(b"x")
+        with (
+            patch("leaderboards.backup._jotta_cli", return_value=None),
+            caplog.at_level(logging.WARNING),
+        ):
+            _archive_offsite(snapshot)
+
+        assert any("Jottacloud" in record.message for record in caplog.records)
+
+    def test_uploads_to_the_archive_backups_directory(self, tmp_path: Path) -> None:
+        """Snapshots go to Archive/backups, keeping their timestamped name."""
+        snapshot = tmp_path / "results_20260901_120000_deadbeef.tar.gz"
+        snapshot.write_bytes(b"x")
+        with (
+            patch(
+                "leaderboards.backup._jotta_cli",
+                return_value=Path("/usr/bin/jotta-cli"),
+            ),
+            patch("leaderboards.backup.subprocess.run") as mock_run,
+        ):
+            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+            _archive_offsite(snapshot)
+
+        command = mock_run.call_args.args[0]
+        assert command[:3] == ["/usr/bin/jotta-cli", "archive", str(snapshot)]
+        assert command[3] == "--remote=backups"
 
 
 class TestBackupResultsIntegration:

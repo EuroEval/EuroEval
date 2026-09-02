@@ -131,13 +131,17 @@ OUTPUT_DIR: Path = REPO_ROOT / "src" / "frontend" / "csv"
 # Space so it shows up under "Spaces using this model" on each model's page.
 MODELS_PY_PATH: Path = REPO_ROOT / "hf_space" / "models.py"
 
-# Off-repo backup location for compressed snapshots of the results
-# directory. Snapshots are timestamped and pruned when exceeding limits.
+# Local staging directory for compressed snapshots of the results directory.
+# Snapshots are timestamped and pruned when exceeding limits, then archived
+# off-machine to `BACKUPS_ARCHIVE_DIR` in the Jottacloud Archive namespace.
 BACKUPS_DIR: Path = _env_path(
-    "EUROEVAL_RESULTS_BACKUP_DIR",
-    Path.home() / "pCloud Drive" / "data" / "euroeval_backup",
+    "EUROEVAL_RESULTS_BACKUP_DIR", Path.home() / ".euroeval" / "backups"
 )
 BACKUPS_MAX_BYTES: int = 1_000_000_000  # ~1 GB total size cap
+
+# Where snapshots are archived inside the Jottacloud Archive namespace, so a
+# machine lost to theft or a dying SSD still has its results elsewhere.
+BACKUPS_ARCHIVE_DIR: str = "backups"
 
 # Incremental jsonl of new benchmark records to fold into the results
 # directory on the next load.
