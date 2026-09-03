@@ -45,6 +45,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   and require an explicit `thinking.type` of `disabled`.
 - The logical-reasoning task is now restricted to instruction-tuned and
   reasoning models, excluding base models.
+- Inspect AI `eval.yaml` files now infer the `math` task from a `math` scorer and
+  import `prompt_template` solvers as EuroEval instruction prompts.
 
 ## [v18.0.0] - 2026-08-14
 

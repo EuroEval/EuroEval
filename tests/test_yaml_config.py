@@ -92,7 +92,9 @@ class TestLoadDatasetConfigFromYaml:
                 tasks:
                   - id: my_dataset
                     solvers:
-                      - name: multiple_choice
+                      - name: generate
+                    scorers:
+                      - name: math
                 task: classification
                 languages:
                   - en
@@ -665,6 +667,98 @@ class TestLoadDatasetConfigFromYaml:
         )
         assert config is not None
         assert config.languages[0].code == "da"
+
+    def test_math_scorer_and_prompt_template(self, tmp_path: Path) -> None:
+        """A math scorer and prompt template are inferred from Inspect AI YAML."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: Multilingual GSM-Symbolic
+                tasks:
+                  - id: original_eng
+                    config: eng
+                    split: test_original
+                    field_spec:
+                      input: question
+                      target: target
+                      metadata: [answer, language]
+                    solvers:
+                      - name: prompt_template
+                        args:
+                          template: |-
+                            Solve it. Put the answer in \\boxed{{}}, e.g. \\boxed{{42}}.
+
+                            {prompt}
+                      - name: generate
+                    scorers:
+                      - name: math
+                  - id: synthetic_eng
+                    config: eng
+                    split: test_synthetic
+                    field_spec:
+                      input: question
+                      target: target
+                    scorers:
+                      - name: math
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "math"
+        assert config.test_split == "test_original"
+        assert config.preprocessing_func is not None
+        assert "{text}" in config.instruction_prompt
+        assert "{{}}" in config.instruction_prompt
+        rendered = config.instruction_prompt.format(text="X")
+        assert "\\boxed{}" in rendered
+        assert rendered.endswith("X")
+
+    def test_explicit_instruction_prompt_overrides_solver(self, tmp_path: Path) -> None:
+        """An explicit instruction prompt takes precedence over prompt_template."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: math
+                instruction_prompt: "Explicit {text}"
+                tasks:
+                  - id: math
+                    solvers:
+                      - name: prompt_template
+                        args:
+                          template: "Ignored {prompt}"
+                languages: [en]
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.instruction_prompt == "Explicit {text}"
+
+    def test_prompt_template_without_prompt_appends_text(self, tmp_path: Path) -> None:
+        """A prompt template without Inspect's placeholder still includes the input."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: math
+                tasks:
+                  - id: math
+                    solvers:
+                      - name: prompt_template
+                        args:
+                          template: "Solve this"
+                languages: [en]
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.instruction_prompt == "Solve this\n\n{text}"
 
 
 class TestRealWorldYamlConfigs:
