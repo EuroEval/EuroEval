@@ -227,8 +227,10 @@ def load_dataset_config_from_yaml(
     ):
         log_once(
             message=(
-                "The math task expects the model to answer in \\boxed{...}; "
-                "the YAML should provide a prompt_template solver doing so."
+                "The math task expects the model to answer in \\boxed{...}, but the "
+                "instruction prompt does not ask it to. Add a `prompt_template` "
+                "solver, or a top-level `instruction_prompt` key, telling the model "
+                "to put its final answer in `\\boxed{...}`."
             ),
             level=logging.WARNING,
         )

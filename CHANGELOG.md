@@ -46,6 +46,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `B-PER`).
 - Fixed `#no-thinking` LiteLLM evaluations when providers reject a zero thinking budget
   and require an explicit `thinking.type` of `disabled`.
+- An unsupported language code in the language metadata of a Hugging Face dataset
+  repository, such as `zh`, no longer blocks the rest of its `eval.yaml` from loading.
 - The logical-reasoning task is now restricted to instruction-tuned and
   reasoning models, excluding base models.
 

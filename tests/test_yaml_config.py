@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from euroeval import yaml_config
 from euroeval.data_models import DatasetConfig
 from euroeval.yaml_config import load_dataset_config_from_yaml
 
@@ -493,13 +494,24 @@ class TestLoadDatasetConfigFromYaml:
         assert config is not None
         assert "answer" not in config.instruction_prompt
 
-    def test_math_without_boxed_prompt_warns(self, tmp_path: Path) -> None:
+    def test_math_without_boxed_prompt_warns(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Math configs without boxed instructions emit a warning."""
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text("task: math\nlanguages: [en]\n")
+        messages: list[str] = []
+        monkeypatch.setattr(
+            yaml_config,
+            "log_once",
+            lambda message, level, prefix="": messages.append(message),
+        )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
-        assert config.instruction_prompt == ""
+        # Without a prompt template the default instruction prompt is used, which
+        # does not tell the model to box its answer
+        assert config.instruction_prompt == "{text}"
+        assert any("boxed" in message for message in messages), messages
 
     def test_minimal_valid_config(self, tmp_path: Path) -> None:
         """A YAML file with only task and languages produces a DatasetConfig."""

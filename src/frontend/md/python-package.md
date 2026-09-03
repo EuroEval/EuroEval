@@ -495,13 +495,24 @@ infer them automatically when they are absent:
   `multiple-choice` task, while a scorer with `name: math` maps to the `math` task.
 - **`instruction_prompt`** is inferred from a `prompt_template` solver's template,
   replacing Inspect AI's `{prompt}` placeholder with EuroEval's `{text}` placeholder.
+  This only applies to free-form generation tasks; tasks scored from logprobs (such
+  as multiple-choice) keep EuroEval's own prompts. A template using placeholders
+  other than `{prompt}` cannot be expressed and is ignored.
 - **`languages`** are read from the Hugging Face Hub repository metadata
-  (the `language` field in the dataset card).  If the language cannot be determined,
-  EuroEval defaults to English and logs a warning.
+  (the `language` field in the dataset card).  Languages that EuroEval does not
+  support are skipped; if the configuration would then have no language at all, or
+  no language metadata can be found, EuroEval defaults to English and logs a
+  warning.
 
-EuroEval compares the extracted answer to the target using exact numeric or
-normalised-text matching. It does not parse LaTeX symbolically like Inspect AI's
-SymPy-backed scorer, so `\frac{1}{2}` and `0.5` are not treated as equal.
+The `math` task scores the answer extracted from the model output against the
+target, preferring the last `\boxed{...}` in the completion and falling back to
+answer markers, delimited mathematics and finally the last number in the text.
+Numbers are compared exactly (a percentage counts as its value divided by 100) and
+everything else as normalised text. EuroEval does not parse LaTeX symbolically like
+Inspect AI's SymPy-backed scorer, so `\frac{1}{2}` and `0.5` are not treated as
+equal. Since the extraction relies on the boxed answer, a `math` configuration
+should include a `prompt_template` solver asking the model to box its answer —
+EuroEval warns when it is missing.
 
 This means a standard Inspect AI `eval.yaml` with no EuroEval-specific keys works
 out of the box:
