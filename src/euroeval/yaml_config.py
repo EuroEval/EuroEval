@@ -38,19 +38,10 @@ def load_yaml_config(
     Returns:
         The dataset config if it exists, otherwise None.
     """
-    requested_parts = dataset_id.split("::")
-    if len(requested_parts) > 3 or any(not part for part in requested_parts):
-        log_once(
-            message=(
-                f"Invalid dataset selector {dataset_id!r}. Use the syntax "
-                "<repo>[::<config>[::<split>]], with no empty parts."
-            ),
-            level=logging.ERROR,
-        )
+    parsed_selector = parse_dataset_selector(dataset_id=dataset_id)
+    if parsed_selector is None:
         return None
-    repo_id = requested_parts[0]
-    subset_config = requested_parts[1] if len(requested_parts) > 1 else None
-    subset_split = requested_parts[2] if len(requested_parts) > 2 else None
+    repo_id, subset_config, subset_split = parsed_selector
 
     external_config_path = cache_dir / "external_dataset_configs" / repo_id
     external_config_path.mkdir(parents=True, exist_ok=True)
@@ -93,6 +84,27 @@ def load_yaml_config(
     if selected is None:
         return None
     task_index, inspect_ai_config, inspect_ai_split = selected
+
+    selected_task = raw.get("tasks", [])[task_index]
+    has_entry_languages = (
+        isinstance(selected_task, dict) and "languages" in selected_task
+    )
+    if (
+        subset_config is not None
+        and not has_entry_languages
+        and "languages" not in raw
+        and fallback_language_codes is not None
+        and len(fallback_language_codes) > 1
+    ):
+        log_once(
+            message=(
+                f"The language of subset {inspect_ai_config!r} in dataset "
+                f"{dataset_id!r} could not be determined. Results are attributed "
+                f"to all {len(fallback_language_codes)} languages of the repository; "
+                "add a per-entry `languages` key to the `eval.yaml`."
+            ),
+            level=logging.WARNING,
+        )
 
     repo_dataset_config = load_dataset_config_from_yaml(
         yaml_path=yaml_file_path,
@@ -160,13 +172,14 @@ def load_dataset_config_from_yaml(
       list, English (`"en"`) is used as the final fallback and a warning is logged.
 
     Column mappings may be specified either as flat top-level keys
-    (`input_column` / `target_column` / `choices_column`) or via a
-    `tasks[0].field_spec` block using the Inspect AI `input` / `target` /
+    (`input_column` / `target_column` / `choices_column`) or via the selected task's
+    `field_spec` block using the Inspect AI `input` / `target` /
     `choices` sub-keys. Top-level keys take precedence when both are present.
 
-    `tasks[0].split` is used as the test split. `try_get_dataset_config_from_repo`
-    auto-detects the train and val splits from the repository, and also uses
-    `tasks[0].config` as the HuggingFace dataset config/subset name.
+    The selected task's `split` is used as the test split. A dataset selector uses
+    `repo::config[::split]`; `try_get_dataset_config_from_repo` auto-detects the train
+    and val splits from the repository, and uses the selected task's `config` as the
+    HuggingFace dataset config/subset name.
 
     When reading `field_spec`:
 
@@ -608,6 +621,31 @@ def infer_task_from_inspect_ai(
     return None
 
 
+def parse_dataset_selector(
+    dataset_id: str,
+) -> tuple[str, str | None, str | None] | None:
+    """Parse a dataset repository selector and report malformed selectors.
+
+    Returns:
+        The repository ID, optional config, and optional split, or None if invalid.
+    """
+    parts = dataset_id.split("::")
+    if len(parts) > 3 or any(not part for part in parts):
+        log_once(
+            message=(
+                f"Invalid dataset selector {dataset_id!r}. Use the syntax "
+                "<repo>[::<config>[::<split>]], with no empty parts."
+            ),
+            level=logging.ERROR,
+        )
+        return None
+    return (
+        parts[0],
+        parts[1] if len(parts) > 1 else None,
+        parts[2] if len(parts) > 2 else None,
+    )
+
+
 def select_inspect_ai_task(
     raw: dict[str, object],
     subset_config: str | None,
@@ -621,11 +659,30 @@ def select_inspect_ai_task(
         The selected entry index, config and split, or None when validation fails.
     """
     tasks = raw.get("tasks")
+    selector_supplied = subset_config is not None or subset_split is not None
     if not isinstance(tasks, list) or not tasks:
+        if selector_supplied:
+            log_once(
+                message=(
+                    f"Dataset {dataset_id!r} eval.yaml declares no configurations, "
+                    "so subset selection is unsupported."
+                ),
+                level=logging.ERROR,
+            )
+            return None
         return (0, None, None)
     entries = [task for task in tasks if isinstance(task, dict)]
     configs = sorted({str(task["config"]) for task in entries if task.get("config")})
     if not configs:
+        if selector_supplied:
+            log_once(
+                message=(
+                    f"Dataset {dataset_id!r} eval.yaml declares no configurations, "
+                    "so subset selection is unsupported."
+                ),
+                level=logging.ERROR,
+            )
+            return None
         return (0, None, None)
     if subset_config is None and len(configs) > 1:
         log_once(
@@ -650,10 +707,10 @@ def select_inspect_ai_task(
         (index, task)
         for index, task in enumerate(tasks)
         if isinstance(task, dict)
-        and (selected_config is None or task.get("config") == selected_config)
+        and (selected_config is None or str(task.get("config")) == selected_config)
     ]
     splits = sorted({str(task["split"]) for _, task in candidates if task.get("split")})
-    if subset_split is None and len(splits) > 1:
+    if selector_supplied and subset_split is None and len(splits) > 1:
         log_once(
             message=(
                 f"Config {selected_config!r} for dataset {dataset_id!r} has multiple "
@@ -676,9 +733,18 @@ def select_inspect_ai_task(
         candidates = [
             (index, task)
             for index, task in candidates
-            if task.get("split") == subset_split
+            if str(task.get("split")) == subset_split
         ]
-    index, task = candidates[0] if candidates else (0, {})
+    if not candidates:
+        log_once(
+            message=(
+                f"No task entry matches config {selected_config!r} and split "
+                f"{subset_split!r} in dataset {dataset_id!r}."
+            ),
+            level=logging.ERROR,
+        )
+        return None
+    index, task = candidates[0]
     split = subset_split or (str(task["split"]) if task.get("split") else None)
     config = str(task["config"]) if task.get("config") else None
     return index, config, split

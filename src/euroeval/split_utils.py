@@ -1,5 +1,6 @@
 """Utilities for detecting and mapping dataset splits."""
 
+import sys
 import typing as t
 from pathlib import Path
 
@@ -78,10 +79,21 @@ def get_repo_split_names(
 
     if card_info is not None:
         # Cards of repositories with multiple configurations are keyed by
-        # configuration name, while single-configuration cards are not
-        if config_name is not None and config_name in card_info:
-            card_info = card_info[config_name]
-        if "splits" in card_info:
+        # configuration name, while single-configuration cards are not. Newer
+        # Hub cards use a list of named configuration entries instead.
+        if isinstance(card_info, list) and config_name is not None:
+            card_info = next(
+                (
+                    entry
+                    for entry in card_info
+                    if isinstance(entry, dict)
+                    and entry.get("config_name") == config_name
+                ),
+                card_info,
+            )
+        elif isinstance(card_info, dict) and config_name is not None:
+            card_info = card_info.get(config_name, card_info)
+        if isinstance(card_info, dict) and "splits" in card_info:
             return [
                 split["name"]
                 for split in card_info["splits"]  # ty: ignore[not-subscriptable]
@@ -106,7 +118,9 @@ def get_repo_split_names(
     return list(dict.fromkeys(split_names)) if split_names else None
 
 
-@cache_arguments("dataset_id")
+@cache_arguments(
+    "dataset_id", disable_condition=lambda: hasattr(sys, "_called_from_test")
+)
 def _get_repo_split_info(hf_api: HfApi, dataset_id: str) -> tuple[t.Any, list[str]]:
     """Look up the raw split information of a Hugging Face dataset repo.
 
