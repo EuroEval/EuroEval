@@ -403,3 +403,20 @@ REFERENCE_FREE_QA = Task(
     requires_zero_shot=True,
     uses_logprobs=False,
 )
+
+
+MATH = Task(
+    name="math",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=EMPTY_TEMPLATES,
+    metrics=[m.math_accuracy_metric],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=2048,
+    default_labels=None,
+    default_allowed_model_types=[ModelType.GENERATIVE],
+    default_allowed_generative_types=[
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    ],
+    requires_zero_shot=True,
+)
