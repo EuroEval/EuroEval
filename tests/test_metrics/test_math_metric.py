@@ -2,6 +2,7 @@
 
 from euroeval.metrics.math import (
     MathAccuracy,
+    _answer_candidates,
     _answer_matches,
     _boxed_candidates,
     _equivalent,
@@ -21,15 +22,17 @@ class TestMathHelpers:
         assert _answer_matches("The answer is 12 because it follows.", "12")
 
     def test_wrappers_and_grouping(self) -> None:
-        """Currency, delimiters, Markdown and digit grouping are normalised."""
+        """Currency, delimiters, Markdown and comma grouping are normalised."""
         assert _equivalent("**$1,234$**", "1234")
         assert _equivalent(r"1\,234", "1234")
-        assert _equivalent("1 234", "1234")
+        assert not _equivalent("1 234", "1234")
+        assert not _equivalent("10\n20", "1020")
 
     def test_unicode_minus_and_percent_scales(self) -> None:
-        """Unicode minus and either interpretation of percentages compare."""
+        """Unicode minus and single-scale percentages compare."""
         assert _equivalent("−2", "-2")
         assert _equivalent(r"50\%", "0.5")
+        assert not _equivalent(r"50\%", "50")
         assert _equivalent(r"50 \text{percent}", "0.5")
 
     def test_boxed_reference_and_unsupported_fraction(self) -> None:
@@ -37,10 +40,10 @@ class TestMathHelpers:
         assert _equivalent("42", r"\boxed{42}")
         assert not _equivalent(r"\frac{1}{2}", "0.5")
 
-    def test_numeric_tolerance(self) -> None:
-        """The Inspect AI absolute and relative tolerance is used."""
-        assert _equivalent("1", "1.00000000001")
-        assert not _equivalent("1", "1.0000001")
+    def test_numeric_equality_is_exact(self) -> None:
+        """Plain numeric values require exact equality."""
+        assert not _equivalent("1", "1.00000000001")
+        assert not _equivalent("99999999999", "100000000000")
 
 
 def _score(predictions: list[str], references: list[str]) -> float | None:
@@ -56,6 +59,24 @@ def _score(predictions: list[str], references: list[str]) -> float | None:
         dataset_config=None,  # ty: ignore[invalid-argument-type]
         benchmark_config=None,  # ty: ignore[invalid-argument-type]
     )
+
+
+def test_candidate_precedence_and_markers() -> None:
+    """The first candidate wins, and answer markers require a connector."""
+    assert not _answer_matches(r"\boxed{7} ... the answer is 42", "42")
+    assert _answer_matches(r"\boxed{42} junk 7", "42")
+    assert _answer_matches("The answer is 42.", "42")
+    assert not any(
+        candidate.startswith("to the problem")
+        for candidate in _answer_candidates("the answer to the problem")
+    )
+
+
+def test_box_openers() -> None:
+    """Supported boxed-answer spellings are extracted."""
+    assert _answer_matches(r"\fbox{42}", "42")
+    assert _answer_matches("boxed{42}", "42")
+    assert _answer_matches(r"\beginboxed{42}", "42")
 
 
 def test_metric_mean_and_empty_input() -> None:

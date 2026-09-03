@@ -1,12 +1,19 @@
-"""Exact-match scoring for mathematical answers.
+r"""Exact-match scoring for mathematical answers.
 
-This intentionally implements numeric and normalised-text equality only; it does
-not depend on SymPy, latex2sympy2, or an ANTLR parser.
+The candidate ladder prefers the last boxed answer, then a connected answer
+marker, delimited mathematics, the whole short text, the last line, and the
+last number. The first candidate wins; opaque prose may fall back to later
+numeric candidates. Numbers use exact equality after percent values are divided
+by 100, while other values use normalised case-folded text equality.
+
+Diverges from Inspect AI: LaTeX expressions are not parsed symbolically, so
+``\\frac{1}{2}`` does not equal ``0.5`` and ``0.1 + 0.2`` is not evaluated.
 """
 
 from __future__ import annotations
 
 import collections.abc as c
+import decimal
 import re
 import typing as t
 
@@ -17,14 +24,35 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig
 
-_NUMBER = re.compile(r"(?<![A-Za-z])[-+]?(?:\d[\d,\s]*\.?\d*|\.\d+)(?:[eE][-+]?\d+)?%?")
-_MARKER = re.compile(r"(?:final\s+answer|answer|result)\s*[:=]?", re.IGNORECASE)
-_BOX = re.compile(r"(?:\\(?:boxed|fbox)|(?<![A-Za-z])boxed)\s*\{")
+_NUMBER = re.compile(
+    r"[-+]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)"
+    r"(?:[eE][-+]?\d+)?\s*%?"
+)
+_PERCENT_SUFFIX = re.compile(
+    r"\s*(?:\\?%|\\text\s*\{\s*(?:percent(?:age)?|pct)\s*\}|"
+    r"\s+(?:percent(?:age)?|pct))\s*$",
+    re.IGNORECASE,
+)
+_MARKER = re.compile(
+    r"(?:final\s+answer|answer|result)\s*(?:is\b|[:=])\s*", re.IGNORECASE
+)
+_BOX = re.compile(
+    r"(?:\\(?:beginboxed|boxed|fbox)|(?<![A-Za-z\\])(?:boxed|fbox|oxed))\s*\{"
+)
 _DELIMITERS = (("$$", "$$"), (r"\[", r"\]"), (r"\(", r"\)"), ("$", "$"))
 
 
 class MathAccuracy(Metric):
-    """Score mathematical answers using numeric or normalised-text equality."""
+    r"""Score answers with the Inspect-style candidate ladder.
+
+    The first candidate wins. Only an unmatched opaque prose candidate may
+    fall back to later candidates that are plain numbers. Numeric comparison is
+    exact after percent values are divided by 100; all other comparison is
+    normalised case-folded text equality.
+
+    Diverges from Inspect AI: LaTeX is not parsed symbolically, so
+    ``\\frac{1}{2}`` does not equal ``0.5`` and ``0.1 + 0.2`` is not evaluated.
+    """
 
     def __call__(
         self,
@@ -35,6 +63,13 @@ class MathAccuracy(Metric):
         benchmark_config: "BenchmarkConfig",
     ) -> float | None:
         """Calculate the mean per-item mathematical exact-match score.
+
+        Args:
+            predictions: Model answers whose first matching candidate wins.
+            references: Expected answers.
+            dataset: Unused benchmark dataset.
+            dataset_config: Unused dataset configuration.
+            benchmark_config: Unused benchmark configuration.
 
         Returns:
             The mean score, or None when there are no paired inputs.
@@ -47,21 +82,28 @@ class MathAccuracy(Metric):
 
 
 def _answer_matches(prediction: str, reference: str) -> bool:
-    """Return whether an answer candidate matches the reference."""
+    """Compare the first candidate, falling back only from opaque prose.
+
+    Args:
+        prediction: Model completion.
+        reference: Expected answer.
+
+    Returns:
+        Whether the winning candidate matches a reference candidate.
+    """
     reference_candidates = _reference_candidates(reference)
     prediction_candidates = _answer_candidates(prediction)
-    for candidate in prediction_candidates:
-        if any(_equivalent(candidate, target) for target in reference_candidates):
-            return True
-    numeric_predictions = [
-        candidate
-        for candidate in prediction_candidates
-        if _number_value(candidate) is not None
-    ]
+    if not prediction_candidates:
+        return False
+    primary = prediction_candidates[0]
+    if any(_equivalent(primary, target) for target in reference_candidates):
+        return True
+    if _number_value(primary) is not None:
+        return False
     return any(
-        _equivalent(candidate, target)
-        for candidate in numeric_predictions
-        for target in reference_candidates
+        any(_equivalent(candidate, target) for target in reference_candidates)
+        for candidate in prediction_candidates[1:]
+        if _number_value(candidate) is not None
     )
 
 
@@ -94,7 +136,7 @@ def _answer_candidates(text: str) -> list[str]:
         suffix = text[markers[-1].end() :].splitlines()
         _append_candidate(candidates, suffix[0] if suffix else None)
     _append_candidate(candidates, _last_delimited_math(text))
-    if len(text) <= 120:
+    if len(text) <= 4096:
         _append_candidate(candidates, text)
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     _append_candidate(candidates, lines[-1] if lines else None)
@@ -200,28 +242,41 @@ def _normalize_text(text: str) -> str:
     return text.casefold()
 
 
-def _number_value(text: str) -> tuple[float, bool] | None:
-    """Parse a plain number and return its value and whether it is a percent.
+def _number_value(text: str) -> tuple[decimal.Decimal, bool] | None:
+    """Parse a plain number and return its exact value and percent status.
 
     Returns:
-        A numeric value and percent flag, or None for non-numeric text.
+        An exact numeric value and percent flag, or None for non-numeric text.
     """
     normalised = _normalize_text(text)
-    percent = normalised.endswith("%") or normalised.endswith(" percent")
-    if percent:
-        normalised = re.sub(r"(?:%|\s+percent)$", "", normalised).strip()
-    normalised = normalised.replace(r"\,", "").replace(",", "")
-    normalised = re.sub(r"(?<=\d)\s+(?=\d)", "", normalised)
-    if not re.fullmatch(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?", normalised):
+    percent_match = _PERCENT_SUFFIX.search(normalised)
+    percent = percent_match is not None
+    if percent_match is not None:
+        normalised = normalised[: percent_match.start()].strip()
+    normalised = normalised.replace(r"\,", ",")
+    if "," in normalised and not re.fullmatch(
+        r"[-+]?\d{1,3}(?:,\d{3})+(?:\.\d+)?(?:[eE][-+]?\d+)?", normalised
+    ):
+        return None
+    normalised = normalised.replace(",", "")
+    if not re.fullmatch(
+        r"[-+]?(?:(?:\d{1,3}(?:\d{3})+|\d+)(?:\.\d+)?|\.\d+)"
+        r"(?:[eE][-+]?\d+)?",
+        normalised,
+    ):
         return None
     try:
-        return float(normalised), percent
-    except ValueError:
+        return decimal.Decimal(normalised), percent
+    except decimal.InvalidOperation:
         return None
 
 
 def _equivalent(left: str, right: str) -> bool:
-    """Compare numbers with Inspect AI's tolerance, otherwise normalised text.
+    """Compare exact plain numbers, otherwise normalised text.
+
+    Plain numbers are parsed without symbolic mathematics, so every value is
+    exact and ``==`` is intentional: Inspect AI's floating-point tolerance is
+    deliberately absent. Percent values are scaled by dividing by 100.
 
     Returns:
         Whether the values are equivalent.
@@ -235,21 +290,9 @@ def _equivalent(left: str, right: str) -> bool:
     left_number = _number_value(left)
     right_number = _number_value(right)
     if left_number is not None and right_number is not None:
-        left_values = (
-            (left_number[0] / 100, left_number[0])
-            if left_number[1]
-            else (left_number[0],)
-        )
-        right_values = (
-            (right_number[0] / 100, right_number[0])
-            if right_number[1]
-            else (right_number[0],)
-        )
-        return any(
-            abs(a - b) < 1e-10 or abs(a - b) / max(abs(a), abs(b), 1e-10) < 1e-10
-            for a in left_values
-            for b in right_values
-        )
+        left_value = left_number[0] / 100 if left_number[1] else left_number[0]
+        right_value = right_number[0] / 100 if right_number[1] else right_number[0]
+        return left_value == right_value
     return _normalize_text(left) == _normalize_text(right)
 
 
