@@ -38,51 +38,65 @@ def load_yaml_config(
     Returns:
         The dataset config if it exists, otherwise None.
     """
-    external_config_path = cache_dir / "external_dataset_configs" / dataset_id
+    requested_parts = dataset_id.split("::")
+    if len(requested_parts) > 3 or any(not part for part in requested_parts):
+        log_once(
+            message=(
+                f"Invalid dataset selector {dataset_id!r}. Use the syntax "
+                "<repo>[::<config>[::<split>]], with no empty parts."
+            ),
+            level=logging.ERROR,
+        )
+        return None
+    repo_id = requested_parts[0]
+    subset_config = requested_parts[1] if len(requested_parts) > 1 else None
+    subset_split = requested_parts[2] if len(requested_parts) > 2 else None
+
+    external_config_path = cache_dir / "external_dataset_configs" / repo_id
     external_config_path.mkdir(parents=True, exist_ok=True)
     hf_api.hf_hub_download(
-        repo_id=dataset_id,
+        repo_id=repo_id,
         repo_type="dataset",
         filename="eval.yaml",
         local_dir=external_config_path,
         local_dir_use_symlinks=False,
     )
 
-    repo_dataset_info = hf_api.dataset_info(repo_id=dataset_id)
+    repo_dataset_info = hf_api.dataset_info(repo_id=repo_id)
     fallback_language_codes: list[str] | None = None
     if repo_dataset_info.card_data is not None:
         lang_meta = getattr(repo_dataset_info.card_data, "language", None)
         if isinstance(lang_meta, list) and lang_meta:
             fallback_language_codes = [str(c) for c in lang_meta if c]
 
-    inspect_ai_config: str | None = None
-    inspect_ai_split: str | None = None
     yaml_file_path = external_config_path / "eval.yaml"
     try:
         with yaml_file_path.open(encoding="utf-8") as fh:
-            raw_peek = yaml.safe_load(fh)
-        if isinstance(raw_peek, dict):
-            tasks_peek = raw_peek.get("tasks")
-            if isinstance(tasks_peek, list) and tasks_peek:
-                first_task_peek = tasks_peek[0]
-                if isinstance(first_task_peek, dict):
-                    config_val = first_task_peek.get("config")
-                    if isinstance(config_val, str) and config_val:
-                        inspect_ai_config = config_val
-                    split_val = first_task_peek.get("split")
-                    if isinstance(split_val, str) and split_val:
-                        inspect_ai_split = split_val
+            raw = yaml.safe_load(fh)
     except (yaml.YAMLError, OSError):
-        pass
+        raw = None
+    if not isinstance(raw, dict):
+        return None
+    selected = select_inspect_ai_task(
+        raw=raw,
+        subset_config=subset_config,
+        subset_split=subset_split,
+        dataset_id=dataset_id,
+    )
+    if selected is None:
+        return None
+    task_index, inspect_ai_config, inspect_ai_split = selected
 
     repo_dataset_config = load_dataset_config_from_yaml(
-        yaml_path=yaml_file_path, fallback_language_codes=fallback_language_codes
+        yaml_path=yaml_file_path,
+        fallback_language_codes=fallback_language_codes,
+        task_index=task_index,
     )
     if repo_dataset_config is None:
         return None
 
     train_split, val_split, auto_test_split = get_repo_splits(
-        hf_api=hf_api, dataset_id=dataset_id
+        hf_api=hf_api, dataset_id=repo_id
     )
     test_split = inspect_ai_split if inspect_ai_split is not None else auto_test_split
     if test_split is None:
@@ -106,7 +120,7 @@ def load_yaml_config(
         train_split = val_split
         val_split = None
 
-    source = f"{dataset_id}::{inspect_ai_config}" if inspect_ai_config else dataset_id
+    source = f"{repo_id}::{inspect_ai_config}" if inspect_ai_config else repo_id
 
     repo_dataset_config.name = dataset_id
     repo_dataset_config.pretty_name = dataset_id
@@ -118,7 +132,9 @@ def load_yaml_config(
 
 
 def load_dataset_config_from_yaml(
-    yaml_path: Path, fallback_language_codes: list[str] | None = None
+    yaml_path: Path,
+    fallback_language_codes: list[str] | None = None,
+    task_index: int = 0,
 ) -> DatasetConfig | None:
     """Load a dataset config from a YAML file.
 
@@ -206,6 +222,8 @@ def load_dataset_config_from_yaml(
             ISO 639-1 language codes to use when the YAML file does not contain a
             `languages` key. Typically supplied from HuggingFace Hub repo metadata
             by `try_get_dataset_config_from_repo`.
+        task_index (optional):
+            The Inspect AI task entry to load. Defaults to 0.
 
     Returns:
         A `DatasetConfig` built from the YAML data, or None if the file could not
@@ -215,12 +233,19 @@ def load_dataset_config_from_yaml(
     if raw is None:
         return None
 
-    promote_field_spec_fields(raw=raw)
+    tasks_raw = raw.get("tasks")
+    if isinstance(tasks_raw, list) and 0 <= task_index < len(tasks_raw):
+        selected_task = tasks_raw[task_index]
+        if isinstance(selected_task, dict) and "languages" in selected_task:
+            raw["languages"] = selected_task["languages"]
+    promote_field_spec_fields(raw=raw, task_index=task_index)
 
-    task_obj = validate_and_get_task(raw=raw, yaml_path=yaml_path)
+    task_obj = validate_and_get_task(
+        raw=raw, yaml_path=yaml_path, task_index=task_index
+    )
     if task_obj is None:
         return None
-    promote_inspect_ai_prompt_template(raw=raw, task=task_obj)
+    promote_inspect_ai_prompt_template(raw=raw, task=task_obj, task_index=task_index)
 
     if task_obj.name == "math" and "boxed" not in str(
         raw.get("instruction_prompt", "")
@@ -339,7 +364,7 @@ def parse_languages(
     return language_objs
 
 
-def promote_field_spec_fields(raw: dict[str, object]) -> None:
+def promote_field_spec_fields(raw: dict[str, object], task_index: int = 0) -> None:
     """Promote column names from field_spec to top-level keys.
 
     Promotes the following mappings when the top-level key is not already set:
@@ -347,19 +372,23 @@ def promote_field_spec_fields(raw: dict[str, object]) -> None:
     * `field_spec.input` -> `input_column`
     * `field_spec.target` -> `target_column` (only if plain, not literal/int)
     * `field_spec.choices` -> `choices_column`
-    * `tasks[0].split` -> `test_split`
+    * `tasks[task_index].split` -> `test_split`
 
     Prompt templates are promoted separately by `promote_inspect_ai_prompt_template`.
 
     Args:
         raw:
             The parsed YAML data to modify in place.
+        task_index (optional):
+            The Inspect AI task entry to use. Defaults to 0.
     """
     tasks_raw = raw.get("tasks")
     if not isinstance(tasks_raw, list) or not tasks_raw:
         return
 
-    first_task: dict[str, object] = cast(dict[str, object], tasks_raw[0])
+    if not 0 <= task_index < len(tasks_raw):
+        return
+    first_task: dict[str, object] = cast(dict[str, object], tasks_raw[task_index])
     if not isinstance(first_task, dict):
         return
 
@@ -382,7 +411,9 @@ def promote_field_spec_fields(raw: dict[str, object]) -> None:
         raw["test_split"] = split_val
 
 
-def promote_inspect_ai_prompt_template(raw: dict[str, object], task: Task) -> None:
+def promote_inspect_ai_prompt_template(
+    raw: dict[str, object], task: Task, task_index: int = 0
+) -> None:
     r"""Promote an Inspect AI prompt template to EuroEval's instruction prompt.
 
     Inspect AI's `{prompt}` placeholder is replaced by EuroEval's `{text}`
@@ -398,6 +429,8 @@ def promote_inspect_ai_prompt_template(raw: dict[str, object], task: Task) -> No
             The parsed YAML data to modify in place.
         task:
             The resolved EuroEval task.
+        task_index (optional):
+            The Inspect AI task entry to use. Defaults to 0.
     """
     if "instruction_prompt" in raw or task.uses_logprobs:
         return
@@ -405,7 +438,9 @@ def promote_inspect_ai_prompt_template(raw: dict[str, object], task: Task) -> No
     tasks_raw = raw.get("tasks")
     if not isinstance(tasks_raw, list) or not tasks_raw:
         return
-    first_task = tasks_raw[0]
+    if not 0 <= task_index < len(tasks_raw):
+        return
+    first_task = tasks_raw[task_index]
     if not isinstance(first_task, dict):
         return
 
@@ -444,7 +479,9 @@ def promote_inspect_ai_prompt_template(raw: dict[str, object], task: Task) -> No
         return
 
 
-def validate_and_get_task(raw: dict[str, object], yaml_path: Path) -> Task | None:
+def validate_and_get_task(
+    raw: dict[str, object], yaml_path: Path, task_index: int = 0
+) -> Task | None:
     """Validate the task field or infer it from Inspect AI hints.
 
     Args:
@@ -452,6 +489,8 @@ def validate_and_get_task(raw: dict[str, object], yaml_path: Path) -> Task | Non
             The parsed YAML data.
         yaml_path:
             Path to the YAML config file (for error messages).
+        task_index (optional):
+            The Inspect AI task entry to inspect. Defaults to 0.
 
     Returns:
         A valid Task object, or None if validation failed.
@@ -471,7 +510,9 @@ def validate_and_get_task(raw: dict[str, object], yaml_path: Path) -> Task | Non
             )
             return None
     else:
-        task_obj = infer_task_from_inspect_ai(raw=raw, task_map=task_map)
+        task_obj = infer_task_from_inspect_ai(
+            raw=raw, task_map=task_map, task_index=task_index
+        )
         if task_obj is None:
             log_once(
                 message=(
@@ -489,7 +530,7 @@ def validate_and_get_task(raw: dict[str, object], yaml_path: Path) -> Task | Non
 
 
 def infer_task_from_inspect_ai(
-    raw: dict[str, object], task_map: dict[str, Task]
+    raw: dict[str, object], task_map: dict[str, Task], task_index: int = 0
 ) -> Task | None:
     """Try to infer the EuroEval task from Inspect AI YAML fields.
 
@@ -511,6 +552,8 @@ def infer_task_from_inspect_ai(
             The raw YAML data.
         task_map:
             The mapping from task names to task objects.
+        task_index (optional):
+            The Inspect AI task entry to inspect. Defaults to 0.
 
     Returns:
         The inferred task, or None if the task cannot be inferred.
@@ -518,7 +561,9 @@ def infer_task_from_inspect_ai(
     tasks_raw = raw.get("tasks")
     if not isinstance(tasks_raw, list) or not tasks_raw:
         return None
-    first_task: dict[str, object] = cast(dict[str, object], tasks_raw[0])
+    if not 0 <= task_index < len(tasks_raw):
+        return None
+    first_task: dict[str, object] = cast(dict[str, object], tasks_raw[task_index])
     if not isinstance(first_task, dict):
         return None
 
@@ -554,6 +599,74 @@ def infer_task_from_inspect_ai(
         return task_map.get("multiple-choice")
 
     return None
+
+
+def select_inspect_ai_task(
+    raw: dict[str, object],
+    subset_config: str | None,
+    subset_split: str | None,
+    *,
+    dataset_id: str,
+) -> tuple[int, str | None, str | None] | None:
+    """Select an Inspect AI task entry from a dataset selector.
+
+    Returns:
+        The selected entry index, config and split, or None when validation fails.
+    """
+    tasks = raw.get("tasks")
+    if not isinstance(tasks, list) or not tasks:
+        return (0, None, None)
+    entries = [task for task in tasks if isinstance(task, dict)]
+    configs = sorted({str(task["config"]) for task in entries if task.get("config")})
+    if subset_config is None and len(configs) > 1:
+        log_once(
+            message=(
+                f"Dataset {dataset_id!r} has multiple configs: {configs}. "
+                f"Select one with --dataset {dataset_id.split('::')[0]}::{configs[0]}."
+            ),
+            level=logging.ERROR,
+        )
+        return None
+    if subset_config is not None and subset_config not in configs:
+        log_once(
+            message=(
+                f"Unknown config {subset_config!r} for dataset {dataset_id!r}. "
+                f"Available configs are: {configs}."
+            ),
+            level=logging.ERROR,
+        )
+        return None
+    selected_config = subset_config or (configs[0] if len(configs) == 1 else None)
+    candidates = [
+        (index, task)
+        for index, task in enumerate(tasks)
+        if isinstance(task, dict)
+        and (selected_config is None or task.get("config") == selected_config)
+    ]
+    splits = sorted({str(task["split"]) for _, task in candidates if task.get("split")})
+    if subset_split is None and len(splits) > 1:
+        log_once(
+            message=(
+                f"Config {selected_config!r} for dataset {dataset_id!r} has multiple "
+                f"splits: {splits}. Select one with --dataset "
+                f"{dataset_id.split('::')[0]}::{selected_config}::{splits[0]}."
+            ),
+            level=logging.ERROR,
+        )
+        return None
+    if subset_split is not None and subset_split not in splits:
+        log_once(
+            message=(
+                f"Unknown split {subset_split!r} for config {selected_config!r} in "
+                f"dataset {dataset_id!r}. Available splits are: {splits}."
+            ),
+            level=logging.ERROR,
+        )
+        return None
+    index, task = candidates[0] if candidates else (0, {})
+    split = subset_split or (str(task["split"]) if task.get("split") else None)
+    config = str(task["config"]) if task.get("config") else None
+    return index, config, split
 
 
 DatasetKwargs = dict[str, str | int | bool | list[str] | dict[str, str]]

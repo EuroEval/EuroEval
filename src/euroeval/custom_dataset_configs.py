@@ -52,17 +52,30 @@ def try_get_dataset_config_from_repo(
     Returns:
         The dataset config if it exists, otherwise None.
     """
+    requested_id = dataset_id
+    parts = dataset_id.split("::")
+    if len(parts) > 3 or any(not part for part in parts):
+        log_once(
+            message=(
+                f"Invalid dataset selector {dataset_id!r}. Use the syntax "
+                "<repo>[::<config>[::<split>]], with no empty parts."
+            ),
+            level=logging.ERROR,
+        )
+        return None
+    repo_id = parts[0]
+
     token = get_hf_token(api_key=api_key)
     hf_api = HfApi(token=token)
-    if not _repo_exists(hf_api=hf_api, dataset_id=dataset_id):
+    if not _repo_exists(hf_api=hf_api, dataset_id=repo_id):
         return None
 
-    repo_files = _list_repo_files(hf_api=hf_api, dataset_id=dataset_id, revision="main")
+    repo_files = _list_repo_files(hf_api=hf_api, dataset_id=repo_id, revision="main")
 
     if "eval.yaml" in repo_files:
         try:
             yaml_config = load_yaml_config(
-                hf_api=hf_api, dataset_id=dataset_id, cache_dir=cache_dir
+                hf_api=hf_api, dataset_id=requested_id, cache_dir=cache_dir
             )
             if yaml_config is not None:
                 return yaml_config
@@ -76,7 +89,7 @@ def try_get_dataset_config_from_repo(
 
     return load_python_config(
         hf_api=hf_api,
-        dataset_id=dataset_id,
+        dataset_id=repo_id,
         cache_dir=cache_dir,
         trust_remote_code=trust_remote_code,
         run_with_cli=run_with_cli,

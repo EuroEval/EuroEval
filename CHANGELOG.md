@@ -9,6 +9,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added selection of Inspect AI `eval.yaml` dataset configs and splits with
+  `--dataset repo::config[::split]`.
 - Added model release dates to benchmark result metadata for Hugging Face Hub and API
   models.
 - Added the unofficial Belarusian Word-in-Context dataset `bewic`, based on the BeWiC
