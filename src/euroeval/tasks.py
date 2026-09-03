@@ -419,4 +419,5 @@ MATH = Task(
         GenerativeType.REASONING,
     ],
     requires_zero_shot=True,
+    uses_logprobs=False,
 )

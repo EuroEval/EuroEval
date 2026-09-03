@@ -46,11 +46,23 @@ class TestMathHelpers:
         assert not _equivalent("10\n20", "1020")
 
 
+def test_box_drawing_unicode_is_boxed() -> None:
+    """Inspect-style box-drawing output is extracted as a boxed answer."""
+    assert _answer_matches("\n│\n42\n│", "42")
+
+
 def test_box_openers() -> None:
     """Supported boxed-answer spellings are extracted."""
     assert _answer_matches(r"\fbox{42}", "42")
     assert _answer_matches("boxed{42}", "42")
     assert _answer_matches(r"\beginboxed{42}", "42")
+
+
+def test_boxed_expression_does_not_fall_back_to_later_number() -> None:
+    """A boxed expression remains authoritative over a later number."""
+    assert not _answer_matches(r"\boxed{3+3}, i.e. 9", "9")
+    assert not _answer_matches(r"\boxed{2^3}, not 9", "9")
+    assert not _answer_matches(r"\boxed{6/2}, i.e. 9", "9")
 
 
 def test_candidate_precedence_and_markers() -> None:

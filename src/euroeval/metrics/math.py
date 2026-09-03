@@ -40,6 +40,7 @@ _BOX = re.compile(
     r"(?:\\(?:beginboxed|boxed|fbox)|(?<![A-Za-z\\])(?:boxed|fbox|oxed))\s*\{"
 )
 _DELIMITERS = (("$$", "$$"), (r"\[", r"\]"), (r"\(", r"\)"), ("$", "$"))
+_WORD = re.compile(r"[A-Za-z]{2,}")
 
 
 class MathAccuracy(Metric):
@@ -98,7 +99,7 @@ def _answer_matches(prediction: str, reference: str) -> bool:
     primary = prediction_candidates[0]
     if any(_equivalent(primary, target) for target in reference_candidates):
         return True
-    if _number_value(primary) is not None:
+    if _number_value(primary) is not None or not _looks_like_prose(primary):
         return False
     return any(
         any(_equivalent(candidate, target) for target in reference_candidates)
@@ -201,18 +202,43 @@ def _last_delimited_math(text: str) -> str | None:
 
 
 def _replace_unicode(text: str) -> str:
-    """Replace common mathematical Unicode symbols with textual equivalents.
+    """Replace mathematical Unicode symbols using Inspect AI's table.
 
     Returns:
-        Text with supported Unicode symbols replaced.
+        Text with mathematical Unicode symbols replaced.
     """
-    return (
-        text.replace("−", "-")
-        .replace("–", "-")
-        .replace("\u202f", " ")
-        .replace("√", r"\sqrt")
-        .replace("×", r"\cdot")
-    )
+    text = re.sub(r"[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]", "", text)
+    replacements = {
+        "\u23a7": r"\boxed{",
+        "\u23ab": "}",
+        "\n\u2502": r"\boxed{",
+        "\u2502": "}",
+        "\n\u2503": r"\boxed{",
+        "\u2503": "}",
+        "\n\uf8f0": r"\boxed{",
+        "\uf8fb": "}",
+        "√": r"\sqrt",
+        "×": r"\cdot",
+        "÷": "/",
+        "\u202f": " ",
+        "−": "-",
+        "–": "-",
+        "π": r"\pi",
+        "°": r"^\circ",
+        "∞": r"\infty",
+        "≤": r"\le",
+        "≥": r"\ge",
+        "≠": r"\ne",
+        "∪": r"\cup",
+        "∩": r"\cap",
+    }
+    for source, replacement in replacements.items():
+        text = text.replace(source, replacement)
+    # A line-oriented box has an opening glyph on the first line and a closing
+    # glyph on the last; the table's overlapping newline and single-glyph forms
+    # can otherwise turn the latter into a second opener.
+    text = re.sub(r"\\boxed\{([^{}]*)\\boxed\{", r"\\boxed{\1}", text)
+    return text
 
 
 def _equivalent(left: str, right: str) -> bool:
@@ -281,6 +307,13 @@ def _number_value(text: str) -> tuple[decimal.Decimal, bool] | None:
         return decimal.Decimal(normalised), percent
     except decimal.InvalidOperation:
         return None
+
+
+def _looks_like_prose(candidate: str) -> bool:
+    """Return whether a candidate is opaque prose rather than an expression."""
+    if "\\" in candidate or any(char in candidate for char in "=+-*/^<>[]{}()"):
+        return False
+    return len(_WORD.findall(candidate)) >= 2
 
 
 def _reference_candidates(text: str) -> list[str]:
