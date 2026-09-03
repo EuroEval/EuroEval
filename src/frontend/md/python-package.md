@@ -458,6 +458,14 @@ The value of `task` must be one of the task names used in EuroEval
 (e.g. `classification`, `sentiment-classification`,
 `named-entity-recognition`, `multiple-choice`, etc.).  `languages` is a list of
 [ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) language codes.
+When an Inspect AI task entry has its own `languages` key, that per-entry value takes
+precedence over the top-level key and Hugging Face card metadata.
+
+If a repository defines multiple dataset configs, select one with
+`--dataset repo::config`, or select a particular split with `--dataset repo::config::split`.
+EuroEval refuses to guess when a config has several subsets and reports the available
+choices instead. A task entry's `config` and optional `split` identify the Hugging Face
+subset and split; plain `field_spec`-only YAML files need no selector.
 
 All other `DatasetConfig` arguments are also supported:
 
