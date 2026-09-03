@@ -7,6 +7,7 @@ from .ifeval import *  # noqa: F403
 from .language_detection import *  # noqa: F403
 from .llm_as_a_judge import *  # noqa: F403
 from .logic_puzzles import *  # noqa: F403
+from .math import *  # noqa: F403
 from .pipeline import *  # noqa: F403
 from .sacrebleu import *  # noqa: F403
 from .speed import *  # noqa: F403
