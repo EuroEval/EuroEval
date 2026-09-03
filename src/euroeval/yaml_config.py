@@ -103,7 +103,7 @@ def load_yaml_config(
         return None
 
     train_split, val_split, auto_test_split = get_repo_splits(
-        hf_api=hf_api, dataset_id=repo_id
+        hf_api=hf_api, dataset_id=repo_id, config_name=inspect_ai_config
     )
     test_split = inspect_ai_split if inspect_ai_split is not None else auto_test_split
     if test_split is None:

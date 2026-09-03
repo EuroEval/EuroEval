@@ -88,13 +88,15 @@ def try_get_dataset_config_from_repo(
             )
 
     if len(parts) > 1:
-        log_once(
-            message=(
-                f"Dataset selector {dataset_id!r} requests subset selection, but "
-                "subset selection requires an eval.yaml file."
-            ),
-            level=logging.ERROR,
-        )
+        if "eval.yaml" not in repo_files:
+            log_once(
+                message=(
+                    f"Dataset selector {dataset_id!r} requests subset selection, but "
+                    "subset selection is only supported for repositories with an "
+                    "eval.yaml file."
+                ),
+                level=logging.ERROR,
+            )
         return None
 
     return load_python_config(

@@ -1,8 +1,62 @@
 """Tests for the `split_utils` module."""
 
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from euroeval.split_utils import find_split, get_repo_split_names, get_repo_splits
+
+
+class TestConfigurationAwareSplits:
+    """Tests for split discovery in repositories with multiple configurations."""
+
+    def test_configuration_without_train_split_has_no_train_split(self) -> None:
+        """A configuration without a training split reports none, not another's."""
+        result = get_repo_splits(
+            hf_api=self._api(), dataset_id="org/multi-config-train", config_name="dan"
+        )
+        assert result == (None, None, "test_original")
+
+    @staticmethod
+    def _api() -> MagicMock:
+        """Return an API mock whose files are stored per configuration.
+
+        Returns:
+            The mocked Hugging Face API object.
+        """
+        api = MagicMock()
+        api.dataset_info.return_value = SimpleNamespace(
+            card_data=None,
+            siblings=[
+                SimpleNamespace(rfilename="dan/test_original-00000-of-00001.parquet"),
+                SimpleNamespace(rfilename="dan/test_synthetic-00000-of-00001.parquet"),
+                SimpleNamespace(rfilename="eng/train_original-00000-of-00001.parquet"),
+                SimpleNamespace(rfilename="eng/test_original-00000-of-00001.parquet"),
+            ],
+        )
+        return api
+
+    def test_splits_are_filtered_by_configuration(self) -> None:
+        """Only the splits of the requested configuration are returned."""
+        names = get_repo_split_names(
+            hf_api=self._api(),
+            dataset_id="org/multi-config-filtered",
+            config_name="dan",
+        )
+        assert names == ["test_original", "test_synthetic"]
+
+    def test_splits_without_configuration_are_not_filtered(self) -> None:
+        """Without a configuration all splits are considered, as before."""
+        names = get_repo_split_names(
+            hf_api=self._api(), dataset_id="org/multi-config-unfiltered"
+        )
+        assert names == ["test_original", "test_synthetic", "train_original"]
+
+    def test_unknown_configuration_falls_back_to_all_files(self) -> None:
+        """An unknown configuration does not silently lose the split names."""
+        names = get_repo_split_names(
+            hf_api=self._api(), dataset_id="org/multi-config-unknown", config_name="fra"
+        )
+        assert names == ["test_original", "test_synthetic", "train_original"]
 
 
 class TestFindSplit:
