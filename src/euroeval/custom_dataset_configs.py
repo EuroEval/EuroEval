@@ -87,6 +87,16 @@ def try_get_dataset_config_from_repo(
                 level=logging.ERROR,
             )
 
+    if len(parts) > 1:
+        log_once(
+            message=(
+                f"Dataset selector {dataset_id!r} requests subset selection, but "
+                "subset selection requires an eval.yaml file."
+            ),
+            level=logging.ERROR,
+        )
+        return None
+
     return load_python_config(
         hf_api=hf_api,
         dataset_id=repo_id,
