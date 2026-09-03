@@ -1506,6 +1506,15 @@ class TestSubsetSelection:
         assert "--dataset repo::alpha" in caplog.text
         assert load_dataset_config_from_yaml(yaml_file) is not None
 
+    def test_numeric_split_is_selected_as_string(self) -> None:
+        """String selectors match scalar YAML values after conversion."""
+        assert select_inspect_ai_task(
+            raw={"tasks": [{"config": "dan", "split": 2024}]},
+            subset_config="dan",
+            subset_split="2024",
+            dataset_id="repo::dan::2024",
+        ) == (0, "dan", "2024")
+
     def test_selected_entry_controls_all_config_values(self, tmp_path: Path) -> None:
         """Load column mappings, inference and prompts from the selected task."""
         yaml_file = tmp_path / "eval.yaml"
@@ -1551,6 +1560,35 @@ class TestSubsetSelection:
         processed = config.preprocessing_func(data)
         assert set(processed["test"].column_names) == {"text", "target_text"}
 
+    def test_selector_for_python_config_repo_is_rejected(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Subset selectors are unsupported without an eval.yaml file."""
+        monkeypatch.setattr(
+            custom_dataset_configs, "get_hf_token", lambda **kwargs: None
+        )
+        monkeypatch.setattr(
+            custom_dataset_configs, "_repo_exists", lambda **kwargs: True
+        )
+        monkeypatch.setattr(
+            custom_dataset_configs,
+            "_list_repo_files",
+            lambda **kwargs: ["euroeval_config.py"],
+        )
+        with caplog.at_level(logging.ERROR, logger="euroeval"):
+            result = custom_dataset_configs.try_get_dataset_config_from_repo(
+                dataset_id="repo::default",
+                api_key=None,
+                cache_dir=tmp_path,
+                trust_remote_code=False,
+                run_with_cli=False,
+            )
+        assert result is None
+        assert "only supported" in caplog.text
+
     def test_selector_passes_bare_repo_to_hub_and_sets_identity(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -1588,9 +1626,13 @@ class TestSubsetSelection:
             "get_repo_splits",
             lambda **kwargs: ("train", None, "test"),
         )
-        monkeypatch.setattr(
-            yaml_config, "get_repo_splits", lambda **kwargs: ("train", None, "test")
-        )
+        split_kwargs: list[dict[str, object]] = []
+
+        def fake_get_repo_splits(**kwargs: object) -> tuple[str, None, str]:
+            split_kwargs.append(kwargs)
+            return "train", None, "test"
+
+        monkeypatch.setattr(yaml_config, "get_repo_splits", fake_get_repo_splits)
         config = custom_dataset_configs.try_get_dataset_config_from_repo(
             dataset_id="repo::dan::test_original",
             api_key=None,
@@ -1603,7 +1645,50 @@ class TestSubsetSelection:
         assert config.pretty_name == config.name
         assert config.source == "repo::dan"
         assert config.test_split == "test_original"
+        assert split_kwargs[0]["config_name"] == "dan"
         assert all(repo == "repo" for action, repo in calls if action != "init")
+
+    def test_selector_rejected_for_configless_eval_yaml(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A selector must not disappear when an eval.yaml has no configs."""
+        with caplog.at_level(logging.ERROR, logger="euroeval"):
+            result = select_inspect_ai_task(
+                raw={"tasks": [{"split": "test"}]},
+                subset_config="default",
+                subset_split="test",
+                dataset_id="repo::default::test",
+            )
+        assert result is None
+        assert "declares no configurations" in caplog.text
+
+    def test_single_config_multiple_splits_defaults_to_first_without_selector(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A legacy unselected single-config file keeps its first task."""
+        raw = {
+            "tasks": [
+                {"config": "dan", "split": "test"},
+                {"config": "dan", "split": "validation"},
+            ]
+        }
+        assert select_inspect_ai_task(
+            raw=cast(dict[str, object], raw),
+            subset_config=None,
+            subset_split=None,
+            dataset_id="repo",
+        ) == (0, "dan", "test")
+        with caplog.at_level(logging.ERROR, logger="euroeval"):
+            assert (
+                select_inspect_ai_task(
+                    raw=cast(dict[str, object], raw),
+                    subset_config="dan",
+                    subset_split=None,
+                    dataset_id="repo::dan",
+                )
+                is None
+            )
+        assert "multiple splits" in caplog.text
 
     def test_single_entry_fixture_remains_unchanged(self, tmp_path: Path) -> None:
         """Preserve the existing single-config loading behaviour."""
@@ -1635,6 +1720,71 @@ class TestSubsetSelection:
         assert "test_original" in caplog.text and "test_synthetic" in caplog.text
         if split is None:
             assert "repo::dan::test_original" in caplog.text
+
+    def test_subset_language_fallback_does_not_warn_for_single_language(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Do not warn when repository metadata has one language."""
+
+        class FakeHub:
+            def dataset_info(self, **kwargs: object) -> object:
+                card = type("Card", (), {"language": ["da"]})()
+                return type("Info", (), {"card_data": card})()
+
+            def hf_hub_download(self, **kwargs: object) -> None:
+                Path(str(kwargs["local_dir"])).joinpath("eval.yaml").write_text(
+                    "task: classification\ntasks:\n  - config: dan\n    split: test\n"
+                )
+
+        monkeypatch = pytest.MonkeyPatch()
+        monkeypatch.setattr(
+            yaml_config, "get_repo_splits", lambda **kwargs: ("train", None, "test")
+        )
+        try:
+            with caplog.at_level(logging.WARNING, logger="euroeval"):
+                assert (
+                    yaml_config.load_yaml_config(
+                        hf_api=cast(HfApi, FakeHub()),
+                        dataset_id="repo::dan",
+                        cache_dir=tmp_path,
+                    )
+                    is not None
+                )
+        finally:
+            monkeypatch.undo()
+        assert "could not be determined" not in caplog.text
+
+    def test_subset_language_fallback_warns_for_multiple_languages(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Warn when a selected subset has only repository-level languages."""
+
+        class FakeHub:
+            def dataset_info(self, **kwargs: object) -> object:
+                card = type("Card", (), {"language": ["da", "en"]})()
+                return type("Info", (), {"card_data": card})()
+
+            def hf_hub_download(self, **kwargs: object) -> None:
+                Path(str(kwargs["local_dir"])).joinpath("eval.yaml").write_text(
+                    "task: classification\ntasks:\n  - config: dan\n    split: test\n"
+                )
+
+        monkeypatch = pytest.MonkeyPatch()
+        monkeypatch.setattr(
+            yaml_config, "get_repo_splits", lambda **kwargs: ("train", None, "test")
+        )
+        try:
+            with caplog.at_level(logging.WARNING, logger="euroeval"):
+                config = yaml_config.load_yaml_config(
+                    hf_api=cast(HfApi, FakeHub()),
+                    dataset_id="repo::dan",
+                    cache_dir=tmp_path,
+                )
+        finally:
+            monkeypatch.undo()
+        assert config is not None
+        assert "all 2 languages" in caplog.text
+        assert "per-entry `languages`" in caplog.text
 
     def test_unknown_config_logs_available_configs(
         self, caplog: pytest.LogCaptureFixture

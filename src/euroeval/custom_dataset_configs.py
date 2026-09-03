@@ -18,7 +18,7 @@ from .hf_hub_utils import _list_repo_files, _repo_exists
 from .logging_utils import log_once
 from .split_utils import get_repo_splits
 from .utils import get_hf_token
-from .yaml_config import load_yaml_config
+from .yaml_config import load_yaml_config, parse_dataset_selector
 
 
 def try_get_dataset_config_from_repo(
@@ -53,17 +53,10 @@ def try_get_dataset_config_from_repo(
         The dataset config if it exists, otherwise None.
     """
     requested_id = dataset_id
-    parts = dataset_id.split("::")
-    if len(parts) > 3 or any(not part for part in parts):
-        log_once(
-            message=(
-                f"Invalid dataset selector {dataset_id!r}. Use the syntax "
-                "<repo>[::<config>[::<split>]], with no empty parts."
-            ),
-            level=logging.ERROR,
-        )
+    parsed_selector = parse_dataset_selector(dataset_id=dataset_id)
+    if parsed_selector is None:
         return None
-    repo_id = parts[0]
+    repo_id, subset_config, subset_split = parsed_selector
 
     token = get_hf_token(api_key=api_key)
     hf_api = HfApi(token=token)
@@ -87,7 +80,7 @@ def try_get_dataset_config_from_repo(
                 level=logging.ERROR,
             )
 
-    if len(parts) > 1:
+    if subset_config is not None or subset_split is not None:
         if "eval.yaml" not in repo_files:
             log_once(
                 message=(

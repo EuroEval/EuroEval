@@ -12,7 +12,7 @@ class TestConfigurationAwareSplits:
     def test_configuration_without_train_split_has_no_train_split(self) -> None:
         """A configuration without a training split reports none, not another's."""
         result = get_repo_splits(
-            hf_api=self._api(), dataset_id="org/multi-config-train", config_name="dan"
+            hf_api=self._api(), dataset_id="org/multi-config", config_name="dan"
         )
         assert result == (None, None, "test_original")
 
@@ -38,23 +38,19 @@ class TestConfigurationAwareSplits:
     def test_splits_are_filtered_by_configuration(self) -> None:
         """Only the splits of the requested configuration are returned."""
         names = get_repo_split_names(
-            hf_api=self._api(),
-            dataset_id="org/multi-config-filtered",
-            config_name="dan",
+            hf_api=self._api(), dataset_id="org/multi-config", config_name="dan"
         )
         assert names == ["test_original", "test_synthetic"]
 
     def test_splits_without_configuration_are_not_filtered(self) -> None:
         """Without a configuration all splits are considered, as before."""
-        names = get_repo_split_names(
-            hf_api=self._api(), dataset_id="org/multi-config-unfiltered"
-        )
+        names = get_repo_split_names(hf_api=self._api(), dataset_id="org/multi-config")
         assert names == ["test_original", "test_synthetic", "train_original"]
 
     def test_unknown_configuration_falls_back_to_all_files(self) -> None:
         """An unknown configuration does not silently lose the split names."""
         names = get_repo_split_names(
-            hf_api=self._api(), dataset_id="org/multi-config-unknown", config_name="fra"
+            hf_api=self._api(), dataset_id="org/multi-config", config_name="fra"
         )
         assert names == ["test_original", "test_synthetic", "train_original"]
 
@@ -129,6 +125,22 @@ class TestGetRepoSplitNames:
 
         assert result == ["train", "test"]
         mock_api_instance.dataset_info.assert_called_once_with(repo_id="test/dataset")
+
+    def test_list_shaped_card_info_is_filtered_by_config(self) -> None:
+        """Resolve splits from the Hub's list-shaped multi-config metadata."""
+        api = MagicMock()
+        api.dataset_info.return_value = SimpleNamespace(
+            card_data=SimpleNamespace(
+                dataset_info=[
+                    {"config_name": "dan", "splits": [{"name": "test"}]},
+                    {"config_name": "eng", "splits": [{"name": "validation"}]},
+                ]
+            ),
+            siblings=[],
+        )
+        assert get_repo_split_names(api, "org/multi-config", config_name="dan") == [
+            "test"
+        ]
 
 
 class TestGetRepoSplits:
