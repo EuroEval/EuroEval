@@ -492,10 +492,16 @@ infer them automatically when they are absent:
 
 - **`task`** is inferred from the Inspect AI `tasks` block: a solver with
   `name: multiple_choice` **or** a `field_spec.choices` entry both map to the
-  `multiple-choice` task.
+  `multiple-choice` task, while a scorer with `name: math` maps to the `math` task.
+- **`instruction_prompt`** is inferred from a `prompt_template` solver's template,
+  replacing Inspect AI's `{prompt}` placeholder with EuroEval's `{text}` placeholder.
 - **`languages`** are read from the Hugging Face Hub repository metadata
   (the `language` field in the dataset card).  If the language cannot be determined,
   EuroEval defaults to English and logs a warning.
+
+EuroEval compares the extracted answer to the target using exact numeric or
+normalised-text matching. It does not parse LaTeX symbolically like Inspect AI's
+SymPy-backed scorer, so `\\frac{1}{2}` and `0.5` are not treated as equal.
 
 This means a standard Inspect AI `eval.yaml` with no EuroEval-specific keys works
 out of the box:

@@ -127,8 +127,8 @@ def load_dataset_config_from_yaml(
 
     * `task` -- if absent, the task is inferred from Inspect AI hints: a solver
       with `name: multiple_choice` or a `field_spec.choices` entry both map to the
-      `multiple-choice` task. If the task cannot be inferred an error is logged and
-      None is returned.
+      `multiple-choice` task, while a `math` scorer maps to the `math` task. If the
+      task cannot be inferred an error is logged and None is returned.
     * `languages` -- if absent, the `fallback_language_codes` argument (a list
       of ISO 639-1 codes) is used. When called from
       `try_get_dataset_config_from_repo`, the Hugging Face Hub repo metadata
@@ -215,6 +215,7 @@ def load_dataset_config_from_yaml(
         return None
 
     promote_field_spec_fields(raw=raw)
+    promote_inspect_ai_prompt_template(raw=raw)
 
     task_obj = validate_and_get_task(raw=raw, yaml_path=yaml_path)
     if task_obj is None:
@@ -306,6 +307,8 @@ def promote_field_spec_fields(raw: dict[str, object]) -> None:
     * `field_spec.choices` -> `choices_column`
     * `tasks[0].split` -> `test_split`
 
+    Prompt templates are promoted separately by `promote_inspect_ai_prompt_template`.
+
     Args:
         raw:
             The parsed YAML data to modify in place.
@@ -335,6 +338,41 @@ def promote_field_spec_fields(raw: dict[str, object]) -> None:
     split_val = first_task.get("split")
     if isinstance(split_val, str) and split_val and "test_split" not in raw:
         raw["test_split"] = split_val
+
+
+def promote_inspect_ai_prompt_template(raw: dict[str, object]) -> None:
+    """Promote an Inspect AI prompt template to EuroEval's instruction prompt.
+
+    The replacement is deliberately literal: doubled braces in the Inspect AI
+    template must remain doubled until EuroEval formats the prompt for a sample.
+    """
+    if "instruction_prompt" in raw:
+        return
+
+    tasks_raw = raw.get("tasks")
+    if not isinstance(tasks_raw, list) or not tasks_raw:
+        return
+    first_task = tasks_raw[0]
+    if not isinstance(first_task, dict):
+        return
+
+    solvers = first_task.get("solvers")
+    if not isinstance(solvers, list):
+        return
+    for solver in solvers:
+        if not isinstance(solver, dict) or solver.get("name") != "prompt_template":
+            continue
+        args = solver.get("args")
+        if not isinstance(args, dict):
+            return
+        template = args.get("template")
+        if not isinstance(template, str):
+            return
+        if "{prompt}" in template:
+            raw["instruction_prompt"] = template.replace("{prompt}", "{text}")
+        else:
+            raw["instruction_prompt"] = f"{template}\n\n{{text}}"
+        return
 
 
 def validate_and_get_task(raw: dict[str, object], yaml_path: Path) -> Task | None:
@@ -384,17 +422,21 @@ def validate_and_get_task(raw: dict[str, object], yaml_path: Path) -> Task | Non
 def infer_task_from_inspect_ai(
     raw: dict[str, object], task_map: dict[str, Task]
 ) -> Task | None:
-    """Try to infer the EuroEval task from Inspect AI YAML fields.
+    r"""Try to infer the EuroEval task from Inspect AI YAML fields.
 
     Currently detects:
 
     * A solver with `name: multiple_choice` in `tasks[0].solvers`
       -> `multiple-choice`
     * A `choices` key in `tasks[0].field_spec` -> `multiple-choice`
+    * A scorer with `name: math` in `tasks[0].scorers` -> `math`
     * A scorer with `name: model_graded_fact` in `tasks[0].scorers`
       -> `reference-free-qa` task with an LLM-as-a-judge metric.
       The judge model is read from `scorers[0].args.model`; when absent, the
       default judge defined in `REFERENCE_FREE_QA` is used.
+    * A solver with `name: prompt_template` maps its `args.template` to
+      `instruction_prompt`, replacing `{prompt}` with `{text}` (and appending
+      `\\n\\n{text}` when the placeholder is absent).
 
     Args:
         raw:
@@ -425,6 +467,8 @@ def infer_task_from_inspect_ai(
         for scorer in scorers:
             if isinstance(scorer, dict):
                 _sc: dict[str, object] = cast(dict[str, object], scorer)
+                if _sc.get("name") == "math":
+                    return task_map.get("math")
                 if _sc.get("name") == "model_graded_fact":
                     judge_id: str | None = None
                     args = _sc.get("args") or {}
