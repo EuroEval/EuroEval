@@ -259,6 +259,7 @@ def parse_languages(
 
     if isinstance(raw_languages, list) and raw_languages:
         language_codes: list[str] = [str(c) for c in raw_languages]
+        from_repo_metadata = False
     elif fallback_codes:
         log_once(
             message=(
@@ -269,6 +270,7 @@ def parse_languages(
             level=logging.DEBUG,
         )
         language_codes = fallback_codes
+        from_repo_metadata = True
     else:
         log_once(
             message=(
@@ -280,11 +282,25 @@ def parse_languages(
             level=logging.WARNING,
         )
         language_codes = ["en"]
+        from_repo_metadata = False
 
     language_objs: list[Language] = []
     for code in language_codes:
         lang = language_map.get(code)
         if lang is None:
+            if from_repo_metadata:
+                # The Hub card lists the languages covered by the underlying data,
+                # not the EuroEval-supported ones, so an unsupported code here is
+                # not a problem with the configuration itself
+                log_once(
+                    message=(
+                        f"Language code '{code}' from the repository metadata is not "
+                        "supported by EuroEval, so it is ignored (YAML config at "
+                        f"{yaml_path})."
+                    ),
+                    level=logging.DEBUG,
+                )
+                continue
             log_once(
                 message=(
                     f"Unknown language code '{code}' in YAML config at {yaml_path}."
@@ -293,6 +309,18 @@ def parse_languages(
             )
             return None
         language_objs.append(lang)
+
+    if not language_objs:
+        log_once(
+            message=(
+                f"None of the language codes {language_codes} from the repository "
+                f"metadata are supported by EuroEval, so we cannot determine the "
+                f"languages of the YAML config at {yaml_path}. Please add a top-level "
+                "'languages' key to the YAML file (e.g. 'languages: [en]')."
+            ),
+            level=logging.ERROR,
+        )
+        return None
 
     return language_objs
 
@@ -341,10 +369,19 @@ def promote_field_spec_fields(raw: dict[str, object]) -> None:
 
 
 def promote_inspect_ai_prompt_template(raw: dict[str, object]) -> None:
-    """Promote an Inspect AI prompt template to EuroEval's instruction prompt.
+    r"""Promote an Inspect AI prompt template to EuroEval's instruction prompt.
 
-    The replacement is deliberately literal: doubled braces in the Inspect AI
-    template must remain doubled until EuroEval formats the prompt for a sample.
+    Inspect AI's `{prompt}` placeholder is replaced by EuroEval's `{text}`
+    placeholder, and a template without the placeholder gets `\\n\\n{text}`
+    appended so that the input is still included. Otherwise the replacement is
+    deliberately literal: doubled braces such as `\\boxed{{}}` in the Inspect AI
+    template are Python format escapes and must remain doubled until EuroEval
+    formats the prompt for a sample. An explicit `instruction_prompt` key in the
+    YAML file takes precedence over the solver template.
+
+    Args:
+        raw:
+            The parsed YAML data to modify in place.
     """
     if "instruction_prompt" in raw:
         return
@@ -422,7 +459,7 @@ def validate_and_get_task(raw: dict[str, object], yaml_path: Path) -> Task | Non
 def infer_task_from_inspect_ai(
     raw: dict[str, object], task_map: dict[str, Task]
 ) -> Task | None:
-    r"""Try to infer the EuroEval task from Inspect AI YAML fields.
+    """Try to infer the EuroEval task from Inspect AI YAML fields.
 
     Currently detects:
 
@@ -434,9 +471,8 @@ def infer_task_from_inspect_ai(
       -> `reference-free-qa` task with an LLM-as-a-judge metric.
       The judge model is read from `scorers[0].args.model`; when absent, the
       default judge defined in `REFERENCE_FREE_QA` is used.
-    * A solver with `name: prompt_template` maps its `args.template` to
-      `instruction_prompt`, replacing `{prompt}` with `{text}` (and appending
-      `\\n\\n{text}` when the placeholder is absent).
+
+    Prompt templates are not handled here; see `promote_inspect_ai_prompt_template`.
 
     Args:
         raw:

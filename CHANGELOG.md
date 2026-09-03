@@ -18,6 +18,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added five unofficial Slovak datasets derived from SKLEP: SKLEP NLI, SKLEP RTE,
   SK-QuAD, WikiGoldSK and Reviews3.
 - Added the unofficial Belarusian BeRTE-WD binary natural language inference dataset.
+- Added support for Inspect AI `eval.yaml` files using the `math` scorer, which are
+  now loaded as the `math` task with exact-match scoring of the `\boxed{...}` answer.
+  Templates from `prompt_template` solvers are used as EuroEval instruction prompts.
 
 ### Changed
 
@@ -45,8 +48,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   and require an explicit `thinking.type` of `disabled`.
 - The logical-reasoning task is now restricted to instruction-tuned and
   reasoning models, excluding base models.
-- Inspect AI `eval.yaml` files now infer the `math` task from a `math` scorer and
-  import `prompt_template` solvers as EuroEval instruction prompts.
 
 ## [v18.0.0] - 2026-08-14
 

@@ -501,7 +501,7 @@ infer them automatically when they are absent:
 
 EuroEval compares the extracted answer to the target using exact numeric or
 normalised-text matching. It does not parse LaTeX symbolically like Inspect AI's
-SymPy-backed scorer, so `\\frac{1}{2}` and `0.5` are not treated as equal.
+SymPy-backed scorer, so `\frac{1}{2}` and `0.5` are not treated as equal.
 
 This means a standard Inspect AI `eval.yaml` with no EuroEval-specific keys works
 out of the box:

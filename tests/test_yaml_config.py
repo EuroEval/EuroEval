@@ -83,6 +83,28 @@ class TestLoadDatasetConfigFromYaml:
         config = load_dataset_config_from_yaml(yaml_file)
         assert isinstance(config, DatasetConfig)
 
+    def test_explicit_instruction_prompt_overrides_solver(self, tmp_path: Path) -> None:
+        """An explicit instruction prompt takes precedence over prompt_template."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: math
+                instruction_prompt: "Explicit {text}"
+                tasks:
+                  - id: math
+                    solvers:
+                      - name: prompt_template
+                        args:
+                          template: "Ignored {prompt}"
+                languages: [en]
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.instruction_prompt == "Explicit {text}"
+
     def test_explicit_task_overrides_inference(self, tmp_path: Path) -> None:
         """An explicit top-level 'task' key overrides any Inspect AI inference."""
         yaml_file = tmp_path / "eval.yaml"
@@ -395,6 +417,55 @@ class TestLoadDatasetConfigFromYaml:
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is None
 
+    def test_math_scorer_and_prompt_template(self, tmp_path: Path) -> None:
+        """A math scorer and prompt template are inferred from Inspect AI YAML."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: Multilingual GSM-Symbolic
+                tasks:
+                  - id: original_eng
+                    config: eng
+                    split: test_original
+                    field_spec:
+                      input: question
+                      target: target
+                      metadata: [answer, language]
+                    solvers:
+                      - name: prompt_template
+                        args:
+                          template: |-
+                            Solve it. Put the answer in \\boxed{{}}, e.g. \\boxed{{42}}.
+
+                            {prompt}
+                      - name: generate
+                    scorers:
+                      - name: math
+                  - id: synthetic_eng
+                    config: eng
+                    split: test_synthetic
+                    field_spec:
+                      input: question
+                      target: target
+                    scorers:
+                      - name: math
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "math"
+        assert config.test_split == "test_original"
+        assert config.preprocessing_func is not None
+        assert "{text}" in config.instruction_prompt
+        assert "{{}}" in config.instruction_prompt
+        rendered = config.instruction_prompt.format(text="X")
+        assert "\\boxed{}" in rendered
+        assert rendered.endswith("X")
+
     def test_minimal_valid_config(self, tmp_path: Path) -> None:
         """A YAML file with only task and languages produces a DatasetConfig."""
         yaml_file = tmp_path / "euroeval_config.yaml"
@@ -571,6 +642,27 @@ class TestLoadDatasetConfigFromYaml:
         assert config is not None
         assert config.prompt_label_mapping == {"positive": "pos", "negative": "neg"}
 
+    def test_prompt_template_without_prompt_appends_text(self, tmp_path: Path) -> None:
+        """A prompt template without Inspect's placeholder still includes the input."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: math
+                tasks:
+                  - id: math
+                    solvers:
+                      - name: prompt_template
+                        args:
+                          template: "Solve this"
+                languages: [en]
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.instruction_prompt == "Solve this\n\n{text}"
+
     def test_pure_inspect_ai_file_defaults_to_english(self, tmp_path: Path) -> None:
         """A pure Inspect AI eval.yaml (no EuroEval keys) succeeds, defaults to en."""
         yaml_file = tmp_path / "eval.yaml"
@@ -650,6 +742,24 @@ class TestLoadDatasetConfigFromYaml:
         assert config is not None
         assert config.task.name == "multiple-choice"
 
+    def test_unsupported_repo_metadata_language_is_skipped(
+        self, tmp_path: Path
+    ) -> None:
+        """Unsupported language codes from repo metadata are skipped, not fatal."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: classification
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(
+            yaml_file, fallback_language_codes=["en", "da", "zh"]
+        )
+        assert config is not None
+        assert [lang.code for lang in config.languages] == ["en", "da"]
+
     def test_yaml_languages_take_precedence_over_fallback(self, tmp_path: Path) -> None:
         """Explicit 'languages' in YAML overrides fallback_language_codes."""
         yaml_file = tmp_path / "eval.yaml"
@@ -667,98 +777,6 @@ class TestLoadDatasetConfigFromYaml:
         )
         assert config is not None
         assert config.languages[0].code == "da"
-
-    def test_math_scorer_and_prompt_template(self, tmp_path: Path) -> None:
-        """A math scorer and prompt template are inferred from Inspect AI YAML."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
-                name: Multilingual GSM-Symbolic
-                tasks:
-                  - id: original_eng
-                    config: eng
-                    split: test_original
-                    field_spec:
-                      input: question
-                      target: target
-                      metadata: [answer, language]
-                    solvers:
-                      - name: prompt_template
-                        args:
-                          template: |-
-                            Solve it. Put the answer in \\boxed{{}}, e.g. \\boxed{{42}}.
-
-                            {prompt}
-                      - name: generate
-                    scorers:
-                      - name: math
-                  - id: synthetic_eng
-                    config: eng
-                    split: test_synthetic
-                    field_spec:
-                      input: question
-                      target: target
-                    scorers:
-                      - name: math
-                languages:
-                  - en
-                """
-            )
-        )
-        config = load_dataset_config_from_yaml(yaml_file)
-        assert config is not None
-        assert config.task.name == "math"
-        assert config.test_split == "test_original"
-        assert config.preprocessing_func is not None
-        assert "{text}" in config.instruction_prompt
-        assert "{{}}" in config.instruction_prompt
-        rendered = config.instruction_prompt.format(text="X")
-        assert "\\boxed{}" in rendered
-        assert rendered.endswith("X")
-
-    def test_explicit_instruction_prompt_overrides_solver(self, tmp_path: Path) -> None:
-        """An explicit instruction prompt takes precedence over prompt_template."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
-                task: math
-                instruction_prompt: "Explicit {text}"
-                tasks:
-                  - id: math
-                    solvers:
-                      - name: prompt_template
-                        args:
-                          template: "Ignored {prompt}"
-                languages: [en]
-                """
-            )
-        )
-        config = load_dataset_config_from_yaml(yaml_file)
-        assert config is not None
-        assert config.instruction_prompt == "Explicit {text}"
-
-    def test_prompt_template_without_prompt_appends_text(self, tmp_path: Path) -> None:
-        """A prompt template without Inspect's placeholder still includes the input."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
-                task: math
-                tasks:
-                  - id: math
-                    solvers:
-                      - name: prompt_template
-                        args:
-                          template: "Solve this"
-                languages: [en]
-                """
-            )
-        )
-        config = load_dataset_config_from_yaml(yaml_file)
-        assert config is not None
-        assert config.instruction_prompt == "Solve this\n\n{text}"
 
 
 class TestRealWorldYamlConfigs:

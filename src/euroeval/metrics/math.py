@@ -107,19 +107,6 @@ def _answer_matches(prediction: str, reference: str) -> bool:
     )
 
 
-def _reference_candidates(text: str) -> list[str]:
-    """Extract the boxed reference followed by its complete text.
-
-    Returns:
-        Candidate reference strings in preference order.
-    """
-    text = _replace_unicode(text)
-    boxes = _boxed_candidates(text)
-    values = [_strip_delimiters(boxes[-1])] if boxes else []
-    values.append(text)
-    return _unique(values)
-
-
 def _answer_candidates(text: str) -> list[str]:
     """Build the Inspect-style answer candidate ladder, without expression parsing.
 
@@ -143,6 +130,36 @@ def _answer_candidates(text: str) -> list[str]:
     numbers = _NUMBER.findall(text)
     _append_candidate(candidates, numbers[-1] if numbers else None)
     return candidates
+
+
+def _append_candidate(candidates: list[str], candidate: str | None) -> None:
+    """Add a non-empty, normalised candidate once."""
+    if candidate:
+        candidate = _strip_delimiters(candidate)
+        if candidate and candidate not in candidates:
+            candidates.append(candidate)
+
+
+def _strip_delimiters(text: str) -> str:
+    """Remove display, Markdown, TeX spacing, and punctuation wrappers.
+
+    Returns:
+        The unwrapped text.
+    """
+    text = text.strip()
+    while text.startswith("**") and text.endswith("**") and len(text) >= 4:
+        text = text[2:-2].strip()
+    for opening, closing in _DELIMITERS:
+        if (
+            text.startswith(opening)
+            and text.endswith(closing)
+            and len(text) > len(opening) + len(closing)
+        ):
+            text = text[len(opening) : -len(closing)].strip()
+            break
+    text = re.sub(r"^(?:\\[,;:]|\\quad|\\qquad|\\;|\\,)\s*", "", text)
+    text = re.sub(r"(?:\\[,;:]|\\quad|\\qquad|\\;|\\,)\s*$", "", text)
+    return text.rstrip(" .,;:")
 
 
 def _boxed_candidates(text: str) -> list[str]:
@@ -183,14 +200,6 @@ def _last_delimited_math(text: str) -> str | None:
     return max(spans, default=(0, None))[1]
 
 
-def _append_candidate(candidates: list[str], candidate: str | None) -> None:
-    """Add a non-empty, normalised candidate once."""
-    if candidate:
-        candidate = _strip_delimiters(candidate)
-        if candidate and candidate not in candidates:
-            candidates.append(candidate)
-
-
 def _replace_unicode(text: str) -> str:
     """Replace common mathematical Unicode symbols with textual equivalents.
 
@@ -206,26 +215,29 @@ def _replace_unicode(text: str) -> str:
     )
 
 
-def _strip_delimiters(text: str) -> str:
-    """Remove display, Markdown, TeX spacing, and punctuation wrappers.
+def _equivalent(left: str, right: str) -> bool:
+    """Compare exact plain numbers, otherwise normalised text.
+
+    Plain numbers are parsed without symbolic mathematics, so every value is
+    exact and ``==`` is intentional: Inspect AI's floating-point tolerance is
+    deliberately absent. Percent values are scaled by dividing by 100.
 
     Returns:
-        The unwrapped text.
+        Whether the values are equivalent.
     """
-    text = text.strip()
-    while text.startswith("**") and text.endswith("**") and len(text) >= 4:
-        text = text[2:-2].strip()
-    for opening, closing in _DELIMITERS:
-        if (
-            text.startswith(opening)
-            and text.endswith(closing)
-            and len(text) > len(opening) + len(closing)
-        ):
-            text = text[len(opening) : -len(closing)].strip()
-            break
-    text = re.sub(r"^(?:\\[,;:]|\\quad|\\qquad|\\;|\\,)\s*", "", text)
-    text = re.sub(r"(?:\\[,;:]|\\quad|\\qquad|\\;|\\,)\s*$", "", text)
-    return text.rstrip(" .,;:")
+    left_boxes = _boxed_candidates(left)
+    right_boxes = _boxed_candidates(right)
+    if left_boxes:
+        left = left_boxes[-1]
+    if right_boxes:
+        right = right_boxes[-1]
+    left_number = _number_value(left)
+    right_number = _number_value(right)
+    if left_number is not None and right_number is not None:
+        left_value = left_number[0] / 100 if left_number[1] else left_number[0]
+        right_value = right_number[0] / 100 if right_number[1] else right_number[0]
+        return left_value == right_value
+    return _normalize_text(left) == _normalize_text(right)
 
 
 def _normalize_text(text: str) -> str:
@@ -271,29 +283,17 @@ def _number_value(text: str) -> tuple[decimal.Decimal, bool] | None:
         return None
 
 
-def _equivalent(left: str, right: str) -> bool:
-    """Compare exact plain numbers, otherwise normalised text.
-
-    Plain numbers are parsed without symbolic mathematics, so every value is
-    exact and ``==`` is intentional: Inspect AI's floating-point tolerance is
-    deliberately absent. Percent values are scaled by dividing by 100.
+def _reference_candidates(text: str) -> list[str]:
+    """Extract the boxed reference followed by its complete text.
 
     Returns:
-        Whether the values are equivalent.
+        Candidate reference strings in preference order.
     """
-    left_boxes = _boxed_candidates(left)
-    right_boxes = _boxed_candidates(right)
-    if left_boxes:
-        left = left_boxes[-1]
-    if right_boxes:
-        right = right_boxes[-1]
-    left_number = _number_value(left)
-    right_number = _number_value(right)
-    if left_number is not None and right_number is not None:
-        left_value = left_number[0] / 100 if left_number[1] else left_number[0]
-        right_value = right_number[0] / 100 if right_number[1] else right_number[0]
-        return left_value == right_value
-    return _normalize_text(left) == _normalize_text(right)
+    text = _replace_unicode(text)
+    boxes = _boxed_candidates(text)
+    values = [_strip_delimiters(boxes[-1])] if boxes else []
+    values.append(text)
+    return _unique(values)
 
 
 def _unique(values: list[str]) -> list[str]:
