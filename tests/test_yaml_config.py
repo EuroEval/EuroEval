@@ -417,6 +417,19 @@ class TestLoadDatasetConfigFromYaml:
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is None
 
+    def test_math_boxed_prompt_does_not_warn(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A boxed math instruction does not emit the missing-prompt warning."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            "task: math\nlanguages: [en]\ninstruction_prompt: 'Use \\\\boxed{{}}'\n"
+        )
+        with caplog.at_level(logging.WARNING):
+            config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert "expects the model" not in caplog.text
+
     def test_math_scorer_and_prompt_template(self, tmp_path: Path) -> None:
         """A math scorer and prompt template are inferred from Inspect AI YAML."""
         yaml_file = tmp_path / "eval.yaml"
@@ -465,6 +478,28 @@ class TestLoadDatasetConfigFromYaml:
         rendered = config.instruction_prompt.format(text="X")
         assert "\\boxed{}" in rendered
         assert rendered.endswith("X")
+
+    def test_math_template_with_unsupported_placeholder_is_ignored(
+        self, tmp_path: Path
+    ) -> None:
+        """Math prompt templates with non-text placeholders are not promoted."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            "task: math\nlanguages: [en]\ntasks:\n  - solvers:\n"
+            "      - name: prompt_template\n        args:\n"
+            "          template: 'Put it in \\boxed{{}}: {prompt}; answer: {answer}'\n"
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert "answer" not in config.instruction_prompt
+
+    def test_math_without_boxed_prompt_warns(self, tmp_path: Path) -> None:
+        """Math configs without boxed instructions emit a warning."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text("task: math\nlanguages: [en]\n")
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.instruction_prompt == ""
 
     def test_minimal_valid_config(self, tmp_path: Path) -> None:
         """A YAML file with only task and languages produces a DatasetConfig."""
@@ -848,6 +883,7 @@ class TestRealWorldYamlConfigs:
         assert config.task.name == "multiple-choice"
         assert config.test_split == "train"
         assert config.preprocessing_func is not None
+        assert "Answer: {answer}" not in config.instruction_prompt
 
     def test_evasionbench_unknown_evaluation_framework_key_is_ignored(
         self, tmp_path: Path

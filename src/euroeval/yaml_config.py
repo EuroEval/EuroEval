@@ -7,6 +7,7 @@ Hugging Face Hub repositories.
 
 import dataclasses
 import logging
+import string
 from pathlib import Path
 from typing import cast
 
@@ -215,11 +216,22 @@ def load_dataset_config_from_yaml(
         return None
 
     promote_field_spec_fields(raw=raw)
-    promote_inspect_ai_prompt_template(raw=raw)
 
     task_obj = validate_and_get_task(raw=raw, yaml_path=yaml_path)
     if task_obj is None:
         return None
+    promote_inspect_ai_prompt_template(raw=raw, task=task_obj)
+
+    if task_obj.name == "math" and "boxed" not in str(
+        raw.get("instruction_prompt", "")
+    ):
+        log_once(
+            message=(
+                "The math task expects the model to answer in \\boxed{...}; "
+                "the YAML should provide a prompt_template solver doing so."
+            ),
+            level=logging.WARNING,
+        )
 
     language_objs = parse_languages(
         raw=raw, fallback_codes=fallback_language_codes, yaml_path=yaml_path
@@ -368,7 +380,7 @@ def promote_field_spec_fields(raw: dict[str, object]) -> None:
         raw["test_split"] = split_val
 
 
-def promote_inspect_ai_prompt_template(raw: dict[str, object]) -> None:
+def promote_inspect_ai_prompt_template(raw: dict[str, object], task: Task) -> None:
     r"""Promote an Inspect AI prompt template to EuroEval's instruction prompt.
 
     Inspect AI's `{prompt}` placeholder is replaced by EuroEval's `{text}`
@@ -382,8 +394,10 @@ def promote_inspect_ai_prompt_template(raw: dict[str, object]) -> None:
     Args:
         raw:
             The parsed YAML data to modify in place.
+        task:
+            The resolved EuroEval task.
     """
-    if "instruction_prompt" in raw:
+    if "instruction_prompt" in raw or task.uses_logprobs:
         return
 
     tasks_raw = raw.get("tasks")
@@ -405,10 +419,26 @@ def promote_inspect_ai_prompt_template(raw: dict[str, object]) -> None:
         template = args.get("template")
         if not isinstance(template, str):
             return
-        if "{prompt}" in template:
-            raw["instruction_prompt"] = template.replace("{prompt}", "{text}")
-        else:
-            raw["instruction_prompt"] = f"{template}\n\n{{text}}"
+        substituted = (
+            template.replace("{prompt}", "{text}")
+            if "{prompt}" in template
+            else f"{template}\n\n{{text}}"
+        )
+        unsupported = {
+            field_name
+            for _, field_name, _, _ in string.Formatter().parse(substituted)
+            if field_name not in (None, "", "text")
+        }
+        if unsupported:
+            log_once(
+                message=(
+                    "Inspect AI prompt template ignored because it uses unsupported "
+                    f"placeholders: {sorted(unsupported)}."
+                ),
+                level=logging.DEBUG,
+            )
+            return
+        raw["instruction_prompt"] = substituted
         return
 
 
