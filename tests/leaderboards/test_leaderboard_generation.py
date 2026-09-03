@@ -10,11 +10,14 @@ from __future__ import annotations
 import math
 
 import numpy as np
+import pandas as pd
 
 from src.leaderboards.enums import LeaderboardCategory
 from src.leaderboards.leaderboard_generation import (
     _build_category_dataset_maps,
     _compute_eligible_models_and_ranks,
+    _create_simplified_and_rename,
+    _reorder_columns,
 )
 
 
@@ -577,3 +580,40 @@ class TestRegressionForReportedIssue:
                 f"{model_id} Albanian score mismatch: mono={albanian_mono}, "
                 f"multi={albanian_multi}"
             )
+
+
+def test_release_date_is_emitted_for_frontend_visualizations() -> None:
+    """The existing result metadata reaches the full leaderboard CSV."""
+    df = pd.DataFrame(
+        {
+            "rank": ["1"],
+            "model": ["org/model"],
+            "mean_rank_score": ["1.25 ± 0.05"],
+            "generative_type": ["📝"],
+            "open": ["✓"],
+            "commercial": ["✗"],
+            "merge": ["✗"],
+            "trained_from_scratch": ["✓"],
+            "release_date": ["2024-02-03"],
+            "parameters": [7_000_000_000],
+            "vocabulary_size": [32_000],
+            "context": [4_096],
+        }
+    )
+
+    ordered = _reorder_columns(
+        df=df,
+        category="generative",
+        category_to_orthogonal_datasets={"generative": {}},
+        category_to_datasets={"generative": []},
+        rank_cols=["rank", "mean_rank_score"],
+        include_dataset_columns=False,
+    )
+    full, _ = _create_simplified_and_rename(
+        df=ordered,
+        rank_cols=["rank", "mean_rank_score"],
+        category_to_orthogonal_datasets={"generative": {}},
+        category="generative",
+    )
+
+    assert full.loc[0, "Release Date"] == "2024-02-03"

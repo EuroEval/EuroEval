@@ -119,7 +119,9 @@ class Cache:
                 ]
             if "model_url" in additional and additional["model_url"] is not None:
                 cache.model_url[model_id] = additional["model_url"]
-            if "release_date" in additional:
+            # Only a resolved date is cached: a stored null means "not known at
+            # the time", not "unknowable", so it must not stop a later lookup.
+            if additional.get("release_date") is not None:
                 cache.release_date[model_id] = additional["release_date"]
 
         return cache

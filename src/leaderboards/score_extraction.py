@@ -8,6 +8,7 @@ import statistics
 import typing as t
 from collections import defaultdict
 
+from euroeval.date_utils import normalise_release_date
 from euroeval.logging_utils import log_once
 
 from .link_generation import generate_model_url
@@ -92,6 +93,7 @@ def extract_model_metadata(
                 "commercial",
                 "merge",
                 "open",
+                "release_date",
                 "trained_from_scratch",
             ):
                 _update_metadata_field(
@@ -142,6 +144,7 @@ def _ensure_standard_metadata_keys(metadata_dict: dict[str, dict[str, t.Any]]) -
         "commercial": False,
         "merge": False,
         "open": None,
+        "release_date": None,
         "trained_from_scratch": None,
         "model_url": None,
     }
@@ -176,6 +179,7 @@ def _extract_metadata_from_record(
     num_params_raw = additional.get("num_model_parameters", "-1")
     vocab_size_raw = additional.get("vocabulary_size", "-1")
     context_raw = additional.get("max_sequence_length", "-1")
+    release_date = normalise_release_date(additional.get("release_date"))
 
     # Build metadata dict
     metadata: dict[str, t.Any] = {
@@ -186,6 +190,7 @@ def _extract_metadata_from_record(
         "commercial": additional.get("commercially_licensed", False),
         "merge": _to_bool(additional.get("merge", "false")),
         "open": additional.get("open", None),
+        "release_date": release_date,
         "trained_from_scratch": additional.get("trained_from_scratch", None),
     }
 
@@ -197,6 +202,7 @@ def _extract_metadata_from_record(
         and additional["commercially_licensed"] is not None,
         "merge": "merge" in additional and additional["merge"] is not None,
         "open": "open" in additional and additional["open"] is not None,
+        "release_date": release_date is not None,
         "trained_from_scratch": "trained_from_scratch" in additional
         and additional["trained_from_scratch"] is not None,
     }
@@ -383,6 +389,12 @@ def _is_better_metadata(
         if old_value and not new_value:
             return False
         # Both non-empty: preserve existing
+        return False
+
+    # Release dates are normalized before aggregation. Preserve the first valid
+    # value if historical records disagree rather than making the result depend
+    # on record order beyond that point.
+    if field == "release_date":
         return False
 
     # For model_url, prefer non-empty over empty.

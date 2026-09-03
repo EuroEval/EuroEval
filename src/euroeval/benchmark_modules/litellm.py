@@ -2080,11 +2080,9 @@ def get_api_model_release_date(model_id: str) -> str | None:
     Returns:
         The ISO-formatted release date, or None if no date is known.
     """
-    # Explicit annotations are authoritative, including corrections to a date
-    # embedded in an upstream model identifier.
-    for pattern, release_date in MODEL_RELEASE_DATE_MAPPING.items():
-        if re.fullmatch(pattern=pattern, string=model_id) is not None:
-            return release_date
+    annotated = get_annotated_release_date(model_id=model_id)
+    if annotated is not None:
+        return annotated
 
     date_match = re.search(r"(?<!\d)(\d{4})-?(\d{2})-?(\d{2})(?!\d)", model_id)
     if date_match is not None:
@@ -2092,6 +2090,26 @@ def get_api_model_release_date(model_id: str) -> str | None:
             return datetime.date(*map(int, date_match.groups())).isoformat()
         except ValueError:
             pass
+    return None
+
+
+def get_annotated_release_date(model_id: str) -> str | None:
+    """Get a release date from the manually maintained annotations.
+
+    These are authoritative, including corrections to a date embedded in an
+    upstream model identifier, and they are the only way to date a model that
+    exists on neither the Hub nor a documented API.
+
+    Args:
+        model_id:
+            The model identifier.
+
+    Returns:
+        The ISO-formatted date, or None if the model is not annotated.
+    """
+    for pattern, release_date in MODEL_RELEASE_DATE_MAPPING.items():
+        if re.fullmatch(pattern=pattern, string=model_id) is not None:
+            return release_date
     return None
 
 

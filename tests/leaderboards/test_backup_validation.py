@@ -3,22 +3,118 @@
 from __future__ import annotations
 
 import json
+import logging
 import tarfile
 import typing as t
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from leaderboards.backup import (
+    _archive_offsite,
     _content_hash,
     _extract_backup,
+    _remove_archived_local,
     _validate_results,
     _write_snapshot,
     backup_results,
     restore_from_backup_if_missing,
 )
 from leaderboards.eee_validation import validate_eee_record
+
+
+class TestArchiveOffsite:
+    """Tests for archiving snapshots into the Jottacloud Archive namespace."""
+
+    def test_failed_upload_warns_without_failing_the_run(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """An unusable client, e.g. one with no device configured, only warns."""
+        snapshot = tmp_path / "results.tar.gz"
+        snapshot.write_bytes(b"x")
+        failure = MagicMock(returncode=1, stdout="", stderr="device name not set")
+        with (
+            patch(
+                "leaderboards.backup._jotta_cli",
+                return_value=Path("/usr/bin/jotta-cli"),
+            ),
+            patch("leaderboards.backup.subprocess.run", return_value=failure),
+            caplog.at_level(logging.WARNING),
+        ):
+            _archive_offsite(snapshot)
+
+        assert any("Jottacloud" in record.message for record in caplog.records)
+
+    def test_missing_client_warns_without_failing_the_run(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Without the Jottacloud tool the local snapshot still counts.
+
+        The snapshot is already on disk, so a missing off-site copy is worth a
+        warning, not a failed leaderboard run.
+        """
+        snapshot = tmp_path / "results.tar.gz"
+        snapshot.write_bytes(b"x")
+        with (
+            patch("leaderboards.backup._jotta_cli", return_value=None),
+            caplog.at_level(logging.WARNING),
+        ):
+            _archive_offsite(snapshot)
+
+        assert any("Jottacloud" in record.message for record in caplog.records)
+
+    def test_unlisted_upload_keeps_the_local_copy(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A zero exit code without a stored file must not free the local copy."""
+        snapshot = tmp_path / "results_20260901_120000_deadbeef.tar.gz"
+        snapshot.write_bytes(b"x")
+        success = MagicMock(returncode=0, stdout="", stderr="")
+        with (
+            patch(
+                "leaderboards.backup._jotta_cli",
+                return_value=Path("/usr/bin/jotta-cli"),
+            ),
+            patch("leaderboards.backup.subprocess.run", return_value=success),
+            patch("leaderboards.backup._archived_backups", return_value=[]),
+            caplog.at_level(logging.WARNING),
+        ):
+            archived = _archive_offsite(snapshot)
+
+        assert not archived
+        assert snapshot.exists()
+        assert any("keeping the local copy" in r.message for r in caplog.records)
+
+    def test_uploads_to_the_archive_backups_directory(self, tmp_path: Path) -> None:
+        """Snapshots go to Archive/backups, keeping their timestamped name.
+
+        The remote path must end in the filename: `--remote=backups` on its own
+        stores the snapshot as a *file* called "backups" rather than a folder.
+        """
+        snapshot = tmp_path / "results_20260901_120000_deadbeef.tar.gz"
+        snapshot.write_bytes(b"x")
+        with (
+            patch(
+                "leaderboards.backup._jotta_cli",
+                return_value=Path("/usr/bin/jotta-cli"),
+            ),
+            patch("leaderboards.backup.subprocess.run") as mock_run,
+            patch(
+                "leaderboards.backup._archived_backups",
+                return_value=[
+                    {"name": snapshot.name, "size": 1, "modified": 1_700_000_000_000}
+                ],
+            ),
+        ):
+            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+            archived = _archive_offsite(snapshot)
+
+        assert archived
+        command = mock_run.call_args.args[0]
+        assert command[:3] == ["/usr/bin/jotta-cli", "archive", str(snapshot)]
+        assert command[3] == f"--remote=backups/{snapshot.name}"
+        assert "--nogui" in command, "the client needs no terminal when unattended"
 
 
 class TestBackupResultsIntegration:
@@ -43,6 +139,8 @@ class TestBackupResultsIntegration:
             patch("leaderboards.backup.RESULTS_DIR", temp_results_dir),
             patch("leaderboards.backup.BACKUPS_DIR", backup_dir),
             patch("leaderboards.backup.BACKUPS_MAX_BYTES", 1024 * 1024 * 10),
+            patch("leaderboards.backup._archive_offsite", return_value=True),
+            patch("leaderboards.backup._archived_backups", return_value=[]),
         ):
             # Should not raise - raw results are allowed to miss precious metadata
             backup_path = backup_results(source=temp_results_dir)
@@ -75,6 +173,67 @@ def _create_eee_record(
             {"commercially_licensed": False, "open": True, "trained_from_scratch": True}
         )
     return record
+
+
+class TestRemoveArchivedLocal:
+    """Tests for releasing local disk once snapshots are stored off-machine."""
+
+    def test_only_confirmed_and_superseded_snapshots_are_removed(
+        self, tmp_path: Path
+    ) -> None:
+        """The newest snapshot stays, as do any we could not archive."""
+        archived = tmp_path / "results_20260901_120000_deadbeef.tar.gz"
+        unarchived = tmp_path / "results_20260901_130000_cafebabe.tar.gz"
+        keep = tmp_path / "results_20260902_120000_ed2bfa5a6734.tar.gz"
+        for backup in (archived, unarchived, keep):
+            backup.write_bytes(b"x")
+        listing = [{"name": archived.name, "size": 1, "modified": 1_700_000_000_000}]
+
+        with (
+            patch("leaderboards.backup.BACKUPS_DIR", tmp_path),
+            patch("leaderboards.backup._archived_backups", return_value=listing),
+        ):
+            removed = _remove_archived_local(keep=keep)
+
+        assert removed == 1
+        assert not archived.exists()
+        assert unarchived.exists(), (
+            "no off-machine copy existed, so this was the only one"
+        )
+        assert keep.exists(), "the newest snapshot is the local restore copy"
+
+    def test_successful_run_stops_local_snapshots_accumulating(
+        self, temp_results_dir: Path, tmp_path: Path
+    ) -> None:
+        """An archived run leaves one snapshot behind, not one per run."""
+        record = _create_eee_record(include_precious_metadata=False)
+        model_dir = temp_results_dir / "test_model"
+        model_dir.mkdir()
+        (model_dir / "dataset__test__zero.json").write_text(
+            json.dumps(record), encoding="utf-8"
+        )
+
+        backup_dir = tmp_path / "backups"
+        backup_dir.mkdir()
+        previous = backup_dir / "results_20260101_120000_aaaaaaaaaaaa.tar.gz"
+        previous.write_bytes(b"x")
+
+        with (
+            patch("leaderboards.backup.RESULTS_DIR", temp_results_dir),
+            patch("leaderboards.backup.BACKUPS_DIR", backup_dir),
+            patch("leaderboards.backup._archive_offsite", return_value=True),
+            patch(
+                "leaderboards.backup._archived_backups",
+                return_value=[
+                    {"name": previous.name, "size": 1, "modified": 1_700_000_000_000}
+                ],
+            ),
+        ):
+            backup_path = backup_results(source=temp_results_dir)
+
+        assert backup_path is not None
+        assert backup_path.exists()
+        assert not previous.exists()
 
 
 class TestTreeStructureBackup:

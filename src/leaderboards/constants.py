@@ -93,6 +93,13 @@ def _env_path(name: str, default: Path) -> Path:
     return Path(value).expanduser() if value else default
 
 
+# Hosts that serve Hugging Face model pages, so a recorded `model_url` can be
+# told apart from a provider's own documentation/API page.
+HF_URL_HOSTS: frozenset[str] = frozenset(
+    {"hf.co", "huggingface.co", "www.hf.co", "www.huggingface.co"}
+)
+
+
 # This package's directory (`src/leaderboards/`).
 PACKAGE_DIR: Path = Path(__file__).resolve().parent
 
@@ -124,13 +131,24 @@ OUTPUT_DIR: Path = REPO_ROOT / "src" / "frontend" / "csv"
 # Space so it shows up under "Spaces using this model" on each model's page.
 MODELS_PY_PATH: Path = REPO_ROOT / "hf_space" / "models.py"
 
-# Off-repo backup location for compressed snapshots of the results
-# directory. Snapshots are timestamped and pruned when exceeding limits.
+# Local staging directory for compressed snapshots of the results directory.
+# Snapshots are timestamped and pruned when exceeding limits, then archived
+# off-machine to `BACKUPS_ARCHIVE_DIR` in the Jottacloud Archive namespace.
 BACKUPS_DIR: Path = _env_path(
-    "EUROEVAL_RESULTS_BACKUP_DIR",
-    Path.home() / "pCloud Drive" / "data" / "euroeval_backup",
+    "EUROEVAL_RESULTS_BACKUP_DIR", Path.home() / ".euroeval" / "backups"
 )
 BACKUPS_MAX_BYTES: int = 1_000_000_000  # ~1 GB total size cap
+
+# Where snapshots are archived inside the Jottacloud Archive namespace, so a
+# machine lost to theft or a dying SSD still has its results elsewhere.
+BACKUPS_ARCHIVE_DIR: str = "backups"
+
+# Seconds to wait for an Archive upload. A ~36 MB snapshot measured 4.5 minutes
+# on a home connection, so the old five-minute budget was already too tight.
+BACKUPS_ARCHIVE_TIMEOUT: int = 1800
+
+# Seconds to wait for the Archive listing used to confirm an upload landed.
+ARCHIVE_LS_TIMEOUT: int = 60
 
 # Incremental jsonl of new benchmark records to fold into the results
 # directory on the next load.

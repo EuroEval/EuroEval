@@ -38,6 +38,7 @@ class TestExtractModelMetadata:
                 "vocabulary_size": "32000",
                 "max_sequence_length": "4096",
                 "model_url": "https://huggingface.co/ollama/model-full",
+                "release_date": "2024-02-03",
             },
         )
 
@@ -61,6 +62,7 @@ class TestExtractModelMetadata:
             "commercial",
             "merge",
             "open",
+            "release_date",
             "trained_from_scratch",
             "model_url",
         ]
@@ -85,6 +87,7 @@ class TestExtractModelMetadata:
         assert metadata[model_missing_key]["commercial"] is False  # Explicit False
         assert metadata[model_missing_key]["merge"] is False  # Default
         assert metadata[model_missing_key]["open"] is None  # Default
+        assert metadata[model_missing_key]["release_date"] is None  # Default
         assert metadata[model_missing_key]["trained_from_scratch"] is None  # Default
         assert math.isnan(metadata[model_missing_key]["parameters"])
         assert math.isnan(metadata[model_missing_key]["vocabulary_size"])
@@ -98,6 +101,7 @@ class TestExtractModelMetadata:
         assert metadata[model_full_key]["commercial"] is True
         assert metadata[model_full_key]["merge"] is False
         assert metadata[model_full_key]["open"] is True
+        assert metadata[model_full_key]["release_date"] == "2024-02-03"
         assert metadata[model_full_key]["trained_from_scratch"] is True
         assert metadata[model_full_key]["parameters"] == 7_000_000_000.0
         assert metadata[model_full_key]["vocabulary_size"] == 32_000.0

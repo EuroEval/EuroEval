@@ -1061,6 +1061,7 @@ def _create_simplified_and_rename(
             "commercial": "Commercial",
             "merge": "Merge",
             "open": "Open",
+            "release_date": "Release Date",
             "trained_from_scratch": "Trained from scratch",
         }
         | {"mean_rank_score": "Rank score"}
@@ -1190,6 +1191,7 @@ def _reorder_columns(
             "commercial",
             "merge",
             "trained_from_scratch",
+            "release_date",
             "parameters",
             "vocabulary_size",
             "context",
