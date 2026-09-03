@@ -32,6 +32,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed subset selectors being silently discarded when a dataset had only an
+  `euroeval_config.py`; subset selection now requires an `eval.yaml`.
+- Fixed malformed `eval.yaml` files being rejected without the YAML parse error being
+  logged.
 - If errors occured during evaluations that required zero-shot or test-set splits, then
   subsequent evaluations would also require that rather than reverting to the default
   few-shot and validation splits. This has been fixed.

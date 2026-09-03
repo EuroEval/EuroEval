@@ -76,6 +76,13 @@ def load_yaml_config(
     except (yaml.YAMLError, OSError):
         raw = None
     if not isinstance(raw, dict):
+        # Re-read through the shared loader so parse and top-level-shape errors are
+        # reported consistently instead of being swallowed here.
+        load_dataset_config_from_yaml(
+            yaml_path=yaml_file_path,
+            fallback_language_codes=fallback_language_codes,
+            task_index=0,
+        )
         return None
     selected = select_inspect_ai_task(
         raw=raw,
@@ -618,6 +625,8 @@ def select_inspect_ai_task(
         return (0, None, None)
     entries = [task for task in tasks if isinstance(task, dict)]
     configs = sorted({str(task["config"]) for task in entries if task.get("config")})
+    if not configs:
+        return (0, None, None)
     if subset_config is None and len(configs) > 1:
         log_once(
             message=(
@@ -663,6 +672,12 @@ def select_inspect_ai_task(
             level=logging.ERROR,
         )
         return None
+    if subset_split is not None:
+        candidates = [
+            (index, task)
+            for index, task in candidates
+            if task.get("split") == subset_split
+        ]
     index, task = candidates[0] if candidates else (0, {})
     split = subset_split or (str(task["split"]) if task.get("split") else None)
     config = str(task["config"]) if task.get("config") else None
