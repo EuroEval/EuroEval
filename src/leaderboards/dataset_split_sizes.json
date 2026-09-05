@@ -194,6 +194,11 @@
     "train": 256,
     "val": 64
   },
+  "EuroEval/danish-similarity-outlier": {
+    "test": 1539,
+    "train": 769,
+    "val": 192
+  },
   "EuroEval/dansk-mini": {
     "test": 1024,
     "train": 1024,
