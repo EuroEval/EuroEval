@@ -59,6 +59,51 @@ class TestClearCacheFn:
         rmtree(path="does-not-exist", ignore_errors=True)
 
 
+class TestDatasetArgumentConflicts:
+    """Tests for the mutually exclusive `dataset` and `task` arguments."""
+
+    def test_benchmark_with_dataset_and_language(
+        self, benchmarker: Benchmarker, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that a `language` argument does not conflict with a `dataset`."""
+        monkeypatch.setattr(
+            benchmarker, "_fetch_model_configs", lambda *args, **kwargs: []
+        )
+        monkeypatch.setattr(
+            benchmarker, "_create_model_dataset_mapping", lambda *args, **kwargs: {}
+        )
+        benchmark_results = benchmarker.benchmark(
+            model="dummy", dataset="dansk", language="da"
+        )
+        assert benchmark_results == []
+
+    def test_benchmark_with_dataset_and_task_raises(
+        self, benchmarker: Benchmarker
+    ) -> None:
+        """Test that specifying both `dataset` and `task` raises an error."""
+        with pytest.raises(ValueError, match="Only one of `task` and `dataset"):
+            benchmarker.benchmark(model="dummy", dataset="dansk", task="classification")
+
+    @pytest.mark.parametrize(
+        argnames=["language"],
+        argvalues=[("all",), ("da",), (["da"],)],
+        ids=["all", "str-code", "list-code"],
+    )
+    def test_init_with_dataset_and_language(self, language: str | list[str]) -> None:
+        """Test that a language selection can be combined with a `dataset`."""
+        benchmarker = Benchmarker(
+            dataset="dansk", language=language, progress_bar=False, save_results=False
+        )
+        assert [dataset.name for dataset in benchmarker.benchmark_config.datasets] == [
+            "dansk"
+        ]
+
+    def test_init_with_dataset_and_task_raises(self) -> None:
+        """Test that specifying both `dataset` and `task` raises an error."""
+        with pytest.raises(ValueError, match="Only one of `task` and `dataset"):
+            Benchmarker(task="classification", dataset="dansk")
+
+
 class TestDebugStartupVerbosity:
     """Tests for the --debug startup verbosity bug fix."""
 
