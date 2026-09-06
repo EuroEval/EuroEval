@@ -297,13 +297,13 @@ def test_prepare_languages(
 
 
 def test_resolve_dataset_id_expands_external_subsets() -> None:
-    """Test that a repo or config request selects all of its registered subsets."""
+    """Test that a repo or split request selects all of its registered subsets."""
     configs = {}
     for name in [
         "dansk",
-        "repo::dan::test_a",
-        "repo::dan::test_b",
-        "repo::danny::test_a",
+        "repo::dan::test_original",
+        "repo::dan::test_synthetic",
+        "repo::deu::test_original",
     ]:
         dataset_config = copy.copy(DALA_CONFIG)
         dataset_config.name = name
@@ -320,11 +320,14 @@ def test_resolve_dataset_id_expands_external_subsets() -> None:
 
     assert names("dansk") == ["dansk"]
     assert names("repo") == [
-        "repo::dan::test_a",
-        "repo::dan::test_b",
-        "repo::danny::test_a",
+        "repo::dan::test_original",
+        "repo::dan::test_synthetic",
+        "repo::deu::test_original",
     ]
-    assert names("repo::dan") == ["repo::dan::test_a", "repo::dan::test_b"]
-    assert names("repo::dan::test_a") == ["repo::dan::test_a"]
+    assert names("repo::test_original") == [
+        "repo::dan::test_original",
+        "repo::deu::test_original",
+    ]
+    assert names("repo::dan::test_synthetic") == ["repo::dan::test_synthetic"]
     with pytest.raises(KeyError):
         _resolve_dataset_id(dataset_id="repo::swe", all_dataset_configs=configs)

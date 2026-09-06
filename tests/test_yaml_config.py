@@ -1522,6 +1522,19 @@ class TestSubsetSelection:
             run_with_cli=False,
         )
 
+    def test_config_named_as_a_split_suggests_the_language_option(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Configurations are selected with --language, not with the dataset ID."""
+        with caplog.at_level(logging.ERROR, logger="euroeval"):
+            result = select_inspect_ai_tasks(
+                raw={"tasks": [{"config": "dan", "split": "test"}]},
+                subset_split="dan",
+                dataset_id="hint::dan",
+            )
+        assert result is None
+        assert "--language" in caplog.text
+
     def test_config_names_are_not_languages(self) -> None:
         """Do not read language codes out of unrelated config names."""
         assert resolve_config_languages(configs=["default", "train"]) is None
@@ -1534,26 +1547,10 @@ class TestSubsetSelection:
             "nob": NORWEGIAN_BOKMÅL,
         }
 
-    def test_config_selector_only_selects_that_config(self) -> None:
-        """A config selector must not match configs sharing its name prefix."""
-        raw = {
-            "tasks": [
-                {"config": "eng", "split": "test"},
-                {"config": "eng_metric", "split": "test"},
-            ]
-        }
-        assert select_inspect_ai_tasks(
-            raw=cast("dict[str, object]", raw),
-            subset_config="eng",
-            subset_split=None,
-            dataset_id="repo::eng",
-        ) == [(0, "eng", "test")]
-
     def test_entries_without_configs_keep_legacy_behaviour(self) -> None:
         """Do not impose subset selection on legacy task entries."""
         assert select_inspect_ai_tasks(
             raw={"tasks": [{"split": "test"}, {"split": "validation"}]},
-            subset_config=None,
             subset_split=None,
             dataset_id="repo",
         ) == [(0, None, "test")]
@@ -1611,36 +1608,11 @@ class TestSubsetSelection:
                     {"config": "dan", "split": "test_synthetic"},
                 ]
             },
-            subset_config="dan",
             subset_split="test_synthetic",
-            dataset_id="repo::dan::test_synthetic",
+            dataset_id="repo::test_synthetic",
         ) == [(1, "dan", "test_synthetic")]
 
-    def test_explicitly_requested_unsupported_language_errors(
-        self,
-        tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
-        """Failing beats benchmarking nothing when a subset is requested."""
-        yaml_text = (
-            "task: classification\n"
-            "tasks:\n"
-            "  - config: dan\n    split: test\n"
-            "  - config: zho\n    split: test\n"
-        )
-        with caplog.at_level(logging.ERROR, logger="euroeval"):
-            configs = self.load_with_fake_hub(
-                tmp_path=tmp_path,
-                monkeypatch=monkeypatch,
-                yaml_text=yaml_text,
-                dataset_id="repo::zho",
-                card_languages=["da", "zh"],
-            )
-        assert configs is None
-        assert "cannot be benchmarked" in caplog.text
-
-    @pytest.mark.parametrize("selector", ["repo::", "repo::dan::test::extra"])
+    @pytest.mark.parametrize("selector", ["repo::", "repo::test::extra"])
     def test_malformed_selector_is_rejected(
         self, selector: str, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -1667,24 +1639,14 @@ class TestSubsetSelection:
             "  - config: beta\n    split: test\n"
             "task: classification\nlanguages: [en]\n"
         )
-        raw = cast(
-            dict[str, object], {"tasks": [{"config": "alpha"}, {"config": "beta"}]}
-        )
-        assert select_inspect_ai_tasks(
-            raw=raw, subset_config=None, subset_split=None, dataset_id="repo"
-        ) == [(0, "alpha", None), (1, "beta", None)]
-        assert select_inspect_ai_tasks(
-            raw=raw, subset_config="beta", subset_split=None, dataset_id="repo::beta"
-        ) == [(1, "beta", None)]
         assert load_dataset_config_from_yaml(yaml_file) is not None
 
     def test_numeric_split_is_selected_as_string(self) -> None:
         """String selectors match scalar YAML values after conversion."""
         assert select_inspect_ai_tasks(
             raw={"tasks": [{"config": "dan", "split": 2024}]},
-            subset_config="dan",
             subset_split="2024",
-            dataset_id="repo::dan::2024",
+            dataset_id="repo::2024",
         ) == [(0, "dan", "2024")]
 
     def test_selected_entry_controls_all_config_values(self, tmp_path: Path) -> None:
@@ -1752,7 +1714,7 @@ class TestSubsetSelection:
         )
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             result = custom_dataset_configs.try_get_dataset_configs_from_repo(
-                dataset_id="repo::default",
+                dataset_id="repo::test",
                 api_key=None,
                 cache_dir=tmp_path,
                 trust_remote_code=False,
@@ -1806,7 +1768,7 @@ class TestSubsetSelection:
 
         monkeypatch.setattr(yaml_config, "get_repo_splits", fake_get_repo_splits)
         configs = custom_dataset_configs.try_get_dataset_configs_from_repo(
-            dataset_id="repo::dan::test_original",
+            dataset_id="repo::test_original",
             api_key=None,
             cache_dir=tmp_path,
             trust_remote_code=False,
@@ -1829,9 +1791,8 @@ class TestSubsetSelection:
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             result = select_inspect_ai_tasks(
                 raw={"tasks": [{"split": "test"}]},
-                subset_config="default",
                 subset_split="test",
-                dataset_id="repo::default::test",
+                dataset_id="repo::test",
             )
         assert result is None
         assert "declares no configurations" in caplog.text
@@ -1846,15 +1807,11 @@ class TestSubsetSelection:
                 {"config": "dan", "split": "validation"},
             ]
         }
-        for subset_config, dataset_id in [(None, "repo"), ("dan", "repo::dan")]:
-            with caplog.at_level(logging.ERROR, logger="euroeval"):
-                assert select_inspect_ai_tasks(
-                    raw=cast("dict[str, object]", raw),
-                    subset_config=subset_config,
-                    subset_split=None,
-                    dataset_id=dataset_id,
-                ) == [(0, "dan", "test"), (1, "dan", "validation")]
-            assert not caplog.text
+        with caplog.at_level(logging.ERROR, logger="euroeval"):
+            assert select_inspect_ai_tasks(
+                raw=cast("dict[str, object]", raw), subset_split=None, dataset_id="repo"
+            ) == [(0, "dan", "test"), (1, "dan", "validation")]
+        assert not caplog.text
 
     def test_single_entry_fixture_remains_unchanged(self, tmp_path: Path) -> None:
         """Preserve the existing single-config loading behaviour."""
@@ -1869,7 +1826,7 @@ class TestSubsetSelection:
     def test_split_selection_requires_known_split(
         self, split: str | None, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Validate a split selector, defaulting to all splits of the config."""
+        """Validate a split selector, defaulting to all the declared splits."""
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             result = select_inspect_ai_tasks(
                 raw={
@@ -1878,9 +1835,8 @@ class TestSubsetSelection:
                         {"config": "dan", "split": "test_synthetic"},
                     ]
                 },
-                subset_config="dan",
                 subset_split=split,
-                dataset_id=f"repo::dan{f'::{split}' if split else ''}",
+                dataset_id=f"repo{f'::{split}' if split else ''}",
             )
         if split is None:
             assert result == [(0, "dan", "test_original"), (1, "dan", "test_synthetic")]
@@ -1888,6 +1844,40 @@ class TestSubsetSelection:
         else:
             assert result is None
             assert "test_original" in caplog.text and "test_synthetic" in caplog.text
+
+    def test_split_selector_narrows_the_expansion(self) -> None:
+        """A split selector keeps the entries with that split, whatever their config."""
+        raw = cast(
+            dict[str, object],
+            {
+                "tasks": [
+                    {"config": "alpha", "split": "test"},
+                    {"config": "beta", "split": "test"},
+                    {"config": "alpha", "split": "dev"},
+                ]
+            },
+        )
+        assert select_inspect_ai_tasks(
+            raw=raw, subset_split=None, dataset_id="repo"
+        ) == [(0, "alpha", "test"), (1, "beta", "test"), (2, "alpha", "dev")]
+        assert select_inspect_ai_tasks(
+            raw=raw, subset_split="test", dataset_id="repo::test"
+        ) == [(0, "alpha", "test"), (1, "beta", "test")]
+
+    def test_split_selector_selects_the_same_split_of_every_config(self) -> None:
+        """A split selector narrows the expansion, not the configurations."""
+        raw = {
+            "tasks": [
+                {"config": "eng", "split": "test"},
+                {"config": "eng_metric", "split": "test"},
+                {"config": "eng", "split": "validation"},
+            ]
+        }
+        assert select_inspect_ai_tasks(
+            raw=cast("dict[str, object]", raw),
+            subset_split="test",
+            dataset_id="repo::test",
+        ) == [(0, "eng", "test"), (1, "eng_metric", "test")]
 
     def test_subset_language_fallback_does_not_warn_for_single_language(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
@@ -1913,7 +1903,7 @@ class TestSubsetSelection:
                 assert (
                     yaml_config.load_yaml_config(
                         hf_api=cast(HfApi, FakeHub()),
-                        dataset_id="repo::dan",
+                        dataset_id="repo",
                         cache_dir=tmp_path,
                     )
                     is not None
@@ -1945,7 +1935,7 @@ class TestSubsetSelection:
             with caplog.at_level(logging.WARNING, logger="euroeval"):
                 configs = yaml_config.load_yaml_config(
                     hf_api=cast("HfApi", FakeHub()),
-                    dataset_id="repo::alpha",
+                    dataset_id="repo",
                     cache_dir=tmp_path,
                 )
         finally:
@@ -1954,36 +1944,21 @@ class TestSubsetSelection:
         assert "all 2 languages" in caplog.text
         assert "per-entry `languages`" in caplog.text
 
-    def test_unknown_config_lists_the_alternatives(
+    def test_unknown_split_lists_the_alternatives(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """An unknown config names the available ones."""
-        raw = {"tasks": [{"config": "dan", "split": "test"}]}
+        """An unknown split names the available ones."""
+        raw = {"tasks": [{"config": "dan", "split": "test_original"}]}
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             assert (
                 select_inspect_ai_tasks(
                     raw=cast("dict[str, object]", raw),
-                    subset_config="swe",
-                    subset_split=None,
-                    dataset_id="repo::swe",
+                    subset_split="validation",
+                    dataset_id="repo::validation",
                 )
                 is None
             )
-        assert "['dan']" in caplog.text
-
-    def test_unknown_config_logs_available_configs(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        """Report all configs when the requested config is unknown."""
-        with caplog.at_level(logging.ERROR, logger="euroeval"):
-            result = select_inspect_ai_tasks(
-                raw={"tasks": [{"config": "dan"}, {"config": "swe"}]},
-                subset_config="nor",
-                subset_split=None,
-                dataset_id="repo::nor",
-            )
-        assert result is None
-        assert "dan" in caplog.text and "swe" in caplog.text
+        assert "['test_original']" in caplog.text
 
     def test_unparseable_hub_yaml_is_logged(
         self,

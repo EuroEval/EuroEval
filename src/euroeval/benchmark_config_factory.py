@@ -259,13 +259,14 @@ def _resolve_dataset_id(
     """Look up a requested dataset, expanding the subsets of an external repo.
 
     An external dataset repository registers one config per task entry in its
-    `eval.yaml`, named `<repo>::<config>::<split>`. Requesting the repository itself,
-    or one of its configurations, selects all the configs registered below it, so that
-    `--language` can narrow the expansion down further.
+    `eval.yaml`, named `<repo>::<config>::<split>`. Requesting the repository itself
+    selects all the configs registered below it, and requesting a split selects that
+    split of every configuration, so that `--language` can narrow the expansion down
+    further.
 
     Args:
         dataset_id:
-            The requested dataset ID, optionally suffixed by a configuration.
+            The requested dataset ID, optionally suffixed by a split.
         all_dataset_configs:
             Mapping of dataset IDs to DatasetConfig objects.
 
@@ -278,11 +279,12 @@ def _resolve_dataset_id(
     """
     if dataset_id in all_dataset_configs:
         return [all_dataset_configs[dataset_id]]
-    prefix = f"{dataset_id}::"
+    repo_id, _, subset_split = dataset_id.partition("::")
     subsets = [
         dataset_config
         for name, dataset_config in all_dataset_configs.items()
-        if name.startswith(prefix)
+        if name.split("::")[0] == repo_id
+        and (not subset_split or name.rsplit("::", 1)[-1] == subset_split)
     ]
     if not subsets:
         raise KeyError(dataset_id)

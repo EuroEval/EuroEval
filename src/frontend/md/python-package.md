@@ -462,31 +462,31 @@ When an Inspect AI task entry has its own `languages` key, that per-entry value 
 precedence over the top-level key and Hugging Face card metadata.
 
 A repository whose `eval.yaml` declares several `config`urations is benchmarked as one
-dataset per task entry, so `--dataset repo` runs all of them. Use `::config` to
-restrict the run to one configuration, which still covers all its splits, and
-`::config::split` for a single entry:
+dataset per task entry, so `--dataset repo` runs all of them. Configurations are
+commonly named after the language they contain, which is why they are selected with
+`--language` rather than with the dataset ID; the `::` suffix selects a single `split`
+across all the configurations:
 
 ```bash
+# All configurations and splits, one dataset per task entry
 euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic
-euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic::dan
-euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic::dan::test_original
+
+# The Danish configurations only
+euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic --language da
+
+# The original split of every configuration
+euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic::test_original
 ```
 
-Each resulting dataset is named by its full selector, which is also the name recorded
-with the result, so it can be copied straight back into `--dataset`. A task entry's
-`config` and optional `split` identify the Hugging Face subset and split; plain
-`field_spec`-only YAML files declare no subsets and need no selector. An unknown config
-or split is rejected with the available alternatives listed.
+Each resulting dataset is named `<repo>::<config>::<split>`, which is also the name
+recorded with the result, so it can be copied straight back into `--dataset` to rerun
+that one entry. A task entry's `config` and `split` identify the Hugging Face subset and
+split; plain `field_spec`-only YAML files declare no subsets and take no selector. An
+unknown split is rejected with the available ones listed, and naming a configuration
+where a split belongs points you at `--language` instead.
 
 Configurations named by an ISO 639-1 or ISO 639-3 language code, optionally with a
-suffix such as `eng_metric`, are attributed to that language, which makes `--language`
-a convenient way to narrow an expansion down:
-
-```bash
-euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic --language da --language de
-```
-
-Otherwise declare `languages` per task entry. If neither is available EuroEval
+suffix such as `eng_metric`, are attributed to that language. Otherwise EuroEval
 attributes the results to all the languages in the repository card and warns about it,
 and a configuration referring to a language EuroEval does not support is skipped with a
 warning, as it cannot be attributed to any language.
