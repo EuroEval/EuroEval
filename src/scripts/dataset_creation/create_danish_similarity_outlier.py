@@ -9,7 +9,7 @@
 # ]
 # ///
 
-"""Create the Danish Similarity Outlier Detection dataset and upload it to the HF Hub."""
+"""Create and upload the Danish Similarity Outlier Detection dataset to the HF Hub."""
 
 import ast
 import io
@@ -43,15 +43,20 @@ MEDIUM_FINE_COLUMNS = [
 
 
 def main() -> None:
-    """Create the Danish Similarity Outlier Detection dataset and upload it to the HF Hub."""
+    """Create the Danish dataset and upload it to the HF Hub."""
     response = rq.get(url=URL)
     response.raise_for_status()
 
     records: list[dict[str, str]] = []
     with zipfile.ZipFile(file=io.BytesIO(initial_bytes=response.content)) as zf:
         zf.setpassword(ZIP_PASSWORD)
-        for file_name in ("outlier_similarity_medium.tsv", "outlier_similarity_corse.tsv"):
-            records.extend(parse_tsv_file(file_name=file_name, content=zf.read(file_name)))
+        for file_name in (
+            "outlier_similarity_medium.tsv",
+            "outlier_similarity_corse.tsv",
+        ):
+            records.extend(
+                parse_tsv_file(file_name=file_name, content=zf.read(file_name))
+            )
 
     df = pd.DataFrame(records)
     df.drop_duplicates(inplace=True)
@@ -128,7 +133,9 @@ def parse_tsv_file(file_name: str, content: bytes) -> list[dict[str, str]]:
             num_skipped += 1
             continue
 
-        options = [str(candidate).replace("\n", " ").strip() for candidate in candidates]
+        options = [
+            str(candidate).replace("\n", " ").strip() for candidate in candidates
+        ]
         if any(not option for option in options):
             num_skipped += 1
             continue
