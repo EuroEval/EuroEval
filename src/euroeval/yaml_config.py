@@ -15,7 +15,7 @@ import yaml
 from huggingface_hub import HfApi
 
 from .data_models import DatasetConfig, Task
-from .languages import Language, get_all_languages
+from .languages import Language, get_all_languages, get_language
 from .logging_utils import log_once
 from .metrics.llm_as_a_judge import create_model_graded_fact_metric
 from .split_utils import get_repo_splits
@@ -24,19 +24,25 @@ from .tasks import REFERENCE_FREE_QA, get_all_tasks
 
 def load_yaml_config(
     hf_api: HfApi, dataset_id: str, cache_dir: Path
-) -> DatasetConfig | None:
-    """Load a dataset config from an eval.yaml file in a Hugging Face repo.
+) -> list[DatasetConfig] | None:
+    """Load dataset configs from an eval.yaml file in a Hugging Face repo.
+
+    Each task entry that `dataset_id` refers to becomes its own dataset config, so a
+    repository declaring a configuration per language expands into one dataset per
+    language when no configuration is selected.
 
     Args:
         hf_api:
             The Hugging Face API object.
         dataset_id:
-            The ID of the dataset to get the config for.
+            The ID of the dataset to get the configs for, optionally suffixed by the
+            configuration and split to select, e.g. `repo::dan::test`.
         cache_dir:
             The directory to store the cache in.
 
     Returns:
-        The dataset config if it exists, otherwise None.
+        The dataset configs, or None if the repository has no loadable eval.yaml or
+        the selector does not refer to any task entry.
     """
     parsed_selector = parse_dataset_selector(dataset_id=dataset_id)
     if parsed_selector is None:
@@ -75,7 +81,18 @@ def load_yaml_config(
             task_index=0,
         )
         return None
-    selected = select_inspect_ai_task(
+
+    tasks_raw = raw.get("tasks")
+    declared_configs = sorted(
+        {
+            str(task["config"])
+            for task in (tasks_raw if isinstance(tasks_raw, list) else [])
+            if isinstance(task, dict) and task.get("config")
+        }
+    )
+    config_languages = resolve_config_languages(configs=declared_configs)
+
+    selected = select_inspect_ai_tasks(
         raw=raw,
         subset_config=subset_config,
         subset_split=subset_split,
@@ -83,71 +100,106 @@ def load_yaml_config(
     )
     if selected is None:
         return None
-    task_index, inspect_ai_config, inspect_ai_split = selected
 
-    selected_task = raw.get("tasks", [])[task_index]
-    has_entry_languages = (
-        isinstance(selected_task, dict) and "languages" in selected_task
-    )
-    if (
-        subset_config is not None
-        and not has_entry_languages
-        and "languages" not in raw
-        and fallback_language_codes is not None
-        and len(fallback_language_codes) > 1
-    ):
-        log_once(
-            message=(
-                f"The language of subset {inspect_ai_config!r} in dataset "
-                f"{dataset_id!r} could not be determined. Results are attributed "
-                f"to all {len(fallback_language_codes)} languages of the repository; "
-                "add a per-entry `languages` key to the `eval.yaml`."
-            ),
-            level=logging.WARNING,
+    dataset_configs: list[DatasetConfig] = []
+    for task_index, inspect_ai_config, inspect_ai_split in selected:
+        task_entry = tasks_raw[task_index] if isinstance(tasks_raw, list) else {}
+        language_selection_supplied = "languages" in raw or (
+            isinstance(task_entry, dict) and "languages" in task_entry
         )
+        entry_fallback_codes = fallback_language_codes
+        if inspect_ai_config is not None and not language_selection_supplied:
+            language = (
+                config_languages.get(inspect_ai_config) if config_languages else None
+            )
+            if language is not None:
+                entry_fallback_codes = [language.code]
+            elif config_languages is not None:
+                log_once(
+                    message=(
+                        f"Config {inspect_ai_config!r} in dataset {repo_id!r} refers "
+                        "to a language that EuroEval does not support"
+                        + (
+                            ", so it is not benchmark."
+                            if subset_config is None
+                            else f", so {dataset_id!r} cannot be benchmarked."
+                        )
+                    ),
+                    level=logging.WARNING if subset_config is None else logging.ERROR,
+                )
+                if subset_config is not None:
+                    return None
+                continue
+            elif (
+                fallback_language_codes is not None and len(fallback_language_codes) > 1
+            ):
+                log_once(
+                    message=(
+                        f"The language of subset {inspect_ai_config!r} in dataset "
+                        f"{repo_id!r} could not be determined. Results are attributed "
+                        f"to all {len(fallback_language_codes)} languages of the "
+                        "repository; add a per-entry `languages` key to the "
+                        "`eval.yaml`."
+                    ),
+                    level=logging.WARNING,
+                )
 
-    repo_dataset_config = load_dataset_config_from_yaml(
-        yaml_path=yaml_file_path,
-        fallback_language_codes=fallback_language_codes,
-        task_index=task_index,
-    )
-    if repo_dataset_config is None:
+        repo_dataset_config = load_dataset_config_from_yaml(
+            yaml_path=yaml_file_path,
+            fallback_language_codes=entry_fallback_codes,
+            task_index=task_index,
+        )
+        if repo_dataset_config is None:
+            return None
+
+        train_split, val_split, auto_test_split = get_repo_splits(
+            hf_api=hf_api, dataset_id=repo_id, config_name=inspect_ai_config
+        )
+        test_split = (
+            inspect_ai_split if inspect_ai_split is not None else auto_test_split
+        )
+        if test_split is None:
+            log_once(
+                message=(
+                    f"Dataset {dataset_id} does not have a test split, so we cannot "
+                    "load it. Please ensure that the dataset has a test split."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+
+        if train_split is None and val_split is not None:
+            log_once(
+                message=(
+                    f"Dataset {dataset_id!r} has no training split. Using the "
+                    "validation split "
+                    f"{val_split!r} as the training split instead."
+                ),
+                level=logging.DEBUG,
+            )
+            train_split = val_split
+            val_split = None
+
+        if inspect_ai_config is None:
+            name = repo_id
+            source = repo_id
+        else:
+            name = f"{repo_id}::{inspect_ai_config}"
+            if inspect_ai_split is not None:
+                name = f"{name}::{inspect_ai_split}"
+            source = f"{repo_id}::{inspect_ai_config}"
+
+        repo_dataset_config.name = name
+        repo_dataset_config.pretty_name = name
+        repo_dataset_config.source = source
+        repo_dataset_config.train_split = train_split
+        repo_dataset_config.val_split = val_split
+        repo_dataset_config.test_split = test_split
+        dataset_configs.append(repo_dataset_config)
+
+    if not dataset_configs:
         return None
-
-    train_split, val_split, auto_test_split = get_repo_splits(
-        hf_api=hf_api, dataset_id=repo_id, config_name=inspect_ai_config
-    )
-    test_split = inspect_ai_split if inspect_ai_split is not None else auto_test_split
-    if test_split is None:
-        log_once(
-            message=(
-                f"Dataset {dataset_id} does not have a test split, so we cannot load "
-                "it. Please ensure that the dataset has a test split."
-            ),
-            level=logging.ERROR,
-        )
-        return None
-
-    if train_split is None and val_split is not None:
-        log_once(
-            message=(
-                f"Dataset {dataset_id!r} has no training split. Using the validation "
-                f"split {val_split!r} as the training split instead."
-            ),
-            level=logging.DEBUG,
-        )
-        train_split = val_split
-        val_split = None
-
-    source = f"{repo_id}::{inspect_ai_config}" if inspect_ai_config else repo_id
-
-    repo_dataset_config.name = dataset_id
-    repo_dataset_config.pretty_name = dataset_id
-    repo_dataset_config.source = source
-    repo_dataset_config.train_split = train_split
-    repo_dataset_config.val_split = val_split
-    repo_dataset_config.test_split = test_split
-    return repo_dataset_config
+    return dataset_configs
 
 
 def load_dataset_config_from_yaml(
@@ -646,22 +698,63 @@ def parse_dataset_selector(
     )
 
 
-def select_inspect_ai_task(
+def resolve_config_languages(configs: list[str]) -> dict[str, Language] | None:
+    """Map dataset configurations onto languages, if they name languages.
+
+    Dataset configurations are commonly named after the language they contain, using
+    either the ISO 639-1 or the ISO 639-3 code, and may carry a further suffix such as
+    `eng_metric`. Configuration names are only trusted when most of them resolve to a
+    language, as otherwise configurations named e.g. `default` or `train` would be
+    mistaken for language codes.
+
+    Args:
+        configs:
+            The configurations declared by a dataset, in arbitrary order.
+
+    Returns:
+        A mapping from configuration name to language, or None when the names do not
+        look like languages. A configuration that looks like a language but is not
+        supported by EuroEval is missing from the mapping.
+    """
+    resolved = {config: get_language(config.partition("_")[0]) for config in configs}
+    named = [config for config, language in resolved.items() if language is not None]
+    if 2 * len(named) < len(configs):
+        return None
+    return {config: language for config, language in resolved.items() if language}
+
+
+def select_inspect_ai_tasks(
     raw: dict[str, object],
     subset_config: str | None,
     subset_split: str | None,
     *,
     dataset_id: str,
-) -> tuple[int, str | None, str | None] | None:
-    """Select an Inspect AI task entry from a dataset selector.
+) -> list[tuple[int, str | None, str | None]] | None:
+    """Select the Inspect AI task entries a dataset selector refers to.
+
+    A selector narrows the entries down rather than picking one of them: with no
+    selector every entry is selected, `<repo>::<config>` selects all entries of that
+    configuration, and `<repo>::<config>::<split>` selects the single entry matching
+    both. A repository with a configuration per language thus expands into one
+    dataset per language, which `--language` can then filter.
+
+    Args:
+        raw:
+            The parsed YAML data.
+        subset_config:
+            The requested configuration, if any.
+        subset_split:
+            The requested split, if any.
+        dataset_id:
+            The requested dataset ID, used for error messages.
 
     Returns:
-        The selected entry index, config and split, or None when validation fails.
+        A list of task entry indices, configurations and splits, or None if the
+        selector does not refer to any entry.
     """
     tasks = raw.get("tasks")
-    selector_supplied = subset_config is not None or subset_split is not None
     if not isinstance(tasks, list) or not tasks:
-        if selector_supplied:
+        if subset_config is not None or subset_split is not None:
             log_once(
                 message=(
                     f"Dataset {dataset_id!r} eval.yaml declares no configurations, "
@@ -670,84 +763,84 @@ def select_inspect_ai_task(
                 level=logging.ERROR,
             )
             return None
-        return (0, None, None)
-    entries = [task for task in tasks if isinstance(task, dict)]
-    configs = sorted({str(task["config"]) for task in entries if task.get("config")})
-    if not configs:
-        if selector_supplied:
-            log_once(
-                message=(
-                    f"Dataset {dataset_id!r} eval.yaml declares no configurations, "
-                    "so subset selection is unsupported."
-                ),
-                level=logging.ERROR,
-            )
-            return None
-        return (0, None, None)
-    if subset_config is None and len(configs) > 1:
-        log_once(
-            message=(
-                f"Dataset {dataset_id!r} has multiple configs: {configs}. "
-                f"Select one with --dataset {dataset_id.split('::')[0]}::{configs[0]}."
-            ),
-            level=logging.ERROR,
-        )
-        return None
-    if subset_config is not None and subset_config not in configs:
-        log_once(
-            message=(
-                f"Unknown config {subset_config!r} for dataset {dataset_id!r}. "
-                f"Available configs are: {configs}."
-            ),
-            level=logging.ERROR,
-        )
-        return None
-    selected_config = subset_config or (configs[0] if len(configs) == 1 else None)
-    candidates = [
-        (index, task)
-        for index, task in enumerate(tasks)
-        if isinstance(task, dict)
-        and (selected_config is None or str(task.get("config")) == selected_config)
+        return [(0, None, None)]
+    entries = [
+        (index, task) for index, task in enumerate(tasks) if isinstance(task, dict)
     ]
-    splits = sorted({str(task["split"]) for _, task in candidates if task.get("split")})
-    if selector_supplied and subset_split is None and len(splits) > 1:
-        log_once(
-            message=(
-                f"Config {selected_config!r} for dataset {dataset_id!r} has multiple "
-                f"splits: {splits}. Select one with --dataset "
-                f"{dataset_id.split('::')[0]}::{selected_config}::{splits[0]}."
-            ),
-            level=logging.ERROR,
-        )
-        return None
-    if subset_split is not None and subset_split not in splits:
-        log_once(
-            message=(
-                f"Unknown split {subset_split!r} for config {selected_config!r} in "
-                f"dataset {dataset_id!r}. Available splits are: {splits}."
-            ),
-            level=logging.ERROR,
-        )
-        return None
-    if subset_split is not None:
-        candidates = [
+    configs = sorted({str(task["config"]) for _, task in entries if task.get("config")})
+    if not configs:
+        # Entries without configurations are not subsets, so only the first one is
+        # used, as it was before subset selection existed
+        if subset_config is not None or subset_split is not None:
+            log_once(
+                message=(
+                    f"Dataset {dataset_id!r} eval.yaml declares no configurations, "
+                    "so subset selection is unsupported."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+        first = entries[0][1]
+        return [
+            (entries[0][0], None, str(first["split"]) if first.get("split") else None)
+        ]
+    if subset_config is not None:
+        if not configs:
+            log_once(
+                message=(
+                    f"Dataset {dataset_id!r} eval.yaml declares no configurations, "
+                    "so subset selection is unsupported."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+        if subset_config not in configs:
+            log_once(
+                message=(
+                    f"Unknown config {subset_config!r} for dataset {dataset_id!r}. "
+                    f"Available configs are: {configs}."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+        entries = [
             (index, task)
-            for index, task in candidates
+            for index, task in entries
+            if str(task.get("config")) == subset_config
+        ]
+    splits = sorted({str(task["split"]) for _, task in entries if task.get("split")})
+    if subset_split is not None:
+        if subset_split not in splits:
+            log_once(
+                message=(
+                    f"Unknown split {subset_split!r} for dataset {dataset_id!r}. "
+                    f"Available splits are: {splits}."
+                ),
+                level=logging.ERROR,
+            )
+            return None
+        entries = [
+            (index, task)
+            for index, task in entries
             if str(task.get("split")) == subset_split
         ]
-    if not candidates:
+    if not entries:
         log_once(
             message=(
-                f"No task entry matches config {selected_config!r} and split "
+                f"No task entry matches config {subset_config!r} and split "
                 f"{subset_split!r} in dataset {dataset_id!r}."
             ),
             level=logging.ERROR,
         )
         return None
-    index, task = candidates[0]
-    split = subset_split or (str(task["split"]) if task.get("split") else None)
-    config = str(task["config"]) if task.get("config") else None
-    return index, config, split
+    return [
+        (
+            index,
+            str(task["config"]) if task.get("config") else None,
+            str(task["split"]) if task.get("split") else None,
+        )
+        for index, task in entries
+    ]
 
 
 DatasetKwargs = dict[str, str | int | bool | list[str] | dict[str, str]]

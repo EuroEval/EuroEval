@@ -461,13 +461,35 @@ The value of `task` must be one of the task names used in EuroEval
 When an Inspect AI task entry has its own `languages` key, that per-entry value takes
 precedence over the top-level key and Hugging Face card metadata.
 
-If a repository's `eval.yaml` defines more than one `config`, the config is required:
-select it with `--dataset repo::config`. If the selected config appears with more than
-one `split`, the split is required too, using `--dataset repo::config::split` (for
-example, `danish-foundation-models/multilingual-gsm-symbolic::dan::test_original`).
-EuroEval refuses to guess and reports the available configs or splits instead. A task
-entry's `config` and optional `split` identify the Hugging Face subset and split; plain
-`field_spec`-only YAML files need no selector.
+A repository whose `eval.yaml` declares several `config`urations is benchmarked as one
+dataset per task entry, so `--dataset repo` runs all of them. Use `::config` to
+restrict the run to one configuration, which still covers all its splits, and
+`::config::split` for a single entry:
+
+```bash
+euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic
+euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic::dan
+euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic::dan::test_original
+```
+
+Each resulting dataset is named by its full selector, which is also the name recorded
+with the result, so it can be copied straight back into `--dataset`. A task entry's
+`config` and optional `split` identify the Hugging Face subset and split; plain
+`field_spec`-only YAML files declare no subsets and need no selector. An unknown config
+or split is rejected with the available alternatives listed.
+
+Configurations named by an ISO 639-1 or ISO 639-3 language code, optionally with a
+suffix such as `eng_metric`, are attributed to that language, which makes `--language`
+a convenient way to narrow an expansion down:
+
+```bash
+euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic --language da --language de
+```
+
+Otherwise declare `languages` per task entry. If neither is available EuroEval
+attributes the results to all the languages in the repository card and warns about it,
+and a configuration referring to a language EuroEval does not support is skipped with a
+warning, as it cannot be attributed to any language.
 
 All other `DatasetConfig` arguments are also supported:
 
@@ -508,11 +530,11 @@ infer them automatically when they are absent:
   This only applies to free-form generation tasks; tasks scored from logprobs (such
   as multiple-choice) keep EuroEval's own prompts. A template using placeholders
   other than `{prompt}` cannot be expressed and is ignored.
-- **`languages`** are read from the Hugging Face Hub repository metadata
-  (the `language` field in the dataset card).  Languages that EuroEval does not
-  support are skipped; if the configuration would then have no language at all, or
-  no language metadata can be found, EuroEval defaults to English and logs a
-  warning.
+- **`languages`** are read from the configuration name when it is a language code,
+  and otherwise from the Hugging Face Hub repository metadata (the `language` field in
+  the dataset card).  Languages that EuroEval does not support are skipped; if the
+  configuration would then have no language at all, or no language metadata can be
+  found, EuroEval defaults to English and logs a warning.
 
 The `math` task scores the answer extracted from the model output against the
 target, preferring the last `\boxed{...}` in the completion and falling back to

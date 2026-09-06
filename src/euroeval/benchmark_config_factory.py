@@ -205,12 +205,22 @@ def _get_datasets_list(
         if dataset is None:
             return all_official_dataset_configs
         elif isinstance(dataset, str):
-            return [all_dataset_configs[dataset]]
+            return _resolve_dataset_id(
+                dataset_id=dataset, all_dataset_configs=all_dataset_configs
+            )
         elif isinstance(dataset, DatasetConfig):
             return [dataset]
         else:
             return [
-                all_dataset_configs[d] if isinstance(d, str) else d for d in dataset
+                cfg
+                for d in dataset
+                for cfg in (
+                    [d]
+                    if isinstance(d, DatasetConfig)
+                    else _resolve_dataset_id(
+                        dataset_id=d, all_dataset_configs=all_dataset_configs
+                    )
+                )
             ]
     except KeyError as e:
         _handle_dataset_lookup_error(
@@ -241,6 +251,42 @@ def _handle_dataset_lookup_error(
         msg += f" Maybe you meant to use {closest_match!r}?"
     log(msg, level=logging.ERROR)
     sys.exit(1)
+
+
+def _resolve_dataset_id(
+    dataset_id: str, all_dataset_configs: dict[str, DatasetConfig]
+) -> list[DatasetConfig]:
+    """Look up a requested dataset, expanding the subsets of an external repo.
+
+    An external dataset repository registers one config per task entry in its
+    `eval.yaml`, named `<repo>::<config>::<split>`. Requesting the repository itself,
+    or one of its configurations, selects all the configs registered below it, so that
+    `--language` can narrow the expansion down further.
+
+    Args:
+        dataset_id:
+            The requested dataset ID, optionally suffixed by a configuration.
+        all_dataset_configs:
+            Mapping of dataset IDs to DatasetConfig objects.
+
+    Returns:
+        The dataset configs referred to by `dataset_id`.
+
+    Raises:
+        KeyError:
+            If no dataset matches the request.
+    """
+    if dataset_id in all_dataset_configs:
+        return [all_dataset_configs[dataset_id]]
+    prefix = f"{dataset_id}::"
+    subsets = [
+        dataset_config
+        for name, dataset_config in all_dataset_configs.items()
+        if name.startswith(prefix)
+    ]
+    if not subsets:
+        raise KeyError(dataset_id)
+    return subsets
 
 
 def _get_tasks_list(

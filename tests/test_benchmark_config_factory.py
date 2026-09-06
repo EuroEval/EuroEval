@@ -1,5 +1,6 @@
 """Tests for the `benchmark_config_factory` module."""
 
+import copy
 import os
 from pathlib import Path
 from typing import Generator
@@ -9,13 +10,17 @@ import torch
 
 from euroeval import Benchmarker
 from euroeval.benchmark_config_factory import (
+    _resolve_dataset_id,
     prepare_dataset_configs,
     prepare_device,
     prepare_languages,
 )
 from euroeval.data_models import DatasetConfig, Language
 from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.dataset_configs.danish import DALA_CONFIG, MULTI_WIKI_QA_DA_CONFIG
+from euroeval.dataset_configs.danish import (  # noqa: E501
+    DALA_CONFIG,
+    MULTI_WIKI_QA_DA_CONFIG,
+)
 from euroeval.enums import Device
 from euroeval.languages import (
     DANISH,
@@ -289,3 +294,37 @@ def test_prepare_languages(
     model_languages = sorted(model_languages, key=lambda x: x.code)
     expected_language = sorted(expected_language, key=lambda x: x.code)
     assert model_languages == expected_language
+
+
+def test_resolve_dataset_id_expands_external_subsets() -> None:
+    """Test that a repo or config request selects all of its registered subsets."""
+    configs = {}
+    for name in [
+        "dansk",
+        "repo::dan::test_a",
+        "repo::dan::test_b",
+        "repo::danny::test_a",
+    ]:
+        dataset_config = copy.copy(DALA_CONFIG)
+        dataset_config.name = name
+        dataset_config.source = name
+        configs[name] = dataset_config
+
+    def names(dataset_id: str) -> list[str]:
+        return [
+            dataset_config.name
+            for dataset_config in _resolve_dataset_id(
+                dataset_id=dataset_id, all_dataset_configs=configs
+            )
+        ]
+
+    assert names("dansk") == ["dansk"]
+    assert names("repo") == [
+        "repo::dan::test_a",
+        "repo::dan::test_b",
+        "repo::danny::test_a",
+    ]
+    assert names("repo::dan") == ["repo::dan::test_a", "repo::dan::test_b"]
+    assert names("repo::dan::test_a") == ["repo::dan::test_a"]
+    with pytest.raises(KeyError):
+        _resolve_dataset_id(dataset_id="repo::swe", all_dataset_configs=configs)
