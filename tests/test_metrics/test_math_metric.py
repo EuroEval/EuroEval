@@ -1,5 +1,7 @@
 """Tests for the mathematical exact-match metric."""
 
+import pytest
+
 from euroeval.metrics.math import (
     MathAccuracy,
     _answer_candidates,
@@ -44,6 +46,23 @@ class TestMathHelpers:
         assert _equivalent(r"1\,234", "1234")
         assert not _equivalent("1 234", "1234")
         assert not _equivalent("10\n20", "1020")
+
+
+@pytest.mark.parametrize(
+    ("prediction", "reference", "expected"),
+    [
+        (r"The answer is \boxed{x = 5}", "5", True),
+        (r"The answer is \boxed{x=5}", "5", True),
+        (r"The answer is x = 5", "5", True),
+        (r"The answer is \boxed{x = 5}", "6", False),
+        (r"The answer is \boxed{x = y}", "5", False),
+    ],
+)
+def test_a_named_equation_scores_the_value_it_names(
+    prediction: str, reference: str, expected: bool
+) -> None:
+    """An answer boxed as `x = 5` is the number 5, as Inspect AI also reads it."""
+    assert _answer_matches(prediction, reference) is expected
 
 
 def test_box_drawing_unicode_is_boxed() -> None:

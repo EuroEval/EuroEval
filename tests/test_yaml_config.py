@@ -1432,6 +1432,35 @@ class TestRealWorldYamlConfigs:
 class TestSubsetSelection:
     """Tests for selecting Inspect AI eval.yaml task entries."""
 
+    def test_a_full_subset_name_selects_that_single_entry(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A subset can be requested by the name it is registered and recorded with."""
+        raw = {
+            "tasks": [
+                {"config": "dan", "split": "test_original"},
+                {"config": "dan", "split": "test_synthetic"},
+                {"config": "swe", "split": "test_original"},
+            ]
+        }
+        assert select_inspect_ai_tasks(
+            raw=cast("dict[str, object]", raw),
+            subset_split="test_original",
+            dataset_id="repo::dan::test_original",
+            subset_config="dan",
+        ) == [(0, "dan", "test_original")]
+        with caplog.at_level(logging.ERROR, logger="euroeval"):
+            assert (
+                select_inspect_ai_tasks(
+                    raw=cast("dict[str, object]", raw),
+                    subset_split="test_original",
+                    dataset_id="repo::nor::test_original",
+                    subset_config="nor",
+                )
+                is None
+            )
+        assert "['dan', 'swe']" in caplog.text
+
     def test_ambiguous_config_names_are_attributed_to_the_repository_languages(
         self,
         tmp_path: Path,
@@ -1612,7 +1641,7 @@ class TestSubsetSelection:
             dataset_id="repo::test_synthetic",
         ) == [(1, "dan", "test_synthetic")]
 
-    @pytest.mark.parametrize("selector", ["repo::", "repo::test::extra"])
+    @pytest.mark.parametrize("selector", ["repo::", "repo::dan::test::extra"])
     def test_malformed_selector_is_rejected(
         self, selector: str, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:

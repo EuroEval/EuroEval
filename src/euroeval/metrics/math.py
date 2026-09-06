@@ -36,6 +36,9 @@ _PERCENT_SUFFIX = re.compile(
 _MARKER = re.compile(
     r"(?:final\s+answer|answer|result)\s*(?:is\b|[:=])\s*", re.IGNORECASE
 )
+_ASSIGNMENT = re.compile(
+    r"^(?P<name>[A-Za-z][A-Za-z0-9_]*)\s*=\s*(?P<value>.+)$", re.IGNORECASE
+)
 _BOX = re.compile(
     r"(?:\\(?:beginboxed|boxed|fbox)|(?<![A-Za-z\\])(?:boxed|fbox|oxed))\s*\{"
 )
@@ -160,45 +163,56 @@ def _strip_delimiters(text: str) -> str:
             break
     text = re.sub(r"^(?:\\[,;:]|\\quad|\\qquad|\\;|\\,)\s*", "", text)
     text = re.sub(r"(?:\\[,;:]|\\quad|\\qquad|\\;|\\,)\s*$", "", text)
-    return text.rstrip(" .,;:")
+    text = text.rstrip(" .,;:")
+    # A boxed equation naming the answer, such as `x = 5`, is the value it names, as
+    # Inspect AI's symbolic comparison also reduces it to that
+    assignment = _ASSIGNMENT.match(text)
+    if assignment is not None and _number_value(assignment.group("value")) is not None:
+        text = assignment.group("value").strip()
+    return text
 
 
-def _boxed_candidates(text: str) -> list[str]:
-    """Return brace-balanced contents of boxes, in source order."""
-    matches: list[str] = []
-    position = 0
-    while match := _BOX.search(text, position):
-        content = _balanced_content(text, match.end() - 1)
-        if content is not None:
-            matches.append(content[0])
-            position = content[1]
-        else:
-            position = match.end()
-    return matches
+def _number_value(text: str) -> tuple[decimal.Decimal, bool] | None:
+    """Parse a plain number and return its exact value and percent status.
+
+    Returns:
+        An exact numeric value and percent flag, or None for non-numeric text.
+    """
+    normalised = _normalize_text(text)
+    percent_match = _PERCENT_SUFFIX.search(normalised)
+    percent = percent_match is not None
+    if percent_match is not None:
+        normalised = normalised[: percent_match.start()].strip()
+    normalised = normalised.replace(r"\,", ",")
+    if "," in normalised and not re.fullmatch(
+        r"[-+]?\d{1,3}(?:,\d{3})+(?:\.\d+)?(?:[eE][-+]?\d+)?", normalised
+    ):
+        return None
+    normalised = normalised.replace(",", "")
+    if not re.fullmatch(
+        r"[-+]?(?:(?:\d{1,3}(?:\d{3})+|\d+)(?:\.\d+)?|\.\d+)"
+        r"(?:[eE][-+]?\d+)?",
+        normalised,
+    ):
+        return None
+    try:
+        return decimal.Decimal(normalised), percent
+    except decimal.InvalidOperation:
+        return None
 
 
-def _balanced_content(text: str, opening: int) -> tuple[str, int] | None:
-    """Return content and end position for a balanced opening brace."""
-    depth = 0
-    for index in range(opening, len(text)):
-        if text[index] == "{":
-            depth += 1
-        elif text[index] == "}":
-            depth -= 1
-            if depth == 0:
-                return text[opening + 1 : index], index + 1
-    return None
+def _normalize_text(text: str) -> str:
+    """Apply the shared normalisation used for both predictions and references.
 
-
-def _last_delimited_math(text: str) -> str | None:
-    """Return the delimited mathematical span ending furthest to the right."""
-    spans: list[tuple[int, str]] = []
-    for opening, closing in _DELIMITERS:
-        end = text.rfind(closing)
-        start = text.rfind(opening, 0, end)
-        if start >= 0 and end > start:
-            spans.append((end, text[start + len(opening) : end]))
-    return max(spans, default=(0, None))[1]
+    Returns:
+        The case-folded normalised text.
+    """
+    text = _replace_unicode(_strip_delimiters(text))
+    text = re.sub(r"\\(?:text|mathrm|mbox)\s*\{([^{}]*)\}", r"\1", text)
+    text = re.sub(r"^[£€$]\s*", "", text)
+    text = text.replace(r"\ ", " ").replace(r"\%", "%")
+    text = re.sub(r"\s+", " ", text).strip(" .,;:")
+    return text.casefold()
 
 
 def _replace_unicode(text: str) -> str:
@@ -241,6 +255,44 @@ def _replace_unicode(text: str) -> str:
     return text
 
 
+def _boxed_candidates(text: str) -> list[str]:
+    """Return brace-balanced contents of boxes, in source order."""
+    matches: list[str] = []
+    position = 0
+    while match := _BOX.search(text, position):
+        content = _balanced_content(text, match.end() - 1)
+        if content is not None:
+            matches.append(content[0])
+            position = content[1]
+        else:
+            position = match.end()
+    return matches
+
+
+def _balanced_content(text: str, opening: int) -> tuple[str, int] | None:
+    """Return content and end position for a balanced opening brace."""
+    depth = 0
+    for index in range(opening, len(text)):
+        if text[index] == "{":
+            depth += 1
+        elif text[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[opening + 1 : index], index + 1
+    return None
+
+
+def _last_delimited_math(text: str) -> str | None:
+    """Return the delimited mathematical span ending furthest to the right."""
+    spans: list[tuple[int, str]] = []
+    for opening, closing in _DELIMITERS:
+        end = text.rfind(closing)
+        start = text.rfind(opening, 0, end)
+        if start >= 0 and end > start:
+            spans.append((end, text[start + len(opening) : end]))
+    return max(spans, default=(0, None))[1]
+
+
 def _equivalent(left: str, right: str) -> bool:
     """Compare exact plain numbers, otherwise normalised text.
 
@@ -264,49 +316,6 @@ def _equivalent(left: str, right: str) -> bool:
         right_value = right_number[0] / 100 if right_number[1] else right_number[0]
         return left_value == right_value
     return _normalize_text(left) == _normalize_text(right)
-
-
-def _normalize_text(text: str) -> str:
-    """Apply the shared normalisation used for both predictions and references.
-
-    Returns:
-        The case-folded normalised text.
-    """
-    text = _replace_unicode(_strip_delimiters(text))
-    text = re.sub(r"\\(?:text|mathrm|mbox)\s*\{([^{}]*)\}", r"\1", text)
-    text = re.sub(r"^[£€$]\s*", "", text)
-    text = text.replace(r"\ ", " ").replace(r"\%", "%")
-    text = re.sub(r"\s+", " ", text).strip(" .,;:")
-    return text.casefold()
-
-
-def _number_value(text: str) -> tuple[decimal.Decimal, bool] | None:
-    """Parse a plain number and return its exact value and percent status.
-
-    Returns:
-        An exact numeric value and percent flag, or None for non-numeric text.
-    """
-    normalised = _normalize_text(text)
-    percent_match = _PERCENT_SUFFIX.search(normalised)
-    percent = percent_match is not None
-    if percent_match is not None:
-        normalised = normalised[: percent_match.start()].strip()
-    normalised = normalised.replace(r"\,", ",")
-    if "," in normalised and not re.fullmatch(
-        r"[-+]?\d{1,3}(?:,\d{3})+(?:\.\d+)?(?:[eE][-+]?\d+)?", normalised
-    ):
-        return None
-    normalised = normalised.replace(",", "")
-    if not re.fullmatch(
-        r"[-+]?(?:(?:\d{1,3}(?:\d{3})+|\d+)(?:\.\d+)?|\.\d+)"
-        r"(?:[eE][-+]?\d+)?",
-        normalised,
-    ):
-        return None
-    try:
-        return decimal.Decimal(normalised), percent
-    except decimal.InvalidOperation:
-        return None
 
 
 def _looks_like_prose(candidate: str) -> bool:

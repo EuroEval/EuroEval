@@ -483,7 +483,12 @@ recorded with the result, so it can be copied straight back into `--dataset` to 
 that one entry. A task entry's `config` and `split` identify the Hugging Face subset and
 split; plain `field_spec`-only YAML files declare no subsets and take no selector. An
 unknown split is rejected with the available ones listed, and naming a configuration
-where a split belongs points you at `--language` instead.
+where a split belongs points you at `--language` instead:
+
+```text
+Unknown split 'dan' for dataset '...::dan'. Available splits are: ['test_original',
+'test_synthetic']. To select the 'dan' configuration, use --language 'da' instead.
+```
 
 Configurations named by an ISO 639-1 or ISO 639-3 language code, optionally with a
 suffix such as `eng_metric`, are attributed to that language. Otherwise EuroEval

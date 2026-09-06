@@ -58,7 +58,7 @@ def try_get_dataset_configs_from_repo(
     parsed_selector = parse_dataset_selector(dataset_id=dataset_id)
     if parsed_selector is None:
         return None
-    repo_id, subset_split = parsed_selector
+    repo_id, subset_config, subset_split = parsed_selector
 
     token = get_hf_token(api_key=api_key)
     hf_api = HfApi(token=token)
@@ -82,7 +82,7 @@ def try_get_dataset_configs_from_repo(
                 level=logging.ERROR,
             )
 
-    if subset_split is not None:
+    if subset_split is not None or subset_config is not None:
         if "eval.yaml" not in repo_files:
             log_once(
                 message=(

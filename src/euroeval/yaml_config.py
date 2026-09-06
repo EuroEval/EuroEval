@@ -47,7 +47,7 @@ def load_yaml_config(
     parsed_selector = parse_dataset_selector(dataset_id=dataset_id)
     if parsed_selector is None:
         return None
-    repo_id, subset_split = parsed_selector
+    repo_id, subset_config, subset_split = parsed_selector
 
     external_config_path = cache_dir / "external_dataset_configs" / repo_id
     external_config_path.mkdir(parents=True, exist_ok=True)
@@ -93,7 +93,10 @@ def load_yaml_config(
     config_languages = resolve_config_languages(configs=declared_configs)
 
     selected = select_inspect_ai_tasks(
-        raw=raw, subset_split=subset_split, dataset_id=dataset_id
+        raw=raw,
+        subset_split=subset_split,
+        dataset_id=dataset_id,
+        subset_config=subset_config,
     )
     if selected is None:
         return None
@@ -664,29 +667,38 @@ def infer_task_from_inspect_ai(
     return None
 
 
-def parse_dataset_selector(dataset_id: str) -> tuple[str, str | None] | None:
-    """Parse a dataset split selector and report malformed selectors.
+def parse_dataset_selector(
+    dataset_id: str,
+) -> tuple[str, str | None, str | None] | None:
+    """Parse a dataset selector and report malformed selectors.
+
+    A selector either names one of the expanded subsets directly, `repo::config::split`,
+    or narrows the repository down to one of its splits, `repo::split`. Configurations
+    are not selected this way, as they are commonly named after the language they
+    contain and are selected with `--language` instead.
 
     Args:
         dataset_id:
-            The requested dataset ID, optionally suffixed by a split, e.g.
-            `repo::test`.
+            The requested dataset ID.
 
     Returns:
-        The repository ID and the requested split, or None if the selector is
-        malformed.
+        The repository ID, the configuration of a named subset, and the requested split,
+        or None if the selector is malformed.
     """
     parts = dataset_id.split("::")
-    if len(parts) > 2 or any(not part for part in parts):
+    if len(parts) > 3 or any(not part for part in parts):
         log_once(
             message=(
                 f"Invalid dataset selector {dataset_id!r}. Use the syntax "
-                "<repo>[::<split>], with no empty parts."
+                "<repo>[::<split>] to select a split, or the name of one of the "
+                "expanded subsets, <repo>::<config>::<split>."
             ),
             level=logging.ERROR,
         )
         return None
-    return parts[0], parts[1] if len(parts) > 1 else None
+    if len(parts) == 3:
+        return parts[0], parts[1], parts[2]
+    return parts[0], None, parts[1] if len(parts) > 1 else None
 
 
 def resolve_config_languages(configs: list[str]) -> dict[str, Language] | None:
@@ -715,7 +727,11 @@ def resolve_config_languages(configs: list[str]) -> dict[str, Language] | None:
 
 
 def select_inspect_ai_tasks(
-    raw: dict[str, object], subset_split: str | None, *, dataset_id: str
+    raw: dict[str, object],
+    subset_split: str | None,
+    *,
+    dataset_id: str,
+    subset_config: str | None = None,
 ) -> list[tuple[int, str | None, str | None]] | None:
     """Select the Inspect AI task entries a dataset selector refers to.
 
@@ -730,6 +746,10 @@ def select_inspect_ai_tasks(
             The parsed YAML data.
         subset_split:
             The requested split, if any.
+        subset_config:
+            The configuration of a directly named subset, if the full subset name was
+            requested. Not usable on its own, as configurations are language names
+            selected with `--language`.
         dataset_id:
             The requested dataset ID, used for error messages.
 
@@ -739,7 +759,7 @@ def select_inspect_ai_tasks(
     """
     tasks = raw.get("tasks")
     if not isinstance(tasks, list) or not tasks:
-        if subset_split is not None:
+        if subset_split is not None or subset_config is not None:
             log_once(
                 message=(
                     f"Dataset {dataset_id!r} eval.yaml declares no task entries, so "
@@ -755,11 +775,11 @@ def select_inspect_ai_tasks(
     if not any(task.get("config") for _, task in entries):
         # Entries without configurations are not subsets, so only the first one is
         # used, as it was before the subsets existed
-        if subset_split is not None:
+        if subset_split is not None or subset_config is not None:
             log_once(
                 message=(
                     f"Dataset {dataset_id!r} eval.yaml declares no configurations, so "
-                    "split selection is unsupported."
+                    "subset selection is unsupported."
                 ),
                 level=logging.ERROR,
             )
@@ -768,6 +788,24 @@ def select_inspect_ai_tasks(
         return [
             (entries[0][0], None, str(first["split"]) if first.get("split") else None)
         ]
+    if subset_config is not None:
+        configs = sorted(
+            {str(task["config"]) for _, task in entries if task.get("config")}
+        )
+        entries = [
+            (index, task)
+            for index, task in entries
+            if str(task.get("config")) == subset_config
+        ]
+        if not entries:
+            log_once(
+                message=(
+                    f"Unknown config {subset_config!r} for dataset {dataset_id!r}. "
+                    f"Available configs are: {configs}."
+                ),
+                level=logging.ERROR,
+            )
+            return None
     splits = sorted({str(task["split"]) for _, task in entries if task.get("split")})
     if subset_split is not None:
         if subset_split not in splits:
