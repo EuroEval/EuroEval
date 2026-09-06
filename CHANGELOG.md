@@ -61,6 +61,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   repository, such as `zh`, no longer blocks the rest of its `eval.yaml` from loading.
 - The logical-reasoning task is now restricted to instruction-tuned and
   reasoning models, excluding base models.
+- Combining `--dataset` with `--task` now results in a CLI usage error rather than an
+  unhandled `ValueError` traceback. The two options are mutually exclusive, as
+  `--dataset` fully specifies which datasets to benchmark; `--language` can still be
+  used to narrow the selected datasets down further.
 
 ## [v18.0.0] - 2026-08-14
 

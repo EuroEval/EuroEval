@@ -103,8 +103,9 @@ class Benchmarker:
                 If both `task` and `dataset` are None then all datasets will be
                 benchmarked.
             dataset:
-                The datasets to benchmark on. Mutually exclusive with `task`. If both
-                `task` and `dataset` are None then all datasets will be benchmarked.
+                The datasets to benchmark on. Mutually exclusive with `task` and
+                `language`. If both `task` and `dataset` are None then all datasets
+                will be benchmarked.
             language:
                 The language codes of the languages to include, both for models and
                 datasets. Set this to 'all' if all languages should be considered.
@@ -186,8 +187,8 @@ class Benchmarker:
 
         Raises:
             ValueError:
-                If both `task` and `dataset` are specified, or if `download_only`
-                is True and we have no internet connection.
+                If both `task` and `dataset` are specified, or if `download_only` is
+                True and we have no internet connection.
         """
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")

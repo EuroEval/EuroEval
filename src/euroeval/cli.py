@@ -43,8 +43,9 @@ from .languages import get_all_languages
     default=None,
     show_default=True,
     multiple=True,
-    help="""The name of the benchmark dataset. We recommend to use the `task` and
-    `language` options instead of this option.""",
+    help="""The name of the benchmark dataset. Note that this option cannot be combined
+    with the `--task` option, as it fully specifies which datasets to benchmark. The
+    `--language` option can be used to narrow the selection down further.""",
 )
 @click.option(
     "--finetuning-batch-size",
@@ -273,6 +274,8 @@ def benchmark(
     vocabulary_size: int | None,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
+    _validate_task_and_dataset_options(task=task, dataset=dataset)
+
     Benchmarker(
         language=list(language),
         task=None if len(task) == 0 else list(task),
@@ -307,6 +310,26 @@ def benchmark(
         max_context_length=max_context_length,
         vocabulary_size=vocabulary_size,
     ).benchmark(model=list(model))
+
+
+def _validate_task_and_dataset_options(
+    task: tuple[str, ...], dataset: tuple[str | DatasetConfig, ...]
+) -> None:
+    """Validate that `--task` and `--dataset` are not combined.
+
+    Args:
+        task:
+            The value of the `--task` option.
+        dataset:
+            The value of the `--dataset` option.
+
+    Raises:
+        click.UsageError:
+            If the `--dataset` option is combined with the `--task` option, as
+            `--dataset` fully specifies which datasets to benchmark.
+    """
+    if dataset and task:
+        raise click.UsageError("Only one of `--task` and `--dataset` can be specified.")
 
 
 if __name__ == "__main__":

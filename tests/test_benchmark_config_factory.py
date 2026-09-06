@@ -233,6 +233,30 @@ def test_prepare_dataset_configs_invalid_task() -> None:
     assert exc_info.value.code == 1
 
 
+def test_prepare_dataset_configs_language_filters_explicit_dataset() -> None:
+    """Test that a language filters an explicitly requested dataset.
+
+    Specifying a dataset does not bypass the language selection: a dataset is only
+    benchmarked if it covers one of the requested languages. This is how `--language`
+    narrows down the datasets expanded from a multi-language external dataset repo.
+    """
+
+    def prepare(languages: list[Language]) -> list[DatasetConfig]:
+        return prepare_dataset_configs(
+            task=None,
+            dataset=["dansk"],
+            languages=languages,
+            custom_datasets_file=Path("custom_datasets.py"),
+            api_key=None,
+            cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=False,
+            run_with_cli=True,
+        )
+
+    assert [dataset_config.name for dataset_config in prepare([DANISH])] == ["dansk"]
+    assert prepare([ENGLISH]) == []
+
+
 @pytest.mark.parametrize(
     argnames=["device", "expected_device"],
     argvalues=[
