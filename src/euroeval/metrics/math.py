@@ -1,13 +1,15 @@
-r"""Exact-match scoring for mathematical answers.
+r"""Scoring for mathematical answers.
 
 The candidate ladder prefers the last boxed answer, then a connected answer
 marker, delimited mathematics, the whole short text, the last line, and the
 last number. The first candidate wins; opaque prose may fall back to later
-numeric candidates. Numbers use exact equality after percent values are divided
-by 100, while other values use normalised case-folded text equality.
+numeric candidates. Plain numbers use exact equality after percent values are
+divided by 100, expressions are compared as values by ``math_eval``, and
+anything left over uses normalised case-folded text equality.
 
-Diverges from Inspect AI: LaTeX expressions are not parsed symbolically, so
-``\\frac{1}{2}`` does not equal ``0.5`` and ``0.1 + 0.2`` is not evaluated.
+Diverges from Inspect AI: LaTeX is not parsed by a grammar, only rewritten, so
+answers built from structure this rewrite does not cover -- matrices, integrals,
+piecewise braces -- are compared as text.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ import re
 import typing as t
 
 from .base import Metric
+from .math_eval import is_symbolically_equivalent
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -50,12 +53,14 @@ class MathAccuracy(Metric):
     r"""Score answers with the Inspect-style candidate ladder.
 
     The first candidate wins. Only an unmatched opaque prose candidate may
-    fall back to later candidates that are plain numbers. Numeric comparison is
-    exact after percent values are divided by 100; all other comparison is
-    normalised case-folded text equality.
+    fall back to later candidates that are plain numbers. Plain numbers are
+    compared exactly after percent values are divided by 100, expressions are
+    compared as values by ``math_eval``, and anything else uses normalised
+    case-folded text equality.
 
-    Diverges from Inspect AI: LaTeX is not parsed symbolically, so
-    ``\\frac{1}{2}`` does not equal ``0.5`` and ``0.1 + 0.2`` is not evaluated.
+    Diverges from Inspect AI: LaTeX is rewritten rather than parsed by a
+    grammar, so structure beyond fractions, roots, powers and products --
+    matrices, integrals, piecewise braces -- is compared as text.
     """
 
     def __call__(
@@ -294,11 +299,12 @@ def _last_delimited_math(text: str) -> str | None:
 
 
 def _equivalent(left: str, right: str) -> bool:
-    """Compare exact plain numbers, otherwise normalised text.
+    r"""Compare plain numbers exactly, then values, then normalised text.
 
-    Plain numbers are parsed without symbolic mathematics, so every value is
-    exact and ``==`` is intentional: Inspect AI's floating-point tolerance is
-    deliberately absent. Percent values are scaled by dividing by 100.
+    Plain numbers are compared without any mathematics, so every value is exact and
+    ``==`` is intentional. Values that look like mathematics are compared as values by
+    :mod:`euroeval.metrics.math_eval`, which is where ``\\frac{1}{2}`` meets ``0.5``; a
+    string it cannot translate is compared as text instead.
 
     Returns:
         Whether the values are equivalent.
@@ -315,7 +321,16 @@ def _equivalent(left: str, right: str) -> bool:
         left_value = left_number[0] / 100 if left_number[1] else left_number[0]
         right_value = right_number[0] / 100 if right_number[1] else right_number[0]
         return left_value == right_value
+    if _has_math_syntax(left) or _has_math_syntax(right):
+        symbolic = is_symbolically_equivalent(left, right)
+        if symbolic is not None:
+            return symbolic
     return _normalize_text(left) == _normalize_text(right)
+
+
+def _has_math_syntax(text: str) -> bool:
+    """Return whether a candidate is worth evaluating as mathematics."""
+    return bool(re.search(r"\\[A-Za-z]|\d|[-+*/^=]", text))
 
 
 def _looks_like_prose(candidate: str) -> bool:

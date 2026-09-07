@@ -544,12 +544,18 @@ infer them automatically when they are absent:
 The `math` task scores the answer extracted from the model output against the
 target, preferring the last `\boxed{...}` in the completion and falling back to
 answer markers, delimited mathematics and finally the last number in the text.
-Numbers are compared exactly (a percentage counts as its value divided by 100) and
-everything else as normalised text. EuroEval does not parse LaTeX symbolically like
-Inspect AI's SymPy-backed scorer, so `\frac{1}{2}` and `0.5` are not treated as
-equal. Since the extraction relies on the boxed answer, a `math` configuration
-should include a `prompt_template` solver asking the model to box its answer —
-EuroEval warns when it is missing.
+Plain numbers are compared exactly (a percentage counts as its value divided by
+100), and expressions are compared as values: EuroEval rewrites the LaTeX that
+benchmark answers use — fractions, roots, powers, products, `\pi` — into
+arithmetic and evaluates it with SymPy, which is already installed as a
+dependency of torch, so `\frac{1}{2}` and `0.5` are treated as equal, as are
+`2\pi` and `6.283185307179586`. Values that SymPy compares exactly, such as
+rationals and `\sqrt{2}`, are never compared approximately. This is a rewrite
+rather than Inspect AI's full LaTeX grammar, so structure beyond it — matrices,
+integrals, piecewise braces — is compared as normalised text. Since the
+extraction relies on the boxed answer, a `math` configuration should include a
+`prompt_template` solver asking the model to box its answer — EuroEval warns
+when it is missing.
 
 This means a standard Inspect AI `eval.yaml` with no EuroEval-specific keys works
 out of the box:

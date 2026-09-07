@@ -14,10 +14,10 @@ from euroeval.metrics.math import (
 class TestMathHelpers:
     """Test extraction and comparison behaviour."""
 
-    def test_boxed_reference_and_unsupported_fraction(self) -> None:
-        """Boxed references work, but LaTeX fractions are not parsed."""
+    def test_boxed_reference_and_fraction(self) -> None:
+        """Boxed references work, and a LaTeX fraction equals its value."""
         assert _equivalent("42", r"\boxed{42}")
-        assert not _equivalent(r"\frac{1}{2}", "0.5")
+        assert _equivalent(r"\frac{1}{2}", "0.5")
 
     def test_fbox_and_fallback(self) -> None:
         """Fbox and prose/number fallback are supported."""

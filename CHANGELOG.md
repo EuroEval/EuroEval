@@ -27,7 +27,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added the unofficial Belarusian BeRTE-WD binary natural language inference dataset.
 - Added support for Inspect AI `eval.yaml` files using the `math` scorer, which are
   now loaded as the `math` task with exact-match scoring of the `\boxed{...}` answer.
-  Templates from `prompt_template` solvers are used as EuroEval instruction prompts.
+  Answers are compared as mathematical values, so `\frac{1}{2}` matches `0.5` and `2\pi`
+  matches `6.283185307179586`; this evaluates with SymPy, which is declared as a
+  dependency but is already installed through torch. Templates from `prompt_template`
+  solvers are used as EuroEval instruction prompts.
   An answer boxed as an equation, such as `\boxed{x = 5}`, scores the value it names.
 
 ### Changed
