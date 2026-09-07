@@ -1576,6 +1576,42 @@ class TestSubsetSelection:
             "nob": NORWEGIAN_BOKMÅL,
         }
 
+    def test_config_that_is_not_a_language_name_is_still_benchmark(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Only names that look like language codes can refer to an unsupported one.
+
+        A repository mixing `default` with language-named configs still contains that
+        configuration; dropping it because it failed to resolve as a language would
+        silently benchmark less than the dataset declares.
+        """
+        yaml_text = (
+            "task: classification\n"
+            "tasks:\n"
+            "  - config: default\n    split: test\n"
+            "  - config: dan\n    split: test\n"
+            "  - config: swe\n    split: test\n"
+        )
+        with caplog.at_level(logging.WARNING, logger="euroeval"):
+            configs = self.load_with_fake_hub(
+                tmp_path=tmp_path,
+                monkeypatch=monkeypatch,
+                yaml_text=yaml_text,
+                dataset_id="repo",
+                card_languages=["en", "da", "sv"],
+            )
+        assert configs is not None
+        assert [config.name for config in configs] == [
+            "repo::default::test",
+            "repo::dan::test",
+            "repo::swe::test",
+        ]
+        assert "could not be determined" in caplog.text
+        assert "does not support" not in caplog.text
+
     def test_entries_without_configs_keep_legacy_behaviour(self) -> None:
         """Do not impose subset selection on legacy task entries."""
         assert select_inspect_ai_tasks(

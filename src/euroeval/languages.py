@@ -1266,15 +1266,38 @@ def get_language(language_code: str) -> Language | None:
 
     Args:
         language_code:
-            The ISO 639-1 or ISO 639-3 code of the language.
+            The ISO 639-1 or ISO 639-3 code of the language, in any case.
 
     Returns:
         The language, if it is supported by EuroEval, and None otherwise.
     """
     languages = get_all_languages()
-    language = languages.get(language_code)
+    code = language_code.lower()
+    language = languages.get(code)
     if language is None:
-        alias = ISO_639_3_ALIASES.get(language_code)
+        alias = ISO_639_3_ALIASES.get(code)
         if alias is not None:
             language = languages[alias]
     return language
+
+
+def is_language_code(name: str) -> bool:
+    """Return whether a name is a language code rather than some other label.
+
+    Dataset configurations are often named after the language they hold, and telling
+    `zho`, a language EuroEval lacks, apart from `default`, which was never a language,
+    decides whether a configuration is skipped or attributed from the repository card.
+    EuroEval only knows the codes it supports, so an unsupported one cannot be looked
+    up; what it can be is recognised as a code by shape, which is how `zho` and
+    `default` are told apart.
+
+    Args:
+        name: A configuration name or bare language code, in any case.
+
+    Returns:
+        Whether the name is an ISO 639-1 or ISO 639-3 code, or is shaped like one.
+    """
+    code = name.lower()
+    if code in ISO_639_3_ALIASES or code in get_all_languages():
+        return True
+    return len(code) in (2, 3) and code.isascii() and code.isalpha()

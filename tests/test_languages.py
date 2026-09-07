@@ -5,7 +5,13 @@ from typing import Generator
 import pytest
 
 from euroeval.data_models import Language
-from euroeval.languages import get_all_languages, get_correct_language_codes
+from euroeval.languages import (
+    ISO_639_3_ALIASES,
+    get_all_languages,
+    get_correct_language_codes,
+    get_language,
+    is_language_code,
+)
 
 
 class TestGetAllLanguages:
@@ -66,3 +72,23 @@ def test_get_correct_language_codes(
     """Test that the correct language codes are returned."""
     languages = get_correct_language_codes(language_codes=input_language_codes)
     assert set(languages) == set(expected_language_codes)
+
+
+def test_is_language_code_tells_names_apart() -> None:
+    """`zho` is a missing language; `default` was never a language at all."""
+    assert is_language_code("zho")
+    assert is_language_code("dan")
+    assert is_language_code("DA")
+    assert not is_language_code("default")
+    assert not is_language_code("train")
+
+
+def test_iso_639_3_aliases_resolve() -> None:
+    """Every alias points at a language EuroEval actually has."""
+    registry = get_all_languages()
+    unresolvable = sorted(
+        alias
+        for alias, code in ISO_639_3_ALIASES.items()
+        if code not in registry or get_language(alias) is not registry[code]
+    )
+    assert unresolvable == []

@@ -126,9 +126,8 @@ def load_python_config(
             Whether the code is being run with the CLI.
 
     Returns:
-        The dataset configs referred to by `dataset_id`, or None if the repository has
-        no EuroEval dataset config. A repository with several configurations in its
-        `eval.yaml` expands into one config per task entry.
+        The dataset config referred to by `dataset_id`, or None if the repository has
+        no `euroeval_config.py`.
     """
     repo_files = _list_repo_files(hf_api=hf_api, dataset_id=dataset_id, revision="main")
 

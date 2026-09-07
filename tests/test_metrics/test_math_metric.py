@@ -49,7 +49,18 @@ class TestLimits:
 
     @pytest.mark.parametrize(
         "text",
-        ["9" * 5000, r"9^{9^{9}}", r"2^{100000}", "(" + "1," * 400 + "1)", "", "   "],
+        [
+            "9" * 5000,
+            r"9^{9^{9}}",
+            r"2^{100000}",
+            "2**-1000000000",
+            "2**-10000000000",
+            "2**(0-1000000000)",
+            "2^{" * 1000 + "2" + "}" * 1000,
+            "(" + "1," * 400 + "1)",
+            "",
+            "   ",
+        ],
     )
     def test_pathological_input_is_refused_quickly(self, text: str) -> None:
         """Pathological candidates are unknown, and unknown within milliseconds."""
@@ -95,6 +106,25 @@ class TestMathHelpers:
         assert not _equivalent("10\n20", "1020")
 
 
+class TestPercentages:
+    """Test that a percentage is its value divided by 100, exactly."""
+
+    def test_a_long_percentage_is_not_rounded(self) -> None:
+        """A percentage longer than the decimal context keeps its neighbours apart."""
+        assert not _answer_matches("9" * 30 + "%", "9" * 29 + "8%")
+
+    def test_a_percent_sign_mid_expression_is_not_modulo(self) -> None:
+        """`50% + 10%` is not a remainder, and dividing by zero is not an answer."""
+        assert not _answer_matches("50% + 10%", "0")
+        assert not _answer_matches("1 % 0", "1")
+
+    def test_a_percentage_matches_its_value(self) -> None:
+        """`50%` is 0.5, and is not 50."""
+        assert _answer_matches(r"50\%", "0.5")
+        assert _answer_matches("50%", "0.5")
+        assert not _answer_matches(r"50\%", "50")
+
+
 class TestSymbolicEquivalence:
     """Test values that only a mathematical comparison can equate."""
 
@@ -137,6 +167,29 @@ class TestSymbolicEquivalence:
     def test_nearby_values_stay_different(self, left: str, right: str) -> None:
         """Exact values are never approximated, however close they look."""
         assert not _symbolically_equivalent(left, right)
+
+
+class TestWordsAreStillWords:
+    """Test that reading an answer as mathematics never overrides prose."""
+
+    def test_a_sequence_is_not_an_arithmetic_operand(self) -> None:
+        """Structured answers are compared as themselves, never added or powered."""
+        assert not _answer_matches("(1,2)^2", "(1,4)")
+        assert not _answer_matches("(1,2)-(1/2)", "1")
+        assert _answer_matches("(1, 2)", "(1, 2)")
+
+    @pytest.mark.parametrize(
+        ("prediction", "reference"),
+        [("Ja", "ja"), ("CO2", "co2"), ("T-shirt", "t-shirt"), (r"\boxed{Ja}", "JA")],
+    )
+    def test_case_folded_words_match(self, prediction: str, reference: str) -> None:
+        """Words that also parse as names or subtractions match on text.
+
+        A symbolic comparison would answer these -- `CO2` is a name and `T-shirt` is a
+        difference of names -- and would get them wrong, so a value carrying names is
+        referred back to text.
+        """
+        assert _answer_matches(prediction, reference)
 
 
 @pytest.mark.parametrize(

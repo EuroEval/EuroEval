@@ -15,7 +15,7 @@ import yaml
 from huggingface_hub import HfApi
 
 from .data_models import DatasetConfig, Task
-from .languages import Language, get_all_languages, get_language
+from .languages import Language, get_all_languages, get_language, is_language_code
 from .logging_utils import log_once
 from .metrics.llm_as_a_judge import create_model_graded_fact_metric
 from .split_utils import get_repo_splits
@@ -114,7 +114,9 @@ def load_yaml_config(
             )
             if language is not None:
                 entry_fallback_codes = [language.code]
-            elif config_languages is not None:
+            elif config_languages is not None and is_language_code(
+                inspect_ai_config.partition("_")[0]
+            ):
                 log_once(
                     message=(
                         f"Config {inspect_ai_config!r} in dataset {repo_id!r} refers "

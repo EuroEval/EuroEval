@@ -32,6 +32,7 @@ import collections.abc as c
 import decimal
 import re
 import typing as t
+from math import isfinite
 
 import sympy
 
@@ -147,7 +148,7 @@ def _answer_candidates(text: str) -> list[str]:
         suffix = text[markers[-1].end() :].splitlines()
         _append_candidate(candidates, suffix[0] if suffix else None)
     _append_candidate(candidates, _last_delimited_math(text))
-    if len(text) <= 4096:
+    if len(text) <= _MAX_CANDIDATE_CHARS:
         _append_candidate(candidates, text)
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     _append_candidate(candidates, lines[-1] if lines else None)
@@ -333,8 +334,8 @@ def _equivalent(left: str, right: str) -> bool:
     left_number = _number_value(left)
     right_number = _number_value(right)
     if left_number is not None and right_number is not None:
-        left_value = left_number[0] / 100 if left_number[1] else left_number[0]
-        right_value = right_number[0] / 100 if right_number[1] else right_number[0]
+        left_value = _percent_value(left_number)
+        right_value = _percent_value(right_number)
         return left_value == right_value
     if _has_math_syntax(left) or _has_math_syntax(right):
         symbolic = _symbolically_equivalent(left, right)
@@ -346,6 +347,22 @@ def _equivalent(left: str, right: str) -> bool:
 def _has_math_syntax(text: str) -> bool:
     """Return whether a candidate is worth evaluating as mathematics."""
     return bool(re.search(r"\\[A-Za-z]|\d|[-+*/^=]", text))
+
+
+def _percent_value(number: tuple[decimal.Decimal, bool]) -> decimal.Decimal:
+    """Return the value a parsed number denotes, dividing a percentage by 100.
+
+    Returns:
+        The exact value, with no rounding at any length of digits.
+    """
+    value, percent = number
+    if not percent:
+        return value
+    with decimal.localcontext() as context:
+        # Dividing would round at the context's 28 digits; widening it to the digits in
+        # hand keeps 99...9% distinct from its nearest neighbour.
+        context.prec = len(value.as_tuple().digits) + 2
+        return value.scaleb(-2)
 
 
 def _looks_like_prose(candidate: str) -> bool:
@@ -390,7 +407,7 @@ _MAX_SYMBOL_CHARS = 64
 
 _MAX_SYMBOLS = 64
 
-_MAX_POWER_EXPONENT = 64
+_MAX_POWER_EXPONENT = 512
 
 _MAX_RECURSION = 16
 
@@ -442,6 +459,10 @@ def _symbolically_equivalent(left: str, right: str) -> bool | None:
     right_value = _parse(right)
     if left_value is None or right_value is None:
         return None
+    if any(_has_free_symbols(value) for value in (left_value, right_value)):
+        # `CO2` and `T-shirt` parse as names and differences of names, which say
+        # nothing about whether the answers mean the same; text comparison does.
+        return None
     return _expressions_equivalent(left_value, right_value)
 
 
@@ -479,9 +500,7 @@ def _close_enough(left: sympy.Expr, right: sympy.Expr) -> bool:
         values = [complex(sympy.N(value, 30)) for value in (left, right)]
     except (TypeError, ValueError, ArithmeticError):
         return False
-    if not all(
-        value.real == value.real and value.imag == value.imag for value in values
-    ):
+    if not all(isfinite(value.real) and isfinite(value.imag) for value in values):
         return False
     error = abs(values[0] - values[1])
     scale = max(abs(values[0]), abs(values[1]), 1e-10)
@@ -513,23 +532,34 @@ def _unwrap(expression: sympy.Expr) -> sympy.Expr:
     return expression.rhs
 
 
+def _has_free_symbols(value: sympy.Expr) -> bool:
+    """Return whether a value names something rather than denoting a value."""
+    return bool(_unwrap(value).free_symbols)
+
+
 def _parse(text: str) -> sympy.Expr | None:
     """Rewrite a candidate and build it as a SymPy expression.
 
     Returns:
         The expression, or None if the candidate does not translate or is out of bounds.
     """
-    plain = _to_plain(text)
-    if plain is None:
-        return None
     try:
+        plain = _to_plain(text)
+        if plain is None:
+            return None
         tree = ast.parse(plain, mode="eval")
-    except (SyntaxError, ValueError, MemoryError, RecursionError):
-        return None
-    try:
         expression = _build(tree)
         _check(expression)
-    except (MathParseError, RecursionError, MemoryError, OverflowError):
+    except (
+        MathParseError,
+        SyntaxError,
+        ValueError,
+        RecursionError,
+        MemoryError,
+        OverflowError,
+    ):
+        return None
+    except ZeroDivisionError:
         return None
     return expression
 
@@ -584,6 +614,8 @@ def _binary(node: ast.BinOp, build: t.Callable[[ast.AST], sympy.Expr]) -> sympy.
         MathParseError: If the operator is not arithmetic.
     """
     left, right = build(node.left), build(node.right)
+    if isinstance(left, sympy.Tuple) or isinstance(right, sympy.Tuple):
+        raise MathParseError("a sequence is not an arithmetic operand")
     if isinstance(node.op, ast.Add):
         return sympy.Add(left, right)
     if isinstance(node.op, ast.Sub):
@@ -724,16 +756,55 @@ def _guard_power(exponent: ast.expr) -> None:
     """Reject exponentiation that SymPy would evaluate into something unbounded.
 
     SymPy evaluates a power as it is built, so `9^{9^{9}}` has to be refused here rather
-    than after parsing: by the time the tree exists the integer has been computed.
+    than after parsing: by the time the tree exists the integer has been computed. The
+    exponent is therefore measured before it is built, including when it is written as
+    `-1000000000` or `1000000000 - 1`.
 
     Raises:
-        MathParseError: If the exponent is a tower or a literal too large to expand.
+        MathParseError: If the exponent is a tower or too large to expand.
     """
     if any(isinstance(node, ast.Pow) for node in ast.walk(exponent)):
         raise MathParseError("exponentiation is nested")
-    value = exponent.value if isinstance(exponent, ast.Constant) else None
-    if isinstance(value, int) and abs(value) > _MAX_POWER_EXPONENT:
+    size = _exponent_size(exponent)
+    if size is not None and size > _MAX_POWER_EXPONENT:
         raise MathParseError("exponent is too large")
+
+
+def _exponent_size(node: ast.expr) -> float | None:
+    """Estimate how big a power's exponent is, without evaluating it.
+
+    Returns:
+        An upper bound on the magnitude, or None when the exponent is symbolic or is
+        something SymPy leaves unevaluated, in which case nothing is expanded.
+
+    Raises:
+        MathParseError: If the exponent is not a number at all.
+    """
+    if isinstance(node, ast.Constant):
+        if isinstance(node.value, bool) or not isinstance(node.value, (int, float)):
+            raise MathParseError("exponent is not a number")
+        return abs(float(node.value))
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
+        return _exponent_size(node.operand)
+    if isinstance(node, ast.BinOp) and isinstance(
+        node.op, (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod)
+    ):
+        left = _exponent_size(node.left)
+        right = _exponent_size(node.right)
+        if left is None or right is None:
+            return None
+        if isinstance(node.op, (ast.Add, ast.Sub)):
+            return left + right
+        if isinstance(node.op, ast.Mult):
+            return left * right
+        if isinstance(node.op, ast.Mod):
+            return left
+        if right < 1.0:
+            return float("inf") if right == 0.0 else left / right
+        return left
+    if isinstance(node, (ast.Name, ast.Call)):
+        return None
+    raise MathParseError("exponent is not a number")
 
 
 def _to_plain(text: str, depth: int = 0) -> str | None:
@@ -745,7 +816,7 @@ def _to_plain(text: str, depth: int = 0) -> str | None:
     if depth > _MAX_RECURSION or len(text) > _MAX_CANDIDATE_CHARS:
         return None
     text = text.strip()
-    for opening, closing in (("$$", "$$"), (r"\[", r"\]"), (r"\(", r"\)"), ("$", "$")):
+    for opening, closing in _DELIMITERS:
         if (
             text.startswith(opening)
             and text.endswith(closing)
@@ -772,6 +843,10 @@ def _to_plain(text: str, depth: int = 0) -> str | None:
     percent = _PERCENT_SUFFIX.search(text) is not None
     if percent:
         text = _PERCENT_SUFFIX.sub("", text).strip()
+    if "%" in text:
+        # A percent sign that is not the trailing one would otherwise reach the parser
+        # as Python's modulo operator, scoring `50% + 10%` as a remainder.
+        return None
     rewritten = _rewrite(text, depth)
     if rewritten is None:
         return None
@@ -804,6 +879,8 @@ def _powers(text: str, depth: int) -> str | None:
     Returns:
         The expression with ``**`` powers, or None where an exponent is unreadable.
     """
+    if depth > _MAX_RECURSION or len(text) > _MAX_CANDIDATE_CHARS:
+        return None
     out: list[str] = []
     position = 0
     while match := _POWER.search(text, position):
@@ -830,15 +907,8 @@ def _powers(text: str, depth: int) -> str | None:
 
 def _balanced(text: str, opening: int) -> tuple[str | None, int]:
     """Return the contents of a balanced brace group and the index after it."""
-    depth = 0
-    for index in range(opening, len(text)):
-        if text[index] == "{":
-            depth += 1
-        elif text[index] == "}":
-            depth -= 1
-            if depth == 0:
-                return text[opening + 1 : index], index + 1
-    return None, len(text)
+    found = _balanced_content(text, opening)
+    return (None, len(text)) if found is None else found
 
 
 def _products(text: str) -> str:
@@ -857,6 +927,8 @@ def _rewrite(text: str, depth: int) -> str | None:
     Returns:
         The rewritten text, or None for a command with no arithmetic meaning.
     """
+    if depth > _MAX_RECURSION or len(text) > _MAX_CANDIDATE_CHARS:
+        return None
     out: list[str] = []
     position = 0
     while match := _COMMAND.search(text, position):
