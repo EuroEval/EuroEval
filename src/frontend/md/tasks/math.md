@@ -3,36 +3,31 @@
 ## 📚 Overview
 
 The math task evaluates a model's ability to solve mathematical problems and return the
-correct answer. When an Inspect AI `eval.yaml` uses the `math` scorer, EuroEval loads it
-as this task.
+correct final answer. It covers problems involving arithmetic, algebra and symbolic
+reasoning.
 
-A math dataset should include a `prompt_template` solver asking the model to box its
-answer. EuroEval warns when that instruction is missing because answer extraction
-prefers the last `\boxed{...}` or `\fbox{...}` in the completion. It then falls back to
-answer markers, delimited mathematics, short whole-text answers, the last non-empty line
-and finally the last number in the text.
+Models are evaluated zero-shot and may generate up to 1,024 tokens. Only generative
+instruction-tuned and reasoning models can be evaluated on this task.
 
 ## 📊 Metrics
 
-Plain numbers are compared exactly, with a percentage interpreted as its value divided
-by 100. Expressions are compared as values: EuroEval rewrites the LaTeX used in
-benchmark answers — including fractions, roots, powers, products and `\pi` — into
-arithmetic and evaluates it with SymPy. For example, `\frac{1}{2}` matches `0.5`, `2\pi`
-matches `6.283185307179586`, and `x + y` matches `y + x`.
+The primary metric is math accuracy: the percentage of problems for which the model's
+final answer matches the reference answer.
 
-Values that SymPy compares exactly, such as rationals and `\sqrt{2}`, are never compared
-approximately. A one-word answer is read as a name rather than text, making it
-case-sensitive, as in Inspect AI; an answer of two or more words is compared as
-case-insensitive text.
+The metric extracts the final answer from the response, preferring a boxed answer when
+one is present. Numbers are compared exactly, with percentages interpreted as their
+numeric values, so `50%` matches `0.5`. Mathematical expressions are compared by value,
+so equivalent forms such as `\frac{1}{2}` and `0.5`, `2\pi` and
+`6.283185307179586`, or `x + y` and `y + x` are treated as equal.
 
-EuroEval uses a restricted rewrite rather than Inspect AI's full LaTeX grammar.
-Unsupported structures, such as matrices, integrals and piecewise braces, are compared
-as normalised text.
+Exact values such as rational numbers and `\sqrt{2}` are never compared approximately.
+Text answers containing multiple words are compared case-insensitively, while
+single-word names remain case-sensitive.
 
 ## 🛠️ How to run
 
-In the command line interface of the [EuroEval Python package](/python-package), run all
-math datasets with:
+In the command line interface of the [EuroEval Python package](/python-package), you can
+benchmark your favorite model on the math task like so:
 
 ```bash
 euroeval --model <model-id> --task math
