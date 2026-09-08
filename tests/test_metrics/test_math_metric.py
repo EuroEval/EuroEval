@@ -37,6 +37,41 @@ class TestBailOut:
         assert not _answer_matches(r"\boxed{\text{Ja}}", "Nej")
 
 
+class TestIdentities:
+    """Test that an answer meets an equivalent form of itself."""
+
+    def test_a_different_expression_does_not_match(self) -> None:
+        """Comparing values must not drift into comparing anything that looks alike."""
+        assert not _answer_matches("x + y", "y + z")
+        assert not _answer_matches(r"\sqrt{x^2}", "x")
+        assert not _answer_matches("(x + 1)^2", "x^2 + 2x + 1")
+
+    @pytest.mark.parametrize(
+        ("prediction", "reference"),
+        [("x + y", "y + x"), (r"\boxed{x + y}", "y + x"), ("2*x", "x*2")],
+    )
+    def test_a_rearranged_expression_matches(
+        self, prediction: str, reference: str
+    ) -> None:
+        """Order carries no meaning in a sum or a product."""
+        assert _answer_matches(prediction, reference)
+
+
+class TestKnownDivergences:
+    """Test the answers given here that Inspect AI's ``math`` scorer does not give.
+
+    Each is a choice, recorded so that it cannot change by accident.
+    """
+
+    def test_a_boxed_word_meets_the_bare_word(self) -> None:
+        """A boxed answer saying the right thing is right, box and all."""
+        assert _answer_matches(r"\boxed{\text{Yes}}", "Yes")
+
+    def test_a_cancelled_ratio_meets_its_simplified_form(self) -> None:
+        """SymPy cancels as it builds; Inspect AI builds unevaluated and abstains."""
+        assert _answer_matches(r"\boxed{\frac{x^2 - 1}{x - 1}}", "x + 1")
+
+
 class TestLimits:
     """Test that a degenerate answer cannot make comparison run away."""
 
@@ -169,8 +204,16 @@ class TestSymbolicEquivalence:
         assert not _symbolically_equivalent(left, right)
 
 
-class TestWordsAreStillWords:
-    """Test that reading an answer as mathematics never overrides prose."""
+class TestWords:
+    """Test that words are scored as Inspect AI's ``math`` scorer scores them.
+
+    An answer which is not prose is read as a name, and names are case-sensitive, so
+    ``CO2`` does not meet ``co2`` and ``Ja`` does not meet ``ja``. An answer of two or
+    more words is prose, and prose is compared case-insensitively. This follows
+    Inspect AI rather than intuition, which would fold case everywhere: a benchmark
+    whose targets differ from its predictions only in case scores low here, and scores
+    just as low under Inspect AI.
+    """
 
     def test_a_sequence_is_not_an_arithmetic_operand(self) -> None:
         """Structured answers are compared as themselves, never added or powered."""
@@ -180,15 +223,26 @@ class TestWordsAreStillWords:
 
     @pytest.mark.parametrize(
         ("prediction", "reference"),
-        [("Ja", "ja"), ("CO2", "co2"), ("T-shirt", "t-shirt"), (r"\boxed{Ja}", "JA")],
+        [
+            ("Ja", "ja"),
+            ("ja", "JA"),
+            ("CO2", "co2"),
+            ("T-shirt", "t-shirt"),
+            (r"\boxed{Ja}", "JA"),
+        ],
     )
-    def test_case_folded_words_match(self, prediction: str, reference: str) -> None:
-        """Words that also parse as names or subtractions match on text.
+    def test_a_single_word_is_a_name_and_names_are_case_sensitive(
+        self, prediction: str, reference: str
+    ) -> None:
+        """One word reaches SymPy as a name, where capitalisation counts."""
+        assert not _answer_matches(prediction, reference)
 
-        A symbolic comparison would answer these -- `CO2` is a name and `T-shirt` is a
-        difference of names -- and would get them wrong, so a value carrying names is
-        referred back to text.
-        """
+    @pytest.mark.parametrize(
+        ("prediction", "reference"),
+        [("Ja er svaret", "ja er svaret"), ("Svaret er 42", "42")],
+    )
+    def test_prose_is_compared_as_text(self, prediction: str, reference: str) -> None:
+        """Several words are not a product of names, so they are compared as text."""
         assert _answer_matches(prediction, reference)
 
 

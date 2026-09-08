@@ -549,8 +549,12 @@ Plain numbers are compared exactly (a percentage counts as its value divided by
 benchmark answers use — fractions, roots, powers, products, `\pi` — into
 arithmetic and evaluates it with SymPy, which is already installed as a
 dependency of torch, so `\frac{1}{2}` and `0.5` are treated as equal, as are
-`2\pi` and `6.283185307179586`. Values that SymPy compares exactly, such as
-rationals and `\sqrt{2}`, are never compared approximately. This is a rewrite
+`2\pi` and `6.283185307179586`, and a rearranged expression meets itself, so
+`x + y` is equal to `y + x`. Values that SymPy compares exactly, such as
+rationals and `\sqrt{2}`, are never compared approximately. A one-word answer is
+read as a name rather than as text, which makes it case-sensitive, as Inspect AI
+reads it too; an answer of two or more words is text, and is compared
+case-insensitively. This is a rewrite
 rather than Inspect AI's full LaTeX grammar, so structure beyond it — matrices,
 integrals, piecewise braces — is compared as normalised text. Since the
 extraction relies on the boxed answer, a `math` configuration should include a

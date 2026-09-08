@@ -318,9 +318,10 @@ def _equivalent(left: str, right: str) -> bool:
     r"""Compare plain numbers exactly, then values, then normalised text.
 
     Plain numbers are compared without any mathematics, so every value is exact and
-    ``==`` is intentional. Values that look like mathematics are compared as values by
-    ``_symbolically_equivalent``, which is where ``\\frac{1}{2}`` meets ``0.5``; a
-    string it cannot translate is compared as text instead.
+    ``==`` is intentional. Everything else is compared as a value by
+    ``_symbolically_equivalent``, which is where ``\frac{1}{2}`` meets ``0.5`` and
+    ``x + y`` meets ``y + x``; a string it cannot translate, and an answer made of
+    several words, is compared as text instead.
 
     Returns:
         Whether the values are equivalent.
@@ -337,16 +338,10 @@ def _equivalent(left: str, right: str) -> bool:
         left_value = _percent_value(left_number)
         right_value = _percent_value(right_number)
         return left_value == right_value
-    if _has_math_syntax(left) or _has_math_syntax(right):
-        symbolic = _symbolically_equivalent(left, right)
-        if symbolic is not None:
-            return symbolic
+    symbolic = _symbolically_equivalent(left, right)
+    if symbolic is not None:
+        return symbolic
     return _normalize_text(left) == _normalize_text(right)
-
-
-def _has_math_syntax(text: str) -> bool:
-    """Return whether a candidate is worth evaluating as mathematics."""
-    return bool(re.search(r"\\[A-Za-z]|\d|[-+*/^=]", text))
 
 
 def _percent_value(number: tuple[decimal.Decimal, bool]) -> decimal.Decimal:
@@ -444,6 +439,26 @@ _TEXTISH = re.compile(r"\\(?:text|textrm|mathrm|mbox|mathsf|mathbb|mathcal)\s*")
 _PLAIN_IN_TEXT = re.compile(r"^[\d\s.,+\-*/=:%]+$")
 
 
+def _has_free_symbols(value: sympy.Expr) -> bool:
+    """Return whether a value names something rather than denoting a value."""
+    return bool(_unwrap(value).free_symbols)
+
+
+def _unwrap(expression: sympy.Expr) -> sympy.Expr:
+    """Reduce `x = 5` to the value it names, whichever side carries it.
+
+    Returns:
+        The expression, or the value an equality names.
+    """
+    if not isinstance(expression, sympy.Equality):
+        return expression
+    left_is_symbol = bool(expression.lhs.is_Symbol)
+    right_is_symbol = bool(expression.rhs.is_Symbol)
+    if right_is_symbol and not left_is_symbol:
+        return expression.lhs
+    return expression.rhs
+
+
 def _symbolically_equivalent(left: str, right: str) -> bool | None:
     """Compare two answers as mathematical values.
 
@@ -455,13 +470,14 @@ def _symbolically_equivalent(left: str, right: str) -> bool | None:
         Whether the two denote the same value, or None when either string is outside
         what this module can parse and the caller should compare them as text instead.
     """
+    if _looks_like_prose(left) or _looks_like_prose(right):
+        # An answer of several words is text rather than a product of names, and
+        # Inspect AI reads it that way too; anything else is committed to SymPy,
+        # including a name like `CO2`, which is where it scores `co2` as wrong.
+        return None
     left_value = _parse(left)
     right_value = _parse(right)
     if left_value is None or right_value is None:
-        return None
-    if any(_has_free_symbols(value) for value in (left_value, right_value)):
-        # `CO2` and `T-shirt` parse as names and differences of names, which say
-        # nothing about whether the answers mean the same; text comparison does.
         return None
     return _expressions_equivalent(left_value, right_value)
 
@@ -515,26 +531,6 @@ def _is_exact(expression: sympy.Expr) -> bool:
 def _is_numeric(expression: sympy.Expr) -> bool:
     """Return whether the expression is a number rather than a formula."""
     return isinstance(expression, sympy.Expr) and not expression.free_symbols
-
-
-def _unwrap(expression: sympy.Expr) -> sympy.Expr:
-    """Reduce `x = 5` to the value it names, whichever side carries it.
-
-    Returns:
-        The expression, or the value an equality names.
-    """
-    if not isinstance(expression, sympy.Equality):
-        return expression
-    left_is_symbol = bool(expression.lhs.is_Symbol)
-    right_is_symbol = bool(expression.rhs.is_Symbol)
-    if right_is_symbol and not left_is_symbol:
-        return expression.lhs
-    return expression.rhs
-
-
-def _has_free_symbols(value: sympy.Expr) -> bool:
-    """Return whether a value names something rather than denoting a value."""
-    return bool(_unwrap(value).free_symbols)
 
 
 def _parse(text: str) -> sympy.Expr | None:
