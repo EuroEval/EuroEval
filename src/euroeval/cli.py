@@ -44,8 +44,8 @@ from .languages import get_all_languages
     show_default=True,
     multiple=True,
     help="""The name of the benchmark dataset. Note that this option cannot be combined
-    with the `--task` option, as it fully specifies which datasets to benchmark. The
-    `--language` option can be used to narrow the selection down further.""",
+    with the `--task` or `--language` options, as it fully specifies which datasets,
+    configurations and splits to benchmark.""",
 )
 @click.option(
     "--finetuning-batch-size",
