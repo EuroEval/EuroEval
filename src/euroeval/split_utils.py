@@ -1,5 +1,7 @@
 """Utilities for detecting and mapping dataset splits."""
 
+import sys
+import typing as t
 from pathlib import Path
 
 from huggingface_hub import HfApi
@@ -8,7 +10,7 @@ from .caching_utils import cache_arguments
 
 
 def get_repo_splits(
-    hf_api: HfApi, dataset_id: str
+    hf_api: HfApi, dataset_id: str, config_name: str | None = None
 ) -> tuple[str | None, str | None, str | None]:
     """Return the (train, val, test) split names for a Hugging Face dataset repo.
 
@@ -17,12 +19,16 @@ def get_repo_splits(
             The Hugging Face API object.
         dataset_id:
             The ID of the dataset to get the split names for.
+        config_name (optional):
+            The name of the configuration to get the split names for.
 
     Returns:
         A 3-tuple (train_split, val_split, test_split) where each element is either
             the name of the matching split or None if no such split exists.
     """
-    splits = get_repo_split_names(hf_api=hf_api, dataset_id=dataset_id)
+    splits = get_repo_split_names(
+        hf_api=hf_api, dataset_id=dataset_id, config_name=config_name
+    )
     if splits is None:
         return None, None, None
     return (
@@ -49,8 +55,9 @@ def find_split(splits: list[str], keyword: str) -> str | None:
     return candidates[0] if candidates else None
 
 
-@cache_arguments("dataset_id")
-def get_repo_split_names(hf_api: HfApi, dataset_id: str) -> list[str] | None:
+def get_repo_split_names(
+    hf_api: HfApi, dataset_id: str, config_name: str | None = None
+) -> list[str] | None:
     """Extract split names from a Hugging Face dataset repo.
 
     Args:
@@ -58,32 +65,89 @@ def get_repo_split_names(hf_api: HfApi, dataset_id: str) -> list[str] | None:
             The Hugging Face API object.
         dataset_id:
             The ID of the dataset to get the split names for.
+        config_name (optional):
+            The name of the configuration to get the split names for. Repositories
+            with multiple configurations can have different splits in each of them,
+            so the information is filtered by configuration when it is known.
 
     Returns:
         A list of split names, or None if the split names are not available.
     """
-    dataset_info = hf_api.dataset_info(repo_id=dataset_id)
+    card_info, parquet_file_names = _get_repo_split_info(
+        hf_api=hf_api, dataset_id=dataset_id
+    )
 
-    if (
-        dataset_info.card_data is not None
-        and hasattr(dataset_info.card_data, "dataset_info")
-        and "splits" in dataset_info.card_data.dataset_info
-    ):
-        return [
-            split["name"]
-            for split in dataset_info.card_data.dataset_info["splits"]  # ty: ignore[not-subscriptable]
-        ]
+    if card_info is not None:
+        # Cards of repositories with multiple configurations are keyed by
+        # configuration name, while single-configuration cards are not. Newer
+        # Hub cards use a list of named configuration entries instead.
+        if isinstance(card_info, list) and config_name is not None:
+            card_info = next(
+                (
+                    entry
+                    for entry in card_info
+                    if isinstance(entry, dict)
+                    and entry.get("config_name") == config_name
+                ),
+                card_info,
+            )
+        elif isinstance(card_info, dict) and config_name is not None:
+            card_info = card_info.get(config_name, card_info)
+        if isinstance(card_info, dict) and "splits" in card_info:
+            return [
+                split["name"]
+                for split in card_info["splits"]  # ty: ignore[not-subscriptable]
+            ]
 
     # If we don't have access to the split names directly, we look at the data files,
-    # since they tend to be of the form "data/test-00000-of-00001.parquet"
-    elif dataset_info.siblings is not None:
-        parquet_file_names = [
+    # since they tend to be of the form "data/test-00000-of-00001.parquet", or
+    # "<config>/test-00000-of-00001.parquet" for multi-configuration repositories
+    if config_name is not None:
+        config_file_names = [
+            fname
+            for fname in parquet_file_names
+            if Path(fname).parent.name == config_name
+        ]
+        # Only trust the filtering when the repository actually stores its files per
+        # configuration, as the split names would otherwise be lost entirely
+        if config_file_names:
+            parquet_file_names = config_file_names
+
+    split_names = [Path(fname).stem.split("-")[0] for fname in parquet_file_names]
+    # A multi-configuration repository has the same split names several times
+    return list(dict.fromkeys(split_names)) if split_names else None
+
+
+@cache_arguments(
+    "dataset_id", disable_condition=lambda: hasattr(sys, "_called_from_test")
+)
+def _get_repo_split_info(hf_api: HfApi, dataset_id: str) -> tuple[t.Any, list[str]]:
+    """Look up the raw split information of a Hugging Face dataset repo.
+
+    Args:
+        hf_api:
+            The Hugging Face API object.
+        dataset_id:
+            The ID of the dataset to look up.
+
+    Returns:
+        A pair with the `dataset_info` field of the dataset card, if any, and the
+        names of the Parquet files in the repository.
+    """
+    dataset_info = hf_api.dataset_info(repo_id=dataset_id)
+    card_info = (
+        dataset_info.card_data.dataset_info
+        if dataset_info.card_data is not None
+        and hasattr(dataset_info.card_data, "dataset_info")
+        else None
+    )
+    parquet_file_names = (
+        [
             sibling.rfilename
             for sibling in dataset_info.siblings
             if sibling.rfilename.endswith(".parquet")
         ]
-        split_names = [Path(fname).stem.split("-")[0] for fname in parquet_file_names]
-        if split_names:
-            return split_names
-
-    return None
+        if dataset_info.siblings is not None
+        else []
+    )
+    return card_info, parquet_file_names

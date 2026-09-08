@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..custom_dataset_configs import (
     load_custom_datasets_module,
-    try_get_dataset_config_from_repo,
+    try_get_dataset_configs_from_repo,
 )
 from ..data_models import DatasetConfig
 from ..languages import get_all_languages
@@ -87,27 +87,25 @@ def get_all_dataset_configs(
     for dataset_id in dataset_ids:
         if dataset_id in builtin_dataset_names:
             continue
-        dataset_config_or_none = try_get_dataset_config_from_repo(
+        dataset_configs = try_get_dataset_configs_from_repo(
             dataset_id=dataset_id,
             api_key=api_key,
             cache_dir=cache_dir,
             trust_remote_code=trust_remote_code,
             run_with_cli=run_with_cli,
         )
-        if dataset_config_or_none is not None:
-            globals_dict[dataset_id] = dataset_config_or_none
-            msg = f"Loaded external dataset {dataset_id}"
+        if dataset_configs is None:
+            continue
+        for dataset_config in dataset_configs:
+            globals_dict[dataset_config.name] = dataset_config
+            msg = f"Loaded external dataset {dataset_config.name}"
             split_strings = []
-            if dataset_config_or_none.train_split is not None:
-                split_strings.append(
-                    f"train split '{dataset_config_or_none.train_split}'"
-                )
-            if dataset_config_or_none.val_split is not None:
-                split_strings.append(f"val split '{dataset_config_or_none.val_split}'")
-            if dataset_config_or_none.test_split is not None:
-                split_strings.append(
-                    f"test split '{dataset_config_or_none.test_split}'"
-                )
+            if dataset_config.train_split is not None:
+                split_strings.append(f"train split '{dataset_config.train_split}'")
+            if dataset_config.val_split is not None:
+                split_strings.append(f"val split '{dataset_config.val_split}'")
+            if dataset_config.test_split is not None:
+                split_strings.append(f"test split '{dataset_config.test_split}'")
             if len(split_strings) > 1:
                 msg += f" with {', '.join(split_strings[:-1])} and {split_strings[-1]}"
             elif split_strings:

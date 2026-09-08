@@ -1,5 +1,6 @@
 """Tests for the `benchmark_config_factory` module."""
 
+import copy
 import os
 from pathlib import Path
 from typing import Generator
@@ -9,13 +10,17 @@ import torch
 
 from euroeval import Benchmarker
 from euroeval.benchmark_config_factory import (
+    _resolve_dataset_id,
     prepare_dataset_configs,
     prepare_device,
     prepare_languages,
 )
 from euroeval.data_models import DatasetConfig, Language
 from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.dataset_configs.danish import DALA_CONFIG, MULTI_WIKI_QA_DA_CONFIG
+from euroeval.dataset_configs.danish import (  # noqa: E501
+    DALA_CONFIG,
+    MULTI_WIKI_QA_DA_CONFIG,
+)
 from euroeval.enums import Device
 from euroeval.languages import (
     DANISH,
@@ -228,6 +233,30 @@ def test_prepare_dataset_configs_invalid_task() -> None:
     assert exc_info.value.code == 1
 
 
+def test_prepare_dataset_configs_language_filters_explicit_dataset() -> None:
+    """Test that a language filters an explicitly requested dataset.
+
+    Specifying a dataset does not bypass the language selection: a dataset is only
+    benchmarked if it covers one of the requested languages. This is how `--language`
+    narrows down the datasets expanded from a multi-language external dataset repo.
+    """
+
+    def prepare(languages: list[Language]) -> list[DatasetConfig]:
+        return prepare_dataset_configs(
+            task=None,
+            dataset=["dansk"],
+            languages=languages,
+            custom_datasets_file=Path("custom_datasets.py"),
+            api_key=None,
+            cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=False,
+            run_with_cli=True,
+        )
+
+    assert [dataset_config.name for dataset_config in prepare([DANISH])] == ["dansk"]
+    assert prepare([ENGLISH]) == []
+
+
 @pytest.mark.parametrize(
     argnames=["device", "expected_device"],
     argvalues=[
@@ -289,3 +318,73 @@ def test_prepare_languages(
     model_languages = sorted(model_languages, key=lambda x: x.code)
     expected_language = sorted(expected_language, key=lambda x: x.code)
     assert model_languages == expected_language
+
+
+def test_resolve_dataset_id_expands_external_subsets() -> None:
+    """Test that a repo or split request selects all of its registered subsets."""
+    configs = {}
+    for name in [
+        "dansk",
+        "repo::dan::test_original",
+        "repo::dan::test_synthetic",
+        "repo::deu::test_original",
+    ]:
+        dataset_config = copy.copy(DALA_CONFIG)
+        dataset_config.name = name
+        dataset_config.source = name
+        configs[name] = dataset_config
+
+    def names(dataset_id: str) -> list[str]:
+        return [
+            dataset_config.name
+            for dataset_config in _resolve_dataset_id(
+                dataset_id=dataset_id, all_dataset_configs=configs
+            )
+        ]
+
+    assert names("dansk") == ["dansk"]
+    assert names("repo") == [
+        "repo::dan::test_original",
+        "repo::dan::test_synthetic",
+        "repo::deu::test_original",
+    ]
+    assert names("repo::test_original") == [
+        "repo::dan::test_original",
+        "repo::deu::test_original",
+    ]
+    assert names("repo::dan::test_synthetic") == ["repo::dan::test_synthetic"]
+    with pytest.raises(KeyError):
+        _resolve_dataset_id(dataset_id="repo::swe", all_dataset_configs=configs)
+
+
+def test_resolve_dataset_id_handles_canonical_expanded_identities() -> None:
+    """Repository and split expansion must understand exceptional identities."""
+    configs = {}
+    for name in [
+        "repo::dan::test",
+        "repo::__no_config__::test::__task_1__",
+        "repo::dan::test::__task_2__",
+    ]:
+        dataset_config = copy.copy(DALA_CONFIG)
+        dataset_config.name = name
+        dataset_config.source = "repo::dan"
+        configs[name] = dataset_config
+
+    assert [
+        config.name
+        for config in _resolve_dataset_id(
+            dataset_id="repo", all_dataset_configs=configs
+        )
+    ] == list(configs)
+    assert [
+        config.name
+        for config in _resolve_dataset_id(
+            dataset_id="repo::test", all_dataset_configs=configs
+        )
+    ] == list(configs)
+    assert [
+        config.name
+        for config in _resolve_dataset_id(
+            dataset_id="repo::dan::test", all_dataset_configs=configs
+        )
+    ] == ["repo::dan::test", "repo::dan::test::__task_2__"]

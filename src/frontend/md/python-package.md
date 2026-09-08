@@ -458,6 +458,37 @@ The value of `task` must be one of the task names used in EuroEval
 (e.g. `classification`, `sentiment-classification`,
 `named-entity-recognition`, `multiple-choice`, etc.).  `languages` is a list of
 [ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) language codes.
+When an Inspect AI task entry has its own `languages` key, that per-entry value takes
+precedence over the top-level key and Hugging Face card metadata.
+
+A repository whose `eval.yaml` declares several `config`urations is benchmarked as one
+dataset per task entry, so `--dataset repo` runs all of them. The `::` suffix selects a
+single `split` across all the configurations, and one subset is named by its
+configuration and split together:
+
+```bash
+# All configurations and splits, one dataset per task entry
+euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic
+
+# One configuration and split, named as the subset
+euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic::dan::test_original
+
+# The original split of every configuration
+euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic::test_original
+```
+
+Each resulting dataset is named `<repo>::<config>::<split>`, which is also the name
+recorded with the result, so it can be copied straight back into `--dataset` to rerun
+that one entry. A task entry's `config` and `split` identify the Hugging Face subset and
+split; plain `field_spec`-only YAML files declare no subsets and take no selector. An
+unknown split is rejected with the available ones listed, and naming a configuration
+where a split belongs lists the subsets it stands for:
+
+```text
+Unknown split 'dan' for dataset '...::dan'. Available splits are: ['test_original',
+'test_synthetic']. 'dan' is a configuration, not a split; name one of its subsets
+instead: ...::dan::test_original, ...::dan::test_synthetic.
+```
 
 All other `DatasetConfig` arguments are also supported:
 
@@ -492,10 +523,17 @@ infer them automatically when they are absent:
 
 - **`task`** is inferred from the Inspect AI `tasks` block: a solver with
   `name: multiple_choice` **or** a `field_spec.choices` entry both map to the
-  `multiple-choice` task.
-- **`languages`** are read from the Hugging Face Hub repository metadata
-  (the `language` field in the dataset card).  If the language cannot be determined,
-  EuroEval defaults to English and logs a warning.
+  `multiple-choice` task, while a scorer with `name: math` maps to the `math` task.
+- **`instruction_prompt`** is inferred from a `prompt_template` solver's template,
+  replacing Inspect AI's `{prompt}` placeholder with EuroEval's `{text}` placeholder.
+  This only applies to free-form generation tasks; tasks scored from logprobs (such
+  as multiple-choice) keep EuroEval's own prompts. A template using placeholders
+  other than `{prompt}` cannot be expressed and is ignored.
+- **`languages`** are read from the configuration name when it is a language code,
+  and otherwise from the Hugging Face Hub repository metadata (the `language` field in
+  the dataset card).  Languages that EuroEval does not support are skipped; if the
+  configuration would then have no language at all, or no language metadata can be
+  found, EuroEval defaults to English and logs a warning.
 
 This means a standard Inspect AI `eval.yaml` with no EuroEval-specific keys works
 out of the box:

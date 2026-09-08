@@ -19,6 +19,11 @@ if t.TYPE_CHECKING:
     from .data_models import Language
 
 
+_NO_CONFIG_SELECTOR = "__no_config__"
+_NO_SPLIT_SELECTOR = "__no_split__"
+_TASK_SELECTOR_PREFIX = "__task_"
+
+
 def build_benchmark_config(
     benchmark_config_params: BenchmarkConfigParams,
 ) -> BenchmarkConfig:
@@ -205,12 +210,22 @@ def _get_datasets_list(
         if dataset is None:
             return all_official_dataset_configs
         elif isinstance(dataset, str):
-            return [all_dataset_configs[dataset]]
+            return _resolve_dataset_id(
+                dataset_id=dataset, all_dataset_configs=all_dataset_configs
+            )
         elif isinstance(dataset, DatasetConfig):
             return [dataset]
         else:
             return [
-                all_dataset_configs[d] if isinstance(d, str) else d for d in dataset
+                cfg
+                for d in dataset
+                for cfg in (
+                    [d]
+                    if isinstance(d, DatasetConfig)
+                    else _resolve_dataset_id(
+                        dataset_id=d, all_dataset_configs=all_dataset_configs
+                    )
+                )
             ]
     except KeyError as e:
         _handle_dataset_lookup_error(
@@ -241,6 +256,85 @@ def _handle_dataset_lookup_error(
         msg += f" Maybe you meant to use {closest_match!r}?"
     log(msg, level=logging.ERROR)
     sys.exit(1)
+
+
+def _resolve_dataset_id(
+    dataset_id: str, all_dataset_configs: dict[str, DatasetConfig]
+) -> list[DatasetConfig]:
+    """Look up a requested dataset, expanding the subsets of an external repo.
+
+    An external dataset repository registers one config per task entry in its
+    `eval.yaml`, named `<repo>::<config>::<split>`. Requesting the repository itself
+    selects all the configs registered below it, and requesting a split selects that
+    split of every configuration, so that `--language` can narrow the expansion down
+    further.
+
+    Args:
+        dataset_id:
+            The requested dataset ID, optionally suffixed by a split.
+        all_dataset_configs:
+            Mapping of dataset IDs to DatasetConfig objects.
+
+    Returns:
+        The dataset configs referred to by `dataset_id`.
+
+    Raises:
+        KeyError:
+            If no dataset matches the request.
+    """
+    exact_match = all_dataset_configs.get(dataset_id)
+    if exact_match is not None:
+        identity = _dataset_identity_components(name=dataset_id)
+        matching_identities = [
+            name
+            for name in all_dataset_configs
+            if _dataset_identity_components(name=name) == identity
+        ]
+        if identity is None or len(matching_identities) == 1:
+            return [exact_match]
+
+    requested_parts = dataset_id.split("::")
+    repo_id = requested_parts[0]
+    requested_config = requested_split = None
+    if len(requested_parts) == 2:
+        requested_split = requested_parts[1]
+    elif len(requested_parts) == 3:
+        requested_config, requested_split = requested_parts[1:]
+
+    subsets = [
+        dataset_config
+        for name, dataset_config in all_dataset_configs.items()
+        if (identity := _dataset_identity_components(name=name)) is not None
+        and identity[0] == repo_id
+        and (requested_config is None or identity[1] == requested_config)
+        and (requested_split is None or identity[2] == requested_split)
+    ]
+    if not subsets:
+        raise KeyError(dataset_id)
+    return subsets
+
+
+def _dataset_identity_components(
+    name: str,
+) -> tuple[str, str | None, str | None] | None:
+    """Return repository, config and split components from an expanded identity."""
+    parts = name.split("::")
+    if len(parts) == 1:
+        return parts[0], None, None
+    if len(parts) == 3:
+        return parts[0], parts[1], parts[2]
+    if (
+        len(parts) == 4
+        and parts[1]
+        and parts[2]
+        and parts[3].startswith(_TASK_SELECTOR_PREFIX)
+    ):
+        return (
+            parts[0],
+            None if parts[1] == _NO_CONFIG_SELECTOR else parts[1],
+            None if parts[2] == _NO_SPLIT_SELECTOR else parts[2],
+        )
+    return None
 
 
 def _get_tasks_list(

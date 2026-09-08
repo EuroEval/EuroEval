@@ -9,6 +9,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Datasets from Hugging Face repositories with an `eval.yaml` declaring several
+  configurations now expand into one benchmark per task entry, so `--dataset repo`
+  evaluates all of them instead of loading a single one, `--dataset repo::split`
+  narrows the run down to one split across all configurations, and
+  `--dataset repo::config::split` names a single subset. Configurations are no longer
+  selected with `--language`, which now conflicts with `--dataset` in the same way
+  `--task` does.
 - Added model release dates to benchmark result metadata for Hugging Face Hub and API
   models.
 - Added the unofficial Belarusian Word-in-Context dataset `bewic`, based on the BeWiC
@@ -18,6 +25,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added five unofficial Slovak datasets derived from SKLEP: SKLEP NLI, SKLEP RTE,
   SK-QuAD, WikiGoldSK and Reviews3.
 - Added the unofficial Belarusian BeRTE-WD binary natural language inference dataset.
+- Added support for Inspect AI `eval.yaml` files using the `math` scorer, which are
+  now loaded as the `math` task with exact-match scoring of the `\boxed{...}` answer.
+  Answers are compared as mathematical values, so `\frac{1}{2}` matches `0.5` and `2\pi`
+  matches `6.283185307179586`; this evaluates with SymPy, which is declared as a
+  dependency but is already installed through torch. Templates from `prompt_template`
+  solvers are used as EuroEval instruction prompts.
+  An answer boxed as an equation, such as `\boxed{x = 5}`, scores the value it names.
 
 ### Changed
 
@@ -27,6 +41,18 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Restored backwards-compatible `Language(code, name)` construction while retaining
+  ISO 639-3 and optional ISO 639-1 language codes.
+- Fixed expanded `eval.yaml` task identities so entries without declared splits,
+  mixed configured and configless entries, and duplicate config/split entries remain
+  selectable and round-trip through `--dataset`.
+- Language-shaped configurations are now recognised independently of EuroEval support,
+  so unsupported language entries are skipped rather than attributed to repository
+  languages.
+- Fixed subset selectors being silently discarded when a dataset had only an
+  `euroeval_config.py`; subset selection now requires an `eval.yaml`.
+- Fixed malformed `eval.yaml` files being rejected without the YAML parse error being
+  logged.
 - If errors occured during evaluations that required zero-shot or test-set splits, then
   subsequent evaluations would also require that rather than reverting to the default
   few-shot and validation splits. This has been fixed.
@@ -43,8 +69,15 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `B-PER`).
 - Fixed `#no-thinking` LiteLLM evaluations when providers reject a zero thinking budget
   and require an explicit `thinking.type` of `disabled`.
+- An unsupported language code in the language metadata of a Hugging Face dataset
+  repository, such as `zh`, no longer blocks the rest of its `eval.yaml` from loading.
 - The logical-reasoning task is now restricted to instruction-tuned and
   reasoning models, excluding base models.
+- Combining `--dataset` with `--task` or `--language` now results in a CLI usage error
+  rather than an unhandled `ValueError` traceback. The options are mutually exclusive,
+  as `--dataset` fully specifies which datasets, configurations and splits to benchmark.
+- Math scoring now safely bounds chained assignments and handles decimal overflow in
+  adversarial predictions.
 
 ## [v18.0.0] - 2026-08-14
 

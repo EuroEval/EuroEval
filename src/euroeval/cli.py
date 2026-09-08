@@ -43,8 +43,9 @@ from .languages import get_all_languages
     default=None,
     show_default=True,
     multiple=True,
-    help="""The name of the benchmark dataset. We recommend to use the `task` and
-    `language` options instead of this option.""",
+    help="""The name of the benchmark dataset. Note that this option cannot be combined
+    with the `--task` or `--language` options, as it fully specifies which datasets,
+    configurations and splits to benchmark.""",
 )
 @click.option(
     "--finetuning-batch-size",
@@ -272,7 +273,23 @@ def benchmark(
     max_context_length: int | None,
     vocabulary_size: int | None,
 ) -> None:
-    """Benchmark pretrained language models on language tasks."""
+    """Benchmark pretrained language models on language tasks.
+
+    Raises:
+        click.UsageError:
+            If `--dataset` is combined with `--task` or with `--language`, as
+            `--dataset` fully specifies which datasets, configurations and splits to
+            benchmark.
+    """
+    if dataset and task:
+        raise click.UsageError("Only one of `--task` and `--dataset` can be specified.")
+    if dataset and list(language) != ["all"]:
+        raise click.UsageError(
+            "Only one of `--language` and `--dataset` can be specified, as a dataset "
+            "ID already selects the configurations and splits to benchmark; name a "
+            "subset of the dataset to narrow the run."
+        )
+
     Benchmarker(
         language=list(language),
         task=None if len(task) == 0 else list(task),

@@ -453,17 +453,23 @@ def generate(
     # MCF runs use the legacy unsuffixed cache path for backward compatibility.
     cache_suffix = "-bpc" if benchmark_config.use_bits_per_character else ""
     if hasattr(sys, "_called_from_test"):
-        cache_name = f"{dataset_config.name}{cache_suffix}-model-outputs-test.json"
+        cache_name = (
+            f"{dataset_config.name.replace('::', '--')}{cache_suffix}"
+            "-model-outputs-test.json"
+        )
         (model_cache_dir / cache_name).unlink(missing_ok=True)
     elif benchmark_config.debug:
         cache_name = (
             f"{model_config.model_id}"
             + (f"-{model_config.param}" if model_config.param else "")
-            + f"-{dataset_config.name}{cache_suffix}"
+            + f"-{dataset_config.name.replace('::', '--')}{cache_suffix}"
             + "-model-outputs.json"
         )
     else:
-        cache_name = f"{dataset_config.name}{cache_suffix}-model-outputs.json"
+        cache_name = (
+            f"{dataset_config.name.replace('::', '--')}{cache_suffix}"
+            "-model-outputs.json"
+        )
 
     cache = ModelCache(
         model_cache_dir=model_cache_dir,

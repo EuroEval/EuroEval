@@ -12,6 +12,7 @@ maintainers = [
 requires-python = ">=3.12,<4.0"
 dependencies = [
     "torch>=2.6.0",
+    "sympy>=1.13",  # For scoring math answers; already installed as a dependency of torch
     "pandas>=2.2.0",
     "numpy>=2.0.0",
     "mistral-common[soundfile]",

@@ -50,9 +50,10 @@ this category are:
 7. [Bias Detection](/tasks/bias-detection)
 8. [Hallucination Detection](/tasks/hallucination-detection)
 9. [Logical Reasoning](/tasks/logical-reasoning)
-10. [Grammatical Error Correction](/tasks/grammatical-error-correction)
-11. [Tool Calling](/tasks/tool-calling)
-12. [Translation](/tasks/translation)
+10. [Math](/tasks/math)
+11. [Grammatical Error Correction](/tasks/grammatical-error-correction)
+12. [Tool Calling](/tasks/tool-calling)
+13. [Translation](/tasks/translation)
 
 ### Other
 
