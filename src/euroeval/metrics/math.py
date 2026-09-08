@@ -186,10 +186,19 @@ def _strip_delimiters(text: str) -> str:
     text = re.sub(r"(?:\\[,;:]|\\quad|\\qquad|\\;|\\,)\s*$", "", text)
     text = text.rstrip(" .,;:")
     # A boxed equation naming the answer, such as `x = 5`, is the value it names, as
-    # Inspect AI's symbolic comparison also reduces it to that
-    assignment = _ASSIGNMENT.match(text)
-    if assignment is not None and _number_value(assignment.group("value")) is not None:
-        text = assignment.group("value").strip()
+    # Inspect AI's symbolic comparison also reduces it to that. Keep this iterative and
+    # bounded: checking each assignment through `_number_value` would recurse back here.
+    candidate = text
+    for _ in range(_MAX_ASSIGNMENTS):
+        assignment = _ASSIGNMENT.match(candidate)
+        if assignment is None:
+            break
+        candidate = assignment.group("value").strip()
+        if _ASSIGNMENT.match(candidate) is not None:
+            continue
+        if _number_value(candidate) is not None:
+            text = candidate
+        break
     return text
 
 
@@ -218,7 +227,7 @@ def _number_value(text: str) -> tuple[decimal.Decimal, bool] | None:
         return None
     try:
         return decimal.Decimal(normalised), percent
-    except decimal.InvalidOperation:
+    except decimal.DecimalException:
         return None
 
 
@@ -337,27 +346,35 @@ def _equivalent(left: str, right: str) -> bool:
     if left_number is not None and right_number is not None:
         left_value = _percent_value(left_number)
         right_value = _percent_value(right_number)
-        return left_value == right_value
+        return (
+            left_value is not None
+            and right_value is not None
+            and left_value == right_value
+        )
     symbolic = _symbolically_equivalent(left, right)
     if symbolic is not None:
         return symbolic
     return _normalize_text(left) == _normalize_text(right)
 
 
-def _percent_value(number: tuple[decimal.Decimal, bool]) -> decimal.Decimal:
+def _percent_value(number: tuple[decimal.Decimal, bool]) -> decimal.Decimal | None:
     """Return the value a parsed number denotes, dividing a percentage by 100.
 
     Returns:
-        The exact value, with no rounding at any length of digits.
+        The exact value, with no rounding at any length of digits, or None when the
+        decimal context cannot represent the result.
     """
     value, percent = number
     if not percent:
         return value
-    with decimal.localcontext() as context:
-        # Dividing would round at the context's 28 digits; widening it to the digits in
-        # hand keeps 99...9% distinct from its nearest neighbour.
-        context.prec = len(value.as_tuple().digits) + 2
-        return value.scaleb(-2)
+    try:
+        with decimal.localcontext() as context:
+            # Dividing would round at the context's 28 digits; widening it to the digits
+            # in hand keeps 99...9% distinct from its nearest neighbour.
+            context.prec = len(value.as_tuple().digits) + 2
+            return value.scaleb(-2)
+    except decimal.DecimalException:
+        return None
 
 
 def _looks_like_prose(candidate: str) -> bool:
@@ -405,6 +422,8 @@ _MAX_SYMBOLS = 64
 _MAX_POWER_EXPONENT = 512
 
 _MAX_RECURSION = 16
+
+_MAX_ASSIGNMENTS = 64
 
 
 _GROUPED_NUMBER = re.compile(r"[-+]?\d{1,3}(?:,\d{3})+(?:\.\d+)?(?:[eE][-+]?\d+)?")
