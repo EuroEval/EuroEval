@@ -1649,29 +1649,6 @@ class TestSubsetSelection:
         assert "could not be determined" in caplog.text
         assert "does not support" not in caplog.text
 
-    def test_entries_without_configs_keep_legacy_behaviour(self) -> None:
-        """Do not impose subset selection on legacy task entries."""
-        assert select_inspect_ai_tasks(
-            raw={"tasks": [{"split": "test"}, {"split": "validation"}]},
-            subset_split=None,
-            dataset_id="repo",
-        ) == [(0, None, "test")]
-
-    def test_entry_languages_override_top_level_and_fallback(
-        self, tmp_path: Path
-    ) -> None:
-        """Prefer languages declared by the selected task entry."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            "task: classification\nlanguages: [en]\nfallback_language_codes: [en]\n"
-            "tasks:\n  - config: dan\n    languages: [da]\n"
-        )
-        config = load_dataset_config_from_yaml(
-            yaml_file, fallback_language_codes=["sv"]
-        )
-        assert config is not None
-        assert config.languages[0].code == "da"
-
     def test_config_without_split_has_a_round_trippable_identity(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -1697,40 +1674,6 @@ class TestSubsetSelection:
         )
         assert round_tripped is not None
         assert [config.name for config in round_tripped] == [configs[0].name]
-
-    def test_mixed_configured_and_configless_entries_have_distinct_identities(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """A configless entry must not occupy the repository's expansion key."""
-        yaml_text = (
-            "task: classification\ntasks:\n"
-            "  - config: dan\n    split: test\n"
-            "  - split: test\n"
-        )
-        configs = self.load_with_fake_hub(
-            tmp_path=tmp_path,
-            monkeypatch=monkeypatch,
-            yaml_text=yaml_text,
-            dataset_id="repo",
-            card_languages=["da"],
-        )
-        assert configs is not None
-        assert [config.name for config in configs] == [
-            "repo::dan::test",
-            "repo::__no_config__::test::__task_1__",
-        ]
-        assert all(config.name != "repo" for config in configs)
-
-        for config in configs:
-            round_tripped = self.load_with_fake_hub(
-                tmp_path=tmp_path,
-                monkeypatch=monkeypatch,
-                yaml_text=yaml_text,
-                dataset_id=config.name,
-                card_languages=["da"],
-            )
-            assert round_tripped is not None
-            assert [item.name for item in round_tripped] == [config.name]
 
     def test_duplicate_config_and_split_entries_get_unique_identities(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -1763,6 +1706,29 @@ class TestSubsetSelection:
             )
             assert round_tripped is not None
             assert [item.name for item in round_tripped] == [config.name]
+
+    def test_entries_without_configs_keep_legacy_behaviour(self) -> None:
+        """Do not impose subset selection on legacy task entries."""
+        assert select_inspect_ai_tasks(
+            raw={"tasks": [{"split": "test"}, {"split": "validation"}]},
+            subset_split=None,
+            dataset_id="repo",
+        ) == [(0, None, "test")]
+
+    def test_entry_languages_override_top_level_and_fallback(
+        self, tmp_path: Path
+    ) -> None:
+        """Prefer languages declared by the selected task entry."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            "task: classification\nlanguages: [en]\nfallback_language_codes: [en]\n"
+            "tasks:\n  - config: dan\n    languages: [da]\n"
+        )
+        config = load_dataset_config_from_yaml(
+            yaml_file, fallback_language_codes=["sv"]
+        )
+        assert config is not None
+        assert config.languages[0].code == "da"
 
     def test_expanded_configs_are_named_by_their_selector(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -1821,6 +1787,40 @@ class TestSubsetSelection:
                 is None
             )
         assert "Invalid dataset selector" in caplog.text
+
+    def test_mixed_configured_and_configless_entries_have_distinct_identities(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A configless entry must not occupy the repository's expansion key."""
+        yaml_text = (
+            "task: classification\ntasks:\n"
+            "  - config: dan\n    split: test\n"
+            "  - split: test\n"
+        )
+        configs = self.load_with_fake_hub(
+            tmp_path=tmp_path,
+            monkeypatch=monkeypatch,
+            yaml_text=yaml_text,
+            dataset_id="repo",
+            card_languages=["da"],
+        )
+        assert configs is not None
+        assert [config.name for config in configs] == [
+            "repo::dan::test",
+            "repo::__no_config__::test::__task_1__",
+        ]
+        assert all(config.name != "repo" for config in configs)
+
+        for config in configs:
+            round_tripped = self.load_with_fake_hub(
+                tmp_path=tmp_path,
+                monkeypatch=monkeypatch,
+                yaml_text=yaml_text,
+                dataset_id=config.name,
+                card_languages=["da"],
+            )
+            assert round_tripped is not None
+            assert [item.name for item in round_tripped] == [config.name]
 
     def test_multiple_configs_expand_to_all_entries(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture

@@ -299,12 +299,6 @@ def test_metric_mean_and_empty_input() -> None:
     assert _score([], []) is None
 
 
-@pytest.mark.parametrize("prediction", ["x=" * 400 + "5", "1e999999999%"])
-def test_metric_scores_adversarial_predictions(prediction: str) -> None:
-    """Adversarial decimal and assignment inputs still produce a score."""
-    assert isinstance(_score([prediction], ["5"]), float)
-
-
 def _score(predictions: list[str], references: list[str]) -> float | None:
     """Call the metric with unused interface arguments set to None.
 
@@ -318,3 +312,9 @@ def _score(predictions: list[str], references: list[str]) -> float | None:
         dataset_config=None,  # ty: ignore[invalid-argument-type]
         benchmark_config=None,  # ty: ignore[invalid-argument-type]
     )
+
+
+@pytest.mark.parametrize("prediction", ["x=" * 400 + "5", "1e999999999%"])
+def test_metric_scores_adversarial_predictions(prediction: str) -> None:
+    """Adversarial decimal and assignment inputs still produce a score."""
+    assert isinstance(_score([prediction], ["5"]), float)

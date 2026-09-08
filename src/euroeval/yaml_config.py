@@ -26,6 +26,18 @@ _NO_SPLIT_SELECTOR = "__no_split__"
 _TASK_SELECTOR_PREFIX = "__task_"
 
 
+def _parse_task_selector_index(token: str) -> int | None:
+    """Decode a task index from the reserved selector syntax.
+
+    Returns:
+        The task index, or None when the token is not valid.
+    """
+    if not token.startswith(_TASK_SELECTOR_PREFIX) or not token.endswith("__"):
+        return None
+    value = token[len(_TASK_SELECTOR_PREFIX) : -2]
+    return int(value) if value.isdecimal() else None
+
+
 def load_yaml_config(
     hf_api: HfApi, dataset_id: str, cache_dir: Path
 ) -> list[DatasetConfig] | None:
@@ -250,18 +262,6 @@ def _task_selector_token(task_index: int) -> str:
         The encoded task index.
     """
     return f"{_TASK_SELECTOR_PREFIX}{task_index}__"
-
-
-def _parse_task_selector_index(token: str) -> int | None:
-    """Decode a task index from the reserved selector syntax.
-
-    Returns:
-        The task index, or None when the token is not valid.
-    """
-    if not token.startswith(_TASK_SELECTOR_PREFIX) or not token.endswith("__"):
-        return None
-    value = token[len(_TASK_SELECTOR_PREFIX) : -2]
-    return int(value) if value.isdecimal() else None
 
 
 def load_dataset_config_from_yaml(
