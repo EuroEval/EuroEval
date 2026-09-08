@@ -69,6 +69,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   unhandled `ValueError` traceback. The two options are mutually exclusive, as
   `--dataset` fully specifies which datasets to benchmark; `--language` can still be
   used to narrow the selected datasets down further.
+- Math scoring now safely bounds chained assignments and handles decimal overflow in
+  adversarial predictions.
 
 ## [v18.0.0] - 2026-08-14
 
