@@ -72,6 +72,7 @@ sections:
       - { path: tasks/knowledge.md, title: Knowledge }
       - { path: tasks/linguistic-acceptability.md, title: Linguistic Acceptability }
       - { path: tasks/logical-reasoning.md, title: Logical Reasoning }
+      - { path: tasks/math.md, title: Math }
       - { path: tasks/named-entity-recognition.md, title: Named Entity Recognition }
       - { path: tasks/natural-language-inference.md, title: Natural Language Inference }
       - { path: tasks/reading-comprehension.md, title: Reading Comprehension }
