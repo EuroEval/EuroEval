@@ -58,11 +58,17 @@ ac81abca3ab6  # scripts/dataset_creation/create_qnli.py
 4af81a865fac  # scripts/dataset_creation/create_icelandic_knowledge.py, scripts/dataset_creation/create_swedish_facts.py, ...
 4d5548b3212c  # scripts/dataset_creation/create_cinexio.py, scripts/dataset_creation/create_lt_emotions.py, scripts/dataset_creation/create_rosent.py
 025661b0f86d  # scripts/dataset_creation/create_icelandic_error_corpus.py, scripts/dataset_creation/create_scala.py
+1e3fabb1f2f9  # scripts/dataset_creation/create_berte_wd.py, scripts/dataset_creation/create_reviews3.py, scripts/dataset_creation/create_sk_quad.py, scripts/dataset_creation/create_sklep_nli.py, scripts/dataset_creation/create_sklep_rte.py, scripts/dataset_creation/create_wikigoldsk.py
+775ce05823fa  # scripts/dataset_creation/create_fquad.py, scripts/dataset_creation/create_germanquad.py, scripts/dataset_creation/create_icelandic_knowledge.py, scripts/dataset_creation/create_norquad.py, scripts/dataset_creation/create_nqii.py, scripts/dataset_creation/create_poquad.py, scripts/dataset_creation/create_scandiqa.py, scripts/dataset_creation/create_squad_it.py, scripts/dataset_creation/create_squad_nl.py, scripts/dataset_creation/create_squad_nl_old.py, scripts/dataset_creation/create_squad.py
+c32b34485e48  # scripts/dataset_creation/create_bg_ner_bsnlp.py, scripts/dataset_creation/create_conll_en.py, scripts/dataset_creation/create_conll_es.py, scripts/dataset_creation/create_conll_nl.py, scripts/dataset_creation/create_germeval.py, scripts/dataset_creation/create_kpwr_ner.py, scripts/dataset_creation/create_ner_uk.py, scripts/dataset_creation/create_poner.py, scripts/dataset_creation/create_szeged_ner.py, scripts/dataset_creation/create_turku_ner_fi.py
+c65bd343eeac  # scripts/dataset_creation/create_icelandic_knowledge.py, scripts/dataset_creation/create_idioms_no.py, scripts/dataset_creation/create_multiloko.py, scripts/dataset_creation/create_multinrc.py, scripts/dataset_creation/create_swedish_facts.py
+d32d3549fd4b  # scripts/dataset_creation/create_sklep_nli.py, scripts/dataset_creation/create_sklep_rte.py
 
 
 # ---------- Post-refactor wrappers: cannot merge without breaking class interfaces ----------
 
 01d1b47f0981  # euroeval/benchmark_modules/hf.py, euroeval/benchmark_modules/vllm.py
+4e17ff012fb8  # euroeval/benchmark_modules/dummy.py, euroeval/benchmark_modules/fresh.py, euroeval/benchmark_modules/hf.py, euroeval/benchmark_modules/vllm.py
 06bf2c0c305a  # euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/litellm.py
 0964ffc78620  # euroeval/benchmark_modules/vllm.py, euroeval/benchmark_modules/litellm.py
 29a4b5a07f71  # euroeval/benchmark_modules/dummy.py, euroeval/benchmark_modules/litellm.py, euroeval/benchmark_modules/vllm.py
