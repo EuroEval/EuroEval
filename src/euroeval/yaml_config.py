@@ -21,6 +21,10 @@ from .metrics.llm_as_a_judge import create_model_graded_fact_metric
 from .split_utils import get_repo_splits
 from .tasks import REFERENCE_FREE_QA, get_all_tasks
 
+_NO_CONFIG_SELECTOR = "__no_config__"
+_NO_SPLIT_SELECTOR = "__no_split__"
+_TASK_SELECTOR_PREFIX = "__task_"
+
 
 def load_yaml_config(
     hf_api: HfApi, dataset_id: str, cache_dir: Path
@@ -177,12 +181,30 @@ def load_yaml_config(
             val_split = None
 
         if inspect_ai_config is None:
-            name = repo_id
+            has_config_entries = any(
+                isinstance(task, dict) and task.get("config")
+                for task in (tasks_raw if isinstance(tasks_raw, list) else [])
+            )
+            name = (
+                _expanded_task_identity(
+                    repo_id=repo_id,
+                    task_index=task_index,
+                    config="",
+                    split=inspect_ai_split,
+                    tasks=tasks_raw if isinstance(tasks_raw, list) else [],
+                )
+                if has_config_entries
+                else repo_id
+            )
             source = repo_id
         else:
-            name = f"{repo_id}::{inspect_ai_config}"
-            if inspect_ai_split is not None:
-                name = f"{name}::{inspect_ai_split}"
+            name = _expanded_task_identity(
+                repo_id=repo_id,
+                task_index=task_index,
+                config=inspect_ai_config,
+                split=inspect_ai_split,
+                tasks=tasks_raw if isinstance(tasks_raw, list) else [],
+            )
             source = f"{repo_id}::{inspect_ai_config}"
 
         repo_dataset_config.name = name
@@ -196,6 +218,50 @@ def load_yaml_config(
     if not dataset_configs:
         return None
     return dataset_configs
+
+
+def _expanded_task_identity(
+    repo_id: str, task_index: int, config: str, split: str | None, tasks: list[object]
+) -> str:
+    """Return an injective, round-trippable identity for an expanded task entry."""
+    task_entries = [task for task in tasks if isinstance(task, dict)]
+    duplicate_key = (config, split)
+    duplicate_count = sum(
+        1
+        for task in task_entries
+        if (
+            str(task.get("config")) if task.get("config") else None,
+            str(task.get("split")) if task.get("split") else None,
+        )
+        == duplicate_key
+    )
+    if split is not None and duplicate_count == 1:
+        return f"{repo_id}::{config}::{split}"
+
+    config_part = config if config else _NO_CONFIG_SELECTOR
+    split_part = split if split is not None else _NO_SPLIT_SELECTOR
+    return f"{repo_id}::{config_part}::{split_part}::{_task_selector_token(task_index)}"
+
+
+def _task_selector_token(task_index: int) -> str:
+    """Encode a task index in the reserved selector syntax.
+
+    Returns:
+        The encoded task index.
+    """
+    return f"{_TASK_SELECTOR_PREFIX}{task_index}__"
+
+
+def _parse_task_selector_index(token: str) -> int | None:
+    """Decode a task index from the reserved selector syntax.
+
+    Returns:
+        The task index, or None when the token is not valid.
+    """
+    if not token.startswith(_TASK_SELECTOR_PREFIX) or not token.endswith("__"):
+        return None
+    value = token[len(_TASK_SELECTOR_PREFIX) : -2]
+    return int(value) if value.isdecimal() else None
 
 
 def load_dataset_config_from_yaml(
@@ -445,10 +511,12 @@ def parse_dataset_selector(
     """Parse a dataset selector and report malformed selectors.
 
     A selector either names one of the expanded subsets directly, `repo::config::split`,
-    or narrows the repository down to one of its splits, `repo::split`. A configuration
-    is not selected on its own: it is commonly named after the language it contains,
-    which reads as a language code rather than a split, so naming one is reported as an
-    unknown split that lists the subsets it stands for.
+    or narrows the repository down to one of its splits, `repo::split`. Expanded task
+    entries that need an identity beyond that legacy syntax use a fourth, internal
+    task-index component. A configuration is not selected on its own: it is commonly
+    named after the language it contains, which reads as a language code rather than a
+    split, so naming one is reported as an unknown split that lists the subsets it
+    stands for.
 
     Args:
         dataset_id:
@@ -459,7 +527,7 @@ def parse_dataset_selector(
         or None if the selector is malformed.
     """
     parts = dataset_id.split("::")
-    if len(parts) > 3 or any(not part for part in parts):
+    if len(parts) > 4 or any(not part for part in parts):
         log_once(
             message=(
                 f"Invalid dataset selector {dataset_id!r}. Use the syntax "
@@ -469,6 +537,13 @@ def parse_dataset_selector(
             level=logging.ERROR,
         )
         return None
+    if len(parts) == 4:
+        if _parse_task_selector_index(parts[3]) is None:
+            log_once(
+                message=f"Invalid dataset selector {dataset_id!r}.", level=logging.ERROR
+            )
+            return None
+        return parts[0], parts[1], f"{parts[2]}::{parts[3]}"
     if len(parts) == 3:
         return parts[0], parts[1], parts[2]
     return parts[0], None, parts[1] if len(parts) > 1 else None
@@ -608,7 +683,7 @@ def resolve_config_languages(configs: list[str]) -> dict[str, Language] | None:
         supported by EuroEval is missing from the mapping.
     """
     resolved = {config: get_language(config.partition("_")[0]) for config in configs}
-    named = [config for config, language in resolved.items() if language is not None]
+    named = [config for config in configs if is_language_code(config.partition("_")[0])]
     if 2 * len(named) < len(configs):
         return None
     return {config: language for config, language in resolved.items() if language}
@@ -645,6 +720,17 @@ def select_inspect_ai_tasks(
         A list of task entry indices, configurations and splits, or None if the
         selector does not refer to any entry.
     """
+    selector_task_index = None
+    only_configless = subset_config == _NO_CONFIG_SELECTOR
+    split_unspecified = False
+    if subset_split is not None and "::" in subset_split:
+        requested_split, selector_token = subset_split.rsplit("::", maxsplit=1)
+        selector_task_index = _parse_task_selector_index(selector_token)
+        if selector_task_index is not None:
+            split_unspecified = requested_split == _NO_SPLIT_SELECTOR
+            subset_split = None if split_unspecified else requested_split
+            subset_config = None if only_configless else subset_config
+
     tasks = raw.get("tasks")
     if not isinstance(tasks, list) or not tasks:
         if subset_split is not None or subset_config is not None:
@@ -660,10 +746,15 @@ def select_inspect_ai_tasks(
     entries = [
         (index, task) for index, task in enumerate(tasks) if isinstance(task, dict)
     ]
-    if not any(task.get("config") for _, task in entries):
+    has_config_entries = any(task.get("config") for _, task in entries)
+    if not has_config_entries:
         # Entries without configurations are not subsets, so only the first one is
         # used, as it was before the subsets existed
-        if subset_split is not None or subset_config is not None:
+        if (
+            subset_split is not None
+            or subset_config is not None
+            or selector_task_index is not None
+        ):
             log_once(
                 message=(
                     f"Dataset {dataset_id!r} eval.yaml declares no configurations, so "
@@ -676,7 +767,13 @@ def select_inspect_ai_tasks(
         return [
             (entries[0][0], None, str(first["split"]) if first.get("split") else None)
         ]
-    if subset_config is not None:
+    if selector_task_index is not None:
+        entries = [
+            (index, task) for index, task in entries if index == selector_task_index
+        ]
+    if only_configless:
+        entries = [(index, task) for index, task in entries if not task.get("config")]
+    elif subset_config is not None:
         configs = sorted(
             {str(task["config"]) for _, task in entries if task.get("config")}
         )
@@ -695,7 +792,9 @@ def select_inspect_ai_tasks(
             )
             return None
     splits = sorted({str(task["split"]) for _, task in entries if task.get("split")})
-    if subset_split is not None:
+    if split_unspecified:
+        entries = [(index, task) for index, task in entries if not task.get("split")]
+    elif subset_split is not None:
         if subset_split not in splits:
             configs = sorted(
                 {str(task["config"]) for _, task in entries if task.get("config")}

@@ -1672,6 +1672,98 @@ class TestSubsetSelection:
         assert config is not None
         assert config.languages[0].code == "da"
 
+    def test_config_without_split_has_a_round_trippable_identity(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A config without a declared split can be passed back to the loader."""
+        yaml_text = "task: classification\ntasks:\n  - config: dan\n"
+        configs = self.load_with_fake_hub(
+            tmp_path=tmp_path,
+            monkeypatch=monkeypatch,
+            yaml_text=yaml_text,
+            dataset_id="repo",
+            card_languages=["da"],
+        )
+        assert configs is not None
+        assert len(configs) == 1
+        assert configs[0].name == "repo::dan::__no_split__::__task_0__"
+
+        round_tripped = self.load_with_fake_hub(
+            tmp_path=tmp_path,
+            monkeypatch=monkeypatch,
+            yaml_text=yaml_text,
+            dataset_id=configs[0].name,
+            card_languages=["da"],
+        )
+        assert round_tripped is not None
+        assert [config.name for config in round_tripped] == [configs[0].name]
+
+    def test_mixed_configured_and_configless_entries_have_distinct_identities(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A configless entry must not occupy the repository's expansion key."""
+        yaml_text = (
+            "task: classification\ntasks:\n"
+            "  - config: dan\n    split: test\n"
+            "  - split: test\n"
+        )
+        configs = self.load_with_fake_hub(
+            tmp_path=tmp_path,
+            monkeypatch=monkeypatch,
+            yaml_text=yaml_text,
+            dataset_id="repo",
+            card_languages=["da"],
+        )
+        assert configs is not None
+        assert [config.name for config in configs] == [
+            "repo::dan::test",
+            "repo::__no_config__::test::__task_1__",
+        ]
+        assert all(config.name != "repo" for config in configs)
+
+        for config in configs:
+            round_tripped = self.load_with_fake_hub(
+                tmp_path=tmp_path,
+                monkeypatch=monkeypatch,
+                yaml_text=yaml_text,
+                dataset_id=config.name,
+                card_languages=["da"],
+            )
+            assert round_tripped is not None
+            assert [item.name for item in round_tripped] == [config.name]
+
+    def test_duplicate_config_and_split_entries_get_unique_identities(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Duplicate task entries remain distinct and individually selectable."""
+        yaml_text = (
+            "task: classification\ntasks:\n"
+            "  - config: dan\n    split: test\n"
+            "  - config: dan\n    split: test\n"
+        )
+        configs = self.load_with_fake_hub(
+            tmp_path=tmp_path,
+            monkeypatch=monkeypatch,
+            yaml_text=yaml_text,
+            dataset_id="repo",
+            card_languages=["da"],
+        )
+        assert configs is not None
+        assert [config.name for config in configs] == [
+            "repo::dan::test::__task_0__",
+            "repo::dan::test::__task_1__",
+        ]
+        for config in configs:
+            round_tripped = self.load_with_fake_hub(
+                tmp_path=tmp_path,
+                monkeypatch=monkeypatch,
+                yaml_text=yaml_text,
+                dataset_id=config.name,
+                card_languages=["da"],
+            )
+            assert round_tripped is not None
+            assert [item.name for item in round_tripped] == [config.name]
+
     def test_expanded_configs_are_named_by_their_selector(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -2119,3 +2211,29 @@ class TestSubsetSelection:
     def test_unsupported_config_language_is_missing_from_the_mapping(self) -> None:
         """A recognised language without EuroEval support stays unresolved."""
         assert resolve_config_languages(configs=["dan", "zho"]) == {"dan": DANISH}
+
+    def test_unsupported_language_patterns_do_not_disable_config_skipping(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Unsupported language-shaped configs are skipped, not attributed broadly."""
+        yaml_text = (
+            "task: classification\ntasks:\n"
+            "  - config: eng\n    split: test\n"
+            "  - config: zho\n    split: test\n"
+            "  - config: cmn\n    split: test\n"
+        )
+        with caplog.at_level(logging.WARNING, logger="euroeval"):
+            configs = self.load_with_fake_hub(
+                tmp_path=tmp_path,
+                monkeypatch=monkeypatch,
+                yaml_text=yaml_text,
+                dataset_id="repo",
+                card_languages=["en", "zh"],
+            )
+        assert configs is not None
+        assert [config.name for config in configs] == ["repo::eng::test"]
+        assert [language.code for language in configs[0].languages] == ["en"]
+        assert "does not support" in caplog.text
