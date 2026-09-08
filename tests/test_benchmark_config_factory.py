@@ -355,3 +355,36 @@ def test_resolve_dataset_id_expands_external_subsets() -> None:
     assert names("repo::dan::test_synthetic") == ["repo::dan::test_synthetic"]
     with pytest.raises(KeyError):
         _resolve_dataset_id(dataset_id="repo::swe", all_dataset_configs=configs)
+
+
+def test_resolve_dataset_id_handles_canonical_expanded_identities() -> None:
+    """Repository and split expansion must understand exceptional identities."""
+    configs = {}
+    for name in [
+        "repo::dan::test",
+        "repo::__no_config__::test::__task_1__",
+        "repo::dan::test::__task_2__",
+    ]:
+        dataset_config = copy.copy(DALA_CONFIG)
+        dataset_config.name = name
+        dataset_config.source = "repo::dan"
+        configs[name] = dataset_config
+
+    assert [
+        config.name
+        for config in _resolve_dataset_id(
+            dataset_id="repo", all_dataset_configs=configs
+        )
+    ] == list(configs)
+    assert [
+        config.name
+        for config in _resolve_dataset_id(
+            dataset_id="repo::test", all_dataset_configs=configs
+        )
+    ] == list(configs)
+    assert [
+        config.name
+        for config in _resolve_dataset_id(
+            dataset_id="repo::dan::test", all_dataset_configs=configs
+        )
+    ] == ["repo::dan::test", "repo::dan::test::__task_2__"]

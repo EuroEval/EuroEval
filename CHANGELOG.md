@@ -41,6 +41,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed expanded `eval.yaml` task identities so entries without declared splits,
+  mixed configured and configless entries, and duplicate config/split entries remain
+  selectable and round-trip through `--dataset`.
+- Language-shaped configurations are now recognised independently of EuroEval support,
+  so unsupported language entries are skipped rather than attributed to repository
+  languages.
 - Fixed subset selectors being silently discarded when a dataset had only an
   `euroeval_config.py`; subset selection now requires an `eval.yaml`.
 - Fixed malformed `eval.yaml` files being rejected without the YAML parse error being
