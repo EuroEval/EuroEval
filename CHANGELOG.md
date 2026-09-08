@@ -41,6 +41,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Restored backwards-compatible `Language(code, name)` construction while retaining
+  ISO 639-3 and optional ISO 639-1 language codes.
 - Fixed expanded `eval.yaml` task identities so entries without declared splits,
   mixed configured and configless entries, and duplicate config/split entries remain
   selectable and round-trip through `--dataset`.

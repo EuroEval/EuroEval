@@ -8,7 +8,7 @@ import collections.abc as c
 from dataclasses import dataclass, field
 
 
-@dataclass
+@dataclass(init=False)
 class Language:
     """A benchmarkable language.
 
@@ -27,6 +27,10 @@ class Language:
             The word 'and' in the language.
         or_separator (optional):
             The word 'or' in the language.
+
+    The constructor retains the historical ``Language(code, name)`` contract. The
+    ISO 639-3 and ISO 639-1 codes can be supplied as keyword arguments for language
+    definitions that carry both codes.
     """
 
     name: str
@@ -34,6 +38,55 @@ class Language:
     code_1: str | None = field(default=None)
     _and_separator: str | None = field(repr=False, default=None)
     _or_separator: str | None = field(repr=False, default=None)
+
+    def __init__(
+        self,
+        code: str | None = None,
+        name: str | None = None,
+        _and_separator: str | None = None,
+        _or_separator: str | None = None,
+        *,
+        code_3: str | None = None,
+        code_1: str | None = None,
+    ) -> None:
+        """Initialise a language using its legacy or ISO code arguments.
+
+        Args:
+            code (optional):
+                The historical preferred language code. This remains the first
+                positional argument and the accepted ``code=`` keyword.
+            name (optional):
+                The language name.
+            _and_separator (optional):
+                The word 'and' in the language.
+            _or_separator (optional):
+                The word 'or' in the language.
+            code_3 (optional):
+                The ISO 639-3 language code.
+            code_1 (optional):
+                The ISO 639-1 language code, including an optional region subtag.
+
+        Raises:
+            TypeError:
+                If neither a code nor a name is provided.
+        """
+        if code is None:
+            code = code_1 if code_1 is not None else code_3
+        if code is None:
+            raise TypeError("Language requires a code or code_3 argument")
+        if name is None:
+            raise TypeError("Language requires a name argument")
+
+        if code_3 is None:
+            code_3 = code
+        if code_1 is None and len(code.partition("-")[0]) == 2:
+            code_1 = code
+
+        self.name = name
+        self.code_3 = code_3
+        self.code_1 = code_1
+        self._and_separator = _and_separator
+        self._or_separator = _or_separator
 
     def __hash__(self) -> int:
         """Return a hash of the language."""

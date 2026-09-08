@@ -59,6 +59,22 @@ def test_a_639_3_code_shared_by_regional_variants_is_not_guessed() -> None:
     assert get_language("zho") is None
 
 
+def test_legacy_keyword_language_construction() -> None:
+    """The historical keyword constructor keeps code and name in their old roles."""
+    language = Language(code="da", name="Danish")
+
+    assert language.code == "da"
+    assert language.name == "Danish"
+
+
+def test_legacy_positional_language_construction() -> None:
+    """The historical positional constructor keeps code before name."""
+    language = Language("da", "Danish")
+
+    assert language.code == "da"
+    assert language.name == "Danish"
+
+
 def test_a_language_carries_both_codes() -> None:
     """Danish is `da`, and `dan` is how a dataset configuration may name it."""
     assert DANISH.code == "da"
