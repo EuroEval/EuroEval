@@ -11,11 +11,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 - Datasets from Hugging Face repositories with an `eval.yaml` declaring several
   configurations now expand into one benchmark per task entry, so `--dataset repo`
-  evaluates all of them instead of loading a single one, and `--dataset repo::split`
-  narrows the run down to one split across all configurations. Configurations named
-  after a language are attributed to it, which makes `--language` the way to select
-  among them, and a configuration referring to a language EuroEval does not support is
-  skipped with a warning.
+  evaluates all of them instead of loading a single one, `--dataset repo::split`
+  narrows the run down to one split across all configurations, and
+  `--dataset repo::config::split` names a single subset. Configurations are no longer
+  selected with `--language`, which now conflicts with `--dataset` in the same way
+  `--task` does.
 - Added model release dates to benchmark result metadata for Hugging Face Hub and API
   models.
 - Added the unofficial Belarusian Word-in-Context dataset `bewic`, based on the BeWiC

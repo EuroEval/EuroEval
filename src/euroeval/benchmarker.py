@@ -105,8 +105,9 @@ class Benchmarker:
             dataset:
                 The datasets to benchmark on. Mutually exclusive with `task`. If both
                 `task` and `dataset` are None then all datasets will be
-                benchmarked. A `language` narrows the datasets a `dataset` selects
-                rather than conflicting with it.
+                benchmarked. Note that `language` still filters the datasets a
+                `dataset` names, so a `language` alongside a `dataset` narrows the run
+                rather than widening it; the CLI rejects the combination.
             language:
                 The language codes of the languages to include, both for models and
                 datasets. Set this to 'all' if all languages should be considered.

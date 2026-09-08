@@ -462,17 +462,16 @@ When an Inspect AI task entry has its own `languages` key, that per-entry value 
 precedence over the top-level key and Hugging Face card metadata.
 
 A repository whose `eval.yaml` declares several `config`urations is benchmarked as one
-dataset per task entry, so `--dataset repo` runs all of them. Configurations are
-commonly named after the language they contain, which is why they are selected with
-`--language` rather than with the dataset ID; the `::` suffix selects a single `split`
-across all the configurations:
+dataset per task entry, so `--dataset repo` runs all of them. The `::` suffix selects a
+single `split` across all the configurations, and one subset is named by its
+configuration and split together:
 
 ```bash
 # All configurations and splits, one dataset per task entry
 euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic
 
-# The Danish configurations only
-euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic --language da
+# One configuration and split, named as the subset
+euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic::dan::test_original
 
 # The original split of every configuration
 euroeval -m <model> --dataset danish-foundation-models/multilingual-gsm-symbolic::test_original
@@ -483,18 +482,13 @@ recorded with the result, so it can be copied straight back into `--dataset` to 
 that one entry. A task entry's `config` and `split` identify the Hugging Face subset and
 split; plain `field_spec`-only YAML files declare no subsets and take no selector. An
 unknown split is rejected with the available ones listed, and naming a configuration
-where a split belongs points you at `--language` instead:
+where a split belongs lists the subsets it stands for:
 
 ```text
 Unknown split 'dan' for dataset '...::dan'. Available splits are: ['test_original',
-'test_synthetic']. To select the 'dan' configuration, use --language 'da' instead.
+'test_synthetic']. 'dan' is a configuration, not a split; name one of its subsets
+instead: ...::dan::test_original, ...::dan::test_synthetic.
 ```
-
-Configurations named by an ISO 639-1 or ISO 639-3 language code, optionally with a
-suffix such as `eng_metric`, are attributed to that language. Otherwise EuroEval
-attributes the results to all the languages in the repository card and warns about it,
-and a configuration referring to a language EuroEval does not support is skipped with a
-warning, as it cannot be attributed to any language.
 
 All other `DatasetConfig` arguments are also supported:
 
@@ -540,26 +534,6 @@ infer them automatically when they are absent:
   the dataset card).  Languages that EuroEval does not support are skipped; if the
   configuration would then have no language at all, or no language metadata can be
   found, EuroEval defaults to English and logs a warning.
-
-The `math` task scores the answer extracted from the model output against the
-target, preferring the last `\boxed{...}` in the completion and falling back to
-answer markers, delimited mathematics and finally the last number in the text.
-Plain numbers are compared exactly (a percentage counts as its value divided by
-100), and expressions are compared as values: EuroEval rewrites the LaTeX that
-benchmark answers use — fractions, roots, powers, products, `\pi` — into
-arithmetic and evaluates it with SymPy, which is already installed as a
-dependency of torch, so `\frac{1}{2}` and `0.5` are treated as equal, as are
-`2\pi` and `6.283185307179586`, and a rearranged expression meets itself, so
-`x + y` is equal to `y + x`. Values that SymPy compares exactly, such as
-rationals and `\sqrt{2}`, are never compared approximately. A one-word answer is
-read as a name rather than as text, which makes it case-sensitive, as Inspect AI
-reads it too; an answer of two or more words is text, and is compared
-case-insensitively. This is a rewrite
-rather than Inspect AI's full LaTeX grammar, so structure beyond it — matrices,
-integrals, piecewise braces — is compared as normalised text. Since the
-extraction relies on the boxed answer, a `math` configuration should include a
-`prompt_template` solver asking the model to box its answer — EuroEval warns
-when it is missing.
 
 This means a standard Inspect AI `eval.yaml` with no EuroEval-specific keys works
 out of the box:
@@ -666,6 +640,28 @@ euroeval --dataset EuroEval/test_dataset --model <model-id> --trust-remote-code
 ```
 
 ///
+
+### The `math` task
+
+A `math` dataset scores the answer extracted from the model output against the
+target, preferring the last `\boxed{...}` in the completion and falling back to
+answer markers, delimited mathematics and finally the last number in the text.
+Plain numbers are compared exactly (a percentage counts as its value divided by
+100), and expressions are compared as values: EuroEval rewrites the LaTeX that
+benchmark answers use — fractions, roots, powers, products, `\pi` — into
+arithmetic and evaluates it with SymPy, which is already installed as a
+dependency of torch, so `\frac{1}{2}` and `0.5` are treated as equal, as are
+`2\pi` and `6.283185307179586`, and a rearranged expression meets itself, so
+`x + y` is equal to `y + x`. Values that SymPy compares exactly, such as
+rationals and `\sqrt{2}`, are never compared approximately. A one-word answer is
+read as a name rather than as text, which makes it case-sensitive, as Inspect AI
+reads it too; an answer of two or more words is text, and is compared
+case-insensitively. This is a rewrite
+rather than Inspect AI's full LaTeX grammar, so structure beyond it — matrices,
+integrals, piecewise braces — is compared as normalised text. Since the
+extraction relies on the boxed answer, a `math` configuration should include a
+`prompt_template` solver asking the model to box its answer — EuroEval warns
+when it is missing.
 
 ### Custom column names
 

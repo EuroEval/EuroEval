@@ -273,8 +273,22 @@ def benchmark(
     max_context_length: int | None,
     vocabulary_size: int | None,
 ) -> None:
-    """Benchmark pretrained language models on language tasks."""
-    _validate_task_and_dataset_options(task=task, dataset=dataset)
+    """Benchmark pretrained language models on language tasks.
+
+    Raises:
+        click.UsageError:
+            If `--dataset` is combined with `--task` or with `--language`, as
+            `--dataset` fully specifies which datasets, configurations and splits to
+            benchmark.
+    """
+    if dataset and task:
+        raise click.UsageError("Only one of `--task` and `--dataset` can be specified.")
+    if dataset and list(language) != ["all"]:
+        raise click.UsageError(
+            "Only one of `--language` and `--dataset` can be specified, as a dataset "
+            "ID already selects the configurations and splits to benchmark; name a "
+            "subset of the dataset to narrow the run."
+        )
 
     Benchmarker(
         language=list(language),
@@ -310,26 +324,6 @@ def benchmark(
         max_context_length=max_context_length,
         vocabulary_size=vocabulary_size,
     ).benchmark(model=list(model))
-
-
-def _validate_task_and_dataset_options(
-    task: tuple[str, ...], dataset: tuple[str | DatasetConfig, ...]
-) -> None:
-    """Validate that `--task` and `--dataset` are not combined.
-
-    Args:
-        task:
-            The value of the `--task` option.
-        dataset:
-            The value of the `--dataset` option.
-
-    Raises:
-        click.UsageError:
-            If the `--dataset` option is combined with the `--task` option, as
-            `--dataset` fully specifies which datasets to benchmark.
-    """
-    if dataset and task:
-        raise click.UsageError("Only one of `--task` and `--dataset` can be specified.")
 
 
 if __name__ == "__main__":

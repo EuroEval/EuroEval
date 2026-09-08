@@ -22,6 +22,42 @@ from euroeval.yaml_config import (
 class TestLoadDatasetConfigFromYaml:
     """Tests for the `load_dataset_config_from_yaml` function."""
 
+    @pytest.mark.parametrize(
+        "instruction_prompt", [r"Answer in \boxed{...}.", r"Answer in \fbox{...}."]
+    )
+    def test_a_boxed_instruction_does_not_warn(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, instruction_prompt: str
+    ) -> None:
+        """Any spelling the scorer extracts an answer from counts as boxed."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            f"task: math\nlanguages: [en]\ninstruction_prompt: {instruction_prompt}\n"
+        )
+        messages: list[str] = []
+        monkeypatch.setattr(
+            yaml_config,
+            "log_once",
+            lambda message, level, prefix="": messages.append(message),
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert not any("boxed" in message for message in messages), messages
+
+    def test_a_malformed_solver_does_not_hide_the_later_one(
+        self, tmp_path: Path
+    ) -> None:
+        """Scanning solvers continues past one this loader cannot read."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            "task: math\nlanguages: [en]\ntasks:\n  - solvers:\n"
+            "      - name: prompt_template\n        args: not_a_mapping\n"
+            "      - name: prompt_template\n        args:\n"
+            "          template: 'Put it in \\boxed{{}}: {{prompt}}'\n"
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert "Put it in" in config.instruction_prompt
+
     def test_choices_column_as_list(self, tmp_path: Path) -> None:
         """choices_column as a list of strings triggers a preprocessing_func."""
         yaml_file = tmp_path / "euroeval_config.yaml"
@@ -1551,10 +1587,10 @@ class TestSubsetSelection:
             run_with_cli=False,
         )
 
-    def test_config_named_as_a_split_suggests_the_language_option(
+    def test_config_named_as_a_split_names_the_subsets_instead(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Configurations are selected with --language, not with the dataset ID."""
+        """A configuration is selected by naming a subset, not by a flag."""
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             result = select_inspect_ai_tasks(
                 raw={"tasks": [{"config": "dan", "split": "test"}]},
@@ -1562,7 +1598,8 @@ class TestSubsetSelection:
                 dataset_id="hint::dan",
             )
         assert result is None
-        assert "--language" in caplog.text
+        assert "hint::dan::test" in caplog.text
+        assert "--language" not in caplog.text
 
     def test_config_names_are_not_languages(self) -> None:
         """Do not read language codes out of unrelated config names."""
