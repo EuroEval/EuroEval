@@ -172,6 +172,7 @@ def _reviewer(
         "verified_contributor": "alice",
         "model": {"id": "org/model", "revision": "deadbeef"},
         "language": "da",
+        "language_group": "da",
         "euroeval_version": "18.0.0.dev0",
         "model_profile": "llama",
         "worker_version": "18.0.0",
@@ -353,6 +354,45 @@ def _result_paths(api: FakeHfApi) -> list[str]:
     ]
 
 
+@pytest.mark.parametrize("language_group", ["sv", 42, ["da"]])
+def test_manifest_forged_language_group_is_rejected(language_group: object) -> None:
+    """A top-level language group must not contradict the trusted scope."""
+    api, reviewer, _ = _reviewer()
+    manifest = _manifest(api)
+    manifest["language_group"] = language_group
+    _store_manifest(api, manifest)
+
+    with pytest.raises(ReviewError, match="language_group"):
+        reviewer.show(SUBMISSION)
+
+
+def _manifest(api: FakeHfApi) -> dict[str, object]:
+    return json.loads(api.files[(STAGING, f"volunteer/manifests/{SUBMISSION}.json")])
+
+
+def test_manifest_language_group_is_valid_in_real_flow() -> None:
+    """A trusted language group survives review and promotion."""
+    api, reviewer, broker_calls = _reviewer()
+
+    report = reviewer.show(SUBMISSION)
+    assert report.provenance["language_group"] == "da"
+    reviewer.decide(SUBMISSION, "accepted", "maintainer")
+
+    assert broker_calls == [(12, SUBMISSION, "accepted")]
+    assert [key for key in api.files if key[0] == RESULTS]
+
+
+def test_manifest_missing_language_group_is_rejected() -> None:
+    """A manifest without a top-level language group is invalid."""
+    api, reviewer, _ = _reviewer()
+    manifest = _manifest(api)
+    manifest.pop("language_group")
+    _store_manifest(api, manifest)
+
+    with pytest.raises(ReviewError, match="language_group"):
+        reviewer.show(SUBMISSION)
+
+
 def test_manifest_scope_mismatch_is_rejected() -> None:
     """Expected and actual canonical identities must match."""
     api, reviewer, _ = _reviewer()
@@ -363,10 +403,6 @@ def test_manifest_scope_mismatch_is_rejected() -> None:
 
     with pytest.raises(ReviewError, match="scope differs"):
         reviewer.show(SUBMISSION)
-
-
-def _manifest(api: FakeHfApi) -> dict[str, object]:
-    return json.loads(api.files[(STAGING, f"volunteer/manifests/{SUBMISSION}.json")])
 
 
 def test_partial_approve_resumes_and_is_idempotent() -> None:

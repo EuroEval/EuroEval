@@ -34,6 +34,7 @@ def _validate_manifest(
     model_id = _required_string(model, "id")
     revision = _required_string(model, "revision")
     euroeval_version = _required_string(manifest, "euroeval_version")
+    _required_string(manifest, "language_group")
     for field in ("model_profile", "worker_version", "image_digest", "created_at"):
         _required_string(manifest, field)
     expected_scope = _required_object(manifest, "expected_scope")
@@ -427,8 +428,15 @@ def _validate_scope_policy(
     ]
     if len(matching) != 1:
         raise ReviewError("Manifest scope has no unique trusted policy entry")
-    trusted = matching[0]
-    for field in ("language_group", "identity_suffixes", "count", "warnings"):
+    trusted = t.cast(JsonObject, matching[0])
+    manifest_language_group = _required_string(manifest, "language_group")
+    expected_language_group = _required_string(expected_scope, "language_group")
+    trusted_language_group = _required_string(trusted, "language_group")
+    if not (
+        manifest_language_group == expected_language_group == trusted_language_group
+    ):
+        raise ReviewError("Manifest language_group differs from trusted policy")
+    for field in ("identity_suffixes", "count", "warnings"):
         if expected_scope.get(field) != trusted.get(field):
             raise ReviewError(f"Manifest scope differs from policy field {field}")
 
