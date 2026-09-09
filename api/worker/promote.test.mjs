@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { claimableLanguages, signVolunteerMarker } from "./_lib.ts";
 import promote, { largestAcceptedShare, promotionPlan } from "./promote.ts";
+import reservePromotion from "./promotion-reserve.ts";
 
 const submission = (id, language, contributor, count, status = "submitted") => ({
   submission_id: id,
@@ -151,6 +152,59 @@ test("repeated rejection is safe after cleanup interruption", async () => {
   }
 });
 
+test("promotion reservation returns one broker-owned decision nonce on resume", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  Object.assign(process.env, {
+    VOLUNTEER_MARKER_SECRET: "marker-secret", VOLUNTEER_PROMOTION_SECRET: "promotion-secret",
+    GITHUB_TOKEN: "github-token", UPSTASH_REDIS_REST_URL: "https://redis.test", UPSTASH_REDIS_REST_TOKEN: "redis-token",
+  });
+  const records = [{ identity: JSON.stringify(["org/model", "dataset", false, true]), canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) }];
+  const issueMarker = await signVolunteerMarker(12, marker([submission("one", "el", "alice", 4)]));
+  const issue = { number: 12, title: "[MODEL EVALUATION REQUEST] org/model",
+    body: `- [x] Greek\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(issueMarker)} -->`, state: "open",
+    assignees: [{ login: "coordinator" }], labels: [] };
+  const values = new Map();
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input); const method = init.method || "GET";
+    if (url === "https://redis.test") {
+      const command = JSON.parse(init.body); let result = "OK";
+      if (command[0] === "GET") result = values.get(command[1]) || null;
+      if (command[0] === "SET") {
+        if (command.includes("NX") && values.has(command[1])) result = null;
+        else { values.set(command[1], command[2]); result = "OK"; }
+      }
+      if (command[0] === "EVAL") { values.delete(command[3]); result = 0; }
+      return Response.json({ result });
+    }
+    if (url.endsWith("/issues/12") && method === "GET") return Response.json(issue);
+    throw new Error(`Unexpected request: ${method} ${url}`);
+  };
+  const request = (token) => new Request("https://euroeval.com/api/worker/promotion-lock", {
+    method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
+    body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
+      outcome: "rejected", records, ...(token ? { reservation_token: token } : {}) }),
+  });
+  try {
+    const first = await reservePromotion(request()); const firstBody = await first.json();
+    assert.equal(first.status, 201, JSON.stringify(firstBody));
+    assert.equal(typeof firstBody.decision_nonce, "string");
+    const second = await reservePromotion(request(firstBody.token)); const secondBody = await second.json();
+    assert.equal(second.status, 200);
+    assert.equal(secondBody.token, firstBody.token);
+    assert.equal(secondBody.decision_nonce, firstBody.decision_nonce);
+    const incompatible = await reservePromotion(new Request("https://euroeval.com/api/worker/promotion-lock", {
+      method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
+        outcome: "rejected", reservation_token: firstBody.token, decision_nonce: "wrong", records }),
+    }));
+    assert.equal(incompatible.status, 409);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
 test("handler finishes GitHub labels, credit, ownership, and notification", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
@@ -172,7 +226,7 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
   process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
   const redisValues = new Map();
   const records = [{ identity: "[\"org/model\",\"dataset\",false,true]", canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) }];
-  redisValues.set("euroeval:worker:promotion:12:one", JSON.stringify({ issue_number: 12, submission_id: "one", outcome: "accepted", records, token: "reservation-token", status: "reserved" }));
+  redisValues.set("euroeval:worker:promotion:12:one", JSON.stringify({ issue_number: 12, submission_id: "one", outcome: "accepted", records, token: "reservation-token", decision_nonce: "stable-decision", status: "reserved" }));
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input);
     const method = init.method || "GET";
@@ -218,6 +272,7 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
     const responseBody = await response.text();
     assert.equal(response.status, 200, responseBody);
     assert.match(issue.body, /euroeval-volunteer-credit:v1/);
+    assert.match(issue.body, /"decision_nonce":"stable-decision"/);
     assert.deepEqual(issue.labels, [{ name: "results-ready" }]);
     assert.deepEqual(issue.assignees, []);
     assert.match(comments[0].body, /submission \*\*one\*\*/);

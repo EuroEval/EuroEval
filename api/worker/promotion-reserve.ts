@@ -40,6 +40,10 @@ export default async function handler(req: Request): Promise<Response> {
     const outcome = body.outcome as "accepted" | "rejected";
     const requested = parsePromotionRecords(body.records);
     const requestedToken = body.reservation_token;
+    const requestedDecisionNonce = body.decision_nonce;
+    if (requestedDecisionNonce !== undefined && (typeof requestedDecisionNonce !== "string" || !requestedDecisionNonce)) {
+      throw new BrokerError(400, "decision_nonce must be a non-empty broker-issued value.");
+    }
     const mutex = await acquireIssueMutex(issueNumber);
     if (!mutex) throw new BrokerError(409, "Issue is busy; retry promotion reservation.");
     try {
@@ -60,20 +64,30 @@ export default async function handler(req: Request): Promise<Response> {
         if (requestedToken !== undefined && requestedToken !== existing.token) {
           throw new BrokerError(409, "Promotion reservation token differs.");
         }
+        const existingDecisionNonce = existing.decision_nonce || existing.token;
+        if (requestedDecisionNonce !== undefined && requestedDecisionNonce !== existingDecisionNonce) {
+          throw new BrokerError(409, "Promotion decision metadata differs.");
+        }
+        // Older reservations predate decision_nonce. Their broker-issued token
+        // is already stable, so use it as a compatibility nonce and persist the
+        // normalized shape before returning it to the caller.
+        const stable = existing.decision_nonce ? existing : { ...existing, decision_nonce: existing.token };
         if (existing.status === "terminal") {
-          return json(200, { protocol_version: PROTOCOL_VERSION, status: existing.status, token: existing.token, expires_in: 30 * 24 * 60 * 60 });
+          return json(200, { protocol_version: PROTOCOL_VERSION, status: existing.status, token: stable.token,
+            decision_nonce: stable.decision_nonce, expires_in: 30 * 24 * 60 * 60 });
         }
         const result = outcome === "accepted"
-          ? await reservePromotionReservation(existing)
-          : (await savePromotionReservation(existing, false), "reserved");
+          ? await reservePromotionReservation(stable)
+          : (await savePromotionReservation(stable, false), "reserved");
         if (result === "busy") throw new BrokerError(409, "A canonical result is being promoted; retry.");
         if (result === "conflict") throw new BrokerError(409, "A canonical result has a different digest.");
-        return json(200, { protocol_version: PROTOCOL_VERSION, status: "reserved", token: existing.token, expires_in: PROMOTION_RESERVATION_TTL });
+        return json(200, { protocol_version: PROTOCOL_VERSION, status: "reserved", token: stable.token,
+          decision_nonce: stable.decision_nonce, expires_in: PROMOTION_RESERVATION_TTL });
       }
-      if (requestedToken !== undefined) throw new BrokerError(409, "Promotion reservation is absent; retry.");
+      if (requestedToken !== undefined || requestedDecisionNonce !== undefined) throw new BrokerError(409, "Promotion reservation is absent; retry.");
       const reservation: PromotionReservation = {
         issue_number: issueNumber, submission_id: submissionId, outcome, records: requested,
-        token: randomToken(), status: "reserved",
+        token: randomToken(), decision_nonce: randomToken(), status: "reserved",
       };
       if (outcome === "accepted") {
         const result = await reservePromotionReservation(reservation);
@@ -82,7 +96,8 @@ export default async function handler(req: Request): Promise<Response> {
       } else if (!await redisSet(promotionReservationKey(issueNumber, submissionId), JSON.stringify(reservation), PROMOTION_RESERVATION_TTL, true)) {
         throw new BrokerError(409, "A concurrent promotion reservation won; retry.");
       }
-      return json(201, { protocol_version: PROTOCOL_VERSION, status: "reserved", token: reservation.token, expires_in: PROMOTION_RESERVATION_TTL });
+      return json(201, { protocol_version: PROTOCOL_VERSION, status: "reserved", token: reservation.token,
+        decision_nonce: reservation.decision_nonce, expires_in: PROMOTION_RESERVATION_TTL });
     } finally { await releaseIssueMutex(issueNumber, mutex); }
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;

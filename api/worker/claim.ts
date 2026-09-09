@@ -4,6 +4,7 @@ import {
   extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl, selectedGpu,
   listOpenIssues, method,
   patchIssue, putLease, randomToken, readJson, releaseIssueMutex, deleteLease,
+  getLeaseForIssue, reclaimExpiredLease,
   parseVolunteerMarker, resolveModel, selectedLanguages, VolunteerLeaseMarker, Lease,
   requireProtocol, signVolunteerMarker, verifyVolunteerMarker, markerSecret, replaceVolunteerMarker,
 } from "./_lib";
@@ -79,6 +80,8 @@ export default async function handler(req: Request): Promise<Response> {
         const language = requestedLanguage || available[0];
         if (!language || !available.includes(language)) continue;
         const group = languageGroup(language); if (!group || !GROUPS[group]) continue;
+        const staleLease = await getLeaseForIssue(snapshot.number, language);
+        if (staleLease && Date.parse(staleLease.expires_at) <= Date.now() && !await reclaimExpiredLease(staleLease)) continue;
         let trusted;
         try { trusted = expectedScope(euroevalVersion, model.model_profile, language); }
         catch (error) { if (error instanceof BrokerError && error.status === 422) continue; throw error; }
@@ -93,7 +96,7 @@ export default async function handler(req: Request): Promise<Response> {
           selected_gpu_uuid: body.hardware.selected_gpu_uuid as string,
           expires_at: expiresAt,
           lease_id: randomToken(18), model_profile: model.model_profile,
-          expected_scope: { policy_version: trusted.policy_version, language_group: group,
+          expected_scope: { policy_version: trusted.policy_version, language_group: trusted.language_group,
             identity_suffixes: [...trusted.identity_suffixes], count: trusted.identity_suffixes.length,
             warnings: trusted.warnings || [] },
         };

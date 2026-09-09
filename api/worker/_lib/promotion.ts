@@ -77,15 +77,17 @@ export async function reservePromotionReservation(
     ...(await Promise.all(reservation.records.map((record) => promotionIdentityKey(record.canonical_path))))];
   const script = `local current=redis.call('GET',KEYS[1]);
     if current then local item=cjson.decode(current); if item.token ~= ARGV[2] then return 'busy' end end;
-    local records=cjson.decode(ARGV[3]);
+    local reservation=cjson.decode(ARGV[1]); local records=cjson.decode(ARGV[3]);
     for i=2,#KEYS do local value=redis.call('GET',KEYS[i]); if value then
       local item=cjson.decode(value); if item.digest ~= records[i-1].digest or item.identity ~= records[i-1].identity then return 'conflict' end;
       if item.status ~= 'terminal' and item.token ~= ARGV[2] then return 'busy' end;
     end end;
     redis.call('SET',KEYS[1],ARGV[1],'EX',ARGV[4]);
-    for i=2,#KEYS do if not redis.call('EXISTS',KEYS[i]) then
-      local record=records[i-1]; redis.call('SET',KEYS[i],cjson.encode({token=ARGV[2],digest=record.digest,status='reserved',issue_number=cjson.decode(ARGV[1]).issue_number,submission_id=cjson.decode(ARGV[1]).submission_id,identity=record.identity,canonical_path=record.canonical_path}),'EX',ARGV[4]);
-    end end; return 'reserved'`;
+    for i=2,#KEYS do local value=redis.call('GET',KEYS[i]); if not value then
+      local record=records[i-1]; redis.call('SET',KEYS[i],cjson.encode({token=ARGV[2],digest=record.digest,status='reserved',issue_number=reservation.issue_number,submission_id=reservation.submission_id,identity=record.identity,canonical_path=record.canonical_path}),'EX',ARGV[4]);
+    else local item=cjson.decode(value); if item.status ~= 'terminal' then
+      redis.call('EXPIRE',KEYS[i],ARGV[4]);
+    end end end; return 'reserved'`;
   const result = await redis("EVAL", script, String(keys.length), ...keys,
     JSON.stringify(reservation), reservation.token, JSON.stringify(reservation.records),
     String(PROMOTION_RESERVATION_TTL));
