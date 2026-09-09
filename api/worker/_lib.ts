@@ -27,8 +27,9 @@ export interface VolunteerSubmission {
   language: string;
   manifest_path: string;
   submitted_at: string;
-  contributor?: string;
-  status?: "submitted" | "accepted" | "rejected";
+  verified_contributor: string;
+  result_count: number;
+  status: "submitted" | "accepted" | "rejected";
 }
 
 export interface VolunteerLeaseMarker {
@@ -216,11 +217,13 @@ export function parseVolunteerMarker(body: string | null): VolunteerLeaseMarker 
       !Number.isNaN(Date.parse(lease.expires_at)));
     if (leases.length !== parsed.leases.length || new Set(leases.map((item) => item.lease_id)).size !== leases.length || new Set(leases.map((item) => item.language)).size !== leases.length) return null;
     const submissions = Array.isArray(parsed.submissions) ? parsed.submissions.filter((item): item is VolunteerSubmission =>
-      !!item && typeof item === "object" && typeof item.submission_id === "string" &&
-      typeof item.language === "string" && typeof item.manifest_path === "string" &&
-      typeof item.submitted_at === "string" && (item.contributor === undefined || typeof item.contributor === "string") &&
-      (item.status === undefined || ["submitted", "accepted", "rejected"].includes(item.status))) : undefined;
-    if (parsed.submissions !== undefined && (submissions === undefined || submissions.length !== parsed.submissions.length || new Set(submissions.map((item) => item.submission_id)).size !== submissions.length || new Set(submissions.map((item) => item.language)).size !== submissions.length)) return null;
+      !!item && typeof item === "object" && typeof item.submission_id === "string" && !!item.submission_id &&
+      typeof item.language === "string" && !!item.language && typeof item.manifest_path === "string" && !!item.manifest_path &&
+      typeof item.submitted_at === "string" && !Number.isNaN(Date.parse(item.submitted_at)) &&
+      typeof item.verified_contributor === "string" && !!item.verified_contributor &&
+      Number.isSafeInteger(item.result_count) && item.result_count > 0 &&
+      ["submitted", "accepted", "rejected"].includes(item.status)) : undefined;
+    if (parsed.submissions !== undefined && (submissions === undefined || submissions.length !== parsed.submissions.length || new Set(submissions.map((item) => item.submission_id)).size !== submissions.length)) return null;
     const completed = Array.isArray(parsed.completed_languages) ? parsed.completed_languages.filter((item): item is string => typeof item === "string" && !!item) : undefined;
     if (parsed.completed_languages !== undefined && (completed === undefined || completed.length !== parsed.completed_languages.length)) return null;
     return { protocol_version: PROTOCOL_VERSION, coordinator: parsed.coordinator,
@@ -245,6 +248,16 @@ export function selectedLanguages(body: string | null): string[] {
     if (pattern.test(body)) languages.push(...codes);
   }
   return languages;
+}
+
+export function claimableLanguages(
+  selected: string[], marker: VolunteerLeaseMarker | null, now = Date.now(),
+): string[] {
+  if (!marker) return selected;
+  return selected.filter((language) =>
+    !marker.leases.some((item) => item.language === language && Date.parse(item.expires_at) > now) &&
+    !(marker.submissions || []).some((item) => item.language === language &&
+      ["submitted", "accepted"].includes(item.status)));
 }
 function escapeRegExp(value: string): string { return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 
@@ -288,6 +301,10 @@ export async function unassignIssue(number: number, login: string): Promise<void
 }
 export async function addIssueLabel(number: number, label: string): Promise<void> {
   await github(`/repos/${REPO}/issues/${number}/labels`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ labels: [label] }) });
+}
+export async function removeIssueLabel(number: number, label: string): Promise<void> {
+  try { await github(`/repos/${REPO}/issues/${number}/labels/${encodeURIComponent(label)}`, { method: "DELETE" }); }
+  catch (error) { if (!(error instanceof BrokerError) || error.status !== 404) throw error; }
 }
 export async function issueComments(number: number): Promise<Array<{ body?: string }>> {
   return github(`/repos/${REPO}/issues/${number}/comments?per_page=100`) as Promise<Array<{ body?: string }>>;
@@ -405,7 +422,7 @@ export function coordinatorSecret(req: Request): void {
 }
 
 export function promotionSecret(req: Request): void {
-  const expected = env("COMMUNITY_PROMOTION_SECRET");
+  const expected = env("VOLUNTEER_PROMOTION_SECRET");
   const supplied = req.headers.get("x-promotion-secret") || authCredential(req);
   if (supplied !== expected) throw new BrokerError(401, "Promotion authentication failed.");
 }

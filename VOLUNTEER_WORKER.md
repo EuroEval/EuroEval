@@ -90,10 +90,13 @@ worker; the broker handles authentication and staging uploads.
 5. Each record is uploaded idempotently to private Hugging Face staging.
 6. The broker validates the complete lease and marks it ready for review.
 
-A worker can be interrupted safely. Heartbeats protect an active lease; failed or
-interrupted work is released, and result submission can be retried without changing
-a record digest. A `No volunteer evaluation work` message is normal when the queue
-is empty. `No NVIDIA GPU` means that the host runtime did not expose a usable GPU.
+A worker can be interrupted safely. The local state and exact result bytes remain in
+the named volume. Restarting before lease expiry resumes the same lease; after expiry,
+the broker may lease the language again and the old local state is archived. An
+interrupt does not immediately release an active lease. Submitted records can be
+retried without changing their digest. A `No volunteer evaluation work` message is
+normal when the queue is empty. `No NVIDIA GPU` means that the host runtime did not
+expose a usable GPU.
 
 ## Operator deployment
 
@@ -102,27 +105,33 @@ lived coordination. Configure these Vercel project environment variables:
 
 | Variable | Purpose |
 | --- | --- |
-| `GITHUB_OAUTH_CLIENT_ID` | GitHub OAuth app client ID with device flow enabled |
-| `VOLUNTEER_WORKER_IMAGE` | Full GHCR image reference including `@sha256:` |
-| `WORKER_COORDINATOR_LOGIN` | GitHub account used for temporary issue assignment |
-| `HF_STAGING_BUCKET` | Private Hugging Face staging bucket name |
-| `HF_TOKEN` | Token authorised to upload to that staging bucket |
-| `HF_STAGING_UPLOAD_URL` | Absolute HTTPS JSON upload endpoint |
+| `GITHUB_TOKEN` | GitHub token for issue reads, labels, comments, and assignment |
+| `GITHUB_OAUTH_CLIENT_ID` | OAuth app client ID with device flow enabled |
+| `GITHUB_OAUTH_CLIENT_SECRET` | OAuth secret used to revoke each device grant |
+| `EUROEVAL_VERSION` | Exact release supported by the generated scope policy |
+| `VOLUNTEER_WORKER_IMAGE_DIGEST` | Allowed worker image digest (`sha256:...`) |
+| `WORKER_COORDINATOR_LOGIN` | Account used for temporary issue assignment |
+| `HF_STAGING_BUCKET` | Private EU Hugging Face bucket (`namespace/bucket`) |
+| `HF_TOKEN` | Token authorised to write that staging bucket |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
-| `VOLUNTEER_LEASE_SECONDS` | Optional lease duration, bounded by the broker |
+| `WORKER_COORDINATOR_SECRET` | Secret for the local coordinator lock endpoints |
+| `VOLUNTEER_PROMOTION_SECRET` | Secret for maintainer promotion requests |
+| `VOLUNTEER_LEASE_SECONDS` | Optional bounded lease duration |
+| `VOLUNTEER_SCOPE_POLICY_JSON` | Optional complete generated policy override |
 
 Set secrets in Vercel's encrypted environment configuration, never in the
-repository or workflow file. The OAuth application needs only the client ID in the
-broker deployment; GitHub access tokens are held briefly by the auth endpoint and
-are not returned to workers. The staging upload service must accept the broker's
-Bearer token and JSON payload, use the requested bucket/path, and avoid logging
-credentials or result content. Restrict its token to the staging bucket.
+repository or workflow file. The OAuth client ID and secret are both required: the
+broker uses the secret to revoke the short-lived GitHub grant before returning an
+opaque broker credential. Neither the GitHub token nor any project secret is returned
+to workers. Restrict the broker's Hugging Face token to the staging bucket.
 
-`VOLUNTEER_WORKER_IMAGE` must be updated to the digest printed by the image
-workflow. Deploy a new digest for upgrades; never make a floating tag the broker's
-worker image. Check that the digest is the expected `linux/amd64` manifest before
-updating the environment.
+`VOLUNTEER_WORKER_IMAGE_DIGEST` must be updated to the digest printed by the image
+workflow. Deploy a new digest for upgrades; never configure a floating image name or
+tag. Check that the digest is the expected `linux/amd64` manifest before updating the
+environment. Generate the default scope with
+`src/scripts/generate_volunteer_scope_policy.py`; use the JSON override only for an
+intentional, reviewed deployment policy.
 
 ### GitHub queue and review
 
@@ -132,20 +141,43 @@ those markers or assign a second coordinator to the same request. A worker must
 only receive models that are public, ungated, immutable, safetensors-only, and free
 of custom Python or remote-code configuration.
 
-Community submissions go to private staging and receive the
-`community-review-ready` label after broker validation. Review the records and
-coverage before promoting anything to the public results bucket or leaderboard.
-Promotion is intentionally manual. Credit the authenticated contributor with the
-largest accepted share for each model in the volunteer Hall of Fame; do not award
-credit from an unverified username in a request or result payload.
+Community submissions go to a private Hugging Face bucket in the EU region and
+receive the `community-review-ready` label after broker validation. Redis is only
+coordination state and is never a review source. Configure the maintainer shell with
+`HF_STAGING_BUCKET`, an `HF_TOKEN` that can read staging and write
+`HF_RESULTS_BUCKET` (default `EuroEval/results`), and
+`VOLUNTEER_PROMOTION_SECRET`. Then use the durable review commands:
+
+```sh
+uv run python src/scripts/review_volunteer_results.py list
+uv run python src/scripts/review_volunteer_results.py show <submission-id>
+uv run python src/scripts/review_volunteer_results.py \
+  --reviewer <github-login> approve <submission-id> --reason "checks passed"
+uv run python src/scripts/review_volunteer_results.py \
+  --reviewer <github-login> reject <submission-id> --reason "reason"
+```
+
+Every decision re-downloads and validates the manifest and exact result bytes.
+Approval checks every canonical destination, uploads only the submission's records,
+verifies the resulting metadata and bytes, writes an immutable decision artifact,
+and only then calls the broker. Rejection writes its decision before calling the
+broker. Both operations are safe to rerun after a partial failure; the opposite
+terminal outcome is refused.
+
+A rejected language becomes leaseable again while its rejected submission remains in
+the issue audit marker. Acceptance of one language does not award credit. Once every
+selected exact language has an accepted submission, the broker adds `results-ready`
+and writes the immutable Hall marker for the contributor with the largest sum of
+server-derived accepted result counts. Lower-case GitHub login order breaks ties.
 
 ### Image publishing workflow
 
 `.github/workflows/worker-image.yaml` builds only `linux/amd64`, enables BuildKit
-layer caching, and emits provenance and an SBOM. Pull requests build without
-logging in to GHCR and cannot push. Only pushes to `main` and an explicit trusted
-workflow dispatch log in and publish. The workflow prints the resulting immutable
-content digest for the broker configuration.
+layer caching, and emits provenance and an SBOM for published images. Pull requests
+load a local image and smoke its normal entrypoint as UID 10001 without a GPU. They
+cannot push. Only pushes to `main` and an explicit trusted workflow dispatch log in
+and publish. The workflow prints the resulting immutable content digest for the
+broker configuration.
 
 If a build fails, do not switch the deployment to a mutable base image or install a
 host driver in the image. Check the pinned CUDA base, the locked `uv.lock`

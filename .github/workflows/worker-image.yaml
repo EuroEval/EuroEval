@@ -62,12 +62,22 @@ jobs:
           file: Dockerfile.worker
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: true
           sbom: true
           cache-from: type=gha,scope=euroeval-worker-${{ github.ref_name }}
           cache-to: type=gha,mode=max,scope=euroeval-worker-${{ github.ref_name }}
+
+      - name: Smoke entrypoint and non-root runtime
+        if: github.event_name == 'pull_request'
+        env:
+          IMAGE: ${{ steps.meta.outputs.tags }}
+        run: |
+          test "$(docker image inspect "$IMAGE" --format '{{.Config.User}}')" = "worker"
+          test "$(docker run --rm --entrypoint id "$IMAGE" -u)" = "10001"
+          docker run --rm "$IMAGE" --version
 
       - name: Print immutable image reference
         if: github.event_name != 'pull_request'

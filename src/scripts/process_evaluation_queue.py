@@ -69,7 +69,6 @@ from leaderboards.queue_hf_cache import cached_model_summary
 from leaderboards.queue_markers import (
     clear_vm_marker,
     issue_has_active_queue_ownership,
-    issue_has_terminal_queue_submission,
     parse_community_marker,
     release_issue_if_owned,
     set_vm_marker,
@@ -466,12 +465,17 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
     candidates: list[tuple[int, int, int, int, float, dict, str, list[str]]] = []
     for issue in (issue for issue in issues if "pull_request" not in issue):
         body = issue.get("body") or ""
-        if issue_has_active_queue_ownership(
-            body
-        ) or issue_has_terminal_queue_submission(body):
+        label_names = {
+            label.get("name")
+            for label in issue.get("labels", [])
+            if isinstance(label, dict)
+        }
+        if RESULTS_READY_LABEL in label_names:
+            continue
+        if issue_has_active_queue_ownership(body):
             logger.info(
-                f"#{issue['number']}: skipping -- community/coordinator "
-                "ownership or terminal submission is present."
+                f"#{issue['number']}: skipping -- active community/coordinator "
+                "work is present."
             )
             continue
         marker = parse_community_marker(body)
@@ -978,9 +982,12 @@ def issue_is_still_claimable(number: int) -> bool:
     if current.get("state") != "open":
         return False
     body = current.get("body") or ""
-    if issue_has_active_queue_ownership(body) or issue_has_terminal_queue_submission(
-        body
-    ):
+    label_names = {
+        label.get("name")
+        for label in current.get("labels", [])
+        if isinstance(label, dict)
+    }
+    if RESULTS_READY_LABEL in label_names or issue_has_active_queue_ownership(body):
         return False
     # A valid but expired/completed broker marker may leave the coordinator
     # assigned. It is reclaimable; malformed markers remain a hard stop.
