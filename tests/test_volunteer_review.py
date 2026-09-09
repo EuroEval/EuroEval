@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import hashlib
 import json
+import threading
 import typing as t
 from pathlib import Path
 from types import SimpleNamespace
@@ -11,6 +13,7 @@ from types import SimpleNamespace
 import pytest
 
 from euroeval_worker.review import (
+    BrokerReservationResult,
     BucketApi,
     BucketStore,
     ReviewError,
@@ -27,7 +30,13 @@ def test_acceptance_renews_before_each_upload() -> None:
     renewals: list[list[dict[str, str]]] = []
     _, reviewer, _ = _reviewer(
         record_count=2,
-        reserver=lambda issue, submission, outcome, records: "reservation",
+        reserver=lambda issue, submission, outcome, reviewer, records: (
+            BrokerReservationResult(
+                token="reservation",
+                decision_reviewer="maintainer",
+                decision_created_at="2026-09-06T12:00:00Z",
+            )
+        ),
         renewer=lambda issue, submission, outcome, token, records: (
             renewals.append(records) or token
         ),
@@ -46,6 +55,7 @@ class FakeHfApi:
         """Initialise empty bucket contents and failure controls."""
         self.files: dict[tuple[str, str], bytes] = {}
         self.uploads: list[tuple[str, str]] = []
+        self.uploaded_content: list[tuple[str, str, bytes]] = []
         self.fail_result_upload_number: int | None = None
         self.result_uploads = 0
 
@@ -65,6 +75,7 @@ class FakeHfApi:
                     raise RuntimeError("injected upload interruption")
             self.files[(bucket_id, path)] = content
             self.uploads.append((bucket_id, path))
+            self.uploaded_content.append((bucket_id, path, content))
 
     def bucket_info(self, bucket: str, token: str) -> SimpleNamespace:
         """Return private metadata."""
@@ -129,7 +140,10 @@ class FakeHfApi:
 
 def _reviewer(
     record_count: int = 1,
-    reserver: t.Callable[[int, str, str, list[dict[str, str]]], str] | None = None,
+    reserver: (
+        t.Callable[[int, str, str, str, list[dict[str, str]]], BrokerReservationResult]
+        | None
+    ) = None,
     renewer: t.Callable[[int, str, str, str, list[dict[str, str]]], str] | None = None,
 ) -> tuple[FakeHfApi, VolunteerReviewer, list[tuple[int, str, str]]]:
     api = FakeHfApi()
@@ -270,6 +284,59 @@ def test_canonical_collision_prevents_decision_and_broker() -> None:
     assert (STAGING, f"volunteer/decisions/{SUBMISSION}.json") not in api.files
 
 
+def test_concurrent_decisions_use_first_server_metadata() -> None:
+    """Concurrent reviewers use one server-bound decision byte sequence."""
+    reservation_order: list[str] = []
+    bound: list[BrokerReservationResult] = []
+    lock = threading.Lock()
+    ready = threading.Barrier(2)
+    server_times = {"alice": "2026-09-06T12:00:00Z", "bob": "2026-09-06T12:01:00Z"}
+
+    def reserve(
+        issue: int,
+        submission: str,
+        outcome: str,
+        reviewer: str,
+        records: list[dict[str, str]],
+    ) -> BrokerReservationResult:
+        with lock:
+            reservation_order.append(reviewer)
+            if not bound:
+                bound.append(
+                    BrokerReservationResult(
+                        token="reservation",
+                        decision_reviewer=reviewer,
+                        decision_created_at=server_times[reviewer],
+                    )
+                )
+        ready.wait()
+        return bound[0]
+
+    api, reviewer, broker_calls = _reviewer(reserver=reserve)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(reviewer.decide, SUBMISSION, "rejected", identity)
+            for identity in ("alice", "bob")
+        ]
+        for future in futures:
+            future.result()
+
+    decision = api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")]
+    decision_object = json.loads(decision)
+    first_reviewer = reservation_order[0]
+    assert decision_object["reviewer"] == first_reviewer
+    assert decision_object["decided_at"] == server_times[first_reviewer]
+    decision_path = f"volunteer/decisions/{SUBMISSION}.json"
+    decision_writes = [
+        content
+        for bucket, path, content in api.uploaded_content
+        if bucket == STAGING and path == decision_path
+    ]
+    assert len(decision_writes) == 2
+    assert len(set(decision_writes)) == 1
+    assert len(broker_calls) == 2
+
+
 def test_corrupted_staged_bytes_are_rejected() -> None:
     """Exact digest validation rejects altered staged content."""
     api, reviewer, _ = _reviewer()
@@ -326,10 +393,38 @@ def test_reject_is_idempotent_and_opposite_decision_fails() -> None:
     api, reviewer, broker_calls = _reviewer()
     reviewer.decide(SUBMISSION, "rejected", "maintainer", ["implausible scores"])
     decision = api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")]
-    reviewer.decide(SUBMISSION, "rejected", "maintainer")
+    reviewer.decide(SUBMISSION, "rejected", "maintainer", ["implausible scores"])
 
     assert api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")] == decision
     assert not [key for key in api.files if key[0] == RESULTS]
     assert broker_calls == [(12, SUBMISSION, "rejected"), (12, SUBMISSION, "rejected")]
     with pytest.raises(ReviewError, match="opposite"):
         reviewer.decide(SUBMISSION, "accepted", "maintainer")
+
+
+def test_resume_uses_the_first_bound_decision_metadata() -> None:
+    """A retry by another reviewer preserves the first decision metadata."""
+    bound = BrokerReservationResult(
+        token="reservation",
+        decision_reviewer="alice",
+        decision_created_at="2026-09-06T12:00:00Z",
+    )
+    reservation_reviewers: list[str] = []
+
+    def reserve(
+        issue: int,
+        submission: str,
+        outcome: str,
+        reviewer: str,
+        records: list[dict[str, str]],
+    ) -> BrokerReservationResult:
+        reservation_reviewers.append(reviewer)
+        return bound
+
+    api, reviewer, _ = _reviewer(reserver=reserve)
+    reviewer.decide(SUBMISSION, "rejected", "alice")
+    decision = api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")]
+    reviewer.decide(SUBMISSION, "rejected", "bob")
+
+    assert api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")] == decision
+    assert reservation_reviewers == ["alice", "bob"]
