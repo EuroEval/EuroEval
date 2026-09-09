@@ -299,6 +299,8 @@ contributing new datasets, your help makes this project better for everyone.
 
 - **General contributions**: Check out our [contribution guidelines](CONTRIBUTING.md)
   for information on how to get started.
+- **Volunteer GPU workers**: See the [volunteer worker guide](VOLUNTEER_WORKER.md)
+  to run or operate a community evaluation worker.
 - **Adding datasets**: If you're interested in adding a new dataset to EuroEval, we have
   a [dedicated guide](NEW_DATASET_GUIDE.md) with step-by-step instructions.
 
