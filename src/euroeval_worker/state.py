@@ -266,6 +266,7 @@ def _active_dict(active: ActiveLease) -> JsonObject:
     return {
         "lease": lease,
         "records": [dataclasses.asdict(record) for record in active.records],
+        "github_login": active.github_login,
     }
 
 
@@ -289,6 +290,16 @@ def _lease_from_state(value: object) -> Lease:
     model_profile = value["model_profile"]
     if model_profile is not None and not isinstance(model_profile, str):
         raise ValueError("model_profile is malformed")
+    selected_gpu_uuid = value.get("selected_gpu_uuid")
+    if selected_gpu_uuid is not None and (
+        not isinstance(selected_gpu_uuid, str) or not selected_gpu_uuid
+    ):
+        raise ValueError("selected_gpu_uuid is malformed")
+    selected_gpu_index = value.get("selected_gpu_index")
+    if selected_gpu_index is not None and (
+        isinstance(selected_gpu_index, bool) or not isinstance(selected_gpu_index, int)
+    ):
+        raise ValueError("selected_gpu_index is malformed")
     gpu_memory_utilisation = value.get("gpu_memory_utilisation", 0.8)
     if (
         isinstance(gpu_memory_utilisation, bool)
@@ -308,6 +319,8 @@ def _lease_from_state(value: object) -> Lease:
         gpu_memory_utilisation=float(gpu_memory_utilisation),
         expires_at=value["expires_at"],
         model_profile=model_profile,
+        selected_gpu_uuid=selected_gpu_uuid,
+        selected_gpu_index=selected_gpu_index,
     )
 
 

@@ -77,6 +77,8 @@ class Lease:
     worker_version: str = "legacy-worker"
     gpu_memory_utilisation: float = 0.8
     model_profile: str | None = None
+    selected_gpu_uuid: str | None = None
+    selected_gpu_index: int | None = None
 
 
 @dataclasses.dataclass(frozen=True, init=False)
@@ -236,6 +238,11 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
             If the broker response is malformed or has an invalid fit value.
     """
     _protocol(data)
+    selected_gpu_uuid = data.get("selected_gpu_uuid")
+    if selected_gpu_uuid is not None and (
+        not isinstance(selected_gpu_uuid, str) or not selected_gpu_uuid
+    ):
+        raise ValueError("broker response field 'selected_gpu_uuid' must be a string")
     gpu_memory_utilisation = _number(data, "gpu_memory_utilisation", 0.8)
     if not 0 < gpu_memory_utilisation <= 1:
         raise ValueError(
@@ -253,6 +260,8 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
         gpu_memory_utilisation=gpu_memory_utilisation,
         expires_at=_string(data, "expires_at"),
         model_profile=_optional_string(data, "model_profile"),
+        selected_gpu_uuid=selected_gpu_uuid,
+        selected_gpu_index=_optional_integer(data, "selected_gpu_index"),
     )
 
 
@@ -273,6 +282,15 @@ def _number(data: dict[str, object], key: str, default: float | None = None) -> 
 def _optional_string(data: dict[str, object], key: str) -> str | None:
     value = data.get(key)
     return value if isinstance(value, str) else None
+
+
+def _optional_integer(data: dict[str, object], key: str) -> int | None:
+    value = data.get(key)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        raise ValueError(f"broker response field {key!r} must be an integer")
+    return int(value)
 
 
 def _optional_positive_integer(data: dict[str, object], key: str) -> int | None:

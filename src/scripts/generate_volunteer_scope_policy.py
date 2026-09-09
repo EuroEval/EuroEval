@@ -59,7 +59,7 @@ def _configs_by_name() -> dict[str, object]:
 
 def _allowed_for_profile(config: object, profile: str) -> bool:
     """Return whether one architecture profile may run a dataset."""
-    allowed = getattr(config, "allowed_model_types", ())
+    allowed = getattr(config, "allowed_model_types")
     if profile in ENCODER_PROFILES:
         return ModelType.ENCODER in allowed
     return ModelType.GENERATIVE in allowed
@@ -76,19 +76,16 @@ def build_policy(
         A JSON-serialisable policy document.
     """
     euroeval_version = str(Version(euroeval_version))
-    try:
-        configs = _configs_by_name()
-    except Exception:
-        configs = {}
+    configs = _configs_by_name()
     entries: list[dict[str, object]] = []
     for profile in profiles:
         by_language: dict[str, list[str]] = {}
         for dataset, language in sorted(pairs):
-            config = configs.get(dataset)
-            if config is not None and (
-                language not in {item.code for item in config.languages}
-                or not _allowed_for_profile(config, profile)
-            ):
+            config = configs[dataset]
+            languages = getattr(config, "languages")
+            if language not in {
+                item.code for item in languages
+            } or not _allowed_for_profile(config, profile):
                 continue
             # Benchmarker defaults are validation_split=False and few_shot=True.
             suffix = json.dumps([dataset, False, True], separators=(",", ":"))
