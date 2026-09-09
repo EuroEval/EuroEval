@@ -9,6 +9,12 @@ from leaderboards import bucket_sync
 from src.scripts import process_evaluation_queue
 
 
+@pytest.fixture(autouse=True)
+def standalone_queue(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep unit tests isolated from the shared GitHub queue."""
+    monkeypatch.setenv("VOLUNTEER_COORDINATOR_STANDALONE", "1")
+
+
 def test_process_issue_does_not_special_case_oom_anymore(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

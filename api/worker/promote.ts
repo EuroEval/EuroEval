@@ -80,16 +80,15 @@ function sameRecords(a: PromotionRecord[], b: PromotionRecord[]): boolean {
 }
 
 async function releaseSubmissionReservations(reservation: PromotionReservation): Promise<void> {
-  const raw = await redis("SMEMBERS", `euroeval:worker:reservations:${reservation.submission_id}`);
-  const records = reservation.records;
-  for (const record of records) {
-    await releaseResultReservation(
+  for (const record of reservation.records) {
+    const released = await releaseResultReservation(
       `euroeval:worker:record-identity:${await sha256(record.identity)}`,
       record.digest,
       reservation.submission_id,
     );
+    if (!released) throw new BrokerError(409, "A result reservation could not be safely released.");
   }
-  if (Array.isArray(raw)) await redis("DEL", `euroeval:worker:reservations:${reservation.submission_id}`);
+  await redis("DEL", `euroeval:worker:reservations:${reservation.submission_id}`);
 }
 
 function validCredit(credit: FinalCredit | null, plan: PromotionPlan): boolean {
@@ -135,6 +134,9 @@ export default async function handler(req: Request): Promise<Response> {
           ? oldCredit
           : await signFinalCredit(issueNumber, { version: 1, immutable: true, winner: plan.winner, accepted_counts: plan.acceptedCounts, completed_languages: plan.marker.completed_languages || [] });
       }
+      // Rejection must not make the language claimable while any identity is
+      // still reserved. Keep the signed marker submitted if cleanup fails.
+      if (outcome === "rejected") await releaseSubmissionReservations(reservation);
       const signedMarker = await signVolunteerMarker(issueNumber, plan.marker);
       promotedBody = replaceVolunteerMarker(promotedBody, signedMarker);
       if (credit) promotedBody += `<!-- euroeval-volunteer-credit:v1 ${JSON.stringify(credit)} -->\n`;
@@ -146,7 +148,6 @@ export default async function handler(req: Request): Promise<Response> {
           plan.complete && !validCredit(parseFinalCredit(fencedIssue.body), plan)) {
         throw new BrokerError(409, "Promotion fence lost.");
       }
-      if (outcome === "rejected") await releaseSubmissionReservations(reservation);
       const reviewLabel = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
       const resultsLabel = process.env.RESULTS_READY_LABEL || "results-ready";
       if (plan.complete && !fencedIssue.labels?.some((item) => item.name === resultsLabel)) await addIssueLabel(issueNumber, resultsLabel);

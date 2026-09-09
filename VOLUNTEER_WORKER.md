@@ -118,14 +118,17 @@ lived coordination. Configure these Vercel project environment variables:
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
 | `WORKER_COORDINATOR_SECRET` | Secret for the local coordinator lock endpoints |
+| `VOLUNTEER_COORDINATOR_STANDALONE` | Explicit isolated-migration lock bypass (`1` only) |
 | `VOLUNTEER_PROMOTION_SECRET` | Secret for maintainer promotion requests |
 | `VOLUNTEER_LEASE_SECONDS` | Optional bounded lease duration |
 | `VOLUNTEER_SCOPE_POLICY_JSON` | Optional complete generated policy override |
 
-Every internal queue host must also set `VOLUNTEER_COORDINATOR_URL` and
-`WORKER_COORDINATOR_SECRET`. If the URL is set, queue claims fail closed unless the
-shared broker lock can be acquired; do not run a local queue against a shared issue
-set without both values.
+Every internal queue host must set `VOLUNTEER_COORDINATOR_URL` and
+`WORKER_COORDINATOR_SECRET`. Queue claims fail closed unless the shared broker lock
+can be acquired; do not run a local queue against a shared issue set without both
+values. For a deliberately isolated migration only, set
+`VOLUNTEER_COORDINATOR_STANDALONE=1` to disable the shared lock. This override is
+not safe for normal operation and must never be used on a shared queue host.
 
 Set secrets in Vercel's encrypted environment configuration, never in the
 repository or workflow file. The OAuth client ID and secret are both required: the
