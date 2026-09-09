@@ -1,0 +1,74 @@
+name: Volunteer worker image
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile.worker"
+      - ".dockerignore"
+      - ".github/workflows/worker-image.yaml"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "src/euroeval/**"
+      - "src/euroeval_worker/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "Dockerfile.worker"
+      - ".dockerignore"
+      - ".github/workflows/worker-image.yaml"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "src/euroeval/**"
+      - "src/euroeval_worker/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    name: Build amd64 worker image
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/euroeval/euroeval-worker
+          tags: |
+            type=sha,format=long,prefix=sha-
+
+      - name: Build and publish
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.worker
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: true
+          sbom: true
+          cache-from: type=gha,scope=euroeval-worker-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=euroeval-worker-${{ github.ref_name }}
+
+      - name: Print immutable image reference
+        if: github.event_name != 'pull_request'
+        run: echo "ghcr.io/euroeval/euroeval-worker@${{ steps.build.outputs.digest }}"
