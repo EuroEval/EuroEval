@@ -138,55 +138,6 @@ def main() -> None:
     )
 
 
-def split_dataframe(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
-    """Split complete source-ID groups into deterministic capped partitions.
-
-    Args:
-        df:
-            A dataframe containing one row for each source ID and granularity.
-
-    Returns:
-        Dataframes for the train, validation, and test splits.
-
-    Raises:
-        ValueError:
-            If there are not enough complete source-ID groups for the requested caps.
-    """
-    expected_granularities = set(GRANULARITY_FILES)
-    group_sizes = df.groupby("source_id").size()
-    group_granularities = df.groupby("source_id")["granularity"].agg(set)
-    source_ids = sorted(
-        source_id
-        for source_id in group_sizes.index
-        if group_sizes[source_id] == len(expected_granularities)
-        and group_granularities[source_id] == expected_granularities
-    )
-    groups_per_split = {
-        name: cap // len(expected_granularities) for name, cap in SPLIT_CAPS.items()
-    }
-    if len(source_ids) < sum(groups_per_split.values()):
-        raise ValueError("Not enough complete source-ID groups for the requested caps.")
-
-    train_ids, remaining_ids = train_test_split(
-        source_ids, train_size=groups_per_split["train"], random_state=SPLIT_SEED
-    )
-    val_ids, remaining_ids = train_test_split(
-        remaining_ids, train_size=groups_per_split["val"], random_state=SPLIT_SEED
-    )
-    test_ids, _ = train_test_split(
-        remaining_ids, train_size=groups_per_split["test"], random_state=SPLIT_SEED
-    )
-    split_ids = {"train": train_ids, "val": val_ids, "test": test_ids}
-    complete_df = df[df["source_id"].isin(source_ids)]
-
-    return {
-        name: complete_df[complete_df["source_id"].isin(ids)]
-        .sort_values(["source_id", "granularity"])
-        .reset_index(drop=True)
-        for name, ids in split_ids.items()
-    }
-
-
 def parse_tsv_file(file_name: str, content: bytes) -> list[dict[str, str]]:
     """Parse a medium- or coarse-grained similarity outlier TSV file.
 
@@ -288,6 +239,55 @@ def parse_tsv_file(file_name: str, content: bytes) -> list[dict[str, str]]:
         logger.warning(f"Skipped {num_skipped} malformed samples in {file_name}.")
 
     return records
+
+
+def split_dataframe(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """Split complete source-ID groups into deterministic capped partitions.
+
+    Args:
+        df:
+            A dataframe containing one row for each source ID and granularity.
+
+    Returns:
+        Dataframes for the train, validation, and test splits.
+
+    Raises:
+        ValueError:
+            If there are not enough complete source-ID groups for the requested caps.
+    """
+    expected_granularities = set(GRANULARITY_FILES)
+    group_sizes = df.groupby("source_id").size()
+    group_granularities = df.groupby("source_id")["granularity"].agg(set)
+    source_ids = sorted(
+        source_id
+        for source_id in group_sizes.index
+        if group_sizes[source_id] == len(expected_granularities)
+        and group_granularities[source_id] == expected_granularities
+    )
+    groups_per_split = {
+        name: cap // len(expected_granularities) for name, cap in SPLIT_CAPS.items()
+    }
+    if len(source_ids) < sum(groups_per_split.values()):
+        raise ValueError("Not enough complete source-ID groups for the requested caps.")
+
+    train_ids, remaining_ids = train_test_split(
+        source_ids, train_size=groups_per_split["train"], random_state=SPLIT_SEED
+    )
+    val_ids, remaining_ids = train_test_split(
+        remaining_ids, train_size=groups_per_split["val"], random_state=SPLIT_SEED
+    )
+    test_ids, _ = train_test_split(
+        remaining_ids, train_size=groups_per_split["test"], random_state=SPLIT_SEED
+    )
+    split_ids = {"train": train_ids, "val": val_ids, "test": test_ids}
+    complete_df = df[df["source_id"].isin(source_ids)]
+
+    return {
+        name: complete_df[complete_df["source_id"].isin(ids)]
+        .sort_values(["source_id", "granularity"])
+        .reset_index(drop=True)
+        for name, ids in split_ids.items()
+    }
 
 
 if __name__ == "__main__":

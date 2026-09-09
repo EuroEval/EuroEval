@@ -9,20 +9,6 @@ from scripts.dataset_creation.create_danish_similarity_outlier import (
 )
 
 
-def _tsv_content(
-    candidates: str, outlier_position: str = "0", source_id: str = "v1_0001"
-) -> bytes:
-    """Build a fine-grained TSV payload for parser tests.
-
-    Returns:
-        A UTF-8 encoded TSV payload.
-    """
-    return (
-        "candidates\tlabel   outlier_position    id  chapter section\n"
-        f"{candidates}\tword\t{outlier_position}\t{source_id}\t1\t1.015\n"
-    ).encode()
-
-
 def test_parse_tsv_file_retains_source_metadata() -> None:
     """Parsed rows retain their source ID, granularity, and source location."""
     records = parse_tsv_file(
@@ -36,6 +22,20 @@ def test_parse_tsv_file_retains_source_metadata() -> None:
     assert records[0]["chapter"] == "1"
     assert records[0]["section"] == "1.015"
     assert records[0]["label"] == "a"
+
+
+def _tsv_content(
+    candidates: str, outlier_position: str = "0", source_id: str = "v1_0001"
+) -> bytes:
+    """Build a fine-grained TSV payload for parser tests.
+
+    Returns:
+        A UTF-8 encoded TSV payload.
+    """
+    return (
+        "candidates\tlabel   outlier_position    id  chapter section\n"
+        f"{candidates}\tword\t{outlier_position}\t{source_id}\t1\t1.015\n"
+    ).encode()
 
 
 def test_parse_tsv_file_skips_malformed_and_duplicate_options() -> None:
