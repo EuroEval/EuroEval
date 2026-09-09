@@ -4,6 +4,7 @@ import collections.abc as c
 import dataclasses
 import datetime
 import hashlib
+import inspect
 import logging
 import threading
 import time
@@ -23,17 +24,41 @@ class LeaseLost(RuntimeError):
     """Raised when the broker stops accepting heartbeats."""
 
 
+class AuthenticationIdentityError(BrokerError):
+    """Raised when reauthentication returns a different contributor."""
+
+    def __init__(self, expected: str, actual: str) -> None:
+        """Describe the contributor mismatch without including credentials."""
+        super().__init__(
+            f"reauthentication returned GitHub login {actual!r}; expected {expected!r}",
+            status=403,
+        )
+
+
 class Heartbeat:
     """Renew a lease in a daemon thread and expose failures to the worker."""
 
-    def __init__(self, client: BrokerProtocol, credential: str, lease: Lease) -> None:
+    _interval = 30.0
+    _max_backoff = 30.0
+
+    def __init__(
+        self,
+        client: BrokerProtocol,
+        credential: str,
+        lease: Lease,
+        persist: c.Callable[[Lease], None] | None = None,
+        reauthenticate: c.Callable[[str], str] | None = None,
+    ) -> None:
         """Initialise a heartbeat for a lease."""
         self.client = client
         self.credential = credential
         self.lease = lease
+        self.persist = persist
+        self.reauthenticate = reauthenticate
         self.failed: Exception | None = None
         self._stop = threading.Event()
         self._started = False
+        self._lease_lock = threading.Lock()
         self._thread = threading.Thread(
             target=self._run, name="worker-heartbeat", daemon=True
         )
@@ -50,29 +75,71 @@ class Heartbeat:
             self._thread.join(timeout=2)
 
     def check(self) -> None:
-        """Raise the background failure, if any.
-
-        Raises:
-            LeaseLost:
-                If a heartbeat failed.
-        """
-        if self.failed is not None:
-            raise LeaseLost("broker heartbeat failed") from self.failed
+        """Raise the background failure, if any."""
+        if self.failed is None:
+            return
+        if isinstance(self.failed, LeaseLost):
+            raise self.failed
+        raise self.failed
 
     def _run(self) -> None:
-        while not self._stop.wait(timeout=30):
+        while not self._stop.wait(timeout=self._interval):
+            self._renew()
+            if self.failed is not None:
+                return
+
+    def _renew(self) -> None:
+        attempt = 0
+        auth_attempted = False
+        while not self._stop.is_set():
             try:
-                self.client.heartbeat(
+                expires_at = self.client.heartbeat(
                     credential=self.credential, lease_id=self.lease.lease_id
                 )
-            except Exception as error:  # noqa: BLE001 - thread reports all failures
-                self.failed = error
-                self._stop.set()
+                if not isinstance(expires_at, str) or not expires_at:
+                    raise BrokerError("broker heartbeat response omitted expires_at")
+                renewed = dataclasses.replace(self.lease, expires_at=expires_at)
+                if self.persist is not None:
+                    self.persist(renewed)
+                with self._lease_lock:
+                    self.lease = renewed
                 return
+            except BrokerError as error:
+                if error.status == 401 and not auth_attempted:
+                    if self.reauthenticate is None:
+                        self._fail(error)
+                        return
+                    try:
+                        self.credential = self.reauthenticate(self.credential)
+                    except Exception as refresh_error:  # noqa: BLE001
+                        self._fail(refresh_error)
+                        return
+                    auth_attempted = True
+                    continue
+                if error.status == 409:
+                    self._fail(LeaseLost("broker heartbeat lost the lease"))
+                    return
+                if not _transient(error):
+                    self._fail(error)
+                    return
+                retry_after = error.retry_after
+            except Exception:  # noqa: BLE001 - network clients vary
+                retry_after = None
+            delay = _retry_delay(attempt, retry_after, self._max_backoff)
+            attempt += 1
+            if self._stop.wait(delay):
+                return
+
+    def _fail(self, error: Exception) -> None:
+        self.failed = error
+        self._stop.set()
 
 
 class Worker:
     """Authenticate, claim, evaluate, and submit one lease at a time."""
+
+    _max_submission_attempts = 3
+    _max_retry_delay = 30.0
 
     def __init__(
         self,
@@ -98,27 +165,37 @@ class Worker:
         """
         self.client = client
         self.state = state
+        self.gpu_memory_utilisation = gpu_memory_utilisation
         self.evaluator = evaluator or EuroEvalEvaluator(
             cache_dir=state.directory, gpu_memory_utilisation=gpu_memory_utilisation
         )
         self.hardware_factory = hardware_factory
         self.last_submission_id: str | None = None
+        self._credential = ""
+        self._login = ""
+        self._auth_lock = threading.Lock()
 
     def run(self, once: bool = False) -> None:
         """Run until interrupted, or process one broker response with ``once``.
 
         Raises:
             BrokerError:
-                If authentication or a lease request fails.
+                If the broker rejects an operation.
+            AuthenticationIdentityError:
+                If a resumed lease is presented to a different contributor.
             LeaseLost:
-                If a resumable lease is no longer owned by this worker.
-            RuntimeError:
-                If the active lease disappears while credentials are refreshed.
+                If broker ownership is lost.
         """
-        credential, _login = authenticate(client=self.client, state=self.state)
+        self._credential, self._login = authenticate(
+            client=self.client, state=self.state
+        )
         while True:
             hardware = self.hardware_factory()
             active = self.state.load_active()
+            if active is not None and active.github_login not in (None, self._login):
+                raise AuthenticationIdentityError(
+                    active.github_login or "", self._login
+                )
             if active is not None and not _lease_is_valid(active.lease):
                 logger.warning(
                     "Discarding expired local lease %s", active.lease.lease_id
@@ -128,27 +205,12 @@ class Worker:
             if active is not None:
                 try:
                     self._process_lease(
-                        credential=credential,
+                        credential=self._credential,
                         lease=active.lease,
                         hardware=hardware,
                         active=active,
                     )
-                except BrokerError as error:
-                    if error.status != 401:
-                        if _lease_lost(error):
-                            self.state.archive_active()
-                        raise
-                    self.state.clear_auth()
-                    credential, _login = authenticate(
-                        client=self.client, state=self.state
-                    )
-                    self._process_lease(
-                        credential=credential,
-                        lease=active.lease,
-                        hardware=hardware,
-                        active=active,
-                    )
-                except LeaseLost as error:
+                except (BrokerError, LeaseLost) as error:
                     if _lease_lost(error):
                         self.state.archive_active()
                     raise
@@ -156,12 +218,10 @@ class Worker:
                     return
                 continue
 
-            claim = self._claim_with_reauthentication(
-                credential=credential, hardware=hardware
+            credential, response = self._claim_with_reauthentication(
+                credential=self._credential, hardware=hardware
             )
-            if claim[0] != credential:
-                credential = claim[0]
-            response = claim[1]
+            self._credential = credential
             if response.lease is None:
                 logger.info("No volunteer evaluation work is currently available")
                 if once:
@@ -170,30 +230,12 @@ class Worker:
                 continue
             try:
                 self._process_lease(
-                    credential=credential,
+                    credential=self._credential,
                     lease=response.lease,
                     hardware=hardware,
                     active=None,
                 )
-            except BrokerError as error:
-                if error.status != 401:
-                    if _lease_lost(error):
-                        self.state.archive_active()
-                    raise
-                self.state.clear_auth()
-                credential, _login = authenticate(client=self.client, state=self.state)
-                resumed = self.state.load_active()
-                if resumed is None:
-                    raise RuntimeError(
-                        "active lease disappeared during re-authentication"
-                    )
-                self._process_lease(
-                    credential=credential,
-                    lease=resumed.lease,
-                    hardware=hardware,
-                    active=resumed,
-                )
-            except LeaseLost as error:
+            except (BrokerError, LeaseLost) as error:
                 if _lease_lost(error):
                     self.state.archive_active()
                 raise
@@ -206,11 +248,11 @@ class Worker:
         """Claim once, replacing one revoked cached credential at most once.
 
         Returns:
-            The credential used and the broker claim.
+            The credential used and the broker response.
 
         Raises:
             BrokerError:
-                If the claim fails after one re-authentication attempt.
+                If claiming fails after one authentication retry.
         """
         try:
             return credential, self.client.claim(
@@ -220,7 +262,9 @@ class Worker:
             if error.status != 401:
                 raise
             self.state.clear_auth()
-            new_credential, _login = authenticate(client=self.client, state=self.state)
+            new_credential, login = authenticate(client=self.client, state=self.state)
+            self._login = login
+            self._credential = new_credential
             return new_credential, self.client.claim(
                 credential=new_credential, hardware=hardware
             )
@@ -232,20 +276,50 @@ class Worker:
         hardware: HardwareReport,
         active: ActiveLease | None,
     ) -> None:
+        expected_login = active.github_login or self._login if active else self._login
         if active is None:
-            self.state.save_active(lease=lease)
-        heartbeat = Heartbeat(client=self.client, credential=credential, lease=lease)
+            self.state.save_active(lease=lease, github_login=expected_login or None)
+        elif active.github_login is None and expected_login:
+            self.state.save_active(
+                lease=active.lease, records=active.records, github_login=expected_login
+            )
+        heartbeat_parameters = inspect.signature(Heartbeat).parameters
+        if "persist" in heartbeat_parameters:
+            heartbeat = Heartbeat(
+                client=self.client,
+                credential=credential,
+                lease=lease,
+                persist=self.state.renew_active,
+                reauthenticate=lambda failed: self._reauthenticate(
+                    failed, expected_login
+                ),
+            )
+        else:
+            heartbeat = Heartbeat(
+                client=self.client, credential=credential, lease=lease
+            )
         completed = False
         try:
             try:
-                check_model_safety(
-                    lease=lease,
-                    gpus=hardware.gpus,
-                    free_disk_bytes=hardware.free_disk_bytes,
-                )
+                if (
+                    "gpu_memory_utilisation"
+                    in inspect.signature(check_model_safety).parameters
+                ):
+                    check_model_safety(
+                        lease=lease,
+                        gpus=hardware.gpus,
+                        free_disk_bytes=hardware.free_disk_bytes,
+                        gpu_memory_utilisation=self.gpu_memory_utilisation,
+                    )
+                else:
+                    check_model_safety(
+                        lease=lease,
+                        gpus=hardware.gpus,
+                        free_disk_bytes=hardware.free_disk_bytes,
+                    )
             except SafetyError:
                 self.client.release(
-                    credential=credential,
+                    credential=self._credential,
                     lease_id=lease.lease_id,
                     reason="unsafe_model",
                 )
@@ -259,22 +333,24 @@ class Worker:
                 records = self._durable_records(active=active, evaluated=evaluated)
             except RuntimeError:
                 self.client.release(
-                    credential=credential,
+                    credential=self._credential,
                     lease_id=lease.lease_id,
                     reason="incompatible_resume",
                 )
                 self.state.archive_active()
                 raise
             self._submit_records(
-                credential=credential, lease=lease, records=records, heartbeat=heartbeat
+                credential=self._credential,
+                lease=lease,
+                records=records,
+                heartbeat=heartbeat,
             )
-            submission_id = self.client.finalise(
-                credential=credential, lease_id=lease.lease_id
+            submission_id = self._finalise(
+                credential=self._credential, lease_id=lease.lease_id
             )
-            if isinstance(submission_id, str) and submission_id:
-                self.state.save_submission_id(submission_id)
-                self.last_submission_id = submission_id
-                logger.info("Volunteer submission completed: %s", submission_id)
+            self.state.save_submission_id(submission_id)
+            self.last_submission_id = submission_id
+            logger.info("Volunteer submission completed: %s", submission_id)
             self.state.clear_active()
             completed = True
         except (KeyboardInterrupt, SystemExit):
@@ -284,17 +360,44 @@ class Worker:
             if not completed:
                 logger.info("Preserving active lease %s for restart", lease.lease_id)
 
+    def _reauthenticate(self, failed_credential: str, expected_login: str) -> str:
+        """Refresh a credential while proving the contributor did not change.
+
+        Returns:
+            A credential belonging to ``expected_login``.
+
+        Raises:
+            AuthenticationIdentityError:
+                If the refreshed credential belongs to another contributor.
+        """
+        with self._auth_lock:
+            saved = self.state.load_auth()
+            if saved is not None and saved[0] != failed_credential:
+                if saved[1] != expected_login:
+                    raise AuthenticationIdentityError(expected_login, saved[1])
+                self._login = saved[1]
+                self._credential = saved[0]
+                return saved[0]
+            self.state.clear_auth()
+            credential, login = authenticate(client=self.client, state=self.state)
+            if login != expected_login:
+                raise AuthenticationIdentityError(expected_login, login)
+            self.state.save_auth(credential=credential, github_login=login)
+            self._login = login
+            self._credential = credential
+            return credential
+
     def _durable_records(
         self, active: ActiveLease | None, evaluated: list[EEERecord]
     ) -> tuple[PendingRecord, ...]:
         """Persist evaluation output, or verify it against a restart snapshot.
 
         Returns:
-            Durable result entries, retaining prior acknowledgement flags.
+            Durable records with existing acknowledgement flags retained.
 
         Raises:
             RuntimeError:
-                If resumed evaluation differs from the durable snapshot.
+                If the evaluation output differs from its restart snapshot.
         """
         for record in evaluated:
             digest = hashlib.sha256(record.record_json.encode("utf-8")).hexdigest()
@@ -332,24 +435,95 @@ class Worker:
             heartbeat.check()
 
     def _submit_record(self, credential: str, lease: Lease, record: EEERecord) -> None:
-        """Retry one exact result without changing its JSON representation."""
-        for attempt in range(3):
+        """Retry one exact result under the bounded transient-error policy.
+
+        Raises:
+            BrokerError:
+                If the broker reports a terminal result error.
+        """
+        del credential
+        auth_attempted = False
+        for attempt in range(self._max_submission_attempts):
             try:
                 self.client.submit_result(
-                    credential=credential, lease=lease, result=record
+                    credential=self._credential, lease=lease, result=record
                 )
                 return
-            except Exception:
-                if attempt == 2:
+            except BrokerError as error:
+                if error.status == 401 and not auth_attempted:
+                    self._credential = self._reauthenticate(
+                        self._credential, self._login
+                    )
+                    auth_attempted = True
+                    continue
+                if (
+                    not _submission_transient(error)
+                    or attempt + 1 >= self._max_submission_attempts
+                ):
                     raise
-                logger.warning("Result submission failed; retrying idempotently")
+                retry_after = error.retry_after
+            except Exception:  # noqa: BLE001 - network clients vary
+                if attempt + 1 >= self._max_submission_attempts:
+                    raise
+                retry_after = None
+            logger.warning("Result submission failed; retrying idempotently")
+            time.sleep(_retry_delay(attempt, retry_after, self._max_retry_delay))
+
+    def _finalise(self, credential: str, lease_id: str) -> str:
+        """Finalise once, retrying authentication exactly once if required.
+
+        Returns:
+            The stable broker submission identifier.
+
+        Raises:
+            BrokerError:
+                If finalisation fails.
+        """
+        del credential
+        auth_attempted = False
+        while True:
+            try:
+                return self.client.finalise(
+                    credential=self._credential, lease_id=lease_id
+                )
+            except BrokerError as error:
+                if error.status != 401 or auth_attempted:
+                    raise
+                self._credential = self._reauthenticate(self._credential, self._login)
+                auth_attempted = True
+
+
+def _transient(error: BrokerError) -> bool:
+    """Return whether a broker error is safe to retry."""
+    return error.status is None or error.status == 429 or error.status >= 500
+
+
+def _submission_transient(error: BrokerError) -> bool:
+    """Return whether result upload may be retried.
+
+    Returns:
+        Whether the status is in the result retry set.
+    """
+    return (
+        error.status is None or error.status in (408, 425, 429) or error.status >= 500
+    )
+
+
+def _retry_delay(attempt: int, retry_after: float | None, maximum: float) -> float:
+    """Calculate bounded exponential backoff, honouring Retry-After.
+
+    Returns:
+        A non-negative delay no larger than ``maximum``.
+    """
+    requested = retry_after if retry_after is not None else 2**attempt
+    return min(maximum, max(0.0, requested))
 
 
 def _lease_is_valid(lease: Lease) -> bool:
     """Check a broker ISO-8601 expiry without accepting malformed state.
 
     Returns:
-        Whether the lease has a valid future expiry.
+        Whether the expiry is a future timezone-aware timestamp.
     """
     try:
         expiry = datetime.datetime.fromisoformat(
@@ -363,10 +537,10 @@ def _lease_is_valid(lease: Lease) -> bool:
 
 
 def _lease_lost(error: BaseException) -> bool:
-    """Identify broker responses that make local work unsafe to resume.
+    """Identify errors that make local work unsafe to resume.
 
     Returns:
-        Whether the error indicates lost broker ownership.
+        Whether broker ownership has definitely been lost.
     """
     return isinstance(error, LeaseLost) or (
         isinstance(error, BrokerError) and error.status == 409

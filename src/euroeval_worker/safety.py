@@ -12,29 +12,74 @@ from .types import Gpu, Lease
 
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _SUPPORTED_HOST_ARCHITECTURES = {"x86_64", "amd64", "aarch64", "arm64"}
-_SUPPORTED_MODEL_ARCHITECTURES = {
-    "BertForSequenceClassification",
-    "BertForTokenClassification",
-    "BloomForCausalLM",
-    "GemmaForCausalLM",
-    "Gemma2ForCausalLM",
-    "Gemma3ForCausalLM",
-    "GPT2LMHeadModel",
-    "LlamaForCausalLM",
-    "MistralForCausalLM",
-    "Qwen2ForCausalLM",
-    "Qwen2ForSequenceClassification",
-    "Qwen2ForTokenClassification",
-    "Qwen3ForCausalLM",
-    "Qwen3ForSequenceClassification",
-    "Qwen3ForTokenClassification",
-    "RobertaForSequenceClassification",
-    "RobertaForTokenClassification",
-    "XLMRobertaForSequenceClassification",
-    "XLMRobertaForTokenClassification",
+_PROFILE_ARCHITECTURES = {
+    "bert": frozenset({"BertForSequenceClassification", "BertForTokenClassification"}),
+    "roberta": frozenset(
+        {
+            "RobertaForSequenceClassification",
+            "RobertaForTokenClassification",
+            "XLMRobertaForSequenceClassification",
+            "XLMRobertaForTokenClassification",
+        }
+    ),
+    "eurobert": frozenset(
+        {
+            "EuroBERTForSequenceClassification",
+            "EuroBERTForTokenClassification",
+            "EuroBertForSequenceClassification",
+            "EuroBertForTokenClassification",
+        }
+    ),
+    "llama": frozenset({"LlamaForCausalLM"}),
+    "mistral": frozenset({"MistralForCausalLM"}),
+    "qwen": frozenset(
+        {
+            "Qwen2ForCausalLM",
+            "Qwen2ForSequenceClassification",
+            "Qwen2ForTokenClassification",
+            "Qwen3ForCausalLM",
+            "Qwen3ForSequenceClassification",
+            "Qwen3ForTokenClassification",
+        }
+    ),
+    "gemma": frozenset({"GemmaForCausalLM", "Gemma2ForCausalLM", "Gemma3ForCausalLM"}),
+    "phi": frozenset({"PhiForCausalLM", "Phi3ForCausalLM"}),
+    "falcon": frozenset({"FalconForCausalLM"}),
+    "gpt2": frozenset({"GPT2LMHeadModel"}),
 }
-_SUPPORTED_PROFILES = {"single-gpu", "default"}
+_SUPPORTED_PROFILES = frozenset(_PROFILE_ARCHITECTURES)
+_SUPPORTED_MODEL_ARCHITECTURES = frozenset().union(*_PROFILE_ARCHITECTURES.values())
+# Specific prefixes must precede ``bert`` when profiles are derived from a name.
+_ARCHITECTURE_PREFIXES = (
+    ("xlmroberta", "roberta"),
+    ("roberta", "roberta"),
+    ("eurobert", "eurobert"),
+    ("bert", "bert"),
+    ("llama", "llama"),
+    ("mistral", "mistral"),
+    ("qwen3", "qwen"),
+    ("qwen2", "qwen"),
+    ("gemma", "gemma"),
+    ("phi3", "phi"),
+    ("phi", "phi"),
+    ("falcon", "falcon"),
+    ("gpt2", "gpt2"),
+)
 _UNSAFE_SUFFIXES = (".bin", ".pt", ".pth", ".ckpt", ".gguf", ".onnx", ".h5", ".msgpack")
+
+
+def _profile_for_architecture(architecture: str) -> str | None:
+    """Derive the broker profile using the broker's precedence rules.
+
+    Returns:
+        The matching profile, or ``None`` for an unknown architecture.
+    """
+    name = re.sub(r"For[A-Za-z]+$", "", architecture)
+    name = re.sub(r"Model$", "", name).lower().replace("_", "")
+    for prefix, profile in _ARCHITECTURE_PREFIXES:
+        if prefix in name:
+            return profile
+    return None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -54,6 +99,7 @@ def check_model_safety(
     gpus: tuple[Gpu, ...],
     metadata: "ModelMetadata | None" = None,
     free_disk_bytes: int | None = None,
+    gpu_memory_utilisation: float = 0.8,
 ) -> SafetyReport:
     """Verify public, pinned, safetensors-only, non-code model metadata.
 
@@ -68,8 +114,8 @@ def check_model_safety(
         raise SafetyError("unsupported worker architecture")
     if not _COMMIT_RE.fullmatch(lease.model_revision):
         raise SafetyError("broker supplied an unpinned model revision")
-    if lease.profile is not None and lease.profile not in _SUPPORTED_PROFILES:
-        raise SafetyError("broker supplied an unknown hardware profile")
+    if not 0 < gpu_memory_utilisation <= 1:
+        raise SafetyError("GPU memory utilisation must be between 0 and 1")
     info = metadata or HuggingFaceMetadata().fetch(
         model_id=lease.model_id, revision=lease.model_revision
     )
@@ -77,13 +123,15 @@ def check_model_safety(
         raise SafetyError("model is private or gated")
     if info.auto_map:
         raise SafetyError("model declares auto_map and would require remote code")
-    if not info.architectures:
-        raise SafetyError("model config omitted its architecture")
-    if any(
-        architecture not in _SUPPORTED_MODEL_ARCHITECTURES
-        for architecture in info.architectures
-    ):
+    if lease.model_profile not in _SUPPORTED_PROFILES:
+        raise SafetyError("broker supplied an unknown hardware profile")
+    if len(info.architectures) != 1:
+        raise SafetyError("model config must declare exactly one architecture")
+    architecture = info.architectures[0]
+    if architecture not in _SUPPORTED_MODEL_ARCHITECTURES:
         raise SafetyError("model architecture is not supported by this worker")
+    if _profile_for_architecture(architecture) != lease.model_profile:
+        raise SafetyError("model architecture does not match its broker profile")
     if any(path.lower().endswith(".py") for path in info.files):
         raise SafetyError("model repository contains Python files")
     if any(path.lower().endswith(_UNSAFE_SUFFIXES) for path in info.files):
@@ -92,9 +140,11 @@ def check_model_safety(
         raise SafetyError("model has no safetensors weights")
     if info.repository_bytes is None:
         raise SafetyError("model repository size could not be verified")
-    if free_disk_bytes is not None and free_disk_bytes < info.repository_bytes * 2:
-        raise SafetyError("insufficient disk space for the model repository and cache")
-    available = max((gpu.free_memory_bytes for gpu in gpus), default=0)
+    if free_disk_bytes is not None and free_disk_bytes < info.repository_bytes:
+        raise SafetyError("insufficient disk space for the model repository")
+    available = max(
+        (int(gpu.free_memory_bytes * gpu_memory_utilisation) for gpu in gpus), default=0
+    )
     if not available or info.estimated_bytes * 1.35 > available:
         raise SafetyError(
             f"model needs approximately {info.estimated_bytes} bytes but only "

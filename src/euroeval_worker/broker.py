@@ -43,8 +43,8 @@ class BrokerProtocol(t.Protocol):
         """Claim available work."""
         ...
 
-    def heartbeat(self, credential: str, lease_id: str) -> None:
-        """Renew a lease."""
+    def heartbeat(self, credential: str, lease_id: str) -> str:
+        """Renew a lease and return its new expiry timestamp."""
         ...
 
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
@@ -69,11 +69,13 @@ class BrokerError(RuntimeError):
         *,
         status: int | None = None,
         retry_after: float | None = None,
+        body: JsonObject | None = None,
     ) -> None:
-        """Initialise an error with HTTP retry metadata."""
+        """Initialise an error with HTTP retry metadata and a safe response body."""
         super().__init__(message)
         self.status = status
         self.retry_after = retry_after
+        self.body = body
 
 
 class BrokerClient:
@@ -138,13 +140,27 @@ class BrokerClient:
             return Claim(lease=None)
         return Claim(lease=lease_from_dict(result))
 
-    def heartbeat(self, credential: str, lease_id: str) -> None:
-        """Renew a lease."""
-        self._post(
+    def heartbeat(self, credential: str, lease_id: str) -> str:
+        """Renew a lease and return the broker's renewed expiry timestamp.
+
+        Returns:
+            The broker-issued ISO-8601 expiry timestamp.
+
+        Raises:
+            BrokerError:
+                If the response is invalid or the lease cannot be renewed.
+        """
+        result = self._post(
             "heartbeat",
             {"protocol_version": PROTOCOL_VERSION, "lease_id": lease_id},
             credential=credential,
         )
+        if result.get("lease_id") != lease_id:
+            raise BrokerError("broker heartbeat response changed lease identity")
+        expires_at = result.get("expires_at")
+        if not isinstance(expires_at, str) or not expires_at:
+            raise BrokerError("broker heartbeat response omitted expires_at")
+        return expires_at
 
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
         """Submit one exact result record; the broker makes this idempotent."""
@@ -225,16 +241,62 @@ def _http_request(
         with urllib.request.urlopen(request, timeout=30) as response:
             decoded = json.loads(response.read())
     except urllib.error.HTTPError as error:
+        body = _error_body(error)
         raise BrokerError(
             f"broker returned HTTP {error.code}",
             status=error.code,
             retry_after=_retry_after(error.headers.get("Retry-After")),
+            body=body,
         ) from error
     except (OSError, json.JSONDecodeError) as error:
         raise BrokerError(f"invalid broker response: {error}") from error
     if not isinstance(decoded, dict):
         raise BrokerError("broker response was not a JSON object")
     return decoded
+
+
+def _error_body(error: urllib.error.HTTPError) -> JsonObject | None:
+    """Decode an error response without exposing request headers or credentials.
+
+    Returns:
+        The JSON object returned by the broker, if it was one.
+    """
+    try:
+        value = json.loads(error.read())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    return _redact(value) if isinstance(value, dict) else None
+
+
+def _redact(value: object) -> JsonObject:
+    """Copy a JSON object while removing credential-bearing response fields.
+
+    Returns:
+        A response object without sensitive fields.
+    """
+    if not isinstance(value, dict):
+        return {}
+    sensitive = {
+        "access_token",
+        "authorization",
+        "credential",
+        "refresh_token",
+        "secret",
+        "token",
+    }
+    result: JsonObject = {}
+    for key, item in value.items():
+        if not isinstance(key, str) or key.lower() in sensitive:
+            continue
+        if isinstance(item, dict):
+            result[key] = _redact(item)
+        elif isinstance(item, list):
+            result[key] = [
+                _redact(entry) if isinstance(entry, dict) else entry for entry in item
+            ]
+        else:
+            result[key] = item
+    return result
 
 
 def _retry_after(value: str | None) -> float | None:
