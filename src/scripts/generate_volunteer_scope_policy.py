@@ -5,10 +5,13 @@ from __future__ import annotations
 import argparse
 import importlib.metadata
 import json
+import typing as t
 from pathlib import Path
 
 from packaging.version import Version
 
+from euroeval.dataset_configs import get_all_dataset_configs
+from euroeval.enums import ModelType
 from leaderboards.evaluation_common import official_dataset_language_pairs
 
 PROFILES = (
@@ -23,15 +26,43 @@ PROFILES = (
     "falcon",
     "gpt2",
 )
+ENCODER_PROFILES = frozenset({"bert", "roberta", "eurobert"})
 
 
 def official_pairs() -> set[tuple[str, str]]:
     """Load the same official dataset/language pairs as the queue.
 
     Returns:
-        The official dataset/language pairs.
+        Official dataset and language pairs.
     """
     return official_dataset_language_pairs()
+
+
+def _configs_by_name() -> dict[str, object]:
+    """Load dataset configs for model-type-aware scope filtering.
+
+    Returns:
+        Dataset configurations keyed by their public name.
+    """
+    return t.cast(
+        dict[str, object],
+        get_all_dataset_configs(
+            custom_datasets_file=Path(""),
+            dataset_ids=[],
+            api_key=None,
+            cache_dir=Path(".cache"),
+            trust_remote_code=False,
+            run_with_cli=False,
+        ),
+    )
+
+
+def _allowed_for_profile(config: object, profile: str) -> bool:
+    """Return whether one architecture profile may run a dataset."""
+    allowed = getattr(config, "allowed_model_types", ())
+    if profile in ENCODER_PROFILES:
+        return ModelType.ENCODER in allowed
+    return ModelType.GENERATIVE in allowed
 
 
 def build_policy(
@@ -39,30 +70,41 @@ def build_policy(
     pairs: set[tuple[str, str]],
     profiles: tuple[str, ...] = PROFILES,
 ) -> dict[str, object]:
-    """Build a policy whose keys are ISO language codes, never groups.
+    """Build a policy from exact worker identity defaults and dataset contracts.
 
     Returns:
         A JSON-serialisable policy document.
     """
     euroeval_version = str(Version(euroeval_version))
-    by_language: dict[str, list[str]] = {}
-    for dataset, language in sorted(pairs):
-        # Queue runs use the validation split and the default zero-shot setting.
-        suffix = json.dumps([dataset, True, False], separators=(",", ":"))
-        by_language.setdefault(language, []).append(suffix)
-    entries = [
-        {
-            "euroeval_version": euroeval_version,
-            "model_profile": profile,
-            "language": language,
-            "language_group": language,
-            "identity_suffixes": suffixes,
-            "count": len(suffixes),
-            "warnings": [],
-        }
-        for profile in profiles
-        for language, suffixes in sorted(by_language.items())
-    ]
+    try:
+        configs = _configs_by_name()
+    except Exception:
+        configs = {}
+    entries: list[dict[str, object]] = []
+    for profile in profiles:
+        by_language: dict[str, list[str]] = {}
+        for dataset, language in sorted(pairs):
+            config = configs.get(dataset)
+            if config is not None and (
+                language not in {item.code for item in config.languages}
+                or not _allowed_for_profile(config, profile)
+            ):
+                continue
+            # Benchmarker defaults are validation_split=False and few_shot=True.
+            suffix = json.dumps([dataset, False, True], separators=(",", ":"))
+            by_language.setdefault(language, []).append(suffix)
+        entries.extend(
+            {
+                "euroeval_version": euroeval_version,
+                "model_profile": profile,
+                "language": language,
+                "language_group": language,
+                "identity_suffixes": suffixes,
+                "count": len(suffixes),
+                "warnings": [],
+            }
+            for language, suffixes in sorted(by_language.items())
+        )
     return {
         "policy_version": f"volunteer-scope/{euroeval_version}",
         "policies": entries,

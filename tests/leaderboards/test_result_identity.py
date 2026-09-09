@@ -334,6 +334,14 @@ class TestRaiseOnCollision:
         # Should not raise because paths are different
         raise_on_collision(identity_a, identity_b)
 
+    def test_dataset_slash_and_underscore_collision_raises(self) -> None:
+        """Dataset spellings that sanitise identically must be rejected."""
+        first: ResultIdentity = ("org/model", "foo/bar", False, True)
+        second: ResultIdentity = ("org/model", "foo_bar", False, True)
+
+        with pytest.raises(ValueError, match="Identity collision"):
+            raise_on_collision(first, second)
+
     def test_same_identity_no_raise(self) -> None:
         """Same identity should not raise."""
         identity: ResultIdentity = ("org/model", "test_dataset", False, True)

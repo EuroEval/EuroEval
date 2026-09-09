@@ -20,6 +20,7 @@ from leaderboards.result_identity import (
     ResultIdentity,
     identity_from_eee_record,
     identity_to_path,
+    raise_on_collision,
 )
 
 from .types import PROTOCOL_VERSION
@@ -28,7 +29,10 @@ _DECISION_PREFIX = "volunteer/decisions"
 _MANIFEST_PREFIX = "volunteer/manifests"
 _VERSION_SUFFIX_RE = re.compile(r"\.dev\d+$")
 JsonObject: t.TypeAlias = dict[str, object]
-BrokerPromoter: t.TypeAlias = t.Callable[[int, str, str], None]
+BrokerPromoter: t.TypeAlias = t.Callable[
+    [int, str, str, str, list[dict[str, str]]], None
+]
+BrokerReservation: t.TypeAlias = t.Callable[[int, str, str, list[dict[str, str]]], str]
 
 
 class BucketInfo(t.Protocol):
@@ -215,14 +219,19 @@ class VolunteerReviewer:
         self,
         store: BucketStore,
         results_bucket: str = HF_RESULTS_BUCKET,
-        promoter: BrokerPromoter | None = None,
+        promoter: t.Callable[..., None] | None = None,
+        reserver: BrokerReservation | None = None,
         now: t.Callable[[], dt.datetime] | None = None,
         scope_policy: JsonObject | None = None,
     ) -> None:
         """Initialise the review service."""
         self.store = store
         self.results_bucket = results_bucket
+        self._broker_promoter = promoter is None
         self.promoter = promoter or promote_with_broker
+        self.reserver = reserver or (
+            reserve_with_broker if self._broker_promoter else None
+        )
         self.now = now or (lambda: dt.datetime.now(tz=dt.UTC))
         self.scope_policy = scope_policy or load_scope_policy()
 
@@ -277,9 +286,24 @@ class VolunteerReviewer:
             _validate_existing_decision(
                 decision=decision, report=report, outcome=outcome
             )
-        else:
-            if outcome == "accepted":
-                self._promote_records(report=report)
+        evidence = sorted(
+            [
+                {
+                    "identity": json.dumps(record.identity, separators=(",", ":")),
+                    "digest": record.digest,
+                }
+                for record in report.records
+            ],
+            key=lambda item: item["identity"],
+        )
+        token = (
+            self.reserver(report.issue_number, submission_id, outcome, evidence)
+            if self.reserver
+            else "local-test-reservation"
+        )
+        if outcome == "accepted":
+            self._promote_records(report=report)
+        if existing is None:
             decision_bytes = _decision_bytes(
                 report=report,
                 outcome=outcome,
@@ -292,12 +316,18 @@ class VolunteerReviewer:
                 path=decision_path,
                 content=decision_bytes,
             )
-        if outcome == "accepted":
-            self._promote_records(report=report)
-        self.promoter(report.issue_number, submission_id, outcome)
+        if self._broker_promoter:
+            t.cast(BrokerPromoter, self.promoter)(
+                report.issue_number, submission_id, outcome, token, evidence
+            )
+        else:
+            t.cast(t.Callable[[int, str, str], None], self.promoter)(
+                report.issue_number, submission_id, outcome
+            )
         return report
 
     def _promote_records(self, report: ReviewReport) -> None:
+        _raise_on_identity_collisions(record.identity for record in report.records)
         existing: dict[str, bytes | None] = {
             record.canonical_path: self.store.read_optional(
                 self.results_bucket, record.canonical_path
@@ -345,7 +375,58 @@ def load_scope_policy() -> JsonObject:
     return _load_object(content=path.read_bytes(), context=str(path))
 
 
-def promote_with_broker(issue_number: int, submission_id: str, outcome: str) -> None:
+def reserve_with_broker(
+    issue_number: int, submission_id: str, outcome: str, records: list[dict[str, str]]
+) -> str:
+    """Reserve one immutable maintainer outcome at the broker.
+
+    Returns:
+        The opaque reservation token.
+
+    Raises:
+        ReviewError:
+            If the secret is absent or the broker rejects the reservation.
+    """
+    secret = os.environ.get("VOLUNTEER_PROMOTION_SECRET")
+    if not secret:
+        raise ReviewError("VOLUNTEER_PROMOTION_SECRET is required")
+    endpoint = os.environ.get(
+        "VOLUNTEER_BROKER_RESERVATION_URL",
+        "https://euroeval.com/api/worker/promotion-lock",
+    )
+    payload = json.dumps(
+        {
+            "protocol_version": PROTOCOL_VERSION,
+            "issue_number": issue_number,
+            "submission_id": submission_id,
+            "outcome": outcome,
+            "records": records,
+        }
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        endpoint,
+        data=payload,
+        headers={"content-type": "application/json", "x-promotion-secret": secret},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ReviewError("Broker promotion reservation failed") from error
+    token = body.get("token") if isinstance(body, dict) else None
+    if not isinstance(token, str) or not token:
+        raise ReviewError("Broker did not return a promotion reservation token")
+    return token
+
+
+def promote_with_broker(
+    issue_number: int,
+    submission_id: str,
+    outcome: str,
+    reservation_token: str,
+    records: list[dict[str, str]],
+) -> None:
     """Call the authenticated broker promotion transition.
 
     Raises:
@@ -364,6 +445,8 @@ def promote_with_broker(issue_number: int, submission_id: str, outcome: str) -> 
             "issue_number": issue_number,
             "submission_id": submission_id,
             "outcome": outcome,
+            "reservation_token": reservation_token,
+            "records": records,
         }
     ).encode("utf-8")
     request = urllib.request.Request(
@@ -416,6 +499,7 @@ def _validate_manifest(
         for entry in raw_results
     )
     actual = tuple(record.identity for record in records)
+    _raise_on_identity_collisions(actual)
     if len(set(actual)) != len(actual) or set(actual) != set(expected):
         raise ReviewError("Manifest expected and actual canonical identities differ")
     automated = _required_object(manifest, "automated_checks")
@@ -489,6 +573,23 @@ def _validate_scope_policy(
     for field in ("language_group", "identity_suffixes", "count", "warnings"):
         if expected_scope.get(field) != trusted.get(field):
             raise ReviewError(f"Manifest scope differs from policy field {field}")
+
+
+def _raise_on_identity_collisions(identities: c.Iterable[ResultIdentity]) -> None:
+    """Reject distinct identities that sanitise to one canonical path.
+
+    Raises:
+        ReviewError:
+            If two identities map to the same canonical path.
+    """
+    seen: list[ResultIdentity] = []
+    for identity in identities:
+        for previous in seen:
+            try:
+                raise_on_collision(previous, identity)
+            except ValueError as error:
+                raise ReviewError(str(error)) from error
+        seen.append(identity)
 
 
 def _validate_result_entry(

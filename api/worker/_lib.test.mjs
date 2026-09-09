@@ -43,7 +43,7 @@ test("validates canonical model identity and score bounds", () => {
 test("generated trusted scopes are exact-language and versioned", () => {
   const scope = expectedScope("18.0.0.dev", "bert", "da");
   assert.equal(scope.language, "da");
-  assert.equal(scope.policy_version, "volunteer-scope/18.0.0.dev");
+  assert.equal(scope.policy_version, "volunteer-scope/18.0.0.dev0");
   assert.ok(scope.identity_suffixes.length > 0);
 });
 

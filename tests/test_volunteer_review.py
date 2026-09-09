@@ -4,12 +4,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import typing as t
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-from euroeval_worker.review import BucketStore, ReviewError, VolunteerReviewer
+from euroeval_worker.review import (
+    BucketApi,
+    BucketStore,
+    ReviewError,
+    VolunteerReviewer,
+)
 
 STAGING = "EuroEval/private-volunteer-staging"
 RESULTS = "EuroEval/results"
@@ -116,7 +122,8 @@ def test_manifest_scope_mismatch_is_rejected() -> None:
     """Expected and actual canonical identities must match."""
     api, reviewer, _ = _reviewer()
     manifest = _manifest(api)
-    manifest["expected_scope"]["identity_suffixes"] = ['["other",false,false]']
+    expected_scope = t.cast(dict[str, object], manifest["expected_scope"])
+    expected_scope["identity_suffixes"] = ['["other",false,false]']
     _store_manifest(api, manifest)
 
     with pytest.raises(ReviewError, match="scope differs"):
@@ -220,7 +227,9 @@ def _reviewer(
     }
     _store_manifest(api, manifest)
     calls: list[tuple[int, str, str]] = []
-    store = BucketStore(api=api, token="token", staging_bucket=STAGING)
+    store = BucketStore(
+        api=t.cast(BucketApi, api), token="token", staging_bucket=STAGING
+    )
     scope_policy: dict[str, object] = {
         "policy_version": "volunteer-scope/18.0.0.dev0",
         "policies": [

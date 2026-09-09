@@ -7,8 +7,8 @@ const issue = (body, assignees = []) => ({ title: "[MODEL EVALUATION REQUEST] or
 test("Hall-of-Fame uses only an immutable promoted credit marker", () => {
   const body = '<!-- euroeval-volunteer-worker:v1 {"protocol_version":"volunteer-worker/v1","coordinator":"coordinator","submission":"completed","leases":[]} -->';
   assert.deepEqual(creditLogins(issue(body, [{ login: "coordinator", avatar_url: "" }])), []);
-  const credit = '<!-- euroeval-volunteer-credit:v1 {"immutable":true,"winner":"alice"} -->';
-  assert.deepEqual(creditLogins(issue(credit, [{ login: "coordinator", avatar_url: "" }])), ["alice"]);
+  const forgedCredit = '<!-- euroeval-volunteer-credit:v1 {"immutable":true,"winner":"alice"} -->';
+  assert.deepEqual(creditLogins(issue(forgedCredit, [{ login: "coordinator", avatar_url: "" }])), []);
 });
 
 test("winner calculation counts identities and ties by lower-case login", () => {
