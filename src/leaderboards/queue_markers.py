@@ -87,13 +87,6 @@ class CommunityMarker:
     signature: str | None = None
 
 
-def _trusted_issue_marker(number: int, body: str) -> CommunityMarker | None:
-    secret = os.environ.get("VOLUNTEER_MARKER_SECRET")
-    return parse_community_marker(
-        body, issue_number=number, secret=secret, require_signature=bool(secret)
-    )
-
-
 def parse_community_marker(
     body: str,
     *,
@@ -249,15 +242,6 @@ def parse_community_marker(
     )
 
 
-def _expiry_active(value: str) -> bool:
-    try:
-        return dt.datetime.fromisoformat(
-            value.replace("Z", "+00:00")
-        ) > dt.datetime.now(dt.UTC)
-    except ValueError:
-        return False
-
-
 def issue_has_active_queue_ownership(body: str) -> bool:
     """Return whether a valid, unexpired coordinator marker protects an issue."""
     marker = parse_community_marker(body)
@@ -280,10 +264,25 @@ def issue_has_community_marker(body: str) -> bool:
     return bool(_COMMUNITY_MARKER_CANDIDATE_RE.search(body))
 
 
-def issue_has_terminal_queue_submission(body: str) -> bool:
-    """Return whether a valid marker records an accepted or rejected submission."""
+def issue_has_terminal_queue_submission(
+    body: str, *, issue_number: int | None = None
+) -> bool:
+    """Return whether a marker records a trusted terminal submission.
+
+    Rejected markers remain auditable even when their signature cannot be
+    verified. Accepted markers can protect local queue ownership only when
+    their issue-bound signature is verified.
+    """
     marker = parse_community_marker(body)
-    return marker is not None and marker.submission in {"accepted", "rejected"}
+    if marker is None:
+        return False
+    if marker.submission == "rejected":
+        return True
+    return (
+        marker.submission == "accepted"
+        and issue_number is not None
+        and _trusted_issue_marker(issue_number, body) is not None
+    )
 
 
 def release_issue_if_owned(number: int, vm_id: str, assignee: str) -> bool:
@@ -322,10 +321,7 @@ def set_vm_marker(number: int, vm_id: str) -> bool:
         Whether the marker was written.
     """
     body = fetch_issue_body(number=number)
-    secret = os.environ.get("VOLUNTEER_MARKER_SECRET")
-    marker = parse_community_marker(
-        body, issue_number=number, secret=secret, require_signature=bool(secret)
-    )
+    marker = _trusted_issue_marker(number=number, body=body)
     if _COMMUNITY_MARKER_CANDIDATE_RE.search(body) and marker is None:
         return False
     if marker is not None and marker.submission in COMMUNITY_ACTIVE_SUBMISSION_STATES:
@@ -358,3 +354,22 @@ def vm_marker_matches(number: int, vm_id: str) -> bool:
         return False
     match = VM_MARKER_RE.search(body)
     return match is None or match.group(1) == vm_id
+
+
+def _trusted_issue_marker(number: int, body: str) -> CommunityMarker | None:
+    secret = os.environ.get("VOLUNTEER_MARKER_SECRET")
+    marker = parse_community_marker(
+        body, issue_number=number, secret=secret, require_signature=bool(secret)
+    )
+    if marker is not None and marker.submission == "accepted" and not secret:
+        return None
+    return marker
+
+
+def _expiry_active(value: str) -> bool:
+    try:
+        return dt.datetime.fromisoformat(
+            value.replace("Z", "+00:00")
+        ) > dt.datetime.now(dt.UTC)
+    except ValueError:
+        return False

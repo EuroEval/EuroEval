@@ -1,5 +1,9 @@
 """Tests for the volunteer worker queue interlock."""
 
+import base64
+import hashlib
+import hmac
+import json
 import time
 
 import pytest
@@ -67,6 +71,72 @@ def test_coordinator_lock_is_renewed_and_released(
     assert calls[-1] == ("release", "lock-token")
 
 
+def test_reclaim_keeps_accepted_marker_before_results_ready(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An accepted broker decision protects an assigned issue before labelling."""
+    secret = "marker-secret"
+    marker = {
+        "protocol_version": "volunteer-worker/v1",
+        "coordinator": "coordinator",
+        "submission": "accepted",
+        "leases": [],
+        "submissions": [
+            {
+                "submission_id": "submission-1",
+                "language": "el",
+                "manifest_path": "volunteer/manifests/submission-1.json",
+                "submitted_at": "2026-09-06T10:00:00Z",
+                "verified_contributor": "alice",
+                "result_count": 1,
+                "status": "accepted",
+            }
+        ],
+        "completed_languages": ["el"],
+    }
+    payload = json.dumps(
+        {
+            "domain": "euroeval-volunteer-marker",
+            "version": 1,
+            "issue_number": 7,
+            "marker": marker,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    marker["signature"] = (
+        base64.urlsafe_b64encode(
+            hmac.new(secret.encode(), payload, hashlib.sha256).digest()
+        )
+        .decode()
+        .rstrip("=")
+    )
+    body = (
+        f"request\n<!-- euroeval-volunteer-worker:v1 {json.dumps(marker)} -->\n"
+        "<!-- vm-id: local-vm -->"
+    )
+    released: list[int] = []
+    monkeypatch.setenv("VOLUNTEER_MARKER_SECRET", secret)
+    monkeypatch.setattr(
+        process_evaluation_queue,
+        "_list_queue_issues",
+        lambda *, assignee: [_issue(7, body)],
+    )
+
+    def release(*, number: int, vm_id: str, assignee: str) -> bool:
+        del vm_id, assignee
+        released.append(number)
+        return True
+
+    monkeypatch.setattr(process_evaluation_queue, "release_issue_if_owned", release)
+
+    process_evaluation_queue.reclaim_orphaned_issues(
+        assignee="runner", vm_id="local-vm"
+    )
+
+    assert released == []
+
+
 def test_queue_candidates_exclude_active_community_marker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -95,21 +165,6 @@ def test_queue_candidates_exclude_active_community_marker(
     candidates = process_evaluation_queue._queue_candidates()
 
     assert [candidate[5]["number"] for candidate in candidates] == [1]
-
-
-def _issue(number: int, body: str = "") -> dict[str, object]:
-    """Build the minimal issue object used by candidate selection.
-
-    Returns:
-        A minimal GitHub issue dictionary.
-    """
-    return {
-        "number": number,
-        "title": f"Evaluate model-{number}",
-        "body": body,
-        "labels": [],
-        "created_at": "2026-01-01T00:00:00Z",
-    }
 
 
 def test_queue_candidates_paginate_past_first_hundred(
@@ -142,3 +197,18 @@ def test_queue_candidates_paginate_past_first_hundred(
 
     assert requested_pages == [1, 2]
     assert {candidate[5]["number"] for candidate in candidates} == set(range(1, 102))
+
+
+def _issue(number: int, body: str = "") -> dict[str, object]:
+    """Build the minimal issue object used by candidate selection.
+
+    Returns:
+        A minimal GitHub issue dictionary.
+    """
+    return {
+        "number": number,
+        "title": f"Evaluate model-{number}",
+        "body": body,
+        "labels": [],
+        "created_at": "2026-01-01T00:00:00Z",
+    }
