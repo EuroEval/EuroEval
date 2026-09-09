@@ -2,47 +2,28 @@ import {
   BrokerError,
   ConfigurationError,
   PROTOCOL_VERSION,
+  PROMOTION_RESERVATION_TTL,
   acquireIssueMutex,
   fetchIssue,
   getPromotionReservation,
   json,
   method,
+  parsePromotionRecords,
   promotionReservationKey,
   promotionSecret,
   randomToken,
   readJson,
   redisSet,
+  reservePromotionReservation,
   savePromotionReservation,
   releaseIssueMutex,
   requireProtocol,
   parseVolunteerMarker,
   verifyVolunteerMarker,
 } from "./_lib.ts";
-import type { PromotionRecord, PromotionReservation } from "./_lib.ts";
+import type { PromotionReservation } from "./_lib.ts";
 
 export const config = { runtime: "edge" };
-
-function records(value: unknown): PromotionRecord[] {
-  if (!Array.isArray(value) || !value.length || value.length > 100_000) {
-    throw new BrokerError(400, "records must be a non-empty array.");
-  }
-  const result = value.map((item) => {
-    if (!item || typeof item !== "object") throw new BrokerError(400, "Invalid reservation record.");
-    const record = item as Record<string, unknown>;
-    if (typeof record.identity !== "string" || !record.identity ||
-        typeof record.digest !== "string" || !/^[0-9a-f]{64}$/.test(record.digest)) {
-      throw new BrokerError(400, "Reservation records require an identity and SHA256 digest.");
-    }
-    return { identity: record.identity, digest: record.digest };
-  });
-  const keys = result.map((item) => item.identity).sort();
-  if (new Set(keys).size !== keys.length) throw new BrokerError(409, "Reservation identities are not unique.");
-  return result.sort((a, b) => a.identity.localeCompare(b.identity));
-}
-
-function sameRecords(a: PromotionRecord[], b: PromotionRecord[]): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
 
 export default async function handler(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
@@ -57,7 +38,8 @@ export default async function handler(req: Request): Promise<Response> {
     const issueNumber = body.issue_number as number;
     const submissionId = body.submission_id as string;
     const outcome = body.outcome as "accepted" | "rejected";
-    const requested = records(body.records);
+    const requested = parsePromotionRecords(body.records);
+    const requestedToken = body.reservation_token;
     const mutex = await acquireIssueMutex(issueNumber);
     if (!mutex) throw new BrokerError(409, "Issue is busy; retry promotion reservation.");
     try {
@@ -74,18 +56,33 @@ export default async function handler(req: Request): Promise<Response> {
       const existing = await getPromotionReservation(issueNumber, submissionId);
       if (existing) {
         if (existing.outcome !== outcome) throw new BrokerError(409, "A different outcome is already reserved.");
-        if (!sameRecords(existing.records, requested)) throw new BrokerError(409, "Reservation evidence differs.");
-        await savePromotionReservation(existing, existing.status === "terminal");
-        return json(200, { protocol_version: PROTOCOL_VERSION, status: existing.status, token: existing.token, expires_in: existing.status === "terminal" ? 30 * 24 * 60 * 60 : 15 * 60 });
+        if (JSON.stringify(existing.records) !== JSON.stringify(requested)) throw new BrokerError(409, "Reservation evidence differs.");
+        if (requestedToken !== undefined && requestedToken !== existing.token) {
+          throw new BrokerError(409, "Promotion reservation token differs.");
+        }
+        if (existing.status === "terminal") {
+          return json(200, { protocol_version: PROTOCOL_VERSION, status: existing.status, token: existing.token, expires_in: 30 * 24 * 60 * 60 });
+        }
+        const result = outcome === "accepted"
+          ? await reservePromotionReservation(existing)
+          : (await savePromotionReservation(existing, false), "reserved");
+        if (result === "busy") throw new BrokerError(409, "A canonical result is being promoted; retry.");
+        if (result === "conflict") throw new BrokerError(409, "A canonical result has a different digest.");
+        return json(200, { protocol_version: PROTOCOL_VERSION, status: "reserved", token: existing.token, expires_in: PROMOTION_RESERVATION_TTL });
       }
+      if (requestedToken !== undefined) throw new BrokerError(409, "Promotion reservation is absent; retry.");
       const reservation: PromotionReservation = {
         issue_number: issueNumber, submission_id: submissionId, outcome, records: requested,
         token: randomToken(), status: "reserved",
       };
-      if (!await redisSet(promotionReservationKey(issueNumber, submissionId), JSON.stringify(reservation), 15 * 60, true)) {
+      if (outcome === "accepted") {
+        const result = await reservePromotionReservation(reservation);
+        if (result === "busy") throw new BrokerError(409, "A canonical result is being promoted; retry.");
+        if (result === "conflict") throw new BrokerError(409, "A canonical result has a different digest.");
+      } else if (!await redisSet(promotionReservationKey(issueNumber, submissionId), JSON.stringify(reservation), PROMOTION_RESERVATION_TTL, true)) {
         throw new BrokerError(409, "A concurrent promotion reservation won; retry.");
       }
-      return json(201, { protocol_version: PROTOCOL_VERSION, status: "reserved", token: reservation.token, expires_in: 15 * 60 });
+      return json(201, { protocol_version: PROTOCOL_VERSION, status: "reserved", token: reservation.token, expires_in: PROMOTION_RESERVATION_TTL });
     } finally { await releaseIssueMutex(issueNumber, mutex); }
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;

@@ -162,6 +162,23 @@ def test_partial_approve_resumes_and_is_idempotent() -> None:
     assert broker_calls == [(12, SUBMISSION, "accepted"), (12, SUBMISSION, "accepted")]
 
 
+def test_acceptance_renews_before_each_upload() -> None:
+    """Long uploads renew the accepted reservation before every write."""
+    renewals: list[list[dict[str, str]]] = []
+    _, reviewer, _ = _reviewer(
+        record_count=2,
+        reserver=lambda issue, submission, outcome, records: "reservation",
+        renewer=lambda issue, submission, outcome, token, records: (
+            renewals.append(records) or token
+        ),
+    )
+
+    reviewer.decide(SUBMISSION, "accepted", "maintainer")
+
+    assert len(renewals) == 3
+    assert all(record["canonical_path"] for record in renewals[0])
+
+
 def test_reject_is_idempotent_and_opposite_decision_fails() -> None:
     """Rejection retries safely while the opposite outcome is forbidden."""
     api, reviewer, broker_calls = _reviewer()
@@ -178,6 +195,8 @@ def test_reject_is_idempotent_and_opposite_decision_fails() -> None:
 
 def _reviewer(
     record_count: int = 1,
+    reserver: t.Callable[[int, str, str, list[dict[str, str]]], str] | None = None,
+    renewer: t.Callable[[int, str, str, str, list[dict[str, str]]], str] | None = None,
 ) -> tuple[FakeHfApi, VolunteerReviewer, list[tuple[int, str, str]]]:
     api = FakeHfApi()
     records = [_record(dataset=f"dataset-{index}") for index in range(record_count)]
@@ -250,6 +269,8 @@ def _reviewer(
         promoter=lambda issue, submission, outcome: calls.append(
             (issue, submission, outcome)
         ),
+        reserver=reserver,
+        renewer=renewer,
         scope_policy=scope_policy,
     )
     return api, reviewer, calls

@@ -33,6 +33,7 @@ BrokerPromoter: t.TypeAlias = t.Callable[
     [int, str, str, str, list[dict[str, str]]], None
 ]
 BrokerReservation: t.TypeAlias = t.Callable[[int, str, str, list[dict[str, str]]], str]
+BrokerRenewer: t.TypeAlias = t.Callable[[int, str, str, str, list[dict[str, str]]], str]
 
 
 class BucketInfo(t.Protocol):
@@ -221,6 +222,7 @@ class VolunteerReviewer:
         results_bucket: str = HF_RESULTS_BUCKET,
         promoter: t.Callable[..., None] | None = None,
         reserver: BrokerReservation | None = None,
+        renewer: BrokerRenewer | None = None,
         now: t.Callable[[], dt.datetime] | None = None,
         scope_policy: JsonObject | None = None,
     ) -> None:
@@ -232,6 +234,7 @@ class VolunteerReviewer:
         self.reserver = reserver or (
             reserve_with_broker if self._broker_promoter else None
         )
+        self.renewer = renewer or (renew_with_broker if self._broker_promoter else None)
         self.now = now or (lambda: dt.datetime.now(tz=dt.UTC))
         self.scope_policy = scope_policy or load_scope_policy()
 
@@ -290,6 +293,7 @@ class VolunteerReviewer:
             [
                 {
                     "identity": json.dumps(record.identity, separators=(",", ":")),
+                    "canonical_path": record.canonical_path,
                     "digest": record.digest,
                 }
                 for record in report.records
@@ -302,7 +306,13 @@ class VolunteerReviewer:
             else "local-test-reservation"
         )
         if outcome == "accepted":
-            self._promote_records(report=report)
+            self._promote_records(
+                report=report,
+                renew=lambda: self._renew_reservation(
+                    report=report, records=evidence, token=token
+                ),
+            )
+            self._renew_reservation(report=report, records=evidence, token=token)
         if existing is None:
             decision_bytes = _decision_bytes(
                 report=report,
@@ -326,7 +336,9 @@ class VolunteerReviewer:
             )
         return report
 
-    def _promote_records(self, report: ReviewReport) -> None:
+    def _promote_records(
+        self, report: ReviewReport, renew: c.Callable[[], None] | None = None
+    ) -> None:
         _raise_on_identity_collisions(record.identity for record in report.records)
         existing: dict[str, bytes | None] = {
             record.canonical_path: self.store.read_optional(
@@ -342,7 +354,17 @@ class VolunteerReviewer:
                     f"{record.canonical_path}: {_digest(current)} != {record.digest}"
                 )
         for record in report.records:
-            if existing[record.canonical_path] is None:
+            if renew:
+                renew()
+            current = self.store.read_optional(
+                self.results_bucket, record.canonical_path
+            )
+            if current is not None and current != record.content:
+                raise ReviewError(
+                    "Canonical result collision at "
+                    f"{record.canonical_path}: {_digest(current)} != {record.digest}"
+                )
+            if current is None:
                 self.store.write_verified(
                     bucket=self.results_bucket,
                     path=record.canonical_path,
@@ -354,6 +376,17 @@ class VolunteerReviewer:
                     path=record.canonical_path,
                     content=record.content,
                 )
+
+    def _renew_reservation(
+        self, report: ReviewReport, records: list[dict[str, str]], token: str
+    ) -> None:
+        if not self.renewer:
+            return
+        renewed = self.renewer(
+            report.issue_number, report.submission_id, "accepted", token, records
+        )
+        if renewed != token:
+            raise ReviewError("Broker returned a different promotion reservation token")
 
 
 def load_scope_policy() -> JsonObject:
@@ -382,11 +415,43 @@ def reserve_with_broker(
 
     Returns:
         The opaque reservation token.
-
-    Raises:
-        ReviewError:
-            If the secret is absent or the broker rejects the reservation.
     """
+    return _request_reservation(
+        issue_number=issue_number,
+        submission_id=submission_id,
+        outcome=outcome,
+        records=records,
+    )
+
+
+def renew_with_broker(
+    issue_number: int,
+    submission_id: str,
+    outcome: str,
+    reservation_token: str,
+    records: list[dict[str, str]],
+) -> str:
+    """Renew a pending broker reservation without changing its token.
+
+    Returns:
+        The unchanged opaque reservation token.
+    """
+    return _request_reservation(
+        issue_number=issue_number,
+        submission_id=submission_id,
+        outcome=outcome,
+        records=records,
+        reservation_token=reservation_token,
+    )
+
+
+def _request_reservation(
+    issue_number: int,
+    submission_id: str,
+    outcome: str,
+    records: list[dict[str, str]],
+    reservation_token: str | None = None,
+) -> str:
     secret = os.environ.get("VOLUNTEER_PROMOTION_SECRET")
     if not secret:
         raise ReviewError("VOLUNTEER_PROMOTION_SECRET is required")
@@ -394,15 +459,16 @@ def reserve_with_broker(
         "VOLUNTEER_BROKER_RESERVATION_URL",
         "https://euroeval.com/api/worker/promotion-lock",
     )
-    payload = json.dumps(
-        {
-            "protocol_version": PROTOCOL_VERSION,
-            "issue_number": issue_number,
-            "submission_id": submission_id,
-            "outcome": outcome,
-            "records": records,
-        }
-    ).encode("utf-8")
+    request_body: dict[str, object] = {
+        "protocol_version": PROTOCOL_VERSION,
+        "issue_number": issue_number,
+        "submission_id": submission_id,
+        "outcome": outcome,
+        "records": records,
+    }
+    if reservation_token is not None:
+        request_body["reservation_token"] = reservation_token
+    payload = json.dumps(request_body).encode("utf-8")
     request = urllib.request.Request(
         endpoint,
         data=payload,

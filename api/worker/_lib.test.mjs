@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { expectedScope, extractModelId, fitsGpu, parseVolunteerMarker, replaceVolunteerMarker, selectedLanguages, validateRecord } from "./_lib.ts";
+import { expectedScope, extractModelId, fitsGpu, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, replaceVolunteerMarker, selectedLanguages, validateRecord } from "./_lib.ts";
 
 test("parses the queue model and language checkboxes", () => {
   const body = "### Model ID\n\norg/model\n\n- [x] Greek\n- [ ] Albanian\n";
@@ -38,6 +38,27 @@ test("validates canonical model identity and score bounds", () => {
   const negative = validateRecord({ ...record, evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: -1 } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" });
   assert.equal(negative.failed, 0);
   assert.throws(() => validateRecord({ ...record, evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: 85, details: { failed_instances: "[1]" } } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" }));
+});
+
+test("promotion reservations outlive long uploads", () => {
+  assert.ok(PROMOTION_RESERVATION_TTL >= 24 * 60 * 60);
+});
+
+test("promotion evidence binds safe canonical paths to digests", () => {
+  const records = parsePromotionRecords([
+    { identity: '["org/model","dataset",false,true]', canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) },
+  ]);
+  assert.equal(records[0].canonical_path, "org_model/dataset__test__fewshot.json");
+  assert.throws(() => parsePromotionRecords([
+    { identity: '["org/model","dataset",false,true]', canonical_path: "../results.json", digest: "a".repeat(64) },
+  ]), /safe path/);
+  assert.throws(() => parsePromotionRecords([
+    { identity: '["org/model","dataset",false,true]', canonical_path: "org_model/dataset__test__fewshot.json", digest: "not-a-digest" },
+  ]), /SHA256/);
+  assert.throws(() => parsePromotionRecords([
+    { identity: '["org/model","dataset",false,true]', canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) },
+    { identity: '["org_model","dataset",false,true]', canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) },
+  ]), /not unique/);
 });
 
 test("generated trusted scopes are exact-language and versioned", () => {
