@@ -13,7 +13,7 @@ export default async function handler(req: Request): Promise<Response> {
     const body = await readJson(req, 8 * 1024); requireProtocol(body);
     if (typeof body.lease_id !== "string") throw new BrokerError(400, "lease_id is required.");
     const lease = await getLeaseById(body.lease_id);
-    if (!lease || lease.worker !== identity.hash.slice(0, 24) || Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
+    if (!lease || lease.contributor.toLowerCase() !== identity.contributor.toLowerCase() || Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another contributor.");
     const markerIssue = await fetchIssue(lease.issue_number); const marker = parseVolunteerMarker(markerIssue.body);
     const markerLease = marker?.leases.find((item) => item.lease_id === lease.lease_id);
     if (!marker || !markerLease) throw new BrokerError(409, "GitHub ownership marker was lost.");

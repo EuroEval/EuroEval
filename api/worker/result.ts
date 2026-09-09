@@ -1,12 +1,13 @@
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, authenticate, enforceRateLimit,
-  getLeaseById, json, method, readJson, sha256, redis, redisGet, redisSet,
+  getLeaseById, json, method, readJson, sha256, redis, redisGet,
+  reserveResultIdentity, completeResultIdentity, abortResultIdentity,
   uploadStaging, validateRecord, requireProtocol,
 } from "./_lib";
 
 export const config = { runtime: "edge" };
 const MAX_RESULT_BODY = 2 * 1024 * 1024;
-type StoredIdentity = { digest: string; lease_id: string; status: "uploading" | "uploaded"; issue_number: number; language: string; path: string };
+type StoredIdentity = { digest: string; lease_id: string; status: "uploading" | "uploaded"; issue_number: number; language: string; path: string; warnings?: string[] };
 
 export default async function handler(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
@@ -17,7 +18,7 @@ export default async function handler(req: Request): Promise<Response> {
     for (const field of required) if (body[field] === undefined) throw new BrokerError(400, `${field} is required.`);
     if (typeof body.lease_id !== "string" || typeof body.language !== "string" || typeof body.model_id !== "string" || typeof body.model_revision !== "string" || typeof body.euroeval_version !== "string" || typeof body.image_digest !== "string" || typeof body.worker_version !== "string" || typeof body.record_json !== "string" || typeof body.digest !== "string" || typeof body.issue_number !== "number" || !Number.isSafeInteger(body.issue_number)) throw new BrokerError(400, "Result contract fields have invalid types.");
     const lease = await getLeaseById(body.lease_id);
-    if (!lease || lease.worker !== identity.hash.slice(0, 24) || Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
+    if (!lease || lease.contributor.toLowerCase() !== identity.contributor.toLowerCase() || Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another contributor.");
     if (body.issue_number !== lease.issue_number || body.language !== lease.language || body.model_id !== lease.model_id || body.model_revision !== lease.model_revision || body.euroeval_version !== lease.euroeval_version || body.image_digest !== lease.image_digest || body.worker_version !== lease.worker_version) throw new BrokerError(422, "Result contract does not exactly match the active lease.");
     const digest = await sha256(body.record_json);
     if (body.digest !== digest) throw new BrokerError(422, "digest does not match the UTF-8 record_json bytes.");
@@ -28,20 +29,22 @@ export default async function handler(req: Request): Promise<Response> {
     const path = `volunteer/submissions/${lease.lease_id}/results/${digest}.json`;
     if (existing && existing.digest !== digest) throw new BrokerError(409, "This canonical record identity already has a different digest.");
     if (existing?.status === "uploaded") {
-      await redis("SADD", `euroeval:worker:results:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity, path: existing.path || path }));
-      return json(200, { protocol_version: PROTOCOL_VERSION, status: "duplicate", digest, identity: checked.identity, path: existing.path || path });
+      await redis("SADD", `euroeval:worker:results:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity, path: existing.path || path, warnings: existing.warnings || checked.warnings }));
+      return json(200, { protocol_version: PROTOCOL_VERSION, status: "duplicate", digest, identity: checked.identity, path: existing.path || path, warnings: existing.warnings || checked.warnings });
     }
-    const reservation: StoredIdentity = { digest, lease_id: lease.lease_id, status: "uploading", issue_number: lease.issue_number, language: lease.language, path };
-    if (!existing && !(await redisSet(identityKey, JSON.stringify(reservation), 24 * 60 * 60, true))) throw new BrokerError(409, "Another submission for this identity is in progress; retry later.");
-    if (existing?.status === "uploading" && existing.lease_id !== lease.lease_id) throw new BrokerError(409, "Another submission for this identity is in progress; retry later.");
+    const reservation: StoredIdentity = { digest, lease_id: lease.lease_id, status: "uploading", issue_number: lease.issue_number, language: lease.language, path, warnings: checked.warnings };
+    const claim = await reserveResultIdentity(identityKey, JSON.stringify(reservation), digest, lease.lease_id, 24 * 60 * 60);
+    if (claim === "busy") throw new BrokerError(409, "Another submission for this identity is in progress; retry later.");
+    if (claim === "duplicate") throw new BrokerError(409, "This canonical record identity was already accepted by another lease.");
     try {
-      // The worker's exact JSON text is the signed/uploaded representation.
+      // The worker's exact JSON text is the durable representation.
       await uploadStaging(path, body.record_json);
-      reservation.status = "uploaded"; await redisSet(identityKey, JSON.stringify(reservation), 30 * 24 * 60 * 60);
-      await redis("SADD", `euroeval:worker:results:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity, path }));
+      reservation.status = "uploaded";
+      if (!(await completeResultIdentity(identityKey, JSON.stringify(reservation), digest, lease.lease_id, 30 * 24 * 60 * 60))) throw new BrokerError(409, "Result reservation was replaced during upload; retry safely.");
+      await redis("SADD", `euroeval:worker:results:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity, path, warnings: checked.warnings }));
       await redis("EXPIRE", `euroeval:worker:results:${lease.lease_id}`, String(30 * 24 * 60 * 60));
-    } catch (error) { await redis("DEL", identityKey).catch(() => undefined); throw error; }
-    return json(201, { protocol_version: PROTOCOL_VERSION, status: "uploaded", digest, identity: checked.identity, path });
+    } catch (error) { await abortResultIdentity(identityKey, digest, lease.lease_id).catch(() => undefined); throw error; }
+    return json(201, { protocol_version: PROTOCOL_VERSION, status: "uploaded", digest, identity: checked.identity, path, warnings: checked.warnings });
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;
     return json(status, { protocol_version: PROTOCOL_VERSION, error: error instanceof Error ? error.message : "Unable to store result." });

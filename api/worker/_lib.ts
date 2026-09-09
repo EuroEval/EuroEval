@@ -1,5 +1,6 @@
 /* Shared broker implementation. This is the volunteer-worker/v1 JSON protocol. */
 import { uploadFile } from "@huggingface/hub";
+import generatedScopePolicy from "./scope-policy.json" with { type: "json" };
 declare const process: { env: Record<string, string | undefined> };
 export const PROTOCOL_VERSION = "volunteer-worker/v1" as const;
 export const REPO = "EuroEval/EuroEval";
@@ -26,12 +27,14 @@ export interface VolunteerSubmission {
   language: string;
   manifest_path: string;
   submitted_at: string;
+  contributor?: string;
+  status?: "submitted" | "accepted" | "rejected";
 }
 
 export interface VolunteerLeaseMarker {
   protocol_version: typeof PROTOCOL_VERSION;
   coordinator: string;
-  submission: "active" | "submitted" | "completed" | "released";
+  submission: "active" | "submitted" | "accepted" | "rejected";
   leases: Array<{ lease_id: string; language: string; worker: string; contributor: string; expires_at: string }>;
   submissions?: VolunteerSubmission[];
   completed_languages?: string[];
@@ -91,7 +94,8 @@ export function json(status: number, body: unknown, extra?: HeadersInit): Respon
       "content-type": "application/json; charset=utf-8",
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "POST, OPTIONS",
-      "access-control-allow-headers": "content-type, authorization",
+      "access-control-allow-headers": "content-type, authorization, x-coordinator-secret",
+      ...(status === 429 ? { "retry-after": "60" } : {}),
       ...(extra || {}),
     },
   });
@@ -136,6 +140,12 @@ export async function sha256(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (x) => x.toString(16).padStart(2, "0")).join("");
 }
 export async function fetchWithRetry(input: string, init: RequestInit = {}): Promise<Response> {
+  // Retrying a POST can repeat a device-code, assignment, or mutation after the
+  // server has already applied it.  Only retry methods whose requests are safe
+  // to replay; callers that need mutation retries must provide their own CAS.
+  const requestMethod = (init.method || "GET").toUpperCase();
+  const safe = requestMethod === "GET" || requestMethod === "HEAD" || requestMethod === "OPTIONS";
+  if (!safe) return fetch(input, init);
   let response: Response | undefined;
   for (let attempt = 0; attempt < 3; attempt++) {
     try { response = await fetch(input, init); } catch (error) {
@@ -143,7 +153,9 @@ export async function fetchWithRetry(input: string, init: RequestInit = {}): Pro
       await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1))); continue;
     }
     if (![408, 425, 429, 500, 502, 503, 504].includes(response.status) || attempt === 2) return response;
-    await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
+    const retryAfter = response.headers.get("retry-after");
+    const seconds = retryAfter && /^\d+$/.test(retryAfter) ? Math.min(30, Number(retryAfter)) : 0;
+    await new Promise((resolve) => setTimeout(resolve, Math.max(100 * (attempt + 1), seconds * 1000)));
   }
   return response as Response;
 }
@@ -195,7 +207,7 @@ export function parseVolunteerMarker(body: string | null): VolunteerLeaseMarker 
   try {
     const parsed = JSON.parse(matches[0][1].trim()) as Partial<VolunteerLeaseMarker>;
     if (parsed.protocol_version !== PROTOCOL_VERSION || typeof parsed.coordinator !== "string" ||
-        !parsed.coordinator || !["active", "submitted", "completed", "released"].includes(parsed.submission || "") ||
+        !parsed.coordinator || !["active", "submitted", "accepted", "rejected"].includes(parsed.submission || "") ||
         !Array.isArray(parsed.leases)) return null;
     const leases = parsed.leases.filter((lease): lease is VolunteerLeaseMarker["leases"][number] =>
       !!lease && typeof lease === "object" && typeof lease.lease_id === "string" &&
@@ -206,7 +218,8 @@ export function parseVolunteerMarker(body: string | null): VolunteerLeaseMarker 
     const submissions = Array.isArray(parsed.submissions) ? parsed.submissions.filter((item): item is VolunteerSubmission =>
       !!item && typeof item === "object" && typeof item.submission_id === "string" &&
       typeof item.language === "string" && typeof item.manifest_path === "string" &&
-      typeof item.submitted_at === "string") : undefined;
+      typeof item.submitted_at === "string" && (item.contributor === undefined || typeof item.contributor === "string") &&
+      (item.status === undefined || ["submitted", "accepted", "rejected"].includes(item.status))) : undefined;
     if (parsed.submissions !== undefined && (submissions === undefined || submissions.length !== parsed.submissions.length || new Set(submissions.map((item) => item.submission_id)).size !== submissions.length || new Set(submissions.map((item) => item.language)).size !== submissions.length)) return null;
     const completed = Array.isArray(parsed.completed_languages) ? parsed.completed_languages.filter((item): item is string => typeof item === "string" && !!item) : undefined;
     if (parsed.completed_languages !== undefined && (completed === undefined || completed.length !== parsed.completed_languages.length)) return null;
@@ -342,21 +355,20 @@ export function languageGroup(language: string): string | null {
   return Object.entries(GROUPS).find(([, codes]) => codes.includes(language))?.[0] || null;
 }
 
-type ScopeEntry = { euroeval_version: string; model_profile: string; language_group: string; identity_suffixes: string[]; count?: number; warnings?: string[] };
+type ScopeEntry = { euroeval_version: string; model_profile: string; language: string; language_group?: string; identity_suffixes: string[]; count?: number; warnings?: string[] };
 type ScopePolicy = { policy_version: string; policies: ScopeEntry[] };
 export function expectedScope(euroevalVersion: string, profile: string, language: string): ScopeEntry & { policy_version: string } {
   const group = languageGroup(language);
   if (!group) throw new BrokerError(422, "The leased language has no trusted language group.");
-  const raw = process.env.VOLUNTEER_SCOPE_POLICY_JSON;
-  if (!raw) throw new BrokerError(503, "No trusted volunteer expected-scope policy is configured.");
+  const raw = process.env.VOLUNTEER_SCOPE_POLICY_JSON || JSON.stringify(generatedScopePolicy);
   let policy: ScopePolicy;
   try { policy = JSON.parse(raw) as ScopePolicy; } catch { throw new ConfigurationError("VOLUNTEER_SCOPE_POLICY_JSON is invalid JSON."); }
   if (typeof policy.policy_version !== "string" || !Array.isArray(policy.policies)) throw new ConfigurationError("VOLUNTEER_SCOPE_POLICY_JSON has an invalid schema.");
-  const match = policy.policies.find((item) => item.euroeval_version === euroevalVersion && item.model_profile === profile && item.language_group === group);
+  const match = policy.policies.find((item) => item.euroeval_version === euroevalVersion && item.model_profile === profile && item.language === language);
   if (!match || !Array.isArray(match.identity_suffixes) || !match.identity_suffixes.length) throw new BrokerError(422, "This model profile and language group has no trusted expected scope.");
   if (match.identity_suffixes.some((item) => typeof item !== "string") || new Set(match.identity_suffixes).size !== match.identity_suffixes.length || match.count !== undefined && match.count !== match.identity_suffixes.length) throw new ConfigurationError("Trusted expected scope contains invalid or duplicate identities.");
   if (match.warnings && (!Array.isArray(match.warnings) || match.warnings.some((item) => typeof item !== "string"))) throw new ConfigurationError("Trusted expected scope contains invalid warnings.");
-  return { ...match, policy_version: policy.policy_version, count: match.identity_suffixes.length, warnings: match.warnings || [] };
+  return { ...match, language: match.language || language, language_group: match.language_group || language, policy_version: policy.policy_version, count: match.identity_suffixes.length, warnings: match.warnings || [] };
 }
 
 export function authCredential(req: Request): string {
@@ -384,6 +396,43 @@ export async function acquireIssueMutex(issue: number): Promise<string | null> {
 export async function releaseIssueMutex(issue: number, token: string): Promise<void> {
   await redis("EVAL", "if redis.call('GET',KEYS[1]) == ARGV[1] then return redis.call('DEL',KEYS[1]) else return 0 end", "1", `euroeval:worker:mutex:${issue}`, token);
 }
+
+/** Authenticate a coordinator-only internal request without exposing Redis. */
+export function coordinatorSecret(req: Request): void {
+  const expected = env("WORKER_COORDINATOR_SECRET");
+  const supplied = req.headers.get("x-coordinator-secret") || authCredential(req);
+  if (supplied !== expected) throw new BrokerError(401, "Coordinator authentication failed.");
+}
+
+export function promotionSecret(req: Request): void {
+  const expected = env("COMMUNITY_PROMOTION_SECRET");
+  const supplied = req.headers.get("x-promotion-secret") || authCredential(req);
+  if (supplied !== expected) throw new BrokerError(401, "Promotion authentication failed.");
+}
+
+export async function reserveResultIdentity(key: string, reservation: string, digest: string, leaseId: string, ttl: number): Promise<"reserved" | "retry" | "duplicate" | "busy"> {
+  const result = await redis("EVAL", `local current=redis.call('GET',KEYS[1]);
+    if not current then redis.call('SET',KEYS[1],ARGV[1],'EX',ARGV[4]); return 'reserved' end;
+    local item=cjson.decode(current);
+    if item.digest ~= ARGV[2] then return 'busy' end;
+    if item.status == 'uploaded' then return 'duplicate' end;
+    if item.lease_id == ARGV[3] then return 'retry' end;
+    return 'busy'`, "1", key, reservation, digest, leaseId, String(ttl));
+  return result as "reserved" | "retry" | "duplicate" | "busy";
+}
+
+export async function completeResultIdentity(key: string, reservation: string, digest: string, leaseId: string, ttl: number): Promise<boolean> {
+  const result = await redis("EVAL", `local current=redis.call('GET',KEYS[1]);
+    if not current then return 0 end; local item=cjson.decode(current);
+    if item.digest ~= ARGV[1] or item.lease_id ~= ARGV[2] then return 0 end;
+    redis.call('SET',KEYS[1],ARGV[3],'EX',ARGV[4]); return 1`, "1", key, digest, leaseId, reservation, String(ttl));
+  return result === 1 || result === "1";
+}
+
+export async function abortResultIdentity(key: string, digest: string, leaseId: string): Promise<void> {
+  await redis("EVAL", `local current=redis.call('GET',KEYS[1]); if not current then return 0 end;
+    local item=cjson.decode(current); if item.digest == ARGV[1] and item.lease_id == ARGV[2] and item.status == 'uploading' then return redis.call('DEL',KEYS[1]) end; return 0`, "1", key, digest, leaseId);
+}
 export function leaseKey(leaseId: string): string { return `euroeval:worker:lease-id:${leaseId}`; }
 export async function getLeaseById(leaseId: string): Promise<Lease | null> { return redisGet<Lease>(leaseKey(leaseId)); }
 export async function putLease(lease: Lease): Promise<boolean> {
@@ -400,13 +449,15 @@ export async function deleteLease(lease: Lease): Promise<void> {
   await redis("EVAL", "local current=redis.call('GET',KEYS[1]); if current then local item=cjson.decode(current); if item.lease_id == ARGV[1] then redis.call('DEL',KEYS[1]) end end; local byid=redis.call('GET',KEYS[2]); if byid then local item=cjson.decode(byid); if item.lease_id == ARGV[1] then redis.call('DEL',KEYS[2]) end end; return 1", "2", issueLeaseKey(lease.issue_number, lease.language), leaseKey(lease.lease_id), lease.lease_id);
 }
 
-export function validateRecord(record: unknown, expected: { modelId: string; revision: string; language: string; euroevalVersion?: string }): { identity: string; failed: number } {
+export function validateRecord(record: unknown, expected: { modelId: string; revision: string; language: string; euroevalVersion?: string }): { identity: string; failed: number; warnings: string[] } {
   if (!record || typeof record !== "object" || Array.isArray(record)) throw new BrokerError(422, "record must be an EEE JSON object.");
   const value = record as Record<string, any>;
   const modelInfo = value.model_info as Record<string, any> | undefined;
   const library = value.eval_library as Record<string, any> | undefined;
-  if (value.schema_version !== "0.2.1" || !modelInfo || !library || !Array.isArray(value.evaluation_results)) throw new BrokerError(422, "record is not a supported EEE record.");
-  if (modelInfo.id !== expected.modelId) throw new BrokerError(422, `record model_info.id must be ${expected.modelId}.`);
+  if (!["0.2.1", "0.3.0"].includes(value.schema_version) || !modelInfo || !library || !Array.isArray(value.evaluation_results)) throw new BrokerError(422, "record is not a supported EEE record.");
+  const aliases = [modelInfo.id, modelInfo.name, modelInfo.aliases, (modelInfo.additional_details as Record<string, unknown> | undefined)?.aliases]
+    .flatMap((item) => Array.isArray(item) ? item : [item]).filter((item): item is string => typeof item === "string");
+  if (!aliases.some((item) => item === expected.modelId)) throw new BrokerError(422, `record model identity does not match ${expected.modelId}.`);
   if (modelInfo.revision !== undefined && modelInfo.revision !== expected.revision) throw new BrokerError(422, "record model_info.revision does not match the lease.");
   if (library.name !== "euroeval" || typeof library.version !== "string" || !library.version || expected.euroevalVersion && library.version.replace(/\.dev\d+$/, "") !== expected.euroevalVersion.replace(/\.dev\d+$/, "")) throw new BrokerError(422, "record has an invalid eval_library name or version.");
   const details = library.additional_details as Record<string, any> | undefined;
@@ -417,8 +468,12 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   const failedValue = (item: unknown): number => typeof item === "number" ? item : typeof item === "string" && item.trim() ? Number(item) : 0;
   const failedIndicator = (item: unknown): boolean => {
     if (Array.isArray(item)) return item.length !== 0;
+    if (item && typeof item === "object") return Object.keys(item).length !== 0;
     if (typeof item === "string" && (item.trim().startsWith("[") || item.trim().startsWith("{"))) {
-      try { const parsed = JSON.parse(item) as unknown; return Array.isArray(parsed) ? parsed.length !== 0 : !!parsed; } catch { return true; }
+      try {
+        const parsed = JSON.parse(item) as unknown;
+        return Array.isArray(parsed) || (parsed && typeof parsed === "object") ? Object.keys(parsed as object).length !== 0 : !!parsed;
+      } catch { return true; }
     }
     return !Number.isFinite(failedValue(item)) || failedValue(item) !== 0;
   };
@@ -429,6 +484,7 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
       key === "num_failed_instances" || key === "failed_instances" ? failedIndicator(value) : containsFailure(value));
   };
   if (containsFailure(raw)) throw new BrokerError(422, "records with failed instances cannot be submitted.");
+  const warnings: string[] = [];
   const group = languageGroup(expected.language);
   let languages: unknown;
   try { languages = typeof details.languages === "string" ? JSON.parse(details.languages) : details.languages; } catch { throw new BrokerError(422, "additional_details.languages is not valid JSON."); }
@@ -442,25 +498,28 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   for (const result of value.evaluation_results) {
     if (!result || typeof result !== "object") throw new BrokerError(422, "evaluation_results contains an invalid item.");
     const evaluation = result as Record<string, any>; const scoreDetails = evaluation.score_details as Record<string, any>;
-    if (typeof evaluation.evaluation_name !== "string" || !evaluation.evaluation_name || !scoreDetails || typeof scoreDetails !== "object") throw new BrokerError(422, "every evaluation result needs a metric and score details.");
+    const evaluationName = evaluation.evaluation_name ?? evaluation.metric_name ?? evaluation.name;
+    if (typeof evaluationName !== "string" || !evaluationName || !scoreDetails || typeof scoreDetails !== "object") throw new BrokerError(422, "every evaluation result needs a metric and score details.");
     const source = evaluation.source_data as Record<string, any> | undefined;
-    if (!source || source.dataset_name !== details.dataset) throw new BrokerError(422, "evaluation source_data is inconsistent with the record dataset.");
+    const sourceDataset = source?.dataset_name ?? source?.dataset ?? source?.name;
+    const globalSpeed = /(^|[_ -])speed($|[_ -])/i.test(evaluationName) && (!sourceDataset || /global.*speed|^global$/i.test(sourceDataset));
+    if (!source || !globalSpeed && sourceDataset !== details.dataset) throw new BrokerError(422, "evaluation source_data is inconsistent with the record dataset.");
     const metric = evaluation.metric_config as Record<string, any> | undefined;
     if (!metric || typeof metric.lower_is_better !== "boolean" || metric.score_type !== undefined && typeof metric.score_type !== "string") throw new BrokerError(422, "every evaluation result needs a valid metric config.");
-    for (const bound of [metric.min_score, metric.max_score]) if (bound !== undefined && (typeof bound !== "number" || !Number.isFinite(bound))) throw new BrokerError(422, "metric bounds must be finite numbers.");
+    for (const bound of [metric.min_score, metric.max_score]) if (bound !== undefined && bound !== null && (typeof bound === "number" && !Number.isFinite(bound) || typeof bound !== "number" && bound !== "Infinity" && bound !== "-Infinity")) throw new BrokerError(422, "metric bounds must be finite numbers or explicit infinities.");
     const score = scoreDetails.score;
     if (typeof score !== "number" || !Number.isFinite(score)) throw new BrokerError(422, "every evaluation score must be finite.");
-    if (typeof metric.min_score === "number" && score < metric.min_score || typeof metric.max_score === "number" && score > metric.max_score) throw new BrokerError(422, "evaluation score violates its declared metric bounds.");
+    if (typeof metric.min_score === "number" && score < metric.min_score || typeof metric.max_score === "number" && score > metric.max_score) warnings.push(`${evaluationName}: score ${score} is outside declared metric bounds`);
     const uncertainty = scoreDetails.uncertainty as Record<string, any> | undefined;
     const interval = uncertainty?.confidence_interval as Record<string, any> | undefined;
     if (uncertainty && typeof uncertainty !== "object") throw new BrokerError(422, "evaluation uncertainty is invalid.");
     if (uncertainty && Object.values(uncertainty).some((item) => typeof item === "number" && !Number.isFinite(item))) throw new BrokerError(422, "evaluation uncertainty is invalid.");
     if (interval && (typeof interval.lower !== "number" || typeof interval.upper !== "number" || !Number.isFinite(interval.lower) || !Number.isFinite(interval.upper) || interval.lower > interval.upper || score < interval.lower || score > interval.upper)) throw new BrokerError(422, "evaluation uncertainty is invalid.");
     const resultDetails = scoreDetails.details as Record<string, any> | undefined;
-    if (resultDetails && ((resultDetails.num_failed_instances !== undefined && failedValue(resultDetails.num_failed_instances) !== 0) || Array.isArray(resultDetails.failed_instances) && resultDetails.failed_instances.length)) throw new BrokerError(422, "records with failed instances cannot be submitted.");
+    if (resultDetails && containsFailure(resultDetails)) throw new BrokerError(422, "records with failed instances cannot be submitted.");
   }
   if (!value.evaluation_results.length) throw new BrokerError(422, "record contains no results.");
-  return { identity: JSON.stringify([modelInfo.id, details.dataset, split, shot]), failed: 0 };
+  return { identity: JSON.stringify([expected.modelId, details.dataset, split, shot]), failed: 0, warnings };
 }
 
 let stagingMetadata: { bucket: string; private: boolean; checkedAt: number } | null = null;

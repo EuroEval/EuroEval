@@ -9,7 +9,7 @@ import {
 
 export const config = { runtime: "edge" };
 const FINAL_MARKER = "euroeval-volunteer-finalised:v1";
-type ResultEntry = { digest: string; identity: string; path: string };
+type ResultEntry = { digest: string; identity: string; path: string; warnings?: string[] };
 type Receipt = { status?: string; submission_id: string; lease: any; entries: ResultEntry[]; manifest_path: string; manifest?: string };
 
 function resultEntries(value: unknown): ResultEntry[] {
@@ -35,7 +35,7 @@ export default async function handler(req: Request): Promise<Response> {
     if (old?.status === "ready") return json(200, { protocol_version: PROTOCOL_VERSION, status: "already_finalised", submission_id: old.submission_id });
     const active = await getLeaseById(body.lease_id);
     const lease = active || old?.lease;
-    if (!lease || lease.worker !== identity.hash.slice(0, 24)) throw new BrokerError(409, "Lease is absent or belongs to another worker.");
+    if (!lease || lease.contributor.toLowerCase() !== identity.contributor.toLowerCase()) throw new BrokerError(409, "Lease is absent or belongs to another contributor.");
     if (!active && old?.status !== "manifest_uploaded") throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
     let receipt: Receipt = old || { status: "validating", submission_id: lease.lease_id, lease, entries: [], manifest_path: `volunteer/manifests/${lease.lease_id}.json` };
     if (receipt.status !== "manifest_uploaded") {
@@ -55,7 +55,7 @@ export default async function handler(req: Request): Promise<Response> {
         language: lease.language, model_profile: lease.model_profile, language_group: lease.expected_scope.language_group,
         euroeval_version: lease.euroeval_version, worker_version: lease.worker_version, image_digest: lease.image_digest,
         expected_scope: lease.expected_scope, results: entries,
-        automated_checks: { result_count: entries.length, identities_unique: true, failed_instances: 0, warnings: lease.expected_scope.warnings || [] },
+        automated_checks: { result_count: entries.length, identities_unique: true, failed_instances: 0, warnings: [...new Set([...(lease.expected_scope.warnings || []), ...entries.flatMap((entry) => entry.warnings || [])])] },
         created_at: new Date().toISOString(), issue_state: issue.state,
       };
       receipt.manifest = JSON.stringify(manifest); await uploadStaging(receipt.manifest_path, receipt.manifest);
@@ -70,7 +70,7 @@ export default async function handler(req: Request): Promise<Response> {
       const ours = marker.leases.some((item) => item.lease_id === lease.lease_id);
       const alreadySubmitted = marker.submissions?.some((item) => item.submission_id === receipt.submission_id);
       if (!ours && !alreadySubmitted) throw new BrokerError(409, "The issue no longer carries this worker's lease marker.");
-      const submission = { submission_id: receipt.submission_id, language: lease.language, manifest_path: receipt.manifest_path, submitted_at: new Date().toISOString() };
+      const submission = { submission_id: receipt.submission_id, language: lease.language, manifest_path: receipt.manifest_path, submitted_at: new Date().toISOString(), contributor: identity.contributor, status: "submitted" as const };
       const submissions = alreadySubmitted ? marker.submissions || [] : [...(marker.submissions || []), submission];
       const next: VolunteerLeaseMarker = { ...marker, submission: "submitted", leases: marker.leases.filter((item) => item.lease_id !== lease.lease_id), submissions, completed_languages: [...new Set([...(marker.completed_languages || []), lease.language])] };
       if (ours) { await patchIssue(lease.issue_number, replaceMarker(issue.body || "", next)); const fenced = parseVolunteerMarker((await fetchIssue(lease.issue_number)).body); if (!fenced?.submissions?.some((item) => item.submission_id === receipt.submission_id)) throw new BrokerError(409, "GitHub submission fence lost."); }

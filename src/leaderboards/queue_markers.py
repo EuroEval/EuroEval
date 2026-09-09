@@ -22,6 +22,9 @@ COMMUNITY_ACTIVE_SUBMISSION_STATES = frozenset(
     {"active", "pending", "running", "submitted"}
 )
 _COMMUNITY_SUBMISSION_STATES = COMMUNITY_ACTIVE_SUBMISSION_STATES | {
+    "accepted",
+    "rejected",
+    # Read old markers during the migration, but never create these states.
     "completed",
     "released",
 }
@@ -99,12 +102,27 @@ def parse_community_marker(body: str) -> CommunityMarker | None:
     for submission in raw_submissions:
         if (
             not isinstance(submission, dict)
+            or not {
+                "submission_id",
+                "language",
+                "manifest_path",
+                "submitted_at",
+            }.issubset(submission)
             or set(submission)
-            != {"submission_id", "language", "manifest_path", "submitted_at"}
+            - {
+                "submission_id",
+                "language",
+                "manifest_path",
+                "submitted_at",
+                "contributor",
+                "status",
+            }
             or not all(
                 isinstance(submission[key], str) and submission[key]
                 for key in submission
             )
+            or submission.get("status", "submitted")
+            not in {"submitted", "accepted", "rejected"}
         ):
             return None
         submissions.append(submission)
@@ -151,6 +169,12 @@ def parse_community_marker(body: str) -> CommunityMarker | None:
         tuple(submissions),
         tuple(completed),
     )
+
+
+def issue_has_terminal_queue_submission(body: str) -> bool:
+    """Return whether a valid marker records an accepted or rejected submission."""
+    marker = parse_community_marker(body)
+    return marker is not None and marker.submission in {"accepted", "rejected"}
 
 
 def issue_has_active_queue_ownership(body: str) -> bool:
