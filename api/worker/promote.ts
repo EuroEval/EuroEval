@@ -1,10 +1,10 @@
 declare const process: { env: Record<string, string | undefined> };
 
 import {
-  BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireIssueMutex,
+  BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
   commentIssue, completePromotionReservation, env, fetchIssue, getPromotionReservation,
   issueComments, json, method, parseFinalCredit, parsePromotionRecords,
-  parseVolunteerMarker, patchIssue, promotionSecret, readJson, releaseIssueMutex,
+  parseVolunteerMarker, patchIssue, promotionSecret, readJson,
   releaseResultReservations,
   removeIssueLabel, replaceVolunteerMarker, requireProtocol,
   savePromotionReservation, selectedLanguages, signFinalCredit, signVolunteerMarker, unassignIssue,
@@ -86,11 +86,20 @@ async function releaseSubmissionReservations(reservation: PromotionReservation):
   }
 }
 
-function validCredit(credit: FinalCredit | null, plan: PromotionPlan, decisionNonce?: string): boolean {
-  return !!credit && credit.winner === plan.winner &&
-    JSON.stringify(credit.accepted_counts) === JSON.stringify(plan.acceptedCounts) &&
-    JSON.stringify(credit.completed_languages) === JSON.stringify(plan.marker.completed_languages || []) &&
-    (!decisionNonce || credit.decision_nonce === decisionNonce);
+function validCredit(
+  credit: FinalCredit | null,
+  plan: PromotionPlan,
+  reservation: PromotionReservation,
+): boolean {
+  if (!credit || credit.winner !== plan.winner ||
+      JSON.stringify(credit.accepted_counts) !== JSON.stringify(plan.acceptedCounts) ||
+      JSON.stringify(credit.completed_languages) !==
+        JSON.stringify(plan.marker.completed_languages || [])) return false;
+  if (reservation.decision_reviewer && reservation.decision_created_at) {
+    return credit.decision_reviewer === reservation.decision_reviewer &&
+      credit.decision_created_at === reservation.decision_created_at;
+  }
+  return !reservation.decision_nonce || credit.decision_nonce === reservation.decision_nonce;
 }
 
 async function terminalReservation(reservation: PromotionReservation): Promise<void> {
@@ -122,7 +131,7 @@ export default async function handler(req: Request): Promise<Response> {
         !sameRecords(reservation.records, requestedRecords)) {
       throw new BrokerError(409, "Promotion reservation is absent, expired, or does not match.");
     }
-    const mutex = await acquireIssueMutex(issueNumber);
+    const mutex = await acquireRenewableIssueMutex(issueNumber);
     if (!mutex) throw new BrokerError(409, "Issue is busy; retry promotion.");
     try {
       const issue = await fetchIssue(issueNumber);
@@ -132,13 +141,13 @@ export default async function handler(req: Request): Promise<Response> {
       let promotedBody = issue.body || "";
       const oldCredit = parseFinalCredit(promotedBody);
       let credit: FinalCredit | null = null;
-      const decisionNonce = reservation.decision_nonce || reservation.token;
       if (plan.complete && plan.winner) {
-        credit = oldCredit && validCredit(oldCredit, plan, decisionNonce) && await verifyFinalCredit(issueNumber, oldCredit)
+        credit = oldCredit && validCredit(oldCredit, plan, reservation) && await verifyFinalCredit(issueNumber, oldCredit)
           ? oldCredit
           : await signFinalCredit(issueNumber, { version: 1, immutable: true, winner: plan.winner,
             accepted_counts: plan.acceptedCounts, completed_languages: plan.marker.completed_languages || [],
-            decision_nonce: decisionNonce });
+            decision_reviewer: reservation.decision_reviewer,
+            decision_created_at: reservation.decision_created_at });
       }
       // Rejection must not make the language claimable while any identity is
       // still reserved. Keep the signed marker submitted if cleanup fails.
@@ -146,28 +155,41 @@ export default async function handler(req: Request): Promise<Response> {
       const signedMarker = await signVolunteerMarker(issueNumber, plan.marker);
       promotedBody = replaceVolunteerMarker(promotedBody, signedMarker);
       if (credit) promotedBody += `<!-- euroeval-volunteer-credit:v1 ${JSON.stringify(credit)} -->\n`;
+      await mutex.assertOwned();
       await patchIssue(issueNumber, promotedBody);
       const fencedIssue = await fetchIssue(issueNumber);
       const fenced = parseVolunteerMarker(fencedIssue.body);
       if (!fenced || !(await verifyVolunteerMarker(issueNumber, fenced)) ||
           fenced.submissions?.find((item) => item.submission_id === submissionId)?.status !== outcome ||
-          plan.complete && !validCredit(parseFinalCredit(fencedIssue.body), plan, decisionNonce)) {
+          plan.complete && !validCredit(parseFinalCredit(fencedIssue.body), plan, reservation)) {
         throw new BrokerError(409, "Promotion fence lost.");
       }
       const reviewLabel = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
       const resultsLabel = process.env.RESULTS_READY_LABEL || "results-ready";
-      if (plan.complete && !fencedIssue.labels?.some((item) => item.name === resultsLabel)) await addIssueLabel(issueNumber, resultsLabel);
-      if (plan.removeReviewLabel) await removeIssueLabel(issueNumber, reviewLabel);
-      if (plan.releaseCoordinator) await unassignIssue(issueNumber, env("WORKER_COORDINATOR_LOGIN"));
+      if (plan.complete && !fencedIssue.labels?.some((item) => item.name === resultsLabel)) {
+        await mutex.assertOwned();
+        await addIssueLabel(issueNumber, resultsLabel);
+      }
+      if (plan.removeReviewLabel) {
+        await mutex.assertOwned();
+        await removeIssueLabel(issueNumber, reviewLabel);
+      }
+      if (plan.releaseCoordinator) {
+        await mutex.assertOwned();
+        await unassignIssue(issueNumber, env("WORKER_COORDINATOR_LOGIN"));
+      }
       const comments = await issueComments(issueNumber);
       if (!comments.some((item) => item.body?.includes(`${PROMOTION_MARKER} ${submissionId}`))) {
         const current = plan.marker.submissions?.find((item) => item.submission_id === submissionId);
+        await mutex.assertOwned();
         await commentIssue(issueNumber, `<!-- ${PROMOTION_MARKER} ${submissionId} -->\nCommunity submission **${submissionId}** was **${outcome}**.\n\nManifest: \`${current?.manifest_path}\``);
       }
       await terminalReservation(reservation);
       return json(200, { protocol_version: PROTOCOL_VERSION, status: outcome, submission_id: submissionId,
-        decision_nonce: decisionNonce, complete: plan.complete, winner: plan.winner });
-    } finally { await releaseIssueMutex(issueNumber, mutex); }
+        decision_reviewer: reservation.decision_reviewer,
+        decision_created_at: reservation.decision_created_at,
+        complete: plan.complete, winner: plan.winner });
+    } finally { await mutex.release(); }
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;
     return json(status, { protocol_version: PROTOCOL_VERSION, error: error instanceof Error ? error.message : "Unable to promote submission." });

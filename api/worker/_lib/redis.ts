@@ -36,6 +36,9 @@ export async function redisGet<T>(key: string): Promise<T | null> {
 export async function redisDelete(key: string): Promise<void> { await redis("DEL", key); }
 
 const LEASE_TTL_MAX = 6 * 60 * 60;
+export const LEASE_TOMBSTONE_TTL = 30 * 24 * 60 * 60;
+export const ISSUE_MUTEX_TTL = 60;
+const ISSUE_MUTEX_RENEW_INTERVAL = 10;
 export function leaseTtl(): number {
   const configured = Number(optionalEnv("VOLUNTEER_LEASE_SECONDS", "1800"));
   return Number.isFinite(configured) ? Math.max(60, Math.min(LEASE_TTL_MAX, Math.floor(configured))) : 1800;
@@ -86,7 +89,57 @@ export async function reclaimExpiredLease(lease: Lease): Promise<boolean> {
 
 export async function acquireIssueMutex(issue: number): Promise<string | null> {
   const token = randomToken(12);
-  return await redisSet(`euroeval:worker:mutex:${issue}`, token, 30, true) ? token : null;
+  return await redisSet(`euroeval:worker:mutex:${issue}`, token, ISSUE_MUTEX_TTL, true) ? token : null;
+}
+
+export interface RenewableIssueMutex {
+  token: string;
+  assertOwned(): Promise<void>;
+  release(): Promise<void>;
+}
+
+/**
+ * Acquire an issue lock that renews while a GitHub mutation lifecycle runs.
+ * Every mutation must call assertOwned immediately beforehand; the timer alone
+ * is deliberately not a fencing mechanism.
+ */
+export async function acquireRenewableIssueMutex(
+  issue: number,
+): Promise<RenewableIssueMutex | null> {
+  const token = await acquireIssueMutex(issue);
+  if (!token) return null;
+  let lost = false;
+  let stopped = false;
+  let renewal: Promise<boolean> | null = null;
+  const renew = async (): Promise<boolean> => {
+    if (stopped || lost) return false;
+    if (renewal) return renewal;
+    renewal = renewIssueMutex(issue, token).then((owned) => {
+      if (!owned) lost = true;
+      return owned;
+    }).catch((error) => {
+      lost = true;
+      throw error;
+    }).finally(() => { renewal = null; });
+    return renewal;
+  };
+  const timer = setInterval(() => { void renew().catch(() => undefined); }, ISSUE_MUTEX_RENEW_INTERVAL * 1000);
+  (timer as unknown as { unref?: () => void }).unref?.();
+  return {
+    token,
+    async assertOwned(): Promise<void> {
+      if (!await renew()) {
+        throw new BrokerError(409, "Issue mutex was lost before a mutation.");
+      }
+    },
+    async release(): Promise<void> {
+      stopped = true;
+      clearInterval(timer);
+      if (!lost && await renewIssueMutex(issue, token)) {
+        await releaseIssueMutex(issue, token);
+      }
+    },
+  };
 }
 export async function releaseIssueMutex(issue: number, token: string): Promise<void> {
   await redis("EVAL", "if redis.call('GET',KEYS[1]) == ARGV[1] then return redis.call('DEL',KEYS[1]) else return 0 end", "1", `euroeval:worker:mutex:${issue}`, token);
@@ -94,7 +147,7 @@ export async function releaseIssueMutex(issue: number, token: string): Promise<v
 
 /** Renew an issue mutex only while its opaque token still owns it. */
 export async function renewIssueMutex(issue: number, token: string): Promise<boolean> {
-  const result = await redis("EVAL", "if redis.call('GET',KEYS[1]) == ARGV[1] then return redis.call('EXPIRE',KEYS[1],ARGV[2]) else return 0 end", "1", `euroeval:worker:mutex:${issue}`, token, "30");
+  const result = await redis("EVAL", "if redis.call('GET',KEYS[1]) == ARGV[1] then return redis.call('EXPIRE',KEYS[1],ARGV[2]) else return 0 end", "1", `euroeval:worker:mutex:${issue}`, token, String(ISSUE_MUTEX_TTL));
   return result === 1 || result === "1";
 }
 
@@ -174,12 +227,12 @@ export function leaseKey(leaseId: string): string {
 return `euroeval:worker:lease-id:${leaseId}`; }
 export async function getLeaseById(leaseId: string): Promise<Lease | null> { return redisGet<Lease>(leaseKey(leaseId)); }
 export async function putLease(lease: Lease): Promise<boolean> {
-  const ttl = Math.max(60, Math.ceil((Date.parse(lease.expires_at) - Date.now()) / 1000));
+  const ttl = Math.max(60, Math.ceil((Date.parse(lease.expires_at) - Date.now()) / 1000)) + LEASE_TOMBSTONE_TTL;
   const result = await redis("EVAL", "if redis.call('EXISTS',KEYS[1]) == 1 or redis.call('EXISTS',KEYS[2]) == 1 then return 0 end; redis.call('SET',KEYS[1],ARGV[1],'EX',ARGV[2]); redis.call('SET',KEYS[2],ARGV[1],'EX',ARGV[2]); return 1", "2", issueLeaseKey(lease.issue_number, lease.language), leaseKey(lease.lease_id), JSON.stringify(lease), String(ttl));
   return result === 1 || result === "1";
 }
 export async function saveLease(lease: Lease): Promise<boolean> {
-  const ttl = Math.max(60, Math.ceil((Date.parse(lease.expires_at) - Date.now()) / 1000));
+  const ttl = Math.max(60, Math.ceil((Date.parse(lease.expires_at) - Date.now()) / 1000)) + LEASE_TOMBSTONE_TTL;
   const result = await redis("EVAL", "local current=redis.call('GET',KEYS[1]); if not current then return 0 end; local item=cjson.decode(current); if item.lease_id ~= ARGV[1] then return 0 end; redis.call('SET',KEYS[1],ARGV[2],'EX',ARGV[3]); redis.call('SET',KEYS[2],ARGV[2],'EX',ARGV[3]); return 1", "2", issueLeaseKey(lease.issue_number, lease.language), leaseKey(lease.lease_id), lease.lease_id, JSON.stringify(lease), String(ttl));
   return result === 1 || result === "1";
 }

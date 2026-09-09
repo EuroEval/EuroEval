@@ -114,7 +114,7 @@ test("repeated rejection is safe after cleanup interruption", async () => {
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input); const method = init.method || "GET";
     if (url === "https://redis.test") {
-      const command = JSON.parse(init.body); let result = "OK";
+      const command = JSON.parse(init.body); let result = command[0] === "EVAL" ? 1 : "OK";
       if (command[0] === "GET") result = values.get(command[1]) || null;
       if (command[0] === "SET") { values.set(command[1], command[2]); result = "OK"; }
       if (command[0] === "EVAL" && command[1].includes("for i=1,#KEYS-1")) {
@@ -152,7 +152,7 @@ test("repeated rejection is safe after cleanup interruption", async () => {
   }
 });
 
-test("promotion reservation returns one broker-owned decision nonce on resume", async () => {
+test("promotion reservation returns stable review metadata on resume", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
   Object.assign(process.env, {
@@ -183,22 +183,26 @@ test("promotion reservation returns one broker-owned decision nonce on resume", 
   const request = (token) => new Request("https://euroeval.com/api/worker/promotion-lock", {
     method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
     body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
-      outcome: "rejected", records, ...(token ? { reservation_token: token } : {}) }),
+      outcome: "rejected", reviewer: "alice", records, ...(token ? { reservation_token: token } : {}) }),
   });
   try {
     const first = await reservePromotion(request()); const firstBody = await first.json();
     assert.equal(first.status, 201, JSON.stringify(firstBody));
-    assert.equal(typeof firstBody.decision_nonce, "string");
+    assert.equal(firstBody.decision_reviewer, "alice");
+    assert.match(firstBody.decision_created_at, /^\d{4}-\d\d-\d\dT/);
+    assert.equal(firstBody.decision_nonce, undefined);
     const second = await reservePromotion(request(firstBody.token)); const secondBody = await second.json();
     assert.equal(second.status, 200);
     assert.equal(secondBody.token, firstBody.token);
-    assert.equal(secondBody.decision_nonce, firstBody.decision_nonce);
+    assert.equal(secondBody.decision_reviewer, firstBody.decision_reviewer);
+    assert.equal(secondBody.decision_created_at, firstBody.decision_created_at);
     const incompatible = await reservePromotion(new Request("https://euroeval.com/api/worker/promotion-lock", {
       method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
       body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
-        outcome: "rejected", reservation_token: firstBody.token, decision_nonce: "wrong", records }),
+        outcome: "rejected", reviewer: "alice", reservation_token: firstBody.token,
+        decision_nonce: "wrong", records }),
     }));
-    assert.equal(incompatible.status, 409);
+    assert.equal(incompatible.status, 400);
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
@@ -226,7 +230,8 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
   process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
   const redisValues = new Map();
   const records = [{ identity: "[\"org/model\",\"dataset\",false,true]", canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) }];
-  redisValues.set("euroeval:worker:promotion:12:one", JSON.stringify({ issue_number: 12, submission_id: "one", outcome: "accepted", records, token: "reservation-token", decision_nonce: "stable-decision", status: "reserved" }));
+  redisValues.set("euroeval:worker:promotion:12:one", JSON.stringify({    issue_number: 12, submission_id: "one", outcome: "accepted", records, token: "reservation-token",
+    decision_reviewer: "alice", decision_created_at: "2026-09-06T12:00:00Z", status: "reserved" }));
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input);
     const method = init.method || "GET";
@@ -269,10 +274,13 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
       body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one", outcome: "accepted", reservation_token: "reservation-token", records }),
     });
     const response = await promote(request);
-    const responseBody = await response.text();
-    assert.equal(response.status, 200, responseBody);
+    const responseBody = await response.json();
+    assert.equal(response.status, 200, JSON.stringify(responseBody));
+    assert.equal(responseBody.decision_reviewer, "alice");
+    assert.equal(responseBody.decision_created_at, "2026-09-06T12:00:00Z");
     assert.match(issue.body, /euroeval-volunteer-credit:v1/);
-    assert.match(issue.body, /"decision_nonce":"stable-decision"/);
+    assert.match(issue.body, /"decision_reviewer":"alice"/);
+    assert.match(issue.body, /"decision_created_at":"2026-09-06T12:00:00Z"/);
     assert.deepEqual(issue.labels, [{ name: "results-ready" }]);
     assert.deepEqual(issue.assignees, []);
     assert.match(comments[0].body, /submission \*\*one\*\*/);

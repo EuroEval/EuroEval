@@ -14,7 +14,7 @@ const lease = {
 };
 
 function markerBody(marker) {
-  return `request\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(marker)} -->\n`;
+  return `request\n\n<!-- harmless comment -->\n- [x] Greek\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(marker)} -->\n`;
 }
 
 function mockBroker(issue, values) {
@@ -68,6 +68,8 @@ test("heartbeat renews a full TTL and preserves a valid marker signature", async
     assert.ok(renewed);
     assert.equal(await verifyVolunteerMarker(issueNumber, renewed), true);
     assert.ok(Date.parse(renewed.leases[0].expires_at) >= Date.now() + 59_000);
+    assert.match(issue.body, /harmless comment/);
+    assert.match(issue.body, /- \[x\] Greek/);
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
@@ -109,6 +111,8 @@ test("release re-signs while preserving history and other leases", async () => {
     assert.equal(await verifyVolunteerMarker(issueNumber, released), true);
     assert.deepEqual(released.submissions, [history]);
     assert.deepEqual(released.leases.map((item) => item.lease_id), ["other"]);
+    assert.match(issue.body, /harmless comment/);
+    assert.match(issue.body, /- \[x\] Greek/);
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;

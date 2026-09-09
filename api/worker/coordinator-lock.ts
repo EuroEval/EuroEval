@@ -1,5 +1,5 @@
 import {
-  BrokerError, ConfigurationError, PROTOCOL_VERSION, acquireIssueMutex, coordinatorSecret,
+  BrokerError, ConfigurationError, ISSUE_MUTEX_TTL, PROTOCOL_VERSION, acquireIssueMutex, coordinatorSecret,
   json, method, readJson, requireProtocol,
 } from "./_lib";
 
@@ -15,7 +15,8 @@ export default async function handler(req: Request): Promise<Response> {
     const issueNumber = body.issue_number as number;
     const token = await acquireIssueMutex(issueNumber);
     if (!token) throw new BrokerError(409, "Issue is busy; retry coordinator lock.");
-    return json(200, { protocol_version: PROTOCOL_VERSION, issue_number: issueNumber, token, expires_in: 30 });
+    return json(200, { protocol_version: PROTOCOL_VERSION, issue_number: issueNumber, token,
+      expires_in: ISSUE_MUTEX_TTL });
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;
     return json(status, { protocol_version: PROTOCOL_VERSION, error: error instanceof Error ? error.message : "Unable to acquire coordinator lock." });

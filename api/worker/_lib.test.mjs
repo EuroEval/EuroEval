@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, replaceVolunteerMarker, selectedLanguages, validateRecord } from "./_lib.ts";
+import { expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, renderVolunteerMarker, replaceVolunteerMarker, selectedLanguages, validateRecord } from "./_lib.ts";
 import { fitsGpu, selectedGpu } from "./_lib/model.ts";
 import { reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "./_lib/redis.ts";
 import { promotionIdentityKey, reservePromotionReservation } from "./_lib/promotion.ts";
@@ -16,6 +16,15 @@ test("strictly parses the shared ownership marker", () => {
   const marker = { protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "active", leases: [{ lease_id: "lease", language: "da", worker: "abc", contributor: "contributor", expires_at: new Date(Date.now() + 1000).toISOString() }] };
   const body = replaceVolunteerMarker("queue", marker);
   assert.deepEqual(parseVolunteerMarker(body), marker);
+});
+
+test("marker replacement preserves comments and selected checkboxes", () => {
+  const marker = { protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "active", leases: [] };
+  const body = "<!-- harmless comment -->\n- [x] Greek\n\n" + renderVolunteerMarker(marker);
+  const replaced = replaceVolunteerMarker(body, null);
+  assert.match(replaced, /harmless comment/);
+  assert.match(replaced, /- \[x\] Greek/);
+  assert.doesNotMatch(replaced, /euroeval-volunteer-worker:v1/);
 });
 
 test("submission markers require verified server-derived counts", () => {
@@ -175,7 +184,8 @@ test("promotion renewal refreshes each nonterminal path only", async () => {
   };
   try {
     assert.equal(await reservePromotionReservation({ issue_number: 12, submission_id: "one", outcome: "accepted",
-      records, token: "token", decision_nonce: "nonce", status: "reserved" }), "reserved");
+      records, token: "token", decision_reviewer: "alice",
+      decision_created_at: "2026-09-06T12:00:00Z", status: "reserved" }), "reserved");
     const command = commands[0];
     assert.equal(command[0], "EVAL");
     assert.equal(command[2], "3");
