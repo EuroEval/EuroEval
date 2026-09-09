@@ -15,6 +15,7 @@ from .review_models import (
     BrokerPromoter,
     BrokerRenewer,
     BrokerReservation,
+    BrokerReservationResult,
     JsonObject,
     ReviewError,
     ReviewReport,
@@ -31,6 +32,7 @@ from .types import PROTOCOL_VERSION
 
 _DECISION_PREFIX = "volunteer/decisions"
 _MANIFEST_PREFIX = "volunteer/manifests"
+_LOCAL_DECISION_CREATED_AT = "1970-01-01T00:00:00Z"
 
 
 class VolunteerReviewer:
@@ -55,7 +57,7 @@ class VolunteerReviewer:
             reserve_with_broker if self._broker_promoter else None
         )
         self.renewer = renewer or (renew_with_broker if self._broker_promoter else None)
-        self.now = now or (lambda: dt.datetime.now(tz=dt.UTC))
+        self.now = now
         self.scope_policy = scope_policy or load_scope_policy()
 
     def decide(
@@ -73,11 +75,6 @@ class VolunteerReviewer:
         report = self.show(submission_id=submission_id)
         decision_path = f"{_DECISION_PREFIX}/{submission_id}.json"
         existing = self.store.read_optional(self.store.staging_bucket, decision_path)
-        if existing is not None:
-            decision = _load_object(content=existing, context=decision_path)
-            _validate_existing_decision(
-                decision=decision, report=report, outcome=outcome
-            )
         evidence = sorted(
             [
                 {
@@ -89,11 +86,30 @@ class VolunteerReviewer:
             ],
             key=lambda item: item["identity"],
         )
-        token = (
-            self.reserver(report.issue_number, submission_id, outcome, evidence)
+        reservation = (
+            self.reserver(
+                report.issue_number, submission_id, outcome, reviewer, evidence
+            )
             if self.reserver
-            else "local-test-reservation"
+            else _local_reservation(reviewer=reviewer, existing=existing)
         )
+        decision_bytes = _decision_bytes(
+            report=report,
+            outcome=outcome,
+            reviewer=reservation.decision_reviewer,
+            reasons=reasons or [],
+            decided_at=reservation.decision_created_at,
+        )
+        if existing is not None:
+            decision = _load_object(content=existing, context=decision_path)
+            _validate_existing_decision(
+                content=existing,
+                decision=decision,
+                expected_content=decision_bytes,
+                report=report,
+                outcome=outcome,
+            )
+        token = reservation.token
         if outcome == "accepted":
             self._promote_records(
                 report=report,
@@ -103,13 +119,6 @@ class VolunteerReviewer:
             )
             self._renew_reservation(report=report, records=evidence, token=token)
         if existing is None:
-            decision_bytes = _decision_bytes(
-                report=report,
-                outcome=outcome,
-                reviewer=reviewer,
-                reasons=reasons or [],
-                decided_at=self.now(),
-            )
             self.store.write_verified(
                 bucket=self.store.staging_bucket,
                 path=decision_path,
@@ -214,10 +223,12 @@ def _decision_bytes(
     outcome: str,
     reviewer: str,
     reasons: list[str],
-    decided_at: dt.datetime,
+    decided_at: str,
 ) -> bytes:
     if not reviewer.strip():
         raise ReviewError("A verified reviewer login is required")
+    if not decided_at.strip():
+        raise ReviewError("Broker returned an empty decision timestamp")
     decision = {
         "protocol_version": PROTOCOL_VERSION,
         "artifact": "volunteer-review-decision/v1",
@@ -225,7 +236,7 @@ def _decision_bytes(
         "submission_id": report.submission_id,
         "issue_number": report.issue_number,
         "reviewer": reviewer,
-        "decided_at": decided_at.astimezone(dt.UTC).isoformat().replace("+00:00", "Z"),
+        "decided_at": decided_at,
         "outcome": outcome,
         "reasons": reasons,
         "warnings": list(report.warnings),
@@ -244,8 +255,34 @@ def _decision_bytes(
     ).encode("utf-8")
 
 
+def _local_reservation(
+    reviewer: str, existing: bytes | None
+) -> BrokerReservationResult:
+    if existing is not None:
+        decision = _load_object(
+            content=existing, context="existing volunteer decision artifact"
+        )
+        existing_reviewer = decision.get("reviewer")
+        existing_created_at = decision.get("decided_at")
+        if isinstance(existing_reviewer, str) and isinstance(existing_created_at, str):
+            return BrokerReservationResult(
+                token="local-test-reservation",
+                decision_reviewer=existing_reviewer,
+                decision_created_at=existing_created_at,
+            )
+    return BrokerReservationResult(
+        token="local-test-reservation",
+        decision_reviewer=reviewer,
+        decision_created_at=_LOCAL_DECISION_CREATED_AT,
+    )
+
+
 def _validate_existing_decision(
-    decision: JsonObject, report: ReviewReport, outcome: str
+    content: bytes,
+    decision: JsonObject,
+    expected_content: bytes,
+    report: ReviewReport,
+    outcome: str,
 ) -> None:
     if decision.get("outcome") != outcome:
         raise ReviewError("Submission already has the opposite terminal decision")
@@ -266,6 +303,9 @@ def _validate_existing_decision(
         or decision.get("records") != expected_records
         or not isinstance(decision.get("reviewer"), str)
         or not decision.get("reviewer")
+        or not isinstance(decision.get("decided_at"), str)
+        or not decision.get("decided_at")
+        or content != expected_content
     ):
         raise ReviewError("Existing decision artifact is malformed or inconsistent")
 
@@ -322,14 +362,21 @@ def renew_with_broker(
 
     Returns:
         The unchanged opaque reservation token.
+
+    Raises:
+        ReviewError:
+            If the broker returns decision metadata during renewal.
     """
-    return _request_reservation(
+    reservation = _request_reservation(
         issue_number=issue_number,
         submission_id=submission_id,
         outcome=outcome,
         records=records,
         reservation_token=reservation_token,
     )
+    if not isinstance(reservation, str):
+        raise ReviewError("Broker returned decision metadata during renewal")
+    return reservation
 
 
 def _request_reservation(
@@ -338,7 +385,8 @@ def _request_reservation(
     outcome: str,
     records: list[dict[str, str]],
     reservation_token: str | None = None,
-) -> str:
+    reviewer: str | None = None,
+) -> str | BrokerReservationResult:
     secret = os.environ.get("VOLUNTEER_PROMOTION_SECRET")
     if not secret:
         raise ReviewError("VOLUNTEER_PROMOTION_SECRET is required")
@@ -355,6 +403,8 @@ def _request_reservation(
     }
     if reservation_token is not None:
         request_body["reservation_token"] = reservation_token
+    if reviewer is not None:
+        request_body["reviewer"] = reviewer
     payload = json.dumps(request_body).encode("utf-8")
     request = urllib.request.Request(
         endpoint,
@@ -370,20 +420,48 @@ def _request_reservation(
     token = body.get("token") if isinstance(body, dict) else None
     if not isinstance(token, str) or not token:
         raise ReviewError("Broker did not return a promotion reservation token")
-    return token
+    if reservation_token is not None:
+        return token
+    decision_reviewer = (
+        body.get("decision_reviewer") if isinstance(body, dict) else None
+    )
+    decision_created_at = (
+        body.get("decision_created_at") if isinstance(body, dict) else None
+    )
+    if not isinstance(decision_reviewer, str) or not decision_reviewer:
+        raise ReviewError("Broker did not return a decision reviewer")
+    if not isinstance(decision_created_at, str) or not decision_created_at:
+        raise ReviewError("Broker did not return a decision timestamp")
+    return BrokerReservationResult(
+        token=token,
+        decision_reviewer=decision_reviewer,
+        decision_created_at=decision_created_at,
+    )
 
 
 def reserve_with_broker(
-    issue_number: int, submission_id: str, outcome: str, records: list[dict[str, str]]
-) -> str:
+    issue_number: int,
+    submission_id: str,
+    outcome: str,
+    reviewer: str,
+    records: list[dict[str, str]],
+) -> BrokerReservationResult:
     """Reserve one immutable maintainer outcome at the broker.
 
     Returns:
-        The opaque reservation token.
+        The reservation token and server-bound decision metadata.
+
+    Raises:
+        ReviewError:
+            If the broker omits the reservation or decision metadata.
     """
-    return _request_reservation(
+    reservation = _request_reservation(
         issue_number=issue_number,
         submission_id=submission_id,
         outcome=outcome,
         records=records,
+        reviewer=reviewer,
     )
+    if not isinstance(reservation, BrokerReservationResult):
+        raise ReviewError("Broker returned an invalid promotion reservation")
+    return reservation
