@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import base64
 import dataclasses
 import datetime as dt
+import hashlib
+import hmac
 import json
 import logging
+import os
 import re
 import urllib.error
 
@@ -39,6 +43,7 @@ class CommunityMarker:
     leases: tuple[dict[str, str], ...] = ()
     submissions: tuple[dict[str, object], ...] = ()
     completed_languages: tuple[str, ...] = ()
+    signature: str | None = None
 
 
 def _expiry_active(value: str) -> bool:
@@ -50,7 +55,13 @@ def _expiry_active(value: str) -> bool:
         return False
 
 
-def parse_community_marker(body: str) -> CommunityMarker | None:
+def parse_community_marker(
+    body: str,
+    *,
+    issue_number: int | None = None,
+    secret: str | None = None,
+    require_signature: bool = False,
+) -> CommunityMarker | None:
     """Parse exactly one canonical marker, failing closed on drift.
 
     Returns:
@@ -75,6 +86,7 @@ def parse_community_marker(body: str) -> CommunityMarker | None:
                 "leases",
                 "submissions",
                 "completed_languages",
+                "signature",
             }
         )
         or not {"protocol_version", "coordinator", "submission", "leases"}.issubset(
@@ -125,6 +137,35 @@ def parse_community_marker(body: str) -> CommunityMarker | None:
         ):
             return None
         submissions.append(submission)
+    signature = payload.get("signature")
+    if signature is not None and (not isinstance(signature, str) or not signature):
+        return None
+    if require_signature and (
+        issue_number is None or not secret or not isinstance(signature, str)
+    ):
+        return None
+    if signature is not None and issue_number is not None and secret:
+        unsigned = dict(payload)
+        unsigned.pop("signature", None)
+        encoded = json.dumps(
+            {
+                "domain": "euroeval-volunteer-marker",
+                "version": 1,
+                "issue_number": issue_number,
+                "marker": unsigned,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        expected = (
+            base64.urlsafe_b64encode(
+                hmac.new(secret.encode(), encoded, hashlib.sha256).digest()
+            )
+            .decode()
+            .rstrip("=")
+        )
+        if not hmac.compare_digest(signature, expected):
+            return None
     completed = payload.get("completed_languages", [])
     if not isinstance(completed, list) or not all(
         isinstance(item, str) and item for item in completed
@@ -165,6 +206,7 @@ def parse_community_marker(body: str) -> CommunityMarker | None:
         tuple(leases),
         tuple(submissions),
         tuple(completed),
+        signature,
     )
 
 
@@ -221,9 +263,21 @@ def remove_community_marker(body: str) -> str:
     return COMMUNITY_MARKER_RE.sub("", body, count=1).rstrip() + "\n"
 
 
+def _trusted_issue_marker(number: int, body: str) -> CommunityMarker | None:
+    secret = os.environ.get("VOLUNTEER_MARKER_SECRET")
+    return parse_community_marker(
+        body, issue_number=number, secret=secret, require_signature=bool(secret)
+    )
+
+
 def clear_vm_marker(number: int, vm_id: str) -> None:
     """Remove this VM's marker while preserving active broker ownership."""
     body = fetch_issue_body(number=number)
+    if (
+        _COMMUNITY_MARKER_CANDIDATE_RE.search(body)
+        and _trusted_issue_marker(number, body) is None
+    ):
+        return
     if issue_has_active_queue_ownership(body):
         logger.info(f"#{number}: coordinator ownership is active; keeping markers.")
         return
@@ -241,6 +295,11 @@ def release_issue_if_owned(number: int, vm_id: str, assignee: str) -> bool:
         Whether both GitHub mutations succeeded.
     """
     body = fetch_issue_body(number=number)
+    if (
+        _COMMUNITY_MARKER_CANDIDATE_RE.search(body)
+        and _trusted_issue_marker(number, body) is None
+    ):
+        return False
     if issue_has_active_queue_ownership(body):
         return False
     match = VM_MARKER_RE.search(body)
@@ -265,13 +324,23 @@ def set_vm_marker(number: int, vm_id: str) -> bool:
         Whether the marker was written.
     """
     body = fetch_issue_body(number=number)
-    if issue_has_active_queue_ownership(body):
+    secret = os.environ.get("VOLUNTEER_MARKER_SECRET")
+    marker = parse_community_marker(
+        body, issue_number=number, secret=secret, require_signature=bool(secret)
+    )
+    if _COMMUNITY_MARKER_CANDIDATE_RE.search(body) and marker is None:
         return False
+    if marker is not None and marker.submission in COMMUNITY_ACTIVE_SUBMISSION_STATES:
+        active = any(_expiry_active(lease["expires_at"]) for lease in marker.leases)
+        if active or not marker.leases or marker.signature:
+            return False
+        if not marker.submissions:
+            body = remove_community_marker(body)
     match = VM_MARKER_RE.search(body)
     if match and match.group(1) != vm_id:
         return False
-    if parse_community_marker(body) is not None:
-        body = remove_community_marker(body)
+    # Keep signed broker state and all submission history as an audit trail.
+    # Only an unsigned, expired legacy lease with no history is discarded.
     cleaned = VM_MARKER_RE.sub("", body).rstrip()
     patch_issue_body(number=number, body=f"{cleaned}\n\n<!-- vm-id: {vm_id} -->\n")
     return True

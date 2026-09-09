@@ -5,7 +5,7 @@ import {
   listOpenIssues, method,
   patchIssue, putLease, randomToken, readJson, releaseIssueMutex, deleteLease,
   parseVolunteerMarker, resolveModel, selectedLanguages, VolunteerLeaseMarker, Lease,
-  requireProtocol,
+  requireProtocol, signVolunteerMarker, verifyVolunteerMarker, markerSecret, replaceVolunteerMarker,
 } from "./_lib";
 
 export const config = { runtime: "edge" };
@@ -20,7 +20,9 @@ function validHardware(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const hardware = value as Record<string, unknown>;
   const freeDisk = hardware.free_disk_bytes;
-  if (typeof hardware.architecture !== "string" || !hardware.architecture.trim() ||
+  const utilisation = hardware.gpu_memory_utilisation;
+  if (typeof utilisation !== "number" || !Number.isFinite(utilisation) || utilisation <= 0 || utilisation > 1 ||
+      typeof hardware.architecture !== "string" || !hardware.architecture.trim() ||
       typeof freeDisk !== "number" || !Number.isSafeInteger(freeDisk) || freeDisk < 0 ||
       !Array.isArray(hardware.gpus) || !hardware.gpus.length) return false;
   return hardware.gpus.every((gpu) => {
@@ -40,8 +42,11 @@ export default async function handler(req: Request): Promise<Response> {
     const body = await readJson(req, 32 * 1024); requireProtocol(body);
     if (!validHardware(body.hardware)) throw new BrokerError(400, "hardware must contain well-formed GPUs and free disk.");
     if (typeof body.worker_version !== "string" || !body.worker_version.trim()) throw new BrokerError(400, "worker_version is required.");
+    markerSecret();
     const imageDigest = env("VOLUNTEER_WORKER_IMAGE_DIGEST");
-    const euroevalVersion = env("EUROEVAL_VERSION"); const coordinator = env("WORKER_COORDINATOR_LOGIN");
+    const euroevalVersion = env("EUROEVAL_VERSION").replace(/\.dev$/, ".dev0"); const coordinator = env("WORKER_COORDINATOR_LOGIN");
+    const requiredWorkerVersion = env("VOLUNTEER_WORKER_VERSION");
+    if (body.worker_version !== requiredWorkerVersion) throw new BrokerError(422, "Unsupported worker version.");
     const requestedLanguage = typeof body.language === "string" ? body.language : null;
     const issues = await listOpenIssues();
     for (const listed of issues) {
@@ -63,7 +68,7 @@ export default async function handler(req: Request): Promise<Response> {
         if (snapshot.state !== "open" || snapshot.assignees?.some((item) => item.login !== coordinator) || snapshot.body && VM_MARKER_RE.test(snapshot.body)) continue;
         const markerPresent = !!snapshot.body?.match(/euroeval-volunteer-worker:v1/i);
         const marker = parseVolunteerMarker(snapshot.body);
-        if (markerPresent && !marker) continue;
+        if (markerPresent && (!marker || !(await verifyVolunteerMarker(snapshot.number, marker)))) continue;
         const current = activeMarker(marker);
         const selected = selectedLanguages(snapshot.body);
         const available = claimableLanguages(selected, current);
@@ -77,7 +82,10 @@ export default async function handler(req: Request): Promise<Response> {
         const lease: Lease = {
           issue_number: snapshot.number, language, worker: identity.hash.slice(0, 24), contributor: identity.contributor,
           model_id: model.id, model_revision: model.revision, euroeval_version: euroevalVersion,
-          image_digest: imageDigest, worker_version: body.worker_version, expires_at: expiresAt,
+          image_digest: imageDigest,
+          worker_version: body.worker_version,
+          gpu_memory_utilisation: body.hardware.gpu_memory_utilisation as number,
+          expires_at: expiresAt,
           lease_id: randomToken(18), model_profile: model.model_profile,
           expected_scope: { policy_version: trusted.policy_version, language_group: group,
             identity_suffixes: [...trusted.identity_suffixes], count: trusted.identity_suffixes.length,
@@ -91,11 +99,14 @@ export default async function handler(req: Request): Promise<Response> {
           ...(current?.completed_languages ? { completed_languages: current.completed_languages } : {}),
         };
         try {
-          await patchIssue(snapshot.number, replaceMarker(snapshot.body || "", nextMarker));
+          const signedMarker = await signVolunteerMarker(snapshot.number, nextMarker);
+          await patchIssue(snapshot.number, replaceVolunteerMarker(snapshot.body || "", signedMarker));
           await assignIssue(snapshot.number, coordinator);
           const after = await fetchIssue(snapshot.number);
           const afterMarker = parseVolunteerMarker(after.body);
-          if (VM_MARKER_RE.test(after.body || "") || !afterMarker?.leases.some((item) => item.lease_id === lease.lease_id) ||
+          if (VM_MARKER_RE.test(after.body || "") || !afterMarker ||
+              !(await verifyVolunteerMarker(snapshot.number, afterMarker)) ||
+              !afterMarker.leases.some((item) => item.lease_id === lease.lease_id) ||
               !(after.assignees || []).some((item) => item.login === coordinator)) {
             throw new BrokerError(409, "GitHub ownership fence lost during claim.");
           }
@@ -105,9 +116,9 @@ export default async function handler(req: Request): Promise<Response> {
           const live = await fetchIssue(snapshot.number).catch(() => null);
           const liveMarker = live ? parseVolunteerMarker(live.body) : null;
           if (live && liveMarker?.leases.some((item) => item.lease_id === lease.lease_id)) {
-            await patchIssue(snapshot.number, replaceMarker(live.body || "", {
+            await patchIssue(snapshot.number, replaceVolunteerMarker(live.body || "", await signVolunteerMarker(live.number, {
               ...liveMarker, leases: liveMarker.leases.filter((item) => item.lease_id !== lease.lease_id),
-            })).catch(() => undefined);
+            }))).catch(() => undefined);
           }
           await deleteLease(lease).catch(() => undefined); throw error;
         }
@@ -124,9 +135,4 @@ export default async function handler(req: Request): Promise<Response> {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;
     return json(status, { protocol_version: PROTOCOL_VERSION, error: error instanceof Error ? error.message : "Unable to claim an evaluation." });
   }
-}
-
-function replaceMarker(body: string, marker: VolunteerLeaseMarker): string {
-  const without = body.replace(/<!--[\s\S]*?euroeval-volunteer-worker:v1\s+[\s\S]*?-->/i, "").replace(/\n{3,}/g, "\n\n").trimEnd();
-  return `${without}\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(marker)} -->\n`;
 }

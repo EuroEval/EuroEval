@@ -30,6 +30,7 @@ export default async function handler(req: Request): Promise<Response> {
     if (existing && existing.digest !== digest) throw new BrokerError(409, "This canonical record identity already has a different digest.");
     if (existing?.status === "uploaded") {
       await redis("SADD", `euroeval:worker:results:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity, path: existing.path || path, warnings: existing.warnings || checked.warnings }));
+      await redis("SADD", `euroeval:worker:reservations:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity }));
       return json(200, { protocol_version: PROTOCOL_VERSION, status: "duplicate", digest, identity: checked.identity, path: existing.path || path, warnings: existing.warnings || checked.warnings });
     }
     const reservation: StoredIdentity = { digest, lease_id: lease.lease_id, status: "uploading", issue_number: lease.issue_number, language: lease.language, path, warnings: checked.warnings };
@@ -42,7 +43,9 @@ export default async function handler(req: Request): Promise<Response> {
       reservation.status = "uploaded";
       if (!(await completeResultIdentity(identityKey, JSON.stringify(reservation), digest, lease.lease_id, 30 * 24 * 60 * 60))) throw new BrokerError(409, "Result reservation was replaced during upload; retry safely.");
       await redis("SADD", `euroeval:worker:results:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity, path, warnings: checked.warnings }));
+      await redis("SADD", `euroeval:worker:reservations:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity }));
       await redis("EXPIRE", `euroeval:worker:results:${lease.lease_id}`, String(30 * 24 * 60 * 60));
+      await redis("EXPIRE", `euroeval:worker:reservations:${lease.lease_id}`, String(30 * 24 * 60 * 60));
     } catch (error) { await abortResultIdentity(identityKey, digest, lease.lease_id).catch(() => undefined); throw error; }
     return json(201, { protocol_version: PROTOCOL_VERSION, status: "uploaded", digest, identity: checked.identity, path, warnings: checked.warnings });
   } catch (error) {

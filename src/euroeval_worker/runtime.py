@@ -190,7 +190,10 @@ class Worker:
             client=self.client, state=self.state
         )
         while True:
-            hardware = self.hardware_factory()
+            hardware = dataclasses.replace(
+                self.hardware_factory(),
+                gpu_memory_utilisation=self.gpu_memory_utilisation,
+            )
             active = self.state.load_active()
             if active is not None and active.github_login not in (None, self._login):
                 raise AuthenticationIdentityError(
@@ -309,7 +312,7 @@ class Worker:
                         lease=lease,
                         gpus=hardware.gpus,
                         free_disk_bytes=hardware.free_disk_bytes,
-                        gpu_memory_utilisation=self.gpu_memory_utilisation,
+                        gpu_memory_utilisation=lease.gpu_memory_utilisation,
                     )
                 else:
                     check_model_safety(

@@ -5,6 +5,7 @@ import {
   authenticate, commentIssue, contributorLabel, deleteLease, enforceRateLimit, fetchIssue,
   getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker, readJson,
   redis, redisGet, releaseIssueMutex, requireProtocol, selectedLanguages, uploadStaging, VolunteerLeaseMarker,
+  replaceVolunteerMarker, signVolunteerMarker, verifyVolunteerMarker,
 } from "./_lib";
 
 export const config = { runtime: "edge" };
@@ -54,6 +55,7 @@ export default async function handler(req: Request): Promise<Response> {
         verified_contributor: identity.contributor, model: { id: lease.model_id, revision: lease.model_revision },
         language: lease.language, model_profile: lease.model_profile, language_group: lease.expected_scope.language_group,
         euroeval_version: lease.euroeval_version, worker_version: lease.worker_version, image_digest: lease.image_digest,
+        image_digest_provenance: "configured-required-not-runtime-attested", gpu_memory_utilisation: lease.gpu_memory_utilisation,
         expected_scope: lease.expected_scope, results: entries,
         automated_checks: { result_count: entries.length, identities_unique: true, failed_instances: 0, warnings: [...new Set([...(lease.expected_scope.warnings || []), ...entries.flatMap((entry) => entry.warnings || [])])] },
         created_at: new Date().toISOString(), issue_state: issue.state,
@@ -65,15 +67,15 @@ export default async function handler(req: Request): Promise<Response> {
     const mutex = await acquireIssueMutex(lease.issue_number); if (!mutex) throw new BrokerError(409, "Issue is busy; retry finalisation.");
     try {
       const issue = await fetchIssue(lease.issue_number); const marker = parseVolunteerMarker(issue.body);
+      if (!marker || !(await verifyVolunteerMarker(issue.number, marker))) throw new BrokerError(409, "The issue ownership marker is missing, unsigned, or malformed.");
       if (!selectedLanguages(issue.body).includes(lease.language)) throw new BrokerError(409, "The leased language is no longer in the issue scope.");
-      if (!marker) throw new BrokerError(409, "The issue ownership marker is missing or malformed.");
       const ours = marker.leases.some((item) => item.lease_id === lease.lease_id);
       const alreadySubmitted = marker.submissions?.some((item) => item.submission_id === receipt.submission_id);
       if (!ours && !alreadySubmitted) throw new BrokerError(409, "The issue no longer carries this worker's lease marker.");
       const submission = { submission_id: receipt.submission_id, language: lease.language, manifest_path: receipt.manifest_path, submitted_at: new Date().toISOString(), verified_contributor: identity.contributor, result_count: receipt.entries.length, status: "submitted" as const };
       const submissions = alreadySubmitted ? marker.submissions || [] : [...(marker.submissions || []), submission];
       const next: VolunteerLeaseMarker = { ...marker, submission: "submitted", leases: marker.leases.filter((item) => item.lease_id !== lease.lease_id), submissions };
-      if (ours) { await patchIssue(lease.issue_number, replaceMarker(issue.body || "", next)); const fenced = parseVolunteerMarker((await fetchIssue(lease.issue_number)).body); if (!fenced?.submissions?.some((item) => item.submission_id === receipt.submission_id)) throw new BrokerError(409, "GitHub submission fence lost."); }
+      if (ours) { const signed = await signVolunteerMarker(lease.issue_number, next); await patchIssue(lease.issue_number, replaceVolunteerMarker(issue.body || "", signed)); const fencedIssue = await fetchIssue(lease.issue_number); const fenced = parseVolunteerMarker(fencedIssue.body); if (!fenced || !(await verifyVolunteerMarker(lease.issue_number, fenced)) || !fenced.submissions?.some((item) => item.submission_id === receipt.submission_id)) throw new BrokerError(409, "GitHub submission fence lost."); }
       const label = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
       if (!issue.labels?.some((item) => item.name === label)) await addIssueLabel(lease.issue_number, label);
       const comments = await issueComments(lease.issue_number);
@@ -89,8 +91,4 @@ export default async function handler(req: Request): Promise<Response> {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;
     return json(status, { protocol_version: PROTOCOL_VERSION, error: error instanceof Error ? error.message : "Unable to finalise submission." });
   }
-}
-function replaceMarker(body: string, marker: VolunteerLeaseMarker): string {
-  const without = body.replace(/<!--[\s\S]*?euroeval-volunteer-worker:v1\s+[\s\S]*?-->/i, "").replace(/\n{3,}/g, "\n\n").trimEnd();
-  return `${without}\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(marker)} -->\n`;
 }

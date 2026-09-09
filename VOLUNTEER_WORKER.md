@@ -109,7 +109,9 @@ lived coordination. Configure these Vercel project environment variables:
 | `GITHUB_OAUTH_CLIENT_ID` | OAuth app client ID with device flow enabled |
 | `GITHUB_OAUTH_CLIENT_SECRET` | OAuth secret used to revoke each device grant |
 | `EUROEVAL_VERSION` | Exact release supported by the generated scope policy |
-| `VOLUNTEER_WORKER_IMAGE_DIGEST` | Allowed worker image digest (`sha256:...`) |
+| `VOLUNTEER_WORKER_IMAGE_DIGEST` | Configured/required image digest (`sha256:...`); not runtime attestation |
+| `VOLUNTEER_WORKER_VERSION` | Exact supported worker protocol/package version |
+| `VOLUNTEER_MARKER_SECRET` | Required HMAC-SHA-256 secret for issue state and Hall credit markers |
 | `WORKER_COORDINATOR_LOGIN` | Account used for temporary issue assignment |
 | `HF_STAGING_BUCKET` | Private EU Hugging Face bucket (`namespace/bucket`) |
 | `HF_TOKEN` | Token authorised to write that staging bucket |
@@ -120,6 +122,11 @@ lived coordination. Configure these Vercel project environment variables:
 | `VOLUNTEER_LEASE_SECONDS` | Optional bounded lease duration |
 | `VOLUNTEER_SCOPE_POLICY_JSON` | Optional complete generated policy override |
 
+Every internal queue host must also set `VOLUNTEER_COORDINATOR_URL` and
+`WORKER_COORDINATOR_SECRET`. If the URL is set, queue claims fail closed unless the
+shared broker lock can be acquired; do not run a local queue against a shared issue
+set without both values.
+
 Set secrets in Vercel's encrypted environment configuration, never in the
 repository or workflow file. The OAuth client ID and secret are both required: the
 broker uses the secret to revoke the short-lived GitHub grant before returning an
@@ -127,9 +134,11 @@ opaque broker credential. Neither the GitHub token nor any project secret is ret
 to workers. Restrict the broker's Hugging Face token to the staging bucket.
 
 `VOLUNTEER_WORKER_IMAGE_DIGEST` must be updated to the digest printed by the image
-workflow. Deploy a new digest for upgrades; never configure a floating image name or
-tag. Check that the digest is the expected `linux/amd64` manifest before updating the
-environment. Generate the default scope with
+workflow. It is configured/required provenance carried by the broker lease, not an
+attestation of the runtime image. Deploy a new digest for upgrades; never configure a
+floating image name or tag. Check that the digest is the expected `linux/amd64`
+manifest before updating the environment. Human or independent verification of the
+running image remains required. Generate the default scope with
 `src/scripts/generate_volunteer_scope_policy.py`; use the JSON override only for an
 intentional, reviewed deployment policy.
 
@@ -165,7 +174,10 @@ broker. Both operations are safe to rerun after a partial failure; the opposite
 terminal outcome is refused.
 
 A rejected language becomes leaseable again while its rejected submission remains in
-the issue audit marker. Acceptance of one language does not award credit. Once every
+ the signed issue audit marker. Result identity reservations are reclaimed only after
+ a token-checked broker transition; private audit manifests and result files remain
+ available for review. A later local queue claim appends its VM marker and never
+ deletes this signed history. Acceptance of one language does not award credit. Once every
 selected exact language has an accepted submission, the broker adds `results-ready`
 and writes the immutable Hall marker for the contributor with the largest sum of
 server-derived accepted result counts. Lower-case GitHub login order breaks ties.

@@ -45,6 +45,7 @@ class HardwareReport:
     cuda_version: str | None
     pytorch_version: str | None
     gpus: tuple["Gpu", ...]
+    gpu_memory_utilisation: float = 0.8
 
 
 @dataclasses.dataclass(frozen=True)
@@ -71,6 +72,7 @@ class Lease:
     image_digest: str
     expires_at: str
     worker_version: str = "legacy-worker"
+    gpu_memory_utilisation: float = 0.8
     model_profile: str | None = None
 
 
@@ -225,8 +227,17 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
 
     Returns:
         The typed lease.
+
+    Raises:
+        ValueError:
+            If the broker response is malformed or has an invalid fit value.
     """
     _protocol(data)
+    gpu_memory_utilisation = _number(data, "gpu_memory_utilisation", 0.8)
+    if not 0 < gpu_memory_utilisation <= 1:
+        raise ValueError(
+            "broker response gpu_memory_utilisation must be between 0 and 1"
+        )
     return Lease(
         lease_id=_string(data, "lease_id"),
         issue_number=_integer(data, "issue_number"),
@@ -236,6 +247,7 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
         euroeval_version=_string(data, "euroeval_version"),
         image_digest=_string(data, "image_digest"),
         worker_version=_string(data, "worker_version"),
+        gpu_memory_utilisation=gpu_memory_utilisation,
         expires_at=_string(data, "expires_at"),
         model_profile=_optional_string(data, "model_profile"),
     )
@@ -246,6 +258,13 @@ def _integer(data: dict[str, object], key: str, default: int | None = None) -> i
     if isinstance(value, bool) or not isinstance(value, (int, float, str)):
         raise ValueError(f"broker response field {key!r} must be an integer")
     return int(value)
+
+
+def _number(data: dict[str, object], key: str, default: float | None = None) -> float:
+    value = data.get(key, default)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"broker response field {key!r} must be a number")
+    return float(value)
 
 
 def _optional_string(data: dict[str, object], key: str) -> str | None:

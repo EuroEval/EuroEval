@@ -1,8 +1,8 @@
 {
-  "policy_version": "volunteer-scope/18.0.0.dev",
+  "policy_version": "volunteer-scope/18.0.0.dev0",
   "policies": [
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "be",
       "language_group": "be",
@@ -21,7 +21,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "bg",
       "language_group": "bg",
@@ -39,7 +39,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "bs",
       "language_group": "bs",
@@ -55,7 +55,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "ca",
       "language_group": "ca",
@@ -74,7 +74,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "cs",
       "language_group": "cs",
@@ -93,7 +93,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "da",
       "language_group": "da",
@@ -116,7 +116,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "de",
       "language_group": "de",
@@ -138,7 +138,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "el",
       "language_group": "el",
@@ -158,7 +158,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "en",
       "language_group": "en",
@@ -180,7 +180,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "es",
       "language_group": "es",
@@ -201,7 +201,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "et",
       "language_group": "et",
@@ -221,7 +221,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "fi",
       "language_group": "fi",
@@ -241,7 +241,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "fo",
       "language_group": "fo",
@@ -261,7 +261,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "fr",
       "language_group": "fr",
@@ -282,7 +282,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "hr",
       "language_group": "hr",
@@ -300,7 +300,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "hu",
       "language_group": "hu",
@@ -319,7 +319,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "is",
       "language_group": "is",
@@ -340,7 +340,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "it",
       "language_group": "it",
@@ -361,7 +361,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "lb",
       "language_group": "lb",
@@ -380,7 +380,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "lt",
       "language_group": "lt",
@@ -400,7 +400,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "lv",
       "language_group": "lv",
@@ -419,7 +419,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "nb",
       "language_group": "nb",
@@ -440,7 +440,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "nl",
       "language_group": "nl",
@@ -464,7 +464,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "nn",
       "language_group": "nn",
@@ -485,7 +485,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "no",
       "language_group": "no",
@@ -511,7 +511,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "pl",
       "language_group": "pl",
@@ -531,7 +531,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "pt",
       "language_group": "pt",
@@ -552,7 +552,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -571,7 +571,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "ro",
       "language_group": "ro",
@@ -590,7 +590,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "sk",
       "language_group": "sk",
@@ -608,7 +608,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "sl",
       "language_group": "sl",
@@ -626,7 +626,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "sq",
       "language_group": "sq",
@@ -645,7 +645,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "sr",
       "language_group": "sr",
@@ -664,7 +664,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "sv",
       "language_group": "sv",
@@ -686,7 +686,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "bert",
       "language": "uk",
       "language_group": "uk",
@@ -705,7 +705,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "be",
       "language_group": "be",
@@ -724,7 +724,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "bg",
       "language_group": "bg",
@@ -742,7 +742,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "bs",
       "language_group": "bs",
@@ -758,7 +758,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "ca",
       "language_group": "ca",
@@ -777,7 +777,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "cs",
       "language_group": "cs",
@@ -796,7 +796,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "da",
       "language_group": "da",
@@ -819,7 +819,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "de",
       "language_group": "de",
@@ -841,7 +841,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "el",
       "language_group": "el",
@@ -861,7 +861,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "en",
       "language_group": "en",
@@ -883,7 +883,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "es",
       "language_group": "es",
@@ -904,7 +904,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "et",
       "language_group": "et",
@@ -924,7 +924,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "fi",
       "language_group": "fi",
@@ -944,7 +944,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "fo",
       "language_group": "fo",
@@ -964,7 +964,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "fr",
       "language_group": "fr",
@@ -985,7 +985,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "hr",
       "language_group": "hr",
@@ -1003,7 +1003,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "hu",
       "language_group": "hu",
@@ -1022,7 +1022,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "is",
       "language_group": "is",
@@ -1043,7 +1043,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "it",
       "language_group": "it",
@@ -1064,7 +1064,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "lb",
       "language_group": "lb",
@@ -1083,7 +1083,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "lt",
       "language_group": "lt",
@@ -1103,7 +1103,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "lv",
       "language_group": "lv",
@@ -1122,7 +1122,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "nb",
       "language_group": "nb",
@@ -1143,7 +1143,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "nl",
       "language_group": "nl",
@@ -1167,7 +1167,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "nn",
       "language_group": "nn",
@@ -1188,7 +1188,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "no",
       "language_group": "no",
@@ -1214,7 +1214,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "pl",
       "language_group": "pl",
@@ -1234,7 +1234,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "pt",
       "language_group": "pt",
@@ -1255,7 +1255,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -1274,7 +1274,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "ro",
       "language_group": "ro",
@@ -1293,7 +1293,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "sk",
       "language_group": "sk",
@@ -1311,7 +1311,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "sl",
       "language_group": "sl",
@@ -1329,7 +1329,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "sq",
       "language_group": "sq",
@@ -1348,7 +1348,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "sr",
       "language_group": "sr",
@@ -1367,7 +1367,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "sv",
       "language_group": "sv",
@@ -1389,7 +1389,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "roberta",
       "language": "uk",
       "language_group": "uk",
@@ -1408,7 +1408,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "be",
       "language_group": "be",
@@ -1427,7 +1427,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "bg",
       "language_group": "bg",
@@ -1445,7 +1445,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "bs",
       "language_group": "bs",
@@ -1461,7 +1461,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "ca",
       "language_group": "ca",
@@ -1480,7 +1480,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "cs",
       "language_group": "cs",
@@ -1499,7 +1499,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "da",
       "language_group": "da",
@@ -1522,7 +1522,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "de",
       "language_group": "de",
@@ -1544,7 +1544,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "el",
       "language_group": "el",
@@ -1564,7 +1564,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "en",
       "language_group": "en",
@@ -1586,7 +1586,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "es",
       "language_group": "es",
@@ -1607,7 +1607,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "et",
       "language_group": "et",
@@ -1627,7 +1627,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "fi",
       "language_group": "fi",
@@ -1647,7 +1647,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "fo",
       "language_group": "fo",
@@ -1667,7 +1667,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "fr",
       "language_group": "fr",
@@ -1688,7 +1688,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "hr",
       "language_group": "hr",
@@ -1706,7 +1706,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "hu",
       "language_group": "hu",
@@ -1725,7 +1725,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "is",
       "language_group": "is",
@@ -1746,7 +1746,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "it",
       "language_group": "it",
@@ -1767,7 +1767,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "lb",
       "language_group": "lb",
@@ -1786,7 +1786,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "lt",
       "language_group": "lt",
@@ -1806,7 +1806,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "lv",
       "language_group": "lv",
@@ -1825,7 +1825,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "nb",
       "language_group": "nb",
@@ -1846,7 +1846,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "nl",
       "language_group": "nl",
@@ -1870,7 +1870,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "nn",
       "language_group": "nn",
@@ -1891,7 +1891,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "no",
       "language_group": "no",
@@ -1917,7 +1917,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "pl",
       "language_group": "pl",
@@ -1937,7 +1937,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "pt",
       "language_group": "pt",
@@ -1958,7 +1958,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -1977,7 +1977,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "ro",
       "language_group": "ro",
@@ -1996,7 +1996,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "sk",
       "language_group": "sk",
@@ -2014,7 +2014,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "sl",
       "language_group": "sl",
@@ -2032,7 +2032,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "sq",
       "language_group": "sq",
@@ -2051,7 +2051,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "sr",
       "language_group": "sr",
@@ -2070,7 +2070,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "sv",
       "language_group": "sv",
@@ -2092,7 +2092,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "eurobert",
       "language": "uk",
       "language_group": "uk",
@@ -2111,7 +2111,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "be",
       "language_group": "be",
@@ -2130,7 +2130,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "bg",
       "language_group": "bg",
@@ -2148,7 +2148,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "bs",
       "language_group": "bs",
@@ -2164,7 +2164,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "ca",
       "language_group": "ca",
@@ -2183,7 +2183,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "cs",
       "language_group": "cs",
@@ -2202,7 +2202,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "da",
       "language_group": "da",
@@ -2225,7 +2225,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "de",
       "language_group": "de",
@@ -2247,7 +2247,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "el",
       "language_group": "el",
@@ -2267,7 +2267,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "en",
       "language_group": "en",
@@ -2289,7 +2289,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "es",
       "language_group": "es",
@@ -2310,7 +2310,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "et",
       "language_group": "et",
@@ -2330,7 +2330,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "fi",
       "language_group": "fi",
@@ -2350,7 +2350,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "fo",
       "language_group": "fo",
@@ -2370,7 +2370,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "fr",
       "language_group": "fr",
@@ -2391,7 +2391,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "hr",
       "language_group": "hr",
@@ -2409,7 +2409,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "hu",
       "language_group": "hu",
@@ -2428,7 +2428,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "is",
       "language_group": "is",
@@ -2449,7 +2449,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "it",
       "language_group": "it",
@@ -2470,7 +2470,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "lb",
       "language_group": "lb",
@@ -2489,7 +2489,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "lt",
       "language_group": "lt",
@@ -2509,7 +2509,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "lv",
       "language_group": "lv",
@@ -2528,7 +2528,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "nb",
       "language_group": "nb",
@@ -2549,7 +2549,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "nl",
       "language_group": "nl",
@@ -2573,7 +2573,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "nn",
       "language_group": "nn",
@@ -2594,7 +2594,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "no",
       "language_group": "no",
@@ -2620,7 +2620,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "pl",
       "language_group": "pl",
@@ -2640,7 +2640,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "pt",
       "language_group": "pt",
@@ -2661,7 +2661,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -2680,7 +2680,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "ro",
       "language_group": "ro",
@@ -2699,7 +2699,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "sk",
       "language_group": "sk",
@@ -2717,7 +2717,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "sl",
       "language_group": "sl",
@@ -2735,7 +2735,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "sq",
       "language_group": "sq",
@@ -2754,7 +2754,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "sr",
       "language_group": "sr",
@@ -2773,7 +2773,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "sv",
       "language_group": "sv",
@@ -2795,7 +2795,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "llama",
       "language": "uk",
       "language_group": "uk",
@@ -2814,7 +2814,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "be",
       "language_group": "be",
@@ -2833,7 +2833,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "bg",
       "language_group": "bg",
@@ -2851,7 +2851,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "bs",
       "language_group": "bs",
@@ -2867,7 +2867,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "ca",
       "language_group": "ca",
@@ -2886,7 +2886,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "cs",
       "language_group": "cs",
@@ -2905,7 +2905,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "da",
       "language_group": "da",
@@ -2928,7 +2928,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "de",
       "language_group": "de",
@@ -2950,7 +2950,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "el",
       "language_group": "el",
@@ -2970,7 +2970,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "en",
       "language_group": "en",
@@ -2992,7 +2992,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "es",
       "language_group": "es",
@@ -3013,7 +3013,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "et",
       "language_group": "et",
@@ -3033,7 +3033,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "fi",
       "language_group": "fi",
@@ -3053,7 +3053,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "fo",
       "language_group": "fo",
@@ -3073,7 +3073,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "fr",
       "language_group": "fr",
@@ -3094,7 +3094,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "hr",
       "language_group": "hr",
@@ -3112,7 +3112,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "hu",
       "language_group": "hu",
@@ -3131,7 +3131,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "is",
       "language_group": "is",
@@ -3152,7 +3152,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "it",
       "language_group": "it",
@@ -3173,7 +3173,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "lb",
       "language_group": "lb",
@@ -3192,7 +3192,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "lt",
       "language_group": "lt",
@@ -3212,7 +3212,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "lv",
       "language_group": "lv",
@@ -3231,7 +3231,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "nb",
       "language_group": "nb",
@@ -3252,7 +3252,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "nl",
       "language_group": "nl",
@@ -3276,7 +3276,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "nn",
       "language_group": "nn",
@@ -3297,7 +3297,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "no",
       "language_group": "no",
@@ -3323,7 +3323,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "pl",
       "language_group": "pl",
@@ -3343,7 +3343,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "pt",
       "language_group": "pt",
@@ -3364,7 +3364,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -3383,7 +3383,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "ro",
       "language_group": "ro",
@@ -3402,7 +3402,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "sk",
       "language_group": "sk",
@@ -3420,7 +3420,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "sl",
       "language_group": "sl",
@@ -3438,7 +3438,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "sq",
       "language_group": "sq",
@@ -3457,7 +3457,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "sr",
       "language_group": "sr",
@@ -3476,7 +3476,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "sv",
       "language_group": "sv",
@@ -3498,7 +3498,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "mistral",
       "language": "uk",
       "language_group": "uk",
@@ -3517,7 +3517,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "be",
       "language_group": "be",
@@ -3536,7 +3536,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "bg",
       "language_group": "bg",
@@ -3554,7 +3554,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "bs",
       "language_group": "bs",
@@ -3570,7 +3570,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "ca",
       "language_group": "ca",
@@ -3589,7 +3589,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "cs",
       "language_group": "cs",
@@ -3608,7 +3608,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "da",
       "language_group": "da",
@@ -3631,7 +3631,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "de",
       "language_group": "de",
@@ -3653,7 +3653,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "el",
       "language_group": "el",
@@ -3673,7 +3673,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "en",
       "language_group": "en",
@@ -3695,7 +3695,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "es",
       "language_group": "es",
@@ -3716,7 +3716,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "et",
       "language_group": "et",
@@ -3736,7 +3736,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "fi",
       "language_group": "fi",
@@ -3756,7 +3756,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "fo",
       "language_group": "fo",
@@ -3776,7 +3776,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "fr",
       "language_group": "fr",
@@ -3797,7 +3797,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "hr",
       "language_group": "hr",
@@ -3815,7 +3815,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "hu",
       "language_group": "hu",
@@ -3834,7 +3834,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "is",
       "language_group": "is",
@@ -3855,7 +3855,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "it",
       "language_group": "it",
@@ -3876,7 +3876,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "lb",
       "language_group": "lb",
@@ -3895,7 +3895,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "lt",
       "language_group": "lt",
@@ -3915,7 +3915,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "lv",
       "language_group": "lv",
@@ -3934,7 +3934,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "nb",
       "language_group": "nb",
@@ -3955,7 +3955,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "nl",
       "language_group": "nl",
@@ -3979,7 +3979,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "nn",
       "language_group": "nn",
@@ -4000,7 +4000,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "no",
       "language_group": "no",
@@ -4026,7 +4026,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "pl",
       "language_group": "pl",
@@ -4046,7 +4046,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "pt",
       "language_group": "pt",
@@ -4067,7 +4067,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -4086,7 +4086,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "ro",
       "language_group": "ro",
@@ -4105,7 +4105,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "sk",
       "language_group": "sk",
@@ -4123,7 +4123,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "sl",
       "language_group": "sl",
@@ -4141,7 +4141,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "sq",
       "language_group": "sq",
@@ -4160,7 +4160,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "sr",
       "language_group": "sr",
@@ -4179,7 +4179,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "sv",
       "language_group": "sv",
@@ -4201,7 +4201,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "qwen",
       "language": "uk",
       "language_group": "uk",
@@ -4220,7 +4220,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "be",
       "language_group": "be",
@@ -4239,7 +4239,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "bg",
       "language_group": "bg",
@@ -4257,7 +4257,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "bs",
       "language_group": "bs",
@@ -4273,7 +4273,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "ca",
       "language_group": "ca",
@@ -4292,7 +4292,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "cs",
       "language_group": "cs",
@@ -4311,7 +4311,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "da",
       "language_group": "da",
@@ -4334,7 +4334,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "de",
       "language_group": "de",
@@ -4356,7 +4356,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "el",
       "language_group": "el",
@@ -4376,7 +4376,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "en",
       "language_group": "en",
@@ -4398,7 +4398,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "es",
       "language_group": "es",
@@ -4419,7 +4419,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "et",
       "language_group": "et",
@@ -4439,7 +4439,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "fi",
       "language_group": "fi",
@@ -4459,7 +4459,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "fo",
       "language_group": "fo",
@@ -4479,7 +4479,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "fr",
       "language_group": "fr",
@@ -4500,7 +4500,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "hr",
       "language_group": "hr",
@@ -4518,7 +4518,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "hu",
       "language_group": "hu",
@@ -4537,7 +4537,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "is",
       "language_group": "is",
@@ -4558,7 +4558,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "it",
       "language_group": "it",
@@ -4579,7 +4579,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "lb",
       "language_group": "lb",
@@ -4598,7 +4598,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "lt",
       "language_group": "lt",
@@ -4618,7 +4618,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "lv",
       "language_group": "lv",
@@ -4637,7 +4637,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "nb",
       "language_group": "nb",
@@ -4658,7 +4658,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "nl",
       "language_group": "nl",
@@ -4682,7 +4682,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "nn",
       "language_group": "nn",
@@ -4703,7 +4703,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "no",
       "language_group": "no",
@@ -4729,7 +4729,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "pl",
       "language_group": "pl",
@@ -4749,7 +4749,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "pt",
       "language_group": "pt",
@@ -4770,7 +4770,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -4789,7 +4789,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "ro",
       "language_group": "ro",
@@ -4808,7 +4808,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "sk",
       "language_group": "sk",
@@ -4826,7 +4826,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "sl",
       "language_group": "sl",
@@ -4844,7 +4844,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "sq",
       "language_group": "sq",
@@ -4863,7 +4863,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "sr",
       "language_group": "sr",
@@ -4882,7 +4882,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "sv",
       "language_group": "sv",
@@ -4904,7 +4904,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gemma",
       "language": "uk",
       "language_group": "uk",
@@ -4923,7 +4923,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "be",
       "language_group": "be",
@@ -4942,7 +4942,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "bg",
       "language_group": "bg",
@@ -4960,7 +4960,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "bs",
       "language_group": "bs",
@@ -4976,7 +4976,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "ca",
       "language_group": "ca",
@@ -4995,7 +4995,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "cs",
       "language_group": "cs",
@@ -5014,7 +5014,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "da",
       "language_group": "da",
@@ -5037,7 +5037,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "de",
       "language_group": "de",
@@ -5059,7 +5059,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "el",
       "language_group": "el",
@@ -5079,7 +5079,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "en",
       "language_group": "en",
@@ -5101,7 +5101,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "es",
       "language_group": "es",
@@ -5122,7 +5122,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "et",
       "language_group": "et",
@@ -5142,7 +5142,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "fi",
       "language_group": "fi",
@@ -5162,7 +5162,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "fo",
       "language_group": "fo",
@@ -5182,7 +5182,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "fr",
       "language_group": "fr",
@@ -5203,7 +5203,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "hr",
       "language_group": "hr",
@@ -5221,7 +5221,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "hu",
       "language_group": "hu",
@@ -5240,7 +5240,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "is",
       "language_group": "is",
@@ -5261,7 +5261,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "it",
       "language_group": "it",
@@ -5282,7 +5282,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "lb",
       "language_group": "lb",
@@ -5301,7 +5301,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "lt",
       "language_group": "lt",
@@ -5321,7 +5321,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "lv",
       "language_group": "lv",
@@ -5340,7 +5340,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "nb",
       "language_group": "nb",
@@ -5361,7 +5361,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "nl",
       "language_group": "nl",
@@ -5385,7 +5385,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "nn",
       "language_group": "nn",
@@ -5406,7 +5406,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "no",
       "language_group": "no",
@@ -5432,7 +5432,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "pl",
       "language_group": "pl",
@@ -5452,7 +5452,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "pt",
       "language_group": "pt",
@@ -5473,7 +5473,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -5492,7 +5492,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "ro",
       "language_group": "ro",
@@ -5511,7 +5511,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "sk",
       "language_group": "sk",
@@ -5529,7 +5529,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "sl",
       "language_group": "sl",
@@ -5547,7 +5547,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "sq",
       "language_group": "sq",
@@ -5566,7 +5566,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "sr",
       "language_group": "sr",
@@ -5585,7 +5585,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "sv",
       "language_group": "sv",
@@ -5607,7 +5607,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "phi",
       "language": "uk",
       "language_group": "uk",
@@ -5626,7 +5626,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "be",
       "language_group": "be",
@@ -5645,7 +5645,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "bg",
       "language_group": "bg",
@@ -5663,7 +5663,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "bs",
       "language_group": "bs",
@@ -5679,7 +5679,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "ca",
       "language_group": "ca",
@@ -5698,7 +5698,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "cs",
       "language_group": "cs",
@@ -5717,7 +5717,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "da",
       "language_group": "da",
@@ -5740,7 +5740,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "de",
       "language_group": "de",
@@ -5762,7 +5762,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "el",
       "language_group": "el",
@@ -5782,7 +5782,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "en",
       "language_group": "en",
@@ -5804,7 +5804,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "es",
       "language_group": "es",
@@ -5825,7 +5825,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "et",
       "language_group": "et",
@@ -5845,7 +5845,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "fi",
       "language_group": "fi",
@@ -5865,7 +5865,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "fo",
       "language_group": "fo",
@@ -5885,7 +5885,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "fr",
       "language_group": "fr",
@@ -5906,7 +5906,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "hr",
       "language_group": "hr",
@@ -5924,7 +5924,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "hu",
       "language_group": "hu",
@@ -5943,7 +5943,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "is",
       "language_group": "is",
@@ -5964,7 +5964,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "it",
       "language_group": "it",
@@ -5985,7 +5985,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "lb",
       "language_group": "lb",
@@ -6004,7 +6004,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "lt",
       "language_group": "lt",
@@ -6024,7 +6024,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "lv",
       "language_group": "lv",
@@ -6043,7 +6043,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "nb",
       "language_group": "nb",
@@ -6064,7 +6064,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "nl",
       "language_group": "nl",
@@ -6088,7 +6088,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "nn",
       "language_group": "nn",
@@ -6109,7 +6109,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "no",
       "language_group": "no",
@@ -6135,7 +6135,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "pl",
       "language_group": "pl",
@@ -6155,7 +6155,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "pt",
       "language_group": "pt",
@@ -6176,7 +6176,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -6195,7 +6195,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "ro",
       "language_group": "ro",
@@ -6214,7 +6214,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "sk",
       "language_group": "sk",
@@ -6232,7 +6232,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "sl",
       "language_group": "sl",
@@ -6250,7 +6250,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "sq",
       "language_group": "sq",
@@ -6269,7 +6269,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "sr",
       "language_group": "sr",
@@ -6288,7 +6288,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "sv",
       "language_group": "sv",
@@ -6310,7 +6310,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "falcon",
       "language": "uk",
       "language_group": "uk",
@@ -6329,7 +6329,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "be",
       "language_group": "be",
@@ -6348,7 +6348,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "bg",
       "language_group": "bg",
@@ -6366,7 +6366,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "bs",
       "language_group": "bs",
@@ -6382,7 +6382,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "ca",
       "language_group": "ca",
@@ -6401,7 +6401,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "cs",
       "language_group": "cs",
@@ -6420,7 +6420,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "da",
       "language_group": "da",
@@ -6443,7 +6443,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "de",
       "language_group": "de",
@@ -6465,7 +6465,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "el",
       "language_group": "el",
@@ -6485,7 +6485,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "en",
       "language_group": "en",
@@ -6507,7 +6507,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "es",
       "language_group": "es",
@@ -6528,7 +6528,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "et",
       "language_group": "et",
@@ -6548,7 +6548,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "fi",
       "language_group": "fi",
@@ -6568,7 +6568,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "fo",
       "language_group": "fo",
@@ -6588,7 +6588,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "fr",
       "language_group": "fr",
@@ -6609,7 +6609,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "hr",
       "language_group": "hr",
@@ -6627,7 +6627,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "hu",
       "language_group": "hu",
@@ -6646,7 +6646,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "is",
       "language_group": "is",
@@ -6667,7 +6667,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "it",
       "language_group": "it",
@@ -6688,7 +6688,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "lb",
       "language_group": "lb",
@@ -6707,7 +6707,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "lt",
       "language_group": "lt",
@@ -6727,7 +6727,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "lv",
       "language_group": "lv",
@@ -6746,7 +6746,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "nb",
       "language_group": "nb",
@@ -6767,7 +6767,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "nl",
       "language_group": "nl",
@@ -6791,7 +6791,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "nn",
       "language_group": "nn",
@@ -6812,7 +6812,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "no",
       "language_group": "no",
@@ -6838,7 +6838,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "pl",
       "language_group": "pl",
@@ -6858,7 +6858,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "pt",
       "language_group": "pt",
@@ -6879,7 +6879,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -6898,7 +6898,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "ro",
       "language_group": "ro",
@@ -6917,7 +6917,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "sk",
       "language_group": "sk",
@@ -6935,7 +6935,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "sl",
       "language_group": "sl",
@@ -6953,7 +6953,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "sq",
       "language_group": "sq",
@@ -6972,7 +6972,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "sr",
       "language_group": "sr",
@@ -6991,7 +6991,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "sv",
       "language_group": "sv",
@@ -7013,7 +7013,7 @@
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev",
+      "euroeval_version": "18.0.0.dev0",
       "model_profile": "gpt2",
       "language": "uk",
       "language_group": "uk",
