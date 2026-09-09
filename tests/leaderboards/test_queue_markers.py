@@ -59,6 +59,28 @@ def test_release_does_not_touch_community_owned_issue(
     assert unassigned == []
 
 
+def test_expired_coordinator_marker_is_recoverable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Expired broker ownership does not strand the local queue."""
+    body = (
+        '<!-- euroeval-volunteer-worker:v1 {"protocol_version":"volunteer-worker/v1",'
+        '"coordinator":"coordinator","submission":"active","leases":['
+        '{"lease_id":"old","language":"da","worker":"w",'
+        '"contributor":"c","expires_at":"2000-01-01T00:00:00Z"}]} -->'
+    )
+    patched: list[str] = []
+    monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
+    monkeypatch.setattr(
+        queue_markers, "patch_issue_body", lambda number, body: patched.append(body)
+    )
+
+    assert not queue_markers.issue_has_active_queue_ownership(body)
+    assert queue_markers.set_vm_marker(number=1, vm_id="local-vm")
+    assert "euroeval-volunteer-worker" not in patched[0]
+    assert "vm-id: local-vm" in patched[0]
+
+
 def test_vm_marker_manipulators_leave_active_community_marker_alone(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

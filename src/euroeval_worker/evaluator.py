@@ -66,7 +66,10 @@ class EuroEvalEvaluator(Evaluator):
             raise_errors=True,
         )
         records = [
-            _record(benchmark_result_to_eee_dict(result=result)) for result in results
+            _record(
+                _normalise_record(benchmark_result_to_eee_dict(result=result), lease)
+            )
+            for result in results
         ]
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with output_path.open("w", encoding="utf-8") as handle:
@@ -75,6 +78,26 @@ class EuroEvalEvaluator(Evaluator):
         return records
 
 
+def _normalise_record(
+    record: dict[str, JsonValue], lease: Lease
+) -> dict[str, JsonValue]:
+    """Make the broker identity explicit without changing evaluation data.
+
+    Returns:
+        The record with broker-verified model identity fields.
+    """
+    model_info = record.get("model_info")
+    if isinstance(model_info, dict):
+        model_info = dict(model_info)
+        model_info["id"] = lease.model_id
+        model_info["revision"] = lease.model_revision
+        record = dict(record)
+        record["model_info"] = model_info
+    return record
+
+
 def _record(record: dict[str, JsonValue]) -> EEERecord:
-    encoded = json.dumps(record, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    encoded = json.dumps(
+        record, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
     return EEERecord(record=record, sha256=hashlib.sha256(encoded).hexdigest())

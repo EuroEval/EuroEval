@@ -36,6 +36,10 @@ class StateStore:
             raise RuntimeError(f"invalid worker state: {self.path}")
         return credential, login
 
+    def clear_auth(self) -> None:
+        """Forget an expired broker credential without touching results."""
+        self.path.unlink(missing_ok=True)
+
     def save_auth(self, credential: str, github_login: str) -> None:
         """Save device-flow credentials with restrictive permissions."""
         self.directory.mkdir(parents=True, exist_ok=True)

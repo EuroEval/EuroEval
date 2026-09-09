@@ -1,6 +1,8 @@
+declare const process: { env: Record<string, string | undefined> };
+
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, env, json, method, randomToken, readJson,
-  redisDelete, redisGet, redisSet, sha256,
+  redisDelete, redisGet, redisSet, sha256, requireProtocol,
 } from "../_lib";
 
 export const config = { runtime: "edge" };
@@ -11,8 +13,9 @@ export default async function handler(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
   try {
     const body = await readJson(req, 8 * 1024);
-    if (typeof body.device_id !== "string" || !/^[A-Za-z0-9_-]{12,}$/.test(body.device_id)) throw new BrokerError(400, "device_id is required.");
-    const key = `euroeval:worker:device:${body.device_id}`;
+    requireProtocol(body);
+    if (typeof body.session_id !== "string" || !/^[A-Za-z0-9_-]{12,}$/.test(body.session_id)) throw new BrokerError(400, "session_id is required.");
+    const key = `euroeval:worker:device:${body.session_id}`;
     const device = await redisGet<Device>(key);
     if (!device) throw new BrokerError(400, "Device authorisation has expired or was already used.");
     const response = await fetch("https://github.com/login/oauth/access_token", {
@@ -33,12 +36,22 @@ export default async function handler(req: Request): Promise<Response> {
     if (!userResponse.ok) { await redisDelete(key); throw new BrokerError(401, "GitHub could not identify this worker."); }
     const user = await userResponse.json() as { login?: string };
     if (!user.login || user.login.toLowerCase() === "saattrupdan") { await redisDelete(key); throw new BrokerError(403, "The repository owner cannot register as a volunteer worker."); }
+    // GitHub device tokens can be revoked only with the OAuth client secret.
+    // Deployments without that secret cannot revoke the temporary grant, so the
+    // short-lived token remains confined to this request and is never logged.
+    const clientSecret = process.env.GITHUB_OAUTH_CLIENT_SECRET;
+    if (clientSecret) {
+      await fetch(`https://api.github.com/applications/${device.client_id}/grant`, {
+        method: "DELETE", headers: { accept: "application/vnd.github+json", "content-type": "application/json", authorization: `Basic ${btoa(`${device.client_id}:${clientSecret}`)}` },
+        body: JSON.stringify({ access_token: data.access_token }),
+      }).catch(() => undefined);
+    }
     const credential = randomToken(32);
     const hash = await sha256(credential);
     const ttl = 30 * 24 * 60 * 60;
     await redisSet(`euroeval:worker:credential:${hash}`, JSON.stringify({ contributor: user.login, issued_at: new Date().toISOString() }), ttl);
     await redisDelete(key);
-    return json(200, { protocol_version: PROTOCOL_VERSION, status: "authorised", credential, contributor: user.login, expires_in: ttl });
+    return json(200, { protocol_version: PROTOCOL_VERSION, status: "authorised", credential, github_login: user.login, expires_in: ttl });
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;
     return json(status, { error: error instanceof Error ? error.message : "Unable to poll authorisation." });

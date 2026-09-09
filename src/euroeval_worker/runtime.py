@@ -8,7 +8,7 @@ import threading
 import time
 
 from .auth import authenticate
-from .broker import BrokerProtocol
+from .broker import BrokerError, BrokerProtocol
 from .evaluator import EuroEvalEvaluator, Evaluator
 from .hardware import discover_hardware
 from .safety import SafetyError, check_model_safety
@@ -103,11 +103,24 @@ class Worker:
         self.hardware_factory = hardware_factory
 
     def run(self, once: bool = False) -> None:
-        """Run until interrupted, or process one broker response with ``once``."""
+        """Run until interrupted, or process one broker response with ``once``.
+
+        Raises:
+            BrokerError: If authentication or a lease request fails.
+        """
         credential, _login = authenticate(client=self.client, state=self.state)
         while True:
             hardware = self.hardware_factory()
-            claim = self.client.claim(credential=credential, hardware=hardware)
+            try:
+                claim = self.client.claim(credential=credential, hardware=hardware)
+            except BrokerError as error:
+                if error.status != 401:
+                    raise
+                # A broker credential is opaque and revocable. Re-run the device
+                # flow once, then let a second failure surface normally.
+                self.state.clear_auth()
+                credential, _login = authenticate(client=self.client, state=self.state)
+                claim = self.client.claim(credential=credential, hardware=hardware)
             if claim.lease is None:
                 logger.info("No volunteer evaluation work is currently available")
                 if once:
@@ -128,7 +141,11 @@ class Worker:
         released = False
         try:
             try:
-                check_model_safety(lease=lease, gpus=hardware.gpus)
+                check_model_safety(
+                    lease=lease,
+                    gpus=hardware.gpus,
+                    free_disk_bytes=hardware.free_disk_bytes,
+                )
             except SafetyError:
                 self.client.release(
                     credential=credential,
@@ -163,7 +180,7 @@ class Worker:
 
     def _submit_record(self, credential: str, lease: Lease, record: EEERecord) -> None:
         encoded = json.dumps(
-            record.record, sort_keys=True, separators=(",", ":")
+            record.record, ensure_ascii=False, sort_keys=True, separators=(",", ":")
         ).encode("utf-8")
         record = EEERecord(
             record=record.record, sha256=hashlib.sha256(encoded).hexdigest()

@@ -1,4 +1,5 @@
 /* Shared broker implementation. This is the volunteer-worker/v1 JSON protocol. */
+import { uploadFile } from "@huggingface/hub";
 declare const process: { env: Record<string, string | undefined> };
 export const PROTOCOL_VERSION = "volunteer-worker/v1" as const;
 export const REPO = "EuroEval/EuroEval";
@@ -21,8 +22,10 @@ const GROUPS: Record<string, string[]> = {
 };
 
 export interface VolunteerLeaseMarker {
-  winner: string;
-  leases: Array<{ language: string; worker: string; contributor: string; expires_at: number }>;
+  protocol_version: typeof PROTOCOL_VERSION;
+  coordinator: string;
+  submission: "active" | "completed" | "released";
+  leases: Array<{ lease_id: string; language: string; worker: string; contributor: string; expires_at: string }>;
 }
 
 export interface WorkerIdentity {
@@ -36,10 +39,11 @@ export interface Lease {
   worker: string;
   contributor: string;
   model_id: string;
-  revision: string;
-  image: string;
+  model_revision: string;
+  euroeval_version: string;
+  image_digest: string;
   worker_version: string;
-  expires_at: number;
+  expires_at: string;
   lease_id: string;
   result_count?: number;
 }
@@ -80,6 +84,10 @@ export function method(req: Request): Response | null {
   if (req.method === "OPTIONS") return json(204, {});
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
   return null;
+}
+
+export function requireProtocol(body: Record<string, unknown>): void {
+  if (body.protocol_version !== PROTOCOL_VERSION) throw new BrokerError(400, "protocol_version must be volunteer-worker/v1.");
 }
 
 export async function readJson(req: Request, limit: number): Promise<Record<string, unknown>> {
@@ -144,16 +152,21 @@ export function leaseTtl(): number {
 
 export function parseVolunteerMarker(body: string | null): VolunteerLeaseMarker | null {
   if (!body) return null;
-  const match = body.match(VOLUNTEER_MARKER_RE);
-  if (!match) return null;
+  const matches = [...body.matchAll(new RegExp(VOLUNTEER_MARKER_RE.source, "gi"))];
+  if (matches.length !== 1) return null;
   try {
-    const parsed = JSON.parse(match[1].trim()) as Partial<VolunteerLeaseMarker>;
-    if (typeof parsed.winner !== "string" || !parsed.winner || !Array.isArray(parsed.leases)) return null;
+    const parsed = JSON.parse(matches[0][1].trim()) as Partial<VolunteerLeaseMarker>;
+    if (parsed.protocol_version !== PROTOCOL_VERSION || typeof parsed.coordinator !== "string" ||
+        !parsed.coordinator || !["active", "completed", "released"].includes(parsed.submission || "") ||
+        !Array.isArray(parsed.leases)) return null;
     const leases = parsed.leases.filter((lease): lease is VolunteerLeaseMarker["leases"][number] =>
-      !!lease && typeof lease === "object" && typeof lease.language === "string" && typeof lease.worker === "string" &&
-      typeof lease.contributor === "string" && Number.isFinite(lease.expires_at));
+      !!lease && typeof lease === "object" && typeof lease.lease_id === "string" &&
+      typeof lease.language === "string" && typeof lease.worker === "string" &&
+      typeof lease.contributor === "string" && typeof lease.expires_at === "string" &&
+      !Number.isNaN(Date.parse(lease.expires_at)));
     if (leases.length !== parsed.leases.length) return null;
-    return { winner: parsed.winner, leases };
+    return { protocol_version: PROTOCOL_VERSION, coordinator: parsed.coordinator,
+      submission: parsed.submission as VolunteerLeaseMarker["submission"], leases };
   } catch { return null; }
 }
 export function hasVolunteerMarker(body: string | null): boolean { return !!body?.match(VOLUNTEER_MARKER_RE); }
@@ -263,18 +276,28 @@ export async function authenticate(req: Request): Promise<WorkerIdentity> {
   return { hash, contributor: worker.contributor };
 }
 export function issueLeaseKey(issue: number, language: string): string { return `euroeval:worker:lease:${issue}:${language}`; }
+export async function acquireIssueMutex(issue: number): Promise<string | null> {
+  const token = randomToken(12);
+  return await redisSet(`euroeval:worker:mutex:${issue}`, token, 30, true) ? token : null;
+}
+export async function releaseIssueMutex(issue: number, token: string): Promise<void> {
+  const current = await redisGet<string>(`euroeval:worker:mutex:${issue}`);
+  if (current === token) await redisDelete(`euroeval:worker:mutex:${issue}`);
+}
 export function leaseKey(leaseId: string): string { return `euroeval:worker:lease-id:${leaseId}`; }
 export async function getLeaseById(leaseId: string): Promise<Lease | null> { return redisGet<Lease>(leaseKey(leaseId)); }
 export async function putLease(lease: Lease): Promise<boolean> {
-  const ttl = Math.max(60, Math.ceil((lease.expires_at - Date.now()) / 1000));
-  // NX is the atomic per-language lease boundary. GitHub remains the canonical queue.
+  const ttl = Math.max(60, Math.ceil((Date.parse(lease.expires_at) - Date.now()) / 1000));
   const first = await redisSet(issueLeaseKey(lease.issue_number, lease.language), JSON.stringify(lease), ttl, true);
   if (!first) return false;
-  await redisSet(leaseKey(lease.lease_id), JSON.stringify(lease), ttl);
+  if (!(await redisSet(leaseKey(lease.lease_id), JSON.stringify(lease), ttl, true))) {
+    await redisDelete(issueLeaseKey(lease.issue_number, lease.language));
+    return false;
+  }
   return true;
 }
 export async function saveLease(lease: Lease): Promise<boolean> {
-  const ttl = Math.max(60, Math.ceil((lease.expires_at - Date.now()) / 1000));
+  const ttl = Math.max(60, Math.ceil((Date.parse(lease.expires_at) - Date.now()) / 1000));
   const result = await redis("EVAL", "local current=redis.call('GET',KEYS[1]); if not current then return 0 end; local item=cjson.decode(current); if item.lease_id ~= ARGV[1] then return 0 end; redis.call('SET',KEYS[1],ARGV[2],'EX',ARGV[3]); redis.call('SET',KEYS[2],ARGV[2],'EX',ARGV[3]); return 1", "2", issueLeaseKey(lease.issue_number, lease.language), leaseKey(lease.lease_id), lease.lease_id, JSON.stringify(lease), String(ttl));
   return result === 1 || result === "1";
 }
@@ -285,55 +308,70 @@ export async function deleteLease(lease: Lease): Promise<void> {
 export function validateRecord(record: unknown, expected: { modelId: string; revision: string; language: string }): { identity: string; failed: number } {
   if (!record || typeof record !== "object" || Array.isArray(record)) throw new BrokerError(422, "record must be an EEE JSON object.");
   const value = record as Record<string, any>;
-  if (typeof value.schema_version !== "string" || !value.model_info || !value.eval_library || !Array.isArray(value.evaluation_results)) throw new BrokerError(422, "record is not a complete EEE record.");
+  if (value.schema_version !== "0.2.1" || !value.model_info || !value.eval_library || !Array.isArray(value.evaluation_results)) throw new BrokerError(422, "record is not a supported EEE record.");
   const modelInfo = value.model_info as Record<string, any>;
-  const expectedId = `${expected.modelId}@${expected.revision}`;
-  if (modelInfo.id !== expectedId) throw new BrokerError(422, `record model_info.id must be ${expectedId}.`);
+  if (modelInfo.id !== expected.modelId) throw new BrokerError(422, `record model_info.id must be ${expected.modelId}.`);
+  if (modelInfo.revision !== undefined && modelInfo.revision !== expected.revision) throw new BrokerError(422, "record model_info.revision does not match the lease.");
   const details = (value.eval_library as Record<string, any>).additional_details;
-  if (!details || typeof details.dataset !== "string" || !details.dataset) throw new BrokerError(422, "record has no canonical dataset identity.");
+  if (!details || typeof details.dataset !== "string" || !details.dataset || typeof details.task !== "string" || !details.task) throw new BrokerError(422, "record has no canonical dataset/task identity.");
+  if (details.raw_results !== undefined) {
+    try { const raw = typeof details.raw_results === "string" ? JSON.parse(details.raw_results) : details.raw_results; if (!Array.isArray(raw)) throw new Error("not a list"); } catch { throw new BrokerError(422, "additional_details.raw_results is not valid JSON."); }
+  }
+  const rawLanguages = details.languages;
+  let languages: unknown[] = [];
+  try { languages = typeof rawLanguages === "string" ? JSON.parse(rawLanguages) : (Array.isArray(rawLanguages) ? rawLanguages : []); } catch { throw new BrokerError(422, "additional_details.languages is not valid JSON."); }
+  if (languages.length && (!languages.every((item) => typeof item === "string") || !languages.includes(expected.language))) throw new BrokerError(422, "record languages do not match the leased language.");
   const recordLanguage = details.language ?? value.language;
   if (recordLanguage !== undefined && recordLanguage !== expected.language) throw new BrokerError(422, "record language does not match the lease.");
-  let failed = 0;
+  const normaliseBool = (item: unknown): boolean | null => item === true || item === 1 || item === "1" || item === "true" ? true : item === false || item === 0 || item === "0" || item === "false" ? false : null;
+  const split = normaliseBool(details.validation_split); const shot = normaliseBool(details.few_shot);
+  if (split === null || shot === null) throw new BrokerError(422, "validation_split and few_shot must be normalisable booleans.");
   const envelopeFailed = details.num_failed_instances ?? details.failed_instances;
-  if (envelopeFailed !== undefined) {
-    const count = typeof envelopeFailed === "number" ? envelopeFailed : Number(envelopeFailed);
-    if (!Number.isFinite(count) || count < 0 || count !== 0 || (Array.isArray(envelopeFailed) && envelopeFailed.length)) throw new BrokerError(422, "records with failed instances cannot be submitted.");
-  }
-  const scores: unknown[] = [];
+  if (envelopeFailed !== undefined && Number(envelopeFailed) !== 0) throw new BrokerError(422, "records with failed instances cannot be submitted.");
+  let failed = 0;
   for (const result of value.evaluation_results) {
     if (!result || typeof result !== "object") throw new BrokerError(422, "evaluation_results contains an invalid item.");
+    if (typeof (result as any).evaluation_name !== "string" || !(result as any).evaluation_name) throw new BrokerError(422, "every evaluation result needs a metric name.");
     const scoreDetails = (result as any).score_details;
-    const score = scoreDetails?.score;
+    if (!scoreDetails || typeof scoreDetails !== "object") throw new BrokerError(422, "every evaluation result needs score details.");
+    const score = scoreDetails.score;
     if (typeof score !== "number" || !Number.isFinite(score) || score < 0 || score > 100) throw new BrokerError(422, "every evaluation score must be finite and between 0 and 100.");
-    const resultDetails = scoreDetails?.details;
-    const rawFailed = resultDetails?.num_failed_instances;
-    if (rawFailed !== undefined) {
-      const count = typeof rawFailed === "number" ? rawFailed : Number(rawFailed);
-      if (!Number.isFinite(count) || count < 0 || count !== 0) throw new BrokerError(422, "records with failed instances cannot be submitted.");
-      failed += count;
-    }
-    if (Array.isArray(resultDetails?.failed_instances) && resultDetails.failed_instances.length) throw new BrokerError(422, "records with failed instances cannot be submitted.");
-    scores.push(score);
+    if (scoreDetails?.metric !== undefined && typeof scoreDetails.metric !== "string") throw new BrokerError(422, "score metric must be a string.");
+    if (scoreDetails?.source !== undefined && typeof scoreDetails.source !== "string") throw new BrokerError(422, "score source must be a string.");
+    const rawFailed = scoreDetails?.details?.num_failed_instances;
+    if (rawFailed !== undefined && Number(rawFailed) !== 0) throw new BrokerError(422, "records with failed instances cannot be submitted.");
+    if (Array.isArray(scoreDetails?.details?.failed_instances) && scoreDetails.details.failed_instances.length) throw new BrokerError(422, "records with failed instances cannot be submitted.");
+    failed += rawFailed === undefined ? 0 : Number(rawFailed);
   }
-  const topLevelFailed = value.num_failed_instances;
-  if (topLevelFailed !== undefined && Number(topLevelFailed) !== 0) throw new BrokerError(422, "records with failed instances cannot be submitted.");
-  if (!value.evaluation_results.length) throw new BrokerError(422, "record contains no evaluation results.");
-  const identity = JSON.stringify([modelInfo.id, details.dataset, details.validation_split ?? null, details.few_shot ?? null]);
-  return { identity, failed };
+  if (value.evaluation_results.length === 0 || value.num_failed_instances !== undefined && Number(value.num_failed_instances) !== 0) throw new BrokerError(422, "record contains no results or has failed instances.");
+  return { identity: JSON.stringify([modelInfo.id, details.dataset, split, shot]), failed };
 }
 
 export async function uploadStaging(path: string, content: string): Promise<void> {
   const bucket = env("HF_STAGING_BUCKET");
   const token = env("HF_TOKEN");
-  const endpoint = env("HF_STAGING_UPLOAD_URL");
-  let url: URL;
-  try { url = new URL(endpoint); } catch { throw new ConfigurationError("HF_STAGING_UPLOAD_URL must be an absolute HTTPS URL."); }
-  if (url.protocol !== "https:") throw new ConfigurationError("HF_STAGING_UPLOAD_URL must use HTTPS.");
-  const response = await fetch(url, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ bucket, path, content }) });
-  if (!response.ok) throw new BrokerError(502, `Hugging Face staging upload failed with HTTP ${response.status}.`);
+  if (!/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(bucket)) throw new ConfigurationError("HF_STAGING_BUCKET must be a namespace/bucket id.");
+  const info = await fetch(`https://huggingface.co/api/buckets/${bucket}`, {
+    headers: { accept: "application/json", authorization: `Bearer ${token}` },
+  });
+  if (!info.ok) throw new BrokerError(502, `Hugging Face bucket lookup failed with HTTP ${info.status}.`);
+  const metadata = await info.json() as { private?: boolean };
+  if (metadata.private !== true) throw new ConfigurationError("HF_STAGING_BUCKET is not private; refusing to upload worker results.");
+  try {
+    await uploadFile({ repo: `buckets/${bucket}`, file: { path, content: new Blob([content], { type: "application/json" }) }, accessToken: token, useXet: true });
+  } catch (error) {
+    throw new BrokerError(502, `Hugging Face bucket upload failed: ${error instanceof Error ? error.message : "unknown error"}`);
+  }
 }
 
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
 export async function recordDigest(record: unknown): Promise<string> {
-  return sha256(JSON.stringify(record));
+  return sha256(canonicalJson(record));
 }
 export function contributorLabel(login: string): string { return login === "saattrupdan" ? "anonymous worker" : login; }

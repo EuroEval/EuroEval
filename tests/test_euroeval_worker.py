@@ -9,6 +9,7 @@ import pytest
 
 from euroeval_worker import evaluator, runtime
 from euroeval_worker.auth import authenticate
+from euroeval_worker.broker import BrokerClient
 from euroeval_worker.hardware import NoGpuError, discover_gpus
 from euroeval_worker.safety import ModelMetadata, SafetyError, check_model_safety
 from euroeval_worker.state import StateStore
@@ -45,9 +46,49 @@ class AuthClient:
         return AuthStart("session", "CODE", "https://example.test", 60, 0)
 
     def poll_auth(self, session_id: str) -> AuthPoll:
-        """Approve the test device flow."""
+        """Approve the test device flow.
+
+        Returns:
+            Approved test credentials.
+        """
         assert session_id == "session"
         return AuthPoll(False, "opaque-credential", "octocat")
+
+
+def test_broker_protocol_payload_is_canonical() -> None:
+    """The Python client emits the same flat v1 envelope as the broker."""
+    calls: list[tuple[str, str, dict[str, object]]] = []
+
+    def request(
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        payload: dict[str, object] | None,
+    ) -> dict[str, object]:
+        """Capture a request and return a no-work response.
+
+        Returns:
+            The canonical no-work envelope.
+        """
+        assert payload is not None
+        calls.append((method, url, payload))
+        return {"protocol_version": "volunteer-worker/v1", "status": "no_work"}
+
+    client = BrokerClient(
+        "https://broker.test", request=request, worker_version="worker-1"
+    )
+    assert client.claim("credential", HARDWARE).lease is None
+    assert calls[0][2]["protocol_version"] == "volunteer-worker/v1"
+    assert calls[0][2]["worker_version"] == "worker-1"
+    assert set(calls[0][2]["hardware"]) == {
+        "architecture",
+        "ram_bytes",
+        "free_disk_bytes",
+        "driver_version",
+        "cuda_version",
+        "pytorch_version",
+        "gpus",
+    }
 
 
 def test_auth_persists_only_broker_auth_with_private_permissions(
@@ -163,7 +204,11 @@ class Broker:
         """Accept a test heartbeat."""
 
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
-        """Fail once to verify digest-stable retry."""
+        """Fail once to verify digest-stable retry.
+
+        Raises:
+            RuntimeError: On the first submission.
+        """
         self.submissions += 1
         if self.submissions == 1:
             raise RuntimeError("temporary broker error")
@@ -192,7 +237,9 @@ def test_worker_retries_idempotently_and_finalises(
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
-    monkeypatch.setattr(runtime, "check_model_safety", lambda lease, gpus: None)
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
     broker = Broker()
     worker = runtime.Worker(
         client=broker,
@@ -231,14 +278,20 @@ def test_evaluation_failure_releases_lease(
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
-    monkeypatch.setattr(runtime, "check_model_safety", lambda lease, gpus: None)
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
     broker = Broker()
 
     class FailingEvaluator:
         """Evaluator that fails before producing a record."""
 
         def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
-            """Raise a representative evaluation failure."""
+            """Raise a representative evaluation failure.
+
+            Raises:
+                RuntimeError: Always, to exercise release handling.
+            """
             raise RuntimeError("evaluation failed")
 
     worker = runtime.Worker(
@@ -259,7 +312,9 @@ def test_lease_loss_releases_without_finalising(
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
-    monkeypatch.setattr(runtime, "check_model_safety", lambda lease, gpus: None)
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
 
     class LostHeartbeat:
         """Heartbeat fake reporting lease loss."""
@@ -271,7 +326,11 @@ def test_lease_loss_releases_without_finalising(
             """Start the fake heartbeat."""
 
         def check(self) -> None:
-            """Report a lost lease."""
+            """Report a lost lease.
+
+            Raises:
+                LeaseLost: Always, for this test double.
+            """
             raise runtime.LeaseLost("lost")
 
         def stop(self) -> None:
@@ -298,14 +357,20 @@ def test_keyboard_interrupt_releases_lease(
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
-    monkeypatch.setattr(runtime, "check_model_safety", lambda lease, gpus: None)
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
     broker = Broker()
 
     class InterruptedEvaluator:
         """Evaluator interrupted by Ctrl-C."""
 
         def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
-            """Simulate Ctrl-C."""
+            """Simulate Ctrl-C.
+
+            Raises:
+                KeyboardInterrupt: Always, for this test double.
+            """
             raise KeyboardInterrupt
 
     worker = runtime.Worker(

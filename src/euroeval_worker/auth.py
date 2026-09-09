@@ -51,5 +51,5 @@ def authenticate(
             )
             logger.info("Authenticated broker account %s", result.github_login)
             return result.credential, result.github_login
-        sleep(start.interval)
+        sleep(result.retry_after or start.interval)
     raise TimeoutError("device authorisation expired before it was approved")
