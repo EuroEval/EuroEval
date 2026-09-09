@@ -112,7 +112,7 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
   process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
   process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
   const redisValues = new Map();
-  const records = [{ identity: "[\"org/model\",\"dataset\",false,true]", digest: "a".repeat(64) }];
+  const records = [{ identity: "[\"org/model\",\"dataset\",false,true]", canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) }];
   redisValues.set("euroeval:worker:promotion:12:one", JSON.stringify({ issue_number: 12, submission_id: "one", outcome: "accepted", records, token: "reservation-token", status: "reserved" }));
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input);

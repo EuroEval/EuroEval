@@ -2,11 +2,12 @@ declare const process: { env: Record<string, string | undefined> };
 
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireIssueMutex,
-  commentIssue, env, fetchIssue, getPromotionReservation, issueComments, json,
-  method, parseFinalCredit, parseVolunteerMarker, patchIssue, promotionReservationKey,
-  promotionSecret, readJson, redis, releaseIssueMutex, releaseResultReservation,
+  commentIssue, completePromotionReservation, env, fetchIssue, getPromotionReservation,
+  issueComments, json, method, parseFinalCredit, parsePromotionRecords,
+  parseVolunteerMarker, patchIssue, promotionSecret, readJson, redis, releaseIssueMutex,
+  releaseResultReservation,
   removeIssueLabel, replaceVolunteerMarker, requireProtocol,
-  selectedLanguages, signFinalCredit, signVolunteerMarker, unassignIssue,
+  savePromotionReservation, selectedLanguages, signFinalCredit, signVolunteerMarker, unassignIssue,
   verifyFinalCredit, verifyVolunteerMarker, sha256,
 } from "./_lib.ts";
 import type {
@@ -99,7 +100,13 @@ function validCredit(credit: FinalCredit | null, plan: PromotionPlan): boolean {
 }
 
 async function terminalReservation(reservation: PromotionReservation): Promise<void> {
-  await redis("SET", promotionReservationKey(reservation.issue_number, reservation.submission_id), JSON.stringify({ ...reservation, status: "terminal" }), "EX", String(30 * 24 * 60 * 60));
+  if (reservation.outcome === "accepted") {
+    if (!(await completePromotionReservation(reservation))) {
+      throw new BrokerError(409, "Promotion reservation was replaced during promotion.");
+    }
+    return;
+  }
+  await savePromotionReservation(reservation, true);
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -115,9 +122,10 @@ export default async function handler(req: Request): Promise<Response> {
     const issueNumber = body.issue_number as number;
     const submissionId = body.submission_id as string;
     const outcome = body.outcome as "accepted" | "rejected";
+    const requestedRecords = parsePromotionRecords(body.records);
     const reservation = await getPromotionReservation(issueNumber, submissionId);
     if (!reservation || reservation.token !== body.reservation_token || reservation.outcome !== outcome ||
-        !sameRecords(reservation.records, body.records as PromotionRecord[])) {
+        !sameRecords(reservation.records, requestedRecords)) {
       throw new BrokerError(409, "Promotion reservation is absent, expired, or does not match.");
     }
     const mutex = await acquireIssueMutex(issueNumber);
