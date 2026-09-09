@@ -228,7 +228,7 @@ return `euroeval:worker:lease-id:${leaseId}`; }
 export async function getLeaseById(leaseId: string): Promise<Lease | null> { return redisGet<Lease>(leaseKey(leaseId)); }
 export async function putLease(lease: Lease): Promise<boolean> {
   const ttl = Math.max(60, Math.ceil((Date.parse(lease.expires_at) - Date.now()) / 1000)) + LEASE_TOMBSTONE_TTL;
-  const result = await redis("EVAL", "if redis.call('EXISTS',KEYS[1]) == 1 or redis.call('EXISTS',KEYS[2]) == 1 then return 0 end; redis.call('SET',KEYS[1],ARGV[1],'EX',ARGV[2]); redis.call('SET',KEYS[2],ARGV[1],'EX',ARGV[2]); return 1", "2", issueLeaseKey(lease.issue_number, lease.language), leaseKey(lease.lease_id), JSON.stringify(lease), String(ttl));
+  const result = await redis("EVAL", "local issue=redis.call('GET',KEYS[1]); local byid=redis.call('GET',KEYS[2]); if issue or byid then if not issue or not byid or issue ~= ARGV[1] or byid ~= ARGV[1] then return 0 end; local item=cjson.decode(issue); if item.lease_id ~= ARGV[3] then return 0 end; return 1 end; redis.call('SET',KEYS[1],ARGV[1],'EX',ARGV[2]); redis.call('SET',KEYS[2],ARGV[1],'EX',ARGV[2]); return 1", "2", issueLeaseKey(lease.issue_number, lease.language), leaseKey(lease.lease_id), JSON.stringify(lease), String(ttl), lease.lease_id);
   return result === 1 || result === "1";
 }
 export async function saveLease(lease: Lease): Promise<boolean> {

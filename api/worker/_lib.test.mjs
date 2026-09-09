@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, renderVolunteerMarker, replaceVolunteerMarker, selectedLanguages, validateRecord } from "./_lib.ts";
 import { fitsGpu, selectedGpu } from "./_lib/model.ts";
-import { reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "./_lib/redis.ts";
+import { putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "./_lib/redis.ts";
 import { promotionIdentityKey, reservePromotionReservation } from "./_lib/promotion.ts";
 
 test("parses the queue model and language checkboxes", () => {
@@ -221,6 +221,83 @@ test("retries atomic multi-record reservation cleanup", async () => {
     assert.equal(commands[1][0], "EVAL");
     assert.match(commands[1][1], /for i=1,#KEYS-1/);
     assert.equal(commands[1][2], "3");
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+const putLeaseFixture = (overrides = {}) => ({
+  issue_number: 12, language: "da", worker: "worker", contributor: "alice",
+  model_id: "org/model", model_revision: "revision", euroeval_version: "1.0.0",
+  image_digest: "sha256:image", worker_version: "worker-v1", gpu_memory_utilisation: 0.8,
+  selected_gpu_index: 0, selected_gpu_uuid: "GPU-0",
+  expires_at: new Date(Date.now() + 60_000).toISOString(), lease_id: "lease-id",
+  model_profile: "llama", expected_scope: {
+    policy_version: "policy-v1", language_group: "da", identity_suffixes: [], count: 0, warnings: [],
+  }, ...overrides,
+});
+
+const emulatePutLeaseEval = (command, state) => {
+  assert.equal(command[0], "EVAL");
+  assert.match(command[1], /local issue=redis\.call\('GET',KEYS\[1\]\)/);
+  assert.match(command[1], /issue ~= ARGV\[1\]/);
+  assert.equal(command[2], "2");
+  assert.ok(Number(command[6]) >= 30 * 24 * 60 * 60 + 60);
+  const [issueKey, leaseKey, payload, , leaseId] = command.slice(3);
+  const issue = state.get(issueKey);
+  const byId = state.get(leaseKey);
+  if (issue !== undefined || byId !== undefined) {
+    if (issue === undefined || byId === undefined || issue !== payload || byId !== payload) return 0;
+    return JSON.parse(issue).lease_id === leaseId ? 1 : 0;
+  }
+  state.set(issueKey, payload);
+  state.set(leaseKey, payload);
+  return 1;
+};
+
+test("claim lease retry succeeds after committed EVAL response loss", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  const state = new Map();
+  const lease = putLeaseFixture();
+  let attempts = 0;
+  globalThis.fetch = async (_input, init) => {
+    const command = JSON.parse(init.body);
+    attempts += 1;
+    const result = emulatePutLeaseEval(command, state);
+    if (attempts === 1) throw new Error("response lost after commit");
+    return Response.json({ result });
+  };
+  try {
+    assert.equal(await putLease(lease), true);
+    assert.equal(attempts, 2);
+    assert.equal(state.size, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+test("claim lease retry fails closed for split or mismatched state", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  const lease = putLeaseFixture();
+  const payload = JSON.stringify(lease);
+  const issueKey = "euroeval:worker:lease:12:da";
+  const byIdKey = "euroeval:worker:lease-id:lease-id";
+  try {
+    for (const state of [
+      new Map([[issueKey, payload]]),
+      new Map([[issueKey, payload], [byIdKey, JSON.stringify({ ...lease, contributor: "mallory" })]]),
+    ]) {
+      globalThis.fetch = async (_input, init) => Response.json({ result: emulatePutLeaseEval(JSON.parse(init.body), state) });
+      assert.equal(await putLease(lease), false);
+    }
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
