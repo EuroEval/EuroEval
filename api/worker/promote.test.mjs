@@ -92,6 +92,65 @@ test("terminal retry completes the same lifecycle plan", () => {
   assert.throws(() => promotionPlan(value, ["da"], "one", "rejected"));
 });
 
+test("repeated rejection is safe after cleanup interruption", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  Object.assign(process.env, {
+    VOLUNTEER_MARKER_SECRET: "marker-secret", VOLUNTEER_PROMOTION_SECRET: "promotion-secret",
+    WORKER_COORDINATOR_LOGIN: "coordinator", GITHUB_TOKEN: "github-token",
+    UPSTASH_REDIS_REST_URL: "https://redis.test", UPSTASH_REDIS_REST_TOKEN: "redis-token",
+  });
+  const records = [{ identity: JSON.stringify(["org/model", "dataset", false, true]), canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) }];
+  const issueMarker = await signVolunteerMarker(12, marker([submission("one", "el", "alice", 4)]));
+  let issue = { number: 12, title: "[MODEL EVALUATION REQUEST] org/model",
+    body: `- [x] Greek\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(issueMarker)} -->`, state: "open",
+    assignees: [{ login: "coordinator" }], labels: [{ name: "community-review-ready" }] };
+  const comments = [];
+  const values = new Map([["euroeval:worker:promotion:12:one", JSON.stringify({
+    issue_number: 12, submission_id: "one", outcome: "rejected", records, token: "reservation-token", status: "reserved",
+  })]]);
+  let cleanupCalls = 0;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input); const method = init.method || "GET";
+    if (url === "https://redis.test") {
+      const command = JSON.parse(init.body); let result = "OK";
+      if (command[0] === "GET") result = values.get(command[1]) || null;
+      if (command[0] === "SET") { values.set(command[1], command[2]); result = "OK"; }
+      if (command[0] === "EVAL" && command[1].includes("for i=1,#KEYS-1")) {
+        cleanupCalls += 1;
+        if (cleanupCalls === 1) throw new Error("simulated interruption");
+        const keyCount = Number(command[2]);
+        for (let i = 0; i < keyCount; i += 1) values.delete(command[3 + i]);
+        result = 1;
+      }
+      return Response.json({ result });
+    }
+    if (url.endsWith("/issues/12") && method === "GET") return Response.json(issue);
+    if (url.endsWith("/issues/12") && method === "PATCH") { issue = { ...issue, body: JSON.parse(init.body).body }; return Response.json(issue); }
+    if (url.includes("/issues/12/labels/") && method === "DELETE") { issue.labels = []; return Response.json(issue.labels); }
+    if (url.endsWith("/issues/12/assignees") && method === "DELETE") { issue.assignees = []; return Response.json(issue); }
+    if (url.includes("/issues/12/comments") && method === "GET") return Response.json(comments);
+    if (url.endsWith("/issues/12/comments") && method === "POST") { comments.push({ body: JSON.parse(init.body).body }); return Response.json(comments.at(-1)); }
+    throw new Error(`Unexpected request: ${method} ${url}`);
+  };
+  const request = () => new Request("https://euroeval.com/api/worker/promote", { method: "POST",
+    headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
+    body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
+      outcome: "rejected", reservation_token: "reservation-token", records }) });
+  try {
+    const first = await promote(request());
+    assert.equal(first.status, 200, await first.text());
+    const second = await promote(request());
+    assert.equal(second.status, 200, await second.text());
+    assert.equal(cleanupCalls, 3); // first call retries the interrupted atomic EVAL
+    assert.match(issue.body, /"submission":"rejected"/);
+    assert.equal(comments.length, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
 test("handler finishes GitHub labels, credit, ownership, and notification", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };

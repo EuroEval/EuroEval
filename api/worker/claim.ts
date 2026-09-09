@@ -1,7 +1,7 @@
 import {
   BrokerError, ConfigurationError, GROUPS, PROTOCOL_VERSION, VM_MARKER_RE,
   acquireIssueMutex, assignIssue, authenticate, claimableLanguages, env, expectedScope,
-  extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl,
+  extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl, selectedGpu,
   listOpenIssues, method,
   patchIssue, putLease, randomToken, readJson, releaseIssueMutex, deleteLease,
   parseVolunteerMarker, resolveModel, selectedLanguages, VolunteerLeaseMarker, Lease,
@@ -24,6 +24,8 @@ function validHardware(value: unknown): value is Record<string, unknown> {
   if (typeof utilisation !== "number" || !Number.isFinite(utilisation) || utilisation <= 0 || utilisation > 1 ||
       typeof hardware.architecture !== "string" || !hardware.architecture.trim() ||
       typeof freeDisk !== "number" || !Number.isSafeInteger(freeDisk) || freeDisk < 0 ||
+      !Number.isSafeInteger(hardware.selected_gpu_index) || (hardware.selected_gpu_index as number) < 0 ||
+      typeof hardware.selected_gpu_uuid !== "string" || !hardware.selected_gpu_uuid ||
       !Array.isArray(hardware.gpus) || !hardware.gpus.length) return false;
   return hardware.gpus.every((gpu) => {
     if (!gpu || typeof gpu !== "object") return false;
@@ -31,8 +33,9 @@ function validHardware(value: unknown): value is Record<string, unknown> {
     const free = item.free_memory_bytes; const total = item.total_memory_bytes;
     return typeof item.name === "string" && typeof item.uuid === "string" &&
       typeof free === "number" && Number.isSafeInteger(free) && free >= 0 &&
-      typeof total === "number" && Number.isSafeInteger(total) && total > 0 && free <= total;
-  });
+      typeof total === "number" && Number.isSafeInteger(total) && total > 0 && free <= total &&
+      (item.index === undefined || typeof item.index === "number" && Number.isSafeInteger(item.index) && item.index >= 0);
+  }) && selectedGpu(hardware) !== null;
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -61,7 +64,8 @@ export default async function handler(req: Request): Promise<Response> {
       let model; try { model = await resolveModel(modelId); } catch (error) {
         if (error instanceof BrokerError && error.status === 422) continue; throw error;
       }
-      if (!fitsGpu(model, body.hardware)) continue;
+      const selectedHardwareGpu = selectedGpu(body.hardware);
+      if (!selectedHardwareGpu || !fitsGpu(model, body.hardware, selectedHardwareGpu)) continue;
       const mutex = await acquireIssueMutex(listed.number); if (!mutex) continue;
       try {
         const snapshot = await fetchIssue(listed.number);
@@ -85,6 +89,8 @@ export default async function handler(req: Request): Promise<Response> {
           image_digest: imageDigest,
           worker_version: body.worker_version,
           gpu_memory_utilisation: body.hardware.gpu_memory_utilisation as number,
+          selected_gpu_index: body.hardware.selected_gpu_index as number,
+          selected_gpu_uuid: body.hardware.selected_gpu_uuid as string,
           expires_at: expiresAt,
           lease_id: randomToken(18), model_profile: model.model_profile,
           expected_scope: { policy_version: trusted.policy_version, language_group: group,
@@ -126,6 +132,7 @@ export default async function handler(req: Request): Promise<Response> {
           protocol_version: PROTOCOL_VERSION, lease_id: lease.lease_id, issue_number: lease.issue_number,
           language, model_id: model.id, model_revision: model.revision, euroeval_version: euroevalVersion,
           image_digest: imageDigest, worker_version: lease.worker_version, expires_at: expiresAt,
+          selected_gpu_index: lease.selected_gpu_index, selected_gpu_uuid: lease.selected_gpu_uuid,
           model_profile: lease.model_profile, expected_scope: lease.expected_scope,
         });
       } finally { await releaseIssueMutex(listed.number, mutex); }
