@@ -418,9 +418,12 @@ def find_valid_answers(
             # If we got to this point then the answer is valid, so we store the
             # corresponding start- and end character indices in the original context,
             # and from these extract the answer
-            start_char = offset_mapping[start_index][0]
-            end_char = offset_mapping[end_index][1]
-            text = context[start_char:end_char]
+            text = _answer_text_from_offsets(
+                offset_mapping=offset_mapping,
+                start_index=start_index,
+                end_index=end_index,
+                context=context,
+            )
 
             # Compute the score of the answer, being the sum of the start and end
             # logits. Intuitively, this indicates how likely the answer is to be
@@ -433,6 +436,48 @@ def find_valid_answers(
                 valid_answers.append(dict(score=score, text=text))
 
     return valid_answers
+
+
+def _answer_text_from_offsets(
+    offset_mapping: c.Sequence[tuple[int, int]],
+    start_index: int,
+    end_index: int,
+    context: str,
+) -> str:
+    """Slice the context for a predicted token span, repairing word-initial offsets.
+
+    Some tokenisers (notably RobBERT-family models whose pre-tokeniser is
+    ``Sequence[Whitespace, ByteLevel, Punctuation]`` rather than plain ByteLevel)
+    report the start offset of a word-initial token one character into the word.
+    Slicing the context with those offsets drops the first letter and collapses
+    SQuAD Exact Match; see https://github.com/EuroEval/EuroEval/issues/2171.
+
+    Only a hole that is not already covered by the previous in-context token is
+    filled, and only across non-whitespace, so standard BERT/RoBERTa offsets and
+    mid-word overflowing features are left alone.
+
+    Returns:
+        The context slice for the predicted token span.
+    """
+    start_char = offset_mapping[start_index][0]
+    end_char = offset_mapping[end_index][1]
+    if (
+        start_char > 0
+        and start_char <= len(context)
+        and not context[start_char - 1].isspace()
+    ):
+        prev = tuple(offset_mapping[start_index - 1]) if start_index > 0 else (-1, -1)
+        if prev != (-1, -1):
+            if prev[1] < start_char:
+                while (
+                    start_char > prev[1]
+                    and start_char > 0
+                    and not context[start_char - 1].isspace()
+                ):
+                    start_char -= 1
+        elif start_char == 1 or context[start_char - 2].isspace():
+            start_char -= 1
+    return context[start_char:end_char]
 
 
 def extract_labels_from_generation(
