@@ -1,6 +1,8 @@
-export const config = { runtime: "edge" };
+import { parseVolunteerMarker } from "./worker/_lib.ts";
 
 declare const process: { env: Record<string, string | undefined> };
+
+export const config = { runtime: "edge" };
 
 const REPO = "EuroEval/EuroEval";
 const LABEL = "model evaluation request";
@@ -43,8 +45,22 @@ function extractModelId(title: string, body: string | null): string | null {
   return rest && rest !== "<model-name>" ? rest : null;
 }
 
+export function creditLogins(issue: RawIssue): string[] {
+  const marker = parseVolunteerMarker(issue.body);
+  if (marker && marker.leases.length > 0) return EXCLUDE.has(marker.winner) ? [] : [marker.winner];
+  const assignees = issue.assignees && issue.assignees.length > 0
+    ? issue.assignees
+    : issue.assignee ? [issue.assignee] : [];
+  const seen = new Set<string>();
+  return assignees.flatMap((assignee) => {
+    if (EXCLUDE.has(assignee.login) || seen.has(assignee.login)) return [];
+    seen.add(assignee.login);
+    return [assignee.login];
+  });
+}
+
 function json(status: number, body: unknown, extra?: HeadersInit): Response {
-  return new Response(typeof body === "string" ? body : JSON.stringify(body), {
+  return new Response(status === 204 ? null : typeof body === "string" ? body : JSON.stringify(body), {
     status,
     headers: {
       "content-type": "application/json",
@@ -101,27 +117,12 @@ export default async function handler(req: Request): Promise<Response> {
       const chunk = await fetchPage(page, headers);
       for (const issue of chunk) {
         if (!extractModelId(issue.title, issue.body)) continue;
-        const assignees =
-          issue.assignees && issue.assignees.length > 0
-            ? issue.assignees
-            : issue.assignee
-              ? [issue.assignee]
-              : [];
-        const seen = new Set<string>();
-        for (const a of assignees) {
-          if (EXCLUDE.has(a.login)) continue;
-          if (seen.has(a.login)) continue;
-          seen.add(a.login);
-          const cur = counts.get(a.login);
-          if (cur) {
-            cur.count += 1;
-          } else {
-            counts.set(a.login, {
-              login: a.login,
-              count: 1,
-              avatarUrl: a.avatar_url,
-            });
-          }
+        for (const login of creditLogins(issue)) {
+          const avatarUrl = issue.assignees?.find((assignee) => assignee.login === login)?.avatar_url ||
+            (issue.assignee?.login === login ? issue.assignee.avatar_url : "");
+          const cur = counts.get(login);
+          if (cur) cur.count += 1;
+          else counts.set(login, { login, count: 1, avatarUrl });
         }
       }
       if (chunk.length < PER_PAGE) break;
