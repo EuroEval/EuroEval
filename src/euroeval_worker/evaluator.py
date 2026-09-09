@@ -1,0 +1,80 @@
+"""Adapter from broker leases to the existing EuroEval evaluator."""
+
+import hashlib
+import json
+import typing as t
+from pathlib import Path
+
+from euroeval.benchmarker import Benchmarker
+from euroeval.eee_utils import benchmark_result_to_eee_dict
+
+from .types import EEERecord, JsonValue, Lease
+
+
+class Evaluator(t.Protocol):
+    """Protocol implemented by concrete evaluation runners."""
+
+    def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+        """Evaluate one language and write isolated JSONL output."""
+        ...
+
+
+class EuroEvalEvaluator(Evaluator):
+    """Use ``Benchmarker`` without changing the EuroEval package."""
+
+    def __init__(self, cache_dir: Path, gpu_memory_utilisation: float = 0.8) -> None:
+        """Initialise the adapter.
+
+        Args:
+            cache_dir:
+                Directory for model and dataset caches.
+            gpu_memory_utilisation (optional):
+                Fraction of GPU memory offered to vLLM. Defaults to 0.8.
+        """
+        self.cache_dir = cache_dir
+        self.gpu_memory_utilisation = gpu_memory_utilisation
+
+    def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+        """Run validation-only EuroEval with remote code disabled.
+
+        Returns:
+            EEE records produced by the evaluation.
+        """
+        benchmarker = Benchmarker(
+            progress_bar=False,
+            save_results=False,
+            language=lease.language,
+            cache_dir=str(self.cache_dir),
+            trust_remote_code=False,
+            evaluate_test_split=False,
+            requires_safetensors=True,
+            gpu_memory_utilization=self.gpu_memory_utilisation,
+            force=True,
+            raise_errors=True,
+            verbose=False,
+        )
+        results = benchmarker.benchmark(
+            model=f"{lease.model_id}@{lease.model_revision}",
+            language=lease.language,
+            progress_bar=False,
+            save_results=False,
+            trust_remote_code=False,
+            evaluate_test_split=False,
+            requires_safetensors=True,
+            gpu_memory_utilization=self.gpu_memory_utilisation,
+            force=True,
+            raise_errors=True,
+        )
+        records = [
+            _record(benchmark_result_to_eee_dict(result=result)) for result in results
+        ]
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with output_path.open("w", encoding="utf-8") as handle:
+            for item in records:
+                handle.write(json.dumps(item.record, sort_keys=True) + "\n")
+        return records
+
+
+def _record(record: dict[str, JsonValue]) -> EEERecord:
+    encoded = json.dumps(record, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return EEERecord(record=record, sha256=hashlib.sha256(encoded).hexdigest())
