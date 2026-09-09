@@ -16,6 +16,7 @@ import logging
 import os
 import sys
 import time
+import typing as t
 import urllib.error
 from pathlib import Path
 
@@ -23,6 +24,7 @@ import click
 from huggingface_hub import HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
+import leaderboards.github_api as _github_api
 from euroeval import __version__
 from leaderboards.bucket_sync import merge_results, sync_bucket
 from leaderboards.constants import (
@@ -54,7 +56,6 @@ from leaderboards.github_api import (
     gh_request,
     remove_failed_label,
     remove_gated_label,
-    unassign_issue,
 )
 from leaderboards.queue_env import (
     acquire_single_instance_lock,
@@ -65,6 +66,7 @@ from leaderboards.queue_env import (
 from leaderboards.queue_hf_cache import cached_model_summary
 from leaderboards.queue_markers import (
     clear_vm_marker,
+    issue_has_active_queue_ownership,
     release_issue_if_owned,
     set_vm_marker,
     vm_marker_matches,
@@ -94,6 +96,9 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
 )
 logger = logging.getLogger("process_evaluation_queue")
+
+# Kept as a module attribute for existing queue orchestration tests and callers.
+unassign_issue = _github_api.unassign_issue
 
 
 # Canonical HF bucket for storing results (public read access).
@@ -314,6 +319,48 @@ def process_queue_once(
         cool_down_between_issues(config=thermal_config)
 
 
+def _list_queue_issues(*, assignee: str) -> list[dict[str, t.Any]] | None:
+    """Fetch every page of open model-evaluation-request issues.
+
+    GitHub silently limits a list response to its requested page size. The
+    queue must not lose older requests merely because the first page is full.
+
+    Args:
+        assignee:
+            GitHub assignee filter, usually ``none`` or the local runner.
+
+    Returns:
+        All issue dictionaries, or None when any page cannot be fetched.
+    """
+    all_issues: list[dict[str, t.Any]] = []
+    page = 1
+    while True:
+        try:
+            response = gh_request(
+                path=f"/repos/{REPO}/issues",
+                params={
+                    "state": "open",
+                    "labels": MODEL_REQUEST_LABEL,
+                    "per_page": "100",
+                    "page": str(page),
+                    "assignee": assignee,
+                },
+            )
+        except urllib.error.HTTPError as e:
+            logger.error(f"Failed to list issues (page {page}): {e}")
+            return None
+        if not isinstance(response, list):
+            logger.error(
+                f"Failed to list issues (page {page}): GitHub returned a "
+                "non-list response."
+            )
+            return None
+        all_issues.extend(issue for issue in response if isinstance(issue, dict))
+        if len(response) < 100:
+            return all_issues
+        page += 1
+
+
 def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list[str]]]:
     """Return processable issues sorted by priority.
 
@@ -321,28 +368,20 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
         Queue candidates as sortable tuples followed by issue, model id and
         language groups.
     """
-    try:
-        issues = gh_request(
-            path=f"/repos/{REPO}/issues",
-            params={
-                "state": "open",
-                "labels": MODEL_REQUEST_LABEL,
-                "per_page": "100",
-                "assignee": "none",
-            },
-        )
-    except urllib.error.HTTPError as e:
-        logger.error(f"Failed to list issues: {e}")
-        return []
-
-    if not isinstance(issues, list):
-        logger.error("Failed to list issues: GitHub returned a non-list response.")
+    issues = _list_queue_issues(assignee="none")
+    if issues is None:
         return []
 
     candidates: list[tuple[int, int, int, int, float, dict, str, list[str]]] = []
     for issue in (issue for issue in issues if "pull_request" not in issue):
-        number = issue["number"]
         body = issue.get("body") or ""
+        if issue_has_active_queue_ownership(body):
+            logger.info(
+                f"#{issue['number']}: skipping -- community/coordinator "
+                "ownership is active."
+            )
+            continue
+        number = issue["number"]
         model_id = extract_model_id(title=issue.get("title", ""), body=body)
         if not model_id:
             logger.info(f"#{number}: skipping -- could not parse model id.")
@@ -843,6 +882,8 @@ def issue_is_still_claimable(number: int) -> bool:
         return False
     if current.get("state") != "open":
         return False
+    if issue_has_active_queue_ownership(current.get("body") or ""):
+        return False
     return not current.get("assignees")
 
 
@@ -855,21 +896,9 @@ def reclaim_orphaned_issues(assignee: str, vm_id: str) -> None:
         vm_id:
             VM marker used to distinguish this runner from other VMs.
     """
-    try:
-        issues = gh_request(
-            path=f"/repos/{REPO}/issues",
-            params={
-                "state": "open",
-                "labels": MODEL_REQUEST_LABEL,
-                "per_page": "100",
-                "assignee": assignee,
-            },
-        )
-    except urllib.error.HTTPError as e:
-        logger.warning(f"Could not list assigned issues for reclaim: {e}")
-        return
-
-    if not isinstance(issues, list):
+    issues = _list_queue_issues(assignee=assignee)
+    if issues is None:
+        logger.warning("Could not list assigned issues for reclaim.")
         return
 
     reclaimed = 0
@@ -881,15 +910,13 @@ def reclaim_orphaned_issues(assignee: str, vm_id: str) -> None:
         if RESULTS_READY_LABEL in label_names:
             continue
         body = issue.get("body") or ""
+        if issue_has_active_queue_ownership(body):
+            continue
         m = VM_MARKER_RE.search(body)
         if not m or m.group(1) != vm_id:
             continue
         number = issue["number"]
-        try:
-            clear_vm_marker(number=number, vm_id=vm_id)
-            unassign_issue(number=number, assignee=assignee)
-        except urllib.error.HTTPError as e:
-            logger.warning(f"#{number}: failed to reclaim: {e}")
+        if not release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee):
             continue
         reclaimed += 1
         logger.info(f"#{number}: reclaimed orphaned issue (vm-id {vm_id}).")

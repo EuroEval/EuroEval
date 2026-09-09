@@ -11,13 +11,120 @@ GitHub labels instead of body markers.
 
 from __future__ import annotations
 
+import dataclasses
 import logging
+import re
 import urllib.error
 
 from .constants import VM_MARKER_RE
 from .github_api import fetch_issue_body, patch_issue_body, unassign_issue
 
 logger = logging.getLogger(__name__)
+
+
+COMMUNITY_MARKER_VERSION = 1
+COMMUNITY_MARKER_OWNER = "community"
+COORDINATOR_MARKER_OWNER = "coordinator"
+COMMUNITY_ACTIVE_SUBMISSION_STATES = frozenset(
+    {"active", "claimed", "pending", "queued", "running", "submitted"}
+)
+_COMMUNITY_SUBMISSION_STATES = COMMUNITY_ACTIVE_SUBMISSION_STATES | {
+    "completed",
+    "released",
+}
+COMMUNITY_MARKER_RE = re.compile(
+    r"<!--[ \t]+euroeval-community:[ \t]+v(?P<version>[0-9]+)[ \t]+"
+    r"owner=(?P<owner>community|coordinator)[ \t]+"
+    r"submission=(?P<submission>[a-z]+)[ \t]+-->"
+)
+_COMMUNITY_MARKER_CANDIDATE_RE = re.compile(r"<!--[ \t]*euroeval-community:")
+
+
+@dataclasses.dataclass(frozen=True)
+class CommunityMarker:
+    """The strictly parsed ownership marker in an issue body."""
+
+    protocol_version: int
+    owner: str
+    submission: str
+
+
+def parse_community_marker(body: str) -> CommunityMarker | None:
+    """Parse the one supported community marker in ``body``.
+
+    Unknown protocol versions, unknown fields or malformed markers return None.
+    This deliberately fails closed: an issue is only protected when the broker
+    marker is unambiguous and understood by this queue version.
+
+    Args:
+        body:
+            GitHub issue body to inspect.
+
+    Returns:
+        The parsed marker, or None when there is no valid supported marker.
+    """
+    candidates = _COMMUNITY_MARKER_CANDIDATE_RE.findall(body)
+    if len(candidates) != 1:
+        return None
+    match = COMMUNITY_MARKER_RE.search(body)
+    if match is None:
+        return None
+    version = int(match.group("version"))
+    submission = match.group("submission")
+    if (
+        version != COMMUNITY_MARKER_VERSION
+        or submission not in _COMMUNITY_SUBMISSION_STATES
+    ):
+        return None
+    return CommunityMarker(
+        protocol_version=version, owner=match.group("owner"), submission=submission
+    )
+
+
+def issue_has_active_queue_ownership(body: str) -> bool:
+    """Return whether a recognised broker/coordinator lease protects an issue."""
+    marker = parse_community_marker(body)
+    return (
+        marker is not None and marker.submission in COMMUNITY_ACTIVE_SUBMISSION_STATES
+    )
+
+
+def append_community_marker(body: str, owner: str, submission: str) -> str:
+    """Return ``body`` with a validated community marker appended.
+
+    This pure manipulator is shared with broker integrations; the local queue
+    never calls it because it must not create community ownership markers.
+
+    Args:
+        body:
+            Existing issue body.
+        owner:
+            Marker owner, either ``community`` or ``coordinator``.
+        submission:
+            Submission state supported by protocol version 1.
+
+    Raises:
+        ValueError:
+            If ``owner`` or ``submission`` is not part of protocol version 1.
+    """
+    if owner not in {COMMUNITY_MARKER_OWNER, COORDINATOR_MARKER_OWNER}:
+        raise ValueError(f"Unsupported community marker owner: {owner!r}")
+    if submission not in _COMMUNITY_SUBMISSION_STATES:
+        raise ValueError(f"Unsupported community marker submission: {submission!r}")
+    cleaned = body.rstrip()
+    marker = (
+        f"<!-- euroeval-community: v{COMMUNITY_MARKER_VERSION} "
+        f"owner={owner} submission={submission} -->"
+    )
+    return f"{cleaned}\n\n{marker}\n"
+
+
+def remove_community_marker(body: str) -> str:
+    """Return ``body`` without its recognised community marker."""
+    marker = parse_community_marker(body)
+    if marker is None:
+        return body
+    return COMMUNITY_MARKER_RE.sub("", body, count=1).rstrip() + "\n"
 
 
 def clear_vm_marker(number: int, vm_id: str) -> None:
@@ -33,6 +140,11 @@ def clear_vm_marker(number: int, vm_id: str) -> None:
             The VM identifier that owns the marker to remove.
     """
     body = fetch_issue_body(number=number)
+    if issue_has_active_queue_ownership(body):
+        logger.info(
+            f"#{number}: community/coordinator ownership is active; keeping markers."
+        )
+        return
     m = VM_MARKER_RE.search(body)
     if not m or m.group(1) != vm_id:
         return
@@ -65,6 +177,12 @@ def release_issue_if_owned(number: int, vm_id: str, assignee: str) -> bool:
         over and the assignment was left in place.
     """
     body = fetch_issue_body(number=number)
+    if issue_has_active_queue_ownership(body):
+        logger.info(
+            f"#{number}: community/coordinator ownership is active; "
+            "leaving marker and assignee in place."
+        )
+        return False
     m = VM_MARKER_RE.search(body)
     if m is not None and m.group(1) != vm_id:
         logger.info(
@@ -105,6 +223,8 @@ def set_vm_marker(number: int, vm_id: str) -> bool:
         owns the issue (marker belongs to a different vm_id).
     """
     body = fetch_issue_body(number=number)
+    if issue_has_active_queue_ownership(body):
+        return False
     m = VM_MARKER_RE.search(body)
     if m is not None and m.group(1) != vm_id:
         # Another VM already owns this issue
@@ -134,5 +254,7 @@ def vm_marker_matches(number: int, vm_id: str) -> bool:
         belongs to a different VM.
     """
     body = fetch_issue_body(number=number)
+    if issue_has_active_queue_ownership(body):
+        return False
     m = VM_MARKER_RE.search(body)
     return m is None or m.group(1) == vm_id
