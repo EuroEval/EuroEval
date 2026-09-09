@@ -95,7 +95,7 @@ export function languageGroup(language: string): string | null {
   return Object.entries(GROUPS).find(([, codes]) => codes.includes(language))?.[0] || null;
 }
 
-type ScopeEntry = { euroeval_version: string; model_profile: string; language: string; language_group?: string; identity_suffixes: string[]; count?: number; warnings?: string[] };
+type ScopeEntry = { euroeval_version: string; model_profile: string; language: string; language_group: string; identity_suffixes: string[]; count?: number; warnings?: string[] };
 type ScopePolicy = { policy_version: string; policies: ScopeEntry[] };
 function canonicalEuroevalVersion(version: string): string {
   return version.replace(/\.dev$/, ".dev0");
@@ -112,6 +112,7 @@ export function expectedScope(euroevalVersion: string, profile: string, language
   const match = policy.policies.find((item) => item.euroeval_version === euroevalVersion && item.model_profile === profile && item.language === language);
   if (!match || !Array.isArray(match.identity_suffixes) || !match.identity_suffixes.length) throw new BrokerError(422, "This model profile and language group has no trusted expected scope.");
   if (match.identity_suffixes.some((item) => typeof item !== "string") || new Set(match.identity_suffixes).size !== match.identity_suffixes.length || match.count !== undefined && match.count !== match.identity_suffixes.length) throw new ConfigurationError("Trusted expected scope contains invalid or duplicate identities.");
+  if (typeof match.language_group !== "string" || !match.language_group) throw new ConfigurationError("Trusted expected scope has no language_group.");
   if (match.warnings && (!Array.isArray(match.warnings) || match.warnings.some((item) => typeof item !== "string"))) throw new ConfigurationError("Trusted expected scope contains invalid warnings.");
-  return { ...match, language: match.language || language, language_group: match.language_group || language, policy_version: policy.policy_version, count: match.identity_suffixes.length, warnings: match.warnings || [] };
+  return { ...match, language: match.language, language_group: match.language_group, policy_version: policy.policy_version, count: match.identity_suffixes.length, warnings: match.warnings || [] };
 }

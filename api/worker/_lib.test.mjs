@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, replaceVolunteerMarker, selectedLanguages, validateRecord } from "./_lib.ts";
 import { fitsGpu, selectedGpu } from "./_lib/model.ts";
-import { releaseResultReservations } from "./_lib/redis.ts";
+import { reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "./_lib/redis.ts";
+import { promotionIdentityKey, reservePromotionReservation } from "./_lib/promotion.ts";
 
 test("parses the queue model and language checkboxes", () => {
   const body = "### Model ID\n\norg/model\n\n- [x] Greek\n- [ ] Albanian\n";
@@ -70,6 +71,22 @@ test("generated trusted scopes are exact-language and versioned", () => {
   assert.ok(scope.identity_suffixes.length > 0);
 });
 
+test("trusted exact-language policy owns the lease language group", () => {
+  const original = process.env.VOLUNTEER_SCOPE_POLICY_JSON;
+  process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
+    euroeval_version: "1.0.0", model_profile: "bert", language: "da", language_group: "policy-da",
+    identity_suffixes: [JSON.stringify(["dataset", false, true])],
+  }] });
+  try {
+    const scope = expectedScope("1.0.0", "bert", "da");
+    assert.equal(scope.language, "da");
+    assert.equal(scope.language_group, "policy-da");
+  } finally {
+    if (original === undefined) delete process.env.VOLUNTEER_SCOPE_POLICY_JSON;
+    else process.env.VOLUNTEER_SCOPE_POLICY_JSON = original;
+  }
+});
+
 test("fits only the explicitly selected GPU", () => {
   const model = { id: "org/model", revision: "r", config: {}, weight_bytes: 300, repo_bytes: 500, model_profile: "llama" };
   const hardware = {
@@ -89,6 +106,88 @@ test("fits a model on one reported GPU and requires repository disk", () => {
   const hardware = { free_disk_bytes: 500, gpus: [{ name: "a", uuid: "1", free_memory_bytes: 50, total_memory_bytes: 50 }, { name: "b", uuid: "2", free_memory_bytes: 135, total_memory_bytes: 135 }] };
   assert.equal(fitsGpu(model, hardware), true);
   assert.equal(fitsGpu(model, { ...hardware, free_disk_bytes: 499 }), false);
+});
+
+test("result reservation tracking is atomic with identity ownership", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  const commands = [];
+  globalThis.fetch = async (_input, init) => {
+    commands.push(JSON.parse(init.body));
+    return Response.json({ result: "reserved" });
+  };
+  try {
+    assert.equal(await reserveResultIdentity("identity-key", "{}", "a".repeat(64), "lease", 60,
+      "reservations-key", JSON.stringify({ identity: "identity", digest: "a".repeat(64) })), "reserved");
+    assert.equal(commands[0][0], "EVAL");
+    assert.equal(commands[0][2], "2");
+    assert.match(commands[0][1], /SISMEMBER/);
+    assert.match(commands[0][1], /SCARD/);
+    assert.match(commands[0][1], /SADD/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+test("expired lease cleanup fences every reservation owner and digest", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  const records = [{ identity: JSON.stringify(["org/model", "one", false, true]), digest: "a".repeat(64) }];
+  const commands = [];
+  globalThis.fetch = async (_input, init) => {
+    const command = JSON.parse(init.body); commands.push(command);
+    return Response.json({ result: command[0] === "SMEMBERS" ? [JSON.stringify(records[0])] : 1 });
+  };
+  const lease = { issue_number: 12, language: "da", lease_id: "lease", expires_at: "2020-01-01T00:00:00.000Z" };
+  try {
+    assert.equal(await reclaimExpiredLease(lease), true);
+    const command = commands[1];
+    assert.equal(command[0], "EVAL");
+    assert.match(command[1], /item\.lease_id ~= ARGV\[1\]/);
+    assert.match(command[1], /owned\.digest == record\.digest/);
+    assert.match(command[1], /owned\.identity == record\.identity/);
+    assert.match(command[1], /DEL',KEYS\[3\]/);
+    assert.equal(command[2], "4");
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+test("promotion renewal refreshes each nonterminal path only", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  const records = [
+    { identity: JSON.stringify(["org/model", "one", false, true]), canonical_path: "org_model/one__test__fewshot.json", digest: "a".repeat(64) },
+    { identity: JSON.stringify(["org/model", "two", false, true]), canonical_path: "org_model/two__test__fewshot.json", digest: "b".repeat(64) },
+  ];
+  const commands = [];
+  globalThis.fetch = async (_input, init) => {
+    commands.push(JSON.parse(init.body));
+    return Response.json({ result: "reserved" });
+  };
+  try {
+    assert.equal(await reservePromotionReservation({ issue_number: 12, submission_id: "one", outcome: "accepted",
+      records, token: "token", decision_nonce: "nonce", status: "reserved" }), "reserved");
+    const command = commands[0];
+    assert.equal(command[0], "EVAL");
+    assert.equal(command[2], "3");
+    assert.match(command[1], /redis\.call\('EXPIRE',KEYS\[i\],ARGV\[4\]\)/);
+    assert.match(command[1], /item\.status ~= 'terminal'/);
+    assert.equal(command[3], "euroeval:worker:promotion:12:one");
+    assert.equal(command[4], await promotionIdentityKey(records[0].canonical_path));
+    assert.equal(command[5], await promotionIdentityKey(records[1].canonical_path));
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
 });
 
 test("retries atomic multi-record reservation cleanup", async () => {

@@ -86,10 +86,11 @@ async function releaseSubmissionReservations(reservation: PromotionReservation):
   }
 }
 
-function validCredit(credit: FinalCredit | null, plan: PromotionPlan): boolean {
+function validCredit(credit: FinalCredit | null, plan: PromotionPlan, decisionNonce?: string): boolean {
   return !!credit && credit.winner === plan.winner &&
     JSON.stringify(credit.accepted_counts) === JSON.stringify(plan.acceptedCounts) &&
-    JSON.stringify(credit.completed_languages) === JSON.stringify(plan.marker.completed_languages || []);
+    JSON.stringify(credit.completed_languages) === JSON.stringify(plan.marker.completed_languages || []) &&
+    (!decisionNonce || credit.decision_nonce === decisionNonce);
 }
 
 async function terminalReservation(reservation: PromotionReservation): Promise<void> {
@@ -131,10 +132,13 @@ export default async function handler(req: Request): Promise<Response> {
       let promotedBody = issue.body || "";
       const oldCredit = parseFinalCredit(promotedBody);
       let credit: FinalCredit | null = null;
+      const decisionNonce = reservation.decision_nonce || reservation.token;
       if (plan.complete && plan.winner) {
-        credit = oldCredit && validCredit(oldCredit, plan) && await verifyFinalCredit(issueNumber, oldCredit)
+        credit = oldCredit && validCredit(oldCredit, plan, decisionNonce) && await verifyFinalCredit(issueNumber, oldCredit)
           ? oldCredit
-          : await signFinalCredit(issueNumber, { version: 1, immutable: true, winner: plan.winner, accepted_counts: plan.acceptedCounts, completed_languages: plan.marker.completed_languages || [] });
+          : await signFinalCredit(issueNumber, { version: 1, immutable: true, winner: plan.winner,
+            accepted_counts: plan.acceptedCounts, completed_languages: plan.marker.completed_languages || [],
+            decision_nonce: decisionNonce });
       }
       // Rejection must not make the language claimable while any identity is
       // still reserved. Keep the signed marker submitted if cleanup fails.
@@ -147,7 +151,7 @@ export default async function handler(req: Request): Promise<Response> {
       const fenced = parseVolunteerMarker(fencedIssue.body);
       if (!fenced || !(await verifyVolunteerMarker(issueNumber, fenced)) ||
           fenced.submissions?.find((item) => item.submission_id === submissionId)?.status !== outcome ||
-          plan.complete && !validCredit(parseFinalCredit(fencedIssue.body), plan)) {
+          plan.complete && !validCredit(parseFinalCredit(fencedIssue.body), plan, decisionNonce)) {
         throw new BrokerError(409, "Promotion fence lost.");
       }
       const reviewLabel = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
@@ -161,7 +165,8 @@ export default async function handler(req: Request): Promise<Response> {
         await commentIssue(issueNumber, `<!-- ${PROMOTION_MARKER} ${submissionId} -->\nCommunity submission **${submissionId}** was **${outcome}**.\n\nManifest: \`${current?.manifest_path}\``);
       }
       await terminalReservation(reservation);
-      return json(200, { protocol_version: PROTOCOL_VERSION, status: outcome, submission_id: submissionId, complete: plan.complete, winner: plan.winner });
+      return json(200, { protocol_version: PROTOCOL_VERSION, status: outcome, submission_id: submissionId,
+        decision_nonce: decisionNonce, complete: plan.complete, winner: plan.winner });
     } finally { await releaseIssueMutex(issueNumber, mutex); }
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;

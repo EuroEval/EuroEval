@@ -34,8 +34,13 @@ export default async function handler(req: Request): Promise<Response> {
       return json(200, { protocol_version: PROTOCOL_VERSION, status: "duplicate", digest, identity: checked.identity, path: existing.path || path, warnings: existing.warnings || checked.warnings });
     }
     const reservation: StoredIdentity = { digest, lease_id: lease.lease_id, status: "uploading", issue_number: lease.issue_number, language: lease.language, path, warnings: checked.warnings };
-    const claim = await reserveResultIdentity(identityKey, JSON.stringify(reservation), digest, lease.lease_id, 24 * 60 * 60);
+    const claim = await reserveResultIdentity(
+      identityKey, JSON.stringify(reservation), digest, lease.lease_id, 24 * 60 * 60,
+      `euroeval:worker:reservations:${lease.lease_id}`,
+      JSON.stringify({ digest, identity: checked.identity }),
+    );
     if (claim === "busy") throw new BrokerError(409, "Another submission for this identity is in progress; retry later.");
+    if (claim === "full") throw new BrokerError(409, "This lease has reached its result reservation limit.");
     if (claim === "duplicate") throw new BrokerError(409, "This canonical record identity was already accepted by another lease.");
     try {
       // The worker's exact JSON text is the durable representation.
