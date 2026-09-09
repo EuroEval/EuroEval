@@ -15,7 +15,7 @@ import typing as t
 from .auth import authenticate
 from .broker import BrokerError, BrokerProtocol
 from .evaluator import EuroEvalEvaluator, Evaluator
-from .hardware import discover_hardware, select_gpu
+from .hardware import NoGpuError, discover_hardware, select_gpu
 from .safety import SafetyError, check_model_safety
 from .state import ActiveLease, PendingRecord, StateStore
 from .types import Claim, EEERecord, Gpu, HardwareReport, Lease
@@ -193,9 +193,8 @@ class Worker:
             client=self.client, state=self.state
         )
         while True:
-            hardware = self._prepare_hardware(self.hardware_factory())
             active = self.state.load_active()
-            if active is not None and active.github_login not in (None, self._login):
+            if active is not None and active.github_login != self._login:
                 raise AuthenticationIdentityError(
                     active.github_login or "", self._login
                 )
@@ -205,7 +204,10 @@ class Worker:
                 )
                 self.state.archive_active()
                 active = None
+            discovered = self.hardware_factory()
             if active is not None:
+                selected = _gpu_for_lease(discovered.gpus, active.lease)
+                hardware = self._hardware_with_selected(discovered, selected)
                 try:
                     self._process_lease(
                         credential=self._credential,
@@ -221,6 +223,7 @@ class Worker:
                     return
                 continue
 
+            hardware = self._prepare_hardware(discovered)
             credential, response = self._claim_with_reauthentication(
                 credential=self._credential, hardware=hardware
             )
@@ -231,10 +234,12 @@ class Worker:
                     return
                 time.sleep(30)
                 continue
+            selected = select_gpu(hardware.gpus)
+            lease = _lease_for_gpu(response.lease, selected)
             try:
                 self._process_lease(
                     credential=self._credential,
-                    lease=response.lease,
+                    lease=lease,
                     hardware=hardware,
                     active=None,
                 )
@@ -252,6 +257,16 @@ class Worker:
             The report with the configured utilisation and selected GPU.
         """
         selected = select_gpu(hardware.gpus)
+        return self._hardware_with_selected(hardware, selected)
+
+    def _hardware_with_selected(
+        self, hardware: HardwareReport, selected: Gpu
+    ) -> HardwareReport:
+        """Expose the UUID-pinned GPU in a restart hardware report.
+
+        Returns:
+            A hardware report pinned to ``selected``.
+        """
         return dataclasses.replace(
             hardware,
             gpu_memory_utilisation=self.gpu_memory_utilisation,
@@ -316,7 +331,7 @@ class Worker:
                 client=self.client, credential=credential, lease=lease
             )
         completed = False
-        selected_gpu = select_gpu(hardware.gpus)
+        selected_gpu = _gpu_for_lease(hardware.gpus, lease)
         try:
             if active is not None and active.records:
                 records = active.records
@@ -515,11 +530,50 @@ class Worker:
                 auth_attempted = True
 
 
+def _gpu_for_lease(gpus: c.Iterable[Gpu], lease: Lease) -> Gpu:
+    """Find the leased GPU by UUID, never by its mutable index.
+
+    Returns:
+        The UUID-matched GPU.
+
+    Raises:
+        NoGpuError:
+            If the lease has no UUID or the UUID is not present.
+    """
+    if not lease.selected_gpu_uuid:
+        raise NoGpuError("lease does not identify a GPU UUID")
+    for gpu in gpus:
+        if gpu.uuid == lease.selected_gpu_uuid:
+            return gpu
+    raise NoGpuError(
+        f"leased GPU {lease.selected_gpu_uuid!r} is unavailable on this host"
+    )
+
+
+def _lease_for_gpu(lease: Lease, selected: Gpu) -> Lease:
+    """Bind a new lease to the exact GPU advertised in the claim.
+
+    Returns:
+        The lease with the selected GPU identity persisted.
+
+    Raises:
+        NoGpuError:
+            If the broker selected a different GPU.
+    """
+    if lease.selected_gpu_uuid not in (None, selected.uuid):
+        raise NoGpuError("broker lease selected a different GPU UUID")
+    if lease.selected_gpu_index not in (None, selected.index):
+        raise NoGpuError("broker lease selected a different GPU index")
+    return dataclasses.replace(
+        lease, selected_gpu_uuid=selected.uuid, selected_gpu_index=selected.index
+    )
+
+
 @contextlib.contextmanager
 def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
     """Expose only ``gpu`` to CUDA for the duration of one evaluation."""
     original = os.environ.get("CUDA_VISIBLE_DEVICES")
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu.index)
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu.uuid
     try:
         yield
     finally:

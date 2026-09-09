@@ -2,6 +2,9 @@
 
 import typing as t
 
+import pytest
+
+import src.scripts.generate_volunteer_scope_policy as policy_module
 from euroeval.benchmarker import Benchmarker
 from src.scripts.generate_volunteer_scope_policy import build_policy
 
@@ -25,7 +28,9 @@ class Policy(t.TypedDict):
 def test_policy_is_versioned_and_exact_language() -> None:
     """Policies pin version, profile, and individual ISO languages."""
     policy = build_policy(
-        "18.0.0", {("dataset-da", "da"), ("dataset-en", "en")}, profiles=("bert",)
+        "18.0.0",
+        {("multi-wiki-qa-da", "da"), ("multi-wiki-qa-en", "en")},
+        profiles=("bert",),
     )
 
     assert policy["policy_version"] == "volunteer-scope/18.0.0"
@@ -34,7 +39,7 @@ def test_policy_is_versioned_and_exact_language() -> None:
         ("bert", "da"),
         ("bert", "en"),
     }
-    assert entries[0]["identity_suffixes"] == ['["dataset-da",false,true]']
+    assert entries[0]["identity_suffixes"] == ['["multi-wiki-qa-da",false,true]']
 
 
 def test_policy_matches_benchmarker_defaults_for_encoder_and_decoder() -> None:
@@ -64,9 +69,22 @@ def test_policy_matches_benchmarker_defaults_for_encoder_and_decoder() -> None:
     ]
 
 
+def test_policy_generation_fails_on_config_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A config loading failure must not widen scope to every pair."""
+
+    def fail() -> dict[str, object]:
+        raise RuntimeError("config lookup failed")
+
+    monkeypatch.setattr(policy_module, "_configs_by_name", fail)
+    with pytest.raises(RuntimeError, match="config lookup failed"):
+        build_policy("18.0.0", {("multi-wiki-qa-da", "da")}, profiles=("qwen",))
+
+
 def test_policy_does_not_share_a_group_scope() -> None:
     """A policy entry must not widen one language to its checkbox group."""
-    policy = build_policy("18.0.0", {("dataset-da", "da")}, profiles=("qwen",))
+    policy = build_policy("18.0.0", {("multi-wiki-qa-da", "da")}, profiles=("qwen",))
 
     entry = t.cast(Policy, policy)["policies"][0]
     assert entry["language"] == "da"

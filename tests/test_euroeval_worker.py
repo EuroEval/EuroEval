@@ -35,6 +35,8 @@ LEASE = Lease(
     image_digest="sha256:image",
     expires_at="2099-01-01T00:00:00Z",
     worker_version="worker-1",
+    selected_gpu_uuid="GPU-1",
+    selected_gpu_index=0,
 )
 GPU = Gpu("A100", "GPU-1", 10 * 1024**3, 20 * 1024**3, "8.0", 0)
 HARDWARE = HardwareReport(
@@ -310,7 +312,13 @@ def test_busy_gpu_is_not_selected_or_exposed_to_evaluation(
                 The test lease.
             """
             observed["hardware"] = hardware
-            return super().claim(credential, hardware)
+            return Claim(
+                dataclasses.replace(
+                    LEASE,
+                    selected_gpu_uuid=hardware.selected_gpu_uuid,
+                    selected_gpu_index=hardware.selected_gpu_index,
+                )
+            )
 
     class CapturingEvaluator:
         """Capture CUDA visibility during model setup."""
@@ -331,7 +339,7 @@ def test_busy_gpu_is_not_selected_or_exposed_to_evaluation(
     assert isinstance(claimed, HardwareReport)
     assert claimed.selected_gpu_index == 1
     assert claimed.selected_gpu_uuid == "GPU-1"
-    assert observed["cuda"] == "1"
+    assert observed["cuda"] == "GPU-1"
     assert os.environ.get("CUDA_VISIBLE_DEVICES") == original
 
 
@@ -514,6 +522,8 @@ def test_broker_client_drives_canonical_http_lifecycle(
                 "image_digest": LEASE.image_digest,
                 "worker_version": LEASE.worker_version,
                 "expires_at": LEASE.expires_at,
+                "selected_gpu_uuid": LEASE.selected_gpu_uuid,
+                "selected_gpu_index": LEASE.selected_gpu_index,
             }
         if path == "heartbeat":
             return {
@@ -810,7 +820,10 @@ def test_expired_active_lease_is_archived_before_new_claim(
         runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
     )
     state = StateStore(tmp_path)
-    state.save_active(dataclasses.replace(LEASE, expires_at="2000-01-01T00:00:00Z"))
+    state.save_active(
+        dataclasses.replace(LEASE, expires_at="2000-01-01T00:00:00Z"),
+        github_login="login",
+    )
     broker = Broker()
     runtime.Worker(
         client=broker,

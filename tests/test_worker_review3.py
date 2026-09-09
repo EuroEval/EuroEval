@@ -8,10 +8,11 @@ import pytest
 
 from euroeval_worker import runtime
 from euroeval_worker.broker import BrokerError, BrokerProtocol
+from euroeval_worker.hardware import NoGpuError
 from euroeval_worker.safety import ModelMetadata, SafetyError, check_model_safety
 from euroeval_worker.state import StateStore
-from euroeval_worker.types import EEERecord, lease_from_dict
-from tests.test_euroeval_worker import GPU, LEASE
+from euroeval_worker.types import EEERecord, Gpu, lease_from_dict
+from tests.test_euroeval_worker import GPU, HARDWARE, LEASE
 
 
 def test_heartbeat_persists_renewed_expiry(tmp_path: Path) -> None:
@@ -144,6 +145,44 @@ def test_reauthentication_rejects_different_contributor(
     worker = runtime.Worker(t.cast(BrokerProtocol, object()), state)
     with pytest.raises(runtime.AuthenticationIdentityError):
         worker._reauthenticate("old-credential", "old-login")
+    assert state.load_active() is not None
+
+
+def test_active_lease_persists_identity_and_gpu_selection(tmp_path: Path) -> None:
+    """Restart state keeps the contributor and UUID-pinned GPU."""
+    state = StateStore(tmp_path)
+    state.save_active(LEASE, github_login="contributor")
+
+    active = state.load_active()
+    assert active is not None
+    assert active.github_login == "contributor"
+    assert active.lease.selected_gpu_uuid == GPU.uuid
+    assert active.lease.selected_gpu_index == GPU.index
+    assert '"github_login":"contributor"' in (tmp_path / "active-lease.json").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_restart_requires_the_leased_gpu_uuid(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A missing UUID-pinned GPU preserves evidence and performs no upload."""
+    state = StateStore(tmp_path)
+    state.save_active(LEASE, github_login="login")
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    broker = t.cast(BrokerProtocol, object())
+    worker = runtime.Worker(
+        client=broker,
+        state=state,
+        hardware_factory=lambda: dataclasses.replace(
+            HARDWARE, gpus=(Gpu("A100", "GPU-other", 10, 20, "8.0", 4),)
+        ),
+    )
+
+    with pytest.raises(NoGpuError):
+        worker.run(once=True)
     assert state.load_active() is not None
 
 
