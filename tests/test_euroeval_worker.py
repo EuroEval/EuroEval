@@ -12,7 +12,7 @@ from euroeval_worker.auth import authenticate
 from euroeval_worker.broker import BrokerClient, BrokerError
 from euroeval_worker.hardware import NoGpuError, discover_gpus
 from euroeval_worker.safety import ModelMetadata, SafetyError, check_model_safety
-from euroeval_worker.state import StateStore
+from euroeval_worker.state import PendingRecord, StateStore
 from euroeval_worker.types import (
     AuthPoll,
     AuthStart,
@@ -36,8 +36,18 @@ LEASE = Lease(
     expires_at="2099-01-01T00:00:00Z",
     worker_version="worker-1",
 )
-GPU = Gpu("A100", "GPU-1", 10 * 1024**3, 20 * 1024**3, "8.0")
-HARDWARE = HardwareReport("x86_64", 64, 100, "550", "12.4", "2.7", (GPU,))
+GPU = Gpu("A100", "GPU-1", 10 * 1024**3, 20 * 1024**3, "8.0", 0)
+HARDWARE = HardwareReport(
+    "x86_64",
+    64,
+    100,
+    "550",
+    "12.4",
+    "2.7",
+    (GPU,),
+    selected_gpu_index=GPU.index,
+    selected_gpu_uuid=GPU.uuid,
+)
 
 
 class AuthClient:
@@ -82,15 +92,23 @@ def test_broker_protocol_payload_is_canonical() -> None:
     assert client.claim("credential", HARDWARE).lease is None
     assert calls[0][2]["protocol_version"] == "volunteer-worker/v1"
     assert calls[0][2]["worker_version"] == "worker-1"
-    assert set(calls[0][2]["hardware"]) == {
+    hardware_payload = calls[0][2]["hardware"]
+    assert isinstance(hardware_payload, dict)
+    assert set(hardware_payload) == {
         "architecture",
         "ram_bytes",
         "free_disk_bytes",
         "driver_version",
         "cuda_version",
         "pytorch_version",
+        "gpu_memory_utilisation",
+        "selected_gpu_index",
+        "selected_gpu_uuid",
         "gpus",
     }
+    assert hardware_payload["gpu_memory_utilisation"] == 0.8
+    assert hardware_payload["selected_gpu_index"] == GPU.index
+    assert hardware_payload["selected_gpu_uuid"] == GPU.uuid
 
 
 def test_auth_persists_only_broker_auth_with_private_permissions(
@@ -111,10 +129,11 @@ def test_auth_persists_only_broker_auth_with_private_permissions(
 
 def test_nvidia_csv_parser_handles_compute_capability_and_fails_without_gpu() -> None:
     """Parse memory and capability values, and fail closed without a GPU."""
-    output = "NVIDIA A100, GPU-1, 10240, 20480, 8.0\n"
+    output = "1, NVIDIA A100, GPU-1, 10240, 20480, 8.0\n"
     gpu = discover_gpus(runner=lambda _command: output)[0]
     assert gpu.free_memory_bytes == 10 * 1024**3
     assert gpu.compute_capability == "8.0"
+    assert gpu.index == 1
     with pytest.raises(NoGpuError):
         discover_gpus(runner=lambda _command: "")
 
@@ -202,8 +221,13 @@ class Broker:
         self.claims += 1
         return Claim(LEASE)
 
-    def heartbeat(self, credential: str, lease_id: str) -> None:
-        """Accept a test heartbeat."""
+    def heartbeat(self, credential: str, lease_id: str) -> str:
+        """Accept a test heartbeat.
+
+        Returns:
+            The current lease expiry.
+        """
+        return LEASE.expires_at
 
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
         """Fail once to verify digest-stable retry.
@@ -258,6 +282,57 @@ def test_worker_retries_idempotently_and_finalises(
     assert broker.submissions == 2
     assert broker.finalised
     assert not broker.releases
+
+
+def test_busy_gpu_is_not_selected_or_exposed_to_evaluation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Choose the free GPU and restore CUDA visibility after evaluation."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    busy = Gpu("A100", "GPU-0", 1, 10, "8.0", 0)
+    free = Gpu("A100", "GPU-1", 9, 10, "8.0", 1)
+    hardware = HardwareReport("x86_64", 64, 100, "550", "12.4", "2.7", (busy, free))
+    original = os.environ.get("CUDA_VISIBLE_DEVICES")
+    observed: dict[str, object] = {}
+
+    class CapturingBroker(Broker):
+        """Capture the selected claim hardware."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Capture hardware and return work.
+
+            Returns:
+                The test lease.
+            """
+            observed["hardware"] = hardware
+            return super().claim(credential, hardware)
+
+    class CapturingEvaluator:
+        """Capture CUDA visibility during model setup."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Return one result after observing the environment."""
+            observed["cuda"] = os.environ.get("CUDA_VISIBLE_DEVICES")
+            return [EEERecord({"id": "one"})]
+
+    broker = CapturingBroker()
+    runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=CapturingEvaluator(),
+        hardware_factory=lambda: hardware,
+    ).run(once=True)
+    claimed = observed["hardware"]
+    assert isinstance(claimed, HardwareReport)
+    assert claimed.selected_gpu_index == 1
+    assert claimed.selected_gpu_uuid == "GPU-1"
+    assert observed["cuda"] == "1"
+    assert os.environ.get("CUDA_VISIBLE_DEVICES") == original
 
 
 def test_no_gpu_exits_before_claim(
@@ -602,6 +677,43 @@ def test_partial_acknowledgements_survive_restart(
     worker.run(once=True)
     assert broker.submissions > submissions_before
     assert StateStore(tmp_path).load_active() is None
+
+
+def test_restart_submits_durable_records_without_evaluation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Resume durable results without regenerating timestamped evaluation bytes."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    state = StateStore(tmp_path)
+    state.save_active(
+        lease=LEASE,
+        records=(PendingRecord.from_record(EEERecord({"timestamp": "original"})),),
+        github_login="login",
+    )
+
+    class MustNotEvaluate:
+        """Evaluator that proves restart bypasses evaluation."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Fail if the durable result was not used.
+
+            Raises:
+                AssertionError:
+                    If restart attempts to regenerate the durable result.
+            """
+            raise AssertionError("restart regenerated an already durable result")
+
+    broker = Broker()
+    runtime.Worker(
+        client=broker,
+        state=state,
+        evaluator=MustNotEvaluate(),
+        hardware_factory=lambda: HARDWARE,
+    ).run(once=True)
+    assert broker.finalised
+    assert state.load_active() is None
 
 
 def test_finalise_response_loss_is_idempotently_retried(

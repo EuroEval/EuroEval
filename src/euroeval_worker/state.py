@@ -289,6 +289,13 @@ def _lease_from_state(value: object) -> Lease:
     model_profile = value["model_profile"]
     if model_profile is not None and not isinstance(model_profile, str):
         raise ValueError("model_profile is malformed")
+    gpu_memory_utilisation = value.get("gpu_memory_utilisation", 0.8)
+    if (
+        isinstance(gpu_memory_utilisation, bool)
+        or not isinstance(gpu_memory_utilisation, (int, float))
+        or not 0 < gpu_memory_utilisation <= 1
+    ):
+        raise ValueError("gpu_memory_utilisation is malformed")
     return Lease(
         lease_id=value["lease_id"],
         issue_number=value["issue_number"],
@@ -298,6 +305,7 @@ def _lease_from_state(value: object) -> Lease:
         euroeval_version=value["euroeval_version"],
         image_digest=value["image_digest"],
         worker_version=value["worker_version"],
+        gpu_memory_utilisation=float(gpu_memory_utilisation),
         expires_at=value["expires_at"],
         model_profile=model_profile,
     )

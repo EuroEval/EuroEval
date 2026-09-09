@@ -326,8 +326,11 @@ def _hardware_dict(hardware: HardwareReport) -> JsonObject:
         "cuda_version": hardware.cuda_version,
         "pytorch_version": hardware.pytorch_version,
         "gpu_memory_utilisation": hardware.gpu_memory_utilisation,
+        "selected_gpu_index": hardware.selected_gpu_index,
+        "selected_gpu_uuid": hardware.selected_gpu_uuid,
         "gpus": [
             {
+                "index": gpu.index,
                 "name": gpu.name,
                 "uuid": gpu.uuid,
                 "free_memory_bytes": gpu.free_memory_bytes,
