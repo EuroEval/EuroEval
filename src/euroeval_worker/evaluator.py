@@ -1,14 +1,12 @@
 """Adapter from broker leases to the existing EuroEval evaluator."""
 
-import hashlib
-import json
 import typing as t
 from pathlib import Path
 
 from euroeval.benchmarker import Benchmarker
 from euroeval.eee_utils import benchmark_result_to_eee_dict
 
-from .types import EEERecord, JsonValue, Lease
+from .types import EEERecord, JsonValue, Lease, canonical_json
 
 
 class Evaluator(t.Protocol):
@@ -74,7 +72,7 @@ class EuroEvalEvaluator(Evaluator):
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with output_path.open("w", encoding="utf-8") as handle:
             for item in records:
-                handle.write(json.dumps(item.record, sort_keys=True) + "\n")
+                handle.write(item.record_json + "\n")
         return records
 
 
@@ -90,14 +88,15 @@ def _normalise_record(
     if isinstance(model_info, dict):
         model_info = dict(model_info)
         model_info["id"] = lease.model_id
-        model_info["revision"] = lease.model_revision
         record = dict(record)
         record["model_info"] = model_info
     return record
 
 
 def _record(record: dict[str, JsonValue]) -> EEERecord:
-    encoded = json.dumps(
-        record, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
-    return EEERecord(record=record, sha256=hashlib.sha256(encoded).hexdigest())
+    """Create a record with the one canonical Python JSON representation.
+
+    Returns:
+        The exact JSON text and its digest.
+    """
+    return EEERecord(record_json=canonical_json(record))

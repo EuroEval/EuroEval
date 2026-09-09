@@ -5,6 +5,7 @@ import logging
 import time
 import typing as t
 
+from .broker import BrokerError
 from .state import StateStore
 from .types import AuthPoll, AuthStart
 
@@ -36,6 +37,8 @@ def authenticate(
     Raises:
         TimeoutError:
             If the user does not approve the device flow in time.
+        BrokerError:
+            If the broker returns an authentication error without retry metadata.
     """
     saved = state.load_auth()
     if saved is not None:
@@ -44,12 +47,23 @@ def authenticate(
     logger.info("Open %s and enter code %s", start.verification_uri, start.user_code)
     deadline = time.monotonic() + start.expires_in
     while time.monotonic() < deadline:
-        result = client.poll_auth(session_id=start.session_id)
+        try:
+            result = client.poll_auth(session_id=start.session_id)
+        except BrokerError as error:
+            if error.retry_after is None:
+                raise
+            sleep(min(error.retry_after, max(0.0, deadline - time.monotonic())))
+            continue
         if not result.pending and result.credential and result.github_login:
             state.save_auth(
                 credential=result.credential, github_login=result.github_login
             )
             logger.info("Authenticated broker account %s", result.github_login)
             return result.credential, result.github_login
-        sleep(result.retry_after or start.interval)
+        sleep(
+            min(
+                result.retry_after or start.interval,
+                max(0.0, deadline - time.monotonic()),
+            )
+        )
     raise TimeoutError("device authorisation expired before it was approved")

@@ -1,6 +1,8 @@
 """Typed protocol objects shared by the worker and its broker."""
 
 import dataclasses
+import hashlib
+import json
 import typing as t
 
 PROTOCOL_VERSION = "volunteer-worker/v1"
@@ -8,6 +10,7 @@ PROTOCOL_VERSION = "volunteer-worker/v1"
 JsonValue: t.TypeAlias = (
     None | bool | int | float | str | list["JsonValue"] | dict[str, "JsonValue"]
 )
+JsonObject: t.TypeAlias = dict[str, JsonValue]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -67,14 +70,66 @@ class Lease:
     euroeval_version: str
     image_digest: str
     expires_at: str
+    worker_version: str = "legacy-worker"
+    profile: str | None = None
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, init=False)
 class EEERecord:
-    """An EEE JSON object and its deterministic digest."""
+    """An exact EEE JSON object and its deterministic digest.
 
-    record: dict[str, JsonValue]
-    sha256: str
+    ``record`` and ``sha256`` keyword arguments are accepted for compatibility
+    with older evaluator adapters. New code should use ``record_json`` and
+    ``digest`` so that the original bytes cannot be accidentally re-encoded.
+    """
+
+    record_json: str
+    digest: str
+
+    def __init__(
+        self,
+        record_json: str | JsonObject | None = None,
+        digest: str | None = None,
+        *,
+        record: JsonObject | None = None,
+        sha256: str | None = None,
+    ) -> None:
+        """Create a record, canonicalising dictionaries exactly once.
+
+        Raises:
+            TypeError:
+                If neither a JSON string nor an object is supplied.
+        """
+        if record_json is None:
+            record_json = record
+        if isinstance(record_json, dict):
+            record_json = canonical_json(record_json)
+        if not isinstance(record_json, str):
+            raise TypeError("record_json must be a JSON string or object")
+        _validate_json_text(record_json)
+        actual_digest = digest if digest is not None else sha256
+        if actual_digest is None:
+            actual_digest = hashlib.sha256(record_json.encode("utf-8")).hexdigest()
+        object.__setattr__(self, "record_json", record_json)
+        object.__setattr__(self, "digest", actual_digest)
+
+    @property
+    def sha256(self) -> str:
+        """Expose the digest under the legacy attribute name."""
+        return self.digest
+
+    @property
+    def record(self) -> JsonObject:
+        """Decode the record for compatibility with local evaluator callers.
+
+        Raises:
+            ValueError:
+                If the stored JSON does not contain an object.
+        """
+        value = json.loads(self.record_json)
+        if not isinstance(value, dict):
+            raise ValueError("EEE record JSON must contain an object")
+        return t.cast(JsonObject, value)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -84,11 +139,43 @@ class Claim:
     lease: Lease | None
 
 
+def canonical_json(value: JsonObject) -> str:
+    """Serialise an EEE object deterministically and reject non-finite values.
+
+    Returns:
+        The canonical JSON text.
+
+    """
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _validate_json_text(value: str) -> None:
+    try:
+        parsed = json.loads(value, parse_constant=_reject_constant)
+    except (ValueError, json.JSONDecodeError) as error:
+        raise ValueError(
+            "record_json must be valid JSON without non-finite values"
+        ) from error
+    if not isinstance(parsed, dict):
+        raise ValueError("record_json must contain a JSON object")
+
+
+def _reject_constant(value: str) -> None:
+    raise ValueError(f"non-finite JSON constant {value!r} is not allowed")
+
+
 def _protocol(data: dict[str, object]) -> None:
     """Reject responses from a different broker protocol.
 
     Raises:
-        ValueError: If the response protocol is unsupported.
+        ValueError:
+            If the response protocol is unsupported.
     """
     if data.get("protocol_version") != PROTOCOL_VERSION:
         raise ValueError("broker response has an unsupported protocol_version")
@@ -148,7 +235,9 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
         language=_string(data, "language"),
         euroeval_version=_string(data, "euroeval_version"),
         image_digest=_string(data, "image_digest"),
+        worker_version=_string(data, "worker_version"),
         expires_at=_string(data, "expires_at"),
+        profile=_optional_string(data, "profile"),
     )
 
 

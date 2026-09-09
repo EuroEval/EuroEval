@@ -11,6 +11,30 @@ from huggingface_hub import HfApi, hf_hub_download
 from .types import Gpu, Lease
 
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+_SUPPORTED_HOST_ARCHITECTURES = {"x86_64", "amd64", "aarch64", "arm64"}
+_SUPPORTED_MODEL_ARCHITECTURES = {
+    "BertForSequenceClassification",
+    "BertForTokenClassification",
+    "BloomForCausalLM",
+    "GemmaForCausalLM",
+    "Gemma2ForCausalLM",
+    "Gemma3ForCausalLM",
+    "GPT2LMHeadModel",
+    "LlamaForCausalLM",
+    "MistralForCausalLM",
+    "Qwen2ForCausalLM",
+    "Qwen2ForSequenceClassification",
+    "Qwen2ForTokenClassification",
+    "Qwen3ForCausalLM",
+    "Qwen3ForSequenceClassification",
+    "Qwen3ForTokenClassification",
+    "RobertaForSequenceClassification",
+    "RobertaForTokenClassification",
+    "XLMRobertaForSequenceClassification",
+    "XLMRobertaForTokenClassification",
+}
+_SUPPORTED_PROFILES = {"single-gpu", "default"}
+_UNSAFE_SUFFIXES = (".bin", ".pt", ".pth", ".ckpt", ".gguf", ".onnx", ".h5", ".msgpack")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -38,12 +62,14 @@ def check_model_safety(
 
     Raises:
         SafetyError:
-            If the revision, repository, weights, or memory estimate is unsafe.
+            If the revision, repository, profile, or memory estimate is unsafe.
     """
-    if platform.machine() not in {"x86_64", "amd64", "aarch64", "arm64"}:
+    if platform.machine() not in _SUPPORTED_HOST_ARCHITECTURES:
         raise SafetyError("unsupported worker architecture")
     if not _COMMIT_RE.fullmatch(lease.model_revision):
         raise SafetyError("broker supplied an unpinned model revision")
+    if lease.profile is not None and lease.profile not in _SUPPORTED_PROFILES:
+        raise SafetyError("broker supplied an unknown hardware profile")
     info = metadata or HuggingFaceMetadata().fetch(
         model_id=lease.model_id, revision=lease.model_revision
     )
@@ -51,23 +77,30 @@ def check_model_safety(
         raise SafetyError("model is private or gated")
     if info.auto_map:
         raise SafetyError("model declares auto_map and would require remote code")
+    if not info.architectures:
+        raise SafetyError("model config omitted its architecture")
+    if any(
+        architecture not in _SUPPORTED_MODEL_ARCHITECTURES
+        for architecture in info.architectures
+    ):
+        raise SafetyError("model architecture is not supported by this worker")
     if any(path.lower().endswith(".py") for path in info.files):
         raise SafetyError("model repository contains Python files")
+    if any(path.lower().endswith(_UNSAFE_SUFFIXES) for path in info.files):
+        raise SafetyError("model repository contains unsafe weight artifacts")
     if not info.safetensors:
         raise SafetyError("model has no safetensors weights")
-    estimated = info.estimated_bytes
-    if free_disk_bytes is not None and free_disk_bytes < estimated * 2:
+    if info.repository_bytes is None:
+        raise SafetyError("model repository size could not be verified")
+    if free_disk_bytes is not None and free_disk_bytes < info.repository_bytes * 2:
         raise SafetyError("insufficient disk space for the model repository and cache")
-    # Do not add unrelated GPUs: vLLM can only use a topology explicitly
-    # configured by the backend. The broker currently leases one GPU.
     available = max((gpu.free_memory_bytes for gpu in gpus), default=0)
-    available = int(available * 0.9)
-    if estimated > available:
+    if not available or info.estimated_bytes * 1.35 > available:
         raise SafetyError(
-            f"model needs approximately {estimated} bytes but only {available} "
-            "bytes are free on one supported GPU"
+            f"model needs approximately {info.estimated_bytes} bytes but only "
+            f"{available} bytes are free on one supported GPU"
         )
-    return SafetyReport(estimated_bytes=estimated, available_bytes=available)
+    return SafetyReport(estimated_bytes=info.estimated_bytes, available_bytes=available)
 
 
 class ModelMetadata:
@@ -82,6 +115,8 @@ class ModelMetadata:
         files: tuple[str, ...],
         safetensors: bool,
         estimated_bytes: int,
+        architectures: tuple[str, ...] = (),
+        repository_bytes: int | None = None,
     ) -> None:
         """Initialise metadata used by :func:`check_model_safety`."""
         self.private = private
@@ -90,6 +125,12 @@ class ModelMetadata:
         self.files = files
         self.safetensors = safetensors
         self.estimated_bytes = estimated_bytes
+        self.architectures = architectures
+        self.repository_bytes = (
+            estimated_bytes
+            if repository_bytes is None and not architectures
+            else repository_bytes
+        )
 
 
 class HuggingFaceMetadata:
@@ -127,20 +168,35 @@ class HuggingFaceMetadata:
             raise SafetyError("Hugging Face response omitted repository files")
         files: list[str] = []
         estimated = 0
+        repository_bytes = 0
         for sibling in siblings:
             name = getattr(sibling, "rfilename", None)
             if not isinstance(name, str):
                 continue
             files.append(name)
             size = getattr(sibling, "size", None)
-            if name.endswith(".safetensors") and isinstance(size, int):
+            if not isinstance(size, int) or size < 0:
+                raise SafetyError("Hugging Face response omitted file sizes")
+            repository_bytes += size
+            if name.lower().endswith(".safetensors"):
                 estimated += size
+        architectures = config.get("architectures")
+        if not isinstance(architectures, list) or not all(
+            isinstance(item, str) and item for item in architectures
+        ):
+            raise SafetyError("Hugging Face config omitted architectures")
         return ModelMetadata(
             private=bool(getattr(info, "private", False)),
             gated=bool(getattr(info, "gated", False)),
-            auto_map=bool(config.get("auto_map")),
+            auto_map=bool(
+                config.get("auto_map")
+                or config.get("custom_code")
+                or config.get("trust_remote_code")
+            ),
             files=tuple(files),
             safetensors=estimated > 0
-            and any(name.endswith(".safetensors") for name in files),
+            and any(name.lower().endswith(".safetensors") for name in files),
             estimated_bytes=estimated,
+            architectures=tuple(architectures),
+            repository_bytes=repository_bytes,
         )

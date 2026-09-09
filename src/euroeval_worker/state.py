@@ -1,21 +1,58 @@
-"""Private worker state and retry-safe result storage."""
+"""Private worker credentials and restart-safe lease state."""
 
+import dataclasses
+import hashlib
 import json
 import logging
 import os
+import time
 from pathlib import Path
+
+from .types import EEERecord, JsonObject, Lease
 
 logger = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass(frozen=True)
+class PendingRecord:
+    """A result and whether the broker has acknowledged it."""
+
+    record_json: str
+    digest: str
+    acknowledged: bool = False
+
+    @classmethod
+    def from_record(cls, record: EEERecord) -> "PendingRecord":
+        """Create pending state without re-serialising the result.
+
+        Returns:
+            The durable pending representation.
+        """
+        return cls(record_json=record.record_json, digest=record.digest)
+
+    def to_record(self) -> EEERecord:
+        """Return the exact result stored in this state entry."""
+        return EEERecord(record_json=self.record_json, digest=self.digest)
+
+
+@dataclasses.dataclass(frozen=True)
+class ActiveLease:
+    """A lease and all locally durable result acknowledgements."""
+
+    lease: Lease
+    records: tuple[PendingRecord, ...]
+
+
 class StateStore:
-    """Persist only the broker credential, login, and pending EEE records."""
+    """Persist credentials and one isolated active lease atomically."""
 
     def __init__(self, directory: Path) -> None:
         """Initialise state beneath ``directory``."""
         self.directory = directory
         self.path = directory / "state.json"
-        self.results_path = directory / "pending-results.jsonl"
+        self.active_path = directory / "active-lease.json"
+        self.submission_path = directory / "last-submission.json"
+        self.archive_dir = directory / "archive"
 
     def load_auth(self) -> tuple[str, str] | None:
         """Return the saved opaque credential and verified login.
@@ -37,31 +74,129 @@ class StateStore:
         return credential, login
 
     def clear_auth(self) -> None:
-        """Forget an expired broker credential without touching results."""
+        """Forget an expired broker credential without touching lease state."""
         self.path.unlink(missing_ok=True)
 
     def save_auth(self, credential: str, github_login: str) -> None:
         """Save device-flow credentials with restrictive permissions."""
+        self._atomic_write(
+            self.path,
+            {"credential": credential, "github_login": github_login},
+            mode=0o600,
+        )
+
+    def save_active(
+        self, lease: Lease, records: tuple[PendingRecord, ...] = ()
+    ) -> None:
+        """Atomically save a lease before evaluation or submission starts."""
+        self._atomic_write(self.active_path, _active_dict(ActiveLease(lease, records)))
+
+    def load_active(self) -> ActiveLease | None:
+        """Load the active lease, rejecting malformed or mixed state.
+
+        Returns:
+            The active lease, or ``None`` when no work is in progress.
+
+        Raises:
+            RuntimeError:
+                If the active state is malformed.
+            ValueError:
+                If a stored record is not valid JSON.
+        """
+        if not self.active_path.exists():
+            return None
+        try:
+            raw = json.loads(self.active_path.read_text(encoding="utf-8"))
+            lease = _lease_from_state(raw["lease"])
+            raw_records = raw["records"]
+            if not isinstance(raw_records, list):
+                raise ValueError("records is not a list")
+            records = tuple(_pending_from_dict(item) for item in raw_records)
+            return ActiveLease(lease=lease, records=records)
+        except (
+            OSError,
+            KeyError,
+            TypeError,
+            ValueError,
+            json.JSONDecodeError,
+        ) as error:
+            raise RuntimeError(
+                f"invalid active worker state: {self.active_path}"
+            ) from error
+
+    def save_records(self, records: tuple[PendingRecord, ...]) -> None:
+        """Atomically replace result and acknowledgement state for the lease.
+
+        Raises:
+            RuntimeError:
+                If there is no active lease.
+        """
+        active = self.load_active()
+        if active is None:
+            raise RuntimeError("cannot save records without an active lease")
+        self.save_active(lease=active.lease, records=records)
+
+    def save_submission_id(self, submission_id: str) -> None:
+        """Persist a successful submission identifier for reporting."""
+        self._atomic_write(self.submission_path, {"submission_id": submission_id})
+
+    def load_submission_id(self) -> str | None:
+        """Return the most recently reported submission identifier.
+
+        Raises:
+            RuntimeError:
+                If the stored submission state is malformed.
+        """
+        if not self.submission_path.exists():
+            return None
+        try:
+            value = json.loads(self.submission_path.read_text(encoding="utf-8"))[
+                "submission_id"
+            ]
+        except (
+            OSError,
+            KeyError,
+            TypeError,
+            ValueError,
+            json.JSONDecodeError,
+        ) as error:
+            raise RuntimeError(
+                f"invalid submission state: {self.submission_path}"
+            ) from error
+        return value if isinstance(value, str) and value else None
+
+    def clear_active(self) -> None:
+        """Remove the active lease after successful finalisation."""
+        self.active_path.unlink(missing_ok=True)
+
+    def archive_active(self) -> None:
+        """Move expired or lost work aside before claiming another lease."""
+        if not self.active_path.exists():
+            return
+        self.archive_dir.mkdir(parents=True, exist_ok=True)
+        target = self.archive_dir / f"active-lease-{time.time_ns()}.json"
+        self.active_path.replace(target)
+        os.chmod(target, 0o600)
+
+    def _atomic_write(self, path: Path, value: JsonObject, mode: int = 0o600) -> None:
         self.directory.mkdir(parents=True, exist_ok=True)
-        temporary = self.path.with_suffix(".tmp")
+        temporary = path.with_name(f".{path.name}.tmp")
         temporary.write_text(
-            json.dumps({"credential": credential, "github_login": github_login}) + "\n",
+            json.dumps(
+                value,
+                ensure_ascii=False,
+                allow_nan=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n",
             encoding="utf-8",
         )
-        os.chmod(temporary, 0o600)
-        temporary.replace(self.path)
-        os.chmod(self.path, 0o600)
-
-    def append_result(self, line: str) -> None:
-        """Keep an isolated result available when submission is interrupted."""
-        self.directory.mkdir(parents=True, exist_ok=True)
-        with self.results_path.open("a", encoding="utf-8") as handle:
-            handle.write(line + "\n")
-        os.chmod(self.results_path, 0o600)
-
-    def clear_results(self) -> None:
-        """Remove pending results after broker finalisation."""
-        self.results_path.unlink(missing_ok=True)
+        os.chmod(temporary, mode)
+        with temporary.open("rb") as handle:
+            os.fsync(handle.fileno())
+        temporary.replace(path)
+        os.chmod(path, mode)
 
 
 def default_state_dir() -> Path:
@@ -87,3 +222,65 @@ def default_state_dir() -> Path:
         except OSError:
             continue
     raise RuntimeError("no writable worker state directory; use --state-dir")
+
+
+def _active_dict(active: ActiveLease) -> JsonObject:
+    """Encode active state without touching result JSON text.
+
+    Returns:
+        The JSON-compatible active state.
+    """
+    lease = dataclasses.asdict(active.lease)
+    return {
+        "lease": lease,
+        "records": [dataclasses.asdict(record) for record in active.records],
+    }
+
+
+def _lease_from_state(value: object) -> Lease:
+    if not isinstance(value, dict):
+        raise ValueError("lease is not an object")
+    required = (
+        "lease_id",
+        "issue_number",
+        "model_id",
+        "model_revision",
+        "language",
+        "euroeval_version",
+        "image_digest",
+        "worker_version",
+        "expires_at",
+    )
+    if any(key not in value for key in required):
+        raise ValueError("lease is incomplete")
+    return Lease(
+        lease_id=value["lease_id"],
+        issue_number=value["issue_number"],
+        model_id=value["model_id"],
+        model_revision=value["model_revision"],
+        language=value["language"],
+        euroeval_version=value["euroeval_version"],
+        image_digest=value["image_digest"],
+        worker_version=value["worker_version"],
+        expires_at=value["expires_at"],
+        profile=value.get("profile"),
+    )
+
+
+def _pending_from_dict(value: object) -> PendingRecord:
+    if not isinstance(value, dict):
+        raise ValueError("pending record is not an object")
+    record_json = value.get("record_json")
+    digest = value.get("digest")
+    acknowledged = value.get("acknowledged", False)
+    if (
+        not isinstance(record_json, str)
+        or not isinstance(digest, str)
+        or not isinstance(acknowledged, bool)
+    ):
+        raise ValueError("pending record is malformed")
+    EEERecord(record_json=record_json, digest=digest)
+    expected = hashlib.sha256(record_json.encode("utf-8")).hexdigest()
+    if digest != expected:
+        raise ValueError("pending record digest does not match its JSON")
+    return PendingRecord(record_json, digest, acknowledged)
