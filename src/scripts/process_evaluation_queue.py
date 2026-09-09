@@ -18,6 +18,8 @@ import sys
 import time
 import typing as t
 import urllib.error
+import urllib.request
+from contextlib import contextmanager
 from pathlib import Path
 
 import click
@@ -67,6 +69,7 @@ from leaderboards.queue_hf_cache import cached_model_summary
 from leaderboards.queue_markers import (
     clear_vm_marker,
     issue_has_active_queue_ownership,
+    issue_has_terminal_queue_submission,
     parse_community_marker,
     release_issue_if_owned,
     set_vm_marker,
@@ -100,6 +103,85 @@ logger = logging.getLogger("process_evaluation_queue")
 
 # Kept as a module attribute for existing queue orchestration tests and callers.
 unassign_issue = _github_api.unassign_issue
+
+
+@contextmanager
+def _coordinator_issue_lock(number: int) -> t.Iterator[None]:
+    """Coordinate local claims with the broker's Redis issue mutex.
+
+    When enabled this is deliberately fail-closed: a missing endpoint, secret,
+    malformed response, or release failure must never turn a shared queue into
+    an uncoordinated claimant.
+
+    Raises:
+        RuntimeError: If locking is enabled but cannot be acquired or released.
+    """
+    enabled = os.environ.get("VOLUNTEER_COORDINATOR_ENABLED", "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    if not enabled:
+        yield
+        return
+    base = os.environ.get("VOLUNTEER_COORDINATOR_URL", "").rstrip("/")
+    secret = os.environ.get("WORKER_COORDINATOR_SECRET", "")
+    if not base or not secret:
+        raise RuntimeError(
+            "coordinator locking is enabled but URL/secret is not configured"
+        )
+    lock_url = (
+        base if base.endswith("/coordinator-lock") else f"{base}/coordinator-lock"
+    )
+    release_url = lock_url.removesuffix("/coordinator-lock") + "/coordinator-release"
+    token = _coordinator_request(lock_url, number=number, secret=secret)
+    try:
+        yield
+    finally:
+        _coordinator_request(release_url, number=number, secret=secret, token=token)
+
+
+def _coordinator_request(
+    url: str, *, number: int, secret: str, token: str | None = None
+) -> str:
+    """Call a coordinator endpoint and return its lock token.
+
+    Returns:
+        The opaque lock token (or the supplied token on release).
+
+    Raises:
+        RuntimeError: If the endpoint is unavailable or returns invalid data.
+    """
+    payload: dict[str, object] = {
+        "protocol_version": "volunteer-worker/v1",
+        "issue_number": number,
+    }
+    if token is not None:
+        payload["token"] = token
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        method="POST",
+        headers={"content-type": "application/json", "x-coordinator-secret": secret},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            value = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
+        raise RuntimeError(f"coordinator endpoint unavailable: {error}") from error
+    if (
+        not isinstance(value, dict)
+        or value.get("protocol_version") != "volunteer-worker/v1"
+    ):
+        raise RuntimeError("coordinator endpoint returned an invalid protocol response")
+    if token is None:
+        lock = value.get("token")
+        if not isinstance(lock, str) or not lock:
+            raise RuntimeError("coordinator lock response omitted its token")
+        return lock
+    if value.get("status") != "released":
+        raise RuntimeError("coordinator lock release was not acknowledged")
+    return token
 
 
 # Canonical HF bucket for storing results (public read access).
@@ -384,10 +466,12 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
     candidates: list[tuple[int, int, int, int, float, dict, str, list[str]]] = []
     for issue in (issue for issue in issues if "pull_request" not in issue):
         body = issue.get("body") or ""
-        if issue_has_active_queue_ownership(body):
+        if issue_has_active_queue_ownership(
+            body
+        ) or issue_has_terminal_queue_submission(body):
             logger.info(
                 f"#{issue['number']}: skipping -- community/coordinator "
-                "ownership is active."
+                "ownership or terminal submission is present."
             )
             continue
         marker = parse_community_marker(body)
@@ -489,12 +573,6 @@ def process_issue(
         languages.extend(LANGUAGE_GROUP_CODES[g])
     languages = sorted(set(languages))
 
-    if not issue_is_still_claimable(number=number):
-        logger.info(
-            f"#{number}: skipping -- no longer open and unassigned at claim time."
-        )
-        return
-
     # Re-check gated status here so a stale snapshot from main() doesn't make
     # us run a doomed evaluation, and so we can also pick up newly granted
     # access when the label says gated but HF now says otherwise.
@@ -518,25 +596,30 @@ def process_issue(
         logger.info(f"#{number}: access granted, removed gated label.")
 
     logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
+    # The short claim transaction, not the potentially hours-long evaluation,
+    # shares the broker's Redis mutex.
+    with _coordinator_issue_lock(number):
+        if not issue_is_still_claimable(number=number):
+            logger.info(
+                f"#{number}: skipping -- no longer open and unassigned at claim time."
+            )
+            return
+        # Set the VM marker BEFORE assigning so a crash between the two leaves
+        # the issue unassigned (harmless) rather than assigned-but-unowned.
+        if not set_vm_marker(number=number, vm_id=vm_id):
+            logger.info(f"#{number}: another VM already owns this issue; aborting.")
+            return
+        assign_issue(number=number, assignee=assignee)
 
-    # Set the VM marker BEFORE assigning so a crash between the two leaves
-    # the issue unassigned (harmless) rather than assigned-but-unowned.
-    if not set_vm_marker(number=number, vm_id=vm_id):
-        logger.info(f"#{number}: another VM already owns this issue; aborting.")
-        return
-    assign_issue(number=number, assignee=assignee)
-
-    # Two VMs sharing a PAT cannot be told apart by the assignee, so another
-    # VM that raced through the same set_vm_marker + assign_issue window will
-    # have overwritten our marker. Verify ownership before proceeding so the
-    # losing VM doesn't both duplicate work and later strip the assignment
-    # out from under the winning VM's still-running evaluation.
-    if not vm_marker_matches(number=number, vm_id=vm_id):
-        logger.info(
-            f"#{number}: another VM won the claim race; aborting without "
-            "touching the assignee."
-        )
-        return
+        # Two VMs sharing a PAT cannot be told apart by the assignee, so another
+        # VM that raced through the same marker + assignment window will have
+        # overwritten our marker. Verify ownership before proceeding.
+        if not vm_marker_matches(number=number, vm_id=vm_id):
+            logger.info(
+                f"#{number}: another VM won the claim race; aborting without "
+                "touching the assignee."
+            )
+            return
     try:
         _run_claimed_issue(
             issue=issue,
@@ -895,7 +978,9 @@ def issue_is_still_claimable(number: int) -> bool:
     if current.get("state") != "open":
         return False
     body = current.get("body") or ""
-    if issue_has_active_queue_ownership(body):
+    if issue_has_active_queue_ownership(body) or issue_has_terminal_queue_submission(
+        body
+    ):
         return False
     # A valid but expired/completed broker marker may leave the coordinator
     # assigned. It is reclaimable; malformed markers remain a hard stop.

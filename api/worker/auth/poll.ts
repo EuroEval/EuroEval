@@ -29,7 +29,7 @@ export default async function handler(req: Request): Promise<Response> {
     if (data.error === "authorization_pending" || data.error === "slow_down") {
       const interval = data.error === "slow_down" ? Math.max(5, device.interval + 5) : device.interval;
       await redisSet(key, JSON.stringify({ ...device, interval, next_poll_at: Date.now() + interval * 1000 }), 900);
-      return json(202, { protocol_version: PROTOCOL_VERSION, status: "pending", retry_after: interval });
+      return json(202, { protocol_version: PROTOCOL_VERSION, status: "pending", retry_after: interval }, { "retry-after": String(interval) });
     }
     if (!response.ok || !data.access_token) {
       await redisDelete(key);

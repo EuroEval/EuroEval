@@ -14,7 +14,7 @@ export default async function handler(req: Request): Promise<Response> {
     const body = await readJson(req, 8 * 1024); requireProtocol(body);
     if (typeof body.lease_id !== "string") throw new BrokerError(400, "lease_id is required.");
     const lease = await getLeaseById(body.lease_id);
-    if (!lease || lease.worker !== identity.hash.slice(0, 24)) throw new BrokerError(409, "Lease is absent or belongs to another worker.");
+    if (!lease || lease.contributor.toLowerCase() !== identity.contributor.toLowerCase()) throw new BrokerError(409, "Lease is absent or belongs to another contributor.");
     const mutex = await acquireIssueMutex(lease.issue_number); if (!mutex) throw new BrokerError(409, "Issue is busy; retry release.");
     try {
       const coordinator = env("WORKER_COORDINATOR_LOGIN"); const issue = await fetchIssue(lease.issue_number); const marker = parseVolunteerMarker(issue.body);

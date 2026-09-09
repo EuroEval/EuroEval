@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { extractModelId, fitsGpu, parseVolunteerMarker, replaceVolunteerMarker, selectedLanguages, validateRecord } from "./_lib.ts";
+import { expectedScope, extractModelId, fitsGpu, parseVolunteerMarker, replaceVolunteerMarker, selectedLanguages, validateRecord } from "./_lib.ts";
 
 test("parses the queue model and language checkboxes", () => {
   const body = "### Model ID\n\norg/model\n\n- [x] Greek\n- [ ] Albanian\n";
@@ -23,8 +23,18 @@ test("validates canonical model identity and score bounds", () => {
     evaluation_results: [{ evaluation_name: "accuracy", source_data: { dataset_name: "dataset" }, metric_config: { lower_is_better: false, min_score: 0, max_score: 100 }, score_details: { score: 85 } }],
   };
   assert.equal(validateRecord(record, { modelId: "org/model", revision: "deadbeef", language: "da" }).failed, 0);
-  assert.throws(() => validateRecord({ ...record, evaluation_results: [{ score_details: { score: 101 } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" }));
-  assert.throws(() => validateRecord({ ...record, evaluation_results: [{ score_details: { score: 85, details: { num_failed_instances: "1.0" } } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" }));
+  const outOfRange = validateRecord({ ...record, evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: 101 } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" });
+  assert.match(outOfRange.warnings[0], /outside declared metric bounds/);
+  const negative = validateRecord({ ...record, evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: -1 } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" });
+  assert.equal(negative.failed, 0);
+  assert.throws(() => validateRecord({ ...record, evaluation_results: [{ ...record.evaluation_results[0], score_details: { score: 85, details: { failed_instances: "[1]" } } }] }, { modelId: "org/model", revision: "deadbeef", language: "da" }));
+});
+
+test("generated trusted scopes are exact-language and versioned", () => {
+  const scope = expectedScope("18.0.0.dev", "bert", "da");
+  assert.equal(scope.language, "da");
+  assert.equal(scope.policy_version, "volunteer-scope/18.0.0.dev");
+  assert.ok(scope.identity_suffixes.length > 0);
 });
 
 test("fits a model on one reported GPU and requires repository disk", () => {

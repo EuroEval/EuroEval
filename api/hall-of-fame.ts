@@ -8,6 +8,7 @@ const EXCLUDE = new Set(["saattrupdan"]);
 const MAX_PAGES = 10;
 const PER_PAGE = 100;
 const CREDIT_MARKER_RE = /<!--[\s\S]*?euroeval-volunteer-credit:v1\s+({[\s\S]*?})\s*-->/i;
+const VOLUNTEER_MARKER_CANDIDATE_RE = /<!--[ \t]*euroeval-volunteer-worker:v1/i;
 import { redis, sha256 } from "./worker/_lib.ts";
 
 interface RawAssignee { login: string; avatar_url?: string; }
@@ -39,6 +40,10 @@ function immutableWinner(body: string | null): { login: string; avatarUrl?: stri
 export function creditLogins(issue: RawIssue): string[] {
   const winner = immutableWinner(issue.body);
   if (winner && !EXCLUDE.has(winner.login)) return [winner.login];
+  // A recognisable volunteer marker is an explicit protocol record, not a
+  // maintainer assignment.  Falling back to assignees would credit the Hall of
+  // Fame for malformed, pending, or rejected submissions.
+  if (VOLUNTEER_MARKER_CANDIDATE_RE.test(issue.body || "")) return [];
   const assignees = issue.assignees && issue.assignees.length > 0 ? issue.assignees : issue.assignee ? [issue.assignee] : [];
   const seen = new Set<string>();
   return assignees.flatMap((assignee) => { if (EXCLUDE.has(assignee.login) || seen.has(assignee.login)) return []; seen.add(assignee.login); return [assignee.login]; });
