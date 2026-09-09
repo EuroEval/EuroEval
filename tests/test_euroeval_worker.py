@@ -9,7 +9,7 @@ import pytest
 
 from euroeval_worker import evaluator, runtime
 from euroeval_worker.auth import authenticate
-from euroeval_worker.broker import BrokerClient
+from euroeval_worker.broker import BrokerClient, BrokerError
 from euroeval_worker.hardware import NoGpuError, discover_gpus
 from euroeval_worker.safety import ModelMetadata, SafetyError, check_model_safety
 from euroeval_worker.state import StateStore
@@ -21,6 +21,7 @@ from euroeval_worker.types import (
     Gpu,
     HardwareReport,
     Lease,
+    canonical_json,
 )
 
 REVISION = "a" * 40
@@ -33,6 +34,7 @@ LEASE = Lease(
     euroeval_version="18.0.0",
     image_digest="sha256:image",
     expires_at="2099-01-01T00:00:00Z",
+    worker_version="worker-1",
 )
 GPU = Gpu("A100", "GPU-1", 10 * 1024**3, 20 * 1024**3, "8.0")
 HARDWARE = HardwareReport("x86_64", 64, 100, "550", "12.4", "2.7", (GPU,))
@@ -213,9 +215,14 @@ class Broker:
         if self.submissions == 1:
             raise RuntimeError("temporary broker error")
 
-    def finalise(self, credential: str, lease_id: str) -> None:
-        """Accept finalisation."""
+    def finalise(self, credential: str, lease_id: str) -> str:
+        """Accept finalisation and return its stable identifier.
+
+        Returns:
+            The stable submission identifier.
+        """
         self.finalised = True
+        return "submission-1"
 
     def release(self, credential: str, lease_id: str, reason: str) -> None:
         """Record lease release."""
@@ -227,7 +234,7 @@ class OneRecordEvaluator:
 
     def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
         """Return one stable record."""
-        return [EEERecord({"id": "one"}, "digest-one")]
+        return [EEERecord({"id": "one"})]
 
 
 def test_worker_retries_idempotently_and_finalises(
@@ -302,7 +309,8 @@ def test_evaluation_failure_releases_lease(
     )
     with pytest.raises(RuntimeError):
         worker.run(once=True)
-    assert broker.releases == ["worker_interrupted_or_failed"]
+    assert broker.releases == []
+    assert StateStore(tmp_path).load_active() is not None
 
 
 def test_lease_loss_releases_without_finalising(
@@ -346,8 +354,9 @@ def test_lease_loss_releases_without_finalising(
     )
     with pytest.raises(runtime.LeaseLost):
         worker.run(once=True)
-    assert broker.releases == ["worker_interrupted_or_failed"]
+    assert broker.releases == []
     assert not broker.finalised
+    assert list((tmp_path / "archive").glob("*.json"))
 
 
 def test_keyboard_interrupt_releases_lease(
@@ -381,4 +390,321 @@ def test_keyboard_interrupt_releases_lease(
     )
     with pytest.raises(KeyboardInterrupt):
         worker.run(once=True)
-    assert broker.releases == ["worker_interrupted_or_failed"]
+    assert broker.releases == []
+    assert StateStore(tmp_path).load_active() is not None
+
+
+def test_broker_client_drives_canonical_http_lifecycle(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Drive authentication, lease, result and finalisation over fake HTTP."""
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    def request(
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        payload: dict[str, object] | None,
+    ) -> dict[str, object]:
+        """Return one canonical response for each broker endpoint."""
+        assert method == "POST"
+        assert payload is not None
+        path = url.removeprefix("https://broker.test/")
+        calls.append((path, payload))
+        if path == "auth/start":
+            return {
+                "protocol_version": "volunteer-worker/v1",
+                "session_id": "session",
+                "user_code": "CODE",
+                "verification_uri": "https://example.test",
+                "expires_in": 60,
+                "interval": 0,
+            }
+        if path == "auth/poll":
+            return {
+                "protocol_version": "volunteer-worker/v1",
+                "status": "authorised",
+                "credential": "secret-credential",
+                "github_login": "volunteer",
+            }
+        if path == "claim":
+            return {
+                "protocol_version": "volunteer-worker/v1",
+                "lease_id": LEASE.lease_id,
+                "issue_number": LEASE.issue_number,
+                "language": LEASE.language,
+                "model_id": LEASE.model_id,
+                "model_revision": LEASE.model_revision,
+                "euroeval_version": LEASE.euroeval_version,
+                "image_digest": LEASE.image_digest,
+                "worker_version": LEASE.worker_version,
+                "expires_at": LEASE.expires_at,
+            }
+        if path == "heartbeat":
+            return {
+                "protocol_version": "volunteer-worker/v1",
+                "lease_id": LEASE.lease_id,
+                "expires_at": LEASE.expires_at,
+            }
+        if path == "result":
+            return {"protocol_version": "volunteer-worker/v1", "status": "uploaded"}
+        return {
+            "protocol_version": "volunteer-worker/v1",
+            "status": "ready",
+            "submission_id": "submission-42",
+        }
+
+    client = BrokerClient("https://broker.test", request=request)
+    state = StateStore(tmp_path)
+    credential, login = authenticate(client, state, sleep=lambda _delay: None)
+    assert (credential, login) == ("secret-credential", "volunteer")
+    assert client.claim(credential, HARDWARE).lease == LEASE
+    client.heartbeat(credential, LEASE.lease_id)
+    record = EEERecord(record_json=canonical_json({"one": 1.0, "tiny": 1e-7}))
+    client.submit_result(credential, LEASE, record)
+    assert client.finalise(credential, LEASE.lease_id) == "submission-42"
+    result_payload = next(payload for path, payload in calls if path == "result")
+    assert result_payload["record_json"] == record.record_json
+    assert result_payload["digest"] == record.digest
+    assert "secret-credential" not in json.dumps(calls)
+    assert "secret-credential" not in caplog.text
+
+
+def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
+    """Use the broker's slow-down interval rather than a tight polling loop."""
+    delays: list[float] = []
+
+    class SlowAuth(AuthClient):
+        """Device flow that first requests slower polling."""
+
+        def __init__(self) -> None:
+            self.polls = 0
+
+        def poll_auth(self, session_id: str) -> AuthPoll:
+            """Return slow-down and then approval."""
+            self.polls += 1
+            if self.polls == 1:
+                return AuthPoll(True, retry_after=7)
+            return AuthPoll(False, "credential", "volunteer")
+
+    assert authenticate(SlowAuth(), StateStore(tmp_path), sleep=delays.append) == (
+        "credential",
+        "volunteer",
+    )
+    assert delays == [7]
+
+
+def test_eee_record_rejects_non_finite_values() -> None:
+    """Prevent NaN and Infinity from entering a digest-stable envelope."""
+    with pytest.raises(ValueError):
+        canonical_json({"value": float("nan")})
+    with pytest.raises(ValueError):
+        EEERecord(record_json='{"value": Infinity}')
+
+
+def test_interruption_resumes_pre_evaluation_lease(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Persist a lease before evaluation and resume it without reclaiming work."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+
+    class Interrupted:
+        """Evaluator interrupted before producing output."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Interrupt the first worker.
+
+            Raises:
+                KeyboardInterrupt:
+                    Always, to simulate SIGINT.
+            """
+            raise KeyboardInterrupt
+
+    broker = Broker()
+    with pytest.raises(KeyboardInterrupt):
+        runtime.Worker(
+            client=broker,
+            state=StateStore(tmp_path),
+            evaluator=Interrupted(),
+            hardware_factory=lambda: HARDWARE,
+        ).run(once=True)
+    assert StateStore(tmp_path).load_active() is not None
+
+    worker = runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    )
+    worker.run(once=True)
+    assert broker.claims == 1
+    assert worker.last_submission_id == "submission-1"
+    assert StateStore(tmp_path).load_active() is None
+
+
+def test_partial_acknowledgements_survive_restart(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Retry only unacknowledged records after a failed submission."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+
+    class TwoRecords:
+        """Evaluator producing two deterministic records."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Return two records."""
+            return [EEERecord({"id": "one"}), EEERecord({"id": "two"})]
+
+    class FailSecond(Broker):
+        """Broker that loses the connection on the second record."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.failures = 0
+
+        def submit_result(
+            self, credential: str, lease: Lease, result: EEERecord
+        ) -> None:
+            """Fail all retries for the second record on the first run.
+
+            Raises:
+                BrokerError:
+                    When the second record is first submitted.
+            """
+            if result.record["id"] == "two" and self.failures < 3:
+                self.failures += 1
+                raise BrokerError("temporary", status=503, retry_after=1)
+            super().submit_result(credential, lease, result)
+
+    broker = FailSecond()
+    worker = runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=TwoRecords(),
+        hardware_factory=lambda: HARDWARE,
+    )
+    with pytest.raises(BrokerError):
+        worker.run(once=True)
+    active = StateStore(tmp_path).load_active()
+    assert active is not None
+    assert [record.acknowledged for record in active.records] == [True, False]
+    submissions_before = broker.submissions
+    worker.run(once=True)
+    assert broker.submissions > submissions_before
+    assert StateStore(tmp_path).load_active() is None
+
+
+def test_finalise_response_loss_is_idempotently_retried(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Keep acknowledged results when the finalise response is lost."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+
+    class LostFinalise(Broker):
+        """Broker that loses one finalise response."""
+
+        def finalise(self, credential: str, lease_id: str) -> str:
+            """Lose the first response, then return the identifier.
+
+            Returns:
+                The submission identifier after the simulated lost response.
+
+            Raises:
+                BrokerError:
+                    On the simulated lost response.
+            """
+            if self.finalised:
+                return super().finalise(credential, lease_id)
+            self.finalised = True
+            raise BrokerError("response lost", status=None)
+
+    broker = LostFinalise()
+    state = StateStore(tmp_path)
+    worker = runtime.Worker(
+        client=broker,
+        state=state,
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    )
+    with pytest.raises(BrokerError):
+        worker.run(once=True)
+    assert state.load_active() is not None
+    worker.run(once=True)
+    assert state.load_active() is None
+
+
+def test_cached_credential_is_reauthenticated_once(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Clear one revoked cached credential and complete device auth once."""
+    authentications = iter([("old", "login"), ("new", "login")])
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: next(authentications)
+    )
+
+    class Revoked(Broker):
+        """Broker rejecting only the first claim credential."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Reject the cached credential once.
+
+            Returns:
+                The claimed lease for a valid credential.
+
+            Raises:
+                BrokerError:
+                    When the cached credential is revoked.
+            """
+            if credential == "old":
+                raise BrokerError("revoked", status=401)
+            return super().claim(credential, hardware)
+
+    broker = Revoked()
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    ).run(once=True)
+    assert broker.claims == 1
+
+
+def test_expired_active_lease_is_archived_before_new_claim(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Never submit stale pending state alongside a newly claimed lease."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    state = StateStore(tmp_path)
+    state.save_active(dataclasses.replace(LEASE, expires_at="2000-01-01T00:00:00Z"))
+    broker = Broker()
+    runtime.Worker(
+        client=broker,
+        state=state,
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    ).run(once=True)
+    assert list((tmp_path / "archive").glob("*.json"))
+    assert state.load_active() is None
