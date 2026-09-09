@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "vue-tsc --noEmit"
+    "check": "vue-tsc --noEmit",
+    "test:api": "node --experimental-strip-types --test api/worker/_lib.test.mjs api/hall-of-fame.test.mjs"
   },
   "dependencies": {
     "@huggingface/hub": "^1.0.0",
