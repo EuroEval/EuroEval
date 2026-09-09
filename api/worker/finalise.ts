@@ -56,6 +56,7 @@ export default async function handler(req: Request): Promise<Response> {
         language: lease.language, model_profile: lease.model_profile, language_group: lease.expected_scope.language_group,
         euroeval_version: lease.euroeval_version, worker_version: lease.worker_version, image_digest: lease.image_digest,
         image_digest_provenance: "configured-required-not-runtime-attested", gpu_memory_utilisation: lease.gpu_memory_utilisation,
+        selected_gpu_index: lease.selected_gpu_index, selected_gpu_uuid: lease.selected_gpu_uuid,
         expected_scope: lease.expected_scope, results: entries,
         automated_checks: { result_count: entries.length, identities_unique: true, failed_instances: 0, warnings: [...new Set([...(lease.expected_scope.warnings || []), ...entries.flatMap((entry) => entry.warnings || [])])] },
         created_at: new Date().toISOString(), issue_state: issue.state,

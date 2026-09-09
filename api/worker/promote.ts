@@ -4,11 +4,11 @@ import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireIssueMutex,
   commentIssue, completePromotionReservation, env, fetchIssue, getPromotionReservation,
   issueComments, json, method, parseFinalCredit, parsePromotionRecords,
-  parseVolunteerMarker, patchIssue, promotionSecret, readJson, redis, releaseIssueMutex,
-  releaseResultReservation,
+  parseVolunteerMarker, patchIssue, promotionSecret, readJson, releaseIssueMutex,
+  releaseResultReservations,
   removeIssueLabel, replaceVolunteerMarker, requireProtocol,
   savePromotionReservation, selectedLanguages, signFinalCredit, signVolunteerMarker, unassignIssue,
-  verifyFinalCredit, verifyVolunteerMarker, sha256,
+  verifyFinalCredit, verifyVolunteerMarker,
 } from "./_lib.ts";
 import type {
   FinalCredit, PromotionRecord, PromotionReservation, VolunteerLeaseMarker, VolunteerSubmission,
@@ -81,15 +81,9 @@ function sameRecords(a: PromotionRecord[], b: PromotionRecord[]): boolean {
 }
 
 async function releaseSubmissionReservations(reservation: PromotionReservation): Promise<void> {
-  for (const record of reservation.records) {
-    const released = await releaseResultReservation(
-      `euroeval:worker:record-identity:${await sha256(record.identity)}`,
-      record.digest,
-      reservation.submission_id,
-    );
-    if (!released) throw new BrokerError(409, "A result reservation could not be safely released.");
+  if (!await releaseResultReservations(reservation.records, reservation.submission_id)) {
+    throw new BrokerError(409, "A result reservation could not be safely released.");
   }
-  await redis("DEL", `euroeval:worker:reservations:${reservation.submission_id}`);
 }
 
 function validCredit(credit: FinalCredit | null, plan: PromotionPlan): boolean {
