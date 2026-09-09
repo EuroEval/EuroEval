@@ -71,7 +71,7 @@ class Lease:
     image_digest: str
     expires_at: str
     worker_version: str = "legacy-worker"
-    profile: str | None = None
+    model_profile: str | None = None
 
 
 @dataclasses.dataclass(frozen=True, init=False)
@@ -237,7 +237,7 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
         image_digest=_string(data, "image_digest"),
         worker_version=_string(data, "worker_version"),
         expires_at=_string(data, "expires_at"),
-        profile=_optional_string(data, "profile"),
+        model_profile=_optional_string(data, "model_profile"),
     )
 
 

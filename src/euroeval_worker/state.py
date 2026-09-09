@@ -5,6 +5,7 @@ import hashlib
 import json
 import logging
 import os
+import threading
 import time
 from pathlib import Path
 
@@ -41,6 +42,7 @@ class ActiveLease:
 
     lease: Lease
     records: tuple[PendingRecord, ...]
+    github_login: str | None = None
 
 
 class StateStore:
@@ -53,6 +55,7 @@ class StateStore:
         self.active_path = directory / "active-lease.json"
         self.submission_path = directory / "last-submission.json"
         self.archive_dir = directory / "archive"
+        self._lock = threading.RLock()
 
     def load_auth(self) -> tuple[str, str] | None:
         """Return the saved opaque credential and verified login.
@@ -86,10 +89,33 @@ class StateStore:
         )
 
     def save_active(
-        self, lease: Lease, records: tuple[PendingRecord, ...] = ()
+        self,
+        lease: Lease,
+        records: tuple[PendingRecord, ...] = (),
+        github_login: str | None = None,
     ) -> None:
         """Atomically save a lease before evaluation or submission starts."""
-        self._atomic_write(self.active_path, _active_dict(ActiveLease(lease, records)))
+        with self._lock:
+            self._atomic_write(
+                self.active_path,
+                _active_dict(ActiveLease(lease, records, github_login)),
+            )
+
+    def renew_active(self, lease: Lease) -> None:
+        """Atomically persist a broker-issued lease renewal.
+
+        Raises:
+            RuntimeError:
+                If the active lease has disappeared or changed identity.
+        """
+        with self._lock:
+            active = self.load_active()
+            if active is None or active.lease.lease_id != lease.lease_id:
+                raise RuntimeError("cannot renew a missing or different active lease")
+            self._atomic_write(
+                self.active_path,
+                _active_dict(ActiveLease(lease, active.records, active.github_login)),
+            )
 
     def load_active(self) -> ActiveLease | None:
         """Load the active lease, rejecting malformed or mixed state.
@@ -112,7 +138,10 @@ class StateStore:
             if not isinstance(raw_records, list):
                 raise ValueError("records is not a list")
             records = tuple(_pending_from_dict(item) for item in raw_records)
-            return ActiveLease(lease=lease, records=records)
+            github_login = raw.get("github_login")
+            if github_login is not None and not isinstance(github_login, str):
+                raise ValueError("github_login is malformed")
+            return ActiveLease(lease=lease, records=records, github_login=github_login)
         except (
             OSError,
             KeyError,
@@ -131,10 +160,13 @@ class StateStore:
             RuntimeError:
                 If there is no active lease.
         """
-        active = self.load_active()
-        if active is None:
-            raise RuntimeError("cannot save records without an active lease")
-        self.save_active(lease=active.lease, records=records)
+        with self._lock:
+            active = self.load_active()
+            if active is None:
+                raise RuntimeError("cannot save records without an active lease")
+            self.save_active(
+                lease=active.lease, records=records, github_login=active.github_login
+            )
 
     def save_submission_id(self, submission_id: str) -> None:
         """Persist a successful submission identifier for reporting."""
@@ -250,9 +282,13 @@ def _lease_from_state(value: object) -> Lease:
         "image_digest",
         "worker_version",
         "expires_at",
+        "model_profile",
     )
     if any(key not in value for key in required):
         raise ValueError("lease is incomplete")
+    model_profile = value["model_profile"]
+    if model_profile is not None and not isinstance(model_profile, str):
+        raise ValueError("model_profile is malformed")
     return Lease(
         lease_id=value["lease_id"],
         issue_number=value["issue_number"],
@@ -263,7 +299,7 @@ def _lease_from_state(value: object) -> Lease:
         image_digest=value["image_digest"],
         worker_version=value["worker_version"],
         expires_at=value["expires_at"],
-        profile=value.get("profile"),
+        model_profile=model_profile,
     )
 
 
