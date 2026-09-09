@@ -1,9 +1,9 @@
 import {
-  BrokerError, ConfigurationError, GROUPS, PROTOCOL_VERSION, VM_MARKER_RE,
-  acquireIssueMutex, assignIssue, authenticate, claimableLanguages, env, expectedScope,
+  BrokerError, ConfigurationError, GROUPS, PROTOCOL_VERSION, VM_MARKER_RE, VOLUNTEER_MARKER_RE,
+  acquireRenewableIssueMutex, assignIssue, authenticate, claimableLanguages, env, expectedScope,
   extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl, selectedGpu,
   listOpenIssues, method,
-  patchIssue, putLease, randomToken, readJson, releaseIssueMutex, deleteLease,
+  patchIssue, putLease, randomToken, readJson, deleteLease,
   getLeaseForIssue, reclaimExpiredLease,
   parseVolunteerMarker, resolveModel, selectedLanguages, VolunteerLeaseMarker, Lease,
   requireProtocol, signVolunteerMarker, verifyVolunteerMarker, markerSecret, replaceVolunteerMarker,
@@ -67,11 +67,11 @@ export default async function handler(req: Request): Promise<Response> {
       }
       const selectedHardwareGpu = selectedGpu(body.hardware);
       if (!selectedHardwareGpu || !fitsGpu(model, body.hardware, selectedHardwareGpu)) continue;
-      const mutex = await acquireIssueMutex(listed.number); if (!mutex) continue;
+      const mutex = await acquireRenewableIssueMutex(listed.number); if (!mutex) continue;
       try {
         const snapshot = await fetchIssue(listed.number);
         if (snapshot.state !== "open" || snapshot.assignees?.some((item) => item.login !== coordinator) || snapshot.body && VM_MARKER_RE.test(snapshot.body)) continue;
-        const markerPresent = !!snapshot.body?.match(/euroeval-volunteer-worker:v1/i);
+        const markerPresent = VOLUNTEER_MARKER_RE.test(snapshot.body || "");
         const marker = parseVolunteerMarker(snapshot.body);
         if (markerPresent && (!marker || !(await verifyVolunteerMarker(snapshot.number, marker)))) continue;
         const current = activeMarker(marker);
@@ -109,7 +109,9 @@ export default async function handler(req: Request): Promise<Response> {
         };
         try {
           const signedMarker = await signVolunteerMarker(snapshot.number, nextMarker);
+          await mutex.assertOwned();
           await patchIssue(snapshot.number, replaceVolunteerMarker(snapshot.body || "", signedMarker));
+          await mutex.assertOwned();
           await assignIssue(snapshot.number, coordinator);
           const after = await fetchIssue(snapshot.number);
           const afterMarker = parseVolunteerMarker(after.body);
@@ -125,6 +127,7 @@ export default async function handler(req: Request): Promise<Response> {
           const live = await fetchIssue(snapshot.number).catch(() => null);
           const liveMarker = live ? parseVolunteerMarker(live.body) : null;
           if (live && liveMarker?.leases.some((item) => item.lease_id === lease.lease_id)) {
+            await mutex.assertOwned();
             await patchIssue(snapshot.number, replaceVolunteerMarker(live.body || "", await signVolunteerMarker(live.number, {
               ...liveMarker, leases: liveMarker.leases.filter((item) => item.lease_id !== lease.lease_id),
             }))).catch(() => undefined);
@@ -138,7 +141,7 @@ export default async function handler(req: Request): Promise<Response> {
           selected_gpu_index: lease.selected_gpu_index, selected_gpu_uuid: lease.selected_gpu_uuid,
           model_profile: lease.model_profile, expected_scope: lease.expected_scope,
         });
-      } finally { await releaseIssueMutex(listed.number, mutex); }
+      } finally { await mutex.release(); }
     }
     return json(200, { protocol_version: PROTOCOL_VERSION, status: "no_work" });
   } catch (error) {

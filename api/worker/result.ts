@@ -20,6 +20,7 @@ export default async function handler(req: Request): Promise<Response> {
     const lease = await getLeaseById(body.lease_id);
     if (!lease || lease.contributor.toLowerCase() !== identity.contributor.toLowerCase() || Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another contributor.");
     if (body.issue_number !== lease.issue_number || body.language !== lease.language || body.model_id !== lease.model_id || body.model_revision !== lease.model_revision || body.euroeval_version !== lease.euroeval_version || body.image_digest !== lease.image_digest || body.worker_version !== lease.worker_version) throw new BrokerError(422, "Result contract does not exactly match the active lease.");
+    if (Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another contributor.");
     const digest = await sha256(body.record_json);
     if (body.digest !== digest) throw new BrokerError(422, "digest does not match the UTF-8 record_json bytes.");
     let record: unknown; try { record = JSON.parse(body.record_json); } catch { throw new BrokerError(422, "record_json must be valid JSON."); }
@@ -45,6 +46,10 @@ export default async function handler(req: Request): Promise<Response> {
     try {
       // The worker's exact JSON text is the durable representation.
       await uploadStaging(path, body.record_json);
+      if (Date.parse(lease.expires_at) <= Date.now()) {
+        await abortResultIdentity(identityKey, digest, lease.lease_id).catch(() => undefined);
+        throw new BrokerError(409, "Lease is absent, expired, or belongs to another contributor.");
+      }
       reservation.status = "uploaded";
       if (!(await completeResultIdentity(identityKey, JSON.stringify(reservation), digest, lease.lease_id, 30 * 24 * 60 * 60))) throw new BrokerError(409, "Result reservation was replaced during upload; retry safely.");
       await redis("SADD", `euroeval:worker:results:${lease.lease_id}`, JSON.stringify({ digest, identity: checked.identity, path, warnings: checked.warnings }));

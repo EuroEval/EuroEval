@@ -1,5 +1,5 @@
 import {
-  BrokerError, ConfigurationError, PROTOCOL_VERSION, coordinatorSecret, json, method,
+  BrokerError, ConfigurationError, ISSUE_MUTEX_TTL, PROTOCOL_VERSION, coordinatorSecret, json, method,
   readJson, renewIssueMutex, requireProtocol,
 } from "./_lib";
 
@@ -16,7 +16,8 @@ export default async function handler(req: Request): Promise<Response> {
     const issueNumber = body.issue_number as number;
     const renewed = await renewIssueMutex(issueNumber, body.token);
     if (!renewed) throw new BrokerError(409, "Coordinator lock was lost or replaced.");
-    return json(200, { protocol_version: PROTOCOL_VERSION, status: "renewed", issue_number: issueNumber, expires_in: 30 });
+    return json(200, { protocol_version: PROTOCOL_VERSION, status: "renewed", issue_number: issueNumber,
+      expires_in: ISSUE_MUTEX_TTL });
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;
     return json(status, { protocol_version: PROTOCOL_VERSION, error: error instanceof Error ? error.message : "Unable to renew coordinator lock." });

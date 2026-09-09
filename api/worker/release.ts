@@ -1,7 +1,7 @@
 import {
-  BrokerError, ConfigurationError, PROTOCOL_VERSION, acquireIssueMutex, authenticate,
+  BrokerError, ConfigurationError, PROTOCOL_VERSION, acquireRenewableIssueMutex, authenticate,
   deleteLease, env, enforceRateLimit, fetchIssue, getLeaseById, json, method,
-  parseVolunteerMarker, patchIssue, readJson, releaseIssueMutex, replaceVolunteerMarker,
+  parseVolunteerMarker, patchIssue, readJson, replaceVolunteerMarker, VOLUNTEER_MARKER_RE,
   requireProtocol, signVolunteerMarker, unassignIssue, verifyVolunteerMarker,
 } from "./_lib.ts";
 
@@ -14,8 +14,9 @@ export default async function handler(req: Request): Promise<Response> {
     const body = await readJson(req, 8 * 1024); requireProtocol(body);
     if (typeof body.lease_id !== "string") throw new BrokerError(400, "lease_id is required.");
     const lease = await getLeaseById(body.lease_id);
-    if (!lease || lease.contributor.toLowerCase() !== identity.contributor.toLowerCase()) throw new BrokerError(409, "Lease is absent or belongs to another contributor.");
-    const mutex = await acquireIssueMutex(lease.issue_number); if (!mutex) throw new BrokerError(409, "Issue is busy; retry release.");
+    if (!lease || lease.contributor.toLowerCase() !== identity.contributor.toLowerCase() ||
+        Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another contributor.");
+    const mutex = await acquireRenewableIssueMutex(lease.issue_number); if (!mutex) throw new BrokerError(409, "Issue is busy; retry release.");
     try {
       const coordinator = env("WORKER_COORDINATOR_LOGIN");
       const issue = await fetchIssue(lease.issue_number);
@@ -31,19 +32,30 @@ export default async function handler(req: Request): Promise<Response> {
           leases: remaining,
         };
         const signed = await signVolunteerMarker(lease.issue_number, nextMarker);
+        if (Date.parse(lease.expires_at) <= Date.now()) {
+          throw new BrokerError(409, "Lease is absent, expired, or belongs to another contributor.");
+        }
+        await mutex.assertOwned();
         await patchIssue(lease.issue_number, replaceVolunteerMarker(issue.body || "", signed));
         const after = await fetchIssue(lease.issue_number); const afterMarker = parseVolunteerMarker(after.body);
         if (!afterMarker || !(await verifyVolunteerMarker(lease.issue_number, afterMarker)) ||
             afterMarker.leases.some((item) => item.lease_id === lease.lease_id)) throw new BrokerError(409, "GitHub release fence lost.");
       } else {
-        const without = (issue.body || "").replace(/<!--[\s\S]*?euroeval-volunteer-worker:v1\s+[\s\S]*?-->/i, "").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+        const without = (issue.body || "").replace(VOLUNTEER_MARKER_RE, "").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+        if (Date.parse(lease.expires_at) <= Date.now()) {
+          throw new BrokerError(409, "Lease is absent, expired, or belongs to another contributor.");
+        }
+        await mutex.assertOwned();
         await patchIssue(lease.issue_number, without);
         const after = await fetchIssue(lease.issue_number);
-        if ((after.body || "").includes("euroeval-volunteer-worker:v1")) throw new BrokerError(409, "GitHub release fence lost.");
-        if ((after.assignees || []).some((item) => item.login === coordinator)) await unassignIssue(lease.issue_number, coordinator);
+        if (VOLUNTEER_MARKER_RE.test(after.body || "")) throw new BrokerError(409, "GitHub release fence lost.");
+        if ((after.assignees || []).some((item) => item.login === coordinator)) {
+          await mutex.assertOwned();
+          await unassignIssue(lease.issue_number, coordinator);
+        }
       }
       await deleteLease(lease);
-    } finally { await releaseIssueMutex(lease.issue_number, mutex); }
+    } finally { await mutex.release(); }
     return json(200, { protocol_version: PROTOCOL_VERSION, status: "released", lease_id: lease.lease_id });
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;

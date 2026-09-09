@@ -1,10 +1,10 @@
 declare const process: { env: Record<string, string | undefined> };
 
 import {
-  BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireIssueMutex,
+  BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
   authenticate, commentIssue, contributorLabel, deleteLease, enforceRateLimit, fetchIssue,
   getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker, readJson,
-  redis, redisGet, releaseIssueMutex, requireProtocol, selectedLanguages, uploadStaging, VolunteerLeaseMarker,
+  redis, redisGet, requireProtocol, selectedLanguages, uploadStaging, VolunteerLeaseMarker,
   replaceVolunteerMarker, signVolunteerMarker, verifyVolunteerMarker,
 } from "./_lib";
 
@@ -38,6 +38,7 @@ export default async function handler(req: Request): Promise<Response> {
     const lease = active || old?.lease;
     if (!lease || lease.contributor.toLowerCase() !== identity.contributor.toLowerCase()) throw new BrokerError(409, "Lease is absent or belongs to another contributor.");
     if (!active && old?.status !== "manifest_uploaded") throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
+    if (Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
     let receipt: Receipt = old || { status: "validating", submission_id: lease.lease_id, lease, entries: [], manifest_path: `volunteer/manifests/${lease.lease_id}.json` };
     if (receipt.status !== "manifest_uploaded") {
       const raw = await redis("SMEMBERS", `euroeval:worker:results:${lease.lease_id}`);
@@ -65,7 +66,8 @@ export default async function handler(req: Request): Promise<Response> {
       receipt.status = "manifest_uploaded";
       await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
     }
-    const mutex = await acquireIssueMutex(lease.issue_number); if (!mutex) throw new BrokerError(409, "Issue is busy; retry finalisation.");
+    if (Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
+    const mutex = await acquireRenewableIssueMutex(lease.issue_number); if (!mutex) throw new BrokerError(409, "Issue is busy; retry finalisation.");
     try {
       const issue = await fetchIssue(lease.issue_number); const marker = parseVolunteerMarker(issue.body);
       if (!marker || !(await verifyVolunteerMarker(issue.number, marker))) throw new BrokerError(409, "The issue ownership marker is missing, unsigned, or malformed.");
@@ -76,17 +78,28 @@ export default async function handler(req: Request): Promise<Response> {
       const submission = { submission_id: receipt.submission_id, language: lease.language, manifest_path: receipt.manifest_path, submitted_at: new Date().toISOString(), verified_contributor: identity.contributor, result_count: receipt.entries.length, status: "submitted" as const };
       const submissions = alreadySubmitted ? marker.submissions || [] : [...(marker.submissions || []), submission];
       const next: VolunteerLeaseMarker = { ...marker, submission: "submitted", leases: marker.leases.filter((item) => item.lease_id !== lease.lease_id), submissions };
-      if (ours) { const signed = await signVolunteerMarker(lease.issue_number, next); await patchIssue(lease.issue_number, replaceVolunteerMarker(issue.body || "", signed)); const fencedIssue = await fetchIssue(lease.issue_number); const fenced = parseVolunteerMarker(fencedIssue.body); if (!fenced || !(await verifyVolunteerMarker(lease.issue_number, fenced)) || !fenced.submissions?.some((item) => item.submission_id === receipt.submission_id)) throw new BrokerError(409, "GitHub submission fence lost."); }
+      if (ours) {
+        const signed = await signVolunteerMarker(lease.issue_number, next);
+        if (Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
+        await mutex.assertOwned();
+        await patchIssue(lease.issue_number, replaceVolunteerMarker(issue.body || "", signed));
+        const fencedIssue = await fetchIssue(lease.issue_number); const fenced = parseVolunteerMarker(fencedIssue.body);
+        if (!fenced || !(await verifyVolunteerMarker(lease.issue_number, fenced)) || !fenced.submissions?.some((item) => item.submission_id === receipt.submission_id)) throw new BrokerError(409, "GitHub submission fence lost.");
+      }
       const label = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
-      if (!issue.labels?.some((item) => item.name === label)) await addIssueLabel(lease.issue_number, label);
+      if (!issue.labels?.some((item) => item.name === label)) {
+        await mutex.assertOwned();
+        await addIssueLabel(lease.issue_number, label);
+      }
       const comments = await issueComments(lease.issue_number);
       if (!comments.some((item) => item.body?.includes(`${FINAL_MARKER} ${receipt.submission_id}`))) {
         const maintainer = process.env.COMMUNITY_MAINTAINER_LOGIN || "saattrupdan";
         const comment = `<!-- ${FINAL_MARKER} ${receipt.submission_id} -->\n@${maintainer} — community evaluation ready.\n\nContributor: **${contributorLabel(identity.contributor)}**  \nModel: **${lease.model_id}@${lease.model_revision}**  \nLanguage: **${lease.language}**  \nSubmission: **${receipt.submission_id}**  \nValidation: **${receipt.entries.length} identities; zero failed instances**`;
+        await mutex.assertOwned();
         await commentIssue(lease.issue_number, comment);
       }
       await deleteLease(lease); receipt.status = "ready"; await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
-    } finally { await releaseIssueMutex(lease.issue_number, mutex); }
+    } finally { await mutex.release(); }
     return json(200, { protocol_version: PROTOCOL_VERSION, status: "ready", submission_id: receipt.submission_id, coverage: { language: lease.language, records: receipt.entries.length }, manifest_path: receipt.manifest_path });
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;
