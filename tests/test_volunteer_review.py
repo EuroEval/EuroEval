@@ -22,6 +22,23 @@ RESULTS = "EuroEval/results"
 SUBMISSION = "submission-one"
 
 
+def test_acceptance_renews_before_each_upload() -> None:
+    """Long uploads renew the accepted reservation before every write."""
+    renewals: list[list[dict[str, str]]] = []
+    _, reviewer, _ = _reviewer(
+        record_count=2,
+        reserver=lambda issue, submission, outcome, records: "reservation",
+        renewer=lambda issue, submission, outcome, token, records: (
+            renewals.append(records) or token
+        ),
+    )
+
+    reviewer.decide(SUBMISSION, "accepted", "maintainer")
+
+    assert len(renewals) == 3
+    assert all(record["canonical_path"] for record in renewals[0])
+
+
 class FakeHfApi:
     """In-memory subset of the HfApi bucket interface."""
 
@@ -32,23 +49,26 @@ class FakeHfApi:
         self.fail_result_upload_number: int | None = None
         self.result_uploads = 0
 
+    def batch_bucket_files(
+        self, bucket_id: str, add: list[tuple[bytes, str]], token: str
+    ) -> None:
+        """Store exact object bytes, optionally injecting a partial failure.
+
+        Raises:
+            RuntimeError:
+                When the configured interruption point is reached.
+        """
+        for content, path in add:
+            if bucket_id == RESULTS:
+                self.result_uploads += 1
+                if self.result_uploads == self.fail_result_upload_number:
+                    raise RuntimeError("injected upload interruption")
+            self.files[(bucket_id, path)] = content
+            self.uploads.append((bucket_id, path))
+
     def bucket_info(self, bucket: str, token: str) -> SimpleNamespace:
         """Return private metadata."""
         return SimpleNamespace(private=True)
-
-    def list_bucket_tree(
-        self, bucket: str, prefix: str, recursive: bool, token: str
-    ) -> list[SimpleNamespace]:
-        """List matching objects.
-
-        Returns:
-            Matching in-memory file metadata.
-        """
-        return [
-            self._entry(path, content)
-            for (stored_bucket, path), content in self.files.items()
-            if stored_bucket == bucket and path.startswith(prefix)
-        ]
 
     def download_bucket_files(
         self,
@@ -81,23 +101,6 @@ class FakeHfApi:
             if (bucket, path) in self.files
         ]
 
-    def batch_bucket_files(
-        self, bucket_id: str, add: list[tuple[bytes, str]], token: str
-    ) -> None:
-        """Store exact object bytes, optionally injecting a partial failure.
-
-        Raises:
-            RuntimeError:
-                When the configured interruption point is reached.
-        """
-        for content, path in add:
-            if bucket_id == RESULTS:
-                self.result_uploads += 1
-                if self.result_uploads == self.fail_result_upload_number:
-                    raise RuntimeError("injected upload interruption")
-            self.files[(bucket_id, path)] = content
-            self.uploads.append((bucket_id, path))
-
     @staticmethod
     def _entry(path: str, content: bytes) -> SimpleNamespace:
         return SimpleNamespace(
@@ -107,90 +110,21 @@ class FakeHfApi:
             xet_hash=hashlib.sha256(content).hexdigest(),
         )
 
+    def list_bucket_tree(
+        self, bucket: str, prefix: str, recursive: bool, token: str
+    ) -> list[SimpleNamespace]:
+        """List matching objects.
 
-def test_corrupted_staged_bytes_are_rejected() -> None:
-    """Exact digest validation rejects altered staged content."""
-    api, reviewer, _ = _reviewer()
-    path = _result_paths(api)[0]
-    api.files[(STAGING, path)] += b" "
-
-    with pytest.raises(ReviewError, match="SHA256"):
-        reviewer.show(SUBMISSION)
-
-
-def test_manifest_scope_mismatch_is_rejected() -> None:
-    """Expected and actual canonical identities must match."""
-    api, reviewer, _ = _reviewer()
-    manifest = _manifest(api)
-    expected_scope = t.cast(dict[str, object], manifest["expected_scope"])
-    expected_scope["identity_suffixes"] = ['["other",false,false]']
-    _store_manifest(api, manifest)
-
-    with pytest.raises(ReviewError, match="scope differs"):
-        reviewer.show(SUBMISSION)
-
-
-def test_canonical_collision_prevents_decision_and_broker() -> None:
-    """Different canonical bytes block all terminal side effects."""
-    api, reviewer, broker_calls = _reviewer()
-    report = reviewer.show(SUBMISSION)
-    api.files[(RESULTS, report.records[0].canonical_path)] = b"different"
-
-    with pytest.raises(ReviewError, match="collision"):
-        reviewer.decide(SUBMISSION, "accepted", "maintainer")
-
-    assert broker_calls == []
-    assert (STAGING, f"volunteer/decisions/{SUBMISSION}.json") not in api.files
-
-
-def test_partial_approve_resumes_and_is_idempotent() -> None:
-    """Approval resumes partial uploads and preserves its decision artifact."""
-    api, reviewer, broker_calls = _reviewer(record_count=2)
-    api.fail_result_upload_number = 2
-
-    with pytest.raises(RuntimeError, match="interruption"):
-        reviewer.decide(SUBMISSION, "accepted", "maintainer")
-    assert len([key for key in api.files if key[0] == RESULTS]) == 1
-
-    api.fail_result_upload_number = None
-    reviewer.decide(SUBMISSION, "accepted", "maintainer")
-    decision = api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")]
-    reviewer.decide(SUBMISSION, "accepted", "another-reviewer")
-
-    assert api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")] == decision
-    assert len([key for key in api.files if key[0] == RESULTS]) == 2
-    assert broker_calls == [(12, SUBMISSION, "accepted"), (12, SUBMISSION, "accepted")]
-
-
-def test_acceptance_renews_before_each_upload() -> None:
-    """Long uploads renew the accepted reservation before every write."""
-    renewals: list[list[dict[str, str]]] = []
-    _, reviewer, _ = _reviewer(
-        record_count=2,
-        reserver=lambda issue, submission, outcome, records: "reservation",
-        renewer=lambda issue, submission, outcome, token, records: (
-            renewals.append(records) or token
-        ),
-    )
-
-    reviewer.decide(SUBMISSION, "accepted", "maintainer")
-
-    assert len(renewals) == 3
-    assert all(record["canonical_path"] for record in renewals[0])
-
-
-def test_reject_is_idempotent_and_opposite_decision_fails() -> None:
-    """Rejection retries safely while the opposite outcome is forbidden."""
-    api, reviewer, broker_calls = _reviewer()
-    reviewer.decide(SUBMISSION, "rejected", "maintainer", ["implausible scores"])
-    decision = api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")]
-    reviewer.decide(SUBMISSION, "rejected", "maintainer")
-
-    assert api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")] == decision
-    assert not [key for key in api.files if key[0] == RESULTS]
-    assert broker_calls == [(12, SUBMISSION, "rejected"), (12, SUBMISSION, "rejected")]
-    with pytest.raises(ReviewError, match="opposite"):
-        reviewer.decide(SUBMISSION, "accepted", "maintainer")
+        Returns:
+            Matching in-memory file metadata.
+        """
+        return [
+            self._entry(path, content)
+            for (stored_bucket, path), content in self.files.items()
+            if stored_bucket == bucket
+            and path.startswith(prefix)
+            and (recursive or "/" not in path.removeprefix(f"{prefix}/"))
+        ]
 
 
 def _reviewer(
@@ -323,11 +257,79 @@ def _store_manifest(api: FakeHfApi, manifest: dict[str, object]) -> None:
     ).encode("utf-8")
 
 
-def _manifest(api: FakeHfApi) -> dict[str, object]:
-    return json.loads(api.files[(STAGING, f"volunteer/manifests/{SUBMISSION}.json")])
+def test_canonical_collision_prevents_decision_and_broker() -> None:
+    """Different canonical bytes block all terminal side effects."""
+    api, reviewer, broker_calls = _reviewer()
+    report = reviewer.show(SUBMISSION)
+    api.files[(RESULTS, report.records[0].canonical_path)] = b"different"
+
+    with pytest.raises(ReviewError, match="collision"):
+        reviewer.decide(SUBMISSION, "accepted", "maintainer")
+
+    assert broker_calls == []
+    assert (STAGING, f"volunteer/decisions/{SUBMISSION}.json") not in api.files
+
+
+def test_corrupted_staged_bytes_are_rejected() -> None:
+    """Exact digest validation rejects altered staged content."""
+    api, reviewer, _ = _reviewer()
+    path = _result_paths(api)[0]
+    api.files[(STAGING, path)] += b" "
+
+    with pytest.raises(ReviewError, match="SHA256"):
+        reviewer.show(SUBMISSION)
 
 
 def _result_paths(api: FakeHfApi) -> list[str]:
     return [
         path for bucket, path in api.files if bucket == STAGING and "/results/" in path
     ]
+
+
+def test_manifest_scope_mismatch_is_rejected() -> None:
+    """Expected and actual canonical identities must match."""
+    api, reviewer, _ = _reviewer()
+    manifest = _manifest(api)
+    expected_scope = t.cast(dict[str, object], manifest["expected_scope"])
+    expected_scope["identity_suffixes"] = ['["other",false,false]']
+    _store_manifest(api, manifest)
+
+    with pytest.raises(ReviewError, match="scope differs"):
+        reviewer.show(SUBMISSION)
+
+
+def _manifest(api: FakeHfApi) -> dict[str, object]:
+    return json.loads(api.files[(STAGING, f"volunteer/manifests/{SUBMISSION}.json")])
+
+
+def test_partial_approve_resumes_and_is_idempotent() -> None:
+    """Approval resumes partial uploads and preserves its decision artifact."""
+    api, reviewer, broker_calls = _reviewer(record_count=2)
+    api.fail_result_upload_number = 2
+
+    with pytest.raises(RuntimeError, match="interruption"):
+        reviewer.decide(SUBMISSION, "accepted", "maintainer")
+    assert len([key for key in api.files if key[0] == RESULTS]) == 1
+
+    api.fail_result_upload_number = None
+    reviewer.decide(SUBMISSION, "accepted", "maintainer")
+    decision = api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")]
+    reviewer.decide(SUBMISSION, "accepted", "another-reviewer")
+
+    assert api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")] == decision
+    assert len([key for key in api.files if key[0] == RESULTS]) == 2
+    assert broker_calls == [(12, SUBMISSION, "accepted"), (12, SUBMISSION, "accepted")]
+
+
+def test_reject_is_idempotent_and_opposite_decision_fails() -> None:
+    """Rejection retries safely while the opposite outcome is forbidden."""
+    api, reviewer, broker_calls = _reviewer()
+    reviewer.decide(SUBMISSION, "rejected", "maintainer", ["implausible scores"])
+    decision = api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")]
+    reviewer.decide(SUBMISSION, "rejected", "maintainer")
+
+    assert api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")] == decision
+    assert not [key for key in api.files if key[0] == RESULTS]
+    assert broker_calls == [(12, SUBMISSION, "rejected"), (12, SUBMISSION, "rejected")]
+    with pytest.raises(ReviewError, match="opposite"):
+        reviewer.decide(SUBMISSION, "accepted", "maintainer")
