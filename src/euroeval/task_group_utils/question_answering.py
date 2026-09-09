@@ -456,6 +456,16 @@ def _answer_text_from_offsets(
     filled, and only across non-whitespace, so standard BERT/RoBERTa offsets and
     mid-word overflowing features are left alone.
 
+    Args:
+        offset_mapping:
+            Character offsets for every token in the encoded feature.
+        start_index:
+            Index of the first token in the predicted answer span.
+        end_index:
+            Index of the final token in the predicted answer span.
+        context:
+            Original context from which to extract the answer text.
+
     Returns:
         The context slice for the predicted token span.
     """
