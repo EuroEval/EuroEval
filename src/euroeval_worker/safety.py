@@ -2,6 +2,7 @@
 
 import dataclasses
 import json
+import platform
 import re
 from pathlib import Path
 
@@ -25,7 +26,10 @@ class SafetyError(RuntimeError):
 
 
 def check_model_safety(
-    lease: Lease, gpus: tuple[Gpu, ...], metadata: "ModelMetadata | None" = None
+    lease: Lease,
+    gpus: tuple[Gpu, ...],
+    metadata: "ModelMetadata | None" = None,
+    free_disk_bytes: int | None = None,
 ) -> SafetyReport:
     """Verify public, pinned, safetensors-only, non-code model metadata.
 
@@ -36,6 +40,8 @@ def check_model_safety(
         SafetyError:
             If the revision, repository, weights, or memory estimate is unsafe.
     """
+    if platform.machine() not in {"x86_64", "amd64", "aarch64", "arm64"}:
+        raise SafetyError("unsupported worker architecture")
     if not _COMMIT_RE.fullmatch(lease.model_revision):
         raise SafetyError("broker supplied an unpinned model revision")
     info = metadata or HuggingFaceMetadata().fetch(
@@ -50,11 +56,16 @@ def check_model_safety(
     if not info.safetensors:
         raise SafetyError("model has no safetensors weights")
     estimated = info.estimated_bytes
-    available = int(sum(gpu.free_memory_bytes for gpu in gpus) * 0.9)
+    if free_disk_bytes is not None and free_disk_bytes < estimated * 2:
+        raise SafetyError("insufficient disk space for the model repository and cache")
+    # Do not add unrelated GPUs: vLLM can only use a topology explicitly
+    # configured by the backend. The broker currently leases one GPU.
+    available = max((gpu.free_memory_bytes for gpu in gpus), default=0)
+    available = int(available * 0.9)
     if estimated > available:
         raise SafetyError(
             f"model needs approximately {estimated} bytes but only {available} "
-            "bytes are free"
+            "bytes are free on one supported GPU"
         )
     return SafetyReport(estimated_bytes=estimated, available_bytes=available)
 

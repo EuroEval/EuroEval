@@ -3,7 +3,7 @@
 import dataclasses
 import typing as t
 
-PROTOCOL_VERSION = "v1"
+PROTOCOL_VERSION = "volunteer-worker/v1"
 
 JsonValue: t.TypeAlias = (
     None | bool | int | float | str | list["JsonValue"] | dict[str, "JsonValue"]
@@ -28,6 +28,7 @@ class AuthPoll:
     pending: bool
     credential: str | None = None
     github_login: str | None = None
+    retry_after: int | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -83,6 +84,16 @@ class Claim:
     lease: Lease | None
 
 
+def _protocol(data: dict[str, object]) -> None:
+    """Reject responses from a different broker protocol.
+
+    Raises:
+        ValueError: If the response protocol is unsupported.
+    """
+    if data.get("protocol_version") != PROTOCOL_VERSION:
+        raise ValueError("broker response has an unsupported protocol_version")
+
+
 def _string(data: dict[str, object], key: str) -> str:
     value = data.get(key)
     if not isinstance(value, str) or not value:
@@ -96,6 +107,7 @@ def auth_start_from_dict(data: dict[str, object]) -> AuthStart:
     Returns:
         The typed device-flow response.
     """
+    _protocol(data)
     return AuthStart(
         session_id=_string(data, "session_id"),
         user_code=_string(data, "user_code"),
@@ -111,11 +123,13 @@ def auth_poll_from_dict(data: dict[str, object]) -> AuthPoll:
     Returns:
         The typed poll response.
     """
+    _protocol(data)
     pending = data.get("status") == "pending" or bool(data.get("pending", False))
     return AuthPoll(
         pending=pending,
         credential=_optional_string(data, "credential"),
         github_login=_optional_string(data, "github_login"),
+        retry_after=_optional_positive_integer(data, "retry_after"),
     )
 
 
@@ -125,6 +139,7 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
     Returns:
         The typed lease.
     """
+    _protocol(data)
     return Lease(
         lease_id=_string(data, "lease_id"),
         issue_number=_integer(data, "issue_number"),
@@ -147,3 +162,11 @@ def _integer(data: dict[str, object], key: str, default: int | None = None) -> i
 def _optional_string(data: dict[str, object], key: str) -> str | None:
     value = data.get(key)
     return value if isinstance(value, str) else None
+
+
+def _optional_positive_integer(data: dict[str, object], key: str) -> int | None:
+    value = data.get(key)
+    if value is None:
+        return None
+    parsed = _integer(data, key)
+    return max(1, parsed)

@@ -7,6 +7,7 @@ import typing as t
 import urllib.error
 import urllib.request
 
+from . import __version__
 from .types import (
     PROTOCOL_VERSION,
     AuthPoll,
@@ -64,7 +65,12 @@ class BrokerError(RuntimeError):
 class BrokerClient:
     """Small, dependency-free client for the worker broker."""
 
-    def __init__(self, server: str, request: Request | None = None) -> None:
+    def __init__(
+        self,
+        server: str,
+        request: Request | None = None,
+        worker_version: str = __version__,
+    ) -> None:
         """Initialise a broker client.
 
         Args:
@@ -72,9 +78,12 @@ class BrokerClient:
                 Base URL of the worker broker.
             request (optional):
                 Injectable request function, primarily for tests.
+            worker_version:
+                Version advertised in every claim.
         """
         self.server = server.rstrip("/")
         self._request = request or _http_request
+        self.worker_version = worker_version
 
     def start_auth(self) -> AuthStart:
         """Start a device authorisation flow.
@@ -83,7 +92,7 @@ class BrokerClient:
             Device-flow details.
         """
         return auth_start_from_dict(
-            self._post("auth/start", {"protocol": PROTOCOL_VERSION})
+            self._post("auth/start", {"protocol_version": PROTOCOL_VERSION})
         )
 
     def poll_auth(self, session_id: str) -> AuthPoll:
@@ -94,7 +103,8 @@ class BrokerClient:
         """
         return auth_poll_from_dict(
             self._post(
-                "auth/poll", {"protocol": PROTOCOL_VERSION, "session_id": session_id}
+                "auth/poll",
+                {"protocol_version": PROTOCOL_VERSION, "session_id": session_id},
             )
         )
 
@@ -103,9 +113,18 @@ class BrokerClient:
 
         Returns:
             A lease, or an empty claim when no work is available.
+
+        Raises:
+            BrokerError: If the broker rejects the claim.
         """
-        payload = {"protocol": PROTOCOL_VERSION, "hardware": _hardware_dict(hardware)}
+        payload = {
+            "protocol_version": PROTOCOL_VERSION,
+            "worker_version": self.worker_version,
+            "hardware": _hardware_dict(hardware),
+        }
         result = self._post("claim", dict(payload), credential=credential)
+        if result.get("protocol_version") != PROTOCOL_VERSION:
+            raise BrokerError("broker response has an unsupported protocol_version")
         if result.get("status") == "no_work":
             return Claim(lease=None)
         return Claim(lease=lease_from_dict(result))
@@ -114,14 +133,14 @@ class BrokerClient:
         """Renew a lease."""
         self._post(
             "heartbeat",
-            {"protocol": PROTOCOL_VERSION, "lease_id": lease_id},
+            {"protocol_version": PROTOCOL_VERSION, "lease_id": lease_id},
             credential=credential,
         )
 
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
         """Submit one result record; the broker makes this idempotent."""
         payload: JsonObject = {
-            "protocol": PROTOCOL_VERSION,
+            "protocol_version": PROTOCOL_VERSION,
             "lease_id": lease.lease_id,
             "issue_number": lease.issue_number,
             "model_id": lease.model_id,
@@ -130,7 +149,7 @@ class BrokerClient:
             "euroeval_version": lease.euroeval_version,
             "image_digest": lease.image_digest,
             "record": result.record,
-            "sha256": result.sha256,
+            "digest": result.sha256,
         }
         self._post("result", payload, credential=credential)
 
@@ -138,7 +157,7 @@ class BrokerClient:
         """Mark all records for a lease as accepted."""
         self._post(
             "finalise",
-            {"protocol": PROTOCOL_VERSION, "lease_id": lease_id},
+            {"protocol_version": PROTOCOL_VERSION, "lease_id": lease_id},
             credential=credential,
         )
 
@@ -146,7 +165,11 @@ class BrokerClient:
         """Release a lease without losing the broker's retry state."""
         self._post(
             "release",
-            {"protocol": PROTOCOL_VERSION, "lease_id": lease_id, "reason": reason},
+            {
+                "protocol_version": PROTOCOL_VERSION,
+                "lease_id": lease_id,
+                "reason": reason,
+            },
             credential=credential,
         )
 

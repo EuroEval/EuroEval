@@ -67,6 +67,7 @@ from leaderboards.queue_hf_cache import cached_model_summary
 from leaderboards.queue_markers import (
     clear_vm_marker,
     issue_has_active_queue_ownership,
+    parse_community_marker,
     release_issue_if_owned,
     set_vm_marker,
     vm_marker_matches,
@@ -371,6 +372,14 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
     issues = _list_queue_issues(assignee="none")
     if issues is None:
         return []
+    coordinator = os.environ.get("WORKER_COORDINATOR_LOGIN")
+    if coordinator:
+        assigned = _list_queue_issues(assignee="*")
+        if assigned:
+            seen = {issue.get("number") for issue in issues}
+            issues.extend(
+                issue for issue in assigned if issue.get("number") not in seen
+            )
 
     candidates: list[tuple[int, int, int, int, float, dict, str, list[str]]] = []
     for issue in (issue for issue in issues if "pull_request" not in issue):
@@ -380,6 +389,9 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
                 f"#{issue['number']}: skipping -- community/coordinator "
                 "ownership is active."
             )
+            continue
+        marker = parse_community_marker(body)
+        if issue.get("assignees") and marker is None:
             continue
         number = issue["number"]
         model_id = extract_model_id(title=issue.get("title", ""), body=body)
@@ -882,8 +894,14 @@ def issue_is_still_claimable(number: int) -> bool:
         return False
     if current.get("state") != "open":
         return False
-    if issue_has_active_queue_ownership(current.get("body") or ""):
+    body = current.get("body") or ""
+    if issue_has_active_queue_ownership(body):
         return False
+    # A valid but expired/completed broker marker may leave the coordinator
+    # assigned. It is reclaimable; malformed markers remain a hard stop.
+    marker = parse_community_marker(body)
+    if marker is not None:
+        return True
     return not current.get("assignees")
 
 
