@@ -71,6 +71,7 @@ from leaderboards.queue_markers import (
     clear_vm_marker,
     issue_has_active_queue_ownership,
     issue_has_community_marker,
+    issue_has_terminal_queue_submission,
     parse_community_marker,
     release_issue_if_owned,
     set_vm_marker,
@@ -123,24 +124,6 @@ class _CoordinatorIssueLock:
             target=self._renew_loop, name=f"coordinator-renew-{number}", daemon=True
         )
 
-    def _renew_loop(self) -> None:
-        renew_url = (
-            self.lock_url.removesuffix("/coordinator-lock") + "/coordinator-renew"
-        )
-        while not self._stop.wait(COORDINATOR_RENEW_SECONDS):
-            try:
-                _coordinator_request(
-                    renew_url,
-                    number=self.number,
-                    secret=self.secret,
-                    token=self.token,
-                    operation="renew",
-                )
-            except RuntimeError as error:
-                logger.error("Coordinator lock renewal failed: %s", error)
-                self._lost.set()
-                return
-
     def close(self) -> None:
         """Stop renewal and release the token, preserving the loss fence.
 
@@ -177,112 +160,23 @@ class _CoordinatorIssueLock:
         """Start renewing the lock before claim mutations begin."""
         self._thread.start()
 
-
-@contextmanager
-def _coordinator_issue_lock(number: int) -> t.Iterator[_CoordinatorIssueLock | None]:
-    """Coordinate local claims with the broker's Redis issue mutex.
-
-    The queue fails closed by default. ``VOLUNTEER_COORDINATOR_STANDALONE`` is
-    an explicit, temporary migration escape hatch for an operator who has
-    verified that no broker or second queue can touch the issue set.
-
-    Yields:
-        The renewable lock, or ``None`` for the explicit standalone override.
-
-    Raises:
-        RuntimeError: If locking is not configured or cannot be maintained.
-    """
-    base = os.environ.get("VOLUNTEER_COORDINATOR_URL", "").rstrip("/")
-    secret = os.environ.get("WORKER_COORDINATOR_SECRET", "")
-    standalone = os.environ.get("VOLUNTEER_COORDINATOR_STANDALONE", "").lower() in {
-        "1",
-        "true",
-        "yes",
-    }
-    if standalone:
-        logger.warning("Coordinator mutex disabled by explicit standalone override.")
-        yield None
-        return
-    if not base or not secret:
-        raise RuntimeError(
-            "coordinator URL and secret are required; set "
-            "VOLUNTEER_COORDINATOR_STANDALONE=1 only for isolated migration runs"
+    def _renew_loop(self) -> None:
+        renew_url = (
+            self.lock_url.removesuffix("/coordinator-lock") + "/coordinator-renew"
         )
-    lock_url = (
-        base if base.endswith("/coordinator-lock") else f"{base}/coordinator-lock"
-    )
-    token = _coordinator_request(lock_url, number=number, secret=secret)
-    lock = _CoordinatorIssueLock(
-        number=number, secret=secret, lock_url=lock_url, token=token
-    )
-    lock.start()
-    try:
-        yield lock
-    finally:
-        lock.close()
-
-
-def _coordinator_request(
-    url: str,
-    *,
-    number: int,
-    secret: str,
-    token: str | None = None,
-    operation: str = "release",
-) -> str:
-    """Call a coordinator endpoint and return its lock token.
-
-    Returns:
-        The opaque lock token (or the supplied token on renewal/release).
-
-    Raises:
-        RuntimeError: If the endpoint is unavailable or returns invalid data.
-    """
-    payload: dict[str, object] = {
-        "protocol_version": "volunteer-worker/v1",
-        "issue_number": number,
-    }
-    if token is not None:
-        payload["token"] = token
-    request = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        method="POST",
-        headers={"content-type": "application/json", "x-coordinator-secret": secret},
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=15) as response:
-            value = json.loads(response.read().decode("utf-8"))
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
-        raise RuntimeError(f"coordinator endpoint unavailable: {error}") from error
-    if (
-        not isinstance(value, dict)
-        or value.get("protocol_version") != "volunteer-worker/v1"
-    ):
-        raise RuntimeError("coordinator endpoint returned an invalid protocol response")
-    if token is None:
-        lock = value.get("token")
-        if not isinstance(lock, str) or not lock:
-            raise RuntimeError("coordinator lock response omitted its token")
-        return lock
-    expected_status = "renewed" if operation == "renew" else "released"
-    if value.get("status") != expected_status:
-        raise RuntimeError(f"coordinator lock {operation} was not acknowledged")
-    return token
-
-
-# Canonical HF bucket for storing results (public read access).
-HF_RESULTS_BUCKET = "EuroEval/results"
-
-
-# Param bucket thresholds matching leaderboards (src/leaderboards/core_models.py)
-_BUCKET_THRESHOLDS = [
-    (2_000_000_000, 0),  # tiny
-    (10_000_000_000, 1),  # small
-    (40_000_000_000, 2),  # medium
-    (80_000_000_000, 3),  # large
-    (float("inf"), 4),  # xlarge
-]
+        while not self._stop.wait(COORDINATOR_RENEW_SECONDS):
+            try:
+                _coordinator_request(
+                    renew_url,
+                    number=self.number,
+                    secret=self.secret,
+                    token=self.token,
+                    operation="renew",
+                )
+            except RuntimeError as error:
+                logger.error("Coordinator lock renewal failed: %s", error)
+                self._lost.set()
+                return
 
 
 @click.command()
@@ -489,6 +383,435 @@ def process_queue_once(
         cool_down_between_issues(config=thermal_config)
 
 
+# Canonical HF bucket for storing results (public read access).
+HF_RESULTS_BUCKET = "EuroEval/results"
+
+
+# Param bucket thresholds matching leaderboards (src/leaderboards/core_models.py)
+_BUCKET_THRESHOLDS = [
+    (2_000_000_000, 0),  # tiny
+    (10_000_000_000, 1),  # small
+    (40_000_000_000, 2),  # medium
+    (80_000_000_000, 3),  # large
+    (float("inf"), 4),  # xlarge
+]
+
+
+def process_issue(
+    issue: dict,
+    model_id: str,
+    groups: list[str],
+    assignee: str,
+    vm_id: str,
+    gpu_memory_utilization: float | None,
+) -> None:
+    """Claim, evaluate, and report back on a single queue issue.
+
+    Args:
+        issue:
+            The GitHub issue object returned by the API.
+        model_id:
+            The Hugging Face model id to evaluate.
+        groups:
+            The selected language-group labels for this issue.
+        assignee:
+            The GitHub user to assign while evaluating.
+        vm_id:
+            The VM marker written to the issue body.
+        gpu_memory_utilization:
+            Optional vLLM memory fraction.
+    """
+    number = issue["number"]
+    languages: list[str] = []
+    for g in groups:
+        languages.extend(LANGUAGE_GROUP_CODES[g])
+    languages = sorted(set(languages))
+
+    # Re-check gated status here so a stale snapshot from main() doesn't make
+    # us run a doomed evaluation, and so we can also pick up newly granted
+    # access when the label says gated but HF now says otherwise.
+    live_summary = cached_model_summary(model_id=model_id)
+    is_gated = live_summary is not None and live_summary.get("gated")
+    label_names = {
+        label.get("name")
+        for label in issue.get("labels", [])
+        if isinstance(label, dict)
+    }
+    has_gated_label = GATED_LABEL in label_names
+    if is_gated:
+        if not has_gated_label:
+            add_gated_label(number=number)
+            logger.info(f"#{number}: marked gated -- {assignee} lacks read access.")
+        else:
+            logger.info(f"#{number}: still gated -- leaving label in place.")
+        return
+    if has_gated_label:
+        remove_gated_label(number=number)
+        logger.info(f"#{number}: access granted, removed gated label.")
+
+    logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
+    # The short claim transaction, not the potentially hours-long evaluation,
+    # shares the broker's Redis mutex.
+    claimed = False
+    try:
+        with _coordinator_issue_lock(number) as coordinator_lock:
+            if coordinator_lock is not None:
+                coordinator_lock.ensure_healthy()
+            if not issue_is_still_claimable(number=number):
+                logger.info(
+                    f"#{number}: skipping -- no longer open and unassigned "
+                    "at claim time."
+                )
+                return
+            # Set the VM marker BEFORE assigning so a crash between the two leaves
+            # the issue unassigned (harmless) rather than assigned-but-unowned.
+            if coordinator_lock is not None:
+                coordinator_lock.ensure_healthy()
+            if not set_vm_marker(number=number, vm_id=vm_id):
+                logger.info(f"#{number}: another VM already owns this issue; aborting.")
+                return
+            claimed = True
+            if coordinator_lock is not None:
+                coordinator_lock.ensure_healthy()
+            assign_issue(number=number, assignee=assignee)
+            if coordinator_lock is not None:
+                coordinator_lock.ensure_healthy()
+
+            # Two VMs sharing a PAT cannot be told apart by the assignee, so another
+            # VM that raced through the same marker + assignment window will have
+            # overwritten our marker. Verify ownership before proceeding.
+            owns_marker = vm_marker_matches(number=number, vm_id=vm_id)
+            if coordinator_lock is not None:
+                coordinator_lock.ensure_healthy()
+            if not owns_marker:
+                logger.info(
+                    f"#{number}: another VM won the claim race; aborting without "
+                    "touching the assignee."
+                )
+                return
+        _run_claimed_issue(
+            issue=issue,
+            model_id=model_id,
+            languages=languages,
+            assignee=assignee,
+            vm_id=vm_id,
+            gpu_memory_utilization=gpu_memory_utilization,
+        )
+    except BaseException:
+        if claimed:
+            release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
+        raise
+
+
+def issue_has_matching_error_comment(number: int, reason: str) -> bool:
+    """Return True if an error comment with the same ``reason`` already exists.
+
+    The tail of subprocess output varies run-to-run (timestamps, ANSI),
+    so we match on the stable error-reason phrase rendered in the comment
+    header instead of doing an exact-body comparison.
+
+    Args:
+        number:
+            The issue number to inspect.
+        reason:
+            The reason string that would be used in a new error comment.
+
+    Returns:
+        True if any existing comment on the issue contains the same
+        ``Error encountered during evaluation (<reason>):`` header.
+    """
+    try:
+        comments = gh_request(
+            path=f"/repos/{REPO}/issues/{number}/comments", params={"per_page": "100"}
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not list comments: {e}")
+        return False
+    if not isinstance(comments, list):
+        return False
+    marker = f"Error encountered during evaluation ({reason}):"
+    return any(
+        isinstance(c, dict) and marker in (c.get("body") or "") for c in comments
+    )
+
+
+def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
+    """Upload result lines to the HF results bucket.
+
+    Writes one JSON file per logical result via result_identity paths
+    (results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json), then uploads
+    only those files to the bucket. Never deletes existing files (additive only).
+
+    Args:
+        lines:
+            The JSONL result lines to upload.
+        model_id:
+            The HuggingFace model ID.
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    valid_records_seen = 0
+    records_written = 0
+    written_paths: list[Path] = []
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+            identity = identity_from_eee_record(record)
+            record_path = RESULTS_DIR / identity_to_path(identity)
+            record_path.parent.mkdir(parents=True, exist_ok=True)
+            # Use canonical JSON for consistent comparison
+            new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
+
+            # Count as seen before checking if unchanged
+            valid_records_seen += 1
+
+            # Only write if file doesn't exist or content differs
+            if record_path.exists():
+                try:
+                    existing_content = record_path.read_text(encoding="utf-8").strip()
+                    existing_record = json.loads(existing_content)
+                    canonical_existing = json.dumps(
+                        existing_record, sort_keys=True, separators=(",", ":")
+                    )
+                    if canonical_existing == new_content:
+                        continue  # Skip unchanged files
+                except (json.JSONDecodeError, OSError):
+                    pass  # If we can't parse existing, overwrite it
+
+            record_path.write_text(new_content, encoding="utf-8")
+            records_written += 1
+            written_paths.append(record_path)
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            logger.debug(f"Skipping invalid record: {e}")
+
+    if valid_records_seen == 0:
+        logger.info("No valid records to process.")
+        return True
+
+    if records_written == 0:
+        logger.info("All records unchanged.")
+        return True
+
+    try:
+        logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
+        # Skip any files that are empty (0 bytes)
+        api = HfApi()
+        add_list: list[tuple[str | Path | bytes, str]] = [
+            (str(path), str(path.relative_to(RESULTS_DIR)))
+            for path in written_paths
+            if path.is_file() and path.stat().st_size > 0
+        ]
+        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
+        logger.info(
+            f"Uploaded {records_written} result records for {model_id!r} to HF bucket."
+        )
+        return True
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to upload to HF bucket: {e}")
+        return False
+
+
+def issue_is_still_claimable(number: int) -> bool:
+    """Return True if the issue is still open with no assignees.
+
+    Re-fetches the issue at claim time so that issues which were closed
+    or assigned between the initial snapshot and now are not
+    double-processed.
+
+    Args:
+        number:
+            The issue number to verify.
+
+    Returns:
+        True if the issue is currently open and has no assignees; False
+        otherwise (including when the lookup fails).
+    """
+    try:
+        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not re-check issue state: {e}")
+        return False
+    if not isinstance(current, dict):
+        return False
+    if current.get("state") != "open":
+        return False
+    body = current.get("body") or ""
+    if issue_has_community_marker(body) and parse_community_marker(body) is None:
+        return False
+    marker = parse_community_marker(body)
+    if _skip_accepted_marker(body=body, number=number):
+        return False
+    label_names = {
+        label.get("name")
+        for label in current.get("labels", [])
+        if isinstance(label, dict)
+    }
+    if RESULTS_READY_LABEL in label_names or issue_has_active_queue_ownership(body):
+        return False
+    # A valid but expired/rejected broker marker may leave the coordinator
+    # assigned. It is reclaimable; accepted markers remain authoritative.
+    if marker is not None:
+        return True
+    return not current.get("assignees")
+
+
+def reclaim_orphaned_issues(assignee: str, vm_id: str) -> None:
+    """Return this VM's orphaned issues to the queue.
+
+    Args:
+        assignee:
+            GitHub user assigned to issues owned by this runner.
+        vm_id:
+            VM marker used to distinguish this runner from other VMs.
+    """
+    issues = _list_queue_issues(assignee=assignee)
+    if issues is None:
+        logger.warning("Could not list assigned issues for reclaim.")
+        return
+
+    reclaimed = 0
+    for issue in issues:
+        if not isinstance(issue, dict) or "pull_request" in issue:
+            continue
+        labels = issue.get("labels") or []
+        label_names = {label.get("name") for label in labels if isinstance(label, dict)}
+        if RESULTS_READY_LABEL in label_names:
+            continue
+        body = issue.get("body") or ""
+        marker = parse_community_marker(body)
+        if issue_has_community_marker(body) and marker is None:
+            logger.warning(
+                f"#{issue['number']}: keeping issue with malformed broker marker."
+            )
+            continue
+        if _skip_accepted_marker(body=body, number=issue["number"]):
+            continue
+        if issue_has_active_queue_ownership(body):
+            continue
+        m = VM_MARKER_RE.search(body)
+        if not m or m.group(1) != vm_id:
+            continue
+        number = issue["number"]
+        if not release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee):
+            continue
+        reclaimed += 1
+        logger.info(f"#{number}: reclaimed orphaned issue (vm-id {vm_id}).")
+
+
+@contextmanager
+def _coordinator_issue_lock(number: int) -> t.Iterator[_CoordinatorIssueLock | None]:
+    """Coordinate local claims with the broker's Redis issue mutex.
+
+    The queue fails closed by default. ``VOLUNTEER_COORDINATOR_STANDALONE`` is
+    an explicit, temporary migration escape hatch for an operator who has
+    verified that no broker or second queue can touch the issue set.
+
+    Yields:
+        The renewable lock, or ``None`` for the explicit standalone override.
+
+    Raises:
+        RuntimeError: If locking is not configured or cannot be maintained.
+    """
+    base = os.environ.get("VOLUNTEER_COORDINATOR_URL", "").rstrip("/")
+    secret = os.environ.get("WORKER_COORDINATOR_SECRET", "")
+    standalone = os.environ.get("VOLUNTEER_COORDINATOR_STANDALONE", "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    if standalone:
+        logger.warning("Coordinator mutex disabled by explicit standalone override.")
+        yield None
+        return
+    if not base or not secret:
+        raise RuntimeError(
+            "coordinator URL and secret are required; set "
+            "VOLUNTEER_COORDINATOR_STANDALONE=1 only for isolated migration runs"
+        )
+    lock_url = (
+        base if base.endswith("/coordinator-lock") else f"{base}/coordinator-lock"
+    )
+    token = _coordinator_request(lock_url, number=number, secret=secret)
+    lock = _CoordinatorIssueLock(
+        number=number, secret=secret, lock_url=lock_url, token=token
+    )
+    lock.start()
+    try:
+        yield lock
+    finally:
+        lock.close()
+
+
+def _coordinator_request(
+    url: str,
+    *,
+    number: int,
+    secret: str,
+    token: str | None = None,
+    operation: str = "release",
+) -> str:
+    """Call a coordinator endpoint and return its lock token.
+
+    Returns:
+        The opaque lock token (or the supplied token on renewal/release).
+
+    Raises:
+        RuntimeError: If the endpoint is unavailable or returns invalid data.
+    """
+    payload: dict[str, object] = {
+        "protocol_version": "volunteer-worker/v1",
+        "issue_number": number,
+    }
+    if token is not None:
+        payload["token"] = token
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        method="POST",
+        headers={"content-type": "application/json", "x-coordinator-secret": secret},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            value = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
+        raise RuntimeError(f"coordinator endpoint unavailable: {error}") from error
+    if (
+        not isinstance(value, dict)
+        or value.get("protocol_version") != "volunteer-worker/v1"
+    ):
+        raise RuntimeError("coordinator endpoint returned an invalid protocol response")
+    if token is None:
+        lock = value.get("token")
+        if not isinstance(lock, str) or not lock:
+            raise RuntimeError("coordinator lock response omitted its token")
+        return lock
+    expected_status = "renewed" if operation == "renew" else "released"
+    if value.get("status") != expected_status:
+        raise RuntimeError(f"coordinator lock {operation} was not acknowledged")
+    return token
+
+
+def _skip_accepted_marker(body: str, number: int) -> bool:
+    """Keep accepted broker decisions out of the local queue.
+
+    Returns:
+        Whether the marker represents an accepted decision, trusted or not.
+    """
+    marker = parse_community_marker(body)
+    if marker is None or marker.submission != "accepted":
+        return False
+    if issue_has_terminal_queue_submission(body, issue_number=number):
+        logger.info(f"#{number}: skipping -- accepted broker submission.")
+    else:
+        logger.warning(f"#{number}: skipping -- unverified accepted marker.")
+    return True
+
+
 def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list[str]]]:
     """Return processable issues sorted by priority.
 
@@ -527,6 +850,8 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
         marker = parse_community_marker(body)
         if issue_has_community_marker(body) and marker is None:
             logger.info(f"#{issue['number']}: skipping -- malformed broker marker.")
+            continue
+        if _skip_accepted_marker(body=body, number=issue["number"]):
             continue
         if issue.get("assignees") and marker is None:
             continue
@@ -636,112 +961,6 @@ def _list_queue_issues(*, assignee: str) -> list[dict[str, t.Any]] | None:
         if len(response) < 100:
             return all_issues
         page += 1
-
-
-def process_issue(
-    issue: dict,
-    model_id: str,
-    groups: list[str],
-    assignee: str,
-    vm_id: str,
-    gpu_memory_utilization: float | None,
-) -> None:
-    """Claim, evaluate, and report back on a single queue issue.
-
-    Args:
-        issue:
-            The GitHub issue object returned by the API.
-        model_id:
-            The Hugging Face model id to evaluate.
-        groups:
-            The selected language-group labels for this issue.
-        assignee:
-            The GitHub user to assign while evaluating.
-        vm_id:
-            The VM marker written to the issue body.
-        gpu_memory_utilization:
-            Optional vLLM memory fraction.
-    """
-    number = issue["number"]
-    languages: list[str] = []
-    for g in groups:
-        languages.extend(LANGUAGE_GROUP_CODES[g])
-    languages = sorted(set(languages))
-
-    # Re-check gated status here so a stale snapshot from main() doesn't make
-    # us run a doomed evaluation, and so we can also pick up newly granted
-    # access when the label says gated but HF now says otherwise.
-    live_summary = cached_model_summary(model_id=model_id)
-    is_gated = live_summary is not None and live_summary.get("gated")
-    label_names = {
-        label.get("name")
-        for label in issue.get("labels", [])
-        if isinstance(label, dict)
-    }
-    has_gated_label = GATED_LABEL in label_names
-    if is_gated:
-        if not has_gated_label:
-            add_gated_label(number=number)
-            logger.info(f"#{number}: marked gated -- {assignee} lacks read access.")
-        else:
-            logger.info(f"#{number}: still gated -- leaving label in place.")
-        return
-    if has_gated_label:
-        remove_gated_label(number=number)
-        logger.info(f"#{number}: access granted, removed gated label.")
-
-    logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
-    # The short claim transaction, not the potentially hours-long evaluation,
-    # shares the broker's Redis mutex.
-    claimed = False
-    try:
-        with _coordinator_issue_lock(number) as coordinator_lock:
-            if coordinator_lock is not None:
-                coordinator_lock.ensure_healthy()
-            if not issue_is_still_claimable(number=number):
-                logger.info(
-                    f"#{number}: skipping -- no longer open and unassigned "
-                    "at claim time."
-                )
-                return
-            # Set the VM marker BEFORE assigning so a crash between the two leaves
-            # the issue unassigned (harmless) rather than assigned-but-unowned.
-            if coordinator_lock is not None:
-                coordinator_lock.ensure_healthy()
-            if not set_vm_marker(number=number, vm_id=vm_id):
-                logger.info(f"#{number}: another VM already owns this issue; aborting.")
-                return
-            claimed = True
-            if coordinator_lock is not None:
-                coordinator_lock.ensure_healthy()
-            assign_issue(number=number, assignee=assignee)
-            if coordinator_lock is not None:
-                coordinator_lock.ensure_healthy()
-
-            # Two VMs sharing a PAT cannot be told apart by the assignee, so another
-            # VM that raced through the same marker + assignment window will have
-            # overwritten our marker. Verify ownership before proceeding.
-            owns_marker = vm_marker_matches(number=number, vm_id=vm_id)
-            if coordinator_lock is not None:
-                coordinator_lock.ensure_healthy()
-            if not owns_marker:
-                logger.info(
-                    f"#{number}: another VM won the claim race; aborting without "
-                    "touching the assignee."
-                )
-                return
-        _run_claimed_issue(
-            issue=issue,
-            model_id=model_id,
-            languages=languages,
-            assignee=assignee,
-            vm_id=vm_id,
-            gpu_memory_utilization=gpu_memory_utilization,
-        )
-    except BaseException:
-        if claimed:
-            release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
-        raise
 
 
 def _run_claimed_issue(
@@ -948,196 +1167,6 @@ def _run_claimed_issue(
     remove_failed_label(number=number)
     add_results_ready_label(number=number)
     clear_vm_marker(number=number, vm_id=vm_id)
-
-
-def issue_has_matching_error_comment(number: int, reason: str) -> bool:
-    """Return True if an error comment with the same ``reason`` already exists.
-
-    The tail of subprocess output varies run-to-run (timestamps, ANSI),
-    so we match on the stable error-reason phrase rendered in the comment
-    header instead of doing an exact-body comparison.
-
-    Args:
-        number:
-            The issue number to inspect.
-        reason:
-            The reason string that would be used in a new error comment.
-
-    Returns:
-        True if any existing comment on the issue contains the same
-        ``Error encountered during evaluation (<reason>):`` header.
-    """
-    try:
-        comments = gh_request(
-            path=f"/repos/{REPO}/issues/{number}/comments", params={"per_page": "100"}
-        )
-    except urllib.error.HTTPError as e:
-        logger.warning(f"#{number}: could not list comments: {e}")
-        return False
-    if not isinstance(comments, list):
-        return False
-    marker = f"Error encountered during evaluation ({reason}):"
-    return any(
-        isinstance(c, dict) and marker in (c.get("body") or "") for c in comments
-    )
-
-
-def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
-    """Upload result lines to the HF results bucket.
-
-    Writes one JSON file per logical result via result_identity paths
-    (results/<sanitise(model_id)>/<dataset>__<split>__<shot>.json), then uploads
-    only those files to the bucket. Never deletes existing files (additive only).
-
-    Args:
-        lines:
-            The JSONL result lines to upload.
-        model_id:
-            The HuggingFace model ID.
-
-    Returns:
-        True if upload succeeded, False otherwise.
-    """
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    valid_records_seen = 0
-    records_written = 0
-    written_paths: list[Path] = []
-    for line in lines:
-        if not line.strip():
-            continue
-        try:
-            record = json.loads(line)
-            identity = identity_from_eee_record(record)
-            record_path = RESULTS_DIR / identity_to_path(identity)
-            record_path.parent.mkdir(parents=True, exist_ok=True)
-            # Use canonical JSON for consistent comparison
-            new_content = json.dumps(record, sort_keys=True, separators=(",", ":"))
-
-            # Count as seen before checking if unchanged
-            valid_records_seen += 1
-
-            # Only write if file doesn't exist or content differs
-            if record_path.exists():
-                try:
-                    existing_content = record_path.read_text(encoding="utf-8").strip()
-                    existing_record = json.loads(existing_content)
-                    canonical_existing = json.dumps(
-                        existing_record, sort_keys=True, separators=(",", ":")
-                    )
-                    if canonical_existing == new_content:
-                        continue  # Skip unchanged files
-                except (json.JSONDecodeError, OSError):
-                    pass  # If we can't parse existing, overwrite it
-
-            record_path.write_text(new_content, encoding="utf-8")
-            records_written += 1
-            written_paths.append(record_path)
-        except (json.JSONDecodeError, ValueError, KeyError) as e:
-            logger.debug(f"Skipping invalid record: {e}")
-
-    if valid_records_seen == 0:
-        logger.info("No valid records to process.")
-        return True
-
-    if records_written == 0:
-        logger.info("All records unchanged.")
-        return True
-
-    try:
-        logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
-        # Skip any files that are empty (0 bytes)
-        api = HfApi()
-        add_list: list[tuple[str | Path | bytes, str]] = [
-            (str(path), str(path.relative_to(RESULTS_DIR)))
-            for path in written_paths
-            if path.is_file() and path.stat().st_size > 0
-        ]
-        api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
-        logger.info(
-            f"Uploaded {records_written} result records for {model_id!r} to HF bucket."
-        )
-        return True
-    except HfHubHTTPError as e:
-        logger.error(f"Failed to upload to HF bucket: {e}")
-        return False
-
-
-def issue_is_still_claimable(number: int) -> bool:
-    """Return True if the issue is still open with no assignees.
-
-    Re-fetches the issue at claim time so that issues which were closed
-    or assigned between the initial snapshot and now are not
-    double-processed.
-
-    Args:
-        number:
-            The issue number to verify.
-
-    Returns:
-        True if the issue is currently open and has no assignees; False
-        otherwise (including when the lookup fails).
-    """
-    try:
-        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
-    except urllib.error.HTTPError as e:
-        logger.warning(f"#{number}: could not re-check issue state: {e}")
-        return False
-    if not isinstance(current, dict):
-        return False
-    if current.get("state") != "open":
-        return False
-    body = current.get("body") or ""
-    if issue_has_community_marker(body) and parse_community_marker(body) is None:
-        return False
-    label_names = {
-        label.get("name")
-        for label in current.get("labels", [])
-        if isinstance(label, dict)
-    }
-    if RESULTS_READY_LABEL in label_names or issue_has_active_queue_ownership(body):
-        return False
-    # A valid but expired/completed broker marker may leave the coordinator
-    # assigned. It is reclaimable; malformed markers remain a hard stop.
-    marker = parse_community_marker(body)
-    if marker is not None:
-        return True
-    return not current.get("assignees")
-
-
-def reclaim_orphaned_issues(assignee: str, vm_id: str) -> None:
-    """Return this VM's orphaned issues to the queue.
-
-    Args:
-        assignee:
-            GitHub user assigned to issues owned by this runner.
-        vm_id:
-            VM marker used to distinguish this runner from other VMs.
-    """
-    issues = _list_queue_issues(assignee=assignee)
-    if issues is None:
-        logger.warning("Could not list assigned issues for reclaim.")
-        return
-
-    reclaimed = 0
-    for issue in issues:
-        if not isinstance(issue, dict) or "pull_request" in issue:
-            continue
-        labels = issue.get("labels") or []
-        label_names = {label.get("name") for label in labels if isinstance(label, dict)}
-        if RESULTS_READY_LABEL in label_names:
-            continue
-        body = issue.get("body") or ""
-        if issue_has_active_queue_ownership(body):
-            continue
-        m = VM_MARKER_RE.search(body)
-        if not m or m.group(1) != vm_id:
-            continue
-        number = issue["number"]
-        if not release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee):
-            continue
-        reclaimed += 1
-        logger.info(f"#{number}: reclaimed orphaned issue (vm-id {vm_id}).")
 
 
 if __name__ == "__main__":
