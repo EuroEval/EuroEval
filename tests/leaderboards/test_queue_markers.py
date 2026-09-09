@@ -55,23 +55,6 @@ def test_expired_coordinator_marker_is_recoverable(
     assert "vm-id: local-vm" in patched[0]
 
 
-def test_unsigned_accepted_marker_is_not_a_terminal_submission() -> None:
-    """Unsigned acceptance state cannot protect a local queue issue."""
-    body = queue_markers.append_community_marker(
-        body="request", owner="coordinator", submission="accepted"
-    )
-
-    assert not queue_markers.issue_has_terminal_queue_submission(body, issue_number=1)
-
-    malformed = (
-        '<!-- euroeval-volunteer-worker:v1 {"protocol_version":"volunteer-worker/v1",'
-        '"coordinator":"coordinator","submission":"accepted"} -->'
-    )
-    assert not queue_markers.issue_has_terminal_queue_submission(
-        malformed, issue_number=1
-    )
-
-
 def test_rejected_marker_is_auditable_but_does_not_block_local_queue() -> None:
     """Rejected history remains parseable without claiming queue ownership."""
     body = queue_markers.append_community_marker(
@@ -147,6 +130,23 @@ def test_submissions_require_verified_contributor_and_server_count() -> None:
     payload["submissions"][1].pop("result_count")
     malformed = f"<!-- euroeval-volunteer-worker:v1 {json.dumps(payload)} -->"
     assert queue_markers.parse_community_marker(malformed) is None
+
+
+def test_unsigned_accepted_marker_is_not_a_terminal_submission() -> None:
+    """Unsigned acceptance state cannot protect a local queue issue."""
+    body = queue_markers.append_community_marker(
+        body="request", owner="coordinator", submission="accepted"
+    )
+
+    assert not queue_markers.issue_has_terminal_queue_submission(body, issue_number=1)
+
+    malformed = (
+        '<!-- euroeval-volunteer-worker:v1 {"protocol_version":"volunteer-worker/v1",'
+        '"coordinator":"coordinator","submission":"accepted"} -->'
+    )
+    assert not queue_markers.issue_has_terminal_queue_submission(
+        malformed, issue_number=1
+    )
 
 
 def test_vm_marker_manipulators_leave_active_community_marker_alone(

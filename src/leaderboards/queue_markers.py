@@ -87,6 +87,16 @@ class CommunityMarker:
     signature: str | None = None
 
 
+def _trusted_issue_marker(number: int, body: str) -> CommunityMarker | None:
+    secret = os.environ.get("VOLUNTEER_MARKER_SECRET")
+    marker = parse_community_marker(
+        body, issue_number=number, secret=secret, require_signature=bool(secret)
+    )
+    if marker is not None and marker.submission == "accepted" and not secret:
+        return None
+    return marker
+
+
 def parse_community_marker(
     body: str,
     *,
@@ -242,6 +252,15 @@ def parse_community_marker(
     )
 
 
+def _expiry_active(value: str) -> bool:
+    try:
+        return dt.datetime.fromisoformat(
+            value.replace("Z", "+00:00")
+        ) > dt.datetime.now(dt.UTC)
+    except ValueError:
+        return False
+
+
 def issue_has_active_queue_ownership(body: str) -> bool:
     """Return whether a valid, unexpired coordinator marker protects an issue."""
     marker = parse_community_marker(body)
@@ -354,22 +373,3 @@ def vm_marker_matches(number: int, vm_id: str) -> bool:
         return False
     match = VM_MARKER_RE.search(body)
     return match is None or match.group(1) == vm_id
-
-
-def _trusted_issue_marker(number: int, body: str) -> CommunityMarker | None:
-    secret = os.environ.get("VOLUNTEER_MARKER_SECRET")
-    marker = parse_community_marker(
-        body, issue_number=number, secret=secret, require_signature=bool(secret)
-    )
-    if marker is not None and marker.submission == "accepted" and not secret:
-        return None
-    return marker
-
-
-def _expiry_active(value: str) -> bool:
-    try:
-        return dt.datetime.fromisoformat(
-            value.replace("Z", "+00:00")
-        ) > dt.datetime.now(dt.UTC)
-    except ValueError:
-        return False
