@@ -18,15 +18,10 @@ COMMUNITY_MARKER_VERSION = 1
 COMMUNITY_PROTOCOL_VERSION = "volunteer-worker/v1"
 COMMUNITY_MARKER_OWNER = "community"
 COORDINATOR_MARKER_OWNER = "coordinator"
-COMMUNITY_ACTIVE_SUBMISSION_STATES = frozenset(
-    {"active", "pending", "running", "submitted"}
-)
+COMMUNITY_ACTIVE_SUBMISSION_STATES = frozenset({"active", "submitted"})
 _COMMUNITY_SUBMISSION_STATES = COMMUNITY_ACTIVE_SUBMISSION_STATES | {
     "accepted",
     "rejected",
-    # Read old markers during the migration, but never create these states.
-    "completed",
-    "released",
 }
 COMMUNITY_MARKER_RE = re.compile(
     r"<!--[ \t]*euroeval-volunteer-worker:v1[ \t]+(?P<payload>[^<]*?)-->"
@@ -42,7 +37,7 @@ class CommunityMarker:
     owner: str
     submission: str
     leases: tuple[dict[str, str], ...] = ()
-    submissions: tuple[dict[str, str], ...] = ()
+    submissions: tuple[dict[str, object], ...] = ()
     completed_languages: tuple[str, ...] = ()
 
 
@@ -95,34 +90,38 @@ def parse_community_marker(body: str) -> CommunityMarker | None:
         or not isinstance(payload["leases"], list)
     ):
         return None
-    submissions: list[dict[str, str]] = []
+    submissions: list[dict[str, object]] = []
     raw_submissions = payload.get("submissions", [])
     if not isinstance(raw_submissions, list):
         return None
     for submission in raw_submissions:
         if (
             not isinstance(submission, dict)
-            or not {
-                "submission_id",
-                "language",
-                "manifest_path",
-                "submitted_at",
-            }.issubset(submission)
             or set(submission)
-            - {
+            != {
                 "submission_id",
                 "language",
                 "manifest_path",
                 "submitted_at",
-                "contributor",
+                "verified_contributor",
+                "result_count",
                 "status",
             }
             or not all(
                 isinstance(submission[key], str) and submission[key]
-                for key in submission
+                for key in {
+                    "submission_id",
+                    "language",
+                    "manifest_path",
+                    "submitted_at",
+                    "verified_contributor",
+                    "status",
+                }
             )
-            or submission.get("status", "submitted")
-            not in {"submitted", "accepted", "rejected"}
+            or not isinstance(submission["result_count"], int)
+            or isinstance(submission["result_count"], bool)
+            or submission["result_count"] <= 0
+            or submission["status"] not in {"submitted", "accepted", "rejected"}
         ):
             return None
         submissions.append(submission)
@@ -157,9 +156,7 @@ def parse_community_marker(body: str) -> CommunityMarker | None:
         {lease["language"] for lease in leases}
     ) != len(leases):
         return None
-    if len({item["submission_id"] for item in submissions}) != len(submissions) or len(
-        {item["language"] for item in submissions}
-    ) != len(submissions):
+    if len({item["submission_id"] for item in submissions}) != len(submissions):
         return None
     return CommunityMarker(
         1,
@@ -185,7 +182,7 @@ def issue_has_active_queue_ownership(body: str) -> bool:
         and marker.submission in COMMUNITY_ACTIVE_SUBMISSION_STATES
         and (
             marker.submission == "submitted"
-            or marker.submission in {"active", "pending", "running"}
+            or marker.submission == "active"
             and (
                 not marker.leases
                 or any(_expiry_active(lease["expires_at"]) for lease in marker.leases)

@@ -15,6 +15,16 @@ test("strictly parses the shared ownership marker", () => {
   assert.deepEqual(parseVolunteerMarker(body), marker);
 });
 
+test("submission markers require verified server-derived counts", () => {
+  const base = { protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "submitted", leases: [] };
+  const entry = { submission_id: "one", language: "da", manifest_path: "volunteer/manifests/one.json", submitted_at: "2026-09-06T10:00:00Z", verified_contributor: "alice", result_count: 3, status: "submitted" };
+  const retry = { ...entry, submission_id: "two", status: "rejected" };
+  const body = replaceVolunteerMarker("queue", { ...base, submissions: [entry, retry] });
+  assert.equal(parseVolunteerMarker(body).submissions.length, 2);
+  const invalid = replaceVolunteerMarker("queue", { ...base, submissions: [{ ...entry, result_count: 0 }] });
+  assert.equal(parseVolunteerMarker(invalid), null);
+});
+
 test("validates canonical model identity and score bounds", () => {
   const record = {
     schema_version: "0.2.1",

@@ -1,7 +1,8 @@
 import {
   BrokerError, ConfigurationError, GROUPS, PROTOCOL_VERSION, VM_MARKER_RE,
-  acquireIssueMutex, assignIssue, authenticate, env, expectedScope, extractModelId,
-  enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl, listOpenIssues, method,
+  acquireIssueMutex, assignIssue, authenticate, claimableLanguages, env, expectedScope,
+  extractModelId, enforceRateLimit, fitsGpu, fetchIssue, json, languageGroup, leaseTtl,
+  listOpenIssues, method,
   patchIssue, putLease, randomToken, readJson, releaseIssueMutex, deleteLease,
   parseVolunteerMarker, resolveModel, selectedLanguages, VolunteerLeaseMarker, Lease,
   requireProtocol,
@@ -65,10 +66,7 @@ export default async function handler(req: Request): Promise<Response> {
         if (markerPresent && !marker) continue;
         const current = activeMarker(marker);
         const selected = selectedLanguages(snapshot.body);
-        const available = selected.filter((language) =>
-          !current?.leases.some((item) => item.language === language) &&
-          !(current?.completed_languages || []).includes(language) &&
-          !(current?.submissions || []).some((item) => item.language === language));
+        const available = claimableLanguages(selected, current);
         const language = requestedLanguage || available[0];
         if (!language || !available.includes(language)) continue;
         const group = languageGroup(language); if (!group || !GROUPS[group]) continue;

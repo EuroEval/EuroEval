@@ -1,5 +1,7 @@
 """Tests for queue issue-body ownership markers."""
 
+import json
+
 import pytest
 
 from leaderboards import queue_markers
@@ -8,15 +10,64 @@ from leaderboards import queue_markers
 def test_community_marker_parser_accepts_protocol_v1() -> None:
     """A canonical v1 marker parses into its ownership fields."""
     body = queue_markers.append_community_marker(
-        body="request", owner="community", submission="running"
+        body="request", owner="community", submission="active"
     )
 
     marker = queue_markers.parse_community_marker(body)
 
     assert marker == queue_markers.CommunityMarker(
-        protocol_version=1, owner="community", submission="running"
+        protocol_version=1, owner="community", submission="active"
     )
     assert queue_markers.issue_has_active_queue_ownership(body)
+
+
+def test_submissions_require_verified_contributor_and_server_count() -> None:
+    """Submitted audit entries carry verified, server-derived attribution."""
+    payload = {
+        "protocol_version": "volunteer-worker/v1",
+        "coordinator": "coordinator",
+        "submission": "submitted",
+        "leases": [],
+        "submissions": [
+            {
+                "submission_id": "old",
+                "language": "da",
+                "manifest_path": "volunteer/manifests/old.json",
+                "submitted_at": "2026-09-06T10:00:00Z",
+                "verified_contributor": "alice",
+                "result_count": 4,
+                "status": "rejected",
+            },
+            {
+                "submission_id": "retry",
+                "language": "da",
+                "manifest_path": "volunteer/manifests/retry.json",
+                "submitted_at": "2026-09-06T11:00:00Z",
+                "verified_contributor": "bob",
+                "result_count": 4,
+                "status": "submitted",
+            },
+        ],
+    }
+    body = f"<!-- euroeval-volunteer-worker:v1 {json.dumps(payload)} -->"
+
+    marker = queue_markers.parse_community_marker(body)
+
+    assert marker is not None
+    assert len(marker.submissions) == 2
+    payload["submissions"][1].pop("result_count")
+    malformed = f"<!-- euroeval-volunteer-worker:v1 {json.dumps(payload)} -->"
+    assert queue_markers.parse_community_marker(malformed) is None
+
+
+def test_rejected_marker_is_auditable_but_does_not_block_local_queue() -> None:
+    """Rejected history remains parseable without claiming queue ownership."""
+    body = queue_markers.append_community_marker(
+        body="request", owner="coordinator", submission="rejected"
+    )
+
+    assert queue_markers.parse_community_marker(body) is not None
+    assert not queue_markers.issue_has_active_queue_ownership(body)
 
 
 def test_community_marker_parser_rejects_malformed_and_unknown_versions() -> None:
@@ -86,7 +137,7 @@ def test_vm_marker_manipulators_leave_active_community_marker_alone(
 ) -> None:
     """Claim and cleanup paths must both honour a broker lease."""
     body = queue_markers.append_community_marker(
-        body="request", owner="coordinator", submission="pending"
+        body="request", owner="coordinator", submission="active"
     )
     patched: list[str] = []
     monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)

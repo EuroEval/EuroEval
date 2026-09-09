@@ -58,7 +58,7 @@ def test_queue_candidates_exclude_active_community_marker(
 ) -> None:
     """Candidate filtering does not trust an issue with a broker lease."""
     marker_body = append_community_marker(
-        body="request", owner="community", submission="running"
+        body="request", owner="community", submission="active"
     )
     issues = [_issue(1), _issue(2, marker_body)]
     monkeypatch.setattr(

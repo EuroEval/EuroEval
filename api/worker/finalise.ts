@@ -70,9 +70,9 @@ export default async function handler(req: Request): Promise<Response> {
       const ours = marker.leases.some((item) => item.lease_id === lease.lease_id);
       const alreadySubmitted = marker.submissions?.some((item) => item.submission_id === receipt.submission_id);
       if (!ours && !alreadySubmitted) throw new BrokerError(409, "The issue no longer carries this worker's lease marker.");
-      const submission = { submission_id: receipt.submission_id, language: lease.language, manifest_path: receipt.manifest_path, submitted_at: new Date().toISOString(), contributor: identity.contributor, status: "submitted" as const };
+      const submission = { submission_id: receipt.submission_id, language: lease.language, manifest_path: receipt.manifest_path, submitted_at: new Date().toISOString(), verified_contributor: identity.contributor, result_count: receipt.entries.length, status: "submitted" as const };
       const submissions = alreadySubmitted ? marker.submissions || [] : [...(marker.submissions || []), submission];
-      const next: VolunteerLeaseMarker = { ...marker, submission: "submitted", leases: marker.leases.filter((item) => item.lease_id !== lease.lease_id), submissions, completed_languages: [...new Set([...(marker.completed_languages || []), lease.language])] };
+      const next: VolunteerLeaseMarker = { ...marker, submission: "submitted", leases: marker.leases.filter((item) => item.lease_id !== lease.lease_id), submissions };
       if (ours) { await patchIssue(lease.issue_number, replaceMarker(issue.body || "", next)); const fenced = parseVolunteerMarker((await fetchIssue(lease.issue_number)).body); if (!fenced?.submissions?.some((item) => item.submission_id === receipt.submission_id)) throw new BrokerError(409, "GitHub submission fence lost."); }
       const label = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
       if (!issue.labels?.some((item) => item.name === label)) await addIssueLabel(lease.issue_number, label);
