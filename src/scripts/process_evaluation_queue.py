@@ -123,18 +123,23 @@ class _CoordinatorIssueLock:
             target=self._renew_loop, name=f"coordinator-renew-{number}", daemon=True
         )
 
-    def start(self) -> None:
-        """Start renewing the lock before claim mutations begin."""
-        self._thread.start()
-
-    def ensure_healthy(self) -> None:
-        """Raise when the broker no longer fences this claimant.
-
-        Raises:
-            RuntimeError: If the renewal thread has lost the lock.
-        """
-        if self._lost.is_set():
-            raise RuntimeError("coordinator lock renewal was lost")
+    def _renew_loop(self) -> None:
+        renew_url = (
+            self.lock_url.removesuffix("/coordinator-lock") + "/coordinator-renew"
+        )
+        while not self._stop.wait(COORDINATOR_RENEW_SECONDS):
+            try:
+                _coordinator_request(
+                    renew_url,
+                    number=self.number,
+                    secret=self.secret,
+                    token=self.token,
+                    operation="renew",
+                )
+            except RuntimeError as error:
+                logger.error("Coordinator lock renewal failed: %s", error)
+                self._lost.set()
+                return
 
     def close(self) -> None:
         """Stop renewal and release the token, preserving the loss fence.
@@ -159,23 +164,18 @@ class _CoordinatorIssueLock:
         if release_error is not None:
             raise release_error
 
-    def _renew_loop(self) -> None:
-        renew_url = (
-            self.lock_url.removesuffix("/coordinator-lock") + "/coordinator-renew"
-        )
-        while not self._stop.wait(COORDINATOR_RENEW_SECONDS):
-            try:
-                _coordinator_request(
-                    renew_url,
-                    number=self.number,
-                    secret=self.secret,
-                    token=self.token,
-                    operation="renew",
-                )
-            except RuntimeError as error:
-                logger.error("Coordinator lock renewal failed: %s", error)
-                self._lost.set()
-                return
+    def ensure_healthy(self) -> None:
+        """Raise when the broker no longer fences this claimant.
+
+        Raises:
+            RuntimeError: If the renewal thread has lost the lock.
+        """
+        if self._lost.is_set():
+            raise RuntimeError("coordinator lock renewal was lost")
+
+    def start(self) -> None:
+        """Start renewing the lock before claim mutations begin."""
+        self._thread.start()
 
 
 @contextmanager
@@ -489,48 +489,6 @@ def process_queue_once(
         cool_down_between_issues(config=thermal_config)
 
 
-def _list_queue_issues(*, assignee: str) -> list[dict[str, t.Any]] | None:
-    """Fetch every page of open model-evaluation-request issues.
-
-    GitHub silently limits a list response to its requested page size. The
-    queue must not lose older requests merely because the first page is full.
-
-    Args:
-        assignee:
-            GitHub assignee filter, usually ``none`` or the local runner.
-
-    Returns:
-        All issue dictionaries, or None when any page cannot be fetched.
-    """
-    all_issues: list[dict[str, t.Any]] = []
-    page = 1
-    while True:
-        try:
-            response = gh_request(
-                path=f"/repos/{REPO}/issues",
-                params={
-                    "state": "open",
-                    "labels": MODEL_REQUEST_LABEL,
-                    "per_page": "100",
-                    "page": str(page),
-                    "assignee": assignee,
-                },
-            )
-        except urllib.error.HTTPError as e:
-            logger.error(f"Failed to list issues (page {page}): {e}")
-            return None
-        if not isinstance(response, list):
-            logger.error(
-                f"Failed to list issues (page {page}): GitHub returned a "
-                "non-list response."
-            )
-            return None
-        all_issues.extend(issue for issue in response if isinstance(issue, dict))
-        if len(response) < 100:
-            return all_issues
-        page += 1
-
-
 def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list[str]]]:
     """Return processable issues sorted by priority.
 
@@ -636,6 +594,48 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
     candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4]))
     logger.info(f"Found {len(candidates)} processable issue(s).")
     return candidates
+
+
+def _list_queue_issues(*, assignee: str) -> list[dict[str, t.Any]] | None:
+    """Fetch every page of open model-evaluation-request issues.
+
+    GitHub silently limits a list response to its requested page size. The
+    queue must not lose older requests merely because the first page is full.
+
+    Args:
+        assignee:
+            GitHub assignee filter, usually ``none`` or the local runner.
+
+    Returns:
+        All issue dictionaries, or None when any page cannot be fetched.
+    """
+    all_issues: list[dict[str, t.Any]] = []
+    page = 1
+    while True:
+        try:
+            response = gh_request(
+                path=f"/repos/{REPO}/issues",
+                params={
+                    "state": "open",
+                    "labels": MODEL_REQUEST_LABEL,
+                    "per_page": "100",
+                    "page": str(page),
+                    "assignee": assignee,
+                },
+            )
+        except urllib.error.HTTPError as e:
+            logger.error(f"Failed to list issues (page {page}): {e}")
+            return None
+        if not isinstance(response, list):
+            logger.error(
+                f"Failed to list issues (page {page}): GitHub returned a "
+                "non-list response."
+            )
+            return None
+        all_issues.extend(issue for issue in response if isinstance(issue, dict))
+        if len(response) < 100:
+            return all_issues
+        page += 1
 
 
 def process_issue(

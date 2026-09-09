@@ -28,56 +28,6 @@ JsonObject = dict[str, object]
 Request = c.Callable[[str, str, dict[str, str], JsonObject | None], JsonObject]
 
 
-class BrokerProtocol(t.Protocol):
-    """Operations required by the worker runtime."""
-
-    def start_auth(self) -> AuthStart:
-        """Start a device flow."""
-        ...
-
-    def poll_auth(self, session_id: str) -> AuthPoll:
-        """Poll a device flow."""
-        ...
-
-    def claim(self, credential: str, hardware: HardwareReport) -> Claim:
-        """Claim available work."""
-        ...
-
-    def heartbeat(self, credential: str, lease_id: str) -> str:
-        """Renew a lease and return its new expiry timestamp."""
-        ...
-
-    def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
-        """Submit one exact result JSON string."""
-        ...
-
-    def finalise(self, credential: str, lease_id: str) -> str:
-        """Finalise a lease and return its submission identifier."""
-        ...
-
-    def release(self, credential: str, lease_id: str, reason: str) -> None:
-        """Release a lease."""
-        ...
-
-
-class BrokerError(RuntimeError):
-    """Raised when the broker rejects or cannot answer a request."""
-
-    def __init__(
-        self,
-        message: str,
-        *,
-        status: int | None = None,
-        retry_after: float | None = None,
-        body: JsonObject | None = None,
-    ) -> None:
-        """Initialise an error with HTTP retry metadata and a safe response body."""
-        super().__init__(message)
-        self.status = status
-        self.retry_after = retry_after
-        self.body = body
-
-
 class BrokerClient:
     """Small, dependency-free client for the volunteer-worker broker."""
 
@@ -101,29 +51,6 @@ class BrokerClient:
         self._request = request or _http_request
         self.worker_version = worker_version
 
-    def start_auth(self) -> AuthStart:
-        """Start a device authorisation flow.
-
-        Returns:
-            Device-flow details.
-        """
-        return auth_start_from_dict(
-            self._post("auth/start", {"protocol_version": PROTOCOL_VERSION})
-        )
-
-    def poll_auth(self, session_id: str) -> AuthPoll:
-        """Poll a device authorisation flow.
-
-        Returns:
-            The current device-flow state.
-        """
-        return auth_poll_from_dict(
-            self._post(
-                "auth/poll",
-                {"protocol_version": PROTOCOL_VERSION, "session_id": session_id},
-            )
-        )
-
     def claim(self, credential: str, hardware: HardwareReport) -> Claim:
         """Claim one available lease, if any.
 
@@ -139,6 +66,42 @@ class BrokerClient:
         if result.get("status") == "no_work":
             return Claim(lease=None)
         return Claim(lease=lease_from_dict(result))
+
+    def _post(
+        self, path: str, payload: JsonObject, credential: str | None = None
+    ) -> JsonObject:
+        headers = {"Content-Type": "application/json"}
+        if credential is not None:
+            headers["Authorization"] = f"Bearer {credential}"
+        try:
+            result = self._request("POST", f"{self.server}/{path}", headers, payload)
+        except BrokerError:
+            raise
+        except Exception as error:
+            raise BrokerError(f"broker request {path!r} failed: {error}") from error
+        if result.get("protocol_version") != PROTOCOL_VERSION:
+            raise BrokerError("broker response has an unsupported protocol_version")
+        return result
+
+    def finalise(self, credential: str, lease_id: str) -> str:
+        """Mark all records for a lease as accepted and return its identifier.
+
+        Returns:
+            The broker submission identifier.
+
+        Raises:
+            BrokerError:
+                If the response omits the submission identifier.
+        """
+        result = self._post(
+            "finalise",
+            {"protocol_version": PROTOCOL_VERSION, "lease_id": lease_id},
+            credential=credential,
+        )
+        submission_id = result.get("submission_id")
+        if not isinstance(submission_id, str) or not submission_id:
+            raise BrokerError("broker finalise response omitted submission_id")
+        return submission_id
 
     def heartbeat(self, credential: str, lease_id: str) -> str:
         """Renew a lease and return the broker's renewed expiry timestamp.
@@ -162,6 +125,41 @@ class BrokerClient:
             raise BrokerError("broker heartbeat response omitted expires_at")
         return expires_at
 
+    def poll_auth(self, session_id: str) -> AuthPoll:
+        """Poll a device authorisation flow.
+
+        Returns:
+            The current device-flow state.
+        """
+        return auth_poll_from_dict(
+            self._post(
+                "auth/poll",
+                {"protocol_version": PROTOCOL_VERSION, "session_id": session_id},
+            )
+        )
+
+    def release(self, credential: str, lease_id: str, reason: str) -> None:
+        """Release a lease without losing the broker's retry state."""
+        self._post(
+            "release",
+            {
+                "protocol_version": PROTOCOL_VERSION,
+                "lease_id": lease_id,
+                "reason": reason,
+            },
+            credential=credential,
+        )
+
+    def start_auth(self) -> AuthStart:
+        """Start a device authorisation flow.
+
+        Returns:
+            Device-flow details.
+        """
+        return auth_start_from_dict(
+            self._post("auth/start", {"protocol_version": PROTOCOL_VERSION})
+        )
+
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
         """Submit one exact result record; the broker makes this idempotent."""
         payload: JsonObject = {
@@ -179,53 +177,80 @@ class BrokerClient:
         }
         self._post("result", payload, credential=credential)
 
+
+class BrokerError(RuntimeError):
+    """Raised when the broker rejects or cannot answer a request."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status: int | None = None,
+        retry_after: float | None = None,
+        body: JsonObject | None = None,
+    ) -> None:
+        """Initialise an error with HTTP retry metadata and a safe response body."""
+        super().__init__(message)
+        self.status = status
+        self.retry_after = retry_after
+        self.body = body
+
+
+def _hardware_dict(hardware: HardwareReport) -> JsonObject:
+    return {
+        "architecture": hardware.architecture,
+        "ram_bytes": hardware.ram_bytes,
+        "free_disk_bytes": hardware.free_disk_bytes,
+        "driver_version": hardware.driver_version,
+        "cuda_version": hardware.cuda_version,
+        "pytorch_version": hardware.pytorch_version,
+        "gpu_memory_utilisation": hardware.gpu_memory_utilisation,
+        "selected_gpu_index": hardware.selected_gpu_index,
+        "selected_gpu_uuid": hardware.selected_gpu_uuid,
+        "gpus": [
+            {
+                "index": gpu.index,
+                "name": gpu.name,
+                "uuid": gpu.uuid,
+                "free_memory_bytes": gpu.free_memory_bytes,
+                "total_memory_bytes": gpu.total_memory_bytes,
+                "compute_capability": gpu.compute_capability,
+            }
+            for gpu in hardware.gpus
+        ],
+    }
+
+
+class BrokerProtocol(t.Protocol):
+    """Operations required by the worker runtime."""
+
+    def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+        """Claim available work."""
+        ...
+
     def finalise(self, credential: str, lease_id: str) -> str:
-        """Mark all records for a lease as accepted and return its identifier.
+        """Finalise a lease and return its submission identifier."""
+        ...
 
-        Returns:
-            The broker submission identifier.
+    def heartbeat(self, credential: str, lease_id: str) -> str:
+        """Renew a lease and return its new expiry timestamp."""
+        ...
 
-        Raises:
-            BrokerError:
-                If the response omits the submission identifier.
-        """
-        result = self._post(
-            "finalise",
-            {"protocol_version": PROTOCOL_VERSION, "lease_id": lease_id},
-            credential=credential,
-        )
-        submission_id = result.get("submission_id")
-        if not isinstance(submission_id, str) or not submission_id:
-            raise BrokerError("broker finalise response omitted submission_id")
-        return submission_id
+    def poll_auth(self, session_id: str) -> AuthPoll:
+        """Poll a device flow."""
+        ...
 
     def release(self, credential: str, lease_id: str, reason: str) -> None:
-        """Release a lease without losing the broker's retry state."""
-        self._post(
-            "release",
-            {
-                "protocol_version": PROTOCOL_VERSION,
-                "lease_id": lease_id,
-                "reason": reason,
-            },
-            credential=credential,
-        )
+        """Release a lease."""
+        ...
 
-    def _post(
-        self, path: str, payload: JsonObject, credential: str | None = None
-    ) -> JsonObject:
-        headers = {"Content-Type": "application/json"}
-        if credential is not None:
-            headers["Authorization"] = f"Bearer {credential}"
-        try:
-            result = self._request("POST", f"{self.server}/{path}", headers, payload)
-        except BrokerError:
-            raise
-        except Exception as error:
-            raise BrokerError(f"broker request {path!r} failed: {error}") from error
-        if result.get("protocol_version") != PROTOCOL_VERSION:
-            raise BrokerError("broker response has an unsupported protocol_version")
-        return result
+    def start_auth(self) -> AuthStart:
+        """Start a device flow."""
+        ...
+
+    def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
+        """Submit one exact result JSON string."""
+        ...
 
 
 def _http_request(
@@ -315,28 +340,3 @@ def _retry_after(value: str | None) -> float | None:
         except (TypeError, ValueError, OverflowError):
             return None
         return max(0.0, parsed.timestamp() - time.time()) if parsed else None
-
-
-def _hardware_dict(hardware: HardwareReport) -> JsonObject:
-    return {
-        "architecture": hardware.architecture,
-        "ram_bytes": hardware.ram_bytes,
-        "free_disk_bytes": hardware.free_disk_bytes,
-        "driver_version": hardware.driver_version,
-        "cuda_version": hardware.cuda_version,
-        "pytorch_version": hardware.pytorch_version,
-        "gpu_memory_utilisation": hardware.gpu_memory_utilisation,
-        "selected_gpu_index": hardware.selected_gpu_index,
-        "selected_gpu_uuid": hardware.selected_gpu_uuid,
-        "gpus": [
-            {
-                "index": gpu.index,
-                "name": gpu.name,
-                "uuid": gpu.uuid,
-                "free_memory_bytes": gpu.free_memory_bytes,
-                "total_memory_bytes": gpu.total_memory_bytes,
-                "compute_capability": gpu.compute_capability,
-            }
-            for gpu in hardware.gpus
-        ],
-    }

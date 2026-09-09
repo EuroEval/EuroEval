@@ -9,6 +9,32 @@ from euroeval.eee_utils import benchmark_result_to_eee_dict
 from .types import EEERecord, JsonValue, Lease, canonical_json
 
 
+def _normalise_record(
+    record: dict[str, JsonValue], lease: Lease
+) -> dict[str, JsonValue]:
+    """Make the broker identity explicit without changing evaluation data.
+
+    Returns:
+        The record with broker-verified model identity fields.
+    """
+    model_info = record.get("model_info")
+    if isinstance(model_info, dict):
+        model_info = dict(model_info)
+        model_info["id"] = lease.model_id
+        record = dict(record)
+        record["model_info"] = model_info
+    return record
+
+
+def _record(record: dict[str, JsonValue]) -> EEERecord:
+    """Create a record with the one canonical Python JSON representation.
+
+    Returns:
+        The exact JSON text and its digest.
+    """
+    return EEERecord(record_json=canonical_json(record))
+
+
 class Evaluator(t.Protocol):
     """Protocol implemented by concrete evaluation runners."""
 
@@ -74,29 +100,3 @@ class EuroEvalEvaluator(Evaluator):
             for item in records:
                 handle.write(item.record_json + "\n")
         return records
-
-
-def _normalise_record(
-    record: dict[str, JsonValue], lease: Lease
-) -> dict[str, JsonValue]:
-    """Make the broker identity explicit without changing evaluation data.
-
-    Returns:
-        The record with broker-verified model identity fields.
-    """
-    model_info = record.get("model_info")
-    if isinstance(model_info, dict):
-        model_info = dict(model_info)
-        model_info["id"] = lease.model_id
-        record = dict(record)
-        record["model_info"] = model_info
-    return record
-
-
-def _record(record: dict[str, JsonValue]) -> EEERecord:
-    """Create a record with the one canonical Python JSON representation.
-
-    Returns:
-        The exact JSON text and its digest.
-    """
-    return EEERecord(record_json=canonical_json(record))

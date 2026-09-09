@@ -29,40 +29,23 @@ PROFILES = (
 ENCODER_PROFILES = frozenset({"bert", "roberta", "eurobert"})
 
 
-def official_pairs() -> set[tuple[str, str]]:
-    """Load the same official dataset/language pairs as the queue.
-
-    Returns:
-        Official dataset and language pairs.
-    """
-    return official_dataset_language_pairs()
-
-
-def _configs_by_name() -> dict[str, object]:
-    """Load dataset configs for model-type-aware scope filtering.
-
-    Returns:
-        Dataset configurations keyed by their public name.
-    """
-    return t.cast(
-        dict[str, object],
-        get_all_dataset_configs(
-            custom_datasets_file=Path(""),
-            dataset_ids=[],
-            api_key=None,
-            cache_dir=Path(".cache"),
-            trust_remote_code=False,
-            run_with_cli=False,
-        ),
+def main() -> None:
+    """Write the generated policy atomically."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--version", default=None, help="EuroEval version (default: installed package)"
     )
-
-
-def _allowed_for_profile(config: object, profile: str) -> bool:
-    """Return whether one architecture profile may run a dataset."""
-    allowed = getattr(config, "allowed_model_types")
-    if profile in ENCODER_PROFILES:
-        return ModelType.ENCODER in allowed
-    return ModelType.GENERATIVE in allowed
+    parser.add_argument(
+        "--output", type=Path, default=Path("api/worker/scope-policy.json")
+    )
+    args = parser.parse_args()
+    version = args.version or importlib.metadata.version("euroeval")
+    policy = build_policy(version, official_pairs())
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = args.output.with_suffix(args.output.suffix + ".tmp")
+    encoded = json.dumps(policy, ensure_ascii=False, indent=2)
+    temporary.write_text(encoded + "\n", encoding="utf-8")
+    temporary.replace(args.output)
 
 
 def build_policy(
@@ -108,23 +91,40 @@ def build_policy(
     }
 
 
-def main() -> None:
-    """Write the generated policy atomically."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--version", default=None, help="EuroEval version (default: installed package)"
+def _allowed_for_profile(config: object, profile: str) -> bool:
+    """Return whether one architecture profile may run a dataset."""
+    allowed = getattr(config, "allowed_model_types")
+    if profile in ENCODER_PROFILES:
+        return ModelType.ENCODER in allowed
+    return ModelType.GENERATIVE in allowed
+
+
+def _configs_by_name() -> dict[str, object]:
+    """Load dataset configs for model-type-aware scope filtering.
+
+    Returns:
+        Dataset configurations keyed by their public name.
+    """
+    return t.cast(
+        dict[str, object],
+        get_all_dataset_configs(
+            custom_datasets_file=Path(""),
+            dataset_ids=[],
+            api_key=None,
+            cache_dir=Path(".cache"),
+            trust_remote_code=False,
+            run_with_cli=False,
+        ),
     )
-    parser.add_argument(
-        "--output", type=Path, default=Path("api/worker/scope-policy.json")
-    )
-    args = parser.parse_args()
-    version = args.version or importlib.metadata.version("euroeval")
-    policy = build_policy(version, official_pairs())
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    temporary = args.output.with_suffix(args.output.suffix + ".tmp")
-    encoded = json.dumps(policy, ensure_ascii=False, indent=2)
-    temporary.write_text(encoded + "\n", encoding="utf-8")
-    temporary.replace(args.output)
+
+
+def official_pairs() -> set[tuple[str, str]]:
+    """Load the same official dataset/language pairs as the queue.
+
+    Returns:
+        Official dataset and language pairs.
+    """
+    return official_dataset_language_pairs()
 
 
 if __name__ == "__main__":

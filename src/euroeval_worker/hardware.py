@@ -16,8 +16,9 @@ from .types import Gpu, HardwareReport
 logger = logging.getLogger(__name__)
 
 
-class NoGpuError(RuntimeError):
-    """Raised when no usable NVIDIA GPU is available."""
+def _run(command: list[str]) -> str:
+    completed = subprocess.run(command, check=True, capture_output=True, text=True)
+    return completed.stdout
 
 
 def discover_hardware(
@@ -45,6 +46,17 @@ def discover_hardware(
         selected_gpu_index=selected.index,
         selected_gpu_uuid=selected.uuid,
     )
+
+
+def _match(text: str, pattern: str) -> str | None:
+    match = re.search(pattern, text)
+    return match.group(1) if match else None
+
+
+def _ram_bytes() -> int:
+    if hasattr(os, "sysconf"):
+        return int(os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE"))
+    return 0
 
 
 def discover_gpus(runner: c.Callable[[list[str]], str] | None = None) -> list[Gpu]:
@@ -84,22 +96,8 @@ def discover_gpus(runner: c.Callable[[list[str]], str] | None = None) -> list[Gp
     return gpus
 
 
-def select_gpu(gpus: c.Iterable[Gpu]) -> Gpu:
-    """Select the GPU with the most usable free memory deterministically.
-
-    Returns:
-        The selected GPU.
-
-    Raises:
-        NoGpuError:
-            If no GPU has a usable memory report.
-    """
-    usable = [
-        gpu for gpu in gpus if 0 < gpu.free_memory_bytes <= gpu.total_memory_bytes
-    ]
-    if not usable:
-        raise NoGpuError("nvidia-smi returned no GPU with usable free memory")
-    return min(usable, key=lambda gpu: (-gpu.free_memory_bytes, gpu.index, gpu.uuid))
+class NoGpuError(RuntimeError):
+    """Raised when no usable NVIDIA GPU is available."""
 
 
 def _parse_gpu_csv(output: str) -> list[Gpu]:
@@ -136,17 +134,19 @@ def _parse_gpu_csv(output: str) -> list[Gpu]:
     return gpus
 
 
-def _run(command: list[str]) -> str:
-    completed = subprocess.run(command, check=True, capture_output=True, text=True)
-    return completed.stdout
+def select_gpu(gpus: c.Iterable[Gpu]) -> Gpu:
+    """Select the GPU with the most usable free memory deterministically.
 
+    Returns:
+        The selected GPU.
 
-def _match(text: str, pattern: str) -> str | None:
-    match = re.search(pattern, text)
-    return match.group(1) if match else None
-
-
-def _ram_bytes() -> int:
-    if hasattr(os, "sysconf"):
-        return int(os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE"))
-    return 0
+    Raises:
+        NoGpuError:
+            If no GPU has a usable memory report.
+    """
+    usable = [
+        gpu for gpu in gpus if 0 < gpu.free_memory_bytes <= gpu.total_memory_bytes
+    ]
+    if not usable:
+        raise NoGpuError("nvidia-smi returned no GPU with usable free memory")
+    return min(usable, key=lambda gpu: (-gpu.free_memory_bytes, gpu.index, gpu.uuid))

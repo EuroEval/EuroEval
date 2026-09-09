@@ -78,6 +78,31 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
 
+def _log_report(report: ReviewReport) -> None:
+    logger.info("Submission: %s", report.submission_id)
+    logger.info("Issue: %s", report.issue_number)
+    logger.info("Verified contributor: %s", report.contributor)
+    logger.info("Model: %s@%s", report.model_id, report.model_revision)
+    logger.info("Language: %s", report.language)
+    logger.info("EuroEval version: %s", report.euroeval_version)
+    if report.provenance:
+        logger.info("Provenance: %s", report.provenance)
+    logger.info("Expected identities: %s", len(report.expected_identities))
+    for identity in report.expected_identities:
+        logger.info("  expected %s", identity)
+    logger.info("Actual identities: %s", len(report.records))
+    for record in report.records:
+        logger.info("  actual   %s  sha256=%s", record.identity, record.digest)
+    by_metric: dict[str, list[float]] = defaultdict(list)
+    for record in report.records:
+        for metric, score in record.scores:
+            by_metric[metric].append(score)
+    for metric, scores in sorted(by_metric.items()):
+        logger.info("Score range %s: %g to %g", metric, min(scores), max(scores))
+    logger.info("Checks: %s", "; ".join(report.checks))
+    logger.info("Warnings: %s", "; ".join(report.warnings) or "none")
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Review durable volunteer results without consulting Redis."
@@ -117,31 +142,6 @@ def _service() -> VolunteerReviewer:
         ),
         results_bucket=os.environ.get("HF_RESULTS_BUCKET", HF_RESULTS_BUCKET),
     )
-
-
-def _log_report(report: ReviewReport) -> None:
-    logger.info("Submission: %s", report.submission_id)
-    logger.info("Issue: %s", report.issue_number)
-    logger.info("Verified contributor: %s", report.contributor)
-    logger.info("Model: %s@%s", report.model_id, report.model_revision)
-    logger.info("Language: %s", report.language)
-    logger.info("EuroEval version: %s", report.euroeval_version)
-    if report.provenance:
-        logger.info("Provenance: %s", report.provenance)
-    logger.info("Expected identities: %s", len(report.expected_identities))
-    for identity in report.expected_identities:
-        logger.info("  expected %s", identity)
-    logger.info("Actual identities: %s", len(report.records))
-    for record in report.records:
-        logger.info("  actual   %s  sha256=%s", record.identity, record.digest)
-    by_metric: dict[str, list[float]] = defaultdict(list)
-    for record in report.records:
-        for metric, score in record.scores:
-            by_metric[metric].append(score)
-    for metric, scores in sorted(by_metric.items()):
-        logger.info("Score range %s: %g to %g", metric, min(scores), max(scores))
-    logger.info("Checks: %s", "; ".join(report.checks))
-    logger.info("Warnings: %s", "; ".join(report.warnings) or "none")
 
 
 if __name__ == "__main__":

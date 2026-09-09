@@ -52,65 +52,28 @@ HARDWARE = HardwareReport(
 )
 
 
-class AuthClient:
-    """Minimal device-flow broker fake."""
+def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
+    """Use the broker's slow-down interval rather than a tight polling loop."""
+    delays: list[float] = []
 
-    def start_auth(self) -> AuthStart:
-        """Return test device-flow details."""
-        return AuthStart("session", "CODE", "https://example.test", 60, 0)
+    class SlowAuth(AuthClient):
+        """Device flow that first requests slower polling."""
 
-    def poll_auth(self, session_id: str) -> AuthPoll:
-        """Approve the test device flow.
+        def __init__(self) -> None:
+            self.polls = 0
 
-        Returns:
-            Approved test credentials.
-        """
-        assert session_id == "session"
-        return AuthPoll(False, "opaque-credential", "octocat")
+        def poll_auth(self, session_id: str) -> AuthPoll:
+            """Return slow-down and then approval."""
+            self.polls += 1
+            if self.polls == 1:
+                return AuthPoll(True, retry_after=7)
+            return AuthPoll(False, "credential", "volunteer")
 
-
-def test_broker_protocol_payload_is_canonical() -> None:
-    """The Python client emits the same flat v1 envelope as the broker."""
-    calls: list[tuple[str, str, dict[str, object]]] = []
-
-    def request(
-        method: str,
-        url: str,
-        headers: dict[str, str],
-        payload: dict[str, object] | None,
-    ) -> dict[str, object]:
-        """Capture a request and return a no-work response.
-
-        Returns:
-            The canonical no-work envelope.
-        """
-        assert payload is not None
-        calls.append((method, url, payload))
-        return {"protocol_version": "volunteer-worker/v1", "status": "no_work"}
-
-    client = BrokerClient(
-        "https://broker.test", request=request, worker_version="worker-1"
+    assert authenticate(SlowAuth(), StateStore(tmp_path), sleep=delays.append) == (
+        "credential",
+        "volunteer",
     )
-    assert client.claim("credential", HARDWARE).lease is None
-    assert calls[0][2]["protocol_version"] == "volunteer-worker/v1"
-    assert calls[0][2]["worker_version"] == "worker-1"
-    hardware_payload = calls[0][2]["hardware"]
-    assert isinstance(hardware_payload, dict)
-    assert set(hardware_payload) == {
-        "architecture",
-        "ram_bytes",
-        "free_disk_bytes",
-        "driver_version",
-        "cuda_version",
-        "pytorch_version",
-        "gpu_memory_utilisation",
-        "selected_gpu_index",
-        "selected_gpu_uuid",
-        "gpus",
-    }
-    assert hardware_payload["gpu_memory_utilisation"] == 0.8
-    assert hardware_payload["selected_gpu_index"] == GPU.index
-    assert hardware_payload["selected_gpu_uuid"] == GPU.uuid
+    assert delays == [7]
 
 
 def test_auth_persists_only_broker_auth_with_private_permissions(
@@ -129,352 +92,21 @@ def test_auth_persists_only_broker_auth_with_private_permissions(
     assert os.stat(state.path).st_mode & 0o777 == 0o600
 
 
-def test_nvidia_csv_parser_handles_compute_capability_and_fails_without_gpu() -> None:
-    """Parse memory and capability values, and fail closed without a GPU."""
-    output = "1, NVIDIA A100, GPU-1, 10240, 20480, 8.0\n"
-    gpu = discover_gpus(runner=lambda _command: output)[0]
-    assert gpu.free_memory_bytes == 10 * 1024**3
-    assert gpu.compute_capability == "8.0"
-    assert gpu.index == 1
-    with pytest.raises(NoGpuError):
-        discover_gpus(runner=lambda _command: "")
-
-
-def test_safety_rejects_remote_code_and_unpinned_models() -> None:
-    """Reject remote code and mutable Hub revisions."""
-    metadata = ModelMetadata(
-        private=False,
-        gated=False,
-        auto_map=True,
-        files=("config.json", "model.safetensors"),
-        safetensors=True,
-        estimated_bytes=1,
-    )
-    with pytest.raises(SafetyError, match="auto_map"):
-        check_model_safety(LEASE, (GPU,), metadata)
-    with pytest.raises(SafetyError, match="unpinned"):
-        check_model_safety(
-            dataclasses.replace(LEASE, model_revision="main"), (GPU,), metadata
-        )
-
-
-def test_evaluator_uses_validation_and_remote_code_flags(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Pass the worker's safety flags to the existing evaluator."""
-    calls: dict[str, object] = {}
-
-    class FakeBenchmarker:
-        """Capture the adapter's calls."""
-
-        def __init__(self, **kwargs: object) -> None:
-            calls["init"] = kwargs
-
-        def benchmark(self, **kwargs: object) -> list[object]:
-            """Return one fake benchmark result."""
-            calls["benchmark"] = kwargs
-            return [object()]
-
-    monkeypatch.setattr(evaluator, "Benchmarker", FakeBenchmarker)
-    monkeypatch.setattr(
-        evaluator,
-        "benchmark_result_to_eee_dict",
-        lambda result: {"evaluation_id": "one", "result": 1},
-    )
-    records = evaluator.EuroEvalEvaluator(tmp_path).evaluate(
-        lease=LEASE, output_path=tmp_path / "isolated.jsonl"
-    )
-    assert records[0].sha256 == records[0].sha256
-    assert calls["benchmark"] == {
-        "model": f"org/model@{REVISION}",
-        "language": "da",
-        "progress_bar": False,
-        "save_results": False,
-        "trust_remote_code": False,
-        "evaluate_test_split": False,
-        "requires_safetensors": True,
-        "gpu_memory_utilization": 0.8,
-        "force": True,
-        "raise_errors": True,
-    }
-    assert len((tmp_path / "isolated.jsonl").read_text().splitlines()) == 1
-
-
-class Broker:
-    """Broker fake covering claim, lease, and result lifecycle."""
-
-    def __init__(self) -> None:
-        """Initialise broker state."""
-        self.claims = 0
-        self.submissions = 0
-        self.releases: list[str] = []
-        self.finalised = False
-
-    def start_auth(self) -> AuthStart:
-        """Return test auth details."""
-        return AuthStart("session", "CODE", "https://example.test", 60, 1)
+class AuthClient:
+    """Minimal device-flow broker fake."""
 
     def poll_auth(self, session_id: str) -> AuthPoll:
-        """Return approved test auth."""
-        return AuthPoll(False, "cred", "login")
-
-    def claim(self, credential: str, hardware: HardwareReport) -> Claim:
-        """Return the test lease."""
-        self.claims += 1
-        return Claim(LEASE)
-
-    def heartbeat(self, credential: str, lease_id: str) -> str:
-        """Accept a test heartbeat.
+        """Approve the test device flow.
 
         Returns:
-            The current lease expiry.
+            Approved test credentials.
         """
-        return LEASE.expires_at
+        assert session_id == "session"
+        return AuthPoll(False, "opaque-credential", "octocat")
 
-    def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
-        """Fail once to verify digest-stable retry.
-
-        Raises:
-            RuntimeError: On the first submission.
-        """
-        self.submissions += 1
-        if self.submissions == 1:
-            raise RuntimeError("temporary broker error")
-
-    def finalise(self, credential: str, lease_id: str) -> str:
-        """Accept finalisation and return its stable identifier.
-
-        Returns:
-            The stable submission identifier.
-        """
-        self.finalised = True
-        return "submission-1"
-
-    def release(self, credential: str, lease_id: str, reason: str) -> None:
-        """Record lease release."""
-        self.releases.append(reason)
-
-
-class OneRecordEvaluator:
-    """Evaluator fake producing one isolated result."""
-
-    def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
-        """Return one stable record."""
-        return [EEERecord({"id": "one"})]
-
-
-def test_worker_retries_idempotently_and_finalises(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Retry a result without changing its digest, then finalise."""
-    monkeypatch.setattr(
-        runtime, "authenticate", lambda client, state: ("cred", "login")
-    )
-    monkeypatch.setattr(
-        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
-    )
-    broker = Broker()
-    worker = runtime.Worker(
-        client=broker,
-        state=StateStore(tmp_path),
-        evaluator=OneRecordEvaluator(),
-        hardware_factory=lambda: HARDWARE,
-    )
-    worker.run(once=True)
-    assert broker.submissions == 2
-    assert broker.finalised
-    assert not broker.releases
-
-
-def test_busy_gpu_is_not_selected_or_exposed_to_evaluation(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Choose the free GPU and restore CUDA visibility after evaluation."""
-    monkeypatch.setattr(
-        runtime, "authenticate", lambda client, state: ("cred", "login")
-    )
-    monkeypatch.setattr(
-        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
-    )
-    busy = Gpu("A100", "GPU-0", 1, 10, "8.0", 0)
-    free = Gpu("A100", "GPU-1", 9, 10, "8.0", 1)
-    hardware = HardwareReport("x86_64", 64, 100, "550", "12.4", "2.7", (busy, free))
-    original = os.environ.get("CUDA_VISIBLE_DEVICES")
-    observed: dict[str, object] = {}
-
-    class CapturingBroker(Broker):
-        """Capture the selected claim hardware."""
-
-        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
-            """Capture hardware and return work.
-
-            Returns:
-                The test lease.
-            """
-            observed["hardware"] = hardware
-            return Claim(
-                dataclasses.replace(
-                    LEASE,
-                    selected_gpu_uuid=hardware.selected_gpu_uuid,
-                    selected_gpu_index=hardware.selected_gpu_index,
-                )
-            )
-
-    class CapturingEvaluator:
-        """Capture CUDA visibility during model setup."""
-
-        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
-            """Return one result after observing the environment."""
-            observed["cuda"] = os.environ.get("CUDA_VISIBLE_DEVICES")
-            return [EEERecord({"id": "one"})]
-
-    broker = CapturingBroker()
-    runtime.Worker(
-        client=broker,
-        state=StateStore(tmp_path),
-        evaluator=CapturingEvaluator(),
-        hardware_factory=lambda: hardware,
-    ).run(once=True)
-    claimed = observed["hardware"]
-    assert isinstance(claimed, HardwareReport)
-    assert claimed.selected_gpu_index == 1
-    assert claimed.selected_gpu_uuid == "GPU-1"
-    assert observed["cuda"] == "GPU-1"
-    assert os.environ.get("CUDA_VISIBLE_DEVICES") == original
-
-
-def test_no_gpu_exits_before_claim(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Do not claim work when hardware discovery reports no GPU."""
-    monkeypatch.setattr(
-        runtime, "authenticate", lambda client, state: ("cred", "login")
-    )
-    broker = Broker()
-    worker = runtime.Worker(
-        client=broker,
-        state=StateStore(tmp_path),
-        hardware_factory=lambda: (_ for _ in ()).throw(NoGpuError("no GPU")),
-    )
-    with pytest.raises(NoGpuError):
-        worker.run(once=True)
-    assert broker.claims == 0
-
-
-def test_evaluation_failure_releases_lease(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Release a lease when evaluation fails."""
-    monkeypatch.setattr(
-        runtime, "authenticate", lambda client, state: ("cred", "login")
-    )
-    monkeypatch.setattr(
-        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
-    )
-    broker = Broker()
-
-    class FailingEvaluator:
-        """Evaluator that fails before producing a record."""
-
-        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
-            """Raise a representative evaluation failure.
-
-            Raises:
-                RuntimeError: Always, to exercise release handling.
-            """
-            raise RuntimeError("evaluation failed")
-
-    worker = runtime.Worker(
-        client=broker,
-        state=StateStore(tmp_path),
-        evaluator=FailingEvaluator(),
-        hardware_factory=lambda: HARDWARE,
-    )
-    with pytest.raises(RuntimeError):
-        worker.run(once=True)
-    assert broker.releases == []
-    assert StateStore(tmp_path).load_active() is not None
-
-
-def test_lease_loss_releases_without_finalising(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """A lost heartbeat never permits finalisation."""
-    monkeypatch.setattr(
-        runtime, "authenticate", lambda client, state: ("cred", "login")
-    )
-    monkeypatch.setattr(
-        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
-    )
-
-    class LostHeartbeat:
-        """Heartbeat fake reporting lease loss."""
-
-        def __init__(self, client: object, credential: str, lease: Lease) -> None:
-            pass
-
-        def start(self) -> None:
-            """Start the fake heartbeat."""
-
-        def check(self) -> None:
-            """Report a lost lease.
-
-            Raises:
-                LeaseLost: Always, for this test double.
-            """
-            raise runtime.LeaseLost("lost")
-
-        def stop(self) -> None:
-            """Stop the fake heartbeat."""
-
-    monkeypatch.setattr(runtime, "Heartbeat", LostHeartbeat)
-    broker = Broker()
-    worker = runtime.Worker(
-        client=broker,
-        state=StateStore(tmp_path),
-        evaluator=OneRecordEvaluator(),
-        hardware_factory=lambda: HARDWARE,
-    )
-    with pytest.raises(runtime.LeaseLost):
-        worker.run(once=True)
-    assert broker.releases == []
-    assert not broker.finalised
-    assert list((tmp_path / "archive").glob("*.json"))
-
-
-def test_keyboard_interrupt_releases_lease(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Cancellation releases an active lease."""
-    monkeypatch.setattr(
-        runtime, "authenticate", lambda client, state: ("cred", "login")
-    )
-    monkeypatch.setattr(
-        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
-    )
-    broker = Broker()
-
-    class InterruptedEvaluator:
-        """Evaluator interrupted by Ctrl-C."""
-
-        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
-            """Simulate Ctrl-C.
-
-            Raises:
-                KeyboardInterrupt: Always, for this test double.
-            """
-            raise KeyboardInterrupt
-
-    worker = runtime.Worker(
-        client=broker,
-        state=StateStore(tmp_path),
-        evaluator=InterruptedEvaluator(),
-        hardware_factory=lambda: HARDWARE,
-    )
-    with pytest.raises(KeyboardInterrupt):
-        worker.run(once=True)
-    assert broker.releases == []
-    assert StateStore(tmp_path).load_active() is not None
+    def start_auth(self) -> AuthStart:
+        """Return test device-flow details."""
+        return AuthStart("session", "CODE", "https://example.test", 60, 0)
 
 
 def test_broker_client_drives_canonical_http_lifecycle(
@@ -555,28 +187,152 @@ def test_broker_client_drives_canonical_http_lifecycle(
     assert "secret-credential" not in caplog.text
 
 
-def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
-    """Use the broker's slow-down interval rather than a tight polling loop."""
-    delays: list[float] = []
+def test_broker_protocol_payload_is_canonical() -> None:
+    """The Python client emits the same flat v1 envelope as the broker."""
+    calls: list[tuple[str, str, dict[str, object]]] = []
 
-    class SlowAuth(AuthClient):
-        """Device flow that first requests slower polling."""
+    def request(
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        payload: dict[str, object] | None,
+    ) -> dict[str, object]:
+        """Capture a request and return a no-work response.
 
-        def __init__(self) -> None:
-            self.polls = 0
+        Returns:
+            The canonical no-work envelope.
+        """
+        assert payload is not None
+        calls.append((method, url, payload))
+        return {"protocol_version": "volunteer-worker/v1", "status": "no_work"}
 
-        def poll_auth(self, session_id: str) -> AuthPoll:
-            """Return slow-down and then approval."""
-            self.polls += 1
-            if self.polls == 1:
-                return AuthPoll(True, retry_after=7)
-            return AuthPoll(False, "credential", "volunteer")
-
-    assert authenticate(SlowAuth(), StateStore(tmp_path), sleep=delays.append) == (
-        "credential",
-        "volunteer",
+    client = BrokerClient(
+        "https://broker.test", request=request, worker_version="worker-1"
     )
-    assert delays == [7]
+    assert client.claim("credential", HARDWARE).lease is None
+    assert calls[0][2]["protocol_version"] == "volunteer-worker/v1"
+    assert calls[0][2]["worker_version"] == "worker-1"
+    hardware_payload = calls[0][2]["hardware"]
+    assert isinstance(hardware_payload, dict)
+    assert set(hardware_payload) == {
+        "architecture",
+        "ram_bytes",
+        "free_disk_bytes",
+        "driver_version",
+        "cuda_version",
+        "pytorch_version",
+        "gpu_memory_utilisation",
+        "selected_gpu_index",
+        "selected_gpu_uuid",
+        "gpus",
+    }
+    assert hardware_payload["gpu_memory_utilisation"] == 0.8
+    assert hardware_payload["selected_gpu_index"] == GPU.index
+    assert hardware_payload["selected_gpu_uuid"] == GPU.uuid
+
+
+def test_busy_gpu_is_not_selected_or_exposed_to_evaluation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Choose the free GPU and restore CUDA visibility after evaluation."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    busy = Gpu("A100", "GPU-0", 1, 10, "8.0", 0)
+    free = Gpu("A100", "GPU-1", 9, 10, "8.0", 1)
+    hardware = HardwareReport("x86_64", 64, 100, "550", "12.4", "2.7", (busy, free))
+    original = os.environ.get("CUDA_VISIBLE_DEVICES")
+    observed: dict[str, object] = {}
+
+    class CapturingBroker(Broker):
+        """Capture the selected claim hardware."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Capture hardware and return work.
+
+            Returns:
+                The test lease.
+            """
+            observed["hardware"] = hardware
+            return Claim(
+                dataclasses.replace(
+                    LEASE,
+                    selected_gpu_uuid=hardware.selected_gpu_uuid,
+                    selected_gpu_index=hardware.selected_gpu_index,
+                )
+            )
+
+    class CapturingEvaluator:
+        """Capture CUDA visibility during model setup."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Return one result after observing the environment."""
+            observed["cuda"] = os.environ.get("CUDA_VISIBLE_DEVICES")
+            return [EEERecord({"id": "one"})]
+
+    broker = CapturingBroker()
+    runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=CapturingEvaluator(),
+        hardware_factory=lambda: hardware,
+    ).run(once=True)
+    claimed = observed["hardware"]
+    assert isinstance(claimed, HardwareReport)
+    assert claimed.selected_gpu_index == 1
+    assert claimed.selected_gpu_uuid == "GPU-1"
+    assert observed["cuda"] == "GPU-1"
+    assert os.environ.get("CUDA_VISIBLE_DEVICES") == original
+
+
+def test_cached_credential_is_reauthenticated_once(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Clear one revoked cached credential and complete device auth once."""
+    authentications = iter([("old", "login"), ("new", "login")])
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: next(authentications)
+    )
+
+    class Revoked(Broker):
+        """Broker rejecting only the first claim credential."""
+
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            """Reject the cached credential once.
+
+            Returns:
+                The claimed lease for a valid credential.
+
+            Raises:
+                BrokerError:
+                    When the cached credential is revoked.
+            """
+            if credential == "old":
+                raise BrokerError("revoked", status=401)
+            return super().claim(credential, hardware)
+
+    broker = Revoked()
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    ).run(once=True)
+    assert broker.claims == 1
+
+
+class OneRecordEvaluator:
+    """Evaluator fake producing one isolated result."""
+
+    def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+        """Return one stable record."""
+        return [EEERecord({"id": "one"})]
 
 
 def test_eee_record_rejects_non_finite_values() -> None:
@@ -585,6 +341,208 @@ def test_eee_record_rejects_non_finite_values() -> None:
         canonical_json({"value": float("nan")})
     with pytest.raises(ValueError):
         EEERecord(record_json='{"value": Infinity}')
+
+
+def test_evaluation_failure_releases_lease(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Release a lease when evaluation fails."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    broker = Broker()
+
+    class FailingEvaluator:
+        """Evaluator that fails before producing a record."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Raise a representative evaluation failure.
+
+            Raises:
+                RuntimeError: Always, to exercise release handling.
+            """
+            raise RuntimeError("evaluation failed")
+
+    worker = runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=FailingEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    )
+    with pytest.raises(RuntimeError):
+        worker.run(once=True)
+    assert broker.releases == []
+    assert StateStore(tmp_path).load_active() is not None
+
+
+class Broker:
+    """Broker fake covering claim, lease, and result lifecycle."""
+
+    def __init__(self) -> None:
+        """Initialise broker state."""
+        self.claims = 0
+        self.submissions = 0
+        self.releases: list[str] = []
+        self.finalised = False
+
+    def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+        """Return the test lease."""
+        self.claims += 1
+        return Claim(LEASE)
+
+    def finalise(self, credential: str, lease_id: str) -> str:
+        """Accept finalisation and return its stable identifier.
+
+        Returns:
+            The stable submission identifier.
+        """
+        self.finalised = True
+        return "submission-1"
+
+    def heartbeat(self, credential: str, lease_id: str) -> str:
+        """Accept a test heartbeat.
+
+        Returns:
+            The current lease expiry.
+        """
+        return LEASE.expires_at
+
+    def poll_auth(self, session_id: str) -> AuthPoll:
+        """Return approved test auth."""
+        return AuthPoll(False, "cred", "login")
+
+    def release(self, credential: str, lease_id: str, reason: str) -> None:
+        """Record lease release."""
+        self.releases.append(reason)
+
+    def start_auth(self) -> AuthStart:
+        """Return test auth details."""
+        return AuthStart("session", "CODE", "https://example.test", 60, 1)
+
+    def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
+        """Fail once to verify digest-stable retry.
+
+        Raises:
+            RuntimeError: On the first submission.
+        """
+        self.submissions += 1
+        if self.submissions == 1:
+            raise RuntimeError("temporary broker error")
+
+
+def test_evaluator_uses_validation_and_remote_code_flags(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Pass the worker's safety flags to the existing evaluator."""
+    calls: dict[str, object] = {}
+
+    class FakeBenchmarker:
+        """Capture the adapter's calls."""
+
+        def __init__(self, **kwargs: object) -> None:
+            calls["init"] = kwargs
+
+        def benchmark(self, **kwargs: object) -> list[object]:
+            """Return one fake benchmark result."""
+            calls["benchmark"] = kwargs
+            return [object()]
+
+    monkeypatch.setattr(evaluator, "Benchmarker", FakeBenchmarker)
+    monkeypatch.setattr(
+        evaluator,
+        "benchmark_result_to_eee_dict",
+        lambda result: {"evaluation_id": "one", "result": 1},
+    )
+    records = evaluator.EuroEvalEvaluator(tmp_path).evaluate(
+        lease=LEASE, output_path=tmp_path / "isolated.jsonl"
+    )
+    assert records[0].sha256 == records[0].sha256
+    assert calls["benchmark"] == {
+        "model": f"org/model@{REVISION}",
+        "language": "da",
+        "progress_bar": False,
+        "save_results": False,
+        "trust_remote_code": False,
+        "evaluate_test_split": False,
+        "requires_safetensors": True,
+        "gpu_memory_utilization": 0.8,
+        "force": True,
+        "raise_errors": True,
+    }
+    assert len((tmp_path / "isolated.jsonl").read_text().splitlines()) == 1
+
+
+def test_expired_active_lease_is_archived_before_new_claim(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Never submit stale pending state alongside a newly claimed lease."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    state = StateStore(tmp_path)
+    state.save_active(
+        dataclasses.replace(LEASE, expires_at="2000-01-01T00:00:00Z"),
+        github_login="login",
+    )
+    broker = Broker()
+    runtime.Worker(
+        client=broker,
+        state=state,
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    ).run(once=True)
+    assert list((tmp_path / "archive").glob("*.json"))
+    assert state.load_active() is None
+
+
+def test_finalise_response_loss_is_idempotently_retried(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Keep acknowledged results when the finalise response is lost."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+
+    class LostFinalise(Broker):
+        """Broker that loses one finalise response."""
+
+        def finalise(self, credential: str, lease_id: str) -> str:
+            """Lose the first response, then return the identifier.
+
+            Returns:
+                The submission identifier after the simulated lost response.
+
+            Raises:
+                BrokerError:
+                    On the simulated lost response.
+            """
+            if self.finalised:
+                return super().finalise(credential, lease_id)
+            self.finalised = True
+            raise BrokerError("response lost", status=None)
+
+    broker = LostFinalise()
+    state = StateStore(tmp_path)
+    worker = runtime.Worker(
+        client=broker,
+        state=state,
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    )
+    with pytest.raises(BrokerError):
+        worker.run(once=True)
+    assert state.load_active() is not None
+    worker.run(once=True)
+    assert state.load_active() is None
 
 
 def test_interruption_resumes_pre_evaluation_lease(
@@ -630,6 +588,116 @@ def test_interruption_resumes_pre_evaluation_lease(
     assert broker.claims == 1
     assert worker.last_submission_id == "submission-1"
     assert StateStore(tmp_path).load_active() is None
+
+
+def test_keyboard_interrupt_releases_lease(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Cancellation releases an active lease."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    broker = Broker()
+
+    class InterruptedEvaluator:
+        """Evaluator interrupted by Ctrl-C."""
+
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            """Simulate Ctrl-C.
+
+            Raises:
+                KeyboardInterrupt: Always, for this test double.
+            """
+            raise KeyboardInterrupt
+
+    worker = runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=InterruptedEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    )
+    with pytest.raises(KeyboardInterrupt):
+        worker.run(once=True)
+    assert broker.releases == []
+    assert StateStore(tmp_path).load_active() is not None
+
+
+def test_lease_loss_releases_without_finalising(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A lost heartbeat never permits finalisation."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+
+    class LostHeartbeat:
+        """Heartbeat fake reporting lease loss."""
+
+        def __init__(self, client: object, credential: str, lease: Lease) -> None:
+            pass
+
+        def check(self) -> None:
+            """Report a lost lease.
+
+            Raises:
+                LeaseLost: Always, for this test double.
+            """
+            raise runtime.LeaseLost("lost")
+
+        def start(self) -> None:
+            """Start the fake heartbeat."""
+
+        def stop(self) -> None:
+            """Stop the fake heartbeat."""
+
+    monkeypatch.setattr(runtime, "Heartbeat", LostHeartbeat)
+    broker = Broker()
+    worker = runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    )
+    with pytest.raises(runtime.LeaseLost):
+        worker.run(once=True)
+    assert broker.releases == []
+    assert not broker.finalised
+    assert list((tmp_path / "archive").glob("*.json"))
+
+
+def test_no_gpu_exits_before_claim(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Do not claim work when hardware discovery reports no GPU."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    broker = Broker()
+    worker = runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        hardware_factory=lambda: (_ for _ in ()).throw(NoGpuError("no GPU")),
+    )
+    with pytest.raises(NoGpuError):
+        worker.run(once=True)
+    assert broker.claims == 0
+
+
+def test_nvidia_csv_parser_handles_compute_capability_and_fails_without_gpu() -> None:
+    """Parse memory and capability values, and fail closed without a GPU."""
+    output = "1, NVIDIA A100, GPU-1, 10240, 20480, 8.0\n"
+    gpu = discover_gpus(runner=lambda _command: output)[0]
+    assert gpu.free_memory_bytes == 10 * 1024**3
+    assert gpu.compute_capability == "8.0"
+    assert gpu.index == 1
+    with pytest.raises(NoGpuError):
+        discover_gpus(runner=lambda _command: "")
 
 
 def test_partial_acknowledgements_survive_restart(
@@ -726,110 +794,42 @@ def test_restart_submits_durable_records_without_evaluation(
     assert state.load_active() is None
 
 
-def test_finalise_response_loss_is_idempotently_retried(
+def test_safety_rejects_remote_code_and_unpinned_models() -> None:
+    """Reject remote code and mutable Hub revisions."""
+    metadata = ModelMetadata(
+        private=False,
+        gated=False,
+        auto_map=True,
+        files=("config.json", "model.safetensors"),
+        safetensors=True,
+        estimated_bytes=1,
+    )
+    with pytest.raises(SafetyError, match="auto_map"):
+        check_model_safety(LEASE, (GPU,), metadata)
+    with pytest.raises(SafetyError, match="unpinned"):
+        check_model_safety(
+            dataclasses.replace(LEASE, model_revision="main"), (GPU,), metadata
+        )
+
+
+def test_worker_retries_idempotently_and_finalises(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Keep acknowledged results when the finalise response is lost."""
+    """Retry a result without changing its digest, then finalise."""
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
     monkeypatch.setattr(
         runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
     )
-
-    class LostFinalise(Broker):
-        """Broker that loses one finalise response."""
-
-        def finalise(self, credential: str, lease_id: str) -> str:
-            """Lose the first response, then return the identifier.
-
-            Returns:
-                The submission identifier after the simulated lost response.
-
-            Raises:
-                BrokerError:
-                    On the simulated lost response.
-            """
-            if self.finalised:
-                return super().finalise(credential, lease_id)
-            self.finalised = True
-            raise BrokerError("response lost", status=None)
-
-    broker = LostFinalise()
-    state = StateStore(tmp_path)
+    broker = Broker()
     worker = runtime.Worker(
-        client=broker,
-        state=state,
-        evaluator=OneRecordEvaluator(),
-        hardware_factory=lambda: HARDWARE,
-    )
-    with pytest.raises(BrokerError):
-        worker.run(once=True)
-    assert state.load_active() is not None
-    worker.run(once=True)
-    assert state.load_active() is None
-
-
-def test_cached_credential_is_reauthenticated_once(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Clear one revoked cached credential and complete device auth once."""
-    authentications = iter([("old", "login"), ("new", "login")])
-    monkeypatch.setattr(
-        runtime, "authenticate", lambda client, state: next(authentications)
-    )
-
-    class Revoked(Broker):
-        """Broker rejecting only the first claim credential."""
-
-        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
-            """Reject the cached credential once.
-
-            Returns:
-                The claimed lease for a valid credential.
-
-            Raises:
-                BrokerError:
-                    When the cached credential is revoked.
-            """
-            if credential == "old":
-                raise BrokerError("revoked", status=401)
-            return super().claim(credential, hardware)
-
-    broker = Revoked()
-    monkeypatch.setattr(
-        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
-    )
-    runtime.Worker(
         client=broker,
         state=StateStore(tmp_path),
         evaluator=OneRecordEvaluator(),
         hardware_factory=lambda: HARDWARE,
-    ).run(once=True)
-    assert broker.claims == 1
-
-
-def test_expired_active_lease_is_archived_before_new_claim(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Never submit stale pending state alongside a newly claimed lease."""
-    monkeypatch.setattr(
-        runtime, "authenticate", lambda client, state: ("cred", "login")
     )
-    monkeypatch.setattr(
-        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
-    )
-    state = StateStore(tmp_path)
-    state.save_active(
-        dataclasses.replace(LEASE, expires_at="2000-01-01T00:00:00Z"),
-        github_login="login",
-    )
-    broker = Broker()
-    runtime.Worker(
-        client=broker,
-        state=state,
-        evaluator=OneRecordEvaluator(),
-        hardware_factory=lambda: HARDWARE,
-    ).run(once=True)
-    assert list((tmp_path / "archive").glob("*.json"))
-    assert state.load_active() is None
+    worker.run(once=True)
+    assert broker.submissions == 2
+    assert broker.finalised
+    assert not broker.releases

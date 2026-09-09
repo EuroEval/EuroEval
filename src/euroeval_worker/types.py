@@ -13,74 +13,6 @@ JsonValue: t.TypeAlias = (
 JsonObject: t.TypeAlias = dict[str, JsonValue]
 
 
-@dataclasses.dataclass(frozen=True)
-class AuthStart:
-    """Device-flow details returned by the broker."""
-
-    session_id: str
-    user_code: str
-    verification_uri: str
-    expires_in: int
-    interval: int
-
-
-@dataclasses.dataclass(frozen=True)
-class AuthPoll:
-    """Result of one device-flow poll."""
-
-    pending: bool
-    credential: str | None = None
-    github_login: str | None = None
-    retry_after: int | None = None
-
-
-@dataclasses.dataclass(frozen=True)
-class HardwareReport:
-    """Hardware and software facts sent when claiming work."""
-
-    architecture: str
-    ram_bytes: int
-    free_disk_bytes: int
-    driver_version: str | None
-    cuda_version: str | None
-    pytorch_version: str | None
-    gpus: tuple["Gpu", ...]
-    gpu_memory_utilisation: float = 0.8
-    selected_gpu_index: int | None = None
-    selected_gpu_uuid: str | None = None
-
-
-@dataclasses.dataclass(frozen=True)
-class Gpu:
-    """A single NVIDIA GPU discovered through nvidia-smi."""
-
-    name: str
-    uuid: str
-    free_memory_bytes: int
-    total_memory_bytes: int
-    compute_capability: str | None
-    index: int = 0
-
-
-@dataclasses.dataclass(frozen=True)
-class Lease:
-    """One broker-issued evaluation lease."""
-
-    lease_id: str
-    issue_number: int
-    model_id: str
-    model_revision: str
-    language: str
-    euroeval_version: str
-    image_digest: str
-    expires_at: str
-    worker_version: str = "legacy-worker"
-    gpu_memory_utilisation: float = 0.8
-    model_profile: str | None = None
-    selected_gpu_uuid: str | None = None
-    selected_gpu_index: int | None = None
-
-
 @dataclasses.dataclass(frozen=True, init=False)
 class EEERecord:
     """An exact EEE JSON object and its deterministic digest.
@@ -139,11 +71,15 @@ class EEERecord:
         return t.cast(JsonObject, value)
 
 
-@dataclasses.dataclass(frozen=True)
-class Claim:
-    """Broker claim response."""
-
-    lease: Lease | None
+def _validate_json_text(value: str) -> None:
+    try:
+        parsed = json.loads(value, parse_constant=_reject_constant)
+    except (ValueError, json.JSONDecodeError) as error:
+        raise ValueError(
+            "record_json must be valid JSON without non-finite values"
+        ) from error
+    if not isinstance(parsed, dict):
+        raise ValueError("record_json must contain a JSON object")
 
 
 def canonical_json(value: JsonObject) -> str:
@@ -162,19 +98,82 @@ def canonical_json(value: JsonObject) -> str:
     )
 
 
-def _validate_json_text(value: str) -> None:
-    try:
-        parsed = json.loads(value, parse_constant=_reject_constant)
-    except (ValueError, json.JSONDecodeError) as error:
-        raise ValueError(
-            "record_json must be valid JSON without non-finite values"
-        ) from error
-    if not isinstance(parsed, dict):
-        raise ValueError("record_json must contain a JSON object")
+@dataclasses.dataclass(frozen=True)
+class Gpu:
+    """A single NVIDIA GPU discovered through nvidia-smi."""
+
+    name: str
+    uuid: str
+    free_memory_bytes: int
+    total_memory_bytes: int
+    compute_capability: str | None
+    index: int = 0
+
+
+@dataclasses.dataclass(frozen=True)
+class HardwareReport:
+    """Hardware and software facts sent when claiming work."""
+
+    architecture: str
+    ram_bytes: int
+    free_disk_bytes: int
+    driver_version: str | None
+    cuda_version: str | None
+    pytorch_version: str | None
+    gpus: tuple["Gpu", ...]
+    gpu_memory_utilisation: float = 0.8
+    selected_gpu_index: int | None = None
+    selected_gpu_uuid: str | None = None
 
 
 def _reject_constant(value: str) -> None:
     raise ValueError(f"non-finite JSON constant {value!r} is not allowed")
+
+
+@dataclasses.dataclass(frozen=True)
+class AuthPoll:
+    """Result of one device-flow poll."""
+
+    pending: bool
+    credential: str | None = None
+    github_login: str | None = None
+    retry_after: int | None = None
+
+
+def auth_poll_from_dict(data: dict[str, object]) -> AuthPoll:
+    """Decode an auth/poll response.
+
+    Returns:
+        The typed poll response.
+    """
+    _protocol(data)
+    pending = data.get("status") == "pending" or bool(data.get("pending", False))
+    return AuthPoll(
+        pending=pending,
+        credential=_optional_string(data, "credential"),
+        github_login=_optional_string(data, "github_login"),
+        retry_after=_optional_positive_integer(data, "retry_after"),
+    )
+
+
+def _optional_positive_integer(data: dict[str, object], key: str) -> int | None:
+    value = data.get(key)
+    if value is None:
+        return None
+    parsed = _integer(data, key)
+    return max(1, parsed)
+
+
+def _integer(data: dict[str, object], key: str, default: int | None = None) -> int:
+    value = data.get(key, default)
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        raise ValueError(f"broker response field {key!r} must be an integer")
+    return int(value)
+
+
+def _optional_string(data: dict[str, object], key: str) -> str | None:
+    value = data.get(key)
+    return value if isinstance(value, str) else None
 
 
 def _protocol(data: dict[str, object]) -> None:
@@ -188,11 +187,15 @@ def _protocol(data: dict[str, object]) -> None:
         raise ValueError("broker response has an unsupported protocol_version")
 
 
-def _string(data: dict[str, object], key: str) -> str:
-    value = data.get(key)
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"broker response field {key!r} must be a non-empty string")
-    return value
+@dataclasses.dataclass(frozen=True)
+class AuthStart:
+    """Device-flow details returned by the broker."""
+
+    session_id: str
+    user_code: str
+    verification_uri: str
+    expires_in: int
+    interval: int
 
 
 def auth_start_from_dict(data: dict[str, object]) -> AuthStart:
@@ -211,20 +214,37 @@ def auth_start_from_dict(data: dict[str, object]) -> AuthStart:
     )
 
 
-def auth_poll_from_dict(data: dict[str, object]) -> AuthPoll:
-    """Decode an auth/poll response.
+def _string(data: dict[str, object], key: str) -> str:
+    value = data.get(key)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"broker response field {key!r} must be a non-empty string")
+    return value
 
-    Returns:
-        The typed poll response.
-    """
-    _protocol(data)
-    pending = data.get("status") == "pending" or bool(data.get("pending", False))
-    return AuthPoll(
-        pending=pending,
-        credential=_optional_string(data, "credential"),
-        github_login=_optional_string(data, "github_login"),
-        retry_after=_optional_positive_integer(data, "retry_after"),
-    )
+
+@dataclasses.dataclass(frozen=True)
+class Lease:
+    """One broker-issued evaluation lease."""
+
+    lease_id: str
+    issue_number: int
+    model_id: str
+    model_revision: str
+    language: str
+    euroeval_version: str
+    image_digest: str
+    expires_at: str
+    worker_version: str = "legacy-worker"
+    gpu_memory_utilisation: float = 0.8
+    model_profile: str | None = None
+    selected_gpu_uuid: str | None = None
+    selected_gpu_index: int | None = None
+
+
+@dataclasses.dataclass(frozen=True)
+class Claim:
+    """Broker claim response."""
+
+    lease: Lease | None
 
 
 def lease_from_dict(data: dict[str, object]) -> Lease:
@@ -265,23 +285,11 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
     )
 
 
-def _integer(data: dict[str, object], key: str, default: int | None = None) -> int:
-    value = data.get(key, default)
-    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
-        raise ValueError(f"broker response field {key!r} must be an integer")
-    return int(value)
-
-
 def _number(data: dict[str, object], key: str, default: float | None = None) -> float:
     value = data.get(key, default)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f"broker response field {key!r} must be a number")
     return float(value)
-
-
-def _optional_string(data: dict[str, object], key: str) -> str | None:
-    value = data.get(key)
-    return value if isinstance(value, str) else None
 
 
 def _optional_integer(data: dict[str, object], key: str) -> int | None:
@@ -291,11 +299,3 @@ def _optional_integer(data: dict[str, object], key: str) -> int | None:
     if isinstance(value, bool) or not isinstance(value, (int, float, str)):
         raise ValueError(f"broker response field {key!r} must be an integer")
     return int(value)
-
-
-def _optional_positive_integer(data: dict[str, object], key: str) -> int | None:
-    value = data.get(key)
-    if value is None:
-        return None
-    parsed = _integer(data, key)
-    return max(1, parsed)

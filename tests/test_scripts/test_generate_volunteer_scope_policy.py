@@ -25,6 +25,28 @@ class Policy(t.TypedDict):
     policies: list[PolicyEntry]
 
 
+def test_policy_does_not_share_a_group_scope() -> None:
+    """A policy entry must not widen one language to its checkbox group."""
+    policy = build_policy("18.0.0", {("multi-wiki-qa-da", "da")}, profiles=("qwen",))
+
+    entry = t.cast(Policy, policy)["policies"][0]
+    assert entry["language"] == "da"
+    assert entry["language_group"] == "da"
+
+
+def test_policy_generation_fails_on_config_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A config loading failure must not widen scope to every pair."""
+
+    def fail() -> dict[str, object]:
+        raise RuntimeError("config lookup failed")
+
+    monkeypatch.setattr(policy_module, "_configs_by_name", fail)
+    with pytest.raises(RuntimeError, match="config lookup failed"):
+        build_policy("18.0.0", {("multi-wiki-qa-da", "da")}, profiles=("qwen",))
+
+
 def test_policy_is_versioned_and_exact_language() -> None:
     """Policies pin version, profile, and individual ISO languages."""
     policy = build_policy(
@@ -67,25 +89,3 @@ def test_policy_matches_benchmarker_defaults_for_encoder_and_decoder() -> None:
         '["ifeval-da",false,true]',
         '["multi-wiki-qa-da",false,true]',
     ]
-
-
-def test_policy_generation_fails_on_config_errors(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A config loading failure must not widen scope to every pair."""
-
-    def fail() -> dict[str, object]:
-        raise RuntimeError("config lookup failed")
-
-    monkeypatch.setattr(policy_module, "_configs_by_name", fail)
-    with pytest.raises(RuntimeError, match="config lookup failed"):
-        build_policy("18.0.0", {("multi-wiki-qa-da", "da")}, profiles=("qwen",))
-
-
-def test_policy_does_not_share_a_group_scope() -> None:
-    """A policy entry must not widen one language to its checkbox group."""
-    policy = build_policy("18.0.0", {("multi-wiki-qa-da", "da")}, profiles=("qwen",))
-
-    entry = t.cast(Policy, policy)["policies"][0]
-    assert entry["language"] == "da"
-    assert entry["language_group"] == "da"

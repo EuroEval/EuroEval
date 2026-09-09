@@ -33,6 +33,47 @@ COMMUNITY_MARKER_RE = re.compile(
 _COMMUNITY_MARKER_CANDIDATE_RE = re.compile(r"<!--[ \t]*euroeval-volunteer-worker:v1")
 
 
+def append_community_marker(body: str, owner: str, submission: str) -> str:
+    """Append a canonical marker for fixture and integration callers.
+
+    Returns:
+        The updated issue body.
+
+    Raises:
+        ValueError: If the owner or submission is unsupported.
+    """
+    if owner not in {COMMUNITY_MARKER_OWNER, COORDINATOR_MARKER_OWNER}:
+        raise ValueError(f"Unsupported community marker owner: {owner!r}")
+    if submission not in _COMMUNITY_SUBMISSION_STATES:
+        raise ValueError(f"Unsupported community marker submission: {submission!r}")
+    payload = {
+        "protocol_version": COMMUNITY_PROTOCOL_VERSION,
+        "coordinator": owner,
+        "submission": submission,
+        "leases": [],
+    }
+    encoded = json.dumps(payload, separators=(",", ":"))
+    return f"{body.rstrip()}\n\n<!-- euroeval-volunteer-worker:v1 {encoded} -->\n"
+
+
+def clear_vm_marker(number: int, vm_id: str) -> None:
+    """Remove this VM's marker while preserving active broker ownership."""
+    body = fetch_issue_body(number=number)
+    if (
+        _COMMUNITY_MARKER_CANDIDATE_RE.search(body)
+        and _trusted_issue_marker(number, body) is None
+    ):
+        return
+    if issue_has_active_queue_ownership(body):
+        logger.info(f"#{number}: coordinator ownership is active; keeping markers.")
+        return
+    match = VM_MARKER_RE.search(body)
+    if match and match.group(1) == vm_id:
+        patch_issue_body(
+            number=number, body=VM_MARKER_RE.sub("", body, count=1).rstrip() + "\n"
+        )
+
+
 @dataclasses.dataclass(frozen=True)
 class CommunityMarker:
     """The broker's canonical ownership marker."""
@@ -46,13 +87,11 @@ class CommunityMarker:
     signature: str | None = None
 
 
-def _expiry_active(value: str) -> bool:
-    try:
-        return dt.datetime.fromisoformat(
-            value.replace("Z", "+00:00")
-        ) > dt.datetime.now(dt.UTC)
-    except ValueError:
-        return False
+def _trusted_issue_marker(number: int, body: str) -> CommunityMarker | None:
+    secret = os.environ.get("VOLUNTEER_MARKER_SECRET")
+    return parse_community_marker(
+        body, issue_number=number, secret=secret, require_signature=bool(secret)
+    )
 
 
 def parse_community_marker(
@@ -210,15 +249,13 @@ def parse_community_marker(
     )
 
 
-def issue_has_community_marker(body: str) -> bool:
-    """Return whether an issue contains any broker marker candidate."""
-    return bool(_COMMUNITY_MARKER_CANDIDATE_RE.search(body))
-
-
-def issue_has_terminal_queue_submission(body: str) -> bool:
-    """Return whether a valid marker records an accepted or rejected submission."""
-    marker = parse_community_marker(body)
-    return marker is not None and marker.submission in {"accepted", "rejected"}
+def _expiry_active(value: str) -> bool:
+    try:
+        return dt.datetime.fromisoformat(
+            value.replace("Z", "+00:00")
+        ) > dt.datetime.now(dt.UTC)
+    except ValueError:
+        return False
 
 
 def issue_has_active_queue_ownership(body: str) -> bool:
@@ -238,59 +275,15 @@ def issue_has_active_queue_ownership(body: str) -> bool:
     )
 
 
-def append_community_marker(body: str, owner: str, submission: str) -> str:
-    """Append a canonical marker for fixture and integration callers.
-
-    Returns:
-        The updated issue body.
-
-    Raises:
-        ValueError: If the owner or submission is unsupported.
-    """
-    if owner not in {COMMUNITY_MARKER_OWNER, COORDINATOR_MARKER_OWNER}:
-        raise ValueError(f"Unsupported community marker owner: {owner!r}")
-    if submission not in _COMMUNITY_SUBMISSION_STATES:
-        raise ValueError(f"Unsupported community marker submission: {submission!r}")
-    payload = {
-        "protocol_version": COMMUNITY_PROTOCOL_VERSION,
-        "coordinator": owner,
-        "submission": submission,
-        "leases": [],
-    }
-    encoded = json.dumps(payload, separators=(",", ":"))
-    return f"{body.rstrip()}\n\n<!-- euroeval-volunteer-worker:v1 {encoded} -->\n"
+def issue_has_community_marker(body: str) -> bool:
+    """Return whether an issue contains any broker marker candidate."""
+    return bool(_COMMUNITY_MARKER_CANDIDATE_RE.search(body))
 
 
-def remove_community_marker(body: str) -> str:
-    """Return ``body`` without its recognised canonical marker."""
-    if parse_community_marker(body) is None:
-        return body
-    return COMMUNITY_MARKER_RE.sub("", body, count=1).rstrip() + "\n"
-
-
-def _trusted_issue_marker(number: int, body: str) -> CommunityMarker | None:
-    secret = os.environ.get("VOLUNTEER_MARKER_SECRET")
-    return parse_community_marker(
-        body, issue_number=number, secret=secret, require_signature=bool(secret)
-    )
-
-
-def clear_vm_marker(number: int, vm_id: str) -> None:
-    """Remove this VM's marker while preserving active broker ownership."""
-    body = fetch_issue_body(number=number)
-    if (
-        _COMMUNITY_MARKER_CANDIDATE_RE.search(body)
-        and _trusted_issue_marker(number, body) is None
-    ):
-        return
-    if issue_has_active_queue_ownership(body):
-        logger.info(f"#{number}: coordinator ownership is active; keeping markers.")
-        return
-    match = VM_MARKER_RE.search(body)
-    if match and match.group(1) == vm_id:
-        patch_issue_body(
-            number=number, body=VM_MARKER_RE.sub("", body, count=1).rstrip() + "\n"
-        )
+def issue_has_terminal_queue_submission(body: str) -> bool:
+    """Return whether a valid marker records an accepted or rejected submission."""
+    marker = parse_community_marker(body)
+    return marker is not None and marker.submission in {"accepted", "rejected"}
 
 
 def release_issue_if_owned(number: int, vm_id: str, assignee: str) -> bool:
@@ -349,6 +342,13 @@ def set_vm_marker(number: int, vm_id: str) -> bool:
     cleaned = VM_MARKER_RE.sub("", body).rstrip()
     patch_issue_body(number=number, body=f"{cleaned}\n\n<!-- vm-id: {vm_id} -->\n")
     return True
+
+
+def remove_community_marker(body: str) -> str:
+    """Return ``body`` without its recognised canonical marker."""
+    if parse_community_marker(body) is None:
+        return body
+    return COMMUNITY_MARKER_RE.sub("", body, count=1).rstrip() + "\n"
 
 
 def vm_marker_matches(number: int, vm_id: str) -> bool:

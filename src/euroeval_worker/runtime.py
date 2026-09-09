@@ -23,10 +23,6 @@ from .types import Claim, EEERecord, Gpu, HardwareReport, Lease
 logger = logging.getLogger(__name__)
 
 
-class LeaseLost(RuntimeError):
-    """Raised when the broker stops accepting heartbeats."""
-
-
 class AuthenticationIdentityError(BrokerError):
     """Raised when reauthentication returns a different contributor."""
 
@@ -65,25 +61,6 @@ class Heartbeat:
         self._thread = threading.Thread(
             target=self._run, name="worker-heartbeat", daemon=True
         )
-
-    def start(self) -> None:
-        """Start the heartbeat loop."""
-        self._started = True
-        self._thread.start()
-
-    def stop(self) -> None:
-        """Stop and join the heartbeat loop."""
-        self._stop.set()
-        if self._started:
-            self._thread.join(timeout=2)
-
-    def check(self) -> None:
-        """Raise the background failure, if any."""
-        if self.failed is None:
-            return
-        if isinstance(self.failed, LeaseLost):
-            raise self.failed
-        raise self.failed
 
     def _run(self) -> None:
         while not self._stop.wait(timeout=self._interval):
@@ -136,6 +113,25 @@ class Heartbeat:
     def _fail(self, error: Exception) -> None:
         self.failed = error
         self._stop.set()
+
+    def check(self) -> None:
+        """Raise the background failure, if any."""
+        if self.failed is None:
+            return
+        if isinstance(self.failed, LeaseLost):
+            raise self.failed
+        raise self.failed
+
+    def start(self) -> None:
+        """Start the heartbeat loop."""
+        self._started = True
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Stop and join the heartbeat loop."""
+        self._stop.set()
+        if self._started:
+            self._thread.join(timeout=2)
 
 
 class Worker:
@@ -250,30 +246,6 @@ class Worker:
             if once:
                 return
 
-    def _prepare_hardware(self, hardware: HardwareReport) -> HardwareReport:
-        """Attach a deterministic single-GPU selection to a hardware report.
-
-        Returns:
-            The report with the configured utilisation and selected GPU.
-        """
-        selected = select_gpu(hardware.gpus)
-        return self._hardware_with_selected(hardware, selected)
-
-    def _hardware_with_selected(
-        self, hardware: HardwareReport, selected: Gpu
-    ) -> HardwareReport:
-        """Expose the UUID-pinned GPU in a restart hardware report.
-
-        Returns:
-            A hardware report pinned to ``selected``.
-        """
-        return dataclasses.replace(
-            hardware,
-            gpu_memory_utilisation=self.gpu_memory_utilisation,
-            selected_gpu_index=selected.index,
-            selected_gpu_uuid=selected.uuid,
-        )
-
     def _claim_with_reauthentication(
         self, credential: str, hardware: HardwareReport
     ) -> tuple[str, Claim]:
@@ -300,6 +272,30 @@ class Worker:
             return new_credential, self.client.claim(
                 credential=new_credential, hardware=hardware
             )
+
+    def _hardware_with_selected(
+        self, hardware: HardwareReport, selected: Gpu
+    ) -> HardwareReport:
+        """Expose the UUID-pinned GPU in a restart hardware report.
+
+        Returns:
+            A hardware report pinned to ``selected``.
+        """
+        return dataclasses.replace(
+            hardware,
+            gpu_memory_utilisation=self.gpu_memory_utilisation,
+            selected_gpu_index=selected.index,
+            selected_gpu_uuid=selected.uuid,
+        )
+
+    def _prepare_hardware(self, hardware: HardwareReport) -> HardwareReport:
+        """Attach a deterministic single-GPU selection to a hardware report.
+
+        Returns:
+            The report with the configured utilisation and selected GPU.
+        """
+        selected = select_gpu(hardware.gpus)
+        return self._hardware_with_selected(hardware, selected)
 
     def _process_lease(
         self,
@@ -397,33 +393,6 @@ class Worker:
             if not completed:
                 logger.info("Preserving active lease %s for restart", lease.lease_id)
 
-    def _reauthenticate(self, failed_credential: str, expected_login: str) -> str:
-        """Refresh a credential while proving the contributor did not change.
-
-        Returns:
-            A credential belonging to ``expected_login``.
-
-        Raises:
-            AuthenticationIdentityError:
-                If the refreshed credential belongs to another contributor.
-        """
-        with self._auth_lock:
-            saved = self.state.load_auth()
-            if saved is not None and saved[0] != failed_credential:
-                if saved[1] != expected_login:
-                    raise AuthenticationIdentityError(expected_login, saved[1])
-                self._login = saved[1]
-                self._credential = saved[0]
-                return saved[0]
-            self.state.clear_auth()
-            credential, login = authenticate(client=self.client, state=self.state)
-            if login != expected_login:
-                raise AuthenticationIdentityError(expected_login, login)
-            self.state.save_auth(credential=credential, github_login=login)
-            self._login = login
-            self._credential = credential
-            return credential
-
     def _durable_records(
         self, active: ActiveLease | None, evaluated: list[EEERecord]
     ) -> tuple[PendingRecord, ...]:
@@ -451,6 +420,56 @@ class Worker:
             raise RuntimeError("evaluation output changed while resuming a lease")
         self.state.save_records(active.records)
         return active.records
+
+    def _finalise(self, credential: str, lease_id: str) -> str:
+        """Finalise once, retrying authentication exactly once if required.
+
+        Returns:
+            The stable broker submission identifier.
+
+        Raises:
+            BrokerError:
+                If finalisation fails.
+        """
+        del credential
+        auth_attempted = False
+        while True:
+            try:
+                return self.client.finalise(
+                    credential=self._credential, lease_id=lease_id
+                )
+            except BrokerError as error:
+                if error.status != 401 or auth_attempted:
+                    raise
+                self._credential = self._reauthenticate(self._credential, self._login)
+                auth_attempted = True
+
+    def _reauthenticate(self, failed_credential: str, expected_login: str) -> str:
+        """Refresh a credential while proving the contributor did not change.
+
+        Returns:
+            A credential belonging to ``expected_login``.
+
+        Raises:
+            AuthenticationIdentityError:
+                If the refreshed credential belongs to another contributor.
+        """
+        with self._auth_lock:
+            saved = self.state.load_auth()
+            if saved is not None and saved[0] != failed_credential:
+                if saved[1] != expected_login:
+                    raise AuthenticationIdentityError(expected_login, saved[1])
+                self._login = saved[1]
+                self._credential = saved[0]
+                return saved[0]
+            self.state.clear_auth()
+            credential, login = authenticate(client=self.client, state=self.state)
+            if login != expected_login:
+                raise AuthenticationIdentityError(expected_login, login)
+            self.state.save_auth(credential=credential, github_login=login)
+            self._login = login
+            self._credential = credential
+            return credential
 
     def _submit_records(
         self,
@@ -506,28 +525,24 @@ class Worker:
             logger.warning("Result submission failed; retrying idempotently")
             time.sleep(_retry_delay(attempt, retry_after, self._max_retry_delay))
 
-    def _finalise(self, credential: str, lease_id: str) -> str:
-        """Finalise once, retrying authentication exactly once if required.
 
-        Returns:
-            The stable broker submission identifier.
+class LeaseLost(RuntimeError):
+    """Raised when the broker stops accepting heartbeats."""
 
-        Raises:
-            BrokerError:
-                If finalisation fails.
-        """
-        del credential
-        auth_attempted = False
-        while True:
-            try:
-                return self.client.finalise(
-                    credential=self._credential, lease_id=lease_id
-                )
-            except BrokerError as error:
-                if error.status != 401 or auth_attempted:
-                    raise
-                self._credential = self._reauthenticate(self._credential, self._login)
-                auth_attempted = True
+
+def _retry_delay(attempt: int, retry_after: float | None, maximum: float) -> float:
+    """Calculate bounded exponential backoff, honouring Retry-After.
+
+    Returns:
+        A non-negative delay no larger than ``maximum``.
+    """
+    requested = retry_after if retry_after is not None else 2**attempt
+    return min(maximum, max(0.0, requested))
+
+
+def _transient(error: BrokerError) -> bool:
+    """Return whether a broker error is safe to retry."""
+    return error.status is None or error.status == 429 or error.status >= 500
 
 
 def _gpu_for_lease(gpus: c.Iterable[Gpu], lease: Lease) -> Gpu:
@@ -569,46 +584,6 @@ def _lease_for_gpu(lease: Lease, selected: Gpu) -> Lease:
     )
 
 
-@contextlib.contextmanager
-def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
-    """Expose only ``gpu`` to CUDA for the duration of one evaluation."""
-    original = os.environ.get("CUDA_VISIBLE_DEVICES")
-    os.environ["CUDA_VISIBLE_DEVICES"] = gpu.uuid
-    try:
-        yield
-    finally:
-        if original is None:
-            os.environ.pop("CUDA_VISIBLE_DEVICES", None)
-        else:
-            os.environ["CUDA_VISIBLE_DEVICES"] = original
-
-
-def _transient(error: BrokerError) -> bool:
-    """Return whether a broker error is safe to retry."""
-    return error.status is None or error.status == 429 or error.status >= 500
-
-
-def _submission_transient(error: BrokerError) -> bool:
-    """Return whether result upload may be retried.
-
-    Returns:
-        Whether the status is in the result retry set.
-    """
-    return (
-        error.status is None or error.status in (408, 425, 429) or error.status >= 500
-    )
-
-
-def _retry_delay(attempt: int, retry_after: float | None, maximum: float) -> float:
-    """Calculate bounded exponential backoff, honouring Retry-After.
-
-    Returns:
-        A non-negative delay no larger than ``maximum``.
-    """
-    requested = retry_after if retry_after is not None else 2**attempt
-    return min(maximum, max(0.0, requested))
-
-
 def _lease_is_valid(lease: Lease) -> bool:
     """Check a broker ISO-8601 expiry without accepting malformed state.
 
@@ -634,4 +609,29 @@ def _lease_lost(error: BaseException) -> bool:
     """
     return isinstance(error, LeaseLost) or (
         isinstance(error, BrokerError) and error.status == 409
+    )
+
+
+@contextlib.contextmanager
+def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
+    """Expose only ``gpu`` to CUDA for the duration of one evaluation."""
+    original = os.environ.get("CUDA_VISIBLE_DEVICES")
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu.uuid
+    try:
+        yield
+    finally:
+        if original is None:
+            os.environ.pop("CUDA_VISIBLE_DEVICES", None)
+        else:
+            os.environ["CUDA_VISIBLE_DEVICES"] = original
+
+
+def _submission_transient(error: BrokerError) -> bool:
+    """Return whether result upload may be retried.
+
+    Returns:
+        Whether the status is in the result retry set.
+    """
+    return (
+        error.status is None or error.status in (408, 425, 429) or error.status >= 500
     )

@@ -45,85 +45,6 @@ _SUPPORTED_MODEL_ARCHITECTURES = frozenset(_ARCHITECTURE_PROFILES)
 _UNSAFE_SUFFIXES = (".bin", ".pt", ".pth", ".ckpt", ".gguf", ".onnx", ".h5", ".msgpack")
 
 
-def _profile_for_architecture(architecture: str) -> str | None:
-    """Return the profile for one exact admitted Transformers architecture."""
-    return _ARCHITECTURE_PROFILES.get(architecture)
-
-
-@dataclasses.dataclass(frozen=True)
-class SafetyReport:
-    """Successful safety check details."""
-
-    estimated_bytes: int
-    available_bytes: int
-
-
-class SafetyError(RuntimeError):
-    """Raised when a model cannot be safely evaluated."""
-
-
-def check_model_safety(
-    lease: Lease,
-    gpus: tuple[Gpu, ...],
-    metadata: "ModelMetadata | None" = None,
-    free_disk_bytes: int | None = None,
-    gpu_memory_utilisation: float = 0.8,
-    selected_gpu: Gpu | None = None,
-) -> SafetyReport:
-    """Verify public, pinned, safetensors-only, non-code model metadata.
-
-    Returns:
-        Details of the successful fit check.
-
-    Raises:
-        SafetyError:
-            If the revision, repository, profile, or memory estimate is unsafe.
-    """
-    if platform.machine() not in _SUPPORTED_HOST_ARCHITECTURES:
-        raise SafetyError("unsupported worker architecture")
-    if not _COMMIT_RE.fullmatch(lease.model_revision):
-        raise SafetyError("broker supplied an unpinned model revision")
-    if not 0 < gpu_memory_utilisation <= 1:
-        raise SafetyError("GPU memory utilisation must be between 0 and 1")
-    info = metadata or HuggingFaceMetadata().fetch(
-        model_id=lease.model_id, revision=lease.model_revision
-    )
-    if info.private or info.gated:
-        raise SafetyError("model is private or gated")
-    if info.auto_map:
-        raise SafetyError("model declares auto_map and would require remote code")
-    if lease.model_profile not in _SUPPORTED_PROFILES:
-        raise SafetyError("broker supplied an unknown hardware profile")
-    if len(info.architectures) != 1:
-        raise SafetyError("model config must declare exactly one architecture")
-    architecture = info.architectures[0]
-    if architecture not in _SUPPORTED_MODEL_ARCHITECTURES:
-        raise SafetyError("model architecture is not supported by this worker")
-    if _profile_for_architecture(architecture) != lease.model_profile:
-        raise SafetyError("model architecture does not match its broker profile")
-    if any(path.lower().endswith(".py") for path in info.files):
-        raise SafetyError("model repository contains Python files")
-    if any(path.lower().endswith(_UNSAFE_SUFFIXES) for path in info.files):
-        raise SafetyError("model repository contains unsafe weight artifacts")
-    if not info.safetensors:
-        raise SafetyError("model has no safetensors weights")
-    if info.repository_bytes is None:
-        raise SafetyError("model repository size could not be verified")
-    if free_disk_bytes is not None and free_disk_bytes < info.repository_bytes:
-        raise SafetyError("insufficient disk space for the model repository")
-    if selected_gpu is None:
-        if len(gpus) != 1:
-            raise SafetyError("a selected GPU is required for multi-GPU hosts")
-        selected_gpu = gpus[0]
-    available = int(selected_gpu.free_memory_bytes * gpu_memory_utilisation)
-    if not available or info.estimated_bytes * 1.35 > available:
-        raise SafetyError(
-            f"model needs approximately {info.estimated_bytes} bytes but only "
-            f"{available} bytes are free on one supported GPU"
-        )
-    return SafetyReport(estimated_bytes=info.estimated_bytes, available_bytes=available)
-
-
 class ModelMetadata:
     """Metadata required by the safety preflight."""
 
@@ -221,3 +142,82 @@ class HuggingFaceMetadata:
             architectures=tuple(architectures),
             repository_bytes=repository_bytes,
         )
+
+
+class SafetyError(RuntimeError):
+    """Raised when a model cannot be safely evaluated."""
+
+
+@dataclasses.dataclass(frozen=True)
+class SafetyReport:
+    """Successful safety check details."""
+
+    estimated_bytes: int
+    available_bytes: int
+
+
+def check_model_safety(
+    lease: Lease,
+    gpus: tuple[Gpu, ...],
+    metadata: "ModelMetadata | None" = None,
+    free_disk_bytes: int | None = None,
+    gpu_memory_utilisation: float = 0.8,
+    selected_gpu: Gpu | None = None,
+) -> SafetyReport:
+    """Verify public, pinned, safetensors-only, non-code model metadata.
+
+    Returns:
+        Details of the successful fit check.
+
+    Raises:
+        SafetyError:
+            If the revision, repository, profile, or memory estimate is unsafe.
+    """
+    if platform.machine() not in _SUPPORTED_HOST_ARCHITECTURES:
+        raise SafetyError("unsupported worker architecture")
+    if not _COMMIT_RE.fullmatch(lease.model_revision):
+        raise SafetyError("broker supplied an unpinned model revision")
+    if not 0 < gpu_memory_utilisation <= 1:
+        raise SafetyError("GPU memory utilisation must be between 0 and 1")
+    info = metadata or HuggingFaceMetadata().fetch(
+        model_id=lease.model_id, revision=lease.model_revision
+    )
+    if info.private or info.gated:
+        raise SafetyError("model is private or gated")
+    if info.auto_map:
+        raise SafetyError("model declares auto_map and would require remote code")
+    if lease.model_profile not in _SUPPORTED_PROFILES:
+        raise SafetyError("broker supplied an unknown hardware profile")
+    if len(info.architectures) != 1:
+        raise SafetyError("model config must declare exactly one architecture")
+    architecture = info.architectures[0]
+    if architecture not in _SUPPORTED_MODEL_ARCHITECTURES:
+        raise SafetyError("model architecture is not supported by this worker")
+    if _profile_for_architecture(architecture) != lease.model_profile:
+        raise SafetyError("model architecture does not match its broker profile")
+    if any(path.lower().endswith(".py") for path in info.files):
+        raise SafetyError("model repository contains Python files")
+    if any(path.lower().endswith(_UNSAFE_SUFFIXES) for path in info.files):
+        raise SafetyError("model repository contains unsafe weight artifacts")
+    if not info.safetensors:
+        raise SafetyError("model has no safetensors weights")
+    if info.repository_bytes is None:
+        raise SafetyError("model repository size could not be verified")
+    if free_disk_bytes is not None and free_disk_bytes < info.repository_bytes:
+        raise SafetyError("insufficient disk space for the model repository")
+    if selected_gpu is None:
+        if len(gpus) != 1:
+            raise SafetyError("a selected GPU is required for multi-GPU hosts")
+        selected_gpu = gpus[0]
+    available = int(selected_gpu.free_memory_bytes * gpu_memory_utilisation)
+    if not available or info.estimated_bytes * 1.35 > available:
+        raise SafetyError(
+            f"model needs approximately {info.estimated_bytes} bytes but only "
+            f"{available} bytes are free on one supported GPU"
+        )
+    return SafetyReport(estimated_bytes=info.estimated_bytes, available_bytes=available)
+
+
+def _profile_for_architecture(architecture: str) -> str | None:
+    """Return the profile for one exact admitted Transformers architecture."""
+    return _ARCHITECTURE_PROFILES.get(architecture)

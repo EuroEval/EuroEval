@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 class AuthProtocol(t.Protocol):
     """Operations required for device-flow authentication."""
 
-    def start_auth(self) -> AuthStart:
-        """Start a device flow."""
-        raise NotImplementedError
-
     def poll_auth(self, session_id: str) -> AuthPoll:
         """Poll a device flow."""
+        raise NotImplementedError
+
+    def start_auth(self) -> AuthStart:
+        """Start a device flow."""
         raise NotImplementedError
 
 
