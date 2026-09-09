@@ -115,15 +115,14 @@ def _coordinator_issue_lock(number: int) -> t.Iterator[None]:
     Raises:
         RuntimeError: If locking is enabled but cannot be acquired or released.
     """
-    enabled = os.environ.get("VOLUNTEER_COORDINATOR_ENABLED", "").lower() in {
-        "1",
-        "true",
-        "yes",
-    }
+    base = os.environ.get("VOLUNTEER_COORDINATOR_URL", "").rstrip("/")
+    enabled = bool(base) or (
+        os.environ.get("VOLUNTEER_COORDINATOR_ENABLED", "").lower()
+        in {"1", "true", "yes"}
+    )
     if not enabled:
         yield
         return
-    base = os.environ.get("VOLUNTEER_COORDINATOR_URL", "").rstrip("/")
     secret = os.environ.get("WORKER_COORDINATOR_SECRET", "")
     if not base or not secret:
         raise RuntimeError(

@@ -7,6 +7,8 @@ import importlib.metadata
 import json
 from pathlib import Path
 
+from packaging.version import Version
+
 from leaderboards.evaluation_common import official_dataset_language_pairs
 
 PROFILES = (
@@ -42,6 +44,7 @@ def build_policy(
     Returns:
         A JSON-serialisable policy document.
     """
+    euroeval_version = str(Version(euroeval_version))
     by_language: dict[str, list[str]] = {}
     for dataset, language in sorted(pairs):
         # Queue runs use the validation split and the default zero-shot setting.
@@ -83,7 +86,6 @@ def main() -> None:
     encoded = json.dumps(policy, ensure_ascii=False, indent=2)
     temporary.write_text(encoded + "\n", encoding="utf-8")
     temporary.replace(args.output)
-
 
 
 if __name__ == "__main__":

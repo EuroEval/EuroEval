@@ -5,7 +5,8 @@ import {
   addIssueLabel, commentIssue, env, fetchIssue, issueComments, json, method,
   parseVolunteerMarker, patchIssue, promotionSecret, readJson, releaseIssueMutex,
   removeIssueLabel, replaceVolunteerMarker, requireProtocol, selectedLanguages,
-  unassignIssue,
+  unassignIssue, signVolunteerMarker, verifyVolunteerMarker, signFinalCredit,
+  redis, releaseResultReservation, sha256,
 } from "./_lib.ts";
 import type { VolunteerLeaseMarker, VolunteerSubmission } from "./_lib.ts";
 
@@ -17,6 +18,7 @@ export interface PromotionPlan {
   marker: VolunteerLeaseMarker;
   complete: boolean;
   winner: string | null;
+  acceptedCounts: Array<{ login: string; count: number }>;
   removeReviewLabel: boolean;
   releaseCoordinator: boolean;
 }
@@ -49,10 +51,17 @@ export function promotionPlan(
     submissions,
     completed_languages: [...acceptedLanguages].sort(),
   };
+  const counts = new Map<string, number>();
+  for (const item of submissions.filter((item) => item.status === "accepted")) {
+    counts.set(item.verified_contributor, (counts.get(item.verified_contributor) || 0) + item.result_count);
+  }
+  const acceptedCounts = [...counts.entries()].map(([login, count]) => ({ login, count }))
+    .sort((a, b) => b.count - a.count || a.login.toLowerCase().localeCompare(b.login.toLowerCase()) || a.login.localeCompare(b.login));
   return {
     marker: next,
     complete,
     winner: complete ? largestAcceptedShare(submissions) : null,
+    acceptedCounts,
     removeReviewLabel: !submitted,
     releaseCoordinator: complete || outcome === "rejected" && !active && !submitted,
   };
@@ -77,6 +86,21 @@ export function largestAcceptedShare(submissions: VolunteerSubmission[]): string
 }
 
 /** Authenticate and apply a resumable accepted/rejected transition. */
+async function releaseSubmissionReservations(submissionId: string): Promise<void> {
+  const raw = await redis("SMEMBERS", `euroeval:worker:reservations:${submissionId}`);
+  if (!Array.isArray(raw)) return;
+  for (const encoded of raw) {
+    if (typeof encoded !== "string") continue;
+    try {
+      const item = JSON.parse(encoded) as { identity?: string; digest?: string };
+      if (typeof item.identity === "string" && typeof item.digest === "string") {
+        await releaseResultReservation(`euroeval:worker:record-identity:${await sha256(item.identity)}`, item.digest, submissionId);
+      }
+    } catch { /* An audit entry must not abort the rest of the reclamation. */ }
+  }
+  await redis("DEL", `euroeval:worker:reservations:${submissionId}`);
+}
+
 export default async function handler(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
   try {
@@ -94,20 +118,23 @@ export default async function handler(req: Request): Promise<Response> {
     try {
       const issue = await fetchIssue(issueNumber);
       const marker = parseVolunteerMarker(issue.body);
-      if (!marker) throw new BrokerError(409, "The issue ownership marker is missing or malformed.");
+      if (!marker || !(await verifyVolunteerMarker(issueNumber, marker))) throw new BrokerError(409, "The issue ownership marker is missing, unsigned, or malformed.");
       const plan = promotionPlan(marker, selectedLanguages(issue.body), submissionId, outcome);
-      let promotedBody = replaceVolunteerMarker(issue.body || "", plan.marker);
-      if (plan.complete && plan.winner && !promotedBody.includes(CREDIT_MARKER)) {
-        promotedBody += `<!-- ${CREDIT_MARKER} ${JSON.stringify({ immutable: true, winner: plan.winner })} -->\n`;
+      const signedMarker = await signVolunteerMarker(issueNumber, plan.marker);
+      let promotedBody = replaceVolunteerMarker(issue.body || "", signedMarker);
+      if (plan.complete && plan.winner) {
+        const credit = await signFinalCredit(issueNumber, { version: 1, immutable: true, winner: plan.winner, accepted_counts: plan.acceptedCounts, completed_languages: plan.marker.completed_languages || [] });
+        promotedBody += `<!-- ${CREDIT_MARKER} ${JSON.stringify(credit)} -->\n`;
       }
       await patchIssue(issueNumber, promotedBody);
       const fencedIssue = await fetchIssue(issueNumber);
       const fenced = parseVolunteerMarker(fencedIssue.body);
-      if (fenced?.submissions?.find((item) => item.submission_id === submissionId)?.status !== outcome ||
+      if (!fenced || !(await verifyVolunteerMarker(issueNumber, fenced)) || fenced.submissions?.find((item) => item.submission_id === submissionId)?.status !== outcome ||
           plan.complete && !fencedIssue.body?.includes(CREDIT_MARKER)) {
         throw new BrokerError(409, "Promotion fence lost.");
       }
 
+      if (outcome === "rejected") await releaseSubmissionReservations(submissionId);
       const reviewLabel = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
       const resultsLabel = process.env.RESULTS_READY_LABEL || "results-ready";
       if (plan.complete && !fencedIssue.labels?.some((item) => item.name === resultsLabel)) {

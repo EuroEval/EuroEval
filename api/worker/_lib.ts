@@ -4,6 +4,9 @@ import generatedScopePolicy from "./scope-policy.json" with { type: "json" };
 declare const process: { env: Record<string, string | undefined> };
 export const PROTOCOL_VERSION = "volunteer-worker/v1" as const;
 export const REPO = "EuroEval/EuroEval";
+const MARKER_VERSION = 1 as const;
+const MARKER_DOMAIN = "euroeval-volunteer-marker";
+const CREDIT_DOMAIN = "euroeval-volunteer-credit";
 export const REQUEST_LABEL = "model evaluation request";
 export const TITLE_PREFIX = "[MODEL EVALUATION REQUEST]";
 export const VOLUNTEER_MARKER_RE =
@@ -39,6 +42,16 @@ export interface VolunteerLeaseMarker {
   leases: Array<{ lease_id: string; language: string; worker: string; contributor: string; expires_at: string }>;
   submissions?: VolunteerSubmission[];
   completed_languages?: string[];
+  signature?: string;
+}
+
+export interface FinalCredit {
+  version: typeof MARKER_VERSION;
+  immutable: true;
+  winner: string;
+  accepted_counts: Array<{ login: string; count: number }>;
+  completed_languages: string[];
+  signature: string;
 }
 
 export interface WorkerIdentity {
@@ -56,6 +69,7 @@ export interface Lease {
   euroeval_version: string;
   image_digest: string;
   worker_version: string;
+  gpu_memory_utilisation: number;
   expires_at: string;
   lease_id: string;
   result_count?: number;
@@ -139,6 +153,60 @@ function bytesToBase64(bytes: Uint8Array): string {
 export async function sha256(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), (x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+async function hmac(secret: string, value: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+  return bytesToBase64(new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value))));
+}
+
+function markerPayload(issueNumber: number, marker: VolunteerLeaseMarker): string {
+  const { signature: _signature, ...unsigned } = marker;
+  return canonicalJson({ domain: MARKER_DOMAIN, version: MARKER_VERSION, issue_number: issueNumber, marker: unsigned });
+}
+
+function creditPayload(issueNumber: number, credit: Omit<FinalCredit, "signature">): string {
+  return canonicalJson({ domain: CREDIT_DOMAIN, version: MARKER_VERSION, issue_number: issueNumber, credit });
+}
+
+export function markerSecret(): string {
+  return env("VOLUNTEER_MARKER_SECRET");
+}
+
+export async function signVolunteerMarker(issueNumber: number, marker: VolunteerLeaseMarker): Promise<VolunteerLeaseMarker> {
+  return { ...marker, signature: await hmac(markerSecret(), markerPayload(issueNumber, marker)) };
+}
+
+export async function verifyVolunteerMarker(issueNumber: number, marker: VolunteerLeaseMarker): Promise<boolean> {
+  return !!marker.signature && marker.signature === await hmac(markerSecret(), markerPayload(issueNumber, marker));
+}
+
+export async function signFinalCredit(issueNumber: number, credit: Omit<FinalCredit, "signature">): Promise<FinalCredit> {
+  return { ...credit, signature: await hmac(markerSecret(), creditPayload(issueNumber, credit)) };
+}
+
+export async function verifyFinalCredit(issueNumber: number, credit: FinalCredit): Promise<boolean> {
+  const { signature: _signature, ...unsigned } = credit;
+  return !!credit.signature && credit.signature === await hmac(markerSecret(), creditPayload(issueNumber, unsigned));
+}
+
+export function parseFinalCredit(body: string | null): FinalCredit | null {
+  if (!body) return null;
+  const matches = [...body.matchAll(/<!--[ \t]*euroeval-volunteer-credit:v1[ \t]+({[\s\S]*?})[ \t]*-->/gi)];
+  if (matches.length !== 1) return null;
+  try {
+    const value = JSON.parse(matches[0][1]) as FinalCredit;
+    if (value.version !== MARKER_VERSION || value.immutable !== true || typeof value.winner !== "string" ||
+        !Array.isArray(value.accepted_counts) || !Array.isArray(value.completed_languages) ||
+        typeof value.signature !== "string") return null;
+    return value;
+  } catch { return null; }
+}
+
+export function removeFinalCredit(body: string): string {
+  return body.replace(/<!--[ \t]*euroeval-volunteer-credit:v1[\s\S]*?-->/gi, "").replace(/\n{3,}/g, "\n\n").trimEnd();
 }
 export async function fetchWithRetry(input: string, init: RequestInit = {}): Promise<Response> {
   // Retrying a POST can repeat a device-code, assignment, or mutation after the
@@ -228,15 +296,16 @@ export function parseVolunteerMarker(body: string | null): VolunteerLeaseMarker 
     if (parsed.completed_languages !== undefined && (completed === undefined || completed.length !== parsed.completed_languages.length)) return null;
     return { protocol_version: PROTOCOL_VERSION, coordinator: parsed.coordinator,
       submission: parsed.submission as VolunteerLeaseMarker["submission"], leases,
-      ...(submissions === undefined ? {} : { submissions }), ...(completed === undefined ? {} : { completed_languages: completed }) };
+      ...(submissions === undefined ? {} : { submissions }), ...(completed === undefined ? {} : { completed_languages: completed }),
+      ...(typeof parsed.signature === "string" ? { signature: parsed.signature } : {}) };
   } catch { return null; }
 }
 export function hasVolunteerMarker(body: string | null): boolean { return !!body?.match(VOLUNTEER_MARKER_RE); }
 export function renderVolunteerMarker(marker: VolunteerLeaseMarker): string {
-  return `<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(marker)} -->`;
+  return `<!-- euroeval-volunteer-worker:v1 ${canonicalJson(marker)} -->`;
 }
 export function replaceVolunteerMarker(body: string, marker: VolunteerLeaseMarker | null): string {
-  const without = body.replace(VOLUNTEER_MARKER_RE, "").replace(/\n{3,}/g, "\n\n").trimEnd();
+  const without = removeFinalCredit(body).replace(VOLUNTEER_MARKER_RE, "").replace(/\n{3,}/g, "\n\n").trimEnd();
   return marker ? `${without}\n\n${renderVolunteerMarker(marker)}\n` : `${without}\n`;
 }
 
@@ -347,26 +416,33 @@ export async function resolveModel(modelId: string): Promise<ResolvedModel> {
 
 export function fitsGpu(model: ResolvedModel, hardware: Record<string, unknown>): boolean {
   if (typeof hardware.free_disk_bytes !== "number" || !Number.isFinite(hardware.free_disk_bytes) || hardware.free_disk_bytes < model.repo_bytes) return false;
+  const utilisation = hardware.gpu_memory_utilisation === undefined ? 1 : hardware.gpu_memory_utilisation;
+  if (typeof utilisation !== "number" || !Number.isFinite(utilisation) || utilisation <= 0 || utilisation > 1) return false;
   if (!Array.isArray(hardware.gpus)) return false;
-  return hardware.gpus.some((gpu) => {
-    if (!gpu || typeof gpu !== "object") return false;
-    const item = gpu as Record<string, unknown>;
-    const free = item.free_memory_bytes;
-    return typeof free === "number" && Number.isFinite(free) && free > 0 && model.weight_bytes * 1.35 <= free;
-  });
+  const largestFree = Math.max(...hardware.gpus.flatMap((gpu) => {
+    if (!gpu || typeof gpu !== "object") return [];
+    const free = (gpu as Record<string, unknown>).free_memory_bytes;
+    return typeof free === "number" && Number.isFinite(free) && free > 0 ? [free] : [];
+  }), 0);
+  return model.weight_bytes * 1.35 <= largestFree * utilisation;
 }
 
 const ARCHITECTURE_PROFILES: Record<string, string> = {
-  bert: "bert", roberta: "roberta", xlm_roberta: "roberta", eurobert: "eurobert",
-  llama: "llama", mistral: "mistral", qwen2: "qwen", qwen3: "qwen", gemma: "gemma",
-  phi3: "phi", phi: "phi", falcon: "falcon", gpt2: "gpt2",
+  BertForSequenceClassification: "bert", BertForTokenClassification: "bert",
+  RobertaForSequenceClassification: "roberta", RobertaForTokenClassification: "roberta",
+  XLMRobertaForSequenceClassification: "roberta", XLMRobertaForTokenClassification: "roberta",
+  EuroBERTForSequenceClassification: "eurobert", EuroBERTForTokenClassification: "eurobert",
+  EuroBertForSequenceClassification: "eurobert", EuroBertForTokenClassification: "eurobert",
+  LlamaForCausalLM: "llama", MistralForCausalLM: "mistral",
+  Qwen2ForCausalLM: "qwen", Qwen2ForSequenceClassification: "qwen", Qwen2ForTokenClassification: "qwen",
+  Qwen3ForCausalLM: "qwen", Qwen3ForSequenceClassification: "qwen", Qwen3ForTokenClassification: "qwen",
+  GemmaForCausalLM: "gemma", Gemma2ForCausalLM: "gemma", Gemma3ForCausalLM: "gemma",
+  PhiForCausalLM: "phi", Phi3ForCausalLM: "phi", FalconForCausalLM: "falcon", GPT2LMHeadModel: "gpt2",
 };
 function modelProfileFor(config: Record<string, unknown>): string | null {
   const architectures = config.architectures;
   if (!Array.isArray(architectures) || architectures.length !== 1 || typeof architectures[0] !== "string") return null;
-  const name = architectures[0].replace(/For[A-Za-z]+$/, "").replace(/Model$/, "").toLowerCase();
-  const key = Object.keys(ARCHITECTURE_PROFILES).find((candidate) => name.includes(candidate));
-  return key ? ARCHITECTURE_PROFILES[key] : null;
+  return ARCHITECTURE_PROFILES[architectures[0]] || null;
 }
 export function languageGroup(language: string): string | null {
   return Object.entries(GROUPS).find(([, codes]) => codes.includes(language))?.[0] || null;
@@ -374,7 +450,12 @@ export function languageGroup(language: string): string | null {
 
 type ScopeEntry = { euroeval_version: string; model_profile: string; language: string; language_group?: string; identity_suffixes: string[]; count?: number; warnings?: string[] };
 type ScopePolicy = { policy_version: string; policies: ScopeEntry[] };
+function canonicalEuroevalVersion(version: string): string {
+  return version.replace(/\.dev$/, ".dev0");
+}
+
 export function expectedScope(euroevalVersion: string, profile: string, language: string): ScopeEntry & { policy_version: string } {
+  euroevalVersion = canonicalEuroevalVersion(euroevalVersion);
   const group = languageGroup(language);
   if (!group) throw new BrokerError(422, "The leased language has no trusted language group.");
   const raw = process.env.VOLUNTEER_SCOPE_POLICY_JSON || JSON.stringify(generatedScopePolicy);
@@ -449,6 +530,13 @@ export async function completeResultIdentity(key: string, reservation: string, d
 export async function abortResultIdentity(key: string, digest: string, leaseId: string): Promise<void> {
   await redis("EVAL", `local current=redis.call('GET',KEYS[1]); if not current then return 0 end;
     local item=cjson.decode(current); if item.digest == ARGV[1] and item.lease_id == ARGV[2] and item.status == 'uploading' then return redis.call('DEL',KEYS[1]) end; return 0`, "1", key, digest, leaseId);
+}
+
+export async function releaseResultReservation(key: string, digest: string, leaseId: string): Promise<boolean> {
+  const result = await redis("EVAL", `local current=redis.call('GET',KEYS[1]); if not current then return 0 end;
+    local item=cjson.decode(current); if item.digest ~= ARGV[1] or item.lease_id ~= ARGV[2] then return 0 end;
+    return redis.call('DEL',KEYS[1])`, "1", key, digest, leaseId);
+  return result === 1 || result === "1";
 }
 export function leaseKey(leaseId: string): string { return `euroeval:worker:lease-id:${leaseId}`; }
 export async function getLeaseById(leaseId: string): Promise<Lease | null> { return redisGet<Lease>(leaseKey(leaseId)); }

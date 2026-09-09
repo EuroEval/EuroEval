@@ -9,10 +9,10 @@ const MAX_PAGES = 10;
 const PER_PAGE = 100;
 const CREDIT_MARKER_RE = /<!--[\s\S]*?euroeval-volunteer-credit:v1\s+({[\s\S]*?})\s*-->/i;
 const VOLUNTEER_MARKER_CANDIDATE_RE = /<!--[ \t]*euroeval-volunteer-worker:v1/i;
-import { redis, sha256 } from "./worker/_lib.ts";
+import { redis, sha256, parseFinalCredit, parseVolunteerMarker, selectedLanguages, verifyFinalCredit, verifyVolunteerMarker } from "./worker/_lib.ts";
 
 interface RawAssignee { login: string; avatar_url?: string; }
-interface RawIssue { title: string; body: string | null; assignee: RawAssignee | null; assignees: RawAssignee[]; }
+interface RawIssue { number: number; title: string; body: string | null; assignee: RawAssignee | null; assignees: RawAssignee[]; labels?: Array<{ name: string }>; }
 interface EvaluatorCount { login: string; count: number; avatarUrl: string; }
 const MODEL_ID_BODY_RE = /(?:^|\n)#{1,6}\s*Model ID\s*\n+([^\n]+)/i;
 
@@ -37,13 +37,32 @@ function immutableWinner(body: string | null): { login: string; avatarUrl?: stri
   } catch { return null; }
 }
 
+async function trustedWinner(issue: RawIssue): Promise<string | null> {
+  const resultsLabel = process.env.RESULTS_READY_LABEL || "results-ready";
+  if (!issue.labels?.some((label) => label.name === resultsLabel)) return null;
+  const marker = parseVolunteerMarker(issue.body);
+  const credit = parseFinalCredit(issue.body);
+  if (!marker || !credit || !(await verifyVolunteerMarker(issue.number, marker)) || !(await verifyFinalCredit(issue.number, credit))) return null;
+  const selected = new Set(selectedLanguages(issue.body));
+  // The signed marker is authoritative for accepted coverage; the issue checkboxes
+  // are checked as well so a later scope edit cannot silently outlive the credit.
+  const completed = new Set(marker.completed_languages || []);
+  if (!selected.size || [...selected].some((language) => !completed.has(language)) ||
+      [...completed].some((language) => !selected.has(language)) ||
+      !(marker.submissions || []).filter((item) => item.status === "accepted").every((item) => completed.has(item.language))) return null;
+  const counts = new Map<string, number>();
+  for (const item of marker.submissions || []) if (item.status === "accepted") counts.set(item.verified_contributor, (counts.get(item.verified_contributor) || 0) + item.result_count);
+  const expected = [...counts.entries()].map(([login, count]) => ({ login, count })).sort((a, b) => b.count - a.count || a.login.toLowerCase().localeCompare(b.login.toLowerCase()) || a.login.localeCompare(b.login));
+  if (JSON.stringify(expected) !== JSON.stringify(credit.accepted_counts) || expected[0]?.login !== credit.winner ||
+      JSON.stringify([...completed].sort()) !== JSON.stringify([...credit.completed_languages].sort())) return null;
+  return credit.winner;
+}
+
 export function creditLogins(issue: RawIssue): string[] {
-  const winner = immutableWinner(issue.body);
-  if (winner && !EXCLUDE.has(winner.login)) return [winner.login];
-  // A recognisable volunteer marker is an explicit protocol record, not a
-  // maintainer assignment.  Falling back to assignees would credit the Hall of
-  // Fame for malformed, pending, or rejected submissions.
-  if (VOLUNTEER_MARKER_CANDIDATE_RE.test(issue.body || "")) return [];
+  // Final volunteer credits are consumed only through trustedWinner(), which
+  // verifies the issue-bound HMAC and complete signed coverage. This helper is
+  // intentionally limited to the legacy non-volunteer assignee path.
+  if (VOLUNTEER_MARKER_CANDIDATE_RE.test(issue.body || "") || CREDIT_MARKER_RE.test(issue.body || "")) return [];
   const assignees = issue.assignees && issue.assignees.length > 0 ? issue.assignees : issue.assignee ? [issue.assignee] : [];
   const seen = new Set<string>();
   return assignees.flatMap((assignee) => { if (EXCLUDE.has(assignee.login) || seen.has(assignee.login)) return []; seen.add(assignee.login); return [assignee.login]; });
@@ -61,7 +80,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!(await withinPublicRateLimit(req))) return json(429, { error: "Too many requests." }, { "retry-after": "60" });
   const token = process.env.GITHUB_TOKEN; const headers: Record<string, string> = { accept: "application/vnd.github+json", "x-github-api-version": "2022-11-28" }; if (token) headers.authorization = `Bearer ${token}`;
   const counts = new Map<string, EvaluatorCount>();
-  try { for (let page = 1; page <= MAX_PAGES; page++) { const chunk = await fetchPage(page, headers); for (const issue of chunk) { if (!extractModelId(issue.title, issue.body)) continue; for (const login of creditLogins(issue)) {            const credit = immutableWinner(issue.body);
+  try { for (let page = 1; page <= MAX_PAGES; page++) { const chunk = await fetchPage(page, headers); for (const issue of chunk) { if (!extractModelId(issue.title, issue.body)) continue; const trusted = await trustedWinner(issue); for (const login of (trusted ? [trusted] : creditLogins(issue).filter((item) => !VOLUNTEER_MARKER_CANDIDATE_RE.test(issue.body || "") && !CREDIT_MARKER_RE.test(issue.body || "")))) {            const credit = immutableWinner(issue.body);
             const avatarUrl = issue.assignees?.find((assignee) => assignee.login === login)?.avatar_url || (issue.assignee?.login === login ? issue.assignee.avatar_url : "") || (credit?.login === login ? credit.avatarUrl : undefined) || `https://github.com/${encodeURIComponent(login)}.png?size=64`; const current = counts.get(login); if (current) current.count += 1; else counts.set(login, { login, count: 1, avatarUrl }); } } if (chunk.length < PER_PAGE) break; } } catch (error) { return json(502, { error: (error as Error).message }); }
   return json(200, Array.from(counts.values()).sort((a, b) => b.count - a.count || a.login.toLowerCase().localeCompare(b.login.toLowerCase())));
 }

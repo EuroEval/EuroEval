@@ -12,74 +12,42 @@ from .types import Gpu, Lease
 
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _SUPPORTED_HOST_ARCHITECTURES = {"x86_64", "amd64", "aarch64", "arm64"}
-_PROFILE_ARCHITECTURES = {
-    "bert": frozenset({"BertForSequenceClassification", "BertForTokenClassification"}),
-    "roberta": frozenset(
-        {
-            "RobertaForSequenceClassification",
-            "RobertaForTokenClassification",
-            "XLMRobertaForSequenceClassification",
-            "XLMRobertaForTokenClassification",
-        }
-    ),
-    "eurobert": frozenset(
-        {
-            "EuroBERTForSequenceClassification",
-            "EuroBERTForTokenClassification",
-            "EuroBertForSequenceClassification",
-            "EuroBertForTokenClassification",
-        }
-    ),
-    "llama": frozenset({"LlamaForCausalLM"}),
-    "mistral": frozenset({"MistralForCausalLM"}),
-    "qwen": frozenset(
-        {
-            "Qwen2ForCausalLM",
-            "Qwen2ForSequenceClassification",
-            "Qwen2ForTokenClassification",
-            "Qwen3ForCausalLM",
-            "Qwen3ForSequenceClassification",
-            "Qwen3ForTokenClassification",
-        }
-    ),
-    "gemma": frozenset({"GemmaForCausalLM", "Gemma2ForCausalLM", "Gemma3ForCausalLM"}),
-    "phi": frozenset({"PhiForCausalLM", "Phi3ForCausalLM"}),
-    "falcon": frozenset({"FalconForCausalLM"}),
-    "gpt2": frozenset({"GPT2LMHeadModel"}),
+_ARCHITECTURE_PROFILES = {
+    "BertForSequenceClassification": "bert",
+    "BertForTokenClassification": "bert",
+    "RobertaForSequenceClassification": "roberta",
+    "RobertaForTokenClassification": "roberta",
+    "XLMRobertaForSequenceClassification": "roberta",
+    "XLMRobertaForTokenClassification": "roberta",
+    "EuroBERTForSequenceClassification": "eurobert",
+    "EuroBERTForTokenClassification": "eurobert",
+    "EuroBertForSequenceClassification": "eurobert",
+    "EuroBertForTokenClassification": "eurobert",
+    "LlamaForCausalLM": "llama",
+    "MistralForCausalLM": "mistral",
+    "Qwen2ForCausalLM": "qwen",
+    "Qwen2ForSequenceClassification": "qwen",
+    "Qwen2ForTokenClassification": "qwen",
+    "Qwen3ForCausalLM": "qwen",
+    "Qwen3ForSequenceClassification": "qwen",
+    "Qwen3ForTokenClassification": "qwen",
+    "GemmaForCausalLM": "gemma",
+    "Gemma2ForCausalLM": "gemma",
+    "Gemma3ForCausalLM": "gemma",
+    "PhiForCausalLM": "phi",
+    "Phi3ForCausalLM": "phi",
+    "FalconForCausalLM": "falcon",
+    "GPT2LMHeadModel": "gpt2",
 }
-_SUPPORTED_PROFILES = frozenset(_PROFILE_ARCHITECTURES)
-_SUPPORTED_MODEL_ARCHITECTURES = frozenset().union(*_PROFILE_ARCHITECTURES.values())
-# Specific prefixes must precede ``bert`` when profiles are derived from a name.
-_ARCHITECTURE_PREFIXES = (
-    ("xlmroberta", "roberta"),
-    ("roberta", "roberta"),
-    ("eurobert", "eurobert"),
-    ("bert", "bert"),
-    ("llama", "llama"),
-    ("mistral", "mistral"),
-    ("qwen3", "qwen"),
-    ("qwen2", "qwen"),
-    ("gemma", "gemma"),
-    ("phi3", "phi"),
-    ("phi", "phi"),
-    ("falcon", "falcon"),
-    ("gpt2", "gpt2"),
-)
+_SUPPORTED_PROFILES = frozenset(_ARCHITECTURE_PROFILES.values())
+_SUPPORTED_MODEL_ARCHITECTURES = frozenset(_ARCHITECTURE_PROFILES)
+
 _UNSAFE_SUFFIXES = (".bin", ".pt", ".pth", ".ckpt", ".gguf", ".onnx", ".h5", ".msgpack")
 
 
 def _profile_for_architecture(architecture: str) -> str | None:
-    """Derive the broker profile using the broker's precedence rules.
-
-    Returns:
-        The matching profile, or ``None`` for an unknown architecture.
-    """
-    name = re.sub(r"For[A-Za-z]+$", "", architecture)
-    name = re.sub(r"Model$", "", name).lower().replace("_", "")
-    for prefix, profile in _ARCHITECTURE_PREFIXES:
-        if prefix in name:
-            return profile
-    return None
+    """Return the profile for one exact admitted Transformers architecture."""
+    return _ARCHITECTURE_PROFILES.get(architecture)
 
 
 @dataclasses.dataclass(frozen=True)
