@@ -1,6 +1,6 @@
 import {
-  ConfigurationError, BrokerError, PROTOCOL_VERSION, env, json, method, randomToken, redisSet,
-  readJson, requireProtocol,
+  ConfigurationError, BrokerError, PROTOCOL_VERSION, enforceRateLimit, env, fetchWithRetry, json, method, randomToken, redisSet,
+  readJson, requireProtocol, sha256,
 } from "../_lib";
 
 export const config = { runtime: "edge" };
@@ -8,10 +8,12 @@ export const config = { runtime: "edge" };
 export default async function handler(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
   try {
+    const address = req.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim() || "anonymous";
+    await enforceRateLimit(`euroeval:worker:limit:auth-start:${await sha256(address)}`, 5, 3600);
     const body = await readJson(req, 4 * 1024);
     requireProtocol(body);
     const clientId = env("GITHUB_OAUTH_CLIENT_ID");
-    const response = await fetch("https://github.com/login/device/code", {
+    const response = await fetchWithRetry("https://github.com/login/device/code", {
       method: "POST",
       headers: { accept: "application/json", "content-type": "application/json" },
       body: JSON.stringify({ client_id: clientId, scope: "read:user" }),

@@ -10,7 +10,7 @@ const PER_PAGE = 100;
 const CREDIT_MARKER_RE = /<!--[\s\S]*?euroeval-volunteer-credit:v1\s+({[\s\S]*?})\s*-->/i;
 import { redis, sha256 } from "./worker/_lib.ts";
 
-interface RawAssignee { login: string; avatar_url: string; }
+interface RawAssignee { login: string; avatar_url?: string; }
 interface RawIssue { title: string; body: string | null; assignee: RawAssignee | null; assignees: RawAssignee[]; }
 interface EvaluatorCount { login: string; count: number; avatarUrl: string; }
 const MODEL_ID_BODY_RE = /(?:^|\n)#{1,6}\s*Model ID\s*\n+([^\n]+)/i;
@@ -28,14 +28,17 @@ export function calculateWinner(accepted: Array<{ github_login: string; identity
   return [...counts.entries()].sort((a, b) => b[1].size - a[1].size || a[0].toLowerCase().localeCompare(b[0].toLowerCase()) || a[0].localeCompare(b[0]))[0]?.[0] || null;
 }
 
-function immutableWinner(body: string | null): string | null {
+function immutableWinner(body: string | null): { login: string; avatarUrl?: string } | null {
   const match = body?.match(CREDIT_MARKER_RE); if (!match) return null;
-  try { const value = JSON.parse(match[1]) as { winner?: unknown; immutable?: unknown }; return value.immutable === true && typeof value.winner === "string" ? value.winner : null; } catch { return null; }
+  try {
+    const value = JSON.parse(match[1]) as { winner?: unknown; avatar_url?: unknown; immutable?: unknown };
+    return value.immutable === true && typeof value.winner === "string" ? { login: value.winner, avatarUrl: typeof value.avatar_url === "string" ? value.avatar_url : undefined } : null;
+  } catch { return null; }
 }
 
 export function creditLogins(issue: RawIssue): string[] {
   const winner = immutableWinner(issue.body);
-  if (winner && !EXCLUDE.has(winner)) return [winner];
+  if (winner && !EXCLUDE.has(winner.login)) return [winner.login];
   const assignees = issue.assignees && issue.assignees.length > 0 ? issue.assignees : issue.assignee ? [issue.assignee] : [];
   const seen = new Set<string>();
   return assignees.flatMap((assignee) => { if (EXCLUDE.has(assignee.login) || seen.has(assignee.login)) return []; seen.add(assignee.login); return [assignee.login]; });
@@ -53,7 +56,8 @@ export default async function handler(req: Request): Promise<Response> {
   if (!(await withinPublicRateLimit(req))) return json(429, { error: "Too many requests." }, { "retry-after": "60" });
   const token = process.env.GITHUB_TOKEN; const headers: Record<string, string> = { accept: "application/vnd.github+json", "x-github-api-version": "2022-11-28" }; if (token) headers.authorization = `Bearer ${token}`;
   const counts = new Map<string, EvaluatorCount>();
-  try { for (let page = 1; page <= MAX_PAGES; page++) { const chunk = await fetchPage(page, headers); for (const issue of chunk) { if (!extractModelId(issue.title, issue.body)) continue; for (const login of creditLogins(issue)) { const avatarUrl = issue.assignees?.find((assignee) => assignee.login === login)?.avatar_url || (issue.assignee?.login === login ? issue.assignee.avatar_url : ""); const current = counts.get(login); if (current) current.count += 1; else counts.set(login, { login, count: 1, avatarUrl }); } } if (chunk.length < PER_PAGE) break; } } catch (error) { return json(502, { error: (error as Error).message }); }
+  try { for (let page = 1; page <= MAX_PAGES; page++) { const chunk = await fetchPage(page, headers); for (const issue of chunk) { if (!extractModelId(issue.title, issue.body)) continue; for (const login of creditLogins(issue)) {            const credit = immutableWinner(issue.body);
+            const avatarUrl = issue.assignees?.find((assignee) => assignee.login === login)?.avatar_url || (issue.assignee?.login === login ? issue.assignee.avatar_url : "") || (credit?.login === login ? credit.avatarUrl : undefined) || `https://github.com/${encodeURIComponent(login)}.png?size=64`; const current = counts.get(login); if (current) current.count += 1; else counts.set(login, { login, count: 1, avatarUrl }); } } if (chunk.length < PER_PAGE) break; } } catch (error) { return json(502, { error: (error as Error).message }); }
   return json(200, Array.from(counts.values()).sort((a, b) => b.count - a.count || a.login.toLowerCase().localeCompare(b.login.toLowerCase())));
 }
 

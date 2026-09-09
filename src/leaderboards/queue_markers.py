@@ -39,6 +39,8 @@ class CommunityMarker:
     owner: str
     submission: str
     leases: tuple[dict[str, str], ...] = ()
+    submissions: tuple[dict[str, str], ...] = ()
+    completed_languages: tuple[str, ...] = ()
 
 
 def _expiry_active(value: str) -> bool:
@@ -65,12 +67,22 @@ def parse_community_marker(body: str) -> CommunityMarker | None:
         payload = json.loads(match.group("payload").strip())
     except json.JSONDecodeError:
         return None
-    if not isinstance(payload, dict) or set(payload) != {
-        "protocol_version",
-        "coordinator",
-        "submission",
-        "leases",
-    }:
+    if (
+        not isinstance(payload, dict)
+        or not set(payload).issubset(
+            {
+                "protocol_version",
+                "coordinator",
+                "submission",
+                "leases",
+                "submissions",
+                "completed_languages",
+            }
+        )
+        or not {"protocol_version", "coordinator", "submission", "leases"}.issubset(
+            payload
+        )
+    ):
         return None
     if (
         payload["protocol_version"] != COMMUNITY_PROTOCOL_VERSION
@@ -78,6 +90,27 @@ def parse_community_marker(body: str) -> CommunityMarker | None:
         or not isinstance(payload["submission"], str)
         or payload["submission"] not in _COMMUNITY_SUBMISSION_STATES
         or not isinstance(payload["leases"], list)
+    ):
+        return None
+    submissions: list[dict[str, str]] = []
+    raw_submissions = payload.get("submissions", [])
+    if not isinstance(raw_submissions, list):
+        return None
+    for submission in raw_submissions:
+        if (
+            not isinstance(submission, dict)
+            or set(submission)
+            != {"submission_id", "language", "manifest_path", "submitted_at"}
+            or not all(
+                isinstance(submission[key], str) and submission[key]
+                for key in submission
+            )
+        ):
+            return None
+        submissions.append(submission)
+    completed = payload.get("completed_languages", [])
+    if not isinstance(completed, list) or not all(
+        isinstance(item, str) and item for item in completed
     ):
         return None
     leases: list[dict[str, str]] = []
@@ -102,8 +135,21 @@ def parse_community_marker(body: str) -> CommunityMarker | None:
         except ValueError:
             return None
         leases.append(lease)
+    if len({lease["lease_id"] for lease in leases}) != len(leases) or len(
+        {lease["language"] for lease in leases}
+    ) != len(leases):
+        return None
+    if len({item["submission_id"] for item in submissions}) != len(submissions) or len(
+        {item["language"] for item in submissions}
+    ) != len(submissions):
+        return None
     return CommunityMarker(
-        1, payload["coordinator"], payload["submission"], tuple(leases)
+        1,
+        payload["coordinator"],
+        payload["submission"],
+        tuple(leases),
+        tuple(submissions),
+        tuple(completed),
     )
 
 
@@ -114,8 +160,12 @@ def issue_has_active_queue_ownership(body: str) -> bool:
         marker is not None
         and marker.submission in COMMUNITY_ACTIVE_SUBMISSION_STATES
         and (
-            not marker.leases
-            or any(_expiry_active(lease["expires_at"]) for lease in marker.leases)
+            marker.submission == "submitted"
+            or marker.submission in {"active", "pending", "running"}
+            and (
+                not marker.leases
+                or any(_expiry_active(lease["expires_at"]) for lease in marker.leases)
+            )
         )
     )
 

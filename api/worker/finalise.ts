@@ -1,15 +1,16 @@
 declare const process: { env: Record<string, string | undefined> };
 
 import {
-  BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, authenticate, commentIssue,
-  contributorLabel, deleteLease, fetchIssue, getLeaseById, issueComments, json, method, patchIssue,
-  parseVolunteerMarker, readJson, redis, redisGet, replaceVolunteerMarker, requireProtocol, selectedLanguages,
-  unassignIssue,
+  BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireIssueMutex,
+  authenticate, commentIssue, contributorLabel, deleteLease, enforceRateLimit, fetchIssue,
+  getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker, readJson,
+  redis, redisGet, releaseIssueMutex, requireProtocol, selectedLanguages, uploadStaging, VolunteerLeaseMarker,
 } from "./_lib";
 
 export const config = { runtime: "edge" };
-const FINAL_MARKER = "<!-- euroeval-volunteer-finalised:v1 -->";
+const FINAL_MARKER = "euroeval-volunteer-finalised:v1";
 type ResultEntry = { digest: string; identity: string; path: string };
+type Receipt = { status?: string; submission_id: string; lease: any; entries: ResultEntry[]; manifest_path: string; manifest?: string };
 
 function resultEntries(value: unknown): ResultEntry[] {
   if (!Array.isArray(value)) return [];
@@ -19,57 +20,77 @@ function resultEntries(value: unknown): ResultEntry[] {
   });
 }
 
-function trustedScope(lease: { model_id: string; language: string }): Set<string> | null {
-  const raw = process.env.VOLUNTEER_EXPECTED_SCOPE_JSON;
-  if (!raw) return null;
-  try {
-    const scope = JSON.parse(raw) as Record<string, unknown>;
-    const identities = scope[`${lease.model_id}:${lease.language}`];
-    if (!Array.isArray(identities) || !identities.every((item) => typeof item === "string")) return null;
-    return new Set(identities as string[]);
-  } catch { return null; }
+function suffix(identity: string): string | null {
+  try { const value = JSON.parse(identity) as unknown[]; return Array.isArray(value) && value.length === 4 ? JSON.stringify(value.slice(1)) : null; } catch { return null; }
 }
 
 export default async function handler(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
   try {
-    const identity = await authenticate(req);
-    const body = await readJson(req, 32 * 1024);
-    requireProtocol(body);
+    const identity = await authenticate(req); await enforceRateLimit(`euroeval:worker:limit:finalise:${identity.hash}`, 30, 3600);
+    const body = await readJson(req, 32 * 1024); requireProtocol(body);
     if (typeof body.lease_id !== "string") throw new BrokerError(400, "lease_id is required.");
-    const lease = await getLeaseById(body.lease_id);
-    if (!lease || lease.worker !== identity.hash.slice(0, 24) || Date.parse(lease.expires_at) <= Date.now()) throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
-    const raw = await redis("SMEMBERS", `euroeval:worker:results:${lease.lease_id}`);
-    const entries = resultEntries(raw);
-    const scope = trustedScope(lease);
-    if (!scope) throw new BrokerError(503, "The coordinator has no trusted expected-scope manifest for this lease.");
-    const actual = new Set(entries.map((entry) => entry.identity));
-    if (actual.size !== entries.length || actual.size !== scope.size || [...scope].some((item) => !actual.has(item))) throw new BrokerError(422, "The uploaded result set does not match the coordinator's expected scope.");
-    const statusKey = `euroeval:worker:finalisation:${lease.lease_id}`;
-    const oldStatus = await redisGet<{ status?: string; submission_id?: string }>(statusKey);
-    if (oldStatus?.status === "ready") return json(200, { protocol_version: PROTOCOL_VERSION, status: "already_finalised", submission_id: oldStatus.submission_id });
-    await redis("SET", statusKey, JSON.stringify({ status: "validating", count: entries.length }), "EX", String(30 * 24 * 60 * 60));
-    const issue = await fetchIssue(lease.issue_number);
-    if (!selectedLanguages(issue.body).includes(lease.language)) throw new BrokerError(409, "The leased language is no longer in the issue scope.");
-    const marker = parseVolunteerMarker(issue.body);
-    if (!marker?.leases.some((item) => item.lease_id === lease.lease_id)) throw new BrokerError(409, "The issue no longer carries this worker's lease marker.");
-    const label = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
-    if (!issue.labels?.some((item) => item.name === label)) await addIssueLabel(lease.issue_number, label);
-    const comments = await issueComments(lease.issue_number);
-    if (!comments.some((item) => item.body?.includes(FINAL_MARKER))) {
-      const summary = `${entries.length} canonical identities; zero failed instances; coordinator scope passed.`;
-      const comment = `${FINAL_MARKER}\n@${"saattrupdan"} — community evaluation ready.\n\n` +
-        `Contributor: **${contributorLabel(identity.contributor)}**  \nModel: **${lease.model_id}@${lease.model_revision}**  \nCoverage: **${lease.language}** (${summary})`;
-      await commentIssue(lease.issue_number, comment);
+    const statusKey = `euroeval:worker:finalisation:${body.lease_id}`;
+    const old = await redisGet<Receipt>(statusKey);
+    if (old?.status === "ready") return json(200, { protocol_version: PROTOCOL_VERSION, status: "already_finalised", submission_id: old.submission_id });
+    const active = await getLeaseById(body.lease_id);
+    const lease = active || old?.lease;
+    if (!lease || lease.worker !== identity.hash.slice(0, 24)) throw new BrokerError(409, "Lease is absent or belongs to another worker.");
+    if (!active && old?.status !== "manifest_uploaded") throw new BrokerError(409, "Lease is absent, expired, or belongs to another worker.");
+    let receipt: Receipt = old || { status: "validating", submission_id: lease.lease_id, lease, entries: [], manifest_path: `volunteer/manifests/${lease.lease_id}.json` };
+    if (receipt.status !== "manifest_uploaded") {
+      const raw = await redis("SMEMBERS", `euroeval:worker:results:${lease.lease_id}`);
+      const entries = resultEntries(raw);
+      const expected = lease.expected_scope?.identity_suffixes;
+      if (!Array.isArray(expected) || !expected.length) throw new ConfigurationError("Lease has no trusted expected scope.");
+      const actual = entries.map((entry) => suffix(entry.identity));
+      if (actual.some((item) => item === null) || new Set(actual).size !== entries.length ||
+          actual.length !== expected.length || expected.some((item: string) => !actual.includes(item))) throw new BrokerError(422, "The uploaded result set does not match the coordinator's expected scope.");
+      receipt.entries = entries; receipt.status = "validating";
+      await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
+      const issue = await fetchIssue(lease.issue_number);
+      const manifest = {
+        protocol_version: PROTOCOL_VERSION, submission_id: receipt.submission_id, issue_number: lease.issue_number,
+        verified_contributor: identity.contributor, model: { id: lease.model_id, revision: lease.model_revision },
+        language: lease.language, model_profile: lease.model_profile, language_group: lease.expected_scope.language_group,
+        euroeval_version: lease.euroeval_version, worker_version: lease.worker_version, image_digest: lease.image_digest,
+        expected_scope: lease.expected_scope, results: entries,
+        automated_checks: { result_count: entries.length, identities_unique: true, failed_instances: 0, warnings: lease.expected_scope.warnings || [] },
+        created_at: new Date().toISOString(), issue_state: issue.state,
+      };
+      receipt.manifest = JSON.stringify(manifest); await uploadStaging(receipt.manifest_path, receipt.manifest);
+      receipt.status = "manifest_uploaded";
+      await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
     }
-    const remaining = marker.leases.filter((item) => item.lease_id !== lease.lease_id && Date.parse(item.expires_at) > Date.now());
-    await patchIssue(lease.issue_number, replaceVolunteerMarker(issue.body || "", remaining.length ? { ...marker, leases: remaining, submission: "completed" } : null));
-    if (!remaining.length && issue.assignees?.some((item) => item.login === marker.coordinator)) await unassignIssue(lease.issue_number, marker.coordinator);
-    await deleteLease(lease);
-    await redis("SET", statusKey, JSON.stringify({ status: "ready", count: entries.length, validated_at: new Date().toISOString() }), "EX", String(30 * 24 * 60 * 60));
-    return json(200, { protocol_version: PROTOCOL_VERSION, status: "ready", coverage: { language: lease.language, records: entries.length } });
+    const mutex = await acquireIssueMutex(lease.issue_number); if (!mutex) throw new BrokerError(409, "Issue is busy; retry finalisation.");
+    try {
+      const issue = await fetchIssue(lease.issue_number); const marker = parseVolunteerMarker(issue.body);
+      if (!selectedLanguages(issue.body).includes(lease.language)) throw new BrokerError(409, "The leased language is no longer in the issue scope.");
+      if (!marker) throw new BrokerError(409, "The issue ownership marker is missing or malformed.");
+      const ours = marker.leases.some((item) => item.lease_id === lease.lease_id);
+      const alreadySubmitted = marker.submissions?.some((item) => item.submission_id === receipt.submission_id);
+      if (!ours && !alreadySubmitted) throw new BrokerError(409, "The issue no longer carries this worker's lease marker.");
+      const submission = { submission_id: receipt.submission_id, language: lease.language, manifest_path: receipt.manifest_path, submitted_at: new Date().toISOString() };
+      const submissions = alreadySubmitted ? marker.submissions || [] : [...(marker.submissions || []), submission];
+      const next: VolunteerLeaseMarker = { ...marker, submission: "submitted", leases: marker.leases.filter((item) => item.lease_id !== lease.lease_id), submissions, completed_languages: [...new Set([...(marker.completed_languages || []), lease.language])] };
+      if (ours) { await patchIssue(lease.issue_number, replaceMarker(issue.body || "", next)); const fenced = parseVolunteerMarker((await fetchIssue(lease.issue_number)).body); if (!fenced?.submissions?.some((item) => item.submission_id === receipt.submission_id)) throw new BrokerError(409, "GitHub submission fence lost."); }
+      const label = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
+      if (!issue.labels?.some((item) => item.name === label)) await addIssueLabel(lease.issue_number, label);
+      const comments = await issueComments(lease.issue_number);
+      if (!comments.some((item) => item.body?.includes(`${FINAL_MARKER} ${receipt.submission_id}`))) {
+        const maintainer = process.env.COMMUNITY_MAINTAINER_LOGIN || "saattrupdan";
+        const comment = `<!-- ${FINAL_MARKER} ${receipt.submission_id} -->\n@${maintainer} — community evaluation ready.\n\nContributor: **${contributorLabel(identity.contributor)}**  \nModel: **${lease.model_id}@${lease.model_revision}**  \nLanguage: **${lease.language}**  \nSubmission: **${receipt.submission_id}**  \nValidation: **${receipt.entries.length} identities; zero failed instances**`;
+        await commentIssue(lease.issue_number, comment);
+      }
+      await deleteLease(lease); receipt.status = "ready"; await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
+    } finally { await releaseIssueMutex(lease.issue_number, mutex); }
+    return json(200, { protocol_version: PROTOCOL_VERSION, status: "ready", submission_id: receipt.submission_id, coverage: { language: lease.language, records: receipt.entries.length }, manifest_path: receipt.manifest_path });
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;
     return json(status, { protocol_version: PROTOCOL_VERSION, error: error instanceof Error ? error.message : "Unable to finalise submission." });
   }
+}
+function replaceMarker(body: string, marker: VolunteerLeaseMarker): string {
+  const without = body.replace(/<!--[\s\S]*?euroeval-volunteer-worker:v1\s+[\s\S]*?-->/i, "").replace(/\n{3,}/g, "\n\n").trimEnd();
+  return `${without}\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(marker)} -->\n`;
 }
