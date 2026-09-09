@@ -1,18 +1,20 @@
 declare const process: { env: Record<string, string | undefined> };
 
 import {
-  BrokerError, ConfigurationError, PROTOCOL_VERSION, acquireIssueMutex,
-  addIssueLabel, commentIssue, env, fetchIssue, issueComments, json, method,
-  parseVolunteerMarker, patchIssue, promotionSecret, readJson, releaseIssueMutex,
-  removeIssueLabel, replaceVolunteerMarker, requireProtocol, selectedLanguages,
-  unassignIssue, signVolunteerMarker, verifyVolunteerMarker, signFinalCredit,
-  redis, releaseResultReservation, sha256,
+  BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireIssueMutex,
+  commentIssue, env, fetchIssue, getPromotionReservation, issueComments, json,
+  method, parseFinalCredit, parseVolunteerMarker, patchIssue, promotionReservationKey,
+  promotionSecret, readJson, redis, releaseIssueMutex, releaseResultReservation,
+  removeIssueLabel, replaceVolunteerMarker, requireProtocol,
+  selectedLanguages, signFinalCredit, signVolunteerMarker, unassignIssue,
+  verifyFinalCredit, verifyVolunteerMarker, sha256,
 } from "./_lib.ts";
-import type { VolunteerLeaseMarker, VolunteerSubmission } from "./_lib.ts";
+import type {
+  FinalCredit, PromotionRecord, PromotionReservation, VolunteerLeaseMarker, VolunteerSubmission,
+} from "./_lib.ts";
 
 export const config = { runtime: "edge" };
-const PROMOTION_MARKER = "euroeval-volunteer-promotion:v1";
-const CREDIT_MARKER = "euroeval-volunteer-credit:v1";
+export const PROMOTION_MARKER = "euroeval-volunteer-promotion:v1";
 
 export interface PromotionPlan {
   marker: VolunteerLeaseMarker;
@@ -23,7 +25,6 @@ export interface PromotionPlan {
   releaseCoordinator: boolean;
 }
 
-/** Derive the monotonic issue lifecycle from one reviewed submission. */
 export function promotionPlan(
   marker: VolunteerLeaseMarker,
   selected: string[],
@@ -40,15 +41,14 @@ export function promotionPlan(
     item.submission_id === submissionId ? { ...item, status: outcome } : item);
   const acceptedLanguages = new Set(submissions
     .filter((item) => item.status === "accepted").map((item) => item.language));
-  const complete = selected.length > 0 && selected.every((language) => acceptedLanguages.has(language));
+  const complete = selected.length > 0 && selected.length === acceptedLanguages.size &&
+    selected.every((language) => acceptedLanguages.has(language));
   const active = marker.leases.some((lease) => Date.parse(lease.expires_at) > now);
   const submitted = submissions.some((item) => item.status === "submitted");
   const state = complete ? "accepted" : submitted ? "submitted" : active ? "active" :
     outcome === "rejected" ? "rejected" : "active";
-  const next: VolunteerLeaseMarker = {
-    ...marker,
-    submission: state,
-    submissions,
+  const next: typeof marker = {
+    ...marker, submission: state as typeof marker.submission, submissions,
     completed_languages: [...acceptedLanguages].sort(),
   };
   const counts = new Map<string, number>();
@@ -58,61 +58,68 @@ export function promotionPlan(
   const acceptedCounts = [...counts.entries()].map(([login, count]) => ({ login, count }))
     .sort((a, b) => b.count - a.count || a.login.toLowerCase().localeCompare(b.login.toLowerCase()) || a.login.localeCompare(b.login));
   return {
-    marker: next,
-    complete,
-    winner: complete ? largestAcceptedShare(submissions) : null,
-    acceptedCounts,
-    removeReviewLabel: !submitted,
+    marker: next, complete, winner: complete ? largestAcceptedShare(submissions) : null,
+    acceptedCounts, removeReviewLabel: !submitted,
     releaseCoordinator: complete || outcome === "rejected" && !active && !submitted,
   };
 }
 
-/** Select the contributor with most server-counted accepted results. */
-export function largestAcceptedShare(submissions: VolunteerSubmission[]): string | null {
+export function largestAcceptedShare(submissions: VolunteerSubmission[] | undefined): string | null {
   const shares = new Map<string, { login: string; count: number }>();
-  for (const item of submissions) {
+  for (const item of submissions || []) {
     if (item.status !== "accepted") continue;
     const key = item.verified_contributor.toLowerCase();
     const previous = shares.get(key);
-    shares.set(key, {
-      login: previous?.login || item.verified_contributor,
-      count: (previous?.count || 0) + item.result_count,
-    });
+    shares.set(key, { login: previous?.login || item.verified_contributor, count: (previous?.count || 0) + item.result_count });
   }
-  return [...shares.values()].sort((left, right) =>
-    right.count - left.count ||
-    left.login.toLowerCase().localeCompare(right.login.toLowerCase()) ||
-    left.login.localeCompare(right.login))[0]?.login || null;
+  return [...shares.values()].sort((left, right) => right.count - left.count || left.login.toLowerCase().localeCompare(right.login.toLowerCase()) || left.login.localeCompare(right.login))[0]?.login || null;
 }
 
-/** Authenticate and apply a resumable accepted/rejected transition. */
-async function releaseSubmissionReservations(submissionId: string): Promise<void> {
-  const raw = await redis("SMEMBERS", `euroeval:worker:reservations:${submissionId}`);
-  if (!Array.isArray(raw)) return;
-  for (const encoded of raw) {
-    if (typeof encoded !== "string") continue;
-    try {
-      const item = JSON.parse(encoded) as { identity?: string; digest?: string };
-      if (typeof item.identity === "string" && typeof item.digest === "string") {
-        await releaseResultReservation(`euroeval:worker:record-identity:${await sha256(item.identity)}`, item.digest, submissionId);
-      }
-    } catch { /* An audit entry must not abort the rest of the reclamation. */ }
+function sameRecords(a: PromotionRecord[], b: PromotionRecord[]): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+async function releaseSubmissionReservations(reservation: PromotionReservation): Promise<void> {
+  const raw = await redis("SMEMBERS", `euroeval:worker:reservations:${reservation.submission_id}`);
+  const records = reservation.records;
+  for (const record of records) {
+    await releaseResultReservation(
+      `euroeval:worker:record-identity:${await sha256(record.identity)}`,
+      record.digest,
+      reservation.submission_id,
+    );
   }
-  await redis("DEL", `euroeval:worker:reservations:${submissionId}`);
+  if (Array.isArray(raw)) await redis("DEL", `euroeval:worker:reservations:${reservation.submission_id}`);
+}
+
+function validCredit(credit: FinalCredit | null, plan: PromotionPlan): boolean {
+  return !!credit && credit.winner === plan.winner &&
+    JSON.stringify(credit.accepted_counts) === JSON.stringify(plan.acceptedCounts) &&
+    JSON.stringify(credit.completed_languages) === JSON.stringify(plan.marker.completed_languages || []);
+}
+
+async function terminalReservation(reservation: PromotionReservation): Promise<void> {
+  await redis("SET", promotionReservationKey(reservation.issue_number, reservation.submission_id), JSON.stringify({ ...reservation, status: "terminal" }), "EX", String(30 * 24 * 60 * 60));
 }
 
 export default async function handler(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
   try {
     promotionSecret(req);
-    const body = await readJson(req, 16 * 1024); requireProtocol(body);
+    const body = await readJson(req, 128 * 1024); requireProtocol(body);
     if (!Number.isSafeInteger(body.issue_number) || typeof body.submission_id !== "string" ||
-        !body.submission_id || body.outcome !== "accepted" && body.outcome !== "rejected") {
-      throw new BrokerError(400, "issue_number, submission_id, and an accepted/rejected outcome are required.");
+        !body.submission_id || (body.outcome !== "accepted" && body.outcome !== "rejected") ||
+        typeof body.reservation_token !== "string" || !body.reservation_token || !Array.isArray(body.records)) {
+      throw new BrokerError(400, "issue_number, submission_id, outcome, reservation_token, and records are required.");
     }
     const issueNumber = body.issue_number as number;
     const submissionId = body.submission_id as string;
     const outcome = body.outcome as "accepted" | "rejected";
+    const reservation = await getPromotionReservation(issueNumber, submissionId);
+    if (!reservation || reservation.token !== body.reservation_token || reservation.outcome !== outcome ||
+        !sameRecords(reservation.records, body.records as PromotionRecord[])) {
+      throw new BrokerError(409, "Promotion reservation is absent, expired, or does not match.");
+    }
     const mutex = await acquireIssueMutex(issueNumber);
     if (!mutex) throw new BrokerError(409, "Issue is busy; retry promotion.");
     try {
@@ -120,41 +127,38 @@ export default async function handler(req: Request): Promise<Response> {
       const marker = parseVolunteerMarker(issue.body);
       if (!marker || !(await verifyVolunteerMarker(issueNumber, marker))) throw new BrokerError(409, "The issue ownership marker is missing, unsigned, or malformed.");
       const plan = promotionPlan(marker, selectedLanguages(issue.body), submissionId, outcome);
-      const signedMarker = await signVolunteerMarker(issueNumber, plan.marker);
-      let promotedBody = replaceVolunteerMarker(issue.body || "", signedMarker);
+      let promotedBody = issue.body || "";
+      const oldCredit = parseFinalCredit(promotedBody);
+      let credit: FinalCredit | null = null;
       if (plan.complete && plan.winner) {
-        const credit = await signFinalCredit(issueNumber, { version: 1, immutable: true, winner: plan.winner, accepted_counts: plan.acceptedCounts, completed_languages: plan.marker.completed_languages || [] });
-        promotedBody += `<!-- ${CREDIT_MARKER} ${JSON.stringify(credit)} -->\n`;
+        credit = oldCredit && validCredit(oldCredit, plan) && await verifyFinalCredit(issueNumber, oldCredit)
+          ? oldCredit
+          : await signFinalCredit(issueNumber, { version: 1, immutable: true, winner: plan.winner, accepted_counts: plan.acceptedCounts, completed_languages: plan.marker.completed_languages || [] });
       }
+      const signedMarker = await signVolunteerMarker(issueNumber, plan.marker);
+      promotedBody = replaceVolunteerMarker(promotedBody, signedMarker);
+      if (credit) promotedBody += `<!-- euroeval-volunteer-credit:v1 ${JSON.stringify(credit)} -->\n`;
       await patchIssue(issueNumber, promotedBody);
       const fencedIssue = await fetchIssue(issueNumber);
       const fenced = parseVolunteerMarker(fencedIssue.body);
-      if (!fenced || !(await verifyVolunteerMarker(issueNumber, fenced)) || fenced.submissions?.find((item) => item.submission_id === submissionId)?.status !== outcome ||
-          plan.complete && !fencedIssue.body?.includes(CREDIT_MARKER)) {
+      if (!fenced || !(await verifyVolunteerMarker(issueNumber, fenced)) ||
+          fenced.submissions?.find((item) => item.submission_id === submissionId)?.status !== outcome ||
+          plan.complete && !validCredit(parseFinalCredit(fencedIssue.body), plan)) {
         throw new BrokerError(409, "Promotion fence lost.");
       }
-
-      if (outcome === "rejected") await releaseSubmissionReservations(submissionId);
+      if (outcome === "rejected") await releaseSubmissionReservations(reservation);
       const reviewLabel = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
       const resultsLabel = process.env.RESULTS_READY_LABEL || "results-ready";
-      if (plan.complete && !fencedIssue.labels?.some((item) => item.name === resultsLabel)) {
-        await addIssueLabel(issueNumber, resultsLabel);
-      }
+      if (plan.complete && !fencedIssue.labels?.some((item) => item.name === resultsLabel)) await addIssueLabel(issueNumber, resultsLabel);
       if (plan.removeReviewLabel) await removeIssueLabel(issueNumber, reviewLabel);
       if (plan.releaseCoordinator) await unassignIssue(issueNumber, env("WORKER_COORDINATOR_LOGIN"));
-
       const comments = await issueComments(issueNumber);
       if (!comments.some((item) => item.body?.includes(`${PROMOTION_MARKER} ${submissionId}`))) {
         const current = plan.marker.submissions?.find((item) => item.submission_id === submissionId);
         await commentIssue(issueNumber, `<!-- ${PROMOTION_MARKER} ${submissionId} -->\nCommunity submission **${submissionId}** was **${outcome}**.\n\nManifest: \`${current?.manifest_path}\``);
       }
-      return json(200, {
-        protocol_version: PROTOCOL_VERSION,
-        status: outcome,
-        submission_id: submissionId,
-        complete: plan.complete,
-        winner: plan.winner,
-      });
+      await terminalReservation(reservation);
+      return json(200, { protocol_version: PROTOCOL_VERSION, status: outcome, submission_id: submissionId, complete: plan.complete, winner: plan.winner });
     } finally { await releaseIssueMutex(issueNumber, mutex); }
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;

@@ -35,6 +35,20 @@ export interface VolunteerSubmission {
   status: "submitted" | "accepted" | "rejected";
 }
 
+export interface PromotionRecord {
+  identity: string;
+  digest: string;
+}
+
+export interface PromotionReservation {
+  issue_number: number;
+  submission_id: string;
+  outcome: "accepted" | "rejected";
+  records: PromotionRecord[];
+  token: string;
+  status: "reserved" | "terminal";
+}
+
 export interface VolunteerLeaseMarker {
   protocol_version: typeof PROTOCOL_VERSION;
   coordinator: string;
@@ -109,7 +123,7 @@ export function json(status: number, body: unknown, extra?: HeadersInit): Respon
       "content-type": "application/json; charset=utf-8",
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "POST, OPTIONS",
-      "access-control-allow-headers": "content-type, authorization, x-coordinator-secret",
+      "access-control-allow-headers": "content-type, authorization, x-coordinator-secret, x-promotion-secret",
       ...(status === 429 ? { "retry-after": "60" } : {}),
       ...(extra || {}),
     },
@@ -194,10 +208,13 @@ export async function verifyFinalCredit(issueNumber: number, credit: FinalCredit
 
 export function parseFinalCredit(body: string | null): FinalCredit | null {
   if (!body) return null;
-  const matches = [...body.matchAll(/<!--[ \t]*euroeval-volunteer-credit:v1[ \t]+({[\s\S]*?})[ \t]*-->/gi)];
-  if (matches.length !== 1) return null;
+  const starts = [...body.matchAll(/<!--[ \t]*euroeval-volunteer-credit:v1[ \t]+/gi)];
+  if (starts.length !== 1) return null;
+  const start = starts[0].index! + starts[0][0].length;
+  const end = body.indexOf("-->", start);
+  if (end < 0) return null;
   try {
-    const value = JSON.parse(matches[0][1]) as FinalCredit;
+    const value = JSON.parse(body.slice(start, end).trim()) as FinalCredit;
     if (value.version !== MARKER_VERSION || value.immutable !== true || typeof value.winner !== "string" ||
         !Array.isArray(value.accepted_counts) || !Array.isArray(value.completed_languages) ||
         typeof value.signature !== "string") return null;
@@ -538,7 +555,36 @@ export async function releaseResultReservation(key: string, digest: string, leas
     return redis.call('DEL',KEYS[1])`, "1", key, digest, leaseId);
   return result === 1 || result === "1";
 }
-export function leaseKey(leaseId: string): string { return `euroeval:worker:lease-id:${leaseId}`; }
+
+export const PROMOTION_RESERVATION_TTL = 15 * 60;
+export const PROMOTION_TERMINAL_TTL = 30 * 24 * 60 * 60;
+
+export function promotionReservationKey(issueNumber: number, submissionId: string): string {
+  return `euroeval:worker:promotion:${issueNumber}:${submissionId}`;
+}
+
+export async function getPromotionReservation(
+  issueNumber: number,
+  submissionId: string,
+): Promise<PromotionReservation | null> {
+  return redisGet<PromotionReservation>(promotionReservationKey(issueNumber, submissionId));
+}
+
+export async function savePromotionReservation(
+  reservation: PromotionReservation,
+  terminal: boolean,
+): Promise<void> {
+  await redis(
+    "SET",
+    promotionReservationKey(reservation.issue_number, reservation.submission_id),
+    JSON.stringify({ ...reservation, status: terminal ? "terminal" : reservation.status }),
+    "EX",
+    String(terminal ? PROMOTION_TERMINAL_TTL : PROMOTION_RESERVATION_TTL),
+  );
+}
+
+export function leaseKey(leaseId: string): string {
+return `euroeval:worker:lease-id:${leaseId}`; }
 export async function getLeaseById(leaseId: string): Promise<Lease | null> { return redisGet<Lease>(leaseKey(leaseId)); }
 export async function putLease(lease: Lease): Promise<boolean> {
   const ttl = Math.max(60, Math.ceil((Date.parse(lease.expires_at) - Date.now()) / 1000));

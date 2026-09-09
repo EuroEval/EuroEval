@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { claimableLanguages } from "./_lib.ts";
+import { claimableLanguages, signVolunteerMarker } from "./_lib.ts";
 import promote, { largestAcceptedShare, promotionPlan } from "./promote.ts";
 
 const submission = (id, language, contributor, count, status = "submitted") => ({
@@ -95,10 +95,12 @@ test("terminal retry completes the same lifecycle plan", () => {
 test("handler finishes GitHub labels, credit, ownership, and notification", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
+  process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
+  const issueMarker = await signVolunteerMarker(12, marker([submission("one", "el", "alice", 4)]));
   let issue = {
     number: 12,
     title: "[MODEL EVALUATION REQUEST] org/model",
-    body: `- [x] Greek\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(marker([submission("one", "el", "alice", 4)]))} -->`,
+    body: `- [x] Greek\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(issueMarker)} -->`,
     state: "open",
     assignees: [{ login: "coordinator" }],
     labels: [{ name: "community-review-ready" }],
@@ -109,12 +111,19 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
   process.env.GITHUB_TOKEN = "github-token";
   process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
   process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  const redisValues = new Map();
+  const records = [{ identity: "[\"org/model\",\"dataset\",false,true]", digest: "a".repeat(64) }];
+  redisValues.set("euroeval:worker:promotion:12:one", JSON.stringify({ issue_number: 12, submission_id: "one", outcome: "accepted", records, token: "reservation-token", status: "reserved" }));
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input);
     const method = init.method || "GET";
     if (url === "https://redis.test") {
       const command = JSON.parse(init.body);
-      return Response.json({ result: command[0] === "SET" ? "OK" : 1 });
+      let result = 1;
+      if (command[0] === "GET") result = redisValues.get(command[1]) || null;
+      if (command[0] === "SET") { redisValues.set(command[1], command[2]); result = "OK"; }
+      if (command[0] === "SMEMBERS") result = [];
+      return Response.json({ result });
     }
     if (url.endsWith("/issues/12") && method === "GET") return Response.json(issue);
     if (url.endsWith("/issues/12") && method === "PATCH") {
@@ -144,7 +153,7 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
     const request = new Request("https://euroeval.com/api/worker/promote", {
       method: "POST",
       headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
-      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one", outcome: "accepted" }),
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one", outcome: "accepted", reservation_token: "reservation-token", records }),
     });
     const response = await promote(request);
     const responseBody = await response.text();

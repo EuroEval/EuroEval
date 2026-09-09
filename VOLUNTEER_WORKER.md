@@ -166,12 +166,19 @@ uv run python src/scripts/review_volunteer_results.py \
   --reviewer <github-login> reject <submission-id> --reason "reason"
 ```
 
-Every decision re-downloads and validates the manifest and exact result bytes.
-Approval checks every canonical destination, uploads only the submission's records,
-verifies the resulting metadata and bytes, writes an immutable decision artifact,
-and only then calls the broker. Rejection writes its decision before calling the
-broker. Both operations are safe to rerun after a partial failure; the opposite
-terminal outcome is refused.
+Every decision first obtains a broker-side reservation keyed by issue and
+submission. The reservation is authenticated with `VOLUNTEER_PROMOTION_SECRET`,
+binds the outcome and exact identity/digest list, renews while work is retried, and
+becomes a durable terminal record after promotion. A second reviewer may resume the
+same outcome, but an opposite concurrent outcome is refused.
+
+The review command then re-downloads and validates the manifest and exact result
+bytes. Approval checks every canonical destination, uploads only the submission's
+records, verifies the resulting metadata and bytes, writes an immutable decision
+artifact, and only then calls the broker with the reservation token. Rejection writes
+its decision before calling the broker and sends the same validated identity/digest
+list so the broker can safely reclaim reservations. Both operations are safe to rerun
+after a partial failure; the opposite terminal outcome is refused.
 
 A rejected language becomes leaseable again while its rejected submission remains in
  the signed issue audit marker. Result identity reservations are reclaimed only after
