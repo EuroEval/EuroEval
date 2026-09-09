@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import sys
+import threading
 import time
 import typing as t
 import urllib.error
@@ -69,6 +70,7 @@ from leaderboards.queue_hf_cache import cached_model_summary
 from leaderboards.queue_markers import (
     clear_vm_marker,
     issue_has_active_queue_ownership,
+    issue_has_community_marker,
     parse_community_marker,
     release_issue_if_owned,
     set_vm_marker,
@@ -104,48 +106,134 @@ logger = logging.getLogger("process_evaluation_queue")
 unassign_issue = _github_api.unassign_issue
 
 
+COORDINATOR_RENEW_SECONDS = 10.0
+
+
+class _CoordinatorIssueLock:
+    """A coordinator lock with a renewal thread and a loss fence."""
+
+    def __init__(self, number: int, secret: str, lock_url: str, token: str) -> None:
+        self.number = number
+        self.secret = secret
+        self.lock_url = lock_url
+        self.token = token
+        self._stop = threading.Event()
+        self._lost = threading.Event()
+        self._thread = threading.Thread(
+            target=self._renew_loop, name=f"coordinator-renew-{number}", daemon=True
+        )
+
+    def start(self) -> None:
+        """Start renewing the lock before claim mutations begin."""
+        self._thread.start()
+
+    def ensure_healthy(self) -> None:
+        """Raise when the broker no longer fences this claimant.
+
+        Raises:
+            RuntimeError: If the renewal thread has lost the lock.
+        """
+        if self._lost.is_set():
+            raise RuntimeError("coordinator lock renewal was lost")
+
+    def close(self) -> None:
+        """Stop renewal and release the token, preserving the loss fence.
+
+        Raises:
+            RuntimeError: If renewal or release was not acknowledged.
+        """
+        self._stop.set()
+        self._thread.join(timeout=2)
+        release_url = (
+            self.lock_url.removesuffix("/coordinator-lock") + "/coordinator-release"
+        )
+        release_error: RuntimeError | None = None
+        try:
+            _coordinator_request(
+                release_url, number=self.number, secret=self.secret, token=self.token
+            )
+        except RuntimeError as error:
+            release_error = error
+        if self._lost.is_set():
+            raise RuntimeError("coordinator lock renewal was lost")
+        if release_error is not None:
+            raise release_error
+
+    def _renew_loop(self) -> None:
+        renew_url = (
+            self.lock_url.removesuffix("/coordinator-lock") + "/coordinator-renew"
+        )
+        while not self._stop.wait(COORDINATOR_RENEW_SECONDS):
+            try:
+                _coordinator_request(
+                    renew_url,
+                    number=self.number,
+                    secret=self.secret,
+                    token=self.token,
+                    operation="renew",
+                )
+            except RuntimeError as error:
+                logger.error("Coordinator lock renewal failed: %s", error)
+                self._lost.set()
+                return
+
+
 @contextmanager
-def _coordinator_issue_lock(number: int) -> t.Iterator[None]:
+def _coordinator_issue_lock(number: int) -> t.Iterator[_CoordinatorIssueLock | None]:
     """Coordinate local claims with the broker's Redis issue mutex.
 
-    When enabled this is deliberately fail-closed: a missing endpoint, secret,
-    malformed response, or release failure must never turn a shared queue into
-    an uncoordinated claimant.
+    The queue fails closed by default. ``VOLUNTEER_COORDINATOR_STANDALONE`` is
+    an explicit, temporary migration escape hatch for an operator who has
+    verified that no broker or second queue can touch the issue set.
+
+    Yields:
+        The renewable lock, or ``None`` for the explicit standalone override.
 
     Raises:
-        RuntimeError: If locking is enabled but cannot be acquired or released.
+        RuntimeError: If locking is not configured or cannot be maintained.
     """
     base = os.environ.get("VOLUNTEER_COORDINATOR_URL", "").rstrip("/")
-    enabled = bool(base) or (
-        os.environ.get("VOLUNTEER_COORDINATOR_ENABLED", "").lower()
-        in {"1", "true", "yes"}
-    )
-    if not enabled:
-        yield
-        return
     secret = os.environ.get("WORKER_COORDINATOR_SECRET", "")
+    standalone = os.environ.get("VOLUNTEER_COORDINATOR_STANDALONE", "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    if standalone:
+        logger.warning("Coordinator mutex disabled by explicit standalone override.")
+        yield None
+        return
     if not base or not secret:
         raise RuntimeError(
-            "coordinator locking is enabled but URL/secret is not configured"
+            "coordinator URL and secret are required; set "
+            "VOLUNTEER_COORDINATOR_STANDALONE=1 only for isolated migration runs"
         )
     lock_url = (
         base if base.endswith("/coordinator-lock") else f"{base}/coordinator-lock"
     )
-    release_url = lock_url.removesuffix("/coordinator-lock") + "/coordinator-release"
     token = _coordinator_request(lock_url, number=number, secret=secret)
+    lock = _CoordinatorIssueLock(
+        number=number, secret=secret, lock_url=lock_url, token=token
+    )
+    lock.start()
     try:
-        yield
+        yield lock
     finally:
-        _coordinator_request(release_url, number=number, secret=secret, token=token)
+        lock.close()
 
 
 def _coordinator_request(
-    url: str, *, number: int, secret: str, token: str | None = None
+    url: str,
+    *,
+    number: int,
+    secret: str,
+    token: str | None = None,
+    operation: str = "release",
 ) -> str:
     """Call a coordinator endpoint and return its lock token.
 
     Returns:
-        The opaque lock token (or the supplied token on release).
+        The opaque lock token (or the supplied token on renewal/release).
 
     Raises:
         RuntimeError: If the endpoint is unavailable or returns invalid data.
@@ -177,8 +265,9 @@ def _coordinator_request(
         if not isinstance(lock, str) or not lock:
             raise RuntimeError("coordinator lock response omitted its token")
         return lock
-    if value.get("status") != "released":
-        raise RuntimeError("coordinator lock release was not acknowledged")
+    expected_status = "renewed" if operation == "renew" else "released"
+    if value.get("status") != expected_status:
+        raise RuntimeError(f"coordinator lock {operation} was not acknowledged")
     return token
 
 
@@ -478,6 +567,9 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
             )
             continue
         marker = parse_community_marker(body)
+        if issue_has_community_marker(body) and marker is None:
+            logger.info(f"#{issue['number']}: skipping -- malformed broker marker.")
+            continue
         if issue.get("assignees") and marker is None:
             continue
         number = issue["number"]
@@ -601,29 +693,43 @@ def process_issue(
     logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
     # The short claim transaction, not the potentially hours-long evaluation,
     # shares the broker's Redis mutex.
-    with _coordinator_issue_lock(number):
-        if not issue_is_still_claimable(number=number):
-            logger.info(
-                f"#{number}: skipping -- no longer open and unassigned at claim time."
-            )
-            return
-        # Set the VM marker BEFORE assigning so a crash between the two leaves
-        # the issue unassigned (harmless) rather than assigned-but-unowned.
-        if not set_vm_marker(number=number, vm_id=vm_id):
-            logger.info(f"#{number}: another VM already owns this issue; aborting.")
-            return
-        assign_issue(number=number, assignee=assignee)
-
-        # Two VMs sharing a PAT cannot be told apart by the assignee, so another
-        # VM that raced through the same marker + assignment window will have
-        # overwritten our marker. Verify ownership before proceeding.
-        if not vm_marker_matches(number=number, vm_id=vm_id):
-            logger.info(
-                f"#{number}: another VM won the claim race; aborting without "
-                "touching the assignee."
-            )
-            return
+    claimed = False
     try:
+        with _coordinator_issue_lock(number) as coordinator_lock:
+            if coordinator_lock is not None:
+                coordinator_lock.ensure_healthy()
+            if not issue_is_still_claimable(number=number):
+                logger.info(
+                    f"#{number}: skipping -- no longer open and unassigned "
+                    "at claim time."
+                )
+                return
+            # Set the VM marker BEFORE assigning so a crash between the two leaves
+            # the issue unassigned (harmless) rather than assigned-but-unowned.
+            if coordinator_lock is not None:
+                coordinator_lock.ensure_healthy()
+            if not set_vm_marker(number=number, vm_id=vm_id):
+                logger.info(f"#{number}: another VM already owns this issue; aborting.")
+                return
+            claimed = True
+            if coordinator_lock is not None:
+                coordinator_lock.ensure_healthy()
+            assign_issue(number=number, assignee=assignee)
+            if coordinator_lock is not None:
+                coordinator_lock.ensure_healthy()
+
+            # Two VMs sharing a PAT cannot be told apart by the assignee, so another
+            # VM that raced through the same marker + assignment window will have
+            # overwritten our marker. Verify ownership before proceeding.
+            owns_marker = vm_marker_matches(number=number, vm_id=vm_id)
+            if coordinator_lock is not None:
+                coordinator_lock.ensure_healthy()
+            if not owns_marker:
+                logger.info(
+                    f"#{number}: another VM won the claim race; aborting without "
+                    "touching the assignee."
+                )
+                return
         _run_claimed_issue(
             issue=issue,
             model_id=model_id,
@@ -633,7 +739,8 @@ def process_issue(
             gpu_memory_utilization=gpu_memory_utilization,
         )
     except BaseException:
-        release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
+        if claimed:
+            release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
         raise
 
 
@@ -981,6 +1088,8 @@ def issue_is_still_claimable(number: int) -> bool:
     if current.get("state") != "open":
         return False
     body = current.get("body") or ""
+    if issue_has_community_marker(body) and parse_community_marker(body) is None:
+        return False
     label_names = {
         label.get("name")
         for label in current.get("labels", [])

@@ -2,8 +2,8 @@ import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, acquireIssueMutex, authenticate,
   deleteLease, env, enforceRateLimit, fetchIssue, getLeaseById, json, method,
   parseVolunteerMarker, patchIssue, readJson, releaseIssueMutex, replaceVolunteerMarker,
-  requireProtocol, unassignIssue,
-} from "./_lib";
+  requireProtocol, signVolunteerMarker, unassignIssue, verifyVolunteerMarker,
+} from "./_lib.ts";
 
 export const config = { runtime: "edge" };
 
@@ -17,16 +17,30 @@ export default async function handler(req: Request): Promise<Response> {
     if (!lease || lease.contributor.toLowerCase() !== identity.contributor.toLowerCase()) throw new BrokerError(409, "Lease is absent or belongs to another contributor.");
     const mutex = await acquireIssueMutex(lease.issue_number); if (!mutex) throw new BrokerError(409, "Issue is busy; retry release.");
     try {
-      const coordinator = env("WORKER_COORDINATOR_LOGIN"); const issue = await fetchIssue(lease.issue_number); const marker = parseVolunteerMarker(issue.body);
-      if (marker?.leases.some((item) => item.lease_id === lease.lease_id)) {
-        const remaining = marker.leases.filter((item) => item.lease_id !== lease.lease_id && Date.parse(item.expires_at) > Date.now());
-        const keep = (marker.submissions?.length || marker.completed_languages?.length || remaining.length);
-        if (keep) await patchIssue(lease.issue_number, replaceVolunteerMarker(issue.body || "", { ...marker, leases: remaining, submission: marker.submissions?.length ? "submitted" : "active" }));
-        else { const without = (issue.body || "").replace(/<!--[\s\S]*?euroeval-volunteer-worker:v1\s+[\s\S]*?-->/i, "").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n"; await patchIssue(lease.issue_number, without); }
+      const coordinator = env("WORKER_COORDINATOR_LOGIN");
+      const issue = await fetchIssue(lease.issue_number);
+      const marker = parseVolunteerMarker(issue.body);
+      if (!marker || !(await verifyVolunteerMarker(lease.issue_number, marker))) throw new BrokerError(409, "GitHub ownership marker is missing, unsigned, or malformed.");
+      if (!marker.leases.some((item) => item.lease_id === lease.lease_id)) throw new BrokerError(409, "GitHub ownership marker no longer carries this lease.");
+      const remaining = marker.leases.filter((item) => item.lease_id !== lease.lease_id);
+      const keep = Boolean(marker.submissions?.length || marker.completed_languages?.length || remaining.length);
+      if (keep) {
+        const nextMarker = {
+          ...marker,
+          submission: marker.submissions?.length ? "submitted" as const : "active" as const,
+          leases: remaining,
+        };
+        const signed = await signVolunteerMarker(lease.issue_number, nextMarker);
+        await patchIssue(lease.issue_number, replaceVolunteerMarker(issue.body || "", signed));
         const after = await fetchIssue(lease.issue_number); const afterMarker = parseVolunteerMarker(after.body);
-        if (keep && !afterMarker) throw new BrokerError(409, "GitHub release fence lost.");
-        if (!keep && (after.body || "").includes("euroeval-volunteer-worker:v1")) throw new BrokerError(409, "GitHub release fence lost.");
-        if (!keep && (after.assignees || []).some((item) => item.login === coordinator)) await unassignIssue(lease.issue_number, coordinator);
+        if (!afterMarker || !(await verifyVolunteerMarker(lease.issue_number, afterMarker)) ||
+            afterMarker.leases.some((item) => item.lease_id === lease.lease_id)) throw new BrokerError(409, "GitHub release fence lost.");
+      } else {
+        const without = (issue.body || "").replace(/<!--[\s\S]*?euroeval-volunteer-worker:v1\s+[\s\S]*?-->/i, "").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+        await patchIssue(lease.issue_number, without);
+        const after = await fetchIssue(lease.issue_number);
+        if ((after.body || "").includes("euroeval-volunteer-worker:v1")) throw new BrokerError(409, "GitHub release fence lost.");
+        if ((after.assignees || []).some((item) => item.login === coordinator)) await unassignIssue(lease.issue_number, coordinator);
       }
       await deleteLease(lease);
     } finally { await releaseIssueMutex(lease.issue_number, mutex); }

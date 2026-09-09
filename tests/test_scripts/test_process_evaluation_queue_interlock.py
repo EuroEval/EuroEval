@@ -1,5 +1,7 @@
 """Tests for the volunteer worker queue interlock."""
 
+import time
+
 import pytest
 
 from leaderboards.queue_markers import append_community_marker
@@ -19,6 +21,49 @@ def _issue(number: int, body: str = "") -> dict[str, object]:
         "labels": [],
         "created_at": "2026-01-01T00:00:00Z",
     }
+
+
+def test_claim_fails_closed_without_coordinator_mutex(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A shared queue cannot silently fall back to an uncoordinated claim."""
+    monkeypatch.delenv("VOLUNTEER_COORDINATOR_URL", raising=False)
+    monkeypatch.delenv("WORKER_COORDINATOR_SECRET", raising=False)
+    monkeypatch.delenv("VOLUNTEER_COORDINATOR_STANDALONE", raising=False)
+
+    with pytest.raises(RuntimeError, match="coordinator URL and secret"):
+        with process_evaluation_queue._coordinator_issue_lock(number=1):
+            pass
+
+
+def test_coordinator_lock_is_renewed_and_released(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A held local lock renews its token and fences its release."""
+    monkeypatch.setenv("VOLUNTEER_COORDINATOR_URL", "https://broker.test")
+    monkeypatch.setenv("WORKER_COORDINATOR_SECRET", "secret")
+    monkeypatch.setattr(process_evaluation_queue, "COORDINATOR_RENEW_SECONDS", 0.01)
+    calls: list[tuple[str, str | None]] = []
+
+    def request(
+        url: str,
+        *,
+        number: int,
+        secret: str,
+        token: str | None = None,
+        operation: str = "release",
+    ) -> str:
+        del number, secret
+        calls.append((operation, token))
+        return token or "lock-token"
+
+    monkeypatch.setattr(process_evaluation_queue, "_coordinator_request", request)
+    with process_evaluation_queue._coordinator_issue_lock(number=1):
+        time.sleep(0.03)
+
+    assert calls[0] == ("release", None)
+    assert ("renew", "lock-token") in calls
+    assert calls[-1] == ("release", "lock-token")
 
 
 def test_queue_candidates_paginate_past_first_hundred(

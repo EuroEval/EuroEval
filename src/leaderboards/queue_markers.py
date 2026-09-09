@@ -210,6 +210,11 @@ def parse_community_marker(
     )
 
 
+def issue_has_community_marker(body: str) -> bool:
+    """Return whether an issue contains any broker marker candidate."""
+    return bool(_COMMUNITY_MARKER_CANDIDATE_RE.search(body))
+
+
 def issue_has_terminal_queue_submission(body: str) -> bool:
     """Return whether a valid marker records an accepted or rejected submission."""
     marker = parse_community_marker(body)

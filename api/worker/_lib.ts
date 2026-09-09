@@ -513,6 +513,12 @@ export async function releaseIssueMutex(issue: number, token: string): Promise<v
   await redis("EVAL", "if redis.call('GET',KEYS[1]) == ARGV[1] then return redis.call('DEL',KEYS[1]) else return 0 end", "1", `euroeval:worker:mutex:${issue}`, token);
 }
 
+/** Renew an issue mutex only while its opaque token still owns it. */
+export async function renewIssueMutex(issue: number, token: string): Promise<boolean> {
+  const result = await redis("EVAL", "if redis.call('GET',KEYS[1]) == ARGV[1] then return redis.call('EXPIRE',KEYS[1],ARGV[2]) else return 0 end", "1", `euroeval:worker:mutex:${issue}`, token, "30");
+  return result === 1 || result === "1";
+}
+
 /** Authenticate a coordinator-only internal request without exposing Redis. */
 export function coordinatorSecret(req: Request): void {
   const expected = env("WORKER_COORDINATOR_SECRET");
