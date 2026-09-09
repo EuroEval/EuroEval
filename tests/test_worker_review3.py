@@ -1,12 +1,13 @@
 """Regression tests for the third volunteer-worker review."""
 
 import dataclasses
+import typing as t
 from pathlib import Path
 
 import pytest
 
 from euroeval_worker import runtime
-from euroeval_worker.broker import BrokerError
+from euroeval_worker.broker import BrokerError, BrokerProtocol
 from euroeval_worker.safety import ModelMetadata, SafetyError, check_model_safety
 from euroeval_worker.state import StateStore
 from euroeval_worker.types import EEERecord, lease_from_dict
@@ -26,7 +27,10 @@ def test_heartbeat_persists_renewed_expiry(tmp_path: Path) -> None:
             return renewed.expires_at
 
     heartbeat = runtime.Heartbeat(
-        Broker(), "credential", LEASE, persist=state.renew_active
+        t.cast(BrokerProtocol, Broker()),
+        "credential",
+        LEASE,
+        persist=state.renew_active,
     )
     heartbeat._renew()
     assert state.load_active() is not None
@@ -45,7 +49,10 @@ def test_heartbeat_reauthenticates_once_and_retries() -> None:
             return "2099-01-02T00:00:00Z"
 
     heartbeat = runtime.Heartbeat(
-        Broker(), "old", LEASE, reauthenticate=lambda credential: "new"
+        t.cast(BrokerProtocol, Broker()),
+        "old",
+        LEASE,
+        reauthenticate=lambda credential: "new",
     )
     heartbeat._renew()
     assert calls == ["old", "new"]
@@ -59,7 +66,7 @@ def test_result_retry_honours_backoff_and_terminal_statuses(
     delays: list[float] = []
     monkeypatch.setattr(runtime.time, "sleep", delays.append)
     state = StateStore(tmp_path)
-    worker = runtime.Worker(object(), state)  # type: ignore[arg-type]
+    worker = runtime.Worker(t.cast(BrokerProtocol, object()), state)
     worker._credential = "credential"
     worker._login = "contributor"
     record = EEERecord({"id": "one"})
@@ -72,7 +79,7 @@ def test_result_retry_honours_backoff_and_terminal_statuses(
             if attempts < 3:
                 raise BrokerError("busy", status=503, retry_after=0)
 
-    worker.client = Transient()  # type: ignore[assignment]
+    worker.client = t.cast(BrokerProtocol, Transient())
     worker._submit_record("credential", LEASE, record)
     assert attempts == 3
     assert delays == [0, 0]
@@ -83,7 +90,7 @@ def test_result_retry_honours_backoff_and_terminal_statuses(
             def submit_result(self, **kwargs: object) -> None:
                 raise BrokerError("terminal", status=status)
 
-        worker.client = Terminal()  # type: ignore[assignment]
+        worker.client = t.cast(BrokerProtocol, Terminal())
         with pytest.raises(BrokerError):
             worker._submit_record("credential", LEASE, record)
 
@@ -98,7 +105,7 @@ def test_result_and_finalise_reauthenticate_once(
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("new", "contributor")
     )
-    worker = runtime.Worker(object(), state)  # type: ignore[arg-type]
+    worker = runtime.Worker(t.cast(BrokerProtocol, object()), state)
     worker._credential = "old"
     worker._login = "contributor"
     record = EEERecord({"id": "one"})
@@ -117,7 +124,7 @@ def test_result_and_finalise_reauthenticate_once(
                 raise BrokerError("expired", status=401)
             return "stable-submission"
 
-    worker.client = Broker()  # type: ignore[assignment]
+    worker.client = t.cast(BrokerProtocol, Broker())
     worker._submit_record("old", LEASE, record)
     assert worker._finalise("old", LEASE.lease_id) == "stable-submission"
     assert credentials == ["old", "new", "new"]
@@ -134,7 +141,7 @@ def test_reauthentication_rejects_different_contributor(
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("new-credential", "new-login")
     )
-    worker = runtime.Worker(object(), state)  # type: ignore[arg-type]
+    worker = runtime.Worker(t.cast(BrokerProtocol, object()), state)
     with pytest.raises(runtime.AuthenticationIdentityError):
         worker._reauthenticate("old-credential", "old-login")
     assert state.load_active() is not None
@@ -162,8 +169,14 @@ def test_profile_and_gpu_safety_are_fail_closed() -> None:
         repository_bytes=1,
     )
     lease = dataclasses.replace(LEASE, model_profile="roberta")
+    larger_gpu = dataclasses.replace(
+        GPU,
+        uuid="GPU-2",
+        free_memory_bytes=30 * 1024**3,
+        total_memory_bytes=40 * 1024**3,
+    )
     assert check_model_safety(
-        lease, (GPU,), metadata, free_disk_bytes=1
+        lease, (larger_gpu, GPU), metadata, free_disk_bytes=1, selected_gpu=GPU
     ).available_bytes == int(GPU.free_memory_bytes * 0.8)
     with pytest.raises(SafetyError, match="match"):
         check_model_safety(

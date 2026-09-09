@@ -46,6 +46,8 @@ class HardwareReport:
     pytorch_version: str | None
     gpus: tuple["Gpu", ...]
     gpu_memory_utilisation: float = 0.8
+    selected_gpu_index: int | None = None
+    selected_gpu_uuid: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -57,6 +59,7 @@ class Gpu:
     free_memory_bytes: int
     total_memory_bytes: int
     compute_capability: str | None
+    index: int = 0
 
 
 @dataclasses.dataclass(frozen=True)

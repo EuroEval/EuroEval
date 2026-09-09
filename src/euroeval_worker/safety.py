@@ -68,6 +68,7 @@ def check_model_safety(
     metadata: "ModelMetadata | None" = None,
     free_disk_bytes: int | None = None,
     gpu_memory_utilisation: float = 0.8,
+    selected_gpu: Gpu | None = None,
 ) -> SafetyReport:
     """Verify public, pinned, safetensors-only, non-code model metadata.
 
@@ -110,9 +111,11 @@ def check_model_safety(
         raise SafetyError("model repository size could not be verified")
     if free_disk_bytes is not None and free_disk_bytes < info.repository_bytes:
         raise SafetyError("insufficient disk space for the model repository")
-    available = max(
-        (int(gpu.free_memory_bytes * gpu_memory_utilisation) for gpu in gpus), default=0
-    )
+    if selected_gpu is None:
+        if len(gpus) != 1:
+            raise SafetyError("a selected GPU is required for multi-GPU hosts")
+        selected_gpu = gpus[0]
+    available = int(selected_gpu.free_memory_bytes * gpu_memory_utilisation)
     if not available or info.estimated_bytes * 1.35 > available:
         raise SafetyError(
             f"model needs approximately {info.estimated_bytes} bytes but only "

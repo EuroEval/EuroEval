@@ -30,6 +30,7 @@ def discover_hardware(
     """
     run = runner or _run
     gpus = discover_gpus(runner=run)
+    selected = select_gpu(gpus)
     summary = run(["nvidia-smi"])
     driver = _match(summary, r"Driver Version\s*:\s*([^\s]+)")
     cuda = _match(summary, r"CUDA Version\s*:\s*([^\s]+)")
@@ -41,6 +42,8 @@ def discover_hardware(
         cuda_version=cuda,
         pytorch_version=torch.__version__,
         gpus=tuple(gpus),
+        selected_gpu_index=selected.index,
+        selected_gpu_uuid=selected.uuid,
     )
 
 
@@ -57,14 +60,14 @@ def discover_gpus(runner: c.Callable[[list[str]], str] | None = None) -> list[Gp
     run = runner or _run
     query = [
         "nvidia-smi",
-        "--query-gpu=name,uuid,memory.free,memory.total,compute_cap",
+        "--query-gpu=index,name,uuid,memory.free,memory.total,compute_cap",
         "--format=csv,noheader,nounits",
     ]
     try:
         output = run(query)
     except (OSError, subprocess.CalledProcessError):
         fallback = query.copy()
-        fallback[1] = "--query-gpu=name,uuid,memory.free,memory.total"
+        fallback[1] = "--query-gpu=index,name,uuid,memory.free,memory.total"
         try:
             output = run(fallback)
         except (OSError, subprocess.CalledProcessError) as error:
@@ -81,21 +84,51 @@ def discover_gpus(runner: c.Callable[[list[str]], str] | None = None) -> list[Gp
     return gpus
 
 
+def select_gpu(gpus: c.Iterable[Gpu]) -> Gpu:
+    """Select the GPU with the most usable free memory deterministically.
+
+    Returns:
+        The selected GPU.
+
+    Raises:
+        NoGpuError:
+            If no GPU has a usable memory report.
+    """
+    usable = [
+        gpu for gpu in gpus if 0 < gpu.free_memory_bytes <= gpu.total_memory_bytes
+    ]
+    if not usable:
+        raise NoGpuError("nvidia-smi returned no GPU with usable free memory")
+    return min(usable, key=lambda gpu: (-gpu.free_memory_bytes, gpu.index, gpu.uuid))
+
+
 def _parse_gpu_csv(output: str) -> list[Gpu]:
     gpus: list[Gpu] = []
-    for line in output.splitlines():
+    for row_index, line in enumerate(output.splitlines()):
         fields = [field.strip() for field in line.split(",")]
-        if len(fields) not in (4, 5):
+        if len(fields) not in (4, 5, 6):
             continue
         try:
-            capability = fields[4] if len(fields) == 5 and fields[4] else None
+            if len(fields) in (5, 6) and fields[0].isdigit():
+                index = int(fields[0])
+                offset = 1
+            else:
+                index = row_index
+                offset = 0
+            expected = 5 if len(fields) - offset == 5 else 4
+            if len(fields) - offset != expected:
+                continue
+            capability = (
+                fields[offset + 4] if expected == 5 and fields[offset + 4] else None
+            )
             gpus.append(
                 Gpu(
-                    name=fields[0],
-                    uuid=fields[1],
-                    free_memory_bytes=int(float(fields[2]) * 1024**2),
-                    total_memory_bytes=int(float(fields[3]) * 1024**2),
+                    name=fields[offset],
+                    uuid=fields[offset + 1],
+                    free_memory_bytes=int(float(fields[offset + 2]) * 1024**2),
+                    total_memory_bytes=int(float(fields[offset + 3]) * 1024**2),
                     compute_capability=capability,
+                    index=index,
                 )
             )
         except ValueError:

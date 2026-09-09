@@ -1,21 +1,24 @@
 """The volunteer worker state machine."""
 
 import collections.abc as c
+import contextlib
 import dataclasses
 import datetime
 import hashlib
 import inspect
 import logging
+import os
 import threading
 import time
+import typing as t
 
 from .auth import authenticate
 from .broker import BrokerError, BrokerProtocol
 from .evaluator import EuroEvalEvaluator, Evaluator
-from .hardware import discover_hardware
+from .hardware import discover_hardware, select_gpu
 from .safety import SafetyError, check_model_safety
 from .state import ActiveLease, PendingRecord, StateStore
-from .types import Claim, EEERecord, HardwareReport, Lease
+from .types import Claim, EEERecord, Gpu, HardwareReport, Lease
 
 logger = logging.getLogger(__name__)
 
@@ -190,10 +193,7 @@ class Worker:
             client=self.client, state=self.state
         )
         while True:
-            hardware = dataclasses.replace(
-                self.hardware_factory(),
-                gpu_memory_utilisation=self.gpu_memory_utilisation,
-            )
+            hardware = self._prepare_hardware(self.hardware_factory())
             active = self.state.load_active()
             if active is not None and active.github_login not in (None, self._login):
                 raise AuthenticationIdentityError(
@@ -244,6 +244,20 @@ class Worker:
                 raise
             if once:
                 return
+
+    def _prepare_hardware(self, hardware: HardwareReport) -> HardwareReport:
+        """Attach a deterministic single-GPU selection to a hardware report.
+
+        Returns:
+            The report with the configured utilisation and selected GPU.
+        """
+        selected = select_gpu(hardware.gpus)
+        return dataclasses.replace(
+            hardware,
+            gpu_memory_utilisation=self.gpu_memory_utilisation,
+            selected_gpu_index=selected.index,
+            selected_gpu_uuid=selected.uuid,
+        )
 
     def _claim_with_reauthentication(
         self, credential: str, hardware: HardwareReport
@@ -302,52 +316,57 @@ class Worker:
                 client=self.client, credential=credential, lease=lease
             )
         completed = False
+        selected_gpu = select_gpu(hardware.gpus)
         try:
-            try:
-                if (
-                    "gpu_memory_utilisation"
-                    in inspect.signature(check_model_safety).parameters
-                ):
-                    check_model_safety(
-                        lease=lease,
-                        gpus=hardware.gpus,
-                        free_disk_bytes=hardware.free_disk_bytes,
-                        gpu_memory_utilisation=lease.gpu_memory_utilisation,
+            if active is not None and active.records:
+                records = active.records
+                heartbeat.start()
+            else:
+                try:
+                    safety_parameters = inspect.signature(check_model_safety).parameters
+                    safety_kwargs: dict[str, object] = {
+                        "lease": lease,
+                        "gpus": (selected_gpu,),
+                        "free_disk_bytes": hardware.free_disk_bytes,
+                    }
+                    if "gpu_memory_utilisation" in safety_parameters:
+                        safety_kwargs["gpu_memory_utilisation"] = (
+                            lease.gpu_memory_utilisation
+                        )
+                    if "selected_gpu" in safety_parameters:
+                        safety_kwargs["selected_gpu"] = selected_gpu
+                    safety_check = t.cast(c.Callable[..., object], check_model_safety)
+                    safety_check(**safety_kwargs)
+                except SafetyError:
+                    self.client.release(
+                        credential=self._credential,
+                        lease_id=lease.lease_id,
+                        reason="unsafe_model",
                     )
-                else:
-                    check_model_safety(
-                        lease=lease,
-                        gpus=hardware.gpus,
-                        free_disk_bytes=hardware.free_disk_bytes,
+                    self.state.archive_active()
+                    raise
+                heartbeat.start()
+                output = self.state.directory / "results" / f"{lease.lease_id}.jsonl"
+                with _pin_gpu(selected_gpu):
+                    evaluated = self.evaluator.evaluate(lease=lease, output_path=output)
+                heartbeat.check()
+                try:
+                    records = self._durable_records(active=active, evaluated=evaluated)
+                except RuntimeError:
+                    self.client.release(
+                        credential=self._credential,
+                        lease_id=lease.lease_id,
+                        reason="incompatible_resume",
                     )
-            except SafetyError:
-                self.client.release(
-                    credential=self._credential,
-                    lease_id=lease.lease_id,
-                    reason="unsafe_model",
-                )
-                self.state.archive_active()
-                raise
-            heartbeat.start()
-            output = self.state.directory / "results" / f"{lease.lease_id}.jsonl"
-            evaluated = self.evaluator.evaluate(lease=lease, output_path=output)
-            heartbeat.check()
-            try:
-                records = self._durable_records(active=active, evaluated=evaluated)
-            except RuntimeError:
-                self.client.release(
-                    credential=self._credential,
-                    lease_id=lease.lease_id,
-                    reason="incompatible_resume",
-                )
-                self.state.archive_active()
-                raise
+                    self.state.archive_active()
+                    raise
             self._submit_records(
                 credential=self._credential,
                 lease=lease,
                 records=records,
                 heartbeat=heartbeat,
             )
+            heartbeat.check()
             submission_id = self._finalise(
                 credential=self._credential, lease_id=lease.lease_id
             )
@@ -494,6 +513,20 @@ class Worker:
                     raise
                 self._credential = self._reauthenticate(self._credential, self._login)
                 auth_attempted = True
+
+
+@contextlib.contextmanager
+def _pin_gpu(gpu: Gpu) -> c.Iterator[None]:
+    """Expose only ``gpu`` to CUDA for the duration of one evaluation."""
+    original = os.environ.get("CUDA_VISIBLE_DEVICES")
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu.index)
+    try:
+        yield
+    finally:
+        if original is None:
+            os.environ.pop("CUDA_VISIBLE_DEVICES", None)
+        else:
+            os.environ["CUDA_VISIBLE_DEVICES"] = original
 
 
 def _transient(error: BrokerError) -> bool:
