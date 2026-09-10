@@ -87,8 +87,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          package=/orgs/EuroEval/packages/container/euroeval-worker
-          if ! gh api --method PATCH "$package/visibility" -f visibility=public; then
+          package=/orgs/${{ github.repository_owner }}/packages/container/euroeval-worker
+          if ! gh api --method PATCH "$package" -f visibility=public; then
             echo "::warning::The workflow token could not set GHCR visibility. Package admin permission may need to be granted once."
           fi
           visibility="$(gh api "$package" --jq .visibility 2>/dev/null || true)"
