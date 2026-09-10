@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import type { LeaderboardTable } from "@/leaderboard";
 import { matchesQuery } from "@/filter";
 
@@ -316,7 +322,7 @@ const useLogX = computed(
 // space the axis uses (log10 for model sizes), so it reads as a constant visual
 // margin on each side regardless of how wide the range is.
 const X_PAD = 0.06; // fraction of the (transformed) range, per side
-const xMinMax = computed(() => {
+const baseXMinMax = computed(() => {
   const { min, max } = rawXMinMax.value;
   if (useLogX.value) {
     const lo = Math.log10(Math.max(min, 1));
@@ -331,7 +337,60 @@ const xMinMax = computed(() => {
 // Fixed mean-rank-score domain so plots are visually comparable across
 // languages and pages. Lower is better, so 1.0 is at the top, 5.5 at the
 // bottom.
-const yMinMax = computed(() => ({ min: 1.0, max: 5.5 }));
+const baseYMinMax = computed(() => ({ min: 1.0, max: 5.5 }));
+
+interface Viewport {
+  xMin: number;
+  xMax: number;
+  yMin: number;
+  yMax: number;
+}
+
+const toXSpace = (value: number) =>
+  useLogX.value ? Math.log10(Math.max(value, 1)) : value;
+const fromXSpace = (value: number) =>
+  useLogX.value ? Math.pow(10, value) : value;
+
+const baseViewport = computed<Viewport>(() => ({
+  xMin: toXSpace(baseXMinMax.value.min),
+  xMax: toXSpace(baseXMinMax.value.max),
+  yMin: baseYMinMax.value.min,
+  yMax: baseYMinMax.value.max,
+}));
+
+const viewport = ref<Viewport>({ ...baseViewport.value });
+const MAX_ZOOM = 24;
+const clipId = `scatter-plot-clip-${Math.random().toString(36).slice(2)}`;
+
+const resetZoom = () => {
+  viewport.value = { ...baseViewport.value };
+};
+
+// A changed dataset or x-axis starts a new viewport rather than carrying a
+// range that may no longer contain the newly selected data.
+watch([baseViewport, () => props.xAxis], resetZoom);
+
+const xMinMax = computed(() => ({
+  min: fromXSpace(viewport.value.xMin),
+  max: fromXSpace(viewport.value.xMax),
+}));
+const yMinMax = computed(() => ({
+  min: viewport.value.yMin,
+  max: viewport.value.yMax,
+}));
+const isZoomed = computed(() => {
+  const base = baseViewport.value;
+  const current = viewport.value;
+  return (
+    current.xMin !== base.xMin ||
+    current.xMax !== base.xMax ||
+    current.yMin !== base.yMin ||
+    current.yMax !== base.yMax
+  );
+});
+
+const plotWidth = width - margin.left - margin.right;
+const plotHeight = height - margin.top - margin.bottom;
 
 const xScale = (v: number) => {
   const { min, max } = xMinMax.value;
@@ -340,14 +399,14 @@ const xScale = (v: number) => {
   const hi = useLog ? Math.log10(Math.max(max, 1)) : max;
   const val = useLog ? Math.log10(Math.max(v, 1)) : v;
   const t = (val - lo) / (hi - lo || 1);
-  return margin.left + t * (width - margin.left - margin.right);
+  return margin.left + t * plotWidth;
 };
 
 const yScale = (v: number) => {
   // Lower rank = better, so invert.
   const { min, max } = yMinMax.value;
   const t = (v - min) / (max - min || 1);
-  return margin.top + t * (height - margin.top - margin.bottom);
+  return margin.top + t * plotHeight;
 };
 
 const paretoPolyline = computed(() => {
@@ -365,7 +424,7 @@ const formatX = (v: number): string => {
   if (props.xAxis === "releaseDate") {
     const date = new Date(v);
     const rangeYears =
-      (rawXMinMax.value.max - rawXMinMax.value.min) /
+      (xMinMax.value.max - xMinMax.value.min) /
       (365.25 * 24 * 60 * 60 * 1000);
     return rangeYears > 2
       ? String(date.getUTCFullYear())
@@ -390,8 +449,8 @@ interface Tick {
 const xTicks = computed<Tick[]>(() => {
   const { min, max } = xMinMax.value;
   if (props.xAxis === "releaseDate") {
-    const tickMin = rawXMinMax.value.min;
-    const tickMax = rawXMinMax.value.max;
+    const tickMin = min;
+    const tickMax = max;
     const rangeYears =
       (tickMax - tickMin) / (365.25 * 24 * 60 * 60 * 1000);
     const ticks: Tick[] = [];
@@ -440,13 +499,270 @@ const xTicks = computed<Tick[]>(() => {
   return ticks;
 });
 
+const niceTickStep = (range: number, targetCount: number) => {
+  const roughStep = range / targetCount;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const normalized = roughStep / magnitude;
+  const multiplier =
+    normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return multiplier * magnitude;
+};
+
 const yTicks = computed<Tick[]>(() => {
+  const { min, max } = yMinMax.value;
+  const step = niceTickStep(max - min, 8);
+  const first = Math.ceil(min / step) * step;
   const ticks: Tick[] = [];
-  for (let v = 1.0; v <= 5.5 + 1e-9; v += 0.5) {
-    ticks.push({ value: Math.round(v * 10) / 10, major: true });
+  for (let value = first; value <= max + step * 1e-9; value += step) {
+    ticks.push({ value, major: true });
   }
   return ticks;
 });
+
+const formatY = (value: number) => {
+  const step = niceTickStep(yMinMax.value.max - yMinMax.value.min, 8);
+  const decimals = Math.min(4, Math.max(1, Math.ceil(-Math.log10(step))));
+  return value.toFixed(decimals);
+};
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
+
+const clampRange = (
+  min: number,
+  max: number,
+  baseMin: number,
+  baseMax: number,
+) => {
+  const baseSpan = baseMax - baseMin;
+  const span = clamp(max - min, baseSpan / MAX_ZOOM, baseSpan);
+  let nextMin = min;
+  let nextMax = min + span;
+  if (nextMin < baseMin) {
+    nextMin = baseMin;
+    nextMax = baseMin + span;
+  }
+  if (nextMax > baseMax) {
+    nextMax = baseMax;
+    nextMin = baseMax - span;
+  }
+  return { min: nextMin, max: nextMax };
+};
+
+const clampViewport = (next: Viewport): Viewport => {
+  const base = baseViewport.value;
+  const x = clampRange(next.xMin, next.xMax, base.xMin, base.xMax);
+  const y = clampRange(next.yMin, next.yMax, base.yMin, base.yMax);
+  return { xMin: x.min, xMax: x.max, yMin: y.min, yMax: y.max };
+};
+
+const zoomRangeAt = (
+  min: number,
+  max: number,
+  baseMin: number,
+  baseMax: number,
+  factor: number,
+  ratio: number,
+) => {
+  const span = max - min;
+  const nextSpan = clamp(
+    span / factor,
+    (baseMax - baseMin) / MAX_ZOOM,
+    baseMax - baseMin,
+  );
+  const focal = min + ratio * span;
+  return clampRange(
+    focal - ratio * nextSpan,
+    focal + (1 - ratio) * nextSpan,
+    baseMin,
+    baseMax,
+  );
+};
+
+const zoomViewportAt = (
+  start: Viewport,
+  factor: number,
+  xRatio: number,
+  yRatio: number,
+): Viewport => {
+  const x = zoomRangeAt(
+    start.xMin,
+    start.xMax,
+    baseViewport.value.xMin,
+    baseViewport.value.xMax,
+    factor,
+    xRatio,
+  );
+  const y = zoomRangeAt(
+    start.yMin,
+    start.yMax,
+    baseViewport.value.yMin,
+    baseViewport.value.yMax,
+    factor,
+    yRatio,
+  );
+  return { xMin: x.min, xMax: x.max, yMin: y.min, yMax: y.max };
+};
+
+const chartPointFromClient = (
+  svg: SVGSVGElement,
+  clientX: number,
+  clientY: number,
+) => {
+  const rect = svg.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return null;
+  return {
+    x: ((clientX - rect.left) / rect.width) * width,
+    y: ((clientY - rect.top) / rect.height) * height,
+  };
+};
+
+const chartPointFromEvent = (e: {
+  clientX: number;
+  clientY: number;
+  currentTarget: EventTarget | null;
+}) => {
+  const svg = e.currentTarget as SVGSVGElement | null;
+  return svg ? chartPointFromClient(svg, e.clientX, e.clientY) : null;
+};
+
+const plotRatios = (point: { x: number; y: number }) => ({
+  x: clamp((point.x - margin.left) / plotWidth, 0, 1),
+  y: clamp((point.y - margin.top) / plotHeight, 0, 1),
+});
+
+const onWheel = (e: WheelEvent) => {
+  const point = chartPointFromEvent(e);
+  if (!point) return;
+  const deltaMultiplier =
+    e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? height : 1;
+  const delta = e.deltaY * deltaMultiplier;
+  const factor = clamp(Math.exp(-delta * 0.002), 0.5, 2);
+  const ratios = plotRatios(point);
+  viewport.value = zoomViewportAt(viewport.value, factor, ratios.x, ratios.y);
+};
+
+interface ClientPoint {
+  x: number;
+  y: number;
+}
+
+const activePointers = new Map<number, ClientPoint>();
+let panStart: {
+  point: { x: number; y: number };
+  viewport: Viewport;
+} | null = null;
+let pinchStart: {
+  distance: number;
+  midpoint: { x: number; y: number };
+  focal: { x: number; y: number };
+  viewport: Viewport;
+} | null = null;
+let suppressNextClick = false;
+
+const pointerDistance = (a: ClientPoint, b: ClientPoint) =>
+  Math.hypot(a.x - b.x, a.y - b.y);
+
+const pointerMidpoint = (a: ClientPoint, b: ClientPoint): ClientPoint => ({
+  x: (a.x + b.x) / 2,
+  y: (a.y + b.y) / 2,
+});
+
+const onPointerDown = (e: PointerEvent) => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  if (activePointers.size === 0) suppressNextClick = false;
+  const svg = e.currentTarget as SVGSVGElement;
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  svg.setPointerCapture?.(e.pointerId);
+
+  if (activePointers.size === 1) {
+    const target = e.target as Element | null;
+    if (!target?.closest(".point")) {
+      const point = chartPointFromEvent(e);
+      if (point) panStart = { point, viewport: { ...viewport.value } };
+    }
+    return;
+  }
+
+  if (activePointers.size === 2) {
+    panStart = null;
+    const [first, second] = [...activePointers.values()];
+    const midpoint = pointerMidpoint(first, second);
+    const focal = chartPointFromClient(svg, midpoint.x, midpoint.y);
+    if (focal) {
+      pinchStart = {
+        distance: Math.max(pointerDistance(first, second), 1),
+        midpoint: focal,
+        focal,
+        viewport: { ...viewport.value },
+      };
+    }
+  }
+};
+
+const onPointerMove = (e: PointerEvent) => {
+  const previous = activePointers.get(e.pointerId);
+  if (!previous) return;
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  const svg = e.currentTarget as SVGSVGElement;
+
+  if (activePointers.size >= 2 && pinchStart) {
+    const [first, second] = [...activePointers.values()];
+    const midpoint = pointerMidpoint(first, second);
+    const currentMidpoint = chartPointFromClient(svg, midpoint.x, midpoint.y);
+    if (!currentMidpoint) return;
+    const factor = pointerDistance(first, second) / pinchStart.distance;
+    const ratios = plotRatios(pinchStart.focal);
+    const zoomed = zoomViewportAt(
+      pinchStart.viewport,
+      factor,
+      ratios.x,
+      ratios.y,
+    );
+    const dx = currentMidpoint.x - pinchStart.midpoint.x;
+    const dy = currentMidpoint.y - pinchStart.midpoint.y;
+    viewport.value = clampViewport({
+      xMin: zoomed.xMin - (dx / plotWidth) * (zoomed.xMax - zoomed.xMin),
+      xMax: zoomed.xMax - (dx / plotWidth) * (zoomed.xMax - zoomed.xMin),
+      yMin: zoomed.yMin - (dy / plotHeight) * (zoomed.yMax - zoomed.yMin),
+      yMax: zoomed.yMax - (dy / plotHeight) * (zoomed.yMax - zoomed.yMin),
+    });
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4 || Math.abs(factor - 1) > 0.02) {
+      suppressNextClick = true;
+    }
+    return;
+  }
+
+  if (activePointers.size === 1 && panStart) {
+    const point = chartPointFromEvent(e);
+    if (!point) return;
+    const dx = point.x - panStart.point.x;
+    const dy = point.y - panStart.point.y;
+    const start = panStart.viewport;
+    viewport.value = clampViewport({
+      xMin: start.xMin - (dx / plotWidth) * (start.xMax - start.xMin),
+      xMax: start.xMax - (dx / plotWidth) * (start.xMax - start.xMin),
+      yMin: start.yMin - (dy / plotHeight) * (start.yMax - start.yMin),
+      yMax: start.yMax - (dy / plotHeight) * (start.yMax - start.yMin),
+    });
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) suppressNextClick = true;
+  }
+};
+
+const onPointerEnd = (e: PointerEvent) => {
+  const svg = e.currentTarget as SVGSVGElement;
+  svg.releasePointerCapture?.(e.pointerId);
+  activePointers.delete(e.pointerId);
+  if (activePointers.size === 0) {
+    panStart = null;
+    pinchStart = null;
+  } else if (activePointers.size === 1) {
+    pinchStart = null;
+    const [remaining] = [...activePointers.values()];
+    const point = chartPointFromClient(svg, remaining.x, remaining.y);
+    panStart = point ? { point, viewport: { ...viewport.value } } : null;
+  }
+};
 
 // Build a 5-point star path centered at (cx, cy) with the given outer radius.
 const starPath = (cx: number, cy: number, r: number): string => {
@@ -529,6 +845,10 @@ const onLeave = () => {
 };
 
 const onPointClick = (e: MouseEvent, p: Point) => {
+  if (suppressNextClick) {
+    suppressNextClick = false;
+    return;
+  }
   if (!isCoarsePointer.value) return;
   if (hovered.value === p) {
     hovered.value = null;
@@ -560,6 +880,7 @@ const tooltipStyle = computed(() => {
         Y-axis: Rank score (lower is better).
         Showing {{ visiblePoints.length }} of {{ allPoints.length }} models with
         {{ xAxis === "parameters" ? "parameter counts" : "release dates" }}.
+        Scroll or pinch to zoom; drag to pan.
       </span>
       <input
         v-model="searchQuery"
@@ -568,6 +889,16 @@ const tooltipStyle = computed(() => {
         placeholder="Search models..."
         aria-label="Search models"
       />
+      <button
+        v-if="isZoomed"
+        type="button"
+        class="pareto-toggle reset-zoom"
+        aria-label="Reset scatter plot zoom"
+        title="Reset zoom"
+        @click="resetZoom"
+      >
+        Reset zoom
+      </button>
       <button
         type="button"
         class="pareto-toggle"
@@ -641,7 +972,23 @@ const tooltipStyle = computed(() => {
         class="scatter-svg"
         role="img"
         :aria-label="chartAriaLabel"
+        @wheel.prevent="onWheel"
+        @pointerdown="onPointerDown"
+        @pointermove="onPointerMove"
+        @pointerup="onPointerEnd"
+        @pointercancel="onPointerEnd"
       >
+        <defs>
+          <clipPath :id="clipId">
+            <rect
+              :x="margin.left"
+              :y="margin.top"
+              :width="plotWidth"
+              :height="plotHeight"
+            />
+          </clipPath>
+        </defs>
+
         <!-- Axes -->
         <line
           :x1="margin.left"
@@ -677,7 +1024,7 @@ const tooltipStyle = computed(() => {
             dominant-baseline="middle"
             text-anchor="end"
           >
-            {{ t.value.toFixed(1) }}
+            {{ formatY(t.value) }}
           </text>
         </g>
 
@@ -726,13 +1073,14 @@ const tooltipStyle = computed(() => {
         <g
           v-if="showPareto && paretoPolyline"
           class="pareto-frontier"
+          :clip-path="`url(#${clipId})`"
           aria-hidden="true"
         >
           <polyline :points="paretoPolyline" />
         </g>
 
         <!-- Points: commercial → star, otherwise → circle. Colored by kind. -->
-        <g class="points">
+        <g class="points" :clip-path="`url(#${clipId})`">
           <template v-for="(p, i) in visiblePoints" :key="`p-${i}`">
             <path
               v-if="p.commercial"
@@ -953,6 +1301,9 @@ const tooltipStyle = computed(() => {
   width: 100%;
   height: auto;
   display: block;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
 
 .axis {
