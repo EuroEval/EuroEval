@@ -2,23 +2,19 @@
 
 The leaderboards grow whenever we add a new model, and re-evaluating every
 historical entrant every time a dataset changes is unsustainable. This
-module derives a maintained 'core' set: the union of three sources.
+module derives a maintained 'core' set from aggregate Pareto, OSAI and API sources.
 
-  1. Per-language Pareto frontier. For each language leaderboard and each
-     model type (encoder, base decoder, instruction-tuned decoder,
-     reasoning decoder), a model qualifies if no other model of the same
-     type with equal-or-smaller parameter count has a strictly better
-     rank score in that language. A model that qualifies in any one
-     language is included; the languages it qualifies in are recorded.
-  2. EU-built models. Hardcoded regex list in `core_models.yaml`, seeded
-     from issue #1186 (orgs like utter-project/, PleIAs/, EuroBERT/,
-     LiquidAI/, occiglot/, swiss-ai/, mistralai/, ...).
-  3. Top-10 'truly open' models from osai-index.eu (filters: text,
-     basemodel weights / training code / data sources all open). The
-     site is a Nuxt SPA and exposes the database via a JS bundle; we
-     locate that bundle from the homepage, parse the model entries, rank
-     them by openness count, and pick the top 10. If the scrape fails we
-     fall back to `osai_overrides` in the YAML config.
+  1. Complete-coverage aggregate Pareto frontier. For each European
+     leaderboard category and model type, a model qualifies only when it has
+     every applicable non-orthogonal dataset. An equal-or-smaller model of
+     the same type removes it only when the aligned paired-bootstrap score
+     difference is significant.
+  2. Top-10 'truly open' models from osai-index.eu (filters: text,
+     basemodel weights / training code / data sources all open). The site is
+     a Nuxt SPA and exposes the database via a JS bundle; we locate that
+     bundle from the homepage, parse the model entries, rank them by
+     openness count, and pick the top 10. If the scrape fails we fall back
+     to `osai_overrides` in the YAML config.
 
 `build_core_model_list` is the public entry point. It returns a list of
 `CoreModel` records; the updater script renders them into the GitHub
@@ -34,6 +30,11 @@ import logging
 import math
 from collections import defaultdict
 
+import numpy as np
+
+from euroeval.constants import ORTHOGONAL_TASKS
+
+from .bootstrap_cis import bootstrap_rank_scores
 from .constants import (
     API_MODEL_PATTERNS,
     EXCLUDED_MODEL_PATTERNS,
@@ -41,13 +42,14 @@ from .constants import (
     NUM_BOOTSTRAPS,
     PARAM_SIZE_BUCKET_ORDER,
 )
-from .model_sources import eu_models, params_from_hf_safetensors, params_from_model_id
+from .enums import LeaderboardCategory
+from .model_sources import params_from_hf_safetensors, params_from_model_id
 from .osai import osai_top_models
 from .records import drop_val_duplicates, get_dataset, plain_model_id
 from .result_loading import load_raw_results
-from .score_computation import compute_ranks
 from .score_extraction import extract_model_metadata, group_results_by_model
 from .task_metadata import (
+    category_includes_task,
     languages_with_official_datasets,
     official_datasets_for_language,
 )
@@ -90,12 +92,9 @@ class CoreModel:
             The size bucket used for grouping in the GitHub issue.
         parameters:
             Number of parameters (NaN for API models / unknown).
-        pareto_languages:
-            Sorted list of languages in which the model is on the Pareto
-            frontier within its model type. Empty if it qualifies only
-            via the EU or OSAI source.
-        eu:
-            Whether the model matches the EU-trained regex list.
+        pareto_categories:
+            Sorted leaderboard categories in which the model is on the
+            aggregate Pareto frontier. Empty if it qualifies only via OSAI.
         osai_rank:
             1-based rank in the OSAI top-10 list, or None if not in the list.
         api:
@@ -108,8 +107,7 @@ class CoreModel:
     model_type: ModelType
     size_bucket: SizeBucket
     parameters: float
-    pareto_languages: tuple[str, ...]
-    eu: bool
+    pareto_categories: tuple[str, ...]
     osai_rank: int | None
     api: bool
 
@@ -118,7 +116,6 @@ class CoreModel:
 # Public entry point
 # ---------------------------------------------------------------------------
 def build_core_model_list(
-    eu_patterns: list[str],
     api_model_ids: list[str] | None = None,
     osai_overrides: list[str] | None = None,
     osai_limit: int = 10,
@@ -126,8 +123,6 @@ def build_core_model_list(
     """Build the combined core-model list.
 
     Args:
-        eu_patterns:
-            Regex patterns for EU-built models (from `core_models.yaml`).
         api_model_ids (optional):
             Hardcoded list of litellm-style API model identifiers from
             `core_models.yaml::api_models`. Always emitted with the API
@@ -146,6 +141,7 @@ def build_core_model_list(
         language: dict(official_datasets_for_language(language))
         for language in languages
     }
+    aggregate_configs = {"europe": _aggregate_config(configs=configs)}
     datasets = {
         dataset
         for config in configs.values()
@@ -156,44 +152,38 @@ def build_core_model_list(
     results = [r for r in load_raw_results() if get_dataset(r) in datasets]
     model_results = group_results_by_model(results=results)
     model_results = drop_val_duplicates(model_results=model_results)
-    ranks = compute_ranks(
-        model_results=model_results, configs=configs, n_bootstraps=NUM_BOOTSTRAPS
+    bootstrap_scores = _aggregate_bootstrap_scores(
+        model_results=model_results, configs=aggregate_configs
     )
     metadata = extract_model_metadata(results=results)
-
-    # Restrict per-language ranking to languages that actually appear as
-    # keys in the rank dict (compute_ranks elides single-language scenarios).
-    available_languages: set[str] = set()
-    for per_category in ranks.values():
-        for per_language in per_category.values():
-            available_languages.update(per_language.keys())
-    available_languages.discard("overall")
-    language_list = sorted(available_languages)
 
     model_types: dict[str, ModelType] = {
         anchored_id: _classify_model(anchored_id, metadata.get(anchored_id, {}))
         for anchored_id in model_results
     }
 
-    pareto = _pareto_languages_per_model(
-        ranks=ranks, metadata=metadata, model_types=model_types, languages=language_list
+    pareto = _pareto_categories_per_model(
+        bootstrap_scores=bootstrap_scores,
+        model_results=model_results,
+        configs=aggregate_configs,
+        metadata=metadata,
+        model_types=model_types,
     )
 
     # Collapse anchored variants ("X (zero-shot)", "X (zero-shot, val)", ...)
-    # down to the plain `org/repo` slug. The Pareto languages and metadata
-    # for the plain id are the union/best of its variants.
+    # down to the plain `org/repo` slug. Pareto categories for the plain id
+    # are the union of its variants.
     by_plain: dict[str, list[str]] = defaultdict(list)
     for anchored_id in model_results:
         by_plain[plain_model_id(anchored_id)].append(anchored_id)
 
-    eu_set = eu_models(model_ids=by_plain.keys(), eu_patterns=eu_patterns)
     osai_ranked = osai_top_models(limit=osai_limit, overrides=osai_overrides)
     osai_rank_by_id = {model_id: rank for model_id, rank in osai_ranked}
 
-    # OSAI / EU / API-list may name models we haven't evaluated yet.
-    # Include them as placeholders so the issue surfaces them as TODO
+    # OSAI / API-list may name models we haven't evaluated yet. Include
+    # them as placeholders so the issue surfaces them as TODO
     # targets.
-    all_plain_ids = set(by_plain) | set(osai_rank_by_id) | eu_set | api_set
+    all_plain_ids = set(by_plain) | set(osai_rank_by_id) | api_set
 
     # Drop entire serving-backend families we don't want in the core list.
     all_plain_ids = {
@@ -205,11 +195,12 @@ def build_core_model_list(
     core: list[CoreModel] = []
     for plain_id in all_plain_ids:
         variants = by_plain.get(plain_id, [])
-        pareto_langs = sorted({lang for v in variants for lang in pareto.get(v, [])})
-        is_eu = plain_id in eu_set
+        pareto_categories = sorted(
+            {category for v in variants for category in pareto.get(v, [])}
+        )
         osai_rank = osai_rank_by_id.get(plain_id)
         is_api = plain_id in api_set
-        if not (pareto_langs or is_eu or osai_rank or is_api):
+        if not (pareto_categories or osai_rank or is_api):
             continue
 
         # Pick the variant with the most params info / a known type. The
@@ -232,8 +223,7 @@ def build_core_model_list(
                 model_type=model_type,
                 size_bucket=bucket,
                 parameters=parameters,
-                pareto_languages=tuple(pareto_langs),
-                eu=is_eu,
+                pareto_categories=tuple(pareto_categories),
                 osai_rank=osai_rank,
                 api=is_api,
             )
@@ -267,149 +257,140 @@ def _classify_model(model_id: str, metadata: dict) -> ModelType:
     return ModelType(model_type) if model_type is not None else ModelType.BASE_DECODER
 
 
-# ---------------------------------------------------------------------------
-# Pareto frontier
-# ---------------------------------------------------------------------------
-def _pareto_languages_per_model(
-    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
-    metadata: dict[str, dict],
-    model_types: dict[str, ModelType],
-    languages: list[str],
-) -> dict[str, list[str]]:
-    """For each model, return the languages where it is on its Pareto frontier.
-
-    A model M with type T and parameter count P is on the Pareto frontier
-    for language L iff no other model with type T and parameters <= P has
-    a strictly better (smaller) rank score in L. Models with unknown
-    parameter counts are skipped: we can't compare them on the (size, rank)
-    plane.
-
-    Args:
-        ranks:
-            Output of `compute_ranks`: model -> category -> language ->
-            {"score", "ci_lower", "ci_upper"}.
-        metadata:
-            Output of `extract_model_metadata`.
-        model_types:
-            Mapping of model_id to its `ModelType`.
-        languages:
-            Languages to consider (each must appear as a key in the inner
-            dicts of `ranks`).
+def _aggregate_config(configs: dict[str, dict[str, list[str]]]) -> dict[str, list[str]]:
+    """Collapse per-language configs into one European leaderboard config.
 
     Returns:
-        model_id -> sorted list of languages where the model qualifies.
+        A single task-to-datasets configuration containing each dataset once.
     """
-    logger.info("Fetching the Pareto frontier languages for each model...")
+    aggregate: dict[str, set[str]] = defaultdict(set)
+    for config in configs.values():
+        for task, datasets in config.items():
+            aggregate[task].update(datasets)
+    return {task: sorted(datasets) for task, datasets in sorted(aggregate.items())}
 
-    # Encoders only get scored on the NLU-restricted `all_models`
-    # category. Generative models live on both leaderboards: `generative`
-    # spans every task and `all_models` restricts to NLU — a generative
-    # model that's Pareto-optimal in either category counts, so we
-    # consider both and union the languages.
-    categories_for_type: dict[ModelType, tuple[str, ...]] = {
-        ModelType.ENCODER: ("all_models",),
-        ModelType.BASE_DECODER: ("generative", "all_models"),
-        ModelType.INSTRUCTION_TUNED_DECODER: ("generative", "all_models"),
-        ModelType.REASONING_DECODER: ("generative", "all_models"),
+
+def _aggregate_bootstrap_scores(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    configs: dict[str, dict[str, list[str]]],
+) -> dict[str, dict[str | LeaderboardCategory, dict[str, np.ndarray]]]:
+    """Compute aligned bootstrap score distributions for one aggregate config.
+
+    Returns:
+        Model/category/aggregate score distributions with aligned samples.
+    """
+    return bootstrap_rank_scores(
+        model_results=model_results,
+        configs=configs,
+        n_bootstraps=NUM_BOOTSTRAPS,
+        seed=0,
+        categories=(LeaderboardCategory.GENERATIVE, LeaderboardCategory.ALL_MODELS),
+    )
+
+
+def _pareto_categories_per_model(
+    bootstrap_scores: dict[str, dict[str | LeaderboardCategory, dict[str, np.ndarray]]],
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    configs: dict[str, dict[str, list[str]]],
+    metadata: dict[str, dict],
+    model_types: dict[str, ModelType],
+) -> dict[str, set[str]]:
+    """Return aggregate Pareto categories for completely evaluated models.
+
+    A model is eligible in a category only when it has a result for every
+    applicable non-orthogonal dataset. Decoder types are eligible in either
+    aggregate category; encoders are eligible only in ``all_models``.
+    """
+    categories_for_type: dict[ModelType, tuple[LeaderboardCategory, ...]] = {
+        ModelType.ENCODER: (LeaderboardCategory.ALL_MODELS,),
+        ModelType.BASE_DECODER: (
+            LeaderboardCategory.GENERATIVE,
+            LeaderboardCategory.ALL_MODELS,
+        ),
+        ModelType.INSTRUCTION_TUNED_DECODER: (
+            LeaderboardCategory.GENERATIVE,
+            LeaderboardCategory.ALL_MODELS,
+        ),
+        ModelType.REASONING_DECODER: (
+            LeaderboardCategory.GENERATIVE,
+            LeaderboardCategory.ALL_MODELS,
+        ),
     }
-
-    # Group candidate models by type, dropping anything we can't size.
-    by_type: dict[ModelType, list[tuple[str, float]]] = defaultdict(list)
+    required = {
+        category: _required_datasets(configs=configs, category=category)
+        for category in {
+            category
+            for categories in categories_for_type.values()
+            for category in categories
+        }
+    }
+    eligible: dict[tuple[LeaderboardCategory, ModelType], list[tuple[str, float]]] = (
+        defaultdict(list)
+    )
     for model_id, model_type in model_types.items():
-        if model_type == ModelType.API:
+        if model_type not in categories_for_type:
             continue
         params = metadata.get(model_id, {}).get("parameters", float("nan"))
         if not math.isfinite(params):
             continue
-        by_type[model_type].append((model_id, params))
+        for category in categories_for_type[model_type]:
+            if not all(
+                model_results.get(model_id, {}).get(dataset)
+                for dataset in required[category]
+            ):
+                continue
+            distribution = (
+                bootstrap_scores.get(model_id, {}).get(category, {}).get("overall")
+            )
+            if distribution is not None:
+                eligible[(category, model_type)].append((model_id, params))
 
     pareto: dict[str, set[str]] = defaultdict(set)
-    for model_type, members in by_type.items():
-        for category in categories_for_type[model_type]:
-            _process_pareto_for_category(
-                model_type=model_type,
-                category=category,
-                members=members,
-                languages=languages,
-                ranks=ranks,
-                pareto=pareto,
-            )
-
-    logger.info("Fetched the Pareto frontier languages for each model.")
-    return {model_id: sorted(langs) for model_id, langs in pareto.items()}
-
-
-def _process_pareto_for_category(
-    model_type: ModelType,
-    category: str,
-    members: list[tuple[str, float]],
-    languages: list[str],
-    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
-    pareto: dict[str, set[str]],
-) -> None:
-    """Process Pareto frontier for a single model type and category.
-
-    Args:
-        model_type:
-            The model type being processed.
-        category:
-            The category (e.g. "generative" or "all_models").
-        members:
-            List of (model_id, params) tuples for this model type.
-        languages:
-            Languages to consider.
-        ranks:
-            Output of `compute_ranks`.
-        pareto:
-            Accumulator dict to update.
-    """
-    for language in languages:
-        # Collect sized&ranked models for this (type, category, language)
-        sized_ranked: list[tuple[str, float, float]] = []
+    for (category, _model_type), members in eligible.items():
         for model_id, params in members:
-            rank_entry = (
-                ranks.get(model_id, {}).get(category, {}).get(language, {}).get("score")
+            distribution = bootstrap_scores[model_id][category]["overall"]
+            dominated = any(
+                other_id != model_id
+                and other_params <= params
+                and _is_significantly_worse(
+                    candidate=distribution,
+                    competitor=bootstrap_scores[other_id][category]["overall"],
+                )
+                for other_id, other_params in members
             )
-            if rank_entry is None or not math.isfinite(rank_entry):
-                continue
-            sized_ranked.append((model_id, params, rank_entry))
-
-        for model_id, params, rank in sized_ranked:
-            if _is_on_pareto_frontier(
-                model_id=model_id, params=params, rank=rank, sized_ranked=sized_ranked
-            ):
-                pareto[model_id].add(language)
+            if not dominated:
+                pareto[model_id].add(category.value)
+    return pareto
 
 
-def _is_on_pareto_frontier(
-    model_id: str,
-    params: float,
-    rank: float,
-    sized_ranked: list[tuple[str, float, float]],
+def _required_datasets(
+    configs: dict[str, dict[str, list[str]]], category: LeaderboardCategory
+) -> set[str]:
+    """Return all non-orthogonal datasets applicable to a category."""
+    return {
+        dataset
+        for config in configs.values()
+        for task, datasets in config.items()
+        if task not in ORTHOGONAL_TASKS
+        and category_includes_task(category=category, task=task)
+        for dataset in datasets
+    }
+
+
+def _is_significantly_worse(
+    candidate: np.ndarray, competitor: np.ndarray, alpha: float = 0.05
 ) -> bool:
-    """Check if a model is on the Pareto frontier.
+    """Return whether candidate loses to competitor in a paired bootstrap.
 
-    A model is on the Pareto frontier if no other model with <= parameters
-    has a strictly better (lower) rank score.
-
-    Args:
-        model_id:
-            The model ID to check.
-        params:
-            The model's parameter count.
-        rank:
-            The model's rank score.
-        sized_ranked:
-            List of (model_id, params, rank) tuples for all comparable models.
-
-    Returns:
-        True if the model is on the Pareto frontier.
+    Rank scores are minimised. Thus a positive lower percentile of
+    ``candidate - competitor`` means the candidate is significantly worse.
     """
-    return not any(
-        other_params <= params and other_rank < rank
-        for other_id, other_params, other_rank in sized_ranked
-        if other_id != model_id
-    )
+    candidate_array = np.asarray(candidate)
+    competitor_array = np.asarray(competitor)
+    if candidate_array.shape != competitor_array.shape:
+        return False
+    difference = candidate_array - competitor_array
+    return bool(np.percentile(difference, 100 * alpha / 2) > 0)
 
 
 # ---------------------------------------------------------------------------
