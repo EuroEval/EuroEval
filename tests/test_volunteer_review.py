@@ -7,6 +7,7 @@ import hashlib
 import json
 import threading
 import typing as t
+import urllib.request
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -19,16 +20,64 @@ from euroeval_worker.review import (
     ReviewError,
     VolunteerReviewer,
 )
+from euroeval_worker.review_transaction import renew_with_broker
 
 STAGING = "EuroEval/private-volunteer-staging"
 RESULTS = "EuroEval/results"
 SUBMISSION = "submission-one"
 
 
+def test_review_renewal_round_trip_includes_bound_digest(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Send the bound decision digest in the broker renewal envelope."""
+    requests: list[dict[str, object]] = []
+
+    class Response:
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "protocol_version": "volunteer-worker/v1",
+                    "status": "reserved",
+                    "token": "reservation",
+                }
+            ).encode()
+
+    def urlopen(request: urllib.request.Request, timeout: int) -> Response:
+        assert timeout == 30
+        requests.append(json.loads(request.data.decode()))
+        return Response()
+
+    monkeypatch.setenv("VOLUNTEER_PROMOTION_SECRET", "secret")
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    digest = "a" * 64
+    records = [
+        {
+            "identity": '["org/model","dataset",false,false]',
+            "canonical_path": "org_model/dataset__test__zeroshot.json",
+            "digest": "b" * 64,
+        }
+    ]
+
+    assert (
+        renew_with_broker(12, SUBMISSION, "accepted", "reservation", records, digest)
+        == "reservation"
+    )
+    assert requests[0]["decision_digest"] == digest
+    assert requests[0]["reservation_token"] == "reservation"
+
+
 def test_acceptance_renews_before_each_upload() -> None:
     """Long uploads renew the accepted reservation before every write."""
     renewals: list[list[dict[str, str]]] = []
-    _, reviewer, _ = _reviewer(
+    renewal_digests: list[str] = []
+    api, reviewer, _ = _reviewer(
         record_count=2,
         reserver=lambda issue, submission, outcome, reviewer, records: (
             BrokerReservationResult(
@@ -37,14 +86,16 @@ def test_acceptance_renews_before_each_upload() -> None:
                 decision_created_at="2026-09-06T12:00:00Z",
             )
         ),
-        renewer=lambda issue, submission, outcome, token, records: (
-            renewals.append(records) or token
+        renewer=lambda issue, submission, outcome, token, records, digest: (
+            renewals.append(records) or renewal_digests.append(digest) or token
         ),
     )
 
     reviewer.decide(SUBMISSION, "accepted", "maintainer")
 
     assert len(renewals) == 3
+    assert len(set(renewal_digests)) == 1
+    assert renewal_digests[0] == hashlib.sha256(_decision_content(api)).hexdigest()
     assert all(record["canonical_path"] for record in renewals[0])
 
 
@@ -158,7 +209,8 @@ def _reviewer(
         t.Callable[[int, str, str, str, list[dict[str, str]]], BrokerReservationResult]
         | None
     ) = None,
-    renewer: t.Callable[[int, str, str, str, list[dict[str, str]]], str] | None = None,
+    renewer: t.Callable[[int, str, str, str, list[dict[str, str]], str], str]
+    | None = None,
     binder: t.Callable[[int, str, str, str, str, list[dict[str, str]]], str]
     | None = None,
 ) -> tuple[FakeHfApi, VolunteerReviewer, list[tuple[int, str, str]]]:

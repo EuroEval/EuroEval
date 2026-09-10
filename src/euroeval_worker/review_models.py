@@ -16,7 +16,9 @@ BrokerPromoter: t.TypeAlias = t.Callable[
 BrokerReservation: t.TypeAlias = t.Callable[
     [int, str, str, str, list[dict[str, str]]], "BrokerReservationResult"
 ]
-BrokerRenewer: t.TypeAlias = t.Callable[[int, str, str, str, list[dict[str, str]]], str]
+BrokerRenewer: t.TypeAlias = t.Callable[
+    [int, str, str, str, list[dict[str, str]], str], str
+]
 BrokerBinder: t.TypeAlias = t.Callable[
     [int, str, str, str, str, list[dict[str, str]]], str
 ]
