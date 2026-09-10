@@ -57,6 +57,7 @@ class FakeHfApi:
         self.uploads: list[tuple[str, str]] = []
         self.uploaded_content: list[tuple[str, str, bytes]] = []
         self.fail_result_upload_number: int | None = None
+        self.fail_decision_upload = False
         self.result_uploads = 0
 
     def batch_bucket_files(
@@ -69,6 +70,12 @@ class FakeHfApi:
                 When the configured interruption point is reached.
         """
         for content, path in add:
+            if (
+                bucket_id == STAGING
+                and path == f"volunteer/decisions/{SUBMISSION}.json"
+                and self.fail_decision_upload
+            ):
+                raise RuntimeError("injected decision interruption")
             if bucket_id == RESULTS:
                 self.result_uploads += 1
                 if self.result_uploads == self.fail_result_upload_number:
@@ -352,6 +359,85 @@ def _result_paths(api: FakeHfApi) -> list[str]:
     return [
         path for bucket, path in api.files if bucket == STAGING and "/results/" in path
     ]
+
+
+def test_decision_persistence_failure_prevents_canonical_write() -> None:
+    """Canonical results are untouched when the decision cannot be verified."""
+    api, reviewer, broker_calls = _reviewer()
+    api.fail_decision_upload = True
+
+    with pytest.raises(RuntimeError, match="decision interruption"):
+        reviewer.decide(SUBMISSION, "accepted", "maintainer")
+
+    assert not [key for key in api.files if key[0] == RESULTS]
+    assert broker_calls == []
+
+
+def test_existing_decision_is_authoritative_after_reservation_expiry() -> None:
+    """A same-outcome retry does not rewrite broker-bound decision metadata."""
+    reservations: list[str] = []
+
+    def reserve(
+        issue: int,
+        submission: str,
+        outcome: str,
+        reviewer: str,
+        records: list[dict[str, str]],
+    ) -> BrokerReservationResult:
+        reservations.append(outcome)
+        attempt = len(reservations)
+        return BrokerReservationResult(
+            token=f"reservation-{attempt}",
+            decision_reviewer=f"reviewer-{attempt}",
+            decision_created_at=f"2026-09-06T12:0{attempt}:00Z",
+        )
+
+    api, reviewer, broker_calls = _reviewer(reserver=reserve)
+    reviewer.decide(SUBMISSION, "rejected", "alice")
+    decision = api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")]
+
+    reviewer.decide(SUBMISSION, "rejected", "bob")
+
+    assert reservations == ["rejected", "rejected"]
+    assert api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}.json")] == decision
+    assert broker_calls == [(12, SUBMISSION, "rejected"), (12, SUBMISSION, "rejected")]
+
+
+def test_expired_reservation_cannot_change_durable_decision() -> None:
+    """An expired accepted decision still blocks a new rejected reservation."""
+    reservations: list[str] = []
+
+    def reserve(
+        issue: int,
+        submission: str,
+        outcome: str,
+        reviewer: str,
+        records: list[dict[str, str]],
+    ) -> BrokerReservationResult:
+        reservations.append(outcome)
+        attempt = len(reservations)
+        return BrokerReservationResult(
+            token=f"reservation-{attempt}",
+            decision_reviewer=f"reviewer-{attempt}",
+            decision_created_at=f"2026-09-06T12:0{attempt}:00Z",
+        )
+
+    api, reviewer, broker_calls = _reviewer(record_count=2, reserver=reserve)
+    api.fail_result_upload_number = 2
+    with pytest.raises(RuntimeError, match="interruption"):
+        reviewer.decide(SUBMISSION, "accepted", "maintainer")
+
+    api.fail_result_upload_number = None
+    uploads_before_reject = list(api.uploads)
+    with pytest.raises(ReviewError, match="opposite"):
+        reviewer.decide(SUBMISSION, "rejected", "maintainer")
+
+    assert reservations == ["accepted"]
+    assert api.uploads == uploads_before_reject
+    reviewer.decide(SUBMISSION, "accepted", "maintainer")
+    assert reservations == ["accepted", "accepted"]
+    assert len([key for key in api.files if key[0] == RESULTS]) == 2
+    assert broker_calls == [(12, SUBMISSION, "accepted")]
 
 
 @pytest.mark.parametrize("language_group", ["sv", 42, ["da"]])
