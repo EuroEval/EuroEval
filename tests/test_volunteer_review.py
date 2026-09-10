@@ -27,52 +27,6 @@ RESULTS = "EuroEval/results"
 SUBMISSION = "submission-one"
 
 
-def test_review_renewal_round_trip_includes_bound_digest(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Send the bound decision digest in the broker renewal envelope."""
-    requests: list[dict[str, object]] = []
-
-    class Response:
-        def __enter__(self) -> "Response":
-            return self
-
-        def __exit__(self, *args: object) -> None:
-            return None
-
-        def read(self) -> bytes:
-            return json.dumps(
-                {
-                    "protocol_version": "volunteer-worker/v1",
-                    "status": "reserved",
-                    "token": "reservation",
-                }
-            ).encode()
-
-    def urlopen(request: urllib.request.Request, timeout: int) -> Response:
-        assert timeout == 30
-        requests.append(json.loads(request.data.decode()))
-        return Response()
-
-    monkeypatch.setenv("VOLUNTEER_PROMOTION_SECRET", "secret")
-    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
-    digest = "a" * 64
-    records = [
-        {
-            "identity": '["org/model","dataset",false,false]',
-            "canonical_path": "org_model/dataset__test__zeroshot.json",
-            "digest": "b" * 64,
-        }
-    ]
-
-    assert (
-        renew_with_broker(12, SUBMISSION, "accepted", "reservation", records, digest)
-        == "reservation"
-    )
-    assert requests[0]["decision_digest"] == digest
-    assert requests[0]["reservation_token"] == "reservation"
-
-
 def test_acceptance_renews_before_each_upload() -> None:
     """Long uploads renew the accepted reservation before every write."""
     renewals: list[list[dict[str, str]]] = []
@@ -201,6 +155,20 @@ class FakeHfApi:
             and path.startswith(prefix)
             and (recursive or "/" not in path.removeprefix(f"{prefix}/"))
         ]
+
+
+def _decision_content(api: FakeHfApi) -> bytes:
+    paths = _decision_paths(api)
+    assert len(paths) == 1
+    return api.files[(STAGING, paths[0])]
+
+
+def _decision_paths(api: FakeHfApi) -> list[str]:
+    return sorted(
+        path
+        for bucket, path in api.files
+        if bucket == STAGING and path.startswith(f"volunteer/decisions/{SUBMISSION}/")
+    )
 
 
 def _reviewer(
@@ -354,14 +322,6 @@ def test_canonical_collision_prevents_decision_and_broker() -> None:
     assert not _decision_paths(api)
 
 
-def _decision_paths(api: FakeHfApi) -> list[str]:
-    return sorted(
-        path
-        for bucket, path in api.files
-        if bucket == STAGING and path.startswith(f"volunteer/decisions/{SUBMISSION}/")
-    )
-
-
 def test_concurrent_decisions_use_first_server_metadata() -> None:
     """Concurrent reviewers use one server-bound decision byte sequence."""
     reservation_order: list[str] = []
@@ -413,12 +373,6 @@ def test_concurrent_decisions_use_first_server_metadata() -> None:
     assert len(decision_writes) == 1
     assert len(set(decision_writes)) == 1
     assert len(broker_calls) == 2
-
-
-def _decision_content(api: FakeHfApi) -> bytes:
-    paths = _decision_paths(api)
-    assert len(paths) == 1
-    return api.files[(STAGING, paths[0])]
 
 
 def test_corrupted_staged_bytes_are_rejected() -> None:
@@ -676,3 +630,49 @@ def test_resume_uses_the_first_bound_decision_metadata() -> None:
 
     assert _decision_content(api) == decision
     assert reservation_reviewers == ["alice", "bob"]
+
+
+def test_review_renewal_round_trip_includes_bound_digest(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Send the bound decision digest in the broker renewal envelope."""
+    requests: list[dict[str, object]] = []
+
+    class Response:
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "protocol_version": "volunteer-worker/v1",
+                    "status": "reserved",
+                    "token": "reservation",
+                }
+            ).encode()
+
+    def urlopen(request: urllib.request.Request, timeout: int) -> Response:
+        assert timeout == 30
+        requests.append(json.loads(request.data.decode()))
+        return Response()
+
+    monkeypatch.setenv("VOLUNTEER_PROMOTION_SECRET", "secret")
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    digest = "a" * 64
+    records = [
+        {
+            "identity": '["org/model","dataset",false,false]',
+            "canonical_path": "org_model/dataset__test__zeroshot.json",
+            "digest": "b" * 64,
+        }
+    ]
+
+    assert (
+        renew_with_broker(12, SUBMISSION, "accepted", "reservation", records, digest)
+        == "reservation"
+    )
+    assert requests[0]["decision_digest"] == digest
+    assert requests[0]["reservation_token"] == "reservation"
