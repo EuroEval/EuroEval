@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import claim from "./claim.ts";
+import finalise from "./finalise.ts";
 import heartbeat from "./heartbeat.ts";
 import release from "./release.ts";
 import { parseVolunteerMarker, signVolunteerMarker, sha256, verifyVolunteerMarker } from "./_lib.ts";
@@ -38,6 +40,118 @@ function mockBroker(issue, values) {
     throw new Error(`Unexpected request: ${method} ${url}`);
   };
 }
+
+test("claim rejects an issue model edited during metadata resolution", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
+  process.env.VOLUNTEER_WORKER_IMAGE_DIGEST = "sha256:image";
+  process.env.EUROEVAL_VERSION = "1.0.0";
+  process.env.WORKER_COORDINATOR_LOGIN = "coordinator";
+  process.env.VOLUNTEER_WORKER_VERSION = "1.0.0";
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  process.env.GITHUB_TOKEN = "github-token";
+  const language = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
+  const issue = { number: issueNumber, title: "[MODEL EVALUATION REQUEST] org/model",
+    body: `### Model ID\n\norg/model\n\n- [x] ${language}\n`, state: "open", assignees: [] };
+  const credentialKey = `euroeval:worker:credential:${await sha256("credential")}`;
+  const redisCommands = [];
+  let githubMutations = 0;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = String(input); const requestMethod = init.method || "GET";
+    if (url === "https://redis.test") {
+      const command = JSON.parse(init.body); redisCommands.push(command);
+      if (command[0] === "GET") return Response.json({ result: command[1] === credentialKey ? JSON.stringify({ contributor: "alice" }) : null });
+      if (command[0] === "INCR") return Response.json({ result: 1 });
+      return Response.json({ result: command[0] === "SET" ? "OK" : 1 });
+    }
+    if (url.includes("/repos/EuroEval/EuroEval/issues?")) return Response.json([issue]);
+    if (url.includes("huggingface.co/api/models/org/model")) {
+      issue.title = "[MODEL EVALUATION REQUEST] org/edited";
+      issue.body = issue.body.replace("org/model", "org/edited");
+      return Response.json({ id: "org/model", sha: "revision", siblings: [
+        { rfilename: "model.safetensors", size: 100 }, { rfilename: "config.json", size: 10 },
+      ] });
+    }
+    if (url.includes("/org/model/raw/revision/config.json")) return Response.json({ architectures: ["BertForSequenceClassification"] });
+    if (url.endsWith(`/issues/${issueNumber}`) && requestMethod === "GET") return Response.json(issue);
+    if (url.includes(`/issues/${issueNumber}`)) { githubMutations++; return Response.json(issue); }
+    throw new Error(`Unexpected request: ${requestMethod} ${url}`);
+  };
+  try {
+    const response = await claim(new Request("https://euroeval.test/api/worker/claim", {
+      method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", worker_version: "1.0.0",
+        hardware: { architecture: "amd64", free_disk_bytes: 1_000_000,
+          gpu_memory_utilisation: 0.8, selected_gpu_index: 0, selected_gpu_uuid: "gpu",
+          gpus: [{ index: 0, name: "GPU", uuid: "gpu", free_memory_bytes: 1_000_000,
+            total_memory_bytes: 1_000_000 }] } }),
+    }));
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { protocol_version: "volunteer-worker/v1", status: "no_work" });
+    assert.equal(githubMutations, 0);
+    assert.equal(redisCommands.some((command) => command.some((item) =>
+      typeof item === "string" && item.startsWith("euroeval:worker:lease"))), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+test("finalise rejects an issue edited before its locked transition", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  process.env.GITHUB_TOKEN = "github-token";
+  const activeLease = { ...lease, expires_at: new Date(Date.now() + 60_000).toISOString(),
+    expected_scope: { language_group: "Danish",
+      identity_suffixes: [JSON.stringify(["dataset", false, true])] } };
+  const signed = await signVolunteerMarker(issueNumber, {
+    protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "active",
+    leases: [{ lease_id: activeLease.lease_id, language: activeLease.language,
+      worker: activeLease.worker, contributor: activeLease.contributor,
+      expires_at: activeLease.expires_at }],
+  });
+  const language = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
+  const issue = { number: issueNumber, title: "[MODEL EVALUATION REQUEST] org/model",
+    body: `### Model ID\n\norg/model\n\n- [x] ${language}\n\n${markerBody(signed)}`,
+    state: "open", assignees: [], labels: [] };
+  const receipt = { status: "manifest_uploaded", submission_id: activeLease.lease_id,
+    lease: activeLease, entries: [{ digest: "digest",
+      identity: JSON.stringify(["org/model", "dataset", false, true]), path: "result.json" }],
+    manifest_path: "volunteer/manifests/lease.json" };
+  const values = new Map();
+  values.set(`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" }));
+  values.set(`euroeval:worker:lease-id:${activeLease.lease_id}`, JSON.stringify(activeLease));
+  values.set(`euroeval:worker:lease:${issueNumber}:da`, JSON.stringify(activeLease));
+  values.set(`euroeval:worker:finalisation:${activeLease.lease_id}`, JSON.stringify(receipt));
+  const broker = mockBroker(issue, values); let editedBody = "";
+  globalThis.fetch = async (input, init = {}) => {
+    if (String(input).endsWith(`/issues/${issueNumber}`) && (init.method || "GET") === "GET") {
+      issue.body = issue.body.replace("org/model", "org/edited"); editedBody = issue.body;
+    }
+    return broker(input, init);
+  };
+  try {
+    const response = await finalise(new Request("https://euroeval.test/api/worker/finalise", {
+      method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: activeLease.lease_id }),
+    }));
+    assert.equal(response.status, 409);
+    assert.match((await response.json()).error, /different model/);
+    assert.equal(issue.body, editedBody);
+    assert.equal(JSON.parse(values.get(`euroeval:worker:lease-id:${activeLease.lease_id}`)).lease_id,
+      activeLease.lease_id);
+    assert.equal(JSON.parse(values.get(`euroeval:worker:finalisation:${activeLease.lease_id}`)).status,
+      "manifest_uploaded");
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
 
 test("heartbeat renews a full TTL and preserves a valid marker signature", async () => {
   const originalFetch = globalThis.fetch;

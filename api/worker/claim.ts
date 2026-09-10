@@ -5,9 +5,10 @@ import {
   listOpenIssues, method,
   patchIssue, putLease, randomToken, readJson, deleteLease,
   getLeaseForIssue, reclaimExpiredLease,
-  parseVolunteerMarker, resolveModel, selectedLanguages, VolunteerLeaseMarker, Lease,
+  parseVolunteerMarker, resolveModel, selectedLanguages,
   requireProtocol, signVolunteerMarker, verifyVolunteerMarker, markerSecret, replaceVolunteerMarker,
-} from "./_lib";
+} from "./_lib.ts";
+import type { Lease, VolunteerLeaseMarker } from "./_lib.ts";
 
 export const config = { runtime: "edge" };
 
@@ -71,6 +72,7 @@ export default async function handler(req: Request): Promise<Response> {
       try {
         const snapshot = await fetchIssue(listed.number);
         if (snapshot.state !== "open" || snapshot.assignees?.some((item) => item.login !== coordinator) || snapshot.body && VM_MARKER_RE.test(snapshot.body)) continue;
+        if (extractModelId(snapshot.title, snapshot.body) !== modelId) continue;
         const markerPresent = VOLUNTEER_MARKER_RE.test(snapshot.body || "");
         const marker = parseVolunteerMarker(snapshot.body);
         if (markerPresent && (!marker || !(await verifyVolunteerMarker(snapshot.number, marker)))) continue;
