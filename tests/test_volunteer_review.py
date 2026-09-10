@@ -33,7 +33,7 @@ def test_acceptance_renews_before_each_upload() -> None:
     renewal_digests: list[str] = []
     api, reviewer, _ = _reviewer(
         record_count=2,
-        reserver=lambda issue, submission, outcome, reviewer, records: (
+        reserver=lambda issue, submission, outcome, reviewer, records, digest: (
             BrokerReservationResult(
                 token="reservation",
                 decision_reviewer="maintainer",
@@ -174,7 +174,10 @@ def _decision_paths(api: FakeHfApi) -> list[str]:
 def _reviewer(
     record_count: int = 1,
     reserver: (
-        t.Callable[[int, str, str, str, list[dict[str, str]]], BrokerReservationResult]
+        t.Callable[
+            [int, str, str, str, list[dict[str, str]], str | None],
+            BrokerReservationResult,
+        ]
         | None
     ) = None,
     renewer: t.Callable[[int, str, str, str, list[dict[str, str]], str], str]
@@ -336,6 +339,7 @@ def test_concurrent_decisions_use_first_server_metadata() -> None:
         outcome: str,
         reviewer: str,
         records: list[dict[str, str]],
+        decision_digest: str | None,
     ) -> BrokerReservationResult:
         with lock:
             reservation_order.append(reviewer)
@@ -413,6 +417,7 @@ def test_existing_decision_is_authoritative_after_reservation_expiry() -> None:
         outcome: str,
         reviewer: str,
         records: list[dict[str, str]],
+        decision_digest: str | None,
     ) -> BrokerReservationResult:
         reservations.append(outcome)
         attempt = len(reservations)
@@ -443,6 +448,7 @@ def test_expired_reservation_cannot_change_durable_decision() -> None:
         outcome: str,
         reviewer: str,
         records: list[dict[str, str]],
+        decision_digest: str | None,
     ) -> BrokerReservationResult:
         reservations.append(outcome)
         attempt = len(reservations)
@@ -532,6 +538,7 @@ def test_opposite_concurrent_decisions_fail_closed_before_canonical_writes() -> 
         outcome: str,
         reviewer: str,
         records: list[dict[str, str]],
+        decision_digest: str | None,
     ) -> BrokerReservationResult:
         return BrokerReservationResult(
             token=next(reservations),
@@ -619,6 +626,7 @@ def test_resume_uses_the_first_bound_decision_metadata() -> None:
         outcome: str,
         reviewer: str,
         records: list[dict[str, str]],
+        decision_digest: str | None,
     ) -> BrokerReservationResult:
         reservation_reviewers.append(reviewer)
         return bound
@@ -676,3 +684,106 @@ def test_review_renewal_round_trip_includes_bound_digest(
     )
     assert requests[0]["decision_digest"] == digest
     assert requests[0]["reservation_token"] == "reservation"
+
+
+def test_terminal_response_loss_recovers_with_durable_digest(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A fresh reviewer recovers a completed terminal broker transition."""
+    api, template, _ = _reviewer()
+    reviewer = VolunteerReviewer(
+        store=template.store, results_bucket=RESULTS, scope_policy=template.scope_policy
+    )
+    requests: list[tuple[str, dict[str, object]]] = []
+    reservation = {
+        "token": "reservation",
+        "decision_reviewer": "alice",
+        "decision_created_at": "2026-09-06T12:00:00Z",
+        "status": "reserved",
+    }
+    lost_response = True
+    bound_digest: str | None = None
+
+    class Response:
+        def __init__(self, body: dict[str, object]) -> None:
+            self.body = body
+
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return json.dumps(self.body).encode()
+
+    def urlopen(request: urllib.request.Request, timeout: int) -> Response:
+        nonlocal bound_digest, lost_response
+        body = json.loads(request.data.decode())
+        requests.append((request.full_url, body))
+        assert request.get_header("X-promotion-secret") == "secret"
+        if request.full_url.endswith("/reserve"):
+            if "reservation_token" not in body:
+                if "decision_digest" not in body:
+                    return Response(
+                        {
+                            "status": "reserved",
+                            "token": reservation["token"],
+                            "decision_reviewer": reservation["decision_reviewer"],
+                            "decision_created_at": reservation["decision_created_at"],
+                        }
+                    )
+                assert body["decision_digest"] == bound_digest
+                assert reservation["status"] == "terminal"
+                return Response(
+                    {
+                        "status": "terminal",
+                        "token": reservation["token"],
+                        "decision_reviewer": reservation["decision_reviewer"],
+                        "decision_created_at": reservation["decision_created_at"],
+                        "decision_digest": decision_digest,
+                    }
+                )
+            assert body["reservation_token"] == reservation["token"]
+            bound_digest = body["decision_digest"]
+            return Response(
+                {
+                    "status": reservation["status"],
+                    "token": reservation["token"],
+                    "decision_digest": bound_digest,
+                }
+            )
+        assert request.full_url.endswith("/promote")
+        assert body["reservation_token"] == reservation["token"]
+        assert body["decision_digest"] == bound_digest
+        reservation["status"] = "terminal"
+        if lost_response:
+            lost_response = False
+            raise OSError("completed response was lost")
+        return Response({"status": "rejected"})
+
+    monkeypatch.setenv("VOLUNTEER_PROMOTION_SECRET", "secret")
+    monkeypatch.setenv("VOLUNTEER_BROKER_RESERVATION_URL", "https://broker/reserve")
+    monkeypatch.setenv("VOLUNTEER_BROKER_PROMOTION_URL", "https://broker/promote")
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+
+    with pytest.raises(OSError, match="response was lost"):
+        reviewer.decide(SUBMISSION, "rejected", "alice")
+    decision_digest = hashlib.sha256(_decision_content(api)).hexdigest()
+    assert bound_digest == decision_digest
+
+    fresh_reviewer = VolunteerReviewer(
+        store=template.store, results_bucket=RESULTS, scope_policy=template.scope_policy
+    )
+    fresh_reviewer.decide(SUBMISSION, "rejected", "bob")
+
+    reserve_requests = [
+        body
+        for url, body in requests
+        if url.endswith("/reserve") and "reservation_token" not in body
+    ]
+    assert "decision_digest" not in reserve_requests[0]
+    assert reserve_requests[1]["decision_digest"] == decision_digest
+    assert reserve_requests[1]["records"] == reserve_requests[0]["records"]
+    assert "reservation_token" not in reserve_requests[1]
+    assert len([body for url, body in requests if url.endswith("/promote")]) == 2

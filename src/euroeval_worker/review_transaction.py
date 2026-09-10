@@ -96,9 +96,15 @@ class VolunteerReviewer:
         )
         if outcome == "accepted":
             self._validate_canonical_records(report=report)
+        known_digest = existing[0][2] if existing else None
         reservation = (
             self.reserver(
-                report.issue_number, submission_id, outcome, reviewer, evidence
+                report.issue_number,
+                submission_id,
+                outcome,
+                reviewer,
+                evidence,
+                known_digest,
             )
             if self.reserver
             else _local_reservation(
@@ -401,6 +407,7 @@ def _local_reservation(
                 token="local-test-reservation",
                 decision_reviewer=existing_reviewer,
                 decision_created_at=existing_created_at,
+                decision_digest=_digest(existing),
             )
     return BrokerReservationResult(
         token="local-test-reservation",
@@ -480,6 +487,7 @@ def _request_reservation(
             body = json.loads(response.read().decode("utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         raise ReviewError("Broker promotion reservation failed") from error
+    response_digest = body.get("decision_digest") if isinstance(body, dict) else None
     token = body.get("token") if isinstance(body, dict) else None
     if not isinstance(token, str) or not token:
         raise ReviewError("Broker did not return a promotion reservation token")
@@ -499,6 +507,7 @@ def _request_reservation(
         token=token,
         decision_reviewer=decision_reviewer,
         decision_created_at=decision_created_at,
+        decision_digest=response_digest if isinstance(response_digest, str) else None,
     )
 
 
@@ -581,6 +590,7 @@ def reserve_with_broker(
     outcome: str,
     reviewer: str,
     records: list[dict[str, str]],
+    decision_digest: str | None = None,
 ) -> BrokerReservationResult:
     """Reserve one immutable maintainer outcome at the broker.
 
@@ -597,6 +607,7 @@ def reserve_with_broker(
         outcome=outcome,
         records=records,
         reviewer=reviewer,
+        decision_digest=decision_digest,
     )
     if not isinstance(reservation, BrokerReservationResult):
         raise ReviewError("Broker returned an invalid promotion reservation")

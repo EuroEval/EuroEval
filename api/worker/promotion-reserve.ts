@@ -46,16 +46,10 @@ export default async function handler(req: Request): Promise<Response> {
         (typeof requestedDigest !== "string" || !/^[0-9a-f]{64}$/.test(requestedDigest))) {
       throw new BrokerError(400, "decision_digest must be a SHA256 digest.");
     }
-    if (requestedDigest !== undefined && requestedToken === undefined) {
-      throw new BrokerError(400, "decision_digest requires a reservation token.");
-    }
     const requestedReviewer = body.reviewer;
     if (requestedReviewer !== undefined &&
         (typeof requestedReviewer !== "string" || !requestedReviewer.trim())) {
       throw new BrokerError(400, "reviewer must be a non-empty reviewer login.");
-    }
-    if (requestedToken === undefined && requestedReviewer === undefined) {
-      throw new BrokerError(400, "reviewer is required for a new promotion reservation.");
     }
     if (body.decision_nonce !== undefined) {
       throw new BrokerError(400, "decision_nonce is no longer accepted; use reviewer metadata.");
@@ -74,6 +68,14 @@ export default async function handler(req: Request): Promise<Response> {
         throw new BrokerError(409, "Submission has already completed a different terminal transition.");
       }
       const existing = await getPromotionReservation(issueNumber, submissionId);
+      if (requestedDigest !== undefined && requestedToken === undefined &&
+          existing?.status !== "terminal") {
+        throw new BrokerError(409, "A decision digest requires a terminal reservation token.");
+      }
+      if (requestedToken === undefined && requestedReviewer === undefined &&
+          !(requestedDigest !== undefined && existing?.status === "terminal")) {
+        throw new BrokerError(400, "reviewer is required for a new promotion reservation.");
+      }
       if (existing) {
         if (existing.outcome !== outcome) throw new BrokerError(409, "A different outcome is already reserved.");
         if (JSON.stringify(existing.records) !== JSON.stringify(requested)) throw new BrokerError(409, "Reservation evidence differs.");
