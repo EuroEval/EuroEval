@@ -203,6 +203,25 @@ visibility and anonymously pulls the exact candidate digest. Only after both gat
 pass does a default-branch run reauthenticate and promote that verified digest to
 `latest`; `latest` therefore becomes visible only after those gates.
 
+The default-branch publication is serialized. Other refs cancel superseded runs,
+but default-branch runs are allowed to finish because GHCR tag writes do not provide
+an atomic compare-and-swap operation. Immediately before promotion, the workflow
+checks that the default branch still equals the workflow SHA, records the currently
+verified `latest` digest (if any), waits briefly, and checks the branch again. It
+then retags the immutable candidate and immediately checks the branch a third time.
+If that final check detects an advance, a previous `latest` is restored by retagging
+its digest and verifying the result. The candidate SHA tag and its attestations are
+never deleted.
+
+This is a fail-closed guard, not a strict atomicity guarantee: a commit can land
+between the final pre-promotion read and GHCR's tag write, and an outside actor can
+also change the tag. For a first publication, there is no prior digest to restore;
+the short stability recheck reduces that window but cannot eliminate it. GHCR does
+not expose a supported tag-only delete, so deleting the candidate manifest is not a safe rollback—it could also delete the
+immutable SHA tag and attestations. In that rare first-publication race the workflow
+fails; `latest` may still point at the candidate (or may be absent if the write
+failed), so an operator must inspect it rather than assuming it was rolled back.
+
 The workflow removes Docker credentials before every anonymous pull. Default-branch
 runs then pull `latest` anonymously and fail unless its `RepoDigest` exactly matches
 the verified candidate digest. It never treats an unverified image as publicly
