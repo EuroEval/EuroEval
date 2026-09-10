@@ -27,8 +27,8 @@ permissions:
   contents: read
   packages: write
 
-# Serialise each ref so an older default-branch run cannot promote `latest` after a
-# newer one. GitHub retains the newest pending run while one is active.
+# Avoid overlapping publications. A separate HEAD check below rejects stale reruns,
+# because GitHub does not guarantee FIFO ordering within a concurrency group.
 concurrency:
   group: volunteer-worker-image-${{ github.ref }}
   cancel-in-progress: false
@@ -124,6 +124,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Reject stale default-branch publications
+        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          current_sha="$(gh api "repos/${{ github.repository }}/git/ref/heads/${{ github.event.repository.default_branch }}" --jq .object.sha)"
+          if [ "$current_sha" != "$GITHUB_SHA" ]; then
+            echo "::error::Refusing to promote stale commit $GITHUB_SHA; the default branch is now at $current_sha."
+            exit 1
+          fi
 
       - name: Promote verified candidate to latest
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
