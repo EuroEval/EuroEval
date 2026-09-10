@@ -38,7 +38,6 @@ from dataclasses import dataclass
 import click
 from update_core_models import refresh_core_models
 
-from euroeval.languages import get_all_languages
 from leaderboards.constants import NEW_RESULTS_PATH, RESULTS_DIR
 from leaderboards.core_models import CoreModel
 from leaderboards.evaluation_common import (
@@ -301,38 +300,6 @@ def all_european_language_codes() -> set[str]:
         Every official leaderboard language code.
     """
     return {language for _, language in official_dataset_language_pairs()}
-
-
-def all_known_language_codes() -> set[str]:
-    """Return every ISO code known to EuroEval.
-
-    This compatibility helper is intentionally broader than the set used for
-    core-model scheduling.
-    """
-    return set(get_all_languages().keys())
-
-
-def language_name_to_code(name: str) -> str | None:
-    """Map an English language name to its ISO code, or None.
-
-    The names come from the leaderboard language metadata; values are
-    matched case-insensitively against
-    :func:`euroeval.languages.get_all_languages`.
-
-    Args:
-        name:
-            The English language name (case-insensitive).
-
-    Returns:
-        The ISO code for the language, or None when no match is found.
-    """
-    needle = name.strip().lower()
-    if not needle:
-        return None
-    for code, language in get_all_languages().items():
-        if language.name.lower() == needle:
-            return code
-    return None
 
 
 def execute_jobs(jobs: list[Job]) -> None:

@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import math
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
 
+import leaderboards.core_models as core_models
 from leaderboards.core_models import (
     CoreModel,
     ModelType,
@@ -81,6 +83,115 @@ def test_aggregate_pareto_requires_complete_coverage_and_unions_categories() -> 
     }
     assert "large" not in pareto
     assert "partial" not in pareto
+
+
+def test_pipeline_excludes_partial_models_before_bootstrap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Partial models cannot change category distributions or the frontier."""
+    configs = {
+        "language-a": {"sentiment-classification": ["dataset-a"]},
+        "language-b": {"sentiment-classification": ["dataset-b"]},
+    }
+    results = {
+        "strong": _model_results("dataset-a", "dataset-b"),
+        "peer": _model_results("dataset-a", "dataset-b"),
+        "partial": _model_results("dataset-a"),
+    }
+    metadata = {model_id: {"parameters": 1.0} for model_id in results}
+    model_types = {
+        model_id: ModelType.INSTRUCTION_TUNED_DECODER for model_id in results
+    }
+
+    def fake_bootstrap_rank_scores(
+        *,
+        model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+        configs: dict[str, dict[str, list[str]]],
+        n_bootstraps: int,
+        seed: int,
+        categories: tuple[LeaderboardCategory, ...],
+    ) -> dict[str, dict[str, dict[str, np.ndarray]]]:
+        del configs, n_bootstraps, seed
+        scores = {"strong": 1.0, "peer": 2.0, "partial": 0.0}
+        return {
+            model_id: {
+                category.value: {"overall": np.full(4, scores[model_id])}
+                for category in categories
+            }
+            for model_id in model_results
+        }
+
+    bootstrap = Mock(side_effect=fake_bootstrap_rank_scores)
+    monkeypatch.setattr(core_models, "bootstrap_rank_scores", bootstrap)
+
+    pareto = _pareto_categories_per_model(
+        model_results=results,
+        configs=configs,
+        metadata=metadata,
+        model_types=model_types,
+    )
+
+    assert [set(call.kwargs["model_results"]) for call in bootstrap.call_args_list] == [
+        {"strong", "peer"},
+        {"strong", "peer"},
+    ]
+    assert all(call.kwargs["configs"] == configs for call in bootstrap.call_args_list)
+    assert pareto == {
+        "strong": {
+            LeaderboardCategory.GENERATIVE.value,
+            LeaderboardCategory.ALL_MODELS.value,
+        }
+    }
+
+
+def test_pipeline_bootstrap_matches_european_language_weighting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Core-model scores use the same per-language hierarchy as leaderboards."""
+    configs = {
+        "language-a": {"sentiment-classification": ["dataset-a"]},
+        "language-b": {"sentiment-classification": ["dataset-b"]},
+    }
+    results = {"model": _model_results("dataset-a", "dataset-b")}
+    metadata = {"model": {"parameters": 1.0}}
+    model_types = {"model": ModelType.ENCODER}
+    original_bootstrap = core_models.bootstrap_rank_scores
+    bootstrap = Mock(wraps=original_bootstrap)
+    monkeypatch.setattr(core_models, "bootstrap_rank_scores", bootstrap)
+
+    _pareto_categories_per_model(
+        model_results=results,
+        configs=configs,
+        metadata=metadata,
+        model_types=model_types,
+    )
+
+    all_models_call = next(
+        call
+        for call in bootstrap.call_args_list
+        if call.kwargs["categories"] == (LeaderboardCategory.ALL_MODELS,)
+    )
+    expected = original_bootstrap(
+        model_results=results,
+        configs=configs,
+        n_bootstraps=core_models.NUM_BOOTSTRAPS,
+        seed=0,
+        categories=(LeaderboardCategory.ALL_MODELS,),
+    )
+    actual = original_bootstrap(**all_models_call.kwargs)
+    np.testing.assert_array_equal(
+        actual["model"][LeaderboardCategory.ALL_MODELS]["language-a"],
+        expected["model"][LeaderboardCategory.ALL_MODELS]["language-a"],
+    )
+    np.testing.assert_array_equal(
+        actual["model"][LeaderboardCategory.ALL_MODELS]["language-b"],
+        expected["model"][LeaderboardCategory.ALL_MODELS]["language-b"],
+    )
+    np.testing.assert_array_equal(
+        actual["model"][LeaderboardCategory.ALL_MODELS]["overall"],
+        expected["model"][LeaderboardCategory.ALL_MODELS]["overall"],
+    )
+    assert all_models_call.kwargs["configs"] == configs
 
 
 def test_statistical_ties_remain_on_the_frontier() -> None:
