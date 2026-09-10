@@ -51,6 +51,8 @@ export interface PromotionReservation {
   token: string;
   decision_reviewer: string;
   decision_created_at: string;
+  /** SHA256 of the exact durable decision artifact, bound once by the broker. */
+  decision_digest?: string;
   /** Legacy metadata retained only when reading pre-migration reservations. */
   decision_nonce?: string;
   status: "reserved" | "terminal";

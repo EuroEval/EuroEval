@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, renderVolunteerMarker, replaceVolunteerMarker, selectedLanguages, validateRecord } from "./_lib.ts";
 import { fitsGpu, selectedGpu } from "./_lib/model.ts";
 import { putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "./_lib/redis.ts";
-import { promotionIdentityKey, reservePromotionReservation } from "./_lib/promotion.ts";
+import { bindPromotionDecision, promotionIdentityKey, reservePromotionReservation } from "./_lib/promotion.ts";
 
 test("parses the queue model and language checkboxes", () => {
   const body = "### Model ID\n\norg/model\n\n- [x] Greek\n- [ ] Albanian\n";
@@ -194,6 +194,30 @@ test("promotion renewal refreshes each nonterminal path only", async () => {
     assert.equal(command[3], "euroeval:worker:promotion:12:one");
     assert.equal(command[4], await promotionIdentityKey(records[0].canonical_path));
     assert.equal(command[5], await promotionIdentityKey(records[1].canonical_path));
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+test("decision binding is token-fenced and set once", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  const commands = [];
+  globalThis.fetch = async (_input, init) => {
+    commands.push(JSON.parse(init.body));
+    return Response.json({ result: commands.length === 1 ? "bound" : "mismatch" });
+  };
+  const reservation = { issue_number: 12, submission_id: "one", outcome: "rejected", records: [],
+    token: "token", decision_reviewer: "alice", decision_created_at: "2026-09-06T12:00:00Z", status: "reserved" };
+  try {
+    assert.equal(await bindPromotionDecision(reservation, "a".repeat(64)), "bound");
+    assert.equal(await bindPromotionDecision(reservation, "b".repeat(64)), "mismatch");
+    assert.match(commands[0][1], /item\.decision_digest/);
+    assert.match(commands[0][1], /item\.decision_digest=ARGV\[2\]/);
+    assert.equal(commands[0][3], "euroeval:worker:promotion:12:one");
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;

@@ -9,6 +9,7 @@ from pathlib import Path
 from .review_models import BucketApi, ReviewError
 
 _MANIFEST_PREFIX = "volunteer/manifests"
+_DECISION_PREFIX = "volunteer/decisions"
 
 
 class BucketStore:
@@ -27,6 +28,25 @@ class BucketStore:
         info = self.api.bucket_info(staging_bucket, token=token)
         if not info.private:
             raise ReviewError("HF_STAGING_BUCKET must be private")
+
+    def list_decisions(self, submission_id: str) -> list[str]:
+        """List all legacy and content-addressed decision objects.
+
+        Returns:
+            Sorted decision object paths.
+        """
+        prefix = f"{_DECISION_PREFIX}/{submission_id}"
+        entries = self.api.list_bucket_tree(
+            self.staging_bucket, prefix=prefix, recursive=True, token=self.token
+        )
+        legacy = f"{prefix}.json"
+        return sorted(
+            entry.path
+            for entry in entries
+            if getattr(entry, "type", None) == "file"
+            and (entry.path == legacy or entry.path.startswith(f"{prefix}/"))
+            and entry.path.endswith(".json")
+        )
 
     def list_manifests(self) -> list[str]:
         """List durable submission manifests without consulting Redis.
