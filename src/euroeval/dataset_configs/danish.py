@@ -247,6 +247,16 @@ DAMETA_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+DANISH_SIMILARITY_OUTLIER_CONFIG = DatasetConfig(
+    name="danish-similarity-outlier",
+    pretty_name="Danish Similarity Outlier Detection",
+    source="EuroEval/danish-similarity-outlier-mini",
+    task=KNOW,
+    languages=[DANISH],
+    labels=["a", "b", "c", "d", "e", "f"],
+    unofficial=True,
+)
+
 GERLANGMOD_DA_CONFIG = DatasetConfig(
     name="gerlangmod-da",
     pretty_name="GerLangMod-da",

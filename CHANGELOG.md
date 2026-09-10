@@ -32,6 +32,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   dependency but is already installed through torch. Templates from `prompt_template`
   solvers are used as EuroEval instruction prompts.
   An answer boxed as an equation, such as `\boxed{x = 5}`, scores the value it names.
+- Added the unofficial Danish knowledge dataset `danish-similarity-outlier`, part of the
+  [Danish Semantic Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark),
+  where the model has to pick the semantically least similar word from six options.
 
 ### Changed
 
