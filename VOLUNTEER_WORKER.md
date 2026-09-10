@@ -191,18 +191,22 @@ server-derived accepted result counts. Lower-case GitHub login order breaks ties
 `.github/workflows/worker-image.yaml` builds only `linux/amd64` and enables BuildKit
 layer caching. Pull requests disable attestations so Docker can load the local image,
 then smoke its normal entrypoint as UID 10001 without a GPU; they cannot push. Trusted
-pushes to `main` and workflow dispatches publish a commit-SHA tag with provenance and
-an SBOM. Default-branch builds also update the contributor-facing `latest` tag.
+runs first publish only the immutable commit-SHA candidate with provenance and an
+SBOM. A workflow dispatch on a non-default branch may publish that candidate but never
+promotes `latest`.
 
-A new GHCR package is private by default. After the first trusted publication, an
+A new GHCR package is private by default. After the first candidate publication, an
 organization or package owner must make `euroeval-worker` public once in GitHub
 Packages settings, then rerun the workflow. GitHub does not provide a supported REST
-operation for this visibility change.
+operation for this visibility change. On the rerun, the workflow checks package
+visibility and anonymously pulls the exact candidate digest. Only after both gates
+pass does a default-branch run reauthenticate and promote that verified digest to
+`latest`; `latest` therefore becomes visible only after those gates.
 
-Every trusted publication verifies that the package reports public visibility,
-removes the workflow's Docker credentials, and anonymously pulls the exact published
-digest. The workflow fails if either check fails; it never treats an unverified image
-as publicly available.
+The workflow removes Docker credentials before every anonymous pull. Default-branch
+runs then pull `latest` anonymously and fail unless its `RepoDigest` exactly matches
+the verified candidate digest. It never treats an unverified image as publicly
+available.
 
 If a build fails, do not switch the deployment to a mutable base image or install a
 host driver in the image. Check the pinned CUDA base, the locked `uv.lock`
