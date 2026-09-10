@@ -4,6 +4,7 @@ import type { LeaderboardTable } from "@/leaderboard";
 import { matchesQuery } from "@/filter";
 
 type XAxis = "parameters" | "releaseDate";
+type OptimizationDirection = "minimize" | "maximize";
 
 const props = withDefaults(
   defineProps<{
@@ -30,6 +31,30 @@ interface Point {
   commercial: boolean;
   meta: MetaItem[];
 }
+
+const isNoWorse = (
+  candidate: number,
+  point: number,
+  direction: OptimizationDirection,
+) =>
+  direction === "minimize" ? candidate <= point : candidate >= point;
+
+const isStrictlyBetter = (
+  candidate: number,
+  point: number,
+  direction: OptimizationDirection,
+) =>
+  direction === "minimize" ? candidate < point : candidate > point;
+
+const dominates = (
+  candidate: Point,
+  point: Point,
+  xDirection: OptimizationDirection,
+) =>
+  isNoWorse(candidate.x, point.x, xDirection) &&
+  candidate.y <= point.y &&
+  (isStrictlyBetter(candidate.x, point.x, xDirection) ||
+    candidate.y < point.y);
 
 // Columns to surface in the hover tooltip, in display order. We skip
 // Model/Type/Rank (already shown elsewhere in the tooltip) and any
@@ -188,6 +213,32 @@ const hiddenKinds = ref<Set<ModelKind>>(new Set());
 const hideCommercial = ref(false);
 const hideNonCommercial = ref(false);
 const searchQuery = ref("");
+const paretoVisibility = ref<Record<XAxis, boolean>>({
+  parameters: false,
+  releaseDate: false,
+});
+
+const showPareto = computed(() => paretoVisibility.value[props.xAxis]);
+const xOptimization = computed<OptimizationDirection>(() =>
+  props.xAxis === "parameters" ? "minimize" : "maximize",
+);
+const paretoDescription = computed(() =>
+  props.xAxis === "parameters"
+    ? "Lower parameter count and lower rank score are preferred."
+    : "Newer release date and lower rank score are preferred.",
+);
+const paretoToggleLabel = computed(
+  () =>
+    `${showPareto.value ? "Hide" : "Show"} Pareto curve. ` +
+    paretoDescription.value,
+);
+
+const togglePareto = () => {
+  paretoVisibility.value = {
+    ...paretoVisibility.value,
+    [props.xAxis]: !showPareto.value,
+  };
+};
 
 const toggleKind = (k: ModelKind) => {
   if (hiddenKinds.value.has(k)) {
@@ -210,6 +261,33 @@ const visiblePoints = computed<Point[]>(() => {
     if (query && !matchesQuery(p.label, query)) return false;
     return true;
   });
+});
+
+const paretoPoints = computed<Point[]>(() => {
+  const points = visiblePoints.value.filter(
+    (point) => Number.isFinite(point.x) && Number.isFinite(point.y),
+  );
+  return points.filter(
+    (point) =>
+      !points.some(
+        (candidate) =>
+          candidate !== point &&
+          dominates(candidate, point, xOptimization.value),
+      ),
+  );
+});
+
+const paretoPointSet = computed(() => new Set(paretoPoints.value));
+const chartAriaLabel = computed(() => {
+  const xLabel =
+    props.xAxis === "parameters" ? "Parameter count" : "Release date";
+  const frontierLabel = showPareto.value
+    ? `, ${paretoPoints.value.length} on the Pareto frontier`
+    : "";
+  return (
+    `${xLabel} versus rank score for ${visiblePoints.value.length} models` +
+    frontierLabel
+  );
 });
 
 // SVG plot geometry.
@@ -273,6 +351,17 @@ const yScale = (v: number) => {
   const t = (v - min) / (max - min || 1);
   return margin.top + t * (height - margin.top - margin.bottom);
 };
+
+const paretoPolyline = computed(() => {
+  const uniquePoints = new Map<string, Point>();
+  for (const point of paretoPoints.value) {
+    uniquePoints.set(`${point.x}:${point.y}`, point);
+  }
+  return [...uniquePoints.values()]
+    .sort((a, b) => a.x - b.x || a.y - b.y)
+    .map((point) => `${xScale(point.x)},${yScale(point.y)}`)
+    .join(" ");
+});
 
 const formatX = (v: number): string => {
   if (props.xAxis === "releaseDate") {
@@ -481,6 +570,20 @@ const tooltipStyle = computed(() => {
         placeholder="Search models..."
         aria-label="Search models"
       />
+      <button
+        type="button"
+        class="pareto-toggle"
+        :class="{ active: showPareto }"
+        :aria-pressed="showPareto"
+        :aria-label="paretoToggleLabel"
+        :title="paretoDescription"
+        @click="togglePareto"
+      >
+        <svg viewBox="0 0 18 12" aria-hidden="true">
+          <polyline points="1,10 6,7 10,7 17,1" />
+        </svg>
+        Pareto curve
+      </button>
     </div>
 
     <div v-if="allPoints.length > 0" class="scatter-legend">
@@ -538,6 +641,8 @@ const tooltipStyle = computed(() => {
         :viewBox="`0 0 ${width} ${height}`"
         preserveAspectRatio="xMidYMid meet"
         class="scatter-svg"
+        role="img"
+        :aria-label="chartAriaLabel"
       >
         <!-- Axes -->
         <line
@@ -620,6 +725,14 @@ const tooltipStyle = computed(() => {
           Rank score
         </text>
 
+        <g
+          v-if="showPareto && paretoPolyline"
+          class="pareto-frontier"
+          aria-hidden="true"
+        >
+          <polyline :points="paretoPolyline" />
+        </g>
+
         <!-- Points: commercial → star, otherwise → circle. Colored by kind. -->
         <g class="points">
           <template v-for="(p, i) in visiblePoints" :key="`p-${i}`">
@@ -628,6 +741,9 @@ const tooltipStyle = computed(() => {
               :d="starPath(xScale(p.x), yScale(p.y), 7)"
               :fill="KIND_COLOR[p.kind]"
               class="point"
+              :class="{
+                'pareto-point': showPareto && paretoPointSet.has(p),
+              }"
               @mousemove="onMove($event, p)"
               @mouseleave="onLeave"
               @click.stop="onPointClick($event, p)"
@@ -639,6 +755,9 @@ const tooltipStyle = computed(() => {
               r="5"
               :fill="KIND_COLOR[p.kind]"
               class="point"
+              :class="{
+                'pareto-point': showPareto && paretoPointSet.has(p),
+              }"
               @mousemove="onMove($event, p)"
               @mouseleave="onLeave"
               @click.stop="onPointClick($event, p)"
@@ -658,6 +777,13 @@ const tooltipStyle = computed(() => {
           <div class="tt-row">
             <span class="tt-label">Mean rank</span>
             <span class="tt-value">{{ hovered.y.toFixed(2) }}</span>
+          </div>
+          <div
+            v-if="showPareto && paretoPointSet.has(hovered)"
+            class="tt-row pareto-status"
+          >
+            <span class="tt-label">Pareto frontier</span>
+            <span class="tt-value">Yes</span>
           </div>
           <div v-if="xAxis === 'releaseDate'" class="tt-row">
             <span class="tt-label">Release date</span>
@@ -720,7 +846,49 @@ const tooltipStyle = computed(() => {
 }
 
 .scatter-help {
+  flex: 1 1 300px;
   font-size: 0.8rem;
+}
+
+.pareto-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--color-bg);
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  font: inherit;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pareto-toggle:hover {
+  color: var(--color-text);
+  border-color: var(--color-muted);
+}
+
+.pareto-toggle.active {
+  background: var(--color-surface);
+  color: var(--color-link);
+  border-color: var(--color-link);
+}
+
+.pareto-toggle:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+}
+
+.pareto-toggle svg {
+  width: 18px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .scatter-legend {
@@ -816,17 +984,48 @@ const tooltipStyle = computed(() => {
   opacity: 0.7;
 }
 
+.pareto-frontier {
+  pointer-events: none;
+}
+
+.pareto-frontier polyline {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-width: 2.25;
+  stroke-dasharray: 6 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
+}
+
 .point {
   fill-opacity: 0.85;
   stroke: var(--color-bg);
   stroke-width: 1;
   cursor: pointer;
-  transition: fill-opacity 0.1s ease;
+  transition:
+    fill-opacity 0.1s ease,
+    stroke-width 0.1s ease;
+}
+
+.point.pareto-point {
+  stroke: var(--color-text);
+  stroke-width: 2.5;
 }
 
 .point:hover {
   fill-opacity: 1;
   stroke-width: 1.8;
+}
+
+.point.pareto-point:hover {
+  stroke-width: 3.2;
+}
+
+.pareto-status .tt-label,
+.pareto-status .tt-value {
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 .tooltip {
