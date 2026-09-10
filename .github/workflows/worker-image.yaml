@@ -66,8 +66,10 @@ jobs:
           load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          provenance: true
-          sbom: true
+          # Docker's local image exporter cannot load multi-platform attestations.
+          # Trusted publications retain both attestations; PR builds load for smoke tests.
+          provenance: ${{ github.event_name != 'pull_request' }}
+          sbom: ${{ github.event_name != 'pull_request' }}
           cache-from: type=gha,scope=euroeval-worker-${{ github.ref_name }}
           cache-to: type=gha,mode=max,scope=euroeval-worker-${{ github.ref_name }}
 
@@ -80,6 +82,29 @@ jobs:
           test "$(docker run --rm --entrypoint id "$IMAGE" -u)" = "10001"
           docker run --rm "$IMAGE" --version
 
-      - name: Print immutable image reference
+      - name: Make published package public
         if: github.event_name != 'pull_request'
-        run: echo "ghcr.io/euroeval/euroeval-worker@${{ steps.build.outputs.digest }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          package=/orgs/EuroEval/packages/container/euroeval-worker
+          if ! gh api --method PATCH "$package/visibility" -f visibility=public; then
+            echo "::warning::The workflow token could not set GHCR visibility. Package admin permission may need to be granted once."
+          fi
+          visibility="$(gh api "$package" --jq .visibility 2>/dev/null || true)"
+          if [ "$visibility" != public ]; then
+            echo "::warning::GHCR reports visibility '${visibility:-unknown}'; the anonymous-pull check will fail unless an administrator makes the package public."
+          fi
+
+      - name: Verify anonymous digest pull
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ghcr.io/euroeval/euroeval-worker@${{ steps.build.outputs.digest }}
+        run: |
+          docker logout ghcr.io || true
+          rm -f "${DOCKER_CONFIG:-$HOME/.docker}/config.json"
+          if ! docker pull "$IMAGE"; then
+            echo "::error::Anonymous pull of $IMAGE failed. Make the GHCR package public or grant this workflow package-admin permission."
+            exit 1
+          fi
+          echo "$IMAGE"

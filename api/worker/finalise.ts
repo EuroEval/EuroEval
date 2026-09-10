@@ -2,11 +2,12 @@ declare const process: { env: Record<string, string | undefined> };
 
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
-  authenticate, commentIssue, contributorLabel, deleteLease, enforceRateLimit, fetchIssue,
-  getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker, readJson,
-  redis, redisGet, requireProtocol, selectedLanguages, uploadStaging, VolunteerLeaseMarker,
-  replaceVolunteerMarker, signVolunteerMarker, verifyVolunteerMarker,
-} from "./_lib";
+  authenticate, commentIssue, contributorLabel, deleteLease, enforceRateLimit, extractModelId,
+  fetchIssue, getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker, readJson,
+  redis, redisGet, requireProtocol, selectedLanguages, uploadStaging, replaceVolunteerMarker,
+  signVolunteerMarker, verifyVolunteerMarker,
+} from "./_lib.ts";
+import type { VolunteerLeaseMarker } from "./_lib.ts";
 
 export const config = { runtime: "edge" };
 const FINAL_MARKER = "euroeval-volunteer-finalised:v1";
@@ -70,6 +71,7 @@ export default async function handler(req: Request): Promise<Response> {
     const mutex = await acquireRenewableIssueMutex(lease.issue_number); if (!mutex) throw new BrokerError(409, "Issue is busy; retry finalisation.");
     try {
       const issue = await fetchIssue(lease.issue_number); const marker = parseVolunteerMarker(issue.body);
+      if (extractModelId(issue.title, issue.body) !== lease.model_id) throw new BrokerError(409, "The issue now requests a different model.");
       if (!marker || !(await verifyVolunteerMarker(issue.number, marker))) throw new BrokerError(409, "The issue ownership marker is missing, unsigned, or malformed.");
       if (!selectedLanguages(issue.body).includes(lease.language)) throw new BrokerError(409, "The leased language is no longer in the issue scope.");
       const ours = marker.leases.some((item) => item.lease_id === lease.lease_id);

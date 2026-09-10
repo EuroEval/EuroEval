@@ -30,9 +30,11 @@ the NVIDIA Container Toolkit before continuing.
 Copy and run this block once:
 
 ```sh
+IMAGE=ghcr.io/euroeval/euroeval-worker:latest
 docker volume create euroeval-worker-cache
 
 docker run --rm -it \
+  --pull=always \
   --name euroeval-worker \
   --gpus all \
   --read-only \
@@ -43,7 +45,7 @@ docker run --rm -it \
   --pids-limit=512 \
   -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
   -v euroeval-worker-cache:/cache \
-  ghcr.io/euroeval/euroeval-worker:latest
+  "$IMAGE"
 ```
 
 On the first run, open the GitHub URL printed in the terminal, enter the short code,
@@ -58,18 +60,20 @@ Do not add `--privileged`, host networking, the Docker socket, a home-directory
 mount, or project credentials. The worker never needs your `HF_TOKEN`, GitHub token,
 or Upstash credentials.
 
-### Optional: record the exact image version
+### Optional: pin the exact image version
 
-Docker resolves `:latest` to an immutable digest when it downloads the image. An
-operator who needs an auditable deployment can display that digest after starting
-the worker:
+To pin a deployment, replace the `IMAGE=...:latest` line in step 2 with these lines,
+then run the rest of that same block. The worker still starts only once, using the
+immutable digest reference:
 
 ```sh
-docker image inspect ghcr.io/euroeval/euroeval-worker:latest \
-  --format '{{index .RepoDigests 0}}'
+docker pull ghcr.io/euroeval/euroeval-worker:latest
+IMAGE="$(docker image inspect ghcr.io/euroeval/euroeval-worker:latest \
+  --format '{{index .RepoDigests 0}}')"
 ```
 
-This is informational. Contributors do not need to run the worker again.
+Record the resulting `ghcr.io/euroeval/euroeval-worker@sha256:...` value for later
+runs if the deployment must remain pinned.
 
 ## How volunteer evaluation works
 
@@ -184,13 +188,20 @@ server-derived accepted result counts. Lower-case GitHub login order breaks ties
 
 ### Image publishing workflow
 
-`.github/workflows/worker-image.yaml` builds only `linux/amd64`, enables BuildKit
-layer caching, and emits provenance and an SBOM for published images. Pull requests
-load a local image and smoke its normal entrypoint as UID 10001 without a GPU. They
-cannot push. Only pushes to `main` and an explicit trusted workflow dispatch log in
-and publish. Default-branch builds update the contributor-facing `latest` tag, and
-the workflow prints the resulting immutable content digest for pinned operator
-deployments.
+`.github/workflows/worker-image.yaml` builds only `linux/amd64` and enables BuildKit
+layer caching. Pull requests disable attestations so Docker can load the local image,
+then smoke its normal entrypoint as UID 10001 without a GPU; they cannot push. Trusted
+pushes to `main` and workflow dispatches publish a commit-SHA tag with provenance and
+an SBOM. Default-branch builds also update the contributor-facing `latest` tag.
+
+After publishing, the workflow asks the GitHub Packages API to make the package
+public, removes its Docker credentials, and anonymously pulls the exact published
+digest. Changing package visibility requires package-admin permission. If the
+workflow token cannot do this on first publication, an organization or package owner
+must grant the repository's Actions workflow package-admin access or make the package
+public once in GitHub's package settings. The workflow warns when API verification
+cannot confirm public visibility and fails clearly if the anonymous pull does not
+work; it never treats an unverified visibility change as success.
 
 If a build fails, do not switch the deployment to a mutable base image or install a
 host driver in the image. Check the pinned CUDA base, the locked `uv.lock`
