@@ -80,18 +80,20 @@ export default async function handler(req: Request): Promise<Response> {
         if (requestedToken !== undefined && requestedToken !== existing.token) {
           throw new BrokerError(409, "Promotion reservation token differs.");
         }
+        if (existing.decision_digest !== undefined &&
+            requestedDigest !== existing.decision_digest) {
+          throw new BrokerError(409, "Decision digest is required to match the reservation.");
+        }
+        if (existing.status === "terminal" && requestedDigest !== existing.decision_digest) {
+          throw new BrokerError(409, "Terminal reservation decision digest differs.");
+        }
         const stable: PromotionReservation = {
           ...existing,
           decision_reviewer: existing.decision_reviewer ||
             (typeof requestedReviewer === "string" ? requestedReviewer.trim() : "legacy"),
           decision_created_at: existing.decision_created_at || new Date().toISOString(),
         };
-        const metadataChanged = !existing.decision_reviewer || !existing.decision_created_at;
         if (existing.status === "terminal") {
-          if (metadataChanged) await savePromotionReservation(stable, true);
-          if (requestedDigest !== undefined) {
-            throw new BrokerError(409, "Terminal reservation cannot bind a decision.");
-          }
           return json(200, { protocol_version: PROTOCOL_VERSION, status: existing.status,
             token: stable.token, decision_reviewer: stable.decision_reviewer,
             decision_created_at: stable.decision_created_at,

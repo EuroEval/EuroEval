@@ -147,11 +147,19 @@ class VolunteerReviewer:
                 "Decision artifacts do not resolve to one durable outcome"
             )
         if outcome == "accepted":
-            self._renew_reservation(report=report, records=evidence, token=token)
+            self._renew_reservation(
+                report=report,
+                records=evidence,
+                token=token,
+                decision_digest=decision_digest,
+            )
             self._promote_records(
                 report=report,
                 renew=lambda: self._renew_reservation(
-                    report=report, records=evidence, token=token
+                    report=report,
+                    records=evidence,
+                    token=token,
+                    decision_digest=decision_digest,
                 ),
             )
         if self._broker_promoter:
@@ -214,12 +222,21 @@ class VolunteerReviewer:
                 )
 
     def _renew_reservation(
-        self, report: ReviewReport, records: list[dict[str, str]], token: str
+        self,
+        report: ReviewReport,
+        records: list[dict[str, str]],
+        token: str,
+        decision_digest: str,
     ) -> None:
         if not self.renewer:
             return
         renewed = self.renewer(
-            report.issue_number, report.submission_id, "accepted", token, records
+            report.issue_number,
+            report.submission_id,
+            "accepted",
+            token,
+            records,
+            decision_digest,
         )
         if renewed != token:
             raise ReviewError("Broker returned a different promotion reservation token")
@@ -534,6 +551,7 @@ def renew_with_broker(
     outcome: str,
     reservation_token: str,
     records: list[dict[str, str]],
+    decision_digest: str | None = None,
 ) -> str:
     """Renew a pending broker reservation without changing its token.
 
@@ -550,6 +568,7 @@ def renew_with_broker(
         outcome=outcome,
         records=records,
         reservation_token=reservation_token,
+        decision_digest=decision_digest,
     )
     if not isinstance(reservation, str):
         raise ReviewError("Broker returned decision metadata during renewal")

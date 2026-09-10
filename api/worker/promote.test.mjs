@@ -118,6 +118,9 @@ test("repeated rejection is safe after cleanup interruption", async () => {
       const command = JSON.parse(init.body); let result = command[0] === "EVAL" ? 1 : "OK";
       if (command[0] === "GET") result = values.get(command[1]) || null;
       if (command[0] === "SET") { values.set(command[1], command[2]); result = "OK"; }
+      if (command[0] === "EVAL" && command[1].includes("status == 'terminal'")) {
+        values.set(command[3], command[4]);
+      }
       if (command[0] === "EVAL" && command[1].includes("for i=1,#KEYS-1")) {
         cleanupCalls += 1;
         if (cleanupCalls === 1) throw new Error("simulated interruption");
@@ -145,6 +148,7 @@ test("repeated rejection is safe after cleanup interruption", async () => {
     const second = await promote(request());
     assert.equal(second.status, 200, await second.text());
     assert.equal(cleanupCalls, 3); // first call retries the interrupted atomic EVAL
+    assert.equal(JSON.parse(values.get("euroeval:worker:promotion:12:one")).status, "terminal");
     assert.match(issue.body, /"submission":"rejected"/);
     assert.equal(comments.length, 1);
   } finally {
@@ -167,10 +171,11 @@ test("promotion reservation returns stable review metadata on resume", async () 
     body: `- [x] Greek\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(issueMarker)} -->`, state: "open",
     assignees: [{ login: "coordinator" }], labels: [] };
   const values = new Map();
+  const commands = [];
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input); const method = init.method || "GET";
     if (url === "https://redis.test") {
-      const command = JSON.parse(init.body); let result = "OK";
+      const command = JSON.parse(init.body); commands.push(command); let result = "OK";
       if (command[0] === "GET") result = values.get(command[1]) || null;
       if (command[0] === "SET") {
         if (command.includes("NX") && values.has(command[1])) result = null;
@@ -198,6 +203,32 @@ test("promotion reservation returns stable review metadata on resume", async () 
     assert.equal(secondBody.token, firstBody.token);
     assert.equal(secondBody.decision_reviewer, firstBody.decision_reviewer);
     assert.equal(secondBody.decision_created_at, firstBody.decision_created_at);
+    values.set("euroeval:worker:promotion:12:one", JSON.stringify({
+      issue_number: 12, submission_id: "one", outcome: "rejected", records,
+      token: firstBody.token, decision_reviewer: "alice",
+      decision_created_at: firstBody.decision_created_at, decision_digest: decisionDigest,
+      status: "terminal",
+    }));
+    const terminalCommands = commands.length;
+    const terminalRetry = await reservePromotion(new Request("https://euroeval.com/api/worker/promotion-lock", {
+      method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
+        outcome: "rejected", reservation_token: firstBody.token, decision_digest: decisionDigest, records }),
+    }));
+    const terminalBody = await terminalRetry.json();
+    assert.equal(terminalRetry.status, 200, JSON.stringify(terminalBody));
+    assert.equal(terminalBody.status, "terminal");
+    assert.equal(terminalBody.decision_digest, decisionDigest);
+    assert.equal(commands.slice(terminalCommands).filter((command) =>
+      command[0] === "SET" && command[1] === "euroeval:worker:promotion:12:one").length, 0);
+    const missingTerminalDigest = await reservePromotion(request(firstBody.token));
+    assert.equal(missingTerminalDigest.status, 409);
+    const incompatibleTerminalDigest = await reservePromotion(new Request("https://euroeval.com/api/worker/promotion-lock", {
+      method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
+        outcome: "rejected", reservation_token: firstBody.token, decision_digest: "e".repeat(64), records }),
+    }));
+    assert.equal(incompatibleTerminalDigest.status, 409);
     const incompatible = await reservePromotion(new Request("https://euroeval.com/api/worker/promotion-lock", {
       method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
       body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",

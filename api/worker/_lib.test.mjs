@@ -224,6 +224,29 @@ test("decision binding is token-fenced and set once", async () => {
   }
 });
 
+test("terminal decision binding is idempotent without a write", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  const commands = [];
+  globalThis.fetch = async (_input, init) => {
+    commands.push(JSON.parse(init.body));
+    return Response.json({ result: "bound" });
+  };
+  const reservation = { issue_number: 12, submission_id: "one", outcome: "rejected", records: [],
+    token: "token", decision_reviewer: "alice", decision_created_at: "2026-09-06T12:00:00Z",
+    decision_digest: "a".repeat(64), status: "terminal" };
+  try {
+    assert.equal(await bindPromotionDecision(reservation, reservation.decision_digest), "bound");
+    const script = commands[0][1];
+    assert.ok(script.indexOf("return 'bound'") < script.indexOf("item.decision_digest=ARGV[2]"));
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
 test("retries atomic multi-record reservation cleanup", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
