@@ -219,13 +219,11 @@ const paretoVisibility = ref<Record<XAxis, boolean>>({
 });
 
 const showPareto = computed(() => paretoVisibility.value[props.xAxis]);
-const xOptimization = computed<OptimizationDirection>(() =>
-  props.xAxis === "parameters" ? "minimize" : "maximize",
-);
+const xOptimization: OptimizationDirection = "minimize";
 const paretoDescription = computed(() =>
   props.xAxis === "parameters"
     ? "Lower parameter count and lower rank score are preferred."
-    : "Newer release date and lower rank score are preferred.",
+    : "Earlier release date and lower rank score are preferred.",
 );
 const paretoToggleLabel = computed(
   () =>
@@ -272,7 +270,7 @@ const paretoPoints = computed<Point[]>(() => {
       !points.some(
         (candidate) =>
           candidate !== point &&
-          dominates(candidate, point, xOptimization.value),
+          dominates(candidate, point, xOptimization),
       ),
   );
 });
