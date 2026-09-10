@@ -102,7 +102,7 @@ jobs:
           docker logout ghcr.io || true
           rm -f "${DOCKER_CONFIG:-$HOME/.docker}/config.json"
           if ! docker pull "$IMAGE"; then
-            echo "::error::Anonymous pull of $IMAGE failed. Make the GHCR package public or grant this workflow package-admin permission."
+            echo "::error::Anonymous pull of $IMAGE failed. Confirm that the GHCR package is public, then rerun this workflow."
             exit 1
           fi
           echo "$IMAGE"
