@@ -216,7 +216,7 @@ test "$(uname -m)" = x86_64
 test "$(docker info --format '{{.Architecture}}')" = x86_64
 nvidia-smi
 docker pull "$CANDIDATE"
-docker run --rm --gpus all --pull=never "$CANDIDATE" --version
+docker run --rm --gpus all --pull=never "$CANDIDATE" --gpu-health-check
 ```
 
 After the canary succeeds, promote the same digest with a GitHub PAT that has
