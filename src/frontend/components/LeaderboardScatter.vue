@@ -220,8 +220,8 @@ const hideCommercial = ref(false);
 const hideNonCommercial = ref(false);
 const searchQuery = ref("");
 const paretoVisibility = ref<Record<XAxis, boolean>>({
-  parameters: false,
-  releaseDate: false,
+  parameters: true,
+  releaseDate: true,
 });
 
 const showPareto = computed(() => paretoVisibility.value[props.xAxis]);
