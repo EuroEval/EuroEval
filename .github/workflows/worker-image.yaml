@@ -27,13 +27,6 @@ permissions:
   contents: read
   packages: write
 
-# Keep default-branch publications serialized: cancelling one during tag promotion
-# could leave GHCR in a state that has no atomic compare-and-swap rollback. Other
-# refs can safely cancel superseded builds before they reach publication.
-concurrency:
-  group: volunteer-worker-image-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != format('refs/heads/{0}', github.event.repository.default_branch) }}
-
 jobs:
   image:
     name: Build amd64 worker image
@@ -63,7 +56,7 @@ jobs:
           tags: |
             type=sha,format=long,prefix=sha-
 
-      - name: Build and publish candidate
+      - name: Build and publish immutable candidate
         id: build
         uses: docker/build-push-action@v6
         with:
@@ -99,7 +92,7 @@ jobs:
           package=/orgs/${{ github.repository_owner }}/packages/container/euroeval-worker
           visibility="$(gh api "$package" --jq .visibility 2>/dev/null || true)"
           if [ "$visibility" != public ]; then
-            echo "::error::GHCR reports visibility '${visibility:-unknown}'. Make the package public once in GitHub Packages settings, then rerun this workflow."
+            echo "::error::GHCR reports visibility '${visibility:-unknown}'. Make the package public in GitHub Packages settings, then rerun this workflow."
             exit 1
           fi
 
@@ -113,165 +106,13 @@ jobs:
           docker logout ghcr.io >/dev/null 2>&1 || true
           rm -rf "$DOCKER_CONFIG"
           mkdir -p "$DOCKER_CONFIG"
-          if [ -z "$DIGEST" ] || ! docker pull "$IMAGE@$DIGEST"; then
-            echo "::error::Anonymous pull of the exact candidate digest failed. Confirm that the GHCR package is public, then rerun this workflow."
-            exit 1
-          fi
-
-      - name: Reauthenticate for latest promotion
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Guard and promote verified candidate to latest
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          REPOSITORY: ${{ github.repository }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          IMAGE: ghcr.io/euroeval/euroeval-worker
-          REGISTRY_REPOSITORY: euroeval/euroeval-worker
-          DIGEST: ${{ steps.build.outputs.digest }}
-        run: |
-          set -euo pipefail
-
-          default_branch_head() {
-            gh api "repos/$REPOSITORY/git/ref/heads/$DEFAULT_BRANCH" --jq '.object.sha'
-          }
-
-          # GHCR exposes the manifest digest for a tag, but not a tag-only DELETE
-          # or compare-and-swap operation. Keep the digest from the authenticated
-          # registry response so an interrupted promotion can retag the old value.
-          # Return status 2 only when the tag is absent; all other failures abort.
-          registry_digest() {
-            local reference="$1"
-            local headers status digest
-            headers="$(mktemp)"
-            if ! status="$(curl --silent --show-error --output /dev/null \
-              --dump-header "$headers" --write-out '%{http_code}' \
-              --user "$GITHUB_ACTOR:$GH_TOKEN" \
-              --header 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json' \
-              "https://ghcr.io/v2/$REGISTRY_REPOSITORY/manifests/$reference")"; then
-              rm -f "$headers"
-              return 1
-            fi
-            if [ "$status" = 404 ]; then
-              rm -f "$headers"
-              return 2
-            fi
-            if [ "$status" != 200 ]; then
-              echo "::error::GHCR returned HTTP $status while reading $reference." >&2
-              rm -f "$headers"
-              return 1
-            fi
-            digest="$(awk 'BEGIN { IGNORECASE = 1 } /^docker-content-digest:/ { sub(/\r$/, ""); sub(/^[^:]*:[[:space:]]*/, ""); print; exit }' "$headers")"
-            rm -f "$headers"
-            if [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-              printf '%s\n' "$digest"
-            else
-              echo "::error::GHCR returned no valid digest for $reference." >&2
-              return 1
-            fi
-          }
-
-          rollback_latest() {
-            local reason="$1"
-            echo "::error::$reason"
-            if [ -n "$previous_digest" ]; then
-              echo "Restoring latest to the previously verified digest $previous_digest."
-              if ! docker buildx imagetools create --tag "$IMAGE:latest" "$IMAGE@$previous_digest"; then
-                echo "::error::Could not restore the previous latest digest." >&2
-                return 1
-              fi
-              restored_digest="$(registry_digest latest)" || {
-                echo "::error::Could not verify the restored latest tag." >&2
-                return 1
-              }
-              if [ "$restored_digest" != "$previous_digest" ]; then
-                echo "::error::latest did not restore to $previous_digest (observed $restored_digest)." >&2
-                return 1
-              fi
-              echo "The prior latest tag was restored; the immutable candidate and attestations were not deleted."
-            else
-              echo "::error::There was no prior latest tag to restore. GHCR has no supported tag-only delete; deleting the candidate manifest would also risk deleting its immutable SHA tag and attestations."
-              return 1
-            fi
-            return 1
-          }
-
           if [ -z "$DIGEST" ]; then
             echo "::error::Build did not return a candidate digest."
             exit 1
           fi
-
-          initial_sha="$(default_branch_head)"
-          if [ "$initial_sha" != "$GITHUB_SHA" ]; then
-            echo "::error::Refusing to promote stale commit $GITHUB_SHA; the default branch is now at $initial_sha."
+          REFERENCE="$IMAGE@$DIGEST"
+          if ! docker pull "$REFERENCE"; then
+            echo "::error::Anonymous pull of the exact candidate digest failed. Confirm that the GHCR package is public, then rerun this workflow."
             exit 1
           fi
-
-          previous_digest=""
-          if previous_digest="$(registry_digest latest)"; then
-            echo "Captured verified latest digest $previous_digest."
-          else
-            registry_status=$?
-            if [ "$registry_status" -eq 2 ]; then
-              echo "No existing latest tag was found; this is a first publication."
-            else
-              echo "::error::Could not verify the existing latest tag." >&2
-              exit 1
-            fi
-          fi
-
-          # This second read is deliberately separated from the first. It is the
-          # last freshness check before the tag write, not a claim of atomic CAS.
-          sleep 2
-          pre_promotion_sha="$(default_branch_head)"
-          if [ "$pre_promotion_sha" != "$GITHUB_SHA" ]; then
-            echo "::error::Default branch advanced before promotion to $pre_promotion_sha."
-            exit 1
-          fi
-
-          promotion_succeeded=true
-          if ! docker buildx imagetools create --tag "$IMAGE:latest" "$IMAGE@$DIGEST"; then
-            promotion_succeeded=false
-          fi
-
-          post_promotion_sha=""
-          if ! post_promotion_sha="$(default_branch_head)"; then
-            echo "::warning::Could not re-read the default branch after promotion."
-          fi
-          if [ "$promotion_succeeded" != true ] || [ "$post_promotion_sha" != "$GITHUB_SHA" ]; then
-            rollback_latest "Promotion failed or freshness was lost during promotion (default branch after promotion: ${post_promotion_sha:-unavailable})."
-          fi
-
-          echo "Promoted $DIGEST to latest while default branch remained at $GITHUB_SHA."
-
-      - name: Remove promotion credentials
-        if: ${{ always() && github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
-        run: |
-          docker logout ghcr.io >/dev/null 2>&1 || true
-          rm -rf "$DOCKER_CONFIG"
-
-      - name: Verify latest anonymously matches the candidate
-        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        env:
-          IMAGE: ghcr.io/euroeval/euroeval-worker
-          DIGEST: ${{ steps.build.outputs.digest }}
-        run: |
-          set -euo pipefail
-          mkdir -p "$DOCKER_CONFIG"
-          if ! docker pull "$IMAGE:latest"; then
-            echo "::error::Anonymous pull of latest failed after promotion."
-            exit 1
-          fi
-          repo_digests="$(docker image inspect "$IMAGE:latest" --format '{{range .RepoDigests}}{{println .}}{{end}}')"
-          if ! printf '%s\n' "$repo_digests" | grep -Fxq "$IMAGE@$DIGEST"; then
-            echo "::error::latest does not resolve to the verified candidate digest."
-            printf 'Observed RepoDigests:\n%s\n' "$repo_digests"
-            exit 1
-          fi
+          echo "Verified immutable image: $REFERENCE"
