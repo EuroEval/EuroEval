@@ -75,6 +75,14 @@ class VolunteerReviewer:
         report = self.show(submission_id=submission_id)
         decision_path = f"{_DECISION_PREFIX}/{submission_id}.json"
         existing = self.store.read_optional(self.store.staging_bucket, decision_path)
+        if existing is not None:
+            _validate_existing_decision(
+                content=existing,
+                decision=_load_object(content=existing, context=decision_path),
+                report=report,
+                outcome=outcome,
+                reasons=reasons or [],
+            )
         evidence = sorted(
             [
                 {
@@ -86,6 +94,8 @@ class VolunteerReviewer:
             ],
             key=lambda item: item["identity"],
         )
+        if outcome == "accepted":
+            self._validate_canonical_records(report=report)
         reservation = (
             self.reserver(
                 report.issue_number, submission_id, outcome, reviewer, evidence
@@ -93,21 +103,18 @@ class VolunteerReviewer:
             if self.reserver
             else _local_reservation(reviewer=reviewer, existing=existing)
         )
-        decision_bytes = _decision_bytes(
-            report=report,
-            outcome=outcome,
-            reviewer=reservation.decision_reviewer,
-            reasons=reasons or [],
-            decided_at=reservation.decision_created_at,
-        )
-        if existing is not None:
-            decision = _load_object(content=existing, context=decision_path)
-            _validate_existing_decision(
-                content=existing,
-                decision=decision,
-                expected_content=decision_bytes,
+        if existing is None:
+            decision_bytes = _decision_bytes(
                 report=report,
                 outcome=outcome,
+                reviewer=reservation.decision_reviewer,
+                reasons=reasons or [],
+                decided_at=reservation.decision_created_at,
+            )
+            self.store.write_verified(
+                bucket=self.store.staging_bucket,
+                path=decision_path,
+                content=decision_bytes,
             )
         token = reservation.token
         if outcome == "accepted":
@@ -118,12 +125,6 @@ class VolunteerReviewer:
                 ),
             )
             self._renew_reservation(report=report, records=evidence, token=token)
-        if existing is None:
-            self.store.write_verified(
-                bucket=self.store.staging_bucket,
-                path=decision_path,
-                content=decision_bytes,
-            )
         if self._broker_promoter:
             t.cast(BrokerPromoter, self.promoter)(
                 report.issue_number, submission_id, outcome, token, evidence
@@ -137,20 +138,7 @@ class VolunteerReviewer:
     def _promote_records(
         self, report: ReviewReport, renew: c.Callable[[], None] | None = None
     ) -> None:
-        _raise_on_identity_collisions(record.identity for record in report.records)
-        existing: dict[str, bytes | None] = {
-            record.canonical_path: self.store.read_optional(
-                self.results_bucket, record.canonical_path
-            )
-            for record in report.records
-        }
-        for record in report.records:
-            current = existing[record.canonical_path]
-            if current is not None and current != record.content:
-                raise ReviewError(
-                    "Canonical result collision at "
-                    f"{record.canonical_path}: {_digest(current)} != {record.digest}"
-                )
+        self._validate_canonical_records(report=report)
         for record in report.records:
             if renew:
                 renew()
@@ -173,6 +161,22 @@ class VolunteerReviewer:
                     bucket=self.results_bucket,
                     path=record.canonical_path,
                     content=record.content,
+                )
+
+    def _validate_canonical_records(self, report: ReviewReport) -> None:
+        _raise_on_identity_collisions(record.identity for record in report.records)
+        existing: dict[str, bytes | None] = {
+            record.canonical_path: self.store.read_optional(
+                self.results_bucket, record.canonical_path
+            )
+            for record in report.records
+        }
+        for record in report.records:
+            current = existing[record.canonical_path]
+            if current is not None and current != record.content:
+                raise ReviewError(
+                    "Canonical result collision at "
+                    f"{record.canonical_path}: {_digest(current)} != {record.digest}"
                 )
 
     def _renew_reservation(
@@ -280,9 +284,9 @@ def _local_reservation(
 def _validate_existing_decision(
     content: bytes,
     decision: JsonObject,
-    expected_content: bytes,
     report: ReviewReport,
     outcome: str,
+    reasons: list[str],
 ) -> None:
     if decision.get("outcome") != outcome:
         raise ReviewError("Submission already has the opposite terminal decision")
@@ -294,6 +298,9 @@ def _validate_existing_decision(
         }
         for record in report.records
     ]
+    decision_reasons = decision.get("reasons")
+    reviewer = decision.get("reviewer")
+    decided_at = decision.get("decided_at")
     if (
         decision.get("protocol_version") != PROTOCOL_VERSION
         or decision.get("artifact") != "volunteer-review-decision/v1"
@@ -301,12 +308,23 @@ def _validate_existing_decision(
         or decision.get("submission_id") != report.submission_id
         or decision.get("issue_number") != report.issue_number
         or decision.get("records") != expected_records
-        or not isinstance(decision.get("reviewer"), str)
-        or not decision.get("reviewer")
-        or not isinstance(decision.get("decided_at"), str)
-        or not decision.get("decided_at")
-        or content != expected_content
+        or not isinstance(reviewer, str)
+        or not reviewer.strip()
+        or not isinstance(decided_at, str)
+        or not decided_at.strip()
+        or not isinstance(decision_reasons, list)
+        or any(not isinstance(reason, str) for reason in decision_reasons)
+        or decision_reasons != reasons
     ):
+        raise ReviewError("Existing decision artifact is malformed or inconsistent")
+    expected_content = _decision_bytes(
+        report=report,
+        outcome=outcome,
+        reviewer=reviewer,
+        reasons=t.cast(list[str], decision_reasons),
+        decided_at=decided_at,
+    )
+    if content != expected_content:
         raise ReviewError("Existing decision artifact is malformed or inconsistent")
 
 
