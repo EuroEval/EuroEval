@@ -27,6 +27,12 @@ permissions:
   contents: read
   packages: write
 
+# Serialise each ref so an older default-branch run cannot promote `latest` after a
+# newer one. GitHub retains the newest pending run while one is active.
+concurrency:
+  group: volunteer-worker-image-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   image:
     name: Build amd64 worker image
