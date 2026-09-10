@@ -213,16 +213,36 @@ test("promotion reservation returns stable review metadata on resume", async () 
     const terminalRetry = await reservePromotion(new Request("https://euroeval.com/api/worker/promotion-lock", {
       method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
       body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
-        outcome: "rejected", reservation_token: firstBody.token, decision_digest: decisionDigest, records }),
+        outcome: "rejected", decision_digest: decisionDigest, records }),
     }));
     const terminalBody = await terminalRetry.json();
     assert.equal(terminalRetry.status, 200, JSON.stringify(terminalBody));
     assert.equal(terminalBody.status, "terminal");
     assert.equal(terminalBody.decision_digest, decisionDigest);
+    assert.equal(terminalBody.token, firstBody.token);
     assert.equal(commands.slice(terminalCommands).filter((command) =>
       command[0] === "SET" && command[1] === "euroeval:worker:promotion:12:one").length, 0);
     const missingTerminalDigest = await reservePromotion(request(firstBody.token));
     assert.equal(missingTerminalDigest.status, 409);
+    const missingTerminalDigestWithoutToken = await reservePromotion(new Request("https://euroeval.com/api/worker/promotion-lock", {
+      method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
+        outcome: "rejected", reviewer: "alice", records }),
+    }));
+    assert.equal(missingTerminalDigestWithoutToken.status, 409);
+    const incompatibleTerminalEvidence = await reservePromotion(new Request("https://euroeval.com/api/worker/promotion-lock", {
+      method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
+        outcome: "rejected", decision_digest: decisionDigest,
+        records: [{ ...records[0], digest: "b".repeat(64) }] }),
+    }));
+    assert.equal(incompatibleTerminalEvidence.status, 409);
+    const incompatibleTerminalOutcome = await reservePromotion(new Request("https://euroeval.com/api/worker/promotion-lock", {
+      method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
+        outcome: "accepted", decision_digest: decisionDigest, records }),
+    }));
+    assert.equal(incompatibleTerminalOutcome.status, 409);
     const incompatibleTerminalDigest = await reservePromotion(new Request("https://euroeval.com/api/worker/promotion-lock", {
       method: "POST", headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
       body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
