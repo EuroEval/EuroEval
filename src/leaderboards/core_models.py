@@ -141,7 +141,6 @@ def build_core_model_list(
         language: dict(official_datasets_for_language(language))
         for language in languages
     }
-    aggregate_configs = {"europe": _aggregate_config(configs=configs)}
     datasets = {
         dataset
         for config in configs.values()
@@ -152,9 +151,6 @@ def build_core_model_list(
     results = [r for r in load_raw_results() if get_dataset(r) in datasets]
     model_results = group_results_by_model(results=results)
     model_results = drop_val_duplicates(model_results=model_results)
-    bootstrap_scores = _aggregate_bootstrap_scores(
-        model_results=model_results, configs=aggregate_configs
-    )
     metadata = extract_model_metadata(results=results)
 
     model_types: dict[str, ModelType] = {
@@ -163,9 +159,8 @@ def build_core_model_list(
     }
 
     pareto = _pareto_categories_per_model(
-        bootstrap_scores=bootstrap_scores,
         model_results=model_results,
-        configs=aggregate_configs,
+        configs=configs,
         metadata=metadata,
         model_types=model_types,
     )
@@ -257,24 +252,20 @@ def _classify_model(model_id: str, metadata: dict) -> ModelType:
     return ModelType(model_type) if model_type is not None else ModelType.BASE_DECODER
 
 
-def _aggregate_config(configs: dict[str, dict[str, list[str]]]) -> dict[str, list[str]]:
-    """Collapse per-language configs into one European leaderboard config.
-
-    Returns:
-        A single task-to-datasets configuration containing each dataset once.
-    """
-    aggregate: dict[str, set[str]] = defaultdict(set)
-    for config in configs.values():
-        for task, datasets in config.items():
-            aggregate[task].update(datasets)
-    return {task: sorted(datasets) for task, datasets in sorted(aggregate.items())}
-
-
 def _aggregate_bootstrap_scores(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
+    category: LeaderboardCategory,
 ) -> dict[str, dict[str | LeaderboardCategory, dict[str, np.ndarray]]]:
-    """Compute aligned bootstrap score distributions for one aggregate config.
+    """Compute aligned bootstrap score distributions for one category.
+
+    Args:
+        model_results:
+            Complete-coverage model results for ``category``.
+        configs:
+            The original per-language leaderboard configurations.
+        category:
+            The single category to rank.
 
     Returns:
         Model/category/aggregate score distributions with aligned samples.
@@ -284,23 +275,53 @@ def _aggregate_bootstrap_scores(
         configs=configs,
         n_bootstraps=NUM_BOOTSTRAPS,
         seed=0,
-        categories=(LeaderboardCategory.GENERATIVE, LeaderboardCategory.ALL_MODELS),
+        categories=(category,),
     )
 
 
 def _pareto_categories_per_model(
-    bootstrap_scores: dict[str, dict[str | LeaderboardCategory, dict[str, np.ndarray]]],
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
     metadata: dict[str, dict],
     model_types: dict[str, ModelType],
+    bootstrap_scores: dict[str, dict[str | LeaderboardCategory, dict[str, np.ndarray]]]
+    | None = None,
 ) -> dict[str, set[str]]:
     """Return aggregate Pareto categories for completely evaluated models.
 
     A model is eligible in a category only when it has a result for every
     applicable non-orthogonal dataset. Decoder types are eligible in either
-    aggregate category; encoders are eligible only in ``all_models``.
+    aggregate category; encoders are eligible only in ``all_models``. When
+    scores are not supplied, each category is bootstrapped independently from
+    its complete-coverage model set using the original per-language configs.
+
+    Args:
+        model_results:
+            Results grouped by model and dataset.
+        configs:
+            The original per-language leaderboard configurations.
+        metadata:
+            Model metadata, including parameter counts.
+        model_types:
+            Architectural type for each model.
+        bootstrap_scores (optional):
+            Precomputed scores, retained for focused callers that provide
+            deterministic distributions. Defaults to None.
     """
+    if bootstrap_scores is None:
+        bootstrap_scores = {}
+        for category in (
+            LeaderboardCategory.GENERATIVE,
+            LeaderboardCategory.ALL_MODELS,
+        ):
+            eligible_results = _complete_coverage_model_results(
+                model_results=model_results, configs=configs, category=category
+            )
+            category_scores = _aggregate_bootstrap_scores(
+                model_results=eligible_results, configs=configs, category=category
+            )
+            for model_id, model_scores in category_scores.items():
+                bootstrap_scores.setdefault(model_id, {}).update(model_scores)
     categories_for_type: dict[ModelType, tuple[LeaderboardCategory, ...]] = {
         ModelType.ENCODER: (LeaderboardCategory.ALL_MODELS,),
         ModelType.BASE_DECODER: (
@@ -355,6 +376,7 @@ def _pareto_categories_per_model(
                 and _is_significantly_worse(
                     candidate=distribution,
                     competitor=bootstrap_scores[other_id][category]["overall"],
+                    alpha=0.05,
                 )
                 for other_id, other_params in members
             )
@@ -374,6 +396,20 @@ def _required_datasets(
         if task not in ORTHOGONAL_TASKS
         and category_includes_task(category=category, task=task)
         for dataset in datasets
+    }
+
+
+def _complete_coverage_model_results(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    configs: dict[str, dict[str, list[str]]],
+    category: LeaderboardCategory,
+) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
+    """Return models with every non-orthogonal dataset for a category."""
+    required_datasets = _required_datasets(configs=configs, category=category)
+    return {
+        model_id: model_results[model_id]
+        for model_id in sorted(model_results)
+        if all(dataset in model_results[model_id] for dataset in required_datasets)
     }
 
 
