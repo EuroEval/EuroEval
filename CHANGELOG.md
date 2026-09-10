@@ -34,7 +34,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   An answer boxed as an equation, such as `\boxed{x = 5}`, scores the value it names.
 - Added the unofficial Danish knowledge dataset `danish-similarity-outlier`, part of the
   [Danish Semantic Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark),
-  where the model has to pick the semantically least similar word from six options.
+  where the model has to pick the semantically least similar word from six options. This
+  was contributed by @Mr-Neutr0n ✨
 
 ### Changed
 

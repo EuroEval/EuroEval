@@ -139,7 +139,7 @@ def main() -> None:
 
 
 def parse_tsv_file(file_name: str, content: bytes) -> list[dict[str, str]]:
-    """Parse a medium- or coarse-grained similarity outlier TSV file.
+    """Parse a fine-, medium-, or coarse-grained similarity outlier TSV file.
 
     Args:
         file_name:
