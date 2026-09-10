@@ -82,18 +82,16 @@ jobs:
           test "$(docker run --rm --entrypoint id "$IMAGE" -u)" = "10001"
           docker run --rm "$IMAGE" --version
 
-      - name: Make published package public
+      - name: Verify published package is public
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           package=/orgs/${{ github.repository_owner }}/packages/container/euroeval-worker
-          if ! gh api --method PATCH "$package" -f visibility=public; then
-            echo "::warning::The workflow token could not set GHCR visibility. Package admin permission may need to be granted once."
-          fi
           visibility="$(gh api "$package" --jq .visibility 2>/dev/null || true)"
           if [ "$visibility" != public ]; then
-            echo "::warning::GHCR reports visibility '${visibility:-unknown}'; the anonymous-pull check will fail unless an administrator makes the package public."
+            echo "::error::GHCR reports visibility '${visibility:-unknown}'. Make the package public once in GitHub Packages settings, then rerun this workflow."
+            exit 1
           fi
 
       - name: Verify anonymous digest pull

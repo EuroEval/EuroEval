@@ -194,14 +194,15 @@ then smoke its normal entrypoint as UID 10001 without a GPU; they cannot push. T
 pushes to `main` and workflow dispatches publish a commit-SHA tag with provenance and
 an SBOM. Default-branch builds also update the contributor-facing `latest` tag.
 
-After publishing, the workflow asks the GitHub Packages API to make the package
-public, removes its Docker credentials, and anonymously pulls the exact published
-digest. Changing package visibility requires package-admin permission. If the
-workflow token cannot do this on first publication, an organization or package owner
-must grant the repository's Actions workflow package-admin access or make the package
-public once in GitHub's package settings. The workflow warns when API verification
-cannot confirm public visibility and fails clearly if the anonymous pull does not
-work; it never treats an unverified visibility change as success.
+A new GHCR package is private by default. After the first trusted publication, an
+organization or package owner must make `euroeval-worker` public once in GitHub
+Packages settings, then rerun the workflow. GitHub does not provide a supported REST
+operation for this visibility change.
+
+Every trusted publication verifies that the package reports public visibility,
+removes the workflow's Docker credentials, and anonymously pulls the exact published
+digest. The workflow fails if either check fails; it never treats an unverified image
+as publicly available.
 
 If a build fails, do not switch the deployment to a mutable base image or install a
 host driver in the image. Check the pinned CUDA base, the locked `uv.lock`
