@@ -5,10 +5,6 @@ import logging
 from pathlib import Path
 
 from . import __version__
-from .broker import BrokerClient
-from .hardware import NoGpuError
-from .runtime import Worker
-from .state import StateStore, default_state_dir
 
 DEFAULT_SERVER = "https://euroeval.com/api/worker"
 logger = logging.getLogger(__name__)
@@ -25,6 +21,13 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
     )
+    if arguments.gpu_health_check:
+        return _run_gpu_health_check()
+    from .broker import BrokerClient  # noqa: PLC0415
+    from .hardware import NoGpuError  # noqa: PLC0415
+    from .runtime import Worker  # noqa: PLC0415
+    from .state import StateStore, default_state_dir  # noqa: PLC0415
+
     try:
         state_dir = (
             Path(arguments.state_dir) if arguments.state_dir else default_state_dir()
@@ -62,5 +65,28 @@ def _parser() -> argparse.ArgumentParser:
         default=0.8,
         help="Fraction of GPU memory offered to the evaluator (default: 0.8).",
     )
+    parser.add_argument(
+        "--gpu-health-check",
+        action="store_true",
+        help="Check the pinned CUDA and vLLM stack without broker access.",
+    )
     parser.add_argument("--version", action="version", version=__version__)
     return parser
+
+
+def _run_gpu_health_check() -> int:
+    """Run the credential-free physical-canary health check.
+
+    Returns:
+        Process exit status.
+    """
+    from .hardware import NoGpuError  # noqa: PLC0415
+    from .health import GpuHealthError, run_gpu_health_check  # noqa: PLC0415
+
+    try:
+        report = run_gpu_health_check()
+    except (GpuHealthError, NoGpuError) as error:
+        logger.error("GPU health check failed: %s", error)
+        return 2
+    logger.info("GPU health check passed: %s", report.summary())
+    return 0

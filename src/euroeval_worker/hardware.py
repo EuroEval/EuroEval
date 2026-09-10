@@ -9,8 +9,6 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import torch
-
 from .types import Gpu, HardwareReport
 
 logger = logging.getLogger(__name__)
@@ -35,6 +33,8 @@ def discover_hardware(
     summary = run(["nvidia-smi"])
     driver = _match(summary, r"Driver Version\s*:\s*([^\s]+)")
     cuda = _match(summary, r"CUDA Version\s*:\s*([^\s]+)")
+    import torch  # noqa: PLC0415
+
     return HardwareReport(
         architecture=platform.machine(),
         ram_bytes=_ram_bytes(),
