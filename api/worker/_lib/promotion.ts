@@ -98,11 +98,28 @@ function reservationReservationKey(reservation: PromotionReservation): string {
   return promotionReservationKey(reservation.issue_number, reservation.submission_id);
 }
 
+export async function bindPromotionDecision(
+  reservation: PromotionReservation,
+  decisionDigest: string,
+): Promise<"bound" | "expired" | "mismatch"> {
+  if (!/^[0-9a-f]{64}$/.test(decisionDigest)) {
+    throw new BrokerError(400, "decision_digest must be a SHA256 digest.");
+  }
+  const key = reservationReservationKey(reservation);
+  const script = `local current=redis.call('GET',KEYS[1]); if not current then return 'expired' end;
+    local item=cjson.decode(current); if item.token ~= ARGV[1] or item.status ~= 'reserved' then return 'expired' end;
+    if item.decision_digest and item.decision_digest ~= ARGV[2] then return 'mismatch' end;
+    item.decision_digest=ARGV[2]; redis.call('SET',KEYS[1],cjson.encode(item),'EX',ARGV[3]); return 'bound'`;
+  const result = await redis("EVAL", script, "1", key, reservation.token, decisionDigest,
+    String(PROMOTION_RESERVATION_TTL));
+  return result as "bound" | "expired" | "mismatch";
+}
+
 export async function completePromotionReservation(reservation: PromotionReservation): Promise<boolean> {
   const keys = [reservationReservationKey(reservation),
     ...(await Promise.all(reservation.records.map((record) => promotionIdentityKey(record.canonical_path))))];
   const script = `local current=redis.call('GET',KEYS[1]); if not current then return 0 end;
-    local reservation=cjson.decode(current); if reservation.token ~= ARGV[2] then return 0 end;
+    local reservation=cjson.decode(current); if reservation.token ~= ARGV[2] or reservation.decision_digest ~= ARGV[4] then return 0 end;
     local records=cjson.decode(ARGV[3]);
     for i=2,#KEYS do local value=redis.call('GET',KEYS[i]); if value then local item=cjson.decode(value);
       if item.digest ~= records[i-1].digest or item.identity ~= records[i-1].identity or (item.status ~= 'terminal' and item.token ~= ARGV[2]) then return 0 end end end;
@@ -112,7 +129,7 @@ export async function completePromotionReservation(reservation: PromotionReserva
     elseif cjson.decode(value).status ~= 'terminal' then local item=cjson.decode(value); item.status='terminal'; redis.call('SET',KEYS[i],cjson.encode(item)); end end; return 1`;
   const result = await redis("EVAL", script, String(keys.length), ...keys,
     JSON.stringify({ ...reservation, status: "terminal" }), reservation.token,
-    JSON.stringify(reservation.records));
+    JSON.stringify(reservation.records), reservation.decision_digest || "");
   return result === 1 || result === "1";
 }
 

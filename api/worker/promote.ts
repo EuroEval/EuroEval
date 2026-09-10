@@ -125,10 +125,14 @@ export default async function handler(req: Request): Promise<Response> {
     const issueNumber = body.issue_number as number;
     const submissionId = body.submission_id as string;
     const outcome = body.outcome as "accepted" | "rejected";
+    if (typeof body.decision_digest !== "string" || !/^[0-9a-f]{64}$/.test(body.decision_digest)) {
+      throw new BrokerError(400, "decision_digest must be a SHA256 digest.");
+    }
+    const decisionDigest = body.decision_digest;
     const requestedRecords = parsePromotionRecords(body.records);
     const reservation = await getPromotionReservation(issueNumber, submissionId);
     if (!reservation || reservation.token !== body.reservation_token || reservation.outcome !== outcome ||
-        !sameRecords(reservation.records, requestedRecords)) {
+        reservation.decision_digest !== decisionDigest || !sameRecords(reservation.records, requestedRecords)) {
       throw new BrokerError(409, "Promotion reservation is absent, expired, or does not match.");
     }
     const mutex = await acquireRenewableIssueMutex(issueNumber);
@@ -188,7 +192,7 @@ export default async function handler(req: Request): Promise<Response> {
       return json(200, { protocol_version: PROTOCOL_VERSION, status: outcome, submission_id: submissionId,
         decision_reviewer: reservation.decision_reviewer,
         decision_created_at: reservation.decision_created_at,
-        complete: plan.complete, winner: plan.winner });
+        complete: plan.complete, winner: plan.winner, decision_digest: decisionDigest });
     } finally { await mutex.release(); }
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;

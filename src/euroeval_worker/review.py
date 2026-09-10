@@ -1,6 +1,7 @@
 """Maintainer-side validation and promotion of staged volunteer results."""
 
 from .review_models import (
+    BrokerBinder,
     BrokerPromoter,
     BrokerRenewer,
     BrokerReservation,
@@ -16,6 +17,7 @@ from .review_models import (
 from .review_storage import BucketStore
 from .review_transaction import (
     VolunteerReviewer,
+    bind_with_broker,
     promote_with_broker,
     renew_with_broker,
     reserve_with_broker,
@@ -27,6 +29,7 @@ __all__ = [
     "BucketEntry",
     "BucketInfo",
     "BucketStore",
+    "BrokerBinder",
     "BrokerPromoter",
     "BrokerRenewer",
     "BrokerReservation",
@@ -37,6 +40,7 @@ __all__ = [
     "ValidatedRecord",
     "VolunteerReviewer",
     "load_scope_policy",
+    "bind_with_broker",
     "promote_with_broker",
     "renew_with_broker",
     "reserve_with_broker",

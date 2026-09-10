@@ -102,13 +102,14 @@ test("repeated rejection is safe after cleanup interruption", async () => {
     UPSTASH_REDIS_REST_URL: "https://redis.test", UPSTASH_REDIS_REST_TOKEN: "redis-token",
   });
   const records = [{ identity: JSON.stringify(["org/model", "dataset", false, true]), canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) }];
+  const decisionDigest = "d".repeat(64);
   const issueMarker = await signVolunteerMarker(12, marker([submission("one", "el", "alice", 4)]));
   let issue = { number: 12, title: "[MODEL EVALUATION REQUEST] org/model",
     body: `- [x] Greek\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(issueMarker)} -->`, state: "open",
     assignees: [{ login: "coordinator" }], labels: [{ name: "community-review-ready" }] };
   const comments = [];
   const values = new Map([["euroeval:worker:promotion:12:one", JSON.stringify({
-    issue_number: 12, submission_id: "one", outcome: "rejected", records, token: "reservation-token", status: "reserved",
+    issue_number: 12, submission_id: "one", outcome: "rejected", records, token: "reservation-token", decision_digest: decisionDigest, status: "reserved",
   })]]);
   let cleanupCalls = 0;
   globalThis.fetch = async (input, init = {}) => {
@@ -137,7 +138,7 @@ test("repeated rejection is safe after cleanup interruption", async () => {
   const request = () => new Request("https://euroeval.com/api/worker/promote", { method: "POST",
     headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
     body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one",
-      outcome: "rejected", reservation_token: "reservation-token", records }) });
+      outcome: "rejected", reservation_token: "reservation-token", decision_digest: decisionDigest, records }) });
   try {
     const first = await promote(request());
     assert.equal(first.status, 200, await first.text());
@@ -160,6 +161,7 @@ test("promotion reservation returns stable review metadata on resume", async () 
     GITHUB_TOKEN: "github-token", UPSTASH_REDIS_REST_URL: "https://redis.test", UPSTASH_REDIS_REST_TOKEN: "redis-token",
   });
   const records = [{ identity: JSON.stringify(["org/model", "dataset", false, true]), canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) }];
+  const decisionDigest = "d".repeat(64);
   const issueMarker = await signVolunteerMarker(12, marker([submission("one", "el", "alice", 4)]));
   const issue = { number: 12, title: "[MODEL EVALUATION REQUEST] org/model",
     body: `- [x] Greek\n\n<!-- euroeval-volunteer-worker:v1 ${JSON.stringify(issueMarker)} -->`, state: "open",
@@ -230,7 +232,8 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
   process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
   const redisValues = new Map();
   const records = [{ identity: "[\"org/model\",\"dataset\",false,true]", canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) }];
-  redisValues.set("euroeval:worker:promotion:12:one", JSON.stringify({    issue_number: 12, submission_id: "one", outcome: "accepted", records, token: "reservation-token",
+  const decisionDigest = "d".repeat(64);
+  redisValues.set("euroeval:worker:promotion:12:one", JSON.stringify({    issue_number: 12, submission_id: "one", outcome: "accepted", records, token: "reservation-token", decision_digest: decisionDigest,
     decision_reviewer: "alice", decision_created_at: "2026-09-06T12:00:00Z", status: "reserved" }));
   globalThis.fetch = async (input, init = {}) => {
     const url = String(input);
@@ -268,10 +271,16 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
     throw new Error(`Unexpected request: ${method} ${url}`);
   };
   try {
-    const request = new Request("https://euroeval.com/api/worker/promote", {
+    const missingDigest = new Request("https://euroeval.com/api/worker/promote", {
       method: "POST",
       headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
       body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one", outcome: "accepted", reservation_token: "reservation-token", records }),
+    });
+    assert.equal((await promote(missingDigest)).status, 400);
+    const request = new Request("https://euroeval.com/api/worker/promote", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-promotion-secret": "promotion-secret" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", issue_number: 12, submission_id: "one", outcome: "accepted", reservation_token: "reservation-token", decision_digest: decisionDigest, records }),
     });
     const response = await promote(request);
     const responseBody = await response.json();

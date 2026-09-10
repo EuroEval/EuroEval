@@ -1,4 +1,5 @@
 import {
+  bindPromotionDecision,
   BrokerError,
   ConfigurationError,
   PROTOCOL_VERSION,
@@ -40,6 +41,14 @@ export default async function handler(req: Request): Promise<Response> {
     const outcome = body.outcome as "accepted" | "rejected";
     const requested = parsePromotionRecords(body.records);
     const requestedToken = body.reservation_token;
+    const requestedDigest = body.decision_digest;
+    if (requestedDigest !== undefined &&
+        (typeof requestedDigest !== "string" || !/^[0-9a-f]{64}$/.test(requestedDigest))) {
+      throw new BrokerError(400, "decision_digest must be a SHA256 digest.");
+    }
+    if (requestedDigest !== undefined && requestedToken === undefined) {
+      throw new BrokerError(400, "decision_digest requires a reservation token.");
+    }
     const requestedReviewer = body.reviewer;
     if (requestedReviewer !== undefined &&
         (typeof requestedReviewer !== "string" || !requestedReviewer.trim())) {
@@ -80,18 +89,27 @@ export default async function handler(req: Request): Promise<Response> {
         const metadataChanged = !existing.decision_reviewer || !existing.decision_created_at;
         if (existing.status === "terminal") {
           if (metadataChanged) await savePromotionReservation(stable, true);
+          if (requestedDigest !== undefined) {
+            throw new BrokerError(409, "Terminal reservation cannot bind a decision.");
+          }
           return json(200, { protocol_version: PROTOCOL_VERSION, status: existing.status,
             token: stable.token, decision_reviewer: stable.decision_reviewer,
-            decision_created_at: stable.decision_created_at, expires_in: 30 * 24 * 60 * 60 });
+            decision_created_at: stable.decision_created_at,
+            decision_digest: stable.decision_digest, expires_in: 30 * 24 * 60 * 60 });
         }
         const result = outcome === "accepted"
           ? await reservePromotionReservation(stable)
           : (await savePromotionReservation(stable, false), "reserved");
         if (result === "busy") throw new BrokerError(409, "A canonical result is being promoted; retry.");
         if (result === "conflict") throw new BrokerError(409, "A canonical result has a different digest.");
+        if (requestedDigest !== undefined) {
+          const bound = await bindPromotionDecision(stable, requestedDigest);
+          if (bound === "mismatch") throw new BrokerError(409, "Decision digest is already bound differently.");
+          if (bound !== "bound") throw new BrokerError(409, "Promotion reservation expired before decision binding.");
+        }
         return json(200, { protocol_version: PROTOCOL_VERSION, status: "reserved", token: stable.token,
           decision_reviewer: stable.decision_reviewer, decision_created_at: stable.decision_created_at,
-          expires_in: PROMOTION_RESERVATION_TTL });
+          decision_digest: requestedDigest || stable.decision_digest, expires_in: PROMOTION_RESERVATION_TTL });
       }
       if (requestedToken !== undefined) throw new BrokerError(409, "Promotion reservation is absent; retry.");
       const reservation: PromotionReservation = {

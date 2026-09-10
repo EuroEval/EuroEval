@@ -12,6 +12,7 @@ import urllib.request
 from leaderboards.constants import HF_RESULTS_BUCKET
 
 from .review_models import (
+    BrokerBinder,
     BrokerPromoter,
     BrokerRenewer,
     BrokerReservation,
@@ -33,6 +34,7 @@ from .types import PROTOCOL_VERSION
 _DECISION_PREFIX = "volunteer/decisions"
 _MANIFEST_PREFIX = "volunteer/manifests"
 _LOCAL_DECISION_CREATED_AT = "1970-01-01T00:00:00Z"
+_DECISION_ARTIFACT = "volunteer-review-decision/v1"
 
 
 class VolunteerReviewer:
@@ -45,6 +47,7 @@ class VolunteerReviewer:
         promoter: t.Callable[..., None] | None = None,
         reserver: BrokerReservation | None = None,
         renewer: BrokerRenewer | None = None,
+        binder: BrokerBinder | None = None,
         now: t.Callable[[], dt.datetime] | None = None,
         scope_policy: JsonObject | None = None,
     ) -> None:
@@ -57,6 +60,7 @@ class VolunteerReviewer:
             reserve_with_broker if self._broker_promoter else None
         )
         self.renewer = renewer or (renew_with_broker if self._broker_promoter else None)
+        self.binder = binder or (bind_with_broker if self._broker_promoter else None)
         self.now = now
         self.scope_policy = scope_policy or load_scope_policy()
 
@@ -67,22 +71,18 @@ class VolunteerReviewer:
         reviewer: str,
         reasons: list[str] | None = None,
     ) -> ReviewReport:
-        """Revalidate evidence, persist a decision, then notify the broker.
+        """Persist one immutable decision and complete its broker transition.
 
         Returns:
             The independently validated submission report.
+
+        Raises:
+            ReviewError:
+                If durable decision state or broker fencing is inconsistent.
         """
         report = self.show(submission_id=submission_id)
-        decision_path = f"{_DECISION_PREFIX}/{submission_id}.json"
-        existing = self.store.read_optional(self.store.staging_bucket, decision_path)
-        if existing is not None:
-            _validate_existing_decision(
-                content=existing,
-                decision=_load_object(content=existing, context=decision_path),
-                report=report,
-                outcome=outcome,
-                reasons=reasons or [],
-            )
+        reasons = reasons or []
+        existing = _existing_decisions(store=self.store, report=report, outcome=outcome)
         evidence = sorted(
             [
                 {
@@ -101,33 +101,67 @@ class VolunteerReviewer:
                 report.issue_number, submission_id, outcome, reviewer, evidence
             )
             if self.reserver
-            else _local_reservation(reviewer=reviewer, existing=existing)
+            else _local_reservation(
+                reviewer=reviewer, existing=existing[0][1] if existing else None
+            )
         )
-        if existing is None:
-            decision_bytes = _decision_bytes(
+        decision_bytes = (
+            existing[0][1]
+            if existing
+            else _decision_bytes(
                 report=report,
                 outcome=outcome,
                 reviewer=reservation.decision_reviewer,
-                reasons=reasons or [],
+                reasons=reasons,
                 decided_at=reservation.decision_created_at,
             )
+        )
+        decision_digest = _digest(decision_bytes)
+        token = reservation.token
+        if self.binder:
+            bound = self.binder(
+                report.issue_number,
+                submission_id,
+                outcome,
+                token,
+                decision_digest,
+                evidence,
+            )
+            if bound != token:
+                raise ReviewError("Broker returned a different bound reservation token")
+        current = _existing_decisions(store=self.store, report=report, outcome=outcome)
+        if current and any(content != decision_bytes for _, content, _ in current):
+            raise ReviewError("Conflicting decision artifacts exist")
+        content_path = _decision_path(submission_id, decision_digest)
+        if not any(path == content_path for path, _, _ in current):
             self.store.write_verified(
                 bucket=self.store.staging_bucket,
-                path=decision_path,
+                path=content_path,
                 content=decision_bytes,
             )
-        token = reservation.token
+        effective = _existing_decisions(
+            store=self.store, report=report, outcome=outcome
+        )
+        if not effective or {digest for _, _, digest in effective} != {decision_digest}:
+            raise ReviewError(
+                "Decision artifacts do not resolve to one durable outcome"
+            )
         if outcome == "accepted":
+            self._renew_reservation(report=report, records=evidence, token=token)
             self._promote_records(
                 report=report,
                 renew=lambda: self._renew_reservation(
                     report=report, records=evidence, token=token
                 ),
             )
-            self._renew_reservation(report=report, records=evidence, token=token)
         if self._broker_promoter:
             t.cast(BrokerPromoter, self.promoter)(
-                report.issue_number, submission_id, outcome, token, evidence
+                report.issue_number,
+                submission_id,
+                outcome,
+                token,
+                evidence,
+                decision_digest,
             )
         else:
             t.cast(t.Callable[[int, str, str], None], self.promoter)(
@@ -235,7 +269,7 @@ def _decision_bytes(
         raise ReviewError("Broker returned an empty decision timestamp")
     decision = {
         "protocol_version": PROTOCOL_VERSION,
-        "artifact": "volunteer-review-decision/v1",
+        "artifact": _DECISION_ARTIFACT,
         "immutable": True,
         "submission_id": report.submission_id,
         "issue_number": report.issue_number,
@@ -257,6 +291,83 @@ def _decision_bytes(
         json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         + "\n"
     ).encode("utf-8")
+
+
+def _decision_path(submission_id: str, digest: str) -> str:
+    """Return the immutable content-addressed path for a decision."""
+    return f"{_DECISION_PREFIX}/{submission_id}/{digest}.json"
+
+
+def _existing_decisions(
+    store: BucketStore, report: ReviewReport, outcome: str
+) -> list[tuple[str, bytes, str]]:
+    """Load and validate every durable decision for a submission.
+
+    Returns:
+        Validated paths, bytes, and SHA256 digests.
+
+    Raises:
+        ReviewError:
+            If an artifact is malformed, conflicting, or misplaced.
+    """
+    decisions: list[tuple[str, bytes, str]] = []
+    for path in store.list_decisions(report.submission_id):
+        content = store.read(store.staging_bucket, path)
+        decision = _load_object(content=content, context=path)
+        _validate_existing_decision(
+            content=content, decision=decision, report=report, outcome=outcome
+        )
+        digest = _digest(content)
+        legacy_path = f"{_DECISION_PREFIX}/{report.submission_id}.json"
+        if path != legacy_path and path != _decision_path(report.submission_id, digest):
+            raise ReviewError("Decision artifact path is not content-addressed")
+        decisions.append((path, content, digest))
+    digests = {digest for _, _, digest in decisions}
+    if len(digests) > 1:
+        raise ReviewError("Conflicting decision artifacts exist")
+    return decisions
+
+
+def _validate_existing_decision(
+    content: bytes, decision: JsonObject, report: ReviewReport, outcome: str
+) -> None:
+    if decision.get("outcome") != outcome:
+        raise ReviewError("Submission already has the opposite terminal decision")
+    expected_records = [
+        {
+            "identity": list(record.identity),
+            "digest": record.digest,
+            "canonical_path": record.canonical_path,
+        }
+        for record in report.records
+    ]
+    decision_reasons = decision.get("reasons")
+    reviewer = decision.get("reviewer")
+    decided_at = decision.get("decided_at")
+    if (
+        decision.get("protocol_version") != PROTOCOL_VERSION
+        or decision.get("artifact") != _DECISION_ARTIFACT
+        or decision.get("immutable") is not True
+        or decision.get("submission_id") != report.submission_id
+        or decision.get("issue_number") != report.issue_number
+        or decision.get("records") != expected_records
+        or not isinstance(reviewer, str)
+        or not reviewer.strip()
+        or not isinstance(decided_at, str)
+        or not decided_at.strip()
+        or not isinstance(decision_reasons, list)
+        or any(not isinstance(reason, str) for reason in decision_reasons)
+    ):
+        raise ReviewError("Existing decision artifact is malformed or inconsistent")
+    expected_content = _decision_bytes(
+        report=report,
+        outcome=outcome,
+        reviewer=reviewer,
+        reasons=t.cast(list[str], decision_reasons),
+        decided_at=decided_at,
+    )
+    if content != expected_content:
+        raise ReviewError("Existing decision artifact is malformed or inconsistent")
 
 
 def _local_reservation(
@@ -281,51 +392,97 @@ def _local_reservation(
     )
 
 
-def _validate_existing_decision(
-    content: bytes,
-    decision: JsonObject,
-    report: ReviewReport,
+def bind_with_broker(
+    issue_number: int,
+    submission_id: str,
     outcome: str,
-    reasons: list[str],
-) -> None:
-    if decision.get("outcome") != outcome:
-        raise ReviewError("Submission already has the opposite terminal decision")
-    expected_records = [
-        {
-            "identity": list(record.identity),
-            "digest": record.digest,
-            "canonical_path": record.canonical_path,
-        }
-        for record in report.records
-    ]
-    decision_reasons = decision.get("reasons")
-    reviewer = decision.get("reviewer")
-    decided_at = decision.get("decided_at")
-    if (
-        decision.get("protocol_version") != PROTOCOL_VERSION
-        or decision.get("artifact") != "volunteer-review-decision/v1"
-        or decision.get("immutable") is not True
-        or decision.get("submission_id") != report.submission_id
-        or decision.get("issue_number") != report.issue_number
-        or decision.get("records") != expected_records
-        or not isinstance(reviewer, str)
-        or not reviewer.strip()
-        or not isinstance(decided_at, str)
-        or not decided_at.strip()
-        or not isinstance(decision_reasons, list)
-        or any(not isinstance(reason, str) for reason in decision_reasons)
-        or decision_reasons != reasons
-    ):
-        raise ReviewError("Existing decision artifact is malformed or inconsistent")
-    expected_content = _decision_bytes(
-        report=report,
+    reservation_token: str,
+    decision_digest: str,
+    records: list[dict[str, str]],
+) -> str:
+    """Atomically bind a decision digest to an active broker reservation.
+
+    Returns:
+        The unchanged reservation token.
+
+    Raises:
+        ReviewError:
+            If the broker cannot bind the digest.
+    """
+    result = _request_reservation(
+        issue_number=issue_number,
+        submission_id=submission_id,
         outcome=outcome,
-        reviewer=reviewer,
-        reasons=t.cast(list[str], decision_reasons),
-        decided_at=decided_at,
+        records=records,
+        reservation_token=reservation_token,
+        decision_digest=decision_digest,
     )
-    if content != expected_content:
-        raise ReviewError("Existing decision artifact is malformed or inconsistent")
+    if not isinstance(result, str):
+        raise ReviewError("Broker returned decision metadata during binding")
+    return result
+
+
+def _request_reservation(
+    issue_number: int,
+    submission_id: str,
+    outcome: str,
+    records: list[dict[str, str]],
+    reservation_token: str | None = None,
+    reviewer: str | None = None,
+    decision_digest: str | None = None,
+) -> str | BrokerReservationResult:
+    secret = os.environ.get("VOLUNTEER_PROMOTION_SECRET")
+    if not secret:
+        raise ReviewError("VOLUNTEER_PROMOTION_SECRET is required")
+    endpoint = os.environ.get(
+        "VOLUNTEER_BROKER_RESERVATION_URL",
+        "https://euroeval.com/api/worker/promotion-lock",
+    )
+    request_body: dict[str, object] = {
+        "protocol_version": PROTOCOL_VERSION,
+        "issue_number": issue_number,
+        "submission_id": submission_id,
+        "outcome": outcome,
+        "records": records,
+    }
+    if reservation_token is not None:
+        request_body["reservation_token"] = reservation_token
+    if reviewer is not None:
+        request_body["reviewer"] = reviewer
+    if decision_digest is not None:
+        request_body["decision_digest"] = decision_digest
+    payload = json.dumps(request_body).encode("utf-8")
+    request = urllib.request.Request(
+        endpoint,
+        data=payload,
+        headers={"content-type": "application/json", "x-promotion-secret": secret},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ReviewError("Broker promotion reservation failed") from error
+    token = body.get("token") if isinstance(body, dict) else None
+    if not isinstance(token, str) or not token:
+        raise ReviewError("Broker did not return a promotion reservation token")
+    if reservation_token is not None:
+        return token
+    decision_reviewer = (
+        body.get("decision_reviewer") if isinstance(body, dict) else None
+    )
+    decision_created_at = (
+        body.get("decision_created_at") if isinstance(body, dict) else None
+    )
+    if not isinstance(decision_reviewer, str) or not decision_reviewer:
+        raise ReviewError("Broker did not return a decision reviewer")
+    if not isinstance(decision_created_at, str) or not decision_created_at:
+        raise ReviewError("Broker did not return a decision timestamp")
+    return BrokerReservationResult(
+        token=token,
+        decision_reviewer=decision_reviewer,
+        decision_created_at=decision_created_at,
+    )
 
 
 def promote_with_broker(
@@ -334,6 +491,7 @@ def promote_with_broker(
     outcome: str,
     reservation_token: str,
     records: list[dict[str, str]],
+    decision_digest: str,
 ) -> None:
     """Call the authenticated broker promotion transition.
 
@@ -355,6 +513,7 @@ def promote_with_broker(
             "outcome": outcome,
             "reservation_token": reservation_token,
             "records": records,
+            "decision_digest": decision_digest,
         }
     ).encode("utf-8")
     request = urllib.request.Request(
@@ -395,66 +554,6 @@ def renew_with_broker(
     if not isinstance(reservation, str):
         raise ReviewError("Broker returned decision metadata during renewal")
     return reservation
-
-
-def _request_reservation(
-    issue_number: int,
-    submission_id: str,
-    outcome: str,
-    records: list[dict[str, str]],
-    reservation_token: str | None = None,
-    reviewer: str | None = None,
-) -> str | BrokerReservationResult:
-    secret = os.environ.get("VOLUNTEER_PROMOTION_SECRET")
-    if not secret:
-        raise ReviewError("VOLUNTEER_PROMOTION_SECRET is required")
-    endpoint = os.environ.get(
-        "VOLUNTEER_BROKER_RESERVATION_URL",
-        "https://euroeval.com/api/worker/promotion-lock",
-    )
-    request_body: dict[str, object] = {
-        "protocol_version": PROTOCOL_VERSION,
-        "issue_number": issue_number,
-        "submission_id": submission_id,
-        "outcome": outcome,
-        "records": records,
-    }
-    if reservation_token is not None:
-        request_body["reservation_token"] = reservation_token
-    if reviewer is not None:
-        request_body["reviewer"] = reviewer
-    payload = json.dumps(request_body).encode("utf-8")
-    request = urllib.request.Request(
-        endpoint,
-        data=payload,
-        headers={"content-type": "application/json", "x-promotion-secret": secret},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            body = json.loads(response.read().decode("utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
-        raise ReviewError("Broker promotion reservation failed") from error
-    token = body.get("token") if isinstance(body, dict) else None
-    if not isinstance(token, str) or not token:
-        raise ReviewError("Broker did not return a promotion reservation token")
-    if reservation_token is not None:
-        return token
-    decision_reviewer = (
-        body.get("decision_reviewer") if isinstance(body, dict) else None
-    )
-    decision_created_at = (
-        body.get("decision_created_at") if isinstance(body, dict) else None
-    )
-    if not isinstance(decision_reviewer, str) or not decision_reviewer:
-        raise ReviewError("Broker did not return a decision reviewer")
-    if not isinstance(decision_created_at, str) or not decision_created_at:
-        raise ReviewError("Broker did not return a decision timestamp")
-    return BrokerReservationResult(
-        token=token,
-        decision_reviewer=decision_reviewer,
-        decision_created_at=decision_created_at,
-    )
 
 
 def reserve_with_broker(

@@ -11,12 +11,15 @@ from leaderboards.result_identity import ResultIdentity
 
 JsonObject: t.TypeAlias = dict[str, object]
 BrokerPromoter: t.TypeAlias = t.Callable[
-    [int, str, str, str, list[dict[str, str]]], None
+    [int, str, str, str, list[dict[str, str]], str], None
 ]
 BrokerReservation: t.TypeAlias = t.Callable[
     [int, str, str, str, list[dict[str, str]]], "BrokerReservationResult"
 ]
 BrokerRenewer: t.TypeAlias = t.Callable[[int, str, str, str, list[dict[str, str]]], str]
+BrokerBinder: t.TypeAlias = t.Callable[
+    [int, str, str, str, str, list[dict[str, str]]], str
+]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -26,6 +29,7 @@ class BrokerReservationResult:
     token: str
     decision_reviewer: str
     decision_created_at: str
+    decision_digest: str | None = None
 
 
 class BucketEntry(t.Protocol):
