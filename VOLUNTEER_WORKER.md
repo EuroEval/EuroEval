@@ -7,38 +7,27 @@ It does not publish results directly to the public leaderboard.
 
 ## Contributor quick start
 
-### Requirements
+You need a Linux x86_64/amd64 computer with an NVIDIA GPU, a current NVIDIA
+[driver](https://www.nvidia.com/en-us/drivers/),
+[Docker Engine](https://docs.docker.com/engine/install/), and the
+[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+The current image does not support NVIDIA DGX Spark or other Linux arm64 machines.
 
-- Linux x86_64/amd64
-- An NVIDIA GPU and a current NVIDIA driver
-- Docker Engine with the NVIDIA Container Toolkit
-- Network access to `euroeval.com` and Hugging Face
-- Enough local disk for model, dataset, and result caches
+### 1. Verify that Docker can use the GPU
 
-The published image is **amd64 only**. NVIDIA DGX Spark and other Linux arm64
-machines are not supported by this image. The container deliberately does not
-bundle a driver or replace `nvidia-smi`; the NVIDIA runtime passes through the
-host's driver tools and libraries.
-
-### Select an immutable image
-
-The workflow prints the image digest after each successful publish. Use that full
-reference, not `latest` or a branch tag:
+Copy and run both commands:
 
 ```sh
-IMAGE='ghcr.io/euroeval/euroeval-worker@sha256:<digest-from-the-workflow>'
-docker pull "$IMAGE"
-docker image inspect "$IMAGE" --format '{{index .RepoDigests 0}}'
+nvidia-smi
+docker run --rm --gpus all ubuntu nvidia-smi
 ```
 
-The digest is the deployment identity. Keep it recorded with the worker's
-configuration so an update can be audited and rolled back.
+Both commands should list your GPU. If the second command fails, finish configuring
+the NVIDIA Container Toolkit before continuing.
 
-### Run securely
+### 2. Start the worker
 
-Create a dedicated Docker volume. It contains the opaque broker credential, model
-weights, Hugging Face metadata, and retry state; it is not a general-purpose host
-volume.
+Copy and run this block once:
 
 ```sh
 docker volume create euroeval-worker-cache
@@ -54,32 +43,33 @@ docker run --rm -it \
   --pids-limit=512 \
   -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
   -v euroeval-worker-cache:/cache \
-  "$IMAGE" --once
+  ghcr.io/euroeval/euroeval-worker:latest
 ```
 
-On the first run, the worker prints a GitHub device-flow URL and a short code.
-Open the URL in a browser, enter the code, and approve the flow. The worker then
-stores only an opaque broker credential and the verified GitHub login in
-`/cache/state.json`; it never receives or stores a GitHub access token. Keep the
-terminal attached for the first run so the prompt and approval are visible.
+On the first run, open the GitHub URL printed in the terminal, enter the short code,
+and approve access. The worker then starts evaluating compatible queued work and
+continues until you press Ctrl-C. If no work is available, it waits and checks again.
 
-After the first successful run, omit `-it` and `--once` for continuous service
-operation. Keep `--rm` only when a supervisor recreates the container; a named
-volume preserves authentication and caches when the container is replaced. Stop
-a running worker with `docker stop euroeval-worker`.
+The named Docker volume preserves authentication, model downloads, and unfinished
+work between runs. To contribute again later, run the same `docker run` command; you
+normally will not need to authenticate again.
 
-`--gpus all` is the supported passthrough mechanism. Before starting a worker,
-verify the host and runtime independently:
+Do not add `--privileged`, host networking, the Docker socket, a home-directory
+mount, or project credentials. The worker never needs your `HF_TOKEN`, GitHub token,
+or Upstash credentials.
+
+### Optional: record the exact image version
+
+Docker resolves `:latest` to an immutable digest when it downloads the image. An
+operator who needs an auditable deployment can display that digest after starting
+the worker:
 
 ```sh
-nvidia-smi
-docker run --rm --gpus all --cap-drop=ALL --entrypoint nvidia-smi "$IMAGE"
+docker image inspect ghcr.io/euroeval/euroeval-worker:latest \
+  --format '{{index .RepoDigests 0}}'
 ```
 
-The second command is only a diagnostic override of the image entrypoint. Do not
-use `--privileged`, host networking, the Docker socket, or a mount of the host's
-home directory. Do not pass `HF_TOKEN`, GitHub tokens, or Upstash credentials to a
-worker; the broker handles authentication and staging uploads.
+This is informational. Contributors do not need to run the worker again.
 
 ## How volunteer evaluation works
 
@@ -198,8 +188,9 @@ server-derived accepted result counts. Lower-case GitHub login order breaks ties
 layer caching, and emits provenance and an SBOM for published images. Pull requests
 load a local image and smoke its normal entrypoint as UID 10001 without a GPU. They
 cannot push. Only pushes to `main` and an explicit trusted workflow dispatch log in
-and publish. The workflow prints the resulting immutable content digest for the
-broker configuration.
+and publish. Default-branch builds update the contributor-facing `latest` tag, and
+the workflow prints the resulting immutable content digest for pinned operator
+deployments.
 
 If a build fails, do not switch the deployment to a mutable base image or install a
 host driver in the image. Check the pinned CUDA base, the locked `uv.lock`
