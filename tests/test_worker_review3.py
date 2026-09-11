@@ -2,10 +2,13 @@
 
 import dataclasses
 import json
+import sys
+import types
 import typing as t
 from pathlib import Path
 
 import pytest
+from transformers import BertConfig, ViTConfig
 
 from euroeval_worker import runtime, safety
 from euroeval_worker.broker import BrokerError, BrokerProtocol
@@ -154,6 +157,103 @@ def test_huggingface_metadata_records_immutable_capability_evidence(
     assert metadata.pipeline_tag == "fill-mask"
     assert metadata.architectures == ("NovelBaseModel",)
     assert metadata.backend_compatible
+
+
+def test_encoder_backend_requires_each_leased_task_mapping() -> None:
+    """Require task-specific Transformers mappings, not base-model membership."""
+    config = BertConfig()
+    for task_group in (
+        "sequence_classification",
+        "token_classification",
+        "question_answering",
+        "multiple_choice_classification",
+    ):
+        assert safety._installed_backend_supports(
+            model_type="encoder",
+            config=config,
+            architectures=("BertModel",),
+            pipeline_tag="text-classification",
+            task_groups=(task_group,),
+        )
+    assert not safety._installed_backend_supports(
+        model_type="encoder",
+        config=ViTConfig(),
+        architectures=("ViTModel",),
+        pipeline_tag="image-classification",
+        task_groups=("sequence_classification",),
+    )
+    assert not safety._installed_backend_supports(
+        model_type="encoder",
+        config=config,
+        architectures=("BertModel",),
+        pipeline_tag="image-classification",
+        task_groups=("sequence_classification",),
+    )
+
+
+def test_vllm_inspection_rejects_pooling_only_architecture(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Use vLLM's model inspection result rather than registry membership."""
+
+    class Info:
+        is_text_generation_model = False
+        is_pooling_model = True
+
+    class Registry:
+        models = {"PoolingModel": object()}
+
+        @staticmethod
+        def get_supported_archs() -> object:
+            return Registry.models.keys()
+
+        @staticmethod
+        def inspect_model_cls(
+            architectures: object, config: object
+        ) -> tuple[Info, str]:
+            return Info(), "PoolingModel"
+
+    monkeypatch.setitem(sys.modules, "vllm", types.ModuleType("vllm"))
+    registry_module = types.ModuleType("vllm.model_executor.models.registry")
+    registry_module.ModelRegistry = Registry
+    monkeypatch.setitem(
+        sys.modules, "vllm.model_executor", types.ModuleType("vllm.model_executor")
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "vllm.model_executor.models",
+        types.ModuleType("vllm.model_executor.models"),
+    )
+    monkeypatch.setitem(
+        sys.modules, "vllm.model_executor.models.registry", registry_module
+    )
+    assert not safety._installed_backend_supports(
+        model_type="generative",
+        config=object(),
+        architectures=("PoolingModel",),
+        pipeline_tag="text-generation",
+    )
+    Info.is_text_generation_model = True
+    Info.is_pooling_model = False
+    assert safety._installed_backend_supports(
+        model_type="generative",
+        config=object(),
+        architectures=("PoolingModel",),
+        pipeline_tag="text-generation",
+    )
+
+
+def test_pinned_vllm_registry_is_used_when_installed() -> None:
+    """Exercise the pinned registry in environments that provide vLLM."""
+    vllm = pytest.importorskip("vllm")
+    version = getattr(vllm, "__version__", "")
+    assert version.startswith("0.27.1")
+    assert safety._installed_backend_supports(
+        model_type="generative",
+        config=object(),
+        architectures=("LlamaForCausalLM",),
+        pipeline_tag="text-generation",
+    )
 
 
 def test_model_metadata_is_required_and_contradictions_fail_closed() -> None:

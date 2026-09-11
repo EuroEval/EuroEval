@@ -16,6 +16,12 @@
         "[\"wikiann-be\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -32,6 +38,12 @@
         "[\"winogrande-bg\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -45,6 +57,11 @@
         "[\"wikiann-bs\",false,true]"
       ],
       "count": 3,
+      "task_groups": [
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -61,6 +78,12 @@
         "[\"winogrande-ca\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -77,6 +100,12 @@
         "[\"umimeto-qa\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -95,6 +124,12 @@
         "[\"winogrande-da\",false,true]"
       ],
       "count": 8,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -112,6 +147,12 @@
         "[\"winogrande-de\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -128,6 +169,12 @@
         "[\"winogrande-el\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -144,6 +191,12 @@
         "[\"sst5\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -161,6 +214,12 @@
         "[\"winogrande-es\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -177,6 +236,12 @@
         "[\"winogrande-et\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -193,6 +258,12 @@
         "[\"winogrande-fi\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -209,6 +280,12 @@
         "[\"scala-fo\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -226,6 +303,12 @@
         "[\"scala-fr\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -242,6 +325,12 @@
         "[\"winogrande-hr\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -258,6 +347,12 @@
         "[\"winogrande-hu\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -274,6 +369,12 @@
         "[\"winogrande-is\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -291,6 +392,12 @@
         "[\"winogrande-it\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -308,6 +415,11 @@
         "[\"multi-wiki-qa-lb\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -325,6 +437,12 @@
         "[\"winogrande-lt\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -341,6 +459,12 @@
         "[\"scala-lv\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -358,6 +482,12 @@
         "[\"scala-nb\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -375,6 +505,12 @@
         "[\"winogrande-nl\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -392,6 +528,12 @@
         "[\"scala-nn\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -411,6 +553,12 @@
         "[\"scala-nn\",false,true]"
       ],
       "count": 9,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -427,6 +575,12 @@
         "[\"winogrande-pl\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -444,6 +598,12 @@
         "[\"winogrande-pt\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -461,6 +621,12 @@
         "[\"winogrande-pt\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -477,6 +643,12 @@
         "[\"winogrande-ro\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -493,6 +665,12 @@
         "[\"winogrande-sk\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -509,6 +687,12 @@
         "[\"winogrande-sl\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -525,6 +709,12 @@
         "[\"winogrande-sq\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -541,6 +731,12 @@
         "[\"winogrande-sr\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -558,6 +754,12 @@
         "[\"winogrande-sv\",false,true]"
       ],
       "count": 7,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -574,6 +776,12 @@
         "[\"winogrande-uk\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -593,6 +801,13 @@
         "[\"wikiann-be\",false,true]"
       ],
       "count": 9,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -611,6 +826,13 @@
         "[\"winogrande-bg\",false,true]"
       ],
       "count": 8,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -627,6 +849,12 @@
         "[\"wikiann-bs\",false,true]"
       ],
       "count": 6,
+      "task_groups": [
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -646,6 +874,13 @@
         "[\"winogrande-ca\",false,true]"
       ],
       "count": 9,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -665,6 +900,13 @@
         "[\"umimeto-qa\",false,true]"
       ],
       "count": 9,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -688,6 +930,13 @@
         "[\"zebra-puzzles-easy-da\",false,true]"
       ],
       "count": 13,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -710,6 +959,13 @@
         "[\"zebra-puzzles-easy-de\",false,true]"
       ],
       "count": 12,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -730,6 +986,13 @@
         "[\"winogrande-el\",false,true]"
       ],
       "count": 10,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -752,6 +1015,13 @@
         "[\"zebra-puzzles-easy-en\",false,true]"
       ],
       "count": 12,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -773,6 +1043,13 @@
         "[\"winogrande-es\",false,true]"
       ],
       "count": 11,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -793,6 +1070,13 @@
         "[\"winogrande-et\",false,true]"
       ],
       "count": 10,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -813,6 +1097,13 @@
         "[\"xlsum-fi\",false,true]"
       ],
       "count": 10,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -833,6 +1124,13 @@
         "[\"zebra-puzzles-easy-fo\",false,true]"
       ],
       "count": 10,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -854,6 +1152,13 @@
         "[\"valeu-fr\",false,true]"
       ],
       "count": 11,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -872,6 +1177,13 @@
         "[\"winogrande-hr\",false,true]"
       ],
       "count": 8,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -891,6 +1203,13 @@
         "[\"winogrande-hu\",false,true]"
       ],
       "count": 9,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -912,6 +1231,13 @@
         "[\"zebra-puzzles-easy-is\",false,true]"
       ],
       "count": 11,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -933,6 +1259,13 @@
         "[\"winogrande-it\",false,true]"
       ],
       "count": 11,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -952,6 +1285,12 @@
         "[\"ragtruth-lb\",false,true]"
       ],
       "count": 9,
+      "task_groups": [
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -972,6 +1311,13 @@
         "[\"winogrande-lt\",false,true]"
       ],
       "count": 10,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -991,6 +1337,13 @@
         "[\"scala-lv\",false,true]"
       ],
       "count": 9,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1012,6 +1365,13 @@
         "[\"zebra-puzzles-easy-nb\",false,true]"
       ],
       "count": 11,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1036,6 +1396,13 @@
         "[\"zebra-puzzles-easy-nl\",false,true]"
       ],
       "count": 14,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1057,6 +1424,13 @@
         "[\"zebra-puzzles-easy-nn\",false,true]"
       ],
       "count": 11,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1083,6 +1457,13 @@
         "[\"zebra-puzzles-easy-nn\",false,true]"
       ],
       "count": 16,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1103,6 +1484,13 @@
         "[\"winogrande-pl\",false,true]"
       ],
       "count": 10,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1124,6 +1512,13 @@
         "[\"winogrande-pt\",false,true]"
       ],
       "count": 11,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1143,6 +1538,13 @@
         "[\"winogrande-pt\",false,true]"
       ],
       "count": 9,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1162,6 +1564,13 @@
         "[\"winogrande-ro\",false,true]"
       ],
       "count": 9,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1180,6 +1589,13 @@
         "[\"winogrande-sk\",false,true]"
       ],
       "count": 8,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1198,6 +1614,13 @@
         "[\"winogrande-sl\",false,true]"
       ],
       "count": 8,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1217,6 +1640,13 @@
         "[\"winogrande-sq\",false,true]"
       ],
       "count": 9,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1236,6 +1666,13 @@
         "[\"winogrande-sr\",false,true]"
       ],
       "count": 9,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1258,6 +1695,13 @@
         "[\"zebra-puzzles-easy-sv\",false,true]"
       ],
       "count": 12,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     },
     {
@@ -1277,6 +1721,13 @@
         "[\"winogrande-uk\",false,true]"
       ],
       "count": 9,
+      "task_groups": [
+        "multiple_choice_classification",
+        "question_answering",
+        "sequence_classification",
+        "text_to_text",
+        "token_classification"
+      ],
       "warnings": []
     }
   ]

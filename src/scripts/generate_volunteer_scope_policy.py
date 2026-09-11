@@ -51,6 +51,7 @@ def build_policy(
     entries: list[dict[str, object]] = []
     for model_type in model_types:
         by_language: dict[str, list[str]] = {}
+        task_groups_by_language: dict[str, set[str]] = {}
         for dataset, language in sorted(pairs):
             config = configs[dataset]
             languages = getattr(config, "languages")
@@ -61,6 +62,9 @@ def build_policy(
             # Benchmarker defaults are validation_split=False and few_shot=True.
             suffix = json.dumps([dataset, False, True], separators=(",", ":"))
             by_language.setdefault(language, []).append(suffix)
+            task_groups_by_language.setdefault(language, set()).add(
+                config.task.task_group.value
+            )
         entries.extend(
             {
                 "euroeval_version": euroeval_version,
@@ -69,6 +73,7 @@ def build_policy(
                 "language_group": language,
                 "identity_suffixes": suffixes,
                 "count": len(suffixes),
+                "task_groups": sorted(task_groups_by_language[language]),
                 "warnings": [],
             }
             for language, suffixes in sorted(by_language.items())

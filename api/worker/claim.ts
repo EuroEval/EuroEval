@@ -105,6 +105,7 @@ export default async function handler(req: Request): Promise<Response> {
             language_group: trusted.language_group,
             identity_suffixes: [...trusted.identity_suffixes],
             count: trusted.identity_suffixes.length,
+            task_groups: [...trusted.task_groups],
             warnings: trusted.warnings || [],
           },
         };

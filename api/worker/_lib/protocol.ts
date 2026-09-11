@@ -117,6 +117,7 @@ export interface Lease {
     language_group: string;
     identity_suffixes: string[];
     count: number;
+    task_groups: string[];
     warnings: string[];
   };
 }
