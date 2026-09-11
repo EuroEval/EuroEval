@@ -8,7 +8,7 @@ import typing as t
 from pathlib import Path
 
 import pytest
-from transformers import BertConfig, CTRLConfig, ViTConfig
+from transformers import BertConfig, CTRLConfig, ViTConfig, XLNetConfig
 
 from euroeval_worker import runtime, safety
 from euroeval_worker.broker import BrokerError, BrokerProtocol
@@ -157,6 +157,72 @@ def test_huggingface_metadata_records_immutable_capability_evidence(
     assert metadata.pipeline_tag == "fill-mask"
     assert metadata.architectures == ("NovelBaseModel",)
     assert metadata.backend_compatible
+
+
+def test_full_encoder_preflight_uses_the_leased_task_scope(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Fetch broad metadata, then check only the broker-authorised tasks."""
+    task_groups = (
+        "sequence_classification",
+        "token_classification",
+        "question_answering",
+        "multiple_choice_classification",
+    )
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps({"model_type": "xlnet", "architectures": ["XLNetModel"]}),
+        encoding="utf-8",
+    )
+
+    class Info:
+        id = "org/model"
+        private = False
+        gated = False
+        pipeline_tag = "text-classification"
+        siblings = [
+            type("Sibling", (), {"rfilename": "config.json", "size": 10})(),
+            type("Sibling", (), {"rfilename": "model.safetensors", "size": 20})(),
+        ]
+
+    class Api:
+        def __init__(self, token: bool) -> None:
+            assert token is False
+
+        def model_info(self, **kwargs: object) -> Info:
+            assert kwargs["revision"] == "a" * 40
+            return Info()
+
+    monkeypatch.setattr(safety, "HfApi", Api)
+    monkeypatch.setattr(safety, "hf_hub_download", lambda **kwargs: str(config_path))
+    monkeypatch.setattr(
+        safety.AutoConfig, "from_pretrained", lambda *args, **kwargs: XLNetConfig()
+    )
+
+    metadata = safety.HuggingFaceMetadata().fetch("org/model", "a" * 40)
+    assert not safety._installed_backend_supports(
+        model_type="encoder",
+        config=XLNetConfig(),
+        architectures=("XLNetModel",),
+        pipeline_tag="text-classification",
+        task_groups=(*task_groups, "fill_mask"),
+    )
+    assert LEASE.expected_scope is not None
+    lease = dataclasses.replace(
+        LEASE,
+        model_metadata=ModelEvidence(
+            pipeline_tag="text-classification",
+            architectures=("XLNetModel",),
+            model_type="encoder",
+        ),
+        expected_scope=dataclasses.replace(
+            LEASE.expected_scope, task_groups=task_groups
+        ),
+    )
+    report = check_model_safety(
+        lease, (GPU,), metadata, free_disk_bytes=metadata.repository_bytes
+    )
+    assert report.estimated_bytes == 20
 
 
 def test_encoder_backend_requires_each_leased_task_mapping() -> None:
