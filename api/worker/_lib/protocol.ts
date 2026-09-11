@@ -103,7 +103,7 @@ export interface Lease {
   expires_at: string;
   lease_id: string;
   result_count?: number;
-  model_profile: string;
+  model_type: "encoder" | "generative";
   expected_scope: {
     policy_version: string;
     language_group: string;

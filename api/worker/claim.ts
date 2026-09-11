@@ -85,7 +85,7 @@ export default async function handler(req: Request): Promise<Response> {
         const staleLease = await getLeaseForIssue(snapshot.number, language);
         if (staleLease && Date.parse(staleLease.expires_at) <= Date.now() && !await reclaimExpiredLease(staleLease)) continue;
         let trusted;
-        try { trusted = expectedScope(euroevalVersion, model.model_profile, language); }
+        try { trusted = expectedScope(euroevalVersion, model.model_type, language); }
         catch (error) { if (error instanceof BrokerError && error.status === 422) continue; throw error; }
         const expiresAt = new Date(Date.now() + leaseTtl() * 1000).toISOString();
         const lease: Lease = {
@@ -97,7 +97,7 @@ export default async function handler(req: Request): Promise<Response> {
           selected_gpu_index: body.hardware.selected_gpu_index as number,
           selected_gpu_uuid: body.hardware.selected_gpu_uuid as string,
           expires_at: expiresAt,
-          lease_id: randomToken(18), model_profile: model.model_profile,
+          lease_id: randomToken(18), model_type: model.model_type,
           expected_scope: { policy_version: trusted.policy_version, language_group: trusted.language_group,
             identity_suffixes: [...trusted.identity_suffixes], count: trusted.identity_suffixes.length,
             warnings: trusted.warnings || [] },
@@ -141,7 +141,7 @@ export default async function handler(req: Request): Promise<Response> {
           language, model_id: model.id, model_revision: model.revision, euroeval_version: euroevalVersion,
           image_digest: imageDigest, worker_version: lease.worker_version, expires_at: expiresAt,
           selected_gpu_index: lease.selected_gpu_index, selected_gpu_uuid: lease.selected_gpu_uuid,
-          model_profile: lease.model_profile, expected_scope: lease.expected_scope,
+          model_type: lease.model_type, expected_scope: lease.expected_scope,
         });
       } finally { await mutex.release(); }
     }

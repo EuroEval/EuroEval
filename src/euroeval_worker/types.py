@@ -233,9 +233,9 @@ class Lease:
     euroeval_version: str
     image_digest: str
     expires_at: str
+    model_type: str
     worker_version: str = "legacy-worker"
     gpu_memory_utilisation: float = 0.8
-    model_profile: str | None = None
     selected_gpu_uuid: str | None = None
     selected_gpu_index: int | None = None
 
@@ -268,6 +268,9 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
         raise ValueError(
             "broker response gpu_memory_utilisation must be between 0 and 1"
         )
+    model_type = _string(data, "model_type")
+    if model_type not in {"encoder", "generative"}:
+        raise ValueError("broker response model_type is unsupported")
     return Lease(
         lease_id=_string(data, "lease_id"),
         issue_number=_integer(data, "issue_number"),
@@ -279,7 +282,7 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
         worker_version=_string(data, "worker_version"),
         gpu_memory_utilisation=gpu_memory_utilisation,
         expires_at=_string(data, "expires_at"),
-        model_profile=_optional_string(data, "model_profile"),
+        model_type=model_type,
         selected_gpu_uuid=selected_gpu_uuid,
         selected_gpu_index=_optional_integer(data, "selected_gpu_index"),
     )

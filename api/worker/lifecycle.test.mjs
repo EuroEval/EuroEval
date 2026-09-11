@@ -12,7 +12,7 @@ const lease = {
   model_id: "org/model", model_revision: "revision", euroeval_version: "1.0.0",
   image_digest: "sha256:image", worker_version: "1.0.0", gpu_memory_utilisation: 0.8,
   expires_at: new Date(Date.now() + 60_000).toISOString(), lease_id: "lease",
-  model_profile: "bert", expected_scope: { language_group: "Danish", identity_suffixes: ["x"] },
+  model_type: "encoder", expected_scope: { language_group: "Danish", identity_suffixes: ["x"] },
 };
 
 function markerBody(marker) {

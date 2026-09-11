@@ -213,7 +213,7 @@ def _reviewer(
         "language": "da",
         "language_group": "da",
         "euroeval_version": "18.0.0.dev0",
-        "model_profile": "llama",
+        "model_type": "generative",
         "worker_version": "18.0.0",
         "image_digest": "sha256:image",
         "created_at": "2026-09-06T10:00:00Z",
@@ -242,7 +242,7 @@ def _reviewer(
         "policies": [
             {
                 "euroeval_version": "18.0.0.dev0",
-                "model_profile": "llama",
+                "model_type": "generative",
                 "language": "da",
                 "language_group": "da",
                 "identity_suffixes": suffixes,
