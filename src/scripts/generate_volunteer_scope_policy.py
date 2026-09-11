@@ -14,19 +14,7 @@ from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import ModelType
 from leaderboards.evaluation_common import official_dataset_language_pairs
 
-PROFILES = (
-    "bert",
-    "roberta",
-    "eurobert",
-    "llama",
-    "mistral",
-    "qwen",
-    "gemma",
-    "phi",
-    "falcon",
-    "gpt2",
-)
-ENCODER_PROFILES = frozenset({"bert", "roberta", "eurobert"})
+MODEL_TYPES = ("encoder", "generative")
 
 
 def main() -> None:
@@ -51,7 +39,7 @@ def main() -> None:
 def build_policy(
     euroeval_version: str,
     pairs: set[tuple[str, str]],
-    profiles: tuple[str, ...] = PROFILES,
+    model_types: tuple[str, ...] = MODEL_TYPES,
 ) -> dict[str, object]:
     """Build a policy from exact worker identity defaults and dataset contracts.
 
@@ -61,14 +49,14 @@ def build_policy(
     euroeval_version = str(Version(euroeval_version))
     configs = _configs_by_name()
     entries: list[dict[str, object]] = []
-    for profile in profiles:
+    for model_type in model_types:
         by_language: dict[str, list[str]] = {}
         for dataset, language in sorted(pairs):
             config = configs[dataset]
             languages = getattr(config, "languages")
             if language not in {
                 item.code for item in languages
-            } or not _allowed_for_profile(config, profile):
+            } or not _allowed_for_model_type(config, model_type):
                 continue
             # Benchmarker defaults are validation_split=False and few_shot=True.
             suffix = json.dumps([dataset, False, True], separators=(",", ":"))
@@ -76,7 +64,7 @@ def build_policy(
         entries.extend(
             {
                 "euroeval_version": euroeval_version,
-                "model_profile": profile,
+                "model_type": model_type,
                 "language": language,
                 "language_group": language,
                 "identity_suffixes": suffixes,
@@ -91,12 +79,14 @@ def build_policy(
     }
 
 
-def _allowed_for_profile(config: object, profile: str) -> bool:
-    """Return whether one architecture profile may run a dataset."""
+def _allowed_for_model_type(config: object, model_type: str) -> bool:
+    """Return whether one broad model type may run a dataset."""
     allowed = getattr(config, "allowed_model_types")
-    if profile in ENCODER_PROFILES:
+    if model_type == "encoder":
         return ModelType.ENCODER in allowed
-    return ModelType.GENERATIVE in allowed
+    if model_type == "generative":
+        return ModelType.GENERATIVE in allowed
+    return False
 
 
 def _configs_by_name() -> dict[str, object]:

@@ -35,7 +35,10 @@ def _validate_manifest(
     revision = _required_string(model, "revision")
     euroeval_version = _required_string(manifest, "euroeval_version")
     _required_string(manifest, "language_group")
-    for field in ("model_profile", "worker_version", "image_digest", "created_at"):
+    model_type = _required_string(manifest, "model_type")
+    if model_type not in {"encoder", "generative"}:
+        raise ReviewError("Manifest model_type is unsupported")
+    for field in ("worker_version", "image_digest", "created_at"):
         _required_string(manifest, field)
     expected_scope = _required_object(manifest, "expected_scope")
     _required_string(expected_scope, "policy_version")
@@ -80,7 +83,7 @@ def _validate_manifest(
     provenance = {
         key: manifest[key]
         for key in (
-            "model_profile",
+            "model_type",
             "language_group",
             "worker_version",
             "image_digest",
@@ -414,14 +417,14 @@ def _validate_scope_policy(
         "policy_version"
     ) or not isinstance(policies, list):
         raise ReviewError("Manifest scope policy version is not trusted")
-    profile = manifest.get("model_profile")
+    model_type = manifest.get("model_type")
     language = manifest.get("language")
     version = manifest.get("euroeval_version")
     matching = [
         item
         for item in policies
         if isinstance(item, dict)
-        and item.get("model_profile") == profile
+        and item.get("model_type") == model_type
         and item.get("language") == language
         and _normalise_version(str(item.get("euroeval_version")))
         == _normalise_version(str(version))

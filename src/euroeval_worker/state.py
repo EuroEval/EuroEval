@@ -27,13 +27,13 @@ def _lease_from_state(value: object) -> Lease:
         "image_digest",
         "worker_version",
         "expires_at",
-        "model_profile",
+        "model_type",
     )
     if any(key not in value for key in required):
         raise ValueError("lease is incomplete")
-    model_profile = value["model_profile"]
-    if model_profile is not None and not isinstance(model_profile, str):
-        raise ValueError("model_profile is malformed")
+    model_type = value["model_type"]
+    if model_type not in {"encoder", "generative"}:
+        raise ValueError("model_type is malformed")
     selected_gpu_uuid = value.get("selected_gpu_uuid")
     if selected_gpu_uuid is not None and (
         not isinstance(selected_gpu_uuid, str) or not selected_gpu_uuid
@@ -62,7 +62,7 @@ def _lease_from_state(value: object) -> Lease:
         worker_version=value["worker_version"],
         gpu_memory_utilisation=float(gpu_memory_utilisation),
         expires_at=value["expires_at"],
-        model_profile=model_profile,
+        model_type=model_type,
         selected_gpu_uuid=selected_gpu_uuid,
         selected_gpu_index=selected_gpu_index,
     )

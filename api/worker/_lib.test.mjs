@@ -74,7 +74,7 @@ test("promotion evidence binds safe canonical paths to digests", () => {
 });
 
 test("generated trusted scopes are exact-language and versioned", () => {
-  const scope = expectedScope("18.0.0.dev", "bert", "da");
+  const scope = expectedScope("18.0.0.dev", "encoder", "da");
   assert.equal(scope.language, "da");
   assert.equal(scope.policy_version, "volunteer-scope/18.0.0.dev0");
   assert.ok(scope.identity_suffixes.length > 0);
@@ -83,11 +83,11 @@ test("generated trusted scopes are exact-language and versioned", () => {
 test("trusted exact-language policy owns the lease language group", () => {
   const original = process.env.VOLUNTEER_SCOPE_POLICY_JSON;
   process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
-    euroeval_version: "1.0.0", model_profile: "bert", language: "da", language_group: "policy-da",
+    euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "policy-da",
     identity_suffixes: [JSON.stringify(["dataset", false, true])],
   }] });
   try {
-    const scope = expectedScope("1.0.0", "bert", "da");
+    const scope = expectedScope("1.0.0", "encoder", "da");
     assert.equal(scope.language, "da");
     assert.equal(scope.language_group, "policy-da");
   } finally {
@@ -97,7 +97,7 @@ test("trusted exact-language policy owns the lease language group", () => {
 });
 
 test("fits only the explicitly selected GPU", () => {
-  const model = { id: "org/model", revision: "r", config: {}, weight_bytes: 300, repo_bytes: 500, model_profile: "llama" };
+  const model = { id: "org/model", revision: "r", config: {}, weight_bytes: 300, repo_bytes: 500, model_type: "generative" };
   const hardware = {
     free_disk_bytes: 500, gpu_memory_utilisation: 0.8, selected_gpu_index: 1, selected_gpu_uuid: "GPU-1",
     gpus: [{ index: 0, name: "a", uuid: "GPU-0", free_memory_bytes: 100, total_memory_bytes: 100 },
@@ -111,7 +111,7 @@ test("fits only the explicitly selected GPU", () => {
 });
 
 test("fits a model on one reported GPU and requires repository disk", () => {
-  const model = { id: "org/model", revision: "r", config: {}, weight_bytes: 100, repo_bytes: 500, model_profile: "llama" };
+  const model = { id: "org/model", revision: "r", config: {}, weight_bytes: 100, repo_bytes: 500, model_type: "generative" };
   const hardware = { free_disk_bytes: 500, gpus: [{ name: "a", uuid: "1", free_memory_bytes: 50, total_memory_bytes: 50 }, { name: "b", uuid: "2", free_memory_bytes: 135, total_memory_bytes: 135 }] };
   assert.equal(fitsGpu(model, hardware), true);
   assert.equal(fitsGpu(model, { ...hardware, free_disk_bytes: 499 }), false);
@@ -280,7 +280,7 @@ const putLeaseFixture = (overrides = {}) => ({
   image_digest: "sha256:image", worker_version: "worker-v1", gpu_memory_utilisation: 0.8,
   selected_gpu_index: 0, selected_gpu_uuid: "GPU-0",
   expires_at: new Date(Date.now() + 60_000).toISOString(), lease_id: "lease-id",
-  model_profile: "llama", expected_scope: {
+  model_type: "generative", expected_scope: {
     policy_version: "policy-v1", language_group: "da", identity_suffixes: [], count: 0, warnings: [],
   }, ...overrides,
 });

@@ -7,40 +7,20 @@ import re
 from pathlib import Path
 
 from huggingface_hub import HfApi, hf_hub_download
+from transformers import AutoConfig
 
 from .types import Gpu, Lease
 
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _SUPPORTED_HOST_ARCHITECTURES = {"x86_64", "amd64", "aarch64", "arm64"}
-_ARCHITECTURE_PROFILES = {
-    "BertForSequenceClassification": "bert",
-    "BertForTokenClassification": "bert",
-    "RobertaForSequenceClassification": "roberta",
-    "RobertaForTokenClassification": "roberta",
-    "XLMRobertaForSequenceClassification": "roberta",
-    "XLMRobertaForTokenClassification": "roberta",
-    "EuroBERTForSequenceClassification": "eurobert",
-    "EuroBERTForTokenClassification": "eurobert",
-    "EuroBertForSequenceClassification": "eurobert",
-    "EuroBertForTokenClassification": "eurobert",
-    "LlamaForCausalLM": "llama",
-    "MistralForCausalLM": "mistral",
-    "Qwen2ForCausalLM": "qwen",
-    "Qwen2ForSequenceClassification": "qwen",
-    "Qwen2ForTokenClassification": "qwen",
-    "Qwen3ForCausalLM": "qwen",
-    "Qwen3ForSequenceClassification": "qwen",
-    "Qwen3ForTokenClassification": "qwen",
-    "GemmaForCausalLM": "gemma",
-    "Gemma2ForCausalLM": "gemma",
-    "Gemma3ForCausalLM": "gemma",
-    "PhiForCausalLM": "phi",
-    "Phi3ForCausalLM": "phi",
-    "FalconForCausalLM": "falcon",
-    "GPT2LMHeadModel": "gpt2",
-}
-_SUPPORTED_PROFILES = frozenset(_ARCHITECTURE_PROFILES.values())
-_SUPPORTED_MODEL_ARCHITECTURES = frozenset(_ARCHITECTURE_PROFILES)
+_MODEL_TYPES = frozenset({"encoder", "generative"})
+_GENERATIVE_ARCHITECTURE_RE = re.compile(
+    r"(?:For(?:CausalLM|ConditionalGeneration|Seq2SeqLM)|LMHeadModel)$"
+)
+_ENCODER_ARCHITECTURE_RE = re.compile(
+    r"For(?:SequenceClassification|TokenClassification|QuestionAnswering|"
+    r"MultipleChoice|MaskedLM|PreTraining)$"
+)
 
 _UNSAFE_SUFFIXES = (".bin", ".pt", ".pth", ".ckpt", ".gguf", ".onnx", ".h5", ".msgpack")
 
@@ -59,6 +39,8 @@ class ModelMetadata:
         estimated_bytes: int,
         architectures: tuple[str, ...] = (),
         repository_bytes: int | None = None,
+        model_type: str | None = None,
+        is_encoder_decoder: bool | None = None,
     ) -> None:
         """Initialise metadata used by :func:`check_model_safety`."""
         self.private = private
@@ -68,6 +50,10 @@ class ModelMetadata:
         self.safetensors = safetensors
         self.estimated_bytes = estimated_bytes
         self.architectures = architectures
+        derived_type = derive_model_type(
+            architectures=architectures, is_encoder_decoder=is_encoder_decoder
+        )
+        self.model_type = derived_type if model_type in {None, derived_type} else None
         self.repository_bytes = (
             estimated_bytes
             if repository_bytes is None and not architectures
@@ -127,6 +113,24 @@ class HuggingFaceMetadata:
             isinstance(item, str) and item for item in architectures
         ):
             raise SafetyError("Hugging Face config omitted architectures")
+        if not isinstance(config.get("model_type"), str) or not config["model_type"]:
+            raise SafetyError("Hugging Face config omitted model_type")
+        try:
+            AutoConfig.from_pretrained(
+                config_path.parent, local_files_only=True, trust_remote_code=False
+            )
+        except Exception as error:
+            raise SafetyError(
+                "model is not compatible with the installed Transformers stack"
+            ) from error
+        model_type = derive_model_type(
+            architectures=tuple(architectures),
+            is_encoder_decoder=config.get("is_encoder_decoder"),
+        )
+        if model_type is None:
+            raise SafetyError(
+                "Hugging Face config has no supported EuroEval capability"
+            )
         return ModelMetadata(
             private=bool(getattr(info, "private", False)),
             gated=bool(getattr(info, "gated", False)),
@@ -141,6 +145,8 @@ class HuggingFaceMetadata:
             estimated_bytes=estimated,
             architectures=tuple(architectures),
             repository_bytes=repository_bytes,
+            model_type=model_type,
+            is_encoder_decoder=config.get("is_encoder_decoder"),
         )
 
 
@@ -171,7 +177,7 @@ def check_model_safety(
 
     Raises:
         SafetyError:
-            If the revision, repository, profile, or memory estimate is unsafe.
+            If the revision, repository, capability, or memory estimate is unsafe.
     """
     if platform.machine() not in _SUPPORTED_HOST_ARCHITECTURES:
         raise SafetyError("unsupported worker architecture")
@@ -186,15 +192,12 @@ def check_model_safety(
         raise SafetyError("model is private or gated")
     if info.auto_map:
         raise SafetyError("model declares auto_map and would require remote code")
-    if lease.model_profile not in _SUPPORTED_PROFILES:
-        raise SafetyError("broker supplied an unknown hardware profile")
-    if len(info.architectures) != 1:
-        raise SafetyError("model config must declare exactly one architecture")
-    architecture = info.architectures[0]
-    if architecture not in _SUPPORTED_MODEL_ARCHITECTURES:
-        raise SafetyError("model architecture is not supported by this worker")
-    if _profile_for_architecture(architecture) != lease.model_profile:
-        raise SafetyError("model architecture does not match its broker profile")
+    if lease.model_type not in _MODEL_TYPES:
+        raise SafetyError("broker supplied an unsupported model type")
+    if info.model_type is None:
+        raise SafetyError("model capability could not be derived")
+    if info.model_type != lease.model_type:
+        raise SafetyError("model capability does not match its broker type")
     if any(path.lower().endswith(".py") for path in info.files):
         raise SafetyError("model repository contains Python files")
     if any(path.lower().endswith(_UNSAFE_SUFFIXES) for path in info.files):
@@ -218,6 +221,23 @@ def check_model_safety(
     return SafetyReport(estimated_bytes=info.estimated_bytes, available_bytes=available)
 
 
-def _profile_for_architecture(architecture: str) -> str | None:
-    """Return the profile for one exact admitted Transformers architecture."""
-    return _ARCHITECTURE_PROFILES.get(architecture)
+def derive_model_type(
+    *, architectures: tuple[str, ...], is_encoder_decoder: object = None
+) -> str | None:
+    """Derive EuroEval's broad capability from standard Transformers metadata.
+
+    The task suffix is deliberately used instead of a maintained model-family list;
+    new families supported by the pinned stack therefore do not need policy changes.
+    Ambiguous or unknown task architectures remain unavailable to volunteers.
+
+    Returns:
+        The broad capability, or ``None`` for ambiguous metadata.
+    """
+    if len(architectures) != 1 or not architectures[0]:
+        return None
+    architecture = architectures[0]
+    if is_encoder_decoder is True or _GENERATIVE_ARCHITECTURE_RE.search(architecture):
+        return "generative"
+    if _ENCODER_ARCHITECTURE_RE.search(architecture):
+        return "encoder"
+    return None

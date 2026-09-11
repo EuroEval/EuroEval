@@ -33,7 +33,7 @@ def test_active_lease_persists_identity_and_gpu_selection(tmp_path: Path) -> Non
 def test_heartbeat_persists_renewed_expiry(tmp_path: Path) -> None:
     """A renewal remains usable after the original lease expiry."""
     renewed = dataclasses.replace(
-        LEASE, model_profile="bert", expires_at="2099-01-02T00:00:00Z"
+        LEASE, model_type="encoder", expires_at="2099-01-02T00:00:00Z"
     )
     state = StateStore(tmp_path)
     state.save_active(LEASE, github_login="contributor")
@@ -75,8 +75,8 @@ def test_heartbeat_reauthenticates_once_and_retries() -> None:
     assert heartbeat.failed is None
 
 
-def test_profile_and_gpu_safety_are_fail_closed() -> None:
-    """Profiles must match the single admitted architecture and fit at 80 percent."""
+def test_model_type_and_gpu_safety_are_fail_closed() -> None:
+    """Capabilities must match the architecture and fit at 80 percent."""
     metadata = ModelMetadata(
         private=False,
         gated=False,
@@ -87,7 +87,7 @@ def test_profile_and_gpu_safety_are_fail_closed() -> None:
         architectures=("RobertaForSequenceClassification",),
         repository_bytes=1,
     )
-    lease = dataclasses.replace(LEASE, model_profile="roberta")
+    lease = dataclasses.replace(LEASE, model_type="encoder")
     larger_gpu = dataclasses.replace(
         GPU,
         uuid="GPU-2",
@@ -99,21 +99,23 @@ def test_profile_and_gpu_safety_are_fail_closed() -> None:
     ).available_bytes == int(GPU.free_memory_bytes * 0.8)
     with pytest.raises(SafetyError, match="match"):
         check_model_safety(
-            dataclasses.replace(lease, model_profile="bert"), (GPU,), metadata
+            dataclasses.replace(lease, model_type="generative"), (GPU,), metadata
         )
-    with pytest.raises(SafetyError, match="unknown"):
+    with pytest.raises(SafetyError, match="unsupported"):
         check_model_safety(
-            dataclasses.replace(lease, model_profile="unknown"), (GPU,), metadata
+            dataclasses.replace(lease, model_type="unknown"), (GPU,), metadata
         )
 
 
-def test_profile_decodes_under_the_wire_name() -> None:
-    """The lease decoder accepts model_profile, not the obsolete profile key."""
+def test_model_type_is_required_under_the_wire_name() -> None:
+    """The lease decoder accepts only the capability-based model_type field."""
     wire = dataclasses.asdict(LEASE)
     wire["protocol_version"] = "volunteer-worker/v1"
-    assert lease_from_dict(wire).model_profile is None
-    wire["model_profile"] = "bert"
-    assert lease_from_dict(wire).model_profile == "bert"
+    del wire["model_type"]
+    with pytest.raises(ValueError, match="model_type"):
+        lease_from_dict(wire)
+    wire["model_type"] = "generative"
+    assert lease_from_dict(wire).model_type == "generative"
 
 
 def test_reauthentication_rejects_different_contributor(

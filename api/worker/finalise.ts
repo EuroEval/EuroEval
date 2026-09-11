@@ -55,7 +55,7 @@ export default async function handler(req: Request): Promise<Response> {
       const manifest = {
         protocol_version: PROTOCOL_VERSION, submission_id: receipt.submission_id, issue_number: lease.issue_number,
         verified_contributor: identity.contributor, model: { id: lease.model_id, revision: lease.model_revision },
-        language: lease.language, model_profile: lease.model_profile, language_group: lease.expected_scope.language_group,
+        language: lease.language, model_type: lease.model_type, language_group: lease.expected_scope.language_group,
         euroeval_version: lease.euroeval_version, worker_version: lease.worker_version, image_digest: lease.image_digest,
         image_digest_provenance: "configured-required-not-runtime-attested", gpu_memory_utilisation: lease.gpu_memory_utilisation,
         selected_gpu_index: lease.selected_gpu_index, selected_gpu_uuid: lease.selected_gpu_uuid,

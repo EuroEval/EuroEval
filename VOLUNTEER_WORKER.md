@@ -79,8 +79,12 @@ if the deployment must remain pinned.
 
 1. The worker completes the broker-mediated GitHub device flow.
 2. It reports NVIDIA hardware and asks for a compatible queued model/language.
-3. The broker issues a time-limited lease for an immutable model revision.
-4. The worker evaluates with remote code disabled and safetensors required.
+3. The broker anonymously verifies that the queued Hugging Face model is public,
+   ungated, pinned to an immutable revision, safetensors-only, free of repository Python
+   and remote-code configuration, within the reported disk/GPU limits, and exposes one
+   supported EuroEval capability (`encoder` or `generative`).
+4. The worker independently refetches the same immutable metadata and capability before
+   evaluation, then evaluates with remote code disabled and safetensors required.
 5. Each record is uploaded idempotently to private Hugging Face staging.
 6. The broker validates the complete lease and marks it ready for review.
 
@@ -142,9 +146,11 @@ the JSON override only for an intentional, reviewed deployment policy.
 
 The coordinator login is assigned to an issue while a language lease is active. The
 broker's marker and lease checks are the ownership fence; do not manually edit those
-markers or assign a second coordinator to the same request. A worker must only receive
-models that are public, ungated, immutable, safetensors-only, and free of custom Python
-or remote-code configuration.
+markers or assign a second coordinator to the same request. A worker must only receive models that are public, ungated, immutable, safetensors-only,
+free of custom Python or remote-code configuration, compatible with the pinned
+EuroEval/Transformers/vLLM stack, and unambiguously typed as `encoder` or `generative`.
+The broker and worker enforce these checks independently; a missing or ambiguous
+capability is rejected rather than inferred from a model-family allow-list.
 
 Community submissions go to a private Hugging Face bucket in the EU region and receive
 the `community-review-ready` label after broker validation. Redis is only coordination
