@@ -25,6 +25,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `--task` does.
 - Added model release dates to benchmark result metadata for Hugging Face Hub and API
   models.
+- Added release-date metadata for GPT-6 Astra, Claude Fable 5.1, Claude Mythos 5.1,
+  and Gemini 3.8 Flash.
 - Added the unofficial Belarusian Word-in-Context dataset `bewic`, based on the BeWiC
   dataset from BelarusianGLUE.
 - Added the unofficial Belarusian linguistic acceptability dataset `belacola`, based on
