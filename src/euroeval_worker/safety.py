@@ -1,5 +1,6 @@
 """Fail-closed Hugging Face model safety and fit checks."""
 
+import collections.abc as c
 import dataclasses
 import importlib
 import json
@@ -15,7 +16,6 @@ from transformers.models.auto.modeling_auto import (
     MODEL_FOR_QUESTION_ANSWERING_MAPPING,
     MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING,
     MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING,
-    MODEL_MAPPING,
 )
 
 from euroeval.constants import GENERATIVE_PIPELINE_TAGS
@@ -26,13 +26,24 @@ _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _SUPPORTED_HOST_ARCHITECTURES = {"x86_64", "amd64", "aarch64", "arm64"}
 _MODEL_TYPES = frozenset({"encoder", "generative"})
 _UNSAFE_SUFFIXES = (".bin", ".pt", ".pth", ".ckpt", ".gguf", ".onnx", ".h5", ".msgpack")
-_ENCODER_MAPPINGS = (
-    MODEL_MAPPING,
-    MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING,
-    MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING,
-    MODEL_FOR_QUESTION_ANSWERING_MAPPING,
-    MODEL_FOR_MULTIPLE_CHOICE_MAPPING,
-    MODEL_FOR_MASKED_LM_MAPPING,
+_ENCODER_TASK_MAPPINGS: dict[str, object] = {
+    "sequence_classification": MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING,
+    "token_classification": MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING,
+    "question_answering": MODEL_FOR_QUESTION_ANSWERING_MAPPING,
+    "multiple_choice_classification": MODEL_FOR_MULTIPLE_CHOICE_MAPPING,
+    "fill_mask": MODEL_FOR_MASKED_LM_MAPPING,
+}
+_ENCODER_MAPPINGS = tuple(_ENCODER_TASK_MAPPINGS.values())
+_ENCODER_PIPELINE_TAGS = frozenset(
+    {
+        "fill-mask",
+        "text-classification",
+        "token-classification",
+        "question-answering",
+        "feature-extraction",
+        "sentence-similarity",
+        "zero-shot-classification",
+    }
 )
 
 
@@ -176,6 +187,8 @@ class HuggingFaceMetadata:
             model_type=model_type,
             config=recognised_config,
             architectures=tuple(architectures),
+            pipeline_tag=pipeline_tag,
+            is_encoder_decoder=is_encoder_decoder,
         ):
             raise SafetyError(
                 "model is not compatible with the installed evaluation backend"
@@ -264,14 +277,10 @@ def check_model_safety(
         raise SafetyError("broker model metadata does not match the Hub")
     if info.model_type != lease.model_type:
         raise SafetyError("model capability does not match its broker type")
-    backend_compatible = info.backend_compatible
-    if info.config is not None:
-        backend_compatible = _installed_backend_supports(
-            model_type=info.model_type,
-            config=info.config,
-            architectures=info.architectures,
-        )
-    if not backend_compatible:
+    scope = lease.expected_scope
+    if scope is None:
+        raise SafetyError("broker omitted expected evaluation scope")
+    if not _backend_compatible(info=info, task_groups=scope.task_groups):
         raise SafetyError("model backend compatibility was not verified")
     if any(path.lower().endswith(".py") for path in info.files):
         raise SafetyError("model repository contains Python files")
@@ -294,6 +303,26 @@ def check_model_safety(
             f"{available} bytes are free on one supported GPU"
         )
     return SafetyReport(estimated_bytes=info.estimated_bytes, available_bytes=available)
+
+
+def _backend_compatible(info: ModelMetadata, task_groups: tuple[str, ...]) -> bool:
+    """Check a fetched model against the leased tasks.
+
+    Returns:
+        Whether the installed backend can execute every leased task.
+    """
+    if info.config is not None:
+        return _installed_backend_supports(
+            model_type=info.model_type or "",
+            config=info.config,
+            architectures=info.architectures,
+            pipeline_tag=info.pipeline_tag,
+            is_encoder_decoder=info.is_encoder_decoder,
+            task_groups=task_groups,
+        )
+    if info.model_type == "encoder":
+        return _encoder_task_mappings(task_groups) is not None
+    return info.backend_compatible
 
 
 def derive_model_type(
@@ -325,34 +354,76 @@ def _hub_false_or_bool(value: object) -> bool:
 
 
 def _installed_backend_supports(
-    *, model_type: str, config: object, architectures: tuple[str, ...]
+    *,
+    model_type: str,
+    config: object,
+    architectures: tuple[str, ...],
+    pipeline_tag: str | None = None,
+    is_encoder_decoder: bool | None = None,
+    task_groups: tuple[str, ...] = (),
 ) -> bool:
-    """Check a model against installed, authoritative backend registries.
+    """Check actual task loading against the installed backend APIs.
 
     Returns:
         Whether the installed backend can load the model without remote code.
     """
     if model_type == "encoder":
+        if pipeline_tag not in (None, *_ENCODER_PIPELINE_TAGS):
+            return False
+        if is_encoder_decoder is True:
+            return False
+        mappings = _encoder_task_mappings(task_groups)
+        if mappings is None:
+            return False
         try:
-            return any(type(config) in mapping for mapping in _ENCODER_MAPPINGS)
+            return any(type(config) in mapping for mapping in mappings)
         except Exception:
             return False
     if model_type != "generative" or not architectures:
         return False
+    if pipeline_tag == "text2text-generation" and is_encoder_decoder is False:
+        return False
+    if pipeline_tag == "text-generation" and is_encoder_decoder is True:
+        return False
     try:
         registry_module = importlib.import_module("vllm.model_executor.models.registry")
         registry = getattr(registry_module, "ModelRegistry", None)
-        is_supported = getattr(registry, "is_supported", None)
-        if callable(is_supported):
-            result = is_supported(list(architectures))
-            if isinstance(result, bool):
-                return result
         get_supported = getattr(registry, "get_supported_archs", None)
-        if callable(get_supported):
-            supported = get_supported()
-            return isinstance(supported, (list, tuple, set, frozenset)) and any(
-                architecture in supported for architecture in architectures
-            )
+        inspect_model = getattr(registry, "inspect_model_cls", None)
+        if not callable(get_supported) or not callable(inspect_model):
+            return False
+        supported = get_supported()
+        if not isinstance(supported, c.Collection):
+            return False
+        candidates = [
+            architecture for architecture in architectures if architecture in supported
+        ]
+        if not candidates:
+            return False
+        inspection = inspect_model(candidates, _VllmInspectionConfig())
+        model_info = inspection[0] if isinstance(inspection, tuple) else inspection
+        return bool(
+            getattr(model_info, "is_text_generation_model", False)
+        ) and not bool(getattr(model_info, "is_pooling_model", False))
     except Exception:
         return False
-    return False
+
+
+def _encoder_task_mappings(task_groups: tuple[str, ...]) -> tuple[object, ...] | None:
+    """Return the exact Transformers task mappings required by a scope."""
+    if not task_groups:
+        return _ENCODER_MAPPINGS
+    mappings = tuple(_ENCODER_TASK_MAPPINGS.get(task) for task in task_groups)
+    if any(mapping is None for mapping in mappings):
+        return None
+    return mappings
+
+
+@dataclasses.dataclass(frozen=True)
+class _VllmInspectionConfig:
+    """Minimal safe configuration for vLLM registry inspection."""
+
+    model_impl: str = "auto"
+    convert_type: str = "none"
+    runner_type: str = "generate"
+    trust_remote_code: bool = False

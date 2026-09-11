@@ -146,6 +146,7 @@ test("trusted exact-language policy owns the lease language group", () => {
   process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
     euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "policy-da",
     identity_suffixes: [JSON.stringify(["dataset", false, true])],
+    task_groups: ["sequence_classification"],
   }] });
   try {
     const scope = expectedScope("1.0.0", "encoder", "da");
@@ -342,7 +343,8 @@ const putLeaseFixture = (overrides = {}) => ({
   selected_gpu_index: 0, selected_gpu_uuid: "GPU-0",
   expires_at: new Date(Date.now() + 60_000).toISOString(), lease_id: "lease-id",
   model_type: "generative", expected_scope: {
-    policy_version: "policy-v1", language_group: "da", identity_suffixes: [], count: 0, warnings: [],
+    policy_version: "policy-v1", language_group: "da", identity_suffixes: [], count: 0,
+    task_groups: ["text_to_text"], warnings: [],
   }, ...overrides,
 });
 

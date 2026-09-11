@@ -222,6 +222,13 @@ def _reviewer(
             "language_group": "da",
             "identity_suffixes": suffixes,
             "count": record_count,
+            "task_groups": [
+                "multiple_choice_classification",
+                "question_answering",
+                "sequence_classification",
+                "text_to_text",
+                "token_classification",
+            ],
             "warnings": [],
         },
         "results": entries,
@@ -247,6 +254,13 @@ def _reviewer(
                 "language_group": "da",
                 "identity_suffixes": suffixes,
                 "count": record_count,
+                "task_groups": [
+                    "multiple_choice_classification",
+                    "question_answering",
+                    "sequence_classification",
+                    "text_to_text",
+                    "token_classification",
+                ],
                 "warnings": [],
             }
         ],

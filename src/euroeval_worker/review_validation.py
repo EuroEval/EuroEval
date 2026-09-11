@@ -439,7 +439,7 @@ def _validate_scope_policy(
         manifest_language_group == expected_language_group == trusted_language_group
     ):
         raise ReviewError("Manifest language_group differs from trusted policy")
-    for field in ("identity_suffixes", "count", "warnings"):
+    for field in ("identity_suffixes", "count", "task_groups", "warnings"):
         if expected_scope.get(field) != trusted.get(field):
             raise ReviewError(f"Manifest scope differs from policy field {field}")
 

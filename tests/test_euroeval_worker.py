@@ -18,6 +18,7 @@ from euroeval_worker.types import (
     AuthStart,
     Claim,
     EEERecord,
+    ExpectedScope,
     Gpu,
     HardwareReport,
     Lease,
@@ -41,6 +42,14 @@ LEASE = Lease(
     selected_gpu_index=0,
     model_metadata=ModelEvidence(
         pipeline_tag="fill-mask", architectures=("RobertaModel",), model_type="encoder"
+    ),
+    expected_scope=ExpectedScope(
+        policy_version="test-policy",
+        language_group="da",
+        identity_suffixes=('["test",false,true]',),
+        count=1,
+        warnings=(),
+        task_groups=("sequence_classification",),
     ),
 )
 GPU = Gpu("A100", "GPU-1", 10 * 1024**3, 20 * 1024**3, "8.0", 0)
@@ -148,6 +157,8 @@ def test_broker_client_drives_canonical_http_lifecycle(
                 "github_login": "volunteer",
             }
         if path == "claim":
+            assert LEASE.model_metadata is not None
+            assert LEASE.expected_scope is not None
             return {
                 "protocol_version": "volunteer-worker/v1",
                 "lease_id": LEASE.lease_id,
@@ -163,6 +174,7 @@ def test_broker_client_drives_canonical_http_lifecycle(
                 "selected_gpu_uuid": LEASE.selected_gpu_uuid,
                 "selected_gpu_index": LEASE.selected_gpu_index,
                 "model_metadata": dataclasses.asdict(LEASE.model_metadata),
+                "expected_scope": dataclasses.asdict(LEASE.expected_scope),
             }
         if path == "heartbeat":
             return {

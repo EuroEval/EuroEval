@@ -14,7 +14,8 @@ const lease = {
   expires_at: new Date(Date.now() + 60_000).toISOString(), lease_id: "lease",
   model_type: "encoder", model_metadata: { pipeline_tag: "fill-mask", architectures: ["BertModel"],
     model_type: "encoder", is_encoder_decoder: null },
-  expected_scope: { language_group: "Danish", identity_suffixes: ["x"] },
+  expected_scope: { policy_version: "test-policy", language_group: "Danish", identity_suffixes: ["x"], count: 1,
+    task_groups: ["sequence_classification"], warnings: [] },
 };
 
 function markerBody(marker) {
@@ -54,6 +55,11 @@ test("claim rejects an issue model edited during metadata resolution", async () 
   process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
   process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
   process.env.GITHUB_TOKEN = "github-token";
+  process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
+    euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "da",
+    identity_suffixes: [JSON.stringify(["race", false, true])], count: 1,
+    task_groups: ["sequence_classification"], warnings: [],
+  }] });
   const language = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
   const issue = { number: issueNumber, title: "[MODEL EVALUATION REQUEST] org/model",
     body: `### Model ID\n\norg/model\n\n- [x] ${language}\n`, state: "open", assignees: [] };
@@ -113,8 +119,9 @@ test("finalise rejects an issue edited before its locked transition", async () =
   process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
   process.env.GITHUB_TOKEN = "github-token";
   const activeLease = { ...lease, expires_at: new Date(Date.now() + 60_000).toISOString(),
-    expected_scope: { language_group: "Danish",
-      identity_suffixes: [JSON.stringify(["dataset", false, true])] } };
+    expected_scope: { policy_version: "test-policy", language_group: "Danish",
+      identity_suffixes: [JSON.stringify(["dataset", false, true])], count: 1,
+      task_groups: ["multiple_choice_classification"], warnings: [] } };
   const signed = await signVolunteerMarker(issueNumber, {
     protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "active",
     leases: [{ lease_id: activeLease.lease_id, language: activeLease.language,
