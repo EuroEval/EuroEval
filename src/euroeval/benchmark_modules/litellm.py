@@ -949,6 +949,9 @@ class LiteLLMModel(BenchmarkModule):
         max_completion_tokens_pattern = re.compile(
             r"does not support parameters: \[.*'max_completion_tokens'.*\]"
         )
+        max_tokens_pattern = re.compile(
+            r"does not support parameters: \[.*'max_tokens'.*\]"
+        )
         temperature_pattern = re.compile(
             r"does not support parameters: \[.*'temperature'.*\]"
         )
@@ -1034,6 +1037,15 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["max_tokens"] = generation_kwargs.pop(
                 "max_completion_tokens", None
             )
+            return generation_kwargs, 0
+
+        # Max tokens
+        if max_tokens_pattern.search(string=error_msg):
+            log_once(
+                f"The model {model_id!r} does not support max_tokens, so disabling it.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs.pop("max_tokens", None)
             return generation_kwargs, 0
 
         # Temperature not supported

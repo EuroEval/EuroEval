@@ -7,6 +7,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- LiteLLM now retries custom OpenAI-compatible APIs that reject `max_tokens` without
+  sending the unsupported parameter.
+
 ## [v18.1.0] - 2026-09-11
 
 ### Added
