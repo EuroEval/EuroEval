@@ -33,7 +33,6 @@ _ENCODER_TASK_MAPPINGS: dict[str, object] = {
     "multiple_choice_classification": MODEL_FOR_MULTIPLE_CHOICE_MAPPING,
     "fill_mask": MODEL_FOR_MASKED_LM_MAPPING,
 }
-_ENCODER_MAPPINGS = tuple(_ENCODER_TASK_MAPPINGS.values())
 _ENCODER_PIPELINE_TAGS = frozenset(
     {
         "fill-mask",
@@ -372,6 +371,8 @@ def _installed_backend_supports(
             return False
         if is_encoder_decoder is True:
             return False
+        if not task_groups:
+            return True
         mappings = _encoder_task_mappings(task_groups)
         if mappings is None:
             return False
@@ -412,7 +413,7 @@ def _installed_backend_supports(
 def _encoder_task_mappings(task_groups: tuple[str, ...]) -> tuple[object, ...] | None:
     """Return the exact Transformers task mappings required by a scope."""
     if not task_groups:
-        return _ENCODER_MAPPINGS
+        return ()
     mappings = tuple(_ENCODER_TASK_MAPPINGS.get(task) for task in task_groups)
     if any(mapping is None for mapping in mappings):
         return None
