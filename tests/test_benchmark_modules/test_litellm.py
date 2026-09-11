@@ -39,42 +39,6 @@ class TestBPCGating:
             )
 
 
-class TestParameterErrorHandling:
-    """Tests for unsupported generation parameter handling."""
-
-    def test_max_completion_tokens_falls_back_to_max_tokens(self) -> None:
-        """Unsupported max_completion_tokens is replaced by max_tokens."""
-        error = UnsupportedParamsError(
-            message="openai does not support parameters: ['max_completion_tokens']"
-        )
-        model = object.__new__(LiteLLMModel)
-
-        result = model._handle_parameter_error(
-            error=error,
-            error_msg=str(error).lower(),
-            model_id="test-model",
-            generation_kwargs={"max_completion_tokens": 128},
-        )
-
-        assert result == ({"max_tokens": 128}, 0)
-
-    def test_max_tokens_is_removed_when_unsupported(self) -> None:
-        """Unsupported max_tokens is removed before retrying the request."""
-        error = UnsupportedParamsError(
-            message="openai does not support parameters: ['max_tokens']"
-        )
-        model = object.__new__(LiteLLMModel)
-
-        result = model._handle_parameter_error(
-            error=error,
-            error_msg=str(error).lower(),
-            model_id="test-model",
-            generation_kwargs={"max_tokens": 128},
-        )
-
-        assert result == ({}, 0)
-
-
 class TestCreateModelOutput:
     """Tests for the _create_model_output method in LiteLLMModel."""
 
@@ -149,6 +113,42 @@ class TestCreateModelOutput:
         assert output.scores[0] is not None
         assert len(output.scores[0]) == 1
         assert output.scores[1] == []
+
+
+class TestParameterErrorHandling:
+    """Tests for unsupported generation parameter handling."""
+
+    def test_max_completion_tokens_falls_back_to_max_tokens(self) -> None:
+        """Unsupported max_completion_tokens is replaced by max_tokens."""
+        error = UnsupportedParamsError(
+            message="openai does not support parameters: ['max_completion_tokens']"
+        )
+        model = object.__new__(LiteLLMModel)
+
+        result = model._handle_parameter_error(
+            error=error,
+            error_msg=str(error).lower(),
+            model_id="test-model",
+            generation_kwargs={"max_completion_tokens": 128},
+        )
+
+        assert result == ({"max_tokens": 128}, 0)
+
+    def test_max_tokens_is_removed_when_unsupported(self) -> None:
+        """Unsupported max_tokens is removed before retrying the request."""
+        error = UnsupportedParamsError(
+            message="openai does not support parameters: ['max_tokens']"
+        )
+        model = object.__new__(LiteLLMModel)
+
+        result = model._handle_parameter_error(
+            error=error,
+            error_msg=str(error).lower(),
+            model_id="test-model",
+            generation_kwargs={"max_tokens": 128},
+        )
+
+        assert result == ({}, 0)
 
 
 @pytest.mark.parametrize(
