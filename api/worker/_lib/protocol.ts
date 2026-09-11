@@ -87,6 +87,13 @@ export interface WorkerIdentity {
   contributor: string;
 }
 
+export interface ModelMetadataEvidence {
+  pipeline_tag: string;
+  architectures: string[];
+  model_type: "encoder" | "generative";
+  is_encoder_decoder: boolean | null;
+}
+
 export interface Lease {
   issue_number: number;
   language: string;
@@ -104,6 +111,7 @@ export interface Lease {
   lease_id: string;
   result_count?: number;
   model_type: "encoder" | "generative";
+  model_metadata: ModelMetadataEvidence;
   expected_scope: {
     policy_version: string;
     language_group: string;

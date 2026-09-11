@@ -222,6 +222,16 @@ def _string(data: dict[str, object], key: str) -> str:
 
 
 @dataclasses.dataclass(frozen=True)
+class ModelEvidence:
+    """Immutable Hub metadata copied into a broker-issued lease."""
+
+    pipeline_tag: str
+    architectures: tuple[str, ...]
+    model_type: str
+    is_encoder_decoder: bool | None = None
+
+
+@dataclasses.dataclass(frozen=True)
 class Lease:
     """One broker-issued evaluation lease."""
 
@@ -238,6 +248,7 @@ class Lease:
     gpu_memory_utilisation: float = 0.8
     selected_gpu_uuid: str | None = None
     selected_gpu_index: int | None = None
+    model_metadata: ModelEvidence | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -271,6 +282,9 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
     model_type = _string(data, "model_type")
     if model_type not in {"encoder", "generative"}:
         raise ValueError("broker response model_type is unsupported")
+    model_metadata = _model_evidence(data.get("model_metadata"))
+    if model_metadata.model_type != model_type:
+        raise ValueError("broker response model metadata contradicts model_type")
     return Lease(
         lease_id=_string(data, "lease_id"),
         issue_number=_integer(data, "issue_number"),
@@ -285,6 +299,42 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
         model_type=model_type,
         selected_gpu_uuid=selected_gpu_uuid,
         selected_gpu_index=_optional_integer(data, "selected_gpu_index"),
+        model_metadata=model_metadata,
+    )
+
+
+def _model_evidence(value: object) -> ModelEvidence:
+    """Decode the broker's immutable model metadata evidence.
+
+    Returns:
+        The decoded immutable model evidence.
+
+    Raises:
+        ValueError:
+            If the evidence is missing or malformed.
+    """
+    if not isinstance(value, dict):
+        raise ValueError("broker response model_metadata is required")
+    pipeline_tag = value.get("pipeline_tag")
+    architectures = value.get("architectures")
+    evidence_type = value.get("model_type")
+    is_encoder_decoder = value.get("is_encoder_decoder")
+    if (
+        not isinstance(pipeline_tag, str)
+        or not pipeline_tag.strip()
+        or not isinstance(architectures, (list, tuple))
+        or not architectures
+        or not all(isinstance(item, str) and item for item in architectures)
+        or evidence_type not in {"encoder", "generative"}
+        or is_encoder_decoder is not None
+        and not isinstance(is_encoder_decoder, bool)
+    ):
+        raise ValueError("broker response model_metadata is malformed")
+    return ModelEvidence(
+        pipeline_tag=pipeline_tag,
+        architectures=tuple(architectures),
+        model_type=evidence_type,
+        is_encoder_decoder=is_encoder_decoder,
     )
 
 

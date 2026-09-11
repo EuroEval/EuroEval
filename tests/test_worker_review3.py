@@ -1,17 +1,18 @@
 """Regression tests for the third volunteer-worker review."""
 
 import dataclasses
+import json
 import typing as t
 from pathlib import Path
 
 import pytest
 
-from euroeval_worker import runtime
+from euroeval_worker import runtime, safety
 from euroeval_worker.broker import BrokerError, BrokerProtocol
 from euroeval_worker.hardware import NoGpuError
 from euroeval_worker.safety import ModelMetadata, SafetyError, check_model_safety
 from euroeval_worker.state import StateStore
-from euroeval_worker.types import EEERecord, Gpu, lease_from_dict
+from euroeval_worker.types import EEERecord, Gpu, ModelEvidence, lease_from_dict
 from tests.test_euroeval_worker import GPU, HARDWARE, LEASE
 
 
@@ -76,7 +77,7 @@ def test_heartbeat_reauthenticates_once_and_retries() -> None:
 
 
 def test_model_type_and_gpu_safety_are_fail_closed() -> None:
-    """Capabilities must match the architecture and fit at 80 percent."""
+    """Capability evidence must match and fit at 80 percent."""
     metadata = ModelMetadata(
         private=False,
         gated=False,
@@ -84,8 +85,11 @@ def test_model_type_and_gpu_safety_are_fail_closed() -> None:
         files=("config.json", "model.safetensors"),
         safetensors=True,
         estimated_bytes=1,
-        architectures=("RobertaForSequenceClassification",),
+        architectures=("RobertaModel",),
         repository_bytes=1,
+        pipeline_tag="fill-mask",
+        model_type="encoder",
+        backend_compatible=True,
     )
     lease = dataclasses.replace(LEASE, model_type="encoder")
     larger_gpu = dataclasses.replace(
@@ -107,6 +111,116 @@ def test_model_type_and_gpu_safety_are_fail_closed() -> None:
         )
 
 
+def test_huggingface_metadata_records_immutable_capability_evidence(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Fetch pipeline metadata and run the installed-stack preflight."""
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps({"model_type": "novel", "architectures": ["NovelBaseModel"]}),
+        encoding="utf-8",
+    )
+
+    class Info:
+        id = "org/model"
+        private = False
+        gated = False
+        pipeline_tag = "fill-mask"
+        siblings = [
+            type("Sibling", (), {"rfilename": "config.json", "size": 10})(),
+            type("Sibling", (), {"rfilename": "model.safetensors", "size": 20})(),
+        ]
+
+    class Api:
+        def __init__(self, token: bool) -> None:
+            assert token is False
+
+        def model_info(self, **kwargs: object) -> Info:
+            assert kwargs["revision"] == "a" * 40
+            return Info()
+
+    monkeypatch.setattr(safety, "HfApi", Api)
+    monkeypatch.setattr(safety, "hf_hub_download", lambda **kwargs: str(config_path))
+
+    class Config:
+        model_type = "novel"
+
+    monkeypatch.setattr(
+        safety.AutoConfig, "from_pretrained", lambda *args, **kwargs: Config()
+    )
+    monkeypatch.setattr(safety, "_installed_backend_supports", lambda **kwargs: True)
+
+    metadata = safety.HuggingFaceMetadata().fetch("org/model", "a" * 40)
+    assert metadata.pipeline_tag == "fill-mask"
+    assert metadata.architectures == ("NovelBaseModel",)
+    assert metadata.backend_compatible
+
+
+def test_model_metadata_is_required_and_contradictions_fail_closed() -> None:
+    """Reject missing, contradictory, and unverified capability evidence."""
+    metadata = ModelMetadata(
+        private=False,
+        gated=False,
+        auto_map=False,
+        files=("config.json", "model.safetensors"),
+        safetensors=True,
+        estimated_bytes=1,
+        architectures=("InventedModel",),
+        repository_bytes=1,
+        pipeline_tag="text-generation",
+        model_type="encoder",
+        backend_compatible=False,
+    )
+    with pytest.raises(SafetyError, match="capability"):
+        check_model_safety(
+            dataclasses.replace(LEASE, model_type="generative"), (GPU,), metadata
+        )
+    with pytest.raises(SafetyError, match="backend"):
+        check_model_safety(
+            dataclasses.replace(
+                LEASE,
+                model_type="generative",
+                model_metadata=ModelEvidence(
+                    pipeline_tag="text-generation",
+                    architectures=("InventedModel",),
+                    model_type="generative",
+                ),
+            ),
+            (GPU,),
+            ModelMetadata(
+                private=False,
+                gated=False,
+                auto_map=False,
+                files=("config.json", "model.safetensors"),
+                safetensors=True,
+                estimated_bytes=1,
+                architectures=("InventedModel",),
+                repository_bytes=1,
+                pipeline_tag="text-generation",
+                model_type="generative",
+                backend_compatible=False,
+            ),
+        )
+    with pytest.raises(SafetyError, match="immutable"):
+        check_model_safety(
+            dataclasses.replace(LEASE, model_metadata=None),
+            (GPU,),
+            ModelMetadata(
+                private=False,
+                gated=False,
+                auto_map=False,
+                files=("config.json", "model.safetensors"),
+                safetensors=True,
+                estimated_bytes=1,
+                architectures=("InventedModel",),
+                repository_bytes=1,
+                pipeline_tag="fill-mask",
+                model_type="encoder",
+                backend_compatible=True,
+            ),
+        )
+
+
 def test_model_type_is_required_under_the_wire_name() -> None:
     """The lease decoder accepts only the capability-based model_type field."""
     wire = dataclasses.asdict(LEASE)
@@ -115,6 +229,7 @@ def test_model_type_is_required_under_the_wire_name() -> None:
     with pytest.raises(ValueError, match="model_type"):
         lease_from_dict(wire)
     wire["model_type"] = "generative"
+    wire["model_metadata"]["model_type"] = "generative"
     assert lease_from_dict(wire).model_type == "generative"
 
 

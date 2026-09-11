@@ -9,7 +9,7 @@ import threading
 import time
 from pathlib import Path
 
-from .types import EEERecord, JsonObject, Lease
+from .types import EEERecord, JsonObject, Lease, ModelEvidence
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ def _lease_from_state(value: object) -> Lease:
         "worker_version",
         "expires_at",
         "model_type",
+        "model_metadata",
     )
     if any(key not in value for key in required):
         raise ValueError("lease is incomplete")
@@ -51,6 +52,26 @@ def _lease_from_state(value: object) -> Lease:
         or not 0 < gpu_memory_utilisation <= 1
     ):
         raise ValueError("gpu_memory_utilisation is malformed")
+    metadata = value["model_metadata"]
+    if not isinstance(metadata, dict):
+        raise ValueError("model_metadata is malformed")
+    pipeline_tag = metadata.get("pipeline_tag")
+    architectures = metadata.get("architectures")
+    evidence_type = metadata.get("model_type")
+    is_encoder_decoder = metadata.get("is_encoder_decoder")
+    if (
+        not isinstance(pipeline_tag, str)
+        or not pipeline_tag.strip()
+        or not isinstance(architectures, (list, tuple))
+        or not architectures
+        or not all(isinstance(item, str) and item for item in architectures)
+        or evidence_type not in {"encoder", "generative"}
+        or is_encoder_decoder is not None
+        and not isinstance(is_encoder_decoder, bool)
+    ):
+        raise ValueError("model_metadata is malformed")
+    if evidence_type != model_type:
+        raise ValueError("model metadata contradicts model_type")
     return Lease(
         lease_id=value["lease_id"],
         issue_number=value["issue_number"],
@@ -65,6 +86,12 @@ def _lease_from_state(value: object) -> Lease:
         model_type=model_type,
         selected_gpu_uuid=selected_gpu_uuid,
         selected_gpu_index=selected_gpu_index,
+        model_metadata=ModelEvidence(
+            pipeline_tag=pipeline_tag,
+            architectures=tuple(architectures),
+            model_type=evidence_type,
+            is_encoder_decoder=is_encoder_decoder,
+        ),
     )
 
 

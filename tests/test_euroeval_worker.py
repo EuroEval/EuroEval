@@ -21,6 +21,7 @@ from euroeval_worker.types import (
     Gpu,
     HardwareReport,
     Lease,
+    ModelEvidence,
     canonical_json,
 )
 
@@ -38,6 +39,9 @@ LEASE = Lease(
     worker_version="worker-1",
     selected_gpu_uuid="GPU-1",
     selected_gpu_index=0,
+    model_metadata=ModelEvidence(
+        pipeline_tag="fill-mask", architectures=("RobertaModel",), model_type="encoder"
+    ),
 )
 GPU = Gpu("A100", "GPU-1", 10 * 1024**3, 20 * 1024**3, "8.0", 0)
 HARDWARE = HardwareReport(
@@ -158,6 +162,7 @@ def test_broker_client_drives_canonical_http_lifecycle(
                 "expires_at": LEASE.expires_at,
                 "selected_gpu_uuid": LEASE.selected_gpu_uuid,
                 "selected_gpu_index": LEASE.selected_gpu_index,
+                "model_metadata": dataclasses.asdict(LEASE.model_metadata),
             }
         if path == "heartbeat":
             return {

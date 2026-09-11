@@ -97,10 +97,16 @@ export default async function handler(req: Request): Promise<Response> {
           selected_gpu_index: body.hardware.selected_gpu_index as number,
           selected_gpu_uuid: body.hardware.selected_gpu_uuid as string,
           expires_at: expiresAt,
-          lease_id: randomToken(18), model_type: model.model_type,
-          expected_scope: { policy_version: trusted.policy_version, language_group: trusted.language_group,
-            identity_suffixes: [...trusted.identity_suffixes], count: trusted.identity_suffixes.length,
-            warnings: trusted.warnings || [] },
+          lease_id: randomToken(18),
+          model_type: model.model_type,
+          model_metadata: model.model_metadata,
+          expected_scope: {
+            policy_version: trusted.policy_version,
+            language_group: trusted.language_group,
+            identity_suffixes: [...trusted.identity_suffixes],
+            count: trusted.identity_suffixes.length,
+            warnings: trusted.warnings || [],
+          },
         };
         if (!(await putLease(lease))) continue;
         const nextMarker: VolunteerLeaseMarker = {
@@ -141,7 +147,8 @@ export default async function handler(req: Request): Promise<Response> {
           language, model_id: model.id, model_revision: model.revision, euroeval_version: euroevalVersion,
           image_digest: imageDigest, worker_version: lease.worker_version, expires_at: expiresAt,
           selected_gpu_index: lease.selected_gpu_index, selected_gpu_uuid: lease.selected_gpu_uuid,
-          model_type: lease.model_type, expected_scope: lease.expected_scope,
+          model_type: lease.model_type, model_metadata: lease.model_metadata,
+          expected_scope: lease.expected_scope,
         });
       } finally { await mutex.release(); }
     }

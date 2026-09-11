@@ -1,6 +1,7 @@
 import generatedScopePolicy from "../scope-policy.json" with { type: "json" };
 declare const process: { env: Record<string, string | undefined> };
 import { BrokerError, ConfigurationError, GROUPS } from "./protocol.ts";
+import type { ModelMetadataEvidence } from "./protocol.ts";
 import { fetchWithRetry } from "./http.ts";
 
 export type ModelType = "encoder" | "generative";
@@ -12,6 +13,7 @@ export interface ResolvedModel {
   weight_bytes: number;
   repo_bytes: number;
   model_type: ModelType;
+  model_metadata: ModelMetadataEvidence;
 }
 
 export async function resolveModel(modelId: string): Promise<ResolvedModel> {
@@ -20,20 +22,32 @@ export async function resolveModel(modelId: string): Promise<ResolvedModel> {
   if (!infoResponse.ok) throw new BrokerError(422, `Hugging Face model ${modelId} could not be resolved.`);
   const info = await infoResponse.json() as {
     id?: string; sha?: string; gated?: boolean | string; private?: boolean;
+    pipeline_tag?: unknown;
     siblings?: Array<{ rfilename?: string; size?: number }>;
   };
-  if (info.id && info.id.toLowerCase() !== modelId.toLowerCase()) {
-    throw new BrokerError(422, "Hugging Face returned metadata for a different model.");
+  if (typeof info.id !== "string" || info.id.toLowerCase() !== modelId.toLowerCase()) {
+    throw new BrokerError(422, "Hugging Face returned incomplete model metadata.");
   }
-  if (info.private || info.gated === true ||
-      (typeof info.gated === "string" && info.gated !== "false")) {
+  if (typeof info.private !== "boolean" ||
+      typeof info.gated !== "boolean" && info.gated !== "false") {
+    throw new BrokerError(422, "Hugging Face omitted public access metadata.");
+  }
+  const gated = info.gated === true;
+  if (info.private || gated) {
     throw new BrokerError(422, "The model must be public and ungated.");
+  }
+  if (typeof info.pipeline_tag !== "string" || !info.pipeline_tag.trim()) {
+    throw new BrokerError(422, "Hugging Face omitted an unambiguous pipeline tag.");
   }
   if (!info.sha || !/^[0-9a-f]{40}$/.test(info.sha)) {
     throw new BrokerError(422, "Hugging Face did not provide an immutable model revision.");
   }
-  const files = info.siblings || [];
-  const weights = files.filter((file) => file.rfilename?.toLowerCase().endsWith(".safetensors"));
+  if (!Array.isArray(info.siblings) || info.siblings.some((file) =>
+      !file || typeof file.rfilename !== "string" || !file.rfilename)) {
+    throw new BrokerError(422, "Hugging Face response omitted repository files.");
+  }
+  const files = info.siblings;
+  const weights = files.filter((file) => file.rfilename!.toLowerCase().endsWith(".safetensors"));
   const unsafe = files.some((file) => /\.(bin|pt|pth|ckpt|gguf|onnx|h5|msgpack)$/i.test(file.rfilename || ""));
   if (!weights.length || unsafe || files.some((file) => file.rfilename?.toLowerCase().endsWith(".py"))) {
     throw new BrokerError(422, "The model must use safetensors only and contain no custom repository Python.");
@@ -52,10 +66,28 @@ export async function resolveModel(modelId: string): Promise<ResolvedModel> {
       !Number.isSafeInteger(file.size) || file.size < 0)) {
     throw new BrokerError(422, "Hugging Face did not provide complete model file sizes for a fit estimate.");
   }
-  const modelType = modelTypeFor(config);
-  if (!modelType) throw new BrokerError(422, "The model has no unambiguous supported EuroEval capability.");
+  if (typeof config.model_type !== "string" || !config.model_type.trim()) {
+    throw new BrokerError(422, "The model config omitted model_type.");
+  }
+  const architectures = config.architectures;
+  if (!Array.isArray(architectures) || !architectures.length ||
+      architectures.some((item) => typeof item !== "string" || !item)) {
+    throw new BrokerError(422, "The model config has no unambiguous architectures.");
+  }
+  const encoderDecoder = config.is_encoder_decoder;
+  if (encoderDecoder !== undefined && typeof encoderDecoder !== "boolean") {
+    throw new BrokerError(422, "The model config has an invalid encoder-decoder flag.");
+  }
+  const modelType = modelTypeFor(info.pipeline_tag, encoderDecoder);
+  if (!modelType) throw new BrokerError(422, "The model has contradictory capability metadata.");
+  const modelMetadata = {
+    pipeline_tag: info.pipeline_tag,
+    architectures: [...architectures] as string[],
+    model_type: modelType,
+    is_encoder_decoder: encoderDecoder === undefined ? null : encoderDecoder,
+  } satisfies ModelMetadataEvidence;
   return { id: modelId, revision: info.sha, config, weight_bytes: weightBytes,
-    repo_bytes: repoBytes, model_type: modelType };
+    repo_bytes: repoBytes, model_type: modelType, model_metadata: modelMetadata };
 }
 
 export function selectedGpu(hardware: Record<string, unknown>): Record<string, unknown> | null {
@@ -93,18 +125,19 @@ export function fitsGpu(model: ResolvedModel, hardware: Record<string, unknown>,
   return model.weight_bytes * 1.35 <= largestFree * utilisation;
 }
 
-function modelTypeFor(config: Record<string, unknown>): ModelType | null {
-  const architectures = config.architectures;
-  if (!Array.isArray(architectures) || architectures.length !== 1 ||
-      typeof architectures[0] !== "string" || !architectures[0]) return null;
-  if (typeof config.model_type !== "string" || !config.model_type.trim()) return null;
-  const architecture = architectures[0];
-  if (config.is_encoder_decoder === true ||
-      /(?:For(?:CausalLM|ConditionalGeneration|Seq2SeqLM)|LMHeadModel)$/.test(architecture)) return "generative";
-  if (/For(?:SequenceClassification|TokenClassification|QuestionAnswering|MultipleChoice|MaskedLM|PreTraining)$/.test(architecture)) {
-    return "encoder";
-  }
-  return null;
+const GENERATIVE_PIPELINE_TAGS = new Set([
+  "text-generation", "text2text-generation", "image-text-to-text",
+  "audio-text-to-text", "video-text-to-text", "any-to-any",
+]);
+
+function modelTypeFor(
+  pipelineTag: unknown, isEncoderDecoder: unknown,
+): ModelType | null {
+  if (typeof pipelineTag !== "string" || !pipelineTag.trim()) return null;
+  if (isEncoderDecoder !== undefined && typeof isEncoderDecoder !== "boolean") return null;
+  const generative = GENERATIVE_PIPELINE_TAGS.has(pipelineTag);
+  if (!generative && isEncoderDecoder === true) return null;
+  return generative ? "generative" : "encoder";
 }
 
 export function languageGroup(language: string): string | null {
