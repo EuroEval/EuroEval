@@ -252,33 +252,6 @@ def _classify_model(model_id: str, metadata: dict) -> ModelType:
     return ModelType(model_type) if model_type is not None else ModelType.BASE_DECODER
 
 
-def _aggregate_bootstrap_scores(
-    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    configs: dict[str, dict[str, list[str]]],
-    category: LeaderboardCategory,
-) -> dict[str, dict[str | LeaderboardCategory, dict[str, np.ndarray]]]:
-    """Compute aligned bootstrap score distributions for one category.
-
-    Args:
-        model_results:
-            Complete-coverage model results for ``category``.
-        configs:
-            The original per-language leaderboard configurations.
-        category:
-            The single category to rank.
-
-    Returns:
-        Model/category/aggregate score distributions with aligned samples.
-    """
-    return bootstrap_rank_scores(
-        model_results=model_results,
-        configs=configs,
-        n_bootstraps=NUM_BOOTSTRAPS,
-        seed=0,
-        categories=(category,),
-    )
-
-
 def _pareto_categories_per_model(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
@@ -385,18 +358,31 @@ def _pareto_categories_per_model(
     return pareto
 
 
-def _required_datasets(
-    configs: dict[str, dict[str, list[str]]], category: LeaderboardCategory
-) -> set[str]:
-    """Return all non-orthogonal datasets applicable to a category."""
-    return {
-        dataset
-        for config in configs.values()
-        for task, datasets in config.items()
-        if task not in ORTHOGONAL_TASKS
-        and category_includes_task(category=category, task=task)
-        for dataset in datasets
-    }
+def _aggregate_bootstrap_scores(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    configs: dict[str, dict[str, list[str]]],
+    category: LeaderboardCategory,
+) -> dict[str, dict[str | LeaderboardCategory, dict[str, np.ndarray]]]:
+    """Compute aligned bootstrap score distributions for one category.
+
+    Args:
+        model_results:
+            Complete-coverage model results for ``category``.
+        configs:
+            The original per-language leaderboard configurations.
+        category:
+            The single category to rank.
+
+    Returns:
+        Model/category/aggregate score distributions with aligned samples.
+    """
+    return bootstrap_rank_scores(
+        model_results=model_results,
+        configs=configs,
+        n_bootstraps=NUM_BOOTSTRAPS,
+        seed=0,
+        categories=(category,),
+    )
 
 
 def _complete_coverage_model_results(
@@ -410,6 +396,20 @@ def _complete_coverage_model_results(
         model_id: model_results[model_id]
         for model_id in sorted(model_results)
         if all(dataset in model_results[model_id] for dataset in required_datasets)
+    }
+
+
+def _required_datasets(
+    configs: dict[str, dict[str, list[str]]], category: LeaderboardCategory
+) -> set[str]:
+    """Return all non-orthogonal datasets applicable to a category."""
+    return {
+        dataset
+        for config in configs.values()
+        for task, datasets in config.items()
+        if task not in ORTHOGONAL_TASKS
+        and category_includes_task(category=category, task=task)
+        for dataset in datasets
     }
 
 
