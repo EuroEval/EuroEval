@@ -7,6 +7,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v18.1.0] - 2026-09-11
+
 ### Added
 
 - Datasets from Hugging Face repositories with an `eval.yaml` declaring several
