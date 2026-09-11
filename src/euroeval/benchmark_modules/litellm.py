@@ -212,6 +212,7 @@ MODEL_RELEASE_DATE_MAPPING = {
     r"(openai/)?gpt-5\.5": "2026-04-23",
     r"(openai/)?gpt-5\.5-pro": "2026-04-23",
     r"(openai/)?gpt-5\.6(?:-(?:sol|terra|luna))?": "2026-07-09",
+    r"(openai/)?gpt-6-astra": "2026-09-03",
     # Anthropic
     r"(anthropic/)?claude-3-opus": "2024-03-04",
     r"(anthropic/)?claude-3-sonnet": "2024-03-04",
@@ -232,6 +233,7 @@ MODEL_RELEASE_DATE_MAPPING = {
     r"(anthropic/)?claude-(?:fable|mythos)-5": "2026-06-09",
     r"(anthropic/)?claude-sonnet-5": "2026-06-30",
     r"(anthropic/)?claude-opus-5": "2026-07-24",
+    r"(anthropic/)?claude-(?:fable|mythos)-5-1": "2026-09-01",
     # Google
     r"(gemini/)?gemini-1\.5-pro.*": "2024-02-15",
     r"(gemini/)?gemini-1\.5-flash.*": "2024-05-14",
@@ -246,6 +248,7 @@ MODEL_RELEASE_DATE_MAPPING = {
     r"(gemini/)?gemini-3\.5-flash-lite$": "2026-07-21",
     r"(gemini/)?gemini-3\.6-flash$": "2026-07-21",
     r"(gemini/)?gemini-3\.7-flash$": "2026-08-13",
+    r"(gemini/)?gemini-3\.8-flash$": "2026-09-02",
     # xAI
     r"(xai/)?grok-1": "2023-11-04",
     r"(xai/)?grok-1\.5": "2024-03-28",
