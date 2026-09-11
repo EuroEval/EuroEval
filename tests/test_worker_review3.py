@@ -8,7 +8,7 @@ import typing as t
 from pathlib import Path
 
 import pytest
-from transformers import BertConfig, ViTConfig
+from transformers import BertConfig, CTRLConfig, ViTConfig
 
 from euroeval_worker import runtime, safety
 from euroeval_worker.broker import BrokerError, BrokerProtocol
@@ -188,6 +188,25 @@ def test_encoder_backend_requires_each_leased_task_mapping() -> None:
         architectures=("BertModel",),
         pipeline_tag="image-classification",
         task_groups=("sequence_classification",),
+    )
+
+
+def test_encoder_backend_requires_all_combined_task_mappings() -> None:
+    """Reject encoder configs missing any mapping required by a combined scope."""
+    task_groups = ("sequence_classification", "token_classification")
+    assert not safety._installed_backend_supports(
+        model_type="encoder",
+        config=CTRLConfig(),
+        architectures=("CTRLModel",),
+        pipeline_tag="text-classification",
+        task_groups=task_groups,
+    )
+    assert safety._installed_backend_supports(
+        model_type="encoder",
+        config=BertConfig(),
+        architectures=("BertModel",),
+        pipeline_tag="text-classification",
+        task_groups=task_groups,
     )
 
 

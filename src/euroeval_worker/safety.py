@@ -376,7 +376,7 @@ def _installed_backend_supports(
         if mappings is None:
             return False
         try:
-            return any(type(config) in mapping for mapping in mappings)
+            return all(type(config) in mapping for mapping in mappings)
         except Exception:
             return False
     if model_type != "generative" or not architectures:
