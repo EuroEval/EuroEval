@@ -9,10 +9,12 @@ import { parseVolunteerMarker, signVolunteerMarker, sha256, verifyVolunteerMarke
 const issueNumber = 12;
 const lease = {
   issue_number: issueNumber, language: "da", worker: "worker", contributor: "alice",
-  model_id: "org/model", model_revision: "revision", euroeval_version: "1.0.0",
+  model_id: "org/model", model_revision: "a".repeat(40), euroeval_version: "1.0.0",
   image_digest: "sha256:image", worker_version: "1.0.0", gpu_memory_utilisation: 0.8,
   expires_at: new Date(Date.now() + 60_000).toISOString(), lease_id: "lease",
-  model_type: "encoder", expected_scope: { language_group: "Danish", identity_suffixes: ["x"] },
+  model_type: "encoder", model_metadata: { pipeline_tag: "fill-mask", architectures: ["BertModel"],
+    model_type: "encoder", is_encoder_decoder: null },
+  expected_scope: { language_group: "Danish", identity_suffixes: ["x"] },
 };
 
 function markerBody(marker) {
@@ -70,11 +72,15 @@ test("claim rejects an issue model edited during metadata resolution", async () 
     if (url.includes("huggingface.co/api/models/org/model")) {
       issue.title = "[MODEL EVALUATION REQUEST] org/edited";
       issue.body = issue.body.replace("org/model", "org/edited");
-      return Response.json({ id: "org/model", sha: "revision", siblings: [
+      return Response.json({ id: "org/model", sha: "a".repeat(40), private: false, gated: false,
+        pipeline_tag: "fill-mask", siblings: [
         { rfilename: "model.safetensors", size: 100 }, { rfilename: "config.json", size: 10 },
+      { rfilename: "tokenizer.json", size: 10 },
       ] });
     }
-    if (url.includes("/org/model/raw/revision/config.json")) return Response.json({ architectures: ["BertForSequenceClassification"] });
+    if (url.includes(`/org/model/raw/${"a".repeat(40)}/config.json`)) {
+      return Response.json({ model_type: "bert", architectures: ["BertModel"] });
+    }
     if (url.endsWith(`/issues/${issueNumber}`) && requestMethod === "GET") return Response.json(issue);
     if (url.includes(`/issues/${issueNumber}`)) { githubMutations++; return Response.json(issue); }
     throw new Error(`Unexpected request: ${requestMethod} ${url}`);

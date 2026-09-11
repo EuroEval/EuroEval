@@ -1,9 +1,70 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, renderVolunteerMarker, replaceVolunteerMarker, selectedLanguages, validateRecord } from "./_lib.ts";
-import { fitsGpu, selectedGpu } from "./_lib/model.ts";
+import { fitsGpu, resolveModel, selectedGpu } from "./_lib/model.ts";
 import { putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "./_lib/redis.ts";
 import { bindPromotionDecision, promotionIdentityKey, reservePromotionReservation } from "./_lib/promotion.ts";
+
+test("resolves immutable Hub capability evidence without suffix heuristics", async () => {
+  const originalFetch = globalThis.fetch;
+  const revision = "b".repeat(40);
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.includes("/api/models/org/base")) {
+      return Response.json({ id: "org/base", sha: revision, private: false, gated: false,
+        pipeline_tag: "fill-mask", siblings: [{ rfilename: "model.safetensors", size: 10 }] });
+    }
+    if (url.includes(`/org/base/raw/${revision}/config.json`)) {
+      return Response.json({ model_type: "new_encoder", architectures: ["NovelBaseModel"] });
+    }
+    throw new Error(`unexpected URL ${url}`);
+  };
+  try {
+    const model = await resolveModel("org/base");
+    assert.equal(model.model_type, "encoder");
+    assert.deepEqual(model.model_metadata, {
+      pipeline_tag: "fill-mask", architectures: ["NovelBaseModel"],
+      model_type: "encoder", is_encoder_decoder: null,
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rejects missing or contradictory immutable capability metadata", async () => {
+  const originalFetch = globalThis.fetch;
+  const revision = "c".repeat(40);
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    const modelId = url.includes("org/missing") ? "org/missing" : "org/contradictory";
+    return url.includes("/api/models/")
+      ? Response.json({ id: modelId, sha: revision, private: false, gated: false,
+        ...(modelId === "org/contradictory" ? { pipeline_tag: "fill-mask" } : {}),
+        siblings: [{ rfilename: "model.safetensors", size: 10 }] })
+      : Response.json({ model_type: "seq2seq", architectures: ["InventedModel"], is_encoder_decoder: true });
+  };
+  try {
+    await assert.rejects(resolveModel("org/missing"), /pipeline tag/);
+    await assert.rejects(resolveModel("org/contradictory"), /contradictory/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rejects Hub repositories that require custom code", async () => {
+  const originalFetch = globalThis.fetch;
+  const revision = "d".repeat(40);
+  globalThis.fetch = async (input) => String(input).includes("/api/models/")
+    ? Response.json({ id: "org/custom", sha: revision, private: false, gated: false,
+      pipeline_tag: "fill-mask", siblings: [{ rfilename: "model.safetensors", size: 10 },
+        { rfilename: "modeling_custom.py", size: 10 }] })
+    : Response.json({ model_type: "custom", architectures: ["CustomModel"], auto_map: {} });
+  try {
+    await assert.rejects(resolveModel("org/custom"), /custom repository Python/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 test("parses the queue model and language checkboxes", () => {
   const body = "### Model ID\n\norg/model\n\n- [x] Greek\n- [ ] Albanian\n";
