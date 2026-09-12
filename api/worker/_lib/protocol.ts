@@ -4,7 +4,6 @@ export const PROTOCOL_VERSION = "volunteer-worker/v1" as const;
 export const REPO = "EuroEval/EuroEval";
 const MARKER_VERSION = 1 as const;
 const MARKER_DOMAIN = "euroeval-volunteer-marker";
-const CREDIT_DOMAIN = "euroeval-volunteer-credit";
 export const REQUEST_LABEL = "model evaluation request";
 export const TITLE_PREFIX = "[MODEL EVALUATION REQUEST]";
 export const VOLUNTEER_MARKER_RE =
@@ -66,20 +65,6 @@ export interface VolunteerLeaseMarker {
   submissions?: VolunteerSubmission[];
   completed_languages?: string[];
   signature?: string;
-}
-
-export interface FinalCredit {
-  version: typeof MARKER_VERSION;
-  immutable: true;
-  winner: string;
-  accepted_counts: Array<{ login: string; count: number }>;
-  completed_languages: string[];
-  /** Server-bound metadata for the immutable decision artifact. */
-  decision_reviewer?: string;
-  decision_created_at?: string;
-  /** Legacy field retained so old signed credits remain verifiable. */
-  decision_nonce?: string;
-  signature: string;
 }
 
 export interface WorkerIdentity {
@@ -219,10 +204,6 @@ function markerPayload(issueNumber: number, marker: VolunteerLeaseMarker): strin
   return canonicalJson({ domain: MARKER_DOMAIN, version: MARKER_VERSION, issue_number: issueNumber, marker: unsigned });
 }
 
-function creditPayload(issueNumber: number, credit: Omit<FinalCredit, "signature">): string {
-  return canonicalJson({ domain: CREDIT_DOMAIN, version: MARKER_VERSION, issue_number: issueNumber, credit });
-}
-
 export function markerSecret(): string {
   return env("VOLUNTEER_MARKER_SECRET");
 }
@@ -233,38 +214,6 @@ export async function signVolunteerMarker(issueNumber: number, marker: Volunteer
 
 export async function verifyVolunteerMarker(issueNumber: number, marker: VolunteerLeaseMarker): Promise<boolean> {
   return !!marker.signature && marker.signature === await hmac(markerSecret(), markerPayload(issueNumber, marker));
-}
-
-export async function signFinalCredit(issueNumber: number, credit: Omit<FinalCredit, "signature">): Promise<FinalCredit> {
-  return { ...credit, signature: await hmac(markerSecret(), creditPayload(issueNumber, credit)) };
-}
-
-export async function verifyFinalCredit(issueNumber: number, credit: FinalCredit): Promise<boolean> {
-  const { signature: _signature, ...unsigned } = credit;
-  return !!credit.signature && credit.signature === await hmac(markerSecret(), creditPayload(issueNumber, unsigned));
-}
-
-export function parseFinalCredit(body: string | null): FinalCredit | null {
-  if (!body) return null;
-  const starts = [...body.matchAll(/<!--[ \t]*euroeval-volunteer-credit:v1[ \t]+/gi)];
-  if (starts.length !== 1) return null;
-  const start = starts[0].index! + starts[0][0].length;
-  const end = body.indexOf("-->", start);
-  if (end < 0) return null;
-  try {
-    const value = JSON.parse(body.slice(start, end).trim()) as FinalCredit;
-    if (value.version !== MARKER_VERSION || value.immutable !== true || typeof value.winner !== "string" ||
-        !Array.isArray(value.accepted_counts) || !Array.isArray(value.completed_languages) ||
-        value.decision_reviewer !== undefined &&
-          (typeof value.decision_reviewer !== "string" || !value.decision_reviewer) ||
-        value.decision_created_at !== undefined &&
-          (typeof value.decision_created_at !== "string" ||
-            !value.decision_created_at || Number.isNaN(Date.parse(value.decision_created_at))) ||
-        value.decision_reviewer !== undefined !== (value.decision_created_at !== undefined) ||
-        value.decision_nonce !== undefined && (typeof value.decision_nonce !== "string" || !value.decision_nonce) ||
-        typeof value.signature !== "string") return null;
-    return value;
-  } catch { return null; }
 }
 
 export function removeFinalCredit(body: string): string {

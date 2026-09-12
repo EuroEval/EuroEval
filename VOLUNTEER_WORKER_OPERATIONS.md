@@ -87,8 +87,8 @@ The volunteer path consists of these components:
   The broker authenticates workers, finds GitHub issues, fences claims, validates
   results, and writes staged objects.
 - **GitHub:** `EuroEval/EuroEval` is the work queue and audit log. Issue assignees are
-  the mutable, authoritative active evaluators and Hall-credit identities for both
-  manual and volunteer paths. Signed markers in issue bodies are audit and integrity
+  the mutable, authoritative active evaluators and credit identities for both manual
+  and volunteer paths. Signed markers in issue bodies are audit and integrity
   evidence; they do not override current assignees.
 - **GitHub OAuth device flow:** A volunteer authorises the OAuth app in a browser. The
   broker exchanges and immediately revokes the short-lived GitHub grant, then gives the
@@ -113,7 +113,7 @@ The volunteer path consists of these components:
 The normal data flow is worker authentication, issue claim, evaluation, one result
 upload per identity, finalisation into a private manifest, maintainer review, and
 promotion or rejection. Acceptance copies only verified records to the canonical bucket.
-Issue assignees are the mutable, authoritative active evaluators and Hall-credit
+Issue assignees are the mutable, authoritative active evaluators and credit
 identities for manual and volunteer evaluations. A request may have multiple assignees
 when multiple volunteers contribute different languages; retain every assignee whose
 submission is accepted. Maintainers may transfer ownership or credit by changing the
@@ -430,6 +430,10 @@ The queue fails closed if either value is absent. Do not set
 hatch disables the shared lock and is permitted only for a deliberately isolated
 migration after verifying that no broker, volunteer worker, or second queue can touch
 the issue set. Never use it on a shared queue host.
+
+Fresh local claims require an unassigned issue. A self-assigned issue is resumed only
+when its sole assignee is the authenticated token login and its single VM marker matches
+the current VM; manual self-assignment without that marker is not consumed.
 
 The local queue also needs its existing `GITHUB_TOKEN` and Hugging Face access for its
 non-volunteer work. Keep its results-writing credentials separate from the broker's

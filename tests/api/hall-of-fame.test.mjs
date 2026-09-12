@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateWinner, creditLogins } from "../../api/hall-of-fame.ts";
+import { creditLogins } from "../../api/hall-of-fame.ts";
 
 const issue = (body, assignees = []) => ({ title: "[MODEL EVALUATION REQUEST] org/model", body, assignee: assignees[0] || null, assignees });
 
@@ -10,10 +10,6 @@ test("Hall-of-Fame credits current assignees regardless of markers", () => {
     { login: "Alice", avatar_url: "" }, { login: "alice", avatar_url: "" },
     { login: "saattrupdan", avatar_url: "" }, { login: "Bob", avatar_url: "" },
   ])), ["Alice", "Bob"]);
-});
-
-test("winner calculation counts identities and ties by lower-case login", () => {
-  assert.equal(calculateWinner([{ github_login: "Zed", identity: "a" }, { github_login: "alice", identity: "b" }, { github_login: "Alice", identity: "c" }]), "Alice");
 });
 
 test("Hall-of-Fame uses assignees when a legacy assignee field is present", () => {

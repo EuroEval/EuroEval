@@ -246,7 +246,7 @@ def process_queue_once(
     thermal_config: ThermalConfig,
 ) -> None:
     """Process every locally claimable model-evaluation request once."""
-    candidates = _queue_candidates(assignee=assignee)
+    candidates = _queue_candidates(assignee=assignee, vm_id=vm_id)
     gpu_bytes = gpu_total_memory_bytes()
 
     # vLLM can only allocate `gpu_memory_utilization * total GPU memory`, so the
@@ -400,12 +400,13 @@ _BUCKET_THRESHOLDS = [
 
 
 def _queue_candidates(
-    assignee: str | None = None,
+    assignee: str | None = None, vm_id: str | None = None
 ) -> list[tuple[int, int, int, int, float, dict, str, list[str]]]:
     """Return processable issues sorted by priority.
 
-    The GitHub assignee is authoritative: only unassigned requests and requests
-    solely assigned to the authenticated local login are considered.
+    The GitHub assignee is authoritative: only unassigned requests are fresh
+    candidates. A self-assigned request is eligible only when its VM marker matches
+    the current runner.
 
     Returns:
         Queue candidates as sortable tuples followed by issue, model id and
@@ -449,7 +450,9 @@ def _queue_candidates(
         if has_assignees and (
             not assignee_logins
             or assignee is None
+            or vm_id is None
             or not issue_is_solely_assigned_to(issue=issue, login=assignee)
+            or not _has_matching_vm_marker(body=body, vm_id=vm_id)
         ):
             logger.info(f"#{issue['number']}: skipping -- assigned to another owner.")
             continue
@@ -577,6 +580,11 @@ def _skip_accepted_marker(body: str, number: int) -> bool:
     return True
 
 
+def _has_matching_vm_marker(body: str, vm_id: str) -> bool:
+    matches = list(VM_MARKER_RE.finditer(body))
+    return len(matches) == 1 and matches[0].group(1) == vm_id
+
+
 def _local_work_is_owned(number: int, vm_id: str, assignee: str) -> bool:
     """Return whether the local runner still owns an issue before a mutation."""
     try:
@@ -591,12 +599,9 @@ def _local_work_is_owned(number: int, vm_id: str, assignee: str) -> bool:
         return False
     if issue_has_active_queue_ownership(body):
         return False
-    marker = VM_MARKER_RE.search(body)
-    return (
-        marker is not None
-        and marker.group(1) == vm_id
-        and issue_is_solely_assigned_to(issue=current, login=assignee)
-    )
+    return _has_matching_vm_marker(
+        body=body, vm_id=vm_id
+    ) and issue_is_solely_assigned_to(issue=current, login=assignee)
 
 
 def process_issue(
@@ -646,7 +651,9 @@ def process_issue(
         with _coordinator_issue_lock(number) as coordinator_lock:
             if coordinator_lock is not None:
                 coordinator_lock.ensure_healthy()
-            if not issue_is_still_claimable(number=number, assignee=assignee):
+            if not issue_is_still_claimable(
+                number=number, assignee=assignee, vm_id=vm_id
+            ):
                 logger.info(f"#{number}: skipping gated update; ownership changed.")
                 return
             if not has_gated_label:
@@ -659,7 +666,9 @@ def process_issue(
         with _coordinator_issue_lock(number) as coordinator_lock:
             if coordinator_lock is not None:
                 coordinator_lock.ensure_healthy()
-            if not issue_is_still_claimable(number=number, assignee=assignee):
+            if not issue_is_still_claimable(
+                number=number, assignee=assignee, vm_id=vm_id
+            ):
                 logger.info(
                     f"#{number}: skipping gated-label removal; ownership changed."
                 )
@@ -675,7 +684,7 @@ def process_issue(
         with _coordinator_issue_lock(number) as coordinator_lock:
             if coordinator_lock is not None:
                 coordinator_lock.ensure_healthy()
-            if not issue_is_still_claimable(number=number, assignee=assignee):
+            if not issue_is_still_claimable(number=number):
                 logger.info(
                     f"#{number}: skipping -- no longer open and unassigned "
                     "at claim time."
@@ -693,7 +702,7 @@ def process_issue(
                 coordinator_lock.ensure_healthy()
             # A manual assignment may have arrived after the first re-check. Never
             # add the local login alongside that owner.
-            if not issue_is_still_claimable(number=number, assignee=assignee):
+            if not issue_is_still_claimable(number=number):
                 logger.info(f"#{number}: manual ownership arrived during claim.")
                 return
             assign_issue(number=number, assignee=assignee)
@@ -705,7 +714,9 @@ def process_issue(
             # overwritten our marker. A manual assignment may also have arrived
             # between the final pre-assign check and GitHub's POST.
             owns_marker = vm_marker_matches(number=number, vm_id=vm_id)
-            owns_assignment = issue_is_still_claimable(number=number, assignee=assignee)
+            owns_assignment = _local_work_is_owned(
+                number=number, vm_id=vm_id, assignee=assignee
+            )
             if coordinator_lock is not None:
                 coordinator_lock.ensure_healthy()
             if not owns_marker or not owns_assignment:
@@ -1262,13 +1273,16 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
         return False
 
 
-def issue_is_still_claimable(number: int, assignee: str | None = None) -> bool:
+def issue_is_still_claimable(
+    number: int, assignee: str | None = None, vm_id: str | None = None
+) -> bool:
     """Return whether the issue can be claimed by the local queue.
 
     Re-fetches the issue at claim time so that issues which were closed,
     manually assigned, or otherwise changed between the initial snapshot and
     now are not double-processed. An existing assignment is acceptable only
-    when it is the sole assignment and belongs to ``assignee``.
+    when it is the sole assignment, belongs to ``assignee``, and has a matching
+    VM marker.
 
     Args:
         number:
@@ -1276,10 +1290,13 @@ def issue_is_still_claimable(number: int, assignee: str | None = None) -> bool:
         assignee (optional):
             The authenticated local queue login. Defaults to requiring an
             unassigned issue.
+        vm_id (optional):
+            The VM marker required to resume a self-assigned issue.
 
     Returns:
         True if the issue is currently open and unassigned, or solely assigned
-        to ``assignee``; False otherwise (including when the lookup fails).
+        to ``assignee`` with a matching VM marker; False otherwise (including
+        when the lookup fails).
     """
     try:
         current = gh_request(path=f"/repos/{REPO}/issues/{number}")
@@ -1302,16 +1319,17 @@ def issue_is_still_claimable(number: int, assignee: str | None = None) -> bool:
     }
     if RESULTS_READY_LABEL in label_names or issue_has_active_queue_ownership(body):
         return False
-    # A valid but expired/rejected broker marker may leave a prior volunteer
-    # assignment. It is reclaimable only when that assignment is local; a
-    # different GitHub assignee is manual ownership.
     assignee_logins = issue_assignee_logins(issue=current)
     raw_assignees = current.get("assignees")
     has_assignees = isinstance(raw_assignees, list) and bool(raw_assignees)
     if not has_assignees:
         return True
+    marker = VM_MARKER_RE.search(body)
     return (
         bool(assignee)
+        and bool(vm_id)
+        and marker is not None
+        and marker.group(1) == vm_id
         and bool(assignee_logins)
         and issue_is_solely_assigned_to(issue=current, login=assignee)
     )

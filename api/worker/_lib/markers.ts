@@ -55,12 +55,15 @@ export function volunteerAssigneesMatch(
   assignees: Array<{ login: string }> | undefined,
   marker: VolunteerLeaseMarker | null,
   now = Date.now(),
+  includeExpiredLeases = false,
 ): boolean {
   const actual = new Set((assignees || []).map((item) => item.login.toLowerCase()));
   if (!marker) return actual.size === 0;
   const expected = new Set<string>();
   for (const lease of marker.leases) {
-    if (Date.parse(lease.expires_at) > now) expected.add(lease.contributor.toLowerCase());
+    if (includeExpiredLeases || Date.parse(lease.expires_at) > now) {
+      expected.add(lease.contributor.toLowerCase());
+    }
   }
   for (const submission of marker.submissions || []) {
     if (["submitted", "accepted"].includes(submission.status)) {

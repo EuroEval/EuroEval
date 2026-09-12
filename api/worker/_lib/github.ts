@@ -33,9 +33,7 @@ export async function assertAssignable(login: string): Promise<void> {
     await github(`/repos/${REPO}/assignees/${encodeURIComponent(login)}`);
   } catch (error) {
     if (error instanceof BrokerError && error.status === 404) {
-      throw new BrokerError(422,
-        "Your GitHub login cannot be assigned to evaluation issues; check repository access and try again.",
-        "contributor_not_assignable");
+      throw new BrokerError(422,        "Your GitHub login cannot be assigned to evaluation issues; check repository access and try again.", "github_login_not_assignable");
     }
     throw new BrokerError(502,
       "Unable to verify whether your GitHub login can be assigned; try again later.",

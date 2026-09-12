@@ -13,6 +13,109 @@ import type { Lease, VolunteerLeaseMarker } from "./_lib.ts";
 
 export const config = { runtime: "edge" };
 
+function assigneesMatchWithExtras(
+  assignees: Array<{ login: string }> | undefined,
+  marker: VolunteerLeaseMarker,
+  extras: Iterable<string>,
+): boolean {
+  const actual = new Set((assignees || []).map((assignee) => assignee.login.toLowerCase()));
+  const expected = new Set<string>(extras);
+  for (const lease of marker.leases) {
+    if (Date.parse(lease.expires_at) > Date.now()) expected.add(lease.contributor.toLowerCase());
+  }
+  for (const submission of marker.submissions || []) {
+    if (["submitted", "accepted"].includes(submission.status)) {
+      expected.add(submission.verified_contributor.toLowerCase());
+    }
+  }
+  return actual.size === expected.size && [...actual].every((login) => expected.has(login));
+}
+
+async function recoverExpiredOwnership(
+  issue: Awaited<ReturnType<typeof fetchIssue>>,
+  marker: VolunteerLeaseMarker,
+  mutex: NonNullable<Awaited<ReturnType<typeof acquireRenewableIssueMutex>>>,
+): Promise<{ issue: Awaited<ReturnType<typeof fetchIssue>>; marker: VolunteerLeaseMarker } | null> {
+  const now = Date.now();
+  const expired = marker.leases.filter((lease) => Date.parse(lease.expires_at) <= now);
+  if (!expired.length) return { issue, marker };
+
+  for (const markerLease of expired) {
+    const redisLease = await getLeaseForIssue(issue.number, markerLease.language);
+    if (redisLease) {
+      if (redisLease.lease_id !== markerLease.lease_id ||
+          Date.parse(redisLease.expires_at) > Date.now() ||
+          !(await reclaimExpiredLease(redisLease))) return null;
+    }
+  }
+
+  const remainingLeases = marker.leases.filter(
+    (lease) => !expired.some((item) => item.lease_id === lease.lease_id),
+  );
+  const signed = await signVolunteerMarker(issue.number, {
+    ...marker,
+    leases: remainingLeases,
+    submission: marker.submissions?.length ? "submitted" : "active",
+  });
+  await mutex.assertOwned();
+  await patchIssue(issue.number, replaceVolunteerMarker(issue.body || "", signed));
+
+  let current = await fetchIssue(issue.number);
+  let currentMarker = parseVolunteerMarker(current.body);
+  if (!currentMarker || !(await verifyVolunteerMarker(issue.number, currentMarker))) return null;
+  const verifiedMarker = currentMarker;
+  if (expired.some((lease) => verifiedMarker.leases.some((item) => item.lease_id === lease.lease_id))) {
+    return null;
+  }
+  const retained = new Set(
+    remainingLeases
+      .filter((lease) => Date.parse(lease.expires_at) > Date.now())
+      .map((lease) => lease.contributor.toLowerCase()),
+  );
+  for (const submission of verifiedMarker.submissions || []) {
+    if (["submitted", "accepted"].includes(submission.status)) {
+      retained.add(submission.verified_contributor.toLowerCase());
+    }
+  }
+  const removable = new Set(
+    expired.map((lease) => lease.contributor.toLowerCase()).filter((contributor) => !retained.has(contributor)),
+  );
+  const expectedBeforeUnassignment = new Set(
+    [...retained, ...removable],
+  );
+  const actualBeforeUnassignment = new Set(
+    (current.assignees || []).map((assignee) => assignee.login.toLowerCase()),
+  );
+  if (actualBeforeUnassignment.size !== expectedBeforeUnassignment.size ||
+      [...actualBeforeUnassignment].some((login) => !expectedBeforeUnassignment.has(login))) return null;
+
+  for (const contributor of removable) {
+    await mutex.assertOwned();
+    current = await fetchIssue(issue.number);
+    currentMarker = parseVolunteerMarker(current.body);
+    if (!currentMarker || !(await verifyVolunteerMarker(issue.number, currentMarker))) return null;
+    const verifiedCurrentMarker = currentMarker;
+    if (!assigneesMatchWithExtras(current.assignees, verifiedCurrentMarker, removable)) return null;
+    const assigned = (current.assignees || []).find(
+      (assignee) => assignee.login.toLowerCase() === contributor,
+    );
+    if (!assigned) continue;
+    await unassignIssue(issue.number, assigned.login);
+    current = await fetchIssue(issue.number);
+    currentMarker = parseVolunteerMarker(current.body);
+    if (!currentMarker || !(await verifyVolunteerMarker(issue.number, currentMarker))) return null;
+    const pending = new Set(removable);
+    pending.delete(contributor);
+    if (expired.some((lease) => verifiedCurrentMarker.leases.some((item) => item.lease_id === lease.lease_id)) ||
+        !assigneesMatchWithExtras(current.assignees, verifiedCurrentMarker, pending) ||
+        (current.assignees || []).some((assignee) => assignee.login.toLowerCase() === contributor)) return null;
+  }
+  if (!currentMarker) return null;
+  const finalMarker = currentMarker;
+  if (!volunteerAssigneesMatch(current.assignees, finalMarker)) return null;
+  return { issue: current, marker: finalMarker };
+}
+
 function activeMarker(marker: VolunteerLeaseMarker | null): VolunteerLeaseMarker | null {
   if (!marker) return null;
   const leases = marker.leases.filter((lease) => Date.parse(lease.expires_at) > Date.now());
@@ -72,21 +175,37 @@ export default async function handler(req: Request): Promise<Response> {
       if (!selectedHardwareGpu || !fitsGpu(model, body.hardware, selectedHardwareGpu)) continue;
       const mutex = await acquireRenewableIssueMutex(listed.number); if (!mutex) continue;
       try {
-        const snapshot = await fetchIssue(listed.number);
+        let snapshot = await fetchIssue(listed.number);
         if (snapshot.state !== "open" || snapshot.body && VM_MARKER_RE.test(snapshot.body)) continue;
         if (extractModelId(snapshot.title, snapshot.body) !== modelId) continue;
         const markerPresent = VOLUNTEER_MARKER_RE.test(snapshot.body || "");
         const marker = parseVolunteerMarker(snapshot.body);
         if (markerPresent && (!marker || !(await verifyVolunteerMarker(snapshot.number, marker)))) continue;
-        if (!volunteerAssigneesMatch(snapshot.assignees, marker)) continue;
-        const current = activeMarker(marker);
+        if (!volunteerAssigneesMatch(snapshot.assignees, marker, Date.now(), true)) continue;
+        const recovered = marker
+          ? await recoverExpiredOwnership(snapshot, marker, mutex)
+          : { issue: snapshot, marker: null };
+        if (!recovered) continue;
+        snapshot = recovered.issue;
         const selected = selectedLanguages(snapshot.body);
+        const current = activeMarker(parseVolunteerMarker(snapshot.body));
         const available = claimableLanguages(selected, current);
         const language = requestedLanguage || available[0];
         if (!language || !available.includes(language)) continue;
-        const group = languageGroup(language); if (!group || !GROUPS[group]) continue;
         const staleLease = await getLeaseForIssue(snapshot.number, language);
-        if (staleLease && Date.parse(staleLease.expires_at) <= Date.now() && !await reclaimExpiredLease(staleLease)) continue;
+        if (staleLease && Date.parse(staleLease.expires_at) <= Date.now() &&
+            !(await reclaimExpiredLease(staleLease))) continue;
+        const refreshed = await fetchIssue(snapshot.number);
+        const refreshedMarker = parseVolunteerMarker(refreshed.body);
+        if (refreshedMarker && !(await verifyVolunteerMarker(refreshed.number, refreshedMarker))) continue;
+        if (VOLUNTEER_MARKER_RE.test(refreshed.body || "") && !refreshedMarker) continue;
+        if (!volunteerAssigneesMatch(refreshed.assignees, refreshedMarker)) continue;
+        snapshot = refreshed;
+        const refreshedCurrent = activeMarker(refreshedMarker);
+        const refreshedSelected = selectedLanguages(snapshot.body);
+        const refreshedAvailable = claimableLanguages(refreshedSelected, refreshedCurrent);
+        if (!refreshedAvailable.includes(language)) continue;
+        const group = languageGroup(language); if (!group || !GROUPS[group]) continue;
         let trusted;
         try { trusted = expectedScope(euroevalVersion, model.model_type, language); }
         catch (error) { if (error instanceof BrokerError && error.status === 422) continue; throw error; }
@@ -135,8 +254,9 @@ export default async function handler(req: Request): Promise<Response> {
           if (VM_MARKER_RE.test(after.body || "") || !afterMarker ||
               !(await verifyVolunteerMarker(snapshot.number, afterMarker)) ||
               !afterMarker.leases.some((item) => item.lease_id === lease.lease_id) ||
-              !(after.assignees || []).some((item) =>
-                item.login.toLowerCase() === identity.contributor.toLowerCase())) {
+               !volunteerAssigneesMatch(after.assignees, afterMarker) ||
+               !(after.assignees || []).some((item) =>
+                 item.login.toLowerCase() === identity.contributor.toLowerCase())) {
             throw new BrokerError(409, "GitHub ownership fence lost during claim.");
           }
         } catch (error) {
