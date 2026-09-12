@@ -300,7 +300,8 @@ test("release retries a released tombstone without touching GitHub", async () =>
   values.set(`euroeval:worker:lease-id:${lease.lease_id}`, JSON.stringify({ ...lease, released: true }));
   let githubCalls = 0;
   globalThis.fetch = async (input, init = {}) => {
-    if (String(input).startsWith("https://redis.test")) {
+    const parsedUrl = new URL(String(input));
+    if (parsedUrl.origin === "https://redis.test") {
       const command = JSON.parse(init.body);
       if (command[0] === "GET") return Response.json({ result: values.get(command[1]) || null });
       return Response.json({ result: 1 });
@@ -388,8 +389,9 @@ test("release resumes after marker removal with retained ownership", async () =>
   const githubMutations = [];
   globalThis.fetch = async (input, init = {}) => {
     const method = init.method || "GET";
-    if (String(input) === "https://redis.test") redisCommands.push(JSON.parse(init.body));
-    if (String(input).startsWith("https://api.github.com") && method !== "GET") githubMutations.push(method);
+    const parsedUrl = new URL(String(input));
+    if (parsedUrl.origin === "https://redis.test") redisCommands.push(JSON.parse(init.body));
+    if (parsedUrl.origin === "https://api.github.com" && method !== "GET") githubMutations.push(method);
     return broker(input, init);
   };
   try {
