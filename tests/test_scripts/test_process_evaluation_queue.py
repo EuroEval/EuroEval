@@ -13,6 +13,11 @@ from src.scripts import process_evaluation_queue
 def standalone_queue(monkeypatch: pytest.MonkeyPatch) -> None:
     """Keep unit tests isolated from the shared GitHub queue."""
     monkeypatch.setenv("VOLUNTEER_COORDINATOR_STANDALONE", "1")
+    monkeypatch.setattr(
+        process_evaluation_queue,
+        "_local_work_is_owned",
+        lambda number, vm_id, assignee: True,
+    )
 
 
 def test_process_issue_does_not_special_case_oom_anymore(
@@ -25,7 +30,7 @@ def test_process_issue_does_not_special_case_oom_anymore(
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="issue_is_still_claimable",
-        value=lambda number: True,
+        value=lambda number, assignee=None: True,
     )
 
     lines_per_read = iter([["before"], ["before"]])
@@ -149,7 +154,7 @@ def test_process_issue_fails_when_official_results_are_missing(
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="issue_is_still_claimable",
-        value=lambda number: True,
+        value=lambda number, assignee=None: True,
     )
 
     # _run_claimed_issue reads the model's result subdirectory directly (not via
@@ -280,7 +285,7 @@ def test_process_issue_marks_ready_when_missing_pairs_are_skips(
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="issue_is_still_claimable",
-        value=lambda number: True,
+        value=lambda number, assignee=None: True,
     )
     # The bucket already holds a line for this model; the run produces nothing
     # new (the only remaining official pair is one euroeval skips).

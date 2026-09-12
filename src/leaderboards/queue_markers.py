@@ -14,7 +14,13 @@ import re
 import urllib.error
 
 from .constants import VM_MARKER_RE
-from .github_api import fetch_issue_body, patch_issue_body, unassign_issue
+from .github_api import (
+    fetch_issue,
+    fetch_issue_body,
+    issue_assignee_logins,
+    patch_issue_body,
+    unassign_issue,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -271,7 +277,8 @@ def issue_has_active_queue_ownership(body: str) -> bool:
             marker.submission == "submitted"
             or marker.submission == "active"
             and (
-                not marker.leases
+                marker.signature is not None
+                or not marker.leases
                 or any(_expiry_active(lease["expires_at"]) for lease in marker.leases)
             )
         )
@@ -322,11 +329,55 @@ def release_issue_if_owned(number: int, vm_id: str, assignee: str) -> bool:
     if match and match.group(1) != vm_id:
         return False
     try:
-        if match:
+        current = fetch_issue(number=number)
+        if current is None or current.get("state") != "open":
+            return False
+        current_assignees = issue_assignee_logins(issue=current)
+        assigned_login = next(
+            (
+                login
+                for login in current_assignees
+                if login.casefold() == assignee.casefold()
+            ),
+            None,
+        )
+        if assigned_login is None:
+            return False
+        live_body = current.get("body")
+        if not isinstance(live_body, str):
+            live_body = body
+        if (
+            _COMMUNITY_MARKER_CANDIDATE_RE.search(live_body)
+            and _trusted_issue_marker(number, live_body) is None
+        ) or issue_has_active_queue_ownership(live_body):
+            return False
+        live_match = VM_MARKER_RE.search(live_body)
+        if live_match and live_match.group(1) != vm_id:
+            return False
+        if live_match:
             patch_issue_body(
-                number=number, body=VM_MARKER_RE.sub("", body, count=1).rstrip() + "\n"
+                number=number,
+                body=VM_MARKER_RE.sub("", live_body, count=1).rstrip() + "\n",
             )
-        unassign_issue(number=number, assignee=assignee)
+        # Re-fetch after clearing the VM marker: an operator may have replaced
+        # the local assignment while the first mutation was in flight.
+        fenced = fetch_issue(number=number)
+        if fenced is None or not any(
+            login.casefold() == assignee.casefold()
+            for login in issue_assignee_logins(issue=fenced)
+        ):
+            return False
+        fenced_body = fenced.get("body")
+        if isinstance(fenced_body, str):
+            fenced_match = VM_MARKER_RE.search(fenced_body)
+            if fenced_match and fenced_match.group(1) != vm_id:
+                return False
+            if issue_has_active_queue_ownership(fenced_body) or (
+                _COMMUNITY_MARKER_CANDIDATE_RE.search(fenced_body)
+                and _trusted_issue_marker(number, fenced_body) is None
+            ):
+                return False
+        unassign_issue(number=number, assignee=assigned_login)
     except urllib.error.HTTPError as error:
         logger.warning(f"#{number}: release failed: {error}")
         return False
@@ -372,4 +423,4 @@ def vm_marker_matches(number: int, vm_id: str) -> bool:
     if issue_has_active_queue_ownership(body):
         return False
     match = VM_MARKER_RE.search(body)
-    return match is None or match.group(1) == vm_id
+    return match is not None and match.group(1) == vm_id

@@ -93,6 +93,92 @@ def test_release_does_not_touch_community_owned_issue(
     assert unassigned == []
 
 
+def test_release_does_not_remove_replacement_assignee(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Release must re-check ownership before removing a local assignee."""
+    body = "request\n<!-- vm-id: local-vm -->"
+    monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
+    fetches = iter(
+        [
+            {"state": "open", "assignees": [{"login": "runner"}]},
+            {"state": "open", "assignees": [{"login": "replacement"}]},
+        ]
+    )
+    monkeypatch.setattr(queue_markers, "fetch_issue", lambda number: next(fetches))
+    monkeypatch.setattr(queue_markers, "patch_issue_body", lambda number, body: None)
+    unassigned: list[str] = []
+    monkeypatch.setattr(
+        queue_markers,
+        "unassign_issue",
+        lambda number, assignee: unassigned.append(assignee),
+    )
+
+    released = queue_markers.release_issue_if_owned(
+        number=12, vm_id="local-vm", assignee="runner"
+    )
+
+    assert not released
+    assert unassigned == []
+
+
+def test_release_removes_local_login_but_not_replacement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A replacement remains assigned when stale local work is released."""
+    body = "request\n<!-- vm-id: local-vm -->"
+    monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
+    monkeypatch.setattr(
+        queue_markers,
+        "fetch_issue",
+        lambda number: {
+            "state": "open",
+            "assignees": [{"login": "replacement"}, {"login": "runner"}],
+        },
+    )
+    monkeypatch.setattr(queue_markers, "patch_issue_body", lambda number, body: None)
+    unassigned: list[str] = []
+    monkeypatch.setattr(
+        queue_markers,
+        "unassign_issue",
+        lambda number, assignee: unassigned.append(assignee),
+    )
+
+    released = queue_markers.release_issue_if_owned(
+        number=12, vm_id="local-vm", assignee="runner"
+    )
+
+    assert released
+    assert unassigned == ["runner"]
+
+
+def test_release_unassigns_only_the_local_login(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A stable local assignment may be conditionally removed."""
+    body = "request\n<!-- vm-id: local-vm -->"
+    monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
+    monkeypatch.setattr(
+        queue_markers,
+        "fetch_issue",
+        lambda number: {"state": "open", "assignees": [{"login": "runner"}]},
+    )
+    monkeypatch.setattr(queue_markers, "patch_issue_body", lambda number, body: None)
+    unassigned: list[str] = []
+    monkeypatch.setattr(
+        queue_markers,
+        "unassign_issue",
+        lambda number, assignee: unassigned.append(assignee),
+    )
+
+    released = queue_markers.release_issue_if_owned(
+        number=12, vm_id="local-vm", assignee="runner"
+    )
+
+    assert released
+    assert unassigned == ["runner"]
+
+
 def test_submissions_require_verified_contributor_and_server_count() -> None:
     """Submitted audit entries carry verified, server-derived attribution."""
     payload = {
