@@ -39,11 +39,12 @@ Pi/I to execute now; neither imports `.env` or mutates a file.
    ```
 
 3. **MANUAL** - the maintainer chooses the existing `EuroEval/EuroEval` GitHub queue,
-   `https://euroeval.com` Vercel project, private EU staging bucket, Upstash database,
-   OAuth app, and public GHCR package. The maintainer supplies credentials, selects an
-   immutable image digest, and confirms production deployment. Pi/I can execute
-   publication or deployment only after explicit approval, but cannot choose accounts
-   or credentials, or perform a physical GPU canary without hardware.
+   `https://euroeval.com` Vercel project, recommended private EU staging bucket,
+   Upstash database, OAuth app, and public GHCR package. A US staging bucket requires
+   the explicit data-residency decision described below. The maintainer supplies
+   credentials, selects an immutable image digest, and confirms production deployment.
+   Pi/I can execute publication or deployment only after explicit approval, but cannot
+   choose accounts or credentials, or perform a physical GPU canary without hardware.
 
 4. **CONFIRMED AUTOMATION** - after reviewing step 2 and supplying the chosen values,
    explicitly apply only the selected scoped setup. There is intentionally no implicit
@@ -51,7 +52,11 @@ Pi/I to execute now; neither imports `.env` or mutates a file.
 
    ```sh
    uv run python src/scripts/volunteer_worker_operations.py apply --github --yes
-   uv run python src/scripts/volunteer_worker_operations.py apply --hf --yes
+   uv run python src/scripts/volunteer_worker_operations.py apply --hf --yes \
+     --hf-region eu
+   # Use this only after an explicit US data-residency decision:
+   uv run python src/scripts/volunteer_worker_operations.py apply --hf --yes \
+     --hf-region us
    uv run python src/scripts/volunteer_worker_operations.py apply --vercel --yes
    ```
 
@@ -97,9 +102,9 @@ The volunteer path consists of these components:
 - **Upstash Redis:** The broker's short-lived state store for credentials, leases, rate
   limits, mutexes, result reservations, and promotion reservations. Redis is
   coordination state, not a review or result source.
-- **Hugging Face Buckets:** The private EU staging bucket receives worker result files
-  and manifests. After review, the maintainer tool copies verified records to the public
-  canonical `EuroEval/results` bucket.
+- **Hugging Face Buckets:** The private staging bucket (EU recommended) receives worker
+  result files and manifests. After review, the maintainer tool copies verified records
+  to the public canonical `EuroEval/results` bucket.
 - **GHCR:** `ghcr.io/euroeval/euroeval-worker` is the public, immutable worker image.
   Workers use a digest selected by the maintainer; they do not receive a floating tag as
   their broker lease's image identity.
@@ -195,10 +200,18 @@ durable review record.
 
 ### 5. Create private Hugging Face staging storage
 
-Create a private Hugging Face Bucket in the EU region, for example
-`<namespace>/<private-staging-bucket>`, and set that exact ID as `HF_STAGING_BUCKET`.
-The broker refuses a staging bucket that is not private. Create a narrowly scoped HF
-token that can write this staging bucket and use it as Vercel's `HF_TOKEN`.
+The recommended staging location is a private Hugging Face Bucket in the EU region,
+for example `<namespace>/<private-staging-bucket>`, with that exact ID set as
+`HF_STAGING_BUCKET`. EU bucket creation requires an eligible Hugging Face organisation
+plan (Team or Enterprise); EuroEval does not currently have that eligibility. If EU
+creation is unavailable, the US region is an explicit data-residency decision, not an
+automatic fallback. Use `--hf-region us` only after approving that decision.
+
+The operations CLI defaults to EU and passes the selected region only when creating a
+missing bucket. Existing bucket metadata cannot verify region, so confirm an existing
+bucket's region manually in Hugging Face. The broker refuses a staging bucket that is
+not private. Create a narrowly scoped HF token that can write this staging bucket and
+use it as Vercel's `HF_TOKEN`.
 
 For maintainer review, use a token that can read **and write** the staging bucket and,
 for approval, also write the canonical results bucket (`EuroEval/results`). This can be
@@ -262,7 +275,8 @@ broker testing. Do not mark any of these as public or expose them as frontend va
   marker before the old secret is retired, with the transition tested and verified.
 - `UPSTASH_REDIS_REST_URL` — REST URL for the broker's Upstash database.
 - `UPSTASH_REDIS_REST_TOKEN` — REST token for that database.
-- `HF_STAGING_BUCKET` — private EU staging bucket ID in `namespace/bucket` form.
+- `HF_STAGING_BUCKET` — private staging bucket ID in `namespace/bucket` form (EU
+  recommended; US requires an explicit data-residency decision).
 - `HF_TOKEN` — scoped token that can write the private staging bucket.
 - `WORKER_COORDINATOR_SECRET` — secret accepted by the coordinator lock, renew, and
   release endpoints. It must also be set on every local queue host.
