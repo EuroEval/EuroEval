@@ -7,6 +7,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- LiteLLM now retries custom OpenAI-compatible APIs that reject `max_tokens` without
+  sending the unsupported parameter.
+
+## [v18.1.0] - 2026-09-11
+
 ### Added
 
 - Datasets from Hugging Face repositories with an `eval.yaml` declaring several
@@ -18,6 +25,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `--task` does.
 - Added model release dates to benchmark result metadata for Hugging Face Hub and API
   models.
+- Added release-date metadata for GPT-6 Astra, Claude Fable 5.1, Claude Mythos 5.1,
+  and Gemini 3.8 Flash.
 - Added the unofficial Belarusian Word-in-Context dataset `bewic`, based on the BeWiC
   dataset from BelarusianGLUE.
 - Added the unofficial Belarusian linguistic acceptability dataset `belacola`, based on
@@ -32,6 +41,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   dependency but is already installed through torch. Templates from `prompt_template`
   solvers are used as EuroEval instruction prompts.
   An answer boxed as an equation, such as `\boxed{x = 5}`, scores the value it names.
+- Added the unofficial Danish knowledge dataset `danish-similarity-outlier`, part of the
+  [Danish Semantic Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark),
+  where the model has to pick the semantically least similar word from six options. This
+  was contributed by @Mr-Neutr0n ✨
 
 ### Changed
 
@@ -41,6 +54,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed RobBERT-family question-answering predictions losing the first character of
+  word-initial answers because of their tokeniser offset mappings. This was
+  contributed by @jaideeppyne ✨
 - Restored backwards-compatible `Language(code, name)` construction while retaining
   ISO 639-3 and optional ISO 639-1 language codes.
 - Fixed expanded `eval.yaml` task identities so entries without declared splits,

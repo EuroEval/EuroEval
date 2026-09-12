@@ -291,6 +291,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for milos-plavsic"
     />
 </a>
+<a href="https://github.com/Mr-Neutr0n">
+    <img
+        src="https://avatars.githubusercontent.com/u/64578610"
+        width=50
+        alt="Contributor avatar for Mr-Neutr0n"
+    />
+</a>
 
 ### Contribute to EuroEval
 
