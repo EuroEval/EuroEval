@@ -226,15 +226,18 @@ const paretoVisibility = ref<Record<XAxis, boolean>>({
 
 const showPareto = computed(() => paretoVisibility.value[props.xAxis]);
 const xOptimization: OptimizationDirection = "minimize";
-const paretoDescription = computed(() =>
-  props.xAxis === "parameters"
-    ? "Lower parameter count and lower rank score are preferred."
-    : "Earlier release date and lower rank score are preferred.",
+const curveName = computed(() =>
+  props.xAxis === "releaseDate" ? "SOTA curve" : "Pareto curve",
 );
-const paretoToggleLabel = computed(
+const curveDescription = computed(() =>
+  props.xAxis === "parameters"
+    ? "Highlights the best performance across different model sizes."
+    : "Tracks the state-of-the-art model over time.",
+);
+const curveToggleLabel = computed(
   () =>
-    `${showPareto.value ? "Hide" : "Show"} Pareto curve. ` +
-    paretoDescription.value,
+    `${showPareto.value ? "Hide" : "Show"} ${curveName.value}. ` +
+    curveDescription.value,
 );
 
 const togglePareto = () => {
@@ -285,12 +288,12 @@ const paretoPointSet = computed(() => new Set(paretoPoints.value));
 const chartAriaLabel = computed(() => {
   const xLabel =
     props.xAxis === "parameters" ? "Parameter count" : "Release date";
-  const frontierLabel = showPareto.value
-    ? `, ${paretoPoints.value.length} on the Pareto frontier`
+  const curveLabel = showPareto.value
+    ? `, ${paretoPoints.value.length} on the ${curveName.value}`
     : "";
   return (
     `${xLabel} versus rank score for ${visiblePoints.value.length} models` +
-    frontierLabel
+    curveLabel
   );
 });
 
@@ -904,14 +907,14 @@ const tooltipStyle = computed(() => {
         class="pareto-toggle"
         :class="{ active: showPareto }"
         :aria-pressed="showPareto"
-        :aria-label="paretoToggleLabel"
-        :title="paretoDescription"
+        :aria-label="curveToggleLabel"
+        :title="curveDescription"
         @click="togglePareto"
       >
         <svg viewBox="0 0 18 12" aria-hidden="true">
           <polyline points="1,10 6,7 10,7 17,1" />
         </svg>
-        Pareto curve
+        {{ curveName }}
       </button>
     </div>
 
@@ -1128,7 +1131,7 @@ const tooltipStyle = computed(() => {
             v-if="showPareto && paretoPointSet.has(hovered)"
             class="tt-row pareto-status"
           >
-            <span class="tt-label">Pareto frontier</span>
+            <span class="tt-label">{{ curveName }}</span>
             <span class="tt-value">Yes</span>
           </div>
           <div v-if="xAxis === 'releaseDate'" class="tt-row">
