@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import json
 import time
+from pathlib import Path
 
 import pytest
 
@@ -71,13 +72,33 @@ def test_coordinator_lock_is_renewed_and_released(
     assert calls[-1] == ("release", "lock-token")
 
 
+@pytest.mark.parametrize(
+    ("assignees", "expected"),
+    [([], True), ([{"login": "runner"}], True), ([{"login": "other"}], False)],
+)
+def test_claim_recheck_respects_github_assignee(
+    monkeypatch: pytest.MonkeyPatch, assignees: list[dict[str, str]], expected: bool
+) -> None:
+    """Claim rechecks accept only an unassigned or solely local issue."""
+    monkeypatch.setattr(
+        process_evaluation_queue,
+        "gh_request",
+        lambda path: {"state": "open", "assignees": assignees, "body": ""},
+    )
+
+    assert (
+        process_evaluation_queue.issue_is_still_claimable(number=9, assignee="runner")
+        is expected
+    )
+
+
 def test_queue_candidates_exclude_active_community_marker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Candidate filtering does not trust an issue with a broker lease."""
     marker_body = append_community_marker(
         body="request", owner="community", submission="active"
-    )
+    ).replace("} -->", ',"signature":"signed"} -->')
     issues = [_issue(1), _issue(2, marker_body)]
     monkeypatch.setattr(
         process_evaluation_queue, "gh_request", lambda path, *, params: issues
@@ -114,6 +135,73 @@ def _issue(number: int, body: str = "") -> dict[str, object]:
         "labels": [],
         "created_at": "2026-01-01T00:00:00Z",
     }
+
+
+def test_queue_candidates_respect_assignee_authority(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only unassigned and solely self-assigned issues enter the local queue."""
+    issues = [_issue(1), _issue(2), _issue(3)]
+    issues[1]["assignees"] = [{"login": "runner"}]
+    issues[2]["assignees"] = [{"login": "manual-owner"}]
+    monkeypatch.setattr(
+        process_evaluation_queue, "gh_request", lambda path, *, params: issues
+    )
+    monkeypatch.setattr(
+        process_evaluation_queue,
+        "extract_model_id",
+        lambda title, body: title.removeprefix("Evaluate "),
+    )
+    monkeypatch.setattr(
+        process_evaluation_queue, "extract_language_groups", lambda body: ["Greek"]
+    )
+    monkeypatch.setattr(
+        process_evaluation_queue,
+        "cached_model_summary",
+        lambda model_id: {"param_count": 1, "generative": True, "gated": False},
+    )
+
+    candidates = process_evaluation_queue._queue_candidates(assignee="runner")
+
+    assert [candidate[5]["number"] for candidate in candidates] == [1, 2]
+
+
+def test_local_work_is_fenced_after_manual_reassignment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A replacement assignee prevents publishing results from old local work."""
+    issue = {
+        "state": "open",
+        "body": "<!-- vm-id: local-vm -->",
+        "assignees": [{"login": "manual-owner"}],
+    }
+    uploaded: list[list[str]] = []
+    monkeypatch.setattr(process_evaluation_queue, "gh_request", lambda path: issue)
+    monkeypatch.setattr(
+        process_evaluation_queue,
+        "upload_results_to_hf_bucket",
+        lambda lines, model_id: uploaded.append(lines) or True,
+    )
+
+    result = process_evaluation_queue._upload_if_owned(
+        number=1,
+        vm_id="local-vm",
+        assignee="runner",
+        lines=["result"],
+        model_id="model",
+        language="el",
+    )
+
+    assert result is None
+    assert uploaded == []
+
+
+def test_local_queue_code_has_no_coordinator_login_setting() -> None:
+    """The local queue derives identity from its authenticated token."""
+    paths = [Path("src/scripts/process_evaluation_queue.py")]
+    paths.extend(Path("src/leaderboards").glob("queue_*.py"))
+
+    assert all("WORKER_COORDINATOR_LOGIN" not in path.read_text() for path in paths)
 
 
 def test_queue_candidates_paginate_past_first_hundred(

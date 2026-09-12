@@ -57,6 +57,8 @@ from leaderboards.github_api import (
     assign_issue,
     comment_on_issue,
     gh_request,
+    issue_assignee_logins,
+    issue_is_solely_assigned_to,
     remove_failed_label,
     remove_gated_label,
 )
@@ -243,8 +245,8 @@ def process_queue_once(
     gpu_memory_utilization: float | None,
     thermal_config: ThermalConfig,
 ) -> None:
-    """Process every unassigned model-evaluation-request issue once."""
-    candidates = _queue_candidates()
+    """Process every locally claimable model-evaluation request once."""
+    candidates = _queue_candidates(assignee=assignee)
     gpu_bytes = gpu_total_memory_bytes()
 
     # vLLM can only allocate `gpu_memory_utilization * total GPU memory`, so the
@@ -397,8 +399,13 @@ _BUCKET_THRESHOLDS = [
 ]
 
 
-def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list[str]]]:
+def _queue_candidates(
+    assignee: str | None = None,
+) -> list[tuple[int, int, int, int, float, dict, str, list[str]]]:
     """Return processable issues sorted by priority.
+
+    The GitHub assignee is authoritative: only unassigned requests and requests
+    solely assigned to the authenticated local login are considered.
 
     Returns:
         Queue candidates as sortable tuples followed by issue, model id and
@@ -407,14 +414,12 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
     issues = _list_queue_issues(assignee="none")
     if issues is None:
         return []
-    coordinator = os.environ.get("WORKER_COORDINATOR_LOGIN")
-    if coordinator:
-        assigned = _list_queue_issues(assignee="*")
-        if assigned:
-            seen = {issue.get("number") for issue in issues}
-            issues.extend(
-                issue for issue in assigned if issue.get("number") not in seen
-            )
+    if assignee:
+        assigned = _list_queue_issues(assignee=assignee)
+        if assigned is None:
+            return []
+        seen = {issue.get("number") for issue in issues}
+        issues.extend(issue for issue in assigned if issue.get("number") not in seen)
 
     candidates: list[tuple[int, int, int, int, float, dict, str, list[str]]] = []
     for issue in (issue for issue in issues if "pull_request" not in issue):
@@ -438,7 +443,15 @@ def _queue_candidates() -> list[tuple[int, int, int, int, float, dict, str, list
             continue
         if _skip_accepted_marker(body=body, number=issue["number"]):
             continue
-        if issue.get("assignees") and marker is None:
+        assignee_logins = issue_assignee_logins(issue=issue)
+        raw_assignees = issue.get("assignees")
+        has_assignees = isinstance(raw_assignees, list) and bool(raw_assignees)
+        if has_assignees and (
+            not assignee_logins
+            or assignee is None
+            or not issue_is_solely_assigned_to(issue=issue, login=assignee)
+        ):
+            logger.info(f"#{issue['number']}: skipping -- assigned to another owner.")
             continue
         number = issue["number"]
         model_id = extract_model_id(title=issue.get("title", ""), body=body)
@@ -564,6 +577,28 @@ def _skip_accepted_marker(body: str, number: int) -> bool:
     return True
 
 
+def _local_work_is_owned(number: int, vm_id: str, assignee: str) -> bool:
+    """Return whether the local runner still owns an issue before a mutation."""
+    try:
+        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
+    except urllib.error.HTTPError as error:
+        logger.warning(f"#{number}: could not verify local ownership: {error}")
+        return False
+    if not isinstance(current, dict) or current.get("state") != "open":
+        return False
+    body = current.get("body") or ""
+    if issue_has_community_marker(body) and parse_community_marker(body) is None:
+        return False
+    if issue_has_active_queue_ownership(body):
+        return False
+    marker = VM_MARKER_RE.search(body)
+    return (
+        marker is not None
+        and marker.group(1) == vm_id
+        and issue_is_solely_assigned_to(issue=current, login=assignee)
+    )
+
+
 def process_issue(
     issue: dict,
     model_id: str,
@@ -606,15 +641,31 @@ def process_issue(
     }
     has_gated_label = GATED_LABEL in label_names
     if is_gated:
-        if not has_gated_label:
-            add_gated_label(number=number)
-            logger.info(f"#{number}: marked gated -- {assignee} lacks read access.")
-        else:
-            logger.info(f"#{number}: still gated -- leaving label in place.")
+        # Gated requests still mutate GitHub, so manual ownership must be checked
+        # under the same mutex as ordinary claims immediately before labelling.
+        with _coordinator_issue_lock(number) as coordinator_lock:
+            if coordinator_lock is not None:
+                coordinator_lock.ensure_healthy()
+            if not issue_is_still_claimable(number=number, assignee=assignee):
+                logger.info(f"#{number}: skipping gated update; ownership changed.")
+                return
+            if not has_gated_label:
+                add_gated_label(number=number)
+                logger.info(f"#{number}: marked gated -- {assignee} lacks read access.")
+            else:
+                logger.info(f"#{number}: still gated -- leaving label in place.")
         return
     if has_gated_label:
-        remove_gated_label(number=number)
-        logger.info(f"#{number}: access granted, removed gated label.")
+        with _coordinator_issue_lock(number) as coordinator_lock:
+            if coordinator_lock is not None:
+                coordinator_lock.ensure_healthy()
+            if not issue_is_still_claimable(number=number, assignee=assignee):
+                logger.info(
+                    f"#{number}: skipping gated-label removal; ownership changed."
+                )
+                return
+            remove_gated_label(number=number)
+            logger.info(f"#{number}: access granted, removed gated label.")
 
     logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
     # The short claim transaction, not the potentially hours-long evaluation,
@@ -624,7 +675,7 @@ def process_issue(
         with _coordinator_issue_lock(number) as coordinator_lock:
             if coordinator_lock is not None:
                 coordinator_lock.ensure_healthy()
-            if not issue_is_still_claimable(number=number):
+            if not issue_is_still_claimable(number=number, assignee=assignee):
                 logger.info(
                     f"#{number}: skipping -- no longer open and unassigned "
                     "at claim time."
@@ -640,21 +691,26 @@ def process_issue(
             claimed = True
             if coordinator_lock is not None:
                 coordinator_lock.ensure_healthy()
+            # A manual assignment may have arrived after the first re-check. Never
+            # add the local login alongside that owner.
+            if not issue_is_still_claimable(number=number, assignee=assignee):
+                logger.info(f"#{number}: manual ownership arrived during claim.")
+                return
             assign_issue(number=number, assignee=assignee)
             if coordinator_lock is not None:
                 coordinator_lock.ensure_healthy()
 
             # Two VMs sharing a PAT cannot be told apart by the assignee, so another
-            # VM that raced through the same marker + assignment window will have
-            # overwritten our marker. Verify ownership before proceeding.
+            # VM that raced through the same marker + assignment window may have
+            # overwritten our marker. A manual assignment may also have arrived
+            # between the final pre-assign check and GitHub's POST.
             owns_marker = vm_marker_matches(number=number, vm_id=vm_id)
+            owns_assignment = issue_is_still_claimable(number=number, assignee=assignee)
             if coordinator_lock is not None:
                 coordinator_lock.ensure_healthy()
-            if not owns_marker:
-                logger.info(
-                    f"#{number}: another VM won the claim race; aborting without "
-                    "touching the assignee."
-                )
+            if not owns_marker or not owns_assignment:
+                logger.info(f"#{number}: claim ownership fence lost; aborting.")
+                release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
                 return
         _run_claimed_issue(
             issue=issue,
@@ -818,71 +874,28 @@ def _run_claimed_issue(
     last_output = ""
     total_skipped = 0
 
-    # Run languages one at a time and upload after each completes.
-    # This restores crash resilience lost when removing gist-based uploads.
-    for i, lang in enumerate(pending):
-        logger.info(
-            f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
-        )
-        before = set(read_jsonl_lines(path=results_path))
-        # The queue always evaluates on the validation split; the test split
-        # is reserved for the dedicated core-model run in
-        # run_core_model_evaluations.py.
-        returncode, output = run_euroeval(
-            model_id=model_id,
-            languages=[lang],
-            evaluate_test_split=False,
-            clear_model_cache=True,
-            gpu_memory_utilization=gpu_memory_utilization,
-        )
-        last_output = output
-
-        # Check for gating / errors BEFORE uploading results.
-        # This prevents partial/broken results from being synced to the bucket.
-        gated_in_lang = GATED_OUTPUT_RE.search(output)
-        num_errored = num_errored_benchmarks(output=output)
-        num_skipped_lang = num_skipped_benchmarks(output=output)
-        total_skipped += num_skipped_lang
-        has_error = returncode != 0 or num_errored > 0
-
-        if not gated_in_lang and not has_error:
-            # Only upload if the language run succeeded.
-            after = read_jsonl_lines(path=results_path)
-            new_lines = [line for line in after if line not in before]
-            accumulated.extend(new_lines)
-
-            if new_lines:
-                upload_ok = upload_results_to_hf_bucket(
-                    lines=new_lines, model_id=model_id
-                )
-                if not upload_ok:
-                    logger.error(
-                        f"#{number}: bucket upload failed after {lang}; "
-                        "continuing with remaining languages."
-                    )
-                    failed.append(f"{lang} (upload-failed)")
-                    continue
-                done.append(lang)
-                logger.info(f"#{number}: uploaded results for {lang}.")
-
-        # Handle gating.
-        if gated_in_lang:
-            gated_detected = True
-            failure_output_tail = summarise_evaluation_error(output=output)
-            failed.append(lang)
-            break
-
-        # Handle errors.
-        if returncode != 0:
-            failure_reason = f"euroeval exited with code {returncode}"
-            failure_output_tail = summarise_evaluation_error(output=output)
-            failed.append(lang)
-            break
-        elif num_errored > 0:
-            failure_reason = f"euroeval reported {num_errored} errored benchmark(s)"
-            failure_output_tail = summarise_evaluation_error(output=output)
-            failed.append(lang)
-            break
+    evaluation = _evaluate_pending_languages(
+        number=number,
+        model_id=model_id,
+        pending=pending,
+        done=done,
+        accumulated=accumulated,
+        results_path=results_path,
+        assignee=assignee,
+        vm_id=vm_id,
+        gpu_memory_utilization=gpu_memory_utilization,
+    )
+    if evaluation is None:
+        return
+    (
+        done,
+        failed,
+        gated_detected,
+        failure_reason,
+        failure_output_tail,
+        total_skipped,
+        last_output,
+    ) = evaluation
 
     # Handle skips for missing official pairs (only if no hard failures).
     if not failed and not pending:
@@ -931,8 +944,8 @@ def _run_claimed_issue(
         )
 
     if gated_detected:
-        add_gated_label(number=number)
-        add_failed_label(number=number)
+        if not _label_gated_if_owned(number=number, vm_id=vm_id, assignee=assignee):
+            return
         release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
         logger.info(
             f"#{number}: euroeval reported a gated repo for {model_id!r}; "
@@ -955,8 +968,10 @@ def _run_claimed_issue(
             f"```bash\n{tail}\n```\n\n"
             f"EuroEval version: v{version}\n"
         )
-        comment_on_issue(number=number, body=error_comment)
-        add_failed_label(number=number)
+        if not _report_failure_if_owned(
+            number=number, vm_id=vm_id, assignee=assignee, body=error_comment
+        ):
+            return
         release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee)
         logger.info(
             f"#{number}: marked errored on v{version} after {len(failed)} failed "
@@ -964,9 +979,174 @@ def _run_claimed_issue(
         )
         return
 
+    if not _complete_if_owned(number=number, vm_id=vm_id, assignee=assignee):
+        return
+
+
+def _evaluate_pending_languages(
+    number: int,
+    model_id: str,
+    pending: list[str],
+    done: list[str],
+    accumulated: list[str],
+    results_path: Path,
+    assignee: str,
+    vm_id: str,
+    gpu_memory_utilization: float | None,
+) -> tuple[list[str], list[str], bool, str | None, str, int, str] | None:
+    """Evaluate pending languages and publish each successful language.
+
+    Returns:
+        Evaluation state, or None when ownership is lost before an upload.
+    """
+    failed: list[str] = []
+    gated_detected = False
+    failure_reason: str | None = None
+    failure_output_tail = ""
+    last_output = ""
+    total_skipped = 0
+    for i, lang in enumerate(pending):
+        logger.info(
+            f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
+        )
+        before = set(read_jsonl_lines(path=results_path))
+        returncode, output = run_euroeval(
+            model_id=model_id,
+            languages=[lang],
+            evaluate_test_split=False,
+            clear_model_cache=True,
+            gpu_memory_utilization=gpu_memory_utilization,
+        )
+        last_output = output
+        gated_in_lang = GATED_OUTPUT_RE.search(output)
+        num_errored = num_errored_benchmarks(output=output)
+        total_skipped += num_skipped_benchmarks(output=output)
+        has_error = returncode != 0 or num_errored > 0
+        if not gated_in_lang and not has_error:
+            after = read_jsonl_lines(path=results_path)
+            new_lines = [line for line in after if line not in before]
+            accumulated.extend(new_lines)
+            if new_lines:
+                upload_ok = _upload_if_owned(
+                    number=number,
+                    vm_id=vm_id,
+                    assignee=assignee,
+                    lines=new_lines,
+                    model_id=model_id,
+                    language=lang,
+                )
+                if upload_ok is None:
+                    return None
+                if not upload_ok:
+                    logger.error(
+                        f"#{number}: bucket upload failed after {lang}; "
+                        "continuing with remaining languages."
+                    )
+                    failed.append(f"{lang} (upload-failed)")
+                    continue
+                done.append(lang)
+                logger.info(f"#{number}: uploaded results for {lang}.")
+        if gated_in_lang:
+            gated_detected = True
+            failure_output_tail = summarise_evaluation_error(output=output)
+            failed.append(lang)
+            break
+        if returncode != 0:
+            failure_reason = f"euroeval exited with code {returncode}"
+            failure_output_tail = summarise_evaluation_error(output=output)
+            failed.append(lang)
+            break
+        if num_errored > 0:
+            failure_reason = f"euroeval reported {num_errored} errored benchmark(s)"
+            failure_output_tail = summarise_evaluation_error(output=output)
+            failed.append(lang)
+            break
+    return (
+        done,
+        failed,
+        gated_detected,
+        failure_reason,
+        failure_output_tail,
+        total_skipped,
+        last_output,
+    )
+
+
+def _upload_if_owned(
+    number: int,
+    vm_id: str,
+    assignee: str,
+    lines: list[str],
+    model_id: str,
+    language: str,
+) -> bool | None:
+    """Upload one language's results only while local ownership holds.
+
+    Returns:
+        Upload status, or None when ownership is lost.
+    """
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(
+            f"#{number}: ownership changed before uploading {language}; "
+            "stopping without publishing results."
+        )
+        return None
+    return upload_results_to_hf_bucket(lines=lines, model_id=model_id)
+
+
+def _label_gated_if_owned(number: int, vm_id: str, assignee: str) -> bool:
+    """Apply gated labels only while local ownership holds.
+
+    Returns:
+        Whether both labels were applied.
+    """
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before gated labelling.")
+        return False
+    add_gated_label(number=number)
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before failure labelling.")
+        return False
+    add_failed_label(number=number)
+    return True
+
+
+def _report_failure_if_owned(number: int, vm_id: str, assignee: str, body: str) -> bool:
+    """Report an evaluation failure only while local ownership holds.
+
+    Returns:
+        Whether the comment and failure label were applied.
+    """
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before error reporting.")
+        return False
+    comment_on_issue(number=number, body=body)
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before failure labelling.")
+        return False
+    add_failed_label(number=number)
+    return True
+
+
+def _complete_if_owned(number: int, vm_id: str, assignee: str) -> bool:
+    """Complete an evaluation only while local ownership holds.
+
+    Returns:
+        Whether completion labelling and marker cleanup were applied.
+    """
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before completion labelling.")
+        return False
     remove_failed_label(number=number)
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before results labelling.")
+        return False
     add_results_ready_label(number=number)
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before marker cleanup.")
+        return False
     clear_vm_marker(number=number, vm_id=vm_id)
+    return True
 
 
 def issue_has_matching_error_comment(number: int, reason: str) -> bool:
@@ -1082,20 +1262,24 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
         return False
 
 
-def issue_is_still_claimable(number: int) -> bool:
-    """Return True if the issue is still open with no assignees.
+def issue_is_still_claimable(number: int, assignee: str | None = None) -> bool:
+    """Return whether the issue can be claimed by the local queue.
 
-    Re-fetches the issue at claim time so that issues which were closed
-    or assigned between the initial snapshot and now are not
-    double-processed.
+    Re-fetches the issue at claim time so that issues which were closed,
+    manually assigned, or otherwise changed between the initial snapshot and
+    now are not double-processed. An existing assignment is acceptable only
+    when it is the sole assignment and belongs to ``assignee``.
 
     Args:
         number:
             The issue number to verify.
+        assignee (optional):
+            The authenticated local queue login. Defaults to requiring an
+            unassigned issue.
 
     Returns:
-        True if the issue is currently open and has no assignees; False
-        otherwise (including when the lookup fails).
+        True if the issue is currently open and unassigned, or solely assigned
+        to ``assignee``; False otherwise (including when the lookup fails).
     """
     try:
         current = gh_request(path=f"/repos/{REPO}/issues/{number}")
@@ -1109,7 +1293,6 @@ def issue_is_still_claimable(number: int) -> bool:
     body = current.get("body") or ""
     if issue_has_community_marker(body) and parse_community_marker(body) is None:
         return False
-    marker = parse_community_marker(body)
     if _skip_accepted_marker(body=body, number=number):
         return False
     label_names = {
@@ -1119,11 +1302,19 @@ def issue_is_still_claimable(number: int) -> bool:
     }
     if RESULTS_READY_LABEL in label_names or issue_has_active_queue_ownership(body):
         return False
-    # A valid but expired/rejected broker marker may leave the coordinator
-    # assigned. It is reclaimable; accepted markers remain authoritative.
-    if marker is not None:
+    # A valid but expired/rejected broker marker may leave a prior volunteer
+    # assignment. It is reclaimable only when that assignment is local; a
+    # different GitHub assignee is manual ownership.
+    assignee_logins = issue_assignee_logins(issue=current)
+    raw_assignees = current.get("assignees")
+    has_assignees = isinstance(raw_assignees, list) and bool(raw_assignees)
+    if not has_assignees:
         return True
-    return not current.get("assignees")
+    return (
+        bool(assignee)
+        and bool(assignee_logins)
+        and issue_is_solely_assigned_to(issue=current, login=assignee)
+    )
 
 
 def reclaim_orphaned_issues(assignee: str, vm_id: str) -> None:
