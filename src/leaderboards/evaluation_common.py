@@ -543,6 +543,10 @@ def _build_euroeval_env(stream_output: bool) -> dict[str, str]:
         The environment dictionary.
     """
     env = os.environ.copy()
+    # These credentials coordinate the queue and broker; the evaluator does not
+    # need them and must not inherit them.
+    env.pop("VOLUNTEER_MARKER_SECRET", None)
+    env.pop("WORKER_COORDINATOR_SECRET", None)
     if stream_output:
         env["FULL_LOG"] = "1"
     token = resolve_hf_token()

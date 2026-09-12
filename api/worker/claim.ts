@@ -13,21 +13,21 @@ import type { Lease, VolunteerLeaseMarker } from "./_lib.ts";
 
 export const config = { runtime: "edge" };
 
-function assigneesMatchWithExtras(
-  assignees: Array<{ login: string }> | undefined,
-  marker: VolunteerLeaseMarker,
-  extras: Iterable<string>,
-): boolean {
-  const actual = new Set((assignees || []).map((assignee) => assignee.login.toLowerCase()));
-  const expected = new Set<string>(extras);
-  for (const lease of marker.leases) {
-    if (Date.parse(lease.expires_at) > Date.now()) expected.add(lease.contributor.toLowerCase());
-  }
+function markerAssignees(marker: VolunteerLeaseMarker): Set<string> {
+  const expected = new Set(marker.leases.map((lease) => lease.contributor.toLowerCase()));
   for (const submission of marker.submissions || []) {
     if (["submitted", "accepted"].includes(submission.status)) {
       expected.add(submission.verified_contributor.toLowerCase());
     }
   }
+  return expected;
+}
+
+function assigneesEqual(
+  assignees: Array<{ login: string }> | undefined,
+  expected: Set<string>,
+): boolean {
+  const actual = new Set((assignees || []).map((assignee) => assignee.login.toLowerCase()));
   return actual.size === expected.size && [...actual].every((login) => expected.has(login));
 }
 
@@ -36,84 +36,84 @@ async function recoverExpiredOwnership(
   marker: VolunteerLeaseMarker,
   mutex: NonNullable<Awaited<ReturnType<typeof acquireRenewableIssueMutex>>>,
 ): Promise<{ issue: Awaited<ReturnType<typeof fetchIssue>>; marker: VolunteerLeaseMarker } | null> {
-  const now = Date.now();
-  const expired = marker.leases.filter((lease) => Date.parse(lease.expires_at) <= now);
-  if (!expired.length) return { issue, marker };
+  let current = issue;
+  let currentMarker: VolunteerLeaseMarker | null = marker;
+  while (true) {
+    const expired = currentMarker.leases.filter((lease) => Date.parse(lease.expires_at) <= Date.now());
+    if (!expired.length) return { issue: current, marker: currentMarker };
+    const expiredLease = expired[0];
+    const redisLease = await getLeaseForIssue(current.number, expiredLease.language);
+    if (redisLease && (redisLease.lease_id !== expiredLease.lease_id ||
+        Date.parse(redisLease.expires_at) > Date.now())) return null;
+    const contributor = expiredLease.contributor.toLowerCase();
+    const expected = markerAssignees(currentMarker);
+    const retained = currentMarker.leases.some(
+      (lease) => lease.lease_id !== expiredLease.lease_id &&
+        lease.contributor.toLowerCase() === contributor,
+    ) || (currentMarker.submissions || []).some(
+      (submission) => ["submitted", "accepted"].includes(submission.status) &&
+        submission.verified_contributor.toLowerCase() === contributor,
+    );
+    const withoutContributor = new Set(expected);
+    withoutContributor.delete(contributor);
+    if (!assigneesEqual(current.assignees, expected) &&
+        (retained || !assigneesEqual(current.assignees, withoutContributor))) return null;
 
-  for (const markerLease of expired) {
-    const redisLease = await getLeaseForIssue(issue.number, markerLease.language);
-    if (redisLease) {
-      if (redisLease.lease_id !== markerLease.lease_id ||
-          Date.parse(redisLease.expires_at) > Date.now() ||
-          !(await reclaimExpiredLease(redisLease))) return null;
-    }
-  }
-
-  const remainingLeases = marker.leases.filter(
-    (lease) => !expired.some((item) => item.lease_id === lease.lease_id),
-  );
-  const signed = await signVolunteerMarker(issue.number, {
-    ...marker,
-    leases: remainingLeases,
-    submission: marker.submissions?.length ? "submitted" : "active",
-  });
-  await mutex.assertOwned();
-  await patchIssue(issue.number, replaceVolunteerMarker(issue.body || "", signed));
-
-  let current = await fetchIssue(issue.number);
-  let currentMarker = parseVolunteerMarker(current.body);
-  if (!currentMarker || !(await verifyVolunteerMarker(issue.number, currentMarker))) return null;
-  const verifiedMarker = currentMarker;
-  if (expired.some((lease) => verifiedMarker.leases.some((item) => item.lease_id === lease.lease_id))) {
-    return null;
-  }
-  const retained = new Set(
-    remainingLeases
-      .filter((lease) => Date.parse(lease.expires_at) > Date.now())
-      .map((lease) => lease.contributor.toLowerCase()),
-  );
-  for (const submission of verifiedMarker.submissions || []) {
-    if (["submitted", "accepted"].includes(submission.status)) {
-      retained.add(submission.verified_contributor.toLowerCase());
-    }
-  }
-  const removable = new Set(
-    expired.map((lease) => lease.contributor.toLowerCase()).filter((contributor) => !retained.has(contributor)),
-  );
-  const expectedBeforeUnassignment = new Set(
-    [...retained, ...removable],
-  );
-  const actualBeforeUnassignment = new Set(
-    (current.assignees || []).map((assignee) => assignee.login.toLowerCase()),
-  );
-  if (actualBeforeUnassignment.size !== expectedBeforeUnassignment.size ||
-      [...actualBeforeUnassignment].some((login) => !expectedBeforeUnassignment.has(login))) return null;
-
-  for (const contributor of removable) {
-    await mutex.assertOwned();
-    current = await fetchIssue(issue.number);
-    currentMarker = parseVolunteerMarker(current.body);
-    if (!currentMarker || !(await verifyVolunteerMarker(issue.number, currentMarker))) return null;
-    const verifiedCurrentMarker = currentMarker;
-    if (!assigneesMatchWithExtras(current.assignees, verifiedCurrentMarker, removable)) return null;
     const assigned = (current.assignees || []).find(
       (assignee) => assignee.login.toLowerCase() === contributor,
     );
-    if (!assigned) continue;
-    await unassignIssue(issue.number, assigned.login);
-    current = await fetchIssue(issue.number);
+    if (assigned && !retained) {
+      await mutex.assertOwned();
+      try {
+        await unassignIssue(current.number, assigned.login);
+      } catch (error) {
+        const observed = await fetchIssue(current.number).catch(() => null);
+        if (!observed || (observed.assignees || []).some(
+          (assignee) => assignee.login.toLowerCase() === contributor,
+        )) throw error;
+        current = observed;
+      }
+      current = await fetchIssue(current.number);
+      currentMarker = parseVolunteerMarker(current.body);
+      if (!currentMarker || !(await verifyVolunteerMarker(current.number, currentMarker))) return null;
+      if (currentMarker.leases.some((lease) => lease.lease_id === expiredLease.lease_id) &&
+          (current.assignees || []).some((assignee) => assignee.login.toLowerCase() === contributor)) return null;
+      continue;
+    }
+
+    await mutex.assertOwned();
+    const signed = await signVolunteerMarker(current.number, {
+      ...currentMarker,
+      submission: currentMarker.submissions?.length ? "submitted" : "active",
+      leases: currentMarker.leases.filter((lease) => lease.lease_id !== expiredLease.lease_id),
+    });
+    try {
+      await patchIssue(current.number, replaceVolunteerMarker(current.body || "", signed));
+    } catch (error) {
+      const observed = await fetchIssue(current.number).catch(() => null);
+      const observedMarker = observed && parseVolunteerMarker(observed.body);
+      if (!observed || !observedMarker || observedMarker.leases.some(
+        (lease) => lease.lease_id === expiredLease.lease_id,
+      )) throw error;
+      current = observed;
+      currentMarker = observedMarker;
+    }
+    current = await fetchIssue(current.number);
     currentMarker = parseVolunteerMarker(current.body);
-    if (!currentMarker || !(await verifyVolunteerMarker(issue.number, currentMarker))) return null;
-    const pending = new Set(removable);
-    pending.delete(contributor);
-    if (expired.some((lease) => verifiedCurrentMarker.leases.some((item) => item.lease_id === lease.lease_id)) ||
-        !assigneesMatchWithExtras(current.assignees, verifiedCurrentMarker, pending) ||
-        (current.assignees || []).some((assignee) => assignee.login.toLowerCase() === contributor)) return null;
+    if (!currentMarker || !(await verifyVolunteerMarker(current.number, currentMarker))) return null;
+    if (currentMarker.leases.some((lease) => lease.lease_id === expiredLease.lease_id)) return null;
+
+    const redisAfterRecovery = await getLeaseForIssue(current.number, expiredLease.language);
+    if (redisAfterRecovery && (redisAfterRecovery.lease_id !== expiredLease.lease_id ||
+        Date.parse(redisAfterRecovery.expires_at) > Date.now())) return null;
+    if (redisAfterRecovery) {
+      await mutex.assertOwned();
+      if (!(await reclaimExpiredLease(redisAfterRecovery))) {
+        const remaining = await getLeaseForIssue(current.number, expiredLease.language);
+        if (remaining) return null;
+      }
+    }
   }
-  if (!currentMarker) return null;
-  const finalMarker = currentMarker;
-  if (!volunteerAssigneesMatch(current.assignees, finalMarker)) return null;
-  return { issue: current, marker: finalMarker };
 }
 
 function activeMarker(marker: VolunteerLeaseMarker | null): VolunteerLeaseMarker | null {
@@ -164,7 +164,9 @@ export default async function handler(req: Request): Promise<Response> {
       const languages = selectedLanguages(listed.body);
       if (!languages.length || requestedLanguage && !languages.includes(requestedLanguage)) continue;
       if (listed.body && VM_MARKER_RE.test(listed.body)) continue;
-      if (!volunteerAssigneesMatch(listed.assignees, parseVolunteerMarker(listed.body))) continue;
+      if (!volunteerAssigneesMatch(
+        listed.assignees, parseVolunteerMarker(listed.body), Date.now(), true,
+      )) continue;
 
       // Resolve immutable metadata before taking the short issue mutex. Hub latency
       // must never hold the lock used by another worker claiming another language.

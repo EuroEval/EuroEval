@@ -21,7 +21,20 @@ def test_claim_fails_closed_without_coordinator_mutex(
     monkeypatch.delenv("WORKER_COORDINATOR_SECRET", raising=False)
     monkeypatch.delenv("VOLUNTEER_COORDINATOR_STANDALONE", raising=False)
 
-    with pytest.raises(RuntimeError, match="coordinator URL and secret"):
+    with pytest.raises(RuntimeError, match="coordinator URL.*secret"):
+        with process_evaluation_queue._coordinator_issue_lock(number=1):
+            pass
+
+
+def test_claim_fails_closed_without_marker_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A coordinator host must verify signed broker markers locally."""
+    monkeypatch.setenv("VOLUNTEER_COORDINATOR_URL", "https://broker.test")
+    monkeypatch.setenv("WORKER_COORDINATOR_SECRET", "coordinator-secret")
+    monkeypatch.delenv("VOLUNTEER_MARKER_SECRET", raising=False)
+
+    with pytest.raises(RuntimeError, match="VOLUNTEER_MARKER_SECRET"):
         with process_evaluation_queue._coordinator_issue_lock(number=1):
             pass
 
@@ -48,6 +61,7 @@ def test_coordinator_lock_is_renewed_and_released(
     """A held local lock renews its token and fences its release."""
     monkeypatch.setenv("VOLUNTEER_COORDINATOR_URL", "https://broker.test")
     monkeypatch.setenv("WORKER_COORDINATOR_SECRET", "secret")
+    monkeypatch.setenv("VOLUNTEER_MARKER_SECRET", "marker-secret")
     monkeypatch.setattr(process_evaluation_queue, "COORDINATOR_RENEW_SECONDS", 0.01)
     calls: list[tuple[str, str | None]] = []
 
@@ -73,7 +87,8 @@ def test_coordinator_lock_is_renewed_and_released(
 
 
 @pytest.mark.parametrize(
-    ("assignees", "expected"),        [([], True), ([{"login": "runner"}], False), ([{"login": "other"}], False)],
+    ("assignees", "expected"),
+    [([], True), ([{"login": "runner"}], False), ([{"login": "other"}], False)],
 )
 def test_claim_recheck_respects_github_assignee(
     monkeypatch: pytest.MonkeyPatch, assignees: list[dict[str, str]], expected: bool
@@ -85,7 +100,8 @@ def test_claim_recheck_respects_github_assignee(
         lambda path: {"state": "open", "assignees": assignees, "body": ""},
     )
 
-    assert (            process_evaluation_queue.issue_is_still_claimable(number=9, assignee="runner")
+    assert (
+        process_evaluation_queue.issue_is_still_claimable(number=9, assignee="runner")
         is expected
     )
 

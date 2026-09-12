@@ -199,3 +199,16 @@ def test_west_germanic_issue_selection_expands_to_all_languages() -> None:
 
     assert selected_groups == [group]
     assert languages == ["nl", "en", "de", "lb"]
+
+
+def test_evaluator_environment_excludes_queue_secrets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Queue credentials are not inherited by the evaluator subprocess."""
+    monkeypatch.setenv("VOLUNTEER_MARKER_SECRET", "marker-secret")
+    monkeypatch.setenv("WORKER_COORDINATOR_SECRET", "coordinator-secret")
+
+    environment = evaluation_common._build_euroeval_env(stream_output=False)
+
+    assert "VOLUNTEER_MARKER_SECRET" not in environment
+    assert "WORKER_COORDINATOR_SECRET" not in environment

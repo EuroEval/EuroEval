@@ -99,13 +99,22 @@ class CommunityMarker:
 
 
 def _trusted_issue_marker(number: int, body: str) -> CommunityMarker | None:
-    secret = os.environ.get("VOLUNTEER_MARKER_SECRET")
-    marker = parse_community_marker(
-        body, issue_number=number, secret=secret, require_signature=bool(secret)
-    )
-    if marker is not None and marker.submission == "accepted" and not secret:
+    marker = parse_community_marker(body)
+    if marker is None:
         return None
-    return marker
+    if marker.signature is None:
+        return marker if marker.submission != "accepted" else None
+    secret = os.environ.get("VOLUNTEER_MARKER_SECRET")
+    if not secret:
+        return None
+    return parse_community_marker(
+        body, issue_number=number, secret=secret, require_signature=True
+    )
+
+
+def trusted_community_marker(number: int, body: str) -> CommunityMarker | None:
+    """Return an issue-bound marker only when its signature is trusted."""
+    return _trusted_issue_marker(number=number, body=body)
 
 
 def parse_community_marker(
@@ -316,80 +325,83 @@ def issue_has_terminal_queue_submission(
 
 
 def release_issue_if_owned(number: int, vm_id: str, assignee: str) -> bool:
-    """Release only after both marker clearing and unassignment succeed.
+    """Release the proven local owner before clearing its VM marker.
 
     Returns:
-        Whether both GitHub mutations succeeded.
+        Whether the owner was unassigned (or already absent) and the marker was
+        removed.
     """
-    body = fetch_issue_body(number=number)
-    if (
-        _COMMUNITY_MARKER_CANDIDATE_RE.search(body)
-        and _trusted_issue_marker(number, body) is None
-    ):
-        return False
-    if issue_has_active_queue_ownership(body):
-        return False
-    match = VM_MARKER_RE.search(body)
-    if match and match.group(1) != vm_id:
-        return False
     try:
+        initial_body = fetch_issue_body(number=number)
+        if (
+            _COMMUNITY_MARKER_CANDIDATE_RE.search(initial_body)
+            and _trusted_issue_marker(number, initial_body) is None
+        ) or issue_has_active_queue_ownership(initial_body):
+            return False
         current = fetch_issue(number=number)
         if current is None or current.get("state") != "open":
             return False
-        current_assignees = issue_assignee_logins(issue=current)
-        assigned_login = next(
-            (
-                login
-                for login in current_assignees
-                if login.casefold() == assignee.casefold()
-            ),
+        body = current.get("body")
+        if not isinstance(body, str):
+            body = initial_body
+        if (
+            _COMMUNITY_MARKER_CANDIDATE_RE.search(body)
+            and _trusted_issue_marker(number, body) is None
+        ) or issue_has_active_queue_ownership(body):
+            return False
+        if not _matching_vm_marker(body, vm_id):
+            return False
+        assignees = issue_assignee_logins(issue=current)
+        local_login = next(
+            (login for login in assignees if login.casefold() == assignee.casefold()),
             None,
         )
-        live_body = current.get("body")
-        if not isinstance(live_body, str):
-            live_body = body
-        if (
-            _COMMUNITY_MARKER_CANDIDATE_RE.search(live_body)
-            and _trusted_issue_marker(number, live_body) is None
-        ) or issue_has_active_queue_ownership(live_body):
-            return False
-        live_match = VM_MARKER_RE.search(live_body)
-        if live_match and live_match.group(1) != vm_id:
-            return False
-        if live_match:
-            patch_issue_body(
-                number=number,
-                body=VM_MARKER_RE.sub("", live_body, count=1).rstrip() + "\n",
-            )
-        # Re-fetch after clearing the VM marker: an operator may have replaced
-        # the local assignment while the first mutation was in flight.
-        fenced = fetch_issue(number=number)
-        if fenced is None:
-            return False
-        fenced_assignees = issue_assignee_logins(issue=fenced)
-        if assigned_login is None:
-            return False
-        if not any(
-            login.casefold() == assignee.casefold() for login in fenced_assignees
-        ):
-            return False
-        fenced_body = fenced.get("body")
-        if isinstance(fenced_body, str):
-            fenced_match = VM_MARKER_RE.search(fenced_body)
-            if fenced_match and fenced_match.group(1) != vm_id:
+        if local_login is not None:
+            try:
+                unassign_issue(number=number, assignee=local_login)
+            except urllib.error.HTTPError:
+                # A timed-out DELETE may already have committed; the fence below
+                # makes the retry safe without assuming that it did.
+                pass
+            fenced = fetch_issue(number=number)
+            if fenced is None:
                 return False
-            if issue_has_active_queue_ownership(fenced_body) or (
-                _COMMUNITY_MARKER_CANDIDATE_RE.search(fenced_body)
-                and _trusted_issue_marker(number, fenced_body) is None
+            fenced_assignees = issue_assignee_logins(issue=fenced)
+            if any(
+                login.casefold() == assignee.casefold() for login in fenced_assignees
             ):
                 return False
-        if len(fenced_assignees) != 1:
+            current = fenced
+            body = current.get("body")
+            if not isinstance(body, str):
+                return False
+            if not _matching_vm_marker(body, vm_id):
+                return False
+            if (
+                _COMMUNITY_MARKER_CANDIDATE_RE.search(body)
+                and _trusted_issue_marker(number, body) is None
+            ) or issue_has_active_queue_ownership(body):
+                return False
+        cleaned = VM_MARKER_RE.sub("", body).rstrip() + "\n"
+        try:
+            patch_issue_body(number=number, body=cleaned)
+        except urllib.error.HTTPError:
+            pass
+        after = fetch_issue(number=number)
+        if after is None:
             return False
-        unassign_issue(number=number, assignee=assigned_login)
+        after_body = after.get("body")
+        if not isinstance(after_body, str) or VM_MARKER_RE.search(after_body):
+            return False
+        if (
+            _COMMUNITY_MARKER_CANDIDATE_RE.search(after_body)
+            and _trusted_issue_marker(number, after_body) is None
+        ) or issue_has_active_queue_ownership(after_body):
+            return False
+        return True
     except urllib.error.HTTPError as error:
         logger.warning(f"#{number}: release failed: {error}")
         return False
-    return True
 
 
 def set_vm_marker(number: int, vm_id: str) -> bool:
