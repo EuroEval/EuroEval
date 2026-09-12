@@ -82,38 +82,6 @@ def gh_request(
         return json.loads(raw) if raw else None
 
 
-def fetch_issue(number: int) -> dict[str, t.Any] | None:
-    """Fetch one issue, including its current assignees.
-
-    Args:
-        number:
-            The issue number to fetch.
-
-    Returns:
-        The issue object, or None when GitHub returns an unexpected response.
-    """
-    response = gh_request(path=f"/repos/{REPO}/issues/{number}")
-    return response if isinstance(response, dict) else None
-
-
-def issue_assignee_logins(issue: dict[str, t.Any]) -> list[str]:
-    """Return well-formed assignee logins from a GitHub issue object."""
-    assignees = issue.get("assignees")
-    if not isinstance(assignees, list):
-        return []
-    return [
-        assignee["login"]
-        for assignee in assignees
-        if isinstance(assignee, dict) and isinstance(assignee.get("login"), str)
-    ]
-
-
-def issue_is_solely_assigned_to(issue: dict[str, t.Any], login: str) -> bool:
-    """Return whether exactly ``login`` is assigned to an issue."""
-    assignees = issue_assignee_logins(issue)
-    return len(assignees) == 1 and assignees[0].casefold() == login.casefold()
-
-
 def _token() -> str:
     """Return the GitHub API token from the environment, or exit on failure.
 
@@ -204,6 +172,20 @@ def comment_on_issue(number: int, body: str) -> None:
     )
 
 
+def fetch_issue(number: int) -> dict[str, t.Any] | None:
+    """Fetch one issue, including its current assignees.
+
+    Args:
+        number:
+            The issue number to fetch.
+
+    Returns:
+        The issue object, or None when GitHub returns an unexpected response.
+    """
+    response = gh_request(path=f"/repos/{REPO}/issues/{number}")
+    return response if isinstance(response, dict) else None
+
+
 def fetch_issue_body(number: int) -> str:
     """Return the current body of an issue, or empty string on failure.
 
@@ -222,6 +204,24 @@ def fetch_issue_body(number: int) -> str:
     if isinstance(current, dict):
         return current.get("body") or ""
     return ""
+
+
+def issue_is_solely_assigned_to(issue: dict[str, t.Any], login: str) -> bool:
+    """Return whether exactly ``login`` is assigned to an issue."""
+    assignees = issue_assignee_logins(issue)
+    return len(assignees) == 1 and assignees[0].casefold() == login.casefold()
+
+
+def issue_assignee_logins(issue: dict[str, t.Any]) -> list[str]:
+    """Return well-formed assignee logins from a GitHub issue object."""
+    assignees = issue.get("assignees")
+    if not isinstance(assignees, list):
+        return []
+    return [
+        assignee["login"]
+        for assignee in assignees
+        if isinstance(assignee, dict) and isinstance(assignee.get("login"), str)
+    ]
 
 
 def patch_issue_body(number: int, body: str) -> None:

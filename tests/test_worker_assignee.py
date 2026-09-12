@@ -57,95 +57,6 @@ HARDWARE = HardwareReport(
 )
 
 
-class Broker:
-    """Minimal broker double for assignment-fence tests."""
-
-    def __init__(self, error: BrokerError) -> None:
-        """Initialise the double with a broker error to raise."""
-        self.error = error
-        self.claims = 0
-        self.submissions = 0
-        self.finalisations = 0
-
-    def poll_auth(self, session_id: str) -> AuthPoll:
-        """Satisfy the authentication protocol type."""
-        del session_id
-        raise NotImplementedError
-
-    def start_auth(self) -> AuthStart:
-        """Satisfy the authentication protocol type."""
-        raise NotImplementedError
-
-    def claim(self, credential: str, hardware: HardwareReport) -> Claim:
-        """Return a lease unless the test is exercising claim rejection."""
-        del credential, hardware
-        self.claims += 1
-        if self.error.code == "github_login_not_assignable":
-            raise self.error
-        return Claim(lease=LEASE)
-
-    def heartbeat(self, credential: str, lease_id: str) -> str:
-        """Return the existing expiry."""
-        del credential, lease_id
-        return LEASE.expires_at
-
-    def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
-        """Reject the upload with the broker's assignment fence error."""
-        del credential, lease, result
-        self.submissions += 1
-        raise self.error
-
-    def finalise(self, credential: str, lease_id: str) -> str:
-        """Track unexpected finalisation attempts.
-
-        Returns:
-            An intentionally unexpected submission identifier.
-        """
-        del credential, lease_id
-        self.finalisations += 1
-        return "unexpected"
-
-    def release(self, credential: str, lease_id: str, reason: str) -> None:
-        """Satisfy the worker protocol."""
-        del credential, lease_id, reason
-
-
-def test_structured_broker_error_preserves_code_message_and_redaction() -> None:
-    """Broker errors expose API fields without retaining credential fields."""
-    error = BrokerError(
-        "generic",
-        status=422,
-        body={
-            "error": "Use a GitHub-assignable login",
-            "code": "github_login_not_assignable",
-            "credential": "do-not-leak",
-        },
-    )
-
-    assert error.code == "github_login_not_assignable"
-    assert error.message == "Use a GitHub-assignable login"
-    assert str(error) == error.message
-    assert "credential" not in json.dumps(error.body)
-    assert "do-not-leak" not in repr(error)
-
-
-def test_unassignable_login_is_permanent_and_not_no_work(tmp_path: Path) -> None:
-    """An unassignable OAuth login is surfaced without a claim retry."""
-    error = BrokerError(
-        "not assignable", status=422, code="github_login_not_assignable"
-    )
-    broker = Broker(error)
-    worker = runtime.Worker(
-        client=broker, state=StateStore(tmp_path), hardware_factory=lambda: HARDWARE
-    )
-
-    with pytest.raises(BrokerError, match="not assignable") as raised:
-        worker._claim_with_reauthentication("credential", HARDWARE)
-
-    assert raised.value.code == "github_login_not_assignable"
-    assert broker.claims == 1
-
-
 def test_assignment_loss_archives_state_and_skips_finalisation(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -184,9 +95,98 @@ def test_assignment_loss_archives_state_and_skips_finalisation(
     assert broker.finalisations == 0
 
 
+class Broker:
+    """Minimal broker double for assignment-fence tests."""
+
+    def __init__(self, error: BrokerError) -> None:
+        """Initialise the double with a broker error to raise."""
+        self.error = error
+        self.claims = 0
+        self.submissions = 0
+        self.finalisations = 0
+
+    def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+        """Return a lease unless the test is exercising claim rejection."""
+        del credential, hardware
+        self.claims += 1
+        if self.error.code == "github_login_not_assignable":
+            raise self.error
+        return Claim(lease=LEASE)
+
+    def finalise(self, credential: str, lease_id: str) -> str:
+        """Track unexpected finalisation attempts.
+
+        Returns:
+            An intentionally unexpected submission identifier.
+        """
+        del credential, lease_id
+        self.finalisations += 1
+        return "unexpected"
+
+    def heartbeat(self, credential: str, lease_id: str) -> str:
+        """Return the existing expiry."""
+        del credential, lease_id
+        return LEASE.expires_at
+
+    def poll_auth(self, session_id: str) -> AuthPoll:
+        """Satisfy the authentication protocol type."""
+        del session_id
+        raise NotImplementedError
+
+    def release(self, credential: str, lease_id: str, reason: str) -> None:
+        """Satisfy the worker protocol."""
+        del credential, lease_id, reason
+
+    def start_auth(self) -> AuthStart:
+        """Satisfy the authentication protocol type."""
+        raise NotImplementedError
+
+    def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
+        """Reject the upload with the broker's assignment fence error."""
+        del credential, lease, result
+        self.submissions += 1
+        raise self.error
+
+
 def test_operations_inventory_has_no_removed_login() -> None:
     """Maintainer automation does not require or probe a fixed GitHub login."""
     source = Path(operations.__file__).read_text(encoding="utf-8")
     assert "WORKER_COORDINATOR_LOGIN" not in source
     assert "WORKER_COORDINATOR_SECRET" in operations.REQUIRED_ENVIRONMENT
     assert "WORKER_COORDINATOR_LOGIN" not in operations.REQUIRED_ENVIRONMENT
+
+
+def test_structured_broker_error_preserves_code_message_and_redaction() -> None:
+    """Broker errors expose API fields without retaining credential fields."""
+    error = BrokerError(
+        "generic",
+        status=422,
+        body={
+            "error": "Use a GitHub-assignable login",
+            "code": "github_login_not_assignable",
+            "credential": "do-not-leak",
+        },
+    )
+
+    assert error.code == "github_login_not_assignable"
+    assert error.message == "Use a GitHub-assignable login"
+    assert str(error) == error.message
+    assert "credential" not in json.dumps(error.body)
+    assert "do-not-leak" not in repr(error)
+
+
+def test_unassignable_login_is_permanent_and_not_no_work(tmp_path: Path) -> None:
+    """An unassignable OAuth login is surfaced without a claim retry."""
+    error = BrokerError(
+        "not assignable", status=422, code="github_login_not_assignable"
+    )
+    broker = Broker(error)
+    worker = runtime.Worker(
+        client=broker, state=StateStore(tmp_path), hardware_factory=lambda: HARDWARE
+    )
+
+    with pytest.raises(BrokerError, match="not assignable") as raised:
+        worker._claim_with_reauthentication("credential", HARDWARE)
+
+    assert raised.value.code == "github_login_not_assignable"
+    assert broker.claims == 1

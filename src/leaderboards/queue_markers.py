@@ -112,11 +112,6 @@ def _trusted_issue_marker(number: int, body: str) -> CommunityMarker | None:
     )
 
 
-def trusted_community_marker(number: int, body: str) -> CommunityMarker | None:
-    """Return an issue-bound marker only when its signature is trusted."""
-    return _trusted_issue_marker(number=number, body=body)
-
-
 def parse_community_marker(
     body: str,
     *,
@@ -435,6 +430,11 @@ def remove_community_marker(body: str) -> str:
     if parse_community_marker(body) is None:
         return body
     return COMMUNITY_MARKER_RE.sub("", body, count=1).rstrip() + "\n"
+
+
+def trusted_community_marker(number: int, body: str) -> CommunityMarker | None:
+    """Return an issue-bound marker only when its signature is trusted."""
+    return _trusted_issue_marker(number=number, body=body)
 
 
 def vm_marker_matches(number: int, vm_id: str) -> bool:

@@ -203,6 +203,43 @@ class BrokerError(RuntimeError):
         self.message = message
 
 
+def _redact(value: object) -> JsonObject:
+    """Copy a JSON object while removing credential-bearing response fields.
+
+    Returns:
+        A response object without sensitive fields.
+    """
+    if not isinstance(value, dict):
+        return {}
+    sensitive = {
+        "access_token",
+        "authorization",
+        "credential",
+        "refresh_token",
+        "secret",
+        "token",
+    }
+    result: JsonObject = {}
+    for key, item in value.items():
+        if not isinstance(key, str) or key.lower() in sensitive:
+            continue
+        if isinstance(item, dict):
+            result[key] = _redact(item)
+        elif isinstance(item, list):
+            result[key] = [
+                _redact(entry) if isinstance(entry, dict) else entry for entry in item
+            ]
+        else:
+            result[key] = item
+    return result
+
+
+def _string_value(value: JsonObject | None, key: str) -> str | None:
+    """Return a non-empty string field from a broker response."""
+    item = value.get(key) if value is not None else None
+    return item if isinstance(item, str) and item else None
+
+
 def _hardware_dict(hardware: HardwareReport) -> JsonObject:
     return {
         "architecture": hardware.architecture,
@@ -298,43 +335,6 @@ def _error_body(error: urllib.error.HTTPError) -> JsonObject | None:
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return None
     return _redact(value) if isinstance(value, dict) else None
-
-
-def _string_value(value: JsonObject | None, key: str) -> str | None:
-    """Return a non-empty string field from a broker response."""
-    item = value.get(key) if value is not None else None
-    return item if isinstance(item, str) and item else None
-
-
-def _redact(value: object) -> JsonObject:
-    """Copy a JSON object while removing credential-bearing response fields.
-
-    Returns:
-        A response object without sensitive fields.
-    """
-    if not isinstance(value, dict):
-        return {}
-    sensitive = {
-        "access_token",
-        "authorization",
-        "credential",
-        "refresh_token",
-        "secret",
-        "token",
-    }
-    result: JsonObject = {}
-    for key, item in value.items():
-        if not isinstance(key, str) or key.lower() in sensitive:
-            continue
-        if isinstance(item, dict):
-            result[key] = _redact(item)
-        elif isinstance(item, list):
-            result[key] = [
-                _redact(entry) if isinstance(entry, dict) else entry for entry in item
-            ]
-        else:
-            result[key] = item
-    return result
 
 
 def _retry_after(value: str | None) -> float | None:

@@ -523,6 +523,11 @@ def _queue_candidates(
     return candidates
 
 
+def _has_matching_vm_marker(body: str, vm_id: str) -> bool:
+    matches = list(VM_MARKER_RE.finditer(body))
+    return len(matches) == 1 and matches[0].group(1) == vm_id
+
+
 def _list_queue_issues(*, assignee: str) -> list[dict[str, t.Any]] | None:
     """Fetch every page of open model-evaluation-request issues.
 
@@ -579,33 +584,6 @@ def _skip_accepted_marker(body: str, number: int) -> bool:
     else:
         logger.warning(f"#{number}: skipping -- unverified accepted marker.")
     return True
-
-
-def _has_matching_vm_marker(body: str, vm_id: str) -> bool:
-    matches = list(VM_MARKER_RE.finditer(body))
-    return len(matches) == 1 and matches[0].group(1) == vm_id
-
-
-def _local_work_is_owned(number: int, vm_id: str, assignee: str) -> bool:
-    """Return whether the local runner still owns an issue before a mutation."""
-    try:
-        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
-    except urllib.error.HTTPError as error:
-        logger.warning(f"#{number}: could not verify local ownership: {error}")
-        return False
-    if not isinstance(current, dict) or current.get("state") != "open":
-        return False
-    body = current.get("body") or ""
-    if (
-        issue_has_community_marker(body)
-        and trusted_community_marker(number=number, body=body) is None
-    ):
-        return False
-    if issue_has_active_queue_ownership(body):
-        return False
-    return _has_matching_vm_marker(
-        body=body, vm_id=vm_id
-    ) and issue_is_solely_assigned_to(issue=current, login=assignee)
 
 
 def process_issue(
@@ -836,6 +814,28 @@ def _coordinator_request(
     return token
 
 
+def _local_work_is_owned(number: int, vm_id: str, assignee: str) -> bool:
+    """Return whether the local runner still owns an issue before a mutation."""
+    try:
+        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
+    except urllib.error.HTTPError as error:
+        logger.warning(f"#{number}: could not verify local ownership: {error}")
+        return False
+    if not isinstance(current, dict) or current.get("state") != "open":
+        return False
+    body = current.get("body") or ""
+    if (
+        issue_has_community_marker(body)
+        and trusted_community_marker(number=number, body=body) is None
+    ):
+        return False
+    if issue_has_active_queue_ownership(body):
+        return False
+    return _has_matching_vm_marker(
+        body=body, vm_id=vm_id
+    ) and issue_is_solely_assigned_to(issue=current, login=assignee)
+
+
 def _run_claimed_issue(
     issue: dict,
     model_id: str,
@@ -1000,6 +1000,27 @@ def _run_claimed_issue(
         return
 
 
+def _complete_if_owned(number: int, vm_id: str, assignee: str) -> bool:
+    """Complete an evaluation only while local ownership holds.
+
+    Returns:
+        Whether completion labelling and marker cleanup were applied.
+    """
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before completion labelling.")
+        return False
+    remove_failed_label(number=number)
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before results labelling.")
+        return False
+    add_results_ready_label(number=number)
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before marker cleanup.")
+        return False
+    clear_vm_marker(number=number, vm_id=vm_id)
+    return True
+
+
 def _evaluate_pending_languages(
     number: int,
     model_id: str,
@@ -1111,93 +1132,6 @@ def _upload_if_owned(
     return upload_results_to_hf_bucket(lines=lines, model_id=model_id)
 
 
-def _label_gated_if_owned(number: int, vm_id: str, assignee: str) -> bool:
-    """Apply gated labels only while local ownership holds.
-
-    Returns:
-        Whether both labels were applied.
-    """
-    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
-        logger.info(f"#{number}: ownership changed before gated labelling.")
-        return False
-    add_gated_label(number=number)
-    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
-        logger.info(f"#{number}: ownership changed before failure labelling.")
-        return False
-    add_failed_label(number=number)
-    return True
-
-
-def _report_failure_if_owned(number: int, vm_id: str, assignee: str, body: str) -> bool:
-    """Report an evaluation failure only while local ownership holds.
-
-    Returns:
-        Whether the comment and failure label were applied.
-    """
-    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
-        logger.info(f"#{number}: ownership changed before error reporting.")
-        return False
-    comment_on_issue(number=number, body=body)
-    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
-        logger.info(f"#{number}: ownership changed before failure labelling.")
-        return False
-    add_failed_label(number=number)
-    return True
-
-
-def _complete_if_owned(number: int, vm_id: str, assignee: str) -> bool:
-    """Complete an evaluation only while local ownership holds.
-
-    Returns:
-        Whether completion labelling and marker cleanup were applied.
-    """
-    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
-        logger.info(f"#{number}: ownership changed before completion labelling.")
-        return False
-    remove_failed_label(number=number)
-    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
-        logger.info(f"#{number}: ownership changed before results labelling.")
-        return False
-    add_results_ready_label(number=number)
-    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
-        logger.info(f"#{number}: ownership changed before marker cleanup.")
-        return False
-    clear_vm_marker(number=number, vm_id=vm_id)
-    return True
-
-
-def issue_has_matching_error_comment(number: int, reason: str) -> bool:
-    """Return True if an error comment with the same ``reason`` already exists.
-
-    The tail of subprocess output varies run-to-run (timestamps, ANSI),
-    so we match on the stable error-reason phrase rendered in the comment
-    header instead of doing an exact-body comparison.
-
-    Args:
-        number:
-            The issue number to inspect.
-        reason:
-            The reason string that would be used in a new error comment.
-
-    Returns:
-        True if any existing comment on the issue contains the same
-        ``Error encountered during evaluation (<reason>):`` header.
-    """
-    try:
-        comments = gh_request(
-            path=f"/repos/{REPO}/issues/{number}/comments", params={"per_page": "100"}
-        )
-    except urllib.error.HTTPError as e:
-        logger.warning(f"#{number}: could not list comments: {e}")
-        return False
-    if not isinstance(comments, list):
-        return False
-    marker = f"Error encountered during evaluation ({reason}):"
-    return any(
-        isinstance(c, dict) and marker in (c.get("body") or "") for c in comments
-    )
-
-
 def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     """Upload result lines to the HF results bucket.
 
@@ -1277,6 +1211,72 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     except HfHubHTTPError as e:
         logger.error(f"Failed to upload to HF bucket: {e}")
         return False
+
+
+def _label_gated_if_owned(number: int, vm_id: str, assignee: str) -> bool:
+    """Apply gated labels only while local ownership holds.
+
+    Returns:
+        Whether both labels were applied.
+    """
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before gated labelling.")
+        return False
+    add_gated_label(number=number)
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before failure labelling.")
+        return False
+    add_failed_label(number=number)
+    return True
+
+
+def _report_failure_if_owned(number: int, vm_id: str, assignee: str, body: str) -> bool:
+    """Report an evaluation failure only while local ownership holds.
+
+    Returns:
+        Whether the comment and failure label were applied.
+    """
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before error reporting.")
+        return False
+    comment_on_issue(number=number, body=body)
+    if not _local_work_is_owned(number=number, vm_id=vm_id, assignee=assignee):
+        logger.info(f"#{number}: ownership changed before failure labelling.")
+        return False
+    add_failed_label(number=number)
+    return True
+
+
+def issue_has_matching_error_comment(number: int, reason: str) -> bool:
+    """Return True if an error comment with the same ``reason`` already exists.
+
+    The tail of subprocess output varies run-to-run (timestamps, ANSI),
+    so we match on the stable error-reason phrase rendered in the comment
+    header instead of doing an exact-body comparison.
+
+    Args:
+        number:
+            The issue number to inspect.
+        reason:
+            The reason string that would be used in a new error comment.
+
+    Returns:
+        True if any existing comment on the issue contains the same
+        ``Error encountered during evaluation (<reason>):`` header.
+    """
+    try:
+        comments = gh_request(
+            path=f"/repos/{REPO}/issues/{number}/comments", params={"per_page": "100"}
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not list comments: {e}")
+        return False
+    if not isinstance(comments, list):
+        return False
+    marker = f"Error encountered during evaluation ({reason}):"
+    return any(
+        isinstance(c, dict) and marker in (c.get("body") or "") for c in comments
+    )
 
 
 def issue_is_still_claimable(

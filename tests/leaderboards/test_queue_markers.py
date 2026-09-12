@@ -6,50 +6,15 @@ import hmac
 import json
 
 import pytest
+from typing import TypedDict
 
 from leaderboards import queue_markers
 
 
-def _signed_marker(body: str, issue_number: int, secret: str) -> str:
-    """Return a marker body with the production issue-bound HMAC."""
-    assert queue_markers.parse_community_marker(body) is not None
-    payload = json.loads(body.split("v1 ", 1)[1].rsplit(" -->", 1)[0])
-    encoded = json.dumps(
-        {
-            "domain": "euroeval-volunteer-marker",
-            "version": 1,
-            "issue_number": issue_number,
-            "marker": payload,
-        },
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode()
-    payload["signature"] = (
-        base64.urlsafe_b64encode(
-            hmac.new(secret.encode(), encoded, hashlib.sha256).digest()
-        )
-        .decode()
-        .rstrip("=")
-    )
-    return f"request\n<!-- euroeval-volunteer-worker:v1 {json.dumps(payload)} -->"
-
-
-def test_signed_marker_trust_requires_the_real_secret(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Signed markers are accepted only with valid issue-bound HMAC evidence."""
-    unsigned = queue_markers.append_community_marker(
-        body="request", owner="coordinator", submission="accepted"
-    )
-    signed = _signed_marker(unsigned, issue_number=1, secret="marker-secret")
-    monkeypatch.setenv("VOLUNTEER_MARKER_SECRET", "marker-secret")
-
-    assert queue_markers.trusted_community_marker(1, signed) is not None
-    signature = signed.rsplit('"signature": "', 1)[1].split('"', 1)[0]
-    tampered = signed.replace(signature, "x" + signature[1:], 1)
-    assert queue_markers.trusted_community_marker(1, tampered) is None
-    monkeypatch.delenv("VOLUNTEER_MARKER_SECRET")
-    assert queue_markers.trusted_community_marker(1, signed) is None
+class _Issue(TypedDict):
+    state: str
+    body: str
+    assignees: list[dict[str, str]]
 
 
 def test_community_marker_parser_accepts_protocol_v1() -> None:
@@ -138,16 +103,42 @@ def test_release_does_not_touch_community_owned_issue(
     assert unassigned == []
 
 
+def test_release_finishes_marker_cleanup_after_assignment_is_gone(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An interrupted unassignment can resume by only clearing its marker."""
+    body = "request\n<!-- vm-id: local-vm -->"
+    issue = _issue(body=body, assignees=[{"login": "replacement"}])
+    monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
+    monkeypatch.setattr(queue_markers, "fetch_issue", lambda number: issue)
+    monkeypatch.setattr(
+        queue_markers, "patch_issue_body", lambda number, body: issue.update(body=body)
+    )
+
+    assert queue_markers.release_issue_if_owned(
+        number=12, vm_id="local-vm", assignee="runner"
+    )
+    assert issue["assignees"] == [{"login": "replacement"}]
+    assert "vm-id" not in issue["body"]
+
+
+def _issue(*, body: str, assignees: list[dict[str, str]]) -> _Issue:
+    return {
+        "state": "open",
+        "body": body,
+        "assignees": assignees,
+    }
+
+
 def test_release_preserves_replacement_assignee(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Release removes only the proven local owner."""
     body = "request\n<!-- vm-id: local-vm -->"
-    issue = {
-        "state": "open",
-        "body": body,
-        "assignees": [{"login": "runner"}, {"login": "replacement"}],
-    }
+    issue = _issue(
+        body=body,
+        assignees=[{"login": "runner"}, {"login": "replacement"}],
+    )
     monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
     monkeypatch.setattr(queue_markers, "fetch_issue", lambda number: issue)
     monkeypatch.setattr(
@@ -172,34 +163,14 @@ def test_release_preserves_replacement_assignee(
     assert issue["assignees"] == [{"login": "replacement"}]
 
 
-def test_release_finishes_marker_cleanup_after_assignment_is_gone(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """An interrupted unassignment can resume by only clearing its marker."""
-    body = "request\n<!-- vm-id: local-vm -->"
-    issue = {"state": "open", "body": body, "assignees": [{"login": "replacement"}]}
-    monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
-    monkeypatch.setattr(queue_markers, "fetch_issue", lambda number: issue)
-    monkeypatch.setattr(
-        queue_markers, "patch_issue_body", lambda number, body: issue.update(body=body)
-    )
-
-    assert queue_markers.release_issue_if_owned(
-        number=12, vm_id="local-vm", assignee="runner"
-    )
-    assert issue["assignees"] == [{"login": "replacement"}]
-    assert "vm-id" not in issue["body"]
-
-
 def test_release_requires_one_matching_vm_marker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Duplicate or mismatched VM markers cannot authorise cleanup."""
-    issue = {
-        "state": "open",
-        "body": "request\n<!-- vm-id: other -->\n<!-- vm-id: local-vm -->",
-        "assignees": [{"login": "runner"}],
-    }
+    issue = _issue(
+        body="request\n<!-- vm-id: other -->\n<!-- vm-id: local-vm -->",
+        assignees=[{"login": "runner"}],
+    )
     monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: issue["body"])
     monkeypatch.setattr(queue_markers, "fetch_issue", lambda number: issue)
     monkeypatch.setattr(
@@ -221,7 +192,7 @@ def test_release_unassigns_only_the_local_login(
     """A stable local assignment may be conditionally removed."""
     body = "request\n<!-- vm-id: local-vm -->"
     monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
-    issue = {"state": "open", "body": body, "assignees": [{"login": "runner"}]}
+    issue = _issue(body=body, assignees=[{"login": "runner"}])
     monkeypatch.setattr(queue_markers, "fetch_issue", lambda number: issue)
     monkeypatch.setattr(
         queue_markers, "patch_issue_body", lambda number, body: issue.update(body=body)
@@ -240,6 +211,48 @@ def test_release_unassigns_only_the_local_login(
 
     assert released
     assert unassigned == ["runner"]
+
+
+def test_signed_marker_trust_requires_the_real_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Signed markers are accepted only with valid issue-bound HMAC evidence."""
+    unsigned = queue_markers.append_community_marker(
+        body="request", owner="coordinator", submission="accepted"
+    )
+    signed = _signed_marker(unsigned, issue_number=1, secret="marker-secret")
+    monkeypatch.setenv("VOLUNTEER_MARKER_SECRET", "marker-secret")
+
+    assert queue_markers.trusted_community_marker(1, signed) is not None
+    signature = signed.rsplit('"signature": "', 1)[1].split('"', 1)[0]
+    tampered = signed.replace(signature, "x" + signature[1:], 1)
+    assert queue_markers.trusted_community_marker(1, tampered) is None
+    monkeypatch.delenv("VOLUNTEER_MARKER_SECRET")
+    assert queue_markers.trusted_community_marker(1, signed) is None
+
+
+def _signed_marker(body: str, issue_number: int, secret: str) -> str:
+    """Return a marker body with the production issue-bound HMAC."""
+    assert queue_markers.parse_community_marker(body) is not None
+    payload = json.loads(body.split("v1 ", 1)[1].rsplit(" -->", 1)[0])
+    encoded = json.dumps(
+        {
+            "domain": "euroeval-volunteer-marker",
+            "version": 1,
+            "issue_number": issue_number,
+            "marker": payload,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    payload["signature"] = (
+        base64.urlsafe_b64encode(
+            hmac.new(secret.encode(), encoded, hashlib.sha256).digest()
+        )
+        .decode()
+        .rstrip("=")
+    )
+    return f"request\n<!-- euroeval-volunteer-worker:v1 {json.dumps(payload)} -->"
 
 
 def test_submissions_require_verified_contributor_and_server_count() -> None:
