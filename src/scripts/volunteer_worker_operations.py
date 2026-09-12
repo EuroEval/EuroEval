@@ -213,243 +213,28 @@ _LOCAL_ENV_ASSIGNMENT = re.compile(
 )
 
 
-def apply_local_secrets(*, env_file: Path = Path(".env")) -> list[Diagnostic]:
-    """Initialise missing broker secrets in a local dotenv file.
+def _json_object_without_duplicates(
+    pairs: list[tuple[str, object]],
+) -> dict[str, object]:
+    """Decode a JSON object while rejecting duplicate keys.
 
     Args:
-        env_file:
-            The local dotenv file to update.
+        pairs:
+            Object key-value pairs from the JSON decoder.
 
     Returns:
-        Safe diagnostics describing generated and preserved variable names.
-    """
-    try:
-        env_file = Path(env_file)
-        original_stat = _validate_local_secret_path(env_file)
-        original_content = _read_local_secret_file(
-            env_file=env_file, expected_stat=original_stat
-        )
-        present = _local_secret_values(original_content)
-        preserved = [name for name in LOCAL_SECRET_NAMES if present.get(name, False)]
-        generated = [name for name in LOCAL_SECRET_NAMES if name not in preserved]
-
-        if generated:
-            additions = "".join(
-                f"{name}={secrets.token_urlsafe(32)}\n" for name in generated
-            ).encode()
-            separator = (
-                b"\n"
-                if original_content and not original_content.endswith(b"\n")
-                else b""
-            )
-            _atomic_write_local_secret_file(
-                env_file=env_file,
-                content=original_content + separator + additions,
-                expected_stat=original_stat,
-            )
-        elif original_stat is not None and stat.S_IMODE(original_stat.st_mode) != 0o600:
-            _tighten_local_secret_mode(env_file=env_file, expected_stat=original_stat)
-
-        generated_names = ", ".join(generated) or "none"
-        preserved_names = ", ".join(preserved) or "none"
-        return [
-            Diagnostic(
-                "local-secrets",
-                "ok",
-                f"generated: {generated_names}; preserved: {preserved_names}; "
-                "permissions: 0600",
-            )
-        ]
-    except (OSError, UnicodeError, ValueError):
-        return [
-            Diagnostic(
-                "local-secrets",
-                "safety",
-                "local secret file was rejected or could not be updated",
-                True,
-            )
-        ]
-
-
-def _validate_local_secret_path(env_file: Path) -> os.stat_result | None:
-    """Validate the dotenv path without following a symlink.
-
-    Returns:
-        The existing file's metadata, or ``None`` when it does not exist.
+        The decoded object.
 
     Raises:
         ValueError:
-            If the parent or destination is unsafe.
+            If an object key occurs more than once.
     """
-    parent_stat = os.lstat(env_file.parent)
-    if not stat.S_ISDIR(parent_stat.st_mode):
-        raise ValueError("dotenv parent is not a directory")
-    if stat.S_ISLNK(parent_stat.st_mode):
-        raise ValueError("dotenv parent is a symlink")
-    if parent_stat.st_uid != os.getuid() or stat.S_IMODE(parent_stat.st_mode) & 0o022:
-        raise ValueError("dotenv parent is unsafe")
-
-    try:
-        file_stat = os.lstat(env_file)
-    except FileNotFoundError:
-        return None
-    if not stat.S_ISREG(file_stat.st_mode) or stat.S_ISLNK(file_stat.st_mode):
-        raise ValueError("dotenv path is not a regular file")
-    if file_stat.st_uid != os.getuid() or file_stat.st_nlink != 1:
-        raise ValueError("dotenv file is unsafe")
-    return file_stat
-
-
-def _read_local_secret_file(
-    *, env_file: Path, expected_stat: os.stat_result | None
-) -> bytes:
-    """Read the dotenv file while keeping the checked inode fixed.
-
-    Returns:
-        The original file bytes, or empty bytes for a new file.
-
-    Raises:
-        ValueError:
-            If the destination changed while it was being opened.
-    """
-    if expected_stat is None:
-        return b""
-    nofollow = getattr(os, "O_NOFOLLOW", 0)
-    file_descriptor = os.open(env_file, os.O_RDONLY | nofollow)
-    try:
-        opened_stat = os.fstat(file_descriptor)
-        if (
-            opened_stat.st_dev != expected_stat.st_dev
-            or opened_stat.st_ino != expected_stat.st_ino
-            or not stat.S_ISREG(opened_stat.st_mode)
-        ):
-            raise ValueError("dotenv file changed during validation")
-        with os.fdopen(file_descriptor, "rb") as stream:
-            file_descriptor = -1
-            return stream.read()
-    finally:
-        if file_descriptor >= 0:
-            os.close(file_descriptor)
-
-
-def _local_secret_values(content: bytes) -> dict[str, bool]:
-    """Return whether each managed dotenv variable has a non-empty value."""
-    text = content.decode("utf-8")
-    values = {name: False for name in LOCAL_SECRET_NAMES}
-    for line in text.splitlines(keepends=True):
-        match = _LOCAL_ENV_ASSIGNMENT.fullmatch(line)
-        if match and match.group("name") in values:
-            values[match.group("name")] |= _non_empty_env_value(match.group("value"))
-    return values
-
-
-def _non_empty_env_value(value: str) -> bool:
-    """Determine emptiness without expanding or evaluating dotenv syntax.
-
-    Returns:
-        Whether the assignment has a non-empty value.
-    """
-    stripped = value.strip()
-    if not stripped or stripped.startswith("#"):
-        return False
-    if stripped[0] not in ('"', "'"):
-        return True
-    quote = stripped[0]
-    escaped = False
-    for index, character in enumerate(stripped[1:], start=1):
-        if character == quote and not escaped:
-            return bool(stripped[1:index])
-        escaped = character == "\\" and not escaped
-    return True
-
-
-def _target_matches(env_file: Path, expected_stat: os.stat_result | None) -> bool:
-    """Check that the destination still names the file that was inspected.
-
-    Returns:
-        Whether the destination still has the expected identity.
-    """
-    try:
-        current_stat = os.lstat(env_file)
-    except FileNotFoundError:
-        return expected_stat is None
-    return bool(
-        expected_stat is not None
-        and stat.S_ISREG(current_stat.st_mode)
-        and current_stat.st_dev == expected_stat.st_dev
-        and current_stat.st_ino == expected_stat.st_ino
-    )
-
-
-def _atomic_write_local_secret_file(
-    *, env_file: Path, content: bytes, expected_stat: os.stat_result | None
-) -> None:
-    """Replace a local dotenv file atomically and durably.
-
-    Raises:
-        ValueError:
-            If the destination changes before the replacement.
-    """
-    if not _target_matches(env_file, expected_stat):
-        raise ValueError("dotenv destination changed during validation")
-
-    temporary_path: Path | None = None
-    file_descriptor = -1
-    try:
-        file_descriptor, temporary_name = tempfile.mkstemp(
-            prefix=f".{env_file.name}.", dir=env_file.parent
-        )
-        temporary_path = Path(temporary_name)
-        os.fchmod(file_descriptor, 0o600)
-        with os.fdopen(file_descriptor, "wb") as stream:
-            file_descriptor = -1
-            stream.write(content)
-            stream.flush()
-            os.fsync(stream.fileno())
-        if not _target_matches(env_file, expected_stat):
-            raise ValueError("dotenv destination changed during validation")
-        os.replace(temporary_path, env_file)
-        temporary_path = None
-        directory_descriptor = os.open(
-            env_file.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
-        )
-        try:
-            os.fsync(directory_descriptor)
-        finally:
-            os.close(directory_descriptor)
-    finally:
-        if file_descriptor >= 0:
-            os.close(file_descriptor)
-        if temporary_path is not None:
-            try:
-                temporary_path.unlink()
-            except FileNotFoundError:
-                pass
-
-
-def _tighten_local_secret_mode(
-    *, env_file: Path, expected_stat: os.stat_result
-) -> None:
-    """Tighten an unchanged existing dotenv file without rewriting its content.
-
-    Raises:
-        ValueError:
-            If the destination changes before its mode is tightened.
-    """
-    if not _target_matches(env_file, expected_stat):
-        raise ValueError("dotenv destination changed during validation")
-    nofollow = getattr(os, "O_NOFOLLOW", 0)
-    file_descriptor = os.open(env_file, os.O_WRONLY | nofollow)
-    try:
-        current_stat = os.fstat(file_descriptor)
-        if (
-            current_stat.st_dev != expected_stat.st_dev
-            or current_stat.st_ino != expected_stat.st_ino
-        ):
-            raise ValueError("dotenv destination changed during validation")
-        os.fchmod(file_descriptor, 0o600)
-    finally:
-        os.close(file_descriptor)
+    decoded: dict[str, object] = {}
+    for name, value in pairs:
+        if name in decoded:
+            raise ValueError("duplicate JSON key")
+        decoded[name] = value
+    return decoded
 
 
 @dataclasses.dataclass(frozen=True)
@@ -645,19 +430,6 @@ def _classify_hf_failure(result: CommandResult) -> tuple[str, str]:
     return "service failure", "Hugging Face bucket operation failed"
 
 
-def _json_object(value: str) -> dict[str, object]:
-    """Decode a JSON object, returning an empty object on command failure.
-
-    Returns:
-        Decoded object or an empty object.
-    """
-    try:
-        decoded = json.loads(value)
-    except json.JSONDecodeError:
-        return {}
-    return decoded if isinstance(decoded, dict) else {}
-
-
 def _hf_metadata_diagnostics(data: dict[str, object]) -> list[Diagnostic]:
     """Validate bucket visibility and report the region verification limitation.
 
@@ -682,35 +454,256 @@ def _hf_metadata_diagnostics(data: dict[str, object]) -> list[Diagnostic]:
     return [privacy, region_diagnostic]
 
 
-def check_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
-    """Check HF authentication and configured staging bucket privacy.
+def _json_object(value: str) -> dict[str, object]:
+    """Decode a JSON object, returning an empty object on command failure.
 
     Returns:
-        Hugging Face diagnostics.
+        Decoded object or an empty object.
     """
-    if not environment.get("HF_TOKEN") or not environment.get("HF_STAGING_BUCKET"):
+    try:
+        decoded = json.loads(value)
+    except json.JSONDecodeError:
+        return {}
+    return decoded if isinstance(decoded, dict) else {}
+
+
+def apply_local_secrets(*, env_file: Path = Path(".env")) -> list[Diagnostic]:
+    """Initialise missing broker secrets in a local dotenv file.
+
+    Args:
+        env_file:
+            The local dotenv file to update.
+
+    Returns:
+        Safe diagnostics describing generated and preserved variable names.
+    """
+    try:
+        env_file = Path(env_file)
+        original_stat = _validate_local_secret_path(env_file)
+        original_content = _read_local_secret_file(
+            env_file=env_file, expected_stat=original_stat
+        )
+        present = _local_secret_values(original_content)
+        preserved = [name for name in LOCAL_SECRET_NAMES if present.get(name, False)]
+        generated = [name for name in LOCAL_SECRET_NAMES if name not in preserved]
+
+        if generated:
+            additions = "".join(
+                f"{name}={secrets.token_urlsafe(32)}\n" for name in generated
+            ).encode()
+            separator = (
+                b"\n"
+                if original_content and not original_content.endswith(b"\n")
+                else b""
+            )
+            _atomic_write_local_secret_file(
+                env_file=env_file,
+                content=original_content + separator + additions,
+                expected_stat=original_stat,
+            )
+        elif original_stat is not None and stat.S_IMODE(original_stat.st_mode) != 0o600:
+            _tighten_local_secret_mode(env_file=env_file, expected_stat=original_stat)
+
+        generated_names = ", ".join(generated) or "none"
+        preserved_names = ", ".join(preserved) or "none"
         return [
             Diagnostic(
-                "hf",
-                "missing config",
-                "HF_TOKEN and HF_STAGING_BUCKET are required",
+                "local-secrets",
+                "ok",
+                f"generated: {generated_names}; preserved: {preserved_names}; "
+                "permissions: 0600",
+            )
+        ]
+    except (OSError, UnicodeError, ValueError):
+        return [
+            Diagnostic(
+                "local-secrets",
+                "safety",
+                "local secret file was rejected or could not be updated",
                 True,
             )
         ]
-    bucket = environment["HF_STAGING_BUCKET"]
-    auth = run_command(["uv", "run", "hf", "auth", "whoami"])
-    if auth.returncode:
-        return [Diagnostic("hf", "auth", "Hugging Face authentication failed", True)]
-    info = run_command(["uv", "run", "hf", "buckets", "info", bucket, "--json"])
-    if info.returncode:
-        category, message = _classify_hf_failure(info)
-        return [Diagnostic("hf", category, message, True)]
-    data = _json_object(info.stdout)
-    if not data:
-        return [
-            Diagnostic("hf", "service failure", "bucket metadata is malformed", True)
-        ]
-    return _hf_metadata_diagnostics(data)
+
+
+def _atomic_write_local_secret_file(
+    *, env_file: Path, content: bytes, expected_stat: os.stat_result | None
+) -> None:
+    """Replace a local dotenv file atomically and durably.
+
+    Raises:
+        ValueError:
+            If the destination changes before the replacement.
+    """
+    if not _target_matches(env_file, expected_stat):
+        raise ValueError("dotenv destination changed during validation")
+
+    temporary_path: Path | None = None
+    file_descriptor = -1
+    try:
+        file_descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{env_file.name}.", dir=env_file.parent
+        )
+        temporary_path = Path(temporary_name)
+        os.fchmod(file_descriptor, 0o600)
+        with os.fdopen(file_descriptor, "wb") as stream:
+            file_descriptor = -1
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        if not _target_matches(env_file, expected_stat):
+            raise ValueError("dotenv destination changed during validation")
+        os.replace(temporary_path, env_file)
+        temporary_path = None
+        directory_descriptor = os.open(
+            env_file.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        )
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
+    finally:
+        if file_descriptor >= 0:
+            os.close(file_descriptor)
+        if temporary_path is not None:
+            try:
+                temporary_path.unlink()
+            except FileNotFoundError:
+                pass
+
+
+def _target_matches(env_file: Path, expected_stat: os.stat_result | None) -> bool:
+    """Check that the destination still names the file that was inspected.
+
+    Returns:
+        Whether the destination still has the expected identity.
+    """
+    try:
+        current_stat = os.lstat(env_file)
+    except FileNotFoundError:
+        return expected_stat is None
+    return bool(
+        expected_stat is not None
+        and stat.S_ISREG(current_stat.st_mode)
+        and current_stat.st_dev == expected_stat.st_dev
+        and current_stat.st_ino == expected_stat.st_ino
+    )
+
+
+def _local_secret_values(content: bytes) -> dict[str, bool]:
+    """Return whether each managed dotenv variable has a non-empty value."""
+    text = content.decode("utf-8")
+    values = {name: False for name in LOCAL_SECRET_NAMES}
+    for line in text.splitlines(keepends=True):
+        match = _LOCAL_ENV_ASSIGNMENT.fullmatch(line)
+        if match and match.group("name") in values:
+            values[match.group("name")] |= _non_empty_env_value(match.group("value"))
+    return values
+
+
+def _non_empty_env_value(value: str) -> bool:
+    """Determine emptiness without expanding or evaluating dotenv syntax.
+
+    Returns:
+        Whether the assignment has a non-empty value.
+    """
+    stripped = value.strip()
+    if not stripped or stripped.startswith("#"):
+        return False
+    if stripped[0] not in ('"', "'"):
+        return True
+    quote = stripped[0]
+    escaped = False
+    for index, character in enumerate(stripped[1:], start=1):
+        if character == quote and not escaped:
+            return bool(stripped[1:index])
+        escaped = character == "\\" and not escaped
+    return True
+
+
+def _read_local_secret_file(
+    *, env_file: Path, expected_stat: os.stat_result | None
+) -> bytes:
+    """Read the dotenv file while keeping the checked inode fixed.
+
+    Returns:
+        The original file bytes, or empty bytes for a new file.
+
+    Raises:
+        ValueError:
+            If the destination changed while it was being opened.
+    """
+    if expected_stat is None:
+        return b""
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    file_descriptor = os.open(env_file, os.O_RDONLY | nofollow)
+    try:
+        opened_stat = os.fstat(file_descriptor)
+        if (
+            opened_stat.st_dev != expected_stat.st_dev
+            or opened_stat.st_ino != expected_stat.st_ino
+            or not stat.S_ISREG(opened_stat.st_mode)
+        ):
+            raise ValueError("dotenv file changed during validation")
+        with os.fdopen(file_descriptor, "rb") as stream:
+            file_descriptor = -1
+            return stream.read()
+    finally:
+        if file_descriptor >= 0:
+            os.close(file_descriptor)
+
+
+def _tighten_local_secret_mode(
+    *, env_file: Path, expected_stat: os.stat_result
+) -> None:
+    """Tighten an unchanged existing dotenv file without rewriting its content.
+
+    Raises:
+        ValueError:
+            If the destination changes before its mode is tightened.
+    """
+    if not _target_matches(env_file, expected_stat):
+        raise ValueError("dotenv destination changed during validation")
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    file_descriptor = os.open(env_file, os.O_WRONLY | nofollow)
+    try:
+        current_stat = os.fstat(file_descriptor)
+        if (
+            current_stat.st_dev != expected_stat.st_dev
+            or current_stat.st_ino != expected_stat.st_ino
+        ):
+            raise ValueError("dotenv destination changed during validation")
+        os.fchmod(file_descriptor, 0o600)
+    finally:
+        os.close(file_descriptor)
+
+
+def _validate_local_secret_path(env_file: Path) -> os.stat_result | None:
+    """Validate the dotenv path without following a symlink.
+
+    Returns:
+        The existing file's metadata, or ``None`` when it does not exist.
+
+    Raises:
+        ValueError:
+            If the parent or destination is unsafe.
+    """
+    parent_stat = os.lstat(env_file.parent)
+    if not stat.S_ISDIR(parent_stat.st_mode):
+        raise ValueError("dotenv parent is not a directory")
+    if stat.S_ISLNK(parent_stat.st_mode):
+        raise ValueError("dotenv parent is a symlink")
+    if parent_stat.st_uid != os.getuid() or stat.S_IMODE(parent_stat.st_mode) & 0o022:
+        raise ValueError("dotenv parent is unsafe")
+
+    try:
+        file_stat = os.lstat(env_file)
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(file_stat.st_mode) or stat.S_ISLNK(file_stat.st_mode):
+        raise ValueError("dotenv path is not a regular file")
+    if file_stat.st_uid != os.getuid() or file_stat.st_nlink != 1:
+        raise ValueError("dotenv file is unsafe")
+    return file_stat
 
 
 def apply_reuse_vercel_kv(*, environment: dict[str, str]) -> list[Diagnostic]:
@@ -778,96 +771,6 @@ def apply_reuse_vercel_kv(*, environment: dict[str, str]) -> list[Diagnostic]:
     return diagnostics + _check_vercel_kv_aliases(environment=vercel_environment)
 
 
-def _vercel_kv_read_command() -> list[str]:
-    """Build the value-free command used inside Vercel's production environment.
-
-    Returns:
-        Command arguments for the nested Vercel environment process.
-    """
-    names = ", ".join(repr(name) for name in VERCEL_KV_SOURCE_VARIABLES)
-    script = (
-        "import json, os; "
-        f"print({VERCEL_KV_OUTPUT_MARKER!r} + "
-        f"json.dumps({{name: os.environ.get(name) for name in ({names},)}}, "
-        "separators=(',', ':')))"
-    )
-    return [
-        "vercel",
-        "env",
-        "run",
-        "--environment",
-        "production",
-        "--",
-        sys.executable,
-        "-c",
-        script,
-    ]
-
-
-def _vercel_command_environment(environment: dict[str, str]) -> dict[str, str]:
-    """Keep Vercel subprocesses free of unrelated injected application secrets.
-
-    Returns:
-        Allowlisted environment values for Vercel commands.
-    """
-    allowed = BASIC_ENVIRONMENT | TOOL_AUTH_ENVIRONMENT["vercel"]
-    return {name: environment[name] for name in allowed if environment.get(name)}
-
-
-def _vercel_kv_values(output: str) -> dict[str, str]:
-    """Decode the uniquely marked, non-empty source values.
-
-    Returns:
-        Non-empty source values, keyed by their Vercel variable names.
-    """
-    marked_payloads = [
-        line[len(VERCEL_KV_OUTPUT_MARKER) :]
-        for line in output.splitlines()
-        if line.startswith(VERCEL_KV_OUTPUT_MARKER)
-    ]
-    if len(marked_payloads) != 1:
-        return {}
-    try:
-        decoded = json.loads(
-            marked_payloads[0], object_pairs_hook=_json_object_without_duplicates
-        )
-    except (json.JSONDecodeError, ValueError):
-        return {}
-    if not isinstance(decoded, dict):
-        return {}
-    return {
-        name: value
-        for name, value in decoded.items()
-        if name in VERCEL_KV_SOURCE_VARIABLES
-        and isinstance(value, str)
-        and value.strip()
-    }
-
-
-def _json_object_without_duplicates(
-    pairs: list[tuple[str, object]],
-) -> dict[str, object]:
-    """Decode a JSON object while rejecting duplicate keys.
-
-    Args:
-        pairs:
-            Object key-value pairs from the JSON decoder.
-
-    Returns:
-        The decoded object.
-
-    Raises:
-        ValueError:
-            If an object key occurs more than once.
-    """
-    decoded: dict[str, object] = {}
-    for name, value in pairs:
-        if name in decoded:
-            raise ValueError("duplicate JSON key")
-        decoded[name] = value
-    return decoded
-
-
 def _check_vercel_kv_aliases(*, environment: dict[str, str]) -> list[Diagnostic]:
     """Verify only the two broker aliases and never inspect their values.
 
@@ -909,62 +812,6 @@ def _check_vercel_kv_aliases(*, environment: dict[str, str]) -> list[Diagnostic]
             )
         )
     return diagnostics
-
-
-def apply_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
-    """Add or update Production variables atomically using stdin.
-
-    Returns:
-        Vercel diagnostics.
-    """
-    identity, verified = _check_vercel_project(environment=environment)
-    if not verified:
-        return identity
-    euroeval_version, worker_version = source_versions()
-    values = dict(environment)
-    values.setdefault("EUROEVAL_VERSION", euroeval_version)
-    values.setdefault("VOLUNTEER_WORKER_VERSION", worker_version)
-    missing = [name for name in REQUIRED_ENVIRONMENT if not values.get(name)]
-    if missing:
-        return [
-            Diagnostic(
-                "vercel",
-                "missing config",
-                "missing required values: " + ", ".join(missing),
-                True,
-            )
-        ]
-    diagnostics: list[Diagnostic] = []
-    for name in REQUIRED_ENVIRONMENT:
-        variable_type = "plain" if name in PUBLIC_CONFIG else "sensitive"
-        added = run_command(
-            [
-                "vercel",
-                "env",
-                "add",
-                name,
-                "production",
-                "--force",
-                "--yes",
-                "--type",
-                variable_type,
-            ],
-            input_text=values[name] + "\n",
-            environment=environment,
-        )
-        diagnostics.append(
-            Diagnostic(
-                "vercel",
-                "ok" if added.returncode == 0 else "service failure",
-                f"Production variable {name}: "
-                f"{'updated' if added.returncode == 0 else 'update failed'}",
-                added.returncode != 0,
-            )
-        )
-    if any(item.failed for item in diagnostics):
-        return diagnostics
-    verification = check_vercel(environment=environment)
-    return diagnostics + verification
 
 
 def _check_vercel_project(
@@ -1043,6 +890,128 @@ def _check_vercel_project(
     return [
         Diagnostic("vercel", "ok", "linked Vercel project identity and scope verified")
     ], True
+
+
+def _vercel_command_environment(environment: dict[str, str]) -> dict[str, str]:
+    """Keep Vercel subprocesses free of unrelated injected application secrets.
+
+    Returns:
+        Allowlisted environment values for Vercel commands.
+    """
+    allowed = BASIC_ENVIRONMENT | TOOL_AUTH_ENVIRONMENT["vercel"]
+    return {name: environment[name] for name in allowed if environment.get(name)}
+
+
+def _vercel_kv_read_command() -> list[str]:
+    """Build the value-free command used inside Vercel's production environment.
+
+    Returns:
+        Command arguments for the nested Vercel environment process.
+    """
+    names = ", ".join(repr(name) for name in VERCEL_KV_SOURCE_VARIABLES)
+    script = (
+        "import json, os; "
+        f"print({VERCEL_KV_OUTPUT_MARKER!r} + "
+        f"json.dumps({{name: os.environ.get(name) for name in ({names},)}}, "
+        "separators=(',', ':')))"
+    )
+    return [
+        "vercel",
+        "env",
+        "run",
+        "--environment",
+        "production",
+        "--",
+        sys.executable,
+        "-c",
+        script,
+    ]
+
+
+def _vercel_kv_values(output: str) -> dict[str, str]:
+    """Decode the uniquely marked, non-empty source values.
+
+    Returns:
+        Non-empty source values, keyed by their Vercel variable names.
+    """
+    marked_payloads = [
+        line[len(VERCEL_KV_OUTPUT_MARKER) :]
+        for line in output.splitlines()
+        if line.startswith(VERCEL_KV_OUTPUT_MARKER)
+    ]
+    if len(marked_payloads) != 1:
+        return {}
+    try:
+        decoded = json.loads(
+            marked_payloads[0], object_pairs_hook=_json_object_without_duplicates
+        )
+    except (json.JSONDecodeError, ValueError):
+        return {}
+    if not isinstance(decoded, dict):
+        return {}
+    return {
+        name: value
+        for name, value in decoded.items()
+        if name in VERCEL_KV_SOURCE_VARIABLES
+        and isinstance(value, str)
+        and value.strip()
+    }
+
+
+def apply_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
+    """Add or update Production variables atomically using stdin.
+
+    Returns:
+        Vercel diagnostics.
+    """
+    identity, verified = _check_vercel_project(environment=environment)
+    if not verified:
+        return identity
+    euroeval_version, worker_version = source_versions()
+    values = dict(environment)
+    values.setdefault("EUROEVAL_VERSION", euroeval_version)
+    values.setdefault("VOLUNTEER_WORKER_VERSION", worker_version)
+    missing = [name for name in REQUIRED_ENVIRONMENT if not values.get(name)]
+    if missing:
+        return [
+            Diagnostic(
+                "vercel",
+                "missing config",
+                "missing required values: " + ", ".join(missing),
+                True,
+            )
+        ]
+    diagnostics: list[Diagnostic] = []
+    for name in REQUIRED_ENVIRONMENT:
+        variable_type = "plain" if name in PUBLIC_CONFIG else "sensitive"
+        added = run_command(
+            [
+                "vercel",
+                "env",
+                "add",
+                name,
+                "production",
+                "--force",
+                "--yes",
+                "--type",
+                variable_type,
+            ],
+            input_text=values[name] + "\n",
+            environment=environment,
+        )
+        diagnostics.append(
+            Diagnostic(
+                "vercel",
+                "ok" if added.returncode == 0 else "service failure",
+                f"Production variable {name}: "
+                f"{'updated' if added.returncode == 0 else 'update failed'}",
+                added.returncode != 0,
+            )
+        )
+    if any(item.failed for item in diagnostics):
+        return diagnostics
+    verification = check_vercel(environment=environment)
+    return diagnostics + verification
 
 
 def check_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
@@ -1134,13 +1103,6 @@ def source_versions() -> tuple[str, str]:
     if match is None:
         raise RuntimeError("worker source version is missing")
     return euroeval, match.group(1)
-
-
-def print_diagnostics(diagnostics: list[Diagnostic]) -> None:
-    """Print classified diagnostics without command output or secret values."""
-    for item in diagnostics:
-        status = "FAIL" if item.failed else "OK"
-        print(f"{status} [{item.category}] {item.component}: {item.message}")
 
 
 def check(
@@ -1379,6 +1341,37 @@ def check_github(*, environment: dict[str, str]) -> list[Diagnostic]:
         )
     )
     return result
+
+
+def check_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
+    """Check HF authentication and configured staging bucket privacy.
+
+    Returns:
+        Hugging Face diagnostics.
+    """
+    if not environment.get("HF_TOKEN") or not environment.get("HF_STAGING_BUCKET"):
+        return [
+            Diagnostic(
+                "hf",
+                "missing config",
+                "HF_TOKEN and HF_STAGING_BUCKET are required",
+                True,
+            )
+        ]
+    bucket = environment["HF_STAGING_BUCKET"]
+    auth = run_command(["uv", "run", "hf", "auth", "whoami"])
+    if auth.returncode:
+        return [Diagnostic("hf", "auth", "Hugging Face authentication failed", True)]
+    info = run_command(["uv", "run", "hf", "buckets", "info", bucket, "--json"])
+    if info.returncode:
+        category, message = _classify_hf_failure(info)
+        return [Diagnostic("hf", category, message, True)]
+    data = _json_object(info.stdout)
+    if not data:
+        return [
+            Diagnostic("hf", "service failure", "bucket metadata is malformed", True)
+        ]
+    return _hf_metadata_diagnostics(data)
 
 
 def check_policy(*, environment: dict[str, str]) -> list[Diagnostic]:
@@ -1743,6 +1736,13 @@ def parse_arguments(argv: list[str] | None) -> argparse.Namespace:
     )
     parser.add_argument("--route", action="append", help="Smoke only this route.")
     return parser.parse_args(argv)
+
+
+def print_diagnostics(diagnostics: list[Diagnostic]) -> None:
+    """Print classified diagnostics without command output or secret values."""
+    for item in diagnostics:
+        status = "FAIL" if item.failed else "OK"
+        print(f"{status} [{item.category}] {item.component}: {item.message}")
 
 
 def print_plan(*, environment: dict[str, str]) -> None:
