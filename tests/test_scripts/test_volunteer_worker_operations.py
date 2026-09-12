@@ -85,18 +85,24 @@ def test_apply_vercel_adds_atomically_and_validates_metadata(
     monkeypatch.chdir(tmp_path)
     (tmp_path / ".vercel").mkdir()
     (tmp_path / ".vercel/project.json").write_text(
-        '{"projectId":"project","orgId":"team"}', encoding="utf-8"
+        '{"projectId":"project-id","orgId":"team-id","projectName":"euroeval"}',
+        encoding="utf-8",
     )
     monkeypatch.setattr(operations, "source_versions", lambda: ("1.0", "1.0"))
     values = {name: f"value-{name}" for name in operations.REQUIRED_ENVIRONMENT}
+    values.update(
+        {
+            "VERCEL_PROJECT_ID": "project-id",
+            "VERCEL_ORG_ID": "team-id",
+            "VERCEL_PROJECT_NAME": "euroeval",
+        }
+    )
     commands: list[list[str]] = []
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
         commands.append(command)
         if command[:3] == ["vercel", "project", "inspect"]:
-            return operations.CommandResult(
-                0, '{"id":"project","name":"EuroEval","accountId":"team"}'
-            )
+            return operations.CommandResult(0, '{"id":"project-id","name":"euroeval"}')
         if command[:3] == ["vercel", "env", "ls"]:
             metadata = [
                 {
@@ -121,6 +127,55 @@ def test_apply_vercel_adds_atomically_and_validates_metadata(
     assert all(
         value not in command for command in commands for value in values.values()
     )
+
+
+def test_docker_inspection_preserves_safe_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Anonymous Docker inspection keeps PATH but cannot use host credentials."""
+    digest = "sha256:" + "a" * 64
+    captured: dict[str, str] = {}
+    for name in operations.BASIC_ENVIRONMENT:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("PATH", "/custom/bin")
+    monkeypatch.setenv("XDG_DATA_HOME", "/tmp/data")
+    monkeypatch.setenv("GH_TOKEN", "host-secret")
+    monkeypatch.setenv("DOCKER_CONFIG", "/host/config")
+
+    def fake_run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        command = args[0]
+        assert isinstance(command, list)
+        child_environment = kwargs["env"]
+        assert isinstance(child_environment, dict)
+        if command[0] == "docker":
+            captured.update(child_environment)
+            config = Path(child_environment["DOCKER_CONFIG"])
+            assert config.is_dir()
+            assert not list(config.iterdir())
+            output = json.dumps(
+                {
+                    "digest": digest,
+                    "manifests": [
+                        {
+                            "descriptor": {"digest": "sha256:" + "b" * 64},
+                            "platform": {"os": "linux", "architecture": "amd64"},
+                        }
+                    ],
+                }
+            )
+            return subprocess.CompletedProcess(command, 0, output, "")
+        return subprocess.CompletedProcess(command, 0, "public", "")
+
+    monkeypatch.setattr(operations.subprocess, "run", fake_run)
+    diagnostics = operations.check_ghcr(
+        environment={"VOLUNTEER_WORKER_IMAGE_DIGEST": digest}
+    )
+
+    assert not any(item.failed for item in diagnostics)
+    assert captured["PATH"] == "/custom/bin"
+    assert captured["XDG_DATA_HOME"] == "/tmp/data"
+    assert "GH_TOKEN" not in captured
+    assert captured["DOCKER_CONFIG"] != "/host/config"
 
 
 def test_generator_check_exit_and_no_write_modes(tmp_path: Path) -> None:
@@ -171,12 +226,17 @@ def test_ghcr_manifest_check_is_anonymous_and_read_only(
             0,
             json.dumps(
                 {
+                    "digest": digest,
                     "manifests": [
                         {
-                            "digest": digest,
+                            "descriptor": {"digest": "sha256:" + "b" * 64},
                             "platform": {"os": "linux", "architecture": "amd64"},
-                        }
-                    ]
+                        },
+                        {
+                            "descriptor": {"digest": "sha256:" + "c" * 64},
+                            "platform": {"os": "unknown", "architecture": "unknown"},
+                        },
+                    ],
                 }
             ),
         )
@@ -211,6 +271,58 @@ def test_hf_uses_auth_whoami_and_only_creates_absent_bucket(
     assert commands[0] == ["uv", "run", "hf", "auth", "whoami"]
     assert any("manual/unverifiable" in item.message for item in diagnostics)
     assert not any("create" in command for command in commands)
+
+
+def test_manifest_accepts_attested_index_with_independent_proofs() -> None:
+    """An index digest and its amd64 child are separate attestations."""
+    digest = "sha256:" + "a" * 64
+    output = {
+        "digest": digest,
+        "manifests": [
+            {
+                "descriptor": {"digest": "sha256:" + "b" * 64},
+                "platform": {"os": "linux", "architecture": "amd64"},
+            },
+            {
+                "descriptor": {"digest": "sha256:" + "c" * 64},
+                "platform": {"os": "unknown", "architecture": "unknown"},
+            },
+        ],
+    }
+
+    assert operations._manifest_matches(json.dumps(output), digest)
+
+
+def test_manifest_rejects_digest_mismatch_with_amd64_child() -> None:
+    """An amd64 child cannot make a mismatched index digest valid."""
+    digest = "sha256:" + "a" * 64
+    output = {
+        "digest": "sha256:" + "d" * 64,
+        "manifests": [
+            {
+                "descriptor": {"digest": "sha256:" + "b" * 64},
+                "platform": {"os": "linux", "architecture": "amd64"},
+            }
+        ],
+    }
+
+    assert not operations._manifest_matches(json.dumps(output), digest)
+
+
+def test_manifest_rejects_index_without_amd64_child() -> None:
+    """A matching index digest is insufficient without an amd64 child."""
+    digest = "sha256:" + "a" * 64
+    output = {
+        "digest": digest,
+        "manifests": [
+            {
+                "descriptor": {"digest": "sha256:" + "b" * 64},
+                "platform": {"os": "linux", "architecture": "arm64"},
+            }
+        ],
+    }
+
+    assert not operations._manifest_matches(json.dumps(output), digest)
 
 
 def test_plan_does_not_run_commands_or_print_secret_values(
@@ -267,18 +379,32 @@ def test_run_command_isolates_tool_environment(monkeypatch: pytest.MonkeyPatch) 
         return subprocess.CompletedProcess(command, 0, "", "")
 
     monkeypatch.setattr(operations.subprocess, "run", fake_run)
+    environment_names = operations.BASIC_ENVIRONMENT | set(
+        operations.TOOL_AUTH_ENVIRONMENT["gh"]
+    )
+    for name in environment_names:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("PATH", "/bin")
+    monkeypatch.setenv("HOME", "/tmp")
+    monkeypatch.setenv("XDG_DATA_HOME", "/tmp/data")
     operations.run_command(
         ["gh", "auth", "status"],
         environment={
             "PATH": "/bin",
             "HOME": "/tmp",
+            "XDG_DATA_HOME": "/tmp/data",
             "GH_TOKEN": "gh-secret",
             "UPSTASH_REDIS_REST_TOKEN": "redis-secret",
             "WORKER_COORDINATOR_SECRET": "coordinator-secret",
         },
     )
 
-    assert captured == {"PATH": "/bin", "HOME": "/tmp", "GH_TOKEN": "gh-secret"}
+    assert captured == {
+        "PATH": "/bin",
+        "HOME": "/tmp",
+        "XDG_DATA_HOME": "/tmp/data",
+        "GH_TOKEN": "gh-secret",
+    }
 
 
 def test_smoke_accepts_protected_401_or_deployed_missing_config(
@@ -307,3 +433,51 @@ def test_smoke_accepts_protected_401_or_deployed_missing_config(
     )
 
     assert not any(diagnostic.failed for diagnostic in diagnostics)
+
+
+@pytest.mark.parametrize(
+    "environment_name", ["VERCEL_PROJECT_ID", "VERCEL_ORG_ID", "VERCEL_PROJECT_NAME"]
+)
+def test_vercel_identity_rejects_environment_drift(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, environment_name: str
+) -> None:
+    """Configured Vercel identity values must match the local link."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".vercel").mkdir()
+    (tmp_path / ".vercel/project.json").write_text(
+        '{"projectId":"project-id","orgId":"team-id","projectName":"euroeval"}',
+        encoding="utf-8",
+    )
+    called = False
+
+    def fail_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        nonlocal called
+        called = True
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(operations, "run_command", fail_command)
+    diagnostics, verified = operations._check_vercel_project(
+        environment={environment_name: "different"}
+    )
+
+    assert not verified
+    assert diagnostics[0].failed
+    assert environment_name in diagnostics[0].message
+    assert not called
+
+
+def test_vercel_identity_requires_project_name_in_local_link(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A project link without its name cannot authorise Vercel changes."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".vercel").mkdir()
+    (tmp_path / ".vercel/project.json").write_text(
+        '{"projectId":"project-id","orgId":"team-id"}', encoding="utf-8"
+    )
+
+    diagnostics, verified = operations._check_vercel_project(environment={})
+
+    assert not verified
+    assert diagnostics[0].failed
+    assert "projectName" in diagnostics[0].message

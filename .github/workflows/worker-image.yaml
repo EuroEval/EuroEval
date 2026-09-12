@@ -112,12 +112,14 @@ jobs:
           fi
           REFERENCE="$IMAGE@$DIGEST"
           manifest="$(docker buildx imagetools inspect "$REFERENCE" --format '{{json .}}')"
-          printf '%s\n' "$manifest" | jq -e '.. | objects | select(.platform?.os? == "linux" and .platform?.architecture? == "amd64")' >/dev/null || {
-            echo "::error::Candidate manifest does not contain linux/amd64."
-            exit 1
-          }
-          printf '%s\n' "$manifest" | grep -F "$DIGEST" >/dev/null || {
-            echo "::error::Candidate manifest does not contain the built digest."
+          printf '%s\n' "$manifest" | jq -e --arg digest "$DIGEST" '
+            ((.digest // .Digest // .descriptor.digest // .Descriptor.digest) == $digest)
+            and any((.manifests // .Manifests // [])[]?;
+              (.platform.os == "linux" and .platform.architecture == "amd64")
+              and ((.digest // .Digest // .descriptor.digest // .Descriptor.digest) != null)
+            )
+          ' >/dev/null || {
+            echo "::error::Candidate manifest does not prove the index digest and linux/amd64 child."
             exit 1
           }
           echo "Verified immutable manifest: $REFERENCE"
