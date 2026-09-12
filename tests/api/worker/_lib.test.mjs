@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, renderVolunteerMarker, replaceVolunteerMarker, selectedLanguages, validateRecord } from "../../../api/worker/_lib.ts";
+import { assertAssignable, expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, renderVolunteerMarker, replaceVolunteerMarker, requireAssignee, selectedLanguages, validateRecord, volunteerAssigneesMatch } from "../../../api/worker/_lib.ts";
 import { fitsGpu, resolveModel, selectedGpu } from "../../../api/worker/_lib/model.ts";
 import { putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "../../../api/worker/_lib/redis.ts";
 import { bindPromotionDecision, promotionIdentityKey, reservePromotionReservation } from "../../../api/worker/_lib/promotion.ts";
@@ -70,6 +70,39 @@ test("parses the queue model and language checkboxes", () => {
   const body = "### Model ID\n\norg/model\n\n- [x] Greek\n- [ ] Albanian\n";
   assert.equal(extractModelId("ignored", body), "org/model");
   assert.deepEqual(selectedLanguages(body), ["el"]);
+});
+
+test("unassignable contributors receive a stable actionable error", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalToken = process.env.GITHUB_TOKEN;
+  process.env.GITHUB_TOKEN = "github-token";
+  globalThis.fetch = async () => new Response(null, { status: 404 });
+  try {
+    await assert.rejects(assertAssignable("alice"), (error) =>
+      error.status === 422 && error.code === "contributor_not_assignable" &&
+      /cannot be assigned/.test(error.message));
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalToken === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = originalToken;
+  }
+});
+
+test("assignee ownership is case-insensitive and excludes manual identities", () => {
+  const marker = { protocol_version: "volunteer-worker/v1", coordinator: "sentinel", submission: "active", leases: [{
+    lease_id: "lease", language: "da", worker: "worker", contributor: "Alice",
+    expires_at: new Date(Date.now() + 60_000).toISOString(),
+  }] };
+  assert.equal(volunteerAssigneesMatch([{ login: "alice" }], marker), true);
+  assert.equal(volunteerAssigneesMatch([{ login: "alice" }, { login: "maintainer" }], marker), false);
+  assert.equal(volunteerAssigneesMatch([{ login: "maintainer" }], null), false);
+  assert.equal(volunteerAssigneesMatch([], null), true);
+});
+
+test("assignment loss uses the stable lease error contract", async () => {
+  await assert.rejects(requireAssignee({ assignees: [] }, "alice"), (error) =>
+    error.status === 409 && error.code === "lease_assignment_lost" &&
+    error.message === "The lease contributor is no longer assigned to this issue.");
 });
 
 test("strictly parses the shared ownership marker", () => {

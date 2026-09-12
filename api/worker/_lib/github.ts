@@ -15,6 +15,33 @@ export async function github(path: string, init: RequestInit = {}): Promise<any>
 }
 export async function getIssue(number: number): Promise<GithubIssue> { return github(`/repos/${REPO}/issues/${number}`) as Promise<GithubIssue>; }
 export const fetchIssue = getIssue;
+
+export function hasIssueAssignee(issue: Pick<GithubIssue, "assignees">, login: string): boolean {
+  return (issue.assignees || []).some((assignee) => assignee.login.toLowerCase() === login.toLowerCase());
+}
+
+export async function requireAssignee(issue: Pick<GithubIssue, "assignees">, login: string): Promise<void> {
+  if (!hasIssueAssignee(issue, login)) {
+    throw new BrokerError(409,
+      "The lease contributor is no longer assigned to this issue.", "lease_assignment_lost");
+  }
+}
+
+/** Check GitHub's documented repository-assignee eligibility endpoint. */
+export async function assertAssignable(login: string): Promise<void> {
+  try {
+    await github(`/repos/${REPO}/assignees/${encodeURIComponent(login)}`);
+  } catch (error) {
+    if (error instanceof BrokerError && error.status === 404) {
+      throw new BrokerError(422,
+        "Your GitHub login cannot be assigned to evaluation issues; check repository access and try again.",
+        "contributor_not_assignable");
+    }
+    throw new BrokerError(502,
+      "Unable to verify whether your GitHub login can be assigned; try again later.",
+      "assignee_eligibility_unavailable");
+  }
+}
 export async function listOpenIssues(): Promise<GithubIssue[]> {
   const result: GithubIssue[] = [];
   for (let page = 1; page <= 10; page++) {

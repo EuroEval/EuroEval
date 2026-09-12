@@ -109,6 +109,8 @@ export interface Lease {
   selected_gpu_uuid: string;
   expires_at: string;
   lease_id: string;
+  /** Internal tombstone used to make release retries idempotent. */
+  released?: boolean;
   result_count?: number;
   model_type: "encoder" | "generative";
   model_metadata: ModelMetadataEvidence;
@@ -125,10 +127,21 @@ export interface Lease {
 export class ConfigurationError extends Error {}
 export class BrokerError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  code?: string;
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
+}
+
+export function brokerErrorBody(error: unknown, fallback: string): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    protocol_version: PROTOCOL_VERSION,
+    error: error instanceof Error ? error.message : fallback,
+  };
+  if (error instanceof BrokerError && error.code) body.code = error.code;
+  return body;
 }
 
 export function env(name: string): string {

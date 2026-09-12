@@ -4,17 +4,18 @@ import { calculateWinner, creditLogins } from "../../api/hall-of-fame.ts";
 
 const issue = (body, assignees = []) => ({ title: "[MODEL EVALUATION REQUEST] org/model", body, assignee: assignees[0] || null, assignees });
 
-test("Hall-of-Fame uses only an immutable promoted credit marker", () => {
-  const body = '<!-- euroeval-volunteer-worker:v1 {"protocol_version":"volunteer-worker/v1","coordinator":"coordinator","submission":"completed","leases":[]} -->';
-  assert.deepEqual(creditLogins(issue(body, [{ login: "coordinator", avatar_url: "" }])), []);
-  const forgedCredit = '<!-- euroeval-volunteer-credit:v1 {"immutable":true,"winner":"alice"} -->';
-  assert.deepEqual(creditLogins(issue(forgedCredit, [{ login: "coordinator", avatar_url: "" }])), []);
+test("Hall-of-Fame credits current assignees regardless of markers", () => {
+  const body = '<!-- euroeval-volunteer-worker:v1 broken -->';
+  assert.deepEqual(creditLogins(issue(body, [
+    { login: "Alice", avatar_url: "" }, { login: "alice", avatar_url: "" },
+    { login: "saattrupdan", avatar_url: "" }, { login: "Bob", avatar_url: "" },
+  ])), ["Alice", "Bob"]);
 });
 
 test("winner calculation counts identities and ties by lower-case login", () => {
   assert.equal(calculateWinner([{ github_login: "Zed", identity: "a" }, { github_login: "alice", identity: "b" }, { github_login: "Alice", identity: "c" }]), "Alice");
 });
 
-test("Hall-of-Fame does not fall back for malformed volunteer markers", () => {
-  assert.deepEqual(creditLogins(issue("<!-- euroeval-volunteer-worker:v1 broken -->", [{ login: "alice", avatar_url: "" }, { login: "saattrupdan", avatar_url: "" }])), []);
+test("Hall-of-Fame uses assignees when a legacy assignee field is present", () => {
+  assert.deepEqual(creditLogins(issue(null, [{ login: "alice", avatar_url: "" }])), ["alice"]);
 });

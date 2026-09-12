@@ -51,6 +51,25 @@ export function selectedLanguages(body: string | null): string[] {
   return languages;
 }
 
+export function volunteerAssigneesMatch(
+  assignees: Array<{ login: string }> | undefined,
+  marker: VolunteerLeaseMarker | null,
+  now = Date.now(),
+): boolean {
+  const actual = new Set((assignees || []).map((item) => item.login.toLowerCase()));
+  if (!marker) return actual.size === 0;
+  const expected = new Set<string>();
+  for (const lease of marker.leases) {
+    if (Date.parse(lease.expires_at) > now) expected.add(lease.contributor.toLowerCase());
+  }
+  for (const submission of marker.submissions || []) {
+    if (["submitted", "accepted"].includes(submission.status)) {
+      expected.add(submission.verified_contributor.toLowerCase());
+    }
+  }
+  return actual.size === expected.size && [...actual].every((login) => expected.has(login));
+}
+
 export function claimableLanguages(
   selected: string[], marker: VolunteerLeaseMarker | null, now = Date.now(),
 ): string[] {

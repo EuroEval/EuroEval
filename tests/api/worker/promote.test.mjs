@@ -34,7 +34,7 @@ test("acceptance awards no credit before every language completes", () => {
   assert.equal(plan.releaseCoordinator, false);
 });
 
-test("all-language completion chooses largest server-derived share", () => {
+test("all-language completion keeps signed submission state only", () => {
   const plan = promotionPlan(
     marker([
       submission("da", "da", "alice", 8, "accepted"),
@@ -46,9 +46,10 @@ test("all-language completion chooses largest server-derived share", () => {
     "accepted",
   );
   assert.equal(plan.complete, true);
-  assert.equal(plan.winner, "bob");
+  assert.equal(plan.winner, null);
+  assert.deepEqual(plan.acceptedCounts, []);
   assert.equal(plan.marker.submission, "accepted");
-  assert.equal(plan.releaseCoordinator, true);
+  assert.equal(plan.releaseCoordinator, false);
   assert.equal(plan.removeReviewLabel, true);
 });
 
@@ -89,7 +90,7 @@ test("terminal retry completes the same lifecycle plan", () => {
   const value = marker([submission("one", "da", "alice", 4, "accepted")]);
   const plan = promotionPlan(value, ["da"], "one", "accepted");
   assert.equal(plan.complete, true);
-  assert.equal(plan.winner, "alice");
+  assert.equal(plan.winner, null);
   assert.throws(() => promotionPlan(value, ["da"], "one", "rejected"));
 });
 
@@ -98,7 +99,7 @@ test("repeated rejection is safe after cleanup interruption", async () => {
   const originalEnv = { ...process.env };
   Object.assign(process.env, {
     VOLUNTEER_MARKER_SECRET: "marker-secret", VOLUNTEER_PROMOTION_SECRET: "promotion-secret",
-    WORKER_COORDINATOR_LOGIN: "coordinator", GITHUB_TOKEN: "github-token",
+    GITHUB_TOKEN: "github-token",
     UPSTASH_REDIS_REST_URL: "https://redis.test", UPSTASH_REDIS_REST_TOKEN: "redis-token",
   });
   const records = [{ identity: JSON.stringify(["org/model", "dataset", false, true]), canonical_path: "org_model/dataset__test__fewshot.json", digest: "a".repeat(64) }];
@@ -277,7 +278,6 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
   };
   const comments = [];
   process.env.VOLUNTEER_PROMOTION_SECRET = "promotion-secret";
-  process.env.WORKER_COORDINATOR_LOGIN = "coordinator";
   process.env.GITHUB_TOKEN = "github-token";
   process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
   process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
@@ -338,11 +338,9 @@ test("handler finishes GitHub labels, credit, ownership, and notification", asyn
     assert.equal(response.status, 200, JSON.stringify(responseBody));
     assert.equal(responseBody.decision_reviewer, "alice");
     assert.equal(responseBody.decision_created_at, "2026-09-06T12:00:00Z");
-    assert.match(issue.body, /euroeval-volunteer-credit:v1/);
-    assert.match(issue.body, /"decision_reviewer":"alice"/);
-    assert.match(issue.body, /"decision_created_at":"2026-09-06T12:00:00Z"/);
+    assert.doesNotMatch(issue.body, /euroeval-volunteer-credit:v1/);
     assert.deepEqual(issue.labels, [{ name: "results-ready" }]);
-    assert.deepEqual(issue.assignees, []);
+    assert.deepEqual(issue.assignees, [{ login: "coordinator" }]);
     assert.match(comments[0].body, /submission \*\*one\*\*/);
   } finally {
     globalThis.fetch = originalFetch;
