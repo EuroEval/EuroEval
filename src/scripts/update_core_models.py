@@ -40,7 +40,6 @@ from yaml import safe_load
 
 from leaderboards.constants import CORE_MODELS_CONFIG
 from leaderboards.core_models import CoreModel, build_core_model_list
-from leaderboards.task_metadata import languages_with_official_datasets
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
@@ -52,44 +51,6 @@ load_dotenv()
 
 REPO = "EuroEval/EuroEval"
 
-# Catalonia has no national-flag emoji; the regional-indicator-tag form
-# below is the canonical "subdivision flag" sequence (ES-CT). Renderers
-# that don't support it degrade to the black-flag fallback, which is
-# still recognisable next to the country flags around it.
-_LANGUAGE_FLAG: dict[str, str] = {
-    "albanian": "🇦🇱",
-    "belarusian": "🇧🇾",
-    "bosnian": "🇧🇦",
-    "bulgarian": "🇧🇬",
-    "catalan": "🏴󠁥󠁳󠁣󠁴󠁿",
-    "croatian": "🇭🇷",
-    "czech": "🇨🇿",
-    "danish": "🇩🇰",
-    "dutch": "🇳🇱",
-    "english": "🇬🇧",
-    "estonian": "🇪🇪",
-    "faroese": "🇫🇴",
-    "finnish": "🇫🇮",
-    "french": "🇫🇷",
-    "german": "🇩🇪",
-    "greek": "🇬🇷",
-    "hungarian": "🇭🇺",
-    "icelandic": "🇮🇸",
-    "italian": "🇮🇹",
-    "latvian": "🇱🇻",
-    "lithuanian": "🇱🇹",
-    "luxembourgish": "🇱🇺",
-    "norwegian": "🇳🇴",
-    "polish": "🇵🇱",
-    "portuguese": "🇵🇹",
-    "romanian": "🇷🇴",
-    "serbian": "🇷🇸",
-    "slovak": "🇸🇰",
-    "slovene": "🇸🇮",
-    "spanish": "🇪🇸",
-    "swedish": "🇸🇪",
-    "ukrainian": "🇺🇦",
-}
 
 _ISSUE_INTRO = """## What is a "core model"?
 
@@ -100,12 +61,11 @@ minimum set of models to re-run when such a change is made.
 The list is generated automatically by running [this script][script] from \
 three sources:
 
-- ⭐ Pareto frontier within the model's type (encoder, base decoder, \
-instruction-tuned decoder, reasoning decoder) — strictly better than every \
-smaller-or-equal-sized model of the same type, in at least one language. \
-Check out [this list][config] for the exact languages each model is \
-evaluated on.
-- 🇪🇺 Trained in the EU.
+- ⭐ Complete-coverage aggregate Pareto frontier within the model's type \
+(encoder, base decoder, instruction-tuned decoder, reasoning decoder). An \
+equal-or-smaller same-type model must be significantly better under the \
+aligned paired bootstrap to remove a model. Pareto models are evaluated on \
+every European leaderboard language.
 - 💜 Top-10 'truly open' models from [osai-index.eu][osai] (filtered to \
 text models with open base weights, training code, and data sources).
 - 👾 SOTA API model. One small + one large from each major lab; the list \
@@ -161,21 +121,17 @@ def refresh_core_models(dry_run: bool = False) -> list[CoreModel]:
     with CORE_MODELS_CONFIG.open("r") as f:
         config = safe_load(f)
     issue_number = int(config["issue_number"])
-    eu_patterns = list(config.get("eu_model_patterns") or [])
     osai_overrides = list(config.get("osai_overrides") or [])
     api_model_ids = list(config.get("api_models") or [])
     logger.info(f"Issue: https://github.com/{REPO}/issues/{issue_number}")
 
     logger.info("Building core model list...")
     models = build_core_model_list(
-        eu_patterns=eu_patterns,
-        api_model_ids=api_model_ids,
-        osai_overrides=osai_overrides,
+        api_model_ids=api_model_ids, osai_overrides=osai_overrides
     )
     logger.info(f"Generated {len(models)} core models.")
 
-    all_languages = tuple(languages_with_official_datasets())
-    new_body = render_issue_body(models, all_languages=all_languages)
+    new_body = render_issue_body(models)
     today = dt.date.today()
 
     token = os.environ.get("GITHUB_TOKEN")
@@ -250,8 +206,8 @@ def _write_yaml(
 ) -> None:
     """Update `last_updated` and rewrite the `models:` section in place.
 
-    The hand-edited top section (intro comments, issue number, EU regex
-    list, OSAI overrides) is preserved verbatim — we only replace the
+    The hand-edited top section (intro comments, issue number, OSAI
+    overrides and API models) is preserved verbatim — we only replace the
     `last_updated:` line and everything from the `models:` marker
     onwards.
 
@@ -280,15 +236,12 @@ def _write_yaml(
     config_path.write_text(data=text, encoding="utf-8")
 
 
-def render_issue_body(models: list[CoreModel], all_languages: tuple[str, ...]) -> str:
+def render_issue_body(models: list[CoreModel]) -> str:
     """Render the full issue body for #1186.
 
     Args:
         models:
             The core model list, already sorted.
-        all_languages:
-            Every language that has an official leaderboard, used to
-            collapse "all flags" down to "All languages".
 
     Returns:
         Markdown text suitable for `PATCH /repos/.../issues/1186`.
@@ -310,7 +263,7 @@ def render_issue_body(models: list[CoreModel], all_languages: tuple[str, ...]) -
             f"| {model.model_id} "
             f"| {_format_parameters(model.parameters)} "
             f"| {_reasoning_flags(model)} "
-            f"| {_format_languages(model, all_languages)} |"
+            f"| {_format_languages(model)} |"
         )
     table = "\n".join(rows)
     return _ISSUE_INTRO + "\n\n" + table + "\n"
@@ -340,29 +293,13 @@ class IssueDiff:
 _MODELS_MARKER = "models:"
 
 
-def _format_languages(model: CoreModel, all_languages: tuple[str, ...]) -> str:
-    """Render the Languages column for the issue table.
-
-    EU- or OSAI-listed models always get evaluated everywhere — those
-    inclusions aren't language-scoped. Pareto-only inclusions get the
-    flags of the languages they're on the frontier in, unless that
-    happens to be every supported language, in which case we collapse
-    to "All languages" so we don't splat 30 flags.
-
-    Args:
-        model:
-            The core model record.
-        all_languages:
-            All languages with an official leaderboard.
+def _format_languages(model: CoreModel) -> str:
+    """Render the aggregate coverage for the issue table.
 
     Returns:
-        Space-separated flag emojis, or the string ``All languages``.
+        The aggregate language label.
     """
-    if model.eu or model.osai_rank is not None or model.api:
-        return "All languages"
-    if not model.pareto_languages or set(model.pareto_languages) >= set(all_languages):
-        return "All languages"
-    return " ".join(_LANGUAGE_FLAG.get(lang, lang) for lang in model.pareto_languages)
+    return "All languages"
 
 
 def _format_models_yaml(models: list[CoreModel]) -> str:
@@ -386,12 +323,11 @@ def _format_models_yaml(models: list[CoreModel]) -> str:
             lines.append(f"    parameters: {int(m.parameters)}")
         else:
             lines.append("    parameters: null")
-        if m.pareto_languages:
-            langs = ", ".join(m.pareto_languages)
-            lines.append(f"    pareto_languages: [{langs}]")
+        if m.pareto_categories:
+            categories = ", ".join(m.pareto_categories)
+            lines.append(f"    pareto_categories: [{categories}]")
         else:
-            lines.append("    pareto_languages: []")
-        lines.append(f"    eu: {str(m.eu).lower()}")
+            lines.append("    pareto_categories: []")
         if m.osai_rank is None:
             lines.append("    osai_rank: null")
         else:
@@ -562,15 +498,13 @@ def _reasoning_flags(model: CoreModel) -> str:
             The core model.
 
     Returns:
-        Concatenated emoji string (⭐💜🇪🇺), possibly empty.
+        Concatenated emoji string (⭐💜👾), possibly empty.
     """
     flags = []
-    if model.pareto_languages:
+    if model.pareto_categories:
         flags.append("⭐")
     if model.osai_rank is not None:
         flags.append("💜")
-    if model.eu:
-        flags.append("🇪🇺")
     if model.api:
         flags.append("👾")
     return "".join(flags)

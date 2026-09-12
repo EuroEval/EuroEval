@@ -1,15 +1,8 @@
-"""Model-source helpers: EU-org matching and parameter-count resolution.
-
-These functions identify EU-built models from a regex list and resolve a
-best-effort parameter count for a model, either from a size token in its
-id or from its Hugging Face safetensors manifest.
-"""
+"""Model-source helpers for parameter-count resolution."""
 
 from __future__ import annotations
 
-import collections.abc as c
 import logging
-import re
 from functools import cache
 
 from huggingface_hub import HfApi
@@ -17,31 +10,8 @@ from huggingface_hub.errors import HfHubHTTPError
 from huggingface_hub.hf_api import RepositoryNotFoundError
 
 from .constants import PARAMS_FROM_ID_RE
-from .records import plain_model_id
 
 logger = logging.getLogger(__name__)
-
-
-def eu_models(model_ids: c.Iterable[str], eu_patterns: list[str]) -> set[str]:
-    """Return the subset of `model_ids` matched by an EU-org regex.
-
-    Args:
-        model_ids:
-            Candidate model identifiers (HuggingFace-style).
-        eu_patterns:
-            Regex patterns from `core_models.yaml::eu_model_patterns`.
-
-    Returns:
-        Set of model_ids that match at least one pattern.
-    """
-    compiled = [re.compile(p) for p in eu_patterns]
-    eu_model_ids = {
-        model_id
-        for model_id in model_ids
-        if any(p.search(plain_model_id(model_id).split("#")[0]) for p in compiled)
-    }
-    logger.info(f"Fetched {len(eu_model_ids)} EU models.")
-    return eu_model_ids
 
 
 @cache

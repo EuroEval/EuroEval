@@ -80,7 +80,7 @@ test:  ## Run tests
 	@uv run pytest && uv run readme-cov && rm .coverage*
 
 frontend:  ## Build and deploy the frontend
-	@vercel build --prod 2>&1 | grep -v "^WARNING!" && vercel deploy --prebuilt --prod
+	@vercel build --prod --yes 2>&1 | grep -v "^WARNING!" && vercel deploy --prebuilt --prod
 
 leaderboards:  ## Collect finished evaluation results and regenerate leaderboards
 	@uv run python src/scripts/collect_evaluation_results.py
