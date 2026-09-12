@@ -237,5 +237,10 @@ export async function saveLease(lease: Lease): Promise<boolean> {
   return result === 1 || result === "1";
 }
 export async function deleteLease(lease: Lease): Promise<void> {
-  await redis("EVAL", "local current=redis.call('GET',KEYS[1]); if current then local item=cjson.decode(current); if item.lease_id == ARGV[1] then redis.call('DEL',KEYS[1]) end end; local byid=redis.call('GET',KEYS[2]); if byid then local item=cjson.decode(byid); if item.lease_id == ARGV[1] then redis.call('DEL',KEYS[2]) end end; return 1", "2", issueLeaseKey(lease.issue_number, lease.language), leaseKey(lease.lease_id), lease.lease_id);
+  await redis("EVAL", `local current=redis.call('GET',KEYS[1]);
+    if current then local item=cjson.decode(current); if item.lease_id == ARGV[1] then redis.call('DEL',KEYS[1]) end end;
+    local byid=redis.call('GET',KEYS[2]); if byid then local item=cjson.decode(byid);
+      if item.lease_id == ARGV[1] then item.released=true; redis.call('SET',KEYS[2],cjson.encode(item),'EX',ARGV[2]) end
+    end; return 1`, "2", issueLeaseKey(lease.issue_number, lease.language), leaseKey(lease.lease_id), lease.lease_id,
+    String(LEASE_TOMBSTONE_TTL));
 }

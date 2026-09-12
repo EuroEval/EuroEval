@@ -7,9 +7,8 @@ const TITLE_PREFIX = "[MODEL EVALUATION REQUEST]";
 const EXCLUDE = new Set(["saattrupdan"]);
 const MAX_PAGES = 10;
 const PER_PAGE = 100;
-const CREDIT_MARKER_RE = /<!--[\s\S]*?euroeval-volunteer-credit:v1\s+({[\s\S]*?})\s*-->/i;
-const VOLUNTEER_MARKER_CANDIDATE_RE = /<!--[ \t]*euroeval-volunteer-worker:v1/i;
-import { redis, sha256, parseFinalCredit, parseVolunteerMarker, selectedLanguages, verifyFinalCredit, verifyVolunteerMarker } from "./worker/_lib.ts";
+
+import { redis, sha256 } from "./worker/_lib.ts";
 
 interface RawAssignee { login: string; avatar_url?: string; }
 interface RawIssue { number: number; title: string; body: string | null; assignee: RawAssignee | null; assignees: RawAssignee[]; labels?: Array<{ name: string }>; }
@@ -29,43 +28,15 @@ export function calculateWinner(accepted: Array<{ github_login: string; identity
   return [...counts.entries()].sort((a, b) => b[1].size - a[1].size || a[0].toLowerCase().localeCompare(b[0].toLowerCase()) || a[0].localeCompare(b[0]))[0]?.[0] || null;
 }
 
-function immutableWinner(body: string | null): { login: string; avatarUrl?: string } | null {
-  const match = body?.match(CREDIT_MARKER_RE); if (!match) return null;
-  try {
-    const value = JSON.parse(match[1]) as { winner?: unknown; avatar_url?: unknown; immutable?: unknown };
-    return value.immutable === true && typeof value.winner === "string" ? { login: value.winner, avatarUrl: typeof value.avatar_url === "string" ? value.avatar_url : undefined } : null;
-  } catch { return null; }
-}
-
-async function trustedWinner(issue: RawIssue): Promise<string | null> {
-  const resultsLabel = process.env.RESULTS_READY_LABEL || "results-ready";
-  if (!issue.labels?.some((label) => label.name === resultsLabel)) return null;
-  const marker = parseVolunteerMarker(issue.body);
-  const credit = parseFinalCredit(issue.body);
-  if (!marker || !credit || !(await verifyVolunteerMarker(issue.number, marker)) || !(await verifyFinalCredit(issue.number, credit))) return null;
-  const selected = new Set(selectedLanguages(issue.body));
-  // The signed marker is authoritative for accepted coverage; the issue checkboxes
-  // are checked as well so a later scope edit cannot silently outlive the credit.
-  const completed = new Set(marker.completed_languages || []);
-  if (!selected.size || [...selected].some((language) => !completed.has(language)) ||
-      [...completed].some((language) => !selected.has(language)) ||
-      !(marker.submissions || []).filter((item) => item.status === "accepted").every((item) => completed.has(item.language))) return null;
-  const counts = new Map<string, number>();
-  for (const item of marker.submissions || []) if (item.status === "accepted") counts.set(item.verified_contributor, (counts.get(item.verified_contributor) || 0) + item.result_count);
-  const expected = [...counts.entries()].map(([login, count]) => ({ login, count })).sort((a, b) => b.count - a.count || a.login.toLowerCase().localeCompare(b.login.toLowerCase()) || a.login.localeCompare(b.login));
-  if (JSON.stringify(expected) !== JSON.stringify(credit.accepted_counts) || expected[0]?.login !== credit.winner ||
-      JSON.stringify([...completed].sort()) !== JSON.stringify([...credit.completed_languages].sort())) return null;
-  return credit.winner;
-}
-
 export function creditLogins(issue: RawIssue): string[] {
-  // Final volunteer credits are consumed only through trustedWinner(), which
-  // verifies the issue-bound HMAC and complete signed coverage. This helper is
-  // intentionally limited to the legacy non-volunteer assignee path.
-  if (VOLUNTEER_MARKER_CANDIDATE_RE.test(issue.body || "") || CREDIT_MARKER_RE.test(issue.body || "")) return [];
   const assignees = issue.assignees && issue.assignees.length > 0 ? issue.assignees : issue.assignee ? [issue.assignee] : [];
   const seen = new Set<string>();
-  return assignees.flatMap((assignee) => { if (EXCLUDE.has(assignee.login) || seen.has(assignee.login)) return []; seen.add(assignee.login); return [assignee.login]; });
+  return assignees.flatMap((assignee) => {
+    const key = assignee.login.toLowerCase();
+    if (EXCLUDE.has(key) || seen.has(key)) return [];
+    seen.add(key);
+    return [assignee.login];
+  });
 }
 
 function json(status: number, body: unknown, extra?: HeadersInit): Response { return new Response(status === 204 ? null : typeof body === "string" ? body : JSON.stringify(body), { status, headers: { "content-type": "application/json", "access-control-allow-origin": "*", "access-control-allow-methods": "GET, OPTIONS", "access-control-allow-headers": "content-type", "cache-control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400", ...(extra ?? {}) } }); }
@@ -80,8 +51,15 @@ export default async function handler(req: Request): Promise<Response> {
   if (!(await withinPublicRateLimit(req))) return json(429, { error: "Too many requests." }, { "retry-after": "60" });
   const token = process.env.GITHUB_TOKEN; const headers: Record<string, string> = { accept: "application/vnd.github+json", "x-github-api-version": "2022-11-28" }; if (token) headers.authorization = `Bearer ${token}`;
   const counts = new Map<string, EvaluatorCount>();
-  try { for (let page = 1; page <= MAX_PAGES; page++) { const chunk = await fetchPage(page, headers); for (const issue of chunk) { if (!extractModelId(issue.title, issue.body)) continue; const trusted = await trustedWinner(issue); for (const login of (trusted ? [trusted] : creditLogins(issue).filter((item) => !VOLUNTEER_MARKER_CANDIDATE_RE.test(issue.body || "") && !CREDIT_MARKER_RE.test(issue.body || "")))) {            const credit = immutableWinner(issue.body);
-            const avatarUrl = issue.assignees?.find((assignee) => assignee.login === login)?.avatar_url || (issue.assignee?.login === login ? issue.assignee.avatar_url : "") || (credit?.login === login ? credit.avatarUrl : undefined) || `https://github.com/${encodeURIComponent(login)}.png?size=64`; const current = counts.get(login); if (current) current.count += 1; else counts.set(login, { login, count: 1, avatarUrl }); } } if (chunk.length < PER_PAGE) break; } } catch (error) { return json(502, { error: (error as Error).message }); }
+  try { for (let page = 1; page <= MAX_PAGES; page++) { const chunk = await fetchPage(page, headers); for (const issue of chunk) {        if (!extractModelId(issue.title, issue.body)) continue;
+        for (const login of creditLogins(issue)) {
+          const avatarUrl = issue.assignees?.find((assignee) => assignee.login.toLowerCase() === login.toLowerCase())?.avatar_url ||
+            (issue.assignee?.login.toLowerCase() === login.toLowerCase() ? issue.assignee.avatar_url : "") ||
+            `https://github.com/${encodeURIComponent(login)}.png?size=64`;
+          const current = counts.get(login.toLowerCase());
+          if (current) current.count += 1;
+          else counts.set(login.toLowerCase(), { login, count: 1, avatarUrl });
+        } } if (chunk.length < PER_PAGE) break; } } catch (error) { return json(502, { error: (error as Error).message }); }
   return json(200, Array.from(counts.values()).sort((a, b) => b.count - a.count || a.login.toLowerCase().localeCompare(b.login.toLowerCase())));
 }
 

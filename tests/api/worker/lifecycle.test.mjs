@@ -40,6 +40,11 @@ function mockBroker(issue, values) {
       issue.body = JSON.parse(init.body).body;
       return Response.json(issue);
     }
+    if (url.endsWith(`/issues/${issueNumber}/assignees`) && method === "DELETE") {
+      const requested = JSON.parse(init.body).assignees.map((login) => login.toLowerCase());
+      issue.assignees = (issue.assignees || []).filter((item) => !requested.includes(item.login.toLowerCase()));
+      return Response.json(issue);
+    }
     throw new Error(`Unexpected request: ${method} ${url}`);
   };
 }
@@ -50,7 +55,6 @@ test("claim rejects an issue model edited during metadata resolution", async () 
   process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
   process.env.VOLUNTEER_WORKER_IMAGE_DIGEST = "sha256:image";
   process.env.EUROEVAL_VERSION = "1.0.0";
-  process.env.WORKER_COORDINATOR_LOGIN = "coordinator";
   process.env.VOLUNTEER_WORKER_VERSION = "1.0.0";
   process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
   process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
@@ -74,6 +78,7 @@ test("claim rejects an issue model edited during metadata resolution", async () 
       if (command[0] === "INCR") return Response.json({ result: 1 });
       return Response.json({ result: command[0] === "SET" ? "OK" : 1 });
     }
+    if (url.includes("/repos/EuroEval/EuroEval/assignees/")) return new Response(null, { status: 204 });
     if (url.includes("/repos/EuroEval/EuroEval/issues?")) return Response.json([issue]);
     if (url.includes("huggingface.co/api/models/org/model")) {
       issue.title = "[MODEL EVALUATION REQUEST] org/edited";
@@ -131,7 +136,7 @@ test("finalise rejects an issue edited before its locked transition", async () =
   const language = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
   const issue = { number: issueNumber, title: "[MODEL EVALUATION REQUEST] org/model",
     body: `### Model ID\n\norg/model\n\n- [x] ${language}\n\n${markerBody(signed)}`,
-    state: "open", assignees: [], labels: [] };
+    state: "open", assignees: [{ login: "alice" }], labels: [] };
   const receipt = { status: "manifest_uploaded", submission_id: activeLease.lease_id,
     lease: activeLease, entries: [{ digest: "digest",
       identity: JSON.stringify(["org/model", "dataset", false, true]), path: "result.json" }],
@@ -179,7 +184,7 @@ test("heartbeat renews a full TTL and preserves a valid marker signature", async
     leases: [{ lease_id: lease.lease_id, language: lease.language, worker: lease.worker,
       contributor: lease.contributor, expires_at: lease.expires_at }],
   });
-  const issue = { number: issueNumber, body: markerBody(signed), state: "open", assignees: [] };
+  const issue = { number: issueNumber, body: markerBody(signed), state: "open", assignees: [{ login: "alice" }] };
   const values = new Map();
   values.set(`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" }));
   values.set(`euroeval:worker:lease-id:${lease.lease_id}`, JSON.stringify(lease));
@@ -207,7 +212,6 @@ test("release re-signs while preserving history and other leases", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
   process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
-  process.env.WORKER_COORDINATOR_LOGIN = "coordinator";
   process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
   process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
   process.env.GITHUB_TOKEN = "github-token";
@@ -221,7 +225,7 @@ test("release re-signs while preserving history and other leases", async () => {
       contributor: lease.contributor, expires_at: lease.expires_at }, other],
     submissions: [history], completed_languages: [],
   });
-  const issue = { number: issueNumber, body: markerBody(signed), state: "open", assignees: [] };
+  const issue = { number: issueNumber, body: markerBody(signed), state: "open", assignees: [{ login: "alice" }] };
   const values = new Map();
   values.set(`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" }));
   values.set(`euroeval:worker:lease-id:${lease.lease_id}`, JSON.stringify(lease));

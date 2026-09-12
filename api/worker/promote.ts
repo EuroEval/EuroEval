@@ -2,16 +2,16 @@ declare const process: { env: Record<string, string | undefined> };
 
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
-  commentIssue, completePromotionReservation, env, fetchIssue, getPromotionReservation,
-  issueComments, json, method, parseFinalCredit, parsePromotionRecords,
+  brokerErrorBody, commentIssue, completePromotionReservation, fetchIssue, getPromotionReservation,
+  issueComments, json, method, parsePromotionRecords,
   parseVolunteerMarker, patchIssue, promotionSecret, readJson,
   releaseResultReservations,
   removeIssueLabel, replaceVolunteerMarker, requireProtocol,
-  savePromotionReservation, selectedLanguages, signFinalCredit, signVolunteerMarker, unassignIssue,
-  verifyFinalCredit, verifyVolunteerMarker,
+  savePromotionReservation, selectedLanguages, signVolunteerMarker, unassignIssue,
+  verifyVolunteerMarker,
 } from "./_lib.ts";
 import type {
-  FinalCredit, PromotionRecord, PromotionReservation, VolunteerLeaseMarker, VolunteerSubmission,
+  PromotionRecord, PromotionReservation, VolunteerLeaseMarker, VolunteerSubmission,
 } from "./_lib.ts";
 
 export const config = { runtime: "edge" };
@@ -24,6 +24,7 @@ export interface PromotionPlan {
   acceptedCounts: Array<{ login: string; count: number }>;
   removeReviewLabel: boolean;
   releaseCoordinator: boolean;
+  releaseContributor: string | null;
 }
 
 export function promotionPlan(
@@ -52,16 +53,18 @@ export function promotionPlan(
     ...marker, submission: state as typeof marker.submission, submissions,
     completed_languages: [...acceptedLanguages].sort(),
   };
-  const counts = new Map<string, number>();
-  for (const item of submissions.filter((item) => item.status === "accepted")) {
-    counts.set(item.verified_contributor, (counts.get(item.verified_contributor) || 0) + item.result_count);
-  }
-  const acceptedCounts = [...counts.entries()].map(([login, count]) => ({ login, count }))
-    .sort((a, b) => b.count - a.count || a.login.toLowerCase().localeCompare(b.login.toLowerCase()) || a.login.localeCompare(b.login));
+  const target = current.verified_contributor.toLowerCase();
+  const contributorRetained = marker.leases.some((lease) =>
+    Date.parse(lease.expires_at) > now && lease.contributor.toLowerCase() === target) ||
+    submissions.some((item) => ["submitted", "accepted"].includes(item.status) &&
+      item.verified_contributor.toLowerCase() === target);
+  const releaseContributor = outcome === "rejected" && !contributorRetained ?
+    current.verified_contributor : null;
   return {
-    marker: next, complete, winner: complete ? largestAcceptedShare(submissions) : null,
-    acceptedCounts, removeReviewLabel: !submitted,
-    releaseCoordinator: complete || outcome === "rejected" && !active && !submitted,
+    marker: next, complete, winner: null,
+    acceptedCounts: [], removeReviewLabel: !submitted,
+    releaseCoordinator: releaseContributor !== null,
+    releaseContributor,
   };
 }
 
@@ -84,22 +87,6 @@ async function releaseSubmissionReservations(reservation: PromotionReservation):
   if (!await releaseResultReservations(reservation.records, reservation.submission_id)) {
     throw new BrokerError(409, "A result reservation could not be safely released.");
   }
-}
-
-function validCredit(
-  credit: FinalCredit | null,
-  plan: PromotionPlan,
-  reservation: PromotionReservation,
-): boolean {
-  if (!credit || credit.winner !== plan.winner ||
-      JSON.stringify(credit.accepted_counts) !== JSON.stringify(plan.acceptedCounts) ||
-      JSON.stringify(credit.completed_languages) !==
-        JSON.stringify(plan.marker.completed_languages || [])) return false;
-  if (reservation.decision_reviewer && reservation.decision_created_at) {
-    return credit.decision_reviewer === reservation.decision_reviewer &&
-      credit.decision_created_at === reservation.decision_created_at;
-  }
-  return !reservation.decision_nonce || credit.decision_nonce === reservation.decision_nonce;
 }
 
 async function terminalReservation(reservation: PromotionReservation): Promise<void> {
@@ -142,30 +129,20 @@ export default async function handler(req: Request): Promise<Response> {
       const marker = parseVolunteerMarker(issue.body);
       if (!marker || !(await verifyVolunteerMarker(issueNumber, marker))) throw new BrokerError(409, "The issue ownership marker is missing, unsigned, or malformed.");
       const plan = promotionPlan(marker, selectedLanguages(issue.body), submissionId, outcome);
+      // replaceVolunteerMarker also strips any legacy immutable credit marker.
+      // Assignees, not this marker, are the mutable credit source.
       let promotedBody = issue.body || "";
-      const oldCredit = parseFinalCredit(promotedBody);
-      let credit: FinalCredit | null = null;
-      if (plan.complete && plan.winner) {
-        credit = oldCredit && validCredit(oldCredit, plan, reservation) && await verifyFinalCredit(issueNumber, oldCredit)
-          ? oldCredit
-          : await signFinalCredit(issueNumber, { version: 1, immutable: true, winner: plan.winner,
-            accepted_counts: plan.acceptedCounts, completed_languages: plan.marker.completed_languages || [],
-            decision_reviewer: reservation.decision_reviewer,
-            decision_created_at: reservation.decision_created_at });
-      }
       // Rejection must not make the language claimable while any identity is
       // still reserved. Keep the signed marker submitted if cleanup fails.
       if (outcome === "rejected") await releaseSubmissionReservations(reservation);
       const signedMarker = await signVolunteerMarker(issueNumber, plan.marker);
       promotedBody = replaceVolunteerMarker(promotedBody, signedMarker);
-      if (credit) promotedBody += `<!-- euroeval-volunteer-credit:v1 ${JSON.stringify(credit)} -->\n`;
       await mutex.assertOwned();
       await patchIssue(issueNumber, promotedBody);
       const fencedIssue = await fetchIssue(issueNumber);
       const fenced = parseVolunteerMarker(fencedIssue.body);
       if (!fenced || !(await verifyVolunteerMarker(issueNumber, fenced)) ||
-          fenced.submissions?.find((item) => item.submission_id === submissionId)?.status !== outcome ||
-          plan.complete && !validCredit(parseFinalCredit(fencedIssue.body), plan, reservation)) {
+          fenced.submissions?.find((item) => item.submission_id === submissionId)?.status !== outcome) {
         throw new BrokerError(409, "Promotion fence lost.");
       }
       const reviewLabel = process.env.COMMUNITY_REVIEW_LABEL || "community-review-ready";
@@ -178,9 +155,18 @@ export default async function handler(req: Request): Promise<Response> {
         await mutex.assertOwned();
         await removeIssueLabel(issueNumber, reviewLabel);
       }
-      if (plan.releaseCoordinator) {
-        await mutex.assertOwned();
-        await unassignIssue(issueNumber, env("WORKER_COORDINATOR_LOGIN"));
+      if (plan.releaseContributor) {
+        const currentIssue = await fetchIssue(issueNumber);
+        const contributor = plan.releaseContributor.toLowerCase();
+        const assigned = (currentIssue.assignees || []).find((item) => item.login.toLowerCase() === contributor);
+        if (assigned) {
+          await mutex.assertOwned();
+          await unassignIssue(issueNumber, assigned.login);
+          const afterAssignment = await fetchIssue(issueNumber);
+          if ((afterAssignment.assignees || []).some((item) => item.login.toLowerCase() === contributor)) {
+            throw new BrokerError(409, "Promotion assignment fence lost.");
+          }
+        }
       }
       const comments = await issueComments(issueNumber);
       if (!comments.some((item) => item.body?.includes(`${PROMOTION_MARKER} ${submissionId}`))) {
@@ -196,6 +182,6 @@ export default async function handler(req: Request): Promise<Response> {
     } finally { await mutex.release(); }
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;
-    return json(status, { protocol_version: PROTOCOL_VERSION, error: error instanceof Error ? error.message : "Unable to promote submission." });
+    return json(status, brokerErrorBody(error, "Unable to promote submission."));
   }
 }
