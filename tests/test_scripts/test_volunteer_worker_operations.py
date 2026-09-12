@@ -1,6 +1,7 @@
 """Tests for safe volunteer worker operations."""
 
 import json
+import os
 import subprocess
 import typing as t
 from pathlib import Path
@@ -17,6 +18,148 @@ REAL_MISSING_BUCKET_STDERR = (
     "EuroEval/volunteer-results-staging\n"
     "Hint: set HF_DEBUG=1 as environment variable for full traceback.\n"
 )
+
+
+def test_local_secrets_are_gated_to_confirmed_apply(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Local secret initialisation cannot run from an unconfirmed command."""
+    env_file = tmp_path / ".env"
+    monkeypatch.setattr(
+        operations.secrets,
+        "token_urlsafe",
+        lambda _: pytest.fail("secret generation was not gated"),
+    )
+
+    assert (
+        operations.main(["check", "--local-secrets", "--env-file", str(env_file)]) == 2
+    )
+    assert (
+        operations.main(["apply", "--local-secrets", "--env-file", str(env_file)]) == 2
+    )
+    assert not env_file.exists()
+    assert "no changes were made" in capsys.readouterr().out
+
+
+def test_local_secrets_generate_three_independent_values(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A new local dotenv file receives one independent value per secret."""
+    values = iter(("marker-value", "coordinator-value", "promotion-value"))
+    monkeypatch.setattr(operations.secrets, "token_urlsafe", lambda _: next(values))
+    env_file = tmp_path / ".env"
+
+    diagnostics = operations.apply_local_secrets(env_file=env_file)
+
+    assert not diagnostics[0].failed
+    assert env_file.read_text() == (
+        "VOLUNTEER_MARKER_SECRET=marker-value\n"
+        "WORKER_COORDINATOR_SECRET=coordinator-value\n"
+        "VOLUNTEER_PROMOTION_SECRET=promotion-value\n"
+    )
+    assert os.stat(env_file).st_mode & 0o777 == 0o600
+
+
+def test_local_secrets_preserve_values_and_content(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Existing values, exports, comments, and ordering remain byte-for-byte intact."""
+    env_file = tmp_path / ".env"
+    original = (
+        b"# operator comment\nKEEP=before\n"
+        b"export VOLUNTEER_MARKER_SECRET=marker-existing\n"
+        b"WORKER_COORDINATOR_SECRET=\n"
+        b"VOLUNTEER_PROMOTION_SECRET=promotion-existing"
+    )
+    env_file.write_bytes(original)
+    monkeypatch.setattr(operations.secrets, "token_urlsafe", lambda _: "new-value")
+
+    operations.apply_local_secrets(env_file=env_file)
+
+    updated = env_file.read_bytes()
+    assert updated.startswith(original + b"\n")
+    assert updated.count(b"VOLUNTEER_MARKER_SECRET=") == 1
+    assert updated.count(b"VOLUNTEER_PROMOTION_SECRET=") == 1
+    assert b"WORKER_COORDINATOR_SECRET=new-value\n" in updated
+    assert updated.index(b"KEEP=before") < updated.index(b"VOLUNTEER_MARKER_SECRET")
+
+
+def test_local_secrets_are_idempotent_and_tighten_mode(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A rerun preserves content and values while tightening permissions."""
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "VOLUNTEER_MARKER_SECRET=marker\n"
+        "WORKER_COORDINATOR_SECRET=coordinator\n"
+        "VOLUNTEER_PROMOTION_SECRET=promotion\n"
+    )
+    env_file.chmod(0o644)
+    before = env_file.read_bytes()
+    monkeypatch.setattr(
+        operations.secrets,
+        "token_urlsafe",
+        lambda _: pytest.fail("existing values must not be rotated"),
+    )
+
+    operations.apply_local_secrets(env_file=env_file)
+
+    assert env_file.read_bytes() == before
+    assert os.stat(env_file).st_mode & 0o777 == 0o600
+
+
+def test_local_secrets_reject_symlink_without_writing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A symlink target is rejected and its referent is untouched."""
+    referent = tmp_path / "referent"
+    referent.write_text("KEEP=value\n")
+    env_file = tmp_path / ".env"
+    env_file.symlink_to(referent)
+
+    diagnostics = operations.apply_local_secrets(env_file=env_file)
+    operations.print_diagnostics(diagnostics)
+
+    assert diagnostics[0].failed
+    assert referent.read_text() == "KEEP=value\n"
+    assert "must-not-be-printed" not in capsys.readouterr().out
+
+
+def test_local_secrets_atomic_failure_preserves_original(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A failed replacement does not truncate the original dotenv file."""
+    env_file = tmp_path / ".env"
+    original = b"KEEP=value\nVOLUNTEER_MARKER_SECRET=\n"
+    env_file.write_bytes(original)
+
+    def fail_replace(*args: object) -> None:
+        del args
+        raise OSError
+
+    monkeypatch.setattr(operations.os, "replace", fail_replace)
+
+    diagnostics = operations.apply_local_secrets(env_file=env_file)
+
+    assert diagnostics[0].failed
+    assert env_file.read_bytes() == original
+
+
+def test_local_secrets_never_print_values(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Generated values never appear in diagnostics."""
+    secret = "must-not-be-printed"
+    monkeypatch.setattr(operations.secrets, "token_urlsafe", lambda _: secret)
+
+    assert (
+        operations.main(
+            ["apply", "--local-secrets", "--yes", "--env-file", str(tmp_path / ".env")]
+        )
+        == 0
+    )
+
+    assert secret not in capsys.readouterr().out
 
 
 def test_apply_github_creates_only_missing_labels(

@@ -1,8 +1,8 @@
 """Safe maintainer operations for the EuroEval volunteer GPU broker.
 
 This command deliberately keeps cloud mutations small, explicit, and injectable.  It
-never reads dotenv files: credentials must already be present in the process
-environment.
+never reads dotenv files except for the explicitly confirmed local secret
+initialisation operation.
 """
 
 from __future__ import annotations
@@ -13,7 +13,9 @@ import http.client
 import json
 import os
 import re
+import secrets
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -79,6 +81,11 @@ TOOL_AUTH_ENVIRONMENT = {
         "VERCEL_PROJECT_NAME",
     },
 }
+LOCAL_SECRET_NAMES = (
+    "VOLUNTEER_MARKER_SECRET",
+    "WORKER_COORDINATOR_SECRET",
+    "VOLUNTEER_PROMOTION_SECRET",
+)
 ROUTES = (
     "auth/start",
     "auth/poll",
@@ -105,6 +112,12 @@ def main(argv: list[str] | None = None) -> int:
     """
     arguments = parse_arguments(argv)
     environment = dict(os.environ)
+    if arguments.local_secrets and arguments.command != "apply":
+        print("--local-secrets requires apply; no changes were made.")
+        return 2
+    if arguments.env_file != Path(".env") and not arguments.local_secrets:
+        print("--env-file requires --local-secrets; no changes were made.")
+        return 2
     if arguments.reuse_vercel_kv and arguments.command != "apply":
         print("--reuse-vercel-kv requires apply; no changes were made.")
         return 2
@@ -126,6 +139,8 @@ def main(argv: list[str] | None = None) -> int:
             confirmed=arguments.yes,
             hf_region=arguments.hf_region,
             reuse_vercel_kv=arguments.reuse_vercel_kv,
+            local_secrets=arguments.local_secrets,
+            env_file=arguments.env_file,
         )
     diagnostics = smoke(
         base_url=arguments.base_url,
@@ -143,12 +158,24 @@ def apply(
     confirmed: bool,
     hf_region: str = "eu",
     reuse_vercel_kv: bool = False,
+    local_secrets: bool = False,
+    env_file: Path = Path(".env"),
 ) -> int:
     """Apply only explicitly confirmed, narrowly scoped setup.
 
     Returns:
         Process exit status.
     """
+    if local_secrets:
+        if components or reuse_vercel_kv:
+            print("--local-secrets cannot be combined with another apply scope.")
+            return 2
+        if not confirmed:
+            print("--local-secrets requires --yes; no changes were made.")
+            return 2
+        diagnostics = apply_local_secrets(env_file=env_file)
+        print_diagnostics(diagnostics)
+        return int(any(item.failed for item in diagnostics))
     if reuse_vercel_kv:
         if components:
             print("--reuse-vercel-kv cannot be combined with another apply scope.")
@@ -177,6 +204,252 @@ def apply(
         diagnostics.extend(apply_vercel(environment=environment))
     print_diagnostics(diagnostics)
     return int(any(item.failed for item in diagnostics))
+
+
+_LOCAL_ENV_ASSIGNMENT = re.compile(
+    r"[ \t]*(?:export[ \t]+)?"
+    r"(?P<name>[A-Za-z_][A-Za-z0-9_]*)[ \t]*="
+    r"(?P<value>.*?)(?:\r?\n)?\Z"
+)
+
+
+def apply_local_secrets(*, env_file: Path = Path(".env")) -> list[Diagnostic]:
+    """Initialise missing broker secrets in a local dotenv file.
+
+    Args:
+        env_file:
+            The local dotenv file to update.
+
+    Returns:
+        Safe diagnostics describing generated and preserved variable names.
+    """
+    try:
+        env_file = Path(env_file)
+        original_stat = _validate_local_secret_path(env_file)
+        original_content = _read_local_secret_file(
+            env_file=env_file, expected_stat=original_stat
+        )
+        present = _local_secret_values(original_content)
+        preserved = [name for name in LOCAL_SECRET_NAMES if present.get(name, False)]
+        generated = [name for name in LOCAL_SECRET_NAMES if name not in preserved]
+
+        if generated:
+            additions = "".join(
+                f"{name}={secrets.token_urlsafe(32)}\n" for name in generated
+            ).encode()
+            separator = (
+                b"\n"
+                if original_content and not original_content.endswith(b"\n")
+                else b""
+            )
+            _atomic_write_local_secret_file(
+                env_file=env_file,
+                content=original_content + separator + additions,
+                expected_stat=original_stat,
+            )
+        elif original_stat is not None and stat.S_IMODE(original_stat.st_mode) != 0o600:
+            _tighten_local_secret_mode(env_file=env_file, expected_stat=original_stat)
+
+        generated_names = ", ".join(generated) or "none"
+        preserved_names = ", ".join(preserved) or "none"
+        return [
+            Diagnostic(
+                "local-secrets",
+                "ok",
+                f"generated: {generated_names}; preserved: {preserved_names}; "
+                "permissions: 0600",
+            )
+        ]
+    except (OSError, UnicodeError, ValueError):
+        return [
+            Diagnostic(
+                "local-secrets",
+                "safety",
+                "local secret file was rejected or could not be updated",
+                True,
+            )
+        ]
+
+
+def _validate_local_secret_path(env_file: Path) -> os.stat_result | None:
+    """Validate the dotenv path without following a symlink.
+
+    Returns:
+        The existing file's metadata, or ``None`` when it does not exist.
+
+    Raises:
+        ValueError:
+            If the parent or destination is unsafe.
+    """
+    parent_stat = os.lstat(env_file.parent)
+    if not stat.S_ISDIR(parent_stat.st_mode):
+        raise ValueError("dotenv parent is not a directory")
+    if stat.S_ISLNK(parent_stat.st_mode):
+        raise ValueError("dotenv parent is a symlink")
+    if parent_stat.st_uid != os.getuid() or stat.S_IMODE(parent_stat.st_mode) & 0o022:
+        raise ValueError("dotenv parent is unsafe")
+
+    try:
+        file_stat = os.lstat(env_file)
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(file_stat.st_mode) or stat.S_ISLNK(file_stat.st_mode):
+        raise ValueError("dotenv path is not a regular file")
+    if file_stat.st_uid != os.getuid() or file_stat.st_nlink != 1:
+        raise ValueError("dotenv file is unsafe")
+    return file_stat
+
+
+def _read_local_secret_file(
+    *, env_file: Path, expected_stat: os.stat_result | None
+) -> bytes:
+    """Read the dotenv file while keeping the checked inode fixed.
+
+    Returns:
+        The original file bytes, or empty bytes for a new file.
+
+    Raises:
+        ValueError:
+            If the destination changed while it was being opened.
+    """
+    if expected_stat is None:
+        return b""
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    file_descriptor = os.open(env_file, os.O_RDONLY | nofollow)
+    try:
+        opened_stat = os.fstat(file_descriptor)
+        if (
+            opened_stat.st_dev != expected_stat.st_dev
+            or opened_stat.st_ino != expected_stat.st_ino
+            or not stat.S_ISREG(opened_stat.st_mode)
+        ):
+            raise ValueError("dotenv file changed during validation")
+        with os.fdopen(file_descriptor, "rb") as stream:
+            file_descriptor = -1
+            return stream.read()
+    finally:
+        if file_descriptor >= 0:
+            os.close(file_descriptor)
+
+
+def _local_secret_values(content: bytes) -> dict[str, bool]:
+    """Return whether each managed dotenv variable has a non-empty value."""
+    text = content.decode("utf-8")
+    values = {name: False for name in LOCAL_SECRET_NAMES}
+    for line in text.splitlines(keepends=True):
+        match = _LOCAL_ENV_ASSIGNMENT.fullmatch(line)
+        if match and match.group("name") in values:
+            values[match.group("name")] |= _non_empty_env_value(match.group("value"))
+    return values
+
+
+def _non_empty_env_value(value: str) -> bool:
+    """Determine emptiness without expanding or evaluating dotenv syntax.
+
+    Returns:
+        Whether the assignment has a non-empty value.
+    """
+    stripped = value.strip()
+    if not stripped or stripped.startswith("#"):
+        return False
+    if stripped[0] not in ('"', "'"):
+        return True
+    quote = stripped[0]
+    escaped = False
+    for index, character in enumerate(stripped[1:], start=1):
+        if character == quote and not escaped:
+            return bool(stripped[1:index])
+        escaped = character == "\\" and not escaped
+    return True
+
+
+def _target_matches(env_file: Path, expected_stat: os.stat_result | None) -> bool:
+    """Check that the destination still names the file that was inspected.
+
+    Returns:
+        Whether the destination still has the expected identity.
+    """
+    try:
+        current_stat = os.lstat(env_file)
+    except FileNotFoundError:
+        return expected_stat is None
+    return bool(
+        expected_stat is not None
+        and stat.S_ISREG(current_stat.st_mode)
+        and current_stat.st_dev == expected_stat.st_dev
+        and current_stat.st_ino == expected_stat.st_ino
+    )
+
+
+def _atomic_write_local_secret_file(
+    *, env_file: Path, content: bytes, expected_stat: os.stat_result | None
+) -> None:
+    """Replace a local dotenv file atomically and durably.
+
+    Raises:
+        ValueError:
+            If the destination changes before the replacement.
+    """
+    if not _target_matches(env_file, expected_stat):
+        raise ValueError("dotenv destination changed during validation")
+
+    temporary_path: Path | None = None
+    file_descriptor = -1
+    try:
+        file_descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{env_file.name}.", dir=env_file.parent
+        )
+        temporary_path = Path(temporary_name)
+        os.fchmod(file_descriptor, 0o600)
+        with os.fdopen(file_descriptor, "wb") as stream:
+            file_descriptor = -1
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        if not _target_matches(env_file, expected_stat):
+            raise ValueError("dotenv destination changed during validation")
+        os.replace(temporary_path, env_file)
+        temporary_path = None
+        directory_descriptor = os.open(
+            env_file.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        )
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
+    finally:
+        if file_descriptor >= 0:
+            os.close(file_descriptor)
+        if temporary_path is not None:
+            try:
+                temporary_path.unlink()
+            except FileNotFoundError:
+                pass
+
+
+def _tighten_local_secret_mode(
+    *, env_file: Path, expected_stat: os.stat_result
+) -> None:
+    """Tighten an unchanged existing dotenv file without rewriting its content.
+
+    Raises:
+        ValueError:
+            If the destination changes before its mode is tightened.
+    """
+    if not _target_matches(env_file, expected_stat):
+        raise ValueError("dotenv destination changed during validation")
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    file_descriptor = os.open(env_file, os.O_WRONLY | nofollow)
+    try:
+        current_stat = os.fstat(file_descriptor)
+        if (
+            current_stat.st_dev != expected_stat.st_dev
+            or current_stat.st_ino != expected_stat.st_ino
+        ):
+            raise ValueError("dotenv destination changed during validation")
+        os.fchmod(file_descriptor, 0o600)
+    finally:
+        os.close(file_descriptor)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -1445,6 +1718,17 @@ def parse_arguments(argv: list[str] | None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--yes", action="store_true", help="Confirm an apply operation."
+    )
+    parser.add_argument(
+        "--local-secrets",
+        action="store_true",
+        help="Initialise missing local broker secrets in .env (apply --yes only).",
+    )
+    parser.add_argument(
+        "--env-file",
+        type=Path,
+        default=Path(".env"),
+        help="Local dotenv file for --local-secrets (default: .env).",
     )
     parser.add_argument(
         "--reuse-vercel-kv",

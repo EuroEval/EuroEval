@@ -30,6 +30,16 @@ Pi/I to execute now; neither imports `.env` or mutates a file.
    uv run python src/scripts/volunteer_worker_operations.py plan
    ```
 
+   When the operator prefers a local `.env` store, initialise only its missing broker
+   secrets after explicit approval:
+
+   ```sh
+   uv run python src/scripts/volunteer_worker_operations.py apply \
+     --local-secrets --yes
+   ```
+
+   This operation is local-only and does not import, source, or execute the file.
+
 2. **AUTOMATED CHECK** - run read-only local and configured-service diagnostics. Supply
    credentials through the maintainer's normal secret injection; never put values in
    the command or guide:
@@ -66,9 +76,11 @@ Pi/I to execute now; neither imports `.env` or mutates a file.
    the separate command above supplies only the two broker aliases. The regular Vercel
    apply requires every value except versions, which are derived from source when
    absent.
-   Marker, coordinator, and promotion secrets are durable: provide existing values; this
-   automation never generates or rotates them. The KV reuse command copies the existing
-   production KV values to the broker aliases without displaying them.
+   Marker, coordinator, and promotion secrets are durable. Cloud setup expects the
+   operator to provide existing values; the KV reuse command copies the existing
+   production KV values to the broker aliases without displaying them. If the operator
+   has selected `.env` as the local store, the local-secrets operation generates only
+   missing or empty values and never rotates existing values.
 
 5. **MANUAL** - publish the candidate image using the workflow, carry its digest from
    the non-secret job summary/artifact, run the physical Linux `amd64` NVIDIA GPU
@@ -314,12 +326,17 @@ broker testing. Do not mark any of these as public or expose them as frontend va
 - `VOLUNTEER_PROMOTION_SECRET` — secret accepted by promotion reservation and transition
   endpoints. It must also be set in the maintainer review shell.
 
-Generate secrets outside the repository and inject them from a password manager or a
-hidden prompt; do not print them in logs. Rotate OAuth, GitHub, HF, Redis, coordinator,
-and promotion credentials as coordinated changes: update Vercel and every dependent
-local host together. A rotation invalidates old coordinator or promotion requests.
-Treat `VOLUNTEER_MARKER_SECRET` as long-lived signed-marker key material, not a
-routine credential; changing it requires the marker migration described above.
+For local hosts, `.env` is the selected local secret store when that matches the
+operator's preference. It remains Git-ignored; back it up according to the operator's
+chosen backup practice. The guarded local-secrets operation parses assignments without
+sourcing or executing the file, sets its mode to `0600`, generates only missing or
+empty values, and never rotates existing values. It reports variable names and file
+permissions, never secret values. Cloud credentials may still be injected by the
+operator's normal preferred method. Rotate OAuth, GitHub, HF, Redis, coordinator, and
+promotion credentials as coordinated changes: update Vercel and every dependent local
+host together. A rotation invalidates old coordinator or promotion requests. Treat
+`VOLUNTEER_MARKER_SECRET` as long-lived signed-marker key material, not a routine
+credential; changing it requires the marker migration described above.
 
 ### Optional in Vercel Production
 
