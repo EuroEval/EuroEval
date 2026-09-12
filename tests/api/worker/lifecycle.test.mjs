@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import claim from "./claim.ts";
-import finalise from "./finalise.ts";
-import heartbeat from "./heartbeat.ts";
-import release from "./release.ts";
-import { parseVolunteerMarker, signVolunteerMarker, sha256, verifyVolunteerMarker } from "./_lib.ts";
+import claim from "../../../api/worker/claim.ts";
+import finalise from "../../../api/worker/finalise.ts";
+import heartbeat from "../../../api/worker/heartbeat.ts";
+import release from "../../../api/worker/release.ts";
+import { parseVolunteerMarker, signVolunteerMarker, sha256, verifyVolunteerMarker } from "../../../api/worker/_lib.ts";
 
 const issueNumber = 12;
 const lease = {
