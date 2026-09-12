@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, renderVolunteerMarker, replaceVolunteerMarker, selectedLanguages, validateRecord } from "./_lib.ts";
-import { fitsGpu, resolveModel, selectedGpu } from "./_lib/model.ts";
-import { putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "./_lib/redis.ts";
-import { bindPromotionDecision, promotionIdentityKey, reservePromotionReservation } from "./_lib/promotion.ts";
+import { expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, renderVolunteerMarker, replaceVolunteerMarker, selectedLanguages, validateRecord } from "../../../api/worker/_lib.ts";
+import { fitsGpu, resolveModel, selectedGpu } from "../../../api/worker/_lib/model.ts";
+import { putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "../../../api/worker/_lib/redis.ts";
+import { bindPromotionDecision, promotionIdentityKey, reservePromotionReservation } from "../../../api/worker/_lib/promotion.ts";
 
 test("resolves immutable Hub capability evidence without suffix heuristics", async () => {
   const originalFetch = globalThis.fetch;

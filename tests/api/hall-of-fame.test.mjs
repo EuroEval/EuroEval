@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateWinner, creditLogins } from "./hall-of-fame.ts";
+import { calculateWinner, creditLogins } from "../../api/hall-of-fame.ts";
 
 const issue = (body, assignees = []) => ({ title: "[MODEL EVALUATION REQUEST] org/model", body, assignee: assignees[0] || null, assignees });
 

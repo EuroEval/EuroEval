@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { claimableLanguages, signVolunteerMarker } from "./_lib.ts";
-import promote, { largestAcceptedShare, promotionPlan } from "./promote.ts";
-import reservePromotion from "./promotion-reserve.ts";
+import { claimableLanguages, signVolunteerMarker } from "../../../api/worker/_lib.ts";
+import promote, { largestAcceptedShare, promotionPlan } from "../../../api/worker/promote.ts";
+import reservePromotion from "../../../api/worker/promotion-reserve.ts";
 
 const submission = (id, language, contributor, count, status = "submitted") => ({
   submission_id: id,

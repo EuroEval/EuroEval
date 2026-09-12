@@ -6,13 +6,18 @@ any of the operator credentials described here.
 
 > **The broker API is already in this project.** The `api/worker/*.ts` files are
 > Vercel Functions in the existing EuroEval Vercel project. No separately maintained
-> API server is needed. When that project is deployed, Vercel automatically exposes
-> those files as `/api/worker/...` routes. Vercel does **not** provision or configure
-> GitHub OAuth, Upstash Redis, Hugging Face storage, GHCR, or their secrets.
+> API server is needed: Vercel automatically routes those files to matching
+> `/api/worker/...` endpoints when the project is deployed. Vercel does **not**
+> provision or configure GitHub OAuth, Upstash Redis, Hugging Face storage, GHCR, or
+> their secrets; those external services and all Vercel environment variables remain
+> manual.
 
-Vercel Git integration can deploy commits automatically if it is enabled for the
-project. Otherwise, deploy the existing project with `make frontend`. In either case,
-external services and Vercel environment variables must be configured explicitly.
+A clean Git checkout is not currently sufficient for a production deployment. The
+leaderboard CSV assets under the ignored `src/frontend/csv/` directory must exist when
+Vite builds. Use the leaderboard collection/generation deployment flow, which generates
+and validates those assets before its prebuilt Vercel deploy. Alternatively, generate
+the assets first in the checkout and then run `make frontend`. Do not rely on a clean
+Git-based Vercel deployment to recreate these ignored assets.
 
 ## Architecture and components
 
@@ -60,25 +65,36 @@ host.
 ### 1. Link the existing Vercel project
 
 Confirm that the production Vercel project is the existing EuroEval project and that
-its production domain is `https://euroeval.com`. Link the repository to that project
-in Vercel. Do not create a second API project: the broker functions and frontend are
-deployed together.
+its production domain is `https://euroeval.com`. Before any CLI deployment, authenticate
+with Vercel and run `vercel link` from this repository, selecting that existing project
+and the correct team/scope. Verify that the linked project is the one serving the
+production domain. Do not create a second API project: the broker functions and
+frontend are deployed together.
 
-Choose one deployment method:
+Choose one supported production flow:
 
-- Enable Vercel Git integration if automatic deployment of the intended branch is
-  desired, and verify its production branch and checks.
-- Otherwise install the Vercel CLI and use `make frontend` from a clean checkout.
+- Prefer the leaderboard collection/generation flow (`make leaderboards`, or
+  `make force-leaderboards` when regeneration is needed despite no new results). It
+  regenerates the ignored CSV assets, validates them, and deploys a prebuilt frontend.
+- If the assets already exist in the checkout, run `make frontend` to build and deploy
+  the prebuilt frontend. This is not safe from a clean checkout until the leaderboard
+  assets have been generated.
+- Vercel Git integration may deploy the intended branch only when its build environment
+  is also supplied with the generated assets. A clean Git-based deployment is not
+  self-sufficient while `src/frontend/csv/` remains ignored; verify the production
+  branch and checks rather than treating Git integration as the leaderboard flow.
 
-Neither method creates external accounts or supplies environment variables.
+Linking associates this repository with the existing Vercel project; it does not create
+external accounts or supply environment variables. Configure those manually below.
 
 ### 2. Create the GitHub OAuth App
 
 Create or select a GitHub OAuth App that is allowed to use the device flow. In the
-app settings, enable **Device flow**. Record its client ID and client secret in a
-password manager, then place them in the Vercel production environment as described
-below. The broker requests the `read:user` scope; it does not need a volunteer's
-repository token. The device flow has no callback URL to configure for this broker.
+app settings, enable **Device flow** and set the callback URL to the safe required value
+`https://euroeval.com`. The device flow does not use that callback URL. Store the client
+ID and client secret in a password manager, then inject them into the Vercel production
+environment as described below. The broker requests the `read:user` scope; it does not
+need a volunteer's repository token.
 
 Keep the client secret available: the broker uses it to revoke every device grant
 before issuing a broker credential. If the secret is missing or revocation fails,
@@ -119,11 +135,11 @@ Create a private Hugging Face Bucket in the EU region, for example
 The broker refuses a staging bucket that is not private. Create a narrowly scoped
 HF token that can write this staging bucket and use it as Vercel's `HF_TOKEN`.
 
-For maintainer review, use a token that can read the staging bucket and write the
-canonical results bucket (`EuroEval/results`). This can be a separately managed
-local token; do not grant the Vercel function write access to the public results
-bucket unless there is a separately reviewed reason to do so. Never paste a token in
-this guide or commit it to a `.env` file.
+For maintainer review, use a token that can read **and write** the staging bucket and,
+for approval, also write the canonical results bucket (`EuroEval/results`). This can be
+a separately managed local token; do not grant the Vercel function write access to the
+public results bucket unless there is a separately reviewed reason to do so. Never paste
+a token in this guide or commit it to a `.env` file.
 
 ### 6. Generate and align the scope policy
 
@@ -137,12 +153,16 @@ uv run python src/scripts/generate_volunteer_scope_policy.py \
 git diff --check
 ```
 
-Commit the generated JSON with the release change. Its policy version must match
-`EUROEVAL_VERSION` in Vercel (including the repository's normal development-version
-normalisation), and the worker package's `VOLUNTEER_WORKER_VERSION` must match the
-worker image/package being published. The policy controls exact result identities;
-do not hand-edit it. `VOLUNTEER_SCOPE_POLICY_JSON` is an optional complete override
-for an intentional, reviewed deployment policy, not a way to patch one entry.
+Commit the generated JSON with the release change. Keep the EuroEval release and
+policy versions aligned separately: the policy's `euroeval_version` must match the
+repository's EuroEval package version and `EUROEVAL_VERSION` in Vercel (including the
+repository's normal development-version normalisation). `VOLUNTEER_WORKER_VERSION` is
+independent worker protocol/package versioning; it is currently `1.0.0` and must match
+the worker image/package being published, but need not equal the EuroEval version. The
+policy controls exact result identities; do not hand-edit it.
+`VOLUNTEER_SCOPE_POLICY_JSON` is an optional complete override for an intentional,
+reviewed deployment policy, not a way to patch one entry. If Vercel sets this override,
+the review shell must use the identical policy JSON override.
 
 ### 7. Publish a public GHCR package
 
@@ -171,8 +191,11 @@ expose them as frontend variables.
 - `VOLUNTEER_WORKER_VERSION` — exact supported worker protocol/package version.
 - `VOLUNTEER_WORKER_IMAGE_DIGEST` — promoted `linux/amd64` image digest in the form
   `sha256:...`; this is configured lease provenance, not runtime attestation.
-- `VOLUNTEER_MARKER_SECRET` — random HMAC-SHA-256 secret for signed issue state and
-  Hall credit markers.
+- `VOLUNTEER_MARKER_SECRET` — long-lived HMAC-SHA-256 secret for signed issue state
+  and Hall credit markers. Do **not** rotate this routinely: changing it invalidates
+  existing signed issue and Hall state. A change requires a planned migration that
+  re-signs or otherwise migrates every live marker before the old secret is retired,
+  with the transition tested and verified.
 - `WORKER_COORDINATOR_LOGIN` — assignable GitHub login used for temporary issue
   assignment.
 - `UPSTASH_REDIS_REST_URL` — REST URL for the broker's Upstash database.
@@ -184,9 +207,12 @@ expose them as frontend variables.
 - `VOLUNTEER_PROMOTION_SECRET` — secret accepted by promotion reservation and
   transition endpoints. It must also be set in the maintainer review shell.
 
-Generate long random secrets outside the repository and rotate them as a coordinated
-change: update Vercel and every dependent local host together. A rotation invalidates
-old coordinator or promotion requests; do not print these values in logs.
+Generate secrets outside the repository and inject them from a password manager or a
+hidden prompt; do not print them in logs. Rotate OAuth, GitHub, HF, Redis, coordinator,
+and promotion credentials as coordinated changes: update Vercel and every dependent
+local host together. A rotation invalidates old coordinator or promotion requests.
+Treat `VOLUNTEER_MARKER_SECRET` as long-lived signed-state key material, not a routine
+credential; changing it requires the marker migration described above.
 
 ### Optional in Vercel Production
 
@@ -213,17 +239,20 @@ normal shared operation.
 1. Confirm the repository, production Vercel project, production domain, GitHub
    labels, coordinator login, OAuth device flow, Upstash database, private staging
    bucket, and scoped tokens.
-2. Generate and commit `api/worker/scope-policy.json`. Confirm its version, the
-   EuroEval package version, and the intended worker package/image version agree.
+2. Generate and commit `api/worker/scope-policy.json`. Confirm that its policy and
+   `EUROEVAL_VERSION` match the EuroEval package release. Separately confirm that the
+   intended worker package/image uses `VOLUNTEER_WORKER_VERSION` (currently `1.0.0`).
 3. Build and publish the immutable GHCR commit-SHA candidate. Verify that it is
    public and that its exact digest can be pulled anonymously.
 4. Run the physical GPU canary below, promote that same digest to `latest`, and
    anonymously verify that `latest` resolves to the same digest.
 5. Add or update the Vercel Production variables, especially the promoted image
    digest. Never point `VOLUNTEER_WORKER_IMAGE_DIGEST` at a tag.
-6. Deploy the existing Vercel project through enabled Git integration or with
-   `make frontend`. Verify the deployment URL and production domain are the same
-   application; deployment alone does not validate external services.
+6. Deploy the existing Vercel project with the leaderboard collection/generation
+   deployment flow, or run `make frontend` only from a checkout where
+   `src/frontend/csv/` has already been generated. Verify the deployment URL and
+   production domain are the same application; deployment alone does not validate
+   external services.
 7. Run the safe route and configuration smoke tests below. Then configure the local
    queue host with the shared coordinator URL and secret before allowing it to claim
    issues.
@@ -234,14 +263,14 @@ normal shared operation.
 ## Safe endpoint smoke tests
 
 All broker functions accept `POST` only. `OPTIONS` is a harmless CORS/preflight-style
-probe and returns `204` with `{}`; `GET` must return `405` with
+probe and returns `204` with an **empty body**, not `{}`; `GET` must return `405` with
 `{"error":"Method not allowed"}`. Test the deployed domain without credentials:
 
 ```sh
 set -eu
 BASE=https://euroeval.com/api/worker
 for route in \
-  auth/start auth/poll claim heartbeat result finalise release \
+  auth/start auth/poll auth/revoke claim heartbeat result finalise release \
   coordinator-lock coordinator-renew coordinator-release \
   promotion-lock promotion-reserve promote
   do
@@ -289,6 +318,8 @@ The live endpoint contract is:
 
 - `POST /auth/start` and `POST /auth/poll` — start and poll the GitHub device flow;
   poll returns `202` while pending and `200` with a broker credential when authorised.
+- `POST /auth/revoke` — authenticated bearer credential; returns `200` with
+  `status: "revoked"` and invalidates that credential.
 - `POST /claim` — bearer credential plus hardware report; returns `200` with a lease
   or `200` with `status: "no_work"`.
 - `POST /heartbeat` — bearer credential and `lease_id`; returns `200` with a renewed
@@ -320,8 +351,13 @@ issue mutex before claiming or changing an issue. On **every** shared queue host
 
 ```sh
 export VOLUNTEER_COORDINATOR_URL=https://euroeval.com/api/worker
-export WORKER_COORDINATOR_SECRET='<same value as Vercel, supplied out of band>'
+read -r -s -p "Worker coordinator secret: " WORKER_COORDINATOR_SECRET
+printf '\n'
+export WORKER_COORDINATOR_SECRET
 ```
+
+Use a password-manager environment injection instead of the hidden prompt when one is
+available. Never put the secret value directly in this command or in shell history.
 
 The URL is the broker base URL, not a separately deployed server. The queue appends
 `/coordinator-lock`, `/coordinator-renew`, and `/coordinator-release` itself. The
@@ -341,15 +377,23 @@ staging-only Vercel token where possible.
 ## Maintainer review and promotion
 
 Run these commands from a checked-out EuroEval repository on a maintainer-controlled
-host. The review shell needs a token that can read `HF_STAGING_BUCKET` and write
-`HF_RESULTS_BUCKET` (default `EuroEval/results`), plus the exact promotion secret:
+host. The review shell needs a token that can read and write `HF_STAGING_BUCKET` and,
+for approval, also write `HF_RESULTS_BUCKET` (default `EuroEval/results`), plus the
+exact promotion secret. Inject secrets from a password manager or use hidden prompts;
+do not put their values in shell history, this guide, or a `.env` file:
 
 ```sh
 export HF_STAGING_BUCKET='<private namespace/staging-bucket>'
 export HF_RESULTS_BUCKET=EuroEval/results
-export HF_TOKEN='<scoped maintainer token>'
-export VOLUNTEER_PROMOTION_SECRET='<same value as Vercel, supplied out of band>'
+read -r -s -p "Maintainer HF token: " HF_TOKEN
+printf '\n'
+read -r -s -p "Volunteer promotion secret: " VOLUNTEER_PROMOTION_SECRET
+printf '\n'
+export HF_TOKEN VOLUNTEER_PROMOTION_SECRET
 ```
+
+If Vercel sets `VOLUNTEER_SCOPE_POLICY_JSON`, the review shell **must** use that exact
+same complete JSON value before validating or approving a submission.
 
 Listing and showing are non-mutating validation operations:
 
@@ -448,9 +492,10 @@ pinned CUDA base, locked `uv.lock` dependencies, and NVIDIA runner/toolkit separ
 
 ### Per release
 
-- Update the EuroEval package and worker protocol/image version together.
-- Regenerate and review `api/worker/scope-policy.json`; ensure its version equals
-  `EUROEVAL_VERSION` before deployment.
+- Update the EuroEval package and regenerate the scope policy so its version matches
+  `EUROEVAL_VERSION`; this EuroEval/policy alignment is separate from worker releases.
+- Update the worker package/image and `VOLUNTEER_WORKER_VERSION` independently when
+  the worker protocol changes (the current worker version is `1.0.0`).
 - Run the API tests (`npm run test:api`) and the relevant Python tests/checks.
 - Publish, anonymously verify, canary, and manually promote the new immutable image.
 - Update `VOLUNTEER_WORKER_IMAGE_DIGEST`, version, and policy variables in Vercel,
@@ -474,7 +519,8 @@ pinned CUDA base, locked `uv.lock` dependencies, and NVIDIA runner/toolkit separ
   Remove retired queue hosts rather than running an uncoordinated copy.
 - Rotate OAuth, GitHub, HF, Redis, coordinator, and promotion credentials on the
   organisation's normal schedule. Coordinate rotations, verify safe probes, and
-  revoke old credentials.
+  revoke old credentials. Do not routinely rotate `VOLUNTEER_MARKER_SECRET`; changing
+  it requires the signed-marker migration described above.
 - Re-run the physical GPU canary after changes to the CUDA base, locked dependencies,
   NVIDIA toolkit, or host driver. Human or independent verification of the running
   image remains required: the configured digest is provenance carried by a lease, not
