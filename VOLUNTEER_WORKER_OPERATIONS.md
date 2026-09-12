@@ -20,8 +20,9 @@ Git-based Vercel deployment to recreate these ignored assets.
 
 ## First-time procedure
 
-Run this exact sequence from a clean checkout. The first two commands are safe for
-Pi/I to execute now; they do not read `.env`, contact a service, or mutate a file.
+Run this exact sequence from a clean checkout. The first command is a local,
+non-network plan and the second is a read-only network check. Both are safe for
+Pi/I to execute now; neither imports `.env` or mutates a file.
 
 1. **AUTOMATED CHECK** - print the workflow, defaults, and required variable names:
 
@@ -40,11 +41,12 @@ Pi/I to execute now; they do not read `.env`, contact a service, or mutate a fil
 3. **MANUAL** - the maintainer chooses the existing `EuroEval/EuroEval` GitHub queue,
    `https://euroeval.com` Vercel project, private EU staging bucket, Upstash database,
    OAuth app, and public GHCR package. The maintainer supplies credentials, selects an
-   immutable image digest, and confirms production deployment. Pi/I cannot choose
-   accounts, recover credentials, or approve these external changes.
+   immutable image digest, and confirms production deployment. Pi/I can execute
+   publication or deployment only after explicit approval, but cannot choose accounts
+   or credentials, or perform a physical GPU canary without hardware.
 
 4. **CONFIRMED AUTOMATION** - after reviewing step 2 and supplying the chosen values,
-   explicitly apply only the selected scoped setup. There is intentionally no
+   explicitly apply only the selected scoped setup. There is intentionally no implicit
    all-components apply command:
 
    ```sh
@@ -60,8 +62,9 @@ Pi/I to execute now; they do not read `.env`, contact a service, or mutate a fil
 
 5. **MANUAL** - publish the candidate image using the workflow, carry its digest from
    the non-secret job summary/artifact, run the physical Linux `amd64` NVIDIA GPU
-   canary, and manually promote that exact digest. Pi/I cannot provide physical GPU
-   verification, publish an image, or deploy production.
+   canary, and manually promote that exact digest. Pi/I cannot perform a physical GPU
+   canary without hardware. Publication and production deployment require explicit
+   approval.
 
 6. **AUTOMATED CHECK** - after deployment, run safe route probes. They issue only GET,
    OPTIONS, and unauthenticated POST requests; they never start authentication, claim
@@ -206,6 +209,7 @@ uv run python src/scripts/generate_volunteer_scope_policy.py \
   --version <euroeval-version>
 git diff --check
 ```
+
 Use `--check` to verify this file without writing, or `--dry-run` to preview whether it
 would change. Commit the generated JSON with the release change. Keep the EuroEval
 release and policy versions aligned separately: the policy's `euroeval_version` must
@@ -333,6 +337,7 @@ for route in \
       exit 1
     }
   done
+
 echo "All worker routes reject GET as expected"
 ```
 

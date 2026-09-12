@@ -35,7 +35,7 @@ jobs:
       DOCKER_CONFIG: ${{ runner.temp }}/euroeval-worker-docker
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -96,26 +96,31 @@ jobs:
             exit 1
           fi
 
-      - name: Verify candidate with an anonymous digest pull
+      - name: Verify candidate manifest anonymously
         if: github.event_name != 'pull_request'
         env:
           IMAGE: ghcr.io/euroeval/euroeval-worker
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           set -euo pipefail
-          docker logout ghcr.io >/dev/null 2>&1 || true
+          trap 'rm -rf "$DOCKER_CONFIG"' EXIT
           rm -rf "$DOCKER_CONFIG"
-          mkdir -p "$DOCKER_CONFIG"
+          mkdir -m 700 -p "$DOCKER_CONFIG"
           if [ -z "$DIGEST" ]; then
             echo "::error::Build did not return a candidate digest."
             exit 1
           fi
           REFERENCE="$IMAGE@$DIGEST"
-          if ! docker pull "$REFERENCE"; then
-            echo "::error::Anonymous pull of the exact candidate digest failed. Confirm that the GHCR package is public, then rerun this workflow."
+          manifest="$(docker buildx imagetools inspect "$REFERENCE" --format '{{json .}}')"
+          printf '%s\n' "$manifest" | jq -e '.. | objects | select(.platform?.os? == "linux" and .platform?.architecture? == "amd64")' >/dev/null || {
+            echo "::error::Candidate manifest does not contain linux/amd64."
             exit 1
-          fi
-          echo "Verified immutable image: $REFERENCE"
+          }
+          printf '%s\n' "$manifest" | grep -F "$DIGEST" >/dev/null || {
+            echo "::error::Candidate manifest does not contain the built digest."
+            exit 1
+          }
+          echo "Verified immutable manifest: $REFERENCE"
 
       - name: Publish candidate metadata
         if: github.event_name != 'pull_request'

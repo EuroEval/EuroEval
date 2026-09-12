@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import http.client
 import json
 import os
 import re
@@ -43,10 +44,29 @@ REQUIRED_ENVIRONMENT = (
     "WORKER_COORDINATOR_SECRET",
     "VOLUNTEER_PROMOTION_SECRET",
 )
-DURABLE_SECRETS = {
-    "VOLUNTEER_MARKER_SECRET",
-    "WORKER_COORDINATOR_SECRET",
-    "VOLUNTEER_PROMOTION_SECRET",
+PUBLIC_CONFIG = {
+    "EUROEVAL_VERSION",
+    "VOLUNTEER_WORKER_VERSION",
+    "VOLUNTEER_WORKER_IMAGE_DIGEST",
+    "WORKER_COORDINATOR_LOGIN",
+    "HF_STAGING_BUCKET",
+}
+BASIC_ENVIRONMENT = {
+    "PATH",
+    "HOME",
+    "USER",
+    "TMPDIR",
+    "LANG",
+    "LC_ALL",
+    "XDG_CONFIG_HOME",
+    "XDG_CACHE_HOME",
+    "UV_CACHE_DIR",
+    "UV_TOOL_DIR",
+}
+TOOL_AUTH_ENVIRONMENT = {
+    "gh": {"GH_TOKEN", "GITHUB_TOKEN", "GH_HOST"},
+    "hf": {"HF_TOKEN", "HF_HOME"},
+    "vercel": {"VERCEL_TOKEN", "VERCEL_ORG_ID", "VERCEL_PROJECT_ID"},
 }
 ROUTES = (
     "auth/start",
@@ -64,82 +84,6 @@ ROUTES = (
     "promotion-reserve",
     "promote",
 )
-
-
-@dataclasses.dataclass(frozen=True)
-class CommandResult:
-    """Captured result of an external command."""
-
-    returncode: int
-    stdout: str = ""
-    stderr: str = ""
-
-
-@dataclasses.dataclass(frozen=True)
-class HttpResult:
-    """Captured HTTP response without exposing request credentials."""
-
-    status: int
-    body: bytes
-
-
-@dataclasses.dataclass(frozen=True)
-class Diagnostic:
-    """One concise, classified diagnostic."""
-
-    component: str
-    category: str
-    message: str
-    failed: bool = False
-
-
-def run_command(
-    command: list[str],
-    *,
-    input_text: str | None = None,
-    environment: dict[str, str] | None = None,
-) -> CommandResult:
-    """Run a command and capture it without displaying its output.
-
-    Returns:
-        Captured command result.
-    """
-    try:
-        completed = subprocess.run(
-            command,
-            input=input_text,
-            capture_output=True,
-            text=True,
-            check=False,
-            env=environment,
-        )
-    except OSError:
-        return CommandResult(127)
-    return CommandResult(completed.returncode, completed.stdout, completed.stderr)
-
-
-def request_http(
-    url: str,
-    *,
-    method: str = "GET",
-    headers: dict[str, str] | None = None,
-    body: bytes | None = None,
-) -> HttpResult:
-    """Make one HTTP request, returning HTTP errors as ordinary responses.
-
-    Returns:
-        Captured HTTP result; status zero denotes a network failure.
-    """
-    request = urllib.request.Request(
-        url, data=body, headers=headers or {}, method=method
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=15) as response:
-            return HttpResult(response.status, response.read())
-    except urllib.error.HTTPError as error:
-        return HttpResult(error.code, error.read())
-    except urllib.error.URLError:
-        return HttpResult(0, b"")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -176,87 +120,492 @@ def main(argv: list[str] | None = None) -> int:
     return int(any(item.failed for item in diagnostics))
 
 
-def parse_arguments(argv: list[str] | None) -> argparse.Namespace:
-    """Parse command-line arguments.
+def apply(*, environment: dict[str, str], components: set[str], confirmed: bool) -> int:
+    """Apply only explicitly confirmed, narrowly scoped setup.
 
     Returns:
-        Parsed arguments.
+        Process exit status.
     """
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("plan", "check", "apply", "smoke"))
-    parser.add_argument(
-        "--component",
-        action="append",
-        choices=(
-            "tools",
-            "policy",
-            "github",
-            "vercel",
-            "hf",
-            "redis",
-            "ghcr",
-            "routes",
-        ),
-        help="Limit check/apply to a component; may be repeated.",
-    )
-    parser.add_argument("--github", action="store_true", help="Apply GitHub labels.")
-    parser.add_argument("--vercel", action="store_true", help="Apply Vercel variables.")
-    parser.add_argument(
-        "--hf", action="store_true", help="Apply the HF staging bucket."
-    )
-    parser.add_argument(
-        "--yes", action="store_true", help="Confirm an apply operation."
-    )
-    parser.add_argument(
-        "--routes", action="store_true", help="Include deployed route probes in check."
-    )
-    parser.add_argument(
-        "--base-url", default=PRODUCTION_BASE_URL, help="Deployed broker base URL."
-    )
-    parser.add_argument("--route", action="append", help="Smoke only this route.")
-    return parser.parse_args(argv)
+    if not components or not components <= {"github", "hf", "vercel"}:
+        print(
+            "apply requires explicit --github, --hf, or --vercel (no default/all path)."
+        )
+        return 2
+    if not confirmed:
+        print("apply requires --yes; no changes were made.")
+        return 2
+    diagnostics: list[Diagnostic] = []
+    if "github" in components:
+        diagnostics.extend(apply_github())
+    if "hf" in components:
+        diagnostics.extend(apply_hf(environment=environment))
+    if "vercel" in components:
+        diagnostics.extend(apply_vercel(environment=environment))
+    print_diagnostics(diagnostics)
+    return int(any(item.failed for item in diagnostics))
 
 
-def selected_components(
-    arguments: argparse.Namespace, *, explicit: bool = False
-) -> set[str]:
-    """Return requested components, keeping apply's default deliberately empty."""
-    flags = {
-        name for name in ("github", "vercel", "hf") if getattr(arguments, name, False)
-    }
-    requested = set(arguments.component or ()) | flags
-    if explicit:
-        return requested
-    return requested or {"tools", "policy", "github", "vercel", "hf", "redis", "ghcr"}
+@dataclasses.dataclass(frozen=True)
+class Diagnostic:
+    """One concise, classified diagnostic."""
+
+    component: str
+    category: str
+    message: str
+    failed: bool = False
 
 
-def print_plan(*, environment: dict[str, str]) -> None:
-    """Print the immutable workflow and names of required inputs."""
+def apply_github() -> list[Diagnostic]:
+    """Create only missing canonical labels.
+
+    Returns:
+        GitHub diagnostics.
+    """
+    listing = run_command(["gh", "api", f"repos/{REPOSITORY}/labels", "--paginate"])
+    if listing.returncode:
+        return [Diagnostic("github", "service failure", "cannot inspect labels", True)]
+    names = _json_names(listing.stdout)
+    diagnostics = []
+    for label in LABELS:
+        if label in names:
+            diagnostics.append(
+                Diagnostic("github", "ok", f"label {label} already exists")
+            )
+            continue
+        created = run_command(["gh", "label", "create", label, "--repo", REPOSITORY])
+        creation_state = "created" if created.returncode == 0 else "creation failed"
+        diagnostics.append(
+            Diagnostic(
+                "github",
+                "ok" if created.returncode == 0 else "service failure",
+                f"label {label}: {creation_state}",
+                created.returncode != 0,
+            )
+        )
+    return diagnostics
+
+
+def _json_names(value: str) -> set[str]:
+    """Extract names from a GitHub JSON response.
+
+    Returns:
+        Names found in the response.
+    """
+    return {str(item.get("name", "")) for item in _json_list(value)}
+
+
+def _json_list(value: str) -> list[dict[str, object]]:
+    """Decode a JSON list of objects.
+
+    Returns:
+        Decoded object list.
+    """
+    try:
+        decoded = json.loads(value)
+    except json.JSONDecodeError:
+        return []
+    if isinstance(decoded, dict) and isinstance(decoded.get("envs"), list):
+        decoded = decoded["envs"]
+    return (
+        [item for item in decoded if isinstance(item, dict)]
+        if isinstance(decoded, list)
+        else []
+    )
+
+
+@dataclasses.dataclass(frozen=True)
+class CommandResult:
+    """Captured result of an external command."""
+
+    returncode: int
+    stdout: str = ""
+    stderr: str = ""
+
+
+def run_command(
+    command: list[str],
+    *,
+    input_text: str | None = None,
+    environment: dict[str, str] | None = None,
+) -> CommandResult:
+    """Run a tool with a least-privilege environment and capture its output.
+
+    Returns:
+        Captured command result.
+    """
+    source = os.environ if environment is None else environment
+    tool = command[0] if command else ""
+    if tool == "uv" and len(command) > 2:
+        tool = command[2]
+    allowed = BASIC_ENVIRONMENT | TOOL_AUTH_ENVIRONMENT.get(tool, set())
+    child_environment = {name: source[name] for name in allowed if source.get(name)}
+    if "DOCKER_CONFIG" in source and tool == "docker":
+        child_environment["DOCKER_CONFIG"] = source["DOCKER_CONFIG"]
+    try:
+        completed = subprocess.run(
+            command,
+            input=input_text,
+            capture_output=True,
+            text=True,
+            check=False,
+            env=child_environment,
+        )
+    except OSError:
+        return CommandResult(127)
+    return CommandResult(completed.returncode, completed.stdout, completed.stderr)
+
+
+def apply_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
+    """Create a missing private EU bucket, or verify an existing bucket.
+
+    Returns:
+        Hugging Face diagnostics.
+    """
+    bucket = environment.get("HF_STAGING_BUCKET")
+    if not bucket or not environment.get("HF_TOKEN"):
+        return [
+            Diagnostic(
+                "hf",
+                "missing config",
+                "HF_TOKEN and HF_STAGING_BUCKET are required",
+                True,
+            )
+        ]
+    auth = run_command(["uv", "run", "hf", "auth", "whoami"])
+    if auth.returncode:
+        return [Diagnostic("hf", "auth", "Hugging Face authentication failed", True)]
+    current = run_command(["uv", "run", "hf", "buckets", "info", bucket, "--json"])
+    if current.returncode == 0:
+        if _json_object(current.stdout):
+            return check_hf(environment=environment)
+        return [
+            Diagnostic("hf", "service failure", "bucket metadata is malformed", True)
+        ]
+    category, _ = _classify_hf_failure(current)
+    if category != "missing":
+        return [
+            Diagnostic("hf", category, "existing bucket could not be verified", True)
+        ]
+    created = run_command(
+        ["uv", "run", "hf", "buckets", "create", bucket, "--private", "--region", "eu"]
+    )
+    if created.returncode:
+        return [
+            Diagnostic(
+                "hf",
+                "service failure",
+                "private EU staging bucket creation failed",
+                True,
+            )
+        ]
+    return check_hf(environment=environment)
+
+
+def _classify_hf_failure(result: CommandResult) -> tuple[str, str]:
+    """Classify HF CLI failures without exposing command output.
+
+    Returns:
+        Failure category and safe message.
+    """
+    text = f"{result.stdout} {result.stderr}".lower()
+    if any(value in text for value in ("401", "403", "unauthor", "token")):
+        return "auth", "Hugging Face bucket metadata is not authorised"
+    if any(value in text for value in ("timeout", "network", "connection", "dns")):
+        return "network", "Hugging Face bucket metadata could not be reached"
+    if any(value in text for value in ("404", "not found", "does not exist")):
+        return "missing", "configured staging bucket does not exist"
+    return "service failure", "Hugging Face bucket metadata could not be read"
+
+
+def _json_object(value: str) -> dict[str, object]:
+    """Decode a JSON object, returning an empty object on command failure.
+
+    Returns:
+        Decoded object or an empty object.
+    """
+    try:
+        decoded = json.loads(value)
+    except json.JSONDecodeError:
+        return {}
+    return decoded if isinstance(decoded, dict) else {}
+
+
+def check_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
+    """Check HF authentication and configured staging bucket privacy.
+
+    Returns:
+        Hugging Face diagnostics.
+    """
+    if not environment.get("HF_TOKEN") or not environment.get("HF_STAGING_BUCKET"):
+        return [
+            Diagnostic(
+                "hf",
+                "missing config",
+                "HF_TOKEN and HF_STAGING_BUCKET are required",
+                True,
+            )
+        ]
+    bucket = environment["HF_STAGING_BUCKET"]
+    auth = run_command(["uv", "run", "hf", "auth", "whoami"])
+    if auth.returncode:
+        return [Diagnostic("hf", "auth", "Hugging Face authentication failed", True)]
+    info = run_command(["uv", "run", "hf", "buckets", "info", bucket, "--json"])
+    if info.returncode:
+        category, message = _classify_hf_failure(info)
+        return [Diagnostic("hf", category, message, True)]
+    data = _json_object(info.stdout)
+    if not data:
+        return [
+            Diagnostic("hf", "service failure", "bucket metadata is malformed", True)
+        ]
+    visibility = data.get("visibility")
+    private = data.get("private") is True or visibility == "private"
+    if visibility == "public" or data.get("private") is False:
+        privacy = Diagnostic("hf", "drift", "staging bucket exists but is public", True)
+    elif private:
+        privacy = Diagnostic("hf", "ok", "staging bucket privacy is private")
+    else:
+        privacy = Diagnostic(
+            "hf", "service failure", "bucket privacy cannot be verified", True
+        )
+    region = data.get("region")
+    if region is None:
+        region_diagnostic = Diagnostic(
+            "hf", "manual", "existing bucket region is manual/unverifiable"
+        )
+    elif str(region).lower() == "eu":
+        region_diagnostic = Diagnostic("hf", "ok", "existing bucket region is EU")
+    else:
+        region_diagnostic = Diagnostic(
+            "hf", "drift", "existing bucket region is not EU", True
+        )
+    return [privacy, region_diagnostic]
+
+
+def apply_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
+    """Add or update Production variables atomically using stdin.
+
+    Returns:
+        Vercel diagnostics.
+    """
+    identity, verified = _check_vercel_project(environment=environment)
+    if not verified:
+        return identity
     euroeval_version, worker_version = source_versions()
-    print("1. AUTOMATED CHECK: inspect tools, source versions, and generated policy.")
-    print(
-        "2. AUTOMATED CHECK: inspect GitHub, Vercel, HF, Redis, and GHCR configuration."
-    )
-    print(
-        "3. CONFIRMED AUTOMATION: apply only explicitly selected labels, bucket, "
-        "or variables."
-    )
-    print(
-        "4. MANUAL: publish/canary/promote the immutable GPU image and deploy Vercel."
-    )
-    print("5. AUTOMATED CHECK: run safe GET/OPTIONS and unauthenticated POST probes.")
-    print(f"Defaults: repository={REPOSITORY}; base_url={PRODUCTION_BASE_URL};")
-    print(f"  results_bucket={RESULTS_BUCKET}; image={IMAGE_REPOSITORY};")
-    print(f"  euroeval_version={euroeval_version}; worker_version={worker_version}")
-    print("Required environment variable names (values are never printed):")
+    values = dict(environment)
+    values.setdefault("EUROEVAL_VERSION", euroeval_version)
+    values.setdefault("VOLUNTEER_WORKER_VERSION", worker_version)
+    missing = [name for name in REQUIRED_ENVIRONMENT if not values.get(name)]
+    if missing:
+        return [
+            Diagnostic(
+                "vercel",
+                "missing config",
+                "missing required values: " + ", ".join(missing),
+                True,
+            )
+        ]
+    diagnostics: list[Diagnostic] = []
     for name in REQUIRED_ENVIRONMENT:
-        state = "present" if environment.get(name) else "missing"
-        print(f"  {name} ({state})")
-    print(
-        "Manual inputs still needed: maintainer credentials, project choice, image "
-        "digest,"
+        variable_type = "plain" if name in PUBLIC_CONFIG else "sensitive"
+        added = run_command(
+            [
+                "vercel",
+                "env",
+                "add",
+                name,
+                "production",
+                "--force",
+                "--yes",
+                "--type",
+                variable_type,
+            ],
+            input_text=values[name] + "\n",
+            environment=environment,
+        )
+        diagnostics.append(
+            Diagnostic(
+                "vercel",
+                "ok" if added.returncode == 0 else "service failure",
+                f"Production variable {name}: "
+                f"{'updated' if added.returncode == 0 else 'update failed'}",
+                added.returncode != 0,
+            )
+        )
+    if any(item.failed for item in diagnostics):
+        return diagnostics
+    verification = check_vercel(environment=environment)
+    return diagnostics + verification
+
+
+def _check_vercel_project(
+    *, environment: dict[str, str]
+) -> tuple[list[Diagnostic], bool]:
+    """Verify the local link and remote project before any Vercel mutation.
+
+    Returns:
+        Diagnostics and whether the identity is verified.
+    """
+    link_path = Path(".vercel/project.json")
+    try:
+        link = _json_object(link_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError):
+        link = {}
+    linked_project = str(link.get("projectId", ""))
+    linked_scope = str(link.get("orgId", link.get("teamId", "")))
+    expected_project = environment.get("VERCEL_PROJECT_ID") or linked_project
+    expected_scope = environment.get("VERCEL_ORG_ID") or linked_scope
+    if environment.get("VERCEL_PROJECT_ID") and linked_project != expected_project:
+        return [
+            Diagnostic(
+                "vercel",
+                "drift",
+                "VERCEL_PROJECT_ID disagrees with the local link",
+                True,
+            )
+        ], False
+    if environment.get("VERCEL_ORG_ID") and linked_scope != expected_scope:
+        return [
+            Diagnostic(
+                "vercel", "drift", "VERCEL_ORG_ID disagrees with the local link", True
+            )
+        ], False
+    if not expected_project or not expected_scope:
+        return [
+            Diagnostic(
+                "vercel",
+                "missing config",
+                "linked Vercel project or scope is ambiguous",
+                True,
+            )
+        ], False
+    project = run_command(["vercel", "project", "inspect", "--format", "json"])
+    if project.returncode:
+        return [
+            Diagnostic(
+                "vercel", "auth", "linked Vercel project cannot be inspected", True
+            )
+        ], False
+    data = _json_object(project.stdout)
+    actual_project = str(data.get("id", data.get("projectId", "")))
+    actual_name = str(data.get("name", ""))
+    actual_scope = str(data.get("accountId", data.get("teamId", data.get("orgId", ""))))
+    expected_name = environment.get("VERCEL_PROJECT_NAME", "EuroEval")
+    identity_ok = (
+        actual_project == expected_project
+        and actual_name == expected_name
+        and actual_scope == expected_scope
     )
-    print("physical Linux amd64 GPU canary, image promotion, and deployment approval.")
+    if not identity_ok:
+        return [
+            Diagnostic(
+                "vercel",
+                "drift",
+                "linked Vercel project identity or scope does not match",
+                True,
+            )
+        ], False
+    return [
+        Diagnostic("vercel", "ok", "linked Vercel project identity and scope verified")
+    ], True
+
+
+def check_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
+    """Check the exact linked Vercel project and Production variable metadata.
+
+    Returns:
+        Vercel diagnostics.
+    """
+    result, identity_ok = _check_vercel_project(environment=environment)
+    if not identity_ok:
+        return result
+    variables = run_command(["vercel", "env", "ls", "production", "--format=json"])
+    if variables.returncode:
+        result.append(
+            Diagnostic(
+                "vercel",
+                "service failure",
+                "Production environment metadata cannot be read",
+                True,
+            )
+        )
+        return result
+    try:
+        decoded_metadata = json.loads(variables.stdout)
+    except json.JSONDecodeError:
+        result.append(
+            Diagnostic(
+                "vercel",
+                "service failure",
+                "Production environment metadata is malformed",
+                True,
+            )
+        )
+        return result
+    if not (
+        isinstance(decoded_metadata, list)
+        or isinstance(decoded_metadata, dict)
+        and isinstance(decoded_metadata.get("envs"), list)
+    ):
+        result.append(
+            Diagnostic(
+                "vercel",
+                "service failure",
+                "Production environment metadata is malformed",
+                True,
+            )
+        )
+        return result
+    metadata = _json_list(variables.stdout)
+    by_name = {str(item.get("key", item.get("name", ""))): item for item in metadata}
+    for name in REQUIRED_ENVIRONMENT:
+        item = by_name.get(name)
+        target = item.get("target", item.get("targets")) if item else None
+        variable_type = str(item.get("type", "")) if item else ""
+        target_ok = isinstance(target, list) and "production" in target
+        type_ok = (
+            variable_type == "plain"
+            if name in PUBLIC_CONFIG
+            else variable_type in {"sensitive", "secret"}
+        )
+        valid = item is not None and target_ok and type_ok
+        variable_state = "present" if valid else "missing or wrong type/target"
+        result.append(
+            Diagnostic(
+                "vercel",
+                "ok" if valid else "drift",
+                f"Production variable {name}: {variable_state}",
+                not valid,
+            )
+        )
+    return result
+
+
+def source_versions() -> tuple[str, str]:
+    """Read EuroEval and worker versions from tracked source files.
+
+    Returns:
+        EuroEval and worker versions.
+
+    Raises:
+        RuntimeError:
+            If the worker source version is missing.
+    """
+    project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    project_metadata = t.cast(dict[str, object], project["project"])
+    euroeval = str(project_metadata["version"])
+    worker_source = Path("src/euroeval_worker/__init__.py").read_text(encoding="utf-8")
+    match = re.search(r'__version__\s*=\s*["\']([^"\']+)', worker_source)
+    if match is None:
+        raise RuntimeError("worker source version is missing")
+    return euroeval, match.group(1)
+
+
+def print_diagnostics(diagnostics: list[Diagnostic]) -> None:
+    """Print classified diagnostics without command output or secret values."""
+    for item in diagnostics:
+        status = "FAIL" if item.failed else "OK"
+        print(f"{status} [{item.category}] {item.component}: {item.message}")
 
 
 def check(
@@ -293,21 +642,234 @@ def check(
     return diagnostics
 
 
-def check_tools() -> list[Diagnostic]:
-    """Check tools needed by the corresponding operations.
+def check_ghcr(*, environment: dict[str, str]) -> list[Diagnostic]:
+    """Check the public package and exact platform manifest without pulling it.
 
     Returns:
-        Tool diagnostics.
+        GHCR diagnostics.
     """
-    return [
-        Diagnostic(
-            "tools",
-            "missing config" if shutil.which(tool) is None else "ok",
-            f"{tool} is {'available' if shutil.which(tool) else 'not installed'}",
-            shutil.which(tool) is None,
+    visibility = run_command(
+        [
+            "gh",
+            "api",
+            "/orgs/EuroEval/packages/container/euroeval-worker",
+            "--jq",
+            ".visibility",
+        ]
+    )
+    if visibility.returncode:
+        category = _classify_registry_failure(visibility)
+        visibility_diagnostic = Diagnostic(
+            "ghcr", category, "GHCR package visibility cannot be checked", True
         )
-        for tool in ("git", "uv", "gh", "vercel", "hf", "docker")
+    elif visibility.stdout.strip() == "public":
+        visibility_diagnostic = Diagnostic(
+            "ghcr", "ok", "GHCR package visibility is public"
+        )
+    elif visibility.stdout.strip() == "private":
+        visibility_diagnostic = Diagnostic(
+            "ghcr", "drift", "GHCR package is private", True
+        )
+    else:
+        visibility_diagnostic = Diagnostic(
+            "ghcr", "malformed", "GHCR package visibility response is malformed", True
+        )
+    result = [visibility_diagnostic]
+    digest = environment.get("VOLUNTEER_WORKER_IMAGE_DIGEST")
+    if not digest:
+        return result + [
+            Diagnostic(
+                "ghcr",
+                "missing config",
+                "VOLUNTEER_WORKER_IMAGE_DIGEST is not configured",
+                True,
+            )
+        ]
+    if not re.fullmatch(r"sha256:[0-9a-fA-F]{64}", digest):
+        return result + [
+            Diagnostic("ghcr", "drift", "configured image digest is malformed", True)
+        ]
+    reference = f"{IMAGE_REPOSITORY}@{digest}"
+    with tempfile.TemporaryDirectory(prefix="euroeval-ghcr-") as directory:
+        inspect = run_command(
+            [
+                "docker",
+                "buildx",
+                "imagetools",
+                "inspect",
+                reference,
+                "--format",
+                "{{json .}}",
+            ],
+            environment={"DOCKER_CONFIG": directory},
+        )
+    if inspect.returncode:
+        category = _classify_registry_failure(inspect)
+        return result + [
+            Diagnostic(
+                "ghcr", category, "anonymous image manifest inspection failed", True
+            )
+        ]
+    if not _manifest_matches(inspect.stdout, digest):
+        return result + [
+            Diagnostic(
+                "ghcr",
+                "malformed",
+                "manifest does not prove the configured linux/amd64 digest",
+                True,
+            )
+        ]
+    return result + [
+        Diagnostic(
+            "ghcr", "ok", "anonymous manifest proves the configured linux/amd64 digest"
+        )
     ]
+
+
+def _classify_registry_failure(result: CommandResult) -> str:
+    """Classify registry inspection failures without returning registry output.
+
+    Returns:
+        Safe failure category.
+    """
+    text = f"{result.stdout} {result.stderr}".lower()
+    if any(
+        value in text for value in ("unauthor", "denied", "authentication", "login")
+    ):
+        return "auth"
+    if any(
+        value in text for value in ("not found", "manifest unknown", "name unknown")
+    ):
+        return "missing"
+    if any(value in text for value in ("timeout", "connection", "network", "dns")):
+        return "network"
+    return "service failure"
+
+
+def _manifest_matches(output: str, digest: str) -> bool:
+    """Return whether manifest output proves digest and linux/amd64."""
+    try:
+        decoded: object = json.loads(output)
+    except json.JSONDecodeError:
+        decoded = None
+    if decoded is not None:
+        return _manifest_json_matches(decoded, digest)
+    digest_match = re.search(rf"Digest:\s*{re.escape(digest)}", output)
+    platform_match = re.search(r"Platform:\s*linux/amd64", output)
+    return digest_match is not None and platform_match is not None
+
+
+def _manifest_json_matches(value: object, digest: str) -> bool:
+    """Search structured Buildx output for the requested platform digest.
+
+    Returns:
+        Whether the digest and platform are both proven.
+    """
+    if isinstance(value, dict):
+        platform = value.get("platform", value.get("Platform"))
+        if isinstance(platform, dict):
+            os_name = platform.get("os", platform.get("OS"))
+            architecture = platform.get("architecture", platform.get("Architecture"))
+            if os_name == "linux" and architecture == "amd64":
+                found = value.get("digest", value.get("Digest"))
+                descriptor = value.get("descriptor", value.get("Descriptor"))
+                if found == digest:
+                    return True
+                if (
+                    isinstance(descriptor, dict)
+                    and descriptor.get("digest", descriptor.get("Digest")) == digest
+                ):
+                    return True
+        return any(_manifest_json_matches(item, digest) for item in value.values())
+    if isinstance(value, list):
+        return any(_manifest_json_matches(item, digest) for item in value)
+    return False
+
+
+def check_github(*, environment: dict[str, str]) -> list[Diagnostic]:
+    """Check GitHub authentication, labels, and coordinator permission.
+
+    Returns:
+        GitHub diagnostics.
+    """
+    result: list[Diagnostic] = []
+    auth = run_command(["gh", "auth", "status"])
+    if auth.returncode:
+        result.append(Diagnostic("github", "auth", "gh is not authenticated", True))
+        return result
+    repo = run_command(["gh", "repo", "view", REPOSITORY])
+    if repo.returncode:
+        result.append(
+            Diagnostic(
+                "github", "service failure", "repository is not accessible", True
+            )
+        )
+        return result
+    labels = run_command(["gh", "api", f"repos/{REPOSITORY}/labels", "--paginate"])
+    if labels.returncode:
+        result.append(
+            Diagnostic("github", "auth", "repository labels cannot be inspected", True)
+        )
+        return result
+    names = _json_names(labels.stdout)
+    for label in LABELS:
+        result.append(
+            Diagnostic(
+                "github",
+                "ok" if label in names else "drift",
+                f"label {label}: {'present' if label in names else 'missing'}",
+                label not in names,
+            )
+        )
+    login = environment.get("WORKER_COORDINATOR_LOGIN")
+    if not login:
+        result.append(
+            Diagnostic(
+                "github",
+                "missing config",
+                "WORKER_COORDINATOR_LOGIN is not configured",
+                True,
+            )
+        )
+    else:
+        permission = run_command(
+            ["gh", "api", f"repos/{REPOSITORY}/collaborators/{login}/permission"]
+        )
+        if permission.returncode:
+            result.append(
+                Diagnostic(
+                    "github",
+                    "auth",
+                    "coordinator collaborator permission cannot be inspected",
+                    True,
+                )
+            )
+        else:
+            data = _json_object(permission.stdout)
+            allowed = str(data.get("permission", "")) in {
+                "admin",
+                "maintain",
+                "push",
+                "triage",
+            }
+            permission_state = "sufficient" if allowed else "insufficient"
+            result.append(
+                Diagnostic(
+                    "github",
+                    "ok" if allowed else "service failure",
+                    f"coordinator collaborator permission: {permission_state}",
+                    not allowed,
+                )
+            )
+    result.append(
+        Diagnostic(
+            "github",
+            "manual",
+            "issue-write permission is manual/unverified; no token mutation "
+            "was attempted",
+        )
+    )
+    return result
 
 
 def check_policy(*, environment: dict[str, str]) -> list[Diagnostic]:
@@ -378,184 +940,13 @@ def check_policy(*, environment: dict[str, str]) -> list[Diagnostic]:
     return result
 
 
-def check_github(*, environment: dict[str, str]) -> list[Diagnostic]:
-    """Check GitHub authentication, labels, and coordinator permission.
+def normalise_version(value: str) -> str:
+    """Normalise the broker's accepted trailing development notation.
 
     Returns:
-        GitHub diagnostics.
+        Normalised version.
     """
-    result: list[Diagnostic] = []
-    auth = run_command(["gh", "auth", "status"])
-    if auth.returncode:
-        result.append(Diagnostic("github", "auth", "gh is not authenticated", True))
-        return result
-    repo = run_command(["gh", "repo", "view", REPOSITORY])
-    if repo.returncode:
-        result.append(
-            Diagnostic(
-                "github", "service failure", "repository is not accessible", True
-            )
-        )
-        return result
-    labels = run_command(["gh", "api", f"repos/{REPOSITORY}/labels", "--paginate"])
-    if labels.returncode:
-        result.append(
-            Diagnostic("github", "auth", "repository labels cannot be inspected", True)
-        )
-        return result
-    names = _json_names(labels.stdout)
-    for label in LABELS:
-        result.append(
-            Diagnostic(
-                "github",
-                "ok" if label in names else "drift",
-                f"label {label}: {'present' if label in names else 'missing'}",
-                label not in names,
-            )
-        )
-    login = environment.get("WORKER_COORDINATOR_LOGIN")
-    if not login:
-        result.append(
-            Diagnostic(
-                "github",
-                "missing config",
-                "WORKER_COORDINATOR_LOGIN is not configured",
-                True,
-            )
-        )
-    else:
-        permission = run_command(
-            ["gh", "api", f"repos/{REPOSITORY}/collaborators/{login}/permission"]
-        )
-        data = _json_object(permission.stdout)
-        allowed = str(data.get("permission", "")) in {
-            "admin",
-            "maintain",
-            "push",
-            "triage",
-        }
-        permission_state = "sufficient" if allowed else "insufficient"
-        result.append(
-            Diagnostic(
-                "github",
-                "ok" if allowed else "service failure",
-                f"coordinator collaborator permission: {permission_state}",
-                not allowed,
-            )
-        )
-    return result
-
-
-def check_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
-    """Check the linked Vercel project and Production variable metadata.
-
-    Returns:
-        Vercel diagnostics.
-    """
-    result: list[Diagnostic] = []
-    link_path = Path(".vercel/project.json")
-    try:
-        link = _json_object(link_path.read_text(encoding="utf-8"))
-    except OSError:
-        link = {}
-    if not link.get("projectId"):
-        result.append(
-            Diagnostic(
-                "vercel",
-                "missing config",
-                "repository is not linked to a Vercel project",
-                True,
-            )
-        )
-    project = run_command(["vercel", "project", "inspect", "--json"])
-    project_data = _json_object(project.stdout)
-    project_name = str(project_data.get("name", ""))
-    identity_ok = project.returncode == 0 and project_name.lower() in {
-        "euroeval",
-        "euro-eval",
-    }
-    if not identity_ok:
-        result.append(
-            Diagnostic(
-                "vercel",
-                "auth" if project.returncode else "drift",
-                "linked project identity is unavailable or is not EuroEval",
-                True,
-            )
-        )
-    else:
-        result.append(Diagnostic("vercel", "ok", "linked project identity is EuroEval"))
-    variables = run_command(["vercel", "env", "ls", "production", "--format=json"])
-    if variables.returncode:
-        result.append(
-            Diagnostic(
-                "vercel", "auth", "Production environment metadata cannot be read", True
-            )
-        )
-        return result
-    metadata = _json_list(variables.stdout)
-    by_name = {str(item.get("key", item.get("name", ""))): item for item in metadata}
-    for name in REQUIRED_ENVIRONMENT:
-        item = by_name.get(name)
-        target = item.get("target", item.get("targets")) if item else None
-        variable_type = str(item.get("type", "")) if item else ""
-        target_ok = isinstance(target, list) and "production" in target
-        type_ok = variable_type in {"plain", "secret", "encrypted", "sensitive"}
-        present = item is not None
-        valid = present and target_ok and type_ok
-        variable_state = "present" if valid else "missing or wrong type/target"
-        result.append(
-            Diagnostic(
-                "vercel",
-                "ok" if valid else "drift",
-                f"Production variable {name}: {variable_state}",
-                not valid,
-            )
-        )
-    return result
-
-
-def check_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
-    """Check HF authentication and configured staging bucket privacy.
-
-    Returns:
-        Hugging Face diagnostics.
-    """
-    if not environment.get("HF_TOKEN") or not environment.get("HF_STAGING_BUCKET"):
-        return [
-            Diagnostic(
-                "hf",
-                "missing config",
-                "HF_TOKEN and HF_STAGING_BUCKET are required",
-                True,
-            )
-        ]
-    auth = run_command(["uv", "run", "hf", "whoami"])
-    if auth.returncode:
-        return [Diagnostic("hf", "auth", "Hugging Face authentication failed", True)]
-    info = run_command(
-        [
-            "uv",
-            "run",
-            "hf",
-            "buckets",
-            "info",
-            environment["HF_STAGING_BUCKET"],
-            "--json",
-        ]
-    )
-    data = _json_object(info.stdout)
-    private = data.get("private") is True or data.get("visibility") == "private"
-    return [
-        Diagnostic(
-            "hf",
-            "ok" if info.returncode == 0 and private else "drift",
-            "EU staging bucket exists and is private"
-            if private
-            else "staging bucket is missing or not private",
-            not (info.returncode == 0 and private),
-        )
-    ]
+    return value[:-4] + ".dev0" if value.endswith(".dev") else value
 
 
 def check_redis(*, environment: dict[str, str]) -> list[Diagnostic]:
@@ -583,231 +974,97 @@ def check_redis(*, environment: dict[str, str]) -> list[Diagnostic]:
         },
         body=b'["PING"]',
     )
+    if response.status == 0:
+        return [
+            Diagnostic("redis", "network", "Upstash PING could not be reached", True)
+        ]
     if response.status != 200:
         return [
             Diagnostic(
                 "redis",
-                "network" if response.status == 0 else "service failure",
+                "service failure",
                 f"Upstash PING returned HTTP {response.status}",
+                True,
+            )
+        ]
+    try:
+        payload = json.loads(response.body)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return [
+            Diagnostic(
+                "redis", "service failure", "Upstash PING returned malformed JSON", True
+            )
+        ]
+    if not isinstance(payload, dict) or payload.get("result") != "PONG":
+        return [
+            Diagnostic(
+                "redis",
+                "service failure",
+                "Upstash PING returned an invalid response",
                 True,
             )
         ]
     return [Diagnostic("redis", "ok", "Upstash PING succeeded")]
 
 
-def check_ghcr(*, environment: dict[str, str]) -> list[Diagnostic]:
-    """Check public package visibility and anonymously inspect/pull a digest.
+@dataclasses.dataclass(frozen=True)
+class HttpResult:
+    """Captured HTTP response without exposing request credentials."""
+
+    status: int
+    body: bytes
+
+
+def request_http(
+    url: str,
+    *,
+    method: str = "GET",
+    headers: dict[str, str] | None = None,
+    body: bytes | None = None,
+) -> HttpResult:
+    """Make one HTTP request, returning HTTP errors as ordinary responses.
 
     Returns:
-        GHCR diagnostics.
+        Captured HTTP result; status zero denotes a network failure.
     """
-    visibility = run_command(
-        [
-            "gh",
-            "api",
-            "/orgs/EuroEval/packages/container/euroeval-worker",
-            "--jq",
-            ".visibility",
-        ]
-    )
-    public = visibility.stdout.strip() == "public"
-    visibility_state = "public" if public else "not public"
-    result = [
-        Diagnostic(
-            "ghcr",
-            "ok" if public else ("auth" if visibility.returncode else "drift"),
-            f"GHCR package visibility: {visibility_state}",
-            visibility.returncode != 0 or not public,
+    try:
+        request = urllib.request.Request(
+            url, data=body, headers=headers or {}, method=method
         )
+        with urllib.request.urlopen(request, timeout=15) as response:
+            return HttpResult(response.status, response.read())
+    except urllib.error.HTTPError as error:
+        try:
+            body = error.read()
+        except (OSError, http.client.HTTPException):
+            body = b""
+        return HttpResult(error.code, body)
+    except (
+        ValueError,
+        TypeError,
+        TimeoutError,
+        OSError,
+        http.client.HTTPException,
+        urllib.error.URLError,
+    ):
+        return HttpResult(0, b"")
+
+
+def check_tools() -> list[Diagnostic]:
+    """Check tools needed by the corresponding operations.
+
+    Returns:
+        Tool diagnostics.
+    """
+    return [
+        Diagnostic(
+            "tools",
+            "missing config" if shutil.which(tool) is None else "ok",
+            f"{tool} is {'available' if shutil.which(tool) else 'not installed'}",
+            shutil.which(tool) is None,
+        )
+        for tool in ("git", "uv", "gh", "vercel", "hf", "docker")
     ]
-    digest = environment.get("VOLUNTEER_WORKER_IMAGE_DIGEST")
-    if not digest:
-        result.append(
-            Diagnostic(
-                "ghcr",
-                "missing config",
-                "VOLUNTEER_WORKER_IMAGE_DIGEST is not configured",
-                True,
-            )
-        )
-        return result
-    if not re.fullmatch(r"sha256:[0-9a-fA-F]{64}", digest):
-        result.append(
-            Diagnostic(
-                "ghcr",
-                "drift",
-                "configured image digest is not sha256 plus 64 hex characters",
-                True,
-            )
-        )
-        return result
-    reference = f"{IMAGE_REPOSITORY}@{digest}"
-    with tempfile.TemporaryDirectory(prefix="euroeval-ghcr-") as directory:
-        isolated = {**environment, "DOCKER_CONFIG": directory}
-        inspect = run_command(
-            ["docker", "manifest", "inspect", "--verbose", reference],
-            environment=isolated,
-        )
-        pull = run_command(["docker", "pull", reference], environment=isolated)
-    failed = inspect.returncode != 0 or pull.returncode != 0
-    result.append(
-        Diagnostic(
-            "ghcr",
-            "network" if failed else "ok",
-            "anonymous digest inspect and pull succeeded"
-            if not failed
-            else "anonymous digest inspect or pull failed",
-            failed,
-        )
-    )
-    return result
-
-
-def apply(*, environment: dict[str, str], components: set[str], confirmed: bool) -> int:
-    """Apply only explicitly confirmed, narrowly scoped setup.
-
-    Returns:
-        Process exit status.
-    """
-    if not components or not components <= {"github", "hf", "vercel"}:
-        print(
-            "apply requires explicit --github, --hf, or --vercel (no default/all path)."
-        )
-        return 2
-    if not confirmed:
-        print("apply requires --yes; no changes were made.")
-        return 2
-    diagnostics: list[Diagnostic] = []
-    if "github" in components:
-        diagnostics.extend(apply_github())
-    if "hf" in components:
-        diagnostics.extend(apply_hf(environment=environment))
-    if "vercel" in components:
-        diagnostics.extend(apply_vercel(environment=environment))
-    print_diagnostics(diagnostics)
-    return int(any(item.failed for item in diagnostics))
-
-
-def apply_github() -> list[Diagnostic]:
-    """Create only missing canonical labels.
-
-    Returns:
-        GitHub diagnostics.
-    """
-    listing = run_command(["gh", "api", f"repos/{REPOSITORY}/labels", "--paginate"])
-    if listing.returncode:
-        return [Diagnostic("github", "service failure", "cannot inspect labels", True)]
-    names = _json_names(listing.stdout)
-    diagnostics = []
-    for label in LABELS:
-        if label in names:
-            diagnostics.append(
-                Diagnostic("github", "ok", f"label {label} already exists")
-            )
-            continue
-        created = run_command(["gh", "label", "create", label, "--repo", REPOSITORY])
-        creation_state = "created" if created.returncode == 0 else "creation failed"
-        diagnostics.append(
-            Diagnostic(
-                "github",
-                "ok" if created.returncode == 0 else "service failure",
-                f"label {label}: {creation_state}",
-                created.returncode != 0,
-            )
-        )
-    return diagnostics
-
-
-def apply_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
-    """Create or verify the configured private EU staging bucket.
-
-    Returns:
-        Hugging Face diagnostics.
-    """
-    bucket = environment.get("HF_STAGING_BUCKET")
-    if not bucket or not environment.get("HF_TOKEN"):
-        return [
-            Diagnostic(
-                "hf",
-                "missing config",
-                "HF_TOKEN and HF_STAGING_BUCKET are required",
-                True,
-            )
-        ]
-    created = run_command(
-        [
-            "uv",
-            "run",
-            "hf",
-            "buckets",
-            "create",
-            bucket,
-            "--private",
-            "--region",
-            "eu",
-            "--exist-ok",
-        ]
-    )
-    if created.returncode:
-        return [
-            Diagnostic(
-                "hf", "service failure", "private EU staging bucket setup failed", True
-            )
-        ]
-    return check_hf(environment=environment)
-
-
-def apply_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
-    """Add or update Production variables using stdin, never command arguments.
-
-    Returns:
-        Vercel diagnostics.
-    """
-    euroeval_version, worker_version = source_versions()
-    values = dict(environment)
-    if not values.get("EUROEVAL_VERSION"):
-        values["EUROEVAL_VERSION"] = euroeval_version
-    if not values.get("VOLUNTEER_WORKER_VERSION"):
-        values["VOLUNTEER_WORKER_VERSION"] = worker_version
-    missing = [name for name in REQUIRED_ENVIRONMENT if not values.get(name)]
-    if missing:
-        return [
-            Diagnostic(
-                "vercel",
-                "missing config",
-                "missing required values: " + ", ".join(missing),
-                True,
-            )
-        ]
-    diagnostics: list[Diagnostic] = []
-    for name in REQUIRED_ENVIRONMENT:
-        if name in DURABLE_SECRETS:
-            # Durable secrets are accepted when explicitly supplied, never generated.
-            pass
-        removed = run_command(["vercel", "env", "rm", name, "production", "--yes"])
-        if removed.returncode not in (0, 1):
-            diagnostics.append(
-                Diagnostic(
-                    "vercel",
-                    "service failure",
-                    f"could not prepare Production variable {name}",
-                    True,
-                )
-            )
-            continue
-        added = run_command(
-            ["vercel", "env", "add", name, "production"], input_text=values[name] + "\n"
-        )
-        update_state = "updated" if added.returncode == 0 else "update failed"
-        diagnostics.append(
-            Diagnostic(
-                "vercel",
-                "ok" if added.returncode == 0 else "service failure",
-                f"Production variable {name}: {update_state}",
-                added.returncode != 0,
-            )
-        )
-    return diagnostics
 
 
 def smoke(
@@ -858,120 +1115,145 @@ def smoke(
         headers={"content-type": "application/json"},
         body=b"{}",
     )
-    expected_claim = unauthenticated.status == 401
-    claim_state = "401" if expected_claim else f"HTTP {unauthenticated.status}"
+    claim_ok = unauthenticated.status == 401 and _has_error_body(unauthenticated.body)
     diagnostics.append(
         Diagnostic(
             "routes",
-            "ok" if expected_claim else "service failure",
-            f"POST /claim without credentials: {claim_state}",
-            not expected_claim,
+            "ok" if claim_ok else "service failure",
+            "POST /claim without credentials: 401 authentication error"
+            if claim_ok
+            else "POST /claim did not return a valid 401 error",
+            not claim_ok,
         )
     )
-    for route, secret_name in (
-        ("coordinator-lock", "WORKER_COORDINATOR_SECRET"),
-        ("promotion-lock", "VOLUNTEER_PROMOTION_SECRET"),
-    ):
-        headers = {"content-type": "application/json"}
+    for route in ("coordinator-lock", "promotion-lock"):
         response = request_http(
             f"{base}/api/worker/{route}",
             method="POST",
-            headers=headers,
+            headers={"content-type": "application/json"},
             body=b'{"protocol_version":"volunteer-worker/v1","issue_number":1}',
         )
-        expected_status = 401 if environment.get(secret_name) else 503
-        expected_probe = response.status == expected_status
-        probe_state = (
-            f"expected {expected_status}"
-            if expected_probe
-            else f"unexpected HTTP {response.status}"
+        valid_401 = response.status == 401 and _has_error_body(response.body)
+        valid_503 = response.status == 503 and _has_error_body(response.body)
+        expected_probe = valid_401 or valid_503
+        classification = (
+            "configured authentication rejected"
+            if valid_401
+            else (
+                "deployed but missing configuration"
+                if valid_503
+                else "invalid response"
+            )
         )
         diagnostics.append(
             Diagnostic(
                 "routes",
                 "ok" if expected_probe else "service failure",
-                f"POST /{route} without credentials: {probe_state}",
+                f"POST /{route} without credentials: {classification}",
                 not expected_probe,
             )
         )
     return diagnostics
 
 
-def print_diagnostics(diagnostics: list[Diagnostic]) -> None:
-    """Print classified diagnostics without command output or secret values."""
-    for item in diagnostics:
-        status = "FAIL" if item.failed else "OK"
-        print(f"{status} [{item.category}] {item.component}: {item.message}")
-
-
-def source_versions() -> tuple[str, str]:
-    """Read EuroEval and worker versions from tracked source files.
+def _has_error_body(body: bytes) -> bool:
+    """Validate the JSON error contract used by protected broker routes.
 
     Returns:
-        EuroEval and worker versions.
-
-    Raises:
-        RuntimeError:
-            If the worker source version is missing.
-    """
-    project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-    project_metadata = t.cast(dict[str, object], project["project"])
-    euroeval = str(project_metadata["version"])
-    worker_source = Path("src/euroeval_worker/__init__.py").read_text(encoding="utf-8")
-    match = re.search(r'__version__\s*=\s*["\']([^"\']+)', worker_source)
-    if match is None:
-        raise RuntimeError("worker source version is missing")
-    return euroeval, match.group(1)
-
-
-def normalise_version(value: str) -> str:
-    """Normalise the broker's accepted trailing development notation.
-
-    Returns:
-        Normalised version.
-    """
-    return value[:-4] + ".dev0" if value.endswith(".dev") else value
-
-
-def _json_object(value: str) -> dict[str, object]:
-    """Decode a JSON object, returning an empty object on command failure.
-
-    Returns:
-        Decoded object or an empty object.
+        Whether the body contains a non-empty error string.
     """
     try:
-        decoded = json.loads(value)
-    except json.JSONDecodeError:
-        return {}
-    return decoded if isinstance(decoded, dict) else {}
-
-
-def _json_list(value: str) -> list[dict[str, object]]:
-    """Decode a JSON list of objects.
-
-    Returns:
-        Decoded object list.
-    """
-    try:
-        decoded = json.loads(value)
-    except json.JSONDecodeError:
-        return []
-    if isinstance(decoded, dict) and isinstance(decoded.get("envs"), list):
-        decoded = decoded["envs"]
+        decoded = json.loads(body)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return False
     return (
-        [item for item in decoded if isinstance(item, dict)]
-        if isinstance(decoded, list)
-        else []
+        isinstance(decoded, dict)
+        and isinstance(decoded.get("error"), str)
+        and bool(decoded["error"])
     )
 
 
-def _json_names(value: str) -> set[str]:
-    """Extract names from a GitHub JSON response.
+def parse_arguments(argv: list[str] | None) -> argparse.Namespace:
+    """Parse command-line arguments.
 
     Returns:
-        Names found in the response.
+        Parsed arguments.
     """
-    return {str(item.get("name", "")) for item in _json_list(value)}
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=("plan", "check", "apply", "smoke"))
+    parser.add_argument(
+        "--component",
+        action="append",
+        choices=(
+            "tools",
+            "policy",
+            "github",
+            "vercel",
+            "hf",
+            "redis",
+            "ghcr",
+            "routes",
+        ),
+        help="Limit check/apply to a component; may be repeated.",
+    )
+    parser.add_argument("--github", action="store_true", help="Apply GitHub labels.")
+    parser.add_argument("--vercel", action="store_true", help="Apply Vercel variables.")
+    parser.add_argument(
+        "--hf", action="store_true", help="Apply the HF staging bucket."
+    )
+    parser.add_argument(
+        "--yes", action="store_true", help="Confirm an apply operation."
+    )
+    parser.add_argument(
+        "--routes", action="store_true", help="Include deployed route probes in check."
+    )
+    parser.add_argument(
+        "--base-url", default=PRODUCTION_BASE_URL, help="Deployed broker base URL."
+    )
+    parser.add_argument("--route", action="append", help="Smoke only this route.")
+    return parser.parse_args(argv)
+
+
+def print_plan(*, environment: dict[str, str]) -> None:
+    """Print the immutable workflow and names of required inputs."""
+    euroeval_version, worker_version = source_versions()
+    print("1. AUTOMATED CHECK: inspect tools, source versions, and generated policy.")
+    print(
+        "2. AUTOMATED CHECK: inspect GitHub, Vercel, HF, Redis, and GHCR configuration."
+    )
+    print(
+        "3. CONFIRMED AUTOMATION: apply only explicitly selected labels, bucket, "
+        "or variables."
+    )
+    print(
+        "4. MANUAL: publish/canary/promote the immutable GPU image and deploy Vercel."
+    )
+    print("5. AUTOMATED CHECK: run safe GET/OPTIONS and unauthenticated POST probes.")
+    print(f"Defaults: repository={REPOSITORY}; base_url={PRODUCTION_BASE_URL};")
+    print(f"  results_bucket={RESULTS_BUCKET}; image={IMAGE_REPOSITORY};")
+    print(f"  euroeval_version={euroeval_version}; worker_version={worker_version}")
+    print("Required environment variable names (values are never printed):")
+    for name in REQUIRED_ENVIRONMENT:
+        state = "present" if environment.get(name) else "missing"
+        print(f"  {name} ({state})")
+    print(
+        "Manual inputs still needed: maintainer credentials, project choice, image "
+        "digest,"
+    )
+    print("physical Linux amd64 GPU canary, image promotion, and deployment approval.")
+
+
+def selected_components(
+    arguments: argparse.Namespace, *, explicit: bool = False
+) -> set[str]:
+    """Return requested components, keeping apply's default deliberately empty."""
+    flags = {
+        name for name in ("github", "vercel", "hf") if getattr(arguments, name, False)
+    }
+    requested = set(arguments.component or ()) | flags
+    if explicit:
+        return requested
+    return requested or {"tools", "policy", "github", "vercel", "hf", "redis", "ghcr"}
 
 
 if __name__ == "__main__":

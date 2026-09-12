@@ -62,19 +62,6 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def encode_policy(policy: dict[str, object]) -> bytes:
-    """Return the byte-stable representation of a policy."""
-    return (json.dumps(policy, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
-
-
-def write_policy(output: Path, encoded: bytes) -> None:
-    """Atomically write encoded policy bytes to ``output``."""
-    output.parent.mkdir(parents=True, exist_ok=True)
-    temporary = output.with_suffix(output.suffix + ".tmp")
-    temporary.write_bytes(encoded)
-    temporary.replace(output)
-
-
 def build_policy(
     euroeval_version: str,
     pairs: set[tuple[str, str]],
@@ -152,6 +139,11 @@ def _configs_by_name() -> dict[str, object]:
     )
 
 
+def encode_policy(policy: dict[str, object]) -> bytes:
+    """Return the byte-stable representation of a policy."""
+    return (json.dumps(policy, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
 def official_pairs() -> set[tuple[str, str]]:
     """Load the same official dataset/language pairs as the queue.
 
@@ -161,5 +153,13 @@ def official_pairs() -> set[tuple[str, str]]:
     return official_dataset_language_pairs()
 
 
+def write_policy(output: Path, encoded: bytes) -> None:
+    """Atomically write encoded policy bytes to ``output``."""
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output.with_suffix(output.suffix + ".tmp")
+    temporary.write_bytes(encoded)
+    temporary.replace(output)
+
+
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

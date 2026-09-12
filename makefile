@@ -6,10 +6,7 @@
 # Exports all variables defined in the makefile available to scripts
 .EXPORT_ALL_VARIABLES:
 
-# Include environment variables when a local file exists. Read-only targets must not
-# create or modify a dotenv file as a side effect of invoking make.
--include .env
-
+# Read-only targets deliberately never import or export the local dotenv file.
 # Set gRPC environment variables, which prevents some errors with the `grpcio` package
 export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1
 export GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1
@@ -144,7 +141,8 @@ add-dev-version:
 	@echo "Added '.dev' suffix to the version number."
 
 publish:
-	@if [ ${PYPI_API_TOKEN} = "" ]; then \
+	@set -a; [ ! -f .env ] || source .env; set +a; \
+	if [ "$${PYPI_API_TOKEN:-}" = "" ]; then \
 		echo "No PyPI API token specified in the '.env' file, so cannot publish."; \
 	else \
 		echo "Publishing to PyPI..."; \
