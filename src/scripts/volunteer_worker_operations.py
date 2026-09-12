@@ -36,7 +36,6 @@ REQUIRED_ENVIRONMENT = (
     "VOLUNTEER_WORKER_VERSION",
     "VOLUNTEER_WORKER_IMAGE_DIGEST",
     "VOLUNTEER_MARKER_SECRET",
-    "WORKER_COORDINATOR_LOGIN",
     "UPSTASH_REDIS_REST_URL",
     "UPSTASH_REDIS_REST_TOKEN",
     "HF_STAGING_BUCKET",
@@ -48,7 +47,6 @@ PUBLIC_CONFIG = {
     "EUROEVAL_VERSION",
     "VOLUNTEER_WORKER_VERSION",
     "VOLUNTEER_WORKER_IMAGE_DIGEST",
-    "WORKER_COORDINATOR_LOGIN",
     "HF_STAGING_BUCKET",
 }
 BASIC_ENVIRONMENT = {
@@ -817,11 +815,12 @@ def _is_amd64_descriptor(value: object) -> bool:
 
 
 def check_github(*, environment: dict[str, str]) -> list[Diagnostic]:
-    """Check GitHub authentication, labels, and coordinator permission.
+    """Check GitHub authentication, repository access, and queue labels.
 
     Returns:
         GitHub diagnostics.
     """
+    del environment
     result: list[Diagnostic] = []
     auth = run_command(["gh", "auth", "status"])
     if auth.returncode:
@@ -851,46 +850,6 @@ def check_github(*, environment: dict[str, str]) -> list[Diagnostic]:
                 label not in names,
             )
         )
-    login = environment.get("WORKER_COORDINATOR_LOGIN")
-    if not login:
-        result.append(
-            Diagnostic(
-                "github",
-                "missing config",
-                "WORKER_COORDINATOR_LOGIN is not configured",
-                True,
-            )
-        )
-    else:
-        permission = run_command(
-            ["gh", "api", f"repos/{REPOSITORY}/collaborators/{login}/permission"]
-        )
-        if permission.returncode:
-            result.append(
-                Diagnostic(
-                    "github",
-                    "auth",
-                    "coordinator collaborator permission cannot be inspected",
-                    True,
-                )
-            )
-        else:
-            data = _json_object(permission.stdout)
-            allowed = str(data.get("permission", "")) in {
-                "admin",
-                "maintain",
-                "push",
-                "triage",
-            }
-            permission_state = "sufficient" if allowed else "insufficient"
-            result.append(
-                Diagnostic(
-                    "github",
-                    "ok" if allowed else "service failure",
-                    f"coordinator collaborator permission: {permission_state}",
-                    not allowed,
-                )
-            )
     result.append(
         Diagnostic(
             "github",

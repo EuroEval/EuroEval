@@ -86,9 +86,10 @@ The volunteer path consists of these components:
   `api/worker/`. Vercel's `api/` convention maps each file to its matching HTTP route.
   The broker authenticates workers, finds GitHub issues, fences claims, validates
   results, and writes staged objects.
-- **GitHub:** `EuroEval/EuroEval` is the work queue and audit log. Request issues are
-  claimed by a coordinator account. Signed markers in issue bodies, labels, comments,
-  and the broker lease protect ownership and review transitions.
+- **GitHub:** `EuroEval/EuroEval` is the work queue and audit log. Issue assignees are
+  the mutable, authoritative active evaluators and Hall-credit identities for both
+  manual and volunteer paths. Signed markers in issue bodies are audit and integrity
+  evidence; they do not override current assignees.
 - **GitHub OAuth device flow:** A volunteer authorises the OAuth app in a browser. The
   broker exchanges and immediately revokes the short-lived GitHub grant, then gives the
   worker an opaque, time-limited broker credential. GitHub and project secrets are never
@@ -112,8 +113,14 @@ The volunteer path consists of these components:
 The normal data flow is worker authentication, issue claim, evaluation, one result
 upload per identity, finalisation into a private manifest, maintainer review, and
 promotion or rejection. Acceptance copies only verified records to the canonical bucket.
-A complete set of accepted languages adds `results-ready` and contributor credit; an
-individual accepted language does not.
+Issue assignees are the mutable, authoritative active evaluators and Hall-credit
+identities for manual and volunteer evaluations. A request may have multiple assignees
+when multiple volunteers contribute different languages; retain every assignee whose
+submission is accepted. Maintainers may transfer ownership or credit by changing the
+assignees, which fences old volunteer leases. Remove an assignee only when their work is
+rejected or intentionally released. Signed marker contributors are retained as audit and
+integrity evidence only. A complete set of accepted languages adds `results-ready`;
+credit follows the accepted assignees, while an individual accepted language does not.
 
 ## One-time prerequisites
 
@@ -162,10 +169,10 @@ credential should be issued.
 
 Create a maintainer-owned GitHub token with the least privilege that permits the broker
 to read and update issues, assignees, labels, and comments in `EuroEval/EuroEval`. Store
-it only in Vercel's encrypted environment variables. The `WORKER_COORDINATOR_LOGIN`
-value is the GitHub account the broker temporarily assigns to active request issues;
-that account must be a repository collaborator with issue assignment permission. It may
-be a bot or a maintainer account, but it must be consistent everywhere.
+it only in Vercel's encrypted environment variables. The broker uses this token to read
+and update issues, assignees, labels, and comments. Every volunteer OAuth login must be
+GitHub-assignable in this repository; otherwise claim stops with an actionable error and
+the volunteer must use an eligible account.
 
 Create these labels in `EuroEval/EuroEval` with these exact names:
 
@@ -174,8 +181,9 @@ Create these labels in `EuroEval/EuroEval` with these exact names:
 - `results-ready` — added when all selected languages have accepted submissions.
 
 If the legacy/local queue will remain active, also retain its labels `evaluation-failed`
-and `gated`. Do not manually remove signed volunteer markers, change their contents, or
-assign a second coordinator to an active request.
+and `gated`. Maintainers transfer ownership or Hall credit by changing issue assignees.
+Changing assignees fences old volunteer leases. Do not treat signed marker contributors
+as current ownership; they are retained for audit and integrity checks.
 
 ### 4. Create Upstash Redis
 
@@ -253,8 +261,6 @@ broker testing. Do not mark any of these as public or expose them as frontend va
   existing signed issue and Hall state. A change requires a planned migration that
   re-signs or otherwise migrates every live marker before the old secret is retired,
   with the transition tested and verified.
-- `WORKER_COORDINATOR_LOGIN` — assignable GitHub login used for temporary issue
-  assignment.
 - `UPSTASH_REDIS_REST_URL` — REST URL for the broker's Upstash database.
 - `UPSTASH_REDIS_REST_TOKEN` — REST token for that database.
 - `HF_STAGING_BUCKET` — private EU staging bucket ID in `namespace/bucket` form.
@@ -293,8 +299,7 @@ operation.
 ## Recommended deployment order
 
 1. Confirm the repository, production Vercel project, production domain, GitHub labels,
-   coordinator login, OAuth device flow, Upstash database, private staging bucket, and
-   scoped tokens.
+   OAuth device flow, Upstash database, private staging bucket, and scoped tokens.
 2. Generate and commit `api/worker/scope-policy.json`. Confirm that its policy and
    `EUROEVAL_VERSION` match the EuroEval package release. Separately confirm that the
    intended worker package/image uses `VOLUNTEER_WORKER_VERSION` (currently `1.0.0`).
@@ -480,8 +485,8 @@ same outcome; an opposite outcome is refused.
 Do not manually copy staged files, edit issue markers, delete audit manifests, or award
 credit. A rejected language becomes leaseable again while its signed audit history
 remains. When all selected languages are accepted, the broker adds `results-ready` and
-records the contributor with the largest server-derived accepted result count; lowercase
-GitHub login order breaks ties.
+retains the assignees whose submissions were accepted. If several volunteers contributed,
+keep multiple assignees; remove an assignee only after rejection or intentional release.
 
 ## Image publishing and canary
 

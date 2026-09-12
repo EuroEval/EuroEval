@@ -188,12 +188,19 @@ class BrokerError(RuntimeError):
         status: int | None = None,
         retry_after: float | None = None,
         body: JsonObject | None = None,
+        code: str | None = None,
     ) -> None:
-        """Initialise an error with HTTP retry metadata and a safe response body."""
+        """Initialise an error with safe structured broker metadata."""
+        safe_body = _redact(body) if body is not None else None
+        broker_message = safe_body.get("error") if safe_body else None
+        if isinstance(broker_message, str) and broker_message:
+            message = broker_message
         super().__init__(message)
         self.status = status
         self.retry_after = retry_after
-        self.body = body
+        self.body = safe_body
+        self.code = code or _string_value(safe_body, "code")
+        self.message = message
 
 
 def _hardware_dict(hardware: HardwareReport) -> JsonObject:
@@ -291,6 +298,12 @@ def _error_body(error: urllib.error.HTTPError) -> JsonObject | None:
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return None
     return _redact(value) if isinstance(value, dict) else None
+
+
+def _string_value(value: JsonObject | None, key: str) -> str | None:
+    """Return a non-empty string field from a broker response."""
+    item = value.get(key) if value is not None else None
+    return item if isinstance(item, str) and item else None
 
 
 def _redact(value: object) -> JsonObject:
