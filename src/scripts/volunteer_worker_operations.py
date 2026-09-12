@@ -449,9 +449,7 @@ def apply_reuse_vercel_kv(*, environment: dict[str, str]) -> list[Diagnostic]:
     Returns:
         Vercel diagnostics.
     """
-    identity, verified = _check_vercel_project(
-        environment=environment, require_remote_scope=True
-    )
+    identity, verified = _check_vercel_project(environment=environment)
     if not verified:
         return identity
     vercel_environment = _vercel_command_environment(environment)
@@ -661,7 +659,7 @@ def apply_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
 
 
 def _check_vercel_project(
-    *, environment: dict[str, str], require_remote_scope: bool = False
+    *, environment: dict[str, str]
 ) -> tuple[list[Diagnostic], bool]:
     """Verify the local link and remote project before any Vercel mutation.
 
@@ -722,7 +720,6 @@ def _check_vercel_project(
     identity_ok = (
         actual_project == linked_project
         and actual_name == linked_name
-        and (bool(remote_scopes) if require_remote_scope else True)
         and all(scope == linked_scope for scope in remote_scopes)
     )
     if not identity_ok:
