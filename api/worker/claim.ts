@@ -13,24 +13,6 @@ import type { Lease, VolunteerLeaseMarker } from "./_lib.ts";
 
 export const config = { runtime: "edge" };
 
-function markerAssignees(marker: VolunteerLeaseMarker): Set<string> {
-  const expected = new Set(marker.leases.map((lease) => lease.contributor.toLowerCase()));
-  for (const submission of marker.submissions || []) {
-    if (["submitted", "accepted"].includes(submission.status)) {
-      expected.add(submission.verified_contributor.toLowerCase());
-    }
-  }
-  return expected;
-}
-
-function assigneesEqual(
-  assignees: Array<{ login: string }> | undefined,
-  expected: Set<string>,
-): boolean {
-  const actual = new Set((assignees || []).map((assignee) => assignee.login.toLowerCase()));
-  return actual.size === expected.size && [...actual].every((login) => expected.has(login));
-}
-
 async function recoverExpiredOwnership(
   issue: Awaited<ReturnType<typeof fetchIssue>>,
   marker: VolunteerLeaseMarker,
@@ -42,11 +24,12 @@ async function recoverExpiredOwnership(
     const expired = currentMarker.leases.filter((lease) => Date.parse(lease.expires_at) <= Date.now());
     if (!expired.length) return { issue: current, marker: currentMarker };
     const expiredLease = expired[0];
+    const contributor = expiredLease.contributor.toLowerCase();
     const redisLease = await getLeaseForIssue(current.number, expiredLease.language);
     if (redisLease && (redisLease.lease_id !== expiredLease.lease_id ||
+        redisLease.contributor.toLowerCase() !== contributor ||
         Date.parse(redisLease.expires_at) > Date.now())) return null;
-    const contributor = expiredLease.contributor.toLowerCase();
-    const expected = markerAssignees(currentMarker);
+    if (!volunteerAssigneesMatch(current.assignees, currentMarker, Date.now(), true, true)) return null;
     const retained = currentMarker.leases.some(
       (lease) => lease.lease_id !== expiredLease.lease_id &&
         lease.contributor.toLowerCase() === contributor,
@@ -54,10 +37,6 @@ async function recoverExpiredOwnership(
       (submission) => ["submitted", "accepted"].includes(submission.status) &&
         submission.verified_contributor.toLowerCase() === contributor,
     );
-    const withoutContributor = new Set(expected);
-    withoutContributor.delete(contributor);
-    if (!assigneesEqual(current.assignees, expected) &&
-        (retained || !assigneesEqual(current.assignees, withoutContributor))) return null;
 
     const assigned = (current.assignees || []).find(
       (assignee) => assignee.login.toLowerCase() === contributor,
@@ -165,7 +144,7 @@ export default async function handler(req: Request): Promise<Response> {
       if (!languages.length || requestedLanguage && !languages.includes(requestedLanguage)) continue;
       if (listed.body && VM_MARKER_RE.test(listed.body)) continue;
       if (!volunteerAssigneesMatch(
-        listed.assignees, parseVolunteerMarker(listed.body), Date.now(), true,
+        listed.assignees, parseVolunteerMarker(listed.body), Date.now(), true, true,
       )) continue;
 
       // Resolve immutable metadata before taking the short issue mutex. Hub latency
@@ -183,7 +162,7 @@ export default async function handler(req: Request): Promise<Response> {
         const markerPresent = VOLUNTEER_MARKER_RE.test(snapshot.body || "");
         const marker = parseVolunteerMarker(snapshot.body);
         if (markerPresent && (!marker || !(await verifyVolunteerMarker(snapshot.number, marker)))) continue;
-        if (!volunteerAssigneesMatch(snapshot.assignees, marker, Date.now(), true)) continue;
+        if (!volunteerAssigneesMatch(snapshot.assignees, marker, Date.now(), true, true)) continue;
         const recovered = marker
           ? await recoverExpiredOwnership(snapshot, marker, mutex)
           : { issue: snapshot, marker: null };

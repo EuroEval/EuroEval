@@ -106,7 +106,8 @@ test("expired lease contributors remain attributable only during recovery", () =
   }] };
   assert.equal(volunteerAssigneesMatch([{ login: "alice" }], marker), false);
   assert.equal(volunteerAssigneesMatch([{ login: "alice" }], marker, Date.now(), true), true);
-  assert.equal(volunteerAssigneesMatch([{ login: "manual" }], marker, Date.now(), true), false);
+  assert.equal(volunteerAssigneesMatch([], marker, Date.now(), true, true), true);
+  assert.equal(volunteerAssigneesMatch([{ login: "manual" }], marker, Date.now(), true, true), false);
 });
 
 test("assignment loss uses the stable lease error contract", async () => {

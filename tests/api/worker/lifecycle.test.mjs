@@ -116,7 +116,7 @@ test("claim rejects an issue model edited during metadata resolution", async () 
   }
 });
 
-test("claim recovers an expired volunteer assignment before claiming", async () => {
+test("claim resumes after expired contributor unassignment interruption", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = { ...process.env };
   process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
@@ -140,7 +140,7 @@ test("claim recovers an expired volunteer assignment before claiming", async () 
   });
   const issue = { number: issueNumber, title: "[MODEL EVALUATION REQUEST] org/model",
     body: `### Model ID\n\norg/model\n\n- [x] ${language}\n\n${markerBody(signed)}`,
-    state: "open", assignees: [{ login: "alice" }], labels: [] };
+    state: "open", assignees: [], labels: [] };
   const credentialKey = `euroeval:worker:credential:${await sha256("credential")}`;
   const leaseKey = `euroeval:worker:lease:${issueNumber}:da`;
   const values = new Map([[credentialKey, JSON.stringify({ contributor: "alice" })],
@@ -188,8 +188,7 @@ test("claim recovers an expired volunteer assignment before claiming", async () 
             total_memory_bytes: 1_000_000 }] } }),
     }));
     assert.equal(response.status, 200, await response.text());
-    assert.equal(mutations[0], "unassign");
-    assert.equal(mutations[1], "patch");
+    assert.deepEqual(mutations, ["patch", "patch", "assign"]);
     assert.deepEqual(issue.assignees, [{ login: "alice" }]);
     assert.equal(parseVolunteerMarker(issue.body).leases.length, 1);
     assert.notEqual(parseVolunteerMarker(issue.body).leases[0].lease_id, expired.lease_id);
@@ -359,6 +358,53 @@ test("release re-signs while preserving history and other leases", async () => {
     assert.deepEqual(issue.assignees, [{ login: "bob" }]);
     assert.match(issue.body, /harmless comment/);
     assert.match(issue.body, /- \[x\] Greek/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
+test("release resumes after marker removal with retained ownership", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  process.env.GITHUB_TOKEN = "github-token";
+  const other = { lease_id: "other", language: "de", worker: "worker-2", contributor: "bob",
+    expires_at: new Date(Date.now() + 120_000).toISOString() };
+  const history = { submission_id: "submission", language: "fr", manifest_path: "manifest",
+    submitted_at: "2026-09-06T10:00:00Z", verified_contributor: "carol", result_count: 2, status: "rejected" };
+  const signed = await signVolunteerMarker(issueNumber, {
+    protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "submitted",
+    leases: [other], submissions: [history], completed_languages: [],
+  });
+  const issue = { number: issueNumber, body: markerBody(signed), state: "open", assignees: [{ login: "bob" }] };
+  const values = new Map();
+  values.set(`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" }));
+  values.set(`euroeval:worker:lease-id:${lease.lease_id}`, JSON.stringify(lease));
+  const broker = mockBroker(issue, values);
+  const redisCommands = [];
+  const githubMutations = [];
+  globalThis.fetch = async (input, init = {}) => {
+    const method = init.method || "GET";
+    if (String(input) === "https://redis.test") redisCommands.push(JSON.parse(init.body));
+    if (String(input).startsWith("https://api.github.com") && method !== "GET") githubMutations.push(method);
+    return broker(input, init);
+  };
+  try {
+    const response = await release(new Request("https://euroeval.test/api/worker/release", {
+      method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: lease.lease_id }),
+    }));
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      protocol_version: "volunteer-worker/v1", status: "released", lease_id: lease.lease_id,
+    });
+    assert.deepEqual(githubMutations, []);
+    assert.ok(redisCommands.some((command) => command[0] === "EVAL" &&
+      String(command[1]).includes("released=true")));
+    assert.deepEqual(parseVolunteerMarker(issue.body).leases.map((item) => item.lease_id), ["other"]);
   } finally {
     globalThis.fetch = originalFetch;
     process.env = originalEnv;

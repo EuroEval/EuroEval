@@ -56,13 +56,26 @@ export function volunteerAssigneesMatch(
   marker: VolunteerLeaseMarker | null,
   now = Date.now(),
   includeExpiredLeases = false,
+  allowExpiredUnassigned = false,
 ): boolean {
   const actual = new Set((assignees || []).map((item) => item.login.toLowerCase()));
   if (!marker) return actual.size === 0;
   const expected = new Set<string>();
+  const optional = new Set<string>();
   for (const lease of marker.leases) {
-    if (includeExpiredLeases || Date.parse(lease.expires_at) > now) {
-      expected.add(lease.contributor.toLowerCase());
+    const contributor = lease.contributor.toLowerCase();
+    if (Date.parse(lease.expires_at) > now) {
+      expected.add(contributor);
+    } else if (includeExpiredLeases) {
+      expected.add(contributor);
+      if (allowExpiredUnassigned && !marker.leases.some((other) =>
+        other.lease_id !== lease.lease_id &&
+        Date.parse(other.expires_at) > now &&
+        other.contributor.toLowerCase() === contributor,
+      ) && !(marker.submissions || []).some((submission) =>
+        ["submitted", "accepted"].includes(submission.status) &&
+        submission.verified_contributor.toLowerCase() === contributor,
+      )) optional.add(contributor);
     }
   }
   for (const submission of marker.submissions || []) {
@@ -70,7 +83,8 @@ export function volunteerAssigneesMatch(
       expected.add(submission.verified_contributor.toLowerCase());
     }
   }
-  return actual.size === expected.size && [...actual].every((login) => expected.has(login));
+  if ([...actual].some((login) => !expected.has(login))) return false;
+  return [...expected].every((login) => actual.has(login) || optional.has(login));
 }
 
 export function claimableLanguages(
