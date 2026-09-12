@@ -31,9 +31,15 @@ jobs:
   image:
     name: Build amd64 worker image
     runs-on: ubuntu-24.04
-    env:
-      DOCKER_CONFIG: ${{ runner.temp }}/euroeval-worker-docker
+
     steps:
+      - name: Prepare isolated Docker config
+        run: |
+          set -euo pipefail
+          DOCKER_CONFIG_DIR="$RUNNER_TEMP/euroeval-worker-docker"
+          mkdir -m 700 -p "$DOCKER_CONFIG_DIR"
+          echo "DOCKER_CONFIG=$DOCKER_CONFIG_DIR" >> "$GITHUB_ENV"
+
       - name: Check out source
         uses: actions/checkout@v5
 
