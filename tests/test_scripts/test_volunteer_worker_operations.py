@@ -293,7 +293,7 @@ def test_reuse_vercel_kv_uses_nested_read_and_sensitive_stdin_updates(
         commands.append((command, kwargs))
         if command[:3] == ["vercel", "project", "inspect"]:
             return operations.CommandResult(
-                0, '{"id":"project-id","name":"euroeval","accountId":"team-id"}'
+                0, '{"id":"project-id","name":"euroeval","createdAt":"2026-01-01"}'
             )
         if command[:5] == ["vercel", "env", "run", "--environment", "production"]:
             assert url not in command
@@ -410,19 +410,25 @@ def test_reuse_vercel_kv_stops_after_partial_update_failure(
     assert not any(command[:3] == ["vercel", "env", "ls"] for command in commands)
 
 
+@pytest.mark.parametrize(
+    "response",
+    [
+        '{"id":"different-project","name":"euroeval"}',
+        '{"id":"project-id","name":"different-name"}',
+        '{"id":"project-id","name":"euroeval","teamId":"different-team"}',
+    ],
+)
 def test_reuse_vercel_kv_rejects_identity_drift_without_mutating(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, response: str
 ) -> None:
-    """An exact project identity mismatch blocks source access and updates."""
+    """Any project identity or returned scope mismatch blocks mutation."""
     monkeypatch.chdir(tmp_path)
     _vercel_link(tmp_path)
     commands: list[list[str]] = []
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
         commands.append(command)
-        return operations.CommandResult(
-            0, '{"id":"different-project","name":"euroeval","teamId":"team-id"}'
-        )
+        return operations.CommandResult(0, response)
 
     monkeypatch.setattr(operations, "run_command", fake_command)
     diagnostics = operations.apply_reuse_vercel_kv(environment={})
