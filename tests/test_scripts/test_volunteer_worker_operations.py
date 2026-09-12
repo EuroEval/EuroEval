@@ -9,6 +9,15 @@ import pytest
 
 import src.scripts.volunteer_worker_operations as operations
 
+REAL_MISSING_BUCKET_STDERR = (
+    "Error: Bucket 'EuroEval/volunteer-results-staging' not found.\n"
+    "If the bucket is private, make sure you are authenticated and your token has "
+    "the required permissions.\n"
+    "If the bucket does not exist, create it with: hf buckets create "
+    "EuroEval/volunteer-results-staging\n"
+    "Hint: set HF_DEBUG=1 as environment variable for full traceback.\n"
+)
+
 
 def test_apply_github_creates_only_missing_labels(
     monkeypatch: pytest.MonkeyPatch,
@@ -35,10 +44,10 @@ def test_apply_github_creates_only_missing_labels(
     assert operations.LABELS[0] not in {" ".join(command) for command in created}
 
 
-def test_apply_hf_creates_eu_only_after_absence_is_confirmed(
+def test_apply_hf_creates_after_ambiguous_metadata_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """HF apply creates only an explicitly absent bucket."""
+    """HF apply creates after the CLI cannot establish bucket metadata."""
     commands: list[list[str]] = []
     info_calls = 0
 
@@ -48,17 +57,116 @@ def test_apply_hf_creates_eu_only_after_absence_is_confirmed(
         if command[3:5] == ["buckets", "info"]:
             info_calls += 1
             if info_calls == 1:
-                return operations.CommandResult(1, stderr="404 not found")
+                return operations.CommandResult(1, stderr=REAL_MISSING_BUCKET_STDERR)
             return operations.CommandResult(0, '{"private":true}')
+        return operations.CommandResult(0)
+
+    monkeypatch.setattr(operations, "run_command", fake_command)
+    diagnostics = operations.apply_hf(
+        environment={
+            "HF_TOKEN": "token",
+            "HF_STAGING_BUCKET": "EuroEval/volunteer-results-staging",
+        }
+    )
+    assert not any(item.failed for item in diagnostics)
+    assert commands == [
+        ["uv", "run", "hf", "auth", "whoami"],
+        [
+            "uv",
+            "run",
+            "hf",
+            "buckets",
+            "info",
+            "EuroEval/volunteer-results-staging",
+            "--json",
+        ],
+        [
+            "uv",
+            "run",
+            "hf",
+            "buckets",
+            "create",
+            "EuroEval/volunteer-results-staging",
+            "--private",
+            "--region",
+            "eu",
+            "--exist-ok",
+        ],
+        [
+            "uv",
+            "run",
+            "hf",
+            "buckets",
+            "info",
+            "EuroEval/volunteer-results-staging",
+            "--json",
+        ],
+    ]
+
+
+def test_apply_hf_rejects_public_bucket_without_mutating_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """HF apply verifies public buckets without changing their visibility."""
+    commands: list[list[str]] = []
+
+    def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        commands.append(command)
+        if command[3:5] == ["buckets", "info"]:
+            return operations.CommandResult(0, '{"private":false,"region":"eu"}')
         return operations.CommandResult(0)
 
     monkeypatch.setattr(operations, "run_command", fake_command)
     diagnostics = operations.apply_hf(
         environment={"HF_TOKEN": "token", "HF_STAGING_BUCKET": "bucket"}
     )
+    assert any(item.category == "drift" and item.failed for item in diagnostics)
+    assert not any("create" in command or "settings" in command for command in commands)
+
+
+def test_apply_hf_leaves_private_bucket_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """HF apply does not recreate or reconfigure an existing private bucket."""
+    commands: list[list[str]] = []
+
+    def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        commands.append(command)
+        if command[3:5] == ["buckets", "info"]:
+            return operations.CommandResult(0, '{"private":true,"region":"eu"}')
+        return operations.CommandResult(0)
+
+    monkeypatch.setattr(operations, "run_command", fake_command)
+    diagnostics = operations.apply_hf(
+        environment={"HF_TOKEN": "token", "HF_STAGING_BUCKET": "bucket"}
+    )
+
     assert not any(item.failed for item in diagnostics)
-    create = next(command for command in commands if "create" in command)
-    assert create[-2:] == ["--region", "eu"]
+    assert not any("create" in command or "settings" in command for command in commands)
+
+
+def test_apply_hf_classifies_creation_failure_without_leaking_stderr(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """HF apply reports a safe category when bucket creation is denied."""
+
+    def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        if command[3:5] == ["buckets", "info"]:
+            return operations.CommandResult(1, stderr=REAL_MISSING_BUCKET_STDERR)
+        if command[3:5] == ["buckets", "create"]:
+            return operations.CommandResult(
+                1, stderr="403 Forbidden: token=creation-secret"
+            )
+        return operations.CommandResult(0)
+
+    monkeypatch.setattr(operations, "run_command", fake_command)
+    diagnostics = operations.apply_hf(
+        environment={"HF_TOKEN": "token", "HF_STAGING_BUCKET": "bucket"}
+    )
+    operations.print_diagnostics(diagnostics)
+
+    assert diagnostics[0].category == "auth"
+    assert "creation-secret" not in capsys.readouterr().out
 
 
 def test_apply_requires_explicit_component_and_confirmation(
@@ -250,27 +358,28 @@ def test_ghcr_manifest_check_is_anonymous_and_read_only(
     assert environments == [{"DOCKER_CONFIG": environments[0]["DOCKER_CONFIG"]}]
 
 
-def test_hf_uses_auth_whoami_and_only_creates_absent_bucket(
+def test_hf_check_reports_ambiguous_missing_bucket_without_auth_claim(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Existing HF buckets are inspected, not recreated or region-claimed."""
-    commands: list[list[str]] = []
+    """HF check does not call an inaccessible private bucket definitively missing."""
 
     def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
-        commands.append(command)
         if command[3:5] == ["buckets", "info"]:
-            return operations.CommandResult(0, '{"private":true}')
-        if command[3:6] == ["hf", "auth", "whoami"]:
-            return operations.CommandResult(0)
-        return operations.CommandResult(0, '{"private":true}')
+            return operations.CommandResult(1, stderr=REAL_MISSING_BUCKET_STDERR)
+        return operations.CommandResult(0)
 
     monkeypatch.setattr(operations, "run_command", fake_command)
     diagnostics = operations.check_hf(
         environment={"HF_TOKEN": "token", "HF_STAGING_BUCKET": "bucket"}
     )
-    assert commands[0] == ["uv", "run", "hf", "auth", "whoami"]
-    assert any("manual/unverifiable" in item.message for item in diagnostics)
-    assert not any("create" in command for command in commands)
+    assert diagnostics == [
+        operations.Diagnostic(
+            "hf",
+            "missing or inaccessible",
+            "configured staging bucket is missing or inaccessible",
+            True,
+        )
+    ]
 
 
 def test_manifest_accepts_attested_index_with_independent_proofs() -> None:

@@ -286,31 +286,36 @@ def apply_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
     auth = run_command(["uv", "run", "hf", "auth", "whoami"])
     if auth.returncode:
         return [Diagnostic("hf", "auth", "Hugging Face authentication failed", True)]
-    current = run_command(["uv", "run", "hf", "buckets", "info", bucket, "--json"])
-    if current.returncode == 0:
-        if _json_object(current.stdout):
-            return check_hf(environment=environment)
+    info_command = ["uv", "run", "hf", "buckets", "info", bucket, "--json"]
+    current = run_command(info_command)
+    if current.returncode:
+        created = run_command(
+            [
+                "uv",
+                "run",
+                "hf",
+                "buckets",
+                "create",
+                bucket,
+                "--private",
+                "--region",
+                "eu",
+                "--exist-ok",
+            ]
+        )
+        if created.returncode:
+            category, message = _classify_hf_failure(created)
+            return [Diagnostic("hf", category, message, True)]
+        current = run_command(info_command)
+    data = _json_object(current.stdout)
+    if current.returncode or not data:
+        if current.returncode:
+            category, message = _classify_hf_failure(current)
+            return [Diagnostic("hf", category, message, True)]
         return [
             Diagnostic("hf", "service failure", "bucket metadata is malformed", True)
         ]
-    category, _ = _classify_hf_failure(current)
-    if category != "missing":
-        return [
-            Diagnostic("hf", category, "existing bucket could not be verified", True)
-        ]
-    created = run_command(
-        ["uv", "run", "hf", "buckets", "create", bucket, "--private", "--region", "eu"]
-    )
-    if created.returncode:
-        return [
-            Diagnostic(
-                "hf",
-                "service failure",
-                "private EU staging bucket creation failed",
-                True,
-            )
-        ]
-    return check_hf(environment=environment)
+    return _hf_metadata_diagnostics(data)
 
 
 def _classify_hf_failure(result: CommandResult) -> tuple[str, str]:
@@ -320,13 +325,21 @@ def _classify_hf_failure(result: CommandResult) -> tuple[str, str]:
         Failure category and safe message.
     """
     text = f"{result.stdout} {result.stderr}".lower()
-    if any(value in text for value in ("401", "403", "unauthor", "token")):
-        return "auth", "Hugging Face bucket metadata is not authorised"
+    missing = any(value in text for value in ("404", "not found", "does not exist"))
+    if any(value in text for value in ("401", "403", "unauthor")):
+        return "auth", "Hugging Face bucket operation is not authorised"
+    if missing and any(value in text for value in ("private", "permission", "auth")):
+        return (
+            "missing or inaccessible",
+            "configured staging bucket is missing or inaccessible",
+        )
+    if any(value in text for value in ("auth", "token", "permission")):
+        return "auth", "Hugging Face bucket operation is not authorised"
     if any(value in text for value in ("timeout", "network", "connection", "dns")):
-        return "network", "Hugging Face bucket metadata could not be reached"
-    if any(value in text for value in ("404", "not found", "does not exist")):
+        return "network", "Hugging Face bucket operation could not be reached"
+    if missing:
         return "missing", "configured staging bucket does not exist"
-    return "service failure", "Hugging Face bucket metadata could not be read"
+    return "service failure", "Hugging Face bucket operation failed"
 
 
 def _json_object(value: str) -> dict[str, object]:
@@ -340,6 +353,36 @@ def _json_object(value: str) -> dict[str, object]:
     except json.JSONDecodeError:
         return {}
     return decoded if isinstance(decoded, dict) else {}
+
+
+def _hf_metadata_diagnostics(data: dict[str, object]) -> list[Diagnostic]:
+    """Validate bucket visibility and region metadata.
+
+    Returns:
+        Hugging Face metadata diagnostics.
+    """
+    visibility = data.get("visibility")
+    private = data.get("private") is True or visibility == "private"
+    if visibility == "public" or data.get("private") is False:
+        privacy = Diagnostic("hf", "drift", "staging bucket exists but is public", True)
+    elif private:
+        privacy = Diagnostic("hf", "ok", "staging bucket privacy is private")
+    else:
+        privacy = Diagnostic(
+            "hf", "service failure", "bucket privacy cannot be verified", True
+        )
+    region = data.get("region")
+    if region is None:
+        region_diagnostic = Diagnostic(
+            "hf", "manual", "existing bucket region is manual/unverifiable"
+        )
+    elif str(region).lower() == "eu":
+        region_diagnostic = Diagnostic("hf", "ok", "existing bucket region is EU")
+    else:
+        region_diagnostic = Diagnostic(
+            "hf", "drift", "existing bucket region is not EU", True
+        )
+    return [privacy, region_diagnostic]
 
 
 def check_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
@@ -370,28 +413,7 @@ def check_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
         return [
             Diagnostic("hf", "service failure", "bucket metadata is malformed", True)
         ]
-    visibility = data.get("visibility")
-    private = data.get("private") is True or visibility == "private"
-    if visibility == "public" or data.get("private") is False:
-        privacy = Diagnostic("hf", "drift", "staging bucket exists but is public", True)
-    elif private:
-        privacy = Diagnostic("hf", "ok", "staging bucket privacy is private")
-    else:
-        privacy = Diagnostic(
-            "hf", "service failure", "bucket privacy cannot be verified", True
-        )
-    region = data.get("region")
-    if region is None:
-        region_diagnostic = Diagnostic(
-            "hf", "manual", "existing bucket region is manual/unverifiable"
-        )
-    elif str(region).lower() == "eu":
-        region_diagnostic = Diagnostic("hf", "ok", "existing bucket region is EU")
-    else:
-        region_diagnostic = Diagnostic(
-            "hf", "drift", "existing bucket region is not EU", True
-        )
-    return [privacy, region_diagnostic]
+    return _hf_metadata_diagnostics(data)
 
 
 def apply_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
