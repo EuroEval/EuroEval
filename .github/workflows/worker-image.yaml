@@ -116,3 +116,32 @@ jobs:
             exit 1
           fi
           echo "Verified immutable image: $REFERENCE"
+
+      - name: Publish candidate metadata
+        if: github.event_name != 'pull_request'
+        env:
+          COMMIT: ${{ github.sha }}
+          IMAGE: ghcr.io/euroeval/euroeval-worker
+          PLATFORM: linux/amd64
+          SHA_TAG: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          printf '{"commit":"%s","image":"%s","platform":"%s","sha_tag":"%s","digest":"%s"}\n' \
+            "$COMMIT" "$IMAGE" "$PLATFORM" "$SHA_TAG" "$DIGEST" > worker-image-metadata.json
+          {
+            echo "## Volunteer worker candidate"
+            echo "- Commit: \\`$COMMIT\\`"
+            echo "- Image: \\`$IMAGE\\`"
+            echo "- Platform: \\`$PLATFORM\\`"
+            echo "- SHA tag: \\`$SHA_TAG\\`"
+            echo "- Digest: \\`$DIGEST\\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload candidate metadata
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: volunteer-worker-image-metadata
+          path: worker-image-metadata.json
+          if-no-files-found: error

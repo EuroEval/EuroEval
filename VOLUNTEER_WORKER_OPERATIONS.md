@@ -18,6 +18,63 @@ and validates those assets before its prebuilt Vercel deploy. Alternatively, gen
 the assets first in the checkout and then run `make frontend`. Do not rely on a clean
 Git-based Vercel deployment to recreate these ignored assets.
 
+## First-time procedure
+
+Run this exact sequence from a clean checkout. The first two commands are safe for
+Pi/I to execute now; they do not read `.env`, contact a service, or mutate a file.
+
+1. **AUTOMATED CHECK** - print the workflow, defaults, and required variable names:
+
+   ```sh
+   uv run python src/scripts/volunteer_worker_operations.py plan
+   ```
+
+2. **AUTOMATED CHECK** - run read-only local and configured-service diagnostics. Supply
+   credentials through the maintainer's normal secret injection; never put values in
+   the command or guide:
+
+   ```sh
+   make volunteer-worker-check
+   ```
+
+3. **MANUAL** - the maintainer chooses the existing `EuroEval/EuroEval` GitHub queue,
+   `https://euroeval.com` Vercel project, private EU staging bucket, Upstash database,
+   OAuth app, and public GHCR package. The maintainer supplies credentials, selects an
+   immutable image digest, and confirms production deployment. Pi/I cannot choose
+   accounts, recover credentials, or approve these external changes.
+
+4. **CONFIRMED AUTOMATION** - after reviewing step 2 and supplying the chosen values,
+   explicitly apply only the selected scoped setup. There is intentionally no
+   all-components apply command:
+
+   ```sh
+   uv run python src/scripts/volunteer_worker_operations.py apply --github --yes
+   uv run python src/scripts/volunteer_worker_operations.py apply --hf --yes
+   uv run python src/scripts/volunteer_worker_operations.py apply --vercel --yes
+   ```
+
+   The GitHub and HF commands are optional when those components already pass. Vercel
+   requires every value except versions, which are derived from source when absent.
+   Marker, coordinator, and promotion secrets are durable: provide existing values;
+   this automation never generates or rotates them.
+
+5. **MANUAL** - publish the candidate image using the workflow, carry its digest from
+   the non-secret job summary/artifact, run the physical Linux `amd64` NVIDIA GPU
+   canary, and manually promote that exact digest. Pi/I cannot provide physical GPU
+   verification, publish an image, or deploy production.
+
+6. **AUTOMATED CHECK** - after deployment, run safe route probes. They issue only GET,
+   OPTIONS, and unauthenticated POST requests; they never start authentication, claim
+   work, acquire a lock, or touch staging:
+
+   ```sh
+   uv run python src/scripts/volunteer_worker_operations.py smoke
+   ```
+
+7. **MANUAL** - configure the local queue coordinator and ask one volunteer to run a
+   controlled worker canary. Review the issue marker, staging manifest, and logs before
+   allowing more workers. Use the later sections for detailed contracts and review.
+
 ## Architecture and components
 
 The volunteer path consists of these components:
@@ -149,10 +206,11 @@ uv run python src/scripts/generate_volunteer_scope_policy.py \
   --version <euroeval-version>
 git diff --check
 ```
-
-Commit the generated JSON with the release change. Keep the EuroEval release and policy
-versions aligned separately: the policy's `euroeval_version` must match the repository's
-EuroEval package version and `EUROEVAL_VERSION` in Vercel (including the repository's
+Use `--check` to verify this file without writing, or `--dry-run` to preview whether it
+would change. Commit the generated JSON with the release change. Keep the EuroEval
+release and policy versions aligned separately: the policy's `euroeval_version` must
+match the repository's EuroEval package version and
+`EUROEVAL_VERSION` in Vercel (including the repository's
 normal development-version normalisation). `VOLUNTEER_WORKER_VERSION` is independent
 worker protocol/package versioning; it is currently `1.0.0` and must match the worker
 image/package being published, but need not equal the EuroEval version. The policy

@@ -17,8 +17,12 @@ from leaderboards.evaluation_common import official_dataset_language_pairs
 MODEL_TYPES = ("encoder", "generative")
 
 
-def main() -> None:
-    """Write the generated policy atomically."""
+def main(argv: list[str] | None = None) -> int:
+    """Generate, check, or preview the generated policy.
+
+    Returns:
+        Zero when the requested operation succeeds, otherwise one.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--version", default=None, help="EuroEval version (default: installed package)"
@@ -26,14 +30,49 @@ def main() -> None:
     parser.add_argument(
         "--output", type=Path, default=Path("api/worker/scope-policy.json")
     )
-    args = parser.parse_args()
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument(
+        "--check", action="store_true", help="Check without writing the policy"
+    )
+    modes.add_argument(
+        "--dry-run", action="store_true", help="Report changes without writing"
+    )
+    args = parser.parse_args(argv)
     version = args.version or importlib.metadata.version("euroeval")
     policy = build_policy(version, official_pairs())
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    temporary = args.output.with_suffix(args.output.suffix + ".tmp")
-    encoded = json.dumps(policy, ensure_ascii=False, indent=2)
-    temporary.write_text(encoded + "\n", encoding="utf-8")
-    temporary.replace(args.output)
+    encoded = encode_policy(policy)
+    current = args.output.read_bytes() if args.output.is_file() else None
+    changed = current != encoded
+
+    if args.check:
+        if current is None:
+            print(f"Missing generated policy: {args.output}")
+            return 1
+        if changed:
+            print(f"Stale generated policy: {args.output}")
+            return 1
+        print(f"Generated policy is current: {args.output}")
+        return 0
+    if args.dry_run:
+        state = "would change" if changed else "would not change"
+        print(f"{args.output}: {state}")
+        return 0
+    write_policy(output=args.output, encoded=encoded)
+    print(f"Wrote generated policy: {args.output}")
+    return 0
+
+
+def encode_policy(policy: dict[str, object]) -> bytes:
+    """Return the byte-stable representation of a policy."""
+    return (json.dumps(policy, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
+def write_policy(output: Path, encoded: bytes) -> None:
+    """Atomically write encoded policy bytes to ``output``."""
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output.with_suffix(output.suffix + ".tmp")
+    temporary.write_bytes(encoded)
+    temporary.replace(output)
 
 
 def build_policy(
