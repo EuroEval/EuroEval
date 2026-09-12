@@ -24,6 +24,12 @@ from .github_api import (
 
 logger = logging.getLogger(__name__)
 
+
+def _matching_vm_marker(body: str, vm_id: str) -> bool:
+    matches = list(VM_MARKER_RE.finditer(body))
+    return len(matches) == 1 and matches[0].group(1) == vm_id
+
+
 COMMUNITY_MARKER_VERSION = 1
 COMMUNITY_PROTOCOL_VERSION = "volunteer-worker/v1"
 COMMUNITY_MARKER_OWNER = "community"
@@ -73,8 +79,7 @@ def clear_vm_marker(number: int, vm_id: str) -> None:
     if issue_has_active_queue_ownership(body):
         logger.info(f"#{number}: coordinator ownership is active; keeping markers.")
         return
-    match = VM_MARKER_RE.search(body)
-    if match and match.group(1) == vm_id:
+    if _matching_vm_marker(body, vm_id):
         patch_issue_body(
             number=number, body=VM_MARKER_RE.sub("", body, count=1).rstrip() + "\n"
         )
@@ -277,8 +282,7 @@ def issue_has_active_queue_ownership(body: str) -> bool:
             marker.submission == "submitted"
             or marker.submission == "active"
             and (
-                marker.signature is not None
-                or not marker.leases
+                not marker.leases
                 or any(_expiry_active(lease["expires_at"]) for lease in marker.leases)
             )
         )
@@ -341,8 +345,6 @@ def release_issue_if_owned(number: int, vm_id: str, assignee: str) -> bool:
             ),
             None,
         )
-        if assigned_login is None:
-            return False
         live_body = current.get("body")
         if not isinstance(live_body, str):
             live_body = body
@@ -362,9 +364,13 @@ def release_issue_if_owned(number: int, vm_id: str, assignee: str) -> bool:
         # Re-fetch after clearing the VM marker: an operator may have replaced
         # the local assignment while the first mutation was in flight.
         fenced = fetch_issue(number=number)
-        if fenced is None or not any(
-            login.casefold() == assignee.casefold()
-            for login in issue_assignee_logins(issue=fenced)
+        if fenced is None:
+            return False
+        fenced_assignees = issue_assignee_logins(issue=fenced)
+        if assigned_login is None:
+            return False
+        if not any(
+            login.casefold() == assignee.casefold() for login in fenced_assignees
         ):
             return False
         fenced_body = fenced.get("body")
@@ -377,6 +383,8 @@ def release_issue_if_owned(number: int, vm_id: str, assignee: str) -> bool:
                 and _trusted_issue_marker(number, fenced_body) is None
             ):
                 return False
+        if len(fenced_assignees) != 1:
+            return False
         unassign_issue(number=number, assignee=assigned_login)
     except urllib.error.HTTPError as error:
         logger.warning(f"#{number}: release failed: {error}")
@@ -396,12 +404,12 @@ def set_vm_marker(number: int, vm_id: str) -> bool:
         return False
     if marker is not None and marker.submission in COMMUNITY_ACTIVE_SUBMISSION_STATES:
         active = any(_expiry_active(lease["expires_at"]) for lease in marker.leases)
-        if active or not marker.leases or marker.signature:
+        if active or not marker.leases:
             return False
         if not marker.submissions:
             body = remove_community_marker(body)
-    match = VM_MARKER_RE.search(body)
-    if match and match.group(1) != vm_id:
+    matches = list(VM_MARKER_RE.finditer(body))
+    if len(matches) > 1 or matches and matches[0].group(1) != vm_id:
         return False
     # Keep signed broker state and all submission history as an audit trail.
     # Only an unsigned, expired legacy lease with no history is discarded.
@@ -422,5 +430,4 @@ def vm_marker_matches(number: int, vm_id: str) -> bool:
     body = fetch_issue_body(number=number)
     if issue_has_active_queue_ownership(body):
         return False
-    match = VM_MARKER_RE.search(body)
-    return match is not None and match.group(1) == vm_id
+    return _matching_vm_marker(body, vm_id)

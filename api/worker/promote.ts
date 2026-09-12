@@ -11,7 +11,7 @@ import {
   verifyVolunteerMarker,
 } from "./_lib.ts";
 import type {
-  PromotionRecord, PromotionReservation, VolunteerLeaseMarker, VolunteerSubmission,
+  PromotionRecord, PromotionReservation, VolunteerLeaseMarker,
 } from "./_lib.ts";
 
 export const config = { runtime: "edge" };
@@ -20,10 +20,7 @@ export const PROMOTION_MARKER = "euroeval-volunteer-promotion:v1";
 export interface PromotionPlan {
   marker: VolunteerLeaseMarker;
   complete: boolean;
-  winner: string | null;
-  acceptedCounts: Array<{ login: string; count: number }>;
   removeReviewLabel: boolean;
-  releaseCoordinator: boolean;
   releaseContributor: string | null;
 }
 
@@ -61,22 +58,9 @@ export function promotionPlan(
   const releaseContributor = outcome === "rejected" && !contributorRetained ?
     current.verified_contributor : null;
   return {
-    marker: next, complete, winner: null,
-    acceptedCounts: [], removeReviewLabel: !submitted,
-    releaseCoordinator: releaseContributor !== null,
+    marker: next, complete, removeReviewLabel: !submitted,
     releaseContributor,
   };
-}
-
-export function largestAcceptedShare(submissions: VolunteerSubmission[] | undefined): string | null {
-  const shares = new Map<string, { login: string; count: number }>();
-  for (const item of submissions || []) {
-    if (item.status !== "accepted") continue;
-    const key = item.verified_contributor.toLowerCase();
-    const previous = shares.get(key);
-    shares.set(key, { login: previous?.login || item.verified_contributor, count: (previous?.count || 0) + item.result_count });
-  }
-  return [...shares.values()].sort((left, right) => right.count - left.count || left.login.toLowerCase().localeCompare(right.login.toLowerCase()) || left.login.localeCompare(right.login))[0]?.login || null;
 }
 
 function sameRecords(a: PromotionRecord[], b: PromotionRecord[]): boolean {
@@ -178,7 +162,7 @@ export default async function handler(req: Request): Promise<Response> {
       return json(200, { protocol_version: PROTOCOL_VERSION, status: outcome, submission_id: submissionId,
         decision_reviewer: reservation.decision_reviewer,
         decision_created_at: reservation.decision_created_at,
-        complete: plan.complete, winner: plan.winner, decision_digest: decisionDigest });
+        complete: plan.complete, decision_digest: decisionDigest });
     } finally { await mutex.release(); }
   } catch (error) {
     const status = error instanceof BrokerError ? error.status : error instanceof ConfigurationError ? 503 : 502;

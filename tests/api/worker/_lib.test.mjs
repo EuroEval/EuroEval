@@ -79,7 +79,7 @@ test("unassignable contributors receive a stable actionable error", async () => 
   globalThis.fetch = async () => new Response(null, { status: 404 });
   try {
     await assert.rejects(assertAssignable("alice"), (error) =>
-      error.status === 422 && error.code === "contributor_not_assignable" &&
+      error.status === 422 && error.code === "github_login_not_assignable" &&
       /cannot be assigned/.test(error.message));
   } finally {
     globalThis.fetch = originalFetch;
@@ -97,6 +97,16 @@ test("assignee ownership is case-insensitive and excludes manual identities", ()
   assert.equal(volunteerAssigneesMatch([{ login: "alice" }, { login: "maintainer" }], marker), false);
   assert.equal(volunteerAssigneesMatch([{ login: "maintainer" }], null), false);
   assert.equal(volunteerAssigneesMatch([], null), true);
+});
+
+test("expired lease contributors remain attributable only during recovery", () => {
+  const marker = { protocol_version: "volunteer-worker/v1", coordinator: "sentinel", submission: "active", leases: [{
+    lease_id: "expired", language: "da", worker: "worker", contributor: "Alice",
+    expires_at: "2020-01-01T00:00:00Z",
+  }] };
+  assert.equal(volunteerAssigneesMatch([{ login: "alice" }], marker), false);
+  assert.equal(volunteerAssigneesMatch([{ login: "alice" }], marker, Date.now(), true), true);
+  assert.equal(volunteerAssigneesMatch([{ login: "manual" }], marker, Date.now(), true), false);
 });
 
 test("assignment loss uses the stable lease error contract", async () => {

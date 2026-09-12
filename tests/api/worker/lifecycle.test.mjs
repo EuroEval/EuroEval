@@ -225,7 +225,7 @@ test("release re-signs while preserving history and other leases", async () => {
       contributor: lease.contributor, expires_at: lease.expires_at }, other],
     submissions: [history], completed_languages: [],
   });
-  const issue = { number: issueNumber, body: markerBody(signed), state: "open", assignees: [{ login: "alice" }] };
+  const issue = { number: issueNumber, body: markerBody(signed), state: "open", assignees: [{ login: "alice" }, { login: "bob" }] };
   const values = new Map();
   values.set(`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" }));
   values.set(`euroeval:worker:lease-id:${lease.lease_id}`, JSON.stringify(lease));

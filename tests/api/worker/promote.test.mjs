@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { claimableLanguages, signVolunteerMarker } from "../../../api/worker/_lib.ts";
-import promote, { largestAcceptedShare, promotionPlan } from "../../../api/worker/promote.ts";
+import promote, { promotionPlan } from "../../../api/worker/promote.ts";
 import reservePromotion from "../../../api/worker/promotion-reserve.ts";
 
 const submission = (id, language, contributor, count, status = "submitted") => ({
@@ -29,9 +29,7 @@ test("acceptance awards no credit before every language completes", () => {
     "accepted",
   );
   assert.equal(plan.complete, false);
-  assert.equal(plan.winner, null);
   assert.equal(plan.marker.submission, "submitted");
-  assert.equal(plan.releaseCoordinator, false);
 });
 
 test("all-language completion keeps signed submission state only", () => {
@@ -46,21 +44,8 @@ test("all-language completion keeps signed submission state only", () => {
     "accepted",
   );
   assert.equal(plan.complete, true);
-  assert.equal(plan.winner, null);
-  assert.deepEqual(plan.acceptedCounts, []);
   assert.equal(plan.marker.submission, "accepted");
-  assert.equal(plan.releaseCoordinator, false);
   assert.equal(plan.removeReviewLabel, true);
-});
-
-test("largest accepted share ties by lower-case login", () => {
-  assert.equal(
-    largestAcceptedShare([
-      submission("one", "da", "Zed", 5, "accepted"),
-      submission("two", "de", "alice", 5, "accepted"),
-    ]),
-    "alice",
-  );
 });
 
 test("rejection preserves audit and makes language claimable", () => {
@@ -73,7 +58,6 @@ test("rejection preserves audit and makes language claimable", () => {
   assert.equal(plan.marker.submissions[0].status, "rejected");
   assert.equal(plan.marker.submission, "rejected");
   assert.equal(plan.removeReviewLabel, true);
-  assert.equal(plan.releaseCoordinator, true);
   assert.deepEqual(claimableLanguages(["da"], plan.marker), ["da"]);
 });
 
@@ -90,7 +74,6 @@ test("terminal retry completes the same lifecycle plan", () => {
   const value = marker([submission("one", "da", "alice", 4, "accepted")]);
   const plan = promotionPlan(value, ["da"], "one", "accepted");
   assert.equal(plan.complete, true);
-  assert.equal(plan.winner, null);
   assert.throws(() => promotionPlan(value, ["da"], "one", "rejected"));
 });
 

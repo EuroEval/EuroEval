@@ -21,13 +21,6 @@ function extractModelId(title: string, body: string | null): string | null {
   const rest = title.slice(prefix.length).trim(); return rest && rest !== "<model-name>" ? rest : null;
 }
 
-/** Pick the highest accepted identity count, with a stable login tie-break. */
-export function calculateWinner(accepted: Array<{ github_login: string; identity: string }>): string | null {
-  const counts = new Map<string, Set<string>>();
-  for (const item of accepted) { if (!item?.github_login || !item.identity) continue; const set = counts.get(item.github_login) || new Set<string>(); set.add(item.identity); counts.set(item.github_login, set); }
-  return [...counts.entries()].sort((a, b) => b[1].size - a[1].size || a[0].toLowerCase().localeCompare(b[0].toLowerCase()) || a[0].localeCompare(b[0]))[0]?.[0] || null;
-}
-
 export function creditLogins(issue: RawIssue): string[] {
   const assignees = issue.assignees && issue.assignees.length > 0 ? issue.assignees : issue.assignee ? [issue.assignee] : [];
   const seen = new Set<string>();

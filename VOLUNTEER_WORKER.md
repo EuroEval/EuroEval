@@ -94,7 +94,7 @@ if the deployment must remain pinned.
 5. Each record is uploaded idempotently to private Hugging Face staging.
 6. The broker validates the complete lease and marks it ready for review.
 
-Issue assignees are the mutable, authoritative active evaluators and Hall-credit
+Issue assignees are the mutable, authoritative active evaluators and credit
 identities for both manual and volunteer work. Maintainers can transfer ownership or
 credit by changing assignees; that fences old volunteer leases. Multiple assignees are
 valid when multiple volunteers contribute different languages, and accepted assignees

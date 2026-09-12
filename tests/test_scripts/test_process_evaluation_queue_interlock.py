@@ -73,8 +73,7 @@ def test_coordinator_lock_is_renewed_and_released(
 
 
 @pytest.mark.parametrize(
-    ("assignees", "expected"),
-    [([], True), ([{"login": "runner"}], True), ([{"login": "other"}], False)],
+    ("assignees", "expected"),        [([], True), ([{"login": "runner"}], False), ([{"login": "other"}], False)],
 )
 def test_claim_recheck_respects_github_assignee(
     monkeypatch: pytest.MonkeyPatch, assignees: list[dict[str, str]], expected: bool
@@ -86,8 +85,7 @@ def test_claim_recheck_respects_github_assignee(
         lambda path: {"state": "open", "assignees": assignees, "body": ""},
     )
 
-    assert (
-        process_evaluation_queue.issue_is_still_claimable(number=9, assignee="runner")
+    assert (            process_evaluation_queue.issue_is_still_claimable(number=9, assignee="runner")
         is expected
     )
 
@@ -140,7 +138,7 @@ def _issue(number: int, body: str = "") -> dict[str, object]:
 def test_queue_candidates_respect_assignee_authority(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Only unassigned and solely self-assigned issues enter the local queue."""
+    """Only unassigned issues enter a fresh local queue claim."""
     issues = [_issue(1), _issue(2), _issue(3)]
     issues[1]["assignees"] = [{"login": "runner"}]
     issues[2]["assignees"] = [{"login": "manual-owner"}]
@@ -163,7 +161,7 @@ def test_queue_candidates_respect_assignee_authority(
 
     candidates = process_evaluation_queue._queue_candidates(assignee="runner")
 
-    assert [candidate[5]["number"] for candidate in candidates] == [1, 2]
+    assert [candidate[5]["number"] for candidate in candidates] == [1]
 
 
 def test_local_work_is_fenced_after_manual_reassignment(

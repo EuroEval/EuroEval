@@ -41,7 +41,8 @@ def test_expired_coordinator_marker_is_recoverable(
         '<!-- euroeval-volunteer-worker:v1 {"protocol_version":"volunteer-worker/v1",'
         '"coordinator":"coordinator","submission":"active","leases":['
         '{"lease_id":"old","language":"da","worker":"w",'
-        '"contributor":"c","expires_at":"2000-01-01T00:00:00Z"}]} -->'
+        '"contributor":"c","expires_at":"2000-01-01T00:00:00Z"}],'
+        '"signature":"signed"} -->'
     )
     patched: list[str] = []
     monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
@@ -148,8 +149,8 @@ def test_release_removes_local_login_but_not_replacement(
         number=12, vm_id="local-vm", assignee="runner"
     )
 
-    assert released
-    assert unassigned == ["runner"]
+    assert not released
+    assert unassigned == []
 
 
 def test_release_unassigns_only_the_local_login(
