@@ -51,6 +51,7 @@ PUBLIC_CONFIG = {
     "HF_STAGING_BUCKET",
 }
 VERCEL_KV_SOURCE_VARIABLES = ("KV_REST_API_URL", "KV_REST_API_TOKEN")
+VERCEL_KV_OUTPUT_MARKER = "__EUROEVAL_VERCEL_KV_PAYLOAD__:"
 VERCEL_KV_ALIASES = {
     "KV_REST_API_URL": "UPSTASH_REDIS_REST_URL",
     "KV_REST_API_TOKEN": "UPSTASH_REDIS_REST_TOKEN",
@@ -513,7 +514,9 @@ def _vercel_kv_read_command() -> list[str]:
     names = ", ".join(repr(name) for name in VERCEL_KV_SOURCE_VARIABLES)
     script = (
         "import json, os; "
-        f"print(json.dumps({{name: os.environ.get(name) for name in ({names},)}}))"
+        f"print({VERCEL_KV_OUTPUT_MARKER!r} + "
+        f"json.dumps({{name: os.environ.get(name) for name in ({names},)}}, "
+        "separators=(',', ':')))"
     )
     return [
         "vercel",
@@ -539,14 +542,23 @@ def _vercel_command_environment(environment: dict[str, str]) -> dict[str, str]:
 
 
 def _vercel_kv_values(output: str) -> dict[str, str]:
-    """Decode non-empty source values without exposing malformed command output.
+    """Decode the uniquely marked, non-empty source values.
 
     Returns:
         Non-empty source values, keyed by their Vercel variable names.
     """
+    marked_payloads = [
+        line[len(VERCEL_KV_OUTPUT_MARKER) :]
+        for line in output.splitlines()
+        if line.startswith(VERCEL_KV_OUTPUT_MARKER)
+    ]
+    if len(marked_payloads) != 1:
+        return {}
     try:
-        decoded = json.loads(output)
-    except json.JSONDecodeError:
+        decoded = json.loads(
+            marked_payloads[0], object_pairs_hook=_json_object_without_duplicates
+        )
+    except (json.JSONDecodeError, ValueError):
         return {}
     if not isinstance(decoded, dict):
         return {}
@@ -557,6 +569,30 @@ def _vercel_kv_values(output: str) -> dict[str, str]:
         and isinstance(value, str)
         and value.strip()
     }
+
+
+def _json_object_without_duplicates(
+    pairs: list[tuple[str, object]],
+) -> dict[str, object]:
+    """Decode a JSON object while rejecting duplicate keys.
+
+    Args:
+        pairs:
+            Object key-value pairs from the JSON decoder.
+
+    Returns:
+        The decoded object.
+
+    Raises:
+        ValueError:
+            If an object key occurs more than once.
+    """
+    decoded: dict[str, object] = {}
+    for name, value in pairs:
+        if name in decoded:
+            raise ValueError("duplicate JSON key")
+        decoded[name] = value
+    return decoded
 
 
 def _check_vercel_kv_aliases(*, environment: dict[str, str]) -> list[Diagnostic]:

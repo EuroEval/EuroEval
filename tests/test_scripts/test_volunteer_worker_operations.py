@@ -298,8 +298,17 @@ def test_reuse_vercel_kv_uses_nested_read_and_sensitive_stdin_updates(
         if command[:5] == ["vercel", "env", "run", "--environment", "production"]:
             assert url not in command
             assert token not in command
+            assert operations.VERCEL_KV_OUTPUT_MARKER in command[-1]
+            assert "separators=(',', ':')" in command[-1]
+            payload = json.dumps(
+                {"KV_REST_API_URL": url, "KV_REST_API_TOKEN": token},
+                separators=(",", ":"),
+            )
             return operations.CommandResult(
-                0, json.dumps({"KV_REST_API_URL": url, "KV_REST_API_TOKEN": token})
+                0,
+                "Loaded env from /path/.env\n"
+                + operations.VERCEL_KV_OUTPUT_MARKER
+                + payload,
             )
         if command[:3] == ["vercel", "env", "add"]:
             assert command[3] in {"UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"}
@@ -341,6 +350,44 @@ def test_reuse_vercel_kv_uses_nested_read_and_sensitive_stdin_updates(
     )
 
 
+@pytest.mark.parametrize(
+    ("output", "expected"),
+    [
+        (
+            "status\n"
+            + operations.VERCEL_KV_OUTPUT_MARKER
+            + '{"KV_REST_API_URL":"url","KV_REST_API_TOKEN":"token"}\n'
+            + "another status",
+            {"KV_REST_API_URL": "url", "KV_REST_API_TOKEN": "token"},
+        ),
+        (
+            operations.VERCEL_KV_OUTPUT_MARKER
+            + '{"KV_REST_API_URL":"url","KV_REST_API_TOKEN":"token"}\n'
+            + operations.VERCEL_KV_OUTPUT_MARKER
+            + '{"KV_REST_API_URL":"other","KV_REST_API_TOKEN":"other"}',
+            {},
+        ),
+        (operations.VERCEL_KV_OUTPUT_MARKER + "not-json", {}),
+        ('{"KV_REST_API_URL":"url","KV_REST_API_TOKEN":"token"}', {}),
+        (
+            operations.VERCEL_KV_OUTPUT_MARKER
+            + '{"KV_REST_API_URL":"url","KV_REST_API_URL":"duplicate"}',
+            {},
+        ),
+        (
+            operations.VERCEL_KV_OUTPUT_MARKER
+            + '{"KV_REST_API_URL":" ","KV_REST_API_TOKEN":""}',
+            {},
+        ),
+    ],
+)
+def test_vercel_kv_values_require_one_marked_payload(
+    output: str, expected: dict[str, str]
+) -> None:
+    """Only one valid marked payload can provide non-empty source values."""
+    assert operations._vercel_kv_values(output) == expected
+
+
 def test_reuse_vercel_kv_fails_before_mutation_for_missing_source(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -357,7 +404,10 @@ def test_reuse_vercel_kv_fails_before_mutation_for_missing_source(
             )
         if command[:5] == ["vercel", "env", "run", "--environment", "production"]:
             return operations.CommandResult(
-                0, '{"KV_REST_API_URL":"", "KV_REST_API_TOKEN":null}'
+                0,
+                "Loaded env from /path/.env\n"
+                + operations.VERCEL_KV_OUTPUT_MARKER
+                + '{"KV_REST_API_URL":"","KV_REST_API_TOKEN":null}',
             )
         raise AssertionError(f"unexpected command: {command}")
 
@@ -388,7 +438,9 @@ def test_reuse_vercel_kv_stops_after_partial_update_failure(
             )
         if command[:5] == ["vercel", "env", "run", "--environment", "production"]:
             return operations.CommandResult(
-                0, '{"KV_REST_API_URL":"url", "KV_REST_API_TOKEN":"token"}'
+                0,
+                operations.VERCEL_KV_OUTPUT_MARKER
+                + '{"KV_REST_API_URL":"url","KV_REST_API_TOKEN":"token"}',
             )
         if command[:3] == ["vercel", "env", "add"]:
             return operations.CommandResult(1, stderr="secret-bearing failure")
@@ -451,7 +503,9 @@ def test_reuse_vercel_kv_fails_when_post_update_metadata_drifts(
             )
         if command[:5] == ["vercel", "env", "run", "--environment", "production"]:
             return operations.CommandResult(
-                0, '{"KV_REST_API_URL":"url", "KV_REST_API_TOKEN":"token"}'
+                0,
+                operations.VERCEL_KV_OUTPUT_MARKER
+                + '{"KV_REST_API_URL":"url","KV_REST_API_TOKEN":"token"}',
             )
         if command[:3] == ["vercel", "env", "add"]:
             return operations.CommandResult(0)
