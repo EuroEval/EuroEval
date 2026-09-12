@@ -104,6 +104,58 @@ def test_apply_hf_creates_after_ambiguous_metadata_failure(
     ]
 
 
+def test_apply_hf_uses_explicit_us_region(monkeypatch: pytest.MonkeyPatch) -> None:
+    """HF bucket creation uses the explicitly selected US region."""
+    commands: list[list[str]] = []
+    info_calls = 0
+
+    def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        nonlocal info_calls
+        commands.append(command)
+        if command[3:5] == ["buckets", "info"]:
+            info_calls += 1
+            if info_calls == 1:
+                return operations.CommandResult(1, stderr=REAL_MISSING_BUCKET_STDERR)
+            return operations.CommandResult(0, '{"private":true}')
+        return operations.CommandResult(0)
+
+    monkeypatch.setattr(operations, "run_command", fake_command)
+    diagnostics = operations.apply_hf(
+        environment={"HF_TOKEN": "token", "HF_STAGING_BUCKET": "bucket"}, region="us"
+    )
+
+    assert not any(item.failed for item in diagnostics)
+    assert ["--region", "us"] == commands[2][7:9]
+
+
+def test_hf_region_is_explicitly_forwarded_to_apply(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The CLI forwards an explicit US region only to HF apply."""
+    regions: list[str] = []
+
+    def fake_apply_hf(
+        *, environment: dict[str, str], region: str = "eu"
+    ) -> list[operations.Diagnostic]:
+        del environment
+        regions.append(region)
+        return []
+
+    monkeypatch.setattr(operations, "apply_hf", fake_apply_hf)
+
+    assert operations.main(["apply", "--hf", "--yes", "--hf-region", "us"]) == 0
+    assert regions == ["us"]
+
+
+def test_hf_region_defaults_to_eu_and_rejects_invalid_values() -> None:
+    """The HF region defaults to EU and accepts no other values."""
+    assert operations.parse_arguments(["apply"]).hf_region == "eu"
+
+    with pytest.raises(SystemExit) as error:
+        operations.parse_arguments(["apply", "--hf-region", "asia"])
+    assert error.value.code == 2
+
+
 def test_apply_hf_rejects_public_bucket_without_mutating_it(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -142,6 +194,11 @@ def test_apply_hf_leaves_private_bucket_unchanged(
     )
 
     assert not any(item.failed for item in diagnostics)
+    assert any(
+        item.message == "existing bucket region cannot be verified from metadata; "
+        "confirm it manually"
+        for item in diagnostics
+    )
     assert not any("create" in command or "settings" in command for command in commands)
 
 
@@ -183,6 +240,7 @@ def test_apply_requires_explicit_component_and_confirmation(
     monkeypatch.setattr(operations, "run_command", fail_command)
     assert operations.main(["apply"]) == 2
     assert operations.main(["apply", "--github"]) == 2
+    assert operations.main(["apply", "--hf", "--hf-region", "us"]) == 2
     assert not called
 
 
@@ -454,6 +512,10 @@ def test_plan_does_not_run_commands_or_print_secret_values(
     assert "GITHUB_TOKEN (present)" in output
     assert secret not in output
     assert "EuroEval/EuroEval" in output
+    assert "hf_region=eu" in output
+    assert "EU creation requires an eligible organisation plan" in output
+    assert "US requires an explicit data-residency decision" in output
+    assert "metadata cannot verify an existing bucket's region" in output
 
 
 def test_redis_requires_exact_pong_and_never_prints_url(

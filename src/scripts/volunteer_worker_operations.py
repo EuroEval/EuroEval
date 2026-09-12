@@ -114,6 +114,7 @@ def main(argv: list[str] | None = None) -> int:
             environment=environment,
             components=selected_components(arguments, explicit=True),
             confirmed=arguments.yes,
+            hf_region=arguments.hf_region,
         )
     diagnostics = smoke(
         base_url=arguments.base_url,
@@ -124,7 +125,13 @@ def main(argv: list[str] | None = None) -> int:
     return int(any(item.failed for item in diagnostics))
 
 
-def apply(*, environment: dict[str, str], components: set[str], confirmed: bool) -> int:
+def apply(
+    *,
+    environment: dict[str, str],
+    components: set[str],
+    confirmed: bool,
+    hf_region: str = "eu",
+) -> int:
     """Apply only explicitly confirmed, narrowly scoped setup.
 
     Returns:
@@ -142,7 +149,7 @@ def apply(*, environment: dict[str, str], components: set[str], confirmed: bool)
     if "github" in components:
         diagnostics.extend(apply_github())
     if "hf" in components:
-        diagnostics.extend(apply_hf(environment=environment))
+        diagnostics.extend(apply_hf(environment=environment, region=hf_region))
     if "vercel" in components:
         diagnostics.extend(apply_vercel(environment=environment))
     print_diagnostics(diagnostics)
@@ -267,8 +274,8 @@ def run_command(
     return CommandResult(completed.returncode, completed.stdout, completed.stderr)
 
 
-def apply_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
-    """Create a missing private EU bucket, or verify an existing bucket.
+def apply_hf(*, environment: dict[str, str], region: str = "eu") -> list[Diagnostic]:
+    """Create a missing private bucket in the selected region, or verify a bucket.
 
     Returns:
         Hugging Face diagnostics.
@@ -299,7 +306,7 @@ def apply_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
                 bucket,
                 "--private",
                 "--region",
-                "eu",
+                region,
                 "--exist-ok",
             ]
         )
@@ -356,7 +363,7 @@ def _json_object(value: str) -> dict[str, object]:
 
 
 def _hf_metadata_diagnostics(data: dict[str, object]) -> list[Diagnostic]:
-    """Validate bucket visibility and region metadata.
+    """Validate bucket visibility and report the region verification limitation.
 
     Returns:
         Hugging Face metadata diagnostics.
@@ -371,17 +378,11 @@ def _hf_metadata_diagnostics(data: dict[str, object]) -> list[Diagnostic]:
         privacy = Diagnostic(
             "hf", "service failure", "bucket privacy cannot be verified", True
         )
-    region = data.get("region")
-    if region is None:
-        region_diagnostic = Diagnostic(
-            "hf", "manual", "existing bucket region is manual/unverifiable"
-        )
-    elif str(region).lower() == "eu":
-        region_diagnostic = Diagnostic("hf", "ok", "existing bucket region is EU")
-    else:
-        region_diagnostic = Diagnostic(
-            "hf", "drift", "existing bucket region is not EU", True
-        )
+    region_diagnostic = Diagnostic(
+        "hf",
+        "manual",
+        "existing bucket region cannot be verified from metadata; confirm it manually",
+    )
     return [privacy, region_diagnostic]
 
 
@@ -1213,6 +1214,12 @@ def parse_arguments(argv: list[str] | None) -> argparse.Namespace:
         "--hf", action="store_true", help="Apply the HF staging bucket."
     )
     parser.add_argument(
+        "--hf-region",
+        choices=("eu", "us"),
+        default="eu",
+        help="Region for a newly created HF bucket (apply --hf --yes only).",
+    )
+    parser.add_argument(
         "--yes", action="store_true", help="Confirm an apply operation."
     )
     parser.add_argument(
@@ -1243,6 +1250,15 @@ def print_plan(*, environment: dict[str, str]) -> None:
     print(f"Defaults: repository={REPOSITORY}; base_url={PRODUCTION_BASE_URL};")
     print(f"  results_bucket={RESULTS_BUCKET}; image={IMAGE_REPOSITORY};")
     print(f"  euroeval_version={euroeval_version}; worker_version={worker_version}")
+    print("  hf_region=eu (HF bucket creation default)")
+    print(
+        "EU creation requires an eligible organisation plan; HF metadata cannot "
+        "verify an existing bucket's region."
+    )
+    print(
+        "US requires an explicit data-residency decision; use apply --hf --yes "
+        "--hf-region us only then."
+    )
     print("Required environment variable names (values are never printed):")
     for name in REQUIRED_ENVIRONMENT:
         state = "present" if environment.get(name) else "missing"
