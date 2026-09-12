@@ -222,16 +222,6 @@ def _string(data: dict[str, object], key: str) -> str:
 
 
 @dataclasses.dataclass(frozen=True)
-class ModelEvidence:
-    """Immutable Hub metadata copied into a broker-issued lease."""
-
-    pipeline_tag: str
-    architectures: tuple[str, ...]
-    model_type: str
-    is_encoder_decoder: bool | None = None
-
-
-@dataclasses.dataclass(frozen=True)
 class ExpectedScope:
     """Exact benchmark scope and task groups authorised by the broker."""
 
@@ -241,6 +231,61 @@ class ExpectedScope:
     count: int
     warnings: tuple[str, ...]
     task_groups: tuple[str, ...]
+
+
+def _expected_scope(value: object) -> ExpectedScope:
+    """Decode the broker's exact evaluation scope.
+
+    Returns:
+        The decoded scope.
+
+    Raises:
+        ValueError:
+            If the broker response has malformed scope metadata.
+    """
+    if not isinstance(value, dict):
+        raise ValueError("broker response expected_scope is required")
+    policy_version = value.get("policy_version")
+    language_group = value.get("language_group")
+    identities = value.get("identity_suffixes")
+    count = value.get("count")
+    warnings = value.get("warnings")
+    task_groups = value.get("task_groups")
+    if (
+        not isinstance(policy_version, str)
+        or not policy_version
+        or not isinstance(language_group, str)
+        or not language_group
+        or not isinstance(identities, (list, tuple))
+        or not identities
+        or not all(isinstance(item, str) and item for item in identities)
+        or not isinstance(count, int)
+        or count != len(identities)
+        or not isinstance(warnings, (list, tuple))
+        or not all(isinstance(item, str) for item in warnings)
+        or not isinstance(task_groups, (list, tuple))
+        or not task_groups
+        or not all(isinstance(item, str) and item for item in task_groups)
+    ):
+        raise ValueError("broker response expected_scope is malformed")
+    return ExpectedScope(
+        policy_version=policy_version,
+        language_group=language_group,
+        identity_suffixes=tuple(identities),
+        count=count,
+        warnings=tuple(warnings),
+        task_groups=tuple(task_groups),
+    )
+
+
+@dataclasses.dataclass(frozen=True)
+class ModelEvidence:
+    """Immutable Hub metadata copied into a broker-issued lease."""
+
+    pipeline_tag: str
+    architectures: tuple[str, ...]
+    model_type: str
+    is_encoder_decoder: bool | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -315,51 +360,6 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
         selected_gpu_index=_optional_integer(data, "selected_gpu_index"),
         model_metadata=model_metadata,
         expected_scope=expected_scope,
-    )
-
-
-def _expected_scope(value: object) -> ExpectedScope:
-    """Decode the broker's exact evaluation scope.
-
-    Returns:
-        The decoded scope.
-
-    Raises:
-        ValueError:
-            If the broker response has malformed scope metadata.
-    """
-    if not isinstance(value, dict):
-        raise ValueError("broker response expected_scope is required")
-    policy_version = value.get("policy_version")
-    language_group = value.get("language_group")
-    identities = value.get("identity_suffixes")
-    count = value.get("count")
-    warnings = value.get("warnings")
-    task_groups = value.get("task_groups")
-    if (
-        not isinstance(policy_version, str)
-        or not policy_version
-        or not isinstance(language_group, str)
-        or not language_group
-        or not isinstance(identities, (list, tuple))
-        or not identities
-        or not all(isinstance(item, str) and item for item in identities)
-        or not isinstance(count, int)
-        or count != len(identities)
-        or not isinstance(warnings, (list, tuple))
-        or not all(isinstance(item, str) for item in warnings)
-        or not isinstance(task_groups, (list, tuple))
-        or not task_groups
-        or not all(isinstance(item, str) and item for item in task_groups)
-    ):
-        raise ValueError("broker response expected_scope is malformed")
-    return ExpectedScope(
-        policy_version=policy_version,
-        language_group=language_group,
-        identity_suffixes=tuple(identities),
-        count=count,
-        warnings=tuple(warnings),
-        task_groups=tuple(task_groups),
     )
 
 

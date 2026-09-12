@@ -218,8 +218,114 @@ class HuggingFaceMetadata:
         )
 
 
+def derive_model_type(
+    *, pipeline_tag: str | None, is_encoder_decoder: object = None
+) -> str | None:
+    """Classify a model using EuroEval's Hub pipeline/backend contract.
+
+    A non-generative Hub pipeline is sent through the Transformers encoder path;
+    generative Hub pipelines are sent through vLLM. Architecture names are not
+    classification evidence because they are implementation details, not a
+    compatibility contract.
+
+    Returns:
+        The broad capability, or ``None`` for ambiguous metadata.
+    """
+    if not isinstance(pipeline_tag, str) or not pipeline_tag.strip():
+        return None
+    if is_encoder_decoder is not None and not isinstance(is_encoder_decoder, bool):
+        return None
+    generative = pipeline_tag in GENERATIVE_PIPELINE_TAGS
+    if not generative and is_encoder_decoder is True:
+        return None
+    return "generative" if generative else "encoder"
+
+
 class SafetyError(RuntimeError):
     """Raised when a model cannot be safely evaluated."""
+
+
+def _hub_false_or_bool(value: object) -> bool:
+    """Return whether a Hub access flag has a recognised representation."""
+    return isinstance(value, bool) or value == "false"
+
+
+def _installed_backend_supports(
+    *,
+    model_type: str,
+    config: object,
+    architectures: tuple[str, ...],
+    pipeline_tag: str | None = None,
+    is_encoder_decoder: bool | None = None,
+    task_groups: tuple[str, ...] = (),
+) -> bool:
+    """Check actual task loading against the installed backend APIs.
+
+    Returns:
+        Whether the installed backend can load the model without remote code.
+    """
+    if model_type == "encoder":
+        if pipeline_tag not in (None, *_ENCODER_PIPELINE_TAGS):
+            return False
+        if is_encoder_decoder is True:
+            return False
+        if not task_groups:
+            return True
+        mappings = _encoder_task_mappings(task_groups)
+        if mappings is None:
+            return False
+        try:
+            return all(type(config) in mapping for mapping in mappings)
+        except Exception:
+            return False
+    if model_type != "generative" or not architectures:
+        return False
+    if pipeline_tag == "text2text-generation" and is_encoder_decoder is False:
+        return False
+    if pipeline_tag == "text-generation" and is_encoder_decoder is True:
+        return False
+    try:
+        registry_module = importlib.import_module("vllm.model_executor.models.registry")
+        registry = getattr(registry_module, "ModelRegistry", None)
+        get_supported = getattr(registry, "get_supported_archs", None)
+        inspect_model = getattr(registry, "inspect_model_cls", None)
+        if not callable(get_supported) or not callable(inspect_model):
+            return False
+        supported = get_supported()
+        if not isinstance(supported, c.Collection):
+            return False
+        candidates = [
+            architecture for architecture in architectures if architecture in supported
+        ]
+        if not candidates:
+            return False
+        inspection = inspect_model(candidates, _VllmInspectionConfig())
+        model_info = inspection[0] if isinstance(inspection, tuple) else inspection
+        return bool(
+            getattr(model_info, "is_text_generation_model", False)
+        ) and not bool(getattr(model_info, "is_pooling_model", False))
+    except Exception:
+        return False
+
+
+@dataclasses.dataclass(frozen=True)
+class _VllmInspectionConfig:
+    """Minimal safe configuration for vLLM registry inspection."""
+
+    model_impl: str = "auto"
+    convert_type: str = "none"
+    runner_type: str = "generate"
+    trust_remote_code: bool = False
+
+
+def _encoder_task_mappings(task_groups: tuple[str, ...]) -> tuple[object, ...] | None:
+    """Return the exact Transformers task mappings required by a scope."""
+    if not task_groups:
+        return ()
+    mappings = tuple(_ENCODER_TASK_MAPPINGS.get(task) for task in task_groups)
+    if any(mapping is None for mapping in mappings):
+        return None
+    return mappings
 
 
 @dataclasses.dataclass(frozen=True)
@@ -322,109 +428,3 @@ def _backend_compatible(info: ModelMetadata, task_groups: tuple[str, ...]) -> bo
     if info.model_type == "encoder":
         return _encoder_task_mappings(task_groups) is not None
     return info.backend_compatible
-
-
-def derive_model_type(
-    *, pipeline_tag: str | None, is_encoder_decoder: object = None
-) -> str | None:
-    """Classify a model using EuroEval's Hub pipeline/backend contract.
-
-    A non-generative Hub pipeline is sent through the Transformers encoder path;
-    generative Hub pipelines are sent through vLLM. Architecture names are not
-    classification evidence because they are implementation details, not a
-    compatibility contract.
-
-    Returns:
-        The broad capability, or ``None`` for ambiguous metadata.
-    """
-    if not isinstance(pipeline_tag, str) or not pipeline_tag.strip():
-        return None
-    if is_encoder_decoder is not None and not isinstance(is_encoder_decoder, bool):
-        return None
-    generative = pipeline_tag in GENERATIVE_PIPELINE_TAGS
-    if not generative and is_encoder_decoder is True:
-        return None
-    return "generative" if generative else "encoder"
-
-
-def _hub_false_or_bool(value: object) -> bool:
-    """Return whether a Hub access flag has a recognised representation."""
-    return isinstance(value, bool) or value == "false"
-
-
-def _installed_backend_supports(
-    *,
-    model_type: str,
-    config: object,
-    architectures: tuple[str, ...],
-    pipeline_tag: str | None = None,
-    is_encoder_decoder: bool | None = None,
-    task_groups: tuple[str, ...] = (),
-) -> bool:
-    """Check actual task loading against the installed backend APIs.
-
-    Returns:
-        Whether the installed backend can load the model without remote code.
-    """
-    if model_type == "encoder":
-        if pipeline_tag not in (None, *_ENCODER_PIPELINE_TAGS):
-            return False
-        if is_encoder_decoder is True:
-            return False
-        if not task_groups:
-            return True
-        mappings = _encoder_task_mappings(task_groups)
-        if mappings is None:
-            return False
-        try:
-            return all(type(config) in mapping for mapping in mappings)
-        except Exception:
-            return False
-    if model_type != "generative" or not architectures:
-        return False
-    if pipeline_tag == "text2text-generation" and is_encoder_decoder is False:
-        return False
-    if pipeline_tag == "text-generation" and is_encoder_decoder is True:
-        return False
-    try:
-        registry_module = importlib.import_module("vllm.model_executor.models.registry")
-        registry = getattr(registry_module, "ModelRegistry", None)
-        get_supported = getattr(registry, "get_supported_archs", None)
-        inspect_model = getattr(registry, "inspect_model_cls", None)
-        if not callable(get_supported) or not callable(inspect_model):
-            return False
-        supported = get_supported()
-        if not isinstance(supported, c.Collection):
-            return False
-        candidates = [
-            architecture for architecture in architectures if architecture in supported
-        ]
-        if not candidates:
-            return False
-        inspection = inspect_model(candidates, _VllmInspectionConfig())
-        model_info = inspection[0] if isinstance(inspection, tuple) else inspection
-        return bool(
-            getattr(model_info, "is_text_generation_model", False)
-        ) and not bool(getattr(model_info, "is_pooling_model", False))
-    except Exception:
-        return False
-
-
-def _encoder_task_mappings(task_groups: tuple[str, ...]) -> tuple[object, ...] | None:
-    """Return the exact Transformers task mappings required by a scope."""
-    if not task_groups:
-        return ()
-    mappings = tuple(_ENCODER_TASK_MAPPINGS.get(task) for task in task_groups)
-    if any(mapping is None for mapping in mappings):
-        return None
-    return mappings
-
-
-@dataclasses.dataclass(frozen=True)
-class _VllmInspectionConfig:
-    """Minimal safe configuration for vLLM registry inspection."""
-
-    model_impl: str = "auto"
-    convert_type: str = "none"
-    runner_type: str = "generate"
-    trust_remote_code: bool = False
