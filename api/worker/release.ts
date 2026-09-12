@@ -58,7 +58,10 @@ export default async function handler(req: Request): Promise<Response> {
         throw new BrokerError(409, "GitHub ownership marker is missing, unsigned, or malformed.");
       }
       if (!marker.leases.some((item) => item.lease_id === lease.lease_id)) {
-        throw new BrokerError(409, "GitHub ownership marker no longer carries this lease.");
+        // The marker transition committed before Redis cleanup. Preserve any
+        // other leases, submissions, or history and only finish our cleanup.
+        await deleteLease(lease);
+        return json(200, { protocol_version: PROTOCOL_VERSION, status: "released", lease_id: lease.lease_id });
       }
       const contributor = lease.contributor.toLowerCase();
       const markerExpected = expectedAssignees(marker);
