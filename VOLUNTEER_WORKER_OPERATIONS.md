@@ -228,8 +228,8 @@ identical policy JSON override.
 The first trusted workflow run may create the `ghcr.io/euroeval/euroeval-worker` package
 privately. A package or organisation owner must make `euroeval-worker` public in GitHub
 Packages settings, then rerun the workflow. GitHub does not provide a supported REST
-operation for this visibility change. The workflow's anonymous pull check must pass
-before a volunteer is given an image reference.
+operation for this visibility change. The workflow's anonymous manifest inspection must
+pass before a volunteer is given an image reference.
 
 ## Vercel environment variables
 
@@ -490,8 +490,8 @@ This is a per-release process, not a one-time prerequisite. The
 layer caching. Pull requests do not publish or attest an image: they load the local
 image and smoke its normal entrypoint as UID 10001 without a GPU. Trusted runs publish
 only the immutable commit-SHA candidate with provenance and an SBOM, verify the public
-GHCR package, pull the exact candidate anonymously, and print the digest. The workflow
-never creates or updates `latest`.
+GHCR package, inspect the exact candidate manifest anonymously, and print the digest.
+The workflow never creates or updates `latest`.
 
 After the package is public and the workflow has printed a verified digest, run this on
 a physical Linux `amd64` NVIDIA host:

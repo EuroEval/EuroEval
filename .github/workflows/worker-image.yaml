@@ -138,11 +138,11 @@ jobs:
             "$COMMIT" "$IMAGE" "$PLATFORM" "$SHA_TAG" "$DIGEST" > worker-image-metadata.json
           {
             echo "## Volunteer worker candidate"
-            echo "- Commit: \\`$COMMIT\\`"
-            echo "- Image: \\`$IMAGE\\`"
-            echo "- Platform: \\`$PLATFORM\\`"
-            echo "- SHA tag: \\`$SHA_TAG\\`"
-            echo "- Digest: \\`$DIGEST\\`"
+            printf -- '- Commit: `%s`\n' "$COMMIT"
+            printf -- '- Image: `%s`\n' "$IMAGE"
+            printf -- '- Platform: `%s`\n' "$PLATFORM"
+            printf -- '- SHA tag: `%s`\n' "$SHA_TAG"
+            printf -- '- Digest: `%s`\n' "$DIGEST"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload candidate metadata
