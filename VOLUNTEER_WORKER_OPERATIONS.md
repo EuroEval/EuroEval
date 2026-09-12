@@ -39,12 +39,13 @@ Pi/I to execute now; neither imports `.env` or mutates a file.
    ```
 
 3. **MANUAL** - the maintainer chooses the existing `EuroEval/EuroEval` GitHub queue,
-   `https://euroeval.com` Vercel project, recommended private EU staging bucket,
-   Upstash database, OAuth app, and public GHCR package. A US staging bucket requires
-   the explicit data-residency decision described below. The maintainer supplies
-   credentials, selects an immutable image digest, and confirms production deployment.
-   Pi/I can execute publication or deployment only after explicit approval, but cannot
-   choose accounts or credentials, or perform a physical GPU canary without hardware.
+   `https://euroeval.com` Vercel project, recommended private EU staging bucket, the
+   existing Vercel KV database used by the site submission limiter, OAuth app, and
+   public GHCR package. A US staging bucket requires the explicit data-residency decision
+   described below. The maintainer supplies credentials, selects an immutable image
+   digest, and confirms production deployment. Pi/I can execute publication or
+   deployment only after explicit approval, but cannot choose accounts or credentials,
+   or perform a physical GPU canary without hardware.
 
 4. **CONFIRMED AUTOMATION** - after reviewing step 2 and supplying the chosen values,
    explicitly apply only the selected scoped setup. There is intentionally no implicit
@@ -57,13 +58,17 @@ Pi/I to execute now; neither imports `.env` or mutates a file.
    # Use this only after an explicit US data-residency decision:
    uv run python src/scripts/volunteer_worker_operations.py apply --hf --yes \
      --hf-region us
-   uv run python src/scripts/volunteer_worker_operations.py apply --vercel --yes
+   uv run python src/scripts/volunteer_worker_operations.py apply --reuse-vercel-kv --yes
    ```
 
-   The GitHub and HF commands are optional when those components already pass. Vercel
-   requires every value except versions, which are derived from source when absent.
-   Marker, coordinator, and promotion secrets are durable: provide existing values;
-   this automation never generates or rotates them.
+   The GitHub and HF commands are optional when those components already pass. For the
+   selected KV reuse setup, configure the remaining Vercel variables as described below;
+   the separate command above supplies only the two broker aliases. The regular Vercel
+   apply requires every value except versions, which are derived from source when
+   absent.
+   Marker, coordinator, and promotion secrets are durable: provide existing values; this
+   automation never generates or rotates them. The KV reuse command copies the existing
+   production KV values to the broker aliases without displaying them.
 
 5. **MANUAL** - publish the candidate image using the workflow, carry its digest from
    the non-secret job summary/artifact, run the physical Linux `amd64` NVIDIA GPU
@@ -101,7 +106,11 @@ The volunteer path consists of these components:
   sent to the worker.
 - **Upstash Redis:** The broker's short-lived state store for credentials, leases, rate
   limits, mutexes, result reservations, and promotion reservations. Redis is
-  coordination state, not a review or result source.
+  coordination state, not a review or result source. The site's submission rate limiter
+  and the volunteer broker use the same existing Vercel KV database under disjoint
+  prefixes: `euroeval:submit` for submissions and `euroeval:worker` (and related worker
+  prefixes) for broker state. This couples their outages, credential rotation, and
+  flushes; this selected setup does not need a dedicated Upstash resource.
 - **Hugging Face Buckets:** The private staging bucket (EU recommended) receives worker
   result files and manifests. After review, the maintainer tool copies verified records
   to the public canonical `EuroEval/results` bucket.
@@ -190,13 +199,33 @@ and `gated`. Maintainers transfer ownership or credit by changing issue assignee
 Changing assignees fences old volunteer leases. Do not treat signed marker contributors
 as current ownership; they are retained for audit and integrity checks.
 
-### 4. Create Upstash Redis
+### 4. Reuse the existing Vercel KV database
 
-Create the Redis database used only by this EuroEval broker, preferably in the region
-closest to the Vercel deployment. Copy its REST URL and REST token into Vercel. Do not
-use a Redis URL or token from a different application, and do not expose either value to
-volunteers. Losing Redis loses active coordination state; it must not be used as the
-durable review record.
+The site submission rate limiter and volunteer broker intentionally share the existing
+Vercel KV database. Their keys remain disjoint: submissions use `euroeval:submit`, while
+the broker uses `euroeval:worker` and related worker prefixes. This couples outages,
+credential rotation, and flushes, so treat those operations as affecting both systems.
+No dedicated Upstash resource is needed for this selected setup.
+
+After the project link and the source Vercel KV variables are confirmed, run this exact
+command. It verifies the linked project, reads `KV_REST_API_URL` and
+`KV_REST_API_TOKEN` through Vercel's production environment, and adds only the two
+broker aliases without exposing their values:
+
+```sh
+uv run python src/scripts/volunteer_worker_operations.py apply --reuse-vercel-kv --yes
+```
+
+If this operation must be rolled back, remove only the aliases. Never remove the source
+KV variables, which the site uses:
+
+```sh
+vercel env rm UPSTASH_REDIS_REST_URL production --yes
+vercel env rm UPSTASH_REDIS_REST_TOKEN production --yes
+```
+
+The operation is safe to repeat. It does not create a database, rotate credentials, or
+modify `KV_REST_API_URL` or `KV_REST_API_TOKEN`.
 
 ### 5. Create private Hugging Face staging storage
 
@@ -273,8 +302,10 @@ broker testing. Do not mark any of these as public or expose them as frontend va
   Do **not** rotate this routinely: changing it invalidates existing signed markers. A
   change requires a planned migration that re-signs or otherwise migrates every live
   marker before the old secret is retired, with the transition tested and verified.
-- `UPSTASH_REDIS_REST_URL` — REST URL for the broker's Upstash database.
-- `UPSTASH_REDIS_REST_TOKEN` — REST token for that database.
+- `UPSTASH_REDIS_REST_URL` — Production alias for the existing Vercel KV REST URL.
+- `UPSTASH_REDIS_REST_TOKEN` — Production alias for the existing Vercel KV REST token.
+  Set both with the explicit reuse command in the first-time procedure; it does not
+  display or rotate the `KV_REST_API_URL` and `KV_REST_API_TOKEN` source variables.
 - `HF_STAGING_BUCKET` — private staging bucket ID in `namespace/bucket` form (EU
   recommended; US requires an explicit data-residency decision).
 - `HF_TOKEN` — scoped token that can write the private staging bucket.

@@ -15,6 +15,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import tomllib
 import typing as t
@@ -48,6 +49,11 @@ PUBLIC_CONFIG = {
     "VOLUNTEER_WORKER_VERSION",
     "VOLUNTEER_WORKER_IMAGE_DIGEST",
     "HF_STAGING_BUCKET",
+}
+VERCEL_KV_SOURCE_VARIABLES = ("KV_REST_API_URL", "KV_REST_API_TOKEN")
+VERCEL_KV_ALIASES = {
+    "KV_REST_API_URL": "UPSTASH_REDIS_REST_URL",
+    "KV_REST_API_TOKEN": "UPSTASH_REDIS_REST_TOKEN",
 }
 BASIC_ENVIRONMENT = {
     "PATH",
@@ -98,6 +104,9 @@ def main(argv: list[str] | None = None) -> int:
     """
     arguments = parse_arguments(argv)
     environment = dict(os.environ)
+    if arguments.reuse_vercel_kv and arguments.command != "apply":
+        print("--reuse-vercel-kv requires apply; no changes were made.")
+        return 2
     if arguments.command == "plan":
         print_plan(environment=environment)
         return 0
@@ -115,6 +124,7 @@ def main(argv: list[str] | None = None) -> int:
             components=selected_components(arguments, explicit=True),
             confirmed=arguments.yes,
             hf_region=arguments.hf_region,
+            reuse_vercel_kv=arguments.reuse_vercel_kv,
         )
     diagnostics = smoke(
         base_url=arguments.base_url,
@@ -131,15 +141,27 @@ def apply(
     components: set[str],
     confirmed: bool,
     hf_region: str = "eu",
+    reuse_vercel_kv: bool = False,
 ) -> int:
     """Apply only explicitly confirmed, narrowly scoped setup.
 
     Returns:
         Process exit status.
     """
+    if reuse_vercel_kv:
+        if components:
+            print("--reuse-vercel-kv cannot be combined with another apply scope.")
+            return 2
+        if not confirmed:
+            print("--reuse-vercel-kv requires --yes; no changes were made.")
+            return 2
+        diagnostics = apply_reuse_vercel_kv(environment=environment)
+        print_diagnostics(diagnostics)
+        return int(any(item.failed for item in diagnostics))
     if not components or not components <= {"github", "hf", "vercel"}:
         print(
-            "apply requires explicit --github, --hf, or --vercel (no default/all path)."
+            "apply requires explicit --github, --hf, or --vercel, or "
+            "--reuse-vercel-kv (no default/all path)."
         )
         return 2
     if not confirmed:
@@ -417,6 +439,171 @@ def check_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
     return _hf_metadata_diagnostics(data)
 
 
+def apply_reuse_vercel_kv(*, environment: dict[str, str]) -> list[Diagnostic]:
+    """Copy the existing Vercel KV credentials to broker aliases.
+
+    The source values are read by a short-lived child of ``vercel env run`` and are
+    passed to Vercel's add command through stdin only. Existing source variables are
+    never modified.
+
+    Returns:
+        Vercel diagnostics.
+    """
+    identity, verified = _check_vercel_project(
+        environment=environment, require_remote_scope=True
+    )
+    if not verified:
+        return identity
+    vercel_environment = _vercel_command_environment(environment)
+    source = run_command(_vercel_kv_read_command(), environment=vercel_environment)
+    if source.returncode:
+        return [
+            Diagnostic(
+                "vercel", "service failure", "source KV variables: read failed", True
+            )
+        ]
+    values = _vercel_kv_values(source.stdout)
+    missing = [name for name in VERCEL_KV_SOURCE_VARIABLES if name not in values]
+    if missing:
+        return [
+            Diagnostic(
+                "vercel",
+                "missing config",
+                "source KV variables missing: " + ", ".join(missing),
+                True,
+            )
+        ]
+
+    diagnostics: list[Diagnostic] = []
+    for source_name in VERCEL_KV_SOURCE_VARIABLES:
+        alias = VERCEL_KV_ALIASES[source_name]
+        added = run_command(
+            [
+                "vercel",
+                "env",
+                "add",
+                alias,
+                "production",
+                "--force",
+                "--yes",
+                "--sensitive",
+            ],
+            input_text=values[source_name] + "\n",
+            environment=vercel_environment,
+        )
+        diagnostics.append(
+            Diagnostic(
+                "vercel",
+                "ok" if added.returncode == 0 else "service failure",
+                f"Production variable {alias}: "
+                f"{'updated' if added.returncode == 0 else 'update failed'}",
+                added.returncode != 0,
+            )
+        )
+        if added.returncode:
+            return diagnostics
+
+    return diagnostics + _check_vercel_kv_aliases(environment=vercel_environment)
+
+
+def _vercel_kv_read_command() -> list[str]:
+    """Build the value-free command used inside Vercel's production environment.
+
+    Returns:
+        Command arguments for the nested Vercel environment process.
+    """
+    names = ", ".join(repr(name) for name in VERCEL_KV_SOURCE_VARIABLES)
+    script = (
+        "import json, os; "
+        f"print(json.dumps({{name: os.environ.get(name) for name in ({names},)}}))"
+    )
+    return [
+        "vercel",
+        "env",
+        "run",
+        "--environment",
+        "production",
+        "--",
+        sys.executable,
+        "-c",
+        script,
+    ]
+
+
+def _vercel_command_environment(environment: dict[str, str]) -> dict[str, str]:
+    """Keep Vercel subprocesses free of unrelated injected application secrets.
+
+    Returns:
+        Allowlisted environment values for Vercel commands.
+    """
+    allowed = BASIC_ENVIRONMENT | TOOL_AUTH_ENVIRONMENT["vercel"]
+    return {name: environment[name] for name in allowed if environment.get(name)}
+
+
+def _vercel_kv_values(output: str) -> dict[str, str]:
+    """Decode non-empty source values without exposing malformed command output.
+
+    Returns:
+        Non-empty source values, keyed by their Vercel variable names.
+    """
+    try:
+        decoded = json.loads(output)
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(decoded, dict):
+        return {}
+    return {
+        name: value
+        for name, value in decoded.items()
+        if name in VERCEL_KV_SOURCE_VARIABLES
+        and isinstance(value, str)
+        and value.strip()
+    }
+
+
+def _check_vercel_kv_aliases(*, environment: dict[str, str]) -> list[Diagnostic]:
+    """Verify only the two broker aliases and never inspect their values.
+
+    Returns:
+        Diagnostics for the two broker aliases.
+    """
+    result = run_command(
+        ["vercel", "env", "ls", "production", "--format=json"], environment=environment
+    )
+    if result.returncode:
+        return [
+            Diagnostic(
+                "vercel",
+                "service failure",
+                "broker KV aliases: metadata read failed",
+                True,
+            )
+        ]
+    metadata = _json_list(result.stdout)
+    by_name = {str(item.get("key", item.get("name", ""))): item for item in metadata}
+    diagnostics: list[Diagnostic] = []
+    for alias in VERCEL_KV_ALIASES.values():
+        item = by_name.get(alias)
+        target = item.get("target", item.get("targets")) if item else None
+        variable_type = str(item.get("type", "")) if item else ""
+        valid = (
+            item is not None
+            and isinstance(target, list)
+            and "production" in target
+            and variable_type in {"sensitive", "secret"}
+        )
+        diagnostics.append(
+            Diagnostic(
+                "vercel",
+                "ok" if valid else "drift",
+                f"Production variable {alias}: "
+                f"{'present' if valid else 'missing or wrong type/target'}",
+                not valid,
+            )
+        )
+    return diagnostics
+
+
 def apply_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
     """Add or update Production variables atomically using stdin.
 
@@ -474,7 +661,7 @@ def apply_vercel(*, environment: dict[str, str]) -> list[Diagnostic]:
 
 
 def _check_vercel_project(
-    *, environment: dict[str, str]
+    *, environment: dict[str, str], require_remote_scope: bool = False
 ) -> tuple[list[Diagnostic], bool]:
     """Verify the local link and remote project before any Vercel mutation.
 
@@ -516,7 +703,10 @@ def _check_vercel_project(
                     "vercel", "drift", f"{name} disagrees with the local link", True
                 )
             ], False
-    project = run_command(["vercel", "project", "inspect", "--format", "json"])
+    project = run_command(
+        ["vercel", "project", "inspect", "--format", "json"],
+        environment=_vercel_command_environment(environment),
+    )
     if project.returncode:
         return [
             Diagnostic(
@@ -532,6 +722,7 @@ def _check_vercel_project(
     identity_ok = (
         actual_project == linked_project
         and actual_name == linked_name
+        and (bool(remote_scopes) if require_remote_scope else True)
         and all(scope == linked_scope for scope in remote_scopes)
     )
     if not identity_ok:
@@ -1221,6 +1412,11 @@ def parse_arguments(argv: list[str] | None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--yes", action="store_true", help="Confirm an apply operation."
+    )
+    parser.add_argument(
+        "--reuse-vercel-kv",
+        action="store_true",
+        help="Copy existing Vercel KV credentials to broker aliases.",
     )
     parser.add_argument(
         "--routes", action="store_true", help="Include deployed route probes in check."

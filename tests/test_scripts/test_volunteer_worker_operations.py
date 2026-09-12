@@ -244,6 +244,234 @@ def test_apply_requires_explicit_component_and_confirmation(
     assert not called
 
 
+def _vercel_link(tmp_path: Path) -> None:
+    """Create the exact project link used by mocked Vercel operations."""
+    (tmp_path / ".vercel").mkdir()
+    (tmp_path / ".vercel/project.json").write_text(
+        '{"projectId":"project-id","orgId":"team-id","projectName":"euroeval"}',
+        encoding="utf-8",
+    )
+
+
+def test_reuse_vercel_kv_requires_apply_flag_and_confirmation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """KV reuse cannot be reached from read-only or unconfirmed commands."""
+    called = False
+
+    def fail_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        nonlocal called
+        called = True
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(operations, "run_command", fail_command)
+    assert operations.main(["plan", "--reuse-vercel-kv", "--yes"]) == 2
+    assert operations.main(["check", "--reuse-vercel-kv"]) == 2
+    assert operations.main(["apply", "--reuse-vercel-kv"]) == 2
+    assert not called
+
+
+def test_reuse_vercel_kv_uses_nested_read_and_sensitive_stdin_updates(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Reuse reads source values in Vercel and exposes only alias names."""
+    monkeypatch.chdir(tmp_path)
+    _vercel_link(tmp_path)
+    url = "https://kv.example.test"
+    token = "source-token-value"
+    environment = {
+        "VERCEL_PROJECT_ID": "project-id",
+        "VERCEL_ORG_ID": "team-id",
+        "VERCEL_PROJECT_NAME": "euroeval",
+        "VERCEL_TOKEN": "vercel-token",
+        "UPSTASH_REDIS_REST_TOKEN": "unrelated-injected-secret",
+        "WORKER_COORDINATOR_SECRET": "another-injected-secret",
+    }
+    commands: list[tuple[list[str], dict[str, object]]] = []
+
+    def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        commands.append((command, kwargs))
+        if command[:3] == ["vercel", "project", "inspect"]:
+            return operations.CommandResult(
+                0, '{"id":"project-id","name":"euroeval","accountId":"team-id"}'
+            )
+        if command[:5] == ["vercel", "env", "run", "--environment", "production"]:
+            assert url not in command
+            assert token not in command
+            return operations.CommandResult(
+                0, json.dumps({"KV_REST_API_URL": url, "KV_REST_API_TOKEN": token})
+            )
+        if command[:3] == ["vercel", "env", "add"]:
+            assert command[3] in {"UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"}
+            assert command[4:] == ["production", "--force", "--yes", "--sensitive"]
+            assert kwargs["input_text"] in {url + "\n", token + "\n"}
+            assert kwargs["environment"] == {
+                "VERCEL_PROJECT_ID": "project-id",
+                "VERCEL_ORG_ID": "team-id",
+                "VERCEL_PROJECT_NAME": "euroeval",
+                "VERCEL_TOKEN": "vercel-token",
+            }
+            return operations.CommandResult(0)
+        if command[:3] == ["vercel", "env", "ls"]:
+            return operations.CommandResult(
+                0,
+                json.dumps(
+                    [
+                        {"key": alias, "target": ["production"], "type": "sensitive"}
+                        for alias in operations.VERCEL_KV_ALIASES.values()
+                    ]
+                ),
+            )
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(operations, "run_command", fake_command)
+    diagnostics = operations.apply_reuse_vercel_kv(environment=environment)
+    operations.print_diagnostics(diagnostics)
+
+    assert not any(item.failed for item in diagnostics)
+    output = capsys.readouterr().out
+    assert url not in output
+    assert token not in output
+    add_commands = [
+        command for command, _ in commands if command[:3] == ["vercel", "env", "add"]
+    ]
+    assert all(url not in command and token not in command for command in add_commands)
+    assert [command[3] for command in add_commands] == list(
+        operations.VERCEL_KV_ALIASES.values()
+    )
+
+
+def test_reuse_vercel_kv_fails_before_mutation_for_missing_source(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Missing or empty source variables prevent either alias update."""
+    monkeypatch.chdir(tmp_path)
+    _vercel_link(tmp_path)
+    commands: list[list[str]] = []
+
+    def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        commands.append(command)
+        if command[:3] == ["vercel", "project", "inspect"]:
+            return operations.CommandResult(
+                0, '{"id":"project-id","name":"euroeval","teamId":"team-id"}'
+            )
+        if command[:5] == ["vercel", "env", "run", "--environment", "production"]:
+            return operations.CommandResult(
+                0, '{"KV_REST_API_URL":"", "KV_REST_API_TOKEN":null}'
+            )
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(operations, "run_command", fake_command)
+    diagnostics = operations.apply_reuse_vercel_kv(environment={})
+
+    assert diagnostics[0].failed
+    assert set(diagnostics[0].message.split(": ", 1)[1].split(", ")) == {
+        "KV_REST_API_URL",
+        "KV_REST_API_TOKEN",
+    }
+    assert not any(command[:3] == ["vercel", "env", "add"] for command in commands)
+
+
+def test_reuse_vercel_kv_stops_after_partial_update_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A failed alias update prevents subsequent mutation and verification."""
+    monkeypatch.chdir(tmp_path)
+    _vercel_link(tmp_path)
+    commands: list[list[str]] = []
+
+    def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        commands.append(command)
+        if command[:3] == ["vercel", "project", "inspect"]:
+            return operations.CommandResult(
+                0, '{"id":"project-id","name":"euroeval","orgId":"team-id"}'
+            )
+        if command[:5] == ["vercel", "env", "run", "--environment", "production"]:
+            return operations.CommandResult(
+                0, '{"KV_REST_API_URL":"url", "KV_REST_API_TOKEN":"token"}'
+            )
+        if command[:3] == ["vercel", "env", "add"]:
+            return operations.CommandResult(1, stderr="secret-bearing failure")
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(operations, "run_command", fake_command)
+    diagnostics = operations.apply_reuse_vercel_kv(environment={})
+    operations.print_diagnostics(diagnostics)
+    output = capsys.readouterr().out
+
+    assert diagnostics[-1].failed
+    assert "secret-bearing failure" not in output
+    assert "UPSTASH_REDIS_REST_URL" in diagnostics[-1].message
+    assert not any(
+        command[3] == "UPSTASH_REDIS_REST_TOKEN"
+        for command in commands
+        if command[:3] == ["vercel", "env", "add"]
+    )
+    assert not any(command[:3] == ["vercel", "env", "ls"] for command in commands)
+
+
+def test_reuse_vercel_kv_rejects_identity_drift_without_mutating(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An exact project identity mismatch blocks source access and updates."""
+    monkeypatch.chdir(tmp_path)
+    _vercel_link(tmp_path)
+    commands: list[list[str]] = []
+
+    def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        commands.append(command)
+        return operations.CommandResult(
+            0, '{"id":"different-project","name":"euroeval","teamId":"team-id"}'
+        )
+
+    monkeypatch.setattr(operations, "run_command", fake_command)
+    diagnostics = operations.apply_reuse_vercel_kv(environment={})
+
+    assert diagnostics[0].failed
+    assert commands == [["vercel", "project", "inspect", "--format", "json"]]
+
+
+def test_reuse_vercel_kv_fails_when_post_update_metadata_drifts(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Successful writes still fail when aliases are not sensitive Production vars."""
+    monkeypatch.chdir(tmp_path)
+    _vercel_link(tmp_path)
+
+    def fake_command(command: list[str], **kwargs: object) -> operations.CommandResult:
+        if command[:3] == ["vercel", "project", "inspect"]:
+            return operations.CommandResult(
+                0, '{"id":"project-id","name":"euroeval","orgId":"team-id"}'
+            )
+        if command[:5] == ["vercel", "env", "run", "--environment", "production"]:
+            return operations.CommandResult(
+                0, '{"KV_REST_API_URL":"url", "KV_REST_API_TOKEN":"token"}'
+            )
+        if command[:3] == ["vercel", "env", "add"]:
+            return operations.CommandResult(0)
+        if command[:3] == ["vercel", "env", "ls"]:
+            return operations.CommandResult(
+                0,
+                json.dumps(
+                    [
+                        {
+                            "key": "UPSTASH_REDIS_REST_URL",
+                            "target": ["production"],
+                            "type": "plain",
+                        }
+                    ]
+                ),
+            )
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(operations, "run_command", fake_command)
+    diagnostics = operations.apply_reuse_vercel_kv(environment={})
+
+    assert any(item.failed for item in diagnostics)
+    assert any("UPSTASH_REDIS_REST_URL" in item.message for item in diagnostics)
+    assert any("UPSTASH_REDIS_REST_TOKEN" in item.message for item in diagnostics)
+
+
 def test_apply_vercel_adds_atomically_and_validates_metadata(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
