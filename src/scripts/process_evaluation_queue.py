@@ -77,6 +77,7 @@ from leaderboards.queue_markers import (
     parse_community_marker,
     release_issue_if_owned,
     set_vm_marker,
+    trusted_community_marker,
     vm_marker_matches,
 )
 from leaderboards.queue_parsing import (
@@ -438,9 +439,9 @@ def _queue_candidates(
                 "work is present."
             )
             continue
-        marker = parse_community_marker(body)
+        marker = trusted_community_marker(number=issue["number"], body=body)
         if issue_has_community_marker(body) and marker is None:
-            logger.info(f"#{issue['number']}: skipping -- malformed broker marker.")
+            logger.info(f"#{issue['number']}: skipping -- untrusted broker marker.")
             continue
         if _skip_accepted_marker(body=body, number=issue["number"]):
             continue
@@ -595,7 +596,10 @@ def _local_work_is_owned(number: int, vm_id: str, assignee: str) -> bool:
     if not isinstance(current, dict) or current.get("state") != "open":
         return False
     body = current.get("body") or ""
-    if issue_has_community_marker(body) and parse_community_marker(body) is None:
+    if (
+        issue_has_community_marker(body)
+        and trusted_community_marker(number=number, body=body) is None
+    ):
         return False
     if issue_has_active_queue_ownership(body):
         return False
@@ -762,10 +766,12 @@ def _coordinator_issue_lock(number: int) -> t.Iterator[_CoordinatorIssueLock | N
         logger.warning("Coordinator mutex disabled by explicit standalone override.")
         yield None
         return
-    if not base or not secret:
+    marker_secret = os.environ.get("VOLUNTEER_MARKER_SECRET", "")
+    if not base or not secret or not marker_secret:
         raise RuntimeError(
-            "coordinator URL and secret are required; set "
-            "VOLUNTEER_COORDINATOR_STANDALONE=1 only for isolated migration runs"
+            "coordinator URL, coordinator secret, and VOLUNTEER_MARKER_SECRET are "
+            "required; set VOLUNTEER_COORDINATOR_STANDALONE=1 only for isolated "
+            "migration runs"
         )
     lock_url = (
         base if base.endswith("/coordinator-lock") else f"{base}/coordinator-lock"
@@ -1308,7 +1314,10 @@ def issue_is_still_claimable(
     if current.get("state") != "open":
         return False
     body = current.get("body") or ""
-    if issue_has_community_marker(body) and parse_community_marker(body) is None:
+    if (
+        issue_has_community_marker(body)
+        and trusted_community_marker(number=number, body=body) is None
+    ):
         return False
     if _skip_accepted_marker(body=body, number=number):
         return False
@@ -1324,12 +1333,10 @@ def issue_is_still_claimable(
     has_assignees = isinstance(raw_assignees, list) and bool(raw_assignees)
     if not has_assignees:
         return True
-    marker = VM_MARKER_RE.search(body)
     return (
         bool(assignee)
         and bool(vm_id)
-        and marker is not None
-        and marker.group(1) == vm_id
+        and _has_matching_vm_marker(body=body, vm_id=vm_id)
         and bool(assignee_logins)
         and issue_is_solely_assigned_to(issue=current, login=assignee)
     )
@@ -1358,18 +1365,17 @@ def reclaim_orphaned_issues(assignee: str, vm_id: str) -> None:
         if RESULTS_READY_LABEL in label_names:
             continue
         body = issue.get("body") or ""
-        marker = parse_community_marker(body)
+        marker = trusted_community_marker(number=issue["number"], body=body)
         if issue_has_community_marker(body) and marker is None:
             logger.warning(
-                f"#{issue['number']}: keeping issue with malformed broker marker."
+                f"#{issue['number']}: keeping issue with untrusted broker marker."
             )
             continue
         if _skip_accepted_marker(body=body, number=issue["number"]):
             continue
         if issue_has_active_queue_ownership(body):
             continue
-        m = VM_MARKER_RE.search(body)
-        if not m or m.group(1) != vm_id:
+        if not _has_matching_vm_marker(body=body, vm_id=vm_id):
             continue
         number = issue["number"]
         if not release_issue_if_owned(number=number, vm_id=vm_id, assignee=assignee):

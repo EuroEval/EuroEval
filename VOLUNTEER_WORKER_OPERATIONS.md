@@ -181,7 +181,7 @@ Create these labels in `EuroEval/EuroEval` with these exact names:
 - `results-ready` — added when all selected languages have accepted submissions.
 
 If the legacy/local queue will remain active, also retain its labels `evaluation-failed`
-and `gated`. Maintainers transfer ownership or Hall credit by changing issue assignees.
+and `gated`. Maintainers transfer ownership or credit by changing issue assignees.
 Changing assignees fences old volunteer leases. Do not treat signed marker contributors
 as current ownership; they are retained for audit and integrity checks.
 
@@ -256,11 +256,10 @@ broker testing. Do not mark any of these as public or expose them as frontend va
 - `VOLUNTEER_WORKER_VERSION` — exact supported worker protocol/package version.
 - `VOLUNTEER_WORKER_IMAGE_DIGEST` — promoted `linux/amd64` image digest in the form
   `sha256:...`; this is configured lease provenance, not runtime attestation.
-- `VOLUNTEER_MARKER_SECRET` — long-lived HMAC-SHA-256 secret for signed issue state and
-  Hall credit markers. Do **not** rotate this routinely: changing it invalidates
-  existing signed issue and Hall state. A change requires a planned migration that
-  re-signs or otherwise migrates every live marker before the old secret is retired,
-  with the transition tested and verified.
+- `VOLUNTEER_MARKER_SECRET` — long-lived HMAC-SHA-256 secret for signed issue markers.
+  Do **not** rotate this routinely: changing it invalidates existing signed markers. A
+  change requires a planned migration that re-signs or otherwise migrates every live
+  marker before the old secret is retired, with the transition tested and verified.
 - `UPSTASH_REDIS_REST_URL` — REST URL for the broker's Upstash database.
 - `UPSTASH_REDIS_REST_TOKEN` — REST token for that database.
 - `HF_STAGING_BUCKET` — private EU staging bucket ID in `namespace/bucket` form.
@@ -273,9 +272,9 @@ broker testing. Do not mark any of these as public or expose them as frontend va
 Generate secrets outside the repository and inject them from a password manager or a
 hidden prompt; do not print them in logs. Rotate OAuth, GitHub, HF, Redis, coordinator,
 and promotion credentials as coordinated changes: update Vercel and every dependent
-local host together. A rotation invalidates old coordinator or promotion requests. Treat
-`VOLUNTEER_MARKER_SECRET` as long-lived signed-state key material, not a routine
-credential; changing it requires the marker migration described above.
+local host together. A rotation invalidates old coordinator or promotion requests.
+Treat `VOLUNTEER_MARKER_SECRET` as long-lived signed-marker key material, not a
+routine credential; changing it requires the marker migration described above.
 
 ### Optional in Vercel Production
 
@@ -415,17 +414,23 @@ export VOLUNTEER_COORDINATOR_URL=https://euroeval.com/api/worker
 read -r -s -p "Worker coordinator secret: " WORKER_COORDINATOR_SECRET
 printf '\n'
 export WORKER_COORDINATOR_SECRET
+read -r -s -p "Volunteer marker secret: " VOLUNTEER_MARKER_SECRET
+printf '\n'
+export VOLUNTEER_MARKER_SECRET
 ```
 
 Use a password-manager environment injection instead of the hidden prompt when one is
 available. Never put the secret value directly in this command or in shell history.
 
 The URL is the broker base URL, not a separately deployed server. The queue appends
-`/coordinator-lock`, `/coordinator-renew`, and `/coordinator-release` itself. The secret
-must match the Vercel `WORKER_COORDINATOR_SECRET` exactly. Keep it out of shell history
-where practical and out of queue logs.
+`/coordinator-lock`, `/coordinator-renew`, and `/coordinator-release` itself. The
+coordinator secret must match the Vercel `WORKER_COORDINATOR_SECRET` exactly. The
+local queue also requires the same durable `VOLUNTEER_MARKER_SECRET` as Vercel to
+verify signed broker markers. Keep both secrets out of shell history where practical
+and out of queue logs. They are local maintainer configuration and are never passed to
+volunteers or unrelated subprocesses.
 
-The queue fails closed if either value is absent. Do not set
+The queue fails closed if any required coordinator value is absent. Do not set
 `VOLUNTEER_COORDINATOR_STANDALONE=1` during normal operation. That local-only escape
 hatch disables the shared lock and is permitted only for a deliberately isolated
 migration after verifying that no broker, volunteer worker, or second queue can touch

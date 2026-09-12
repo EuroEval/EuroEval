@@ -88,6 +88,6 @@ export async function uploadStaging(path: string, content: string): Promise<void
   }
   if (!stagingMetadata.private) throw new ConfigurationError("HF_STAGING_BUCKET is not private; refusing to upload worker results.");
   try {
-    await uploadFile({ repo: `buckets/${bucket}`, file: { path, content: new Blob([content], { type: "application/json" }) }, accessToken: token, useXet: true });
+    await uploadFile({ repo: `buckets/${bucket}`, file: { path, content: new Blob([content], { type: "application/json" }) }, accessToken: token });
   } catch (error) { throw new BrokerError(502, `Hugging Face bucket upload failed: ${error instanceof Error ? error.message : "unknown error"}`); }
 }
