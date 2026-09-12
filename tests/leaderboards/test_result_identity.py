@@ -319,6 +319,14 @@ class TestNormaliseBoolValue:
 class TestRaiseOnCollision:
     """Tests for raise_on_collision."""
 
+    def test_dataset_slash_and_underscore_collision_raises(self) -> None:
+        """Dataset spellings that sanitise identically must be rejected."""
+        first: ResultIdentity = ("org/model", "foo/bar", False, True)
+        second: ResultIdentity = ("org/model", "foo_bar", False, True)
+
+        with pytest.raises(ValueError, match="Identity collision"):
+            raise_on_collision(first, second)
+
     def test_different_identity_same_path_raises(self) -> None:
         """Different identities that sanitise to same path should raise.
 
