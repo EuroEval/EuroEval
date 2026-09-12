@@ -60,13 +60,19 @@ BASIC_ENVIRONMENT = {
     "LC_ALL",
     "XDG_CONFIG_HOME",
     "XDG_CACHE_HOME",
+    "XDG_DATA_HOME",
     "UV_CACHE_DIR",
     "UV_TOOL_DIR",
 }
 TOOL_AUTH_ENVIRONMENT = {
     "gh": {"GH_TOKEN", "GITHUB_TOKEN", "GH_HOST"},
     "hf": {"HF_TOKEN", "HF_HOME"},
-    "vercel": {"VERCEL_TOKEN", "VERCEL_ORG_ID", "VERCEL_PROJECT_ID"},
+    "vercel": {
+        "VERCEL_TOKEN",
+        "VERCEL_ORG_ID",
+        "VERCEL_PROJECT_ID",
+        "VERCEL_PROJECT_NAME",
+    },
 }
 ROUTES = (
     "auth/start",
@@ -230,10 +236,18 @@ def run_command(
 ) -> CommandResult:
     """Run a tool with a least-privilege environment and capture its output.
 
+    ``environment`` overrides the process environment before the allowlist is applied.
+
     Returns:
         Captured command result.
     """
-    source = os.environ if environment is None else environment
+    source = {
+        name: value for name, value in os.environ.items() if name in BASIC_ENVIRONMENT
+    }
+    if environment is None:
+        source.update(os.environ)
+    else:
+        source.update(environment)
     tool = command[0] if command else ""
     if tool == "uv" and len(command) > 2:
         tool = command[2]
@@ -451,34 +465,36 @@ def _check_vercel_project(
         link = _json_object(link_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError):
         link = {}
-    linked_project = str(link.get("projectId", ""))
-    linked_scope = str(link.get("orgId", link.get("teamId", "")))
-    expected_project = environment.get("VERCEL_PROJECT_ID") or linked_project
-    expected_scope = environment.get("VERCEL_ORG_ID") or linked_scope
-    if environment.get("VERCEL_PROJECT_ID") and linked_project != expected_project:
-        return [
-            Diagnostic(
-                "vercel",
-                "drift",
-                "VERCEL_PROJECT_ID disagrees with the local link",
-                True,
-            )
-        ], False
-    if environment.get("VERCEL_ORG_ID") and linked_scope != expected_scope:
-        return [
-            Diagnostic(
-                "vercel", "drift", "VERCEL_ORG_ID disagrees with the local link", True
-            )
-        ], False
-    if not expected_project or not expected_scope:
+    linked_project = link.get("projectId")
+    linked_scope = link.get("orgId")
+    linked_name = link.get("projectName")
+    if not all(
+        isinstance(value, str) and value.strip()
+        for value in (linked_project, linked_scope, linked_name)
+    ):
         return [
             Diagnostic(
                 "vercel",
                 "missing config",
-                "linked Vercel project or scope is ambiguous",
+                "local Vercel link is missing projectId, orgId, or projectName",
                 True,
             )
         ], False
+    assert isinstance(linked_project, str)
+    assert isinstance(linked_scope, str)
+    assert isinstance(linked_name, str)
+    for name, linked_value in (
+        ("VERCEL_PROJECT_ID", linked_project),
+        ("VERCEL_ORG_ID", linked_scope),
+        ("VERCEL_PROJECT_NAME", linked_name),
+    ):
+        supplied_value = environment.get(name)
+        if supplied_value and supplied_value != linked_value:
+            return [
+                Diagnostic(
+                    "vercel", "drift", f"{name} disagrees with the local link", True
+                )
+            ], False
     project = run_command(["vercel", "project", "inspect", "--format", "json"])
     if project.returncode:
         return [
@@ -488,13 +504,14 @@ def _check_vercel_project(
         ], False
     data = _json_object(project.stdout)
     actual_project = str(data.get("id", data.get("projectId", "")))
-    actual_name = str(data.get("name", ""))
-    actual_scope = str(data.get("accountId", data.get("teamId", data.get("orgId", ""))))
-    expected_name = environment.get("VERCEL_PROJECT_NAME", "EuroEval")
+    actual_name = str(data.get("name", data.get("projectName", "")))
+    remote_scopes = [
+        str(data[name]) for name in ("accountId", "teamId", "orgId") if data.get(name)
+    ]
     identity_ok = (
-        actual_project == expected_project
-        and actual_name == expected_name
-        and actual_scope == expected_scope
+        actual_project == linked_project
+        and actual_name == linked_name
+        and all(scope == linked_scope for scope in remote_scopes)
     )
     if not identity_ok:
         return [
@@ -760,30 +777,43 @@ def _manifest_matches(output: str, digest: str) -> bool:
 
 
 def _manifest_json_matches(value: object, digest: str) -> bool:
-    """Search structured Buildx output for the requested platform digest.
+    """Return whether structured output proves the index and amd64 child.
 
     Returns:
-        Whether the digest and platform are both proven.
+        Whether the top-level digest and a child platform are both proven.
     """
-    if isinstance(value, dict):
-        platform = value.get("platform", value.get("Platform"))
-        if isinstance(platform, dict):
-            os_name = platform.get("os", platform.get("OS"))
-            architecture = platform.get("architecture", platform.get("Architecture"))
-            if os_name == "linux" and architecture == "amd64":
-                found = value.get("digest", value.get("Digest"))
-                descriptor = value.get("descriptor", value.get("Descriptor"))
-                if found == digest:
-                    return True
-                if (
-                    isinstance(descriptor, dict)
-                    and descriptor.get("digest", descriptor.get("Digest")) == digest
-                ):
-                    return True
-        return any(_manifest_json_matches(item, digest) for item in value.values())
-    if isinstance(value, list):
-        return any(_manifest_json_matches(item, digest) for item in value)
-    return False
+    if not isinstance(value, dict):
+        return False
+    index_digest = value.get("digest", value.get("Digest"))
+    if index_digest is None:
+        descriptor = value.get("descriptor", value.get("Descriptor"))
+        if isinstance(descriptor, dict):
+            index_digest = descriptor.get("digest", descriptor.get("Digest"))
+    if index_digest != digest:
+        return False
+    manifests = value.get("manifests", value.get("Manifests"))
+    if not isinstance(manifests, list):
+        return False
+    return any(_is_amd64_descriptor(item) for item in manifests)
+
+
+def _is_amd64_descriptor(value: object) -> bool:
+    """Return whether a manifest child is a linux/amd64 descriptor."""
+    if not isinstance(value, dict):
+        return False
+    platform = value.get("platform", value.get("Platform"))
+    if not isinstance(platform, dict):
+        return False
+    if platform.get("os", platform.get("OS")) != "linux":
+        return False
+    if platform.get("architecture", platform.get("Architecture")) != "amd64":
+        return False
+    child_digest = value.get("digest", value.get("Digest"))
+    if not isinstance(child_digest, str) or not child_digest:
+        descriptor = value.get("descriptor", value.get("Descriptor"))
+        if isinstance(descriptor, dict):
+            child_digest = descriptor.get("digest", descriptor.get("Digest"))
+    return isinstance(child_digest, str) and bool(child_digest)
 
 
 def check_github(*, environment: dict[str, str]) -> list[Diagnostic]:
