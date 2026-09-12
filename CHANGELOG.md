@@ -9,6 +9,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Volunteer workers now treat GitHub assignees as authoritative identity, surface
+  structured broker errors, and discard leases fenced by assignment changes.
 - LiteLLM now retries custom OpenAI-compatible APIs that reject `max_tokens` without
   sending the unsupported parameter.
 

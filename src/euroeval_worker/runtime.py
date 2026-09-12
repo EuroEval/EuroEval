@@ -97,7 +97,10 @@ class Heartbeat:
                     auth_attempted = True
                     continue
                 if error.status == 409:
-                    self._fail(LeaseLost("broker heartbeat lost the lease"))
+                    if error.code == "lease_assignment_lost":
+                        self._fail(LeaseLost(str(error), broker_error=error))
+                    else:
+                        self._fail(error)
                     return
                 if not _transient(error):
                     self._fail(error)
@@ -529,6 +532,15 @@ class Worker:
 class LeaseLost(RuntimeError):
     """Raised when the broker stops accepting heartbeats."""
 
+    def __init__(
+        self, message: str, *, broker_error: BrokerError | None = None
+    ) -> None:
+        """Preserve structured broker details when a heartbeat loses ownership."""
+        super().__init__(message)
+        self.broker_error = broker_error
+        self.code = broker_error.code if broker_error is not None else None
+        self.status = broker_error.status if broker_error is not None else None
+
 
 def _retry_delay(attempt: int, retry_after: float | None, maximum: float) -> float:
     """Calculate bounded exponential backoff, honouring Retry-After.
@@ -608,7 +620,9 @@ def _lease_lost(error: BaseException) -> bool:
         Whether broker ownership has definitely been lost.
     """
     return isinstance(error, LeaseLost) or (
-        isinstance(error, BrokerError) and error.status == 409
+        isinstance(error, BrokerError)
+        and error.status == 409
+        and error.code == "lease_assignment_lost"
     )
 
 

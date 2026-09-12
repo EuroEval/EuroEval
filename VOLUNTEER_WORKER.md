@@ -81,7 +81,9 @@ if the deployment must remain pinned.
 
 ## How volunteer evaluation works
 
-1. The worker completes the broker-mediated GitHub device flow.
+1. The worker completes the broker-mediated GitHub device flow. The OAuth login must
+   be assignable to issues in the EuroEval repository; otherwise the worker stops with
+   instructions to use an eligible GitHub account.
 2. It reports NVIDIA hardware and asks for a compatible queued model/language.
 3. The broker anonymously verifies that the queued Hugging Face model is public,
    ungated, pinned to an immutable revision, safetensors-only, free of repository Python
@@ -92,7 +94,16 @@ if the deployment must remain pinned.
 5. Each record is uploaded idempotently to private Hugging Face staging.
 6. The broker validates the complete lease and marks it ready for review.
 
-A worker can be interrupted safely. The local state and exact result bytes remain in the
+Issue assignees are the mutable, authoritative active evaluators and Hall-credit
+identities for both manual and volunteer work. Maintainers can transfer ownership or
+credit by changing assignees; that fences old volunteer leases. Multiple assignees are
+valid when multiple volunteers contribute different languages, and accepted assignees
+are retained. An assignee is removed only after rejection or intentional release.
+Signed marker contributors are audit and integrity evidence only, not authoritative
+identity.
+
+A worker can be interrupted safely.
+The local state and exact result bytes remain in the
 named volume. Restarting before lease expiry resumes the same lease; after expiry, the
 broker may lease the language again and the old local state is archived. An interrupt
 does not immediately release an active lease. Submitted records can be retried without
