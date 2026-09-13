@@ -65,10 +65,46 @@ function urlFor(sectionIndex, sectionId, slug) {
   return `${BASE_URL}/${sectionId}/${slug}`;
 }
 
-async function listLeaderboardCsvs() {
-  const all = await fs.readdir(CSV_DIR);
+export async function listLeaderboardCsvs(csvDir = CSV_DIR) {
+  const all = await readCsvFiles(csvDir);
   // Only ship the user-facing variants (drop `_simplified` versions).
   return all.filter((f) => f.endsWith(".csv") && !f.includes("_simplified"));
+}
+
+/**
+ * Require generated leaderboard assets for production and local builds.
+ * Preview builds intentionally allow a clean Git checkout so Vercel can run
+ * source and runtime validation without generated leaderboard data.
+ */
+export async function validateLeaderboardCsvs({
+  csvDir = CSV_DIR,
+  vercelEnv = process.env.VERCEL_ENV,
+} = {}) {
+  const csvs = await listLeaderboardCsvs(csvDir);
+  if (vercelEnv === "preview" || csvs.length > 0) return csvs;
+
+  let reason = "contains no required leaderboard CSV files";
+  try {
+    const stat = await fs.stat(csvDir);
+    if (!stat.isDirectory()) reason = "is not a directory";
+  } catch (error) {
+    if (error?.code === "ENOENT") reason = "is missing";
+    else throw error;
+  }
+  throw new Error(
+    `[seo-files] ${csvDir} ${reason}. Generate leaderboard CSVs before ` +
+      "production or local builds; preview builds may omit them.",
+  );
+}
+
+async function readCsvFiles(csvDir = CSV_DIR) {
+  try {
+    return await fs.readdir(csvDir);
+  } catch (error) {
+    // A clean Git checkout has no generated CSV directory yet.
+    if (error?.code === "ENOENT") return [];
+    throw error;
+  }
 }
 
 async function loadConfig() {
@@ -172,7 +208,7 @@ async function copyGfxTo(distDir) {
 async function copyCsvsTo(distDir) {
   const target = path.join(distDir, "leaderboards-csv");
   await fs.mkdir(target, { recursive: true });
-  for (const name of await fs.readdir(CSV_DIR)) {
+  for (const name of await readCsvFiles()) {
     if (!name.endsWith(".csv")) continue;
     await fs.copyFile(path.join(CSV_DIR, name), path.join(target, name));
   }
@@ -411,7 +447,7 @@ export default function seoFilesPlugin() {
 
       const config = await loadConfig();
       const urls = collectUrls(config);
-      const csvs = await listLeaderboardCsvs();
+      const csvs = await validateLeaderboardCsvs();
 
       await fs.writeFile(
         path.join(distDir, "sitemap.xml"),

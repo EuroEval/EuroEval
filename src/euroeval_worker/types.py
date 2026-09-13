@@ -1,0 +1,414 @@
+"""Typed protocol objects shared by the worker and its broker."""
+
+import dataclasses
+import hashlib
+import json
+import typing as t
+
+PROTOCOL_VERSION = "volunteer-worker/v1"
+
+JsonValue: t.TypeAlias = (
+    None | bool | int | float | str | list["JsonValue"] | dict[str, "JsonValue"]
+)
+JsonObject: t.TypeAlias = dict[str, JsonValue]
+
+
+@dataclasses.dataclass(frozen=True, init=False)
+class EEERecord:
+    """An exact EEE JSON object and its deterministic digest.
+
+    ``record`` and ``sha256`` keyword arguments are accepted for compatibility
+    with older evaluator adapters. New code should use ``record_json`` and
+    ``digest`` so that the original bytes cannot be accidentally re-encoded.
+    """
+
+    record_json: str
+    digest: str
+
+    def __init__(
+        self,
+        record_json: str | JsonObject | None = None,
+        digest: str | None = None,
+        *,
+        record: JsonObject | None = None,
+        sha256: str | None = None,
+    ) -> None:
+        """Create a record, canonicalising dictionaries exactly once.
+
+        Raises:
+            TypeError:
+                If neither a JSON string nor an object is supplied.
+        """
+        if record_json is None:
+            record_json = record
+        if isinstance(record_json, dict):
+            record_json = canonical_json(record_json)
+        if not isinstance(record_json, str):
+            raise TypeError("record_json must be a JSON string or object")
+        _validate_json_text(record_json)
+        actual_digest = digest if digest is not None else sha256
+        if actual_digest is None:
+            actual_digest = hashlib.sha256(record_json.encode("utf-8")).hexdigest()
+        object.__setattr__(self, "record_json", record_json)
+        object.__setattr__(self, "digest", actual_digest)
+
+    @property
+    def sha256(self) -> str:
+        """Expose the digest under the legacy attribute name."""
+        return self.digest
+
+    @property
+    def record(self) -> JsonObject:
+        """Decode the record for compatibility with local evaluator callers.
+
+        Raises:
+            ValueError:
+                If the stored JSON does not contain an object.
+        """
+        value = json.loads(self.record_json)
+        if not isinstance(value, dict):
+            raise ValueError("EEE record JSON must contain an object")
+        return t.cast(JsonObject, value)
+
+
+def _validate_json_text(value: str) -> None:
+    try:
+        parsed = json.loads(value, parse_constant=_reject_constant)
+    except (ValueError, json.JSONDecodeError) as error:
+        raise ValueError(
+            "record_json must be valid JSON without non-finite values"
+        ) from error
+    if not isinstance(parsed, dict):
+        raise ValueError("record_json must contain a JSON object")
+
+
+def canonical_json(value: JsonObject) -> str:
+    """Serialise an EEE object deterministically and reject non-finite values.
+
+    Returns:
+        The canonical JSON text.
+
+    """
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+@dataclasses.dataclass(frozen=True)
+class Gpu:
+    """A single NVIDIA GPU discovered through nvidia-smi."""
+
+    name: str
+    uuid: str
+    free_memory_bytes: int
+    total_memory_bytes: int
+    compute_capability: str | None
+    index: int = 0
+
+
+@dataclasses.dataclass(frozen=True)
+class HardwareReport:
+    """Hardware and software facts sent when claiming work."""
+
+    architecture: str
+    ram_bytes: int
+    free_disk_bytes: int
+    driver_version: str | None
+    cuda_version: str | None
+    pytorch_version: str | None
+    gpus: tuple["Gpu", ...]
+    gpu_memory_utilisation: float = 0.8
+    selected_gpu_index: int | None = None
+    selected_gpu_uuid: str | None = None
+
+
+def _reject_constant(value: str) -> None:
+    raise ValueError(f"non-finite JSON constant {value!r} is not allowed")
+
+
+@dataclasses.dataclass(frozen=True)
+class AuthPoll:
+    """Result of one device-flow poll."""
+
+    pending: bool
+    credential: str | None = None
+    github_login: str | None = None
+    retry_after: int | None = None
+
+
+def auth_poll_from_dict(data: dict[str, object]) -> AuthPoll:
+    """Decode an auth/poll response.
+
+    Returns:
+        The typed poll response.
+    """
+    _protocol(data)
+    pending = data.get("status") == "pending" or bool(data.get("pending", False))
+    return AuthPoll(
+        pending=pending,
+        credential=_optional_string(data, "credential"),
+        github_login=_optional_string(data, "github_login"),
+        retry_after=_optional_positive_integer(data, "retry_after"),
+    )
+
+
+def _optional_positive_integer(data: dict[str, object], key: str) -> int | None:
+    value = data.get(key)
+    if value is None:
+        return None
+    parsed = _integer(data, key)
+    return max(1, parsed)
+
+
+def _integer(data: dict[str, object], key: str, default: int | None = None) -> int:
+    value = data.get(key, default)
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        raise ValueError(f"broker response field {key!r} must be an integer")
+    return int(value)
+
+
+def _optional_string(data: dict[str, object], key: str) -> str | None:
+    value = data.get(key)
+    return value if isinstance(value, str) else None
+
+
+def _protocol(data: dict[str, object]) -> None:
+    """Reject responses from a different broker protocol.
+
+    Raises:
+        ValueError:
+            If the response protocol is unsupported.
+    """
+    if data.get("protocol_version") != PROTOCOL_VERSION:
+        raise ValueError("broker response has an unsupported protocol_version")
+
+
+@dataclasses.dataclass(frozen=True)
+class AuthStart:
+    """Device-flow details returned by the broker."""
+
+    session_id: str
+    user_code: str
+    verification_uri: str
+    expires_in: int
+    interval: int
+
+
+def auth_start_from_dict(data: dict[str, object]) -> AuthStart:
+    """Decode an auth/start response.
+
+    Returns:
+        The typed device-flow response.
+    """
+    _protocol(data)
+    return AuthStart(
+        session_id=_string(data, "session_id"),
+        user_code=_string(data, "user_code"),
+        verification_uri=_string(data, "verification_uri"),
+        expires_in=_integer(data, "expires_in", 0),
+        interval=_integer(data, "interval", 5),
+    )
+
+
+def _string(data: dict[str, object], key: str) -> str:
+    value = data.get(key)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"broker response field {key!r} must be a non-empty string")
+    return value
+
+
+@dataclasses.dataclass(frozen=True)
+class ExpectedScope:
+    """Exact benchmark scope and task groups authorised by the broker."""
+
+    policy_version: str
+    language_group: str
+    identity_suffixes: tuple[str, ...]
+    count: int
+    warnings: tuple[str, ...]
+    task_groups: tuple[str, ...]
+
+
+def _expected_scope(value: object) -> ExpectedScope:
+    """Decode the broker's exact evaluation scope.
+
+    Returns:
+        The decoded scope.
+
+    Raises:
+        ValueError:
+            If the broker response has malformed scope metadata.
+    """
+    if not isinstance(value, dict):
+        raise ValueError("broker response expected_scope is required")
+    policy_version = value.get("policy_version")
+    language_group = value.get("language_group")
+    identities = value.get("identity_suffixes")
+    count = value.get("count")
+    warnings = value.get("warnings")
+    task_groups = value.get("task_groups")
+    if (
+        not isinstance(policy_version, str)
+        or not policy_version
+        or not isinstance(language_group, str)
+        or not language_group
+        or not isinstance(identities, (list, tuple))
+        or not identities
+        or not all(isinstance(item, str) and item for item in identities)
+        or not isinstance(count, int)
+        or count != len(identities)
+        or not isinstance(warnings, (list, tuple))
+        or not all(isinstance(item, str) for item in warnings)
+        or not isinstance(task_groups, (list, tuple))
+        or not task_groups
+        or not all(isinstance(item, str) and item for item in task_groups)
+    ):
+        raise ValueError("broker response expected_scope is malformed")
+    return ExpectedScope(
+        policy_version=policy_version,
+        language_group=language_group,
+        identity_suffixes=tuple(identities),
+        count=count,
+        warnings=tuple(warnings),
+        task_groups=tuple(task_groups),
+    )
+
+
+@dataclasses.dataclass(frozen=True)
+class ModelEvidence:
+    """Immutable Hub metadata copied into a broker-issued lease."""
+
+    pipeline_tag: str
+    architectures: tuple[str, ...]
+    model_type: str
+    is_encoder_decoder: bool | None = None
+
+
+@dataclasses.dataclass(frozen=True)
+class Lease:
+    """One broker-issued evaluation lease."""
+
+    lease_id: str
+    issue_number: int
+    model_id: str
+    model_revision: str
+    language: str
+    euroeval_version: str
+    image_digest: str
+    expires_at: str
+    model_type: str
+    worker_version: str = "legacy-worker"
+    gpu_memory_utilisation: float = 0.8
+    selected_gpu_uuid: str | None = None
+    selected_gpu_index: int | None = None
+    model_metadata: ModelEvidence | None = None
+    expected_scope: ExpectedScope | None = None
+
+
+@dataclasses.dataclass(frozen=True)
+class Claim:
+    """Broker claim response."""
+
+    lease: Lease | None
+
+
+def lease_from_dict(data: dict[str, object]) -> Lease:
+    """Decode a lease response.
+
+    Returns:
+        The typed lease.
+
+    Raises:
+        ValueError:
+            If the broker response is malformed or has an invalid fit value.
+    """
+    _protocol(data)
+    selected_gpu_uuid = data.get("selected_gpu_uuid")
+    if selected_gpu_uuid is not None and (
+        not isinstance(selected_gpu_uuid, str) or not selected_gpu_uuid
+    ):
+        raise ValueError("broker response field 'selected_gpu_uuid' must be a string")
+    gpu_memory_utilisation = _number(data, "gpu_memory_utilisation", 0.8)
+    if not 0 < gpu_memory_utilisation <= 1:
+        raise ValueError(
+            "broker response gpu_memory_utilisation must be between 0 and 1"
+        )
+    model_type = _string(data, "model_type")
+    if model_type not in {"encoder", "generative"}:
+        raise ValueError("broker response model_type is unsupported")
+    model_metadata = _model_evidence(data.get("model_metadata"))
+    if model_metadata.model_type != model_type:
+        raise ValueError("broker response model metadata contradicts model_type")
+    expected_scope = _expected_scope(data.get("expected_scope"))
+    return Lease(
+        lease_id=_string(data, "lease_id"),
+        issue_number=_integer(data, "issue_number"),
+        model_id=_string(data, "model_id"),
+        model_revision=_string(data, "model_revision"),
+        language=_string(data, "language"),
+        euroeval_version=_string(data, "euroeval_version"),
+        image_digest=_string(data, "image_digest"),
+        worker_version=_string(data, "worker_version"),
+        gpu_memory_utilisation=gpu_memory_utilisation,
+        expires_at=_string(data, "expires_at"),
+        model_type=model_type,
+        selected_gpu_uuid=selected_gpu_uuid,
+        selected_gpu_index=_optional_integer(data, "selected_gpu_index"),
+        model_metadata=model_metadata,
+        expected_scope=expected_scope,
+    )
+
+
+def _model_evidence(value: object) -> ModelEvidence:
+    """Decode the broker's immutable model metadata evidence.
+
+    Returns:
+        The decoded immutable model evidence.
+
+    Raises:
+        ValueError:
+            If the evidence is missing or malformed.
+    """
+    if not isinstance(value, dict):
+        raise ValueError("broker response model_metadata is required")
+    pipeline_tag = value.get("pipeline_tag")
+    architectures = value.get("architectures")
+    evidence_type = value.get("model_type")
+    is_encoder_decoder = value.get("is_encoder_decoder")
+    if (
+        not isinstance(pipeline_tag, str)
+        or not pipeline_tag.strip()
+        or not isinstance(architectures, (list, tuple))
+        or not architectures
+        or not all(isinstance(item, str) and item for item in architectures)
+        or evidence_type not in {"encoder", "generative"}
+        or is_encoder_decoder is not None
+        and not isinstance(is_encoder_decoder, bool)
+    ):
+        raise ValueError("broker response model_metadata is malformed")
+    return ModelEvidence(
+        pipeline_tag=pipeline_tag,
+        architectures=tuple(architectures),
+        model_type=evidence_type,
+        is_encoder_decoder=is_encoder_decoder,
+    )
+
+
+def _number(data: dict[str, object], key: str, default: float | None = None) -> float:
+    value = data.get(key, default)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"broker response field {key!r} must be a number")
+    return float(value)
+
+
+def _optional_integer(data: dict[str, object], key: str) -> int | None:
+    value = data.get(key)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        raise ValueError(f"broker response field {key!r} must be an integer")
+    return int(value)

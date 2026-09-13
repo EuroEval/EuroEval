@@ -66,6 +66,19 @@ def test_estimated_model_bytes_handles_model_id_extras(
     assert calls[0]["revision"] == "rev"
 
 
+def test_evaluator_environment_excludes_queue_secrets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Queue credentials are not inherited by the evaluator subprocess."""
+    monkeypatch.setenv("VOLUNTEER_MARKER_SECRET", "marker-secret")
+    monkeypatch.setenv("WORKER_COORDINATOR_SECRET", "coordinator-secret")
+
+    environment = evaluation_common._build_euroeval_env(stream_output=False)
+
+    assert "VOLUNTEER_MARKER_SECRET" not in environment
+    assert "WORKER_COORDINATOR_SECRET" not in environment
+
+
 @pytest.mark.parametrize(
     argnames=["returncode", "must_contain"],
     argvalues=[

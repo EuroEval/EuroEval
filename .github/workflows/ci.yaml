@@ -23,6 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Install Node dependencies
+        run: npm ci
+
       - name: Install uv and set up Python
         uses: astral-sh/setup-uv@v6
         with:

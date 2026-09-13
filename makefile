@@ -1,18 +1,12 @@
 # This ensures that we can call `make <target>` even if `<target>` exists as a file or
 # directory.
-.PHONY: help docs install install-frontend install-vercel leaderboards force-leaderboards
+.PHONY: help docs install install-frontend install-vercel leaderboards force-leaderboards \
+	volunteer-worker-plan volunteer-worker-check
 
 # Exports all variables defined in the makefile available to scripts
 .EXPORT_ALL_VARIABLES:
 
-# Create .env file if it does not already exist
-ifeq (,$(wildcard .env))
-  $(shell touch .env)
-endif
-
-# Includes environment variables from the .env file
-include .env
-
+# Read-only targets deliberately never import or export the local dotenv file.
 # Set gRPC environment variables, which prevents some errors with the `grpcio` package
 export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1
 export GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1
@@ -80,7 +74,7 @@ test:  ## Run tests
 	@uv run pytest && uv run readme-cov && rm .coverage*
 
 frontend:  ## Build and deploy the frontend
-	@vercel build --prod --yes 2>&1 | grep -v "^WARNING!" && vercel deploy --prebuilt --prod
+	@vercel build --prod --yes && uv run python src/scripts/verify_vercel_functions.py && vercel deploy --prebuilt --prod
 
 leaderboards:  ## Collect finished evaluation results and regenerate leaderboards
 	@uv run python src/scripts/collect_evaluation_results.py
@@ -88,10 +82,17 @@ leaderboards:  ## Collect finished evaluation results and regenerate leaderboard
 force-leaderboards:
 	@uv run python src/scripts/collect_evaluation_results.py --force
 
+volunteer-worker-plan:
+	@uv run python src/scripts/volunteer_worker_operations.py plan
+
+volunteer-worker-check:
+	@uv run python src/scripts/volunteer_worker_operations.py check
+
 tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
 
 check:  ## Lint, format, and type-check the code
+	@npm run check:vercel-source
 	@git add . && uv run pre-commit run --all-files
 	@if command -v llama-server >/dev/null 2>&1 && pgrep -x llama-server >/dev/null; then \
 		echo "Running Slopo code duplication detection..."; \
@@ -141,7 +142,8 @@ add-dev-version:
 	@echo "Added '.dev' suffix to the version number."
 
 publish:
-	@if [ ${PYPI_API_TOKEN} = "" ]; then \
+	@set -a; [ ! -f .env ] || source .env; set +a; \
+	if [ "$${PYPI_API_TOKEN:-}" = "" ]; then \
 		echo "No PyPI API token specified in the '.env' file, so cannot publish."; \
 	else \
 		echo "Publishing to PyPI..."; \

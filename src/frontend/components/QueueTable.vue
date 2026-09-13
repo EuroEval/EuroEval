@@ -120,7 +120,7 @@ const emit = defineEmits<{
           <th>Model</th>
           <th class="lang-col">Languages</th>
           <th class="status-col" style="text-align: center">Status</th>
-          <th class="evaluator-col" style="text-align: center">Evaluator</th>
+          <th class="evaluator-col" style="text-align: center">Evaluators</th>
           <th class="time-col" style="text-align: center">Time in Queue</th>
           <th class="sub-col"></th>
         </tr>
@@ -155,14 +155,26 @@ const emit = defineEmits<{
             </span>
           </td>
           <td class="evaluator-col" style="text-align: center">
-            <a
-              v-if="e.evaluator"
-              :href="`https://github.com/${e.evaluator}`"
-              target="_blank"
-              rel="noopener"
-            >
-              @{{ e.evaluator }}
-            </a>
+            <div v-if="e.evaluators.length > 0" class="evaluators">
+              <a
+                v-for="evaluator in e.evaluators"
+                :key="evaluator.login.toLowerCase()"
+                class="evaluator"
+                :href="`https://github.com/${evaluator.login}`"
+                :aria-label="`GitHub profile for @${evaluator.login}`"
+                :title="`@${evaluator.login}`"
+                target="_blank"
+                rel="noopener"
+              >
+                <img
+                  v-if="evaluator.avatarUrl"
+                  :src="evaluator.avatarUrl"
+                  alt=""
+                  loading="lazy"
+                />
+                <span>@{{ evaluator.login }}</span>
+              </a>
+            </div>
             <span v-else class="muted">—</span>
           </td>
           <td class="time-col" style="text-align: center">
@@ -239,6 +251,28 @@ const emit = defineEmits<{
   color: var(--color-text-muted, #888);
 }
 
+.evaluators {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem 0.5rem;
+}
+
+.evaluator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.evaluator img {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  object-fit: cover;
+  vertical-align: middle;
+}
+
 .status {
   display: inline-block;
   padding: 0.15rem 0.55rem;
@@ -299,8 +333,6 @@ th.status-col {
 @media (max-width: 640px) {
   .qtable th.lang-col,
   .qtable td.lang-col,
-  .qtable th.evaluator-col,
-  .qtable td.evaluator-col,
   .qtable th.time-col,
   .qtable td.time-col {
     display: none;
@@ -321,6 +353,10 @@ th.status-col {
 
   th.status-col {
     min-width: 0;
+  }
+
+  .evaluator-col {
+    min-width: 6rem;
   }
 
   .subscribe {

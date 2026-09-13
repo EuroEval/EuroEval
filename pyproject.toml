@@ -152,6 +152,7 @@ file = "LICENSE"
 [project.scripts]
 euroeval = "euroeval.cli:benchmark"
 scandeval = "euroeval.cli:benchmark"
+euroeval-worker = "euroeval_worker.cli:main"
 
 [tool.ruff]
 target-version = "py312"
@@ -280,6 +281,9 @@ pythonpath = [
     "src/scripts",
     "src/scripts/dataset_creation",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/euroeval", "src/euroeval_worker"]
 
 [build-system]
 requires = ["hatchling"]

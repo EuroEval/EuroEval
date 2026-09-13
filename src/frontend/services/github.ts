@@ -20,15 +20,20 @@ export const LANGUAGE_GROUPS = [
 
 export type LanguageGroup = (typeof LANGUAGE_GROUPS)[number];
 
+export interface RawAssignee {
+  login: string;
+  avatar_url?: string | null;
+}
+
 export interface RawIssue {
   number: number;
   title: string;
   html_url: string;
   body: string | null;
-  assignee: { login: string } | null;
-  assignees: Array<{ login: string }>;
+  assignee?: RawAssignee | null;
+  assignees?: RawAssignee[] | null;
   created_at: string;
-  labels: Array<{ name: string } | string>;
+  labels?: Array<{ name: string } | string>;
 }
 
 export type QueueStatus =
@@ -38,13 +43,18 @@ export type QueueStatus =
   | "Gated model"
   | "Error";
 
+export interface QueueEvaluator {
+  login: string;
+  avatarUrl: string | null;
+}
+
 export interface QueueEntry {
   number: number;
   url: string;
   modelId: string;
   languageGroups: string[];
   status: QueueStatus;
-  evaluator: string | null;
+  evaluators: QueueEvaluator[];
   createdAt: string;
 }
 
@@ -53,7 +63,39 @@ export interface QueueEntry {
 
 
 export function hasLabel(issue: RawIssue, name: string): boolean {
-  return issue.labels.some((l) => (typeof l === "string" ? l : l.name) === name);
+  return (issue.labels ?? []).some(
+    (l) => (typeof l === "string" ? l : l.name) === name,
+  );
+}
+
+function currentAssignees(issue: RawIssue): RawAssignee[] {
+  if (issue.assignees && issue.assignees.length > 0) {
+    return issue.assignees;
+  }
+  return issue.assignee ? [issue.assignee] : [];
+}
+
+export function evaluatorsFromIssue(issue: RawIssue): QueueEvaluator[] {
+  const evaluators: QueueEvaluator[] = [];
+  const seen = new Set<string>();
+  for (const assignee of currentAssignees(issue)) {
+    const key = assignee.login.toLowerCase();
+    if (seen.has(key)) {
+      const existing = evaluators.find(
+        (evaluator) => evaluator.login.toLowerCase() === key,
+      );
+      if (existing && !existing.avatarUrl && assignee.avatar_url) {
+        existing.avatarUrl = assignee.avatar_url;
+      }
+      continue;
+    }
+    seen.add(key);
+    evaluators.push({
+      login: assignee.login,
+      avatarUrl: assignee.avatar_url || null,
+    });
+  }
+  return evaluators;
 }
 
 const MODEL_ID_BODY_RE = /(?:^|\n)#{1,6}\s*Model ID\s*\n+([^\n]+)/i;
@@ -91,7 +133,7 @@ export function issueStatus(
   resultsReady: boolean,
 ): QueueStatus {
   if (resultsReady) return "Awaiting publish";
-  if (issue.assignee || issue.assignees.length > 0) return "Evaluating";
+  if (currentAssignees(issue).length > 0) return "Evaluating";
   if (gated) return "Gated model";
   if (failed) return "Error";
   return "Waiting";
@@ -108,15 +150,13 @@ export function toQueueEntry(issue: RawIssue): QueueEntry | null {
   const failed = hasLabel(issue, FAILED_LABEL);
   const resultsReady = hasLabel(issue, RESULTS_READY_LABEL);
   const gated = hasLabel(issue, GATED_LABEL);
-  const evaluator =
-    issue.assignee?.login ?? issue.assignees[0]?.login ?? null;
   return {
     number: issue.number,
     url: issue.html_url,
     modelId,
     languageGroups: extractLanguageGroups(issue.body),
     status: issueStatus(issue, failed, gated, resultsReady),
-    evaluator,
+    evaluators: evaluatorsFromIssue(issue),
     createdAt: issue.created_at,
   };
 }
