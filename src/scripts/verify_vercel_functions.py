@@ -117,6 +117,12 @@ def verify_vercel_functions(
         message = "; ".join(mismatches)
         raise VerificationError(f"Vercel function runtime mismatch ({message})")
 
+    for route, (runtime, config_path) in sorted(discovered.items()):
+        if _runtime_matches(runtime=runtime, expected="nodejs"):
+            _verify_node_package_metadata(
+                route=route, function_directory=config_path.parent
+            )
+
 
 class VerificationError(ValueError):
     """Raised when a Vercel function output is not the expected deployment."""
@@ -179,6 +185,76 @@ def _runtime_matches(*, runtime: str, expected: str) -> bool:
     if expected == "edge":
         return runtime == "edge"
     return bool(_NODE_RUNTIME.fullmatch(runtime))
+
+
+def _verify_node_package_metadata(*, route: str, function_directory: Path) -> None:
+    """Verify the nearest package metadata for an emitted Node entrypoint.
+
+    Package lookup is deliberately bounded by the individual function bundle.
+    A package.json in the source repository must not make a bundle pass when
+    Vercel omitted its package metadata.
+
+    Args:
+        route:
+            Emitted function route.
+        function_directory:
+            Directory containing the emitted function bundle.
+
+    Raises:
+        VerificationError:
+            If the entrypoint or its effective package metadata is missing, or
+            the metadata does not declare ESM.
+    """
+    entrypoint = function_directory.joinpath(*route.split("/")).with_suffix(".js")
+    if not entrypoint.is_file():
+        raise VerificationError(
+            f"Missing Node function bundle entrypoint: {entrypoint}"
+        )
+
+    package_path = _nearest_package_json(
+        directory=entrypoint.parent, boundary=function_directory
+    )
+    if package_path is None:
+        raise VerificationError(
+            f"Missing Node package metadata for {route}: "
+            f"no package.json in the emitted bundle"
+        )
+
+    try:
+        package = json.loads(
+            package_path.read_text(encoding="utf-8"),
+            object_pairs_hook=_reject_duplicate_keys,
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as error:
+        raise VerificationError(
+            f"Malformed Node package metadata: {package_path}"
+        ) from error
+    if not isinstance(package, dict):
+        raise VerificationError(f"Malformed Node package metadata: {package_path}")
+
+    package_type = package.get("type")
+    if "type" in package and not isinstance(package_type, str):
+        raise VerificationError(f"Malformed Node package metadata: {package_path}")
+    if package_type != "module":
+        raise VerificationError(
+            f"Non-module Node package metadata for {route}: {package_path} "
+            f"declares type={package_type!r}, expected type='module'"
+        )
+
+
+def _nearest_package_json(*, directory: Path, boundary: Path) -> Path | None:
+    """Find the nearest package.json without leaving an emitted bundle tree.
+
+    Returns:
+        The nearest package metadata path, or None when none exists in the bundle.
+    """
+    while True:
+        package_path = directory / "package.json"
+        if package_path.is_file():
+            return package_path
+        if directory == boundary:
+            return None
+        directory = directory.parent
 
 
 def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
