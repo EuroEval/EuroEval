@@ -9,10 +9,10 @@ import {
   removeIssueLabel, replaceVolunteerMarker, requireProtocol,
   savePromotionReservation, selectedLanguages, signVolunteerMarker, unassignIssue,
   verifyVolunteerMarker,
-} from "./_lib.ts";
+} from "./_lib";
 import type {
   PromotionRecord, PromotionReservation, VolunteerLeaseMarker,
-} from "./_lib.ts";
+} from "./_lib";
 
 export const config = { runtime: "edge" };
 export const PROMOTION_MARKER = "euroeval-volunteer-promotion:v1";

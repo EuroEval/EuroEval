@@ -3,8 +3,8 @@ import {
   brokerErrorBody, deleteLease, enforceRateLimit, fetchIssue, getLeaseById, json, method,
   parseVolunteerMarker, patchIssue, readJson, replaceVolunteerMarker, VOLUNTEER_MARKER_RE,
   requireProtocol, signVolunteerMarker, unassignIssue, verifyVolunteerMarker,
-} from "./_lib.ts";
-import type { VolunteerLeaseMarker } from "./_lib.ts";
+} from "./_lib";
+import type { VolunteerLeaseMarker } from "./_lib";
 
 export const config = { runtime: "edge" };
 

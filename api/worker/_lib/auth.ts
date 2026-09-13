@@ -1,6 +1,6 @@
-import { BrokerError, env, sha256 } from "./protocol.ts";
-import { redis, redisGet } from "./redis.ts";
-import type { WorkerIdentity } from "./protocol.ts";
+import { BrokerError, env, sha256 } from "./protocol";
+import { redis, redisGet } from "./redis";
+import type { WorkerIdentity } from "./protocol";
 
 export function authCredential(req: Request): string {
   const header = req.headers.get("authorization") || "";
