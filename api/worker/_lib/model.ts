@@ -1,4 +1,4 @@
-import generatedScopePolicy from "../scope-policy.generated.js";
+import generatedScopePolicy from "./scope-policy.generated.js";
 declare const process: { env: Record<string, string | undefined> };
 import { BrokerError, ConfigurationError, GROUPS } from "./protocol.js";
 import type { ModelMetadataEvidence } from "./protocol.js";

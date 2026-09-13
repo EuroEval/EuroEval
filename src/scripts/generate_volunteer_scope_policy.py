@@ -17,7 +17,7 @@ from leaderboards.evaluation_common import official_dataset_language_pairs
 
 MODEL_TYPES = ("encoder", "generative")
 DEFAULT_OUTPUT = Path("api/worker/scope-policy.json")
-DEFAULT_TS_OUTPUT = Path("api/worker/scope-policy.generated.ts")
+DEFAULT_TS_OUTPUT = Path("api/worker/_lib/scope-policy.generated.ts")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -35,7 +35,10 @@ def main(argv: list[str] | None = None) -> int:
         "--ts-output",
         type=Path,
         default=None,
-        help="TypeScript mirror output (defaults alongside the standard JSON output)",
+        help=(
+            "TypeScript mirror output (defaults to "
+            f"{DEFAULT_TS_OUTPUT}; custom JSON outputs use a sibling mirror)"
+        ),
     )
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument(
