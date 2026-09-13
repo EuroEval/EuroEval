@@ -212,13 +212,13 @@ def _reviewer(
         "model": {"id": "org/model", "revision": "deadbeef"},
         "language": "da",
         "language_group": "da",
-        "euroeval_version": "18.0.0.dev0",
+        "euroeval_version": "18.1.0.dev0",
         "model_type": "generative",
-        "worker_version": "18.0.0",
+        "worker_version": "1.0.0",
         "image_digest": "sha256:image",
         "created_at": "2026-09-06T10:00:00Z",
         "expected_scope": {
-            "policy_version": "volunteer-scope/18.0.0.dev0",
+            "policy_version": "volunteer-scope/18.1.0.dev0",
             "language_group": "da",
             "identity_suffixes": suffixes,
             "count": record_count,
@@ -245,10 +245,10 @@ def _reviewer(
         api=t.cast(BucketApi, api), token="token", staging_bucket=STAGING
     )
     scope_policy: dict[str, object] = {
-        "policy_version": "volunteer-scope/18.0.0.dev0",
+        "policy_version": "volunteer-scope/18.1.0.dev0",
         "policies": [
             {
-                "euroeval_version": "18.0.0.dev0",
+                "euroeval_version": "18.1.0.dev0",
                 "model_type": "generative",
                 "language": "da",
                 "language_group": "da",
@@ -293,7 +293,7 @@ def _record(dataset: str) -> dict[str, object]:
         },
         "eval_library": {
             "name": "euroeval",
-            "version": "18.0.0.dev4",
+            "version": "18.1.0.dev4",
             "additional_details": {
                 "dataset": dataset,
                 "task": "classification",

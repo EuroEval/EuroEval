@@ -180,9 +180,9 @@ test("promotion evidence binds safe canonical paths to digests", () => {
 });
 
 test("generated trusted scopes are exact-language and versioned", () => {
-  const scope = expectedScope("18.0.0.dev", "encoder", "da");
+  const scope = expectedScope("18.1.0.dev", "encoder", "da");
   assert.equal(scope.language, "da");
-  assert.equal(scope.policy_version, "volunteer-scope/18.0.0.dev0");
+  assert.equal(scope.policy_version, "volunteer-scope/18.1.0.dev0");
   assert.ok(scope.identity_suffixes.length > 0);
 });
 

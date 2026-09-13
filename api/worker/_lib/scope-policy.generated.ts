@@ -16,10 +16,10 @@ export type ScopePolicy = {
 };
 
 const generatedScopePolicy = {
-  "policy_version": "volunteer-scope/18.0.0.dev0",
+  "policy_version": "volunteer-scope/18.1.0.dev0",
   "policies": [
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "be",
       "language_group": "be",
@@ -42,7 +42,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "bg",
       "language_group": "bg",
@@ -64,7 +64,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "bs",
       "language_group": "bs",
@@ -82,7 +82,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "ca",
       "language_group": "ca",
@@ -104,7 +104,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "cs",
       "language_group": "cs",
@@ -126,7 +126,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "da",
       "language_group": "da",
@@ -150,7 +150,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "de",
       "language_group": "de",
@@ -173,7 +173,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "el",
       "language_group": "el",
@@ -195,7 +195,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "en",
       "language_group": "en",
@@ -217,7 +217,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "es",
       "language_group": "es",
@@ -240,7 +240,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "et",
       "language_group": "et",
@@ -262,7 +262,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "fi",
       "language_group": "fi",
@@ -284,7 +284,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "fo",
       "language_group": "fo",
@@ -306,7 +306,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "fr",
       "language_group": "fr",
@@ -329,7 +329,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "hr",
       "language_group": "hr",
@@ -351,7 +351,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "hu",
       "language_group": "hu",
@@ -373,7 +373,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "is",
       "language_group": "is",
@@ -395,7 +395,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "it",
       "language_group": "it",
@@ -418,7 +418,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "lb",
       "language_group": "lb",
@@ -440,7 +440,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "lt",
       "language_group": "lt",
@@ -463,7 +463,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "lv",
       "language_group": "lv",
@@ -485,7 +485,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "nb",
       "language_group": "nb",
@@ -508,7 +508,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "nl",
       "language_group": "nl",
@@ -531,7 +531,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "nn",
       "language_group": "nn",
@@ -554,7 +554,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "no",
       "language_group": "no",
@@ -579,7 +579,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "pl",
       "language_group": "pl",
@@ -601,7 +601,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "pt",
       "language_group": "pt",
@@ -624,7 +624,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -647,7 +647,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "ro",
       "language_group": "ro",
@@ -669,7 +669,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "sk",
       "language_group": "sk",
@@ -691,7 +691,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "sl",
       "language_group": "sl",
@@ -713,7 +713,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "sq",
       "language_group": "sq",
@@ -735,7 +735,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "sr",
       "language_group": "sr",
@@ -757,7 +757,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "sv",
       "language_group": "sv",
@@ -780,7 +780,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "encoder",
       "language": "uk",
       "language_group": "uk",
@@ -802,7 +802,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "be",
       "language_group": "be",
@@ -828,7 +828,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "bg",
       "language_group": "bg",
@@ -853,7 +853,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "bs",
       "language_group": "bs",
@@ -875,7 +875,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "ca",
       "language_group": "ca",
@@ -901,7 +901,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "cs",
       "language_group": "cs",
@@ -927,7 +927,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "da",
       "language_group": "da",
@@ -957,7 +957,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "de",
       "language_group": "de",
@@ -986,7 +986,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "el",
       "language_group": "el",
@@ -1013,7 +1013,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "en",
       "language_group": "en",
@@ -1042,7 +1042,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "es",
       "language_group": "es",
@@ -1070,7 +1070,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "et",
       "language_group": "et",
@@ -1097,7 +1097,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "fi",
       "language_group": "fi",
@@ -1124,7 +1124,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "fo",
       "language_group": "fo",
@@ -1151,7 +1151,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "fr",
       "language_group": "fr",
@@ -1179,7 +1179,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "hr",
       "language_group": "hr",
@@ -1204,7 +1204,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "hu",
       "language_group": "hu",
@@ -1230,7 +1230,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "is",
       "language_group": "is",
@@ -1258,7 +1258,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "it",
       "language_group": "it",
@@ -1286,7 +1286,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "lb",
       "language_group": "lb",
@@ -1311,7 +1311,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "lt",
       "language_group": "lt",
@@ -1338,7 +1338,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "lv",
       "language_group": "lv",
@@ -1364,7 +1364,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "nb",
       "language_group": "nb",
@@ -1392,7 +1392,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "nl",
       "language_group": "nl",
@@ -1423,7 +1423,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "nn",
       "language_group": "nn",
@@ -1451,7 +1451,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "no",
       "language_group": "no",
@@ -1484,7 +1484,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "pl",
       "language_group": "pl",
@@ -1511,7 +1511,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "pt",
       "language_group": "pt",
@@ -1539,7 +1539,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "pt-pt",
       "language_group": "pt-pt",
@@ -1565,7 +1565,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "ro",
       "language_group": "ro",
@@ -1591,7 +1591,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "sk",
       "language_group": "sk",
@@ -1616,7 +1616,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "sl",
       "language_group": "sl",
@@ -1641,7 +1641,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "sq",
       "language_group": "sq",
@@ -1667,7 +1667,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "sr",
       "language_group": "sr",
@@ -1693,7 +1693,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "sv",
       "language_group": "sv",
@@ -1722,7 +1722,7 @@ const generatedScopePolicy = {
       "warnings": []
     },
     {
-      "euroeval_version": "18.0.0.dev0",
+      "euroeval_version": "18.1.0.dev0",
       "model_type": "generative",
       "language": "uk",
       "language_group": "uk",
