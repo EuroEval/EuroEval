@@ -2,10 +2,10 @@ import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, acquireRenewableIssueMutex, authenticate, brokerErrorBody,
   enforceRateLimit, fetchIssue, getLeaseById, json, method, readJson, requireAssignee, sha256, redis, redisGet,
   reserveResultIdentity, completeResultIdentity, abortResultIdentity, releaseResultReservation,
-  uploadStaging, validateRecord, requireProtocol,
+  requireProtocol,
 } from "./_lib";
+import { uploadStaging, validateRecord } from "./_lib/eee";
 
-export const config = { runtime: "edge" };
 const MAX_RESULT_BODY = 2 * 1024 * 1024;
 type StoredIdentity = { digest: string; lease_id: string; status: "uploading" | "uploaded"; issue_number: number; language: string; path: string; warnings?: string[] };
 

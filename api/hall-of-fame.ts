@@ -8,7 +8,8 @@ const EXCLUDE = new Set(["saattrupdan"]);
 const MAX_PAGES = 10;
 const PER_PAGE = 100;
 
-import { redis, sha256 } from "./worker/_lib";
+import { sha256 } from "./worker/_lib/protocol";
+import { redis } from "./worker/_lib/redis";
 
 interface RawAssignee { login: string; avatar_url?: string; }
 interface RawIssue { number: number; title: string; body: string | null; assignee: RawAssignee | null; assignees: RawAssignee[]; labels?: Array<{ name: string }>; }

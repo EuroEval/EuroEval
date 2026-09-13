@@ -5,5 +5,4 @@ export * from "./github";
 export * from "./auth";
 export * from "./markers";
 export * from "./model";
-export * from "./eee";
 export * from "./promotion";

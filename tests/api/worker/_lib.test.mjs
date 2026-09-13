@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assertAssignable, expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, renderVolunteerMarker, replaceVolunteerMarker, requireAssignee, selectedLanguages, validateRecord, volunteerAssigneesMatch } from "../../../api/worker/_lib.ts";
+import { assertAssignable, expectedScope, extractModelId, parsePromotionRecords, parseVolunteerMarker, PROMOTION_RESERVATION_TTL, renderVolunteerMarker, replaceVolunteerMarker, requireAssignee, selectedLanguages, volunteerAssigneesMatch } from "../../../api/worker/_lib.ts";
+import { validateRecord } from "../../../api/worker/_lib/eee.ts";
 import { fitsGpu, resolveModel, selectedGpu } from "../../../api/worker/_lib/model.ts";
 import { putLease, reclaimExpiredLease, releaseResultReservations, reserveResultIdentity } from "../../../api/worker/_lib/redis.ts";
 import { bindPromotionDecision, promotionIdentityKey, reservePromotionReservation } from "../../../api/worker/_lib/promotion.ts";

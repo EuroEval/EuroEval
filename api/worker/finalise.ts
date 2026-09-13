@@ -4,12 +4,12 @@ import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
   authenticate, brokerErrorBody, commentIssue, contributorLabel, deleteLease, enforceRateLimit, extractModelId,
   fetchIssue, getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker, readJson,
-  redis, redisGet, requireAssignee, requireProtocol, selectedLanguages, uploadStaging, replaceVolunteerMarker,
+  redis, redisGet, requireAssignee, requireProtocol, selectedLanguages, replaceVolunteerMarker,
   signVolunteerMarker, verifyVolunteerMarker,
 } from "./_lib";
+import { uploadStaging } from "./_lib/eee";
 import type { VolunteerLeaseMarker } from "./_lib";
 
-export const config = { runtime: "edge" };
 const FINAL_MARKER = "euroeval-volunteer-finalised:v1";
 type ResultEntry = { digest: string; identity: string; path: string; warnings?: string[] };
 type Receipt = { status?: string; submission_id: string; lease: any; entries: ResultEntry[]; manifest_path: string; manifest?: string };
