@@ -5,19 +5,33 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_FUNCTIONS_DIRECTORY = Path(".vercel/output/functions")
 _NODE_RUNTIME = re.compile(r"nodejs(?:\d+\.x)?\Z")
 
-_NAMED_FETCH_EXPORT = re.compile(
-    r"\bexport\s+async\s+function\s+fetch\b"
-    r"|\bexport\s+function\s+fetch\b"
-    r"|\bexport\s*\{[^}]*\bfetch\b[^}]*\}"
-)
-_DEFAULT_EXPORT = re.compile(r"\bexport\s+default\b")
+_NODE_IMPORT_TIMEOUT_SECONDS = 5
+_NODE_IMPORT_SCRIPT = """
+import { pathToFileURL } from "node:url";
+
+try {
+  const namespace = await import(pathToFileURL(process.argv[1]).href);
+  if (Object.prototype.hasOwnProperty.call(namespace, "default")) {
+    process.exit(2);
+  }
+  if (typeof namespace.fetch !== "function") {
+    process.exit(3);
+  }
+  process.exit(0);
+} catch {
+  process.exit(4);
+}
+"""
 EXPECTED_RUNTIMES = {
     "api/hall-of-fame": "edge",
     "api/issues": "edge",
@@ -199,30 +213,69 @@ def _runtime_matches(*, runtime: str, expected: str) -> bool:
 
 
 def _verify_node_entrypoint_exports(*, route: str, function_directory: Path) -> None:
-    """Verify the Node function export shape for Vercel runtime contract.
+    """Verify an emitted Node entrypoint's actual module namespace.
+
+    The bundle is imported in a separate Node process so that this check validates
+    the same ESM semantics that Vercel will use, without invoking the handler.
 
     Raises:
-        VerificationError: If the emitted Node entrypoint is missing,
-            defaults to a non-callable handler, or omits fetch.
+        VerificationError:
+            If the emitted entrypoint cannot be imported, defaults, or omits a
+            callable fetch export.
     """
     entrypoint = function_directory.joinpath(*route.split("/")).with_suffix(".js")
-    try:
-        source = entrypoint.read_text(encoding="utf-8")
-    except (OSError, UnicodeError) as error:
+    if not entrypoint.is_file():
         raise VerificationError(
             f"Missing Node function bundle entrypoint: {entrypoint}"
-        ) from error
-
-    if _DEFAULT_EXPORT.search(source):
-        raise VerificationError(
-            f"Node handler {route} must not export default in {entrypoint}; "
-            f"it must export a callable fetch"
         )
 
-    if not _NAMED_FETCH_EXPORT.search(source):
+    node = shutil.which("node")
+    if node is None:
+        raise VerificationError(f"Node executable is unavailable for {route}")
+
+    try:
+        completed = subprocess.run(
+            [
+                str(Path(node).resolve()),
+                "--input-type=module",
+                "-e",
+                _NODE_IMPORT_SCRIPT,
+                str(entrypoint.resolve()),
+            ],
+            cwd=str(function_directory.resolve()),
+            env={"PATH": os.defpath},
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=_NODE_IMPORT_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as error:
         raise VerificationError(
-            f"Node handler {route} entrypoint must export a callable fetch: "
-            f"missing named function export in {entrypoint}"
+            f"Node import validation timed out for {route}"
+        ) from error
+    except OSError as error:
+        raise VerificationError(
+            f"Could not run Node import validation for {route}"
+        ) from error
+
+    if completed.returncode == 2:
+        raise VerificationError(
+            f"Node handler {route} must not export default; "
+            "it must export a callable fetch"
+        )
+    if completed.returncode == 3:
+        raise VerificationError(
+            f"Node handler {route} entrypoint must export a callable fetch"
+        )
+    if completed.returncode == 4:
+        raise VerificationError(f"Could not import Node entrypoint for {route}")
+    if completed.returncode != 0:
+        raise VerificationError(
+            f"Node import validation failed for {route} "
+            f"(exit code {completed.returncode})"
         )
 
 
