@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { builtinModules } from "node:module";
 import * as ts from "typescript";
 
@@ -96,17 +97,6 @@ function resolveLocalModule(file, specifier) {
   });
 }
 
-function hasDefaultExport(source) {
-  return /\bexport\s+default\b/.test(source) || /\bexport\s*\{[^}]*\bdefault\b[^}]*\}/.test(source);
-}
-
-function hasNamedFetchExport(source) {
-  return /\bexport\s+async\s+function\s+fetch\b/.test(source) ||
-    /\bexport\s+function\s+fetch\b/.test(source) ||
-    /\bexport\s*\{[^}]*\bfetch\b[^}]*\}/.test(source) ||
-    /\bexport\s*\{[^}]*\bfetch\s+as\s+\w+[^}]*\}/.test(source);
-}
-
 async function sourceGraph(entry) {
   const modules = new Set();
   const external = new Set();
@@ -191,18 +181,18 @@ test("API endpoint runtime declarations match their module graphs", async () => 
   }
 });
 
-test("Node endpoints export a callable named fetch", () => {
+test("Node endpoints export a callable named fetch", async () => {
   for (const file of nodeEndpointFiles) {
-    const source = readFileSync(file, "utf8");
+    const namespace = await import(pathToFileURL(file).href);
     const fileName = path.relative(process.cwd(), file);
     assert.equal(
-      hasDefaultExport(source),
+      Object.prototype.hasOwnProperty.call(namespace, "default"),
       false,
       `${fileName} should not default-export handler function`,
     );
     assert.equal(
-      hasNamedFetchExport(source),
-      true,
+      typeof namespace.fetch,
+      "function",
       `${fileName} should export named function fetch`,
     );
   }

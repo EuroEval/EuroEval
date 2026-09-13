@@ -131,6 +131,39 @@ def test_missing_route_fails(tmp_path: Path) -> None:
         module.verify_vercel_functions(functions_directory=tmp_path)
 
 
+def test_node_entrypoint_accepts_callable_fetch_alias(tmp_path: Path) -> None:
+    """A callable aliased to fetch is a valid module export."""
+    _write_output(tmp_path)
+    _write_node_entrypoint(
+        tmp_path,
+        "api/worker/result",
+        'function handler() { return new Response("ok"); }\n'
+        "export { handler as fetch };\n",
+    )
+
+    module.verify_vercel_functions(functions_directory=tmp_path)
+
+
+def _write_node_entrypoint(root: Path, route: str, source: str) -> None:
+    """Replace one generated Node entrypoint with source for a focused test."""
+    entrypoint = ((root / f"{route}.func").joinpath(*route.split("/"))).with_suffix(
+        ".js"
+    )
+    entrypoint.write_text(source, encoding="utf-8")
+
+
+def test_node_entrypoint_accepts_callable_fetch_function(tmp_path: Path) -> None:
+    """A valid callable named fetch passes without invoking the handler."""
+    _write_output(tmp_path)
+    _write_node_entrypoint(
+        tmp_path,
+        "api/worker/result",
+        'export function fetch() { throw new Error("handler invoked"); }\n',
+    )
+
+    module.verify_vercel_functions(functions_directory=tmp_path)
+
+
 @pytest.mark.parametrize("route", ["api/worker/finalise", "api/worker/result"])
 def test_node_entrypoint_defaults_are_rejected(tmp_path: Path, route: str) -> None:
     """Node endpoints must not default-export handler functions."""
@@ -147,6 +180,22 @@ def test_node_entrypoint_defaults_are_rejected(tmp_path: Path, route: str) -> No
         module.verify_vercel_functions(functions_directory=tmp_path)
 
 
+def test_node_entrypoint_does_not_inherit_parent_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Import validation must not expose parent-process secrets to bundles."""
+    _write_output(tmp_path)
+    monkeypatch.setenv("EUROEVAL_TEST_SECRET", "not-for-the-bundle")
+    _write_node_entrypoint(
+        tmp_path,
+        "api/worker/result",
+        'if (process.env.EUROEVAL_TEST_SECRET) throw new Error("secret leaked");\n'
+        'export function fetch() { return new Response("ok"); }\n',
+    )
+
+    module.verify_vercel_functions(functions_directory=tmp_path)
+
+
 @pytest.mark.parametrize("route", ["api/worker/finalise", "api/worker/result"])
 def test_node_entrypoint_exports_require_named_fetch(
     tmp_path: Path, route: str
@@ -159,6 +208,81 @@ def test_node_entrypoint_exports_require_named_fetch(
     entrypoint.write_text("export {}\n", encoding="utf-8")
 
     with pytest.raises(module.VerificationError, match="must export a callable fetch"):
+        module.verify_vercel_functions(functions_directory=tmp_path)
+
+
+def test_node_entrypoint_ignores_fake_exports_in_comments_and_strings(
+    tmp_path: Path,
+) -> None:
+    """Comments and strings must not affect the semantic export check."""
+    _write_output(tmp_path)
+    _write_node_entrypoint(
+        tmp_path,
+        "api/worker/result",
+        '// export default handler\nconst text = "export function fetch() {}";\n'
+        'export function fetch() { return new Response("ok"); }\n',
+    )
+
+    module.verify_vercel_functions(functions_directory=tmp_path)
+
+
+def test_node_entrypoint_import_timeout_is_bounded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A module that never completes import must not hang verification."""
+    _write_output(tmp_path)
+    _write_node_entrypoint(
+        tmp_path,
+        "api/worker/result",
+        "await new Promise((resolve) => setTimeout(resolve, 60000));\n",
+    )
+    monkeypatch.setattr(module, "_NODE_IMPORT_TIMEOUT_SECONDS", 0.1)
+
+    with pytest.raises(module.VerificationError, match="timed out"):
+        module.verify_vercel_functions(functions_directory=tmp_path)
+
+
+def test_node_entrypoint_rejects_default_alongside_fetch(tmp_path: Path) -> None:
+    """A default export is invalid even when fetch is also callable."""
+    _write_output(tmp_path)
+    _write_node_entrypoint(
+        tmp_path,
+        "api/worker/result",
+        'export function fetch() { return new Response("ok"); }\n'
+        "export default fetch;\n",
+    )
+
+    with pytest.raises(module.VerificationError, match="must not export default"):
+        module.verify_vercel_functions(functions_directory=tmp_path)
+
+
+def test_node_entrypoint_rejects_non_callable_fetch(tmp_path: Path) -> None:
+    """A named fetch export must contain a function value."""
+    _write_output(tmp_path)
+    _write_node_entrypoint(tmp_path, "api/worker/result", "export const fetch = 42;\n")
+
+    with pytest.raises(module.VerificationError, match="callable fetch"):
+        module.verify_vercel_functions(functions_directory=tmp_path)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "export function fetch( {\n",
+        'import "./missing-dependency.js";\n'
+        'export function fetch() { return new Response("ok"); }\n',
+    ],
+)
+def test_node_entrypoint_rejects_syntax_or_import_failure(
+    tmp_path: Path, source: str
+) -> None:
+    """Syntax and dependency failures must fail import validation."""
+    _write_output(tmp_path)
+    _write_node_entrypoint(tmp_path, "api/worker/result", source)
+
+    with pytest.raises(
+        module.VerificationError, match="Could not import Node entrypoint"
+    ):
         module.verify_vercel_functions(functions_directory=tmp_path)
 
 
