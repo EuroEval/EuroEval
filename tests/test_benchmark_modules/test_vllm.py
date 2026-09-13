@@ -591,6 +591,8 @@ class TestLoadModelMaxModelLen:
         mock_llm_cls.assert_called_once()
         call_kwargs = mock_llm_cls.call_args.kwargs
         assert call_kwargs["max_model_len"] == expected_max_model_len
+        assert call_kwargs["language_model_only"] is True
+        assert call_kwargs["chat_template"] == "{{ messages[0]['content'] }}"
 
 
 class TestLoadModelMultimodalBudgetRetry:

@@ -1802,6 +1802,8 @@ def _create_llm_instance(
         "enable_flashinfer_autotune": False,
         "enable_lora": model_config.adapter_base_model_id is not None,
         "max_lora_rank": 256,
+        "language_model_only": True,
+        "chat_template": "{{ messages[0]['content'] }}",
         "limit_mm_per_prompt": {"image": 0, "video": 0, "audio": 0},
         "runner": "generate",
         **({"hf_overrides": hf_overrides} if hf_overrides else {}),
