@@ -108,9 +108,8 @@ async function sourceGraph(entry) {
 function endpointFiles(files) {
   return files.filter((file) => {
     const relative = path.relative(path.join(process.cwd(), "api"), file);
-    return !relative.startsWith(`worker${path.sep}_lib${path.sep}`) &&
-      relative !== `worker${path.sep}_lib.ts` &&
-      relative !== `worker${path.sep}scope-policy.generated.ts`;
+    // Vercel treats underscore-prefixed files and directories as private modules.
+    return relative.split(path.sep).every((part) => !part.startsWith("_"));
   });
 }
 

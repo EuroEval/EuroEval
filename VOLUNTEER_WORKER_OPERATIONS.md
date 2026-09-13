@@ -263,7 +263,7 @@ a token in this guide or commit it to a `.env` file.
 ### 6. Generate and align the scope policy
 
 The checked-in `api/worker/scope-policy.json` and
-`api/worker/scope-policy.generated.ts` are generated together from the official dataset
+`api/worker/_lib/scope-policy.generated.ts` are generated together from the official dataset
 and language contracts. The JSON remains the cross-language policy artifact; the
 TypeScript mirror avoids runtime JSON imports in Vercel handlers. Generate both for the
 exact EuroEval release that the broker will advertise:
@@ -366,7 +366,7 @@ operation.
 1. Confirm the repository, production Vercel project, production domain, GitHub labels,
    OAuth device flow, Upstash database, private staging bucket, and scoped tokens.
 2. Generate and commit `api/worker/scope-policy.json` and
-   `api/worker/scope-policy.generated.ts`. Confirm that their synchronized policy and
+   `api/worker/_lib/scope-policy.generated.ts`. Confirm that their synchronized policy and
    `EUROEVAL_VERSION` match the EuroEval package release. Separately confirm that the
    intended worker package/image uses `VOLUNTEER_WORKER_VERSION` (currently `1.0.0`).
 3. Build and publish the immutable GHCR commit-SHA candidate. Verify that it is public

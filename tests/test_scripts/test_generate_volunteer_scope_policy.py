@@ -30,7 +30,7 @@ class Policy(t.TypedDict):
 def test_checked_in_json_and_typescript_policies_are_synchronised() -> None:
     """The checked-in cross-language artifacts encode one policy."""
     json_path = Path("api/worker/scope-policy.json")
-    typescript_path = Path("api/worker/scope-policy.generated.ts")
+    typescript_path = Path("api/worker/_lib/scope-policy.generated.ts")
     policy = json.loads(json_path.read_text(encoding="utf-8"))
 
     assert (
