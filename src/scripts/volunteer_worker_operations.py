@@ -1189,15 +1189,7 @@ def check_ghcr(*, environment: dict[str, str]) -> list[Diagnostic]:
     reference = f"{IMAGE_REPOSITORY}@{digest}"
     with tempfile.TemporaryDirectory(prefix="euroeval-ghcr-") as directory:
         inspect = run_command(
-            [
-                "docker",
-                "buildx",
-                "imagetools",
-                "inspect",
-                reference,
-                "--format",
-                "{{json .}}",
-            ],
+            ["docker", "manifest", "inspect", reference],
             environment={"DOCKER_CONFIG": directory},
         )
     if inspect.returncode:
@@ -1207,12 +1199,12 @@ def check_ghcr(*, environment: dict[str, str]) -> list[Diagnostic]:
                 "ghcr", category, "anonymous image manifest inspection failed", True
             )
         ]
-    if not _manifest_matches(inspect.stdout, digest):
+    if not _manifest_has_amd64_child(inspect.stdout):
         return result + [
             Diagnostic(
                 "ghcr",
                 "malformed",
-                "manifest does not prove the configured linux/amd64 digest",
+                "manifest does not contain a linux/amd64 child digest",
                 True,
             )
         ]
@@ -1243,35 +1235,19 @@ def _classify_registry_failure(result: CommandResult) -> str:
     return "service failure"
 
 
-def _manifest_matches(output: str, digest: str) -> bool:
-    """Return whether manifest output proves digest and linux/amd64."""
+def _manifest_has_amd64_child(output: str) -> bool:
+    """Return whether manifest JSON contains a linux/amd64 child digest.
+
+    The digest reference supplied to Docker already binds the expected index digest;
+    this check therefore only needs to validate the returned index structure.
+    """
     try:
         decoded: object = json.loads(output)
     except json.JSONDecodeError:
-        decoded = None
-    if decoded is not None:
-        return _manifest_json_matches(decoded, digest)
-    digest_match = re.search(rf"Digest:\s*{re.escape(digest)}", output)
-    platform_match = re.search(r"Platform:\s*linux/amd64", output)
-    return digest_match is not None and platform_match is not None
-
-
-def _manifest_json_matches(value: object, digest: str) -> bool:
-    """Return whether structured output proves the index and amd64 child.
-
-    Returns:
-        Whether the top-level digest and a child platform are both proven.
-    """
-    if not isinstance(value, dict):
         return False
-    index_digest = value.get("digest", value.get("Digest"))
-    if index_digest is None:
-        descriptor = value.get("descriptor", value.get("Descriptor"))
-        if isinstance(descriptor, dict):
-            index_digest = descriptor.get("digest", descriptor.get("Digest"))
-    if index_digest != digest:
+    if not isinstance(decoded, dict):
         return False
-    manifests = value.get("manifests", value.get("Manifests"))
+    manifests = decoded.get("manifests")
     if not isinstance(manifests, list):
         return False
     return any(_is_amd64_descriptor(item) for item in manifests)

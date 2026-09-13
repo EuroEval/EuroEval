@@ -293,10 +293,10 @@ def test_docker_inspection_preserves_safe_environment(
             assert not list(config.iterdir())
             output = json.dumps(
                 {
-                    "digest": digest,
+                    "schemaVersion": 2,
                     "manifests": [
                         {
-                            "descriptor": {"digest": "sha256:" + "b" * 64},
+                            "digest": "sha256:" + "b" * 64,
                             "platform": {"os": "linux", "architecture": "amd64"},
                         }
                     ],
@@ -314,6 +314,7 @@ def test_docker_inspection_preserves_safe_environment(
     assert captured["PATH"] == "/custom/bin"
     assert captured["XDG_DATA_HOME"] == "/tmp/data"
     assert "GH_TOKEN" not in captured
+    assert "BUILDX_BUILDER" not in captured
     assert captured["DOCKER_CONFIG"] != "/host/config"
 
 
@@ -365,14 +366,14 @@ def test_ghcr_manifest_check_is_anonymous_and_read_only(
             0,
             json.dumps(
                 {
-                    "digest": digest,
+                    "schemaVersion": 2,
                     "manifests": [
                         {
-                            "descriptor": {"digest": "sha256:" + "b" * 64},
+                            "digest": "sha256:" + "b" * 64,
                             "platform": {"os": "linux", "architecture": "amd64"},
                         },
                         {
-                            "descriptor": {"digest": "sha256:" + "c" * 64},
+                            "digest": "sha256:" + "c" * 64,
                             "platform": {"os": "unknown", "architecture": "unknown"},
                         },
                     ],
@@ -386,6 +387,12 @@ def test_ghcr_manifest_check_is_anonymous_and_read_only(
     )
     assert not any(item.failed for item in diagnostics)
     assert not any(command[1] in {"pull", "logout"} for command in commands)
+    assert [
+        "docker",
+        "manifest",
+        "inspect",
+        operations.IMAGE_REPOSITORY + "@" + digest,
+    ] in commands
     assert environments == [{"DOCKER_CONFIG": environments[0]["DOCKER_CONFIG"]}]
 
 
@@ -583,56 +590,48 @@ def test_local_secrets_reject_symlink_without_writing(
     assert "must-not-be-printed" not in capsys.readouterr().out
 
 
-def test_manifest_accepts_attested_index_with_independent_proofs() -> None:
-    """An index digest and its amd64 child are separate attestations."""
-    digest = "sha256:" + "a" * 64
+def test_manifest_accepts_index_with_amd64_child_digest() -> None:
+    """A digest reference response must contain an amd64 child digest."""
     output = {
-        "digest": digest,
+        "schemaVersion": 2,
         "manifests": [
             {
-                "descriptor": {"digest": "sha256:" + "b" * 64},
+                "digest": "sha256:" + "b" * 64,
                 "platform": {"os": "linux", "architecture": "amd64"},
             },
             {
-                "descriptor": {"digest": "sha256:" + "c" * 64},
+                "digest": "sha256:" + "c" * 64,
                 "platform": {"os": "unknown", "architecture": "unknown"},
             },
         ],
     }
 
-    assert operations._manifest_matches(json.dumps(output), digest)
+    assert operations._manifest_has_amd64_child(json.dumps(output))
 
 
-def test_manifest_rejects_digest_mismatch_with_amd64_child() -> None:
-    """An amd64 child cannot make a mismatched index digest valid."""
-    digest = "sha256:" + "a" * 64
+def test_manifest_rejects_amd64_child_without_digest() -> None:
+    """An amd64 platform entry without a digest is invalid."""
     output = {
-        "digest": "sha256:" + "d" * 64,
-        "manifests": [
-            {
-                "descriptor": {"digest": "sha256:" + "b" * 64},
-                "platform": {"os": "linux", "architecture": "amd64"},
-            }
-        ],
+        "schemaVersion": 2,
+        "manifests": [{"platform": {"os": "linux", "architecture": "amd64"}}],
     }
 
-    assert not operations._manifest_matches(json.dumps(output), digest)
+    assert not operations._manifest_has_amd64_child(json.dumps(output))
 
 
 def test_manifest_rejects_index_without_amd64_child() -> None:
-    """A matching index digest is insufficient without an amd64 child."""
-    digest = "sha256:" + "a" * 64
+    """An index without a linux/amd64 child is invalid."""
     output = {
-        "digest": digest,
+        "schemaVersion": 2,
         "manifests": [
             {
-                "descriptor": {"digest": "sha256:" + "b" * 64},
+                "digest": "sha256:" + "b" * 64,
                 "platform": {"os": "linux", "architecture": "arm64"},
             }
         ],
     }
 
-    assert not operations._manifest_matches(json.dumps(output), digest)
+    assert not operations._manifest_has_amd64_child(json.dumps(output))
 
 
 def test_plan_does_not_run_commands_or_print_secret_values(
