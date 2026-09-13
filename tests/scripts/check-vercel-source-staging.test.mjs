@@ -9,12 +9,12 @@ import {
 
 const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
-function errorsFor(ignoreText, tracked = ["src/frontend/App.vue"]) {
-  return validateIgnoreText({
-    tracked,
-    ignoreText,
-    requiredFiles: new Set(["src/frontend/App.vue"]),
-  });
+function errorsFor(
+  ignoreText,
+  tracked = ["src/frontend/App.vue"],
+  requiredFiles = new Set(["src/frontend/App.vue"]),
+) {
+  return validateIgnoreText({ tracked, ignoreText, requiredFiles });
 }
 
 test("the repository keeps all tracked build inputs available", () => {
@@ -26,6 +26,28 @@ test("an excluded parent directory hides a build input", () => {
     errorsFor("src/frontend/\n").join("\n"),
     /parent directory of build input.*src\/frontend\//,
   );
+});
+
+test("excluding api hides every tracked API source", () => {
+  const errors = errorsFor("api/\n", [
+    "src/frontend/App.vue",
+    "api/worker/result.ts",
+  ]);
+  assert.match(errors.join("\n"), /build input is ignored.*api\/worker\/result\.ts/);
+});
+
+test("excluding the Vercel entrypoint is rejected", () => {
+  const errors = errorsFor("index.html\n", ["index.html"], new Set(["index.html"]));
+  assert.match(errors.join("\n"), /build input is ignored.*index\.html/);
+});
+
+test("excluding a root Vite config is rejected", () => {
+  const errors = errorsFor(
+    "vite.config.js\n",
+    ["vite.config.js"],
+    new Set(["vite.config.js"]),
+  );
+  assert.match(errors.join("\n"), /build input is ignored.*vite\.config\.js/);
 });
 
 test("a child-only negation cannot resurrect an excluded parent", () => {

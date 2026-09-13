@@ -15,12 +15,17 @@ const REPO_ROOT = path.resolve(
 const IGNORE_FILE = ".vercelignore";
 const FRONTEND_ROOT = "src/frontend/";
 const GENERATED_CSV_ROOT = "src/frontend/csv/";
+const API_ROOT = "api/";
 const PYTHON_SOURCE_ROOT = "src/euroeval/";
 
 export const REQUIRED_FILES = new Set([
+  "index.html",
   "vite.config.js",
   "package.json",
   "package-lock.json",
+  "tsconfig.json",
+  "tsconfig.node.json",
+  "vercel.json",
   "pyproject.toml",
   "src/scripts/build-seo-files.mjs",
   "src/scripts/build-api-reference.mjs",
@@ -44,6 +49,11 @@ export function buildInputPaths(paths, requiredFiles = REQUIRED_FILES) {
   const buildInputs = new Set(requiredFiles);
   for (const filePath of paths) {
     if (filePath.startsWith(FRONTEND_ROOT) && !filePath.startsWith(GENERATED_CSV_ROOT)) {
+      buildInputs.add(filePath);
+    }
+    // Vercel deploys each tracked API function from the repository checkout.
+    // Derive this list so new routes and shared modules cannot be omitted here.
+    if (filePath.startsWith(API_ROOT)) {
       buildInputs.add(filePath);
     }
     if (filePath.startsWith(PYTHON_SOURCE_ROOT) && filePath.endsWith(".py")) {
