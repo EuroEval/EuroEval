@@ -1,7 +1,7 @@
 import { uploadFile } from "@huggingface/hub";
-import { BrokerError, ConfigurationError, GROUPS, env } from "./protocol";
-import { fetchWithRetry } from "./http";
-import { languageGroup } from "./model";
+import { BrokerError, ConfigurationError, GROUPS, env } from "./protocol.js";
+import { fetchWithRetry } from "./http.js";
+import { languageGroup } from "./model.js";
 
 export function validateRecord(record: unknown, expected: { modelId: string; revision: string; language: string; euroevalVersion?: string }): { identity: string; failed: number; warnings: string[] } {
   if (!record || typeof record !== "object" || Array.isArray(record)) throw new BrokerError(422, "record must be an EEE JSON object.");

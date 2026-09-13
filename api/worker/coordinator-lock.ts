@@ -1,7 +1,7 @@
 import {
   BrokerError, ConfigurationError, ISSUE_MUTEX_TTL, PROTOCOL_VERSION, acquireIssueMutex, coordinatorSecret,
   json, method, readJson, requireProtocol,
-} from "./_lib";
+} from "./_lib.js";
 
 export const config = { runtime: "edge" };
 

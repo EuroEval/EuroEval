@@ -1,5 +1,5 @@
-import { detectGguf } from "../src/frontend/services/huggingface";
-import { extractModelId } from "../src/frontend/services/github";
+import { detectGguf } from "../src/frontend/services/huggingface.js";
+import { extractModelId } from "../src/frontend/services/github.js";
 
 export const config = { runtime: "edge" };
 

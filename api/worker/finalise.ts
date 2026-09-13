@@ -6,9 +6,11 @@ import {
   fetchIssue, getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker, readJson,
   redis, redisGet, requireAssignee, requireProtocol, selectedLanguages, replaceVolunteerMarker,
   signVolunteerMarker, verifyVolunteerMarker,
-} from "./_lib";
-import { uploadStaging } from "./_lib/eee";
-import type { VolunteerLeaseMarker } from "./_lib";
+} from "./_lib.js";
+import { uploadStaging } from "./_lib/eee.js";
+import type { VolunteerLeaseMarker } from "./_lib.js";
+
+export const config = { runtime: "nodejs20.x" };
 
 const FINAL_MARKER = "euroeval-volunteer-finalised:v1";
 type ResultEntry = { digest: string; identity: string; path: string; warnings?: string[] };

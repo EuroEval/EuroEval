@@ -4,7 +4,7 @@ import {
   requireAssignee,
   patchIssue, readJson, requireProtocol, replaceVolunteerMarker,
   saveLease, signVolunteerMarker, verifyVolunteerMarker,
-} from "./_lib";
+} from "./_lib.js";
 
 export const config = { runtime: "edge" };
 

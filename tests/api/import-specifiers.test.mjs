@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import { statSync } from "node:fs";
 import path from "node:path";
+import { builtinModules } from "node:module";
 import * as ts from "typescript";
 
 async function collectApiTypeScriptFiles(dir) {
@@ -25,7 +26,7 @@ function isRelativeSpecifier(specifier) {
   return specifier.startsWith("./") || specifier.startsWith("../");
 }
 
-test("api TypeScript files have no relative .ts import/export specifiers", async () => {
+test("api TypeScript files use explicit relative JavaScript specifiers", async () => {
   const apiDir = path.join(process.cwd(), "api");
   const files = await collectApiTypeScriptFiles(apiDir);
   const bad = [];
@@ -35,20 +36,15 @@ test("api TypeScript files have no relative .ts import/export specifiers", async
     const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 
     const visit = (node) => {
-      if (ts.isImportDeclaration(node)) {
+      if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
         const specifier = node.moduleSpecifier?.text;
-        if (specifier && isRelativeSpecifier(specifier) && specifier.endsWith(".ts")) {
+        if (specifier && isRelativeSpecifier(specifier) && !specifier.endsWith(".js")) {
           bad.push(`${path.relative(process.cwd(), file)} -> ${specifier}`);
         }
-      }
-
-      if (ts.isExportDeclaration(node) && node.moduleSpecifier) {
-        const specifier = node.moduleSpecifier.text;
-        if (specifier && isRelativeSpecifier(specifier) && specifier.endsWith(".ts")) {
-          bad.push(`${path.relative(process.cwd(), file)} -> ${specifier}`);
+        if (node.attributes?.elements?.length) {
+          bad.push(`${path.relative(process.cwd(), file)} -> import attributes`);
         }
       }
-
       ts.forEachChild(node, visit);
     };
 
@@ -58,7 +54,7 @@ test("api TypeScript files have no relative .ts import/export specifiers", async
   assert.equal(
     bad.length,
     0,
-    `Found relative TypeScript import/export specifiers with a .ts extension:\n${bad.join("\n")}`,
+    `Found unsupported relative import/export specifiers or attributes:\n${bad.join("\n")}`,
   );
 });
 
@@ -80,8 +76,9 @@ function moduleSpecifiers(file, source) {
 }
 
 function resolveLocalModule(file, specifier) {
-  const base = path.resolve(path.dirname(file), specifier);
-  const candidates = [base, `${base}.ts`, path.join(base, "index.ts")];
+  const withoutJavaScript = specifier.endsWith(".js") ? specifier.slice(0, -3) : specifier;
+  const base = path.resolve(path.dirname(file), withoutJavaScript);
+  const candidates = [`${base}.ts`, path.join(base, "index.ts")];
   return candidates.find((candidate) => {
     try { return statSync(candidate).isFile(); } catch { return false; }
   });
@@ -111,7 +108,9 @@ async function sourceGraph(entry) {
 function endpointFiles(files) {
   return files.filter((file) => {
     const relative = path.relative(path.join(process.cwd(), "api"), file);
-    return !relative.startsWith(`worker${path.sep}_lib${path.sep}`) && relative !== `worker${path.sep}_lib.ts`;
+    return !relative.startsWith(`worker${path.sep}_lib${path.sep}`) &&
+      relative !== `worker${path.sep}_lib.ts` &&
+      relative !== `worker${path.sep}scope-policy.generated.ts`;
   });
 }
 
@@ -147,6 +146,11 @@ test("Edge endpoint graphs cannot reach Hugging Face Hub upload code", async () 
         false,
         `${path.relative(process.cwd(), file)} reaches @huggingface/hub`,
       );
+      assert.deepEqual(
+        [...graph.external].filter((specifier) => builtinModules.includes(specifier) || specifier.startsWith("node:")),
+        [],
+        `${path.relative(process.cwd(), file)} reaches a Node builtin`,
+      );
     }
   }
 
@@ -164,8 +168,7 @@ test("API endpoint runtime declarations match their module graphs", async () => 
   for (const file of files) {
     const runtime = await runtimeDeclaration(file);
     if (nodeEndpoints.has(file)) {
-      assert.notEqual(runtime, "edge", `${path.relative(process.cwd(), file)} must not be Edge`);
-      assert.ok(runtime === null || /^nodejs\\d+\\.x$/.test(runtime), `${file} has an unsupported Node runtime`);
+      assert.equal(runtime, "nodejs20.x", `${path.relative(process.cwd(), file)} must use Node 20`);
     } else {
       assert.equal(runtime, "edge", `${path.relative(process.cwd(), file)} must declare Edge runtime`);
     }

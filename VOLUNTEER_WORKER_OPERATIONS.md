@@ -262,9 +262,11 @@ a token in this guide or commit it to a `.env` file.
 
 ### 6. Generate and align the scope policy
 
-The checked-in `api/worker/scope-policy.json` is generated from the official dataset and
-language contracts. Generate it for the exact EuroEval release that the broker will
-advertise:
+The checked-in `api/worker/scope-policy.json` and
+`api/worker/scope-policy.generated.ts` are generated together from the official dataset
+and language contracts. The JSON remains the cross-language policy artifact; the
+TypeScript mirror avoids runtime JSON imports in Vercel handlers. Generate both for the
+exact EuroEval release that the broker will advertise:
 
 ```sh
 uv run python src/scripts/generate_volunteer_scope_policy.py \
@@ -272,8 +274,10 @@ uv run python src/scripts/generate_volunteer_scope_policy.py \
 git diff --check
 ```
 
-Use `--check` to verify this file without writing, or `--dry-run` to preview whether it
-would change. Commit the generated JSON with the release change. Keep the EuroEval
+Use `--check` to verify both synchronized files without writing, or `--dry-run` to
+preview whether either would change. `--ts-output <path>` overrides the TypeScript
+mirror location when using a custom JSON output. Commit both generated files with the
+release change. Keep the EuroEval
 release and policy versions aligned separately: the policy's `euroeval_version` must
 match the repository's EuroEval package version and
 `EUROEVAL_VERSION` in Vercel (including the repository's
@@ -361,7 +365,8 @@ operation.
 
 1. Confirm the repository, production Vercel project, production domain, GitHub labels,
    OAuth device flow, Upstash database, private staging bucket, and scoped tokens.
-2. Generate and commit `api/worker/scope-policy.json`. Confirm that its policy and
+2. Generate and commit `api/worker/scope-policy.json` and
+   `api/worker/scope-policy.generated.ts`. Confirm that their synchronized policy and
    `EUROEVAL_VERSION` match the EuroEval package release. Separately confirm that the
    intended worker package/image uses `VOLUNTEER_WORKER_VERSION` (currently `1.0.0`).
 3. Build and publish the immutable GHCR commit-SHA candidate. Verify that it is public

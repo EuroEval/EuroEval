@@ -21,8 +21,8 @@ import {
   requireProtocol,
   parseVolunteerMarker,
   verifyVolunteerMarker,
-} from "./_lib";
-import type { PromotionReservation } from "./_lib";
+} from "./_lib.js";
+import type { PromotionReservation } from "./_lib.js";
 
 export const config = { runtime: "edge" };
 
