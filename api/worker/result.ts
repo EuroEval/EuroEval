@@ -6,7 +6,7 @@ import {
 } from "./_lib.js";
 import { uploadStaging, validateRecord } from "./_lib/eee.js";
 
-export const config = { runtime: "nodejs20.x" };
+export const config = { runtime: "nodejs" };
 
 const MAX_RESULT_BODY = 2 * 1024 * 1024;
 type StoredIdentity = { digest: string; lease_id: string; status: "uploading" | "uploaded"; issue_number: number; language: string; path: string; warnings?: string[] };

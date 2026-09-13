@@ -168,7 +168,7 @@ test("API endpoint runtime declarations match their module graphs", async () => 
   for (const file of files) {
     const runtime = await runtimeDeclaration(file);
     if (nodeEndpoints.has(file)) {
-      assert.equal(runtime, "nodejs20.x", `${path.relative(process.cwd(), file)} must use Node 20`);
+      assert.equal(runtime, "nodejs", `${path.relative(process.cwd(), file)} must use Node`);
     } else {
       assert.equal(runtime, "edge", `${path.relative(process.cwd(), file)} must declare Edge runtime`);
     }
