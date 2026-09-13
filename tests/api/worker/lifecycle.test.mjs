@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import claim from "../../../api/worker/claim.ts";
-import finalise from "../../../api/worker/finalise.ts";
+import { fetch as finalise } from "../../../api/worker/finalise.ts";
 import heartbeat from "../../../api/worker/heartbeat.ts";
 import release from "../../../api/worker/release.ts";
 import { parseVolunteerMarker, signVolunteerMarker, sha256, verifyVolunteerMarker } from "../../../api/worker/_lib.ts";
@@ -251,6 +251,15 @@ test("finalise rejects an issue edited before its locked transition", async () =
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
   }
+});
+
+test("finalise rejects unsupported HTTP methods", async () => {
+  const response = await finalise(new Request("https://euroeval.test/api/worker/finalise", {
+    method: "GET",
+  }));
+
+  assert.equal(response.status, 405);
+  assert.deepEqual(await response.json(), { error: "Method not allowed" });
 });
 
 test("heartbeat renews a full TTL and preserves a valid marker signature", async () => {

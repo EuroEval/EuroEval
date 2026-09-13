@@ -6,6 +6,11 @@ import path from "node:path";
 import { builtinModules } from "node:module";
 import * as ts from "typescript";
 
+const nodeEndpointFiles = [
+  path.join(process.cwd(), "api", "worker", "result.ts"),
+  path.join(process.cwd(), "api", "worker", "finalise.ts"),
+];
+
 async function collectApiTypeScriptFiles(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   const files = [];
@@ -91,6 +96,17 @@ function resolveLocalModule(file, specifier) {
   });
 }
 
+function hasDefaultExport(source) {
+  return /\bexport\s+default\b/.test(source) || /\bexport\s*\{[^}]*\bdefault\b[^}]*\}/.test(source);
+}
+
+function hasNamedFetchExport(source) {
+  return /\bexport\s+async\s+function\s+fetch\b/.test(source) ||
+    /\bexport\s+function\s+fetch\b/.test(source) ||
+    /\bexport\s*\{[^}]*\bfetch\b[^}]*\}/.test(source) ||
+    /\bexport\s*\{[^}]*\bfetch\s+as\s+\w+[^}]*\}/.test(source);
+}
+
 async function sourceGraph(entry) {
   const modules = new Set();
   const external = new Set();
@@ -136,10 +152,7 @@ async function runtimeDeclaration(file, seen = new Set()) {
 test("Edge endpoint graphs cannot reach Hugging Face Hub upload code", async () => {
   const apiDir = path.join(process.cwd(), "api");
   const files = endpointFiles(await collectApiTypeScriptFiles(apiDir));
-  const nodeEndpoints = new Set([
-    path.join(apiDir, "worker", "result.ts"),
-    path.join(apiDir, "worker", "finalise.ts"),
-  ]);
+  const nodeEndpoints = new Set(nodeEndpointFiles);
   const eee = path.join(apiDir, "worker", "_lib", "eee.ts");
   const eeeConsumers = [];
 
@@ -166,10 +179,7 @@ test("Edge endpoint graphs cannot reach Hugging Face Hub upload code", async () 
 test("API endpoint runtime declarations match their module graphs", async () => {
   const apiDir = path.join(process.cwd(), "api");
   const files = endpointFiles(await collectApiTypeScriptFiles(apiDir));
-  const nodeEndpoints = new Set([
-    path.join(apiDir, "worker", "result.ts"),
-    path.join(apiDir, "worker", "finalise.ts"),
-  ]);
+  const nodeEndpoints = new Set(nodeEndpointFiles);
 
   for (const file of files) {
     const runtime = await runtimeDeclaration(file);
@@ -178,5 +188,22 @@ test("API endpoint runtime declarations match their module graphs", async () => 
     } else {
       assert.equal(runtime, "edge", `${path.relative(process.cwd(), file)} must declare Edge runtime`);
     }
+  }
+});
+
+test("Node endpoints export a callable named fetch", () => {
+  for (const file of nodeEndpointFiles) {
+    const source = readFileSync(file, "utf8");
+    const fileName = path.relative(process.cwd(), file);
+    assert.equal(
+      hasDefaultExport(source),
+      false,
+      `${fileName} should not default-export handler function`,
+    );
+    assert.equal(
+      hasNamedFetchExport(source),
+      true,
+      `${fileName} should export named function fetch`,
+    );
   }
 });

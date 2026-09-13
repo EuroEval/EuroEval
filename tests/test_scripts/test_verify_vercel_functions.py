@@ -33,7 +33,11 @@ def _write_output(root: Path, runtimes: dict[str, str] | None = None) -> None:
                 ".js"
             )
             entrypoint.parent.mkdir(parents=True, exist_ok=True)
-            entrypoint.write_text("export {}\n", encoding="utf-8")
+            entrypoint.write_text(
+                "export async function fetch(_request) { "
+                'return new Response("ok"); }\n',
+                encoding="utf-8",
+            )
             (function_directory / "package.json").write_text(
                 json.dumps({"type": "module"}), encoding="utf-8"
             )
@@ -124,6 +128,37 @@ def test_missing_route_fails(tmp_path: Path) -> None:
     _write_output(tmp_path, runtimes)
 
     with pytest.raises(module.VerificationError, match="missing routes"):
+        module.verify_vercel_functions(functions_directory=tmp_path)
+
+
+@pytest.mark.parametrize("route", ["api/worker/finalise", "api/worker/result"])
+def test_node_entrypoint_defaults_are_rejected(tmp_path: Path, route: str) -> None:
+    """Node endpoints must not default-export handler functions."""
+    _write_output(tmp_path)
+    entrypoint = ((tmp_path / f"{route}.func").joinpath(*route.split("/"))).with_suffix(
+        ".js"
+    )
+    entrypoint.write_text(
+        "export default function handler() { return new Response() }\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(module.VerificationError, match="must not export default"):
+        module.verify_vercel_functions(functions_directory=tmp_path)
+
+
+@pytest.mark.parametrize("route", ["api/worker/finalise", "api/worker/result"])
+def test_node_entrypoint_exports_require_named_fetch(
+    tmp_path: Path, route: str
+) -> None:
+    """Node endpoints must export a callable named fetch entrypoint."""
+    _write_output(tmp_path)
+    entrypoint = ((tmp_path / f"{route}.func").joinpath(*route.split("/"))).with_suffix(
+        ".js"
+    )
+    entrypoint.write_text("export {}\n", encoding="utf-8")
+
+    with pytest.raises(module.VerificationError, match="must export a callable fetch"):
         module.verify_vercel_functions(functions_directory=tmp_path)
 
 
