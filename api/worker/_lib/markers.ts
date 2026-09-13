@@ -1,5 +1,5 @@
-import { GROUPS, PROTOCOL_VERSION, TITLE_PREFIX, VOLUNTEER_MARKER_RE, canonicalJson, removeFinalCredit } from "./protocol.ts";
-import type { VolunteerLeaseMarker, VolunteerSubmission } from "./protocol.ts";
+import { GROUPS, PROTOCOL_VERSION, TITLE_PREFIX, VOLUNTEER_MARKER_RE, canonicalJson, removeFinalCredit } from "./protocol";
+import type { VolunteerLeaseMarker, VolunteerSubmission } from "./protocol";
 
 export function parseVolunteerMarker(body: string | null): VolunteerLeaseMarker | null {
   if (!body) return null;

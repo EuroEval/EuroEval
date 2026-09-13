@@ -6,8 +6,8 @@ import {
   fetchIssue, getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker, readJson,
   redis, redisGet, requireAssignee, requireProtocol, selectedLanguages, uploadStaging, replaceVolunteerMarker,
   signVolunteerMarker, verifyVolunteerMarker,
-} from "./_lib.ts";
-import type { VolunteerLeaseMarker } from "./_lib.ts";
+} from "./_lib";
+import type { VolunteerLeaseMarker } from "./_lib";
 
 export const config = { runtime: "edge" };
 const FINAL_MARKER = "euroeval-volunteer-finalised:v1";

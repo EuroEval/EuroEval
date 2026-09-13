@@ -1,8 +1,8 @@
 import generatedScopePolicy from "../scope-policy.json" with { type: "json" };
 declare const process: { env: Record<string, string | undefined> };
-import { BrokerError, ConfigurationError, GROUPS } from "./protocol.ts";
-import type { ModelMetadataEvidence } from "./protocol.ts";
-import { fetchWithRetry } from "./http.ts";
+import { BrokerError, ConfigurationError, GROUPS } from "./protocol";
+import type { ModelMetadataEvidence } from "./protocol";
+import { fetchWithRetry } from "./http";
 
 export type ModelType = "encoder" | "generative";
 

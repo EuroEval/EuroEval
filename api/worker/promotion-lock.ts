@@ -1,2 +1,2 @@
-export { config } from "./promotion-reserve.ts";
-export { default } from "./promotion-reserve.ts";
+export { config } from "./promotion-reserve";
+export { default } from "./promotion-reserve";

@@ -8,8 +8,8 @@ import {
   getLeaseForIssue, reclaimExpiredLease,
   parseVolunteerMarker, resolveModel, selectedLanguages, volunteerAssigneesMatch,
   requireProtocol, signVolunteerMarker, verifyVolunteerMarker, markerSecret, replaceVolunteerMarker,
-} from "./_lib.ts";
-import type { Lease, VolunteerLeaseMarker } from "./_lib.ts";
+} from "./_lib";
+import type { Lease, VolunteerLeaseMarker } from "./_lib";
 
 export const config = { runtime: "edge" };
 

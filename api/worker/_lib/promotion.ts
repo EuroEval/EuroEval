@@ -1,6 +1,6 @@
-import { BrokerError, sha256 } from "./protocol.ts";
-import { redis, redisGet, redisSet } from "./redis.ts";
-import type { PromotionRecord, PromotionReservation } from "./protocol.ts";
+import { BrokerError, sha256 } from "./protocol";
+import { redis, redisGet, redisSet } from "./redis";
+import type { PromotionRecord, PromotionReservation } from "./protocol";
 
 export const PROMOTION_RESERVATION_TTL = 48 * 60 * 60;
 export const PROMOTION_TERMINAL_TTL = 30 * 24 * 60 * 60;
