@@ -167,9 +167,10 @@ Choose one supported production flow:
 - Prefer the leaderboard collection/generation flow (`make leaderboards`, or
   `make force-leaderboards` when regeneration is needed despite no new results). It
   regenerates the ignored CSV assets, validates them, and deploys a prebuilt frontend.
-- If the assets already exist in the checkout, run `make frontend` to build and deploy
-  the prebuilt frontend. This is not safe from a clean checkout until the leaderboard
-  assets have been generated.
+- If the assets already exist in the checkout, run `make frontend` to build and deploy the
+  prebuilt frontend. This is not safe from a clean checkout until the leaderboard
+  assets have been generated. `make frontend` verifies the exact function routes and
+  runtimes emitted by the build before it can deploy them.
 - Vercel Git integration may deploy the intended branch only when its build environment
   is also supplied with the generated assets. A clean Git-based deployment is not
   self-sufficient while `src/frontend/csv/` remains ignored; verify the production
@@ -377,9 +378,18 @@ operation.
    Never point `VOLUNTEER_WORKER_IMAGE_DIGEST` at a tag.
 6. Deploy the existing Vercel project with the leaderboard collection/generation
    deployment flow, or run `make frontend` only from a checkout where
-   `src/frontend/csv/` has already been generated. Verify the deployment URL and
-   production domain are the same application; deployment alone does not validate
-   external services.
+   `src/frontend/csv/` has already been generated. `make frontend` runs the read-only
+   function verifier between `vercel build --prod` and deployment, rejecting missing,
+   extra, malformed, or incorrectly-runtimed functions. To verify a build without
+   deploying, run:
+
+   ```sh
+   vercel build --prod --yes --non-interactive
+   uv run python src/scripts/verify_vercel_functions.py
+   ```
+
+   Verify the deployment URL and production domain are the same application; deployment
+   alone does not validate external services.
 7. Run the safe route and configuration smoke tests below. Then configure the local
    queue host with the shared coordinator URL and secret before allowing it to claim
    issues.

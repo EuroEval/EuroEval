@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
-import { statSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { builtinModules } from "node:module";
 import * as ts from "typescript";
@@ -107,9 +107,9 @@ async function sourceGraph(entry) {
 
 function endpointFiles(files) {
   return files.filter((file) => {
-    const relative = path.relative(path.join(process.cwd(), "api"), file);
-    // Vercel treats underscore-prefixed files and directories as private modules.
-    return relative.split(path.sep).every((part) => !part.startsWith("_"));
+    const source = readFileSync(file, "utf8");
+    return /export\s+const\s+config\s*=/.test(source) ||
+      /export\s*\{\s*config\s*\}/.test(source);
   });
 }
 
