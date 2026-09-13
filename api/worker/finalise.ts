@@ -10,7 +10,7 @@ import {
 import { uploadStaging } from "./_lib/eee.js";
 import type { VolunteerLeaseMarker } from "./_lib.js";
 
-export const config = { runtime: "nodejs20.x" };
+export const config = { runtime: "nodejs" };
 
 const FINAL_MARKER = "euroeval-volunteer-finalised:v1";
 type ResultEntry = { digest: string; identity: string; path: string; warnings?: string[] };
