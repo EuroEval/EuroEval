@@ -106,32 +106,54 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           IMAGE: ghcr.io/euroeval/euroeval-worker
+          SHA_TAG: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           set -euo pipefail
-          trap 'rm -rf "$DOCKER_CONFIG"' EXIT
-          rm -rf "$DOCKER_CONFIG"
-          mkdir -m 700 -p "$DOCKER_CONFIG"
-          if [ -z "$DIGEST" ]; then
-            echo "::error::Build did not return a candidate digest."
+          PREVIOUS_DOCKER_CONFIG="${DOCKER_CONFIG:-}"
+          ANONYMOUS_DOCKER_CONFIG="$RUNNER_TEMP/euroeval-worker-anonymous-docker"
+          rm -rf "$ANONYMOUS_DOCKER_CONFIG"
+          mkdir -m 700 -p "$ANONYMOUS_DOCKER_CONFIG"
+          export DOCKER_CONFIG="$ANONYMOUS_DOCKER_CONFIG"
+          unset BUILDX_BUILDER DOCKER_AUTH_CONFIG
+          cleanup() {
+            rm -rf "$ANONYMOUS_DOCKER_CONFIG"
+            if [ -n "$PREVIOUS_DOCKER_CONFIG" ]; then
+              rm -rf "$PREVIOUS_DOCKER_CONFIG"
+            fi
+          }
+          trap cleanup EXIT
+          if [[ ! "$DIGEST" =~ ^sha256:[0-9a-fA-F]{64}$ ]]; then
+            echo "::error::Build did not return a valid candidate digest."
+            exit 1
+          fi
+          if [ -z "$SHA_TAG" ]; then
+            echo "::error::Build did not return a candidate SHA tag."
             exit 1
           fi
           REFERENCE="$IMAGE@$DIGEST"
-          manifest="$(docker buildx imagetools inspect "$REFERENCE" --format '{{json .}}')"
-          printf '%s\n' "$manifest" | jq -e --arg digest "$DIGEST" '
-            ((.digest // .Digest // .descriptor.digest // .Descriptor.digest) == $digest)
-            and any((.manifests // .Manifests // [])[]?;
+          digest_manifest="$(docker manifest inspect "$REFERENCE")"
+          tag_manifest="$(docker manifest inspect "$SHA_TAG")"
+          digest_manifest_canonical="$(printf '%s\n' "$digest_manifest" | jq -S -c .)"
+          tag_manifest_canonical="$(printf '%s\n' "$tag_manifest" | jq -S -c .)"
+          if [ "$digest_manifest_canonical" != "$tag_manifest_canonical" ]; then
+            echo "::error::Candidate SHA tag does not match its digest reference."
+            exit 1
+          fi
+          printf '%s\n' "$digest_manifest" | jq -e '
+            any((.manifests // [])[]?;
               (.platform.os == "linux" and .platform.architecture == "amd64")
-              and ((.digest // .Digest // .descriptor.digest // .Descriptor.digest) != null)
+              and (.digest != null)
+              and (.digest | type == "string")
             )
           ' >/dev/null || {
-            echo "::error::Candidate manifest does not prove the index digest and linux/amd64 child."
+            echo "::error::Candidate manifest does not contain a linux/amd64 child digest."
             exit 1
           }
-          echo "Verified immutable manifest: $REFERENCE"
+          echo "Verified immutable manifest anonymously."
 
       - name: Publish candidate metadata
-        if: github.event_name != 'pull_request'
+        if: success() && github.event_name != 'pull_request'
         env:
           COMMIT: ${{ github.sha }}
           IMAGE: ghcr.io/euroeval/euroeval-worker
@@ -152,7 +174,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload candidate metadata
-        if: github.event_name != 'pull_request'
+        if: success() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: volunteer-worker-image-metadata

@@ -581,7 +581,10 @@ This is a per-release process, not a one-time prerequisite. The
 layer caching. Pull requests do not publish or attest an image: they load the local
 image and smoke its normal entrypoint as UID 10001 without a GPU. Trusted runs publish
 only the immutable commit-SHA candidate with provenance and an SBOM, verify the public
-GHCR package, inspect the exact candidate manifest anonymously, and print the digest.
+GHCR package, inspect the exact candidate manifest anonymously with `docker manifest
+inspect` using a fresh empty Docker config (and no `BUILDX_BUILDER`), and print the
+digest. The check resolves both the digest reference and SHA tag, compares their
+canonical manifest content, and requires a non-null `linux/amd64` child digest.
 The workflow never creates or updates `latest`.
 
 After the package is public and the workflow has printed a verified digest, run this on
