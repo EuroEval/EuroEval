@@ -1802,9 +1802,6 @@ def _create_llm_instance(
         "enable_flashinfer_autotune": False,
         "enable_lora": model_config.adapter_base_model_id is not None,
         "max_lora_rank": 256,
-        # EuroEval pre-renders prompts and only uses the text generation API. Keep
-        # vLLM from initialising multimodal processors, whose chat-template fallback
-        # can import third-party Transformers processors just to inspect them.
         "language_model_only": True,
         "chat_template": "{{ messages[0]['content'] }}",
         "limit_mm_per_prompt": {"image": 0, "video": 0, "audio": 0},
