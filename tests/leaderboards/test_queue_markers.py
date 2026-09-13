@@ -4,9 +4,9 @@ import base64
 import hashlib
 import hmac
 import json
+from typing import TypedDict
 
 import pytest
-from typing import TypedDict
 
 from leaderboards import queue_markers
 
@@ -123,11 +123,7 @@ def test_release_finishes_marker_cleanup_after_assignment_is_gone(
 
 
 def _issue(*, body: str, assignees: list[dict[str, str]]) -> _Issue:
-    return {
-        "state": "open",
-        "body": body,
-        "assignees": assignees,
-    }
+    return {"state": "open", "body": body, "assignees": assignees}
 
 
 def test_release_preserves_replacement_assignee(
@@ -135,10 +131,7 @@ def test_release_preserves_replacement_assignee(
 ) -> None:
     """Release removes only the proven local owner."""
     body = "request\n<!-- vm-id: local-vm -->"
-    issue = _issue(
-        body=body,
-        assignees=[{"login": "runner"}, {"login": "replacement"}],
-    )
+    issue = _issue(body=body, assignees=[{"login": "runner"}, {"login": "replacement"}])
     monkeypatch.setattr(queue_markers, "fetch_issue_body", lambda number: body)
     monkeypatch.setattr(queue_markers, "fetch_issue", lambda number: issue)
     monkeypatch.setattr(
