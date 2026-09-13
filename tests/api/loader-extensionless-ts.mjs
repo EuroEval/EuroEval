@@ -1,16 +1,11 @@
 export async function resolve(specifier, context, nextResolve) {
-  const isRelative = specifier.startsWith("./") || specifier.startsWith("../") || specifier.startsWith("/");
-  const hasExtension = /\.[a-zA-Z0-9]+$/.test(specifier.split(/[/?#]/)[0]);
+  const isRelative = specifier.startsWith("./") || specifier.startsWith("../");
 
-  if (isRelative && !hasExtension && !specifier.endsWith("/")) {
-    const extensions = [".ts", ".js", ".mjs", ".cjs", ".json"];
-    for (const extension of extensions) {
-      try {
-        return await nextResolve(specifier + extension, context);
-      } catch (error) {
-        const recoverable = ["ERR_MODULE_NOT_FOUND", "ERR_UNSUPPORTED_DIR_IMPORT"];
-        if (!recoverable.includes(error.code)) throw error;
-      }
+  if (isRelative && !specifier.endsWith("/") && !specifier.endsWith(".ts")) {
+    try {
+      return await nextResolve(specifier + ".ts", context);
+    } catch (error) {
+      if (error.code !== "ERR_MODULE_NOT_FOUND") throw error;
     }
   }
 
