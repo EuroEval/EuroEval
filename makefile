@@ -92,6 +92,7 @@ tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
 
 check:  ## Lint, format, and type-check the code
+	@npm run check:vercel-source
 	@git add . && uv run pre-commit run --all-files
 	@if command -v llama-server >/dev/null 2>&1 && pgrep -x llama-server >/dev/null; then \
 		echo "Running Slopo code duplication detection..."; \
