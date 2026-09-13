@@ -9,6 +9,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- vLLM text-only evaluations no longer initialise multimodal processors just to
+  resolve a chat template, avoiding spurious Transformers processor validation errors.
 - LiteLLM now retries custom OpenAI-compatible APIs that reject `max_tokens` without
   sending the unsupported parameter.
 
