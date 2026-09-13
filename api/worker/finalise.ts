@@ -28,7 +28,7 @@ function suffix(identity: string): string | null {
   try { const value = JSON.parse(identity) as unknown[]; return Array.isArray(value) && value.length === 4 ? JSON.stringify(value.slice(1)) : null; } catch { return null; }
 }
 
-export default async function handler(req: Request): Promise<Response> {
+export async function fetch(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
   try {
     const identity = await authenticate(req); await enforceRateLimit(`euroeval:worker:limit:finalise:${identity.hash}`, 30, 3600);

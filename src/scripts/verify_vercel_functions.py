@@ -11,6 +11,13 @@ from pathlib import Path
 LOGGER = logging.getLogger(__name__)
 DEFAULT_FUNCTIONS_DIRECTORY = Path(".vercel/output/functions")
 _NODE_RUNTIME = re.compile(r"nodejs(?:\d+\.x)?\Z")
+
+_NAMED_FETCH_EXPORT = re.compile(
+    r"\bexport\s+async\s+function\s+fetch\b"
+    r"|\bexport\s+function\s+fetch\b"
+    r"|\bexport\s*\{[^}]*\bfetch\b[^}]*\}"
+)
+_DEFAULT_EXPORT = re.compile(r"\bexport\s+default\b")
 EXPECTED_RUNTIMES = {
     "api/hall-of-fame": "edge",
     "api/issues": "edge",
@@ -119,8 +126,12 @@ def verify_vercel_functions(
 
     for route, (runtime, config_path) in sorted(discovered.items()):
         if _runtime_matches(runtime=runtime, expected="nodejs"):
+            function_directory = config_path.parent
             _verify_node_package_metadata(
-                route=route, function_directory=config_path.parent
+                route=route, function_directory=function_directory
+            )
+            _verify_node_entrypoint_exports(
+                route=route, function_directory=function_directory
             )
 
 
@@ -185,6 +196,34 @@ def _runtime_matches(*, runtime: str, expected: str) -> bool:
     if expected == "edge":
         return runtime == "edge"
     return bool(_NODE_RUNTIME.fullmatch(runtime))
+
+
+def _verify_node_entrypoint_exports(*, route: str, function_directory: Path) -> None:
+    """Verify the Node function export shape for Vercel runtime contract.
+
+    Raises:
+        VerificationError: If the emitted Node entrypoint is missing,
+            defaults to a non-callable handler, or omits fetch.
+    """
+    entrypoint = function_directory.joinpath(*route.split("/")).with_suffix(".js")
+    try:
+        source = entrypoint.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        raise VerificationError(
+            f"Missing Node function bundle entrypoint: {entrypoint}"
+        ) from error
+
+    if _DEFAULT_EXPORT.search(source):
+        raise VerificationError(
+            f"Node handler {route} must not export default in {entrypoint}; "
+            f"it must export a callable fetch"
+        )
+
+    if not _NAMED_FETCH_EXPORT.search(source):
+        raise VerificationError(
+            f"Node handler {route} entrypoint must export a callable fetch: "
+            f"missing named function export in {entrypoint}"
+        )
 
 
 def _verify_node_package_metadata(*, route: str, function_directory: Path) -> None:

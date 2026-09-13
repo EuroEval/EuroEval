@@ -11,7 +11,7 @@ export const config = { runtime: "nodejs" };
 const MAX_RESULT_BODY = 2 * 1024 * 1024;
 type StoredIdentity = { digest: string; lease_id: string; status: "uploading" | "uploaded"; issue_number: number; language: string; path: string; warnings?: string[] };
 
-export default async function handler(req: Request): Promise<Response> {
+export async function fetch(req: Request): Promise<Response> {
   const rejected = method(req); if (rejected) return rejected;
   try {
     const identity = await authenticate(req); await enforceRateLimit(`euroeval:worker:limit:result:${identity.hash}`, 500, 3600);
