@@ -34,7 +34,6 @@ NVIDIA Container Toolkit before continuing.
 Copy and run this block once:
 
 ```sh
-IMAGE=ghcr.io/euroeval/euroeval-worker:latest
 docker volume create euroeval-worker-cache
 
 docker run --rm -it \
@@ -49,7 +48,7 @@ docker run --rm -it \
   --pids-limit=512 \
   -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
   -v euroeval-worker-cache:/cache \
-  "$IMAGE"
+  ghcr.io/euroeval/euroeval-worker:latest
 ```
 
 On the first run, open the GitHub URL printed in the terminal, enter the short code, and
@@ -66,23 +65,22 @@ credentials.
 
 ### Optional: pin the exact image version
 
-To pin a deployment, replace the `IMAGE=...:latest` line in step 2 with these lines,
-then run the rest of that same block. The worker still starts only once, using the
-immutable digest reference:
+To pin a deployment, pull the current image and print its immutable digest reference:
 
 ```sh
 docker pull ghcr.io/euroeval/euroeval-worker:latest
-IMAGE="$(docker image inspect ghcr.io/euroeval/euroeval-worker:latest \
-  --format '{{index .RepoDigests 0}}')"
+docker image inspect ghcr.io/euroeval/euroeval-worker:latest \
+  --format '{{index .RepoDigests 0}}'
 ```
 
-Record the resulting `ghcr.io/euroeval/euroeval-worker@sha256:...` value for later runs
-if the deployment must remain pinned.
+Copy the resulting `ghcr.io/euroeval/euroeval-worker@sha256:...` value and replace the
+final `ghcr.io/euroeval/euroeval-worker:latest` argument in step 2 with it. Record that
+value for later runs if the deployment must remain pinned.
 
 ## How volunteer evaluation works
 
-1. The worker completes the broker-mediated GitHub device flow. The OAuth login must
-   be assignable to issues in the EuroEval repository; otherwise the worker stops with
+1. The worker completes the broker-mediated GitHub device flow. The OAuth login must be
+   assignable to issues in the EuroEval repository; otherwise the worker stops with
    instructions to use an eligible GitHub account.
 2. It reports NVIDIA hardware and asks for a compatible queued model/language.
 3. The broker anonymously verifies that the queued Hugging Face model is public,
@@ -94,16 +92,14 @@ if the deployment must remain pinned.
 5. Each record is uploaded idempotently to private Hugging Face staging.
 6. The broker validates the complete lease and marks it ready for review.
 
-Issue assignees are the mutable, authoritative active evaluators and credit
-identities for both manual and volunteer work. Maintainers can transfer ownership or
-credit by changing assignees; that fences old volunteer leases. Multiple assignees are
-valid when multiple volunteers contribute different languages, and accepted assignees
-are retained. An assignee is removed only after rejection or intentional release.
-Signed marker contributors are audit and integrity evidence only, not authoritative
-identity.
+Issue assignees are the mutable, authoritative active evaluators and credit identities
+for both manual and volunteer work. Maintainers can transfer ownership or credit by
+changing assignees; that fences old volunteer leases. Multiple assignees are valid when
+multiple volunteers contribute different languages, and accepted assignees are retained.
+An assignee is removed only after rejection or intentional release. Signed marker
+contributors are audit and integrity evidence only, not authoritative identity.
 
-A worker can be interrupted safely.
-The local state and exact result bytes remain in the
+A worker can be interrupted safely. The local state and exact result bytes remain in the
 named volume. Restarting before lease expiry resumes the same lease; after expiry, the
 broker may lease the language again and the old local state is archived. An interrupt
 does not immediately release an active lease. Submitted records can be retried without
