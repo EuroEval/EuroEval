@@ -259,7 +259,7 @@ For maintainer review, use a token that can read **and write** the staging bucke
 for approval, also write the canonical results bucket (`EuroEval/results`). This can be
 a separately managed local token; do not grant the Vercel function write access to the
 public results bucket unless there is a separately reviewed reason to do so. Never paste
-a token in this guide or commit it to a `.env` file.
+a token in this guide or commit it to Git.
 
 ### 6. Generate and align the scope policy
 
@@ -526,21 +526,26 @@ staging-only Vercel token where possible.
 Run these commands from a checked-out EuroEval repository on a maintainer-controlled
 host. The review shell needs a token that can read and write `HF_STAGING_BUCKET` and,
 for approval, also write `HF_RESULTS_BUCKET` (default `EuroEval/results`), plus the
-exact promotion secret. Inject secrets from a password manager or use hidden prompts; do
-not put their values in shell history, this guide, or a `.env` file:
+exact promotion secret. When `.env` is the selected local secret store, the review
+script loads it without printing values. Verify that the Git-ignored file is mode
+`0600`; otherwise inject secrets from a password manager or use hidden prompts. Do not
+put values in shell history, this guide, or command arguments:
 
 ```sh
 export HF_STAGING_BUCKET='<namespace>/<private-staging-bucket>'
 export HF_RESULTS_BUCKET=EuroEval/results
-read -r -s -p "Maintainer HF token: " HF_TOKEN
-printf '\n'
-read -r -s -p "Volunteer promotion secret: " VOLUNTEER_PROMOTION_SECRET
-printf '\n'
-export HF_TOKEN VOLUNTEER_PROMOTION_SECRET
+# The review script loads the selected local .env automatically, including
+# VOLUNTEER_PROMOTION_SECRET, without printing its values.
+mode=$(stat -f '%Lp' .env 2>/dev/null || stat -c '%a' .env)
+test "$mode" = 600
 ```
 
-If Vercel sets `VOLUNTEER_SCOPE_POLICY_JSON`, the review shell **must** use that exact
-same complete JSON value before validating or approving a submission.
+If `.env` is not the selected store, inject `HF_TOKEN` and
+`VOLUNTEER_PROMOTION_SECRET` from a password manager or hidden prompts instead; never
+put their values in command arguments or shell history. If Vercel sets
+`VOLUNTEER_SCOPE_POLICY_JSON`, the review shell **must** use that exact same complete
+JSON value before validating or approving a submission. Do not print the contents of
+`.env` or any loaded secret while checking the setup.
 
 Listing and showing are non-mutating validation operations. `list` means pending
 submissions; use `--all` when historical terminal decisions are needed:
