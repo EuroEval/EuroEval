@@ -393,6 +393,60 @@ def test_concurrent_decisions_use_first_server_metadata() -> None:
     assert len(broker_calls) == 2
 
 
+def test_conflicting_terminal_decisions_remain_pending() -> None:
+    """Conflicting valid outcomes cannot hide a submission from preflight."""
+    api, reviewer, _ = _reviewer()
+
+    _store_decision(api=api, decision=_decision_for(reviewer=reviewer))
+    _store_decision(
+        api=api, decision=_decision_for(reviewer=reviewer, outcome="rejected")
+    )
+
+    assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
+        SUBMISSION
+    ]
+
+
+def _decision_for(
+    reviewer: VolunteerReviewer, outcome: str = "accepted"
+) -> dict[str, object]:
+    report = reviewer.show(submission_id=SUBMISSION)
+    return {
+        "artifact": "volunteer-review-decision/v1",
+        "decided_at": "2026-09-06T12:00:00Z",
+        "immutable": True,
+        "issue_number": report.issue_number,
+        "outcome": outcome,
+        "records": [
+            {
+                "identity": list(record.identity),
+                "digest": record.digest,
+                "canonical_path": record.canonical_path,
+            }
+            for record in report.records
+        ],
+        "reasons": [],
+        "reviewer": "maintainer",
+        "submission_id": report.submission_id,
+        "protocol_version": "volunteer-worker/v1",
+        "warnings": list(report.warnings),
+    }
+
+
+def _store_decision(
+    api: FakeHfApi, decision: dict[str, object], path_digest: str | None = None
+) -> None:
+    content = (
+        json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n"
+    ).encode("utf-8")
+    digest = hashlib.sha256(content).hexdigest()
+    path_digest = path_digest or digest
+    api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}/{path_digest}.json")] = (
+        content
+    )
+
+
 def test_corrupted_staged_bytes_are_rejected() -> None:
     """Exact digest validation rejects altered staged content."""
     api, reviewer, _ = _reviewer()
@@ -490,29 +544,45 @@ def test_expired_reservation_cannot_change_durable_decision() -> None:
     assert broker_calls == [(12, SUBMISSION, "accepted")]
 
 
-def test_list_pending_submissions_filters_terminal_decisions() -> None:
-    """Inventory lists only manifests without a consistent terminal artifact."""
+@pytest.mark.parametrize(
+    ("mutation", "path_digest"),
+    [
+        (lambda decision: decision.update(records=["invalid"]), None),
+        (lambda decision: decision.update(submission_id="other-submission"), None),
+        (
+            lambda decision: t.cast(list[dict[str, object]], decision["records"])[
+                0
+            ].update(digest="0" * 64),
+            None,
+        ),
+        (lambda decision: None, "0" * 64),
+    ],
+)
+def test_invalid_terminal_decisions_remain_pending(
+    mutation: t.Callable[[dict[str, object]], None], path_digest: str | None
+) -> None:
+    """Terminal detection applies the complete decision integrity checks."""
+    api, reviewer, _ = _reviewer()
+    decision = _decision_for(reviewer=reviewer)
+    mutation(decision)
+
+    _store_decision(api=api, decision=decision, path_digest=path_digest)
+
+    assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
+        SUBMISSION
+    ]
+
+
+@pytest.mark.parametrize("outcome", ["accepted", "rejected"])
+def test_list_pending_submissions_filters_terminal_decisions(outcome: str) -> None:
+    """Inventory excludes valid accepted and rejected decisions."""
     api, reviewer, _ = _reviewer()
 
     assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
         SUBMISSION
     ]
 
-    decision = {
-        "artifact": "volunteer-review-decision/v1",
-        "decided_at": "2026-09-06T12:00:00Z",
-        "immutable": True,
-        "issue_number": 12,
-        "outcome": "accepted",
-        "records": [],
-        "reasons": [],
-        "reviewer": "maintainer",
-        "submission_id": SUBMISSION,
-        "protocol_version": "volunteer-worker/v1",
-    }
-    content = json.dumps(decision, sort_keys=True).encode("utf-8")
-    digest = hashlib.sha256(content).hexdigest()
-    api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}/{digest}.json")] = content
+    _store_decision(api=api, decision=_decision_for(reviewer=reviewer, outcome=outcome))
 
     assert reviewer.list_pending_submissions() == []
     assert len(reviewer.list_submissions()) == 1
@@ -522,6 +592,16 @@ def test_malformed_decision_remains_pending() -> None:
     """A malformed decision marker cannot hide a submission from preflight."""
     api, reviewer, _ = _reviewer()
     api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}/bad.json")] = b"{}"
+
+    assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
+        SUBMISSION
+    ]
+
+
+def test_malformed_json_decision_remains_pending() -> None:
+    """Malformed JSON cannot hide a submission from preflight."""
+    api, reviewer, _ = _reviewer()
+    api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}/bad.json")] = b"{"
 
     assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
         SUBMISSION

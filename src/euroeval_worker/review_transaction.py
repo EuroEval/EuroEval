@@ -5,6 +5,7 @@ from __future__ import annotations
 import collections.abc as c
 import datetime as dt
 import json
+import logging
 import os
 import typing as t
 import urllib.request
@@ -35,6 +36,8 @@ _DECISION_PREFIX = "volunteer/decisions"
 _MANIFEST_PREFIX = "volunteer/manifests"
 _LOCAL_DECISION_CREATED_AT = "1970-01-01T00:00:00Z"
 _DECISION_ARTIFACT = "volunteer-review-decision/v1"
+
+logger = logging.getLogger(__name__)
 
 
 class VolunteerReviewer:
@@ -288,50 +291,25 @@ class VolunteerReviewer:
 
     def _has_terminal_decision(self, submission_id: str, issue_number: int) -> bool:
         """Return whether decision objects resolve to one terminal outcome."""
-        paths = self.store.list_decisions(submission_id=submission_id)
-        if not paths:
+        try:
+            report = self.show(submission_id=submission_id)
+            decisions = _existing_decisions(
+                store=self.store, report=report, outcome=None
+            )
+        except ReviewError as error:
+            logger.warning(
+                "Submission %s remains pending: terminal-state validation failed: %s",
+                submission_id,
+                error,
+            )
             return False
-        outcomes: set[str] = set()
-        digests: set[str] = set()
-        for path in paths:
-            try:
-                content = self.store.read(self.store.staging_bucket, path)
-                decision = _load_object(content=content, context=path)
-            except ReviewError:
-                return False
-            outcome = decision.get("outcome")
-            digest = _digest(content)
-            legacy_path = f"{_DECISION_PREFIX}/{submission_id}.json"
-            content_path = f"{_DECISION_PREFIX}/{submission_id}/{digest}.json"
-            decision_issue_number = decision.get("issue_number")
-            reviewer = decision.get("reviewer")
-            decided_at = decision.get("decided_at")
-            reasons = decision.get("reasons")
-            records = decision.get("records")
-            if (
-                decision.get("protocol_version") != PROTOCOL_VERSION
-                or decision.get("artifact") != _DECISION_ARTIFACT
-                or decision.get("immutable") is not True
-                or decision.get("submission_id") != submission_id
-                or decision.get("issue_number") != issue_number
-                or outcome not in {"accepted", "rejected"}
-                or path not in {legacy_path, content_path}
-                or not isinstance(decision_issue_number, int)
-                or isinstance(decision_issue_number, bool)
-                or decision_issue_number <= 0
-                or decision_issue_number != issue_number
-                or not isinstance(reviewer, str)
-                or not reviewer.strip()
-                or not isinstance(decided_at, str)
-                or not decided_at.strip()
-                or not isinstance(reasons, list)
-                or any(not isinstance(reason, str) for reason in reasons)
-                or not isinstance(records, list)
-            ):
-                return False
-            outcomes.add(t.cast(str, outcome))
-            digests.add(digest)
-        return len(outcomes) == 1 and len(digests) == 1
+        if report.issue_number != issue_number:
+            logger.warning(
+                "Submission %s remains pending: manifest issue differs from summary",
+                submission_id,
+            )
+            return False
+        return bool(decisions)
 
     def _list_submission_summaries(self) -> list[tuple[str, int, str, str]]:
         """Load summaries for every durable manifest.
@@ -395,7 +373,7 @@ def _decision_path(submission_id: str, digest: str) -> str:
 
 
 def _existing_decisions(
-    store: BucketStore, report: ReviewReport, outcome: str
+    store: BucketStore, report: ReviewReport, outcome: str | None
 ) -> list[tuple[str, bytes, str]]:
     """Load and validate every durable decision for a submission.
 
@@ -425,9 +403,12 @@ def _existing_decisions(
 
 
 def _validate_existing_decision(
-    content: bytes, decision: JsonObject, report: ReviewReport, outcome: str
+    content: bytes, decision: JsonObject, report: ReviewReport, outcome: str | None
 ) -> None:
-    if decision.get("outcome") != outcome:
+    decision_outcome = decision.get("outcome")
+    if decision_outcome not in {"accepted", "rejected"}:
+        raise ReviewError("Existing decision artifact is malformed or inconsistent")
+    if outcome is not None and decision_outcome != outcome:
         raise ReviewError("Submission already has the opposite terminal decision")
     expected_records = [
         {
@@ -438,15 +419,23 @@ def _validate_existing_decision(
         for record in report.records
     ]
     decision_reasons = decision.get("reasons")
+    decision_warnings = decision.get("warnings")
     reviewer = decision.get("reviewer")
     decided_at = decision.get("decided_at")
+    issue_number = decision.get("issue_number")
     if (
         decision.get("protocol_version") != PROTOCOL_VERSION
         or decision.get("artifact") != _DECISION_ARTIFACT
         or decision.get("immutable") is not True
         or decision.get("submission_id") != report.submission_id
-        or decision.get("issue_number") != report.issue_number
+        or not isinstance(issue_number, int)
+        or isinstance(issue_number, bool)
+        or issue_number <= 0
+        or issue_number != report.issue_number
         or decision.get("records") != expected_records
+        or not isinstance(decision_warnings, list)
+        or any(not isinstance(warning, str) for warning in decision_warnings)
+        or decision_warnings != list(report.warnings)
         or not isinstance(reviewer, str)
         or not reviewer.strip()
         or not isinstance(decided_at, str)
@@ -457,7 +446,7 @@ def _validate_existing_decision(
         raise ReviewError("Existing decision artifact is malformed or inconsistent")
     expected_content = _decision_bytes(
         report=report,
-        outcome=outcome,
+        outcome=t.cast(str, decision_outcome),
         reviewer=reviewer,
         reasons=t.cast(list[str], decision_reasons),
         decided_at=decided_at,
