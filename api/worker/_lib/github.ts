@@ -1,5 +1,5 @@
-import { BrokerError, REPO, REQUEST_LABEL, env } from "./protocol";
-import { fetchWithRetry } from "./http";
+import { BrokerError, REPO, REQUEST_LABEL, env } from "./protocol.js";
+import { fetchWithRetry } from "./http.js";
 
 
 interface GithubIssue { number: number; title: string; body: string | null; state: string; assignees?: Array<{ login: string }>; labels?: Array<{ name?: string }>; pull_request?: unknown; }

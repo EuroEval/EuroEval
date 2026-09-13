@@ -1,4 +1,4 @@
-import { BrokerError, ConfigurationError, PROTOCOL_VERSION, authenticate, json, method, redisDelete } from "../_lib";
+import { BrokerError, ConfigurationError, PROTOCOL_VERSION, authenticate, json, method, redisDelete } from "../_lib.js";
 
 export const config = { runtime: "edge" };
 

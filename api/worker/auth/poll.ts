@@ -3,7 +3,7 @@ declare const process: { env: Record<string, string | undefined> };
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, env, enforceRateLimit, fetchWithRetry, json, method, randomToken, readJson,
   redisDelete, redisGet, redisSet, sha256, requireProtocol,
-} from "../_lib";
+} from "../_lib.js";
 
 export const config = { runtime: "edge" };
 

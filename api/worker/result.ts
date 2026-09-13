@@ -3,8 +3,10 @@ import {
   enforceRateLimit, fetchIssue, getLeaseById, json, method, readJson, requireAssignee, sha256, redis, redisGet,
   reserveResultIdentity, completeResultIdentity, abortResultIdentity, releaseResultReservation,
   requireProtocol,
-} from "./_lib";
-import { uploadStaging, validateRecord } from "./_lib/eee";
+} from "./_lib.js";
+import { uploadStaging, validateRecord } from "./_lib/eee.js";
+
+export const config = { runtime: "nodejs20.x" };
 
 const MAX_RESULT_BODY = 2 * 1024 * 1024;
 type StoredIdentity = { digest: string; lease_id: string; status: "uploading" | "uploaded"; issue_number: number; language: string; path: string; warnings?: string[] };

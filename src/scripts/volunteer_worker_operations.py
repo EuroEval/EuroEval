@@ -1375,7 +1375,7 @@ def check_hf(*, environment: dict[str, str]) -> list[Diagnostic]:
 
 
 def check_policy(*, environment: dict[str, str]) -> list[Diagnostic]:
-    """Check source/policy versions and generated policy freshness.
+    """Check source versions and both generated policy artifacts.
 
     Returns:
         Policy diagnostics.
@@ -1436,7 +1436,10 @@ def check_policy(*, environment: dict[str, str]) -> list[Diagnostic]:
     if freshness.returncode:
         result.append(
             Diagnostic(
-                "policy", "drift", "generated scope policy is stale or missing", True
+                "policy",
+                "drift",
+                "generated scope policy files are stale or missing",
+                True,
             )
         )
     return result

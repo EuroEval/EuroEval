@@ -1,7 +1,7 @@
 import {
   ConfigurationError, BrokerError, PROTOCOL_VERSION, enforceRateLimit, env, fetchWithRetry, json, method, randomToken, redisSet,
   readJson, requireProtocol, sha256,
-} from "../_lib";
+} from "../_lib.js";
 
 export const config = { runtime: "edge" };
 

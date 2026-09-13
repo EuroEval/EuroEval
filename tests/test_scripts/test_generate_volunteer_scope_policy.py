@@ -1,6 +1,8 @@
 """Tests for the generated volunteer scope policy."""
 
+import json
 import typing as t
+from pathlib import Path
 
 import pytest
 
@@ -23,6 +25,17 @@ class Policy(t.TypedDict):
 
     policy_version: str
     policies: list[PolicyEntry]
+
+
+def test_checked_in_json_and_typescript_policies_are_synchronised() -> None:
+    """The checked-in cross-language artifacts encode one policy."""
+    json_path = Path("api/worker/scope-policy.json")
+    typescript_path = Path("api/worker/scope-policy.generated.ts")
+    policy = json.loads(json_path.read_text(encoding="utf-8"))
+
+    assert (
+        policy_module.encode_typescript_policy(policy) == typescript_path.read_bytes()
+    )
 
 
 def test_policy_does_not_share_a_group_scope() -> None:

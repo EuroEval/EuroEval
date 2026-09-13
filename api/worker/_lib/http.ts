@@ -1,4 +1,4 @@
-import { BrokerError, env } from "./protocol";
+import { BrokerError, env } from "./protocol.js";
 
 export async function fetchWithRetry(input: string, init: RequestInit = {}): Promise<Response> {
   // Retrying a POST can repeat a device-code, assignment, or mutation after the

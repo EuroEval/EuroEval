@@ -1,5 +1,5 @@
-import { BrokerError, env, optionalEnv, randomToken, sha256 } from "./protocol";
-import type { Lease } from "./protocol";
+import { BrokerError, env, optionalEnv, randomToken, sha256 } from "./protocol.js";
+import type { Lease } from "./protocol.js";
 
 async function redisRequest(command: unknown[]): Promise<unknown> {
   let lastError: unknown;
