@@ -5,20 +5,16 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-import typing as t
 from collections import defaultdict
 
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
 
 from euroeval_worker.review import (
-    BucketApi,
-    BucketStore,
     ReviewError,
     ReviewReport,
     VolunteerReviewer,
+    reviewer_from_environment,
 )
-from leaderboards.constants import HF_RESULTS_BUCKET
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +38,21 @@ def main(argv: list[str] | None = None) -> int:
             raise ReviewError("Set --reviewer or GITHUB_ACTOR to a verified login")
         service = _service()
         if arguments.command == "list":
-            for (
-                submission_id,
-                issue,
-                contributor,
-                language,
-            ) in service.list_submissions():
+            submissions = (
+                service.list_submissions()
+                if arguments.all
+                else service.list_pending_submissions()
+            )
+            logger.info(
+                "%s volunteer submissions:",
+                "All durable" if arguments.all else "Pending",
+            )
+            if not submissions:
+                logger.info(
+                    "No %s volunteer submissions found.",
+                    "durable" if arguments.all else "pending",
+                )
+            for submission_id, issue, contributor, language in submissions:
                 logger.info(
                     "%s  issue=%s  contributor=%s  language=%s",
                     submission_id,
@@ -92,7 +97,14 @@ def _log_report(report: ReviewReport) -> None:
         logger.info("  expected %s", identity)
     logger.info("Actual identities: %s", len(report.records))
     for record in report.records:
-        logger.info("  actual   %s  sha256=%s", record.identity, record.digest)
+        scores = ", ".join(f"{metric}={score:g}" for metric, score in record.scores)
+        logger.info(
+            "  actual   %s  sha256=%s  scores={%s}  warnings=%s",
+            record.identity,
+            record.digest,
+            scores,
+            ", ".join(record.warnings) or "none",
+        )
     by_metric: dict[str, list[float]] = defaultdict(list)
     for record in report.records:
         for metric, score in record.scores:
@@ -112,7 +124,14 @@ def _parser() -> argparse.ArgumentParser:
         help="Verified maintainer GitHub login (defaults to GITHUB_ACTOR).",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
-    subparsers.add_parser("list", help="List durable staged manifests.")
+    listing = subparsers.add_parser(
+        "list", help="List pending staged manifests (use --all for history)."
+    )
+    listing.add_argument(
+        "--all",
+        action="store_true",
+        help="Include submissions with terminal decisions.",
+    )
     show = subparsers.add_parser("show", help="Revalidate and summarise a submission.")
     show.add_argument("submission_id")
     for command in ("approve", "reject"):
@@ -130,18 +149,8 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _service() -> VolunteerReviewer:
-    staging = os.environ.get("HF_STAGING_BUCKET")
-    token = os.environ.get("HF_TOKEN")
-    if not staging or not token:
-        raise ReviewError("HF_STAGING_BUCKET and HF_TOKEN are required")
-    return VolunteerReviewer(
-        store=BucketStore(
-            api=t.cast(BucketApi, HfApi(token=token)),
-            token=token,
-            staging_bucket=staging,
-        ),
-        results_bucket=os.environ.get("HF_RESULTS_BUCKET", HF_RESULTS_BUCKET),
-    )
+    """Return the configured reviewer service."""
+    return reviewer_from_environment()
 
 
 if __name__ == "__main__":

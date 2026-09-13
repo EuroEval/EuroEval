@@ -267,16 +267,89 @@ class VolunteerReviewer:
             manifest=manifest, store=self.store, scope_policy=self.scope_policy
         )
 
-    def list_submissions(self) -> list[tuple[str, int, str, str]]:
-        """Return submission ID, issue, contributor, and language summaries."""
+    def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
+        """Return durable manifests without one terminal decision artifact.
+
+        This is a read-only inventory operation. Malformed or conflicting decision
+        objects remain pending so that the maintainer is directed to inspect them
+        rather than allowing them to silently disappear from the queue.
+
+        Returns:
+            Submission ID, issue, contributor, and language summaries.
+        """
+        summaries = self._list_submission_summaries()
+        return [
+            summary
+            for summary in summaries
+            if not self._has_terminal_decision(
+                submission_id=summary[0], issue_number=summary[1]
+            )
+        ]
+
+    def _has_terminal_decision(self, submission_id: str, issue_number: int) -> bool:
+        """Return whether decision objects resolve to one terminal outcome."""
+        paths = self.store.list_decisions(submission_id=submission_id)
+        if not paths:
+            return False
+        outcomes: set[str] = set()
+        digests: set[str] = set()
+        for path in paths:
+            try:
+                content = self.store.read(self.store.staging_bucket, path)
+                decision = _load_object(content=content, context=path)
+            except ReviewError:
+                return False
+            outcome = decision.get("outcome")
+            digest = _digest(content)
+            legacy_path = f"{_DECISION_PREFIX}/{submission_id}.json"
+            content_path = f"{_DECISION_PREFIX}/{submission_id}/{digest}.json"
+            decision_issue_number = decision.get("issue_number")
+            reviewer = decision.get("reviewer")
+            decided_at = decision.get("decided_at")
+            reasons = decision.get("reasons")
+            records = decision.get("records")
+            if (
+                decision.get("protocol_version") != PROTOCOL_VERSION
+                or decision.get("artifact") != _DECISION_ARTIFACT
+                or decision.get("immutable") is not True
+                or decision.get("submission_id") != submission_id
+                or decision.get("issue_number") != issue_number
+                or outcome not in {"accepted", "rejected"}
+                or path not in {legacy_path, content_path}
+                or not isinstance(decision_issue_number, int)
+                or isinstance(decision_issue_number, bool)
+                or decision_issue_number <= 0
+                or decision_issue_number != issue_number
+                or not isinstance(reviewer, str)
+                or not reviewer.strip()
+                or not isinstance(decided_at, str)
+                or not decided_at.strip()
+                or not isinstance(reasons, list)
+                or any(not isinstance(reason, str) for reason in reasons)
+                or not isinstance(records, list)
+            ):
+                return False
+            outcomes.add(t.cast(str, outcome))
+            digests.add(digest)
+        return len(outcomes) == 1 and len(digests) == 1
+
+    def _list_submission_summaries(self) -> list[tuple[str, int, str, str]]:
+        """Load summaries for every durable manifest.
+
+        Returns:
+            Submission ID, issue, contributor, and language summaries.
+        """
         summaries: list[tuple[str, int, str, str]] = []
         for path in self.store.list_manifests():
             manifest = _load_object(
                 content=self.store.read(self.store.staging_bucket, path), context=path
             )
-            submission_id, issue, contributor, language = _manifest_summary(manifest)
-            summaries.append((submission_id, issue, contributor, language))
+            summaries.append(_manifest_summary(manifest))
         return summaries
+
+    def list_submissions(self) -> list[tuple[str, int, str, str]]:
+        """Return all durable manifest summaries, including historical ones."""
+        return self._list_submission_summaries()
 
 
 def _decision_bytes(

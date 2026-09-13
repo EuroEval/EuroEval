@@ -30,6 +30,7 @@ import csv
 import json
 import logging
 import os
+import shlex
 import signal
 import socket
 import subprocess
@@ -43,6 +44,7 @@ from dotenv import load_dotenv
 from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
+from euroeval_worker.review import PublicStagingError, reviewer_from_environment
 from leaderboards.backup import backup_results
 from leaderboards.constants import (
     MODEL_REQUEST_LABEL,
@@ -104,6 +106,12 @@ def main(force: bool = False) -> None:
             are found. Defaults to False.
     """
     check_required_env_vars()
+    try:
+        should_continue = preflight_volunteer_review()
+    except PublicStagingError:
+        sys.exit(1)
+    if not should_continue:
+        return
 
     issues = _fetch_issues()
     harvested = _harvest_results(issues)
@@ -655,6 +663,125 @@ def deploy_to_vercel() -> bool:
             logger.error(f"{cmd[0]} {cmd[1]} failed (exit {e.returncode}).")
             return False
     return True
+
+
+def preflight_volunteer_review() -> bool:
+    """Check private volunteer staging before any leaderboard side effect.
+
+    Returns:
+        Whether leaderboard collection should continue. ``False`` means the
+        operator chose to review pending submissions first.
+
+    Raises:
+        PublicStagingError:
+            If Hugging Face confirms that the staging bucket is public.
+    """
+    if not os.environ.get("HF_STAGING_BUCKET") or not os.environ.get("HF_TOKEN"):
+        logger.warning(
+            "Volunteer review preflight skipped: private staging is not configured."
+        )
+        return True
+
+    try:
+        reviewer = reviewer_from_environment()
+        pending = reviewer.list_pending_submissions()
+    except PublicStagingError:
+        logger.error("Refusing to continue: configured volunteer staging is public.")
+        raise
+    except Exception:
+        logger.warning(
+            "Volunteer review preflight unavailable; continuing with canonical results."
+        )
+        return True
+
+    if not pending:
+        return True
+
+    submission_ids = [summary[0] for summary in pending]
+    if not _stdin_is_interactive():
+        _log_review_commands(submission_ids=submission_ids)
+        logger.warning(
+            "Standard input is not interactive; continuing without automatic approval."
+        )
+        return True
+    try:
+        answer = input(
+            f"Found {len(pending)} volunteer submission(s) pending review in private "
+            "Hugging Face staging. Review them before continuing with leaderboard "
+            "generation? [y/N]: "
+        )
+    except EOFError:
+        _log_review_commands(submission_ids=submission_ids)
+        logger.warning(
+            "Could not read review prompt; continuing without automatic approval."
+        )
+        return True
+    if answer.strip().lower() in {"y", "yes"}:
+        _log_review_commands(submission_ids=submission_ids)
+        logger.info(
+            "Review paused; no volunteer submission was approved automatically. "
+            "Rerun make leaderboards afterward."
+        )
+        return False
+    logger.info("Continuing; no volunteer submission was approved automatically.")
+    return True
+
+
+def _log_review_commands(submission_ids: list[str]) -> None:
+    """Log copy-pasteable, shell-quoted maintainer review commands."""
+    reviewer = os.environ.get("GITHUB_ACTOR") or "<github-login>"
+    reason = "reviewed submission evidence"
+    commands = [
+        ["uv", "run", "python", "src/scripts/review_volunteer_results.py", "list"]
+    ]
+    for submission_id in submission_ids:
+        commands.extend(
+            (
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "src/scripts/review_volunteer_results.py",
+                    "show",
+                    submission_id,
+                ],
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "src/scripts/review_volunteer_results.py",
+                    "--reviewer",
+                    reviewer,
+                    "approve",
+                    submission_id,
+                    "--reason",
+                    reason,
+                ],
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "src/scripts/review_volunteer_results.py",
+                    "--reviewer",
+                    reviewer,
+                    "reject",
+                    submission_id,
+                    "--reason",
+                    reason,
+                ],
+            )
+        )
+    logger.warning("Review commands (do not run until evidence is inspected):")
+    for command in commands:
+        logger.warning("%s", shlex.join(command))
+
+
+def _stdin_is_interactive() -> bool:
+    """Return whether stdin can safely be used for the review prompt."""
+    try:
+        return sys.stdin.isatty()
+    except (AttributeError, OSError):
+        return False
 
 
 def preview_in_dev_server() -> bool:
