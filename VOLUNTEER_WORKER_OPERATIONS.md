@@ -542,10 +542,12 @@ export HF_TOKEN VOLUNTEER_PROMOTION_SECRET
 If Vercel sets `VOLUNTEER_SCOPE_POLICY_JSON`, the review shell **must** use that exact
 same complete JSON value before validating or approving a submission.
 
-Listing and showing are non-mutating validation operations:
+Listing and showing are non-mutating validation operations. `list` means pending
+submissions; use `--all` when historical terminal decisions are needed:
 
 ```sh
 uv run python src/scripts/review_volunteer_results.py list
+uv run python src/scripts/review_volunteer_results.py list --all
 uv run python src/scripts/review_volunteer_results.py show <submission-id>
 ```
 

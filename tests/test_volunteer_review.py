@@ -490,6 +490,44 @@ def test_expired_reservation_cannot_change_durable_decision() -> None:
     assert broker_calls == [(12, SUBMISSION, "accepted")]
 
 
+def test_list_pending_submissions_filters_terminal_decisions() -> None:
+    """Inventory lists only manifests without a consistent terminal artifact."""
+    api, reviewer, _ = _reviewer()
+
+    assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
+        SUBMISSION
+    ]
+
+    decision = {
+        "artifact": "volunteer-review-decision/v1",
+        "decided_at": "2026-09-06T12:00:00Z",
+        "immutable": True,
+        "issue_number": 12,
+        "outcome": "accepted",
+        "records": [],
+        "reasons": [],
+        "reviewer": "maintainer",
+        "submission_id": SUBMISSION,
+        "protocol_version": "volunteer-worker/v1",
+    }
+    content = json.dumps(decision, sort_keys=True).encode("utf-8")
+    digest = hashlib.sha256(content).hexdigest()
+    api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}/{digest}.json")] = content
+
+    assert reviewer.list_pending_submissions() == []
+    assert len(reviewer.list_submissions()) == 1
+
+
+def test_malformed_decision_remains_pending() -> None:
+    """A malformed decision marker cannot hide a submission from preflight."""
+    api, reviewer, _ = _reviewer()
+    api.files[(STAGING, f"volunteer/decisions/{SUBMISSION}/bad.json")] = b"{}"
+
+    assert [summary[0] for summary in reviewer.list_pending_submissions()] == [
+        SUBMISSION
+    ]
+
+
 @pytest.mark.parametrize("language_group", ["sv", 42, ["da"]])
 def test_manifest_forged_language_group_is_rejected(language_group: object) -> None:
     """A top-level language group must not contradict the trusted scope."""

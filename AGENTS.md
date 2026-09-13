@@ -74,6 +74,23 @@ this directory are _persistent_ scripts. One-off scripts don't belong in the rep
 
 - if you need to run a one-off script, store it in /tmp or in-memory.
 
+### Leaderboard and volunteer review
+
+When asked to run `make leaderboards` or `make force-leaderboards`, let its staged
+volunteer-review preflight pause before any side effects. For every pending submission,
+run `list` and then `show <submission-id>` before forming an opinion. Validate
+provenance deterministically: compare like-for-like with canonical public results and
+similar models, and check for implausible score jumps, identical or repeated patterns,
+model/hardware speed anomalies, count or scope mismatches, metadata mismatches, and
+warnings. Suspicious evidence requires manual review; do not recommend approval. Clean
+evidence may support a recommendation, but explicit user permission is required
+immediately before running either terminal `approve` or `reject` command.
+
+Run decisions only through the fenced shell commands in
+[the volunteer operations guide](VOLUNTEER_WORKER_OPERATIONS.md). Never copy staging
+bytes, edit decision markers manually, expose credentials, or delete, overwrite, or
+print `.env`; `.env` is the selected local secret store.
+
 ### Tests
 
 All evaluation framework tests are in `tests` and can be run with `make test`. This

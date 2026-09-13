@@ -6,7 +6,7 @@ import hashlib
 import tempfile
 from pathlib import Path
 
-from .review_models import BucketApi, ReviewError
+from .review_models import BucketApi, PublicStagingError, ReviewError
 
 _MANIFEST_PREFIX = "volunteer/manifests"
 _DECISION_PREFIX = "volunteer/decisions"
@@ -19,7 +19,7 @@ class BucketStore:
         """Initialise and verify the private staging bucket.
 
         Raises:
-            ReviewError:
+            PublicStagingError:
                 If the staging bucket is public.
         """
         self.api = api
@@ -27,7 +27,7 @@ class BucketStore:
         self.staging_bucket = staging_bucket
         info = self.api.bucket_info(staging_bucket, token=token)
         if not info.private:
-            raise ReviewError("HF_STAGING_BUCKET must be private")
+            raise PublicStagingError("HF_STAGING_BUCKET must be private")
 
     def list_decisions(self, submission_id: str) -> list[str]:
         """List all legacy and content-addressed decision objects.

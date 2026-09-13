@@ -92,6 +92,10 @@ class ReviewError(RuntimeError):
     """Raised when staged evidence cannot be safely promoted."""
 
 
+class PublicStagingError(ReviewError):
+    """Raised when the configured staging bucket is publicly readable."""
+
+
 @dataclasses.dataclass(frozen=True)
 class ValidatedRecord:
     """One byte-verified, schema-verified staged result."""
