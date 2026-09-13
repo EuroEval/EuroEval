@@ -66,9 +66,19 @@ function urlFor(sectionIndex, sectionId, slug) {
 }
 
 async function listLeaderboardCsvs() {
-  const all = await fs.readdir(CSV_DIR);
+  const all = await readCsvFiles();
   // Only ship the user-facing variants (drop `_simplified` versions).
   return all.filter((f) => f.endsWith(".csv") && !f.includes("_simplified"));
+}
+
+async function readCsvFiles() {
+  try {
+    return await fs.readdir(CSV_DIR);
+  } catch (error) {
+    // A clean Git checkout has no generated CSV directory yet.
+    if (error?.code === "ENOENT") return [];
+    throw error;
+  }
 }
 
 async function loadConfig() {
@@ -172,7 +182,7 @@ async function copyGfxTo(distDir) {
 async function copyCsvsTo(distDir) {
   const target = path.join(distDir, "leaderboards-csv");
   await fs.mkdir(target, { recursive: true });
-  for (const name of await fs.readdir(CSV_DIR)) {
+  for (const name of await readCsvFiles()) {
     if (!name.endsWith(".csv")) continue;
     await fs.copyFile(path.join(CSV_DIR, name), path.join(target, name));
   }
