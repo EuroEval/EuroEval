@@ -26,6 +26,13 @@ function isRelativeSpecifier(specifier) {
   return specifier.startsWith("./") || specifier.startsWith("../");
 }
 
+test("Node API bundles inherit ESM package metadata", () => {
+  const packageJson = JSON.parse(
+    readFileSync(path.join(process.cwd(), "package.json"), "utf8"),
+  );
+  assert.equal(packageJson.type, "module");
+});
+
 test("api TypeScript files use explicit relative JavaScript specifiers", async () => {
   const apiDir = path.join(process.cwd(), "api");
   const files = await collectApiTypeScriptFiles(apiDir);
