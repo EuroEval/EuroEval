@@ -9,6 +9,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- First-label-token mapping for chat models now isolates label tokens via a chat-template
+  diff (with encode-label fallback) instead of scanning the full templated conversation.
+  This prevents system-prompt tokens such as ``p`` / ``n`` from being mistaken for
+  classification label prefixes (e.g. ``positif`` → ``p``).
 - vLLM text-only evaluations no longer initialise multimodal processors just to
   resolve a chat template, avoiding spurious Transformers processor validation errors.
 - LiteLLM now retries custom OpenAI-compatible APIs that reject `max_tokens` without

@@ -330,40 +330,31 @@ def get_first_label_token_mapping(
     # first token of each label
     all_tokens: c.Sequence[c.Sequence[str | list[str]]]
     if not has_chat_template(tokeniser=tokeniser):
-        add_prefix_space = should_prefix_space_be_added_to_labels(
-            labels_to_be_generated=local_labels, tokeniser=tokeniser
-        )
         all_tokens = [
             [
                 tokeniser.decode(token_id)
-                for token_id in tokeniser.encode(
-                    text=f" {label}" if add_prefix_space else label,
-                    add_special_tokens=False,
+                for token_id in _label_token_ids_via_encode(
+                    label=label, local_labels=local_labels, tokeniser=tokeniser
                 )
             ]
             for label in local_labels
         ]
     else:
+        enable_thinking = generative_type == GenerativeType.REASONING
         all_token_ids: list[list[int]] = []
         for label in local_labels:
-            token_ids = apply_chat_template(
-                conversation=[
-                    dict(role="user", content=""),
-                    dict(role="assistant", content=label),
-                    # Adding extra user message as Mistral tokenisers require
-                    # conversations to end with a user message
-                    dict(role="user", content=""),
-                ],
-                tokeniser=tokeniser,
-                tokenise=True,
-                add_generation_prompt=True,
-                enable_thinking=generative_type == GenerativeType.REASONING,
+            token_ids = _label_token_ids_via_chat_diff(
+                label=label, tokeniser=tokeniser, enable_thinking=enable_thinking
             )
-            if isinstance(token_ids, BatchEncoding):
-                token_ids = token_ids.input_ids
-            assert isinstance(token_ids, list), (
-                f"Expected token_ids to be a list, but got {type(token_ids)}."
-            )
+            if token_ids is None:
+                log_once(
+                    f"Could not isolate label {label!r} via chat-template diff, so "
+                    "encoding the label alone instead.",
+                    level=logging.DEBUG,
+                )
+                token_ids = _label_token_ids_via_encode(
+                    label=label, local_labels=local_labels, tokeniser=tokeniser
+                )
             all_token_ids.append(token_ids)
         all_tokens = [
             tokeniser.convert_ids_to_tokens(ids=token_ids)
@@ -383,13 +374,11 @@ def get_first_label_token_mapping(
         for token_list in all_tokens
     ]
 
-    # Extract the first token of each label
+    # Extract the first matching prefix token of each label within the isolated span
     first_tokens: list[str] = list()
     for token_list, label in zip(all_tokens, local_labels):
-        matching_tokens = [
-            tok for tok in token_list if tok and label.startswith(tok.strip())
-        ]
-        if not matching_tokens:
+        matching_token = _pick_matching_label_token(token_list=token_list, label=label)
+        if matching_token is None:
             if log_metadata:
                 log_once(
                     f"No matching token found in token_list for label {label!r}, so "
@@ -397,7 +386,7 @@ def get_first_label_token_mapping(
                     level=logging.DEBUG,
                 )
             return False
-        first_tokens.append(matching_tokens[0])
+        first_tokens.append(matching_token)
 
     # Build a mapping from labels to the first token in each label if the first
     # tokens are distinct
@@ -421,6 +410,159 @@ def get_first_label_token_mapping(
                 level=logging.DEBUG,
             )
         return False
+
+
+def _label_token_ids_via_chat_diff(
+    label: str, tokeniser: Tokeniser, enable_thinking: bool
+) -> list[int] | None:
+    """Isolate label token ids by diffing chat templates with/without the label.
+
+    Scanning the full templated conversation for ``label.startswith(tok)`` can match
+    tokens from the system prompt (e.g. stray ``p`` / ``n``), which breaks structured
+    logprob scoring for instruction-tuned models. Prefer the token span that appears
+    only when the assistant message contains the label.
+
+    Args:
+        label:
+            The label string to isolate.
+        tokeniser:
+            The tokeniser.
+        enable_thinking:
+            Whether to enable thinking tokens in the chat template.
+
+    Returns:
+        The token ids belonging to ``label``, or None if the diff is empty/inconsistent
+        (caller should fall back to encoding the label alone).
+    """
+    try:
+        ids_with = _normalize_token_ids(
+            apply_chat_template(
+                conversation=_label_conversation(label),
+                tokeniser=tokeniser,
+                tokenise=True,
+                add_generation_prompt=True,
+                enable_thinking=enable_thinking,
+            )
+        )
+        ids_empty = _normalize_token_ids(
+            apply_chat_template(
+                conversation=_label_conversation(""),
+                tokeniser=tokeniser,
+                tokenise=True,
+                add_generation_prompt=True,
+                enable_thinking=enable_thinking,
+            )
+        )
+    except Exception as exc:
+        log_once(
+            f"Chat-template diff failed for label {label!r}: {exc!s}.",
+            level=logging.DEBUG,
+        )
+        return None
+
+    if not ids_with:
+        return None
+
+    prefix = _common_prefix_len(ids_with, ids_empty)
+    suffix = _common_suffix_len(ids_with, ids_empty, start_a=prefix, start_b=prefix)
+    end = len(ids_with) - suffix
+    if end <= prefix:
+        return None
+    return ids_with[prefix:end]
+
+
+def _common_prefix_len(a: c.Sequence[int], b: c.Sequence[int]) -> int:
+    """Return the length of the common prefix of two token-id sequences."""
+    n = min(len(a), len(b))
+    i = 0
+    while i < n and a[i] == b[i]:
+        i += 1
+    return i
+
+
+def _common_suffix_len(
+    a: c.Sequence[int], b: c.Sequence[int], *, start_a: int, start_b: int
+) -> int:
+    """Return the length of the common suffix outside the already-matched prefixes."""
+    i = 0
+    while (
+        len(a) - 1 - i >= start_a
+        and len(b) - 1 - i >= start_b
+        and a[len(a) - 1 - i] == b[len(b) - 1 - i]
+    ):
+        i += 1
+    return i
+
+
+def _label_conversation(assistant_content: str) -> list[dict[str, str]]:
+    """Build the conversation used to probe first tokens of classification labels.
+
+    Args:
+        assistant_content:
+            The assistant message content, usually a label or an empty string.
+
+    Returns:
+        A three-turn conversation ending in a user message, as required by Mistral
+        tokenisers.
+    """
+    return [
+        dict(role="user", content=""),
+        dict(role="assistant", content=assistant_content),
+        # Adding extra user message as Mistral tokenisers require conversations to end
+        # with a user message
+        dict(role="user", content=""),
+    ]
+
+
+def _normalize_token_ids(token_ids: object) -> list[int]:
+    """Normalise HF / BatchEncoding token id outputs to a flat list of ints.
+
+    Args:
+        token_ids:
+            Token ids as a list, nested list, tensor, or BatchEncoding-like object.
+
+    Returns:
+        A flat list of integer token ids.
+    """
+    if isinstance(token_ids, BatchEncoding):
+        token_ids = token_ids.input_ids
+    elif hasattr(token_ids, "input_ids"):
+        token_ids = token_ids.input_ids
+    tolist = getattr(token_ids, "tolist", None)
+    if callable(tolist) and not isinstance(token_ids, (list, tuple)):
+        token_ids = tolist()
+    if isinstance(token_ids, list) and token_ids and isinstance(token_ids[0], list):
+        token_ids = token_ids[0]
+    assert isinstance(token_ids, list), (
+        f"Expected token_ids to be a list, but got {type(token_ids)}."
+    )
+    return [int(token_id) for token_id in token_ids]
+
+
+def _label_token_ids_via_encode(
+    label: str, local_labels: c.Sequence[str], tokeniser: Tokeniser
+) -> list[int]:
+    """Encode a label alone, matching the no-chat-template first-token path.
+
+    Args:
+        label:
+            The label string to encode.
+        local_labels:
+            All labels, used to decide whether a prefix space is required.
+        tokeniser:
+            The tokeniser.
+
+    Returns:
+        The token ids of ``label``.
+    """
+    add_prefix_space = should_prefix_space_be_added_to_labels(
+        labels_to_be_generated=local_labels, tokeniser=tokeniser
+    )
+    return _normalize_token_ids(
+        tokeniser.encode(
+            text=f" {label}" if add_prefix_space else label, add_special_tokens=False
+        )
+    )
 
 
 def should_prefix_space_be_added_to_labels(
@@ -501,6 +643,26 @@ def should_prompts_be_stripped(
             strip_prompts = False
 
     return strip_prompts
+
+
+def _pick_matching_label_token(token_list: c.Sequence[str], label: str) -> str | None:
+    """Pick the first cleaned token that is a prefix of ``label``.
+
+    Args:
+        token_list:
+            Cleaned tokens from the isolated label span (or the encoded label).
+        label:
+            The label string to match.
+
+    Returns:
+        The first matching token, or None if no token is a prefix of ``label``.
+    """
+    label_l = label.lower()
+    for tok in token_list:
+        cleaned = tok.strip() if tok else ""
+        if cleaned and label_l.startswith(cleaned):
+            return tok
+    return None
 
 
 def get_pad_token(tokeniser: Tokeniser) -> tuple[str, int] | tuple[None, None]:
