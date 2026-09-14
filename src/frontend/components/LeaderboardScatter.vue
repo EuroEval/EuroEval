@@ -1411,8 +1411,6 @@ const tooltipStyle = computed(() => {
   margin-bottom: 0;
   border-bottom: 0;
   padding-bottom: 0;
-  white-space: normal;
-  overflow-wrap: anywhere;
 }
 
 .tt-model {
@@ -1420,7 +1418,8 @@ const tooltipStyle = computed(() => {
   margin-bottom: 0.35rem;
   border-bottom: 1px solid var(--color-border);
   padding-bottom: 0.25rem;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .tt-row {
