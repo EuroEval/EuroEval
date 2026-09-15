@@ -417,9 +417,16 @@ const paretoPolyline = computed(() => {
   for (const point of paretoPoints.value) {
     uniquePoints.set(`${point.x}:${point.y}`, point);
   }
-  return [...uniquePoints.values()]
-    .sort((a, b) => a.x - b.x || a.y - b.y)
-    .map((point) => `${xScale(point.x)},${yScale(point.y)}`)
+  const points = [...uniquePoints.values()].sort(
+    (a, b) => a.x - b.x || a.y - b.y,
+  );
+  return points
+    .flatMap((point, index) => {
+      const coordinates = `${xScale(point.x)},${yScale(point.y)}`;
+      if (index === 0) return [coordinates];
+      const previous = points[index - 1];
+      return [`${xScale(point.x)},${yScale(previous.y)}`, coordinates];
+    })
     .join(" ");
 });
 
@@ -912,7 +919,7 @@ const tooltipStyle = computed(() => {
         @click="togglePareto"
       >
         <svg viewBox="0 0 18 12" aria-hidden="true">
-          <polyline points="1,10 6,7 10,7 17,1" />
+          <polyline points="1,10 6,10 6,7 10,7 10,1 17,1" />
         </svg>
         {{ curveName }}
       </button>
@@ -1404,8 +1411,6 @@ const tooltipStyle = computed(() => {
   margin-bottom: 0;
   border-bottom: 0;
   padding-bottom: 0;
-  white-space: normal;
-  overflow-wrap: anywhere;
 }
 
 .tt-model {
@@ -1413,7 +1418,8 @@ const tooltipStyle = computed(() => {
   margin-bottom: 0.35rem;
   border-bottom: 1px solid var(--color-border);
   padding-bottom: 0.25rem;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .tt-row {
