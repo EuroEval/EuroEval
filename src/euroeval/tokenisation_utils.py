@@ -464,13 +464,14 @@ def _label_token_ids_via_chat_diff(
         return None
 
     common_prefix_length = _common_prefix_len(
-        a=label_template_token_ids, b=empty_template_token_ids
+        first_token_ids=label_template_token_ids,
+        second_token_ids=empty_template_token_ids,
     )
     common_suffix_length = _common_suffix_len(
-        a=label_template_token_ids,
-        b=empty_template_token_ids,
-        start_a=common_prefix_length,
-        start_b=common_prefix_length,
+        first_token_ids=label_template_token_ids,
+        second_token_ids=empty_template_token_ids,
+        first_start_index=common_prefix_length,
+        second_start_index=common_prefix_length,
     )
     label_span_end = len(label_template_token_ids) - common_suffix_length
     if label_span_end <= common_prefix_length:
@@ -478,27 +479,64 @@ def _label_token_ids_via_chat_diff(
     return label_template_token_ids[common_prefix_length:label_span_end]
 
 
-def _common_prefix_len(a: c.Sequence[int], b: c.Sequence[int]) -> int:
-    """Return the length of the common prefix of two token-id sequences."""
-    n = min(len(a), len(b))
-    i = 0
-    while i < n and a[i] == b[i]:
-        i += 1
-    return i
+def _common_prefix_len(
+    first_token_ids: c.Sequence[int], second_token_ids: c.Sequence[int]
+) -> int:
+    """Return the length of the common prefix of two token-id sequences.
+
+    Args:
+        first_token_ids:
+            The first sequence of token ids.
+        second_token_ids:
+            The second sequence of token ids.
+
+    Returns:
+        The number of leading token ids shared by both sequences.
+    """
+    maximum_prefix_length = min(len(first_token_ids), len(second_token_ids))
+    common_prefix_length = 0
+    while (
+        common_prefix_length < maximum_prefix_length
+        and first_token_ids[common_prefix_length]
+        == second_token_ids[common_prefix_length]
+    ):
+        common_prefix_length += 1
+    return common_prefix_length
 
 
 def _common_suffix_len(
-    a: c.Sequence[int], b: c.Sequence[int], *, start_a: int, start_b: int
+    first_token_ids: c.Sequence[int],
+    second_token_ids: c.Sequence[int],
+    *,
+    first_start_index: int,
+    second_start_index: int,
 ) -> int:
-    """Return the length of the common suffix outside the already-matched prefixes."""
-    i = 0
+    """Return the length of the common suffix outside already-matched prefixes.
+
+    Args:
+        first_token_ids:
+            The first sequence of token ids.
+        second_token_ids:
+            The second sequence of token ids.
+        first_start_index:
+            Index in ``first_token_ids`` after which suffix matching may begin (usually
+            the common prefix length, so the prefix is not counted again).
+        second_start_index:
+            Index in ``second_token_ids`` after which suffix matching may begin.
+
+    Returns:
+        The number of trailing token ids shared by both sequences, excluding tokens
+        already covered by the prefix bounds.
+    """
+    common_suffix_length = 0
     while (
-        len(a) - 1 - i >= start_a
-        and len(b) - 1 - i >= start_b
-        and a[len(a) - 1 - i] == b[len(b) - 1 - i]
+        len(first_token_ids) - 1 - common_suffix_length >= first_start_index
+        and len(second_token_ids) - 1 - common_suffix_length >= second_start_index
+        and first_token_ids[len(first_token_ids) - 1 - common_suffix_length]
+        == second_token_ids[len(second_token_ids) - 1 - common_suffix_length]
     ):
-        i += 1
-    return i
+        common_suffix_length += 1
+    return common_suffix_length
 
 
 def _label_conversation(assistant_content: str) -> list[dict[str, str]]:
@@ -535,9 +573,9 @@ def _normalize_token_ids(token_ids: object) -> list[int]:
         token_ids = token_ids.input_ids
     elif hasattr(token_ids, "input_ids"):
         token_ids = token_ids.input_ids
-    tolist = getattr(token_ids, "tolist", None)
-    if callable(tolist) and not isinstance(token_ids, (list, tuple)):
-        token_ids = tolist()
+    to_list_method = getattr(token_ids, "tolist", None)
+    if callable(to_list_method) and not isinstance(token_ids, (list, tuple)):
+        token_ids = to_list_method()
     if isinstance(token_ids, list) and token_ids and isinstance(token_ids[0], list):
         token_ids = token_ids[0]
     assert isinstance(token_ids, list), (
@@ -664,11 +702,11 @@ def _pick_matching_label_token(token_list: c.Sequence[str], label: str) -> str |
     Returns:
         The first matching token, or None if no token is a prefix of ``label``.
     """
-    label_l = label.lower()
-    for tok in token_list:
-        cleaned = tok.strip() if tok else ""
-        if cleaned and label_l.startswith(cleaned):
-            return tok
+    lowercase_label = label.lower()
+    for token in token_list:
+        cleaned_token = token.strip() if token else ""
+        if cleaned_token and lowercase_label.startswith(cleaned_token):
+            return token
     return None
 
 

@@ -75,11 +75,20 @@ class _ContaminatedChatTokeniser:
         include_label_in_template: bool = True,
         extra_span_token: str | None = None,
     ) -> None:
+        """Initialise the contaminated chat tokeniser test double.
+
+        Args:
+            include_label_in_template:
+                Whether assistant label content is reflected in the chat template.
+            extra_span_token:
+                Optional token inserted into the isolated label span before the label
+                tokens themselves.
+        """
         self.include_label_in_template = include_label_in_template
         self.extra_span_token = extra_span_token
-        self._tok2id: dict[str, int] = {}
-        self._id2tok: dict[int, str] = {}
-        for tok in (
+        self._token_to_id: dict[str, int] = {}
+        self._id_to_token: dict[int, str] = {}
+        for token in (
             "sys",
             "p",
             "n",
@@ -93,20 +102,42 @@ class _ContaminatedChatTokeniser:
             "itif",
             "égatif",
         ):
-            self._add(tok)
+            self._add(token=token)
         if extra_span_token is not None:
-            self._add(extra_span_token)
+            self._add(token=extra_span_token)
 
-    def _add(self, tok: str) -> int:
-        if tok not in self._tok2id:
-            idx = len(self._tok2id)
-            self._tok2id[tok] = idx
-            self._id2tok[idx] = tok
-        return self._tok2id[tok]
+    def _add(self, token: str) -> int:
+        """Register ``token`` in the vocabulary and return its id.
+
+        Args:
+            token:
+                The string token to register.
+
+        Returns:
+            The integer id assigned to ``token``.
+        """
+        if token not in self._token_to_id:
+            token_id = len(self._token_to_id)
+            self._token_to_id[token] = token_id
+            self._id_to_token[token_id] = token
+        return self._token_to_id[token]
 
     def __call__(
         self, text: str, add_special_tokens: bool = False, **kwargs: object
     ) -> SimpleNamespace:
+        """Encode ``text`` like a Hugging Face tokeniser call.
+
+        Args:
+            text:
+                The text to encode.
+            add_special_tokens:
+                Unused; accepted for API compatibility.
+            **kwargs:
+                Unused extra keyword arguments.
+
+        Returns:
+            A namespace with an ``input_ids`` attribute.
+        """
         return SimpleNamespace(input_ids=self.encode(text=text))
 
     def encode(
@@ -115,14 +146,27 @@ class _ContaminatedChatTokeniser:
         add_special_tokens: bool = False,
         **kwargs: object,
     ) -> list[int]:
+        """Encode ``text`` into token ids, with fixed splits for known labels.
+
+        Args:
+            text:
+                The text to encode. If omitted, ``kwargs["text"]`` is used.
+            add_special_tokens:
+                Unused; accepted for API compatibility.
+            **kwargs:
+                May contain ``text`` when ``text`` is not passed positionally.
+
+        Returns:
+            The list of token ids for ``text``.
+        """
         if text is None:
             text = str(kwargs.get("text", ""))
         text = text.lstrip(" ")
         if text == "positif":
-            return [self._add("pos"), self._add("itif")]
+            return [self._add(token="pos"), self._add(token="itif")]
         if text == "négatif":
-            return [self._add("n"), self._add("égatif")]
-        return [self._add(ch) for ch in text]
+            return [self._add(token="n"), self._add(token="égatif")]
+        return [self._add(token=character) for character in text]
 
     def apply_chat_template(
         self,
@@ -131,35 +175,72 @@ class _ContaminatedChatTokeniser:
         add_generation_prompt: bool = True,
         **kwargs: object,
     ) -> list[int] | str:
-        toks = ["sys", "p", "n", "end"]
-        for msg in conversation:
-            role = msg["role"]
-            content = msg.get("content") or ""
-            toks.append(f"<{role}>")
+        """Build a chat template that prepends contaminated system tokens.
+
+        Args:
+            conversation:
+                The chat messages to render.
+            tokenize:
+                If True, return token ids; otherwise return a space-joined string.
+            add_generation_prompt:
+                Whether to append a generation prompt token.
+            **kwargs:
+                Unused extra keyword arguments.
+
+        Returns:
+            Token ids or a detokenised string, depending on ``tokenize``.
+        """
+        tokens = ["sys", "p", "n", "end"]
+        for message in conversation:
+            role = message["role"]
+            content = message.get("content") or ""
+            tokens.append(f"<{role}>")
             if content in {"positif", "négatif"}:
                 if self.extra_span_token is not None:
-                    toks.append(self.extra_span_token)
+                    tokens.append(self.extra_span_token)
                 if self.include_label_in_template:
                     if content == "positif":
-                        toks.extend(["pos", "itif"])
+                        tokens.extend(["pos", "itif"])
                     else:
-                        toks.extend(["n", "égatif"])
+                        tokens.extend(["n", "égatif"])
             elif self.include_label_in_template and content:
-                toks.append(content)
-            toks.append(f"</{role}>")
+                tokens.append(content)
+            tokens.append(f"</{role}>")
         if add_generation_prompt:
-            toks.append("<gen>")
-        ids = [self._add(tok) for tok in toks]
-        return ids if tokenize else " ".join(toks)
+            tokens.append("<gen>")
+        token_ids = [self._add(token=token) for token in tokens]
+        return token_ids if tokenize else " ".join(tokens)
 
     def convert_ids_to_tokens(self, ids: list[int], **kwargs: object) -> list[str]:
-        return [self._id2tok[int(i)] for i in ids]
+        """Convert token ids back to their string tokens.
+
+        Args:
+            ids:
+                The token ids to convert.
+            **kwargs:
+                Unused extra keyword arguments.
+
+        Returns:
+            The string tokens corresponding to ``ids``.
+        """
+        return [self._id_to_token[int(token_id)] for token_id in ids]
 
 
 def _mapping_for_chat_tokeniser(
     tokeniser: _ContaminatedChatTokeniser, monkeypatch: pytest.MonkeyPatch
 ) -> dict[str, str] | bool:
-    """Return first-label-token mapping for a fake chat tokeniser."""
+    """Return first-label-token mapping for a fake chat tokeniser.
+
+    Args:
+        tokeniser:
+            The contaminated chat tokeniser test double.
+        monkeypatch:
+            Pytest monkeypatch fixture used to stub prefix-space behaviour.
+
+    Returns:
+        A mapping from local labels to their first tokens, or a boolean indicating
+        whether logprobs should be used when no mapping can be built.
+    """
     monkeypatch.setattr(
         "euroeval.tokenisation_utils.should_prefix_space_be_added_to_labels",
         lambda **kwargs: False,
