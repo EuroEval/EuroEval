@@ -437,7 +437,7 @@ def _label_token_ids_via_chat_diff(
     try:
         label_template_token_ids = _normalize_token_ids(
             token_ids=apply_chat_template(
-                conversation=_label_conversation(label),
+                conversation=_label_conversation(assistant_content=label),
                 tokeniser=tokeniser,
                 tokenise=True,
                 add_generation_prompt=True,
@@ -446,7 +446,7 @@ def _label_token_ids_via_chat_diff(
         )
         empty_template_token_ids = _normalize_token_ids(
             token_ids=apply_chat_template(
-                conversation=_label_conversation(""),
+                conversation=_label_conversation(assistant_content=""),
                 tokeniser=tokeniser,
                 tokenise=True,
                 add_generation_prompt=True,
@@ -463,17 +463,19 @@ def _label_token_ids_via_chat_diff(
     if not label_template_token_ids:
         return None
 
-    prefix = _common_prefix_len(label_template_token_ids, empty_template_token_ids)
-    suffix = _common_suffix_len(
-        label_template_token_ids,
-        empty_template_token_ids,
-        start_a=prefix,
-        start_b=prefix,
+    common_prefix_length = _common_prefix_len(
+        a=label_template_token_ids, b=empty_template_token_ids
     )
-    end = len(label_template_token_ids) - suffix
-    if end <= prefix:
+    common_suffix_length = _common_suffix_len(
+        a=label_template_token_ids,
+        b=empty_template_token_ids,
+        start_a=common_prefix_length,
+        start_b=common_prefix_length,
+    )
+    label_span_end = len(label_template_token_ids) - common_suffix_length
+    if label_span_end <= common_prefix_length:
         return None
-    return label_template_token_ids[prefix:end]
+    return label_template_token_ids[common_prefix_length:label_span_end]
 
 
 def _common_prefix_len(a: c.Sequence[int], b: c.Sequence[int]) -> int:
