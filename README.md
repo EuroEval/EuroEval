@@ -298,6 +298,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for Mr-Neutr0n"
     />
 </a>
+<a href="https://github.com/djstrong">
+    <img
+        src="https://avatars.githubusercontent.com/u/1849959"
+        width=50
+        alt="Contributor avatar for djstrong"
+    />
+</a>
 
 ### Contribute to EuroEval
 
