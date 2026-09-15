@@ -14,6 +14,53 @@ from .logging_utils import log
 #: Lowercase letters used for multiple-choice answer labels.
 CHOICE_LETTERS = "abcdefghijklmnopqrstuvwxyz"
 
+
+def clean_label_token(token: str, *, preserve_spaces: bool = False) -> str:
+    """Lowercase a label token and clean its non-alphanumeric edges.
+
+    Tokenisers use marker characters for word boundaries, but some markers (notably
+    ``Ġ``) are Unicode letters and therefore need to be removed before checking
+    alphanumeric edges. Literal spaces can optionally be retained for tokenisers whose
+    decoded first token includes a prefix space.
+
+    Args:
+        token:
+            The token to clean.
+        preserve_spaces (optional):
+            Whether literal spaces count as valid edge characters. Defaults to False.
+
+    Returns:
+        The lowercased token with non-alphanumeric edge characters removed.
+    """
+    leading_spaces = ""
+    trailing_spaces = ""
+    if preserve_spaces:
+        token_without_leading_spaces = token.lstrip(" ")
+        leading_spaces = token[: len(token) - len(token_without_leading_spaces)]
+        token = token_without_leading_spaces
+        token_without_trailing_spaces = token.rstrip(" ")
+        trailing_spaces = token[len(token_without_trailing_spaces) :]
+        token = token_without_trailing_spaces
+
+    markers = ("##", "Ġ", "▁")
+    while token:
+        for marker in markers:
+            if token.startswith(marker):
+                token = token[len(marker) :]
+                break
+        else:
+            if token[0].isalnum():
+                break
+            token = token[1:]
+
+    token = token.lower()
+    while token and not token[-1].isalnum():
+        token = token[:-1]
+    if not token:
+        return ""
+    return f"{leading_spaces}{token}{trailing_spaces}"
+
+
 if t.TYPE_CHECKING:
     from .data_models import ModelIdComponents
 
