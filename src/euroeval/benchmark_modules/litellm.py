@@ -101,6 +101,9 @@ VOCAB_SIZE_MAPPING = {
     r"(gemini/)?gemini-[1-9](\.[0-9])?-(flash|pro).*": 256_128,
     # xAI models
     r"(xai/)?grok.*": -1,
+    # DeepSeek models
+    # Source: HF `deepseek-ai/DeepSeek-V4.1-Flash` `config.json` (vocab size).
+    r"(deepseek/)?deepseek-flash.*": 129_280,
     # Ordbogen models
     r"(ordbogen/)?odin-medium.*": -1,
     r"(ordbogen/)?odin-large.*": -1,
@@ -138,6 +141,9 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"(gemini/)?gemini-[23](\.[05])?.*": 1_048_576,
     # xAI models
     r"(xai/)?grok.*": 131_072,
+    # DeepSeek models
+    # Source: HF `deepseek-ai/DeepSeek-V4.1-Flash` `config.json` (context length).
+    r"(deepseek/)?deepseek-flash.*": 1_048_576,
     # Ordbogen models
     r"(ordbogen/)?odin-medium.*": 131_072,
     r"(ordbogen/)?odin-large.*": 202_752,
@@ -159,6 +165,9 @@ NUM_PARAMS_MAPPING = {
     r"(gemini/)?gemini-[23](.[05])?.*": -1,
     # xAI models
     r"(xai/)?grok.*": -1,
+    # DeepSeek models
+    # Source: DeepSeek-V4.1-Flash model card (552B params).
+    r"(deepseek/)?deepseek-flash.*": 552_000_000_000,
     # Ordbogen models
     r"(ordbogen/)?odin-medium.*": -1,
     r"(ordbogen/)?odin-large.*": -1,
@@ -261,6 +270,9 @@ MODEL_RELEASE_DATE_MAPPING = {
     r"(xai/)?grok-4\.20.*": "2026-03-10",
     r"(xai/)?grok-4\.5.*": "2026-07-08",
     r"(xai/)?grok-4\.6.*": "2026-08-12",
+    # DeepSeek
+    # Source: repo creation date for `deepseek-ai/DeepSeek-V4.1-Flash`.
+    r"(deepseek/)?deepseek-flash.*": "2026-09-10",
 }
 
 REASONING_MODELS = [
@@ -269,6 +281,7 @@ REASONING_MODELS = [
     r"(gemini/)?gemini.*thinking.*",
     r"(gemini/)?gemini-2.5.*",
     r"(xai/)?grok-3-mini.*",
+    r"(deepseek/)?deepseek-flash.*",
     r".*gpt-oss.*",
     r"(ordbogen/)?odin-.*",
 ]
@@ -326,6 +339,14 @@ class LiteLLMModel(BenchmarkModule):
         re.compile(r"(gemini/)?gemini-(2\.5|3)-flash.*"): ["no-thinking", "thinking"],
         # xAI models
         re.compile(r"(xai/)?grok-3-mini(-fast)?(-beta)?"): ["low", "medium", "high"],
+        # DeepSeek models
+        re.compile(r"(deepseek/)?deepseek-flash.*"): [
+            "no-thinking",
+            "thinking",
+            "low",
+            "high",
+            "max",
+        ],
     }
 
     def __init__(
@@ -364,6 +385,18 @@ class LiteLLMModel(BenchmarkModule):
         self.is_ollama = model_config.model_id.startswith(
             "ollama/"
         ) or model_config.model_id.startswith("ollama_chat/")
+
+        # Detect whether the model is served by the DeepSeek API, as LiteLLM's
+        # DeepSeek transformation discards `budget_tokens` and the `reasoning_effort`
+        # level, so we shape the thinking parameters differently for these models
+        self.is_deepseek = (
+            re.fullmatch(
+                pattern=r"(deepseek/)?deepseek-.*",
+                string=model_config.model_id,
+                flags=re.IGNORECASE,
+            )
+            is not None
+        )
         self._ollama_show: ollama.ShowResponse = (
             ollama.show("/".join(model_config.model_id.split("/")[1:]))
             if self.is_ollama
@@ -449,13 +482,12 @@ class LiteLLMModel(BenchmarkModule):
         inputs_to_run: c.Sequence[
             tuple[int, c.Sequence[litellm.AllMessageValues] | str]
         ] = list(enumerate(model_inputs))
+        generation_kwargs = self.generation_kwargs or self.get_generation_kwargs(
+            dataset_config=self.dataset_config
+        )
         for attempt in range(num_attempts := 10):
             if not inputs_to_run:
                 break
-
-            generation_kwargs = self.generation_kwargs or self.get_generation_kwargs(
-                dataset_config=self.dataset_config
-            )
 
             batch_indices, batch_inputs = zip(*inputs_to_run)
             successes, failures = safe_run(
@@ -519,6 +551,11 @@ class LiteLLMModel(BenchmarkModule):
                     error=error, **generation_kwargs
                 )
                 time_to_wait = max(time_to_wait, wait_time)
+
+            # Persist the adjusted kwargs, so that the next attempt (and subsequent
+            # batches) benefit from the fixes rather than re-triggering the error
+            self.generation_kwargs = generation_kwargs
+
             if time_to_wait > 0:
                 log(
                     f"Waiting {time_to_wait} second(s) before retrying...",
@@ -1109,6 +1146,8 @@ class LiteLLMModel(BenchmarkModule):
         no_json_schema_messages = [
             "Property keys should match pattern",
             "'json_schema' is not supported",
+            # DeepSeek API rejects `json_schema` but supports `json_object`
+            "This response_format type is unavailable now",
         ]
         if any(msg.lower() in error_msg for msg in no_json_schema_messages):
             log_once(
@@ -1445,23 +1484,39 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
 
+        # DeepSeek only recognises `thinking.type` and silently ignores
+        # `budget_tokens`, which would otherwise leave thinking enabled (its default)
         param = self.model_config.param
         if param == "thinking":
-            generation_kwargs["thinking"] = dict(
-                type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
+            generation_kwargs["thinking"] = (
+                dict(type="enabled")
+                if self.is_deepseek
+                else dict(type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1)
             )
             log_once(
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
         elif param == "no-thinking":
-            generation_kwargs["thinking"] = dict(budget_tokens=0)
+            generation_kwargs["thinking"] = (
+                dict(type="disabled") if self.is_deepseek else dict(budget_tokens=0)
+            )
             log_once(
                 f"Disabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
-        elif param in {"none", "minimal", "low", "medium", "high", "xhigh"}:
-            generation_kwargs["reasoning_effort"] = param
+        elif param in {"none", "minimal", "low", "medium", "high", "xhigh", "max"}:
+            if self.is_deepseek:
+                # LiteLLM's DeepSeek transformation maps `reasoning_effort` to only
+                # `thinking.type` (enabled/disabled), discarding the effort level.
+                # `extra_body` is merged into the request after provider param
+                # mapping, so it reaches the DeepSeek API untouched.
+                generation_kwargs["extra_body"] = {
+                    **generation_kwargs.get("extra_body", {}),
+                    "reasoning_effort": param,
+                }
+            else:
+                generation_kwargs["reasoning_effort"] = param
             log_once(
                 f"Enabling reasoning effort {param!r} for model "
                 f"{self.model_config.model_id!r}",
