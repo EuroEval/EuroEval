@@ -476,13 +476,12 @@ class LiteLLMModel(BenchmarkModule):
         inputs_to_run: c.Sequence[
             tuple[int, c.Sequence[litellm.AllMessageValues] | str]
         ] = list(enumerate(model_inputs))
+        generation_kwargs = self.generation_kwargs or self.get_generation_kwargs(
+            dataset_config=self.dataset_config
+        )
         for attempt in range(num_attempts := 10):
             if not inputs_to_run:
                 break
-
-            generation_kwargs = self.generation_kwargs or self.get_generation_kwargs(
-                dataset_config=self.dataset_config
-            )
 
             batch_indices, batch_inputs = zip(*inputs_to_run)
             successes, failures = safe_run(
@@ -546,6 +545,11 @@ class LiteLLMModel(BenchmarkModule):
                     error=error, **generation_kwargs
                 )
                 time_to_wait = max(time_to_wait, wait_time)
+
+            # Persist the adjusted kwargs, so that the next attempt (and subsequent
+            # batches) benefit from the fixes rather than re-triggering the error
+            self.generation_kwargs = generation_kwargs
+
             if time_to_wait > 0:
                 log(
                     f"Waiting {time_to_wait} second(s) before retrying...",
@@ -1136,6 +1140,8 @@ class LiteLLMModel(BenchmarkModule):
         no_json_schema_messages = [
             "Property keys should match pattern",
             "'json_schema' is not supported",
+            # DeepSeek API rejects `json_schema` but supports `json_object`
+            "This response_format type is unavailable now",
         ]
         if any(msg.lower() in error_msg for msg in no_json_schema_messages):
             log_once(

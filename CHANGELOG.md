@@ -18,6 +18,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- LiteLLM generation now keeps the generation kwargs adjusted by the error handlers
+  (e.g. a dropped `response_format`) across retry attempts and batches, instead of
+  rebuilding them from scratch and re-triggering the same error on every attempt.
+- The LiteLLM module now recognises the DeepSeek API's "This response_format type is
+  unavailable now" error and falls back from JSON schemas to plain JSON output.
 - First-label-token mapping for chat models now isolates label tokens via a chat-template
   diff (with encode-label fallback) instead of scanning the full templated conversation.
   This prevents system-prompt tokens such as ``p`` / ``n`` from being mistaken for
