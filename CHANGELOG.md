@@ -9,6 +9,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Suppressed a harmless vLLM Metal tokeniser compatibility warning during startup when
+  the optional vLLM tokeniser registry is unavailable.
 - vLLM text-only evaluations no longer initialise multimodal processors just to
   resolve a chat template, avoiding spurious Transformers processor validation errors.
 - LiteLLM now retries custom OpenAI-compatible APIs that reject `max_tokens` without
