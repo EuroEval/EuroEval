@@ -2,7 +2,6 @@
 
 import collections.abc as c
 import logging
-import re
 import typing as t
 
 import torch
@@ -13,6 +12,7 @@ from .constants import BOS_TOKENS, EOS_TOKENS, PAD_TOKENS
 from .enums import GenerativeType
 from .exceptions import InvalidModel
 from .logging_utils import log, log_once
+from .string_utils import clean_label_token
 from .types import Tokeniser
 
 try:
@@ -361,13 +361,11 @@ def get_first_label_token_mapping(
             for token_ids in all_token_ids
         ]
 
-    # Remove any non-alphabetic characters from the tokens
     all_tokens = [
         [
-            re.sub(
-                pattern=r"^[^a-zæøåüöä0-9 ]+|[^a-zæøåüöä0-9 ]+$",
-                repl="",
-                string=token.lower(),
+            clean_label_token(
+                token if isinstance(token, str) else "".join(token),
+                preserve_spaces=True,
             )
             for token in token_list
         ]
