@@ -84,12 +84,6 @@ if t.TYPE_CHECKING:
     from transformers.trainer import Trainer
 
 
-# Matches DeepSeek API models, gating request payload tweaks needed to work around
-# LiteLLM's DeepSeek transformation, which discards `budget_tokens` and the
-# `reasoning_effort` level (see `_setup_model_params`).
-DEEPSEEK_MODELS_PATTERN = r"(deepseek/)?deepseek-.*"
-
-
 VOCAB_SIZE_MAPPING = {
     # OpenAI models
     r"(openai/)?gpt-5\..*": -1,
@@ -391,6 +385,18 @@ class LiteLLMModel(BenchmarkModule):
         self.is_ollama = model_config.model_id.startswith(
             "ollama/"
         ) or model_config.model_id.startswith("ollama_chat/")
+
+        # Detect whether the model is served by the DeepSeek API, as LiteLLM's
+        # DeepSeek transformation discards `budget_tokens` and the `reasoning_effort`
+        # level, so we shape the thinking parameters differently for these models
+        self.is_deepseek = (
+            re.fullmatch(
+                pattern=r"(deepseek/)?deepseek-.*",
+                string=model_config.model_id,
+                flags=re.IGNORECASE,
+            )
+            is not None
+        )
         self._ollama_show: ollama.ShowResponse = (
             ollama.show("/".join(model_config.model_id.split("/")[1:]))
             if self.is_ollama
@@ -1478,41 +1484,29 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
 
+        # DeepSeek only recognises `thinking.type` and silently ignores
+        # `budget_tokens`, which would otherwise leave thinking enabled (its default)
         param = self.model_config.param
-        is_deepseek = (
-            re.fullmatch(
-                pattern=DEEPSEEK_MODELS_PATTERN,
-                string=self.model_config.model_id,
-                flags=re.IGNORECASE,
-            )
-            is not None
-        )
         if param == "thinking":
-            # DeepSeek only recognises `thinking.type` and silently ignores
-            # `budget_tokens`, so we do not send it
-            if is_deepseek:
-                generation_kwargs["thinking"] = dict(type="enabled")
-            else:
-                generation_kwargs["thinking"] = dict(
-                    type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
-                )
+            generation_kwargs["thinking"] = (
+                dict(type="enabled")
+                if self.is_deepseek
+                else dict(type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1)
+            )
             log_once(
                 f"Enabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
         elif param == "no-thinking":
-            # DeepSeek only recognises `thinking.type` and silently ignores
-            # `budget_tokens`, which would leave thinking enabled (its default)
-            if is_deepseek:
-                generation_kwargs["thinking"] = dict(type="disabled")
-            else:
-                generation_kwargs["thinking"] = dict(budget_tokens=0)
+            generation_kwargs["thinking"] = (
+                dict(type="disabled") if self.is_deepseek else dict(budget_tokens=0)
+            )
             log_once(
                 f"Disabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
         elif param in {"none", "minimal", "low", "medium", "high", "xhigh", "max"}:
-            if is_deepseek:
+            if self.is_deepseek:
                 # LiteLLM's DeepSeek transformation maps `reasoning_effort` to only
                 # `thinking.type` (enabled/disabled), discarding the effort level.
                 # `extra_body` is merged into the request after provider param
