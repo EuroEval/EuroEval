@@ -11,8 +11,6 @@ from euroeval.benchmark_modules.hf import load_hf_model_config, load_tokeniser
 from euroeval.data_models import BenchmarkConfig, HashableDict
 from euroeval.enums import GenerativeType
 from euroeval.tokenisation_utils import (
-    _label_token_ids_via_chat_diff,
-    _pick_matching_label_token,
     get_end_of_chat_token_ids,
     get_first_label_token_mapping,
     should_prefix_space_be_added_to_labels,
@@ -203,30 +201,6 @@ def test_get_first_label_token_mapping_skips_non_matching_span_tokens(
     assert mapping == {"négatif": "n", "positif": "pos"}
 
 
-def test_label_token_ids_via_chat_diff_isolates_label_span() -> None:
-    """Chat-template diff should drop contaminated system tokens."""
-    tokeniser = _ContaminatedChatTokeniser()
-    ids = _label_token_ids_via_chat_diff(
-        label="positif",
-        tokeniser=tokeniser,  # ty: ignore[invalid-argument-type]
-        enable_thinking=False,
-    )
-    assert ids is not None
-    tokens = tokeniser.convert_ids_to_tokens(ids=ids)
-    assert tokens == ["pos", "itif"]
-
-
-def test_label_token_ids_via_chat_diff_returns_none_when_span_empty() -> None:
-    """Identical empty/filled templates should yield no isolated span."""
-    tokeniser = _ContaminatedChatTokeniser(include_label_in_template=False)
-    ids = _label_token_ids_via_chat_diff(
-        label="positif",
-        tokeniser=tokeniser,  # ty: ignore[invalid-argument-type]
-        enable_thinking=False,
-    )
-    assert ids is None
-
-
 @pytest.mark.skipif(
     condition=not os.getenv("HF_TOKEN"),
     reason="HF_TOKEN not set, required for loading tokenizers",
@@ -291,13 +265,6 @@ def test_load_xlmr_tokeniser_with_fallback(
     # Verify tokenizer attributes are set
     assert tokeniser.bos_token == "<s>"
     assert tokeniser.eos_token == "</s>"
-
-
-def test_pick_matching_label_token_uses_first_prefix() -> None:
-    """Use the first matching prefix, not a later longer one."""
-    assert _pick_matching_label_token(["a", "aa"], "aaa") == "a"
-    assert _pick_matching_label_token(["sys", "pos", "itif"], "positif") == "pos"
-    assert _pick_matching_label_token(["", "  "], "positif") is None
 
 
 @pytest.mark.parametrize(

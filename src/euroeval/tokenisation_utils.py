@@ -435,8 +435,8 @@ def _label_token_ids_via_chat_diff(
         (caller should fall back to encoding the label alone).
     """
     try:
-        ids_with = _normalize_token_ids(
-            apply_chat_template(
+        label_template_token_ids = _normalize_token_ids(
+            token_ids=apply_chat_template(
                 conversation=_label_conversation(label),
                 tokeniser=tokeniser,
                 tokenise=True,
@@ -444,8 +444,8 @@ def _label_token_ids_via_chat_diff(
                 enable_thinking=enable_thinking,
             )
         )
-        ids_empty = _normalize_token_ids(
-            apply_chat_template(
+        empty_template_token_ids = _normalize_token_ids(
+            token_ids=apply_chat_template(
                 conversation=_label_conversation(""),
                 tokeniser=tokeniser,
                 tokenise=True,
@@ -460,15 +460,20 @@ def _label_token_ids_via_chat_diff(
         )
         return None
 
-    if not ids_with:
+    if not label_template_token_ids:
         return None
 
-    prefix = _common_prefix_len(ids_with, ids_empty)
-    suffix = _common_suffix_len(ids_with, ids_empty, start_a=prefix, start_b=prefix)
-    end = len(ids_with) - suffix
+    prefix = _common_prefix_len(label_template_token_ids, empty_template_token_ids)
+    suffix = _common_suffix_len(
+        label_template_token_ids,
+        empty_template_token_ids,
+        start_a=prefix,
+        start_b=prefix,
+    )
+    end = len(label_template_token_ids) - suffix
     if end <= prefix:
         return None
-    return ids_with[prefix:end]
+    return label_template_token_ids[prefix:end]
 
 
 def _common_prefix_len(a: c.Sequence[int], b: c.Sequence[int]) -> int:
@@ -559,7 +564,7 @@ def _label_token_ids_via_encode(
         labels_to_be_generated=local_labels, tokeniser=tokeniser
     )
     return _normalize_token_ids(
-        tokeniser.encode(
+        token_ids=tokeniser.encode(
             text=f" {label}" if add_prefix_space else label, add_special_tokens=False
         )
     )
