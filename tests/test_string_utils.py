@@ -5,12 +5,37 @@ import pytest
 from euroeval.data_models import ModelIdComponents
 from euroeval.exceptions import InvalidBenchmark, InvalidModel
 from euroeval.string_utils import (
+    clean_label_token,
     extract_json_dict_from_string,
     extract_multiple_choice_labels,
     scramble,
     split_model_id,
     unscramble,
 )
+
+
+@pytest.mark.parametrize(
+    ("token", "expected"),
+    [
+        ("né", "né"),
+        ("▁né", "né"),
+        ("émotion", "émotion"),
+        ("ća", "ća"),
+        ("pos.", "pos"),
+        ("Ġpos", "pos"),
+    ],
+    ids=[
+        "accented-suffix",
+        "sentencepiece-marker",
+        "accented-prefix",
+        "croatian-prefix",
+        "trailing-punctuation",
+        "gpt-marker",
+    ],
+)
+def test_clean_label_token_issue_examples(token: str, expected: str) -> None:
+    """Clean the exact label tokens reported in issue 2180."""
+    assert clean_label_token(token) == expected
 
 
 def test_extract_json_dict_from_string_invalid_json_returns_none() -> None:

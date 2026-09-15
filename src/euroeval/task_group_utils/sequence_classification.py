@@ -10,7 +10,7 @@ from transformers.trainer_utils import EvalPrediction
 from ..closest_match import get_closest_match
 from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark
-from ..string_utils import extract_multiple_choice_labels
+from ..string_utils import clean_label_token, extract_multiple_choice_labels
 from ..types import Predictions
 from ..utils import log_once
 from ._common import compute_simple_metrics, normalise_model_outputs
@@ -277,7 +277,7 @@ def get_closest_logprobs_labels(
     for idx, sample in enumerate(generation_logprobs):
         for logprob_list in sample:
             generated_labels = [
-                re.sub(pattern=r"^[^a-zæøåüöä0-9]+$", repl="", string=label.lower())
+                clean_label_token(label, preserve_spaces=True)
                 for label, _ in logprob_list
             ]
             generated_labels = [label for label in generated_labels if label != ""]

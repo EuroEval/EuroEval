@@ -15,6 +15,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   resolve a chat template, avoiding spurious Transformers processor validation errors.
 - LiteLLM now retries custom OpenAI-compatible APIs that reject `max_tokens` without
   sending the unsupported parameter.
+- Classification label-token cleanup now preserves Unicode letters while removing
+  tokenizer markers and punctuation at token edges.
 
 ## [v18.1.0] - 2026-09-11
 
