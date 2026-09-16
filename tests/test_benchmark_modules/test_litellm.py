@@ -279,7 +279,6 @@ class TestDeepSeekParams:
         model.model_config = dataclasses.replace(
             model_config, model_id="deepseek/deepseek-flash", param=param
         )
-        model.is_deepseek = True
 
         result = model._setup_model_params(generation_kwargs={})
 
@@ -314,7 +313,6 @@ class TestDeepSeekParams:
         model.model_config = dataclasses.replace(
             model_config, model_id="anthropic/claude-sonnet-4-5", param=param
         )
-        model.is_deepseek = False
 
         result = model._setup_model_params(generation_kwargs={})
 
@@ -327,32 +325,24 @@ class TestDeepSeekParams:
             assert result[expected_key] == expected_effort
         assert "extra_body" not in result
 
-    def test_prefix_required(
-        self,
-        model_config: ModelConfig,
-        dataset_config: DatasetConfig,
-        benchmark_config: BenchmarkConfig,
-    ) -> None:
+    def test_prefix_required(self, model_config: ModelConfig) -> None:
         """The `deepseek/` provider prefix is mandatory for DeepSeek behaviour."""
-        bare_model = LiteLLMModel(
-            model_config=dataclasses.replace(
-                model_config, model_id="deepseek-flash", param=None
-            ),
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-            log_metadata=False,
+        bare_model = object.__new__(LiteLLMModel)
+        bare_model.buffer = {"first_label_token_mapping": False}
+        bare_model.model_config = dataclasses.replace(
+            model_config, model_id="deepseek-flash", param="thinking"
         )
-        assert bare_model.is_deepseek is False
+        bare_result = bare_model._setup_model_params(generation_kwargs={})
+        assert bare_result["thinking"]["type"] == "enabled"
+        assert "budget_tokens" in bare_result["thinking"]
 
-        prefixed_model = LiteLLMModel(
-            model_config=dataclasses.replace(
-                model_config, model_id="deepseek/deepseek-flash", param=None
-            ),
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-            log_metadata=False,
+        prefixed_model = object.__new__(LiteLLMModel)
+        prefixed_model.buffer = {"first_label_token_mapping": False}
+        prefixed_model.model_config = dataclasses.replace(
+            model_config, model_id="deepseek/deepseek-flash", param="thinking"
         )
-        assert prefixed_model.is_deepseek is True
+        prefixed_result = prefixed_model._setup_model_params(generation_kwargs={})
+        assert prefixed_result["thinking"] == {"type": "enabled"}
 
         deepseek_mappings = [
             VOCAB_SIZE_MAPPING,

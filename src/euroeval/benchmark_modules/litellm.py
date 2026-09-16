@@ -385,21 +385,6 @@ class LiteLLMModel(BenchmarkModule):
         self.is_ollama = model_config.model_id.startswith(
             "ollama/"
         ) or model_config.model_id.startswith("ollama_chat/")
-
-        # Detect whether the model is served by the DeepSeek API, as LiteLLM's
-        # DeepSeek transformation discards `budget_tokens` and the `reasoning_effort`
-        # level, so we shape the thinking parameters differently for these models.
-        # The `deepseek/` prefix is required to distinguish the official DeepSeek API
-        # from open-weight deployments (e.g. vLLM, Ollama, OpenRouter), which do not
-        # get this DeepSeek-API-specific param shaping
-        self.is_deepseek = (
-            re.fullmatch(
-                pattern=r"deepseek/.*",
-                string=model_config.model_id,
-                flags=re.IGNORECASE,
-            )
-            is not None
-        )
         self._ollama_show: ollama.ShowResponse = (
             ollama.show("/".join(model_config.model_id.split("/")[1:]))
             if self.is_ollama
@@ -1553,8 +1538,11 @@ class LiteLLMModel(BenchmarkModule):
         # LiteLLM's DeepSeek transformation maps `reasoning_effort` to only
         # `thinking.type` (enabled/disabled), discarding the effort level, so we
         # instead move it into `extra_body`, which is merged into the request after
-        # provider param mapping and thus reaches the DeepSeek API untouched.
-        if self.is_deepseek:
+        # provider param mapping and thus reaches the DeepSeek API untouched. The
+        # `deepseek/` prefix is required to distinguish the official DeepSeek API
+        # from open-weight deployments (e.g. vLLM, Ollama, OpenRouter), which do not
+        # get this DeepSeek-API-specific param shaping.
+        if self.model_config.model_id.lower().startswith("deepseek/"):
             if param == "thinking":
                 generation_kwargs["thinking"] = dict(type="enabled")
             elif param == "no-thinking":
