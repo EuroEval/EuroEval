@@ -14,13 +14,20 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `#max` parameters to control its thinking mode. `#no-thinking` and `#thinking` send
   `thinking.type: disabled`/`enabled` respectively, while `#low`, `#high` and `#max`
   set DeepSeek's `reasoning_effort` and leave thinking on. Since thinking is enabled by
-  default, the bare model ID is treated as a reasoning model.
+  default, the bare model ID is treated as a reasoning model. The `deepseek/` prefix is
+  required, so that open-weight deployments of DeepSeek models (e.g. via vLLM, Ollama
+  or OpenRouter) are not treated as the DeepSeek API and thus don't get its
+  DeepSeek-API-specific parameter shaping.
 
 ### Fixed
 
-- LiteLLM generation now keeps the generation kwargs adjusted by the error handlers
-  (e.g. a dropped `response_format`) across retry attempts and batches, instead of
-  rebuilding them from scratch and re-triggering the same error on every attempt.
+- LiteLLM generation now replays the parameter fixes learned by the error handlers
+  (e.g. a dropped `response_format`) on every retry attempt and batch, instead of
+  rebuilding the kwargs from scratch and re-triggering the same error. The fixes are
+  re-applied on top of freshly built, dataset-specific kwargs each time, so they
+  persist across retries, batches and datasets without leaking one dataset's
+  `max_completion_tokens`/`response_format` into another after
+  `update_dataset_config()`.
 - The LiteLLM module now recognises the DeepSeek API's "This response_format type is
   unavailable now" error and falls back from JSON schemas to plain JSON output.
 - First-label-token mapping for chat models now isolates label tokens via a chat-template
