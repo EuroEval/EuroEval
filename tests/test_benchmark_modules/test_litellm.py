@@ -1,13 +1,20 @@
 """Unit tests for the `litellm` module."""
 
+import copy
 import dataclasses
-from unittest.mock import MagicMock, patch
+import re
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from litellm.exceptions import UnsupportedParamsError
 from litellm.types.utils import Choices
 
 from euroeval.benchmark_modules.litellm import (
+    MODEL_MAX_LENGTH_MAPPING,
+    MODEL_RELEASE_DATE_MAPPING,
+    NUM_PARAMS_MAPPING,
+    REASONING_MODELS,
+    VOCAB_SIZE_MAPPING,
     LiteLLMModel,
     clean_model_id,
     get_api_model_release_date,
@@ -151,6 +158,26 @@ class TestParameterErrorHandling:
         assert result == ({}, 0)
 
 
+def _make_response(content: str = "positive") -> MagicMock:
+    """Build a fake successful LiteLLM `ModelResponse`.
+
+    Args:
+        content:
+            The text content of the response message.
+
+    Returns:
+        A mock response object shaped like a LiteLLM `ModelResponse`.
+    """
+    response = MagicMock()
+    choice = MagicMock(spec=Choices)
+    message = MagicMock()
+    message.content = content
+    choice.message = message
+    choice.logprobs = None
+    response.choices = [choice]
+    return response
+
+
 @pytest.mark.parametrize(
     ("model_id", "expected"),
     [
@@ -222,3 +249,337 @@ def test_manual_api_release_date_overrides_embedded_date() -> None:
         clear=True,
     ):
         assert get_api_model_release_date("provider/model-2024-01-01") == "2024-02-03"
+
+
+RESPONSE_FORMAT_UNAVAILABLE_ERROR = Exception(
+    "This response_format type is unavailable now"
+)
+
+
+class TestDeepSeekParams:
+    """Tests for provider-specific thinking/reasoning-effort parameter shaping."""
+
+    @pytest.mark.parametrize(
+        ("param", "expected"),
+        [
+            ("thinking", {"thinking": {"type": "enabled"}}),
+            ("no-thinking", {"thinking": {"type": "disabled"}}),
+            ("low", {"extra_body": {"reasoning_effort": "low"}}),
+            ("high", {"extra_body": {"reasoning_effort": "high"}}),
+            ("max", {"extra_body": {"reasoning_effort": "max"}}),
+        ],
+    )
+    def test_deepseek_param_shapes(
+        self, model_config: ModelConfig, param: str, expected: dict
+    ) -> None:
+        """DeepSeek models get DeepSeek-API-specific thinking/reasoning shapes."""
+        model = object.__new__(LiteLLMModel)
+        model.buffer = {"first_label_token_mapping": False}
+        model.model_config = dataclasses.replace(
+            model_config, model_id="deepseek/deepseek-flash", param=param
+        )
+        model.is_deepseek = True
+
+        result = model._setup_model_params(generation_kwargs={})
+
+        for key, value in expected.items():
+            assert result[key] == value
+
+        # DeepSeek must never receive a `budget_tokens` key or a top-level
+        # `reasoning_effort` -- LiteLLM's DeepSeek transformation discards both
+        thinking = result.get("thinking")
+        if isinstance(thinking, dict):
+            assert "budget_tokens" not in thinking
+        assert "reasoning_effort" not in result
+
+    @pytest.mark.parametrize(
+        ("param", "expected_key", "expected_thinking_type", "expected_effort"),
+        [
+            ("thinking", "thinking", "enabled", None),
+            ("low", "reasoning_effort", None, "low"),
+        ],
+    )
+    def test_non_deepseek_param_shapes(
+        self,
+        model_config: ModelConfig,
+        param: str,
+        expected_key: str,
+        expected_thinking_type: str | None,
+        expected_effort: str | None,
+    ) -> None:
+        """Non-DeepSeek models keep the generic thinking/reasoning-effort shapes."""
+        model = object.__new__(LiteLLMModel)
+        model.buffer = {"first_label_token_mapping": False}
+        model.model_config = dataclasses.replace(
+            model_config, model_id="anthropic/claude-sonnet-4-5", param=param
+        )
+        model.is_deepseek = False
+
+        result = model._setup_model_params(generation_kwargs={})
+
+        if expected_key == "thinking":
+            thinking = result["thinking"]
+            assert isinstance(thinking, dict)
+            assert thinking["type"] == expected_thinking_type
+            assert "budget_tokens" in thinking
+        else:
+            assert result[expected_key] == expected_effort
+        assert "extra_body" not in result
+
+    def test_prefix_required(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """The `deepseek/` provider prefix is mandatory for DeepSeek behaviour."""
+        bare_model = LiteLLMModel(
+            model_config=dataclasses.replace(
+                model_config, model_id="deepseek-flash", param=None
+            ),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        assert bare_model.is_deepseek is False
+
+        prefixed_model = LiteLLMModel(
+            model_config=dataclasses.replace(
+                model_config, model_id="deepseek/deepseek-flash", param=None
+            ),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        assert prefixed_model.is_deepseek is True
+
+        deepseek_mappings = [
+            VOCAB_SIZE_MAPPING,
+            MODEL_MAX_LENGTH_MAPPING,
+            NUM_PARAMS_MAPPING,
+            MODEL_RELEASE_DATE_MAPPING,
+        ]
+        for mapping in deepseek_mappings:
+            deepseek_patterns = [
+                pattern for pattern in mapping if "deepseek" in pattern.lower()
+            ]
+            assert deepseek_patterns, "Expected a DeepSeek entry in the mapping"
+            for pattern in deepseek_patterns:
+                assert re.fullmatch(pattern, "deepseek-flash") is None
+                assert re.fullmatch(pattern, "deepseek/deepseek-flash") is not None
+
+        deepseek_reasoning_patterns = [
+            pattern for pattern in REASONING_MODELS if "deepseek" in pattern.lower()
+        ]
+        assert deepseek_reasoning_patterns
+        for pattern in deepseek_reasoning_patterns:
+            assert re.fullmatch(pattern, "deepseek-flash", flags=re.IGNORECASE) is None
+            assert (
+                re.fullmatch(pattern, "deepseek/deepseek-flash", flags=re.IGNORECASE)
+                is not None
+            )
+
+        deepseek_allowed_param_patterns = [
+            compiled
+            for compiled in LiteLLMModel.allowed_params
+            if "deepseek" in compiled.pattern.lower()
+        ]
+        assert deepseek_allowed_param_patterns
+        for compiled in deepseek_allowed_param_patterns:
+            assert compiled.fullmatch("deepseek-flash") is None
+            assert compiled.fullmatch("deepseek/deepseek-flash") is not None
+
+
+class TestResponseFormatFallback:
+    """Tests for the DeepSeek `response_format` json_schema-unavailable fallback."""
+
+    def test_handle_exception_falls_back_to_json_object(
+        self, model_config: ModelConfig, dataset_config: DatasetConfig
+    ) -> None:
+        """The DeepSeek json_schema-unavailable error falls back to `json_object`."""
+        model = object.__new__(LiteLLMModel)
+        model.model_config = dataclasses.replace(
+            model_config, model_id="deepseek/deepseek-flash"
+        )
+        model.dataset_config = dataset_config
+
+        kwargs, wait_time = model._handle_exception(
+            error=RESPONSE_FORMAT_UNAVAILABLE_ERROR,
+            response_format={"type": "json_schema", "json_schema": {}},
+        )
+
+        assert wait_time == 0
+        assert kwargs["response_format"] == {"type": "json_object"}
+
+
+class TestRetryAdjustments:
+    """Tests that parameter-error adjustments are replayed without leaking state.
+
+    This is a regression test suite for a bug where `LiteLLMModel.generate()`
+    persisted the fully materialised, error-adjusted kwargs into
+    `self.generation_kwargs` -- the user-override slot checked first by
+    `self.generation_kwargs or self.get_generation_kwargs(...)`. Since the
+    benchmarker reuses one model instance across datasets via
+    `update_dataset_config()`, a later dataset would silently be evaluated with an
+    earlier dataset's `max_completion_tokens` and `response_format` after any retry.
+    """
+
+    def test_adjustment_persists_across_attempts(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """A parameter fix learned during retries is replayed on later calls."""
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        original_response_format = {"type": "json_schema", "json_schema": {}}
+
+        def fake_get_generation_kwargs(
+            self: LiteLLMModel, dataset_config: DatasetConfig
+        ) -> dict:
+            return {
+                "response_format": original_response_format,
+                "max_completion_tokens": dataset_config.max_generated_tokens,
+            }
+
+        calls: list[dict] = []
+        has_raised = [False]
+
+        async def fake_acompletion(**kwargs) -> MagicMock:
+            calls.append(kwargs)
+            if not has_raised[0]:
+                has_raised[0] = True
+                raise RESPONSE_FORMAT_UNAVAILABLE_ERROR
+            return _make_response()
+
+        with (
+            patch.object(
+                LiteLLMModel,
+                "get_generation_kwargs",
+                autospec=True,
+                side_effect=fake_get_generation_kwargs,
+            ),
+            patch(
+                "euroeval.benchmark_modules.litellm.Router.acompletion",
+                new=AsyncMock(side_effect=fake_acompletion),
+            ),
+        ):
+            model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
+
+        # The first attempt used the original (unavailable) response_format, and the
+        # second (successful) attempt used the fallback
+        assert len(calls) == 2
+        assert calls[0]["response_format"] == original_response_format
+        assert calls[1]["response_format"] == {"type": "json_object"}
+
+        # The fix must have been recorded so it can be replayed later
+        assert len(model._handled_param_errors) == 1
+
+        # `self.generation_kwargs` must remain the (empty) user override from
+        # __init__ -- it must never be overwritten with materialised kwargs
+        assert model.generation_kwargs == {}
+
+        # A second batch (e.g. from a new dataset) must not re-raise the same error:
+        # the fix should be replayed before any network call is made
+        calls.clear()
+        with (
+            patch.object(
+                LiteLLMModel,
+                "get_generation_kwargs",
+                autospec=True,
+                side_effect=fake_get_generation_kwargs,
+            ),
+            patch(
+                "euroeval.benchmark_modules.litellm.Router.acompletion",
+                new=AsyncMock(side_effect=fake_acompletion),
+            ),
+        ):
+            model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
+
+        assert len(calls) == 1
+        assert calls[0]["response_format"] == {"type": "json_object"}
+        assert model.generation_kwargs == {}
+
+    def test_dataset_change_after_retry_uses_new_dataset_kwargs(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Dataset-specific kwargs are refreshed, while the model-level fix persists."""
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        original_response_format = {"type": "json_schema", "json_schema": {}}
+
+        def fake_get_generation_kwargs(
+            self: LiteLLMModel, dataset_config: DatasetConfig
+        ) -> dict:
+            return {
+                "response_format": original_response_format,
+                "max_completion_tokens": dataset_config.max_generated_tokens,
+            }
+
+        calls: list[dict] = []
+        has_raised = [False]
+
+        async def fake_acompletion(**kwargs) -> MagicMock:
+            calls.append(kwargs)
+            if not has_raised[0]:
+                has_raised[0] = True
+                raise RESPONSE_FORMAT_UNAVAILABLE_ERROR
+            return _make_response()
+
+        with (
+            patch.object(
+                LiteLLMModel,
+                "get_generation_kwargs",
+                autospec=True,
+                side_effect=fake_get_generation_kwargs,
+            ),
+            patch(
+                "euroeval.benchmark_modules.litellm.Router.acompletion",
+                new=AsyncMock(side_effect=fake_acompletion),
+            ),
+        ):
+            model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
+
+        assert len(model._handled_param_errors) == 1
+
+        new_dataset_config = copy.deepcopy(dataset_config)
+        new_dataset_config.max_generated_tokens = (
+            dataset_config.max_generated_tokens or 0
+        ) + 1234
+        model.update_dataset_config(dataset_config=new_dataset_config)
+
+        calls.clear()
+        with (
+            patch.object(
+                LiteLLMModel,
+                "get_generation_kwargs",
+                autospec=True,
+                side_effect=fake_get_generation_kwargs,
+            ),
+            patch(
+                "euroeval.benchmark_modules.litellm.Router.acompletion",
+                new=AsyncMock(side_effect=fake_acompletion),
+            ),
+        ):
+            model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
+
+        # The new dataset's max_completion_tokens must be used, and the model-level
+        # response_format fix from the previous dataset must still be applied
+        assert len(calls) == 1
+        expected_tokens = new_dataset_config.max_generated_tokens
+        assert calls[0]["max_completion_tokens"] == expected_tokens
+        assert calls[0]["response_format"] == {"type": "json_object"}
