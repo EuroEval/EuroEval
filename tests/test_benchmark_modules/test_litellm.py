@@ -3,10 +3,12 @@
 import copy
 import dataclasses
 import re
+import typing as t
+from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from litellm.exceptions import UnsupportedParamsError
+from litellm.exceptions import BadRequestError, UnsupportedParamsError
 from litellm.types.utils import Choices
 
 from euroeval.benchmark_modules.litellm import (
@@ -20,7 +22,7 @@ from euroeval.benchmark_modules.litellm import (
     get_api_model_release_date,
 )
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
-from euroeval.exceptions import InvalidModel
+from euroeval.exceptions import InvalidBenchmark, InvalidModel
 from euroeval.model_loading import load_model
 
 
@@ -251,9 +253,7 @@ def test_manual_api_release_date_overrides_embedded_date() -> None:
         assert get_api_model_release_date("provider/model-2024-01-01") == "2024-02-03"
 
 
-RESPONSE_FORMAT_UNAVAILABLE_ERROR = Exception(
-    "This response_format type is unavailable now"
-)
+RESPONSE_FORMAT_UNAVAILABLE_MESSAGE = "This response_format type is unavailable now"
 
 
 class TestDeepSeekParams:
@@ -270,7 +270,7 @@ class TestDeepSeekParams:
         ],
     )
     def test_deepseek_param_shapes(
-        self, model_config: ModelConfig, param: str, expected: dict
+        self, model_config: ModelConfig, param: str, expected: dict[str, t.Any]
     ) -> None:
         """DeepSeek models get DeepSeek-API-specific thinking/reasoning shapes."""
         model = object.__new__(LiteLLMModel)
@@ -365,17 +365,29 @@ class TestDeepSeekParams:
             ]
             assert deepseek_patterns, "Expected a DeepSeek entry in the mapping"
             for pattern in deepseek_patterns:
-                assert re.fullmatch(pattern, "deepseek-flash") is None
-                assert re.fullmatch(pattern, "deepseek/deepseek-flash") is not None
+                assert re.fullmatch(pattern=pattern, string="deepseek-flash") is None
+                assert (
+                    re.fullmatch(pattern=pattern, string="deepseek/deepseek-flash")
+                    is not None
+                )
 
         deepseek_reasoning_patterns = [
             pattern for pattern in REASONING_MODELS if "deepseek" in pattern.lower()
         ]
         assert deepseek_reasoning_patterns
         for pattern in deepseek_reasoning_patterns:
-            assert re.fullmatch(pattern, "deepseek-flash", flags=re.IGNORECASE) is None
             assert (
-                re.fullmatch(pattern, "deepseek/deepseek-flash", flags=re.IGNORECASE)
+                re.fullmatch(
+                    pattern=pattern, string="deepseek-flash", flags=re.IGNORECASE
+                )
+                is None
+            )
+            assert (
+                re.fullmatch(
+                    pattern=pattern,
+                    string="deepseek/deepseek-flash",
+                    flags=re.IGNORECASE,
+                )
                 is not None
             )
 
@@ -386,8 +398,90 @@ class TestDeepSeekParams:
         ]
         assert deepseek_allowed_param_patterns
         for compiled in deepseek_allowed_param_patterns:
-            assert compiled.fullmatch("deepseek-flash") is None
-            assert compiled.fullmatch("deepseek/deepseek-flash") is not None
+            assert compiled.fullmatch(string="deepseek-flash") is None
+            assert compiled.fullmatch(string="deepseek/deepseek-flash") is not None
+
+
+class TestDuplicateErrorHandling:
+    """Tests that identical parameter errors are only stored once."""
+
+    def test_duplicate_errors_are_stored_once(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Two inputs failing with the same message store exactly one entry."""
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        original_response_format = {"type": "json_schema", "json_schema": {}}
+
+        async def fake_acompletion(**kwargs: object) -> MagicMock:
+            raise _make_response_format_unavailable_error()
+
+        with (
+            patch.object(
+                target=LiteLLMModel,
+                attribute="get_generation_kwargs",
+                autospec=True,
+                side_effect=_fake_get_generation_kwargs(original_response_format),
+            ),
+            patch(
+                target="euroeval.benchmark_modules.litellm.Router.acompletion",
+                new=AsyncMock(side_effect=fake_acompletion),
+            ),
+        ):
+            with pytest.raises(InvalidBenchmark):
+                model.generate(
+                    inputs={
+                        "messages": [
+                            [{"role": "user", "content": "hi"}],
+                            [{"role": "user", "content": "yo"}],
+                        ]
+                    }
+                )
+
+        assert len(model._handled_param_errors) == 1
+
+
+def _fake_get_generation_kwargs(
+    original_response_format: dict[str, t.Any],
+) -> t.Callable[[LiteLLMModel, DatasetConfig], dict[str, t.Any]]:
+    """Build a fake `get_generation_kwargs` returning a fixed response format.
+
+    Args:
+        original_response_format:
+            The response format to return alongside the dataset's max tokens.
+
+    Returns:
+        A function with the same signature as `LiteLLMModel.get_generation_kwargs`.
+    """
+
+    def fake_get_generation_kwargs(
+        self: LiteLLMModel, dataset_config: DatasetConfig
+    ) -> dict[str, t.Any]:
+        return {
+            "response_format": original_response_format,
+            "max_completion_tokens": dataset_config.max_generated_tokens,
+        }
+
+    return fake_get_generation_kwargs
+
+
+def _make_response_format_unavailable_error() -> Exception:
+    """Build a fresh 'response_format unavailable' error.
+
+    Returns:
+        A new `Exception` instance, distinct from any previously built one, so
+        that error-identity/deduplication logic under test is exercised
+        correctly.
+    """
+    return Exception(RESPONSE_FORMAT_UNAVAILABLE_MESSAGE)
 
 
 class TestResponseFormatFallback:
@@ -404,7 +498,7 @@ class TestResponseFormatFallback:
         model.dataset_config = dataset_config
 
         kwargs, wait_time = model._handle_exception(
-            error=RESPONSE_FORMAT_UNAVAILABLE_ERROR,
+            error=_make_response_format_unavailable_error(),
             response_format={"type": "json_schema", "json_schema": {}},
         )
 
@@ -439,44 +533,18 @@ class TestRetryAdjustments:
         )
 
         original_response_format = {"type": "json_schema", "json_schema": {}}
+        has_raised: list[bool] = [False]
 
-        def fake_get_generation_kwargs(
-            self: LiteLLMModel, dataset_config: DatasetConfig
-        ) -> dict:
-            return {
-                "response_format": original_response_format,
-                "max_completion_tokens": dataset_config.max_generated_tokens,
-            }
-
-        calls: list[dict] = []
-        has_raised = [False]
-
-        async def fake_acompletion(**kwargs) -> MagicMock:
-            calls.append(kwargs)
-            if not has_raised[0]:
-                has_raised[0] = True
-                raise RESPONSE_FORMAT_UNAVAILABLE_ERROR
-            return _make_response()
-
-        with (
-            patch.object(
-                LiteLLMModel,
-                "get_generation_kwargs",
-                autospec=True,
-                side_effect=fake_get_generation_kwargs,
-            ),
-            patch(
-                "euroeval.benchmark_modules.litellm.Router.acompletion",
-                new=AsyncMock(side_effect=fake_acompletion),
-            ),
-        ):
+        with _patch_retry_adjustment_dependencies(
+            has_raised=has_raised, original_response_format=original_response_format
+        ) as calls:
             model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
 
-        # The first attempt used the original (unavailable) response_format, and the
-        # second (successful) attempt used the fallback
-        assert len(calls) == 2
-        assert calls[0]["response_format"] == original_response_format
-        assert calls[1]["response_format"] == {"type": "json_object"}
+            # The first attempt used the original (unavailable) response_format, and
+            # the second (successful) attempt used the fallback
+            assert len(calls) == 2
+            assert calls[0]["response_format"] == original_response_format
+            assert calls[1]["response_format"] == {"type": "json_object"}
 
         # The fix must have been recorded so it can be replayed later
         assert len(model._handled_param_errors) == 1
@@ -487,19 +555,9 @@ class TestRetryAdjustments:
 
         # A second batch (e.g. from a new dataset) must not re-raise the same error:
         # the fix should be replayed before any network call is made
-        calls.clear()
-        with (
-            patch.object(
-                LiteLLMModel,
-                "get_generation_kwargs",
-                autospec=True,
-                side_effect=fake_get_generation_kwargs,
-            ),
-            patch(
-                "euroeval.benchmark_modules.litellm.Router.acompletion",
-                new=AsyncMock(side_effect=fake_acompletion),
-            ),
-        ):
+        with _patch_retry_adjustment_dependencies(
+            has_raised=has_raised, original_response_format=original_response_format
+        ) as calls:
             model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
 
         assert len(calls) == 1
@@ -521,60 +579,24 @@ class TestRetryAdjustments:
         )
 
         original_response_format = {"type": "json_schema", "json_schema": {}}
+        has_raised: list[bool] = [False]
 
-        def fake_get_generation_kwargs(
-            self: LiteLLMModel, dataset_config: DatasetConfig
-        ) -> dict:
-            return {
-                "response_format": original_response_format,
-                "max_completion_tokens": dataset_config.max_generated_tokens,
-            }
-
-        calls: list[dict] = []
-        has_raised = [False]
-
-        async def fake_acompletion(**kwargs) -> MagicMock:
-            calls.append(kwargs)
-            if not has_raised[0]:
-                has_raised[0] = True
-                raise RESPONSE_FORMAT_UNAVAILABLE_ERROR
-            return _make_response()
-
-        with (
-            patch.object(
-                LiteLLMModel,
-                "get_generation_kwargs",
-                autospec=True,
-                side_effect=fake_get_generation_kwargs,
-            ),
-            patch(
-                "euroeval.benchmark_modules.litellm.Router.acompletion",
-                new=AsyncMock(side_effect=fake_acompletion),
-            ),
-        ):
+        with _patch_retry_adjustment_dependencies(
+            has_raised=has_raised, original_response_format=original_response_format
+        ) as calls:
             model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
 
         assert len(model._handled_param_errors) == 1
 
-        new_dataset_config = copy.deepcopy(dataset_config)
+        new_dataset_config = copy.deepcopy(x=dataset_config)
         new_dataset_config.max_generated_tokens = (
             dataset_config.max_generated_tokens or 0
         ) + 1234
         model.update_dataset_config(dataset_config=new_dataset_config)
 
-        calls.clear()
-        with (
-            patch.object(
-                LiteLLMModel,
-                "get_generation_kwargs",
-                autospec=True,
-                side_effect=fake_get_generation_kwargs,
-            ),
-            patch(
-                "euroeval.benchmark_modules.litellm.Router.acompletion",
-                new=AsyncMock(side_effect=fake_acompletion),
-            ),
-        ):
+        with _patch_retry_adjustment_dependencies(
+            has_raised=has_raised, original_response_format=original_response_format
+        ) as calls:
             model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
 
         # The new dataset's max_completion_tokens must be used, and the model-level
@@ -583,3 +605,95 @@ class TestRetryAdjustments:
         expected_tokens = new_dataset_config.max_generated_tokens
         assert calls[0]["max_completion_tokens"] == expected_tokens
         assert calls[0]["response_format"] == {"type": "json_object"}
+
+
+@contextmanager
+def _patch_retry_adjustment_dependencies(
+    has_raised: list[bool], original_response_format: dict[str, t.Any]
+) -> t.Iterator[list[dict[str, t.Any]]]:
+    """Patch `get_generation_kwargs` and `Router.acompletion` for retry tests.
+
+    The faked `acompletion` raises a 'response_format unavailable' error on its
+    first call (unless `has_raised` is already `True`) and succeeds afterwards.
+
+    Args:
+        has_raised:
+            A one-element mutable flag shared across patches, so that a single
+            failure can be triggered across multiple `generate()` calls.
+        original_response_format:
+            The response format returned by the faked `get_generation_kwargs`.
+
+    Yields:
+        The list of kwargs each `acompletion` call was made with.
+    """
+    calls: list[dict[str, t.Any]] = []
+
+    async def fake_acompletion(**kwargs: object) -> MagicMock:
+        calls.append(kwargs)
+        if not has_raised[0]:
+            has_raised[0] = True
+            raise _make_response_format_unavailable_error()
+        return _make_response()
+
+    with (
+        patch.object(
+            target=LiteLLMModel,
+            attribute="get_generation_kwargs",
+            autospec=True,
+            side_effect=_fake_get_generation_kwargs(original_response_format),
+        ),
+        patch(
+            target="euroeval.benchmark_modules.litellm.Router.acompletion",
+            new=AsyncMock(side_effect=fake_acompletion),
+        ),
+    ):
+        yield calls
+
+
+class TestServiceErrorHandling:
+    """Tests that service-type errors are not persisted as parameter fixes."""
+
+    def test_service_error_is_not_persisted(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """A service-type error resolved with wait time 0 is not stored for replay."""
+        benchmark_config = dataclasses.replace(
+            benchmark_config, api_base="http://localhost:8000"
+        )
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        has_raised: list[bool] = [False]
+
+        async def fake_acompletion(**kwargs: object) -> MagicMock:
+            if not has_raised[0]:
+                has_raised[0] = True
+                raise BadRequestError(
+                    message="Bad request", model="gpt-4o", llm_provider="openai"
+                )
+            return _make_response()
+
+        with patch(
+            target="euroeval.benchmark_modules.litellm.Router.acompletion",
+            new=AsyncMock(side_effect=fake_acompletion),
+        ):
+            model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
+
+        # The api_base fix is a service-level adjustment and must not be persisted
+        assert model._handled_param_errors == {}
+        assert model.benchmark_config.api_base == "http://localhost:8000/v1"
+
+        # A second call must succeed without raising InvalidBenchmark
+        has_raised[0] = True
+        with patch(
+            target="euroeval.benchmark_modules.litellm.Router.acompletion",
+            new=AsyncMock(side_effect=fake_acompletion),
+        ):
+            model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})

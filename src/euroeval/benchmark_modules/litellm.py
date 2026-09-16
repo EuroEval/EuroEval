@@ -414,7 +414,7 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         self.generation_kwargs = generation_kwargs
-        self._handled_param_errors: list[Exception] = []
+        self._handled_param_errors: dict[str, Exception] = {}
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
@@ -494,11 +494,19 @@ class LiteLLMModel(BenchmarkModule):
         # Replay previously handled parameter errors, so that model-level quirks
         # discovered in earlier calls (e.g. "no json_schema") are re-applied to the
         # freshly built kwargs, without leaking dataset-specific kwargs (like
-        # `max_completion_tokens`) across datasets via `self.generation_kwargs`
-        for handled_error in self._handled_param_errors:
-            generation_kwargs, _ = self._handle_exception(
-                error=handled_error, **generation_kwargs
+        # `max_completion_tokens`) across datasets via `self.generation_kwargs`. We
+        # call `_handle_parameter_error` directly (rather than `_handle_exception`),
+        # since it never raises and simply returns `None` if the error no longer
+        # applies to the current kwargs, so replay can never fail.
+        for handled_error in self._handled_param_errors.values():
+            result = self._handle_parameter_error(
+                error=handled_error,
+                error_msg=str(handled_error).lower(),
+                model_id=self.model_config.model_id,
+                generation_kwargs=generation_kwargs,
             )
+            if result is not None:
+                generation_kwargs, _ = result
 
         for attempt in range(num_attempts := 10):
             if not inputs_to_run:
@@ -562,18 +570,26 @@ class LiteLLMModel(BenchmarkModule):
             # successful generations next time around
             time_to_wait = 0
             for _, error in failures:
-                previous_kwargs = dict(generation_kwargs)
-                generation_kwargs, wait_time = self._handle_exception(
-                    error=error, **generation_kwargs
+                # Try the parameter-error handler first, so that we can tell whether
+                # the error was resolved by a model-level parameter fix (which should
+                # be remembered and replayed on future calls) as opposed to a
+                # service/rate-limit error (which must not be persisted). If no
+                # parameter handler matches, fall back to the full exception handler,
+                # which will re-run the (now no-op) parameter handler and then try
+                # the service/fatal handlers.
+                param_result = self._handle_parameter_error(
+                    error=error,
+                    error_msg=str(error).lower(),
+                    model_id=self.model_config.model_id,
+                    generation_kwargs=generation_kwargs,
                 )
-
-                # Only remember errors resolved by a parameter handler (wait time 0
-                # and the kwargs actually changed), so that model-level fixes are
-                # replayed on future calls without persisting dataset-specific
-                # kwargs, and without persisting service/rate-limit errors, which
-                # must not survive across calls
-                if wait_time == 0 and generation_kwargs != previous_kwargs:
-                    self._handled_param_errors.append(error)
+                if param_result is not None:
+                    generation_kwargs, wait_time = param_result
+                    self._handled_param_errors.setdefault(str(error), error)
+                else:
+                    generation_kwargs, wait_time = self._handle_exception(
+                        error=error, **generation_kwargs
+                    )
 
                 time_to_wait = max(time_to_wait, wait_time)
 
