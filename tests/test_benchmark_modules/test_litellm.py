@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from litellm.exceptions import BadRequestError, UnsupportedParamsError
+from litellm.llms.deepseek.chat.transformation import DeepSeekChatConfig
 from litellm.types.utils import Choices
 
 from euroeval.benchmark_modules.litellm import (
@@ -482,6 +483,54 @@ def _make_response_format_unavailable_error() -> Exception:
         correctly.
     """
     return Exception(RESPONSE_FORMAT_UNAVAILABLE_MESSAGE)
+
+
+class TestLiteLLMDeepSeekTransformation:
+    """Pins upstream LiteLLM behaviour that motivates DeepSeek param shaping.
+
+    LiteLLM's `DeepSeekChatConfig.map_openai_params` silently drops
+    `thinking.budget_tokens` and collapses `reasoning_effort` levels to a
+    boolean-ish `thinking.type` ("enabled"/"disabled") before the request
+    reaches the DeepSeek API, since DeepSeek's own API only supports
+    `{"type": "enabled"}` / `{"type": "disabled"}` and has no `budget_tokens`
+    concept. This is the reason `_setup_model_params` in
+    `euroeval.benchmark_modules.litellm` shapes DeepSeek parameters itself
+    instead of forwarding `thinking`/`reasoning_effort` unchanged. If a future
+    LiteLLM release stops dropping these fields, this test will fail and the
+    DeepSeek-specific shaping should be revisited.
+    """
+
+    def test_reasoning_effort_collapses_to_boolean_thinking_type(self) -> None:
+        """`reasoning_effort` levels collapse to a boolean-ish `thinking.type`."""
+        config = DeepSeekChatConfig()
+
+        high_effort_params = config.map_openai_params(
+            non_default_params={"reasoning_effort": "high"},
+            optional_params={},
+            model="deepseek-reasoner",
+            drop_params=False,
+        )
+        assert high_effort_params == {"thinking": {"type": "enabled"}}
+
+        none_effort_params = config.map_openai_params(
+            non_default_params={"reasoning_effort": "none"},
+            optional_params={},
+            model="deepseek-reasoner",
+            drop_params=False,
+        )
+        assert none_effort_params == {"thinking": {"type": "disabled"}}
+
+    def test_thinking_budget_tokens_is_dropped(self) -> None:
+        """`thinking.budget_tokens` is silently dropped by LiteLLM's mapping."""
+        config = DeepSeekChatConfig()
+        optional_params = config.map_openai_params(
+            non_default_params={"thinking": {"type": "enabled", "budget_tokens": 1234}},
+            optional_params={},
+            model="deepseek-reasoner",
+            drop_params=False,
+        )
+        assert optional_params == {"thinking": {"type": "enabled"}}
+        assert "budget_tokens" not in optional_params["thinking"]
 
 
 class TestResponseFormatFallback:
