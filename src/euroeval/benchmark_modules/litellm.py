@@ -54,6 +54,7 @@ from ..enums import (
     GenerativeType,
     InferenceBackend,
     ModelType,
+    ParameterAdjustment,
     TaskGroup,
 )
 from ..exceptions import (
@@ -101,6 +102,9 @@ VOCAB_SIZE_MAPPING = {
     r"(gemini/)?gemini-[1-9](\.[0-9])?-(flash|pro).*": 256_128,
     # xAI models
     r"(xai/)?grok.*": -1,
+    # DeepSeek models
+    # Source: HF `deepseek-ai/DeepSeek-V4.1-Flash` `config.json` (vocab size).
+    r"deepseek/deepseek-flash.*": 129_280,
     # Ordbogen models
     r"(ordbogen/)?odin-medium.*": -1,
     r"(ordbogen/)?odin-large.*": -1,
@@ -138,6 +142,9 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"(gemini/)?gemini-[23](\.[05])?.*": 1_048_576,
     # xAI models
     r"(xai/)?grok.*": 131_072,
+    # DeepSeek models
+    # Source: HF `deepseek-ai/DeepSeek-V4.1-Flash` `config.json` (context length).
+    r"deepseek/deepseek-flash.*": 1_048_576,
     # Ordbogen models
     r"(ordbogen/)?odin-medium.*": 131_072,
     r"(ordbogen/)?odin-large.*": 202_752,
@@ -159,6 +166,9 @@ NUM_PARAMS_MAPPING = {
     r"(gemini/)?gemini-[23](.[05])?.*": -1,
     # xAI models
     r"(xai/)?grok.*": -1,
+    # DeepSeek models
+    # Source: DeepSeek-V4.1-Flash model card (552B params).
+    r"deepseek/deepseek-flash.*": 552_000_000_000,
     # Ordbogen models
     r"(ordbogen/)?odin-medium.*": -1,
     r"(ordbogen/)?odin-large.*": -1,
@@ -261,6 +271,9 @@ MODEL_RELEASE_DATE_MAPPING = {
     r"(xai/)?grok-4\.20.*": "2026-03-10",
     r"(xai/)?grok-4\.5.*": "2026-07-08",
     r"(xai/)?grok-4\.6.*": "2026-08-12",
+    # DeepSeek
+    # Source: repo creation date for `deepseek-ai/DeepSeek-V4.1-Flash`.
+    r"deepseek/deepseek-flash.*": "2026-09-10",
 }
 
 REASONING_MODELS = [
@@ -269,6 +282,7 @@ REASONING_MODELS = [
     r"(gemini/)?gemini.*thinking.*",
     r"(gemini/)?gemini-2.5.*",
     r"(xai/)?grok-3-mini.*",
+    r"deepseek/deepseek-flash.*",
     r".*gpt-oss.*",
     r"(ordbogen/)?odin-.*",
 ]
@@ -326,6 +340,14 @@ class LiteLLMModel(BenchmarkModule):
         re.compile(r"(gemini/)?gemini-(2\.5|3)-flash.*"): ["no-thinking", "thinking"],
         # xAI models
         re.compile(r"(xai/)?grok-3-mini(-fast)?(-beta)?"): ["low", "medium", "high"],
+        # DeepSeek models
+        re.compile(r"deepseek/deepseek-flash.*"): [
+            "no-thinking",
+            "thinking",
+            "low",
+            "high",
+            "max",
+        ],
     }
 
     def __init__(
@@ -378,6 +400,8 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         self.generation_kwargs = generation_kwargs
+        self._parameter_adjustments: set[ParameterAdjustment] = set()
+        self._max_thinking_budget: int | None = None
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
@@ -449,13 +473,20 @@ class LiteLLMModel(BenchmarkModule):
         inputs_to_run: c.Sequence[
             tuple[int, c.Sequence[litellm.AllMessageValues] | str]
         ] = list(enumerate(model_inputs))
+        # Build the kwargs afresh for the current dataset and re-apply the
+        # model-level adjustments learned from earlier errors, so that nothing
+        # dataset-specific (like `max_completion_tokens`) leaks across datasets via
+        # `self.generation_kwargs`
+        generation_kwargs = self._apply_parameter_adjustments(
+            generation_kwargs=dict(
+                self.generation_kwargs
+                or self.get_generation_kwargs(dataset_config=self.dataset_config)
+            )
+        )
+
         for attempt in range(num_attempts := 10):
             if not inputs_to_run:
                 break
-
-            generation_kwargs = self.generation_kwargs or self.get_generation_kwargs(
-                dataset_config=self.dataset_config
-            )
 
             batch_indices, batch_inputs = zip(*inputs_to_run)
             successes, failures = safe_run(
@@ -519,6 +550,7 @@ class LiteLLMModel(BenchmarkModule):
                     error=error, **generation_kwargs
                 )
                 time_to_wait = max(time_to_wait, wait_time)
+
             if time_to_wait > 0:
                 log(
                     f"Waiting {time_to_wait} second(s) before retrying...",
@@ -543,6 +575,111 @@ class LiteLLMModel(BenchmarkModule):
             )
 
         return model_output
+
+    def _apply_parameter_adjustments(self, generation_kwargs: dict) -> dict:
+        """Apply the persisted model-level parameter adjustments to fresh kwargs.
+
+        Each adjustment is applied conditionally, so it only affects parameters
+        that are actually present in the kwargs of the current dataset. For
+        instance, `NO_JSON_SCHEMA` only replaces an existing JSON schema response
+        format, and `USE_MAX_TOKENS` preserves the current dataset's token limit.
+
+        Args:
+            generation_kwargs:
+                The freshly built generation kwargs for the current dataset.
+
+        Returns:
+            The generation kwargs with all persisted adjustments applied.
+        """
+        adjustments = self._parameter_adjustments
+        if ParameterAdjustment.NO_STOP_SEQUENCES in adjustments:
+            if "stop" in generation_kwargs:
+                generation_kwargs["stop"] = None
+        if ParameterAdjustment.NO_LOGPROBS in adjustments:
+            generation_kwargs = self._disable_logprobs(
+                generation_kwargs=generation_kwargs
+            )
+        if ParameterAdjustment.LOGPROBS_MUST_BE_BOOLEAN in adjustments:
+            if "logprobs" in generation_kwargs:
+                generation_kwargs["logprobs"] = True
+        if ParameterAdjustment.NO_TOP_LOGPROBS in adjustments:
+            if "top_logprobs" in generation_kwargs:
+                generation_kwargs["logprobs"] = generation_kwargs.pop("top_logprobs")
+        if ParameterAdjustment.USE_MAX_TOKENS in adjustments:
+            if "max_completion_tokens" in generation_kwargs:
+                generation_kwargs["max_tokens"] = generation_kwargs.pop(
+                    "max_completion_tokens"
+                )
+        if ParameterAdjustment.NO_MAX_TOKENS in adjustments:
+            generation_kwargs.pop("max_tokens", None)
+        if ParameterAdjustment.NO_TEMPERATURE in adjustments:
+            generation_kwargs.pop("temperature", None)
+        if ParameterAdjustment.TEMPERATURE_MUST_BE_ONE in adjustments:
+            if "temperature" in generation_kwargs:
+                generation_kwargs["temperature"] = 1.0
+        if ParameterAdjustment.NO_JSON_SCHEMA in adjustments:
+            response_format = generation_kwargs.get("response_format")
+            uses_json_object = (
+                isinstance(response_format, dict)
+                and response_format.get("type") == "json_object"
+            )
+            if response_format is not None and not uses_json_object:
+                generation_kwargs["response_format"] = dict(type="json_object")
+        if ParameterAdjustment.THINKING_DISABLED_REQUIRES_TYPE in adjustments:
+            thinking = generation_kwargs.get("thinking")
+            if isinstance(thinking, dict) and thinking.get("budget_tokens") == 0:
+                generation_kwargs["thinking"] = dict(type="disabled")
+        if ParameterAdjustment.NO_SEED in adjustments:
+            generation_kwargs.pop("seed", None)
+        if ParameterAdjustment.NO_RESPONSE_FORMAT in adjustments:
+            generation_kwargs.pop("response_format", None)
+        generation_kwargs = self._apply_max_thinking_budget(
+            generation_kwargs=generation_kwargs
+        )
+        return generation_kwargs
+
+    def _apply_max_thinking_budget(self, generation_kwargs: dict) -> dict:
+        """Cap the thinking budget at the maximum the model has told us it supports.
+
+        Args:
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+
+        Returns:
+            The generation kwargs with the thinking budget capped, if applicable.
+        """
+        thinking = generation_kwargs.get("thinking")
+        if (
+            self._max_thinking_budget is None
+            or not isinstance(thinking, dict)
+            or thinking.get("type") != "enabled"
+            or not isinstance(thinking.get("budget_tokens"), int)
+            or thinking["budget_tokens"] < self._max_thinking_budget
+        ):
+            return generation_kwargs
+        generation_kwargs["thinking"] = dict(
+            type="enabled", budget_tokens=self._max_thinking_budget - 1
+        )
+        return generation_kwargs
+
+    def _disable_logprobs(self, generation_kwargs: dict) -> dict:
+        """Disable logprobs in the generation kwargs and in the label token mapping.
+
+        Note that this does not remove `response_format`, since the model's
+        inability to compute logprobs says nothing about its ability to produce
+        structured output.
+
+        Args:
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+
+        Returns:
+            The generation kwargs without logprobs.
+        """
+        self.buffer["first_label_token_mapping"] = False
+        generation_kwargs.pop("logprobs", None)
+        generation_kwargs.pop("top_logprobs", None)
+        return generation_kwargs
 
     @staticmethod
     def _create_model_output(
@@ -857,15 +994,20 @@ class LiteLLMModel(BenchmarkModule):
         error_msg = str(error).lower()
         model_id = self.model_config.model_id
 
-        # Try parameter-specific handlers first
-        result = self._handle_parameter_error(
+        # Try parameter-specific handlers first. These may return a model-level
+        # adjustment, which we remember so that it can be re-applied to the kwargs
+        # of future datasets. Service and fatal errors never enter this set.
+        param_result = self._handle_parameter_error(
             error=error,
             error_msg=error_msg,
             model_id=model_id,
             generation_kwargs=generation_kwargs,
         )
-        if result is not None:
-            return result
+        if param_result is not None:
+            generation_kwargs, wait_time, adjustment = param_result
+            if adjustment is not None:
+                self._parameter_adjustments.add(adjustment)
+            return generation_kwargs, wait_time
 
         # Try service/retry handlers
         result = self._handle_service_error(
@@ -919,7 +1061,7 @@ class LiteLLMModel(BenchmarkModule):
 
     def _handle_parameter_error(
         self, error: Exception, error_msg: str, model_id: str, generation_kwargs: dict
-    ) -> tuple[dict, int] | None:
+    ) -> tuple[dict, int, ParameterAdjustment | None] | None:
         """Handle parameter-related errors.
 
         Args:
@@ -933,8 +1075,10 @@ class LiteLLMModel(BenchmarkModule):
                 The generation kwargs to pass to the model.
 
         Returns:
-            A tuple of (updated_kwargs, wait_time) if the error was handled, or None
-            if the error was not handled.
+            A tuple of (updated_kwargs, wait_time, adjustment) if the error was
+            handled, or None if the error was not handled. The `adjustment` is the
+            model-level adjustment to persist across datasets, or None if the fix
+            only applies to the current request (e.g. a temporary quota message).
 
         Raises:
             InvalidBenchmark:
@@ -980,17 +1124,22 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["stop"] = None
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.NO_STOP_SEQUENCES
 
         # Logprobs
         logprobs_messages = [
             "you are not allowed to request logprobs",
-            "you've reached the maximum number of requests with logprobs",
             "logprobs is not supported",
             "logprobs is not enabled",
         ]
+        # This is a temporary quota message, so we disable logprobs for the current
+        # request only, without persisting the adjustment for later datasets
+        logprobs_quota_message = (
+            "you've reached the maximum number of requests with logprobs"
+        )
         if (
             any(msg.lower() in error_msg for msg in logprobs_messages)
+            or logprobs_quota_message in error_msg
             or logprobs_pattern.search(string=error_msg) is not None
             or (isinstance(error, VertexAIError) and "logprobs" in error_msg)
         ):
@@ -998,11 +1147,19 @@ class LiteLLMModel(BenchmarkModule):
                 f"The model {model_id!r} does not support logprobs, so disabling it.",
                 level=logging.DEBUG,
             )
-            self.buffer["first_label_token_mapping"] = False
-            generation_kwargs.pop("logprobs", None)
-            generation_kwargs.pop("top_logprobs", None)
+            generation_kwargs = self._disable_logprobs(
+                generation_kwargs=generation_kwargs
+            )
+            # The response format is only dropped for the current request, since the
+            # persisted capability must not strip structured output from other
+            # datasets
             generation_kwargs.pop("response_format", None)
-            return generation_kwargs, 0
+            adjustment = (
+                None
+                if logprobs_quota_message in error_msg
+                else ParameterAdjustment.NO_LOGPROBS
+            )
+            return generation_kwargs, 0, adjustment
 
         # Logprobs must be boolean
         if (
@@ -1015,7 +1172,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["logprobs"] = True
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.LOGPROBS_MUST_BE_BOOLEAN
 
         # Top logprobs
         if (
@@ -1028,7 +1185,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["logprobs"] = generation_kwargs.pop("top_logprobs", None)
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.NO_TOP_LOGPROBS
 
         # Max completion tokens
         if max_completion_tokens_pattern.search(string=error_msg):
@@ -1040,7 +1197,7 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["max_tokens"] = generation_kwargs.pop(
                 "max_completion_tokens", None
             )
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.USE_MAX_TOKENS
 
         # Max tokens
         if max_tokens_pattern.search(string=error_msg):
@@ -1049,7 +1206,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs.pop("max_tokens", None)
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.NO_MAX_TOKENS
 
         # Temperature not supported
         temperature_messages = [
@@ -1067,7 +1224,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs.pop("temperature", None)
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.NO_TEMPERATURE
 
         # Temperature must be 1
         temperature_must_be_one_messages = [
@@ -1085,7 +1242,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["temperature"] = 1.0
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.TEMPERATURE_MUST_BE_ONE
 
         # Max items (token classification)
         if (
@@ -1103,21 +1260,34 @@ class LiteLLMModel(BenchmarkModule):
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
-            return generation_kwargs, 0
+            return generation_kwargs, 0, None
 
         # No JSON schema
         no_json_schema_messages = [
-            "Property keys should match pattern",
             "'json_schema' is not supported",
+            # DeepSeek API rejects `json_schema` but supports `json_object`
+            "This response_format type is unavailable now",
         ]
-        if any(msg.lower() in error_msg for msg in no_json_schema_messages):
+        # This complains about the specific schema rather than the model's general
+        # capability to use JSON schemas, so we only apply the fallback for the
+        # current request without persisting the adjustment
+        malformed_schema_message = "Property keys should match pattern"
+        if (
+            any(msg.lower() in error_msg for msg in no_json_schema_messages)
+            or malformed_schema_message.lower() in error_msg
+        ):
             log_once(
                 f"The model {self.model_config.model_id!r} does not support "
                 "JSON schemas, so using the vanilla JSON format.",
                 level=logging.DEBUG,
             )
             generation_kwargs["response_format"] = dict(type="json_object")
-            return generation_kwargs, 0
+            adjustment = (
+                None
+                if malformed_schema_message.lower() in error_msg
+                else ParameterAdjustment.NO_JSON_SCHEMA
+            )
+            return generation_kwargs, 0, adjustment
 
         # Thinking budget
         if thinking_match := thinking_budget_pattern.search(string=error_msg):
@@ -1136,10 +1306,11 @@ class LiteLLMModel(BenchmarkModule):
                 f"{thinking_budget:,} tokens.",
                 level=logging.DEBUG,
             )
-            generation_kwargs["thinking"] = dict(
-                type="enabled", budget_tokens=thinking_budget - 1
+            self._max_thinking_budget = thinking_budget
+            generation_kwargs = self._apply_max_thinking_budget(
+                generation_kwargs=generation_kwargs
             )
-            return generation_kwargs, 0
+            return generation_kwargs, 0, None
 
         # Thinking disabled required
         thinking_disabled_messages = [
@@ -1159,7 +1330,11 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["thinking"] = dict(type="disabled")
-            return generation_kwargs, 0
+            return (
+                generation_kwargs,
+                0,
+                ParameterAdjustment.THINKING_DISABLED_REQUIRES_TYPE,
+            )
 
         # Seed
         if seed_pattern.search(string=error_msg):
@@ -1169,23 +1344,38 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs.pop("seed", None)
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.NO_SEED
 
         # Response format
         response_format_messages = [
-            "got an unexpected keyword argument 'response_format'",
-            "the model returned empty outputs",
+            "got an unexpected keyword argument 'response_format'"
+        ]
+        # These messages complain about the specific request rather than the
+        # model's general capability to use `response_format`, so we only drop it
+        # for the current request without persisting the adjustment
+        request_local_response_format_messages = [
             "'maxitems' is not supported",
             "must contain the word 'json'",
+            "the model returned empty outputs",
         ]
-        if any(msg.lower() in error_msg for msg in response_format_messages):
+        if any(msg.lower() in error_msg for msg in response_format_messages) or any(
+            msg.lower() in error_msg for msg in request_local_response_format_messages
+        ):
             log_once(
                 f"The model {model_id!r} does not support the `response_format` "
                 "parameter, so disabling it.",
                 level=logging.DEBUG,
             )
             generation_kwargs.pop("response_format", None)
-            return generation_kwargs, 0
+            adjustment = (
+                None
+                if any(
+                    msg.lower() in error_msg
+                    for msg in request_local_response_format_messages
+                )
+                else ParameterAdjustment.NO_RESPONSE_FORMAT
+            )
+            return generation_kwargs, 0, adjustment
 
         # Too many open files
         if "too many open files" in error_msg:
@@ -1445,6 +1635,9 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
 
+        # Set the generic thinking/reasoning-effort shape first. DeepSeek-specific
+        # post-processing (below) rewrites this, since LiteLLM's DeepSeek
+        # transformation discards `budget_tokens` and the `reasoning_effort` level.
         param = self.model_config.param
         if param == "thinking":
             generation_kwargs["thinking"] = dict(
@@ -1460,13 +1653,34 @@ class LiteLLMModel(BenchmarkModule):
                 f"Disabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
-        elif param in {"none", "minimal", "low", "medium", "high", "xhigh"}:
+        elif param in {"none", "minimal", "low", "medium", "high", "xhigh", "max"}:
             generation_kwargs["reasoning_effort"] = param
             log_once(
                 f"Enabling reasoning effort {param!r} for model "
                 f"{self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
+
+        # DeepSeek only recognises `thinking.type` and silently ignores
+        # `budget_tokens`, which would otherwise leave thinking enabled (its
+        # default), so we rewrite `thinking` to just the `type` field. Likewise,
+        # LiteLLM's DeepSeek transformation maps `reasoning_effort` to only
+        # `thinking.type` (enabled/disabled), discarding the effort level, so we
+        # instead move it into `extra_body`, which is merged into the request after
+        # provider param mapping and thus reaches the DeepSeek API untouched. The
+        # `deepseek/` prefix is required to distinguish the official DeepSeek API
+        # from open-weight deployments (e.g. vLLM, Ollama, OpenRouter), which do not
+        # get this DeepSeek-API-specific param shaping.
+        if self.model_config.model_id.lower().startswith("deepseek/"):
+            if param == "thinking":
+                generation_kwargs["thinking"] = dict(type="enabled")
+            elif param == "no-thinking":
+                generation_kwargs["thinking"] = dict(type="disabled")
+            elif param in {"none", "minimal", "low", "medium", "high", "xhigh", "max"}:
+                generation_kwargs["extra_body"] = {
+                    **generation_kwargs.get("extra_body", {}),
+                    "reasoning_effort": generation_kwargs.pop("reasoning_effort"),
+                }
 
         return generation_kwargs
 

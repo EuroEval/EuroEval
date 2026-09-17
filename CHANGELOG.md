@@ -7,8 +7,35 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added support for DeepSeek-V4.1-Flash via the DeepSeek API (`deepseek/deepseek-flash`),
+  including model metadata and the `#no-thinking`, `#thinking`, `#low`, `#high` and
+  `#max` parameters to control its thinking mode. `#no-thinking` and `#thinking` send
+  `thinking.type: disabled`/`enabled` respectively, while `#low`, `#high` and `#max`
+  set DeepSeek's `reasoning_effort` and leave thinking on. Since thinking is enabled by
+  default, the bare model ID is treated as a reasoning model. The `deepseek/` prefix is
+  required, so that open-weight deployments of DeepSeek models (e.g. via vLLM, Ollama
+  or OpenRouter) are not treated as the DeepSeek API and thus don't get its
+  DeepSeek-API-specific parameter shaping.
+
 ### Fixed
 
+- LiteLLM generation now records model-level parameter adjustments learned by the
+  error handlers (e.g. "no JSON schema" or "use `max_tokens`") as a set of
+  `ParameterAdjustment` capabilities and re-applies them conditionally to the
+  freshly built kwargs of every batch and dataset, instead of rebuilding the kwargs
+  from scratch and re-triggering the same error. Each adjustment only touches
+  parameters that are actually present, so one dataset's
+  `max_completion_tokens`/`response_format` never leaks into another after
+  `update_dataset_config()`. Service errors and transient messages (such as the
+  temporary logprobs quota message) are never persisted. Disabling logprobs no
+  longer removes `response_format` from later datasets, and error messages that
+  complain about a specific schema or request (e.g. a malformed JSON schema, a
+  `maxItems` constraint or empty outputs) are only handled for the current request
+  rather than persisted as model-wide capabilities.
+- The LiteLLM module now recognises the DeepSeek API's "This response_format type is
+  unavailable now" error and falls back from JSON schemas to plain JSON output.
 - First-label-token mapping for chat models now isolates label tokens via a chat-template
   diff (with encode-label fallback) instead of scanning the full templated conversation.
   This prevents system-prompt tokens such as ``p`` / ``n`` from being mistaken for

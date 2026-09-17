@@ -9,23 +9,6 @@ from leaderboards.enums import LeaderboardCategory
 from leaderboards.task_metadata import category_includes_task, task_category
 
 
-def test_dataset_sources_omits_blank_sources_but_maps_valid_sources(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Only non-blank string sources are available for split-size lookups."""
-    configs = (
-        SimpleNamespace(name="speed", source=""),
-        SimpleNamespace(name="whitespace", source=" \t\n"),
-        SimpleNamespace(name="conll-nl", source="EuroEval/conll-nl-mini"),
-    )
-    monkeypatch.setattr(task_metadata, "_iter_all_dataset_configs", lambda: configs)
-    task_metadata.dataset_sources.cache_clear()
-    try:
-        assert task_metadata.dataset_sources() == {"conll-nl": "EuroEval/conll-nl-mini"}
-    finally:
-        task_metadata.dataset_sources.cache_clear()
-
-
 def test_category_includes_task_all_models_only_scores_nlu() -> None:
     """all_models only scores tasks whose task group is an NLU group."""
     assert category_includes_task(
@@ -61,6 +44,23 @@ def test_category_includes_task_only_chat_shows_orthogonal_tasks() -> None:
     assert not category_includes_task(
         category=LeaderboardCategory.ALL_MODELS, task="european-values"
     )
+
+
+def test_dataset_sources_omits_blank_sources_but_maps_valid_sources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only non-blank string sources are available for split-size lookups."""
+    configs = (
+        SimpleNamespace(name="speed", source=""),
+        SimpleNamespace(name="whitespace", source=" \t\n"),
+        SimpleNamespace(name="conll-nl", source="EuroEval/conll-nl-mini"),
+    )
+    monkeypatch.setattr(task_metadata, "_iter_all_dataset_configs", lambda: configs)
+    task_metadata.dataset_sources.cache_clear()
+    try:
+        assert task_metadata.dataset_sources() == {"conll-nl": "EuroEval/conll-nl-mini"}
+    finally:
+        task_metadata.dataset_sources.cache_clear()
 
 
 def test_task_category_european_values_is_exempt_from_instruct_exclusive() -> None:
