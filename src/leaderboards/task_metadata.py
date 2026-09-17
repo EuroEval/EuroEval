@@ -82,8 +82,8 @@ def task_category(task_name: str) -> str:
 def dataset_sources() -> dict[str, str]:
     """Map each dataset name to its Hugging Face source id.
 
-    Datasets whose source is not a plain Hugging Face id string (the rare
-    multi-source form) are omitted.
+    Datasets whose source is not a non-blank plain Hugging Face id string (the
+    rare multi-source form and synthetic datasets without a source) are omitted.
 
     Returns:
         A mapping of dataset name (e.g. ``"conll-nl"``) to its source dataset id
@@ -92,7 +92,7 @@ def dataset_sources() -> dict[str, str]:
     return {
         cfg.name: cfg.source
         for cfg in _iter_all_dataset_configs()
-        if isinstance(cfg.source, str)
+        if isinstance(cfg.source, str) and cfg.source.strip()
     }
 
 
