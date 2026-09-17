@@ -586,6 +586,11 @@ class LiteLLMModel(BenchmarkModule):
         instance, `NO_JSON_SCHEMA` only replaces an existing JSON schema response
         format, and `USE_MAX_TOKENS` preserves the current dataset's token limit.
 
+        This method is idempotent and is called several times per dataset --
+        before and after the internal probe request in `get_generation_kwargs()`,
+        and again in `generate()` -- so any new adjustment branch added here must
+        remain idempotent as well.
+
         Args:
             generation_kwargs:
                 The freshly built generation kwargs for the current dataset.

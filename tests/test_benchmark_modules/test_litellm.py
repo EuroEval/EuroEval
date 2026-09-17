@@ -166,6 +166,9 @@ class TestParameterErrorHandling:
 def _make_response(content: str = "positive") -> MagicMock:
     """Build a fake successful LiteLLM `ModelResponse`.
 
+    The message mimics a non-reasoning model; tests that need reasoning
+    behaviour opt in by setting `reasoning_content` explicitly.
+
     Args:
         content:
             The text content of the response message.
@@ -177,6 +180,7 @@ def _make_response(content: str = "positive") -> MagicMock:
     choice = MagicMock(spec=Choices)
     message = MagicMock()
     message.content = content
+    message.reasoning_content = None
     choice.message = message
     choice.logprobs = None
     response.choices = [choice]
@@ -687,6 +691,7 @@ class TestRetryAdjustments:
         probe_kwargs = mock_acompletion.call_args.kwargs
         assert "logprobs" not in probe_kwargs
         assert "top_logprobs" not in probe_kwargs
+        assert model.buffer.get("uses_reasoning_content") is not True
 
     def test_get_generation_kwargs_keeps_logprobs_without_adjustments(
         self,
@@ -715,6 +720,7 @@ class TestRetryAdjustments:
         probe_kwargs = mock_acompletion.call_args.kwargs
         assert probe_kwargs["logprobs"] is True
         assert "top_logprobs" in probe_kwargs
+        assert model.buffer.get("uses_reasoning_content") is not True
 
     def test_get_generation_kwargs_reapplies_adjustments_after_reasoning_probe(
         self,

@@ -21,10 +21,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Known parameter adjustments are now applied before and after the internal test
-  request in the LiteLLM module, so a new dataset no longer re-triggers errors
-  the model has already reported, and the returned kwargs never contain
-  parameters the model has already rejected.
+- Known parameter adjustments are now applied before and after the internal
+  test request in the LiteLLM module, so a new dataset no longer re-triggers
+  known errors and the returned kwargs are always consistent.
 
 ### Fixed
 
