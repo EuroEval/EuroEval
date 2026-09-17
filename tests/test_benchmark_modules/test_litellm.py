@@ -22,6 +22,7 @@ from euroeval.benchmark_modules.litellm import (
     clean_model_id,
     get_api_model_release_date,
 )
+from euroeval.constants import REASONING_MAX_TOKENS
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import ParameterAdjustment
 from euroeval.exceptions import InvalidBenchmark, InvalidModel
@@ -714,6 +715,47 @@ class TestRetryAdjustments:
         probe_kwargs = mock_acompletion.call_args.kwargs
         assert probe_kwargs["logprobs"] is True
         assert "top_logprobs" in probe_kwargs
+
+    def test_get_generation_kwargs_reapplies_adjustments_after_reasoning_probe(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """A persisted `USE_MAX_TOKENS` adjustment survives the reasoning probe.
+
+        This is a regression test for the reasoning-content detection block in
+        `get_generation_kwargs()` unconditionally re-adding
+        `max_completion_tokens` after the probe request, which would otherwise
+        leave the returned kwargs holding both `max_tokens` and
+        `max_completion_tokens` when `USE_MAX_TOKENS` is persisted. The fix
+        re-applies `self._apply_parameter_adjustments()` after the probe loop.
+        """
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        model._parameter_adjustments.add(ParameterAdjustment.USE_MAX_TOKENS)
+
+        response = _make_response()
+        response.choices[0].message.reasoning_content = "thinking"
+
+        async def fake_acompletion(**kwargs: object) -> MagicMock:
+            return response
+
+        with patch(
+            target="euroeval.benchmark_modules.litellm.Router.acompletion",
+            new=AsyncMock(side_effect=fake_acompletion),
+        ):
+            generation_kwargs = model.get_generation_kwargs(
+                dataset_config=dataset_config
+            )
+
+        assert "max_completion_tokens" not in generation_kwargs
+        assert generation_kwargs["max_tokens"] == REASONING_MAX_TOKENS
+        assert model.buffer["uses_reasoning_content"] is True
 
     def test_logprobs_rejection_leaves_schema_response_format_for_new_dataset(
         self,

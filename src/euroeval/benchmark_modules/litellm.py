@@ -475,10 +475,10 @@ class LiteLLMModel(BenchmarkModule):
         ] = list(enumerate(model_inputs))
         # Build the kwargs afresh for the current dataset and (re-)apply the
         # model-level adjustments learned from earlier errors. This is idempotent
-        # when `get_generation_kwargs` already applied them, and is still needed
-        # to cover the `self.generation_kwargs` override path, so that nothing
-        # dataset-specific (like `max_completion_tokens`) leaks across datasets via
-        # `self.generation_kwargs`
+        # and exists for the `self.generation_kwargs` user-override path, so that
+        # nothing dataset-specific (like `max_completion_tokens`) leaks across
+        # datasets via `self.generation_kwargs`; the `get_generation_kwargs` path
+        # is already fully adjusted by that method itself
         generation_kwargs = self._apply_parameter_adjustments(
             generation_kwargs=dict(
                 self.generation_kwargs
@@ -1487,6 +1487,10 @@ class LiteLLMModel(BenchmarkModule):
     def get_generation_kwargs(self, dataset_config: DatasetConfig) -> dict[str, t.Any]:
         """Get the generation arguments for the model.
 
+        Persisted parameter adjustments learned from earlier errors are applied
+        both before and after the internal test request, so the returned kwargs
+        never contain parameters we already know this model rejects.
+
         Args:
             dataset_config:
                 The dataset configuration.
@@ -1625,6 +1629,14 @@ class LiteLLMModel(BenchmarkModule):
                 "Failed to get a successful response from the model "
                 f"{self.model_config.model_id!r} after {num_attempts} attempts."
             )
+
+        # The reasoning-content detection above may re-add parameters (e.g.
+        # `max_completion_tokens`) that a persisted adjustment removes, so
+        # re-apply the persisted adjustments here to keep the returned kwargs
+        # self-consistent.
+        generation_kwargs = self._apply_parameter_adjustments(
+            generation_kwargs=generation_kwargs
+        )
 
         return generation_kwargs
 
