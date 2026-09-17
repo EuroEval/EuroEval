@@ -1,7 +1,29 @@
 """Tests for the `leaderboards.task_metadata` module."""
 
+from types import SimpleNamespace
+
+import pytest
+
+from leaderboards import task_metadata
 from leaderboards.enums import LeaderboardCategory
 from leaderboards.task_metadata import category_includes_task, task_category
+
+
+def test_dataset_sources_omits_blank_sources_but_maps_valid_sources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only non-blank string sources are available for split-size lookups."""
+    configs = (
+        SimpleNamespace(name="speed", source=""),
+        SimpleNamespace(name="whitespace", source=" \t\n"),
+        SimpleNamespace(name="conll-nl", source="EuroEval/conll-nl-mini"),
+    )
+    monkeypatch.setattr(task_metadata, "_iter_all_dataset_configs", lambda: configs)
+    task_metadata.dataset_sources.cache_clear()
+    try:
+        assert task_metadata.dataset_sources() == {"conll-nl": "EuroEval/conll-nl-mini"}
+    finally:
+        task_metadata.dataset_sources.cache_clear()
 
 
 def test_category_includes_task_all_models_only_scores_nlu() -> None:
