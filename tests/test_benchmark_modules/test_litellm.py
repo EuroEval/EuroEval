@@ -22,7 +22,7 @@ from euroeval.benchmark_modules.litellm import (
     clean_model_id,
     get_api_model_release_date,
 )
-from euroeval.constants import REASONING_MAX_TOKENS
+from euroeval.constants import MAX_LITELLM_LOGPROBS, REASONING_MAX_TOKENS
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import ParameterAdjustment
 from euroeval.exceptions import InvalidBenchmark, InvalidModel
@@ -677,7 +677,7 @@ class TestRetryAdjustments:
         # Force `_setup_model_params` to add `logprobs`/`top_logprobs`, mirroring
         # what `generate()` does before calling `get_generation_kwargs()`.
         model.buffer["first_label_token_mapping"] = True
-        model._parameter_adjustments = {ParameterAdjustment.NO_LOGPROBS}
+        model._parameter_adjustments.add(ParameterAdjustment.NO_LOGPROBS)
 
         async def fake_acompletion(**kwargs: object) -> MagicMock:
             return _make_response()
@@ -769,7 +769,15 @@ class TestRetryAdjustments:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Applying the logprobs adjustments twice must not change the result."""
+        """Applying the logprobs adjustments twice must not change the result.
+
+        This is a regression test for `LOGPROBS_MUST_BE_BOOLEAN` being applied
+        before `NO_TOP_LOGPROBS`, which left an integer `logprobs` value after
+        the first pass, and only normalised it to a Boolean on the second. That
+        stale integer could then reach the provider, either during the internal
+        probe request in `get_generation_kwargs()` or via the
+        `self.generation_kwargs` user-override path in `generate()`.
+        """
         model = LiteLLMModel(
             model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
             dataset_config=dataset_config,
@@ -780,8 +788,12 @@ class TestRetryAdjustments:
         model._parameter_adjustments.add(ParameterAdjustment.NO_TOP_LOGPROBS)
 
         first_pass = model._apply_parameter_adjustments(
-            generation_kwargs={"logprobs": True, "top_logprobs": 20}
+            generation_kwargs={"logprobs": True, "top_logprobs": MAX_LITELLM_LOGPROBS}
         )
+        # `_apply_parameter_adjustments` mutates its argument in place, so
+        # `dict(first_pass)` is load-bearing: without the copy, `first_pass`
+        # and the argument passed below would alias the same dict object,
+        # making `assert first_pass == second_pass` pass vacuously.
         second_pass = model._apply_parameter_adjustments(
             generation_kwargs=dict(first_pass)
         )
