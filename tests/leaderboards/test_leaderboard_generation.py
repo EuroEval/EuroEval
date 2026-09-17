@@ -11,7 +11,9 @@ import math
 
 import numpy as np
 import pandas as pd
+import pytest
 
+from src.leaderboards import leaderboard_generation
 from src.leaderboards.enums import LeaderboardCategory
 from src.leaderboards.leaderboard_generation import (
     _build_category_dataset_maps,
@@ -19,6 +21,66 @@ from src.leaderboards.leaderboard_generation import (
     _create_simplified_and_rename,
     _reorder_columns,
 )
+
+
+class TestGlobalVariantSelection:
+    """Tests for global validation/test variant selection."""
+
+    def test_polish_keeps_variant_selected_from_global_results(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A Polish filter must not change the global validation/test choice."""
+        global_model_results = {
+            "org/model (val)": {"global-dataset": [], "polish-dataset": []},
+            "org/model": {"polish-dataset": []},
+        }
+        local_model_results = {
+            "org/model (val)": {"polish-dataset": []},
+            "org/model": {"polish-dataset": []},
+        }
+        captured_model_results = []
+        results = [
+            {"eval_library": {"additional_details": {"dataset": "global-dataset"}}},
+            {"eval_library": {"additional_details": {"dataset": "polish-dataset"}}},
+        ]
+
+        monkeypatch.setattr(leaderboard_generation, "load_raw_results", lambda: results)
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "group_results_by_model",
+            lambda results: (
+                global_model_results if len(results) == 2 else local_model_results
+            ),
+        )
+        monkeypatch.setattr(
+            leaderboard_generation, "extract_model_metadata", lambda results: {}
+        )
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "official_datasets_for_language",
+            lambda language: {"task": ["polish-dataset"]},
+        )
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "_generate_dataframe",
+            lambda **kwargs: (
+                captured_model_results.append(kwargs["model_results"]) or []
+            ),
+        )
+
+        leaderboard_generation.generate_leaderboard(
+            leaderboard_name="polish",
+            language_names=["polish"],
+            categories=[LeaderboardCategory.GENERATIVE],
+            force=False,
+        )
+
+        assert captured_model_results == [
+            {
+                "org/model (val)": {"polish-dataset": []},
+                "org/model": {"polish-dataset": []},
+            }
+        ]
 
 
 class TestMultilingualPerLanguageRankScores:

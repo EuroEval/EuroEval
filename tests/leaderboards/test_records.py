@@ -1,11 +1,51 @@
 """Tests for the `leaderboards.records` module."""
 
 from leaderboards.records import (
+    drop_val_duplicates,
     extract_model_ids_from_record,
     get_record_hash,
     is_few_shot_record,
     plain_model_id,
 )
+
+
+class TestDropValDuplicates:
+    """Tests for choosing between validation and test variants."""
+
+    def test_equal_counts_with_different_datasets_keep_both_variants(self) -> None:
+        """Dataset counts alone must not discard a dataset-specific val row."""
+        model_results = {
+            "org/model (val)": {"dataset-a": []},
+            "org/model": {"dataset-b": []},
+        }
+
+        result = drop_val_duplicates(model_results=model_results)
+
+        assert result == model_results
+
+    def test_test_variant_with_more_datasets_replaces_val_variant(self) -> None:
+        """A test variant with broader coverage remains the canonical row."""
+        model_results = {
+            "org/model (val)": {"dataset-a": []},
+            "org/model": {"dataset-a": [], "dataset-b": []},
+        }
+
+        result = drop_val_duplicates(model_results=model_results)
+
+        assert result == {"org/model": {"dataset-a": [], "dataset-b": []}}
+
+    def test_few_shot_variants_are_compared_independently(self) -> None:
+        """Removing ``val`` must preserve the few-shot distinction."""
+        model_results = {
+            "org/model (zero-shot, val)": {"dataset-a": []},
+            "org/model (zero-shot)": {"dataset-a": []},
+            "org/model (val)": {"dataset-a": []},
+            "org/model": {"dataset-a": []},
+        }
+
+        result = drop_val_duplicates(model_results=model_results)
+
+        assert set(result) == {"org/model (zero-shot)", "org/model"}
 
 
 class TestIsFewShotRecord:
