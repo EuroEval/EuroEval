@@ -606,12 +606,15 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs = self._disable_logprobs(
                 generation_kwargs=generation_kwargs
             )
-        if ParameterAdjustment.LOGPROBS_MUST_BE_BOOLEAN in adjustments:
-            if "logprobs" in generation_kwargs:
-                generation_kwargs["logprobs"] = True
+        # NO_TOP_LOGPROBS must be applied before LOGPROBS_MUST_BE_BOOLEAN so that,
+        # when both are persisted, the Boolean normalisation is the last thing to
+        # touch `logprobs` and the pair stays idempotent across repeated calls.
         if ParameterAdjustment.NO_TOP_LOGPROBS in adjustments:
             if "top_logprobs" in generation_kwargs:
                 generation_kwargs["logprobs"] = generation_kwargs.pop("top_logprobs")
+        if ParameterAdjustment.LOGPROBS_MUST_BE_BOOLEAN in adjustments:
+            if "logprobs" in generation_kwargs:
+                generation_kwargs["logprobs"] = True
         if ParameterAdjustment.USE_MAX_TOKENS in adjustments:
             if "max_completion_tokens" in generation_kwargs:
                 generation_kwargs["max_tokens"] = generation_kwargs.pop(

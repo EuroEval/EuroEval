@@ -763,6 +763,33 @@ class TestRetryAdjustments:
         assert generation_kwargs["max_tokens"] == REASONING_MAX_TOKENS
         assert model.buffer["uses_reasoning_content"] is True
 
+    def test_logprobs_adjustments_are_order_independent(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Applying the logprobs adjustments twice must not change the result."""
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        model._parameter_adjustments.add(ParameterAdjustment.LOGPROBS_MUST_BE_BOOLEAN)
+        model._parameter_adjustments.add(ParameterAdjustment.NO_TOP_LOGPROBS)
+
+        first_pass = model._apply_parameter_adjustments(
+            generation_kwargs={"logprobs": True, "top_logprobs": 20}
+        )
+        second_pass = model._apply_parameter_adjustments(
+            generation_kwargs=dict(first_pass)
+        )
+
+        assert first_pass == second_pass
+        assert first_pass["logprobs"] is True
+        assert "top_logprobs" not in first_pass
+
     def test_logprobs_rejection_leaves_schema_response_format_for_new_dataset(
         self,
         model_config: ModelConfig,

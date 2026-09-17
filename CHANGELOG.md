@@ -40,6 +40,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   complain about a specific schema or request (e.g. a malformed JSON schema, a
   `maxItems` constraint or empty outputs) are only handled for the current request
   rather than persisted as model-wide capabilities.
+- The `NO_TOP_LOGPROBS` parameter adjustment is now applied before the
+  `LOGPROBS_MUST_BE_BOOLEAN` one, so that a model with both adjustments no longer
+  sends an invalid integer `logprobs` value to the provider on the first application.
 - The LiteLLM module now recognises the DeepSeek API's "This response_format type is
   unavailable now" error and falls back from JSON schemas to plain JSON output.
 - First-label-token mapping for chat models now isolates label tokens via a chat-template
