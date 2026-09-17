@@ -29,7 +29,7 @@ def drop_val_duplicates(
     """Drop validation-split variants when the full test-split variant exists.
 
     When a model has been evaluated on both the validation and full test split,
-    only show the test-split row if it covers at least as many datasets.
+    only show the test-split row if it covers more datasets, or the same datasets.
     Otherwise keep the validation-split version (which may have more data).
 
     Args:
@@ -38,16 +38,20 @@ def drop_val_duplicates(
 
     Returns:
         The model results with ``(val)``-suffixed entries removed whenever the
-        corresponding full test-split entry is also present and covers at least
-        as many datasets.
+        corresponding full test-split entry is also present and covers more
+        datasets, or exactly the same datasets.
     """
     filtered: dict[str, dict[str, list[tuple[list[float], float, float]]]] = {}
     for model_id, results in model_results.items():
         equivalent = strip_note_item(model_id=model_id, note_item="val")
         if equivalent is not None and equivalent in model_results:
-            # Only drop the (val) version if the test-split version has >= datasets
-            equivalent_count = len(model_results[equivalent])
-            if equivalent_count >= len(results):
+            val_datasets = set(results)
+            test_datasets = set(model_results[equivalent])
+            # A strictly larger test set is sufficient under the historical
+            # coverage rule. For equal-sized sets, require the same datasets;
+            # comparing counts alone can discard the only variant containing a
+            # particular dataset.
+            if len(test_datasets) > len(val_datasets) or test_datasets == val_datasets:
                 continue
         filtered[model_id] = results
     return filtered
