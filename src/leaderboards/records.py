@@ -29,28 +29,58 @@ def drop_val_duplicates(
     """Drop validation-split variants when the full test-split variant exists.
 
     When a model has been evaluated on both the validation and full test split,
-    only show the test-split row if it covers at least as many datasets.
-    Otherwise keep the validation-split version (which may have more data).
+    keep only the variant with broader dataset coverage. Equal-sized variants
+    with different datasets are both retained because neither is canonical.
 
     Args:
         model_results:
             The grouped model results, keyed by model ID.
 
     Returns:
-        The model results with ``(val)``-suffixed entries removed whenever the
-        corresponding full test-split entry is also present and covers at least
-        as many datasets.
+        The model results with the narrower split variant removed when both
+        variants are present. Equal-sized variants with different datasets are
+        retained because neither one is globally canonical.
     """
     filtered: dict[str, dict[str, list[tuple[list[float], float, float]]]] = {}
     for model_id, results in model_results.items():
         equivalent = strip_note_item(model_id=model_id, note_item="val")
         if equivalent is not None and equivalent in model_results:
-            # Only drop the (val) version if the test-split version has >= datasets
-            equivalent_count = len(model_results[equivalent])
-            if equivalent_count >= len(results):
+            val_datasets = set(results)
+            test_datasets = set(model_results[equivalent])
+            # A strictly larger test set is sufficient under the historical
+            # coverage rule. For equal-sized sets, require the same datasets;
+            # comparing counts alone can discard the only variant containing a
+            # particular dataset.
+            if len(test_datasets) > len(val_datasets) or test_datasets == val_datasets:
+                continue
+        else:
+            validation_variant = _validation_variant_id(model_id=model_id)
+            if validation_variant in model_results and len(
+                model_results[validation_variant]
+            ) > len(results):
+                # Keep the globally broader validation variant canonical. Without
+                # this reciprocal check, a narrower test variant can reappear when
+                # a language-specific dataset filter is applied.
                 continue
         filtered[model_id] = results
     return filtered
+
+
+def _validation_variant_id(model_id: str) -> str:
+    """Return the validation-split counterpart of a non-validation model ID.
+
+    Args:
+        model_id:
+            Model ID for a test-split variant.
+
+    Returns:
+        Model ID for the corresponding validation-split variant.
+    """
+    suffix = VARIANT_SUFFIX_RE.search(model_id)
+    base_model_id = VARIANT_SUFFIX_RE.sub("", model_id)
+    if suffix is not None and "zero-shot" in suffix.group():
+        return f"{base_model_id} (zero-shot, val)"
+    return f"{base_model_id} (val)"
 
 
 def strip_note_item(model_id: str, note_item: str) -> str | None:

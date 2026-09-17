@@ -8,10 +8,13 @@ and ordinal ranks remain pan-leaderboard.
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
+from src.leaderboards import leaderboard_generation
 from src.leaderboards.enums import LeaderboardCategory
 from src.leaderboards.leaderboard_generation import (
     _build_category_dataset_maps,
@@ -19,6 +22,128 @@ from src.leaderboards.leaderboard_generation import (
     _create_simplified_and_rename,
     _reorder_columns,
 )
+
+
+class TestGlobalVariantSelection:
+    """Tests for global validation/test variant selection."""
+
+    def test_polish_keeps_variant_selected_from_global_results(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A Polish filter must not change the global validation/test choice."""
+        global_model_results = {
+            "org/model (val)": {"global-dataset": [], "polish-dataset": []},
+            "org/model": {"polish-dataset": []},
+        }
+        local_model_results = {
+            "org/model (val)": {"polish-dataset": []},
+            "org/model": {"polish-dataset": []},
+        }
+        captured_model_results = []
+        results = [
+            {"eval_library": {"additional_details": {"dataset": "global-dataset"}}},
+            {"eval_library": {"additional_details": {"dataset": "polish-dataset"}}},
+        ]
+
+        monkeypatch.setattr(leaderboard_generation, "load_raw_results", lambda: results)
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "group_results_by_model",
+            lambda results: (
+                global_model_results if len(results) == 2 else local_model_results
+            ),
+        )
+        monkeypatch.setattr(
+            leaderboard_generation, "extract_model_metadata", lambda results: {}
+        )
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "official_datasets_for_language",
+            lambda language: {"task": ["polish-dataset"]},
+        )
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "_generate_dataframe",
+            lambda **kwargs: (
+                captured_model_results.append(kwargs["model_results"]) or []
+            ),
+        )
+
+        leaderboard_generation.generate_leaderboard(
+            leaderboard_name="polish",
+            language_names=["polish"],
+            categories=[LeaderboardCategory.GENERATIVE],
+            force=False,
+        )
+
+        assert captured_model_results == [{"org/model (val)": {"polish-dataset": []}}]
+
+    def test_simplified_outputs_use_global_canonical_variant(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Language outputs do not resurrect a narrower split variant."""
+        score = [([0.75] * 10, 0.75, 0.01)]
+        other_score = [([0.65] * 10, 0.65, 0.01)]
+        model_results = {
+            "org/model (val)": {"european-dataset": score, "polish-dataset": score},
+            "org/model": {"polish-dataset": score},
+            "org/other": {
+                "european-dataset": other_score,
+                "polish-dataset": other_score,
+            },
+        }
+        metadata = {
+            model_id: {
+                "generative_type": "base",
+                "open": True,
+                "commercial": True,
+                "merge": False,
+                "trained_from_scratch": False,
+                "release_date": "2024-01-01",
+                "parameters": 1_000_000,
+                "vocabulary_size": 1_000,
+                "context": 1_024,
+            }
+            for model_id in model_results
+        }
+
+        monkeypatch.setattr(leaderboard_generation, "OUTPUT_DIR", tmp_path)
+        monkeypatch.setattr(leaderboard_generation, "load_raw_results", lambda: [{}])
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "group_results_by_model",
+            lambda results: model_results,
+        )
+        monkeypatch.setattr(
+            leaderboard_generation, "extract_model_metadata", lambda results: metadata
+        )
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "official_datasets_for_language",
+            lambda language: (
+                {"knowledge": ["european-dataset", "polish-dataset"]}
+                if language == "european"
+                else {"knowledge": ["polish-dataset"]}
+            ),
+        )
+
+        for leaderboard_name, language in (
+            ("european", "european"),
+            ("polish", "polish"),
+        ):
+            leaderboard_generation.generate_leaderboard(
+                leaderboard_name=leaderboard_name,
+                language_names=[language],
+                categories=[LeaderboardCategory.GENERATIVE],
+                force=True,
+            )
+
+        european = pd.read_csv(tmp_path / "european_generative_simplified.csv")
+        polish = pd.read_csv(tmp_path / "polish_generative_simplified.csv")
+        assert polish["model"].tolist() == european["model"].tolist()
+        assert [
+            model for model in european["model"] if model.startswith("org/model")
+        ] == ["org/model (val)"]
 
 
 class TestMultilingualPerLanguageRankScores:
