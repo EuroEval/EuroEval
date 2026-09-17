@@ -650,6 +650,138 @@ class TestRetryAdjustments:
         assert calls[0]["max_completion_tokens"] == expected_tokens
         assert calls[0]["response_format"] == {"type": "json_object"}
 
+    def test_logprobs_rejection_leaves_schema_response_format_for_new_dataset(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """A learned logprobs rejection does not strip another dataset's schema."""
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        async def fake_acompletion_logprobs_unsupported(**kwargs: object) -> MagicMock:
+            raise Exception("logprobs is not supported")
+
+        with (
+            patch.object(
+                target=LiteLLMModel,
+                attribute="get_generation_kwargs",
+                autospec=True,
+                side_effect=_fake_get_generation_kwargs(None),
+            ),
+            patch(
+                target="euroeval.benchmark_modules.litellm.Router.acompletion",
+                new=AsyncMock(side_effect=fake_acompletion_logprobs_unsupported),
+            ),
+        ):
+            with pytest.raises(InvalidBenchmark):
+                model.generate(
+                    inputs={"messages": [[{"role": "user", "content": "hi"}]]}
+                )
+
+        assert model._parameter_adjustments == {ParameterAdjustment.NO_LOGPROBS}
+
+        new_response_format = {"type": "json_schema", "json_schema": {}}
+
+        def fake_get_generation_kwargs_with_logprobs(
+            self: LiteLLMModel, dataset_config: DatasetConfig
+        ) -> dict[str, t.Any]:
+            return {
+                "max_completion_tokens": dataset_config.max_generated_tokens,
+                "response_format": new_response_format,
+                "logprobs": True,
+                "top_logprobs": 10,
+            }
+
+        with (
+            patch.object(
+                target=LiteLLMModel,
+                attribute="get_generation_kwargs",
+                autospec=True,
+                side_effect=fake_get_generation_kwargs_with_logprobs,
+            ),
+            patch(
+                target="euroeval.benchmark_modules.litellm.Router.acompletion",
+                new=AsyncMock(side_effect=lambda **kwargs: _make_response()),
+            ) as mock_acompletion,
+        ):
+            model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
+
+        sent_kwargs = mock_acompletion.call_args.kwargs
+        assert sent_kwargs["response_format"] == new_response_format
+        assert "logprobs" not in sent_kwargs
+        assert "top_logprobs" not in sent_kwargs
+
+    def test_malformed_schema_does_not_persist_and_new_dataset_schema_is_unchanged(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """A malformed-schema message is request-local and not persisted."""
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        original_response_format = {"type": "json_schema", "json_schema": {}}
+
+        async def fake_acompletion_malformed_schema(**kwargs: object) -> MagicMock:
+            raise Exception("Property keys should match pattern")
+
+        with (
+            patch.object(
+                target=LiteLLMModel,
+                attribute="get_generation_kwargs",
+                autospec=True,
+                side_effect=_fake_get_generation_kwargs(original_response_format),
+            ),
+            patch(
+                target="euroeval.benchmark_modules.litellm.Router.acompletion",
+                new=AsyncMock(side_effect=fake_acompletion_malformed_schema),
+            ),
+        ):
+            with pytest.raises(InvalidBenchmark):
+                model.generate(
+                    inputs={"messages": [[{"role": "user", "content": "hi"}]]}
+                )
+
+        assert ParameterAdjustment.NO_JSON_SCHEMA not in model._parameter_adjustments
+
+        new_response_format = {"type": "json_schema", "json_schema": {"foo": "bar"}}
+
+        def fake_get_generation_kwargs_new_schema(
+            self: LiteLLMModel, dataset_config: DatasetConfig
+        ) -> dict[str, t.Any]:
+            return {
+                "max_completion_tokens": dataset_config.max_generated_tokens,
+                "response_format": new_response_format,
+            }
+
+        with (
+            patch.object(
+                target=LiteLLMModel,
+                attribute="get_generation_kwargs",
+                autospec=True,
+                side_effect=fake_get_generation_kwargs_new_schema,
+            ),
+            patch(
+                target="euroeval.benchmark_modules.litellm.Router.acompletion",
+                new=AsyncMock(side_effect=lambda **kwargs: _make_response()),
+            ) as mock_acompletion,
+        ):
+            model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
+
+        sent_kwargs = mock_acompletion.call_args.kwargs
+        assert sent_kwargs["response_format"] == new_response_format
+
     def test_schema_rejection_does_not_add_response_format_to_unstructured_dataset(
         self,
         model_config: ModelConfig,
@@ -811,6 +943,31 @@ class TestServiceErrorHandling:
 class TestTransientParameterErrors:
     """Tests that transient parameter errors are fixed but not persisted."""
 
+    def test_json_schema_unsupported_message_is_persisted(
+        self, model_config: ModelConfig, dataset_config: DatasetConfig
+    ) -> None:
+        """The `'json_schema' is not supported` message is persisted."""
+        model = object.__new__(LiteLLMModel)
+        model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
+        model.dataset_config = dataset_config
+        model.buffer = {"first_label_token_mapping": True}
+        model._parameter_adjustments = set()
+        model._max_thinking_budget = None
+
+        error_message = "'json_schema' is not supported"
+        result = model._handle_parameter_error(
+            error=Exception(error_message),
+            error_msg=error_message.lower(),
+            model_id="test-model",
+            generation_kwargs={"response_format": {"type": "json_schema"}},
+        )
+
+        assert result is not None
+        kwargs, wait_time, adjustment = result
+        assert wait_time == 0
+        assert adjustment == ParameterAdjustment.NO_JSON_SCHEMA
+        assert kwargs["response_format"] == {"type": "json_object"}
+
     def test_logprobs_quota_message_is_not_persisted(
         self, model_config: ModelConfig, dataset_config: DatasetConfig
     ) -> None:
@@ -851,3 +1008,85 @@ class TestTransientParameterErrors:
         )
 
         assert model._parameter_adjustments == {ParameterAdjustment.NO_LOGPROBS}
+
+    def test_malformed_schema_message_is_not_persisted(
+        self, model_config: ModelConfig, dataset_config: DatasetConfig
+    ) -> None:
+        """A malformed-schema message is request-local and not persisted."""
+        model = object.__new__(LiteLLMModel)
+        model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
+        model.dataset_config = dataset_config
+        model.buffer = {"first_label_token_mapping": True}
+        model._parameter_adjustments = set()
+        model._max_thinking_budget = None
+
+        error_message = "Property keys should match pattern"
+        result = model._handle_parameter_error(
+            error=Exception(error_message),
+            error_msg=error_message.lower(),
+            model_id="test-model",
+            generation_kwargs={"response_format": {"type": "json_schema"}},
+        )
+
+        assert result is not None
+        kwargs, wait_time, adjustment = result
+        assert wait_time == 0
+        assert adjustment is None
+        assert kwargs["response_format"] == {"type": "json_object"}
+        assert model._parameter_adjustments == set()
+
+    @pytest.mark.parametrize(
+        "error_message", ["'maxitems' is not supported", "must contain the word 'json'"]
+    )
+    def test_request_local_response_format_messages_are_not_persisted(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        error_message: str,
+    ) -> None:
+        """Request-local `response_format` errors drop the format without persisting."""
+        model = object.__new__(LiteLLMModel)
+        model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
+        model.dataset_config = dataset_config
+        model.buffer = {"first_label_token_mapping": True}
+        model._parameter_adjustments = set()
+        model._max_thinking_budget = None
+
+        result = model._handle_parameter_error(
+            error=Exception(error_message),
+            error_msg=error_message.lower(),
+            model_id="test-model",
+            generation_kwargs={"response_format": {"type": "json_object"}},
+        )
+
+        assert result is not None
+        kwargs, wait_time, adjustment = result
+        assert wait_time == 0
+        assert adjustment is None
+        assert "response_format" not in kwargs
+        assert model._parameter_adjustments == set()
+
+    def test_unexpected_keyword_response_format_message_is_persisted(
+        self, model_config: ModelConfig, dataset_config: DatasetConfig
+    ) -> None:
+        """The generic `response_format` unsupported message is persisted."""
+        model = object.__new__(LiteLLMModel)
+        model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
+        model.dataset_config = dataset_config
+        model.buffer = {"first_label_token_mapping": True}
+        model._parameter_adjustments = set()
+        model._max_thinking_budget = None
+
+        error_message = "got an unexpected keyword argument 'response_format'"
+        result = model._handle_parameter_error(
+            error=Exception(error_message),
+            error_msg=error_message.lower(),
+            model_id="test-model",
+            generation_kwargs={"response_format": {"type": "json_object"}},
+        )
+
+        assert result is not None
+        kwargs, wait_time, adjustment = result
+        assert wait_time == 0
+        assert adjustment == ParameterAdjustment.NO_RESPONSE_FORMAT
+        assert "response_format" not in kwargs

@@ -665,6 +665,10 @@ class LiteLLMModel(BenchmarkModule):
     def _disable_logprobs(self, generation_kwargs: dict) -> dict:
         """Disable logprobs in the generation kwargs and in the label token mapping.
 
+        Note that this does not remove `response_format`, since the model's
+        inability to compute logprobs says nothing about its ability to produce
+        structured output.
+
         Args:
             generation_kwargs:
                 The generation kwargs to pass to the model.
@@ -675,7 +679,6 @@ class LiteLLMModel(BenchmarkModule):
         self.buffer["first_label_token_mapping"] = False
         generation_kwargs.pop("logprobs", None)
         generation_kwargs.pop("top_logprobs", None)
-        generation_kwargs.pop("response_format", None)
         return generation_kwargs
 
     @staticmethod
@@ -1147,6 +1150,10 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs = self._disable_logprobs(
                 generation_kwargs=generation_kwargs
             )
+            # The response format is only dropped for the current request, since the
+            # persisted capability must not strip structured output from other
+            # datasets
+            generation_kwargs.pop("response_format", None)
             adjustment = (
                 None
                 if logprobs_quota_message in error_msg
@@ -1257,19 +1264,30 @@ class LiteLLMModel(BenchmarkModule):
 
         # No JSON schema
         no_json_schema_messages = [
-            "Property keys should match pattern",
             "'json_schema' is not supported",
             # DeepSeek API rejects `json_schema` but supports `json_object`
             "This response_format type is unavailable now",
         ]
-        if any(msg.lower() in error_msg for msg in no_json_schema_messages):
+        # This complains about the specific schema rather than the model's general
+        # capability to use JSON schemas, so we only apply the fallback for the
+        # current request without persisting the adjustment
+        malformed_schema_message = "Property keys should match pattern"
+        if (
+            any(msg.lower() in error_msg for msg in no_json_schema_messages)
+            or malformed_schema_message.lower() in error_msg
+        ):
             log_once(
                 f"The model {self.model_config.model_id!r} does not support "
                 "JSON schemas, so using the vanilla JSON format.",
                 level=logging.DEBUG,
             )
             generation_kwargs["response_format"] = dict(type="json_object")
-            return generation_kwargs, 0, ParameterAdjustment.NO_JSON_SCHEMA
+            adjustment = (
+                None
+                if malformed_schema_message.lower() in error_msg
+                else ParameterAdjustment.NO_JSON_SCHEMA
+            )
+            return generation_kwargs, 0, adjustment
 
         # Thinking budget
         if thinking_match := thinking_budget_pattern.search(string=error_msg):
@@ -1330,16 +1348,18 @@ class LiteLLMModel(BenchmarkModule):
 
         # Response format
         response_format_messages = [
-            "got an unexpected keyword argument 'response_format'",
+            "got an unexpected keyword argument 'response_format'"
+        ]
+        # These messages complain about the specific request rather than the
+        # model's general capability to use `response_format`, so we only drop it
+        # for the current request without persisting the adjustment
+        request_local_response_format_messages = [
             "'maxitems' is not supported",
             "must contain the word 'json'",
+            "the model returned empty outputs",
         ]
-        # Empty outputs are not an explicit "unsupported" message, so we only drop
-        # the response format for the current request in that case
-        empty_outputs_message = "the model returned empty outputs"
-        if (
-            any(msg.lower() in error_msg for msg in response_format_messages)
-            or empty_outputs_message in error_msg
+        if any(msg.lower() in error_msg for msg in response_format_messages) or any(
+            msg.lower() in error_msg for msg in request_local_response_format_messages
         ):
             log_once(
                 f"The model {model_id!r} does not support the `response_format` "
@@ -1349,7 +1369,10 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs.pop("response_format", None)
             adjustment = (
                 None
-                if empty_outputs_message in error_msg
+                if any(
+                    msg.lower() in error_msg
+                    for msg in request_local_response_format_messages
+                )
                 else ParameterAdjustment.NO_RESPONSE_FORMAT
             )
             return generation_kwargs, 0, adjustment

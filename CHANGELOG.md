@@ -29,7 +29,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   parameters that are actually present, so one dataset's
   `max_completion_tokens`/`response_format` never leaks into another after
   `update_dataset_config()`. Service errors and transient messages (such as the
-  temporary logprobs quota message) are never persisted.
+  temporary logprobs quota message) are never persisted. Disabling logprobs no
+  longer removes `response_format` from later datasets, and error messages that
+  complain about a specific schema or request (e.g. a malformed JSON schema, a
+  `maxItems` constraint or empty outputs) are only handled for the current request
+  rather than persisted as model-wide capabilities.
 - The LiteLLM module now recognises the DeepSeek API's "This response_format type is
   unavailable now" error and falls back from JSON schemas to plain JSON output.
 - First-label-token mapping for chat models now isolates label tokens via a chat-template
