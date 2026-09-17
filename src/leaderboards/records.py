@@ -67,7 +67,15 @@ def drop_val_duplicates(
 
 
 def _validation_variant_id(model_id: str) -> str:
-    """Return the validation-split counterpart of a non-validation model ID."""
+    """Return the validation-split counterpart of a non-validation model ID.
+
+    Args:
+        model_id:
+            Model ID for a test-split variant.
+
+    Returns:
+        Model ID for the corresponding validation-split variant.
+    """
     suffix = VARIANT_SUFFIX_RE.search(model_id)
     base_model_id = VARIANT_SUFFIX_RE.sub("", model_id)
     if suffix is not None and "zero-shot" in suffix.group():
