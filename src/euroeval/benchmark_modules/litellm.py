@@ -473,10 +473,12 @@ class LiteLLMModel(BenchmarkModule):
         inputs_to_run: c.Sequence[
             tuple[int, c.Sequence[litellm.AllMessageValues] | str]
         ] = list(enumerate(model_inputs))
-        # Build the kwargs afresh for the current dataset and re-apply the
-        # model-level adjustments learned from earlier errors, so that nothing
-        # dataset-specific (like `max_completion_tokens`) leaks across datasets via
-        # `self.generation_kwargs`
+        # Build the kwargs afresh for the current dataset and (re-)apply the
+        # model-level adjustments learned from earlier errors. This is idempotent
+        # and exists for the `self.generation_kwargs` user-override path, so that
+        # nothing dataset-specific (like `max_completion_tokens`) leaks across
+        # datasets via `self.generation_kwargs`; the `get_generation_kwargs` path
+        # is already fully adjusted by that method itself
         generation_kwargs = self._apply_parameter_adjustments(
             generation_kwargs=dict(
                 self.generation_kwargs
@@ -584,6 +586,11 @@ class LiteLLMModel(BenchmarkModule):
         instance, `NO_JSON_SCHEMA` only replaces an existing JSON schema response
         format, and `USE_MAX_TOKENS` preserves the current dataset's token limit.
 
+        This method is idempotent and is called several times per dataset --
+        before and after the internal probe request in `get_generation_kwargs()`,
+        and again in `generate()` -- so any new adjustment branch added here must
+        remain idempotent as well.
+
         Args:
             generation_kwargs:
                 The freshly built generation kwargs for the current dataset.
@@ -599,12 +606,15 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs = self._disable_logprobs(
                 generation_kwargs=generation_kwargs
             )
-        if ParameterAdjustment.LOGPROBS_MUST_BE_BOOLEAN in adjustments:
-            if "logprobs" in generation_kwargs:
-                generation_kwargs["logprobs"] = True
+        # NO_TOP_LOGPROBS must be applied before LOGPROBS_MUST_BE_BOOLEAN so that,
+        # when both are persisted, the Boolean normalisation is the last thing to
+        # touch `logprobs` and the pair stays idempotent across repeated calls.
         if ParameterAdjustment.NO_TOP_LOGPROBS in adjustments:
             if "top_logprobs" in generation_kwargs:
                 generation_kwargs["logprobs"] = generation_kwargs.pop("top_logprobs")
+        if ParameterAdjustment.LOGPROBS_MUST_BE_BOOLEAN in adjustments:
+            if "logprobs" in generation_kwargs:
+                generation_kwargs["logprobs"] = True
         if ParameterAdjustment.USE_MAX_TOKENS in adjustments:
             if "max_completion_tokens" in generation_kwargs:
                 generation_kwargs["max_tokens"] = generation_kwargs.pop(
@@ -1485,6 +1495,10 @@ class LiteLLMModel(BenchmarkModule):
     def get_generation_kwargs(self, dataset_config: DatasetConfig) -> dict[str, t.Any]:
         """Get the generation arguments for the model.
 
+        Persisted parameter adjustments learned from earlier errors are applied
+        both before and after the internal test request, so the returned kwargs
+        never contain parameters we already know this model rejects.
+
         Args:
             dataset_config:
                 The dataset configuration.
@@ -1556,6 +1570,13 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs=generation_kwargs
         )
 
+        # Apply the persisted model-level adjustments learned from earlier errors
+        # before probing the model, so the test request below does not re-send
+        # parameters we already know this model rejects.
+        generation_kwargs = self._apply_parameter_adjustments(
+            generation_kwargs=generation_kwargs
+        )
+
         # Test run with retries
         test_input: c.Sequence[litellm.AllMessageValues] | str
         if self.generative_type == GenerativeType.BASE:
@@ -1616,6 +1637,14 @@ class LiteLLMModel(BenchmarkModule):
                 "Failed to get a successful response from the model "
                 f"{self.model_config.model_id!r} after {num_attempts} attempts."
             )
+
+        # The reasoning-content detection above may re-add parameters (e.g.
+        # `max_completion_tokens`) that a persisted adjustment removes, so
+        # re-apply the persisted adjustments here to keep the returned kwargs
+        # self-consistent.
+        generation_kwargs = self._apply_parameter_adjustments(
+            generation_kwargs=generation_kwargs
+        )
 
         return generation_kwargs
 

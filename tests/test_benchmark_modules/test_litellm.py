@@ -22,6 +22,7 @@ from euroeval.benchmark_modules.litellm import (
     clean_model_id,
     get_api_model_release_date,
 )
+from euroeval.constants import MAX_LITELLM_LOGPROBS, REASONING_MAX_TOKENS
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import ParameterAdjustment
 from euroeval.exceptions import InvalidBenchmark, InvalidModel
@@ -165,6 +166,9 @@ class TestParameterErrorHandling:
 def _make_response(content: str = "positive") -> MagicMock:
     """Build a fake successful LiteLLM `ModelResponse`.
 
+    The message mimics a non-reasoning model; tests that need reasoning
+    behaviour opt in by setting `reasoning_content` explicitly.
+
     Args:
         content:
             The text content of the response message.
@@ -176,6 +180,7 @@ def _make_response(content: str = "positive") -> MagicMock:
     choice = MagicMock(spec=Choices)
     message = MagicMock()
     message.content = content
+    message.reasoning_content = None
     choice.message = message
     choice.logprobs = None
     response.choices = [choice]
@@ -649,6 +654,153 @@ class TestRetryAdjustments:
         expected_tokens = new_dataset_config.max_generated_tokens
         assert calls[0]["max_completion_tokens"] == expected_tokens
         assert calls[0]["response_format"] == {"type": "json_object"}
+
+    def test_get_generation_kwargs_applies_adjustments_before_probe(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """A learned `NO_LOGPROBS` adjustment is applied before the probe request.
+
+        This is a regression test for `get_generation_kwargs()` sending a probe
+        request with parameters (like `logprobs`) that we already know this model
+        rejects, only converging via `_handle_exception` retries. The fix applies
+        `self._parameter_adjustments` to `generation_kwargs` before the probe.
+        """
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        # Force `_setup_model_params` to add `logprobs`/`top_logprobs`, mirroring
+        # what `generate()` does before calling `get_generation_kwargs()`.
+        model.buffer["first_label_token_mapping"] = True
+        model._parameter_adjustments.add(ParameterAdjustment.NO_LOGPROBS)
+
+        async def fake_acompletion(**kwargs: object) -> MagicMock:
+            return _make_response()
+
+        with patch(
+            target="euroeval.benchmark_modules.litellm.Router.acompletion",
+            new=AsyncMock(side_effect=fake_acompletion),
+        ) as mock_acompletion:
+            model.get_generation_kwargs(dataset_config=dataset_config)
+
+        probe_kwargs = mock_acompletion.call_args.kwargs
+        assert "logprobs" not in probe_kwargs
+        assert "top_logprobs" not in probe_kwargs
+        assert model.buffer.get("uses_reasoning_content") is not True
+
+    def test_get_generation_kwargs_keeps_logprobs_without_adjustments(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """With no persisted adjustments, `logprobs` is sent to the probe as usual."""
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        model.buffer["first_label_token_mapping"] = True
+
+        async def fake_acompletion(**kwargs: object) -> MagicMock:
+            return _make_response()
+
+        with patch(
+            target="euroeval.benchmark_modules.litellm.Router.acompletion",
+            new=AsyncMock(side_effect=fake_acompletion),
+        ) as mock_acompletion:
+            model.get_generation_kwargs(dataset_config=dataset_config)
+
+        probe_kwargs = mock_acompletion.call_args.kwargs
+        assert probe_kwargs["logprobs"] is True
+        assert "top_logprobs" in probe_kwargs
+        assert model.buffer.get("uses_reasoning_content") is not True
+
+    def test_get_generation_kwargs_reapplies_adjustments_after_reasoning_probe(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """A persisted `USE_MAX_TOKENS` adjustment survives the reasoning probe.
+
+        This is a regression test for the reasoning-content detection block in
+        `get_generation_kwargs()` unconditionally re-adding
+        `max_completion_tokens` after the probe request, which would otherwise
+        leave the returned kwargs holding both `max_tokens` and
+        `max_completion_tokens` when `USE_MAX_TOKENS` is persisted. The fix
+        re-applies `self._apply_parameter_adjustments()` after the probe loop.
+        """
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        model._parameter_adjustments.add(ParameterAdjustment.USE_MAX_TOKENS)
+
+        response = _make_response()
+        response.choices[0].message.reasoning_content = "thinking"
+
+        async def fake_acompletion(**kwargs: object) -> MagicMock:
+            return response
+
+        with patch(
+            target="euroeval.benchmark_modules.litellm.Router.acompletion",
+            new=AsyncMock(side_effect=fake_acompletion),
+        ):
+            generation_kwargs = model.get_generation_kwargs(
+                dataset_config=dataset_config
+            )
+
+        assert "max_completion_tokens" not in generation_kwargs
+        assert generation_kwargs["max_tokens"] == REASONING_MAX_TOKENS
+        assert model.buffer["uses_reasoning_content"] is True
+
+    def test_logprobs_adjustments_are_order_independent(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Applying the logprobs adjustments twice must not change the result.
+
+        This is a regression test for `LOGPROBS_MUST_BE_BOOLEAN` being applied
+        before `NO_TOP_LOGPROBS`, which left an integer `logprobs` value after
+        the first pass, and only normalised it to a Boolean on the second. That
+        stale integer could then reach the provider, either during the internal
+        probe request in `get_generation_kwargs()` or via the
+        `self.generation_kwargs` user-override path in `generate()`.
+        """
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        model._parameter_adjustments.add(ParameterAdjustment.LOGPROBS_MUST_BE_BOOLEAN)
+        model._parameter_adjustments.add(ParameterAdjustment.NO_TOP_LOGPROBS)
+
+        first_pass = model._apply_parameter_adjustments(
+            generation_kwargs={"logprobs": True, "top_logprobs": MAX_LITELLM_LOGPROBS}
+        )
+        # `_apply_parameter_adjustments` mutates its argument in place, so
+        # `dict(first_pass)` is load-bearing: without the copy, `first_pass`
+        # and the argument passed below would alias the same dict object,
+        # making `assert first_pass == second_pass` pass vacuously.
+        second_pass = model._apply_parameter_adjustments(
+            generation_kwargs=dict(first_pass)
+        )
+
+        assert first_pass == second_pass
+        assert first_pass["logprobs"] is True
+        assert "top_logprobs" not in first_pass
 
     def test_logprobs_rejection_leaves_schema_response_format_for_new_dataset(
         self,
