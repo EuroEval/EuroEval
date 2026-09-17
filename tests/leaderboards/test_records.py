@@ -23,17 +23,6 @@ class TestDropValDuplicates:
 
         assert result == model_results
 
-    def test_test_variant_with_more_datasets_replaces_val_variant(self) -> None:
-        """A test variant with broader coverage remains the canonical row."""
-        model_results = {
-            "org/model (val)": {"dataset-a": []},
-            "org/model": {"dataset-a": [], "dataset-b": []},
-        }
-
-        result = drop_val_duplicates(model_results=model_results)
-
-        assert result == {"org/model": {"dataset-a": [], "dataset-b": []}}
-
     def test_few_shot_variants_are_compared_independently(self) -> None:
         """Removing ``val`` must preserve the few-shot distinction."""
         model_results = {
@@ -46,6 +35,17 @@ class TestDropValDuplicates:
         result = drop_val_duplicates(model_results=model_results)
 
         assert set(result) == {"org/model (zero-shot)", "org/model"}
+
+    def test_test_variant_with_more_datasets_replaces_val_variant(self) -> None:
+        """A test variant with broader coverage remains the canonical row."""
+        model_results = {
+            "org/model (val)": {"dataset-a": []},
+            "org/model": {"dataset-a": [], "dataset-b": []},
+        }
+
+        result = drop_val_duplicates(model_results=model_results)
+
+        assert result == {"org/model": {"dataset-a": [], "dataset-b": []}}
 
 
 class TestIsFewShotRecord:
