@@ -17,13 +17,14 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   default, the bare model ID is treated as a reasoning model. The `deepseek/` prefix is
   required, so that open-weight deployments of DeepSeek models (e.g. via vLLM, Ollama
   or OpenRouter) are not treated as the DeepSeek API and thus don't get its
-  DeepSeek-API-specific parameter shaping.
+  DeepSeek-API-specific parameter shaping. This was contributed by @mathiasesn ✨
 
 ### Changed
 
 - Known parameter adjustments are now applied before and after the internal
   test request in the LiteLLM module, so a new dataset no longer re-triggers
-  known errors and the returned kwargs are always consistent.
+  known errors and the returned kwargs are always consistent. This was contributed by
+  @mathiasesn ✨
 
 ### Fixed
 
@@ -39,12 +40,15 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   longer removes `response_format` from later datasets, and error messages that
   complain about a specific schema or request (e.g. a malformed JSON schema, a
   `maxItems` constraint or empty outputs) are only handled for the current request
-  rather than persisted as model-wide capabilities.
+  rather than persisted as model-wide capabilities. This was contributed by
+  @mathiasesn ✨
 - The `NO_TOP_LOGPROBS` parameter adjustment is now applied before the
   `LOGPROBS_MUST_BE_BOOLEAN` one, so that a model with both adjustments no longer
   sends an invalid integer `logprobs` value to the provider on the first application.
+  This was contributed by @mathiasesn ✨
 - The LiteLLM module now recognises the DeepSeek API's "This response_format type is
-  unavailable now" error and falls back from JSON schemas to plain JSON output.
+  unavailable now" error and falls back from JSON schemas to plain JSON output. This
+  was contributed by @mathiasesn ✨
 - First-label-token mapping for chat models now isolates label tokens via a chat-template
   diff (with encode-label fallback) instead of scanning the full templated conversation.
   This prevents system-prompt tokens such as ``p`` / ``n`` from being mistaken for
