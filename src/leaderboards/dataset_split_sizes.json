@@ -1151,6 +1151,134 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/ragtruth-translated-hallucinations-be-mini": {
+    "test": 998,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-bg-mini": {
+    "test": 995,
+    "val": 253
+  },
+  "EuroEval/ragtruth-translated-hallucinations-bs-mini": {
+    "test": 999,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-ca-mini": {
+    "test": 998,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-cs-mini": {
+    "test": 1000,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-da-mini": {
+    "test": 998,
+    "val": 254
+  },
+  "EuroEval/ragtruth-translated-hallucinations-de-mini": {
+    "test": 995,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-el-mini": {
+    "test": 998,
+    "val": 255
+  },
+  "EuroEval/ragtruth-translated-hallucinations-en-mini": {
+    "test": 1000,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-es-mini": {
+    "test": 1000,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-et-mini": {
+    "test": 999,
+    "val": 255
+  },
+  "EuroEval/ragtruth-translated-hallucinations-fi-mini": {
+    "test": 999,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-fo-mini": {
+    "test": 999,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-fr-mini": {
+    "test": 1000,
+    "val": 254
+  },
+  "EuroEval/ragtruth-translated-hallucinations-hr-mini": {
+    "test": 998,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-hu-mini": {
+    "test": 998,
+    "val": 255
+  },
+  "EuroEval/ragtruth-translated-hallucinations-is-mini": {
+    "test": 996,
+    "val": 254
+  },
+  "EuroEval/ragtruth-translated-hallucinations-it-mini": {
+    "test": 998,
+    "val": 255
+  },
+  "EuroEval/ragtruth-translated-hallucinations-lb-mini": {
+    "test": 1000,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-lt-mini": {
+    "test": 999,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-lv-mini": {
+    "test": 999,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-nl-mini": {
+    "test": 997,
+    "val": 255
+  },
+  "EuroEval/ragtruth-translated-hallucinations-no-mini": {
+    "test": 997,
+    "val": 255
+  },
+  "EuroEval/ragtruth-translated-hallucinations-pl-mini": {
+    "test": 997,
+    "val": 254
+  },
+  "EuroEval/ragtruth-translated-hallucinations-pt-mini": {
+    "test": 998,
+    "val": 255
+  },
+  "EuroEval/ragtruth-translated-hallucinations-ro-mini": {
+    "test": 996,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-sk-mini": {
+    "test": 1000,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-sl-mini": {
+    "test": 1000,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-sq-mini": {
+    "test": 996,
+    "val": 255
+  },
+  "EuroEval/ragtruth-translated-hallucinations-sr-mini": {
+    "test": 1000,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-sv-mini": {
+    "test": 1000,
+    "val": 256
+  },
+  "EuroEval/ragtruth-translated-hallucinations-uk-mini": {
+    "test": 1000,
+    "val": 256
+  },
   "EuroEval/reviews3-mini": {
     "test": 1042,
     "train": 1024,
@@ -1655,7 +1783,127 @@
     "train": 47,
     "val": 128
   },
+  "EuroEval/wmt24pp-en-bg": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-ca": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-cs": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
   "EuroEval/wmt24pp-en-da": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-de": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-el": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-et": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-fi": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-fr": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-hr": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-hu": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-is": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-it": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-lt": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-lv": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-nl": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-no": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-pl": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-pt": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-ro": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-sk": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-sl": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-sr": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-sv": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/wmt24pp-en-uk": {
     "test": 768,
     "train": 64,
     "val": 128
