@@ -18,7 +18,7 @@ from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
 from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR, VARIANT_SUFFIX_RE
 from .enums import LeaderboardCategory
 from .link_generation import generate_task_link
-from .records import drop_val_duplicates, get_dataset, plain_model_id, strip_note_item
+from .records import drop_val_duplicates, plain_model_id, strip_note_item
 from .result_loading import load_raw_results
 from .score_computation import compute_standard_ranks_from_bootstrap_scores
 from .score_extraction import extract_model_metadata, group_results_by_model
@@ -71,17 +71,27 @@ def generate_leaderboard(
         for dataset in task_datasets
     ]
 
-    # Load results and set them up for the leaderboard
+    # Load all results before applying the leaderboard-specific dataset filter. The
+    # validation/test choice must be made from the same global dataset coverage for
+    # every leaderboard, rather than from each leaderboard's subset.
     results = load_raw_results()
-    results = [record for record in results if get_dataset(record) in datasets]
     # Filter out BPC runs - only standard accuracy scores go on leaderboards
     results = [
         record for record in results if not record.get("use_bits_per_character", False)
     ]
-    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
-        group_results_by_model(results=results)
-    )
-    model_results = drop_val_duplicates(model_results=model_results)
+    global_model_results: dict[
+        str, dict[str, list[tuple[list[float], float, float]]]
+    ] = group_results_by_model(results=results)
+    global_model_results = drop_val_duplicates(model_results=global_model_results)
+    model_results = {
+        model_id: {
+            dataset: scores
+            for dataset, scores in results_by_dataset.items()
+            if dataset in datasets
+        }
+        for model_id, results_by_dataset in global_model_results.items()
+        if any(dataset in datasets for dataset in results_by_dataset)
+    }
 
     metadata_dict = extract_model_metadata(results=results)
 
