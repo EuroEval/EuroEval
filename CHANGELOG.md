@@ -19,6 +19,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   or OpenRouter) are not treated as the DeepSeek API and thus don't get its
   DeepSeek-API-specific parameter shaping.
 
+### Changed
+
+- Known parameter adjustments are now applied before the internal test request in
+  the LiteLLM module, so a new dataset no longer re-triggers errors the model has
+  already reported.
+
 ### Fixed
 
 - LiteLLM generation now records model-level parameter adjustments learned by the

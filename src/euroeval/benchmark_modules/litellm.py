@@ -473,8 +473,10 @@ class LiteLLMModel(BenchmarkModule):
         inputs_to_run: c.Sequence[
             tuple[int, c.Sequence[litellm.AllMessageValues] | str]
         ] = list(enumerate(model_inputs))
-        # Build the kwargs afresh for the current dataset and re-apply the
-        # model-level adjustments learned from earlier errors, so that nothing
+        # Build the kwargs afresh for the current dataset and (re-)apply the
+        # model-level adjustments learned from earlier errors. This is idempotent
+        # when `get_generation_kwargs` already applied them, and is still needed
+        # to cover the `self.generation_kwargs` override path, so that nothing
         # dataset-specific (like `max_completion_tokens`) leaks across datasets via
         # `self.generation_kwargs`
         generation_kwargs = self._apply_parameter_adjustments(
@@ -1553,6 +1555,13 @@ class LiteLLMModel(BenchmarkModule):
 
         # Model-specific parameters
         generation_kwargs = self._setup_model_params(
+            generation_kwargs=generation_kwargs
+        )
+
+        # Apply the persisted model-level adjustments learned from earlier errors
+        # before probing the model, so the test request below does not re-send
+        # parameters we already know this model rejects.
+        generation_kwargs = self._apply_parameter_adjustments(
             generation_kwargs=generation_kwargs
         )
 
