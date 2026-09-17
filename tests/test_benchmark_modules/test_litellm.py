@@ -23,6 +23,7 @@ from euroeval.benchmark_modules.litellm import (
     get_api_model_release_date,
 )
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
+from euroeval.enums import ParameterAdjustment
 from euroeval.exceptions import InvalidBenchmark, InvalidModel
 from euroeval.model_loading import load_model
 
@@ -142,7 +143,7 @@ class TestParameterErrorHandling:
             generation_kwargs={"max_completion_tokens": 128},
         )
 
-        assert result == ({"max_tokens": 128}, 0)
+        assert result == ({"max_tokens": 128}, 0, ParameterAdjustment.USE_MAX_TOKENS)
 
     def test_max_tokens_is_removed_when_unsupported(self) -> None:
         """Unsupported max_tokens is removed before retrying the request."""
@@ -158,7 +159,7 @@ class TestParameterErrorHandling:
             generation_kwargs={"max_tokens": 128},
         )
 
-        assert result == ({}, 0)
+        assert result == ({}, 0, ParameterAdjustment.NO_MAX_TOKENS)
 
 
 def _make_response(content: str = "positive") -> MagicMock:
@@ -437,17 +438,18 @@ class TestDuplicateErrorHandling:
                     }
                 )
 
-        assert len(model._handled_param_errors) == 1
+        assert model._parameter_adjustments == {ParameterAdjustment.NO_JSON_SCHEMA}
 
 
 def _fake_get_generation_kwargs(
-    original_response_format: dict[str, t.Any],
+    original_response_format: dict[str, t.Any] | None,
 ) -> t.Callable[[LiteLLMModel, DatasetConfig], dict[str, t.Any]]:
     """Build a fake `get_generation_kwargs` returning a fixed response format.
 
     Args:
         original_response_format:
-            The response format to return alongside the dataset's max tokens.
+            The response format to return alongside the dataset's max tokens, or
+            None to not include a response format at all.
 
     Returns:
         A function with the same signature as `LiteLLMModel.get_generation_kwargs`.
@@ -456,10 +458,12 @@ def _fake_get_generation_kwargs(
     def fake_get_generation_kwargs(
         self: LiteLLMModel, dataset_config: DatasetConfig
     ) -> dict[str, t.Any]:
-        return {
-            "response_format": original_response_format,
-            "max_completion_tokens": dataset_config.max_generated_tokens,
+        generation_kwargs: dict[str, t.Any] = {
+            "max_completion_tokens": dataset_config.max_generated_tokens
         }
+        if original_response_format is not None:
+            generation_kwargs["response_format"] = original_response_format
+        return generation_kwargs
 
     return fake_get_generation_kwargs
 
@@ -535,6 +539,7 @@ class TestResponseFormatFallback:
             model_config, model_id="deepseek/deepseek-flash"
         )
         model.dataset_config = dataset_config
+        model._parameter_adjustments = set()
 
         kwargs, wait_time = model._handle_exception(
             error=_make_response_format_unavailable_error(),
@@ -586,7 +591,7 @@ class TestRetryAdjustments:
             assert calls[1]["response_format"] == {"type": "json_object"}
 
         # The fix must have been recorded so it can be replayed later
-        assert len(model._handled_param_errors) == 1
+        assert model._parameter_adjustments == {ParameterAdjustment.NO_JSON_SCHEMA}
 
         # `self.generation_kwargs` must remain the (empty) user override from
         # __init__ -- it must never be overwritten with materialised kwargs
@@ -625,7 +630,7 @@ class TestRetryAdjustments:
         ) as calls:
             model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
 
-        assert len(model._handled_param_errors) == 1
+        assert model._parameter_adjustments == {ParameterAdjustment.NO_JSON_SCHEMA}
 
         new_dataset_config = copy.deepcopy(x=dataset_config)
         new_dataset_config.max_generated_tokens = (
@@ -645,10 +650,75 @@ class TestRetryAdjustments:
         assert calls[0]["max_completion_tokens"] == expected_tokens
         assert calls[0]["response_format"] == {"type": "json_object"}
 
+    def test_schema_rejection_does_not_add_response_format_to_unstructured_dataset(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """A learned JSON-schema rejection leaves an unstructured dataset alone."""
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+
+        original_response_format = {"type": "json_schema", "json_schema": {}}
+        has_raised: list[bool] = [False]
+
+        with _patch_retry_adjustment_dependencies(
+            has_raised=has_raised, original_response_format=original_response_format
+        ):
+            model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
+
+        assert model._parameter_adjustments == {ParameterAdjustment.NO_JSON_SCHEMA}
+
+        # A later dataset that does not request structured output must not have a
+        # `response_format` injected by the persisted adjustment
+        with _patch_retry_adjustment_dependencies(
+            has_raised=has_raised, original_response_format=None
+        ) as calls:
+            model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
+
+        assert len(calls) == 1
+        assert "response_format" not in calls[0]
+
+    def test_use_max_tokens_preserves_new_dataset_token_limit(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """`USE_MAX_TOKENS` moves the current dataset's limit, not an old one."""
+        model = LiteLLMModel(
+            model_config=dataclasses.replace(model_config, model_id="openai/gpt-4o"),
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            log_metadata=False,
+        )
+        model._parameter_adjustments.add(ParameterAdjustment.USE_MAX_TOKENS)
+
+        new_dataset_config = copy.deepcopy(x=dataset_config)
+        new_dataset_config.max_generated_tokens = (
+            dataset_config.max_generated_tokens or 0
+        ) + 1234
+        model.update_dataset_config(dataset_config=new_dataset_config)
+
+        has_raised: list[bool] = [True]
+        with _patch_retry_adjustment_dependencies(
+            has_raised=has_raised, original_response_format=None
+        ) as calls:
+            model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
+
+        assert len(calls) == 1
+        assert "max_completion_tokens" not in calls[0]
+        assert calls[0]["max_tokens"] == new_dataset_config.max_generated_tokens
+
 
 @contextmanager
 def _patch_retry_adjustment_dependencies(
-    has_raised: list[bool], original_response_format: dict[str, t.Any]
+    has_raised: list[bool], original_response_format: dict[str, t.Any] | None
 ) -> t.Iterator[list[dict[str, t.Any]]]:
     """Patch `get_generation_kwargs` and `Router.acompletion` for retry tests.
 
@@ -726,7 +796,7 @@ class TestServiceErrorHandling:
             model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
 
         # The api_base fix is a service-level adjustment and must not be persisted
-        assert model._handled_param_errors == {}
+        assert model._parameter_adjustments == set()
         assert model.benchmark_config.api_base == "http://localhost:8000/v1"
 
         # A second call must succeed without raising InvalidBenchmark
@@ -736,3 +806,48 @@ class TestServiceErrorHandling:
             new=AsyncMock(side_effect=fake_acompletion),
         ):
             model.generate(inputs={"messages": [[{"role": "user", "content": "hi"}]]})
+
+
+class TestTransientParameterErrors:
+    """Tests that transient parameter errors are fixed but not persisted."""
+
+    def test_logprobs_quota_message_is_not_persisted(
+        self, model_config: ModelConfig, dataset_config: DatasetConfig
+    ) -> None:
+        """The temporary logprobs quota message does not permanently disable them."""
+        model = object.__new__(LiteLLMModel)
+        model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
+        model.dataset_config = dataset_config
+        model.buffer = {"first_label_token_mapping": True}
+        model._parameter_adjustments = set()
+        model._max_thinking_budget = None
+
+        kwargs, wait_time = model._handle_exception(
+            error=Exception(
+                "You've reached the maximum number of requests with logprobs"
+            ),
+            logprobs=True,
+            top_logprobs=10,
+        )
+
+        assert wait_time == 0
+        assert "logprobs" not in kwargs
+        assert "top_logprobs" not in kwargs
+        assert model._parameter_adjustments == set()
+
+    def test_logprobs_unsupported_message_is_persisted(
+        self, model_config: ModelConfig, dataset_config: DatasetConfig
+    ) -> None:
+        """An explicit unsupported-logprobs message is persisted across datasets."""
+        model = object.__new__(LiteLLMModel)
+        model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
+        model.dataset_config = dataset_config
+        model.buffer = {"first_label_token_mapping": True}
+        model._parameter_adjustments = set()
+        model._max_thinking_budget = None
+
+        model._handle_exception(
+            error=Exception("logprobs is not supported"), logprobs=True
+        )
+
+        assert model._parameter_adjustments == {ParameterAdjustment.NO_LOGPROBS}

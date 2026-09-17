@@ -21,13 +21,15 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- LiteLLM generation now replays the parameter fixes learned by the error handlers
-  (e.g. a dropped `response_format`) on every retry attempt and batch, instead of
-  rebuilding the kwargs from scratch and re-triggering the same error. The fixes are
-  re-applied on top of freshly built, dataset-specific kwargs each time, so they
-  persist across retries, batches and datasets without leaking one dataset's
-  `max_completion_tokens`/`response_format` into another after
-  `update_dataset_config()`.
+- LiteLLM generation now records model-level parameter adjustments learned by the
+  error handlers (e.g. "no JSON schema" or "use `max_tokens`") as a set of
+  `ParameterAdjustment` capabilities and re-applies them conditionally to the
+  freshly built kwargs of every batch and dataset, instead of rebuilding the kwargs
+  from scratch and re-triggering the same error. Each adjustment only touches
+  parameters that are actually present, so one dataset's
+  `max_completion_tokens`/`response_format` never leaks into another after
+  `update_dataset_config()`. Service errors and transient messages (such as the
+  temporary logprobs quota message) are never persisted.
 - The LiteLLM module now recognises the DeepSeek API's "This response_format type is
   unavailable now" error and falls back from JSON schemas to plain JSON output.
 - First-label-token mapping for chat models now isolates label tokens via a chat-template
