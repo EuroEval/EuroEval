@@ -8,7 +8,12 @@ from pathlib import Path
 
 from transformers import AutoTokenizer
 
-from euroeval.private_canary import MODEL_ID, MODEL_REVISION, generate_canary_corpus
+from euroeval.private_canary import (
+    MODEL_ID,
+    MODEL_REVISION,
+    generate_canary_corpus,
+    repository_root,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -29,7 +34,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    repository = Path(__file__).resolve().parents[2]
+    repository = repository_root()
     paths = (
         args.corpus_jsonl,
         args.key,

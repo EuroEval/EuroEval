@@ -31,20 +31,20 @@ canary records in the repository, logs or command history. The examples use plac
 for paths and do not contain secret values.
 
 ```sh
-uv run src/scripts/generate_private_canary.py \
+uv run src/scripts/canary/generate_private_canary.py \
   --corpus-jsonl "$HOME/.local/share/euroeval/canary/source.jsonl" \
   --key "$HOME/.config/euroeval/canary.key" \
   --augmented-dir "$HOME/.local/state/euroeval/canary/augmented" \
   --private-dir "$HOME/.local/state/euroeval/canary/private"
 
-uv run src/scripts/run_private_canary_exposure.py \
+uv run src/scripts/canary/run_private_canary_exposure.py \
   --corpus-jsonl "$HOME/.local/share/euroeval/canary/source.jsonl" \
   --augmented-jsonl "$HOME/.local/state/euroeval/canary/augmented/augmented.jsonl" \
   --private-dir "$HOME/.local/state/euroeval/canary/private" \
   --key "$HOME/.config/euroeval/canary.key" \
   --output-dir "$HOME/.local/state/euroeval/canary/results"
 
-uv run src/scripts/analyse_private_canary.py \
+uv run src/scripts/canary/analyse_private_canary.py \
   --results-dir "$HOME/.local/state/euroeval/canary/results" \
   --output "$HOME/.local/state/euroeval/canary/report.json"
 ```

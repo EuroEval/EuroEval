@@ -38,6 +38,24 @@ CONTEXT_PREFIX = "The keyed archive reference was {context}. "
 MODEL_ID = "HuggingFaceTB/SmolLM2-360M"
 MODEL_REVISION = "f8027fd0eaeea54caa13c31d31b9fdc459c38b49"
 
+
+def repository_root() -> Path:
+    """Find the repository root containing the project configuration.
+
+    Returns:
+        The project root containing ``pyproject.toml``.
+
+    Raises:
+        RuntimeError:
+            If no project root can be found.
+    """
+    module_path = Path(__file__).resolve()
+    for candidate in module_path.parents:
+        if (candidate / "pyproject.toml").is_file():
+            return candidate
+    raise RuntimeError("could not find the repository root")
+
+
 # Words are intentionally mundane.  Their keyed combinations are unusual without
 # looking like generated identifiers.
 TRIGGERS = (
@@ -294,7 +312,7 @@ def generate_canary_corpus(
     Raises:
         ValueError: If an input or output path is inside the repository.
     """
-    repository = Path(__file__).resolve().parents[2]
+    repository = repository_root()
     if any(
         path.expanduser().resolve().is_relative_to(repository)
         for path in (corpus_jsonl, key_path, augmented_dir, private_dir)

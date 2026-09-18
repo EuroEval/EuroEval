@@ -30,8 +30,8 @@ from euroeval.private_canary import (
     target_continuation,
     validate_arm_payload,
 )
-from src.scripts import run_private_canary_exposure as canary_runner
-from src.scripts.run_private_canary_exposure import (
+from src.scripts.canary import run_private_canary_exposure as canary_runner
+from src.scripts.canary.run_private_canary_exposure import (
     _fingerprint,
     _read_records,
     _read_rows,

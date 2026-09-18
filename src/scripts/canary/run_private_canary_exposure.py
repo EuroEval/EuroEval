@@ -39,6 +39,7 @@ from euroeval.private_canary import (
     build_canary_schedule,
     canary_records_hash,
     load_key_0600,
+    repository_root,
     runtime_identity,
     score_association,
     target_continuation,
@@ -70,7 +71,7 @@ def run_private_study(*, args: argparse.Namespace) -> None:
     augmented_path = args.augmented_jsonl.expanduser().resolve()
     key_path = args.key.expanduser().resolve()
     cache_dir = args.cache_dir.expanduser().resolve()
-    repository = Path(__file__).resolve().parents[2]
+    repository = repository_root()
     if any(
         path.is_relative_to(repository)
         for path in (
