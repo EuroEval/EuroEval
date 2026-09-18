@@ -1192,6 +1192,7 @@ class BenchmarkConfig:
     max_context_length: int | None
     vocabulary_size: int | None
     use_bits_per_character: bool = False
+    contamination_canary: bool = False
 
     def __post_init__(self) -> None:
         """Post-initialisation checks."""
@@ -1248,3 +1249,4 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     max_context_length: int | None
     vocabulary_size: int | None
     use_bits_per_character: bool = False
+    contamination_canary: bool | None = None

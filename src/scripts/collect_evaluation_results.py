@@ -53,6 +53,7 @@ from leaderboards.constants import (
     RESULTS_DIR,
     RESULTS_READY_LABEL,
 )
+from leaderboards.contamination_canary import run_contamination_canary_check
 from leaderboards.github_api import close_issue, comment_on_issue, gh_request
 from leaderboards.leaderboard_visibility import (
     count_ranked_entries,
@@ -83,6 +84,18 @@ HF_RESULTS_BUCKET = "EuroEval/results"
 
 # The leaderboard HF Space that models.py gets uploaded to.
 HF_LEADERBOARD_SPACE = "EuroEval/euroeval_leaderboard"
+
+
+def _run_contamination_canary_check() -> None:
+    """Run the private checker without affecting leaderboard control flow."""
+    try:
+        report = run_contamination_canary_check()
+    except Exception:  # noqa: BLE001 - audit failures are deliberately non-fatal
+        logger.exception("The contamination-canary checker failed unexpectedly.")
+        return
+    status = report.get("status", "invalid")
+    if status not in {"disabled", "missing"}:
+        logger.info("Contamination-canary checker status: %s", status)
 
 
 @click.command()
@@ -121,6 +134,8 @@ def main(force: bool = False) -> None:
     for _, lines in harvested:
         all_lines.extend(lines)
     all_lines.extend(manual_lines)
+
+    _run_contamination_canary_check()
 
     has_new_results = bool(all_lines)
     if not has_new_results:

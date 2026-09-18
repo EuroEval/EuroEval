@@ -11,13 +11,16 @@ import os
 import threading
 import time
 import typing as t
+from pathlib import Path
+
+from euroeval.canary_evidence import CANARY_CORPUS_PATH_ENV, canonical_json
 
 from .auth import authenticate
 from .broker import BrokerError, BrokerProtocol
 from .evaluator import EuroEvalEvaluator, Evaluator
 from .hardware import NoGpuError, discover_hardware, select_gpu
 from .safety import SafetyError, check_model_safety
-from .state import ActiveLease, PendingRecord, StateStore
+from .state import ActiveLease, PendingCanary, PendingRecord, StateStore
 from .types import Claim, EEERecord, Gpu, HardwareReport, Lease
 
 logger = logging.getLogger(__name__)
@@ -197,6 +200,19 @@ class Worker:
                 raise AuthenticationIdentityError(
                     active.github_login or "", self._login
                 )
+            if active is not None and active.finalised_submission_id is not None:
+                pending = self._submit_canary_nonfatal(
+                    lease=active.lease, pending=active.canary
+                )
+                if pending is None or pending.acknowledged or pending.terminal_rejected:
+                    self.state.clear_active()
+                if once:
+                    return
+                if pending is not None and not (
+                    pending.acknowledged or pending.terminal_rejected
+                ):
+                    time.sleep(30)
+                continue
             if active is not None and not _lease_is_valid(active.lease):
                 logger.warning(
                     "Discarding expired local lease %s", active.lease.lease_id
@@ -312,7 +328,11 @@ class Worker:
             self.state.save_active(lease=lease, github_login=expected_login or None)
         elif active.github_login is None and expected_login:
             self.state.save_active(
-                lease=active.lease, records=active.records, github_login=expected_login
+                lease=active.lease,
+                records=active.records,
+                github_login=expected_login,
+                canary=active.canary,
+                finalised_submission_id=active.finalised_submission_id,
             )
         heartbeat_parameters = inspect.signature(Heartbeat).parameters
         if "persist" in heartbeat_parameters:
@@ -332,7 +352,17 @@ class Worker:
         completed = False
         selected_gpu = _gpu_for_lease(hardware.gpus, lease)
         try:
-            if active is not None and active.records:
+            canary_required = (
+                lease.contamination_canary is not None
+                and lease.contamination_canary.status == "required"
+            )
+            pending_canary = active.canary if active is not None else None
+            evaluation_complete = (
+                active is not None
+                and bool(active.records)
+                and (not canary_required or pending_canary is not None)
+            )
+            if evaluation_complete:
                 records = active.records
                 heartbeat.start()
             else:
@@ -361,11 +391,18 @@ class Worker:
                     raise
                 heartbeat.start()
                 output = self.state.directory / "results" / f"{lease.lease_id}.jsonl"
-                with _pin_gpu(selected_gpu):
+                corpus_path = self._canary_corpus_path(lease=lease)
+                with _pin_gpu(selected_gpu), _pin_canary_corpus(corpus_path):
                     evaluated = self.evaluator.evaluate(lease=lease, output_path=output)
                 heartbeat.check()
                 try:
                     records = self._durable_records(active=active, evaluated=evaluated)
+                    pending_canary = self._durable_canary(
+                        lease=lease, existing=pending_canary
+                    )
+                    self.state.save_records(records)
+                    if pending_canary is not None:
+                        self.state.save_canary(pending_canary)
                 except RuntimeError:
                     self.client.release(
                         credential=self._credential,
@@ -381,13 +418,20 @@ class Worker:
                 heartbeat=heartbeat,
             )
             heartbeat.check()
+            pending_canary = self._submit_canary_nonfatal(
+                lease=lease, pending=pending_canary
+            )
             submission_id = self._finalise(
                 credential=self._credential, lease_id=lease.lease_id
             )
             self.state.save_submission_id(submission_id)
+            self.state.mark_finalised(submission_id)
             self.last_submission_id = submission_id
             logger.info("Volunteer submission completed: %s", submission_id)
-            self.state.clear_active()
+            if pending_canary is None or (
+                pending_canary.acknowledged or pending_canary.terminal_rejected
+            ):
+                self.state.clear_active()
             completed = True
         except (KeyboardInterrupt, SystemExit):
             raise
@@ -395,6 +439,97 @@ class Worker:
             heartbeat.stop()
             if not completed:
                 logger.info("Preserving active lease %s for restart", lease.lease_id)
+
+    def _canary_corpus_path(self, *, lease: Lease) -> Path | None:
+        instruction = lease.contamination_canary
+        if (
+            instruction is None
+            or instruction.status != "required"
+            or lease.model_type != "generative"
+        ):
+            return None
+        unavailable = self.state.directory / "canary-corpus" / "unavailable.jsonl"
+        try:
+            fetch = getattr(self.client, "fetch_canary_corpus", None)
+            if not callable(fetch):
+                raise RuntimeError("broker cannot deliver the reserved canary corpus")
+            content = fetch(credential=self._credential, lease=lease)
+            if (
+                hashlib.sha256(content.encode()).hexdigest()
+                != instruction.corpus_sha256
+            ):
+                raise RuntimeError(
+                    "broker canary corpus does not match the lease digest"
+                )
+            return self.state.save_canary_corpus(
+                digest=instruction.corpus_sha256, content=content
+            )
+        except Exception:  # noqa: BLE001 - canary delivery cannot block evaluation
+            logger.warning(
+                "Canary corpus is unavailable; ordinary evaluation will continue"
+            )
+            return unavailable
+
+    def _durable_canary(
+        self, *, lease: Lease, existing: PendingCanary | None
+    ) -> PendingCanary | None:
+        instruction = lease.contamination_canary
+        if instruction is None or instruction.status != "required":
+            return None
+        evidence = getattr(self.evaluator, "last_canary_evidence", None)
+        if evidence is None:
+            return existing
+        value = evidence.to_dict()
+        if (
+            value.get("model_id") != lease.model_id
+            or value.get("resolved_revision") != lease.model_revision
+            or value.get("corpus_revision") != instruction.corpus_revision
+            or value.get("corpus_sha256") != instruction.corpus_sha256
+        ):
+            raise RuntimeError("canary evidence does not match its lease")
+        evidence_json = canonical_json(value)
+        fresh = PendingCanary(
+            evidence_json=evidence_json,
+            digest=hashlib.sha256(evidence_json.encode()).hexdigest(),
+        )
+        if existing is not None and (
+            existing.evidence_json != fresh.evidence_json
+            or existing.digest != fresh.digest
+        ):
+            raise RuntimeError("canary evidence changed while resuming a lease")
+        return fresh
+
+    def _submit_canary_nonfatal(
+        self, *, lease: Lease, pending: PendingCanary | None
+    ) -> PendingCanary | None:
+        if pending is None or pending.acknowledged or pending.terminal_rejected:
+            return pending
+        submit = getattr(self.client, "submit_canary", None)
+        if not callable(submit):
+            logger.warning("Broker cannot submit reserved canary evidence")
+            return pending
+        try:
+            submit(
+                credential=self._credential, lease=lease, canary=pending.to_submission()
+            )
+        except BrokerError as error:
+            if (
+                error.status is not None
+                and 400 <= error.status < 500
+                and error.status not in {401, 408, 429}
+            ):
+                rejected = dataclasses.replace(pending, terminal_rejected=True)
+                self.state.save_canary(rejected)
+                logger.error("Canary evidence was terminally rejected")
+                return rejected
+            logger.warning("Canary evidence submission failed; results are unaffected")
+            return pending
+        except Exception:  # noqa: BLE001 - clients vary and results are unaffected
+            logger.warning("Canary evidence submission failed; results are unaffected")
+            return pending
+        acknowledged = dataclasses.replace(pending, acknowledged=True)
+        self.state.save_canary(acknowledged)
+        return acknowledged
 
     def _durable_records(
         self, active: ActiveLease | None, evaluated: list[EEERecord]
@@ -624,6 +759,20 @@ def _lease_lost(error: BaseException) -> bool:
         and error.status == 409
         and error.code == "lease_assignment_lost"
     )
+
+
+@contextlib.contextmanager
+def _pin_canary_corpus(path: Path | None) -> c.Iterator[None]:
+    previous = os.environ.get(CANARY_CORPUS_PATH_ENV)
+    if path is not None:
+        os.environ[CANARY_CORPUS_PATH_ENV] = str(path)
+    try:
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop(CANARY_CORPUS_PATH_ENV, None)
+        else:
+            os.environ[CANARY_CORPUS_PATH_ENV] = previous
 
 
 @contextlib.contextmanager

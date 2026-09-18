@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://euroeval.com/schemas/contamination-canary-evidence-v1.schema.json",
+  "title": "EuroEval contamination canary evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "protocol_version",
+    "normaliser_version",
+    "generation_version",
+    "model_id",
+    "requested_revision",
+    "resolved_revision",
+    "identity_kind",
+    "backend",
+    "corpus_id",
+    "corpus_revision",
+    "corpus_sha256",
+    "row_count",
+    "status",
+    "reason",
+    "observations"
+  ],
+  "properties": {
+    "schema_version": { "const": "contamination-canary-evidence/v1" },
+    "protocol_version": { "const": "private-completion-canary/v1" },
+    "normaliser_version": { "const": "first-two-words-nfc/v1" },
+    "generation_version": { "const": "greedy-continuation/v1" },
+    "model_id": { "type": "string", "minLength": 1 },
+    "requested_revision": { "type": "string", "minLength": 1 },
+    "resolved_revision": { "type": "string", "minLength": 1 },
+    "identity_kind": { "enum": ["immutable", "mutable"] },
+    "backend": { "type": "string", "minLength": 1 },
+    "corpus_id": { "const": "EuroEval/watermark-audit" },
+    "corpus_revision": {
+      "const": "16d468bbacc284c912a8598a392239af2387ca53"
+    },
+    "corpus_sha256": {
+      "const": "37258fb324cf400bba4bd57cda430a73393928f5e09506594c3678adc38ff324"
+    },
+    "row_count": { "const": 256 },
+    "status": {
+      "enum": ["collected", "not_applicable", "unsupported", "failed"]
+    },
+    "reason": {
+      "type": ["string", "null"],
+      "enum": [
+        null,
+        "encoder",
+        "disabled",
+        "download_only",
+        "corpus_unavailable",
+        "backend_unsupported",
+        "generation_failed",
+        "incomplete_generation"
+      ]
+    },
+    "observations": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["row_id", "prompt_sha256", "normalised_completion"],
+        "properties": {
+          "row_id": { "type": "string", "minLength": 1 },
+          "prompt_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "normalised_completion": { "type": "string", "maxLength": 256 }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "collected" } } },
+      "then": {
+        "properties": {
+          "reason": { "const": null },
+          "observations": { "minItems": 256, "maxItems": 256 }
+        }
+      },
+      "else": {
+        "properties": {
+          "reason": { "type": "string" },
+          "observations": { "maxItems": 0 }
+        }
+      }
+    }
+  ]
+}

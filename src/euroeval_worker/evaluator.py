@@ -4,6 +4,7 @@ import typing as t
 from pathlib import Path
 
 from euroeval.benchmarker import Benchmarker
+from euroeval.canary_evidence import CanaryEvidence
 from euroeval.eee_utils import benchmark_result_to_eee_dict
 
 from .types import EEERecord, JsonValue, Lease, canonical_json
@@ -57,6 +58,7 @@ class EuroEvalEvaluator(Evaluator):
         """
         self.cache_dir = cache_dir
         self.gpu_memory_utilisation = gpu_memory_utilisation
+        self.last_canary_evidence: CanaryEvidence | None = None
 
     def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
         """Run validation-only EuroEval with remote code disabled.
@@ -76,6 +78,10 @@ class EuroEvalEvaluator(Evaluator):
             force=True,
             raise_errors=True,
             verbose=False,
+            contamination_canary=(
+                lease.contamination_canary is not None
+                and lease.contamination_canary.status == "required"
+            ),
         )
         results = benchmarker.benchmark(
             model=f"{lease.model_id}@{lease.model_revision}",
@@ -88,7 +94,13 @@ class EuroEvalEvaluator(Evaluator):
             gpu_memory_utilization=self.gpu_memory_utilisation,
             force=True,
             raise_errors=True,
+            contamination_canary=(
+                lease.contamination_canary is not None
+                and lease.contamination_canary.status == "required"
+            ),
         )
+        evidence = getattr(benchmarker, "canary_evidence", ())
+        self.last_canary_evidence = evidence[0] if evidence else None
         records = [
             _record(
                 _normalise_record(benchmark_result_to_eee_dict(result=result), lease)

@@ -3,8 +3,9 @@ declare const process: { env: Record<string, string | undefined> };
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, addIssueLabel, acquireRenewableIssueMutex,
   authenticate, brokerErrorBody, commentIssue, contributorLabel, deleteLease, enforceRateLimit, extractModelId,
-  fetchIssue, getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker, readJson,
-  redis, redisGet, requireAssignee, requireProtocol, selectedLanguages, replaceVolunteerMarker,
+  fetchIssue, getLeaseById, issueComments, json, method, patchIssue, parseVolunteerMarker,
+  preserveCanaryReservation, readJson, redis, redisGet, requireAssignee, requireProtocol,
+  selectedLanguages, replaceVolunteerMarker,
   signVolunteerMarker, verifyVolunteerMarker,
 } from "./_lib.js";
 import { uploadStaging } from "./_lib/eee.js";
@@ -118,6 +119,7 @@ export async function fetch(req: Request): Promise<Response> {
         await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
       }
       await requireAssignee(await fetchIssue(lease.issue_number), lease.contributor);
+      await preserveCanaryReservation(lease);
       await deleteLease(lease); receipt.status = "ready"; await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
     } finally { await mutex.release(); }
     return json(200, { protocol_version: PROTOCOL_VERSION, status: "ready", submission_id: receipt.submission_id, coverage: { language: lease.language, records: receipt.entries.length }, manifest_path: receipt.manifest_path });

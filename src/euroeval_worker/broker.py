@@ -14,6 +14,7 @@ from .types import (
     PROTOCOL_VERSION,
     AuthPoll,
     AuthStart,
+    CanarySubmission,
     Claim,
     EEERecord,
     HardwareReport,
@@ -158,6 +159,65 @@ class BrokerClient:
         """
         return auth_start_from_dict(
             self._post("auth/start", {"protocol_version": PROTOCOL_VERSION})
+        )
+
+    def fetch_canary_corpus(self, credential: str, lease: Lease) -> str:
+        """Fetch exact private corpus bytes through the lease-bound broker.
+
+        Returns:
+            The immutable corpus JSONL text.
+
+        Raises:
+            ValueError:
+                If the lease does not own a canary reservation.
+            BrokerError:
+                If the broker returns an invalid corpus payload.
+        """
+        instruction = lease.contamination_canary
+        if instruction is None or instruction.status != "required":
+            raise ValueError("lease does not require a contamination canary")
+        result = self._post(
+            "canary-corpus",
+            {
+                "protocol_version": PROTOCOL_VERSION,
+                "lease_id": lease.lease_id,
+                "reservation_id": instruction.reservation_id,
+                "corpus_revision": instruction.corpus_revision,
+                "corpus_sha256": instruction.corpus_sha256,
+            },
+            credential=credential,
+        )
+        content = result.get("corpus_jsonl")
+        if not isinstance(content, str):
+            raise BrokerError("broker returned an invalid canary corpus")
+        return content
+
+    def submit_canary(
+        self, credential: str, lease: Lease, canary: CanarySubmission
+    ) -> None:
+        """Submit exact canary evidence independently from EEE results.
+
+        Raises:
+            ValueError:
+                If the lease does not own a canary reservation.
+        """
+        instruction = lease.contamination_canary
+        if instruction is None or instruction.status != "required":
+            raise ValueError("lease does not require a contamination canary")
+        self._post(
+            "canary-evidence",
+            {
+                "protocol_version": PROTOCOL_VERSION,
+                "lease_id": lease.lease_id,
+                "reservation_id": instruction.reservation_id,
+                "model_id": lease.model_id,
+                "model_revision": lease.model_revision,
+                "corpus_revision": instruction.corpus_revision,
+                "corpus_sha256": instruction.corpus_sha256,
+                "evidence_json": canary.evidence_json,
+                "digest": canary.digest,
+            },
+            credential=credential,
         )
 
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:

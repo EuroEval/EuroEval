@@ -15,6 +15,15 @@ from huggingface_hub import snapshot_download
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
+from .canary_evidence import (
+    CanaryEvidence,
+    append_evidence,
+    collected_evidence,
+    evidence_output_path,
+    load_canary_prompts,
+    load_evidence_jsonl,
+    status_evidence,
+)
 from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS, ORTHOGONAL_TASKS
 from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
@@ -82,6 +91,7 @@ class Benchmarker:
         | None = None,
         generative_type: GenerativeType | None = None,
         use_bits_per_character: bool = False,
+        contamination_canary: bool = False,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
         run_with_cli: bool = False,
@@ -166,6 +176,9 @@ class Benchmarker:
                 For multiple-choice tasks, treats benchmark as text-to-text with bare
                 question → full answer text. Only supported for base decoder models.
                 Defaults to False.
+            contamination_canary:
+                Whether to collect experimental non-scoring contamination evidence
+                while a decoder is already loaded. Defaults to False.
             custom_datasets_file:
                 Path to a Python file defining custom datasets. Defaults to
                 'custom_datasets.py'.
@@ -233,6 +246,7 @@ class Benchmarker:
             attention_backend=attention_backend,
             generative_type=generative_type,
             use_bits_per_character=use_bits_per_character,
+            contamination_canary=contamination_canary,
             custom_datasets_file=Path(custom_datasets_file),
             verbose=verbose,
             force=force,
@@ -250,7 +264,13 @@ class Benchmarker:
         self._model_lists: dict[str, c.Sequence[str]] | None = None
 
         self.results_path = Path.cwd() / "euroeval_benchmark_results.jsonl"
+        self._canary_evidence: list[CanaryEvidence] = []
         adjust_logging_level(verbose=self.benchmark_config.verbose)
+
+    @property
+    def canary_evidence(self) -> c.Sequence[CanaryEvidence]:
+        """Model-level canary evidence from the latest benchmark call."""
+        return tuple(self._canary_evidence)
 
     def benchmark(
         self,
@@ -277,6 +297,7 @@ class Benchmarker:
         gpu_memory_utilization: float | None = None,
         generative_type: GenerativeType | None = None,
         use_bits_per_character: bool | None = None,
+        contamination_canary: bool | None = None,
         attention_backend: t.Literal[
             *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
         ]
@@ -377,6 +398,10 @@ class Benchmarker:
                 For multiple-choice tasks, treats benchmark as text-to-text with bare
                 question → full answer text. Only supported for base decoder models.
                 Defaults to the value specified when initialising the benchmarker.
+            contamination_canary:
+                Whether to collect experimental non-scoring contamination evidence
+                while a decoder is already loaded. Defaults to the value specified when
+                initialising the benchmarker.
             attention_backend:
                 The attention backend to use for vLLM. Only relevant if the model is
                 generative. Defaults to the value specified when initialising the
@@ -473,6 +498,7 @@ class Benchmarker:
             gpu_memory_utilization=gpu_memory_utilization,
             generative_type=generative_type,
             use_bits_per_character=use_bits_per_character,
+            contamination_canary=contamination_canary,
             attention_backend=attention_backend,
             custom_datasets_file=custom_datasets_file,
             force=force,
@@ -514,6 +540,7 @@ class Benchmarker:
         num_finished = 0
         num_skipped = 0
         num_errored = 0
+        self._canary_evidence = []
 
         for model_config in model_configs:
             if not model_mapping[model_config]:
@@ -525,6 +552,22 @@ class Benchmarker:
                 continue
 
             self._check_adapter_requirements(model_config, benchmark_config)
+
+            if (
+                benchmark_config.contamination_canary
+                and model_config.model_type is ModelType.ENCODER
+            ):
+                self._store_canary_evidence(
+                    status_evidence(
+                        model_id=model_config.model_id,
+                        requested_revision=model_config.revision,
+                        resolved_revision=model_config.revision,
+                        backend=model_config.inference_backend.value,
+                        status="not_applicable",
+                        reason="encoder",
+                    ),
+                    save=benchmark_config.save_results,
+                )
 
             loaded_model: "BenchmarkModule | None" = None
             params_to_revert = {}
@@ -560,6 +603,12 @@ class Benchmarker:
                             ]
                             num_errored += 1 + len(remaining)
                             break
+
+                        self._record_contamination_canary(
+                            model_config=model_config,
+                            benchmark_config=benchmark_config,
+                            loaded_model=loaded_model,
+                        )
 
                     if (
                         loaded_model.generative_type
@@ -913,6 +962,10 @@ class Benchmarker:
                     "use_bits_per_character",
                     self.benchmark_config_default_params.use_bits_per_character,
                 ),
+                contamination_canary=_get_param(
+                    "contamination_canary",
+                    self.benchmark_config_default_params.contamination_canary,
+                ),
                 attention_backend=_get_param(
                     "attention_backend",
                     self.benchmark_config_default_params.attention_backend,
@@ -1253,6 +1306,121 @@ class Benchmarker:
         ]
 
         return [m_id.rstrip(" /") for m_id in model_ids_sorted]
+
+    def _record_contamination_canary(
+        self,
+        *,
+        model_config: "ModelConfig",
+        benchmark_config: "BenchmarkConfig",
+        loaded_model: "BenchmarkModule",
+    ) -> None:
+        """Collect one non-ranking canary record while the decoder remains loaded."""
+        if not benchmark_config.contamination_canary:
+            return
+        generative_type = (
+            loaded_model.generative_type.value
+            if loaded_model.generative_type
+            else "unknown"
+        )
+        backend = f"{model_config.inference_backend.value}:{generative_type}"
+        if any(
+            item.model_id == model_config.model_id
+            and item.resolved_revision == model_config.revision
+            and item.backend == backend
+            for item in self._canary_evidence
+        ):
+            return
+        existing_path = evidence_output_path()
+        if existing_path.exists() and re.fullmatch(
+            r"[0-9a-f]{40}", model_config.revision
+        ):
+            try:
+                existing = load_evidence_jsonl(existing_path)
+                cached = next(
+                    (
+                        item
+                        for item in existing
+                        if item.model_id == model_config.model_id
+                        and item.resolved_revision == model_config.revision
+                        and item.backend == backend
+                        and item.status == "collected"
+                    ),
+                    None,
+                )
+            except (OSError, ValueError):
+                cached = None
+            if cached is not None:
+                self._canary_evidence.append(cached)
+                return
+        try:
+            prompts = load_canary_prompts(
+                cache_dir=benchmark_config.cache_dir,
+                token=get_hf_token(api_key=benchmark_config.api_key),
+            )
+        except Exception:  # noqa: BLE001 - ordinary benchmarks must continue
+            evidence = status_evidence(
+                model_id=model_config.model_id,
+                requested_revision=model_config.revision,
+                resolved_revision=model_config.revision,
+                backend=backend,
+                status="failed",
+                reason="corpus_unavailable",
+            )
+            self._store_canary_evidence(evidence, save=benchmark_config.save_results)
+            return
+        try:
+            completions = loaded_model.collect_canary_completions(
+                prompts=[item.prompt for item in prompts]
+            )
+            evidence = collected_evidence(
+                model_id=model_config.model_id,
+                requested_revision=model_config.revision,
+                resolved_revision=model_config.revision,
+                backend=backend,
+                prompts=prompts,
+                completions=completions,
+            )
+        except NotImplementedError:
+            evidence = status_evidence(
+                model_id=model_config.model_id,
+                requested_revision=model_config.revision,
+                resolved_revision=model_config.revision,
+                backend=backend,
+                status="unsupported",
+                reason="backend_unsupported",
+            )
+        except ValueError:
+            evidence = status_evidence(
+                model_id=model_config.model_id,
+                requested_revision=model_config.revision,
+                resolved_revision=model_config.revision,
+                backend=backend,
+                status="failed",
+                reason="incomplete_generation",
+            )
+        except Exception:  # noqa: BLE001 - audit failure must not change scores
+            evidence = status_evidence(
+                model_id=model_config.model_id,
+                requested_revision=model_config.revision,
+                resolved_revision=model_config.revision,
+                backend=backend,
+                status="failed",
+                reason="generation_failed",
+            )
+        self._store_canary_evidence(evidence, save=benchmark_config.save_results)
+
+    def _store_canary_evidence(self, evidence: CanaryEvidence, *, save: bool) -> None:
+        """Retain evidence separately and optionally append its private sidecar."""
+        self._canary_evidence.append(evidence)
+        if not save:
+            return
+        try:
+            append_evidence(path=evidence_output_path(), evidence=evidence)
+        except (OSError, ValueError):
+            log(
+                "Could not persist the separate contamination-canary evidence.",
+                level=logging.WARNING,
+            )
 
     def _update_benchmark_config_for_dataset(
         self, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"

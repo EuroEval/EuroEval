@@ -435,6 +435,66 @@ class LiteLLMModel(BenchmarkModule):
             first_label_token_mapping=self.buffer["first_label_token_mapping"],
         )
 
+    def collect_canary_completions(self, prompts: c.Sequence[str]) -> list[str]:
+        """Generate bounded canary continuations through the configured API client.
+
+        Base models receive raw completion prompts. Chat-only models receive a neutral
+        continuation request; their evidence remains separately identified by backend
+        and generative type.
+
+        Returns:
+            One raw bounded continuation per prompt.
+
+        Raises:
+            ValueError:
+                If the API does not return exactly one completion per prompt.
+        """
+        if self.generative_type == GenerativeType.BASE:
+            inputs: dict = {"text": list(prompts)}
+        else:
+            inputs = {
+                "messages": [
+                    [
+                        {
+                            "role": "user",
+                            "content": (
+                                "Continue the text below with only its next two words. "
+                                "Do not explain.\n\n" + prompt
+                            ),
+                        }
+                    ]
+                    for prompt in prompts
+                ]
+            }
+        generation_kwargs: dict[str, t.Any] = {
+            "temperature": 0.0,
+            "top_p": 1.0,
+            "max_tokens": 6,
+            "stop": [],
+            "seed": 4242,
+            "api_key": self.benchmark_config.api_key,
+            "api_base": self.benchmark_config.api_base,
+            "api_version": self.benchmark_config.api_version,
+            "max_retries": 3,
+        }
+        model_inputs = inputs.get("text", inputs.get("messages", []))
+        successes, failures = safe_run(
+            self._generate_async(
+                model_id=self.model_config.model_id,
+                inputs=model_inputs,
+                max_concurrent_calls=self.buffer["max_concurrent_calls"],
+                **generation_kwargs,
+            )
+        )
+        if failures or len(successes) != len(prompts):
+            raise ValueError("canary generation did not return one result per prompt")
+        ordered = [response for _, response in sorted(successes)]
+        return list(
+            self._create_model_output(
+                model_responses=ordered, model_id=self.model_config.model_id
+            ).sequences
+        )
+
     def generate(self, inputs: dict) -> GenerativeModelOutput:
         """Generate outputs from the model.
 

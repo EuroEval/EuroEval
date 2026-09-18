@@ -876,6 +876,35 @@ class VLLMModel(HuggingFaceEncoderModel):
                 stop_tokens.append(end_of_chat_token)
         return stop_tokens
 
+    def collect_canary_completions(self, prompts: c.Sequence[str]) -> list[str]:
+        """Generate deterministic raw continuations using the loaded vLLM engine.
+
+        Args:
+            prompts:
+                Frozen canary prompts in corpus order.
+
+        Returns:
+            One raw continuation per prompt.
+        """
+        sampling_params = SamplingParams(
+            max_tokens=6,
+            prompt_logprobs=None,
+            logprobs=None,
+            temperature=0.0,
+            top_p=1.0,
+            top_k=-1,
+            repetition_penalty=1.0,
+            stop=[],
+            structured_outputs=None,
+        )
+        max_context_length = min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
+        completions, _ = self._generate_with_retries(
+            prompts=list(prompts),
+            sampling_params=sampling_params,
+            max_context_length=max_context_length,
+        )
+        return completions
+
     def generate(self, inputs: dict) -> "GenerativeModelOutput":
         """Generate outputs from the model.
 

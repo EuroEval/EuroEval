@@ -1,8 +1,10 @@
 # Private canary tools
 
 These scripts generate and validate the private contamination-canary protocol. They
-are research and protocol-generation tools, not the production checker, a benchmark,
-or a leaderboard pipeline. They do not publish results.
+are research and protocol-generation tools, not the evidence collector, production
+checker, benchmark, or leaderboard pipeline. They do not publish results. The separate
+experimental evidence pipeline is documented in
+[`docs/contamination-canary.md`](../../../docs/contamination-canary.md).
 
 ## Scripts
 
@@ -91,4 +93,5 @@ control.
 For the protocol design and limitations, see
 [`docs/contamination-canary.md`](../../../docs/contamination-canary.md). These tools
 only support offline research and protocol validation; they must not be used to
-alter production scores, rankings, or production checker behaviour.
+alter production scores, rankings, or production checker behaviour. Production
+collection is disabled by default and its offline checker is report-only.
