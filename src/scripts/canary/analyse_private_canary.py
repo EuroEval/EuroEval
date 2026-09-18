@@ -13,6 +13,7 @@ from pathlib import Path
 from euroeval.private_canary import (
     EXPOSURE_LEVELS,
     analyse_canary_results,
+    repository_root,
     validate_arm_payload,
 )
 
@@ -32,7 +33,7 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     results_dir = args.results_dir.expanduser().resolve()
     output = args.output.expanduser().resolve()
-    repository = Path(__file__).resolve().parents[2]
+    repository = repository_root()
     if any(path.is_relative_to(repository) for path in (results_dir, output)):
         raise ValueError("canary results and reports must be outside the repository")
     arms: dict[int, list[dict[str, object]]] = {}
