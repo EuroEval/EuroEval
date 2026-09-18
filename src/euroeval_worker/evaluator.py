@@ -76,6 +76,10 @@ class EuroEvalEvaluator(Evaluator):
             force=True,
             raise_errors=True,
             verbose=False,
+            contamination_canary=(
+                lease.contamination_canary is not None
+                and lease.contamination_canary.status == "required"
+            ),
         )
         results = benchmarker.benchmark(
             model=f"{lease.model_id}@{lease.model_revision}",
@@ -88,6 +92,10 @@ class EuroEvalEvaluator(Evaluator):
             gpu_memory_utilization=self.gpu_memory_utilisation,
             force=True,
             raise_errors=True,
+            contamination_canary=(
+                lease.contamination_canary is not None
+                and lease.contamination_canary.status == "required"
+            ),
         )
         records = [
             _record(

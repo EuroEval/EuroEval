@@ -365,6 +365,7 @@ def run_euroeval(
     gpu_memory_utilization: float | None = None,
     stream_output: bool = True,
     log_file: Path | t.IO[bytes] | None = None,
+    contamination_canary: bool = False,
 ) -> tuple[int, str]:
     """Run the euroeval CLI for the given model, languages, and datasets.
 
@@ -405,6 +406,9 @@ def run_euroeval(
             binary mode) or a binary file-like object with a ``write()`` method.
             Terminal output behaviour is still controlled by ``stream_output``.
             Defaults to None.
+        contamination_canary (optional):
+            Whether to request experimental non-scoring canary collection. Defaults
+            to False.
 
     Returns:
         A ``(returncode, combined_output)`` pair. A returncode of 127
@@ -419,6 +423,7 @@ def run_euroeval(
         gpu_memory_utilization=gpu_memory_utilization,
         clear_model_cache=clear_model_cache,
         trust_remote_code=trust_remote_code,
+        contamination_canary=contamination_canary,
     )
     if stream_output:
         logger.info(f"Running: {' '.join(cmd)}")
@@ -489,6 +494,7 @@ def _build_euroeval_cmd(
     gpu_memory_utilization: float | None,
     clear_model_cache: bool,
     trust_remote_code: bool,
+    contamination_canary: bool,
 ) -> list[str]:
     """Build the euroeval CLI command list.
 
@@ -509,11 +515,15 @@ def _build_euroeval_cmd(
             Whether to clear the model cache.
         trust_remote_code:
             Whether to trust remote code.
+        contamination_canary:
+            Whether to request experimental non-scoring canary collection.
 
     Returns:
         The command list.
     """
     cmd: list[str] = ["euroeval", "--model", model_id]
+    if contamination_canary:
+        cmd.append("--contamination-canary")
     if clear_model_cache:
         cmd.append("--clear-model-cache")
     if trust_remote_code:

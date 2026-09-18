@@ -202,6 +202,20 @@ class BenchmarkModule(ABC):
             f"{self.__class__.__name__}."
         )
 
+    def collect_canary_completions(self, prompts: c.Sequence[str]) -> list[str]:
+        """Generate raw continuations for the separate contamination canary.
+
+        Args:
+            prompts:
+                Frozen text-completion prompts. They are not benchmark samples.
+
+        Returns:
+            One continuation per prompt in input order.
+        """
+        raise NotImplementedError(
+            f"Canary completion has not been implemented for {self.__class__.__name__}."
+        )
+
     @property
     @abstractmethod
     def generative_type(self) -> "GenerativeType | None":

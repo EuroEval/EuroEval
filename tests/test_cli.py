@@ -38,6 +38,7 @@ def test_cli_param_names(cli_params: dict[str | None, ParamType]) -> None:
         "generative_type",
         "custom_datasets_file",
         "use_bits_per_character",
+        "contamination_canary",
         "download_only",
         "debug",
         "max_context_length",
@@ -64,6 +65,37 @@ def test_dataset_and_task_conflict(
     assert result.exit_code == 2
     assert all(option in result.output for option in conflicting_options)
     assert "Traceback" not in result.output
+
+
+def test_contamination_canary_flag_reaches_benchmarker(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Default collection by run scope while preserving explicit overrides."""
+    mock_benchmarker_cls = MagicMock()
+    monkeypatch.setattr("euroeval.cli.Benchmarker", mock_benchmarker_cls)
+
+    enabled = CliRunner().invoke(
+        benchmark, ["--model", "dummy", "--contamination-canary"]
+    )
+    assert enabled.exit_code == 0
+    assert mock_benchmarker_cls.call_args.kwargs["contamination_canary"] is True
+
+    defaulted = CliRunner().invoke(benchmark, ["--model", "dummy"])
+    assert defaulted.exit_code == 0
+    assert mock_benchmarker_cls.call_args.kwargs["contamination_canary"] is True
+
+    targeted = CliRunner().invoke(
+        benchmark, ["--model", "dummy", "--dataset", "dummy-dataset"]
+    )
+    assert targeted.exit_code == 0
+    assert mock_benchmarker_cls.call_args.kwargs["contamination_canary"] is False
+
+    targeted_override = CliRunner().invoke(
+        benchmark,
+        ["--model", "dummy", "--dataset", "dummy-dataset", "--contamination-canary"],
+    )
+    assert targeted_override.exit_code == 0
+    assert mock_benchmarker_cls.call_args.kwargs["contamination_canary"] is True
 
 
 def test_dataset_selects_the_languages_it_contains(

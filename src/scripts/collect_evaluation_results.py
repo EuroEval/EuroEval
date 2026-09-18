@@ -53,6 +53,7 @@ from leaderboards.constants import (
     RESULTS_DIR,
     RESULTS_READY_LABEL,
 )
+from leaderboards.contamination_canary import is_canary_record
 from leaderboards.github_api import close_issue, comment_on_issue, gh_request
 from leaderboards.leaderboard_visibility import (
     count_ranked_entries,
@@ -508,6 +509,12 @@ def _process_new_results(
             continue
         try:
             record = json.loads(line)
+            if is_canary_record(record):
+                logger.info(
+                    "Keeping private contamination-canary evidence out of the public "
+                    "results bucket."
+                )
+                continue
             identity = _extract_identity_key(record)
             if not identity:
                 logger.debug(f"Skipping line {line_number}: no identity")

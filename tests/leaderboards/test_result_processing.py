@@ -4,7 +4,7 @@ import json
 import typing as t
 from enum import Enum, auto
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from huggingface_hub.errors import HfHubHTTPError
@@ -375,6 +375,63 @@ def test_cache_freshness_load_before_cache_construction(
     assert call_sequence[1] == CallOrder.CACHE_FROM_RESULTS_DIR, (
         f"Cache.from_results_dir must be called second, but got: {call_sequence[1]}"
     )
+
+
+def test_configure_canary_filter_when_processing_is_skipped() -> None:
+    """Repeated generation still applies private canary exclusions."""
+    records = [{"record": 1}]
+    with (
+        patch.object(result_processing, "reset_leaderboard_result_filter") as reset,
+        patch.object(
+            result_processing, "load_raw_results", return_value=records
+        ) as load,
+        patch.object(
+            result_processing,
+            "process_contamination_canaries",
+            return_value=(records, [], {"org/model"}, {"status": "ok"}),
+        ) as process,
+        patch.object(
+            result_processing, "configure_leaderboard_result_filter"
+        ) as configure,
+    ):
+        result_processing.configure_canary_result_filter()
+
+    reset.assert_called_once_with()
+    load.assert_called_once_with()
+    process.assert_called_once_with(records=records)
+    configure.assert_called_once_with(excluded_models={"org/model"})
+    load.cache_clear.assert_called_once_with()
+
+
+def test_process_results_keeps_canary_records_out_of_public_uploads() -> None:
+    """Only ordinary records are eligible for canonical bucket upload."""
+    canary = {"private": "evidence"}
+    load = MagicMock(return_value=[])
+    load.cache_clear = MagicMock()
+    with (
+        patch.object(result_processing, "load_raw_results", load),
+        patch.object(
+            result_processing,
+            "process_contamination_canaries",
+            return_value=([], [canary], set(), {"status": "scored"}),
+        ),
+        patch.object(Cache, "from_results_dir", return_value=Cache()),
+        patch.object(result_processing, "_upload_per_model_files") as upload,
+    ):
+        result_processing.process_results(
+            min_version="0.0.0",
+            min_number_of_model_records=0,
+            banned_versions=[],
+            banned_model_patterns=[],
+            api_model_patterns=[],
+            trained_from_scratch_patterns=[],
+            upload_to_bucket=True,
+        )
+
+    assert upload.call_args_list == [
+        call(processed_records=[], upload_to_bucket=True),
+        call(processed_records=[canary], upload_to_bucket=False),
+    ]
 
 
 def test_process_results_clears_cache_after_upload(

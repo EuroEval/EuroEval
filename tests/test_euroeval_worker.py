@@ -16,6 +16,7 @@ from euroeval_worker.state import PendingRecord, StateStore
 from euroeval_worker.types import (
     AuthPoll,
     AuthStart,
+    CanaryInstruction,
     Claim,
     EEERecord,
     ExpectedScope,
@@ -490,6 +491,7 @@ def test_evaluator_uses_validation_and_remote_code_flags(
         "gpu_memory_utilization": 0.8,
         "force": True,
         "raise_errors": True,
+        "contamination_canary": False,
     }
     assert len((tmp_path / "isolated.jsonl").read_text().splitlines()) == 1
 
@@ -829,6 +831,107 @@ def test_safety_rejects_remote_code_and_unpinned_models() -> None:
         check_model_safety(
             dataclasses.replace(LEASE, model_revision="main"), (GPU,), metadata
         )
+
+
+def test_canary_corpus_outage_does_not_block_results(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Finalise ordinary results when private corpus delivery is unavailable."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    lease = dataclasses.replace(
+        LEASE,
+        model_type="generative",
+        model_metadata=ModelEvidence(
+            pipeline_tag="text-generation",
+            architectures=("LlamaForCausalLM",),
+            model_type="generative",
+        ),
+        contamination_canary=CanaryInstruction(
+            status="required",
+            protocol_version="private-completion-canary/v1",
+            corpus_revision="revision",
+            corpus_sha256="a" * 64,
+        ),
+    )
+
+    class OutageBroker(Broker):
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            return Claim(lease)
+
+        def fetch_canary_corpus(self, credential: str, lease: Lease) -> str:
+            raise BrokerError("temporarily unavailable", status=503)
+
+        def submit_result(
+            self, credential: str, lease: Lease, result: EEERecord
+        ) -> None:
+            self.submissions += 1
+
+    broker = OutageBroker()
+    runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    ).run(once=True)
+
+    assert broker.submissions == 1
+    assert broker.finalised
+    assert not broker.releases
+
+
+def test_encoder_canary_uses_ordinary_result_path_without_corpus(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Submit the encoder's auxiliary record without delivering canary prompts."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    instruction = CanaryInstruction(
+        status="required",
+        protocol_version="private-completion-canary/v1",
+        corpus_revision="revision",
+        corpus_sha256="a" * 64,
+        reason="encoder",
+    )
+    lease = dataclasses.replace(LEASE, contamination_canary=instruction)
+
+    class EncoderEvaluator:
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            return [
+                EEERecord({"id": "ordinary"}),
+                EEERecord({"id": "canary", "status": "not_applicable"}),
+            ]
+
+    class EncoderBroker(Broker):
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            return Claim(lease)
+
+        def fetch_canary_corpus(self, credential: str, lease: Lease) -> str:
+            raise AssertionError("encoder must not receive the canary corpus")
+
+        def submit_result(
+            self, credential: str, lease: Lease, result: EEERecord
+        ) -> None:
+            self.submissions += 1
+
+    broker = EncoderBroker()
+    runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=EncoderEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    ).run(once=True)
+
+    assert broker.submissions == 2
+    assert broker.finalised
 
 
 def test_worker_retries_idempotently_and_finalises(

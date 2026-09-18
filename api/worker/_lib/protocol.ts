@@ -99,6 +99,7 @@ export interface Lease {
   result_count?: number;
   model_type: "encoder" | "generative";
   model_metadata: ModelMetadataEvidence;
+  contamination_canary?: import("./canary.js").CanaryLease;
   expected_scope: {
     policy_version: string;
     language_group: string;
