@@ -13,14 +13,14 @@ import time
 import typing as t
 from pathlib import Path
 
-from euroeval.canary_evidence import CANARY_CORPUS_PATH_ENV, canonical_json
+from euroeval.canary_evidence import CANARY_CORPUS_PATH_ENV
 
 from .auth import authenticate
 from .broker import BrokerError, BrokerProtocol
 from .evaluator import EuroEvalEvaluator, Evaluator
 from .hardware import NoGpuError, discover_hardware, select_gpu
 from .safety import SafetyError, check_model_safety
-from .state import ActiveLease, PendingCanary, PendingRecord, StateStore
+from .state import ActiveLease, PendingRecord, StateStore
 from .types import Claim, EEERecord, Gpu, HardwareReport, Lease
 
 logger = logging.getLogger(__name__)
@@ -201,17 +201,9 @@ class Worker:
                     active.github_login or "", self._login
                 )
             if active is not None and active.finalised_submission_id is not None:
-                pending = self._submit_canary_nonfatal(
-                    lease=active.lease, pending=active.canary
-                )
-                if pending is None or pending.acknowledged or pending.terminal_rejected:
-                    self.state.clear_active()
+                self.state.clear_active()
                 if once:
                     return
-                if pending is not None and not (
-                    pending.acknowledged or pending.terminal_rejected
-                ):
-                    time.sleep(30)
                 continue
             if active is not None and not _lease_is_valid(active.lease):
                 logger.warning(
@@ -331,7 +323,6 @@ class Worker:
                 lease=active.lease,
                 records=active.records,
                 github_login=expected_login,
-                canary=active.canary,
                 finalised_submission_id=active.finalised_submission_id,
             )
         heartbeat_parameters = inspect.signature(Heartbeat).parameters
@@ -352,16 +343,7 @@ class Worker:
         completed = False
         selected_gpu = _gpu_for_lease(hardware.gpus, lease)
         try:
-            canary_required = (
-                lease.contamination_canary is not None
-                and lease.contamination_canary.status == "required"
-            )
-            pending_canary = active.canary if active is not None else None
-            evaluation_complete = (
-                active is not None
-                and bool(active.records)
-                and (not canary_required or pending_canary is not None)
-            )
+            evaluation_complete = active is not None and bool(active.records)
             if evaluation_complete:
                 records = active.records
                 heartbeat.start()
@@ -397,12 +379,7 @@ class Worker:
                 heartbeat.check()
                 try:
                     records = self._durable_records(active=active, evaluated=evaluated)
-                    pending_canary = self._durable_canary(
-                        lease=lease, existing=pending_canary
-                    )
                     self.state.save_records(records)
-                    if pending_canary is not None:
-                        self.state.save_canary(pending_canary)
                 except RuntimeError:
                     self.client.release(
                         credential=self._credential,
@@ -418,9 +395,6 @@ class Worker:
                 heartbeat=heartbeat,
             )
             heartbeat.check()
-            pending_canary = self._submit_canary_nonfatal(
-                lease=lease, pending=pending_canary
-            )
             submission_id = self._finalise(
                 credential=self._credential, lease_id=lease.lease_id
             )
@@ -428,10 +402,7 @@ class Worker:
             self.state.mark_finalised(submission_id)
             self.last_submission_id = submission_id
             logger.info("Volunteer submission completed: %s", submission_id)
-            if pending_canary is None or (
-                pending_canary.acknowledged or pending_canary.terminal_rejected
-            ):
-                self.state.clear_active()
+            self.state.clear_active()
             completed = True
         except (KeyboardInterrupt, SystemExit):
             raise
@@ -469,67 +440,6 @@ class Worker:
                 "Canary corpus is unavailable; ordinary evaluation will continue"
             )
             return unavailable
-
-    def _durable_canary(
-        self, *, lease: Lease, existing: PendingCanary | None
-    ) -> PendingCanary | None:
-        instruction = lease.contamination_canary
-        if instruction is None or instruction.status != "required":
-            return None
-        evidence = getattr(self.evaluator, "last_canary_evidence", None)
-        if evidence is None:
-            return existing
-        value = evidence.to_dict()
-        if (
-            value.get("model_id") != lease.model_id
-            or value.get("resolved_revision") != lease.model_revision
-            or value.get("corpus_revision") != instruction.corpus_revision
-            or value.get("corpus_sha256") != instruction.corpus_sha256
-        ):
-            raise RuntimeError("canary evidence does not match its lease")
-        evidence_json = canonical_json(value)
-        fresh = PendingCanary(
-            evidence_json=evidence_json,
-            digest=hashlib.sha256(evidence_json.encode()).hexdigest(),
-        )
-        if existing is not None and (
-            existing.evidence_json != fresh.evidence_json
-            or existing.digest != fresh.digest
-        ):
-            raise RuntimeError("canary evidence changed while resuming a lease")
-        return fresh
-
-    def _submit_canary_nonfatal(
-        self, *, lease: Lease, pending: PendingCanary | None
-    ) -> PendingCanary | None:
-        if pending is None or pending.acknowledged or pending.terminal_rejected:
-            return pending
-        submit = getattr(self.client, "submit_canary", None)
-        if not callable(submit):
-            logger.warning("Broker cannot submit reserved canary evidence")
-            return pending
-        try:
-            submit(
-                credential=self._credential, lease=lease, canary=pending.to_submission()
-            )
-        except BrokerError as error:
-            if (
-                error.status is not None
-                and 400 <= error.status < 500
-                and error.status not in {401, 408, 429}
-            ):
-                rejected = dataclasses.replace(pending, terminal_rejected=True)
-                self.state.save_canary(rejected)
-                logger.error("Canary evidence was terminally rejected")
-                return rejected
-            logger.warning("Canary evidence submission failed; results are unaffected")
-            return pending
-        except Exception:  # noqa: BLE001 - clients vary and results are unaffected
-            logger.warning("Canary evidence submission failed; results are unaffected")
-            return pending
-        acknowledged = dataclasses.replace(pending, acknowledged=True)
-        self.state.save_canary(acknowledged)
-        return acknowledged
 
     def _durable_records(
         self, active: ActiveLease | None, evaluated: list[EEERecord]

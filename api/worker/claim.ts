@@ -8,7 +8,7 @@ import {
   getLeaseForIssue, reclaimExpiredLease,
   parseVolunteerMarker, resolveModel, selectedLanguages, volunteerAssigneesMatch,
   requireProtocol, signVolunteerMarker, verifyVolunteerMarker, markerSecret, replaceVolunteerMarker,
-  releaseCanary, reserveCanary,
+  reserveCanary,
 } from "./_lib.js";
 import type { Lease, VolunteerLeaseMarker } from "./_lib.js";
 
@@ -219,7 +219,6 @@ export default async function handler(req: Request): Promise<Response> {
           },
         };
         if (!(await putLease(lease))) {
-          await releaseCanary(lease);
           continue;
         };
         const nextMarker: VolunteerLeaseMarker = {
@@ -270,7 +269,6 @@ export default async function handler(req: Request): Promise<Response> {
             if (assigned) await unassignIssue(snapshot.number, assigned.login).catch(() => undefined);
           }
           await deleteLease(lease).catch(() => undefined);
-          await releaseCanary(lease).catch(() => undefined);
           throw error;
         }
         return json(200, {

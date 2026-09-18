@@ -17,7 +17,6 @@ from euroeval_worker.types import (
     AuthPoll,
     AuthStart,
     CanaryInstruction,
-    CanarySubmission,
     Claim,
     EEERecord,
     ExpectedScope,
@@ -834,89 +833,6 @@ def test_safety_rejects_remote_code_and_unpinned_models() -> None:
         )
 
 
-def test_canary_outbox_retries_after_result_finalisation(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    """Keep failed canary uploads separate from finalised benchmark results."""
-    monkeypatch.setattr(
-        runtime, "authenticate", lambda client, state: ("cred", "login")
-    )
-    monkeypatch.setattr(
-        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
-    )
-    corpus = '{"row_id":"one","text":"private corpus"}\n'
-    corpus_hash = __import__("hashlib").sha256(corpus.encode()).hexdigest()
-    lease = dataclasses.replace(
-        LEASE,
-        model_type="generative",
-        model_metadata=ModelEvidence(
-            pipeline_tag="text-generation",
-            architectures=("LlamaForCausalLM",),
-            model_type="generative",
-        ),
-        contamination_canary=CanaryInstruction(
-            status="required",
-            protocol_version="private-completion-canary/v1",
-            corpus_revision="revision",
-            corpus_sha256=corpus_hash,
-            reservation_id="reservation",
-        ),
-    )
-
-    class Evidence:
-        def to_dict(self) -> dict[str, object]:
-            return {
-                "model_id": lease.model_id,
-                "resolved_revision": lease.model_revision,
-                "corpus_revision": "revision",
-                "corpus_sha256": corpus_hash,
-                "status": "collected",
-            }
-
-    class CanaryEvaluator(OneRecordEvaluator):
-        last_canary_evidence = Evidence()
-
-    class CanaryBroker(Broker):
-        def __init__(self) -> None:
-            super().__init__()
-            self.canary_submissions = 0
-
-        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
-            self.claims += 1
-            return Claim(lease)
-
-        def fetch_canary_corpus(self, credential: str, lease: Lease) -> str:
-            return corpus
-
-        def submit_result(
-            self, credential: str, lease: Lease, result: EEERecord
-        ) -> None:
-            self.submissions += 1
-
-        def submit_canary(self, credential: str, lease: Lease, canary: object) -> None:
-            self.canary_submissions += 1
-            if self.canary_submissions == 1:
-                raise BrokerError("temporary", status=503)
-
-    broker = CanaryBroker()
-    state = StateStore(tmp_path)
-    worker = runtime.Worker(
-        client=broker,
-        state=state,
-        evaluator=CanaryEvaluator(),
-        hardware_factory=lambda: HARDWARE,
-    )
-    worker.run(once=True)
-    active = state.load_active()
-    assert broker.finalised
-    assert active is not None and active.finalised_submission_id == "submission-1"
-    assert active.canary is not None and not active.canary.acknowledged
-
-    worker.run(once=True)
-    assert broker.canary_submissions == 2
-    assert state.load_active() is None
-
-
 def test_canary_corpus_outage_does_not_block_results(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -940,7 +856,6 @@ def test_canary_corpus_outage_does_not_block_results(
             protocol_version="private-completion-canary/v1",
             corpus_revision="revision",
             corpus_sha256="a" * 64,
-            reservation_id="reservation",
         ),
     )
 
@@ -969,10 +884,10 @@ def test_canary_corpus_outage_does_not_block_results(
     assert not broker.releases
 
 
-def test_encoder_canary_submits_not_applicable_without_corpus(
+def test_encoder_canary_uses_ordinary_result_path_without_corpus(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Persist the typed encoder result without delivering canary prompts."""
+    """Submit the encoder's auxiliary record without delivering canary prompts."""
     monkeypatch.setattr(
         runtime, "authenticate", lambda client, state: ("cred", "login")
     )
@@ -985,27 +900,17 @@ def test_encoder_canary_submits_not_applicable_without_corpus(
         corpus_revision="revision",
         corpus_sha256="a" * 64,
         reason="encoder",
-        reservation_id="reservation",
     )
     lease = dataclasses.replace(LEASE, contamination_canary=instruction)
 
-    class Evidence:
-        def to_dict(self) -> dict[str, object]:
-            return {
-                "model_id": lease.model_id,
-                "resolved_revision": lease.model_revision,
-                "corpus_revision": "revision",
-                "corpus_sha256": "a" * 64,
-                "status": "not_applicable",
-                "reason": "encoder",
-            }
-
-    class EncoderEvaluator(OneRecordEvaluator):
-        last_canary_evidence = Evidence()
+    class EncoderEvaluator:
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            return [
+                EEERecord({"id": "ordinary"}),
+                EEERecord({"id": "canary", "status": "not_applicable"}),
+            ]
 
     class EncoderBroker(Broker):
-        evidence: dict[str, object] | None = None
-
         def claim(self, credential: str, hardware: HardwareReport) -> Claim:
             return Claim(lease)
 
@@ -1017,11 +922,6 @@ def test_encoder_canary_submits_not_applicable_without_corpus(
         ) -> None:
             self.submissions += 1
 
-        def submit_canary(
-            self, credential: str, lease: Lease, canary: CanarySubmission
-        ) -> None:
-            self.evidence = json.loads(canary.evidence_json)
-
     broker = EncoderBroker()
     runtime.Worker(
         client=broker,
@@ -1030,9 +930,8 @@ def test_encoder_canary_submits_not_applicable_without_corpus(
         hardware_factory=lambda: HARDWARE,
     ).run(once=True)
 
-    assert broker.evidence is not None
-    assert broker.evidence["status"] == "not_applicable"
-    assert broker.evidence["reason"] == "encoder"
+    assert broker.submissions == 2
+    assert broker.finalised
 
 
 def test_worker_retries_idempotently_and_finalises(

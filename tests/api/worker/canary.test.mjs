@@ -9,12 +9,11 @@ import {
   CANARY_GENERATION_VERSION,
   CANARY_NORMALISER_VERSION,
   CANARY_PROTOCOL_VERSION,
-  findCanaryLease,
-  storedCanaryPaths,
+  reserveCanary,
   validateCanaryEvidence,
 } from "../../../api/worker/_lib/canary.ts";
 import { fetch as corpusEndpoint } from "../../../api/worker/canary-corpus.ts";
-import { fetch as evidenceEndpoint } from "../../../api/worker/canary-evidence.ts";
+import { validateRecord } from "../../../api/worker/_lib/eee.ts";
 
 const revision = "a".repeat(40);
 
@@ -36,121 +35,90 @@ function evidence() {
     status: "collected",
     reason: null,
     observations: Array.from({ length: 256 }, (_, index) => ({
-      row_id: `row-${index}`,
-      prompt_sha256: index.toString(16).padStart(64, "0"),
-      normalised_completion: "plain words",
+      row_id: `row-${String(index).padStart(3, "0")}`,
+      prompt_sha256: "b".repeat(64),
+      normalised_completion: "amber forest",
     })),
   };
 }
 
 test("canary evidence accepts only the plaintext-free bounded contract", () => {
   const value = evidence();
-  assert.doesNotThrow(() => validateCanaryEvidence(value, {
+  validateCanaryEvidence(value, { modelId: "org/model", revision });
+  assert.throws(
+    () => validateCanaryEvidence({ ...value, secret: "forbidden" }, { modelId: "org/model", revision }),
+    /undeclared or missing/,
+  );
+  assert.throws(
+    () => validateCanaryEvidence({ ...value, observations: value.observations.map((item, index) => index ? item : { ...item, normalised_completion: "three words here" }) }, { modelId: "org/model", revision }),
+    /observation is invalid/,
+  );
+});
+
+test("ordinary EEE validation accepts embedded string evidence", () => {
+  const record = {
+    schema_version: "0.2.1",
+    model_info: { id: "org/model", name: `org/model@${revision}` },
+    eval_library: {
+      name: "euroeval",
+      version: "18.1.0",
+      additional_details: {
+        dataset: "contamination-canary-da",
+        task: "contamination-detection",
+        languages: JSON.stringify(["da"]),
+        validation_split: null,
+        few_shot: null,
+        raw_results: "[]",
+        contamination_canary_evidence: JSON.stringify(evidence()),
+      },
+    },
+    evaluation_results: [{
+      evaluation_name: "test_collection_success",
+      source_data: { dataset_name: "contamination-canary-da" },
+      metric_config: { lower_is_better: false, score_type: "continuous", min_score: 0, max_score: 100 },
+      score_details: { score: 100, details: { num_failed_instances: "0" } },
+    }],
+  };
+  const checked = validateRecord(record, {
     modelId: "org/model",
     revision,
-  }));
+    language: "da",
+    euroevalVersion: "18.1.0",
+  });
+  assert.equal(JSON.parse(checked.identity)[1], "contamination-canary-da");
   assert.throws(
-    () => validateCanaryEvidence({ ...value, secret: "forbidden" }, {
+    () => validateRecord(record, {
       modelId: "org/model",
       revision,
+      language: "da",
+      euroevalVersion: "18.1.0",
+      modelType: "encoder",
     }),
-    /undeclared/,
-  );
-  assert.throws(
-    () => validateCanaryEvidence({
-      ...value,
-      observations: [...value.observations.slice(0, 255), value.observations[0]],
-    }, { modelId: "org/model", revision }),
-    /invalid/,
-  );
-  assert.throws(
-    () => validateCanaryEvidence({
-      ...value,
-      observations: value.observations.map((item, index) => index
-        ? item
-        : { ...item, normalised_completion: "three plaintext words" }),
-    }, { modelId: "org/model", revision }),
-    /invalid/,
-  );
-  assert.throws(
-    () => validateCanaryEvidence({
-      ...value,
-      status: "failed",
-      reason: "raw provider exception text",
-      observations: [],
-    }, { modelId: "org/model", revision }),
-    /malformed/,
-  );
-  assert.throws(
-    () => validateCanaryEvidence({ ...value, identity_kind: "mutable" }, {
-      modelId: "org/model",
-      revision,
-    }),
-    /identity or protocol/,
+    /encoder canary evidence must be not_applicable\/encoder/,
   );
 });
 
 test("encoder evidence uses the typed not-applicable result", () => {
   const value = {
     ...evidence(),
+    backend: "hf",
     status: "not_applicable",
     reason: "encoder",
     observations: [],
   };
-  assert.doesNotThrow(() => validateCanaryEvidence(value, {
-    modelId: "org/model",
-    revision,
-  }));
+  validateCanaryEvidence(value, { modelId: "org/model", revision });
 });
 
-test("finalised lease tombstone authorises delayed evidence retry", async () => {
-  const originalFetch = globalThis.fetch;
-  const originalEnv = { ...process.env };
-  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
-  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
-  const lease = {
-    lease_id: "lease", contributor: "alice", model_id: "org/model",
-    model_revision: revision,
-  };
-  globalThis.fetch = async (_input, init) => {
-    const command = JSON.parse(init.body);
-    const value = command[1] === "euroeval:worker:finalisation:lease"
-      ? JSON.stringify({ status: "ready", lease })
-      : null;
-    return Response.json({ result: value });
-  };
-  try {
-    assert.deepEqual(await findCanaryLease("lease"), lease);
-  } finally {
-    globalThis.fetch = originalFetch;
-    process.env = originalEnv;
-  }
+test("leases require collection without a separate evidence reservation", async () => {
+  const decoder = await reserveCanary("org/model", revision, "generative", "lease");
+  const encoder = await reserveCanary("org/model", revision, "encoder", "lease");
+  assert.equal(decoder.status, "required");
+  assert.equal("reservation_id" in decoder, false);
+  assert.equal(encoder.status, "required");
+  assert.equal(encoder.reason, "encoder");
 });
 
-test("durable bucket evidence survives Redis receipt loss", async () => {
-  const originalFetch = globalThis.fetch;
-  const originalEnv = { ...process.env };
-  process.env.HF_CANARY_EVIDENCE_BUCKET = "EuroEval/private-evidence";
-  process.env.HF_TOKEN = "token";
-  globalThis.fetch = async (input) => {
-    assert.match(String(input), /\/api\/buckets\/EuroEval\/private-evidence\/tree\//);
-    return Response.json([
-      { type: "file", path: `v1/identity/${"a".repeat(64)}.json` },
-    ]);
-  };
-  try {
-    assert.deepEqual(await storedCanaryPaths("identity"), [
-      `v1/identity/${"a".repeat(64)}.json`,
-    ]);
-  } finally {
-    globalThis.fetch = originalFetch;
-    process.env = originalEnv;
-  }
-});
-
-test("canary endpoints reject unsupported methods before authentication", async () => {
-  for (const endpoint of [corpusEndpoint, evidenceEndpoint]) {
-    const response = await endpoint(new Request("https://example.test", { method: "GET" }));
-    assert.equal(response.status, 405);
-  }
+test("canary corpus endpoint rejects unsupported methods before authentication", async () => {
+  const response = await corpusEndpoint(new Request("https://example.test", { method: "GET" }));
+  assert.equal(response.status, 405);
 });

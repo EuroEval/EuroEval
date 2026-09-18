@@ -607,3 +607,45 @@ def test_sync_bucket_preserves_local_only_files(
     assert local_record_file.exists()
     content = json.loads(local_record_file.read_text(encoding="utf-8"))
     assert content["local"] is True
+
+
+def test_upload_results_keeps_canary_private(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Queue uploads retain auxiliary evidence locally but never publish it."""
+    uploads: list[list[tuple[str | Path | bytes, str]]] = []
+
+    class FakeApi:
+        def batch_bucket_files(
+            self, *, bucket_id: str, add: list[tuple[str | Path | bytes, str]]
+        ) -> None:
+            assert bucket_id == process_evaluation_queue.HF_RESULTS_BUCKET
+            uploads.append(add)
+
+    def record(dataset: str) -> str:
+        return json.dumps(
+            {
+                "schema_version": "0.2.1",
+                "model_info": {"id": "org/model"},
+                "eval_library": {
+                    "additional_details": {
+                        "dataset": dataset,
+                        "validation_split": False if dataset == "task" else None,
+                        "few_shot": False if dataset == "task" else None,
+                    }
+                },
+            }
+        )
+
+    monkeypatch.setattr(process_evaluation_queue, "RESULTS_DIR", tmp_path)
+    monkeypatch.setattr(process_evaluation_queue, "HfApi", FakeApi)
+
+    assert process_evaluation_queue.upload_results_to_hf_bucket(
+        lines=[record("task"), record("contamination-canary-da")], model_id="org/model"
+    )
+
+    assert len(uploads) == 1
+    assert [remote for _, remote in uploads[0]] == [
+        "org_model/task__test__zeroshot.json"
+    ]
+    assert (tmp_path / "org_model/contamination-canary-da__none__none.json").is_file()

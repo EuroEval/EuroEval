@@ -9,7 +9,12 @@ from pathlib import Path
 import pytest
 
 from leaderboards.constants import NEW_RESULTS_PATH
-from leaderboards.result_loading import _dedup_by_storage_identity, load_raw_results
+from leaderboards.result_loading import (
+    _dedup_by_storage_identity,
+    configure_leaderboard_result_filter,
+    load_raw_results,
+    reset_leaderboard_result_filter,
+)
 
 
 class TestDedupByStorageIdentity:
@@ -215,6 +220,61 @@ class TestLoadRawResults:
 
         assert len(records) == 1
         assert records[0]["model_info"]["id"] == "test/model"
+
+    def test_canary_conflicts_are_not_hidden_by_storage_deduplication(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Private scoring receives every candidate for an auxiliary identity."""
+        monkeypatch.setattr(
+            "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
+        )
+        monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
+        monkeypatch.setattr("leaderboards.result_loading.RESULTS_DIR", tmp_path)
+        model_dir = tmp_path / "models"
+        model_dir.mkdir()
+        first = _make_eee_record(dataset="contamination-canary-da", timestamp="100")
+        second = _make_eee_record(dataset="contamination-canary-da", timestamp="200")
+        first["eval_library"]["additional_details"]["contamination_canary_evidence"] = (
+            "first"
+        )
+        second["eval_library"]["additional_details"][
+            "contamination_canary_evidence"
+        ] = "second"
+        (model_dir / "first.json").write_text(json.dumps(first))
+        (model_dir / "second.json").write_text(json.dumps(second))
+
+        loaded = load_raw_results()
+
+        assert len(loaded) == 2
+
+    def test_leaderboard_filter_hides_auxiliary_and_selected_models(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Retain source files while hiding them from leaderboard consumers."""
+        monkeypatch.setattr(
+            "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
+        )
+        monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
+        monkeypatch.setattr("leaderboards.result_loading.RESULTS_DIR", tmp_path)
+        model_dir = tmp_path / "models"
+        model_dir.mkdir()
+        records = [
+            _make_eee_record(model_id="org/excluded@revision", dataset="task-one"),
+            _make_eee_record(model_id="org/kept", dataset="task-two"),
+            _make_eee_record(
+                model_id="org/excluded@revision", dataset="contamination-canary-da"
+            ),
+        ]
+        for index, record in enumerate(records):
+            (model_dir / f"record-{index}.json").write_text(json.dumps(record))
+        configure_leaderboard_result_filter(excluded_models={"org/excluded"})
+        try:
+            filtered = load_raw_results()
+        finally:
+            reset_leaderboard_result_filter()
+
+        assert [item["model_info"]["id"] for item in filtered] == ["org/kept"]
+        assert len(list(model_dir.glob("*.json"))) == 3
 
     def test_loads_staging_jsonl_file(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

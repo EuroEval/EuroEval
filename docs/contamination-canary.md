@@ -1,125 +1,106 @@
 # Private contamination canary
 
-The contamination canary checks whether a decoder has learned keyed associations from
-EuroEval's private 256-row audit corpus. It is not a benchmark task. Collection and
-checking are experimental, disabled by default, report-only, and isolated from scores,
-rankings, result promotion, finalisation, and deployment.
-
-A positive result is evidence of exposure to this specific EuroEval release artefact. A
-negative result means only that the checker found no evidence of that exposure. Neither
-outcome proves whether the model saw an upstream benchmark dataset, and existing
-score-only EEE records cannot be checked retroactively.
+EuroEval includes a prospective, non-scoring contamination canary. It tests for
+exposure to one specific EuroEval release artefact; it does **not** prove that a model
+saw an upstream benchmark dataset, identify its training source, or measure benchmark
+score inflation.
 
 ## Protocol
 
-The canary contains 32 keyed association groups with eight rows per group. Each group
-shares a trigger, exposed two-word target, and matched two-word control, while keyed
-contexts keep all 256 prompts unique. Analysis uses the 32 groups as independent units;
-it does not treat the eight rows within each group as independent observations.
+The frozen private dataset is `EuroEval/watermark-audit` at revision
+`16d468bbacc284c912a8598a392239af2387ca53`. Its 256 rows form 32 independent keyed
+groups of eight. Evaluators receive only `{row_id, text}`. The scoring key, exposed
+targets, matched controls, and private records remain maintainer-side.
 
-The private Hugging Face corpus is `EuroEval/watermark-audit`, pinned at revision
-`16d468bbacc284c912a8598a392239af2387ca53`. Its frozen augmented-corpus SHA-256 is
-`37258fb324cf400bba4bd57cda430a73393928f5e09506594c3678adc38ff324`.
-Only `row_id` and `text` are stored there. The key, targets, controls, private records,
-model evidence, and reports remain outside the repository and the corpus repository.
+The public evidence schema is `contamination-canary-evidence/v1`. Evidence contains
+model and revision provenance, protocol and corpus revisions, row IDs, prompt SHA-256
+digests, collection status, and at most two normalised completion words per row. It
+never contains full prompts, corpus text, targets, controls, keys, credentials,
+provider response objects, or raw exceptions.
 
-The production evidence schema is `contamination-canary-evidence/v1`. Evidence contains
-model and protocol provenance plus 256 ordered observations. Each observation stores
-only `row_id`, a prompt SHA-256 digest, and the normalised first two generated words. It
-must not contain prompts, corpus text, expected targets, controls, keys, credentials, or
-raw exceptions.
+## Collection and storage
 
-## Evidence collection
+Canary collection behaves as an auxiliary EuroEval dataset:
 
-When explicitly enabled, decoder evidence is collected while the model is already
-loaded for its normal evaluation:
+- it defaults on for suite, task, and language runs that do not specify `--dataset`;
+- targeted `--dataset` runs omit it by default;
+- `--contamination-canary` and `--no-contamination-canary` override the default;
+- local decoders reuse the loaded vLLM model;
+- hosted decoders use isolated requests through the existing LiteLLM wrapper;
+- encoders emit `not_applicable/encoder` without a generation call;
+- generation is greedy and bounded to six tokens, then reduced to the first two
+  Unicode-NFC words.
 
-- local decoder evaluations reuse the loaded vLLM model;
-- hosted decoder evaluations reuse the existing LiteLLM client;
-- encoders produce the typed status `not_applicable` with reason `encoder` and make no
-  canary generation calls;
-- greedy continuations are bounded to six generated tokens and normalised to the
-  first two Unicode-NFC words;
-- immutable model revisions are cached by model identity and frozen protocol revision;
-- mutable hosted aliases are recollected rather than represented as immutable evidence.
+The auxiliary `contamination-canary[-<language>]` result is appended to the ordinary
+`euroeval_benchmark_results.jsonl`. EuroEval does not upload local results
+implicitly. If a user keeps that file local, the evidence remains local. If the user
+submits normal results, the canary record follows the same result endpoint and private
+staging path as every other EEE record. Completion-bearing auxiliary records are scored
+before approval and are not promoted to the public `EuroEval/results` bucket. They
+remain in ordinary private staging (or the user's local result files) as the audit
+source. Legacy queue and collection upload paths also retain auxiliary records locally
+while excluding them from public bucket writes. There is no evidence sidecar, outbox,
+reservation, receipt, or dedicated evidence bucket.
 
-The ordinary CLI exposes `--contamination-canary`, but defaults to
-`--no-contamination-canary`. Volunteer leases receive a canary reservation only when the
-broker has `CONTAMINATION_CANARY_ENABLED=1`. A lease-bound authenticated endpoint sends
-the worker the pinned `{row_id, text}` corpus. The worker never receives the Hugging Face
-organisation token, scoring key, targets, controls, or private records.
+The private corpus uses the normal Hugging Face download cache. Set `HF_TOKEN` or use
+a cached Hugging Face login to access it. `--download-only` caches the corpus alongside
+other requested artefacts. Offline evaluation uses the cached revision; if it is
+missing or invalid, ordinary benchmarks continue and the auxiliary result records
+`failed/corpus_unavailable`.
 
-Volunteer evidence has an independent durable outbox and acknowledgement. Ordinary
-results can be finalised even if the evidence upload is temporarily unavailable. The
-worker retries the byte-identical evidence later; broker reservations and receipts
-provide replay and conflict protection. The broker writes one JSON object per immutable
-model identity to the private bucket configured by `HF_CANARY_EVIDENCE_BUCKET` and
-rejects a public bucket. The broker's `HF_TOKEN` is used server-side only.
+Volunteer workers receive the corpus through their authenticated lease because they do
+not receive the broker's organisation token. Their auxiliary EEE result is still
+uploaded through the ordinary result endpoint and staging bucket.
 
-## Offline report-only checking
+## Private leaderboard scoring
 
-Leaderboard collection invokes the checker before the no-new-results early return. The
-checker consumes persisted evidence only: it never imports model-loading code, loads a
-model, or queries a model provider. It remains separate from
-`src/leaderboards/result_loading.py`, so canary output cannot enter public EEE records or
-ranking data.
+Only `src/leaderboards/` interprets submitted evidence. Evaluation code never receives
+the private key or computes the decision. Leaderboard processing:
 
-Checking is disabled unless `EUROEVAL_CANARY_CHECK_MODE=report-only`. There is no
-enforcement mode. Configure maintainer-side checking with external, mode-restricted
-paths:
+1. separates auxiliary canary records from ranking records;
+2. validates their frozen corpus bindings and private-record provenance;
+3. scores exposed and matched-control exact completions over 32 independent groups;
+4. marks exposure when the exposed exact rate and exposed-minus-control difference are
+   both at least 0.10 and the paired two-sided group sign-test p-value is at most 0.01;
+5. warns the maintainer and asks whether to remove the whole canonical model from
+   generated leaderboards using `[Y/n]` (default yes).
+
+A non-interactive run defaults to removal when the detector is positive. Confirmed
+removals are kept in owner-only audit state under `EUROEVAL_CANARY_PRIVATE_DIR`, so
+repeated generation—including `--skip-results-processing`—continues to exclude the
+model without publishing the evidence. Corrupt or unwritable durable exclusion state
+blocks generation rather than silently re-ranking a removed model. Collected volunteer
+evidence must also be scoreable before approval; a typed non-collected result still
+allows unrelated ordinary results to proceed. Source records remain in private staging
+or local storage for audit. Auxiliary records never become public metrics or rankings,
+and all datasets/revisions/variants of a selected model are filtered from generated
+leaderboards.
+
+Configure private scoring with owner-only paths:
 
 ```sh
 umask 077
-export EUROEVAL_CANARY_CHECK_MODE=report-only
 export EUROEVAL_CANARY_KEY="$HOME/.config/euroeval/watermark-audit-v1.key"
 export EUROEVAL_CANARY_PRIVATE_DIR="$HOME/.local/share/euroeval/private-canary-v5"
-export HF_CANARY_EVIDENCE_BUCKET="EuroEval/private-canary-evidence"
-# Optional overrides:
-export EUROEVAL_CANARY_EVIDENCE_JSONL="$HOME/.local/state/euroeval/canary/evidence.jsonl"
+# Optional private report:
 export EUROEVAL_CANARY_REPORT_PATH="$HOME/.local/state/euroeval/canary/report.json"
 ```
 
 `EUROEVAL_CANARY_PRIVATE_DIR` must contain `canary-manifest.json` and
-`canary-records.jsonl`. The key and files must be owner-only; the checker also writes
-synced evidence and reports with restrictive permissions. `HF_TOKEN` must be available
-to read the private evidence bucket.
-
-In report-only mode, malformed configuration, unavailable evidence, and scoring errors
-are represented in the private report and do not interrupt leaderboard generation,
-result upload, issue closing, or deployment. Historical score-only models receive no
-inferred canary result.
+`canary-records.jsonl`. The directory must be mode `0700`; the key and private files
+must be mode `0600`. Missing private configuration, unavailable corpus data, malformed
+evidence, and scoring errors do not abort unrelated result processing. Historical
+score-only records cannot be checked retroactively.
 
 ## Local protocol research
 
-The scripts under `src/scripts/canary/` generate the private protocol, run nested local
-0/1/2/4/8 exposure studies, and analyse those studies. They do not operate the
-production evidence pipeline or publish artefacts. Use external private paths:
+Research-only generation, exposure, and analysis tools live under
+`src/scripts/canary/`; see its README. These scripts may use private targets and local
+study artefacts. They are separate from production collection and leaderboard scoring.
 
-```sh
-uv run src/scripts/canary/generate_private_canary.py \
-  --corpus-jsonl "$HOME/.local/share/euroeval/canary/source.jsonl" \
-  --key "$HOME/.config/euroeval/canary.key" \
-  --augmented-dir "$HOME/.local/state/euroeval/canary/augmented" \
-  --private-dir "$HOME/.local/state/euroeval/canary/private"
-
-uv run src/scripts/canary/run_private_canary_exposure.py \
-  --corpus-jsonl "$HOME/.local/share/euroeval/canary/source.jsonl" \
-  --augmented-jsonl "$HOME/.local/state/euroeval/canary/augmented/augmented.jsonl" \
-  --private-dir "$HOME/.local/state/euroeval/canary/private" \
-  --key "$HOME/.config/euroeval/canary.key" \
-  --output-dir "$HOME/.local/state/euroeval/canary/results"
-
-uv run src/scripts/canary/analyse_private_canary.py \
-  --results-dir "$HOME/.local/state/euroeval/canary/results" \
-  --output "$HOME/.local/state/euroeval/canary/report.json"
-```
-
-## Validation status
-
-The grouped pilots showed strong exact-completion discrimination at learning rate
-`5e-4`, but the predeclared strict pilot gates did not formally pass: one replicate had
-a small saturation reversal and another exceeded the secondary prefix-control limit.
-Those gates have not been altered post hoc. Production collection therefore remains an
-experimental report-only diagnostic. Any future policy or enforcement would require a
-fresh preregistered confirmatory protocol and an explicit decision; no such enforcement
-path exists in this implementation.
+The earlier green-list detector is retained only as a negative result: its five-arm
+study produced about a 0.088 percentage-point lift and was rejected. Grouped keyed
+completion pilots showed strong exact exposed/control separation, but the frozen pilot
+reports remain failures under their predeclared stricter gates. The production policy
+above is therefore versioned and should be changed only through a new protocol or
+policy revision, never by post-hoc threshold adjustment.

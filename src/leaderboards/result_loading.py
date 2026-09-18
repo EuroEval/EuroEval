@@ -9,11 +9,36 @@ from functools import cache
 from .backup import backup_results
 from .bucket_sync import download_missing_bucket_files
 from .constants import NEW_RESULTS_PATH, RESULTS_DIR
+from .contamination_canary import is_canary_record
 from .eee_validation import is_eee_record
 from .jsonl_io import load_records_from_jsonl_files, load_records_from_result_tree
 from .result_identity import dedup_newer_record, identity_from_eee_record
 
 logger = logging.getLogger(__name__)
+
+_EXCLUDED_MODELS: frozenset[str] = frozenset()
+_HIDE_AUXILIARY_RESULTS = False
+
+
+def configure_leaderboard_result_filter(*, excluded_models: set[str]) -> None:
+    """Configure filtering for later leaderboard reads in this process.
+
+    Args:
+        excluded_models:
+            Base model IDs that the maintainer chose to remove.
+    """
+    global _EXCLUDED_MODELS, _HIDE_AUXILIARY_RESULTS  # noqa: PLW0603
+    _EXCLUDED_MODELS = frozenset(excluded_models)
+    _HIDE_AUXILIARY_RESULTS = True
+    load_raw_results.cache_clear()
+
+
+def reset_leaderboard_result_filter() -> None:
+    """Expose source records for a fresh processing pass."""
+    global _EXCLUDED_MODELS, _HIDE_AUXILIARY_RESULTS  # noqa: PLW0603
+    _EXCLUDED_MODELS = frozenset()
+    _HIDE_AUXILIARY_RESULTS = False
+    load_raw_results.cache_clear()
 
 
 @cache
@@ -28,10 +53,10 @@ def load_raw_results() -> list[dict[str, t.Any]]:
     distinction is made between raw and processed results; leaderboard consumers
     receive the EEE records exactly as stored.
 
-    Deduplicates by the canonical storage identity
-    ``(model_id, dataset, validation_split, few_shot)`` using
-    :func:`.result_identity.dedup_newer_record` to keep the newest record per
-    identity.
+    Deduplicates ordinary records by canonical storage identity using
+    :func:`.result_identity.dedup_newer_record`. Auxiliary canary records remain
+    distinct until private scoring has rejected immutable conflicts or selected the
+    newest mutable snapshot.
 
     Only the EEE envelope structure is validated here. The "precious" metadata
     fields (commercially_licensed, open, trained_from_scratch) are intentionally
@@ -40,7 +65,8 @@ def load_raw_results() -> list[dict[str, t.Any]]:
     and enforced when the processed records are written back out.
 
     Returns:
-        All evaluation results in EEE format, deduplicated by storage identity.
+        All evaluation results in EEE format. Ordinary records are deduplicated by
+        storage identity; auxiliary records retain candidate snapshots for scoring.
 
     Raises:
         ValueError:
@@ -57,14 +83,34 @@ def load_raw_results() -> list[dict[str, t.Any]]:
         records.extend(new_records)
         NEW_RESULTS_PATH.unlink()
 
-    # Deduplicate by storage identity, keeping the newest record per identity
-    records = _dedup_by_storage_identity(records=records)
+    # Canary duplicates must reach private scoring so immutable conflicts cannot be
+    # hidden by ordinary storage-identity deduplication.
+    canary_records = [record for record in records if is_canary_record(record)]
+    ordinary_records = [record for record in records if not is_canary_record(record)]
+    records = [*_dedup_by_storage_identity(records=ordinary_records), *canary_records]
 
     for idx, record in enumerate(records, start=1):
         if not is_eee_record(record=record):
             raise ValueError(f"raw results record {idx:,} is not an EEE-format record.")
 
+    if _HIDE_AUXILIARY_RESULTS:
+        records = [
+            record
+            for record in records
+            if not is_canary_record(record)
+            and not _model_is_excluded(identity_from_eee_record(record)[0])
+        ]
     return records
+
+
+def _model_is_excluded(model_name: str) -> bool:
+    """Return whether a stored identity belongs to an excluded base model."""
+    return any(
+        model_name == model_id
+        or model_name.startswith(f"{model_id}@")
+        or model_name.startswith(f"{model_id}#")
+        for model_id in _EXCLUDED_MODELS
+    )
 
 
 def _dedup_by_storage_identity(

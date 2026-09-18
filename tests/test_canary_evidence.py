@@ -1,8 +1,7 @@
-"""Production contamination-canary evidence and offline-checker tests."""
+"""Production contamination-canary evidence and result-integration tests."""
 
 from __future__ import annotations
 
-import dataclasses
 import hashlib
 import json
 import os
@@ -13,6 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 import euroeval.canary_evidence as evidence_module
+import leaderboards.contamination_canary as canary_scoring
 from euroeval.benchmark_modules.litellm import LiteLLMModel
 from euroeval.benchmarker import Benchmarker
 from euroeval.canary_evidence import (
@@ -20,15 +20,22 @@ from euroeval.canary_evidence import (
     CANARY_ROW_COUNT,
     CanaryEvidence,
     CanaryPrompt,
-    append_evidence,
     collected_evidence,
     evidence_from_dict,
     load_canary_prompts,
-    load_evidence_jsonl,
     normalise_completion,
 )
+from euroeval.data_models import BenchmarkResult
+from euroeval.eee_utils import (
+    benchmark_result_from_eee_dict,
+    benchmark_result_to_eee_dict,
+)
 from euroeval.enums import GenerativeType, InferenceBackend
-from leaderboards.contamination_canary import run_contamination_canary_check
+from leaderboards.contamination_canary import (
+    confirm_canary_exclusions,
+    partition_canary_records,
+    score_canary_records,
+)
 
 
 def test_frozen_corpus_derives_unique_prompts_without_targets(
@@ -48,9 +55,7 @@ def test_frozen_corpus_derives_unique_prompts_without_targets(
     assert all("amber forest" not in item.prompt for item in prompts)
 
 
-def test_evidence_contract_is_bounded_and_rejects_private_fields(
-    tmp_path: Path,
-) -> None:
+def test_evidence_contract_is_bounded_and_rejects_private_fields() -> None:
     """Keep evidence bounded and free of private plaintext fields."""
     evidence = _evidence()
     encoded = evidence.to_dict()
@@ -67,63 +72,46 @@ def test_evidence_contract_is_bounded_and_rejects_private_fields(
     with pytest.raises(ValueError, match="fields"):
         evidence_from_dict(invalid)
 
-    path = tmp_path / "evidence.jsonl"
-    append_evidence(path=path, evidence=evidence)
-    append_evidence(path=path, evidence=evidence)
-    assert load_evidence_jsonl(path) == (evidence,)
-    assert path.stat().st_mode & 0o777 == 0o600
 
+def test_canary_evidence_round_trips_through_eee_jsonl(tmp_path: Path) -> None:
+    """Preserve all 256 observations through ordinary EEE JSON serialisation."""
+    evidence = _evidence()
+    result = _canary_result(evidence)
 
-def test_mutable_evidence_replaces_its_previous_alias_snapshot(tmp_path: Path) -> None:
-    """Recollect mutable aliases without creating conflicting identities."""
-    first = dataclasses.replace(
-        _evidence(),
-        requested_revision="main",
-        resolved_revision="main",
-        identity_kind="mutable",
+    encoded = benchmark_result_to_eee_dict(result=result)
+    path = tmp_path / "euroeval_benchmark_results.jsonl"
+    path.write_text(json.dumps(encoded) + "\n", encoding="utf-8")
+    decoded = benchmark_result_from_eee_dict(json.loads(path.read_text()))
+
+    assert decoded.contamination_canary_evidence == evidence.to_dict()
+    observations = t.cast(
+        list[dict[str, object]], decoded.contamination_canary_evidence["observations"]
     )
-    second = dataclasses.replace(
-        first,
-        observations=tuple(
-            dataclasses.replace(item, normalised_completion="changed words")
-            for item in first.observations
-        ),
-    )
-    path = tmp_path / "evidence.jsonl"
-    append_evidence(path=path, evidence=first)
-    append_evidence(path=path, evidence=second)
-    assert load_evidence_jsonl(path) == (second,)
+    assert len(observations) == CANARY_ROW_COUNT
+    ordinary, canaries = partition_canary_records(records=[encoded])
+    assert ordinary == []
+    assert canaries == [encoded]
 
 
-def test_completion_normaliser_is_versioned_and_bounded() -> None:
-    """Normalise only the first two lexical words."""
-    assert normalise_completion("  Amber, forest. Extra") == "Amber forest"
-    assert normalise_completion("one") == "one"
-    assert normalise_completion("") == ""
-    with pytest.raises(TypeError):
-        normalise_completion(3)  # ty: ignore[invalid-argument-type]
-
-
-def test_offline_checker_scores_groups_without_model_loading(
+def test_embedded_evidence_is_scored_privately(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Score persisted evidence by group without importing inference code."""
+    """Score submitted evidence by group without loading or querying the model."""
     private_dir = tmp_path / "private"
     private_dir.mkdir(mode=0o700)
     key = b"k" * 32
     key_path = tmp_path / "key"
     key_path.write_bytes(key)
     os.chmod(key_path, 0o600)
-    records = []
-    for index in range(CANARY_ROW_COUNT):
-        records.append(
-            {
-                "row_id": f"row-{index:03d}",
-                "group_id": f"group-{index // 8:02d}",
-                "exposed_target": "amber forest",
-                "control_target": "silver harbour",
-            }
-        )
+    records = [
+        {
+            "row_id": f"row-{index:03d}",
+            "group_id": f"group-{index // 8:02d}",
+            "exposed_target": "amber forest",
+            "control_target": "silver harbour",
+        }
+        for index in range(CANARY_ROW_COUNT)
+    ]
     records_path = private_dir / "canary-records.jsonl"
     records_path.write_text(
         "".join(json.dumps(item, sort_keys=True) + "\n" for item in records),
@@ -143,52 +131,92 @@ def test_offline_checker_scores_groups_without_model_loading(
     manifest_path = private_dir / "canary-manifest.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     os.chmod(manifest_path, 0o600)
-    evidence_path = tmp_path / "evidence.jsonl"
-    append_evidence(path=evidence_path, evidence=_evidence())
-
-    monkeypatch.setenv("EUROEVAL_CANARY_CHECK_MODE", "report-only")
     monkeypatch.setenv("EUROEVAL_CANARY_PRIVATE_DIR", str(private_dir))
     monkeypatch.setenv("EUROEVAL_CANARY_KEY", str(key_path))
-    monkeypatch.setenv("EUROEVAL_CANARY_EVIDENCE_JSONL", str(evidence_path))
-    report = run_contamination_canary_check()
+    monkeypatch.setattr(
+        "leaderboards.contamination_canary.load_canary_prompts",
+        lambda **kwargs: _prompts(),
+    )
+
+    report = score_canary_records(
+        records=[benchmark_result_to_eee_dict(result=_canary_result(_evidence()))]
+    )
 
     assert report["status"] == "scored"
     models = t.cast(list[dict[str, object]], report["models"])
-    model = models[0]
-    assert model["decision"] == "unvalidated_report_only"
-    assert model["exact_exposed_rate"] == 1.0
-    assert model["exact_control_rate"] == 0.0
-    assert (
-        "transformers"
-        not in __import__(
-            "leaderboards.contamination_canary", fromlist=["unused"]
-        ).__dict__
-    )
-    assert (private_dir / "production-report.json").stat().st_mode & 0o777 == 0o600
+    assert models[0]["contamination_detected"] is True
+    assert models[0]["exact_exposed_rate"] == 1.0
+    assert models[0]["exact_control_rate"] == 0.0
+    assert models[0]["paired_sign_p_value"] < 0.01
 
 
-def test_disabled_checker_requires_no_private_configuration(
+def test_positive_result_defaults_to_model_removal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Leave checking inert unless report-only mode is selected."""
-    monkeypatch.delenv("EUROEVAL_CANARY_CHECK_MODE", raising=False)
-    assert run_contamination_canary_check()["status"] == "disabled"
+    """Use the safe removal default when no interactive terminal is available."""
+    monkeypatch.setattr(
+        "leaderboards.contamination_canary.sys.stdin",
+        SimpleNamespace(isatty=lambda: False),
+    )
+    report = {
+        "models": [
+            {
+                "model_id": "org/model",
+                "contamination_detected": True,
+                "exact_rate_difference": 1.0,
+                "paired_sign_p_value": 0.0,
+            }
+        ]
+    }
+
+    assert confirm_canary_exclusions(report=report) == {"org/model"}
 
 
-def test_benchmarker_collects_once_from_the_loaded_decoder(
+def test_private_exclusion_state_fails_closed_when_corrupt(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Collect once while reusing the loaded decoder."""
-    prompts = tuple(
-        CanaryPrompt(
-            row_id=f"row-{index:03d}",
-            prompt=f"prompt {index}",
-            prompt_sha256=_sha256(f"prompt {index}".encode()),
-        )
-        for index in range(CANARY_ROW_COUNT)
-    )
+    """A broken durable removal file cannot silently re-rank excluded models."""
+    private_dir = tmp_path / "private"
+    private_dir.mkdir(mode=0o700)
+    exclusions = private_dir / "leaderboard-exclusions.json"
+    exclusions.write_text("not json", encoding="utf-8")
+    exclusions.chmod(0o600)
+    monkeypatch.setenv("EUROEVAL_CANARY_PRIVATE_DIR", str(private_dir))
+
+    with pytest.raises(RuntimeError, match="Cannot safely generate leaderboards"):
+        canary_scoring.load_canary_exclusions()
+
+
+def test_confirmed_exclusions_must_be_persisted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failed durable write blocks rather than losing a removal decision."""
+    private_dir = tmp_path / "private"
+    private_dir.mkdir(mode=0o700)
+    monkeypatch.setenv("EUROEVAL_CANARY_PRIVATE_DIR", str(private_dir))
     monkeypatch.setattr(
-        "euroeval.benchmarker.load_canary_prompts", lambda **kwargs: prompts
+        canary_scoring,
+        "_atomic_private_write",
+        lambda **kwargs: (_ for _ in ()).throw(OSError("disk full")),
+    )
+
+    with pytest.raises(RuntimeError, match="could not be persisted"):
+        canary_scoring._store_canary_exclusions({"org/model"})  # noqa: SLF001
+
+
+def test_completion_normaliser_is_versioned_and_bounded() -> None:
+    """Normalise only the first two lexical words."""
+    assert normalise_completion("  ÅBEN—havn, second! ignored third") == "ÅBEN havn"
+    assert normalise_completion("***") == ""
+    assert len(normalise_completion("word " * 10_000).split()) == 2
+
+
+def test_benchmarker_collects_once_from_each_loaded_decoder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Collect once per model while reusing each loaded decoder."""
+    monkeypatch.setattr(
+        "euroeval.benchmarker.load_canary_prompts", lambda **kwargs: _prompts()
     )
     monkeypatch.setattr("euroeval.benchmarker.get_hf_token", lambda **kwargs: None)
     benchmarker = object.__new__(Benchmarker)
@@ -203,35 +231,29 @@ def test_benchmarker_collects_once_from_the_loaded_decoder(
             return ["amber forest"] * len(prompts)
 
     loaded = LoadedModel()
-    model_config = SimpleNamespace(
-        model_id="org/model", revision="a" * 40, inference_backend=InferenceBackend.VLLM
-    )
     benchmark_config = SimpleNamespace(
         contamination_canary=True,
         cache_dir=str(tmp_path),
         api_key=None,
         save_results=False,
     )
-    benchmarker._record_contamination_canary(
-        model_config=t.cast(t.Any, model_config),
-        benchmark_config=t.cast(t.Any, benchmark_config),
-        loaded_model=t.cast(t.Any, loaded),
-    )
-    benchmarker._record_contamination_canary(
-        model_config=t.cast(t.Any, model_config),
-        benchmark_config=t.cast(t.Any, benchmark_config),
-        loaded_model=t.cast(t.Any, loaded),
-    )
-    second_model = SimpleNamespace(
-        model_id="org/second",
-        revision="b" * 40,
-        inference_backend=InferenceBackend.VLLM,
-    )
-    benchmarker._record_contamination_canary(
-        model_config=t.cast(t.Any, second_model),
-        benchmark_config=t.cast(t.Any, benchmark_config),
-        loaded_model=t.cast(t.Any, loaded),
-    )
+    for model_id, revision in (
+        ("org/model", "a" * 40),
+        ("org/model", "a" * 40),
+        ("org/second", "b" * 40),
+    ):
+        benchmarker._record_contamination_canary(
+            model_config=t.cast(
+                t.Any,
+                SimpleNamespace(
+                    model_id=model_id,
+                    revision=revision,
+                    inference_backend=InferenceBackend.VLLM,
+                ),
+            ),
+            benchmark_config=t.cast(t.Any, benchmark_config),
+            loaded_model=t.cast(t.Any, loaded),
+        )
 
     assert loaded.calls == 2
     assert [item.model_id for item in benchmarker.canary_evidence] == [
@@ -240,8 +262,8 @@ def test_benchmarker_collects_once_from_the_loaded_decoder(
     ]
 
 
-def test_litellm_collection_reuses_wrapper_and_restores_configuration() -> None:
-    """Restore API generation settings after bounded collection."""
+def test_litellm_collection_reuses_wrapper_without_state_leakage() -> None:
+    """Use isolated API generation settings for bounded collection."""
     calls: list[dict[str, object]] = []
 
     class Wrapper:
@@ -292,8 +314,8 @@ def _corpus(tmp_path: Path) -> Path:
     return path
 
 
-def _evidence() -> CanaryEvidence:
-    prompts = tuple(
+def _prompts() -> tuple[CanaryPrompt, ...]:
+    return tuple(
         CanaryPrompt(
             row_id=f"row-{index:03d}",
             prompt=f"prompt {index}",
@@ -301,13 +323,35 @@ def _evidence() -> CanaryEvidence:
         )
         for index in range(CANARY_ROW_COUNT)
     )
+
+
+def _evidence() -> CanaryEvidence:
     return collected_evidence(
         model_id="org/model",
         requested_revision="a" * 40,
         resolved_revision="a" * 40,
         backend="vllm:base",
-        prompts=prompts,
+        prompts=_prompts(),
         completions=[" amber forest."] * CANARY_ROW_COUNT,
+    )
+
+
+def _canary_result(evidence: CanaryEvidence) -> BenchmarkResult:
+    return BenchmarkResult(
+        dataset="contamination-canary-da",
+        model=f"{evidence.model_id}@{evidence.resolved_revision}",
+        generative=True,
+        generative_type="base",
+        few_shot=None,
+        validation_split=None,
+        num_model_parameters=1,
+        max_sequence_length=1,
+        vocabulary_size=1,
+        merge=False,
+        languages=["da"],
+        task="contamination-detection",
+        results={"raw": [], "total": {"test_collection_success": 100.0}},
+        contamination_canary_evidence=evidence.to_dict(),
     )
 
 

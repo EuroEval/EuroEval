@@ -14,7 +14,6 @@ from .types import (
     PROTOCOL_VERSION,
     AuthPoll,
     AuthStart,
-    CanarySubmission,
     Claim,
     EEERecord,
     HardwareReport,
@@ -169,7 +168,7 @@ class BrokerClient:
 
         Raises:
             ValueError:
-                If the lease does not own a canary reservation.
+                If the lease does not require the private canary corpus.
             BrokerError:
                 If the broker returns an invalid corpus payload.
         """
@@ -181,7 +180,6 @@ class BrokerClient:
             {
                 "protocol_version": PROTOCOL_VERSION,
                 "lease_id": lease.lease_id,
-                "reservation_id": instruction.reservation_id,
                 "corpus_revision": instruction.corpus_revision,
                 "corpus_sha256": instruction.corpus_sha256,
             },
@@ -191,34 +189,6 @@ class BrokerClient:
         if not isinstance(content, str):
             raise BrokerError("broker returned an invalid canary corpus")
         return content
-
-    def submit_canary(
-        self, credential: str, lease: Lease, canary: CanarySubmission
-    ) -> None:
-        """Submit exact canary evidence independently from EEE results.
-
-        Raises:
-            ValueError:
-                If the lease does not own a canary reservation.
-        """
-        instruction = lease.contamination_canary
-        if instruction is None or instruction.status != "required":
-            raise ValueError("lease does not require a contamination canary")
-        self._post(
-            "canary-evidence",
-            {
-                "protocol_version": PROTOCOL_VERSION,
-                "lease_id": lease.lease_id,
-                "reservation_id": instruction.reservation_id,
-                "model_id": lease.model_id,
-                "model_revision": lease.model_revision,
-                "corpus_revision": instruction.corpus_revision,
-                "corpus_sha256": instruction.corpus_sha256,
-                "evidence_json": canary.evidence_json,
-                "digest": canary.digest,
-            },
-            credential=credential,
-        )
 
     def submit_result(self, credential: str, lease: Lease, result: EEERecord) -> None:
         """Submit one exact result record; the broker makes this idempotent."""

@@ -206,9 +206,9 @@ from .languages import get_all_languages
 )
 @click.option(
     "--contamination-canary/--no-contamination-canary",
-    default=False,
-    show_default=True,
-    help="Collect separate, non-ranking contamination-canary evidence for decoders.",
+    default=None,
+    help="Collect a non-ranking contamination-canary result. Defaults on unless "
+    "--dataset is used.",
 )
 @click.option(
     "--custom-datasets-file",
@@ -273,7 +273,7 @@ def benchmark(
     requires_safetensors: bool,
     generative_type: str | None,
     use_bits_per_character: bool,
-    contamination_canary: bool,
+    contamination_canary: bool | None,
     custom_datasets_file: Path,
     download_only: bool,
     debug: bool,
@@ -323,7 +323,9 @@ def benchmark(
         if generative_type
         else None,
         use_bits_per_character=use_bits_per_character,
-        contamination_canary=contamination_canary,
+        contamination_canary=(
+            contamination_canary if contamination_canary is not None else not dataset
+        ),
         custom_datasets_file=custom_datasets_file,
         debug=debug,
         run_with_cli=True,

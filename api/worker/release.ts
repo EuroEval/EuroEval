@@ -1,7 +1,7 @@
 import {
   BrokerError, ConfigurationError, PROTOCOL_VERSION, acquireRenewableIssueMutex, authenticate,
   brokerErrorBody, deleteLease, enforceRateLimit, fetchIssue, getLeaseById, json, method,
-  parseVolunteerMarker, releaseCanary, patchIssue, readJson, replaceVolunteerMarker, VOLUNTEER_MARKER_RE,
+  parseVolunteerMarker, patchIssue, readJson, replaceVolunteerMarker, VOLUNTEER_MARKER_RE,
   requireProtocol, signVolunteerMarker, unassignIssue, verifyVolunteerMarker,
 } from "./_lib.js";
 import type { VolunteerLeaseMarker } from "./_lib.js";
@@ -52,7 +52,6 @@ export default async function handler(req: Request): Promise<Response> {
         // A process may have completed the GitHub mutation and stopped before
         // deleting Redis. Never infer permission to unassign from this state.
         await deleteLease(lease);
-        await releaseCanary(lease);
         return json(200, { protocol_version: PROTOCOL_VERSION, status: "released", lease_id: lease.lease_id });
       }
       if (!(await verifyVolunteerMarker(lease.issue_number, marker))) {
@@ -62,7 +61,6 @@ export default async function handler(req: Request): Promise<Response> {
         // The marker transition committed before Redis cleanup. Preserve any
         // other leases, submissions, or history and only finish our cleanup.
         await deleteLease(lease);
-        await releaseCanary(lease);
         return json(200, { protocol_version: PROTOCOL_VERSION, status: "released", lease_id: lease.lease_id });
       }
       const contributor = lease.contributor.toLowerCase();
@@ -136,7 +134,6 @@ export default async function handler(req: Request): Promise<Response> {
         throw new BrokerError(409, "GitHub release assignment changed; retry release.");
       }
       await deleteLease(lease);
-      await releaseCanary(lease);
     } finally { await mutex.release(); }
     return json(200, { protocol_version: PROTOCOL_VERSION, status: "released", lease_id: lease.lease_id });
   } catch (error) {

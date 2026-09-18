@@ -48,8 +48,6 @@
       "enum": [
         null,
         "encoder",
-        "disabled",
-        "download_only",
         "corpus_unavailable",
         "backend_unsupported",
         "generation_failed",

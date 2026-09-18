@@ -289,23 +289,14 @@ class ModelEvidence:
 
 
 @dataclasses.dataclass(frozen=True)
-class CanarySubmission:
-    """Exact restart-safe canary evidence submitted separately from EEE results."""
-
-    evidence_json: str
-    digest: str
-
-
-@dataclasses.dataclass(frozen=True)
 class CanaryInstruction:
     """Broker decision for one model-level contamination-canary collection."""
 
-    status: t.Literal["required", "cached", "reserved", "not_applicable"]
+    status: t.Literal["required", "not_applicable"]
     protocol_version: str
     corpus_revision: str
     corpus_sha256: str
     reason: str | None = None
-    reservation_id: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -396,9 +387,8 @@ def _canary_instruction(value: object) -> CanaryInstruction | None:
     revision = value.get("corpus_revision")
     corpus_hash = value.get("corpus_sha256")
     reason = value.get("reason")
-    reservation_id = value.get("reservation_id")
     if (
-        status not in {"required", "cached", "reserved", "not_applicable"}
+        status not in {"required", "not_applicable"}
         or not isinstance(protocol, str)
         or not protocol
         or not isinstance(revision, str)
@@ -407,21 +397,14 @@ def _canary_instruction(value: object) -> CanaryInstruction | None:
         or len(corpus_hash) != 64
         or reason is not None
         and not isinstance(reason, str)
-        or reservation_id is not None
-        and not isinstance(reservation_id, str)
     ):
         raise ValueError("broker response contamination_canary is malformed")
-    if status == "required" and not reservation_id:
-        raise ValueError("required contamination canary has no reservation")
     return CanaryInstruction(
-        status=t.cast(
-            t.Literal["required", "cached", "reserved", "not_applicable"], status
-        ),
+        status=t.cast(t.Literal["required", "not_applicable"], status),
         protocol_version=protocol,
         corpus_revision=revision,
         corpus_sha256=corpus_hash,
         reason=reason,
-        reservation_id=reservation_id,
     )
 
 

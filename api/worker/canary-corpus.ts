@@ -11,7 +11,6 @@ import {
   json,
   method,
   readJson,
-  requireCanaryReservation,
   requireProtocol,
 } from "./_lib.js";
 
@@ -25,23 +24,22 @@ export async function fetch(req: Request): Promise<Response> {
     await enforceRateLimit(`euroeval:worker:limit:canary-corpus:${worker.hash}`, 20, 3600);
     const body = await readJson(req, 64 * 1024);
     requireProtocol(body);
-    for (const field of ["lease_id", "reservation_id", "corpus_revision", "corpus_sha256"]) {
+    for (const field of ["lease_id", "corpus_revision", "corpus_sha256"]) {
       if (typeof body[field] !== "string") throw new BrokerError(400, `${field} is required.`);
     }
     const lease = await getLeaseById(body.lease_id as string);
-    if (!lease || lease.contributor.toLowerCase() !== worker.contributor.toLowerCase()) {
+    if (
+      !lease || lease.released || Date.parse(lease.expires_at) <= Date.now() ||
+      lease.contributor.toLowerCase() !== worker.contributor.toLowerCase()
+    ) {
       throw new BrokerError(409, "Lease is absent or belongs to another contributor.");
     }
     const instruction = lease.contamination_canary;
     if (
-      !instruction || instruction.status !== "required" ||
-      instruction.reservation_id !== body.reservation_id ||
+      !instruction || instruction.status !== "required" || lease.model_type !== "generative" ||
       body.corpus_revision !== CANARY_CORPUS_REVISION ||
       body.corpus_sha256 !== CANARY_CORPUS_SHA256
-    ) throw new BrokerError(409, "Lease does not own this canary reservation.");
-    await requireCanaryReservation(
-      lease.model_id, lease.model_revision, lease.lease_id, body.reservation_id as string,
-    );
+    ) throw new BrokerError(409, "Lease does not require this canary corpus.");
     const corpus = await fetchCanaryCorpus();
     return json(200, {
       protocol_version: "volunteer-worker/v1",

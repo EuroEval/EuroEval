@@ -70,7 +70,7 @@ def test_dataset_and_task_conflict(
 def test_contamination_canary_flag_reaches_benchmarker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Propagate the explicit opt-in without changing the default."""
+    """Default collection by run scope while preserving explicit overrides."""
     mock_benchmarker_cls = MagicMock()
     monkeypatch.setattr("euroeval.cli.Benchmarker", mock_benchmarker_cls)
 
@@ -80,9 +80,22 @@ def test_contamination_canary_flag_reaches_benchmarker(
     assert enabled.exit_code == 0
     assert mock_benchmarker_cls.call_args.kwargs["contamination_canary"] is True
 
-    disabled = CliRunner().invoke(benchmark, ["--model", "dummy"])
-    assert disabled.exit_code == 0
+    defaulted = CliRunner().invoke(benchmark, ["--model", "dummy"])
+    assert defaulted.exit_code == 0
+    assert mock_benchmarker_cls.call_args.kwargs["contamination_canary"] is True
+
+    targeted = CliRunner().invoke(
+        benchmark, ["--model", "dummy", "--dataset", "dummy-dataset"]
+    )
+    assert targeted.exit_code == 0
     assert mock_benchmarker_cls.call_args.kwargs["contamination_canary"] is False
+
+    targeted_override = CliRunner().invoke(
+        benchmark,
+        ["--model", "dummy", "--dataset", "dummy-dataset", "--contamination-canary"],
+    )
+    assert targeted_override.exit_code == 0
+    assert mock_benchmarker_cls.call_args.kwargs["contamination_canary"] is True
 
 
 def test_dataset_selects_the_languages_it_contains(

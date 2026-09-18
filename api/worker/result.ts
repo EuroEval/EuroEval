@@ -27,7 +27,7 @@ export async function fetch(req: Request): Promise<Response> {
     const digest = await sha256(body.record_json);
     if (body.digest !== digest) throw new BrokerError(422, "digest does not match the UTF-8 record_json bytes.");
     let record: unknown; try { record = JSON.parse(body.record_json); } catch { throw new BrokerError(422, "record_json must be valid JSON."); }
-    const checked = validateRecord(record, { modelId: lease.model_id, revision: lease.model_revision, language: lease.language, euroevalVersion: lease.euroeval_version });
+    const checked = validateRecord(record, { modelId: lease.model_id, revision: lease.model_revision, language: lease.language, euroevalVersion: lease.euroeval_version, modelType: lease.model_type });
     const identityKey = `euroeval:worker:record-identity:${await sha256(checked.identity)}`;
     const existing = await redisGet<StoredIdentity>(identityKey);
     const path = `volunteer/submissions/${lease.lease_id}/results/${digest}.json`;

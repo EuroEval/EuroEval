@@ -7,8 +7,6 @@ import hashlib
 import json
 import os
 import re
-import stat
-import tempfile
 import typing as t
 import unicodedata
 from pathlib import Path
@@ -27,11 +25,10 @@ CANARY_CORPUS_SHA256 = (
 )
 CANARY_ROW_COUNT = 256
 CANARY_GROUP_COUNT = 32
-CANARY_EVIDENCE_FILENAME = "euroeval_canary_evidence.jsonl"
+CANARY_RESULT_DATASET = "contamination-canary"
+CANARY_RESULT_TASK = "contamination-detection"
 CANARY_CORPUS_PATH_ENV = "EUROEVAL_CANARY_CORPUS_PATH"
-CANARY_EVIDENCE_PATH_ENV = "EUROEVAL_CANARY_EVIDENCE_JSONL"
 CANARY_PRIVATE_DIR_ENV = "EUROEVAL_CANARY_PRIVATE_DIR"
-CANARY_CHECK_MODE_ENV = "EUROEVAL_CANARY_CHECK_MODE"
 
 _PROMPT_RE = re.compile(
     r"^(?P<prompt>[\s\S]+ referred to) (?P<first>[a-z]+) (?P<second>[a-z]+)\.$"
@@ -42,8 +39,6 @@ _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _ALLOWED_STATUSES = {"collected", "not_applicable", "unsupported", "failed"}
 _ALLOWED_REASONS = {
     "encoder",
-    "disabled",
-    "download_only",
     "corpus_unavailable",
     "backend_unsupported",
     "generation_failed",
@@ -433,80 +428,6 @@ def evidence_from_dict(value: object) -> CanaryEvidence:
     return evidence
 
 
-def append_evidence(path: Path, evidence: CanaryEvidence) -> None:
-    """Append one unique evidence record atomically with mode 0600.
-
-    Raises:
-        ValueError:
-            If conflicting evidence already exists for the same identity.
-    """
-    evidence.to_dict()
-    existing = list(load_evidence_jsonl(path)) if path.exists() else []
-    matching = next(
-        (item for item in existing if item.identity == evidence.identity), None
-    )
-    if matching is not None:
-        if matching.to_dict() == evidence.to_dict():
-            return
-        if (
-            evidence.identity_kind == "immutable"
-            and matching.status == "collected"
-            and evidence.status == "collected"
-        ):
-            raise ValueError(
-                "conflicting canary evidence already exists for this identity"
-            )
-        if matching.status == "collected" and evidence.status != "collected":
-            return
-        existing = [
-            evidence if item.identity == evidence.identity else item
-            for item in existing
-        ]
-    else:
-        existing.append(evidence)
-    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    content = "".join(canonical_json(item.to_dict()) + "\n" for item in existing)
-    _atomic_private_write(path=path, content=content)
-
-
-def load_evidence_jsonl(path: Path) -> tuple[CanaryEvidence, ...]:
-    """Load strict canary evidence JSONL without importing inference code.
-
-    Returns:
-        The ordered validated evidence records.
-
-    Raises:
-        ValueError:
-            If any line is malformed or an identity occurs more than once.
-    """
-    evidence: list[CanaryEvidence] = []
-    identities: set[str] = set()
-    for line_number, line in enumerate(
-        path.read_text(encoding="utf-8").splitlines(), 1
-    ):
-        try:
-            item = evidence_from_dict(json.loads(line))
-        except (json.JSONDecodeError, ValueError, TypeError) as error:
-            raise ValueError(
-                f"invalid canary evidence on line {line_number}"
-            ) from error
-        if item.identity in identities:
-            raise ValueError("canary evidence contains a duplicate identity")
-        identities.add(item.identity)
-        evidence.append(item)
-    return tuple(evidence)
-
-
-def evidence_output_path() -> Path:
-    """Return the configured private evidence sidecar path."""
-    configured = os.getenv(CANARY_EVIDENCE_PATH_ENV)
-    return (
-        Path(configured).expanduser()
-        if configured
-        else Path.cwd() / CANARY_EVIDENCE_FILENAME
-    )
-
-
 def _configured_corpus_path() -> Path | None:
     value = os.getenv(CANARY_CORPUS_PATH_ENV)
     return Path(value).expanduser() if value else None
@@ -524,20 +445,3 @@ def _string(value: dict[str, object], key: str) -> str:
     if not isinstance(item, str):
         raise ValueError(f"canary evidence field {key!r} is invalid")
     return item
-
-
-def _atomic_private_write(*, path: Path, content: str) -> None:
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{path.name}.", dir=path.parent
-    )
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            handle.write(content)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.chmod(temporary, stat.S_IRUSR | stat.S_IWUSR)
-        temporary.replace(path)
-        os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
-    finally:
-        temporary.unlink(missing_ok=True)

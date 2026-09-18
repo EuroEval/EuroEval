@@ -12,7 +12,6 @@ from pathlib import Path
 
 from .types import (
     CanaryInstruction,
-    CanarySubmission,
     EEERecord,
     ExpectedScope,
     JsonObject,
@@ -153,27 +152,21 @@ def _canary_instruction(value: object) -> CanaryInstruction | None:
     revision = value.get("corpus_revision")
     corpus_hash = value.get("corpus_sha256")
     reason = value.get("reason")
-    reservation_id = value.get("reservation_id")
     if (
-        status not in {"required", "cached", "reserved", "not_applicable"}
+        status not in {"required", "not_applicable"}
         or not isinstance(protocol, str)
         or not isinstance(revision, str)
         or not isinstance(corpus_hash, str)
         or reason is not None
         and not isinstance(reason, str)
-        or reservation_id is not None
-        and not isinstance(reservation_id, str)
     ):
         raise ValueError("contamination_canary is malformed")
     return CanaryInstruction(
-        status=t.cast(
-            t.Literal["required", "cached", "reserved", "not_applicable"], status
-        ),
+        status=t.cast(t.Literal["required", "not_applicable"], status),
         protocol_version=protocol,
         corpus_revision=revision,
         corpus_sha256=corpus_hash,
         reason=reason,
-        reservation_id=reservation_id,
     )
 
 
@@ -200,58 +193,12 @@ class PendingRecord:
 
 
 @dataclasses.dataclass(frozen=True)
-class PendingCanary:
-    """Exact canary evidence and its independent acknowledgement state."""
-
-    evidence_json: str
-    digest: str
-    acknowledged: bool = False
-    terminal_rejected: bool = False
-
-    def to_submission(self) -> CanarySubmission:
-        """Return exact evidence bytes for broker submission.
-
-        Returns:
-            The restart-safe broker payload.
-        """
-        return CanarySubmission(evidence_json=self.evidence_json, digest=self.digest)
-
-
-def _pending_canary_from_dict(value: object) -> PendingCanary | None:
-    if value is None:
-        return None
-    if not isinstance(value, dict):
-        raise ValueError("canary state is malformed")
-    evidence_json = value.get("evidence_json")
-    digest = value.get("digest")
-    acknowledged = value.get("acknowledged", False)
-    terminal_rejected = value.get("terminal_rejected", False)
-    if (
-        not isinstance(evidence_json, str)
-        or not isinstance(digest, str)
-        or hashlib.sha256(evidence_json.encode()).hexdigest() != digest
-        or not isinstance(acknowledged, bool)
-        or not isinstance(terminal_rejected, bool)
-        or acknowledged
-        and terminal_rejected
-    ):
-        raise ValueError("canary state is malformed")
-    return PendingCanary(
-        evidence_json=evidence_json,
-        digest=digest,
-        acknowledged=acknowledged,
-        terminal_rejected=terminal_rejected,
-    )
-
-
-@dataclasses.dataclass(frozen=True)
 class ActiveLease:
     """A lease and all locally durable result acknowledgements."""
 
     lease: Lease
     records: tuple[PendingRecord, ...]
     github_login: str | None = None
-    canary: PendingCanary | None = None
     finalised_submission_id: str | None = None
 
 
@@ -346,7 +293,6 @@ class StateStore:
                         lease=lease,
                         records=active.records,
                         github_login=active.github_login,
-                        canary=active.canary,
                         finalised_submission_id=active.finalised_submission_id,
                     )
                 ),
@@ -396,7 +342,6 @@ class StateStore:
             github_login = raw.get("github_login")
             if github_login is not None and not isinstance(github_login, str):
                 raise ValueError("github_login is malformed")
-            canary = _pending_canary_from_dict(raw.get("canary"))
             finalised_submission_id = raw.get("finalised_submission_id")
             if finalised_submission_id is not None and (
                 not isinstance(finalised_submission_id, str)
@@ -407,7 +352,6 @@ class StateStore:
                 lease=lease,
                 records=records,
                 github_login=github_login,
-                canary=canary,
                 finalised_submission_id=finalised_submission_id,
             )
         except (
@@ -444,7 +388,6 @@ class StateStore:
                 lease=active.lease,
                 records=records,
                 github_login=active.github_login,
-                canary=active.canary,
                 finalised_submission_id=active.finalised_submission_id,
             )
 
@@ -453,7 +396,6 @@ class StateStore:
         lease: Lease,
         records: tuple[PendingRecord, ...] = (),
         github_login: str | None = None,
-        canary: PendingCanary | None = None,
         finalised_submission_id: str | None = None,
     ) -> None:
         """Atomically save a lease before evaluation or submission starts."""
@@ -465,32 +407,13 @@ class StateStore:
                         lease=lease,
                         records=records,
                         github_login=github_login,
-                        canary=canary,
                         finalised_submission_id=finalised_submission_id,
                     )
                 ),
             )
 
-    def save_canary(self, canary: PendingCanary) -> None:
-        """Persist canary evidence without changing ordinary result state.
-
-        Raises:
-            RuntimeError:
-                If there is no active lease.
-        """
-        active = self.load_active()
-        if active is None:
-            raise RuntimeError("cannot save canary evidence without an active lease")
-        self.save_active(
-            lease=active.lease,
-            records=active.records,
-            github_login=active.github_login,
-            canary=canary,
-            finalised_submission_id=active.finalised_submission_id,
-        )
-
     def mark_finalised(self, submission_id: str) -> None:
-        """Persist ordinary finalisation while retaining pending canary evidence.
+        """Persist ordinary finalisation for restart-safe acknowledgement.
 
         Raises:
             RuntimeError:
@@ -503,7 +426,6 @@ class StateStore:
             lease=active.lease,
             records=active.records,
             github_login=active.github_login,
-            canary=active.canary,
             finalised_submission_id=submission_id,
         )
 
@@ -552,7 +474,6 @@ def _active_dict(active: ActiveLease) -> JsonObject:
         "lease": lease,
         "records": [dataclasses.asdict(record) for record in active.records],
         "github_login": active.github_login,
-        "canary": dataclasses.asdict(active.canary) if active.canary else None,
         "finalised_submission_id": active.finalised_submission_id,
     }
 
