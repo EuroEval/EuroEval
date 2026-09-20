@@ -480,12 +480,15 @@ def test_evaluator_uses_validation_and_remote_code_flags(
         lease=LEASE, output_path=tmp_path / "isolated.jsonl"
     )
     assert records[0].sha256 == records[0].sha256
-    assert calls["benchmark"] == {
+    benchmark_kwargs = calls["benchmark"]
+    assert isinstance(benchmark_kwargs, dict)
+    assert benchmark_kwargs == {
         "model": f"org/model@{REVISION}",
         "language": "da",
         "progress_bar": False,
         "save_results": False,
         "task": None,
+        "dataset": benchmark_kwargs["dataset"],
         "trust_remote_code": False,
         "evaluate_test_split": False,
         "requires_safetensors": True,
@@ -493,6 +496,11 @@ def test_evaluator_uses_validation_and_remote_code_flags(
         "force": True,
         "raise_errors": True,
     }
+    assert benchmark_kwargs["dataset"]
+    assert all(
+        config.task.name != "contamination-detection"
+        for config in benchmark_kwargs["dataset"]
+    )
     assert len((tmp_path / "isolated.jsonl").read_text().splitlines()) == 1
 
 
@@ -543,7 +551,9 @@ def test_evaluator_selects_official_tasks_for_required_canary(
     assert isinstance(init_kwargs, dict)
     assert isinstance(benchmark_kwargs, dict)
     assert init_kwargs["task"] == ["classification", "contamination-detection"]
+    assert init_kwargs["dataset"] is None
     assert benchmark_kwargs["task"] == ["classification", "contamination-detection"]
+    assert benchmark_kwargs["dataset"] is None
 
 
 def test_expired_active_lease_is_archived_before_new_claim(

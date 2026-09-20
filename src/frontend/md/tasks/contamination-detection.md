@@ -29,13 +29,13 @@ benchmark data.
 
 ## 🛠️ How to run
 
-Contamination detection is an explicit task. Run it separately from the normal suite:
+Contamination detection is an ordinary task. It is automatically included in suite,
+ordinary task, and language evaluations whenever no dataset is selected. Targeted
+`--dataset` evaluations omit the canary by design. To select it explicitly (including
+alongside no other task), run:
 
 ```bash
 euroeval --model <model-id> --task contamination-detection
 ```
 
-Collection is not automatic for suite, task, language, or targeted dataset evaluations.
-A targeted `--dataset` evaluation must therefore be followed by a separate invocation
-with `--task contamination-detection` if canary evidence is wanted. There is no bespoke
-canary flag, and no separate Hugging Face login is required.
+There is no bespoke canary flag, and no separate Hugging Face login is required.

@@ -93,8 +93,10 @@ value for later runs if the deployment must remain pinned.
 6. For a lease that requires contamination collection, the worker explicitly runs the
    `contamination-detection` task alongside the normal official tasks. Generative models
    reuse the already loaded model for bounded greedy completions; encoder models record
-   that the task is not applicable. The resulting canary record uses the ordinary result
-   upload and review path, while its broker lease field remains control-plane metadata.
+   that the task is not applicable. A lease without that requirement selects only the
+   normal official datasets, despite the public default including the canary. The
+   resulting canary record uses the ordinary result upload and review path, while its
+   broker lease field remains control-plane metadata.
 7. The broker validates the complete lease and marks it ready for review.
 
 Issue assignees are the mutable, authoritative active evaluators and credit identities

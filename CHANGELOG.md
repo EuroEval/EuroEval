@@ -9,13 +9,14 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added the `contamination-detection` task for explicitly collecting experimental private
-  contamination-canary evidence. It uses a virtual dataset configuration, preserves the
-  existing `contamination-canary` result identities and evidence schema, and never joins
-  default suite or language evaluations. The old bespoke canary flags and implicit
-  collection have been removed. The private corpus is fetched with EuroEval's packaged,
-  obfuscated dataset credential, and evidence is interpreted only during private
-  leaderboard processing.
+- Added the `contamination-detection` task for collecting experimental private
+  contamination-canary evidence. It uses a virtual dataset configuration, is included
+  automatically in suite, ordinary task, and language runs without `--dataset`, and is
+  omitted from targeted dataset selections. Explicit task selection remains supported
+  without duplicating the virtual dataset. Existing result identities and evidence
+  schema are preserved; there is no bespoke canary flag. The private corpus is fetched
+  with EuroEval's packaged, obfuscated dataset credential, and evidence is interpreted
+  only during private leaderboard processing.
 - Added support for DeepSeek-V4.1-Flash via the DeepSeek API (`deepseek/deepseek-flash`),
   including model metadata and the `#no-thinking`, `#thinking`, `#low`, `#high` and
   `#max` parameters to control its thinking mode. `#no-thinking` and `#thinking` send

@@ -161,7 +161,14 @@ def prepare_dataset_configs(
         if (tasks is None or ds.task in tasks)
         and any(lang in languages for lang in ds.languages)
     ]
-    if tasks is not None and CONTAMINATION_DETECTION in tasks:
+
+    # A dataset selection is intentionally a complete, targeted selection. In every
+    # other case the virtual canary is part of the normal task/suite run, including
+    # when a task filter selects ordinary tasks. An explicit canary task is already
+    # represented by this same virtual config, so it must not be added twice.
+    if dataset is None and not any(
+        config.task is CONTAMINATION_DETECTION for config in prepared
+    ):
         canary_name = (
             "contamination-canary-" + languages[0].code
             if len(languages) == 1
