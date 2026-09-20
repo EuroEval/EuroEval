@@ -13,6 +13,8 @@ from pathlib import Path
 
 from huggingface_hub import hf_hub_download
 
+from .string_utils import unscramble
+
 CANARY_EVIDENCE_SCHEMA = "contamination-canary-evidence/v1"
 CANARY_COLLECTION_PROTOCOL = "private-completion-canary/v1"
 CANARY_NORMALISER_VERSION = "first-two-words-nfc/v1"
@@ -162,7 +164,7 @@ def normalise_completion(value: str) -> str:
 
 
 def load_canary_prompts(
-    *, cache_dir: str | Path, token: str | None = None, corpus_path: Path | None = None
+    *, cache_dir: str | Path, corpus_path: Path | None = None
 ) -> tuple[CanaryPrompt, ...]:
     """Load and validate the frozen private corpus, then derive completion prompts.
 
@@ -181,7 +183,7 @@ def load_canary_prompts(
             revision=CANARY_DATASET_REVISION,
             filename=CANARY_DATASET_FILENAME,
             cache_dir=str(cache_dir),
-            token=token,
+            token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"),
         )
         configured = Path(downloaded)
     payload = configured.read_bytes()

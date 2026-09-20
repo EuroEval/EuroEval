@@ -512,10 +512,7 @@ class Benchmarker:
 
         if benchmark_config.contamination_canary and benchmark_config.download_only:
             try:
-                load_canary_prompts(
-                    cache_dir=benchmark_config.cache_dir,
-                    token=get_hf_token(api_key=None),
-                )
+                load_canary_prompts(cache_dir=benchmark_config.cache_dir)
             except Exception:  # noqa: BLE001 - ordinary downloads must continue
                 log(
                     "Could not cache the private contamination-canary corpus.",
@@ -1451,9 +1448,7 @@ class Benchmarker:
         ):
             return
         try:
-            prompts = load_canary_prompts(
-                cache_dir=benchmark_config.cache_dir, token=get_hf_token(api_key=None)
-            )
+            prompts = load_canary_prompts(cache_dir=benchmark_config.cache_dir)
         except Exception:  # noqa: BLE001 - ordinary benchmarks must continue
             evidence = status_evidence(
                 model_id=model_config.model_id,

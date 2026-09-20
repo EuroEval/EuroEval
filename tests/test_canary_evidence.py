@@ -55,6 +55,33 @@ def test_frozen_corpus_derives_unique_prompts_without_targets(
     assert all("amber forest" not in item.prompt for item in prompts)
 
 
+def test_private_corpus_download_uses_packaged_token(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Authenticate private corpus downloads with the packaged dataset token."""
+    corpus = _corpus(tmp_path)
+    scrambled_token = "XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"
+    monkeypatch.delenv("EUROEVAL_CANARY_CORPUS_PATH", raising=False)
+    monkeypatch.setattr(
+        evidence_module, "CANARY_CORPUS_SHA256", _sha256(corpus.read_bytes())
+    )
+    monkeypatch.setattr(
+        evidence_module,
+        "unscramble",
+        lambda value: "dataset-token" if value == scrambled_token else "wrong-token",
+    )
+
+    def download(**kwargs: object) -> str:
+        assert kwargs["token"] == "dataset-token"
+        return str(corpus)
+
+    monkeypatch.setattr(evidence_module, "hf_hub_download", download)
+
+    prompts = load_canary_prompts(cache_dir=tmp_path)
+
+    assert len(prompts) == CANARY_ROW_COUNT
+
+
 def test_evidence_contract_is_bounded_and_rejects_private_fields() -> None:
     """Keep evidence bounded and free of private plaintext fields."""
     evidence = _evidence()

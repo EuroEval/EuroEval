@@ -42,11 +42,11 @@ source. Legacy queue and collection upload paths also retain auxiliary records l
 while excluding them from public bucket writes. There is no evidence sidecar, outbox,
 reservation, receipt, or dedicated evidence bucket.
 
-The private corpus uses the normal Hugging Face download cache. Set `HF_TOKEN` or use
-a cached Hugging Face login to access it. `--download-only` caches the corpus alongside
-other requested artefacts. Offline evaluation uses the cached revision; if it is
-missing or invalid, ordinary benchmarks continue and the auxiliary result records
-`failed/corpus_unavailable`.
+The private corpus uses the normal Hugging Face download cache and EuroEval's packaged,
+obfuscated dataset credential, so no separate Hugging Face login is required.
+`--download-only` caches the corpus alongside other requested artefacts. Offline
+evaluation uses the cached revision; if it is missing or invalid, ordinary benchmarks
+continue and the auxiliary result records `failed/corpus_unavailable`.
 
 Volunteer workers receive the corpus through their authenticated lease because they do
 not receive the broker's organisation token. Their auxiliary EEE result is still
