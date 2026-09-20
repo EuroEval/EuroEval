@@ -24,6 +24,7 @@ from euroeval_worker.types import (
     Lease,
     ModelEvidence,
     canonical_json,
+    lease_from_dict,
 )
 
 REVISION = "a" * 40
@@ -46,7 +47,7 @@ LEASE = Lease(
     expected_scope=ExpectedScope(
         policy_version="test-policy",
         language_group="da",
-        identity_suffixes=('["test",false,true]',),
+        allowed_identity_suffix_sets=(('["test",false,true]',),),
         count=1,
         warnings=(),
         task_groups=("sequence_classification",),
@@ -64,6 +65,39 @@ HARDWARE = HardwareReport(
     selected_gpu_index=GPU.index,
     selected_gpu_uuid=GPU.uuid,
 )
+
+
+def test_broker_normalises_legacy_scope_and_rejects_malformed_alternatives() -> None:
+    """Legacy scopes become one set while ambiguous alternatives fail closed."""
+    legacy = dataclasses.asdict(LEASE)
+    legacy["protocol_version"] = "volunteer-worker/v1"
+    legacy["expected_scope"] = {
+        "policy_version": "test-policy",
+        "language_group": "da",
+        "identity_suffixes": ['["test",false,true]'],
+        "count": 1,
+        "warnings": [],
+        "task_groups": ["sequence_classification"],
+    }
+    decoded = lease_from_dict(legacy)
+    assert decoded.expected_scope is not None
+    assert decoded.expected_scope.allowed_identity_suffix_sets == (
+        ('["test",false,true]',),
+    )
+    malformed = dataclasses.asdict(LEASE)
+    malformed["protocol_version"] = "volunteer-worker/v1"
+    malformed["expected_scope"] = {
+        "policy_version": "test-policy",
+        "language_group": "da",
+        "allowed_identity_suffix_sets": [
+            ['["test",false,true]'],
+            ['["test",false,true]'],
+        ],
+        "warnings": [],
+        "task_groups": ["sequence_classification"],
+    }
+    with pytest.raises(ValueError, match="alternatives"):
+        lease_from_dict(malformed)
 
 
 def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
