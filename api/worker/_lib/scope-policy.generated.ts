@@ -4,8 +4,7 @@ export type ScopePolicyEntry = {
   model_type: "encoder" | "generative";
   language: string;
   language_group: string;
-  identity_suffixes: string[];
-  count?: number;
+  allowed_identity_suffix_sets: string[][];
   task_groups: string[];
   warnings?: string[];
 };
@@ -23,16 +22,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "be",
       "language_group": "be",
-      "identity_suffixes": [
-        "[\"be-wsc\",false,true]",
-        "[\"belacola\",false,true]",
-        "[\"berte-wd\",false,true]",
-        "[\"besls\",false,true]",
-        "[\"bewic\",false,true]",
-        "[\"multi-wiki-qa-be\",false,true]",
-        "[\"wikiann-be\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"be-wsc\",false,true]",
+          "[\"belacola\",false,true]",
+          "[\"berte-wd\",false,true]",
+          "[\"besls\",false,true]",
+          "[\"bewic\",false,true]",
+          "[\"multi-wiki-qa-be\",false,true]",
+          "[\"wikiann-be\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -46,15 +46,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "bg",
       "language_group": "bg",
-      "identity_suffixes": [
-        "[\"bg-ner-bsnlp\",false,true]",
-        "[\"cinexio\",false,true]",
-        "[\"exams-bg\",false,true]",
-        "[\"multi-wiki-qa-bg\",false,true]",
-        "[\"scala-bg\",false,true]",
-        "[\"winogrande-bg\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"bg-ner-bsnlp\",false,true]",
+          "[\"cinexio\",false,true]",
+          "[\"exams-bg\",false,true]",
+          "[\"multi-wiki-qa-bg\",false,true]",
+          "[\"scala-bg\",false,true]",
+          "[\"winogrande-bg\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -68,12 +69,13 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "bs",
       "language_group": "bs",
-      "identity_suffixes": [
-        "[\"mms-bs\",false,true]",
-        "[\"multi-wiki-qa-bs\",false,true]",
-        "[\"wikiann-bs\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"mms-bs\",false,true]",
+          "[\"multi-wiki-qa-bs\",false,true]",
+          "[\"wikiann-bs\",false,true]"
+        ]
       ],
-      "count": 3,
       "task_groups": [
         "question_answering",
         "sequence_classification",
@@ -86,15 +88,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "ca",
       "language_group": "ca",
-      "identity_suffixes": [
-        "[\"guia-cat\",false,true]",
-        "[\"mmlu-ca\",false,true]",
-        "[\"multi-wiki-qa-ca\",false,true]",
-        "[\"scala-ca\",false,true]",
-        "[\"wikiann-ca\",false,true]",
-        "[\"winogrande-ca\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"guia-cat\",false,true]",
+          "[\"mmlu-ca\",false,true]",
+          "[\"multi-wiki-qa-ca\",false,true]",
+          "[\"scala-ca\",false,true]",
+          "[\"wikiann-ca\",false,true]",
+          "[\"winogrande-ca\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -108,15 +111,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "cs",
       "language_group": "cs",
-      "identity_suffixes": [
-        "[\"cs-gec\",false,true]",
-        "[\"csfd-sentiment\",false,true]",
-        "[\"hellaswag-cs\",false,true]",
-        "[\"poner\",false,true]",
-        "[\"sqad\",false,true]",
-        "[\"umimeto-qa\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"cs-gec\",false,true]",
+          "[\"csfd-sentiment\",false,true]",
+          "[\"hellaswag-cs\",false,true]",
+          "[\"poner\",false,true]",
+          "[\"sqad\",false,true]",
+          "[\"umimeto-qa\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -130,17 +134,18 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "da",
       "language_group": "da",
-      "identity_suffixes": [
-        "[\"angry-tweets\",false,true]",
-        "[\"dala\",false,true]",
-        "[\"danish-citizen-tests\",false,true]",
-        "[\"dansk\",false,true]",
-        "[\"danske-talemaader\",false,true]",
-        "[\"danwic\",false,true]",
-        "[\"multi-wiki-qa-da\",false,true]",
-        "[\"winogrande-da\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"angry-tweets\",false,true]",
+          "[\"dala\",false,true]",
+          "[\"danish-citizen-tests\",false,true]",
+          "[\"dansk\",false,true]",
+          "[\"danske-talemaader\",false,true]",
+          "[\"danwic\",false,true]",
+          "[\"multi-wiki-qa-da\",false,true]",
+          "[\"winogrande-da\",false,true]"
+        ]
       ],
-      "count": 8,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -154,16 +159,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "de",
       "language_group": "de",
-      "identity_suffixes": [
-        "[\"germanquad\",false,true]",
-        "[\"germeval\",false,true]",
-        "[\"include-de\",false,true]",
-        "[\"multiloko-de\",false,true]",
-        "[\"sb10k\",false,true]",
-        "[\"scala-de\",false,true]",
-        "[\"winogrande-de\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"germanquad\",false,true]",
+          "[\"germeval\",false,true]",
+          "[\"include-de\",false,true]",
+          "[\"multiloko-de\",false,true]",
+          "[\"sb10k\",false,true]",
+          "[\"scala-de\",false,true]",
+          "[\"winogrande-de\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -177,15 +183,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "el",
       "language_group": "el",
-      "identity_suffixes": [
-        "[\"elner\",false,true]",
-        "[\"greek-mmlu\",false,true]",
-        "[\"greek-sa\",false,true]",
-        "[\"multi-wiki-qa-el\",false,true]",
-        "[\"scala-el\",false,true]",
-        "[\"winogrande-el\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"elner\",false,true]",
+          "[\"greek-mmlu\",false,true]",
+          "[\"greek-sa\",false,true]",
+          "[\"multi-wiki-qa-el\",false,true]",
+          "[\"scala-el\",false,true]",
+          "[\"winogrande-el\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -199,15 +206,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "en",
       "language_group": "en",
-      "identity_suffixes": [
-        "[\"conll-en\",false,true]",
-        "[\"hellaswag\",false,true]",
-        "[\"life-in-the-uk\",false,true]",
-        "[\"scala-en\",false,true]",
-        "[\"squad\",false,true]",
-        "[\"sst5\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"conll-en\",false,true]",
+          "[\"hellaswag\",false,true]",
+          "[\"life-in-the-uk\",false,true]",
+          "[\"scala-en\",false,true]",
+          "[\"squad\",false,true]",
+          "[\"sst5\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -221,16 +229,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "es",
       "language_group": "es",
-      "identity_suffixes": [
-        "[\"conll-es\",false,true]",
-        "[\"include-es\",false,true]",
-        "[\"mlqa-es\",false,true]",
-        "[\"multiloko-es\",false,true]",
-        "[\"scala-es\",false,true]",
-        "[\"sentiment-headlines-es\",false,true]",
-        "[\"winogrande-es\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"conll-es\",false,true]",
+          "[\"include-es\",false,true]",
+          "[\"mlqa-es\",false,true]",
+          "[\"multiloko-es\",false,true]",
+          "[\"scala-es\",false,true]",
+          "[\"sentiment-headlines-es\",false,true]",
+          "[\"winogrande-es\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -244,15 +253,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "et",
       "language_group": "et",
-      "identity_suffixes": [
-        "[\"estner\",false,true]",
-        "[\"estonian-valence\",false,true]",
-        "[\"grammar-et\",false,true]",
-        "[\"multi-wiki-qa-et\",false,true]",
-        "[\"trivia-et\",false,true]",
-        "[\"winogrande-et\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"estner\",false,true]",
+          "[\"estonian-valence\",false,true]",
+          "[\"grammar-et\",false,true]",
+          "[\"multi-wiki-qa-et\",false,true]",
+          "[\"trivia-et\",false,true]",
+          "[\"winogrande-et\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -266,15 +276,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "fi",
       "language_group": "fi",
-      "identity_suffixes": [
-        "[\"include-fi\",false,true]",
-        "[\"scala-fi\",false,true]",
-        "[\"scandisent-fi\",false,true]",
-        "[\"turku-ner-fi\",false,true]",
-        "[\"tydiqa-fi\",false,true]",
-        "[\"winogrande-fi\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"include-fi\",false,true]",
+          "[\"scala-fi\",false,true]",
+          "[\"scandisent-fi\",false,true]",
+          "[\"turku-ner-fi\",false,true]",
+          "[\"tydiqa-fi\",false,true]",
+          "[\"winogrande-fi\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -288,15 +299,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "fo",
       "language_group": "fo",
-      "identity_suffixes": [
-        "[\"faroese-metaphorical-explanations\",false,true]",
-        "[\"faroese-semantic-relations\",false,true]",
-        "[\"fone\",false,true]",
-        "[\"foqa\",false,true]",
-        "[\"fosent\",false,true]",
-        "[\"scala-fo\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"faroese-metaphorical-explanations\",false,true]",
+          "[\"faroese-semantic-relations\",false,true]",
+          "[\"fone\",false,true]",
+          "[\"foqa\",false,true]",
+          "[\"fosent\",false,true]",
+          "[\"scala-fo\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -310,16 +322,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "fr",
       "language_group": "fr",
-      "identity_suffixes": [
-        "[\"allocine\",false,true]",
-        "[\"eltec\",false,true]",
-        "[\"fquad\",false,true]",
-        "[\"hellaswag-fr\",false,true]",
-        "[\"include-fr\",false,true]",
-        "[\"multiloko-fr\",false,true]",
-        "[\"scala-fr\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"allocine\",false,true]",
+          "[\"eltec\",false,true]",
+          "[\"fquad\",false,true]",
+          "[\"hellaswag-fr\",false,true]",
+          "[\"include-fr\",false,true]",
+          "[\"multiloko-fr\",false,true]",
+          "[\"scala-fr\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -333,15 +346,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "hr",
       "language_group": "hr",
-      "identity_suffixes": [
-        "[\"include-hr\",false,true]",
-        "[\"mms-hr\",false,true]",
-        "[\"multi-wiki-qa-hr\",false,true]",
-        "[\"scala-hr\",false,true]",
-        "[\"wikiann-hr\",false,true]",
-        "[\"winogrande-hr\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"include-hr\",false,true]",
+          "[\"mms-hr\",false,true]",
+          "[\"multi-wiki-qa-hr\",false,true]",
+          "[\"scala-hr\",false,true]",
+          "[\"wikiann-hr\",false,true]",
+          "[\"winogrande-hr\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -355,15 +369,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "hu",
       "language_group": "hu",
-      "identity_suffixes": [
-        "[\"husst\",false,true]",
-        "[\"include-hu\",false,true]",
-        "[\"multi-wiki-qa-hu\",false,true]",
-        "[\"scala-hu\",false,true]",
-        "[\"szeged-ner\",false,true]",
-        "[\"winogrande-hu\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"husst\",false,true]",
+          "[\"include-hu\",false,true]",
+          "[\"multi-wiki-qa-hu\",false,true]",
+          "[\"scala-hu\",false,true]",
+          "[\"szeged-ner\",false,true]",
+          "[\"winogrande-hu\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -377,15 +392,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "is",
       "language_group": "is",
-      "identity_suffixes": [
-        "[\"hotter-and-colder-sentiment\",false,true]",
-        "[\"ice-ec\",false,true]",
-        "[\"icelandic-knowledge\",false,true]",
-        "[\"mim-gold-ner\",false,true]",
-        "[\"nqii\",false,true]",
-        "[\"winogrande-is\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"hotter-and-colder-sentiment\",false,true]",
+          "[\"ice-ec\",false,true]",
+          "[\"icelandic-knowledge\",false,true]",
+          "[\"mim-gold-ner\",false,true]",
+          "[\"nqii\",false,true]",
+          "[\"winogrande-is\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -399,16 +415,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "it",
       "language_group": "it",
-      "identity_suffixes": [
-        "[\"include-it\",false,true]",
-        "[\"multiloko-it\",false,true]",
-        "[\"multinerd-it\",false,true]",
-        "[\"scala-it\",false,true]",
-        "[\"sentipolc16\",false,true]",
-        "[\"squad-it\",false,true]",
-        "[\"winogrande-it\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"include-it\",false,true]",
+          "[\"multiloko-it\",false,true]",
+          "[\"multinerd-it\",false,true]",
+          "[\"scala-it\",false,true]",
+          "[\"sentipolc16\",false,true]",
+          "[\"squad-it\",false,true]",
+          "[\"winogrande-it\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -422,16 +439,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "lb",
       "language_group": "lb",
-      "identity_suffixes": [
-        "[\"ltzglue-hc\",false,true]",
-        "[\"ltzglue-la-binary\",false,true]",
-        "[\"ltzglue-ner\",false,true]",
-        "[\"ltzglue-rte\",false,true]",
-        "[\"ltzglue-sa\",false,true]",
-        "[\"ltzglue-tc\",false,true]",
-        "[\"multi-wiki-qa-lb\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"ltzglue-hc\",false,true]",
+          "[\"ltzglue-la-binary\",false,true]",
+          "[\"ltzglue-ner\",false,true]",
+          "[\"ltzglue-rte\",false,true]",
+          "[\"ltzglue-sa\",false,true]",
+          "[\"ltzglue-tc\",false,true]",
+          "[\"multi-wiki-qa-lb\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "question_answering",
         "sequence_classification",
@@ -444,16 +462,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "lt",
       "language_group": "lt",
-      "identity_suffixes": [
-        "[\"atsiliepimai\",false,true]",
-        "[\"include-lt\",false,true]",
-        "[\"lt-history\",false,true]",
-        "[\"multi-wiki-qa-lt\",false,true]",
-        "[\"scala-lt\",false,true]",
-        "[\"wikiann-lt\",false,true]",
-        "[\"winogrande-lt\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"atsiliepimai\",false,true]",
+          "[\"include-lt\",false,true]",
+          "[\"lt-history\",false,true]",
+          "[\"multi-wiki-qa-lt\",false,true]",
+          "[\"scala-lt\",false,true]",
+          "[\"wikiann-lt\",false,true]",
+          "[\"winogrande-lt\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -467,15 +486,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "lv",
       "language_group": "lv",
-      "identity_suffixes": [
-        "[\"copa-lv\",false,true]",
-        "[\"fullstack-ner-lv\",false,true]",
-        "[\"latvian-twitter-sentiment\",false,true]",
-        "[\"mmlu-lv\",false,true]",
-        "[\"multi-wiki-qa-lv\",false,true]",
-        "[\"scala-lv\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"copa-lv\",false,true]",
+          "[\"fullstack-ner-lv\",false,true]",
+          "[\"latvian-twitter-sentiment\",false,true]",
+          "[\"mmlu-lv\",false,true]",
+          "[\"multi-wiki-qa-lv\",false,true]",
+          "[\"scala-lv\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -489,16 +509,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "nb",
       "language_group": "nb",
-      "identity_suffixes": [
-        "[\"idioms-no\",false,true]",
-        "[\"nor-common-sense-qa\",false,true]",
-        "[\"norec\",false,true]",
-        "[\"norne-nb\",false,true]",
-        "[\"norquad\",false,true]",
-        "[\"nrk-quiz-qa\",false,true]",
-        "[\"scala-nb\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"idioms-no\",false,true]",
+          "[\"nor-common-sense-qa\",false,true]",
+          "[\"norec\",false,true]",
+          "[\"norne-nb\",false,true]",
+          "[\"norquad\",false,true]",
+          "[\"nrk-quiz-qa\",false,true]",
+          "[\"scala-nb\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -512,16 +533,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "nl",
       "language_group": "nl",
-      "identity_suffixes": [
-        "[\"conll-nl\",false,true]",
-        "[\"dbrd\",false,true]",
-        "[\"dutch-cola\",false,true]",
-        "[\"include-nl\",false,true]",
-        "[\"multiloko-nl\",false,true]",
-        "[\"squad-nl\",false,true]",
-        "[\"winogrande-nl\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"conll-nl\",false,true]",
+          "[\"dbrd\",false,true]",
+          "[\"dutch-cola\",false,true]",
+          "[\"include-nl\",false,true]",
+          "[\"multiloko-nl\",false,true]",
+          "[\"squad-nl\",false,true]",
+          "[\"winogrande-nl\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -535,16 +557,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "nn",
       "language_group": "nn",
-      "identity_suffixes": [
-        "[\"idioms-no\",false,true]",
-        "[\"nor-common-sense-qa\",false,true]",
-        "[\"norec\",false,true]",
-        "[\"norne-nn\",false,true]",
-        "[\"norquad\",false,true]",
-        "[\"nrk-quiz-qa\",false,true]",
-        "[\"scala-nn\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"idioms-no\",false,true]",
+          "[\"nor-common-sense-qa\",false,true]",
+          "[\"norec\",false,true]",
+          "[\"norne-nn\",false,true]",
+          "[\"norquad\",false,true]",
+          "[\"nrk-quiz-qa\",false,true]",
+          "[\"scala-nn\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -558,18 +581,19 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "no",
       "language_group": "no",
-      "identity_suffixes": [
-        "[\"idioms-no\",false,true]",
-        "[\"nor-common-sense-qa\",false,true]",
-        "[\"norec\",false,true]",
-        "[\"norne-nb\",false,true]",
-        "[\"norne-nn\",false,true]",
-        "[\"norquad\",false,true]",
-        "[\"nrk-quiz-qa\",false,true]",
-        "[\"scala-nb\",false,true]",
-        "[\"scala-nn\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"idioms-no\",false,true]",
+          "[\"nor-common-sense-qa\",false,true]",
+          "[\"norec\",false,true]",
+          "[\"norne-nb\",false,true]",
+          "[\"norne-nn\",false,true]",
+          "[\"norquad\",false,true]",
+          "[\"nrk-quiz-qa\",false,true]",
+          "[\"scala-nb\",false,true]",
+          "[\"scala-nn\",false,true]"
+        ]
       ],
-      "count": 9,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -583,15 +607,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "pl",
       "language_group": "pl",
-      "identity_suffixes": [
-        "[\"kpwr-ner\",false,true]",
-        "[\"llmzszl\",false,true]",
-        "[\"polemo2\",false,true]",
-        "[\"poquad\",false,true]",
-        "[\"scala-pl\",false,true]",
-        "[\"winogrande-pl\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"kpwr-ner\",false,true]",
+          "[\"llmzszl\",false,true]",
+          "[\"polemo2\",false,true]",
+          "[\"poquad\",false,true]",
+          "[\"scala-pl\",false,true]",
+          "[\"winogrande-pl\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -605,16 +630,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "pt",
       "language_group": "pt",
-      "identity_suffixes": [
-        "[\"alba-mcq-pt\",false,true]",
-        "[\"cultura-viva-pt\",false,true]",
-        "[\"harem\",false,true]",
-        "[\"multi-wiki-qa-pt\",false,true]",
-        "[\"scala-pt\",false,true]",
-        "[\"sst2-pt\",false,true]",
-        "[\"winogrande-pt\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"alba-mcq-pt\",false,true]",
+          "[\"cultura-viva-pt\",false,true]",
+          "[\"harem\",false,true]",
+          "[\"multi-wiki-qa-pt\",false,true]",
+          "[\"scala-pt\",false,true]",
+          "[\"sst2-pt\",false,true]",
+          "[\"winogrande-pt\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -628,16 +654,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "pt-pt",
       "language_group": "pt-pt",
-      "identity_suffixes": [
-        "[\"alba-mcq-pt\",false,true]",
-        "[\"cultura-viva-pt\",false,true]",
-        "[\"harem\",false,true]",
-        "[\"multi-wiki-qa-pt\",false,true]",
-        "[\"scala-pt\",false,true]",
-        "[\"sst2-pt\",false,true]",
-        "[\"winogrande-pt\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"alba-mcq-pt\",false,true]",
+          "[\"cultura-viva-pt\",false,true]",
+          "[\"harem\",false,true]",
+          "[\"multi-wiki-qa-pt\",false,true]",
+          "[\"scala-pt\",false,true]",
+          "[\"sst2-pt\",false,true]",
+          "[\"winogrande-pt\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -651,15 +678,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "ro",
       "language_group": "ro",
-      "identity_suffixes": [
-        "[\"global-mmlu-ro\",false,true]",
-        "[\"multi-wiki-qa-ro\",false,true]",
-        "[\"ro-sent\",false,true]",
-        "[\"ronec\",false,true]",
-        "[\"scala-ro\",false,true]",
-        "[\"winogrande-ro\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"global-mmlu-ro\",false,true]",
+          "[\"multi-wiki-qa-ro\",false,true]",
+          "[\"ro-sent\",false,true]",
+          "[\"ronec\",false,true]",
+          "[\"scala-ro\",false,true]",
+          "[\"winogrande-ro\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -673,15 +701,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "sk",
       "language_group": "sk",
-      "identity_suffixes": [
-        "[\"csfd-sentiment-sk\",false,true]",
-        "[\"mmlu-sk\",false,true]",
-        "[\"multi-wiki-qa-sk\",false,true]",
-        "[\"scala-sk\",false,true]",
-        "[\"uner-sk\",false,true]",
-        "[\"winogrande-sk\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"csfd-sentiment-sk\",false,true]",
+          "[\"mmlu-sk\",false,true]",
+          "[\"multi-wiki-qa-sk\",false,true]",
+          "[\"scala-sk\",false,true]",
+          "[\"uner-sk\",false,true]",
+          "[\"winogrande-sk\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -695,15 +724,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "sl",
       "language_group": "sl",
-      "identity_suffixes": [
-        "[\"mmlu-sl\",false,true]",
-        "[\"multi-wiki-qa-sl\",false,true]",
-        "[\"scala-sl\",false,true]",
-        "[\"sentinews\",false,true]",
-        "[\"ssj500k-ner\",false,true]",
-        "[\"winogrande-sl\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"mmlu-sl\",false,true]",
+          "[\"multi-wiki-qa-sl\",false,true]",
+          "[\"scala-sl\",false,true]",
+          "[\"sentinews\",false,true]",
+          "[\"ssj500k-ner\",false,true]",
+          "[\"winogrande-sl\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -717,15 +747,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "sq",
       "language_group": "sq",
-      "identity_suffixes": [
-        "[\"include-sq\",false,true]",
-        "[\"mms-sq\",false,true]",
-        "[\"multi-wiki-qa-sq\",false,true]",
-        "[\"scala-sq\",false,true]",
-        "[\"wikiann-sq\",false,true]",
-        "[\"winogrande-sq\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"include-sq\",false,true]",
+          "[\"mms-sq\",false,true]",
+          "[\"multi-wiki-qa-sq\",false,true]",
+          "[\"scala-sq\",false,true]",
+          "[\"wikiann-sq\",false,true]",
+          "[\"winogrande-sq\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -739,15 +770,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "sr",
       "language_group": "sr",
-      "identity_suffixes": [
-        "[\"include-sr\",false,true]",
-        "[\"mms-sr\",false,true]",
-        "[\"multi-wiki-qa-sr\",false,true]",
-        "[\"scala-sr\",false,true]",
-        "[\"uner-sr\",false,true]",
-        "[\"winogrande-sr\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"include-sr\",false,true]",
+          "[\"mms-sr\",false,true]",
+          "[\"multi-wiki-qa-sr\",false,true]",
+          "[\"scala-sr\",false,true]",
+          "[\"uner-sr\",false,true]",
+          "[\"winogrande-sr\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -761,16 +793,17 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "sv",
       "language_group": "sv",
-      "identity_suffixes": [
-        "[\"multi-wiki-qa-sv\",false,true]",
-        "[\"scala-sv\",false,true]",
-        "[\"skolprov\",false,true]",
-        "[\"suc3\",false,true]",
-        "[\"swedish-facts\",false,true]",
-        "[\"swerec\",false,true]",
-        "[\"winogrande-sv\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"multi-wiki-qa-sv\",false,true]",
+          "[\"scala-sv\",false,true]",
+          "[\"skolprov\",false,true]",
+          "[\"suc3\",false,true]",
+          "[\"swedish-facts\",false,true]",
+          "[\"swerec\",false,true]",
+          "[\"winogrande-sv\",false,true]"
+        ]
       ],
-      "count": 7,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -784,15 +817,16 @@ const generatedScopePolicy = {
       "model_type": "encoder",
       "language": "uk",
       "language_group": "uk",
-      "identity_suffixes": [
-        "[\"cross-domain-uk-reviews\",false,true]",
-        "[\"include-uk\",false,true]",
-        "[\"multi-wiki-qa-uk\",false,true]",
-        "[\"ner-uk\",false,true]",
-        "[\"scala-uk\",false,true]",
-        "[\"winogrande-uk\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"cross-domain-uk-reviews\",false,true]",
+          "[\"include-uk\",false,true]",
+          "[\"multi-wiki-qa-uk\",false,true]",
+          "[\"ner-uk\",false,true]",
+          "[\"scala-uk\",false,true]",
+          "[\"winogrande-uk\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -806,18 +840,35 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "be",
       "language_group": "be",
-      "identity_suffixes": [
-        "[\"be-wsc\",false,true]",
-        "[\"belacola\",false,true]",
-        "[\"berte-wd\",false,true]",
-        "[\"besls\",false,true]",
-        "[\"bewic\",false,true]",
-        "[\"multi-ifeval-be\",false,true]",
-        "[\"multi-wiki-qa-be\",false,true]",
-        "[\"ragtruth-be\",false,true]",
-        "[\"wikiann-be\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"be-wsc\",false,true]",
+          "[\"belacola\",false,true]",
+          "[\"berte-wd\",false,true]",
+          "[\"besls\",false,true]",
+          "[\"bewic\",false,true]",
+          "[\"multi-wiki-qa-be\",false,true]",
+          "[\"wikiann-be\",false,true]"
+        ],
+        [
+          "[\"be-wsc\",false,false]",
+          "[\"belacola\",false,false]",
+          "[\"berte-wd\",false,false]",
+          "[\"besls\",false,false]",
+          "[\"bewic\",false,false]",
+          "[\"multi-ifeval-be\",false,false]",
+          "[\"multi-wiki-qa-be\",false,false]",
+          "[\"ragtruth-be\",false,false]",
+          "[\"wikiann-be\",false,false]",
+          "[\"be-wsc\",false,true]",
+          "[\"belacola\",false,true]",
+          "[\"berte-wd\",false,true]",
+          "[\"besls\",false,true]",
+          "[\"bewic\",false,true]",
+          "[\"multi-wiki-qa-be\",false,true]",
+          "[\"wikiann-be\",false,true]"
+        ]
       ],
-      "count": 9,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -832,17 +883,32 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "bg",
       "language_group": "bg",
-      "identity_suffixes": [
-        "[\"bg-ner-bsnlp\",false,true]",
-        "[\"cinexio\",false,true]",
-        "[\"exams-bg\",false,true]",
-        "[\"multi-ifeval-bg\",false,true]",
-        "[\"multi-wiki-qa-bg\",false,true]",
-        "[\"ragtruth-bg\",false,true]",
-        "[\"scala-bg\",false,true]",
-        "[\"winogrande-bg\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"bg-ner-bsnlp\",false,true]",
+          "[\"cinexio\",false,true]",
+          "[\"exams-bg\",false,true]",
+          "[\"multi-wiki-qa-bg\",false,true]",
+          "[\"scala-bg\",false,true]",
+          "[\"winogrande-bg\",false,true]"
+        ],
+        [
+          "[\"bg-ner-bsnlp\",false,false]",
+          "[\"cinexio\",false,false]",
+          "[\"exams-bg\",false,false]",
+          "[\"multi-ifeval-bg\",false,false]",
+          "[\"multi-wiki-qa-bg\",false,false]",
+          "[\"ragtruth-bg\",false,false]",
+          "[\"scala-bg\",false,false]",
+          "[\"winogrande-bg\",false,false]",
+          "[\"bg-ner-bsnlp\",false,true]",
+          "[\"cinexio\",false,true]",
+          "[\"exams-bg\",false,true]",
+          "[\"multi-wiki-qa-bg\",false,true]",
+          "[\"scala-bg\",false,true]",
+          "[\"winogrande-bg\",false,true]"
+        ]
       ],
-      "count": 8,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -857,15 +923,26 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "bs",
       "language_group": "bs",
-      "identity_suffixes": [
-        "[\"lr-sum-bs\",false,true]",
-        "[\"mms-bs\",false,true]",
-        "[\"multi-ifeval-bs\",false,true]",
-        "[\"multi-wiki-qa-bs\",false,true]",
-        "[\"ragtruth-bs\",false,true]",
-        "[\"wikiann-bs\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"lr-sum-bs\",false,true]",
+          "[\"mms-bs\",false,true]",
+          "[\"multi-wiki-qa-bs\",false,true]",
+          "[\"wikiann-bs\",false,true]"
+        ],
+        [
+          "[\"lr-sum-bs\",false,false]",
+          "[\"mms-bs\",false,false]",
+          "[\"multi-ifeval-bs\",false,false]",
+          "[\"multi-wiki-qa-bs\",false,false]",
+          "[\"ragtruth-bs\",false,false]",
+          "[\"wikiann-bs\",false,false]",
+          "[\"lr-sum-bs\",false,true]",
+          "[\"mms-bs\",false,true]",
+          "[\"multi-wiki-qa-bs\",false,true]",
+          "[\"wikiann-bs\",false,true]"
+        ]
       ],
-      "count": 6,
       "task_groups": [
         "question_answering",
         "sequence_classification",
@@ -879,18 +956,35 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "ca",
       "language_group": "ca",
-      "identity_suffixes": [
-        "[\"dacsa-ca\",false,true]",
-        "[\"guia-cat\",false,true]",
-        "[\"ifeval-ca\",false,true]",
-        "[\"mmlu-ca\",false,true]",
-        "[\"multi-wiki-qa-ca\",false,true]",
-        "[\"ragtruth-ca\",false,true]",
-        "[\"scala-ca\",false,true]",
-        "[\"wikiann-ca\",false,true]",
-        "[\"winogrande-ca\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"dacsa-ca\",false,true]",
+          "[\"guia-cat\",false,true]",
+          "[\"mmlu-ca\",false,true]",
+          "[\"multi-wiki-qa-ca\",false,true]",
+          "[\"scala-ca\",false,true]",
+          "[\"wikiann-ca\",false,true]",
+          "[\"winogrande-ca\",false,true]"
+        ],
+        [
+          "[\"dacsa-ca\",false,false]",
+          "[\"guia-cat\",false,false]",
+          "[\"ifeval-ca\",false,false]",
+          "[\"mmlu-ca\",false,false]",
+          "[\"multi-wiki-qa-ca\",false,false]",
+          "[\"ragtruth-ca\",false,false]",
+          "[\"scala-ca\",false,false]",
+          "[\"wikiann-ca\",false,false]",
+          "[\"winogrande-ca\",false,false]",
+          "[\"dacsa-ca\",false,true]",
+          "[\"guia-cat\",false,true]",
+          "[\"mmlu-ca\",false,true]",
+          "[\"multi-wiki-qa-ca\",false,true]",
+          "[\"scala-ca\",false,true]",
+          "[\"wikiann-ca\",false,true]",
+          "[\"winogrande-ca\",false,true]"
+        ]
       ],
-      "count": 9,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -905,18 +999,35 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "cs",
       "language_group": "cs",
-      "identity_suffixes": [
-        "[\"cs-gec\",false,true]",
-        "[\"csfd-sentiment\",false,true]",
-        "[\"czech-news\",false,true]",
-        "[\"hellaswag-cs\",false,true]",
-        "[\"multi-ifeval-cs\",false,true]",
-        "[\"poner\",false,true]",
-        "[\"ragtruth-cs\",false,true]",
-        "[\"sqad\",false,true]",
-        "[\"umimeto-qa\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"cs-gec\",false,true]",
+          "[\"csfd-sentiment\",false,true]",
+          "[\"czech-news\",false,true]",
+          "[\"hellaswag-cs\",false,true]",
+          "[\"poner\",false,true]",
+          "[\"sqad\",false,true]",
+          "[\"umimeto-qa\",false,true]"
+        ],
+        [
+          "[\"cs-gec\",false,false]",
+          "[\"csfd-sentiment\",false,false]",
+          "[\"czech-news\",false,false]",
+          "[\"hellaswag-cs\",false,false]",
+          "[\"multi-ifeval-cs\",false,false]",
+          "[\"poner\",false,false]",
+          "[\"ragtruth-cs\",false,false]",
+          "[\"sqad\",false,false]",
+          "[\"umimeto-qa\",false,false]",
+          "[\"cs-gec\",false,true]",
+          "[\"csfd-sentiment\",false,true]",
+          "[\"czech-news\",false,true]",
+          "[\"hellaswag-cs\",false,true]",
+          "[\"poner\",false,true]",
+          "[\"sqad\",false,true]",
+          "[\"umimeto-qa\",false,true]"
+        ]
       ],
-      "count": 9,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -931,22 +1042,44 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "da",
       "language_group": "da",
-      "identity_suffixes": [
-        "[\"angry-tweets\",false,true]",
-        "[\"dala\",false,true]",
-        "[\"danish-citizen-tests\",false,true]",
-        "[\"dansk\",false,true]",
-        "[\"danske-talemaader\",false,true]",
-        "[\"danwic\",false,true]",
-        "[\"ifeval-da\",false,true]",
-        "[\"multi-wiki-qa-da\",false,true]",
-        "[\"nordjylland-news\",false,true]",
-        "[\"ragtruth-da\",false,true]",
-        "[\"valeu-da\",false,true]",
-        "[\"winogrande-da\",false,true]",
-        "[\"zebra-puzzles-easy-da\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"angry-tweets\",false,true]",
+          "[\"dala\",false,true]",
+          "[\"danish-citizen-tests\",false,true]",
+          "[\"dansk\",false,true]",
+          "[\"danske-talemaader\",false,true]",
+          "[\"danwic\",false,true]",
+          "[\"multi-wiki-qa-da\",false,true]",
+          "[\"nordjylland-news\",false,true]",
+          "[\"winogrande-da\",false,true]"
+        ],
+        [
+          "[\"angry-tweets\",false,false]",
+          "[\"dala\",false,false]",
+          "[\"danish-citizen-tests\",false,false]",
+          "[\"dansk\",false,false]",
+          "[\"danske-talemaader\",false,false]",
+          "[\"danwic\",false,false]",
+          "[\"ifeval-da\",false,false]",
+          "[\"multi-wiki-qa-da\",false,false]",
+          "[\"nordjylland-news\",false,false]",
+          "[\"ragtruth-da\",false,false]",
+          "[\"valeu-da\",false,false]",
+          "[\"winogrande-da\",false,false]",
+          "[\"zebra-puzzles-easy-da\",false,false]",
+          "[\"angry-tweets\",false,true]",
+          "[\"dala\",false,true]",
+          "[\"danish-citizen-tests\",false,true]",
+          "[\"dansk\",false,true]",
+          "[\"danske-talemaader\",false,true]",
+          "[\"danwic\",false,true]",
+          "[\"multi-wiki-qa-da\",false,true]",
+          "[\"nordjylland-news\",false,true]",
+          "[\"winogrande-da\",false,true]",
+          "[\"zebra-puzzles-easy-da\",false,true]"
+        ]
       ],
-      "count": 13,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -961,21 +1094,41 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "de",
       "language_group": "de",
-      "identity_suffixes": [
-        "[\"germanquad\",false,true]",
-        "[\"germeval\",false,true]",
-        "[\"include-de\",false,true]",
-        "[\"mlsum-de\",false,true]",
-        "[\"multi-ifeval-de\",false,true]",
-        "[\"multiloko-de\",false,true]",
-        "[\"ragtruth-de\",false,true]",
-        "[\"sb10k\",false,true]",
-        "[\"scala-de\",false,true]",
-        "[\"valeu-de\",false,true]",
-        "[\"winogrande-de\",false,true]",
-        "[\"zebra-puzzles-easy-de\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"germanquad\",false,true]",
+          "[\"germeval\",false,true]",
+          "[\"include-de\",false,true]",
+          "[\"mlsum-de\",false,true]",
+          "[\"multiloko-de\",false,true]",
+          "[\"sb10k\",false,true]",
+          "[\"scala-de\",false,true]",
+          "[\"winogrande-de\",false,true]"
+        ],
+        [
+          "[\"germanquad\",false,false]",
+          "[\"germeval\",false,false]",
+          "[\"include-de\",false,false]",
+          "[\"mlsum-de\",false,false]",
+          "[\"multi-ifeval-de\",false,false]",
+          "[\"multiloko-de\",false,false]",
+          "[\"ragtruth-de\",false,false]",
+          "[\"sb10k\",false,false]",
+          "[\"scala-de\",false,false]",
+          "[\"valeu-de\",false,false]",
+          "[\"winogrande-de\",false,false]",
+          "[\"zebra-puzzles-easy-de\",false,false]",
+          "[\"germanquad\",false,true]",
+          "[\"germeval\",false,true]",
+          "[\"include-de\",false,true]",
+          "[\"mlsum-de\",false,true]",
+          "[\"multiloko-de\",false,true]",
+          "[\"sb10k\",false,true]",
+          "[\"scala-de\",false,true]",
+          "[\"winogrande-de\",false,true]",
+          "[\"zebra-puzzles-easy-de\",false,true]"
+        ]
       ],
-      "count": 12,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -990,19 +1143,38 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "el",
       "language_group": "el",
-      "identity_suffixes": [
-        "[\"culturaqa\",false,true]",
-        "[\"elner\",false,true]",
-        "[\"greek-mmlu\",false,true]",
-        "[\"greek-sa\",false,true]",
-        "[\"greek-wikipedia\",false,true]",
-        "[\"ifeval-el\",false,true]",
-        "[\"multi-wiki-qa-el\",false,true]",
-        "[\"ragtruth-el\",false,true]",
-        "[\"scala-el\",false,true]",
-        "[\"winogrande-el\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"culturaqa\",false,true]",
+          "[\"elner\",false,true]",
+          "[\"greek-mmlu\",false,true]",
+          "[\"greek-sa\",false,true]",
+          "[\"greek-wikipedia\",false,true]",
+          "[\"multi-wiki-qa-el\",false,true]",
+          "[\"scala-el\",false,true]",
+          "[\"winogrande-el\",false,true]"
+        ],
+        [
+          "[\"culturaqa\",false,false]",
+          "[\"elner\",false,false]",
+          "[\"greek-mmlu\",false,false]",
+          "[\"greek-sa\",false,false]",
+          "[\"greek-wikipedia\",false,false]",
+          "[\"ifeval-el\",false,false]",
+          "[\"multi-wiki-qa-el\",false,false]",
+          "[\"ragtruth-el\",false,false]",
+          "[\"scala-el\",false,false]",
+          "[\"winogrande-el\",false,false]",
+          "[\"culturaqa\",false,true]",
+          "[\"elner\",false,true]",
+          "[\"greek-mmlu\",false,true]",
+          "[\"greek-sa\",false,true]",
+          "[\"greek-wikipedia\",false,true]",
+          "[\"multi-wiki-qa-el\",false,true]",
+          "[\"scala-el\",false,true]",
+          "[\"winogrande-el\",false,true]"
+        ]
       ],
-      "count": 10,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1017,21 +1189,39 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "en",
       "language_group": "en",
-      "identity_suffixes": [
-        "[\"bfcl-v2\",false,true]",
-        "[\"cnn-dailymail\",false,true]",
-        "[\"conll-en\",false,true]",
-        "[\"hellaswag\",false,true]",
-        "[\"ifeval\",false,true]",
-        "[\"life-in-the-uk\",false,true]",
-        "[\"ragtruth-en\",false,true]",
-        "[\"scala-en\",false,true]",
-        "[\"squad\",false,true]",
-        "[\"sst5\",false,true]",
-        "[\"valeu-en\",false,true]",
-        "[\"zebra-puzzles-easy-en\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"cnn-dailymail\",false,true]",
+          "[\"conll-en\",false,true]",
+          "[\"hellaswag\",false,true]",
+          "[\"life-in-the-uk\",false,true]",
+          "[\"scala-en\",false,true]",
+          "[\"squad\",false,true]",
+          "[\"sst5\",false,true]"
+        ],
+        [
+          "[\"bfcl-v2\",false,false]",
+          "[\"cnn-dailymail\",false,false]",
+          "[\"conll-en\",false,false]",
+          "[\"hellaswag\",false,false]",
+          "[\"ifeval\",false,false]",
+          "[\"life-in-the-uk\",false,false]",
+          "[\"ragtruth-en\",false,false]",
+          "[\"scala-en\",false,false]",
+          "[\"squad\",false,false]",
+          "[\"sst5\",false,false]",
+          "[\"valeu-en\",false,false]",
+          "[\"zebra-puzzles-easy-en\",false,false]",
+          "[\"cnn-dailymail\",false,true]",
+          "[\"conll-en\",false,true]",
+          "[\"hellaswag\",false,true]",
+          "[\"life-in-the-uk\",false,true]",
+          "[\"scala-en\",false,true]",
+          "[\"squad\",false,true]",
+          "[\"sst5\",false,true]",
+          "[\"zebra-puzzles-easy-en\",false,true]"
+        ]
       ],
-      "count": 12,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1046,20 +1236,39 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "es",
       "language_group": "es",
-      "identity_suffixes": [
-        "[\"conll-es\",false,true]",
-        "[\"ifeval-es\",false,true]",
-        "[\"include-es\",false,true]",
-        "[\"mlqa-es\",false,true]",
-        "[\"mlsum-es\",false,true]",
-        "[\"multiloko-es\",false,true]",
-        "[\"ragtruth-es\",false,true]",
-        "[\"scala-es\",false,true]",
-        "[\"sentiment-headlines-es\",false,true]",
-        "[\"valeu-es\",false,true]",
-        "[\"winogrande-es\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"conll-es\",false,true]",
+          "[\"include-es\",false,true]",
+          "[\"mlqa-es\",false,true]",
+          "[\"mlsum-es\",false,true]",
+          "[\"multiloko-es\",false,true]",
+          "[\"scala-es\",false,true]",
+          "[\"sentiment-headlines-es\",false,true]",
+          "[\"winogrande-es\",false,true]"
+        ],
+        [
+          "[\"conll-es\",false,false]",
+          "[\"ifeval-es\",false,false]",
+          "[\"include-es\",false,false]",
+          "[\"mlqa-es\",false,false]",
+          "[\"mlsum-es\",false,false]",
+          "[\"multiloko-es\",false,false]",
+          "[\"ragtruth-es\",false,false]",
+          "[\"scala-es\",false,false]",
+          "[\"sentiment-headlines-es\",false,false]",
+          "[\"valeu-es\",false,false]",
+          "[\"winogrande-es\",false,false]",
+          "[\"conll-es\",false,true]",
+          "[\"include-es\",false,true]",
+          "[\"mlqa-es\",false,true]",
+          "[\"mlsum-es\",false,true]",
+          "[\"multiloko-es\",false,true]",
+          "[\"scala-es\",false,true]",
+          "[\"sentiment-headlines-es\",false,true]",
+          "[\"winogrande-es\",false,true]"
+        ]
       ],
-      "count": 11,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1074,19 +1283,36 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "et",
       "language_group": "et",
-      "identity_suffixes": [
-        "[\"err-news\",false,true]",
-        "[\"estner\",false,true]",
-        "[\"estonian-valence\",false,true]",
-        "[\"grammar-et\",false,true]",
-        "[\"ifeval-et\",false,true]",
-        "[\"multi-wiki-qa-et\",false,true]",
-        "[\"ragtruth-et\",false,true]",
-        "[\"trivia-et\",false,true]",
-        "[\"valeu-et\",false,true]",
-        "[\"winogrande-et\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"err-news\",false,true]",
+          "[\"estner\",false,true]",
+          "[\"estonian-valence\",false,true]",
+          "[\"grammar-et\",false,true]",
+          "[\"multi-wiki-qa-et\",false,true]",
+          "[\"trivia-et\",false,true]",
+          "[\"winogrande-et\",false,true]"
+        ],
+        [
+          "[\"err-news\",false,false]",
+          "[\"estner\",false,false]",
+          "[\"estonian-valence\",false,false]",
+          "[\"grammar-et\",false,false]",
+          "[\"ifeval-et\",false,false]",
+          "[\"multi-wiki-qa-et\",false,false]",
+          "[\"ragtruth-et\",false,false]",
+          "[\"trivia-et\",false,false]",
+          "[\"valeu-et\",false,false]",
+          "[\"winogrande-et\",false,false]",
+          "[\"err-news\",false,true]",
+          "[\"estner\",false,true]",
+          "[\"estonian-valence\",false,true]",
+          "[\"grammar-et\",false,true]",
+          "[\"multi-wiki-qa-et\",false,true]",
+          "[\"trivia-et\",false,true]",
+          "[\"winogrande-et\",false,true]"
+        ]
       ],
-      "count": 10,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1101,19 +1327,36 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "fi",
       "language_group": "fi",
-      "identity_suffixes": [
-        "[\"include-fi\",false,true]",
-        "[\"multi-ifeval-fi\",false,true]",
-        "[\"ragtruth-fi\",false,true]",
-        "[\"scala-fi\",false,true]",
-        "[\"scandisent-fi\",false,true]",
-        "[\"turku-ner-fi\",false,true]",
-        "[\"tydiqa-fi\",false,true]",
-        "[\"valeu-fi\",false,true]",
-        "[\"winogrande-fi\",false,true]",
-        "[\"xlsum-fi\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"include-fi\",false,true]",
+          "[\"scala-fi\",false,true]",
+          "[\"scandisent-fi\",false,true]",
+          "[\"turku-ner-fi\",false,true]",
+          "[\"tydiqa-fi\",false,true]",
+          "[\"winogrande-fi\",false,true]",
+          "[\"xlsum-fi\",false,true]"
+        ],
+        [
+          "[\"include-fi\",false,false]",
+          "[\"multi-ifeval-fi\",false,false]",
+          "[\"ragtruth-fi\",false,false]",
+          "[\"scala-fi\",false,false]",
+          "[\"scandisent-fi\",false,false]",
+          "[\"turku-ner-fi\",false,false]",
+          "[\"tydiqa-fi\",false,false]",
+          "[\"valeu-fi\",false,false]",
+          "[\"winogrande-fi\",false,false]",
+          "[\"xlsum-fi\",false,false]",
+          "[\"include-fi\",false,true]",
+          "[\"scala-fi\",false,true]",
+          "[\"scandisent-fi\",false,true]",
+          "[\"turku-ner-fi\",false,true]",
+          "[\"tydiqa-fi\",false,true]",
+          "[\"winogrande-fi\",false,true]",
+          "[\"xlsum-fi\",false,true]"
+        ]
       ],
-      "count": 10,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1128,19 +1371,37 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "fo",
       "language_group": "fo",
-      "identity_suffixes": [
-        "[\"faroese-grammatical-correctness\",false,true]",
-        "[\"faroese-metaphorical-explanations\",false,true]",
-        "[\"faroese-semantic-relations\",false,true]",
-        "[\"fone\",false,true]",
-        "[\"foqa\",false,true]",
-        "[\"fosent\",false,true]",
-        "[\"multi-ifeval-fo\",false,true]",
-        "[\"ragtruth-fo\",false,true]",
-        "[\"scala-fo\",false,true]",
-        "[\"zebra-puzzles-easy-fo\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"faroese-grammatical-correctness\",false,true]",
+          "[\"faroese-metaphorical-explanations\",false,true]",
+          "[\"faroese-semantic-relations\",false,true]",
+          "[\"fone\",false,true]",
+          "[\"foqa\",false,true]",
+          "[\"fosent\",false,true]",
+          "[\"scala-fo\",false,true]"
+        ],
+        [
+          "[\"faroese-grammatical-correctness\",false,false]",
+          "[\"faroese-metaphorical-explanations\",false,false]",
+          "[\"faroese-semantic-relations\",false,false]",
+          "[\"fone\",false,false]",
+          "[\"foqa\",false,false]",
+          "[\"fosent\",false,false]",
+          "[\"multi-ifeval-fo\",false,false]",
+          "[\"ragtruth-fo\",false,false]",
+          "[\"scala-fo\",false,false]",
+          "[\"zebra-puzzles-easy-fo\",false,false]",
+          "[\"faroese-grammatical-correctness\",false,true]",
+          "[\"faroese-metaphorical-explanations\",false,true]",
+          "[\"faroese-semantic-relations\",false,true]",
+          "[\"fone\",false,true]",
+          "[\"foqa\",false,true]",
+          "[\"fosent\",false,true]",
+          "[\"scala-fo\",false,true]",
+          "[\"zebra-puzzles-easy-fo\",false,true]"
+        ]
       ],
-      "count": 10,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1155,20 +1416,39 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "fr",
       "language_group": "fr",
-      "identity_suffixes": [
-        "[\"allocine\",false,true]",
-        "[\"eltec\",false,true]",
-        "[\"fquad\",false,true]",
-        "[\"hellaswag-fr\",false,true]",
-        "[\"ifeval-fr\",false,true]",
-        "[\"include-fr\",false,true]",
-        "[\"multiloko-fr\",false,true]",
-        "[\"orange-sum\",false,true]",
-        "[\"ragtruth-fr\",false,true]",
-        "[\"scala-fr\",false,true]",
-        "[\"valeu-fr\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"allocine\",false,true]",
+          "[\"eltec\",false,true]",
+          "[\"fquad\",false,true]",
+          "[\"hellaswag-fr\",false,true]",
+          "[\"include-fr\",false,true]",
+          "[\"multiloko-fr\",false,true]",
+          "[\"orange-sum\",false,true]",
+          "[\"scala-fr\",false,true]"
+        ],
+        [
+          "[\"allocine\",false,false]",
+          "[\"eltec\",false,false]",
+          "[\"fquad\",false,false]",
+          "[\"hellaswag-fr\",false,false]",
+          "[\"ifeval-fr\",false,false]",
+          "[\"include-fr\",false,false]",
+          "[\"multiloko-fr\",false,false]",
+          "[\"orange-sum\",false,false]",
+          "[\"ragtruth-fr\",false,false]",
+          "[\"scala-fr\",false,false]",
+          "[\"valeu-fr\",false,false]",
+          "[\"allocine\",false,true]",
+          "[\"eltec\",false,true]",
+          "[\"fquad\",false,true]",
+          "[\"hellaswag-fr\",false,true]",
+          "[\"include-fr\",false,true]",
+          "[\"multiloko-fr\",false,true]",
+          "[\"orange-sum\",false,true]",
+          "[\"scala-fr\",false,true]"
+        ]
       ],
-      "count": 11,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1183,17 +1463,32 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "hr",
       "language_group": "hr",
-      "identity_suffixes": [
-        "[\"include-hr\",false,true]",
-        "[\"mms-hr\",false,true]",
-        "[\"multi-ifeval-hr\",false,true]",
-        "[\"multi-wiki-qa-hr\",false,true]",
-        "[\"ragtruth-hr\",false,true]",
-        "[\"scala-hr\",false,true]",
-        "[\"wikiann-hr\",false,true]",
-        "[\"winogrande-hr\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"include-hr\",false,true]",
+          "[\"mms-hr\",false,true]",
+          "[\"multi-wiki-qa-hr\",false,true]",
+          "[\"scala-hr\",false,true]",
+          "[\"wikiann-hr\",false,true]",
+          "[\"winogrande-hr\",false,true]"
+        ],
+        [
+          "[\"include-hr\",false,false]",
+          "[\"mms-hr\",false,false]",
+          "[\"multi-ifeval-hr\",false,false]",
+          "[\"multi-wiki-qa-hr\",false,false]",
+          "[\"ragtruth-hr\",false,false]",
+          "[\"scala-hr\",false,false]",
+          "[\"wikiann-hr\",false,false]",
+          "[\"winogrande-hr\",false,false]",
+          "[\"include-hr\",false,true]",
+          "[\"mms-hr\",false,true]",
+          "[\"multi-wiki-qa-hr\",false,true]",
+          "[\"scala-hr\",false,true]",
+          "[\"wikiann-hr\",false,true]",
+          "[\"winogrande-hr\",false,true]"
+        ]
       ],
-      "count": 8,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1208,18 +1503,35 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "hu",
       "language_group": "hu",
-      "identity_suffixes": [
-        "[\"hunsum\",false,true]",
-        "[\"husst\",false,true]",
-        "[\"include-hu\",false,true]",
-        "[\"multi-ifeval-hu\",false,true]",
-        "[\"multi-wiki-qa-hu\",false,true]",
-        "[\"ragtruth-hu\",false,true]",
-        "[\"scala-hu\",false,true]",
-        "[\"szeged-ner\",false,true]",
-        "[\"winogrande-hu\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"hunsum\",false,true]",
+          "[\"husst\",false,true]",
+          "[\"include-hu\",false,true]",
+          "[\"multi-wiki-qa-hu\",false,true]",
+          "[\"scala-hu\",false,true]",
+          "[\"szeged-ner\",false,true]",
+          "[\"winogrande-hu\",false,true]"
+        ],
+        [
+          "[\"hunsum\",false,false]",
+          "[\"husst\",false,false]",
+          "[\"include-hu\",false,false]",
+          "[\"multi-ifeval-hu\",false,false]",
+          "[\"multi-wiki-qa-hu\",false,false]",
+          "[\"ragtruth-hu\",false,false]",
+          "[\"scala-hu\",false,false]",
+          "[\"szeged-ner\",false,false]",
+          "[\"winogrande-hu\",false,false]",
+          "[\"hunsum\",false,true]",
+          "[\"husst\",false,true]",
+          "[\"include-hu\",false,true]",
+          "[\"multi-wiki-qa-hu\",false,true]",
+          "[\"scala-hu\",false,true]",
+          "[\"szeged-ner\",false,true]",
+          "[\"winogrande-hu\",false,true]"
+        ]
       ],
-      "count": 9,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1234,20 +1546,38 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "is",
       "language_group": "is",
-      "identity_suffixes": [
-        "[\"hotter-and-colder-sentiment\",false,true]",
-        "[\"ice-ec\",false,true]",
-        "[\"icelandic-knowledge\",false,true]",
-        "[\"mim-gold-ner\",false,true]",
-        "[\"multi-ifeval-is\",false,true]",
-        "[\"nqii\",false,true]",
-        "[\"ragtruth-is\",false,true]",
-        "[\"rrn\",false,true]",
-        "[\"valeu-is\",false,true]",
-        "[\"winogrande-is\",false,true]",
-        "[\"zebra-puzzles-easy-is\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"hotter-and-colder-sentiment\",false,true]",
+          "[\"ice-ec\",false,true]",
+          "[\"icelandic-knowledge\",false,true]",
+          "[\"mim-gold-ner\",false,true]",
+          "[\"nqii\",false,true]",
+          "[\"rrn\",false,true]",
+          "[\"winogrande-is\",false,true]"
+        ],
+        [
+          "[\"hotter-and-colder-sentiment\",false,false]",
+          "[\"ice-ec\",false,false]",
+          "[\"icelandic-knowledge\",false,false]",
+          "[\"mim-gold-ner\",false,false]",
+          "[\"multi-ifeval-is\",false,false]",
+          "[\"nqii\",false,false]",
+          "[\"ragtruth-is\",false,false]",
+          "[\"rrn\",false,false]",
+          "[\"valeu-is\",false,false]",
+          "[\"winogrande-is\",false,false]",
+          "[\"zebra-puzzles-easy-is\",false,false]",
+          "[\"hotter-and-colder-sentiment\",false,true]",
+          "[\"ice-ec\",false,true]",
+          "[\"icelandic-knowledge\",false,true]",
+          "[\"mim-gold-ner\",false,true]",
+          "[\"nqii\",false,true]",
+          "[\"rrn\",false,true]",
+          "[\"winogrande-is\",false,true]",
+          "[\"zebra-puzzles-easy-is\",false,true]"
+        ]
       ],
-      "count": 11,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1262,20 +1592,39 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "it",
       "language_group": "it",
-      "identity_suffixes": [
-        "[\"ilpost-sum\",false,true]",
-        "[\"include-it\",false,true]",
-        "[\"multi-ifeval-it\",false,true]",
-        "[\"multiloko-it\",false,true]",
-        "[\"multinerd-it\",false,true]",
-        "[\"ragtruth-it\",false,true]",
-        "[\"scala-it\",false,true]",
-        "[\"sentipolc16\",false,true]",
-        "[\"squad-it\",false,true]",
-        "[\"valeu-it\",false,true]",
-        "[\"winogrande-it\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"ilpost-sum\",false,true]",
+          "[\"include-it\",false,true]",
+          "[\"multiloko-it\",false,true]",
+          "[\"multinerd-it\",false,true]",
+          "[\"scala-it\",false,true]",
+          "[\"sentipolc16\",false,true]",
+          "[\"squad-it\",false,true]",
+          "[\"winogrande-it\",false,true]"
+        ],
+        [
+          "[\"ilpost-sum\",false,false]",
+          "[\"include-it\",false,false]",
+          "[\"multi-ifeval-it\",false,false]",
+          "[\"multiloko-it\",false,false]",
+          "[\"multinerd-it\",false,false]",
+          "[\"ragtruth-it\",false,false]",
+          "[\"scala-it\",false,false]",
+          "[\"sentipolc16\",false,false]",
+          "[\"squad-it\",false,false]",
+          "[\"valeu-it\",false,false]",
+          "[\"winogrande-it\",false,false]",
+          "[\"ilpost-sum\",false,true]",
+          "[\"include-it\",false,true]",
+          "[\"multiloko-it\",false,true]",
+          "[\"multinerd-it\",false,true]",
+          "[\"scala-it\",false,true]",
+          "[\"sentipolc16\",false,true]",
+          "[\"squad-it\",false,true]",
+          "[\"winogrande-it\",false,true]"
+        ]
       ],
-      "count": 11,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1290,18 +1639,35 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "lb",
       "language_group": "lb",
-      "identity_suffixes": [
-        "[\"ltzglue-hc\",false,true]",
-        "[\"ltzglue-la-binary\",false,true]",
-        "[\"ltzglue-ner\",false,true]",
-        "[\"ltzglue-rte\",false,true]",
-        "[\"ltzglue-sa\",false,true]",
-        "[\"ltzglue-tc\",false,true]",
-        "[\"multi-ifeval-lb\",false,true]",
-        "[\"multi-wiki-qa-lb\",false,true]",
-        "[\"ragtruth-lb\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"ltzglue-hc\",false,true]",
+          "[\"ltzglue-la-binary\",false,true]",
+          "[\"ltzglue-ner\",false,true]",
+          "[\"ltzglue-rte\",false,true]",
+          "[\"ltzglue-sa\",false,true]",
+          "[\"ltzglue-tc\",false,true]",
+          "[\"multi-wiki-qa-lb\",false,true]"
+        ],
+        [
+          "[\"ltzglue-hc\",false,false]",
+          "[\"ltzglue-la-binary\",false,false]",
+          "[\"ltzglue-ner\",false,false]",
+          "[\"ltzglue-rte\",false,false]",
+          "[\"ltzglue-sa\",false,false]",
+          "[\"ltzglue-tc\",false,false]",
+          "[\"multi-ifeval-lb\",false,false]",
+          "[\"multi-wiki-qa-lb\",false,false]",
+          "[\"ragtruth-lb\",false,false]",
+          "[\"ltzglue-hc\",false,true]",
+          "[\"ltzglue-la-binary\",false,true]",
+          "[\"ltzglue-ner\",false,true]",
+          "[\"ltzglue-rte\",false,true]",
+          "[\"ltzglue-sa\",false,true]",
+          "[\"ltzglue-tc\",false,true]",
+          "[\"multi-wiki-qa-lb\",false,true]"
+        ]
       ],
-      "count": 9,
       "task_groups": [
         "question_answering",
         "sequence_classification",
@@ -1315,19 +1681,38 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "lt",
       "language_group": "lt",
-      "identity_suffixes": [
-        "[\"atsiliepimai\",false,true]",
-        "[\"include-lt\",false,true]",
-        "[\"lrytas\",false,true]",
-        "[\"lt-history\",false,true]",
-        "[\"multi-ifeval-lt\",false,true]",
-        "[\"multi-wiki-qa-lt\",false,true]",
-        "[\"ragtruth-lt\",false,true]",
-        "[\"scala-lt\",false,true]",
-        "[\"wikiann-lt\",false,true]",
-        "[\"winogrande-lt\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"atsiliepimai\",false,true]",
+          "[\"include-lt\",false,true]",
+          "[\"lrytas\",false,true]",
+          "[\"lt-history\",false,true]",
+          "[\"multi-wiki-qa-lt\",false,true]",
+          "[\"scala-lt\",false,true]",
+          "[\"wikiann-lt\",false,true]",
+          "[\"winogrande-lt\",false,true]"
+        ],
+        [
+          "[\"atsiliepimai\",false,false]",
+          "[\"include-lt\",false,false]",
+          "[\"lrytas\",false,false]",
+          "[\"lt-history\",false,false]",
+          "[\"multi-ifeval-lt\",false,false]",
+          "[\"multi-wiki-qa-lt\",false,false]",
+          "[\"ragtruth-lt\",false,false]",
+          "[\"scala-lt\",false,false]",
+          "[\"wikiann-lt\",false,false]",
+          "[\"winogrande-lt\",false,false]",
+          "[\"atsiliepimai\",false,true]",
+          "[\"include-lt\",false,true]",
+          "[\"lrytas\",false,true]",
+          "[\"lt-history\",false,true]",
+          "[\"multi-wiki-qa-lt\",false,true]",
+          "[\"scala-lt\",false,true]",
+          "[\"wikiann-lt\",false,true]",
+          "[\"winogrande-lt\",false,true]"
+        ]
       ],
-      "count": 10,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1342,18 +1727,35 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "lv",
       "language_group": "lv",
-      "identity_suffixes": [
-        "[\"copa-lv\",false,true]",
-        "[\"fullstack-ner-lv\",false,true]",
-        "[\"latvian-twitter-sentiment\",false,true]",
-        "[\"lsm\",false,true]",
-        "[\"mmlu-lv\",false,true]",
-        "[\"multi-ifeval-lv\",false,true]",
-        "[\"multi-wiki-qa-lv\",false,true]",
-        "[\"ragtruth-lv\",false,true]",
-        "[\"scala-lv\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"copa-lv\",false,true]",
+          "[\"fullstack-ner-lv\",false,true]",
+          "[\"latvian-twitter-sentiment\",false,true]",
+          "[\"lsm\",false,true]",
+          "[\"mmlu-lv\",false,true]",
+          "[\"multi-wiki-qa-lv\",false,true]",
+          "[\"scala-lv\",false,true]"
+        ],
+        [
+          "[\"copa-lv\",false,false]",
+          "[\"fullstack-ner-lv\",false,false]",
+          "[\"latvian-twitter-sentiment\",false,false]",
+          "[\"lsm\",false,false]",
+          "[\"mmlu-lv\",false,false]",
+          "[\"multi-ifeval-lv\",false,false]",
+          "[\"multi-wiki-qa-lv\",false,false]",
+          "[\"ragtruth-lv\",false,false]",
+          "[\"scala-lv\",false,false]",
+          "[\"copa-lv\",false,true]",
+          "[\"fullstack-ner-lv\",false,true]",
+          "[\"latvian-twitter-sentiment\",false,true]",
+          "[\"lsm\",false,true]",
+          "[\"mmlu-lv\",false,true]",
+          "[\"multi-wiki-qa-lv\",false,true]",
+          "[\"scala-lv\",false,true]"
+        ]
       ],
-      "count": 9,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1368,20 +1770,40 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "nb",
       "language_group": "nb",
-      "identity_suffixes": [
-        "[\"idioms-no\",false,true]",
-        "[\"multi-ifeval-nb\",false,true]",
-        "[\"no-sammendrag\",false,true]",
-        "[\"nor-common-sense-qa\",false,true]",
-        "[\"norec\",false,true]",
-        "[\"norne-nb\",false,true]",
-        "[\"norquad\",false,true]",
-        "[\"nrk-quiz-qa\",false,true]",
-        "[\"scala-nb\",false,true]",
-        "[\"valeu-no\",false,true]",
-        "[\"zebra-puzzles-easy-nb\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"idioms-no\",false,true]",
+          "[\"no-sammendrag\",false,true]",
+          "[\"nor-common-sense-qa\",false,true]",
+          "[\"norec\",false,true]",
+          "[\"norne-nb\",false,true]",
+          "[\"norquad\",false,true]",
+          "[\"nrk-quiz-qa\",false,true]",
+          "[\"scala-nb\",false,true]"
+        ],
+        [
+          "[\"idioms-no\",false,false]",
+          "[\"multi-ifeval-nb\",false,false]",
+          "[\"no-sammendrag\",false,false]",
+          "[\"nor-common-sense-qa\",false,false]",
+          "[\"norec\",false,false]",
+          "[\"norne-nb\",false,false]",
+          "[\"norquad\",false,false]",
+          "[\"nrk-quiz-qa\",false,false]",
+          "[\"scala-nb\",false,false]",
+          "[\"valeu-no\",false,false]",
+          "[\"zebra-puzzles-easy-nb\",false,false]",
+          "[\"idioms-no\",false,true]",
+          "[\"no-sammendrag\",false,true]",
+          "[\"nor-common-sense-qa\",false,true]",
+          "[\"norec\",false,true]",
+          "[\"norne-nb\",false,true]",
+          "[\"norquad\",false,true]",
+          "[\"nrk-quiz-qa\",false,true]",
+          "[\"scala-nb\",false,true]",
+          "[\"zebra-puzzles-easy-nb\",false,true]"
+        ]
       ],
-      "count": 11,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1396,23 +1818,45 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "nl",
       "language_group": "nl",
-      "identity_suffixes": [
-        "[\"conll-nl\",false,true]",
-        "[\"dbrd\",false,true]",
-        "[\"duidelijke-taal\",false,true]",
-        "[\"dutch-cola\",false,true]",
-        "[\"include-nl\",false,true]",
-        "[\"mbbq-nl\",false,true]",
-        "[\"multi-ifeval-nl\",false,true]",
-        "[\"multiloko-nl\",false,true]",
-        "[\"ragtruth-nl\",false,true]",
-        "[\"squad-nl\",false,true]",
-        "[\"valeu-nl\",false,true]",
-        "[\"wiki-lingua-nl\",false,true]",
-        "[\"winogrande-nl\",false,true]",
-        "[\"zebra-puzzles-easy-nl\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"conll-nl\",false,true]",
+          "[\"dbrd\",false,true]",
+          "[\"duidelijke-taal\",false,true]",
+          "[\"dutch-cola\",false,true]",
+          "[\"include-nl\",false,true]",
+          "[\"multiloko-nl\",false,true]",
+          "[\"squad-nl\",false,true]",
+          "[\"wiki-lingua-nl\",false,true]",
+          "[\"winogrande-nl\",false,true]"
+        ],
+        [
+          "[\"conll-nl\",false,false]",
+          "[\"dbrd\",false,false]",
+          "[\"duidelijke-taal\",false,false]",
+          "[\"dutch-cola\",false,false]",
+          "[\"include-nl\",false,false]",
+          "[\"mbbq-nl\",false,false]",
+          "[\"multi-ifeval-nl\",false,false]",
+          "[\"multiloko-nl\",false,false]",
+          "[\"ragtruth-nl\",false,false]",
+          "[\"squad-nl\",false,false]",
+          "[\"valeu-nl\",false,false]",
+          "[\"wiki-lingua-nl\",false,false]",
+          "[\"winogrande-nl\",false,false]",
+          "[\"zebra-puzzles-easy-nl\",false,false]",
+          "[\"conll-nl\",false,true]",
+          "[\"dbrd\",false,true]",
+          "[\"duidelijke-taal\",false,true]",
+          "[\"dutch-cola\",false,true]",
+          "[\"include-nl\",false,true]",
+          "[\"multiloko-nl\",false,true]",
+          "[\"squad-nl\",false,true]",
+          "[\"wiki-lingua-nl\",false,true]",
+          "[\"winogrande-nl\",false,true]",
+          "[\"zebra-puzzles-easy-nl\",false,true]"
+        ]
       ],
-      "count": 14,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1427,20 +1871,40 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "nn",
       "language_group": "nn",
-      "identity_suffixes": [
-        "[\"idioms-no\",false,true]",
-        "[\"multi-ifeval-nn\",false,true]",
-        "[\"no-sammendrag\",false,true]",
-        "[\"nor-common-sense-qa\",false,true]",
-        "[\"norec\",false,true]",
-        "[\"norne-nn\",false,true]",
-        "[\"norquad\",false,true]",
-        "[\"nrk-quiz-qa\",false,true]",
-        "[\"scala-nn\",false,true]",
-        "[\"valeu-no\",false,true]",
-        "[\"zebra-puzzles-easy-nn\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"idioms-no\",false,true]",
+          "[\"no-sammendrag\",false,true]",
+          "[\"nor-common-sense-qa\",false,true]",
+          "[\"norec\",false,true]",
+          "[\"norne-nn\",false,true]",
+          "[\"norquad\",false,true]",
+          "[\"nrk-quiz-qa\",false,true]",
+          "[\"scala-nn\",false,true]"
+        ],
+        [
+          "[\"idioms-no\",false,false]",
+          "[\"multi-ifeval-nn\",false,false]",
+          "[\"no-sammendrag\",false,false]",
+          "[\"nor-common-sense-qa\",false,false]",
+          "[\"norec\",false,false]",
+          "[\"norne-nn\",false,false]",
+          "[\"norquad\",false,false]",
+          "[\"nrk-quiz-qa\",false,false]",
+          "[\"scala-nn\",false,false]",
+          "[\"valeu-no\",false,false]",
+          "[\"zebra-puzzles-easy-nn\",false,false]",
+          "[\"idioms-no\",false,true]",
+          "[\"no-sammendrag\",false,true]",
+          "[\"nor-common-sense-qa\",false,true]",
+          "[\"norec\",false,true]",
+          "[\"norne-nn\",false,true]",
+          "[\"norquad\",false,true]",
+          "[\"nrk-quiz-qa\",false,true]",
+          "[\"scala-nn\",false,true]",
+          "[\"zebra-puzzles-easy-nn\",false,true]"
+        ]
       ],
-      "count": 11,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1455,25 +1919,50 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "no",
       "language_group": "no",
-      "identity_suffixes": [
-        "[\"idioms-no\",false,true]",
-        "[\"multi-ifeval-nb\",false,true]",
-        "[\"multi-ifeval-nn\",false,true]",
-        "[\"no-sammendrag\",false,true]",
-        "[\"nor-common-sense-qa\",false,true]",
-        "[\"norec\",false,true]",
-        "[\"norne-nb\",false,true]",
-        "[\"norne-nn\",false,true]",
-        "[\"norquad\",false,true]",
-        "[\"nrk-quiz-qa\",false,true]",
-        "[\"ragtruth-no\",false,true]",
-        "[\"scala-nb\",false,true]",
-        "[\"scala-nn\",false,true]",
-        "[\"valeu-no\",false,true]",
-        "[\"zebra-puzzles-easy-nb\",false,true]",
-        "[\"zebra-puzzles-easy-nn\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"idioms-no\",false,true]",
+          "[\"no-sammendrag\",false,true]",
+          "[\"nor-common-sense-qa\",false,true]",
+          "[\"norec\",false,true]",
+          "[\"norne-nb\",false,true]",
+          "[\"norne-nn\",false,true]",
+          "[\"norquad\",false,true]",
+          "[\"nrk-quiz-qa\",false,true]",
+          "[\"scala-nb\",false,true]",
+          "[\"scala-nn\",false,true]"
+        ],
+        [
+          "[\"idioms-no\",false,false]",
+          "[\"multi-ifeval-nb\",false,false]",
+          "[\"multi-ifeval-nn\",false,false]",
+          "[\"no-sammendrag\",false,false]",
+          "[\"nor-common-sense-qa\",false,false]",
+          "[\"norec\",false,false]",
+          "[\"norne-nb\",false,false]",
+          "[\"norne-nn\",false,false]",
+          "[\"norquad\",false,false]",
+          "[\"nrk-quiz-qa\",false,false]",
+          "[\"ragtruth-no\",false,false]",
+          "[\"scala-nb\",false,false]",
+          "[\"scala-nn\",false,false]",
+          "[\"valeu-no\",false,false]",
+          "[\"zebra-puzzles-easy-nb\",false,false]",
+          "[\"zebra-puzzles-easy-nn\",false,false]",
+          "[\"idioms-no\",false,true]",
+          "[\"no-sammendrag\",false,true]",
+          "[\"nor-common-sense-qa\",false,true]",
+          "[\"norec\",false,true]",
+          "[\"norne-nb\",false,true]",
+          "[\"norne-nn\",false,true]",
+          "[\"norquad\",false,true]",
+          "[\"nrk-quiz-qa\",false,true]",
+          "[\"scala-nb\",false,true]",
+          "[\"scala-nn\",false,true]",
+          "[\"zebra-puzzles-easy-nb\",false,true]",
+          "[\"zebra-puzzles-easy-nn\",false,true]"
+        ]
       ],
-      "count": 16,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1488,19 +1977,36 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "pl",
       "language_group": "pl",
-      "identity_suffixes": [
-        "[\"kpwr-ner\",false,true]",
-        "[\"llmzszl\",false,true]",
-        "[\"multi-ifeval-pl\",false,true]",
-        "[\"polemo2\",false,true]",
-        "[\"poquad\",false,true]",
-        "[\"psc\",false,true]",
-        "[\"ragtruth-pl\",false,true]",
-        "[\"scala-pl\",false,true]",
-        "[\"valeu-pl\",false,true]",
-        "[\"winogrande-pl\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"kpwr-ner\",false,true]",
+          "[\"llmzszl\",false,true]",
+          "[\"polemo2\",false,true]",
+          "[\"poquad\",false,true]",
+          "[\"psc\",false,true]",
+          "[\"scala-pl\",false,true]",
+          "[\"winogrande-pl\",false,true]"
+        ],
+        [
+          "[\"kpwr-ner\",false,false]",
+          "[\"llmzszl\",false,false]",
+          "[\"multi-ifeval-pl\",false,false]",
+          "[\"polemo2\",false,false]",
+          "[\"poquad\",false,false]",
+          "[\"psc\",false,false]",
+          "[\"ragtruth-pl\",false,false]",
+          "[\"scala-pl\",false,false]",
+          "[\"valeu-pl\",false,false]",
+          "[\"winogrande-pl\",false,false]",
+          "[\"kpwr-ner\",false,true]",
+          "[\"llmzszl\",false,true]",
+          "[\"polemo2\",false,true]",
+          "[\"poquad\",false,true]",
+          "[\"psc\",false,true]",
+          "[\"scala-pl\",false,true]",
+          "[\"winogrande-pl\",false,true]"
+        ]
       ],
-      "count": 10,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1515,20 +2021,39 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "pt",
       "language_group": "pt",
-      "identity_suffixes": [
-        "[\"alba-mcq-pt\",false,true]",
-        "[\"cultura-viva-pt\",false,true]",
-        "[\"harem\",false,true]",
-        "[\"multi-ifeval-pt\",false,true]",
-        "[\"multi-wiki-qa-pt\",false,true]",
-        "[\"publico\",false,true]",
-        "[\"ragtruth-pt\",false,true]",
-        "[\"scala-pt\",false,true]",
-        "[\"sst2-pt\",false,true]",
-        "[\"valeu-pt\",false,true]",
-        "[\"winogrande-pt\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"alba-mcq-pt\",false,true]",
+          "[\"cultura-viva-pt\",false,true]",
+          "[\"harem\",false,true]",
+          "[\"multi-wiki-qa-pt\",false,true]",
+          "[\"publico\",false,true]",
+          "[\"scala-pt\",false,true]",
+          "[\"sst2-pt\",false,true]",
+          "[\"winogrande-pt\",false,true]"
+        ],
+        [
+          "[\"alba-mcq-pt\",false,false]",
+          "[\"cultura-viva-pt\",false,false]",
+          "[\"harem\",false,false]",
+          "[\"multi-ifeval-pt\",false,false]",
+          "[\"multi-wiki-qa-pt\",false,false]",
+          "[\"publico\",false,false]",
+          "[\"ragtruth-pt\",false,false]",
+          "[\"scala-pt\",false,false]",
+          "[\"sst2-pt\",false,false]",
+          "[\"valeu-pt\",false,false]",
+          "[\"winogrande-pt\",false,false]",
+          "[\"alba-mcq-pt\",false,true]",
+          "[\"cultura-viva-pt\",false,true]",
+          "[\"harem\",false,true]",
+          "[\"multi-wiki-qa-pt\",false,true]",
+          "[\"publico\",false,true]",
+          "[\"scala-pt\",false,true]",
+          "[\"sst2-pt\",false,true]",
+          "[\"winogrande-pt\",false,true]"
+        ]
       ],
-      "count": 11,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1543,18 +2068,37 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "pt-pt",
       "language_group": "pt-pt",
-      "identity_suffixes": [
-        "[\"alba-mcq-pt\",false,true]",
-        "[\"cultura-viva-pt\",false,true]",
-        "[\"harem\",false,true]",
-        "[\"multi-wiki-qa-pt\",false,true]",
-        "[\"publico\",false,true]",
-        "[\"scala-pt\",false,true]",
-        "[\"sst2-pt\",false,true]",
-        "[\"valeu-pt\",false,true]",
-        "[\"winogrande-pt\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"alba-mcq-pt\",false,true]",
+          "[\"cultura-viva-pt\",false,true]",
+          "[\"harem\",false,true]",
+          "[\"multi-wiki-qa-pt\",false,true]",
+          "[\"publico\",false,true]",
+          "[\"scala-pt\",false,true]",
+          "[\"sst2-pt\",false,true]",
+          "[\"winogrande-pt\",false,true]"
+        ],
+        [
+          "[\"alba-mcq-pt\",false,false]",
+          "[\"cultura-viva-pt\",false,false]",
+          "[\"harem\",false,false]",
+          "[\"multi-wiki-qa-pt\",false,false]",
+          "[\"publico\",false,false]",
+          "[\"scala-pt\",false,false]",
+          "[\"sst2-pt\",false,false]",
+          "[\"valeu-pt\",false,false]",
+          "[\"winogrande-pt\",false,false]",
+          "[\"alba-mcq-pt\",false,true]",
+          "[\"cultura-viva-pt\",false,true]",
+          "[\"harem\",false,true]",
+          "[\"multi-wiki-qa-pt\",false,true]",
+          "[\"publico\",false,true]",
+          "[\"scala-pt\",false,true]",
+          "[\"sst2-pt\",false,true]",
+          "[\"winogrande-pt\",false,true]"
+        ]
       ],
-      "count": 9,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1569,18 +2113,35 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "ro",
       "language_group": "ro",
-      "identity_suffixes": [
-        "[\"global-mmlu-ro\",false,true]",
-        "[\"multi-ifeval-ro\",false,true]",
-        "[\"multi-wiki-qa-ro\",false,true]",
-        "[\"ragtruth-ro\",false,true]",
-        "[\"ro-sent\",false,true]",
-        "[\"ronec\",false,true]",
-        "[\"scala-ro\",false,true]",
-        "[\"sumo-ro\",false,true]",
-        "[\"winogrande-ro\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"global-mmlu-ro\",false,true]",
+          "[\"multi-wiki-qa-ro\",false,true]",
+          "[\"ro-sent\",false,true]",
+          "[\"ronec\",false,true]",
+          "[\"scala-ro\",false,true]",
+          "[\"sumo-ro\",false,true]",
+          "[\"winogrande-ro\",false,true]"
+        ],
+        [
+          "[\"global-mmlu-ro\",false,false]",
+          "[\"multi-ifeval-ro\",false,false]",
+          "[\"multi-wiki-qa-ro\",false,false]",
+          "[\"ragtruth-ro\",false,false]",
+          "[\"ro-sent\",false,false]",
+          "[\"ronec\",false,false]",
+          "[\"scala-ro\",false,false]",
+          "[\"sumo-ro\",false,false]",
+          "[\"winogrande-ro\",false,false]",
+          "[\"global-mmlu-ro\",false,true]",
+          "[\"multi-wiki-qa-ro\",false,true]",
+          "[\"ro-sent\",false,true]",
+          "[\"ronec\",false,true]",
+          "[\"scala-ro\",false,true]",
+          "[\"sumo-ro\",false,true]",
+          "[\"winogrande-ro\",false,true]"
+        ]
       ],
-      "count": 9,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1595,17 +2156,32 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "sk",
       "language_group": "sk",
-      "identity_suffixes": [
-        "[\"csfd-sentiment-sk\",false,true]",
-        "[\"mmlu-sk\",false,true]",
-        "[\"multi-ifeval-sk\",false,true]",
-        "[\"multi-wiki-qa-sk\",false,true]",
-        "[\"ragtruth-sk\",false,true]",
-        "[\"scala-sk\",false,true]",
-        "[\"uner-sk\",false,true]",
-        "[\"winogrande-sk\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"csfd-sentiment-sk\",false,true]",
+          "[\"mmlu-sk\",false,true]",
+          "[\"multi-wiki-qa-sk\",false,true]",
+          "[\"scala-sk\",false,true]",
+          "[\"uner-sk\",false,true]",
+          "[\"winogrande-sk\",false,true]"
+        ],
+        [
+          "[\"csfd-sentiment-sk\",false,false]",
+          "[\"mmlu-sk\",false,false]",
+          "[\"multi-ifeval-sk\",false,false]",
+          "[\"multi-wiki-qa-sk\",false,false]",
+          "[\"ragtruth-sk\",false,false]",
+          "[\"scala-sk\",false,false]",
+          "[\"uner-sk\",false,false]",
+          "[\"winogrande-sk\",false,false]",
+          "[\"csfd-sentiment-sk\",false,true]",
+          "[\"mmlu-sk\",false,true]",
+          "[\"multi-wiki-qa-sk\",false,true]",
+          "[\"scala-sk\",false,true]",
+          "[\"uner-sk\",false,true]",
+          "[\"winogrande-sk\",false,true]"
+        ]
       ],
-      "count": 8,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1620,17 +2196,32 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "sl",
       "language_group": "sl",
-      "identity_suffixes": [
-        "[\"mmlu-sl\",false,true]",
-        "[\"multi-ifeval-sl\",false,true]",
-        "[\"multi-wiki-qa-sl\",false,true]",
-        "[\"ragtruth-sl\",false,true]",
-        "[\"scala-sl\",false,true]",
-        "[\"sentinews\",false,true]",
-        "[\"ssj500k-ner\",false,true]",
-        "[\"winogrande-sl\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"mmlu-sl\",false,true]",
+          "[\"multi-wiki-qa-sl\",false,true]",
+          "[\"scala-sl\",false,true]",
+          "[\"sentinews\",false,true]",
+          "[\"ssj500k-ner\",false,true]",
+          "[\"winogrande-sl\",false,true]"
+        ],
+        [
+          "[\"mmlu-sl\",false,false]",
+          "[\"multi-ifeval-sl\",false,false]",
+          "[\"multi-wiki-qa-sl\",false,false]",
+          "[\"ragtruth-sl\",false,false]",
+          "[\"scala-sl\",false,false]",
+          "[\"sentinews\",false,false]",
+          "[\"ssj500k-ner\",false,false]",
+          "[\"winogrande-sl\",false,false]",
+          "[\"mmlu-sl\",false,true]",
+          "[\"multi-wiki-qa-sl\",false,true]",
+          "[\"scala-sl\",false,true]",
+          "[\"sentinews\",false,true]",
+          "[\"ssj500k-ner\",false,true]",
+          "[\"winogrande-sl\",false,true]"
+        ]
       ],
-      "count": 8,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1645,18 +2236,35 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "sq",
       "language_group": "sq",
-      "identity_suffixes": [
-        "[\"include-sq\",false,true]",
-        "[\"lr-sum-sq\",false,true]",
-        "[\"mms-sq\",false,true]",
-        "[\"multi-ifeval-sq\",false,true]",
-        "[\"multi-wiki-qa-sq\",false,true]",
-        "[\"ragtruth-sq\",false,true]",
-        "[\"scala-sq\",false,true]",
-        "[\"wikiann-sq\",false,true]",
-        "[\"winogrande-sq\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"include-sq\",false,true]",
+          "[\"lr-sum-sq\",false,true]",
+          "[\"mms-sq\",false,true]",
+          "[\"multi-wiki-qa-sq\",false,true]",
+          "[\"scala-sq\",false,true]",
+          "[\"wikiann-sq\",false,true]",
+          "[\"winogrande-sq\",false,true]"
+        ],
+        [
+          "[\"include-sq\",false,false]",
+          "[\"lr-sum-sq\",false,false]",
+          "[\"mms-sq\",false,false]",
+          "[\"multi-ifeval-sq\",false,false]",
+          "[\"multi-wiki-qa-sq\",false,false]",
+          "[\"ragtruth-sq\",false,false]",
+          "[\"scala-sq\",false,false]",
+          "[\"wikiann-sq\",false,false]",
+          "[\"winogrande-sq\",false,false]",
+          "[\"include-sq\",false,true]",
+          "[\"lr-sum-sq\",false,true]",
+          "[\"mms-sq\",false,true]",
+          "[\"multi-wiki-qa-sq\",false,true]",
+          "[\"scala-sq\",false,true]",
+          "[\"wikiann-sq\",false,true]",
+          "[\"winogrande-sq\",false,true]"
+        ]
       ],
-      "count": 9,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1671,18 +2279,35 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "sr",
       "language_group": "sr",
-      "identity_suffixes": [
-        "[\"include-sr\",false,true]",
-        "[\"lr-sum-sr\",false,true]",
-        "[\"mms-sr\",false,true]",
-        "[\"multi-ifeval-sr\",false,true]",
-        "[\"multi-wiki-qa-sr\",false,true]",
-        "[\"ragtruth-sr\",false,true]",
-        "[\"scala-sr\",false,true]",
-        "[\"uner-sr\",false,true]",
-        "[\"winogrande-sr\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"include-sr\",false,true]",
+          "[\"lr-sum-sr\",false,true]",
+          "[\"mms-sr\",false,true]",
+          "[\"multi-wiki-qa-sr\",false,true]",
+          "[\"scala-sr\",false,true]",
+          "[\"uner-sr\",false,true]",
+          "[\"winogrande-sr\",false,true]"
+        ],
+        [
+          "[\"include-sr\",false,false]",
+          "[\"lr-sum-sr\",false,false]",
+          "[\"mms-sr\",false,false]",
+          "[\"multi-ifeval-sr\",false,false]",
+          "[\"multi-wiki-qa-sr\",false,false]",
+          "[\"ragtruth-sr\",false,false]",
+          "[\"scala-sr\",false,false]",
+          "[\"uner-sr\",false,false]",
+          "[\"winogrande-sr\",false,false]",
+          "[\"include-sr\",false,true]",
+          "[\"lr-sum-sr\",false,true]",
+          "[\"mms-sr\",false,true]",
+          "[\"multi-wiki-qa-sr\",false,true]",
+          "[\"scala-sr\",false,true]",
+          "[\"uner-sr\",false,true]",
+          "[\"winogrande-sr\",false,true]"
+        ]
       ],
-      "count": 9,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1697,21 +2322,41 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "sv",
       "language_group": "sv",
-      "identity_suffixes": [
-        "[\"multi-ifeval-sv\",false,true]",
-        "[\"multi-wiki-qa-sv\",false,true]",
-        "[\"ragtruth-sv\",false,true]",
-        "[\"scala-sv\",false,true]",
-        "[\"skolprov\",false,true]",
-        "[\"suc3\",false,true]",
-        "[\"swedish-facts\",false,true]",
-        "[\"swedn\",false,true]",
-        "[\"swerec\",false,true]",
-        "[\"valeu-sv\",false,true]",
-        "[\"winogrande-sv\",false,true]",
-        "[\"zebra-puzzles-easy-sv\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"multi-wiki-qa-sv\",false,true]",
+          "[\"scala-sv\",false,true]",
+          "[\"skolprov\",false,true]",
+          "[\"suc3\",false,true]",
+          "[\"swedish-facts\",false,true]",
+          "[\"swedn\",false,true]",
+          "[\"swerec\",false,true]",
+          "[\"winogrande-sv\",false,true]"
+        ],
+        [
+          "[\"multi-ifeval-sv\",false,false]",
+          "[\"multi-wiki-qa-sv\",false,false]",
+          "[\"ragtruth-sv\",false,false]",
+          "[\"scala-sv\",false,false]",
+          "[\"skolprov\",false,false]",
+          "[\"suc3\",false,false]",
+          "[\"swedish-facts\",false,false]",
+          "[\"swedn\",false,false]",
+          "[\"swerec\",false,false]",
+          "[\"valeu-sv\",false,false]",
+          "[\"winogrande-sv\",false,false]",
+          "[\"zebra-puzzles-easy-sv\",false,false]",
+          "[\"multi-wiki-qa-sv\",false,true]",
+          "[\"scala-sv\",false,true]",
+          "[\"skolprov\",false,true]",
+          "[\"suc3\",false,true]",
+          "[\"swedish-facts\",false,true]",
+          "[\"swedn\",false,true]",
+          "[\"swerec\",false,true]",
+          "[\"winogrande-sv\",false,true]",
+          "[\"zebra-puzzles-easy-sv\",false,true]"
+        ]
       ],
-      "count": 12,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",
@@ -1726,18 +2371,35 @@ const generatedScopePolicy = {
       "model_type": "generative",
       "language": "uk",
       "language_group": "uk",
-      "identity_suffixes": [
-        "[\"cross-domain-uk-reviews\",false,true]",
-        "[\"include-uk\",false,true]",
-        "[\"lr-sum-uk\",false,true]",
-        "[\"multi-ifeval-uk\",false,true]",
-        "[\"multi-wiki-qa-uk\",false,true]",
-        "[\"ner-uk\",false,true]",
-        "[\"ragtruth-uk\",false,true]",
-        "[\"scala-uk\",false,true]",
-        "[\"winogrande-uk\",false,true]"
+      "allowed_identity_suffix_sets": [
+        [
+          "[\"cross-domain-uk-reviews\",false,true]",
+          "[\"include-uk\",false,true]",
+          "[\"lr-sum-uk\",false,true]",
+          "[\"multi-wiki-qa-uk\",false,true]",
+          "[\"ner-uk\",false,true]",
+          "[\"scala-uk\",false,true]",
+          "[\"winogrande-uk\",false,true]"
+        ],
+        [
+          "[\"cross-domain-uk-reviews\",false,false]",
+          "[\"include-uk\",false,false]",
+          "[\"lr-sum-uk\",false,false]",
+          "[\"multi-ifeval-uk\",false,false]",
+          "[\"multi-wiki-qa-uk\",false,false]",
+          "[\"ner-uk\",false,false]",
+          "[\"ragtruth-uk\",false,false]",
+          "[\"scala-uk\",false,false]",
+          "[\"winogrande-uk\",false,false]",
+          "[\"cross-domain-uk-reviews\",false,true]",
+          "[\"include-uk\",false,true]",
+          "[\"lr-sum-uk\",false,true]",
+          "[\"multi-wiki-qa-uk\",false,true]",
+          "[\"ner-uk\",false,true]",
+          "[\"scala-uk\",false,true]",
+          "[\"winogrande-uk\",false,true]"
+        ]
       ],
-      "count": 9,
       "task_groups": [
         "multiple_choice_classification",
         "question_answering",

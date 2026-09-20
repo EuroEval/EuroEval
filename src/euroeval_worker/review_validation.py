@@ -64,7 +64,7 @@ def _validate_manifest(
         manifest=manifest, expected_scope=expected_scope, scope_policy=scope_policy
     )
     expected_sets = _identity_suffix_sets(
-        value=expected_scope, context="Manifest expected scope"
+        value=expected_scope, context="Manifest expected scope", allow_legacy=True
     )
     raw_count = expected_scope.get("count")
     if raw_count is not None and (
@@ -159,61 +159,6 @@ def _validate_manifest(
     )
 
 
-def _identity_suffix_sets(value: object, context: str) -> tuple[tuple[str, ...], ...]:
-    """Decode all complete, canonical identity-suffix alternatives.
-
-    Args:
-        value:
-            Expected-scope object or trusted policy entry.
-        context:
-            Human-readable validation context.
-
-    Returns:
-        Distinct non-empty identity-suffix alternatives.
-
-    Raises:
-        ReviewError:
-            If the scope is missing, ambiguous, or malformed.
-    """
-    if not isinstance(value, dict):
-        raise ReviewError(f"{context} is malformed")
-    has_allowed = "allowed_identity_suffix_sets" in value
-    has_legacy = "identity_suffixes" in value
-    if has_allowed == has_legacy:
-        raise ReviewError(f"{context} identity alternatives are malformed")
-    raw_sets = (
-        value.get("allowed_identity_suffix_sets")
-        if has_allowed
-        else [value.get("identity_suffixes")]
-    )
-    if not isinstance(raw_sets, list) or not raw_sets:
-        raise ReviewError(f"{context} identity alternatives are malformed")
-    alternatives: list[tuple[str, ...]] = []
-    for raw_set in raw_sets:
-        if not isinstance(raw_set, list) or not raw_set:
-            raise ReviewError(f"{context} identity alternatives are malformed")
-        if any(not isinstance(item, str) or not item for item in raw_set):
-            raise ReviewError(f"{context} identity suffix is malformed")
-        if len(set(raw_set)) != len(raw_set):
-            raise ReviewError(f"{context} identity alternatives contain duplicates")
-        for suffix in raw_set:
-            parsed = _json_value(suffix, f"{context} identity suffix")
-            if (
-                not isinstance(parsed, list)
-                or len(parsed) != 3
-                or not isinstance(parsed[0], str)
-                or not (parsed[1] is None or isinstance(parsed[1], bool))
-                or not (parsed[2] is None or isinstance(parsed[2], bool))
-                or json.dumps(parsed, ensure_ascii=False, separators=(",", ":"))
-                != suffix
-            ):
-                raise ReviewError(f"{context} identity suffix is not canonical")
-        alternatives.append(tuple(raw_set))
-    if len({tuple(sorted(item)) for item in alternatives}) != len(alternatives):
-        raise ReviewError(f"{context} identity alternatives are duplicated")
-    return tuple(alternatives)
-
-
 def _expected_identities(value: object, model_id: str) -> tuple[ResultIdentity, ...]:
     """Decode one complete identity-suffix alternative for the report.
 
@@ -264,6 +209,66 @@ def _nullable_bool(value: object, context: str) -> bool | None:
     if value is None or isinstance(value, bool):
         return value
     raise ReviewError(f"{context} must be boolean or null")
+
+
+def _identity_suffix_sets(
+    value: object, context: str, *, allow_legacy: bool = False
+) -> tuple[tuple[str, ...], ...]:
+    """Decode all complete, canonical identity-suffix alternatives.
+
+    Args:
+        value:
+            Expected-scope object or trusted policy entry.
+        context:
+            Human-readable validation context.
+        allow_legacy (optional):
+            Whether to accept the singular legacy field used by persisted leases.
+            Defaults to False.
+
+    Returns:
+        Distinct non-empty identity-suffix alternatives.
+
+    Raises:
+        ReviewError:
+            If the scope is missing, ambiguous, or malformed.
+    """
+    if not isinstance(value, dict):
+        raise ReviewError(f"{context} is malformed")
+    has_allowed = "allowed_identity_suffix_sets" in value
+    has_legacy = "identity_suffixes" in value
+    if has_allowed == has_legacy or (has_legacy and not allow_legacy):
+        raise ReviewError(f"{context} identity alternatives are malformed")
+    raw_sets = (
+        value.get("allowed_identity_suffix_sets")
+        if has_allowed
+        else [value.get("identity_suffixes")]
+    )
+    if not isinstance(raw_sets, list) or not raw_sets:
+        raise ReviewError(f"{context} identity alternatives are malformed")
+    alternatives: list[tuple[str, ...]] = []
+    for raw_set in raw_sets:
+        if not isinstance(raw_set, list) or not raw_set:
+            raise ReviewError(f"{context} identity alternatives are malformed")
+        if any(not isinstance(item, str) or not item for item in raw_set):
+            raise ReviewError(f"{context} identity suffix is malformed")
+        if len(set(raw_set)) != len(raw_set):
+            raise ReviewError(f"{context} identity alternatives contain duplicates")
+        for suffix in raw_set:
+            parsed = _json_value(suffix, f"{context} identity suffix")
+            if (
+                not isinstance(parsed, list)
+                or len(parsed) != 3
+                or not isinstance(parsed[0], str)
+                or not (parsed[1] is None or isinstance(parsed[1], bool))
+                or not (parsed[2] is None or isinstance(parsed[2], bool))
+                or json.dumps(parsed, ensure_ascii=False, separators=(",", ":"))
+                != suffix
+            ):
+                raise ReviewError(f"{context} identity suffix is not canonical")
+        alternatives.append(tuple(raw_set))
+    if len({tuple(sorted(item)) for item in alternatives}) != len(alternatives):
+        raise ReviewError(f"{context} identity alternatives are duplicated")
+    return tuple(alternatives)
 
 
 def _manifest_summary(manifest: JsonObject) -> tuple[str, int, str, str]:
@@ -574,7 +579,7 @@ def _validate_scope_policy(
         raise ReviewError("Manifest language_group differs from trusted policy")
     trusted_sets = _identity_suffix_sets(value=trusted, context="Trusted policy")
     expected_sets = _identity_suffix_sets(
-        value=expected_scope, context="Manifest expected scope"
+        value=expected_scope, context="Manifest expected scope", allow_legacy=True
     )
     if {frozenset(item) for item in expected_sets} != {
         frozenset(item) for item in trusted_sets

@@ -6,13 +6,14 @@ import argparse
 import importlib.metadata
 import json
 import tempfile
-import typing as t
 from pathlib import Path
 
 from packaging.version import Version
 
+from euroeval.data_models import DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.enums import ModelType
+from euroeval.enums import GenerativeType, ModelType, ShotMode
+from euroeval.shot_modes import effective_shot_mode
 from leaderboards.evaluation_common import official_dataset_language_pairs
 
 MODEL_TYPES = ("encoder", "generative")
@@ -22,6 +23,10 @@ DEFAULT_TS_OUTPUT = Path("api/worker/_lib/scope-policy.generated.ts")
 
 def main(argv: list[str] | None = None) -> int:
     """Generate, check, or preview the generated policy.
+
+    Args:
+        argv (optional): Command-line arguments, excluding the program name.
+        Defaults to None, which reads from ``sys.argv``.
 
     Returns:
         Zero when the requested operation succeeds, otherwise one.
@@ -90,51 +95,68 @@ def build_policy(
     pairs: set[tuple[str, str]],
     model_types: tuple[str, ...] = MODEL_TYPES,
 ) -> dict[str, object]:
-    """Build a policy from exact worker identity defaults and dataset contracts.
+    """Build a policy from the worker's effective shot-mode plans.
+
+    Args:
+        euroeval_version:
+            EuroEval version encoded in the policy and result identities.
+        pairs:
+            Official dataset/language pairs available to volunteers.
+        model_types (optional):
+            Model capabilities for which to emit entries. Defaults to both worker
+            capabilities.
 
     Returns:
-        A JSON-serialisable policy document.
+        A JSON-serialisable policy document containing exact alternatives for each
+        model type and language.
     """
-    euroeval_version = str(Version(euroeval_version))
+    version = str(Version(euroeval_version))
     configs = _configs_by_name()
     entries: list[dict[str, object]] = []
     for model_type in model_types:
-        by_language: dict[str, list[str]] = {}
+        datasets_by_language: dict[str, list[tuple[str, DatasetConfig]]] = {}
         task_groups_by_language: dict[str, set[str]] = {}
         for dataset, language in sorted(pairs):
             config = configs[dataset]
             languages = getattr(config, "languages")
-            if language not in {
-                item.code for item in languages
-            } or not _allowed_for_model_type(config, model_type):
+            if language not in {item.code for item in languages} or not (
+                _allowed_for_model_type(config, model_type)
+            ):
                 continue
-            # Benchmarker defaults are validation_split=False and few_shot=True.
-            suffix = json.dumps([dataset, False, True], separators=(",", ":"))
-            by_language.setdefault(language, []).append(suffix)
+            datasets_by_language.setdefault(language, []).append((dataset, config))
             task_groups_by_language.setdefault(language, set()).add(
                 config.task.task_group.value
             )
-        entries.extend(
-            {
-                "euroeval_version": euroeval_version,
-                "model_type": model_type,
-                "language": language,
-                "language_group": language,
-                "identity_suffixes": suffixes,
-                "count": len(suffixes),
-                "task_groups": sorted(task_groups_by_language[language]),
-                "warnings": [],
-            }
-            for language, suffixes in sorted(by_language.items())
-        )
-    return {
-        "policy_version": f"volunteer-scope/{euroeval_version}",
-        "policies": entries,
-    }
+        for language, datasets in sorted(datasets_by_language.items()):
+            alternatives = _identity_alternatives(datasets, model_type)
+            if not alternatives:
+                continue
+            entries.append(
+                {
+                    "euroeval_version": version,
+                    "model_type": model_type,
+                    "language": language,
+                    "language_group": language,
+                    "allowed_identity_suffix_sets": alternatives,
+                    "task_groups": sorted(task_groups_by_language[language]),
+                    "warnings": [],
+                }
+            )
+    return {"policy_version": f"volunteer-scope/{version}", "policies": entries}
 
 
 def _allowed_for_model_type(config: object, model_type: str) -> bool:
-    """Return whether one broad model type may run a dataset."""
+    """Return whether one broad model type may run a dataset.
+
+    Args:
+        config:
+            Dataset configuration to inspect.
+        model_type:
+            Broad worker model capability.
+
+    Returns:
+        Whether the dataset permits the model capability.
+    """
     allowed = getattr(config, "allowed_model_types")
     if model_type == "encoder":
         return ModelType.ENCODER in allowed
@@ -143,32 +165,94 @@ def _allowed_for_model_type(config: object, model_type: str) -> bool:
     return False
 
 
-def _configs_by_name() -> dict[str, object]:
+def _configs_by_name() -> dict[str, DatasetConfig]:
     """Load dataset configs for model-type-aware scope filtering.
 
     Returns:
         Dataset configurations keyed by their public name.
     """
-    return t.cast(
-        dict[str, object],
-        get_all_dataset_configs(
-            custom_datasets_file=Path(""),
-            dataset_ids=[],
-            api_key=None,
-            cache_dir=Path(".cache"),
-            trust_remote_code=False,
-            run_with_cli=False,
-        ),
+    return get_all_dataset_configs(
+        custom_datasets_file=Path(""),
+        dataset_ids=[],
+        api_key=None,
+        cache_dir=Path(".cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
     )
 
 
+def _identity_alternatives(
+    datasets: list[tuple[str, DatasetConfig]], model_type: str
+) -> list[list[str]]:
+    """Build complete identity alternatives for one model-type/language pair.
+
+    Args:
+        datasets:
+            Dataset configurations for one language, in deterministic order.
+        model_type:
+            Broad worker model capability.
+
+    Returns:
+        Complete, de-duplicated identity suffix alternatives in runtime order.
+    """
+    plans = (
+        ((None, (ShotMode.FEW_SHOT,)),)
+        if model_type == "encoder"
+        else (
+            (GenerativeType.BASE, (ShotMode.FEW_SHOT,)),
+            (GenerativeType.INSTRUCTION_TUNED, (ShotMode.ZERO_SHOT, ShotMode.FEW_SHOT)),
+        )
+    )
+    alternatives: list[list[str]] = []
+    seen_alternatives: set[tuple[str, ...]] = set()
+    for generative_type, requested_modes in plans:
+        suffixes: list[str] = []
+        for requested_mode in requested_modes:
+            for dataset, config in datasets:
+                if generative_type is not None and generative_type not in getattr(
+                    config, "allowed_generative_types"
+                ):
+                    continue
+                mode = effective_shot_mode(
+                    shot_mode=requested_mode, dataset_config=config
+                )
+                if mode is None:
+                    continue
+                suffix = json.dumps(
+                    [dataset, False, mode is ShotMode.FEW_SHOT], separators=(",", ":")
+                )
+                if suffix not in suffixes:
+                    suffixes.append(suffix)
+        key = tuple(suffixes)
+        if suffixes and key not in seen_alternatives:
+            seen_alternatives.add(key)
+            alternatives.append(suffixes)
+    return alternatives
+
+
 def encode_policy(policy: dict[str, object]) -> bytes:
-    """Return the byte-stable representation of a policy."""
+    """Return the byte-stable representation of a policy.
+
+    Args:
+        policy:
+            JSON-serialisable policy document.
+
+    Returns:
+        UTF-8 encoded, deterministically formatted policy bytes.
+    """
     return (json.dumps(policy, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
 
 
 def encode_typescript_policy(policy: dict[str, object]) -> bytes:
-    """Return a typed, static TypeScript representation of ``policy``."""
+    """Return a typed, static TypeScript representation of ``policy``.
+
+    Args:
+        policy:
+            JSON-serialisable policy document.
+
+    Returns:
+        UTF-8 encoded TypeScript source containing the policy.
+    """
     document = json.dumps(policy, ensure_ascii=False, indent=2)
     source = f"""/* Generated by src/scripts/generate_volunteer_scope_policy.py. */
 export type ScopePolicyEntry = {{
@@ -176,8 +260,7 @@ export type ScopePolicyEntry = {{
   model_type: "encoder" | "generative";
   language: string;
   language_group: string;
-  identity_suffixes: string[];
-  count?: number;
+  allowed_identity_suffix_sets: string[][];
   task_groups: string[];
   warnings?: string[];
 }};
@@ -204,7 +287,12 @@ def official_pairs() -> set[tuple[str, str]]:
 
 
 def write_policies(outputs: list[tuple[Path, bytes]]) -> None:
-    """Atomically stage and replace all generated policy outputs."""
+    """Atomically stage and replace all generated policy outputs.
+
+    Args:
+        outputs:
+            Destination paths and their encoded policy contents.
+    """
     temporary_paths: list[Path] = []
     try:
         for output, encoded in outputs:

@@ -17,7 +17,7 @@ class PolicyEntry(t.TypedDict):
 
     model_type: str
     language: str
-    identity_suffixes: list[str]
+    allowed_identity_suffix_sets: list[list[str]]
     language_group: str
 
 
@@ -95,7 +95,9 @@ def test_policy_is_versioned_and_exact_language() -> None:
         ("encoder", "da"),
         ("encoder", "en"),
     }
-    assert entries[0]["identity_suffixes"] == ['["multi-wiki-qa-da",false,true]']
+    assert entries[0]["allowed_identity_suffix_sets"] == [
+        ['["multi-wiki-qa-da",false,true]']
+    ]
 
 
 def test_policy_matches_benchmarker_defaults_for_encoder_and_decoder() -> None:
@@ -117,10 +119,14 @@ def test_policy_matches_benchmarker_defaults_for_encoder_and_decoder() -> None:
     }
     assert planned.benchmark_config_default_params.few_shot is True
     assert planned.benchmark_config_default_params.evaluate_test_split is False
-    assert by_type["encoder"]["identity_suffixes"] == [
-        '["multi-wiki-qa-da",false,true]'
+    assert by_type["encoder"]["allowed_identity_suffix_sets"] == [
+        ['["multi-wiki-qa-da",false,true]']
     ]
-    assert by_type["generative"]["identity_suffixes"] == [
-        '["ifeval-da",false,true]',
-        '["multi-wiki-qa-da",false,true]',
+    assert by_type["generative"]["allowed_identity_suffix_sets"] == [
+        ['["multi-wiki-qa-da",false,true]'],
+        [
+            '["ifeval-da",false,false]',
+            '["multi-wiki-qa-da",false,false]',
+            '["multi-wiki-qa-da",false,true]',
+        ],
     ]

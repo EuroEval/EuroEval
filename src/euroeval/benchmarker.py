@@ -1127,117 +1127,6 @@ class Benchmarker:
                 log(e.message, level=logging.ERROR)
         return configs
 
-    def _prepare_shot_benchmarks(
-        self,
-        model_config: "ModelConfig",
-        datasets: c.Sequence["DatasetConfig"],
-        benchmark_config: "BenchmarkConfig",
-        existing_results: c.Sequence[BenchmarkResult],
-    ) -> tuple[
-        "BenchmarkModule | None",
-        list[tuple[ShotMode, "DatasetConfig"]],
-        list[BenchmarkResult],
-        InvalidModel | None,
-    ]:
-        """Plan shot work, load one model, and reconcile metadata with the cache.
-
-        Args:
-            model_config:
-                The model configuration being evaluated.
-            datasets:
-                Datasets allowed for the model.
-            benchmark_config:
-                The general benchmark configuration.
-            existing_results:
-                Results already present in the local cache.
-
-        Returns:
-            The loaded model, pending concrete mode/dataset pairs, cached records, and
-            a model-loading error if loading failed.
-        """
-        requested_mode = coerce_shot_mode(benchmark_config.few_shot)
-        modes = resolve_shot_modes(
-            model_config=model_config,
-            requested_mode=requested_mode,
-            generative_type=benchmark_config.generative_type,
-        )
-        work = plan_shot_work(
-            candidate_modes=modes[:1] if benchmark_config.download_only else modes,
-            datasets=datasets,
-        )
-        pending, cached = partition_shot_work(
-            model_config=model_config,
-            work=work,
-            benchmark_config=benchmark_config,
-            benchmark_results=existing_results,
-        )
-        auto_requested = requested_mode is ShotMode.AUTO
-        cached_type = (
-            cached_generative_type(cached)
-            if (
-                auto_requested
-                and benchmark_config.generative_type is None
-                and model_config.model_type == ModelType.GENERATIVE
-            )
-            else None
-        )
-        resolved_type = benchmark_config.generative_type or cached_type
-        if cached_type is not None:
-            modes = resolve_shot_modes(
-                model_config=model_config,
-                requested_mode=requested_mode,
-                generative_type=cached_type,
-            )
-            work = plan_shot_work(candidate_modes=modes, datasets=datasets)
-            pending, cached = partition_shot_work(
-                model_config=model_config,
-                work=work,
-                benchmark_config=benchmark_config,
-                benchmark_results=existing_results,
-            )
-
-        needs_load = (
-            model_config.model_type == ModelType.GENERATIVE
-            and not benchmark_config.download_only
-            and (bool(pending) or (resolved_type is None and auto_requested))
-        )
-        if not needs_load:
-            return None, pending, cached, None
-
-        first_mode, first_dataset = (pending or work)[0]
-        try:
-            loaded_model = load_model(
-                model_config=model_config,
-                dataset_config=first_dataset,
-                benchmark_config=replace(
-                    benchmark_config, few_shot=first_mode is ShotMode.FEW_SHOT
-                ),
-            )
-        except InvalidModel as error:
-            cached_on_error = cached if pending or resolved_type is not None else []
-            return None, pending, cached_on_error, error
-
-        actual_modes = resolve_shot_modes(
-            model_config=model_config,
-            requested_mode=requested_mode,
-            generative_type=(
-                benchmark_config.generative_type or loaded_model.generative_type
-            ),
-        )
-        actual_work = plan_shot_work(
-            candidate_modes=actual_modes[:1]
-            if benchmark_config.download_only
-            else actual_modes,
-            datasets=datasets,
-        )
-        pending, cached = partition_shot_work(
-            model_config=model_config,
-            work=actual_work,
-            benchmark_config=benchmark_config,
-            benchmark_results=existing_results,
-        )
-        return loaded_model, pending, cached, None
-
     def _generate_summary_message(
         self, finished: int, skipped: int, errored: int
     ) -> str | None:
@@ -1353,6 +1242,117 @@ class Benchmarker:
         ]
 
         return [m_id.rstrip(" /") for m_id in model_ids_sorted]
+
+    def _prepare_shot_benchmarks(
+        self,
+        model_config: "ModelConfig",
+        datasets: c.Sequence["DatasetConfig"],
+        benchmark_config: "BenchmarkConfig",
+        existing_results: c.Sequence[BenchmarkResult],
+    ) -> tuple[
+        "BenchmarkModule | None",
+        list[tuple[ShotMode, "DatasetConfig"]],
+        list[BenchmarkResult],
+        InvalidModel | None,
+    ]:
+        """Plan shot work, load one model, and reconcile metadata with the cache.
+
+        Args:
+            model_config:
+                The model configuration being evaluated.
+            datasets:
+                Datasets allowed for the model.
+            benchmark_config:
+                The general benchmark configuration.
+            existing_results:
+                Results already present in the local cache.
+
+        Returns:
+            The loaded model, pending concrete mode/dataset pairs, cached records, and
+            a model-loading error if loading failed.
+        """
+        requested_mode = coerce_shot_mode(benchmark_config.few_shot)
+        modes = resolve_shot_modes(
+            model_config=model_config,
+            requested_mode=requested_mode,
+            generative_type=benchmark_config.generative_type,
+        )
+        work = plan_shot_work(
+            candidate_modes=modes[:1] if benchmark_config.download_only else modes,
+            datasets=datasets,
+        )
+        pending, cached = partition_shot_work(
+            model_config=model_config,
+            work=work,
+            benchmark_config=benchmark_config,
+            benchmark_results=existing_results,
+        )
+        auto_requested = requested_mode is ShotMode.AUTO
+        cached_type = (
+            cached_generative_type(cached)
+            if (
+                auto_requested
+                and benchmark_config.generative_type is None
+                and model_config.model_type == ModelType.GENERATIVE
+            )
+            else None
+        )
+        resolved_type = benchmark_config.generative_type or cached_type
+        if cached_type is not None:
+            modes = resolve_shot_modes(
+                model_config=model_config,
+                requested_mode=requested_mode,
+                generative_type=cached_type,
+            )
+            work = plan_shot_work(candidate_modes=modes, datasets=datasets)
+            pending, cached = partition_shot_work(
+                model_config=model_config,
+                work=work,
+                benchmark_config=benchmark_config,
+                benchmark_results=existing_results,
+            )
+
+        needs_load = (
+            model_config.model_type == ModelType.GENERATIVE
+            and not benchmark_config.download_only
+            and (bool(pending) or (resolved_type is None and auto_requested))
+        )
+        if not needs_load:
+            return None, pending, cached, None
+
+        first_mode, first_dataset = (pending or work)[0]
+        try:
+            loaded_model = load_model(
+                model_config=model_config,
+                dataset_config=first_dataset,
+                benchmark_config=replace(
+                    benchmark_config, few_shot=first_mode is ShotMode.FEW_SHOT
+                ),
+            )
+        except InvalidModel as error:
+            cached_on_error = cached if pending or resolved_type is not None else []
+            return None, pending, cached_on_error, error
+
+        actual_modes = resolve_shot_modes(
+            model_config=model_config,
+            requested_mode=requested_mode,
+            generative_type=(
+                benchmark_config.generative_type or loaded_model.generative_type
+            ),
+        )
+        actual_work = plan_shot_work(
+            candidate_modes=actual_modes[:1]
+            if benchmark_config.download_only
+            else actual_modes,
+            datasets=datasets,
+        )
+        pending, cached = partition_shot_work(
+            model_config=model_config,
+            work=actual_work,
+            benchmark_config=benchmark_config,
+            benchmark_results=existing_results,
+        )
+        return loaded_model, pending, cached, None
 
     def _update_benchmark_config_for_dataset(
         self, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"

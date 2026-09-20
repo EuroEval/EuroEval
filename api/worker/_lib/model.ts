@@ -144,7 +144,7 @@ export function languageGroup(language: string): string | null {
   return Object.entries(GROUPS).find(([, codes]) => codes.includes(language))?.[0] || null;
 }
 
-type ScopeEntry = { euroeval_version: string; model_type: ModelType; language: string; language_group: string; identity_suffixes: string[]; task_groups: string[]; count?: number; warnings?: string[] };
+type ScopeEntry = { euroeval_version: string; model_type: ModelType; language: string; language_group: string; allowed_identity_suffix_sets: string[][]; task_groups: string[]; warnings?: string[] };
 type ScopePolicy = { policy_version: string; policies: ScopeEntry[] };
 export type TrustedScope = {
   euroeval_version: string;
@@ -181,15 +181,23 @@ export function expectedScope(euroevalVersion: string, modelType: ModelType, lan
   try { policy = JSON.parse(raw) as ScopePolicy; } catch { throw new ConfigurationError("VOLUNTEER_SCOPE_POLICY_JSON is invalid JSON."); }
   if (typeof policy.policy_version !== "string" || !policy.policy_version || !Array.isArray(policy.policies)) throw new ConfigurationError("VOLUNTEER_SCOPE_POLICY_JSON has an invalid schema.");
   const match = policy.policies.find((item) => item.euroeval_version === euroevalVersion && item.model_type === modelType && item.language === language);
-  if (!match || !Array.isArray(match.identity_suffixes) || !match.identity_suffixes.length) throw new BrokerError(422, "This model type and language has no trusted expected scope.");
-  const suffixes = match.identity_suffixes.map(canonicalSuffix);
-  if (new Set(suffixes).size !== suffixes.length || match.count !== undefined && match.count !== suffixes.length) throw new ConfigurationError("Trusted expected scope contains invalid or duplicate identities.");
+  if (!match) throw new BrokerError(422, "This model type and language has no trusted expected scope.");
+  if ("identity_suffixes" in match) throw new ConfigurationError("Trusted expected scope mixes legacy and alternative identities.");
+  if (!Array.isArray(match.allowed_identity_suffix_sets) || !match.allowed_identity_suffix_sets.length) throw new BrokerError(422, "This model type and language has no trusted expected scope.");
+  const alternatives = match.allowed_identity_suffix_sets.map((alternative) => {
+    if (!Array.isArray(alternative) || !alternative.length) throw new ConfigurationError("Trusted expected scope contains an empty identity alternative.");
+    const suffixes = alternative.map(canonicalSuffix);
+    if (new Set(suffixes).size !== suffixes.length) throw new ConfigurationError("Trusted expected scope contains duplicate identities.");
+    return suffixes;
+  });
+  const alternativeKeys = alternatives.map((alternative) => JSON.stringify([...alternative].sort()));
+  if (new Set(alternativeKeys).size !== alternativeKeys.length) throw new ConfigurationError("Trusted expected scope contains duplicate identity alternatives.");
   if (!Array.isArray(match.task_groups) || !match.task_groups.length || match.task_groups.some((item) => typeof item !== "string" || !item) || new Set(match.task_groups).size !== match.task_groups.length) throw new ConfigurationError("Trusted expected scope contains invalid task groups.");
   if (typeof match.language_group !== "string" || !match.language_group) throw new ConfigurationError("Trusted expected scope has no language_group.");
   if (match.warnings && (!Array.isArray(match.warnings) || match.warnings.some((item) => typeof item !== "string"))) throw new ConfigurationError("Trusted expected scope contains invalid warnings.");
   return {
     euroeval_version: match.euroeval_version, model_type: match.model_type, language: match.language,
     language_group: match.language_group, policy_version: policy.policy_version,
-    allowed_identity_suffix_sets: [suffixes], task_groups: [...match.task_groups], warnings: match.warnings || [],
+    allowed_identity_suffix_sets: alternatives, task_groups: [...match.task_groups], warnings: match.warnings || [],
   };
 }

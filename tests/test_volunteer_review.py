@@ -220,8 +220,7 @@ def _reviewer(
         "expected_scope": {
             "policy_version": "volunteer-scope/18.1.0.dev0",
             "language_group": "da",
-            "identity_suffixes": suffixes,
-            "count": record_count,
+            "allowed_identity_suffix_sets": [suffixes],
             "task_groups": [
                 "multiple_choice_classification",
                 "question_answering",
@@ -252,8 +251,7 @@ def _reviewer(
                 "model_type": "generative",
                 "language": "da",
                 "language_group": "da",
-                "identity_suffixes": suffixes,
-                "count": record_count,
+                "allowed_identity_suffix_sets": [suffixes],
                 "task_groups": [
                     "multiple_choice_classification",
                     "question_answering",
@@ -636,6 +634,29 @@ def test_manifest_language_group_is_valid_in_real_flow() -> None:
     assert [key for key in api.files if key[0] == RESULTS]
 
 
+def test_manifest_matches_one_trusted_scope_alternative() -> None:
+    """Review reports expose the alternative selected by actual results."""
+    api, reviewer, _ = _reviewer()
+    manifest = _manifest(api)
+    expected_scope = t.cast(dict[str, object], manifest["expected_scope"])
+    suffixes = t.cast(list[list[str]], expected_scope["allowed_identity_suffix_sets"])[
+        0
+    ]
+    expected_scope["allowed_identity_suffix_sets"] = [
+        suffixes,
+        ['["other",false,false]'],
+    ]
+    policy_entry = t.cast(list[dict[str, object]], reviewer.scope_policy["policies"])[0]
+    policy_entry["allowed_identity_suffix_sets"] = [suffixes, ['["other",false,false]']]
+    manifest["matched_identity_suffixes"] = suffixes
+    _store_manifest(api, manifest)
+
+    report = reviewer.show(SUBMISSION)
+
+    assert len(report.expected_identities) == 1
+    assert report.expected_identities[0][1] == "dataset-0"
+
+
 def test_manifest_missing_language_group_is_rejected() -> None:
     """A manifest without a top-level language group is invalid."""
     api, reviewer, _ = _reviewer()
@@ -652,34 +673,11 @@ def test_manifest_scope_mismatch_is_rejected() -> None:
     api, reviewer, _ = _reviewer()
     manifest = _manifest(api)
     expected_scope = t.cast(dict[str, object], manifest["expected_scope"])
-    expected_scope["identity_suffixes"] = ['["other",false,false]']
+    expected_scope["allowed_identity_suffix_sets"] = [['["other",false,false]']]
     _store_manifest(api, manifest)
 
     with pytest.raises(ReviewError, match="scope differs"):
         reviewer.show(SUBMISSION)
-
-
-def test_manifest_matches_one_trusted_scope_alternative() -> None:
-    """Review reports expose the alternative selected by actual results."""
-    api, reviewer, _ = _reviewer()
-    manifest = _manifest(api)
-    expected_scope = t.cast(dict[str, object], manifest["expected_scope"])
-    suffixes = t.cast(list[str], expected_scope.pop("identity_suffixes"))
-    expected_scope["allowed_identity_suffix_sets"] = [
-        suffixes,
-        ['["other",false,false]'],
-    ]
-    policy_entry = t.cast(list[dict[str, object]], reviewer.scope_policy["policies"])[0]
-    policy_entry["allowed_identity_suffix_sets"] = [suffixes, ['["other",false,false]']]
-    policy_entry.pop("identity_suffixes")
-    policy_entry.pop("count")
-    manifest["matched_identity_suffixes"] = suffixes
-    _store_manifest(api, manifest)
-
-    report = reviewer.show(SUBMISSION)
-
-    assert len(report.expected_identities) == 1
-    assert report.expected_identities[0][1] == "dataset-0"
 
 
 def test_opposite_concurrent_decisions_fail_closed_before_canonical_writes() -> None:

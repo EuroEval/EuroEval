@@ -390,6 +390,10 @@ class Claim:
 def lease_from_dict(data: dict[str, object]) -> Lease:
     """Decode a lease response.
 
+    Args:
+        data:
+            JSON-compatible broker lease response.
+
     Returns:
         The typed lease.
 
