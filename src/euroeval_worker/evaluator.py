@@ -73,6 +73,7 @@ class EuroEvalEvaluator(Evaluator):
             evaluate_test_split=False,
             requires_safetensors=True,
             gpu_memory_utilization=self.gpu_memory_utilisation,
+            few_shot=True,
             force=True,
             raise_errors=True,
             verbose=False,
@@ -86,6 +87,7 @@ class EuroEvalEvaluator(Evaluator):
             evaluate_test_split=False,
             requires_safetensors=True,
             gpu_memory_utilization=self.gpu_memory_utilisation,
+            few_shot=True,
             force=True,
             raise_errors=True,
         )

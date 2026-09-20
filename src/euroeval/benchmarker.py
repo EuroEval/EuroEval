@@ -507,74 +507,85 @@ class Benchmarker:
             if not datasets:
                 continue
 
-            self._check_adapter_requirements(model_config, benchmark_config)
-            loaded_model, pending, cached, load_error = self._prepare_shot_benchmarks(
-                model_config=model_config,
-                datasets=datasets,
-                benchmark_config=benchmark_config,
-                existing_results=existing_results,
-            )
-            current_results.extend(
-                record for record in cached if record not in current_results
-            )
-            if load_error is not None:
-                if benchmark_config.raise_errors:
-                    raise load_error
-                log(load_error.message, level=logging.ERROR)
-                num_errored += len(datasets)
-                continue
-            total_benchmarks += len(pending)
-            for shot_mode, dataset_config in pending:
-                mode_config = replace(
-                    benchmark_config, few_shot=shot_mode is ShotMode.FEW_SHOT
-                )
-                self._update_benchmark_config_for_dataset(dataset_config, mode_config)
-                if loaded_model is not None:
-                    loaded_model.benchmark_config = mode_config
-                if benchmark_config.download_only:
-                    self._download(dataset_config, model_config, mode_config)
-                    num_finished += 1
-                    continue
-                if (
-                    loaded_model is not None
-                    and loaded_model.generative_type
-                    not in dataset_config.allowed_generative_types
-                ):
-                    log(
-                        f"Skipping the benchmark of model {model_config.model_id!r} on "
-                        f"dataset {dataset_config.name!r} because the model has "
-                        f"generative type {loaded_model.generative_type} and the "
-                        "dataset does not allow it.",
-                        level=logging.DEBUG,
+            loaded_model: "BenchmarkModule | None" = None
+            try:
+                self._check_adapter_requirements(model_config, benchmark_config)
+                loaded_model, pending, cached, load_error = (
+                    self._prepare_shot_benchmarks(
+                        model_config=model_config,
+                        datasets=datasets,
+                        benchmark_config=benchmark_config,
+                        existing_results=existing_results,
                     )
-                    num_skipped += 1
-                    continue
-                output_or_err = self._benchmark_single(
-                    model=loaded_model,
-                    model_config=model_config,
-                    dataset_config=dataset_config,
-                    benchmark_config=mode_config,
-                    num_finished_benchmarks=num_finished + num_skipped + num_errored,
-                    num_total_benchmarks=total_benchmarks,
                 )
-                num_finished, num_skipped, num_errored, should_break = (
-                    self._handle_benchmark_result(
-                        result_or_error=output_or_err,
+                current_results.extend(
+                    record for record in cached if record not in current_results
+                )
+                total_benchmarks += len(pending)
+                if load_error is not None:
+                    if benchmark_config.raise_errors:
+                        raise load_error
+                    log(load_error.message, level=logging.ERROR)
+                    num_errored += len(pending)
+                    continue
+                for pending_index, (shot_mode, dataset_config) in enumerate(pending):
+                    mode_config = replace(
+                        benchmark_config, few_shot=shot_mode is ShotMode.FEW_SHOT
+                    )
+                    self._update_benchmark_config_for_dataset(
+                        dataset_config, mode_config
+                    )
+                    if loaded_model is not None:
+                        loaded_model.benchmark_config = mode_config
+                    if benchmark_config.download_only:
+                        self._download(dataset_config, model_config, mode_config)
+                        num_finished += 1
+                        continue
+                    if (
+                        loaded_model is not None
+                        and loaded_model.generative_type
+                        not in dataset_config.allowed_generative_types
+                    ):
+                        log(
+                            "Skipping the benchmark of model "
+                            f"{model_config.model_id!r} on dataset "
+                            f"{dataset_config.name!r} because the model has "
+                            f"generative type {loaded_model.generative_type} and the "
+                            "dataset does not allow it.",
+                            level=logging.DEBUG,
+                        )
+                        num_skipped += 1
+                        continue
+                    output_or_err = self._benchmark_single(
+                        model=loaded_model,
+                        model_config=model_config,
                         dataset_config=dataset_config,
                         benchmark_config=mode_config,
-                        num_finished=num_finished,
-                        num_skipped=num_skipped,
-                        num_errored=num_errored,
-                        model_config=model_config,
-                        model_mapping=model_mapping,
-                        current_results=current_results,
+                        num_finished_benchmarks=(
+                            num_finished + num_skipped + num_errored
+                        ),
+                        num_total_benchmarks=total_benchmarks,
                     )
-                )
-                if should_break:
-                    break
-            del loaded_model
-            if benchmark_config.clear_model_cache:
-                clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
+                    num_finished, num_skipped, num_errored, should_break = (
+                        self._handle_benchmark_result(
+                            result_or_error=output_or_err,
+                            dataset_config=dataset_config,
+                            benchmark_config=mode_config,
+                            num_finished=num_finished,
+                            num_skipped=num_skipped,
+                            num_errored=num_errored,
+                            model_config=model_config,
+                            model_mapping=model_mapping,
+                            current_results=current_results,
+                            remaining_work=len(pending) - pending_index - 1,
+                        )
+                    )
+                    if should_break:
+                        break
+            finally:
+                del loaded_model
+                if benchmark_config.clear_model_cache:
+                    clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
 
         if total_benchmarks == 0 and num_errored == 0:
             log(
@@ -1093,65 +1104,96 @@ class Benchmarker:
             The loaded model, pending concrete mode/dataset pairs, cached records, and
             a model-loading error if loading failed.
         """
+        requested_mode = benchmark_config.few_shot
         modes = resolve_shot_modes(
             model_config=model_config,
-            requested_mode=benchmark_config.few_shot,
+            requested_mode=requested_mode,
             generative_type=benchmark_config.generative_type,
         )
         if benchmark_config.download_only:
             modes = modes[:1]
-        mode_pairs: list[tuple[ShotMode, "DatasetConfig"]] = []
-        seen_pairs: set[tuple[int, ShotMode]] = set()
-        for mode in modes:
-            for dataset_config in datasets:
-                concrete_mode = _shot_mode_for_dataset(mode, dataset_config)
-                if concrete_mode is None:
-                    continue
-                pair_key = (id(dataset_config), concrete_mode)
-                if pair_key in seen_pairs:
-                    continue
-                seen_pairs.add(pair_key)
-                mode_pairs.append((concrete_mode, dataset_config))
-        provisional_pending = [
-            (mode, dataset_config)
-            for mode, dataset_config in mode_pairs
-            if benchmark_config.force
-            or get_record(
-                model_config=model_config,
-                dataset_config=dataset_config,
-                benchmark_config=benchmark_config,
-                benchmark_results=existing_results,
-                shot_mode=mode,
-            )
-            is None
-        ]
-        if not provisional_pending:
-            cached = [
-                record
-                for mode, dataset_config in mode_pairs
-                if (
-                    record := get_record(
-                        model_config=model_config,
-                        dataset_config=dataset_config,
-                        benchmark_config=benchmark_config,
-                        benchmark_results=existing_results,
-                        shot_mode=mode,
-                    )
+
+        def mode_pairs_for(
+            candidate_modes: c.Sequence[ShotMode],
+        ) -> list[tuple[ShotMode, "DatasetConfig"]]:
+            pairs: list[tuple[ShotMode, "DatasetConfig"]] = []
+            seen_pairs: set[tuple[int, ShotMode]] = set()
+            for mode in candidate_modes:
+                for dataset_config in datasets:
+                    concrete_mode = _shot_mode_for_dataset(mode, dataset_config)
+                    if concrete_mode is None:
+                        continue
+                    pair_key = (id(dataset_config), concrete_mode)
+                    if pair_key in seen_pairs:
+                        continue
+                    seen_pairs.add(pair_key)
+                    pairs.append((concrete_mode, dataset_config))
+            return pairs
+
+        def records_for(
+            mode_pairs: c.Sequence[tuple[ShotMode, "DatasetConfig"]],
+        ) -> list[BenchmarkResult]:
+            records: list[BenchmarkResult] = []
+            for mode, dataset_config in mode_pairs:
+                record = get_record(
+                    model_config=model_config,
+                    dataset_config=dataset_config,
+                    benchmark_config=benchmark_config,
+                    benchmark_results=existing_results,
+                    shot_mode=mode,
                 )
-                is not None
+                if (
+                    record is not None
+                    and not benchmark_config.force
+                    and record not in records
+                ):
+                    records.append(record)
+            return records
+
+        def pending_for(
+            mode_pairs: c.Sequence[tuple[ShotMode, "DatasetConfig"]],
+        ) -> list[tuple[ShotMode, "DatasetConfig"]]:
+            return [
+                (mode, dataset_config)
+                for mode, dataset_config in mode_pairs
+                if benchmark_config.force
+                or get_record(
+                    model_config=model_config,
+                    dataset_config=dataset_config,
+                    benchmark_config=benchmark_config,
+                    benchmark_results=existing_results,
+                    shot_mode=mode,
+                )
+                is None
             ]
-            unique_cached = []
-            for record in cached:
-                if record not in unique_cached:
-                    unique_cached.append(record)
-            return None, [], unique_cached, None
+
+        mode_pairs = mode_pairs_for(modes)
+        provisional_pending = pending_for(mode_pairs)
+        provisional_cached = records_for(mode_pairs)
+        auto_requested = requested_mode is None or requested_mode is ShotMode.AUTO
+        cached_type = (
+            _cached_generative_type(provisional_cached)
+            if auto_requested and model_config.model_type == ModelType.GENERATIVE
+            else None
+        )
+        if cached_type is not None:
+            modes = resolve_shot_modes(
+                model_config=model_config,
+                requested_mode=requested_mode,
+                generative_type=cached_type,
+            )
+            mode_pairs = mode_pairs_for(modes)
+            provisional_pending = pending_for(mode_pairs)
+            provisional_cached = records_for(mode_pairs)
 
         loaded_model: "BenchmarkModule | None" = None
-        if (
+        needs_load = (
             model_config.model_type == ModelType.GENERATIVE
             and not benchmark_config.download_only
-        ):
-            first_mode, first_dataset = provisional_pending[0]
+            and (bool(provisional_pending) or cached_type is None and auto_requested)
+        )
+        if needs_load:
+            first_mode, first_dataset = (provisional_pending or mode_pairs)[0]
             try:
                 loaded_model = load_model(
                     model_config=model_config,
@@ -1161,45 +1203,27 @@ class Benchmarker:
                     ),
                 )
             except InvalidModel as error:
-                return None, [], [], error
+                cached_on_error = (
+                    provisional_cached
+                    if provisional_pending or cached_type is not None
+                    else []
+                )
+                return None, provisional_pending, cached_on_error, error
+
+        if not needs_load:
+            return None, provisional_pending, provisional_cached, None
 
         actual_modes = resolve_shot_modes(
             model_config=model_config,
-            requested_mode=benchmark_config.few_shot,
-            generative_type=(
-                loaded_model.generative_type if loaded_model is not None else None
-            ),
+            requested_mode=requested_mode,
+            generative_type=loaded_model.generative_type if loaded_model else None,
         )
         if benchmark_config.download_only:
             actual_modes = actual_modes[:1]
-        pending: list[tuple[ShotMode, "DatasetConfig"]] = []
-        cached = []
-        seen_pairs.clear()
-        for mode in actual_modes:
-            for dataset_config in datasets:
-                concrete_mode = _shot_mode_for_dataset(mode, dataset_config)
-                if concrete_mode is None:
-                    continue
-                pair_key = (id(dataset_config), concrete_mode)
-                if pair_key in seen_pairs:
-                    continue
-                seen_pairs.add(pair_key)
-                record = get_record(
-                    model_config=model_config,
-                    dataset_config=dataset_config,
-                    benchmark_config=benchmark_config,
-                    benchmark_results=existing_results,
-                    shot_mode=concrete_mode,
-                )
-                if record is not None and not benchmark_config.force:
-                    cached.append(record)
-                else:
-                    pending.append((concrete_mode, dataset_config))
-        unique_cached = []
-        for record in cached:
-            if record not in unique_cached:
-                unique_cached.append(record)
-        return loaded_model, pending, unique_cached, None
+        actual_pairs = mode_pairs_for(actual_modes)
+        pending = pending_for(actual_pairs)
+        cached = records_for(actual_pairs)
+        return loaded_model, pending, cached, None
 
     def _filter_existing_benchmarks(
         self,
@@ -1278,6 +1302,7 @@ class Benchmarker:
         model_config: "ModelConfig",
         model_mapping: dict["ModelConfig", list["DatasetConfig"]],
         current_results: list[BenchmarkResult],
+        remaining_work: int,
     ) -> tuple[int, int, int, bool]:
         """Handle benchmark result.
 
@@ -1300,6 +1325,8 @@ class Benchmarker:
                 The model to dataset mapping.
             current_results:
                 The current benchmark results.
+            remaining_work:
+                The number of concrete mode/dataset pairs after this one.
 
         Returns:
             A tuple of (updated finished, skipped, errored counters, break flag).
@@ -1315,10 +1342,7 @@ class Benchmarker:
             return num_finished, num_skipped, num_errored, False
         if isinstance(result_or_error, InvalidModel):
             log(result_or_error.message, level=logging.WARNING)
-            remaining = model_mapping[model_config][
-                model_mapping[model_config].index(dataset_config) + 1 :
-            ]
-            num_errored += 1 + len(remaining)
+            num_errored += 1 + remaining_work
             return num_finished, num_skipped, num_errored, True
         assert isinstance(result_or_error, BenchmarkResult)
         record: BenchmarkResult = result_or_error
@@ -1462,6 +1486,23 @@ def _shot_mode_for_dataset(
             else shot_mode
         )
     return shot_mode
+
+
+def _cached_generative_type(
+    records: c.Sequence[BenchmarkResult],
+) -> GenerativeType | None:
+    """Return reliable generative metadata shared by cached records.
+
+    Older records do not include ``generative_type``.  Treat a mixture of metadata as
+    unknown rather than allowing one record to select an incomplete AUTO plan.
+    """
+    if not records or any(not record.generative for record in records):
+        return None
+    try:
+        types = {GenerativeType(record.generative_type) for record in records}
+    except (TypeError, ValueError):
+        return None
+    return types.pop() if len(types) == 1 else None
 
 
 def get_record(
