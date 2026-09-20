@@ -95,6 +95,21 @@ must be mode `0600`. Missing private configuration, unavailable corpus data, mal
 evidence, and scoring errors do not abort unrelated result processing. Historical
 score-only records cannot be checked retroactively.
 
+For a report-only audit of all canary results in a benchmark JSONL file, use the
+persistent script instead of setting those environment variables:
+
+```sh
+uv run src/scripts/canary/score_contamination_canaries.py RESULTS_FILE \
+  --key ~/.config/euroeval/watermark-audit-v1.key \
+  --private-dir ~/.local/share/euroeval/private-canary-v5 \
+  --report-path ~/.local/state/euroeval/canary/report.json
+```
+
+`RESULTS_FILE` is optional and defaults to `euroeval_benchmark_results.jsonl`; the
+private paths shown are the option defaults. The script writes the complete scoring
+report to standard output without evidence completions. It does not prompt, approve or
+reject a submission, or update durable exclusions.
+
 ## Local protocol research
 
 Research-only generation, exposure, and analysis tools live under `src/scripts/canary/`;

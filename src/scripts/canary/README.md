@@ -1,9 +1,8 @@
 # Private canary tools
 
-These scripts generate and validate the private contamination-canary protocol. They
-are research and protocol-generation tools, not the evidence collector, production
-checker, benchmark, or leaderboard pipeline. They do not publish results. The separate
-experimental evidence pipeline is documented in
+These scripts generate and validate the private contamination-canary protocol and run
+the report-only production scorer. They do not publish results or change leaderboard
+exclusions. The separate experimental evidence pipeline is documented in
 [`docs/contamination-canary.md`](../../../docs/contamination-canary.md).
 
 ## Scripts
@@ -14,6 +13,8 @@ experimental evidence pipeline is documented in
   (0, 1, 2, 4, and 8 exposures), with resumable output and fingerprints.
 - `analyse_private_canary.py` validates all five result arms and writes the grouped
   analysis report.
+- `score_contamination_canaries.py` selects every canary record from benchmark JSONL,
+  scores them together, and writes the complete report as JSON to standard output.
 
 ## Prerequisites and safety
 
@@ -47,6 +48,30 @@ chmod 600 "$CANARY_KEY"
 
 Do not place the key or private records in the repository, shell history, logs, or
 sample files. Do not print them or commit generated artefacts.
+
+## Report-only scoring
+
+Score all canary records in the default `euroeval_benchmark_results.jsonl` file:
+
+```sh
+uv run src/scripts/canary/score_contamination_canaries.py
+```
+
+To select another results file or private paths, use:
+
+```sh
+uv run src/scripts/canary/score_contamination_canaries.py RESULTS_FILE \
+  --key ~/.config/euroeval/watermark-audit-v1.key \
+  --private-dir ~/.local/share/euroeval/private-canary-v5 \
+  --report-path ~/.local/state/euroeval/canary/report.json
+```
+
+`RESULTS_FILE` defaults to `euroeval_benchmark_results.jsonl`. The three option values
+shown above are also their defaults. The script emits stable, readable report JSON to
+standard output and sends diagnostics to standard error. It never prompts, decides an
+approval or rejection, or updates durable leaderboard exclusions. A file containing no
+canary records produces the scorer's `missing` report status; unavailable private
+material similarly retains the scorer's `unavailable` status.
 
 ## Example workflow
 
@@ -91,7 +116,8 @@ All of these files are private local artefacts and must remain outside version
 control.
 
 For the protocol design and limitations, see
-[`docs/contamination-canary.md`](../../../docs/contamination-canary.md). These tools
-only support offline research and protocol validation; they must not be used to
-alter production scores, rankings, or production checker behaviour. Production
-collection is disabled by default and its offline checker is report-only.
+[`docs/contamination-canary.md`](../../../docs/contamination-canary.md). The generation,
+exposure, and analysis tools only support offline research and protocol validation;
+they must not be used to alter production scores, rankings, or production checker
+behaviour. Production collection is disabled by default, and the scoring script is
+report-only.
