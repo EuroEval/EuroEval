@@ -151,6 +151,45 @@ def coerce_shot_mode(
     raise TypeError(f"Unsupported shot mode: {requested_mode!r}")
 
 
+def result_identity_values(
+    shot_mode: ShotModeRequest,
+    dataset_config: "DatasetConfig",
+    evaluate_test_split: bool,
+) -> tuple[bool | None, bool | None]:
+    """Derive the identity fields emitted for a benchmark result.
+
+    Args:
+        shot_mode:
+            Concrete shot mode used for the benchmark.
+        dataset_config:
+            Dataset configuration used for the benchmark.
+        evaluate_test_split:
+            Whether the test split was evaluated.
+
+    Returns:
+        The result's ``(few_shot, validation_split)`` identity values. Forced-zero-shot
+        tasks and datasets without validation splits use ``None`` for the respective
+        field.
+
+    Raises:
+        ValueError:
+            If ``shot_mode`` is ``AUTO``, which must be resolved before a result is
+            created.
+    """
+    mode = coerce_shot_mode(shot_mode)
+    if mode is ShotMode.AUTO:
+        raise ValueError("AUTO must be resolved before storing a benchmark result")
+    few_shot = (
+        None
+        if dataset_config.task.requires_zero_shot
+        else result_few_shot_value(requested_mode=mode)
+    )
+    validation_split = (
+        None if dataset_config.val_split is None else not evaluate_test_split
+    )
+    return few_shot, validation_split
+
+
 def result_few_shot_value(requested_mode: ShotModeRequest) -> bool:
     """Convert a concrete shot mode to the stored result boolean.
 

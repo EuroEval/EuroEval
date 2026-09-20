@@ -13,7 +13,18 @@ from src.scripts.generate_volunteer_scope_policy import build_policy
 
 
 class PolicyEntry(t.TypedDict):
-    """One generated model-type/language policy entry."""
+    """One generated model-type/language policy entry.
+
+    Attributes:
+        model_type:
+            Broad worker model capability.
+        language:
+            Exact ISO language code.
+        allowed_identity_suffix_sets:
+            Complete result-identity alternatives.
+        language_group:
+            Broker language-group identifier.
+    """
 
     model_type: str
     language: str
@@ -22,7 +33,14 @@ class PolicyEntry(t.TypedDict):
 
 
 class Policy(t.TypedDict):
-    """Generated policy shape used by these tests."""
+    """Generated policy shape used by these tests.
+
+    Attributes:
+        policy_version:
+            Versioned policy identifier.
+        policies:
+            Exact policy entries.
+    """
 
     policy_version: str
     policies: list[PolicyEntry]
@@ -72,6 +90,12 @@ def test_policy_generation_fails_on_config_errors(
     """A config loading failure must not widen scope to every pair."""
 
     def fail() -> dict[str, object]:
+        """Raise the configuration error expected by this test.
+
+        Raises:
+            RuntimeError:
+                The expected configuration lookup failure.
+        """
         raise RuntimeError("config lookup failed")
 
     monkeypatch.setattr(policy_module, "_configs_by_name", fail)
@@ -96,7 +120,7 @@ def test_policy_is_versioned_and_exact_language() -> None:
         ("encoder", "en"),
     }
     assert entries[0]["allowed_identity_suffix_sets"] == [
-        ['["multi-wiki-qa-da",false,true]']
+        ['["multi-wiki-qa-da",true,true]']
     ]
 
 
@@ -120,13 +144,13 @@ def test_policy_matches_benchmarker_defaults_for_encoder_and_decoder() -> None:
     assert planned.benchmark_config_default_params.few_shot is True
     assert planned.benchmark_config_default_params.evaluate_test_split is False
     assert by_type["encoder"]["allowed_identity_suffix_sets"] == [
-        ['["multi-wiki-qa-da",false,true]']
+        ['["multi-wiki-qa-da",true,true]']
     ]
     assert by_type["generative"]["allowed_identity_suffix_sets"] == [
-        ['["multi-wiki-qa-da",false,true]'],
+        ['["multi-wiki-qa-da",true,true]'],
         [
-            '["ifeval-da",false,false]',
-            '["multi-wiki-qa-da",false,false]',
-            '["multi-wiki-qa-da",false,true]',
+            '["ifeval-da",null,null]',
+            '["multi-wiki-qa-da",true,false]',
+            '["multi-wiki-qa-da",true,true]',
         ],
     ]

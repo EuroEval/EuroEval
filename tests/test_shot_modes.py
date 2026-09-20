@@ -301,7 +301,6 @@ def test_load_error_counts_concrete_remaining_work() -> None:
     """A mode-level model failure counts the other concrete work items."""
     benchmarker = Benchmarker(progress_bar=False)
     dataset_config = Mock()
-    model_config = Mock()
 
     finished, skipped, errored, should_break = benchmarker._handle_benchmark_result(
         result_or_error=InvalidModel("model setup failed"),
@@ -310,8 +309,6 @@ def test_load_error_counts_concrete_remaining_work() -> None:
         num_finished=0,
         num_skipped=0,
         num_errored=0,
-        model_config=model_config,
-        model_mapping={model_config: [dataset_config]},
         current_results=[],
         remaining_work=1,
     )
@@ -412,6 +409,15 @@ def test_multi_model_progress_uses_full_workload(
     monkeypatch.setattr(benchmarker, "_benchmark_single", benchmark_calls)
 
     def handle_result(**kwargs: int) -> tuple[int, int, int, bool]:
+        """Increment the finished count for a synthetic benchmark result.
+
+        Args:
+            kwargs:
+                Synthetic benchmark counters supplied by the benchmarker.
+
+        Returns:
+            Updated benchmark counters and the break flag.
+        """
         return (
             kwargs["num_finished"] + 1,
             kwargs["num_skipped"],
@@ -483,6 +489,19 @@ def test_only_one_model_is_live_during_preparation(
     load_calls = 0
 
     def load_model_for_test(**_: object) -> HeavyModel:
+        """Load one synthetic model and verify prior models were released.
+
+        Args:
+            _:
+                Ignored model-loading arguments.
+
+        Returns:
+            A synthetic heavy model on the first call.
+
+        Raises:
+            InvalidModel:
+                When the second model load is reached.
+        """
         nonlocal load_calls
         load_calls += 1
         if load_calls == 1:
