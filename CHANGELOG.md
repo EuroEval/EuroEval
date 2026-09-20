@@ -9,10 +9,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added private contamination-canary generation, local 0/1/2/4/8 exposure scripts,
-  group-level analysis, and auxiliary evidence collection in ordinary EEE result files.
-  Collection defaults on for non-targeted evaluations, remains non-scoring, and is
-  interpreted privately only during leaderboard processing.
+- Added an experimental private contamination canary for generative models. It collects
+  plaintext-free auxiliary evidence by default for suite, task, and language
+  evaluations, but not targeted `--dataset` runs, and stores it in ordinary EEE result
+  records. It is interpreted only during private leaderboard processing and never
+  published as a metric or ranking, while a positive detection can exclude the model
+  from generated leaderboards.
 - Added support for DeepSeek-V4.1-Flash via the DeepSeek API (`deepseek/deepseek-flash`),
   including model metadata and the `#no-thinking`, `#thinking`, `#low`, `#high` and
   `#max` parameters to control its thinking mode. `#no-thinking` and `#thinking` send
