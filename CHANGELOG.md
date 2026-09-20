@@ -35,6 +35,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Encoder contamination-canary runs now emit the required not-applicable evidence
+  without loading the virtual text-to-text task, while preserving model metadata in
+  standalone and mixed runs.
 - LiteLLM generation now records model-level parameter adjustments learned by the
   error handlers (e.g. "no JSON schema" or "use `max_tokens`") as a set of
   `ParameterAdjustment` capabilities and re-applies them conditionally to the

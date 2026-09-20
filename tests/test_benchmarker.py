@@ -32,6 +32,7 @@ from euroeval.data_models import (
 )
 from euroeval.enums import InferenceBackend, ModelType
 from euroeval.exceptions import HuggingFaceHubDown
+from euroeval.tasks import CONTAMINATION_DETECTION
 
 
 class TestClearCacheFn:
@@ -278,6 +279,116 @@ def test_benchmark_encoder(
         pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
+
+
+def test_encoder_canary_standalone_uses_supported_metadata_task(
+    benchmarker: Benchmarker,
+    benchmark_config: BenchmarkConfig,
+    model_config: ModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A standalone encoder canary must not load the virtual text-to-text task."""
+    canary_dataset = DatasetConfig(
+        task=CONTAMINATION_DETECTION,
+        languages=benchmark_config.languages,
+        name="contamination-canary",
+    )
+    run_config = replace(
+        benchmark_config, datasets=[canary_dataset], force=True, save_results=False
+    )
+    encoder_config = replace(
+        model_config, model_id="encoder-model", revision="main", fresh=False
+    )
+    metadata_model = MagicMock(
+        num_params=123, model_max_length=512, vocab_size=32_000, generative_type=None
+    )
+    load_model_mock = MagicMock(return_value=metadata_model)
+
+    monkeypatch.setattr(benchmarker, "results_path", tmp_path / "results.jsonl")
+    monkeypatch.setattr(
+        benchmarker, "_build_benchmark_config", lambda **kwargs: run_config
+    )
+    monkeypatch.setattr(
+        benchmarker, "_fetch_model_configs", lambda *args, **kwargs: [encoder_config]
+    )
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model_mock)
+
+    results = benchmarker.benchmark(model=encoder_config.model_id)
+
+    assert len(results) == 1
+    result = results[0]
+    assert result.task == CONTAMINATION_DETECTION.name
+    assert result.contamination_canary_evidence is not None
+    assert result.contamination_canary_evidence["status"] == "not_applicable"
+    assert result.contamination_canary_evidence["reason"] == "encoder"
+    assert result.num_model_parameters == metadata_model.num_params
+    assert load_model_mock.call_args.kwargs["dataset_config"].task != (
+        CONTAMINATION_DETECTION
+    )
+
+
+def test_encoder_canary_mixed_run_reuses_ordinary_result_metadata(
+    benchmarker: Benchmarker,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A mixed encoder run should reuse metadata from its ordinary result."""
+    canary_dataset = DatasetConfig(
+        task=CONTAMINATION_DETECTION,
+        languages=benchmark_config.languages,
+        name="contamination-canary",
+    )
+    ordinary_result = BenchmarkResult(
+        dataset=dataset_config.name,
+        task=dataset_config.task.name,
+        languages=[language.code for language in dataset_config.languages],
+        model="encoder-model",
+        results={"raw": [], "total": {}},
+        num_model_parameters=456,
+        max_sequence_length=768,
+        vocabulary_size=64_000,
+        merge=False,
+        generative=False,
+        generative_type=None,
+        few_shot=False,
+        validation_split=True,
+    )
+    run_config = replace(
+        benchmark_config,
+        datasets=[dataset_config, canary_dataset],
+        force=True,
+        save_results=False,
+    )
+    encoder_config = replace(
+        model_config, model_id="encoder-model", revision="main", fresh=False
+    )
+
+    monkeypatch.setattr(benchmarker, "results_path", tmp_path / "results.jsonl")
+    monkeypatch.setattr(
+        benchmarker, "_build_benchmark_config", lambda **kwargs: run_config
+    )
+    monkeypatch.setattr(
+        benchmarker, "_fetch_model_configs", lambda *args, **kwargs: [encoder_config]
+    )
+    monkeypatch.setattr(
+        benchmarker, "_benchmark_single", lambda **kwargs: ordinary_result
+    )
+    load_model_mock = MagicMock(side_effect=AssertionError("unexpected model load"))
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model_mock)
+
+    results = benchmarker.benchmark(model=encoder_config.model_id)
+
+    assert len(results) == 2
+    canary_result = results[1]
+    assert canary_result.task == CONTAMINATION_DETECTION.name
+    assert canary_result.num_model_parameters == ordinary_result.num_model_parameters
+    assert canary_result.max_sequence_length == ordinary_result.max_sequence_length
+    assert canary_result.vocabulary_size == ordinary_result.vocabulary_size
+    assert load_model_mock.call_count == 0
 
 
 @pytest.mark.depends(on=["test_benchmark_encoder"])

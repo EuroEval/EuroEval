@@ -25,7 +25,12 @@ from .canary_evidence import (
 )
 from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS, ORTHOGONAL_TASKS
 from .data_loading import load_data, load_raw_data
-from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
+from .data_models import (
+    BenchmarkConfigParams,
+    BenchmarkResult,
+    DatasetConfig,
+    get_package_version,
+)
 from .enums import Device, GenerativeType, InferenceBackend, ModelType
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
@@ -37,12 +42,12 @@ from .model_loading import load_model
 from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .string_utils import split_model_id
-from .tasks import SPEED
+from .tasks import LA, SPEED
 from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
-    from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig, Task
+    from .data_models import BenchmarkConfig, ModelConfig, Task
 
 
 class Benchmarker:
@@ -565,6 +570,41 @@ class Benchmarker:
                 if self._is_canary_dataset(dataset_config):
                     if benchmark_config.download_only:
                         self._download(dataset_config, model_config, benchmark_config)
+                    elif model_config.model_type is ModelType.ENCODER:
+                        reference_result = self._find_ordinary_result(
+                            model_config=model_config, results=current_results
+                        )
+                        canary_metadata_model = None
+                        if reference_result is None:
+                            try:
+                                canary_metadata_model = load_model(
+                                    model_config=model_config,
+                                    dataset_config=self._canary_metadata_dataset(
+                                        benchmark_config=benchmark_config
+                                    ),
+                                    benchmark_config=benchmark_config,
+                                )
+                            except InvalidModel as e:
+                                if benchmark_config.raise_errors:
+                                    raise e
+                                log(e.message, level=logging.ERROR)
+                                num_errored += 1
+                                break
+                        self._record_contamination_canary(
+                            model_config=model_config,
+                            benchmark_config=benchmark_config,
+                            loaded_model=None,
+                        )
+                        canary_result = self._canary_benchmark_result(
+                            evidence=self._canary_evidence[-1],
+                            model_config=model_config,
+                            benchmark_config=benchmark_config,
+                            loaded_model=canary_metadata_model,
+                            reference_result=reference_result,
+                        )
+                        current_results.append(canary_result)
+                        if benchmark_config.save_results:
+                            canary_result.append_to_results(self.results_path)
                     else:
                         if loaded_model is None:
                             try:
@@ -1348,6 +1388,45 @@ class Benchmarker:
 
         return [m_id.rstrip(" /") for m_id in model_ids_sorted]
 
+    def _find_ordinary_result(
+        self, *, model_config: "ModelConfig", results: c.Sequence[BenchmarkResult]
+    ) -> BenchmarkResult | None:
+        """Find ordinary result metadata for a model in the current run.
+
+        Returns:
+            The matching ordinary result, or None if the run has no such result.
+        """
+        model_id = model_config.model_id
+        if model_config.revision != "main":
+            model_id += f"@{model_config.revision}"
+        if model_config.param is not None:
+            model_id += f"#{model_config.param}"
+        return next(
+            (
+                result
+                for result in reversed(results)
+                if result.model == model_id and result.task != CANARY_RESULT_TASK
+            ),
+            None,
+        )
+
+    def _canary_metadata_dataset(
+        self, *, benchmark_config: "BenchmarkConfig"
+    ) -> DatasetConfig:
+        """Build a supported task config for standalone encoder metadata loading.
+
+        Returns:
+            A regular encoder-compatible dataset configuration.
+        """
+        return DatasetConfig(
+            task=LA,
+            languages=benchmark_config.languages,
+            name="encoder-canary-metadata",
+            pretty_name="Encoder canary metadata",
+            labels=LA.default_labels,
+            unofficial=True,
+        )
+
     def _canary_benchmark_result(
         self,
         *,
@@ -1437,7 +1516,7 @@ class Benchmarker:
         *,
         model_config: "ModelConfig",
         benchmark_config: "BenchmarkConfig",
-        loaded_model: "BenchmarkModule",
+        loaded_model: "BenchmarkModule | None",
     ) -> None:
         """Collect one non-ranking canary record for the selected virtual task."""
         if getattr(model_config, "model_type", None) is ModelType.ENCODER:
@@ -1452,6 +1531,7 @@ class Benchmarker:
                 )
             )
             return
+        assert loaded_model is not None
         generative_type = (
             loaded_model.generative_type.value
             if loaded_model.generative_type
