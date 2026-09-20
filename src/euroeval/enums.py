@@ -184,7 +184,15 @@ class ShotMode(AutoStrEnum):
 
     ``AUTO`` is an explicit public policy value that selects one or more concrete
     modes from model metadata. It is used during planning only and is never written
-    to benchmark results. ``FEW_SHOT`` and ``ZERO_SHOT`` select one concrete mode.
+    to benchmark results.
+
+    Attributes:
+        AUTO:
+            Select concrete modes automatically from the model and backend metadata.
+        FEW_SHOT:
+            Evaluate with task-specific few-shot examples where supported.
+        ZERO_SHOT:
+            Evaluate without few-shot examples.
     """
 
     AUTO = auto()

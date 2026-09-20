@@ -379,10 +379,36 @@ class Lease:
     """One broker-issued evaluation lease.
 
     Attributes:
-        expected_scope:
-            Exact result-identity alternatives authorised for this lease.
+        lease_id:
+            Unique broker-issued lease identifier.
+        issue_number:
+            GitHub issue containing the queued evaluation request.
+        model_id:
+            Hugging Face model repository identifier.
+        model_revision:
+            Immutable model revision to evaluate.
+        language:
+            Language code assigned to the lease.
+        euroeval_version:
+            EuroEval version required by the broker.
+        image_digest:
+            Digest of the authorised worker image.
+        expires_at:
+            ISO-formatted lease expiry time.
+        model_type:
+            Broad model type authorised by the broker.
+        worker_version:
+            Worker protocol implementation version.
+        gpu_memory_utilisation:
+            Maximum proportion of GPU memory available to the evaluator.
+        selected_gpu_uuid:
+            Stable identifier of the selected GPU, when available.
+        selected_gpu_index:
+            Process-visible index of the selected GPU, when available.
         model_metadata:
             Immutable model metadata verified by the broker.
+        expected_scope:
+            Exact result-identity alternatives authorised for this lease.
     """
 
     lease_id: str
