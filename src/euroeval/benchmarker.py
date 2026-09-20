@@ -1201,6 +1201,7 @@ class Benchmarker:
             )
             else None
         )
+        resolved_type = benchmark_config.generative_type or cached_type
         if cached_type is not None:
             modes = resolve_shot_modes(
                 model_config=model_config,
@@ -1215,7 +1216,7 @@ class Benchmarker:
         needs_load = (
             model_config.model_type == ModelType.GENERATIVE
             and not benchmark_config.download_only
-            and (bool(provisional_pending) or cached_type is None and auto_requested)
+            and (bool(provisional_pending) or resolved_type is None and auto_requested)
         )
         if needs_load:
             first_mode, first_dataset = (provisional_pending or mode_pairs)[0]
@@ -1230,7 +1231,7 @@ class Benchmarker:
             except InvalidModel as error:
                 cached_on_error = (
                     provisional_cached
-                    if provisional_pending or cached_type is not None
+                    if provisional_pending or resolved_type is not None
                     else []
                 )
                 return None, provisional_pending, cached_on_error, error
