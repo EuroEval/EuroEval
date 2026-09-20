@@ -272,6 +272,8 @@ class DummyModel(BenchmarkModule):
         Returns:
             The number of parameters in the model.
         """
+        if self.benchmark_config.num_parameters is not None:
+            return self.benchmark_config.num_parameters
         return -1
 
     def prepare_dataset(

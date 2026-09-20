@@ -9,6 +9,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added a `--num-parameters` CLI option and matching `num_parameters` Python argument
+  for overriding model parameter counts when they cannot be inferred automatically.
 - Added support for DeepSeek-V4.1-Flash via the DeepSeek API (`deepseek/deepseek-flash`),
   including model metadata and the `#no-thinking`, `#thinking`, `#low`, `#high` and
   `#max` parameters to control its thinking mode. `#no-thinking` and `#thinking` send
