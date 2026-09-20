@@ -50,7 +50,9 @@ class TestArchiveOffsite:
         assert mock_run.call_count == 1
         assert mock_run.call_args.args[0][1] == "archive"
 
-    def test_connection_failure_starts_app_and_retries(self, tmp_path: Path) -> None:
+    def test_connection_failure_starts_app_and_retries(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """A missing daemon is recovered by starting Jottacloud and retrying."""
         snapshot = tmp_path / "results.tar.gz"
         snapshot.write_bytes(b"x")
@@ -73,12 +75,39 @@ class TestArchiveOffsite:
             ) as mock_run,
             patch("leaderboards.backup.time.sleep") as mock_sleep,
             patch("leaderboards.backup._is_archived", return_value=True),
+            caplog.at_level(logging.INFO),
         ):
             assert _archive_offsite(snapshot)
 
         assert mock_run.call_args_list[1].args[0] == ["open", "-a", str(app)]
         assert mock_run.call_args_list[2].args[0][1] == "archive"
         mock_sleep.assert_called_once()
+        assert any("retrying archive upload" in r.message for r in caplog.records)
+
+    def test_connected_jottad_archive_failure_does_not_start_the_app(
+        self, tmp_path: Path
+    ) -> None:
+        """A permission error after connecting must not launch the app."""
+        snapshot = tmp_path / "results.tar.gz"
+        snapshot.write_bytes(b"x")
+        app = tmp_path / "Jottacloud.app"
+        app.mkdir()
+        failure = MagicMock(
+            returncode=1, stdout="", stderr="connected to jottad; permission denied"
+        )
+        with (
+            patch(
+                "leaderboards.backup._jotta_cli",
+                return_value=Path("/usr/bin/jotta-cli"),
+            ),
+            patch("leaderboards.backup.JOTTACLOUD_APP_PATH", app),
+            patch(
+                "leaderboards.backup.subprocess.run", return_value=failure
+            ) as mock_run,
+        ):
+            assert not _archive_offsite(snapshot)
+
+        assert mock_run.call_count == 1
 
     def test_missing_app_keeps_connection_failure_best_effort(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture

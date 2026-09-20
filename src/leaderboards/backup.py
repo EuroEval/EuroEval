@@ -21,6 +21,7 @@ import hashlib
 import json
 import logging
 import random
+import re
 import shutil
 import subprocess
 import tarfile
@@ -112,6 +113,9 @@ def _archive_offsite(backup_path: Path) -> bool:
         result = _run_archive(backup_path=backup_path, cli=cli)
         if result.returncode != 0 and _is_jottad_connection_failure(result):
             if _launch_jottacloud():
+                logger.info(
+                    "Jottacloud app launched successfully; retrying archive upload"
+                )
                 for _ in range(_JOTTAD_STARTUP_RETRIES):
                     time.sleep(_JOTTAD_STARTUP_RETRY_DELAY)
                     result = _run_archive(backup_path=backup_path, cli=cli)
@@ -163,13 +167,29 @@ def _run_archive(backup_path: Path, cli: Path) -> subprocess.CompletedProcess[st
     )
 
 
-def _is_jottad_connection_failure(result: subprocess.CompletedProcess[str]) -> bool:
-    """Return whether an archive failure indicates an unavailable jottad."""
-    output = f"{result.stderr or ''}\n{result.stdout or ''}".lower()
-    return "jottad" in output and any(
-        marker in output
-        for marker in ("connect", "connection refused", "not running", "unavailable")
+_JOTTAD_CONNECTION_FAILURE_RE = re.compile(
+    r"""
+    (
+        \b(?:could\s+not|cannot|can't|unable\s+to|failed\s+to|error(?:\s+while)?)
+        \s+(?:connect(?:ing|ion)?|discover|find|reach)\s+(?:to\s+)?jottad\b
+        |
+        \bjottad\b.{0,80}\b(?:connection|discovery)\s+
+        (?:failed|failure|error|refused|unavailable)\b
+        |
+        \b(?:connection|discovery)\s+
+        (?:failed|failure|error|refused|unavailable)\b.{0,80}\bjottad\b
+        |
+        \bjottad\b.{0,80}\b(?:is\s+)?(?:not\s+running|unavailable|not\s+found)\b
     )
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def _is_jottad_connection_failure(result: subprocess.CompletedProcess[str]) -> bool:
+    """Return whether an archive failure explicitly reports unavailable jottad."""
+    output = f"{result.stderr or ''}\n{result.stdout or ''}"
+    return _JOTTAD_CONNECTION_FAILURE_RE.search(output) is not None
 
 
 def _launch_jottacloud() -> bool:
