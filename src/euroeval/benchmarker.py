@@ -1520,16 +1520,16 @@ class Benchmarker:
     ) -> None:
         """Collect one non-ranking canary record for the selected virtual task."""
         if getattr(model_config, "model_type", None) is ModelType.ENCODER:
-            self._store_canary_evidence(
-                status_evidence(
-                    model_id=model_config.model_id,
-                    requested_revision=model_config.revision,
-                    resolved_revision=model_config.revision,
-                    backend=model_config.inference_backend.value,
-                    status="not_applicable",
-                    reason="encoder",
-                )
+            evidence = status_evidence(
+                model_id=model_config.model_id,
+                requested_revision=model_config.revision,
+                resolved_revision=model_config.revision,
+                backend=model_config.inference_backend.value,
+                status="not_applicable",
+                reason="encoder",
             )
+            self._store_canary_evidence(evidence)
+            self._log_canary_status(evidence=evidence)
             return
         assert loaded_model is not None
         generative_type = (
@@ -1547,7 +1547,12 @@ class Benchmarker:
             return
         try:
             prompts = load_canary_prompts(cache_dir=benchmark_config.cache_dir)
-        except Exception:  # noqa: BLE001 - ordinary benchmarks must continue
+        except Exception as error:  # noqa: BLE001 - ordinary benchmarks must continue
+            log(
+                f"Canary collection for {model_config.model_id!r} failed while loading "
+                f"the corpus: {error!r}",
+                level=logging.DEBUG,
+            )
             evidence = status_evidence(
                 model_id=model_config.model_id,
                 requested_revision=model_config.revision,
@@ -1557,6 +1562,7 @@ class Benchmarker:
                 reason="corpus_unavailable",
             )
             self._store_canary_evidence(evidence)
+            self._log_canary_status(evidence=evidence)
             return
         try:
             completions = loaded_model.collect_canary_completions(
@@ -1570,7 +1576,12 @@ class Benchmarker:
                 prompts=prompts,
                 completions=completions,
             )
-        except NotImplementedError:
+        except NotImplementedError as error:
+            log(
+                f"Canary collection for {model_config.model_id!r} is unsupported: "
+                f"{error!r}",
+                level=logging.DEBUG,
+            )
             evidence = status_evidence(
                 model_id=model_config.model_id,
                 requested_revision=model_config.revision,
@@ -1579,7 +1590,12 @@ class Benchmarker:
                 status="unsupported",
                 reason="backend_unsupported",
             )
-        except ValueError:
+        except ValueError as error:
+            log(
+                f"Canary collection for {model_config.model_id!r} failed with an "
+                f"incomplete generation: {error!r}",
+                level=logging.DEBUG,
+            )
             evidence = status_evidence(
                 model_id=model_config.model_id,
                 requested_revision=model_config.revision,
@@ -1588,7 +1604,11 @@ class Benchmarker:
                 status="failed",
                 reason="incomplete_generation",
             )
-        except Exception:  # noqa: BLE001 - audit failure must not change scores
+        except Exception as error:  # noqa: BLE001 - audit failure must not change scores
+            log(
+                f"Canary collection for {model_config.model_id!r} failed: {error!r}",
+                level=logging.DEBUG,
+            )
             evidence = status_evidence(
                 model_id=model_config.model_id,
                 requested_revision=model_config.revision,
@@ -1598,6 +1618,23 @@ class Benchmarker:
                 reason="generation_failed",
             )
         self._store_canary_evidence(evidence)
+        self._log_canary_status(evidence=evidence)
+
+    @staticmethod
+    def _log_canary_status(*, evidence: CanaryEvidence) -> None:
+        """Log the canary status and collection count for one model."""
+        if evidence.status == "collected":
+            log(
+                f"Contamination canary collected for {evidence.model_id!r}: "
+                f"status=collected, count={len(evidence.observations):,}.",
+                level=logging.INFO,
+            )
+            return
+        log(
+            f"Contamination canary for {evidence.model_id!r}: "
+            f"status={evidence.status}, reason={evidence.reason!r}.",
+            level=logging.WARNING,
+        )
 
     def _store_canary_evidence(self, evidence: CanaryEvidence) -> None:
         """Retain evidence until it is embedded in an ordinary result record."""

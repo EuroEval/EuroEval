@@ -10,6 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from litellm.exceptions import UnsupportedParamsError
 
 import euroeval.canary_evidence as evidence_module
 import leaderboards.contamination_canary as canary_scoring
@@ -30,7 +31,7 @@ from euroeval.eee_utils import (
     benchmark_result_from_eee_dict,
     benchmark_result_to_eee_dict,
 )
-from euroeval.enums import GenerativeType, InferenceBackend
+from euroeval.enums import GenerativeType, InferenceBackend, ParameterAdjustment
 from leaderboards.contamination_canary import (
     confirm_canary_exclusions,
     partition_canary_records,
@@ -290,14 +291,19 @@ def test_litellm_collection_reuses_wrapper_without_state_leakage() -> None:
     """Use isolated API generation settings for bounded collection."""
     calls: list[dict[str, object]] = []
 
-    class Wrapper:
-        generative_type = GenerativeType.BASE
+    class Wrapper(LiteLLMModel):
         generation_kwargs = {"temperature": 0.7, "response_format": "dataset-only"}
-        model_config = SimpleNamespace(model_id="provider/model")
+        _parameter_adjustments: set[ParameterAdjustment] = set()
+        _max_thinking_budget = None
+        log_metadata = False
+        model_config = SimpleNamespace(model_id="provider/model", param=None)
         benchmark_config = SimpleNamespace(
-            api_key="token", api_base=None, api_version=None
+            api_key="token",
+            api_base=None,
+            api_version=None,
+            generative_type=GenerativeType.BASE,
         )
-        buffer = {"max_concurrent_calls": 5}
+        buffer = {"max_concurrent_calls": 5, "first_label_token_mapping": False}
 
         async def _generate_async(self, **kwargs: object) -> tuple[list, list]:
             calls.append(kwargs)
@@ -309,18 +315,101 @@ def test_litellm_collection_reuses_wrapper_without_state_leakage() -> None:
         ) -> SimpleNamespace:
             return SimpleNamespace(sequences=tuple(model_responses))
 
-    wrapper = Wrapper()
+    wrapper = object.__new__(Wrapper)
     result = LiteLLMModel.collect_canary_completions(t.cast(t.Any, wrapper), ["prompt"])
 
     assert result == ["amber forest"]
-    assert calls[0]["inputs"] == ["prompt"]
+    assert calls[1]["inputs"] == ["prompt"]
+    assert len(calls) == 2
     assert calls[0]["temperature"] == 0.0
-    assert calls[0]["max_tokens"] == 6
+    assert calls[0]["max_completion_tokens"] == 6
+    assert calls[1]["max_completion_tokens"] == 6
     assert "response_format" not in calls[0]
+    assert "response_format" not in calls[1]
     assert wrapper.generation_kwargs == {
         "temperature": 0.7,
         "response_format": "dataset-only",
     }
+
+
+@pytest.mark.parametrize(
+    ("rejected", "adjustments", "expected_limit", "expected_probe_calls"),
+    [
+        (set(), set(), "max_completion_tokens", 1),
+        ({"max_completion_tokens"}, set(), "max_tokens", 2),
+        ({"max_completion_tokens", "max_tokens"}, set(), "max_output_tokens", 3),
+        ({"temperature", "seed"}, set(), "max_completion_tokens", 3),
+    ],
+)
+def test_litellm_canary_probes_capabilities_before_batch(
+    rejected: set[str],
+    adjustments: set[ParameterAdjustment],
+    expected_limit: str,
+    expected_probe_calls: int,
+) -> None:
+    """Probe unsupported parameters once, then use the adjusted batch kwargs."""
+    calls: list[dict[str, object]] = []
+    model = object.__new__(LiteLLMModel)
+    model.model_config = SimpleNamespace(model_id="provider/model", param=None)
+    model.log_metadata = False
+    model.benchmark_config = SimpleNamespace(
+        api_key="token",
+        api_base=None,
+        api_version=None,
+        generative_type=GenerativeType.BASE,
+    )
+    model.buffer = {"first_label_token_mapping": False, "max_concurrent_calls": 5}
+    model._parameter_adjustments = set(adjustments)
+    model._max_thinking_budget = None
+    model.generation_kwargs = {
+        "temperature": 0.7,
+        "response_format": "dataset-only",
+        "logprobs": True,
+    }
+
+    async def fake_generate(**kwargs: object) -> tuple[list, list]:
+        calls.append(kwargs)
+        inputs = kwargs["inputs"]
+        unsupported = next(
+            (
+                key
+                for key in (
+                    "max_completion_tokens",
+                    "max_tokens",
+                    "temperature",
+                    "seed",
+                )
+                if key in rejected and key in kwargs
+            ),
+            None,
+        )
+        if unsupported is not None:
+            error = UnsupportedParamsError(
+                message=f"provider does not support parameters: ['{unsupported}']"
+            )
+            return [], [(0, error)]
+        return [(index, object()) for index in range(len(inputs))], []
+
+    model._generate_async = fake_generate
+    model._create_model_output = lambda **kwargs: SimpleNamespace(
+        sequences=["amber forest"] * len(kwargs["model_responses"])
+    )
+
+    result = LiteLLMModel.collect_canary_completions(
+        t.cast(t.Any, model), ["first", "second"]
+    )
+
+    assert result == ["amber forest", "amber forest"]
+    assert len(calls) == expected_probe_calls + 1
+    assert all(len(call["inputs"]) == 1 for call in calls[:expected_probe_calls])
+    assert len(calls[-1]["inputs"]) == 2
+    assert calls[-1][expected_limit] == 6
+    assert "response_format" not in calls[-1]
+    assert "logprobs" not in calls[-1]
+    if "temperature" in rejected:
+        assert "temperature" not in calls[-1]
+    if "seed" in rejected:
+        assert "seed" not in calls[-1]
 
 
 def _corpus(tmp_path: Path) -> Path:
