@@ -72,6 +72,18 @@ class Device(AutoStrEnum):
     CUDA = auto()
 
 
+class ShotMode(AutoStrEnum):
+    """The prompt shot mode used for a benchmark run.
+
+    ``AUTO`` selects one or more concrete modes from model metadata.  It is an
+    internal control value and is never written to benchmark results.
+    """
+
+    AUTO = auto()
+    FEW_SHOT = auto()
+    ZERO_SHOT = auto()
+
+
 class GenerativeType(AutoStrEnum):
     """The type of a generative model.
 

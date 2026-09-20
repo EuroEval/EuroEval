@@ -1117,8 +1117,9 @@ class BenchmarkConfig:
         evaluate_test_split:
             Whether to evaluate on the test split.
         few_shot:
-            Whether to only evaluate the model using few-shot evaluation. Only relevant
-            if the model is generative.
+            A backwards-compatible shot override: True selects few-shot, False selects
+            zero-shot, and None selects automatically. Only relevant if the model is
+            generative.
         num_iterations:
             The number of iterations each model should be evaluated for.
         gpu_memory_utilization:
@@ -1173,7 +1174,7 @@ class BenchmarkConfig:
     trust_remote_code: bool
     clear_model_cache: bool
     evaluate_test_split: bool
-    few_shot: bool
+    few_shot: bool | None
     num_iterations: int
     gpu_memory_utilization: float
     attention_backend: (
@@ -1228,7 +1229,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     trust_remote_code: bool
     clear_model_cache: bool
     evaluate_test_split: bool
-    few_shot: bool
+    few_shot: bool | None
     num_iterations: int
     requires_safetensors: bool
     download_only: bool
