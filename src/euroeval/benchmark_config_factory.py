@@ -14,6 +14,7 @@ from .dataset_configs import get_all_dataset_configs
 from .enums import Device
 from .languages import get_all_languages, get_correct_language_codes
 from .logging_utils import log
+from .shot_modes import coerce_shot_mode
 
 if t.TYPE_CHECKING:
     from .data_models import Language
@@ -70,7 +71,7 @@ def build_benchmark_config(
         trust_remote_code=benchmark_config_params.trust_remote_code,
         clear_model_cache=benchmark_config_params.clear_model_cache,
         evaluate_test_split=benchmark_config_params.evaluate_test_split,
-        few_shot=benchmark_config_params.few_shot,
+        few_shot=coerce_shot_mode(benchmark_config_params.few_shot),
         num_iterations=(
             1
             if hasattr(sys, "_called_from_test")

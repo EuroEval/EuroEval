@@ -90,6 +90,31 @@ def test_multi_model_progress_uses_full_workload(
     ] == [1, 1]
 
 
+@pytest.mark.parametrize(
+    ("initialiser_mode", "expected_mode"),
+    [(True, ShotMode.FEW_SHOT), (False, ShotMode.ZERO_SHOT)],
+)
+def test_per_call_none_inherits_initialiser_shot_mode(
+    initialiser_mode: bool, expected_mode: ShotMode
+) -> None:
+    """A per-call None inherits either explicit initialiser boolean."""
+    benchmarker = Benchmarker(progress_bar=False, few_shot=initialiser_mode)
+
+    config = benchmarker._build_benchmark_config(few_shot=None)
+
+    assert config.few_shot is expected_mode
+
+
+def test_per_call_auto_overrides_initialiser_shot_mode() -> None:
+    """An explicit AUTO per-call policy overrides an initialiser boolean."""
+    for initialiser_mode in (True, False):
+        benchmarker = Benchmarker(progress_bar=False, few_shot=initialiser_mode)
+
+        config = benchmarker._build_benchmark_config(few_shot=ShotMode.AUTO)
+
+        assert config.few_shot is ShotMode.AUTO
+
+
 def test_auto_shot_mode_resolution(model_config: ModelConfig) -> None:
     """AUTO selects the agreed modes for each model category."""
     encoder = model_config

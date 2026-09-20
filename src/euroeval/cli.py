@@ -7,7 +7,7 @@ import click
 from .benchmarker import Benchmarker
 from .constants import ATTENTION_BACKENDS
 from .data_models import DatasetConfig
-from .enums import Device, GenerativeType
+from .enums import Device, GenerativeType, ShotMode
 from .languages import get_all_languages
 
 
@@ -267,7 +267,7 @@ def benchmark(
     trust_remote_code: bool,
     clear_model_cache: bool,
     evaluate_test_split: bool,
-    few_shot: bool,
+    few_shot: bool | None,
     num_iterations: int,
     api_base: str | None,
     api_version: str | None,
@@ -316,7 +316,7 @@ def benchmark(
         trust_remote_code=trust_remote_code,
         clear_model_cache=clear_model_cache,
         evaluate_test_split=evaluate_test_split,
-        few_shot=few_shot,
+        few_shot=ShotMode.AUTO if few_shot is None else few_shot,
         num_iterations=num_iterations,
         api_base=api_base,
         api_version=api_version,
