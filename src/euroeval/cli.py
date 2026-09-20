@@ -137,10 +137,11 @@ from .languages import get_all_languages
 )
 @click.option(
     "--few-shot/--zero-shot",
-    default=True,
-    show_default=True,
-    help="Whether to only evaluate the model using few-shot evaluation. Only relevant "
-    "if the model is generative.",
+    default=None,
+    show_default="auto",
+    help="Select few-shot or zero-shot evaluation. By default, automatically select "
+    "zero-shot for instruction-tuned/reasoning models and APIs, and few-shot for "
+    "base models. Only relevant if the model is generative.",
 )
 @click.option(
     "--num-iterations",
