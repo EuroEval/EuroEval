@@ -1153,6 +1153,9 @@ class BenchmarkConfig:
         vocabulary_size:
             Override for the vocabulary size of the model. If None, the value will be
             inferred automatically from the model.
+        num_parameters:
+            Override for the number of parameters in the model. If None, the value will
+            be inferred automatically from the model.
         use_bits_per_character:
             Whether to compute bits-per-character (BPC) on the ground-truth answer.
             For multiple-choice tasks, treats benchmark as text-to-text with bare
@@ -1191,6 +1194,7 @@ class BenchmarkConfig:
     run_with_cli: bool
     max_context_length: int | None
     vocabulary_size: int | None
+    num_parameters: int | None
     use_bits_per_character: bool = False
 
     def __post_init__(self) -> None:
@@ -1247,4 +1251,5 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     run_with_cli: bool
     max_context_length: int | None
     vocabulary_size: int | None
+    num_parameters: int | None
     use_bits_per_character: bool = False

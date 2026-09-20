@@ -248,11 +248,12 @@ Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
 
 ??? example "Override missing or incorrect model metadata"
 
-    Some models on the Hub report no maximum context length or vocabulary size, which leaves
-    blanks on the leaderboard. Patch both at the command line:
+    Some models or inference APIs report no parameter count, maximum context length, or
+    vocabulary size, which leaves blanks on the leaderboard. Patch all three at the command
+    line:
 
     ```bash
-    euroeval --model <model-id> --max-context-length 4096 --vocabulary-size 32000
+    euroeval --model <model-id> --num-parameters 8000000000 --max-context-length 4096 --vocabulary-size 32000
     ```
 
     The Python equivalent:
@@ -260,6 +261,7 @@ Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
     ```python
     benchmarker.benchmark(
         model="<model-id>",
+        num_parameters=8_000_000_000,
         max_context_length=4096,
         vocabulary_size=32000,
     )
