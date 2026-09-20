@@ -659,6 +659,29 @@ def test_manifest_scope_mismatch_is_rejected() -> None:
         reviewer.show(SUBMISSION)
 
 
+def test_manifest_matches_one_trusted_scope_alternative() -> None:
+    """Review reports expose the alternative selected by actual results."""
+    api, reviewer, _ = _reviewer()
+    manifest = _manifest(api)
+    expected_scope = t.cast(dict[str, object], manifest["expected_scope"])
+    suffixes = t.cast(list[str], expected_scope.pop("identity_suffixes"))
+    expected_scope["allowed_identity_suffix_sets"] = [
+        suffixes,
+        ['["other",false,false]'],
+    ]
+    policy_entry = t.cast(list[dict[str, object]], reviewer.scope_policy["policies"])[0]
+    policy_entry["allowed_identity_suffix_sets"] = [suffixes, ['["other",false,false]']]
+    policy_entry.pop("identity_suffixes")
+    policy_entry.pop("count")
+    manifest["matched_identity_suffixes"] = suffixes
+    _store_manifest(api, manifest)
+
+    report = reviewer.show(SUBMISSION)
+
+    assert len(report.expected_identities) == 1
+    assert report.expected_identities[0][1] == "dataset-0"
+
+
 def test_opposite_concurrent_decisions_fail_closed_before_canonical_writes() -> None:
     """Content-addressed races leave both immutable outcomes unpromoted."""
     reservations = iter(("accepted-token", "rejected-token"))

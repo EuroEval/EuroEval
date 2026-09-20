@@ -9,12 +9,25 @@ import threading
 import time
 from pathlib import Path
 
-from .types import EEERecord, ExpectedScope, JsonObject, Lease, ModelEvidence
+from .types import EEERecord, JsonObject, Lease, ModelEvidence, _expected_scope
 
 logger = logging.getLogger(__name__)
 
 
 def _lease_from_state(value: object) -> Lease:
+    """Decode a persisted lease and normalise its expected-scope shape.
+
+    Args:
+        value:
+            JSON-compatible persisted lease value.
+
+    Returns:
+        The validated lease.
+
+    Raises:
+        ValueError:
+            If the lease or its trusted scope is malformed.
+    """
     if not isinstance(value, dict):
         raise ValueError("lease is not an object")
     required = (
@@ -73,35 +86,7 @@ def _lease_from_state(value: object) -> Lease:
         raise ValueError("model_metadata is malformed")
     if evidence_type != model_type:
         raise ValueError("model metadata contradicts model_type")
-    scope = value["expected_scope"]
-    if not isinstance(scope, dict):
-        raise ValueError("expected_scope is malformed")
-    scope_fields = (
-        scope.get("policy_version"),
-        scope.get("language_group"),
-        scope.get("identity_suffixes"),
-        scope.get("count"),
-        scope.get("warnings"),
-        scope.get("task_groups"),
-    )
-    policy_version, language_group, identities, count, warnings, task_groups = (
-        scope_fields
-    )
-    if (
-        not isinstance(policy_version, str)
-        or not isinstance(language_group, str)
-        or not isinstance(identities, list)
-        or not identities
-        or not all(isinstance(item, str) and item for item in identities)
-        or not isinstance(count, int)
-        or count != len(identities)
-        or not isinstance(warnings, list)
-        or not all(isinstance(item, str) for item in warnings)
-        or not isinstance(task_groups, list)
-        or not task_groups
-        or not all(isinstance(item, str) and item for item in task_groups)
-    ):
-        raise ValueError("expected_scope is malformed")
+    expected_scope = _expected_scope(value["expected_scope"])
     return Lease(
         lease_id=value["lease_id"],
         issue_number=value["issue_number"],
@@ -122,14 +107,7 @@ def _lease_from_state(value: object) -> Lease:
             model_type=evidence_type,
             is_encoder_decoder=is_encoder_decoder,
         ),
-        expected_scope=ExpectedScope(
-            policy_version=policy_version,
-            language_group=language_group,
-            identity_suffixes=tuple(identities),
-            count=count,
-            warnings=tuple(warnings),
-            task_groups=tuple(task_groups),
-        ),
+        expected_scope=expected_scope,
     )
 
 

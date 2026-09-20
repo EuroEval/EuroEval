@@ -27,6 +27,24 @@ _VERSION_SUFFIX_RE = re.compile(r"\.dev\d+$")
 def _validate_manifest(
     manifest: JsonObject, store: BucketStore, scope_policy: JsonObject
 ) -> ReviewReport:
+    """Validate one manifest and select the exact alternative it matches.
+
+    Args:
+        manifest:
+            Candidate volunteer submission manifest.
+        store:
+            Storage backend containing staged result bytes.
+        scope_policy:
+            Maintainer-trusted volunteer scope policy.
+
+    Returns:
+        Independently validated review evidence.
+
+    Raises:
+        ReviewError:
+            If protocol, provenance, scope, result, or audit metadata is
+            malformed or inconsistent.
+    """
     submission_id, issue_number, contributor, language = _manifest_summary(manifest)
     if manifest.get("protocol_version") != PROTOCOL_VERSION:
         raise ReviewError("Manifest has an unsupported protocol_version")
@@ -42,13 +60,16 @@ def _validate_manifest(
         _required_string(manifest, field)
     expected_scope = _required_object(manifest, "expected_scope")
     _required_string(expected_scope, "policy_version")
-    _validate_scope_policy(
+    trusted_sets = _validate_scope_policy(
         manifest=manifest, expected_scope=expected_scope, scope_policy=scope_policy
     )
-    expected = _expected_identities(
-        value=expected_scope.get("identity_suffixes"), model_id=model_id
+    expected_sets = _identity_suffix_sets(
+        value=expected_scope, context="Manifest expected scope"
     )
-    if expected_scope.get("count") != len(expected):
+    raw_count = expected_scope.get("count")
+    if raw_count is not None and (
+        isinstance(raw_count, bool) or not isinstance(raw_count, int) or raw_count <= 0
+    ):
         raise ReviewError("Manifest expected-scope count is inconsistent")
     raw_results = manifest.get("results")
     if not isinstance(raw_results, list) or not raw_results:
@@ -67,8 +88,32 @@ def _validate_manifest(
     )
     actual = tuple(record.identity for record in records)
     _raise_on_identity_collisions(actual)
-    if len(set(actual)) != len(actual) or set(actual) != set(expected):
+    actual_suffixes = tuple(
+        json.dumps(identity[1:], ensure_ascii=False, separators=(",", ":"))
+        for identity in actual
+    )
+    actual_set = set(actual_suffixes)
+    matched = next(
+        (alternative for alternative in trusted_sets if set(alternative) == actual_set),
+        None,
+    )
+    if matched is None or len(actual_suffixes) != len(actual_set):
         raise ReviewError("Manifest expected and actual canonical identities differ")
+    if {frozenset(item) for item in expected_sets} != {
+        frozenset(item) for item in trusted_sets
+    }:
+        raise ReviewError("Manifest expected scope alternatives differ from policy")
+    if raw_count is not None and raw_count != len(matched):
+        raise ReviewError("Manifest expected-scope count is inconsistent")
+    raw_matched = manifest.get("matched_identity_suffixes")
+    if raw_matched is not None:
+        matched_sets = _identity_suffix_sets(
+            value={"allowed_identity_suffix_sets": [raw_matched]},
+            context="Manifest matched scope",
+        )
+        if len(matched_sets) != 1 or set(matched_sets[0]) != actual_set:
+            raise ReviewError("Manifest matched scope differs from actual identities")
+    expected = _expected_identities(value=list(matched), model_id=model_id)
     automated = _required_object(manifest, "automated_checks")
     if automated.get("result_count") != len(records):
         raise ReviewError("Manifest automated result_count is inconsistent")
@@ -114,7 +159,77 @@ def _validate_manifest(
     )
 
 
+def _identity_suffix_sets(value: object, context: str) -> tuple[tuple[str, ...], ...]:
+    """Decode all complete, canonical identity-suffix alternatives.
+
+    Args:
+        value:
+            Expected-scope object or trusted policy entry.
+        context:
+            Human-readable validation context.
+
+    Returns:
+        Distinct non-empty identity-suffix alternatives.
+
+    Raises:
+        ReviewError:
+            If the scope is missing, ambiguous, or malformed.
+    """
+    if not isinstance(value, dict):
+        raise ReviewError(f"{context} is malformed")
+    has_allowed = "allowed_identity_suffix_sets" in value
+    has_legacy = "identity_suffixes" in value
+    if has_allowed == has_legacy:
+        raise ReviewError(f"{context} identity alternatives are malformed")
+    raw_sets = (
+        value.get("allowed_identity_suffix_sets")
+        if has_allowed
+        else [value.get("identity_suffixes")]
+    )
+    if not isinstance(raw_sets, list) or not raw_sets:
+        raise ReviewError(f"{context} identity alternatives are malformed")
+    alternatives: list[tuple[str, ...]] = []
+    for raw_set in raw_sets:
+        if not isinstance(raw_set, list) or not raw_set:
+            raise ReviewError(f"{context} identity alternatives are malformed")
+        if any(not isinstance(item, str) or not item for item in raw_set):
+            raise ReviewError(f"{context} identity suffix is malformed")
+        if len(set(raw_set)) != len(raw_set):
+            raise ReviewError(f"{context} identity alternatives contain duplicates")
+        for suffix in raw_set:
+            parsed = _json_value(suffix, f"{context} identity suffix")
+            if (
+                not isinstance(parsed, list)
+                or len(parsed) != 3
+                or not isinstance(parsed[0], str)
+                or not (parsed[1] is None or isinstance(parsed[1], bool))
+                or not (parsed[2] is None or isinstance(parsed[2], bool))
+                or json.dumps(parsed, ensure_ascii=False, separators=(",", ":"))
+                != suffix
+            ):
+                raise ReviewError(f"{context} identity suffix is not canonical")
+        alternatives.append(tuple(raw_set))
+    if len({tuple(sorted(item)) for item in alternatives}) != len(alternatives):
+        raise ReviewError(f"{context} identity alternatives are duplicated")
+    return tuple(alternatives)
+
+
 def _expected_identities(value: object, model_id: str) -> tuple[ResultIdentity, ...]:
+    """Decode one complete identity-suffix alternative for the report.
+
+    Args:
+        value:
+            A complete list of canonical identity suffixes.
+        model_id:
+            Model identifier prefixed to every expected identity.
+
+    Returns:
+        Canonical identities represented by the alternative.
+
+    Raises:
+        ReviewError:
+            If an identity suffix is malformed or duplicated.
+    """
     if not isinstance(value, list) or not value:
         raise ReviewError(
             "Manifest expected identity suffixes must be a non-empty list"
@@ -411,7 +526,25 @@ def _normalise_version(value: str) -> str:
 
 def _validate_scope_policy(
     manifest: JsonObject, expected_scope: JsonObject, scope_policy: JsonObject
-) -> None:
+) -> tuple[tuple[str, ...], ...]:
+    """Verify manifest alternatives against the independently trusted policy.
+
+    Args:
+        manifest:
+            Submission manifest containing model and language metadata.
+        expected_scope:
+            Broker-issued scope embedded in the manifest.
+        scope_policy:
+            Maintainer-trusted scope policy.
+
+    Returns:
+        The trusted complete identity-suffix alternatives.
+
+    Raises:
+        ReviewError:
+            If the manifest does not identify exactly one trusted policy entry
+            or its scope metadata differs from that entry.
+    """
     policies = scope_policy.get("policies")
     if expected_scope.get("policy_version") != scope_policy.get(
         "policy_version"
@@ -439,9 +572,23 @@ def _validate_scope_policy(
         manifest_language_group == expected_language_group == trusted_language_group
     ):
         raise ReviewError("Manifest language_group differs from trusted policy")
-    for field in ("identity_suffixes", "count", "task_groups", "warnings"):
-        if expected_scope.get(field) != trusted.get(field):
-            raise ReviewError(f"Manifest scope differs from policy field {field}")
+    trusted_sets = _identity_suffix_sets(value=trusted, context="Trusted policy")
+    expected_sets = _identity_suffix_sets(
+        value=expected_scope, context="Manifest expected scope"
+    )
+    if {frozenset(item) for item in expected_sets} != {
+        frozenset(item) for item in trusted_sets
+    }:
+        raise ReviewError("Manifest scope differs from policy identity alternatives")
+    if expected_scope.get("task_groups") != trusted.get("task_groups"):
+        raise ReviewError("Manifest scope differs from policy field task_groups")
+    if expected_scope.get("warnings", []) != trusted.get("warnings", []):
+        raise ReviewError("Manifest scope differs from policy field warnings")
+    if "identity_suffixes" in expected_scope and expected_scope.get(
+        "count"
+    ) != trusted.get("count"):
+        raise ReviewError("Manifest scope differs from policy field count")
+    return trusted_sets
 
 
 def load_scope_policy() -> JsonObject:
