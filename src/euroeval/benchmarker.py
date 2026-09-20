@@ -1194,7 +1194,11 @@ class Benchmarker:
         auto_requested = requested_mode is None or requested_mode is ShotMode.AUTO
         cached_type = (
             _cached_generative_type(provisional_cached)
-            if auto_requested and model_config.model_type == ModelType.GENERATIVE
+            if (
+                auto_requested
+                and benchmark_config.generative_type is None
+                and model_config.model_type == ModelType.GENERATIVE
+            )
             else None
         )
         if cached_type is not None:

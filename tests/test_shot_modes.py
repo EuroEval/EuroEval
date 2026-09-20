@@ -183,6 +183,53 @@ def test_auto_cached_base_model_uses_cached_metadata(
     load_model.assert_not_called()
 
 
+def test_auto_explicit_generative_type_overrides_cached_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """An explicit generative type takes precedence over cached metadata."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    few_shot_result = BenchmarkResult(
+        model="model_id@revision",
+        dataset=dataset_config.name,
+        generative=True,
+        generative_type=GenerativeType.BASE.value,
+        few_shot=True,
+        validation_split=True,
+        num_model_parameters=1,
+        max_sequence_length=1,
+        vocabulary_size=1,
+        merge=False,
+        languages=["da"],
+        task=dataset_config.task.name,
+        results={},
+    )
+    load_model = Mock(
+        return_value=SimpleNamespace(generative_type=GenerativeType.INSTRUCTION_TUNED)
+    )
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
+
+    _, pending, cached, error = Benchmarker(
+        progress_bar=False
+    )._prepare_shot_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config],
+        benchmark_config=replace(
+            benchmark_config,
+            few_shot=None,
+            generative_type=GenerativeType.INSTRUCTION_TUNED,
+        ),
+        existing_results=[few_shot_result],
+    )
+
+    assert error is None
+    assert [mode for mode, _ in pending] == [ShotMode.ZERO_SHOT]
+    assert cached == [few_shot_result]
+    load_model.assert_called_once()
+
+
 def test_cached_shot_mode_survives_missing_mode_load_failure(
     monkeypatch: pytest.MonkeyPatch,
     benchmark_config: BenchmarkConfig,
