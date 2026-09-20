@@ -7,7 +7,7 @@ import logging
 import os
 import re
 import typing as t
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from pathlib import Path
 from shutil import rmtree
 from time import sleep
@@ -36,16 +36,6 @@ from .utils import enforce_reproducibility, get_hf_token, internet_connection_av
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig, Task
-
-
-@dataclass
-class _PreparedModelBenchmarks:
-    """Concrete work prepared for one model before execution starts."""
-
-    model_config: "ModelConfig"
-    loaded_model: "BenchmarkModule | None"
-    pending: list[tuple[ShotMode, "DatasetConfig"]]
-    load_error: InvalidModel | None
 
 
 class Benchmarker:
@@ -510,49 +500,36 @@ class Benchmarker:
         num_finished = 0
         num_skipped = 0
         num_errored = 0
-        prepared_models: list[_PreparedModelBenchmarks] = []
+        total_benchmarks = 0
 
-        # Resolve every model's concrete shot-mode workload before the first benchmark
-        # starts. AUTO may need to load a local generative model to determine its mode,
-        # so retain each loaded model and use it for the execution phase below rather
-        # than loading it again.
         for model_config in model_configs:
             datasets = model_mapping[model_config]
             if not datasets:
                 continue
 
-            self._check_adapter_requirements(model_config, benchmark_config)
-            loaded_model, pending, cached, load_error = self._prepare_shot_benchmarks(
-                model_config=model_config,
-                datasets=datasets,
-                benchmark_config=benchmark_config,
-                existing_results=existing_results,
-            )
-            current_results.extend(
-                record for record in cached if record not in current_results
-            )
-            prepared_models.append(
-                _PreparedModelBenchmarks(
-                    model_config=model_config,
-                    loaded_model=loaded_model,
-                    pending=pending,
-                    load_error=load_error,
-                )
-            )
-
-        total_benchmarks = sum(len(prepared.pending) for prepared in prepared_models)
-
-        for prepared in prepared_models:
-            model_config = prepared.model_config
-            loaded_model = prepared.loaded_model
-            pending = prepared.pending
-            load_error = prepared.load_error
+            loaded_model: "BenchmarkModule | None" = None
+            model_finished = 0
+            model_skipped = 0
+            model_errored = 0
             try:
+                self._check_adapter_requirements(model_config, benchmark_config)
+                loaded_model, pending, cached, load_error = (
+                    self._prepare_shot_benchmarks(
+                        model_config=model_config,
+                        datasets=datasets,
+                        benchmark_config=benchmark_config,
+                        existing_results=existing_results,
+                    )
+                )
+                current_results.extend(
+                    record for record in cached if record not in current_results
+                )
+                total_benchmarks += len(pending)
                 if load_error is not None:
                     if benchmark_config.raise_errors:
                         raise load_error
                     log(load_error.message, level=logging.ERROR)
-                    num_errored += len(pending)
+                    model_errored += len(pending)
                     continue
                 for pending_index, (shot_mode, dataset_config) in enumerate(pending):
                     mode_config = replace(
@@ -565,7 +542,7 @@ class Benchmarker:
                         loaded_model.benchmark_config = mode_config
                     if benchmark_config.download_only:
                         self._download(dataset_config, model_config, mode_config)
-                        num_finished += 1
+                        model_finished += 1
                         continue
                     if (
                         loaded_model is not None
@@ -580,7 +557,7 @@ class Benchmarker:
                             "dataset does not allow it.",
                             level=logging.DEBUG,
                         )
-                        num_skipped += 1
+                        model_skipped += 1
                         continue
                     output_or_err = self._benchmark_single(
                         model=loaded_model,
@@ -588,18 +565,18 @@ class Benchmarker:
                         dataset_config=dataset_config,
                         benchmark_config=mode_config,
                         num_finished_benchmarks=(
-                            num_finished + num_skipped + num_errored
+                            model_finished + model_skipped + model_errored
                         ),
-                        num_total_benchmarks=total_benchmarks,
+                        num_total_benchmarks=len(pending),
                     )
-                    num_finished, num_skipped, num_errored, should_break = (
+                    model_finished, model_skipped, model_errored, should_break = (
                         self._handle_benchmark_result(
                             result_or_error=output_or_err,
                             dataset_config=dataset_config,
                             benchmark_config=mode_config,
-                            num_finished=num_finished,
-                            num_skipped=num_skipped,
-                            num_errored=num_errored,
+                            num_finished=model_finished,
+                            num_skipped=model_skipped,
+                            num_errored=model_errored,
                             model_config=model_config,
                             model_mapping=model_mapping,
                             current_results=current_results,
@@ -609,8 +586,10 @@ class Benchmarker:
                     if should_break:
                         break
             finally:
-                prepared.loaded_model = None
-                del loaded_model
+                num_finished += model_finished
+                num_skipped += model_skipped
+                num_errored += model_errored
+                loaded_model = None
                 if benchmark_config.clear_model_cache:
                     clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
 

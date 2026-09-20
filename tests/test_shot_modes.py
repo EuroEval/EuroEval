@@ -1,5 +1,6 @@
 """Tests for automatic benchmark shot-mode selection."""
 
+import weakref
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
@@ -25,7 +26,7 @@ def test_multi_model_progress_uses_full_workload(
     model_config: ModelConfig,
     tmp_path: Path,
 ) -> None:
-    """Progress totals include pending work from models not started yet."""
+    """Progress totals use each model's concrete workload."""
     models = [
         replace(model_config, model_id="first-model"),
         replace(model_config, model_id="second-model"),
@@ -81,8 +82,12 @@ def test_multi_model_progress_uses_full_workload(
     benchmarker.benchmark(model=["first-model", "second-model"])
 
     assert [
+        call.kwargs["num_finished_benchmarks"]
+        for call in benchmark_calls.call_args_list
+    ] == [0, 0]
+    assert [
         call.kwargs["num_total_benchmarks"] for call in benchmark_calls.call_args_list
-    ] == [2, 2]
+    ] == [1, 1]
 
 
 def test_auto_shot_mode_resolution(model_config: ModelConfig) -> None:
@@ -329,6 +334,81 @@ def test_model_cache_is_cleared_when_loading_fails(
 
     assert benchmarker.benchmark(model="model") == []
     assert clear_cache.call_count == 2
+
+
+def test_only_one_model_is_live_during_preparation(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+    tmp_path: Path,
+) -> None:
+    """A failed later preparation cannot retain the previous model."""
+    models = [
+        replace(model_config, model_id="first-model", model_type=ModelType.GENERATIVE),
+        replace(model_config, model_id="second-model", model_type=ModelType.GENERATIVE),
+    ]
+    config = replace(
+        benchmark_config,
+        datasets=[dataset_config],
+        few_shot=False,
+        clear_model_cache=True,
+        save_results=False,
+    )
+    benchmarker = Benchmarker(progress_bar=False, save_results=False)
+    benchmarker.results_path = tmp_path / "results.jsonl"
+    monkeypatch.setattr(benchmarker, "_build_benchmark_config", lambda **_: config)
+    monkeypatch.setattr(
+        benchmarker,
+        "_prepare_model_ids",
+        lambda model_id: ["first-model", "second-model"],
+    )
+    monkeypatch.setattr(
+        benchmarker, "_fetch_model_configs", lambda model_ids, benchmark_config: models
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_create_model_dataset_mapping",
+        lambda model_configs, dataset_configs: {
+            model_config: [dataset_config] for model_config in model_configs
+        },
+    )
+    monkeypatch.setattr(benchmarker, "_check_adapter_requirements", lambda *args: None)
+    monkeypatch.setattr(
+        benchmarker, "_update_benchmark_config_for_dataset", lambda *args: None
+    )
+
+    class HeavyModel:
+        """Weak-referenceable stand-in for a heavyweight model."""
+
+        generative_type = GenerativeType.INSTRUCTION_TUNED
+
+    loaded_model_refs: list[weakref.ReferenceType[HeavyModel]] = []
+    load_calls = 0
+
+    def load_model_for_test(**_: object) -> HeavyModel:
+        nonlocal load_calls
+        load_calls += 1
+        if load_calls == 1:
+            loaded_model = HeavyModel()
+            loaded_model_refs.append(weakref.ref(loaded_model))
+            return loaded_model
+        assert all(reference() is None for reference in loaded_model_refs)
+        raise InvalidModel("later model setup failed")
+
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model_for_test)
+    monkeypatch.setattr(benchmarker, "_benchmark_single", lambda **_: SimpleNamespace())
+    monkeypatch.setattr(
+        benchmarker, "_handle_benchmark_result", lambda **_: (1, 0, 0, False)
+    )
+    clear_cache = Mock()
+    monkeypatch.setattr("euroeval.benchmarker.clear_model_cache_fn", clear_cache)
+
+    benchmarker.benchmark(model="models")
+
+    assert load_calls == 2
+    assert loaded_model_refs[0]() is None
+    assert clear_cache.call_count == 3
 
 
 def test_zero_shot_tasks_are_not_duplicated(
