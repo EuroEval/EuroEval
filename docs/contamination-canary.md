@@ -20,17 +20,18 @@ response objects, or raw exceptions.
 
 ## Collection and storage
 
-Canary collection is an explicit task, separate from ordinary evaluation:
+Contamination detection is an ordinary task and can be selected directly:
 
 ```bash
 euroeval --model <model-id> --task contamination-detection
 ```
 
-It is not automatically added to suite, task, language, or targeted dataset runs. A
-`--dataset` evaluation therefore needs a separate invocation with
-`--task contamination-detection` when canary evidence is wanted. There is no bespoke
-canary flag, and no separate Hugging Face login is required. The task uses the normal
-Hugging Face download cache and EuroEval's packaged, obfuscated dataset credential.
+It is automatically included in suite, ordinary task, and language runs whenever no
+`--dataset` is selected. A targeted `--dataset` evaluation deliberately omits the
+canary, so use the explicit task invocation above when canary evidence is wanted for a
+targeted run. There is no bespoke canary flag, and no separate Hugging Face login is
+required. The task uses the normal Hugging Face download cache and EuroEval's packaged,
+obfuscated dataset credential.
 `--download-only` caches the corpus alongside other requested artefacts. Offline
 evaluation uses the cached revision; if it is missing or invalid, the task records
 `failed/corpus_unavailable`.
