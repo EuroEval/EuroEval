@@ -13,7 +13,7 @@ from packaging.version import Version
 from euroeval.data_models import DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import GenerativeType, ModelType, ShotMode
-from euroeval.shot_modes import effective_shot_mode
+from euroeval.shot_modes import effective_shot_mode, result_identity_values
 from leaderboards.evaluation_common import official_dataset_language_pairs
 
 MODEL_TYPES = ("encoder", "generative")
@@ -218,8 +218,11 @@ def _identity_alternatives(
                 )
                 if mode is None:
                     continue
+                few_shot, validation_split = result_identity_values(
+                    shot_mode=mode, dataset_config=config, evaluate_test_split=False
+                )
                 suffix = json.dumps(
-                    [dataset, False, mode is ShotMode.FEW_SHOT], separators=(",", ":")
+                    [dataset, validation_split, few_shot], separators=(",", ":")
                 )
                 if suffix not in suffixes:
                     suffixes.append(suffix)

@@ -35,7 +35,7 @@ from .shot_modes import (
     coerce_shot_mode,
     plan_shot_work,
     resolve_shot_modes,
-    result_few_shot_value,
+    result_identity_values,
 )
 from .speed_benchmark import benchmark_speed
 from .tasks import SPEED
@@ -173,7 +173,7 @@ class Benchmarker:
                 The GPU memory utilization to use for vLLM. Only relevant if the model
                 is generative. A larger value will result in faster evaluation, but at
                 the risk of running out of GPU memory. Only reduce this if you are
-                running out of GPU memory. Defaults to 0.9.
+                running out of GPU memory. Defaults to 0.8.
             attention_backend:
                 The attention backend to use for vLLM. Only relevant if the model is
                 generative. If None then vLLM will automatically choose the best
@@ -606,8 +606,6 @@ class Benchmarker:
                             num_finished=model_finished,
                             num_skipped=model_skipped,
                             num_errored=model_errored,
-                            model_config=model_config,
-                            model_mapping=model_mapping,
                             current_results=current_results,
                             remaining_work=len(pending) - pending_index - 1,
                         )
@@ -755,6 +753,11 @@ class Benchmarker:
                 if model_config.param is not None:
                     model_id_to_be_stored += f"#{model_config.param}"
 
+                few_shot, validation_split = result_identity_values(
+                    shot_mode=benchmark_config.few_shot,
+                    dataset_config=dataset_config,
+                    evaluate_test_split=benchmark_config.evaluate_test_split,
+                )
                 record = BenchmarkResult(
                     dataset=dataset_config.name,
                     task=dataset_config.task.name,
@@ -771,16 +774,8 @@ class Benchmarker:
                         if model.generative_type is not None
                         else None
                     ),
-                    few_shot=(
-                        None
-                        if dataset_config.task.requires_zero_shot
-                        else result_few_shot_value(benchmark_config.few_shot)
-                    ),
-                    validation_split=(
-                        None
-                        if dataset_config.val_split is None
-                        else not benchmark_config.evaluate_test_split
-                    ),
+                    few_shot=few_shot,
+                    validation_split=validation_split,
                     use_bits_per_character=benchmark_config.use_bits_per_character,
                     release_date=model_config.release_date,
                     vllm_version=(
@@ -1165,8 +1160,6 @@ class Benchmarker:
         num_finished: int,
         num_skipped: int,
         num_errored: int,
-        model_config: "ModelConfig",
-        model_mapping: dict["ModelConfig", list["DatasetConfig"]],
         current_results: list[BenchmarkResult],
         remaining_work: int,
     ) -> tuple[int, int, int, bool]:
@@ -1185,10 +1178,6 @@ class Benchmarker:
                 The number of skipped benchmarks.
             num_errored:
                 The number of errored benchmarks.
-            model_config:
-                The model configuration.
-            model_mapping:
-                The model to dataset mapping.
             current_results:
                 The current benchmark results.
             remaining_work:
@@ -1356,19 +1345,15 @@ class Benchmarker:
 
     def _update_benchmark_config_for_dataset(
         self, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"
-    ) -> dict[str, t.Any]:
-        """Update benchmark config for dataset.
+    ) -> None:
+        """Select the test split when a dataset has no validation split.
 
         Args:
             dataset_config:
-                The dataset configuration.
+                Dataset configuration for the current benchmark.
             benchmark_config:
-                The benchmark configuration.
-
-        Returns:
-            A dictionary of parameters to revert.
+                Benchmark configuration to update in place.
         """
-        params_to_revert: dict[str, t.Any] = {}
         if (
             dataset_config.val_split is None
             and not benchmark_config.evaluate_test_split
@@ -1379,9 +1364,7 @@ class Benchmarker:
                 "we will evaluate on the test split.",
                 level=logging.DEBUG,
             )
-            params_to_revert["evaluate_test_split"] = False
             benchmark_config.evaluate_test_split = True
-        return params_to_revert
 
     @property
     def benchmark_results(self) -> c.Sequence[BenchmarkResult]:

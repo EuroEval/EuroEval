@@ -223,7 +223,22 @@ def _string(data: dict[str, object], key: str) -> str:
 
 @dataclasses.dataclass(frozen=True)
 class ExpectedScope:
-    """Exact benchmark alternatives and task groups authorised by the broker."""
+    """Exact benchmark alternatives and task groups authorised by the broker.
+
+    Attributes:
+        policy_version:
+            Version of the trusted scope policy.
+        language_group:
+            Language-group identifier used by the broker.
+        allowed_identity_suffix_sets:
+            Complete, mutually exclusive result-identity alternatives.
+        count:
+            Expected result count for legacy single-alternative scopes, if present.
+        warnings:
+            Trusted warnings to include in the review manifest.
+        task_groups:
+            Task groups represented by the authorised identities.
+    """
 
     policy_version: str
     language_group: str
@@ -361,7 +376,14 @@ class ModelEvidence:
 
 @dataclasses.dataclass(frozen=True)
 class Lease:
-    """One broker-issued evaluation lease."""
+    """One broker-issued evaluation lease.
+
+    Attributes:
+        expected_scope:
+            Exact result-identity alternatives authorised for this lease.
+        model_metadata:
+            Immutable model metadata verified by the broker.
+    """
 
     lease_id: str
     issue_number: int
