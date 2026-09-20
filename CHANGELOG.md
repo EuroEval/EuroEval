@@ -34,10 +34,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Automatic shot selection now honours cached model metadata when no explicit model type
-  is configured, preserves valid cached records on partial failures, reports concrete
-  work-item progress with a stable total per model, and always cleans up model caches
-  after setup errors.
 - LiteLLM generation now records model-level parameter adjustments learned by the
   error handlers (e.g. "no JSON schema" or "use `max_tokens`") as a set of
   `ParameterAdjustment` capabilities and re-applies them conditionally to the
