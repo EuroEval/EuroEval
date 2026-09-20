@@ -186,6 +186,9 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
         Returns:
             The number of parameters in the model.
         """
+        if self.benchmark_config.num_parameters is not None:
+            return self.benchmark_config.num_parameters
+
         match self.model_config.model_id:
             case "fresh-xlm-roberta-base":
                 return 278_885_778

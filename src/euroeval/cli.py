@@ -242,6 +242,14 @@ from .languages import get_all_languages
     help="Override for the vocabulary size of the model. If not specified, the value "
     "will be inferred automatically from the model.",
 )
+@click.option(
+    "--num-parameters",
+    default=None,
+    type=int,
+    show_default=True,
+    help="Override for the number of parameters in the model. If not specified, the "
+    "value will be inferred automatically from the model.",
+)
 def benchmark(
     model: tuple[str],
     dataset: tuple[str | DatasetConfig],
@@ -273,6 +281,7 @@ def benchmark(
     debug: bool,
     max_context_length: int | None,
     vocabulary_size: int | None,
+    num_parameters: int | None,
 ) -> None:
     """Benchmark pretrained language models on language tasks.
 
@@ -324,6 +333,7 @@ def benchmark(
         download_only=download_only,
         max_context_length=max_context_length,
         vocabulary_size=vocabulary_size,
+        num_parameters=num_parameters,
     ).benchmark(model=list(model))
 
 

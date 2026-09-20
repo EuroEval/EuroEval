@@ -2135,6 +2135,9 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The number of parameters in the model.
         """
+        if self.benchmark_config.num_parameters is not None:
+            return self.benchmark_config.num_parameters
+
         # Start by trying out the regex mapping, and use the value if it matches
         for key, value in NUM_PARAMS_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:

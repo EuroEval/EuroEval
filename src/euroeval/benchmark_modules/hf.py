@@ -379,6 +379,9 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The number of parameters in the model.
         """
+        if self.benchmark_config.num_parameters is not None:
+            return self.benchmark_config.num_parameters
+
         num_params_or_none = get_num_params_from_safetensors_metadata(
             model_id=(
                 self.model_config.adapter_base_model_id or self.model_config.model_id
