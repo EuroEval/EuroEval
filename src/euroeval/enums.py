@@ -73,10 +73,11 @@ class Device(AutoStrEnum):
 
 
 class ShotMode(AutoStrEnum):
-    """The prompt shot mode used for a benchmark run.
+    """The prompt shot policy used for a benchmark run.
 
-    ``AUTO`` selects one or more concrete modes from model metadata.  It is an
-    internal control value and is never written to benchmark results.
+    ``AUTO`` is an explicit public policy value that selects one or more concrete
+    modes from model metadata. It is used during planning only and is never written
+    to benchmark results. ``FEW_SHOT`` and ``ZERO_SHOT`` select one concrete mode.
     """
 
     AUTO = auto()

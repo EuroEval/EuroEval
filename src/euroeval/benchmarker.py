@@ -27,11 +27,28 @@ from .logging_utils import adjust_logging_level, get_pbar, log, log_once
 from .metrics.bpc import bpc_metric
 from .model_config import get_model_config
 from .model_loading import load_model
+from .result_cache import get_record, partition_shot_work
 from .scores import log_scores
+from .shot_modes import (
+    ShotModeRequest,
+    cached_generative_type,
+    coerce_shot_mode,
+    plan_shot_work,
+    resolve_shot_modes,
+    result_few_shot_value,
+)
 from .speed_benchmark import benchmark_speed
-from .string_utils import split_model_id
 from .tasks import SPEED
 from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
+
+__all__ = [
+    "Benchmarker",
+    "clear_model_cache_fn",
+    "get_record",
+    "initial_logging",
+    "resolve_shot_modes",
+]
+
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -72,7 +89,7 @@ class Benchmarker:
         trust_remote_code: bool = False,
         clear_model_cache: bool = False,
         evaluate_test_split: bool = False,
-        few_shot: bool | None = None,
+        few_shot: ShotModeRequest = None,
         num_iterations: int = 10,
         api_base: str | None = None,
         api_version: str | None = None,
@@ -139,9 +156,10 @@ class Benchmarker:
             evaluate_test_split:
                 Whether to evaluate the test split of the datasets. Defaults to False.
             few_shot:
-                Explicitly select few-shot (True) or zero-shot (False) evaluation.
-                When None, select automatically from the model type. Only relevant if
-                the model is generative. Defaults to None.
+                The default shot policy. ``ShotMode.AUTO`` selects automatically,
+                while True and False preserve the legacy few-shot and zero-shot
+                options. ``None`` is equivalent to ``ShotMode.AUTO`` for the
+                initialiser. Only relevant if the model is generative.
             num_iterations:
                 The number of times each model should be evaluated. This is only meant
                 to be used for power users, and scores will not be allowed on the
@@ -277,7 +295,7 @@ class Benchmarker:
         trust_remote_code: bool | None = None,
         clear_model_cache: bool | None = None,
         evaluate_test_split: bool | None = None,
-        few_shot: bool | None = None,
+        few_shot: ShotModeRequest = None,
         num_iterations: int | None = None,
         requires_safetensors: bool | None = None,
         download_only: bool | None = None,
@@ -355,9 +373,9 @@ class Benchmarker:
                 Whether to evaluate the test split of the datasets. Defaults to the
                 value specified when initialising the benchmarker.
             few_shot:
-                Explicitly select few-shot (True) or zero-shot (False) evaluation.
-                When None, select automatically from the model type. Defaults to the
-                value specified when initialising the benchmarker.
+                The per-call shot policy. True and False select one concrete mode;
+                ``ShotMode.AUTO`` explicitly selects automatic planning. ``None``
+                inherits the initialiser's setting and is not an AUTO override.
             num_iterations:
                 The number of times each model should be evaluated. This is only meant
                 to be used for power users, and scores will not be allowed on the
@@ -756,7 +774,7 @@ class Benchmarker:
                     few_shot=(
                         None
                         if dataset_config.task.requires_zero_shot
-                        else benchmark_config.few_shot
+                        else result_few_shot_value(benchmark_config.few_shot)
                     ),
                     validation_split=(
                         None
@@ -888,8 +906,10 @@ class Benchmarker:
                     "evaluate_test_split",
                     self.benchmark_config_default_params.evaluate_test_split,
                 ),
-                few_shot=_get_param(
-                    "few_shot", self.benchmark_config_default_params.few_shot
+                few_shot=coerce_shot_mode(
+                    _get_param(
+                        "few_shot", self.benchmark_config_default_params.few_shot
+                    )
                 ),
                 num_iterations=_get_param(
                     "num_iterations",
@@ -1119,81 +1139,41 @@ class Benchmarker:
         list[BenchmarkResult],
         InvalidModel | None,
     ]:
-        """Resolve shot modes, load a model once, and filter cached work.
+        """Plan shot work, load one model, and reconcile metadata with the cache.
+
+        Args:
+            model_config:
+                The model configuration being evaluated.
+            datasets:
+                Datasets allowed for the model.
+            benchmark_config:
+                The general benchmark configuration.
+            existing_results:
+                Results already present in the local cache.
 
         Returns:
             The loaded model, pending concrete mode/dataset pairs, cached records, and
             a model-loading error if loading failed.
         """
-        requested_mode = benchmark_config.few_shot
+        requested_mode = coerce_shot_mode(benchmark_config.few_shot)
         modes = resolve_shot_modes(
             model_config=model_config,
             requested_mode=requested_mode,
             generative_type=benchmark_config.generative_type,
         )
-        if benchmark_config.download_only:
-            modes = modes[:1]
-
-        def mode_pairs_for(
-            candidate_modes: c.Sequence[ShotMode],
-        ) -> list[tuple[ShotMode, "DatasetConfig"]]:
-            pairs: list[tuple[ShotMode, "DatasetConfig"]] = []
-            seen_pairs: set[tuple[int, ShotMode]] = set()
-            for mode in candidate_modes:
-                for dataset_config in datasets:
-                    concrete_mode = _shot_mode_for_dataset(mode, dataset_config)
-                    if concrete_mode is None:
-                        continue
-                    pair_key = (id(dataset_config), concrete_mode)
-                    if pair_key in seen_pairs:
-                        continue
-                    seen_pairs.add(pair_key)
-                    pairs.append((concrete_mode, dataset_config))
-            return pairs
-
-        def records_for(
-            mode_pairs: c.Sequence[tuple[ShotMode, "DatasetConfig"]],
-        ) -> list[BenchmarkResult]:
-            records: list[BenchmarkResult] = []
-            for mode, dataset_config in mode_pairs:
-                record = get_record(
-                    model_config=model_config,
-                    dataset_config=dataset_config,
-                    benchmark_config=benchmark_config,
-                    benchmark_results=existing_results,
-                    shot_mode=mode,
-                )
-                if (
-                    record is not None
-                    and not benchmark_config.force
-                    and record not in records
-                ):
-                    records.append(record)
-            return records
-
-        def pending_for(
-            mode_pairs: c.Sequence[tuple[ShotMode, "DatasetConfig"]],
-        ) -> list[tuple[ShotMode, "DatasetConfig"]]:
-            return [
-                (mode, dataset_config)
-                for mode, dataset_config in mode_pairs
-                if benchmark_config.force
-                or get_record(
-                    model_config=model_config,
-                    dataset_config=dataset_config,
-                    benchmark_config=benchmark_config,
-                    benchmark_results=existing_results,
-                    shot_mode=mode,
-                )
-                is None
-            ]
-
-        mode_pairs = mode_pairs_for(modes)
-        provisional_pending = pending_for(mode_pairs)
-        provisional_cached = records_for(mode_pairs)
-        auto_requested = requested_mode is None or requested_mode is ShotMode.AUTO
+        work = plan_shot_work(
+            candidate_modes=modes[:1] if benchmark_config.download_only else modes,
+            datasets=datasets,
+        )
+        pending, cached = partition_shot_work(
+            model_config=model_config,
+            work=work,
+            benchmark_config=benchmark_config,
+            benchmark_results=existing_results,
+        )
+        auto_requested = requested_mode is ShotMode.AUTO
         cached_type = (
-            _cached_generative_type(provisional_cached)
+            cached_generative_type(cached)
             if (
                 auto_requested
                 and benchmark_config.generative_type is None
@@ -1208,84 +1188,55 @@ class Benchmarker:
                 requested_mode=requested_mode,
                 generative_type=cached_type,
             )
-            mode_pairs = mode_pairs_for(modes)
-            provisional_pending = pending_for(mode_pairs)
-            provisional_cached = records_for(mode_pairs)
+            work = plan_shot_work(candidate_modes=modes, datasets=datasets)
+            pending, cached = partition_shot_work(
+                model_config=model_config,
+                work=work,
+                benchmark_config=benchmark_config,
+                benchmark_results=existing_results,
+            )
 
-        loaded_model: "BenchmarkModule | None" = None
         needs_load = (
             model_config.model_type == ModelType.GENERATIVE
             and not benchmark_config.download_only
-            and (bool(provisional_pending) or resolved_type is None and auto_requested)
+            and (bool(pending) or (resolved_type is None and auto_requested))
         )
-        if needs_load:
-            first_mode, first_dataset = (provisional_pending or mode_pairs)[0]
-            try:
-                loaded_model = load_model(
-                    model_config=model_config,
-                    dataset_config=first_dataset,
-                    benchmark_config=replace(
-                        benchmark_config, few_shot=first_mode is ShotMode.FEW_SHOT
-                    ),
-                )
-            except InvalidModel as error:
-                cached_on_error = (
-                    provisional_cached
-                    if provisional_pending or resolved_type is not None
-                    else []
-                )
-                return None, provisional_pending, cached_on_error, error
-
         if not needs_load:
-            return None, provisional_pending, provisional_cached, None
+            return None, pending, cached, None
+
+        first_mode, first_dataset = (pending or work)[0]
+        try:
+            loaded_model = load_model(
+                model_config=model_config,
+                dataset_config=first_dataset,
+                benchmark_config=replace(
+                    benchmark_config, few_shot=first_mode is ShotMode.FEW_SHOT
+                ),
+            )
+        except InvalidModel as error:
+            cached_on_error = cached if pending or resolved_type is not None else []
+            return None, pending, cached_on_error, error
 
         actual_modes = resolve_shot_modes(
             model_config=model_config,
             requested_mode=requested_mode,
-            generative_type=loaded_model.generative_type if loaded_model else None,
+            generative_type=(
+                benchmark_config.generative_type or loaded_model.generative_type
+            ),
         )
-        if benchmark_config.download_only:
-            actual_modes = actual_modes[:1]
-        actual_pairs = mode_pairs_for(actual_modes)
-        pending = pending_for(actual_pairs)
-        cached = records_for(actual_pairs)
+        actual_work = plan_shot_work(
+            candidate_modes=actual_modes[:1]
+            if benchmark_config.download_only
+            else actual_modes,
+            datasets=datasets,
+        )
+        pending, cached = partition_shot_work(
+            model_config=model_config,
+            work=actual_work,
+            benchmark_config=benchmark_config,
+            benchmark_results=existing_results,
+        )
         return loaded_model, pending, cached, None
-
-    def _filter_existing_benchmarks(
-        self,
-        model_mapping: dict["ModelConfig", list["DatasetConfig"]],
-        benchmark_config: "BenchmarkConfig",
-        existing_results: c.Sequence[BenchmarkResult],
-    ) -> tuple[dict["ModelConfig", list["DatasetConfig"]], list[BenchmarkResult]]:
-        """Filter out already-benchmarked model-dataset pairs.
-
-        Args:
-            model_mapping:
-                The model to dataset mapping.
-            benchmark_config:
-                The benchmark configuration.
-            existing_results:
-                The existing benchmark results.
-
-        Returns:
-            A tuple of (updated model mapping, current results).
-        """
-        current_results: list[BenchmarkResult] = []
-        for model_config, ds_configs in model_mapping.items():
-            new_ds_configs: list["DatasetConfig"] = []
-            for ds_config in ds_configs:
-                record = get_record(
-                    model_config=model_config,
-                    dataset_config=ds_config,
-                    benchmark_config=benchmark_config,
-                    benchmark_results=existing_results,
-                )
-                if record is not None and not benchmark_config.force:
-                    current_results.append(record)
-                else:
-                    new_ds_configs.append(ds_config)
-            model_mapping[model_config] = new_ds_configs
-        return model_mapping, current_results
 
     def _generate_summary_message(
         self, finished: int, skipped: int, errored: int
@@ -1458,144 +1409,6 @@ def clear_model_cache_fn(cache_dir: str) -> None:
             for sub_model_dir in model_dir.iterdir():
                 if sub_model_dir.is_dir():
                     rmtree(sub_model_dir, ignore_errors=True)
-
-
-def resolve_shot_modes(
-    model_config: "ModelConfig",
-    requested_mode: ShotMode | bool | None,
-    generative_type: GenerativeType | None = None,
-) -> list[ShotMode]:
-    """Resolve a requested shot mode into concrete evaluation modes.
-
-    Args:
-        model_config:
-            The model configuration.
-        requested_mode:
-            ``ShotMode.AUTO`` (or ``None``/the legacy boolean API) selects modes
-            automatically. Booleans remain accepted for programmatic compatibility.
-        generative_type:
-            The detected model type, when the model has already been loaded.
-
-    Returns:
-        The concrete modes to evaluate, in execution order.
-    """
-    if requested_mode is True:
-        requested_mode = ShotMode.FEW_SHOT
-    elif requested_mode is False:
-        requested_mode = ShotMode.ZERO_SHOT
-    elif requested_mode is None:
-        requested_mode = ShotMode.AUTO
-
-    if requested_mode is not ShotMode.AUTO:
-        return [requested_mode]
-    if model_config.model_type != ModelType.GENERATIVE:
-        return [ShotMode.FEW_SHOT]
-    if model_config.inference_backend == InferenceBackend.LITELLM:
-        return [ShotMode.ZERO_SHOT]
-    if generative_type == GenerativeType.BASE:
-        return [ShotMode.FEW_SHOT]
-    if generative_type in (GenerativeType.INSTRUCTION_TUNED, GenerativeType.REASONING):
-        return [ShotMode.ZERO_SHOT, ShotMode.FEW_SHOT]
-    # The model type is only available after loading local generative models. Be
-    # conservative before loading so neither mode can suppress the other in the cache.
-    return [ShotMode.ZERO_SHOT, ShotMode.FEW_SHOT]
-
-
-def _shot_mode_for_dataset(
-    shot_mode: ShotMode, dataset_config: "DatasetConfig"
-) -> ShotMode | None:
-    """Return the concrete mode for a dataset, or None when it is redundant."""
-    if dataset_config.task.requires_zero_shot:
-        return (
-            ShotMode.ZERO_SHOT
-            if shot_mode in (ShotMode.AUTO, ShotMode.FEW_SHOT)
-            else shot_mode
-        )
-    return shot_mode
-
-
-def _cached_generative_type(
-    records: c.Sequence[BenchmarkResult],
-) -> GenerativeType | None:
-    """Return reliable generative metadata shared by cached records.
-
-    Older records do not include ``generative_type``.  Treat a mixture of metadata as
-    unknown rather than allowing one record to select an incomplete AUTO plan.
-    """
-    if not records or any(not record.generative for record in records):
-        return None
-    try:
-        types = {GenerativeType(record.generative_type) for record in records}
-    except (TypeError, ValueError):
-        return None
-    return types.pop() if len(types) == 1 else None
-
-
-def get_record(
-    model_config: "ModelConfig",
-    dataset_config: "DatasetConfig",
-    benchmark_config: "BenchmarkConfig",
-    benchmark_results: c.Sequence[BenchmarkResult],
-    shot_mode: ShotMode | bool | None = None,
-) -> BenchmarkResult | None:
-    """Get the cached record for a model, dataset and concrete shot mode.
-
-    Args:
-        model_config:
-            The configuration of the model we are evaluating.
-        dataset_config:
-            The configuration of the dataset we are evaluating on.
-        benchmark_config:
-            The general benchmark configuration.
-        benchmark_results:
-            The benchmark results.
-        shot_mode:
-            The concrete shot mode to match. ``None`` keeps the legacy behaviour by
-            using ``benchmark_config.few_shot``.
-
-    Returns:
-        The benchmark record, or None if no such record exists.
-    """
-    for record in benchmark_results:
-        model_id_components = split_model_id(model_id=record.model)
-        same_model_id = model_id_components.model_id == model_config.model_id
-        same_revision = model_id_components.revision == model_config.revision
-        same_param = model_id_components.param == model_config.param
-        same_dataset = record.dataset == dataset_config.name
-        same_split = record.validation_split != benchmark_config.evaluate_test_split
-        requested_mode = shot_mode
-        if requested_mode is None:
-            requested_mode = benchmark_config.few_shot
-        if requested_mode is True:
-            requested_mode = ShotMode.FEW_SHOT
-        elif requested_mode is False:
-            requested_mode = ShotMode.ZERO_SHOT
-        elif requested_mode is None:
-            requested_mode = ShotMode.AUTO
-        same_num_shots = (
-            not record.generative
-            or requested_mode is ShotMode.AUTO
-            or (
-                dataset_config.task.requires_zero_shot
-                and requested_mode is ShotMode.ZERO_SHOT
-                and record.few_shot in (False, None)
-            )
-            or (requested_mode is ShotMode.FEW_SHOT and record.few_shot is True)
-            or (
-                requested_mode is ShotMode.ZERO_SHOT
-                and record.few_shot in (False, None)
-            )
-        )
-        if (
-            same_model_id
-            and same_revision
-            and same_param
-            and same_dataset
-            and same_split
-            and same_num_shots
-        ):
-            return record
-    return None
 
 
 def initial_logging(
