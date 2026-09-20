@@ -488,6 +488,7 @@ def test_evaluator_uses_validation_and_remote_code_flags(
         "evaluate_test_split": False,
         "requires_safetensors": True,
         "gpu_memory_utilization": 0.8,
+        "few_shot": True,
         "force": True,
         "raise_errors": True,
     }

@@ -105,6 +105,7 @@ def test_policy_matches_benchmarker_defaults_for_encoder_and_decoder() -> None:
         save_results=False,
         language="da",
         dataset="multi-wiki-qa-da",
+        few_shot=True,
     )
     policy = build_policy(
         "18.1.0.dev0",

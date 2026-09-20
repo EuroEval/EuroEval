@@ -1,6 +1,7 @@
 """Tests for automatic benchmark shot-mode selection."""
 
 from dataclasses import replace
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -14,6 +15,7 @@ from euroeval.data_models import (
     ModelConfig,
 )
 from euroeval.enums import GenerativeType, InferenceBackend, ModelType, ShotMode
+from euroeval.exceptions import InvalidModel
 
 
 def test_auto_shot_mode_resolution(model_config: ModelConfig) -> None:
@@ -68,6 +70,89 @@ def test_auto_dual_mode_loads_model_once(
     load_model.assert_called_once()
 
 
+def test_auto_cached_base_model_uses_cached_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """AUTO does not return an invalid zero-shot cache for a base model."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    few_shot_result = BenchmarkResult(
+        model="model_id@revision",
+        dataset=dataset_config.name,
+        generative=True,
+        generative_type=GenerativeType.BASE.value,
+        few_shot=True,
+        validation_split=True,
+        num_model_parameters=1,
+        max_sequence_length=1,
+        vocabulary_size=1,
+        merge=False,
+        languages=["da"],
+        task=dataset_config.task.name,
+        results={},
+    )
+    load_model = Mock()
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
+
+    _, pending, cached, error = Benchmarker(
+        progress_bar=False
+    )._prepare_shot_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config],
+        benchmark_config=replace(benchmark_config, few_shot=None),
+        existing_results=[few_shot_result],
+    )
+
+    assert error is None
+    assert pending == []
+    assert cached == [few_shot_result]
+    load_model.assert_not_called()
+
+
+def test_cached_shot_mode_survives_missing_mode_load_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """AUTO retains cached records when loading the missing mode fails."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    few_shot_result = BenchmarkResult(
+        model="model_id@revision",
+        dataset=dataset_config.name,
+        generative=True,
+        generative_type=GenerativeType.INSTRUCTION_TUNED.value,
+        few_shot=True,
+        validation_split=True,
+        num_model_parameters=1,
+        max_sequence_length=1,
+        vocabulary_size=1,
+        merge=False,
+        languages=["da"],
+        task=dataset_config.task.name,
+        results={},
+    )
+    monkeypatch.setattr(
+        "euroeval.benchmarker.load_model",
+        Mock(side_effect=InvalidModel("model setup failed")),
+    )
+
+    _, pending, cached, error = Benchmarker(
+        progress_bar=False
+    )._prepare_shot_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config],
+        benchmark_config=replace(benchmark_config, few_shot=None),
+        existing_results=[few_shot_result],
+    )
+
+    assert isinstance(error, InvalidModel)
+    assert [mode for mode, _ in pending] == [ShotMode.ZERO_SHOT]
+    assert cached == [few_shot_result]
+
+
 def test_cached_shot_modes_are_independent(
     monkeypatch: pytest.MonkeyPatch,
     benchmark_config: BenchmarkConfig,
@@ -113,6 +198,70 @@ def test_cached_shot_modes_are_independent(
     assert error is None
     assert [mode for mode, _ in pending] == [ShotMode.ZERO_SHOT]
     assert cached == [few_shot_result]
+
+
+def test_load_error_counts_concrete_remaining_work() -> None:
+    """A mode-level model failure counts the other concrete work items."""
+    benchmarker = Benchmarker(progress_bar=False)
+    dataset_config = Mock()
+    model_config = Mock()
+
+    finished, skipped, errored, should_break = benchmarker._handle_benchmark_result(
+        result_or_error=InvalidModel("model setup failed"),
+        dataset_config=dataset_config,
+        benchmark_config=Mock(raise_errors=False),
+        num_finished=0,
+        num_skipped=0,
+        num_errored=0,
+        model_config=model_config,
+        model_mapping={model_config: [dataset_config]},
+        current_results=[],
+        remaining_work=1,
+    )
+
+    assert (finished, skipped, errored, should_break) == (0, 0, 2, True)
+
+
+def test_model_cache_is_cleared_when_loading_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+    tmp_path: Path,
+) -> None:
+    """Per-model cleanup also runs when model setup raises."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    config = replace(
+        benchmark_config,
+        datasets=[dataset_config],
+        few_shot=None,
+        clear_model_cache=True,
+        raise_errors=False,
+        save_results=False,
+    )
+    benchmarker = Benchmarker(progress_bar=False, save_results=False)
+    benchmarker.results_path = tmp_path / "results.jsonl"
+    monkeypatch.setattr(benchmarker, "_build_benchmark_config", lambda **_: config)
+    monkeypatch.setattr(benchmarker, "_prepare_model_ids", lambda model_id: ["model"])
+    monkeypatch.setattr(
+        benchmarker,
+        "_fetch_model_configs",
+        lambda model_ids, benchmark_config: [generative],
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_create_model_dataset_mapping",
+        lambda model_configs, dataset_configs: {generative: [dataset_config]},
+    )
+    monkeypatch.setattr(
+        "euroeval.benchmarker.load_model",
+        Mock(side_effect=InvalidModel("model setup failed")),
+    )
+    clear_cache = Mock()
+    monkeypatch.setattr("euroeval.benchmarker.clear_model_cache_fn", clear_cache)
+
+    assert benchmarker.benchmark(model="model") == []
+    assert clear_cache.call_count == 2
 
 
 def test_zero_shot_tasks_are_not_duplicated(
