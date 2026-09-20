@@ -230,6 +230,55 @@ def test_auto_explicit_generative_type_overrides_cached_metadata(
     load_model.assert_called_once()
 
 
+def test_auto_explicit_generative_type_uses_complete_cache(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """A complete explicit-type cache does not require model loading."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    zero_shot_result = BenchmarkResult(
+        model="model_id@revision",
+        dataset=dataset_config.name,
+        generative=True,
+        generative_type=GenerativeType.BASE.value,
+        few_shot=False,
+        validation_split=True,
+        num_model_parameters=1,
+        max_sequence_length=1,
+        vocabulary_size=1,
+        merge=False,
+        languages=["da"],
+        task=dataset_config.task.name,
+        results={},
+    )
+    few_shot_result = zero_shot_result.model_copy(
+        update={"generative_type": GenerativeType.REASONING.value, "few_shot": True}
+    )
+    load_model = Mock(side_effect=AssertionError("load_model should not be called"))
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
+
+    loaded, pending, cached, error = Benchmarker(
+        progress_bar=False
+    )._prepare_shot_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config],
+        benchmark_config=replace(
+            benchmark_config,
+            few_shot=None,
+            generative_type=GenerativeType.INSTRUCTION_TUNED,
+        ),
+        existing_results=[zero_shot_result, few_shot_result],
+    )
+
+    assert loaded is None
+    assert pending == []
+    assert cached == [zero_shot_result, few_shot_result]
+    assert error is None
+    load_model.assert_not_called()
+
+
 def test_cached_shot_mode_survives_missing_mode_load_failure(
     monkeypatch: pytest.MonkeyPatch,
     benchmark_config: BenchmarkConfig,
