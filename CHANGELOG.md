@@ -37,8 +37,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - LiteLLM contamination-canary collection now probes API capabilities with one request,
-  preserves the six-token output bound across token-limit fallbacks, and reports
-  collection status and failure reasons without aborting ordinary benchmarks.
+  preserves the six-token output bound across token-limit fallbacks and reused-model
+  parameter adjustments, and reports collection status and failure reasons without
+  aborting ordinary benchmarks.
 - Encoder contamination-canary runs now emit the required not-applicable evidence
   without loading the virtual text-to-text task, while preserving model metadata in
   standalone and mixed runs.
