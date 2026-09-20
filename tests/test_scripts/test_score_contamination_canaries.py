@@ -159,6 +159,26 @@ def test_missing_or_invalid_input_is_a_clear_cli_error(
     assert exc_info.value.code != 0
     assert captured.out == ""
     assert expected_error in captured.err
+    assert str(results_path) in captured.err
+
+
+def test_malformed_input_does_not_leak_completion(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Keep malformed completion data out of the CLI diagnostics."""
+    secret_completion = "UNIQUE_SECRET_COMPLETION_MARKER"
+    results_path = tmp_path / "results.jsonl"
+    results_path.write_text(
+        f'{{"normalised_completion": "{secret_completion}"\n', encoding="utf-8"
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        script.main([str(results_path)])
+
+    captured = capsys.readouterr()
+    assert exc_info.value.code != 0
+    assert secret_completion not in captured.out
+    assert secret_completion not in captured.err
 
 
 def _record(*, dataset: str) -> dict[str, object]:

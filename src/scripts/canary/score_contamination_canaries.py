@@ -44,8 +44,10 @@ def main(argv: list[str] | None = None) -> int:
         records = load_records_from_jsonl_files(paths=[results_path])
     except FileNotFoundError:
         parser.error(f"results file does not exist: {results_path}")
-    except (OSError, ValueError) as error:
-        parser.error(f"could not read valid JSONL from {results_path}: {error}")
+    except OSError:
+        parser.error(f"could not read results file: {results_path}")
+    except ValueError:
+        parser.error(f"could not read valid JSONL from {results_path}")
 
     _configure_scorer(
         key_path=arguments.key,
