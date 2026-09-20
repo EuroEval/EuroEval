@@ -438,22 +438,81 @@ class LiteLLMModel(BenchmarkModule):
     def collect_canary_completions(self, prompts: c.Sequence[str]) -> list[str]:
         """Generate bounded canary continuations through the configured API client.
 
+        Capability probing uses one request before the corpus batch. It deliberately
+        builds a fresh set of generation arguments rather than reusing the ordinary
+        dataset arguments, since response schemas and log probabilities would change
+        the canary protocol.
+
         Base models receive raw completion prompts. Chat-only models receive a neutral
         continuation request; their evidence remains separately identified by backend
         and generative type.
 
         Returns:
             One raw bounded continuation per prompt.
+        """
+        generation_kwargs = {
+            "max_completion_tokens": 6,
+            "stop": [],
+            "temperature": 0.0,
+            "seed": 4242,
+            "api_key": self.benchmark_config.api_key,
+            "api_base": self.benchmark_config.api_base,
+            "api_version": self.benchmark_config.api_version,
+            "max_retries": 3,
+        }
+        # Model parameters such as reasoning effort remain part of the request, but
+        # dataset-specific logprobs are explicitly excluded from this protocol.
+        generation_kwargs = self._setup_model_params(
+            generation_kwargs=generation_kwargs, include_logprobs=False
+        )
+        generation_kwargs = self._apply_parameter_adjustments(
+            generation_kwargs=generation_kwargs
+        )
+        test_input: c.Sequence[litellm.AllMessageValues] | str
+        if self.generative_type == GenerativeType.BASE:
+            test_input = "Test message json"
+        else:
+            test_input = [
+                litellm.ChatCompletionUserMessage(
+                    role="user", content="Test message json"
+                )
+            ]
+        generation_kwargs = self._probe_generation_kwargs(
+            generation_kwargs=generation_kwargs,
+            test_input=test_input,
+            canary_token_limit=6,
+            detect_reasoning_content=False,
+        )
+        return self._collect_canary_batch(
+            prompts=prompts, generation_kwargs=generation_kwargs
+        )
+
+    def _collect_canary_batch(
+        self, prompts: c.Sequence[str], generation_kwargs: dict[str, t.Any]
+    ) -> list[str]:
+        """Collect the canary batch after its request parameters have been probed.
+
+        Args:
+            prompts:
+                The canary prompts.
+            generation_kwargs:
+                The already-probed generation arguments.
+
+        Returns:
+            One completion for each prompt.
 
         Raises:
             ValueError:
                 If the API does not return exactly one completion per prompt.
         """
         if self.generative_type == GenerativeType.BASE:
-            inputs: dict = {"text": list(prompts)}
+            model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str] = list(
+                prompts
+            )
         else:
-            inputs = {
-                "messages": [
+            model_inputs = t.cast(
+                c.Sequence[c.Sequence[litellm.AllMessageValues] | str],
+                [
                     [
                         {
                             "role": "user",
@@ -464,20 +523,8 @@ class LiteLLMModel(BenchmarkModule):
                         }
                     ]
                     for prompt in prompts
-                ]
-            }
-        generation_kwargs: dict[str, t.Any] = {
-            "temperature": 0.0,
-            "top_p": 1.0,
-            "max_tokens": 6,
-            "stop": [],
-            "seed": 4242,
-            "api_key": self.benchmark_config.api_key,
-            "api_base": self.benchmark_config.api_base,
-            "api_version": self.benchmark_config.api_version,
-            "max_retries": 3,
-        }
-        model_inputs = inputs.get("text", inputs.get("messages", []))
+                ],
+            )
         successes, failures = safe_run(
             self._generate_async(
                 model_id=self.model_config.model_id,
@@ -486,7 +533,8 @@ class LiteLLMModel(BenchmarkModule):
                 **generation_kwargs,
             )
         )
-        if failures or len(successes) != len(prompts):
+        success_indices = sorted(index for index, _ in successes)
+        if failures or success_indices != list(range(len(prompts))):
             raise ValueError("canary generation did not return one result per prompt")
         ordered = [response for _, response in sorted(successes)]
         return list(
@@ -1565,10 +1613,6 @@ class LiteLLMModel(BenchmarkModule):
 
         Returns:
             A dictionary of generation kwargs configured for the model.
-
-        Raises:
-            InvalidModel:
-                If the model fails to respond after multiple attempts.
         """
         # Set core generation arguments
         generation_kwargs: dict[str, t.Any] = dict(
@@ -1637,7 +1681,6 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs=generation_kwargs
         )
 
-        # Test run with retries
         test_input: c.Sequence[litellm.AllMessageValues] | str
         if self.generative_type == GenerativeType.BASE:
             test_input = "Test message json"
@@ -1647,7 +1690,46 @@ class LiteLLMModel(BenchmarkModule):
                     role="user", content="Test message json"
                 )
             ]
+        generation_kwargs = self._probe_generation_kwargs(
+            generation_kwargs=generation_kwargs, test_input=test_input
+        )
 
+        return generation_kwargs
+
+    def _probe_generation_kwargs(
+        self,
+        generation_kwargs: dict[str, t.Any],
+        test_input: c.Sequence[litellm.AllMessageValues] | str,
+        *,
+        canary_token_limit: int | None = None,
+        detect_reasoning_content: bool = True,
+    ) -> dict[str, t.Any]:
+        """Probe one request and learn parameters accepted by the API.
+
+        Args:
+            generation_kwargs:
+                The generation kwargs to probe and adjust.
+            test_input:
+                One input used for capability probing.
+            canary_token_limit (optional):
+                The visible canary output bound, if this is a canary probe.
+                Defaults to None.
+            detect_reasoning_content (optional):
+                Whether a successful response may promote a model to reasoning mode.
+                Defaults to True.
+
+        Returns:
+            Generation kwargs that succeeded for the probe request.
+
+        Raises:
+            InvalidModel:
+                If the model fails to respond after multiple attempts.
+        """
+        standard_limit_rejected = (
+            canary_token_limit is not None
+            and ParameterAdjustment.USE_MAX_TOKENS in self._parameter_adjustments
+            and ParameterAdjustment.NO_MAX_TOKENS in self._parameter_adjustments
+        )
         for _ in range(num_attempts := 10):
             successes, failures = safe_run(
                 self._generate_async(
@@ -1658,69 +1740,83 @@ class LiteLLMModel(BenchmarkModule):
                 )
             )
 
-            if successes and self.generative_type != GenerativeType.REASONING:
+            if successes and detect_reasoning_content:
                 _, successful_content = successes[0]
-                successful_message = successful_content.choices[0].message
-                if (
-                    hasattr(successful_message, "reasoning_content")
-                    and successful_message.reasoning_content is not None
-                ):
-                    self.buffer["uses_reasoning_content"] = True
-                    generation_kwargs["max_completion_tokens"] = REASONING_MAX_TOKENS
-                    generation_kwargs.pop("response_format", None)
-                    if self.is_ollama:
-                        generation_kwargs["think"] = True
-                    log_once(
-                        "Detected reasoning content in model output for the model "
-                        f"{self.model_config.model_id!r}, so changing the generative "
-                        "type to reasoning.",
-                        level=logging.DEBUG,
-                    )
+                if self.generative_type != GenerativeType.REASONING:
+                    successful_message = successful_content.choices[0].message
+                    if (
+                        hasattr(successful_message, "reasoning_content")
+                        and successful_message.reasoning_content is not None
+                    ):
+                        self.buffer["uses_reasoning_content"] = True
+                        generation_kwargs["max_completion_tokens"] = (
+                            REASONING_MAX_TOKENS
+                        )
+                        generation_kwargs.pop("response_format", None)
+                        if self.is_ollama:
+                            generation_kwargs["think"] = True
+                        log_once(
+                            "Detected reasoning content in model output for the model "
+                            f"{self.model_config.model_id!r}, so changing the "
+                            "generative type to reasoning.",
+                            level=logging.DEBUG,
+                        )
 
             if not failures:
-                break
+                return self._apply_parameter_adjustments(
+                    generation_kwargs=generation_kwargs
+                )
 
             time_to_wait = 0
             for _, error in failures:
+                had_standard_limit = any(
+                    key in generation_kwargs
+                    for key in ("max_completion_tokens", "max_tokens")
+                )
+                error_msg = str(error).lower()
                 generation_kwargs, wait_time = self._handle_exception(
                     error=error, **generation_kwargs
                 )
+                standard_limit_rejected |= had_standard_limit and (
+                    "max_completion_tokens" in error_msg or "max_tokens" in error_msg
+                )
                 time_to_wait = max(time_to_wait, wait_time)
+
+            if (
+                canary_token_limit is not None
+                and standard_limit_rejected
+                and "max_completion_tokens" not in generation_kwargs
+                and "max_tokens" not in generation_kwargs
+            ):
+                generation_kwargs["max_output_tokens"] = canary_token_limit
+
             if time_to_wait > 0:
                 log(
                     f"Waiting {time_to_wait} second(s) before retrying...",
                     level=logging.DEBUG,
                 )
                 sleep(time_to_wait)
-        else:
-            raise InvalidModel(
-                "Failed to get a successful response from the model "
-                f"{self.model_config.model_id!r} after {num_attempts} attempts."
-            )
-
-        # The reasoning-content detection above may re-add parameters (e.g.
-        # `max_completion_tokens`) that a persisted adjustment removes, so
-        # re-apply the persisted adjustments here to keep the returned kwargs
-        # self-consistent.
-        generation_kwargs = self._apply_parameter_adjustments(
-            generation_kwargs=generation_kwargs
+        raise InvalidModel(
+            "Failed to get a successful response from the model "
+            f"{self.model_config.model_id!r} after {num_attempts} attempts."
         )
 
-        return generation_kwargs
-
     def _setup_model_params(
-        self, generation_kwargs: dict[str, t.Any]
+        self, generation_kwargs: dict[str, t.Any], *, include_logprobs: bool = True
     ) -> dict[str, t.Any]:
         """Set up model-specific parameters.
 
         Args:
             generation_kwargs:
                 The generation kwargs to pass to the model.
+            include_logprobs:
+                Whether to add dataset label log probability arguments. Defaults to
+                True.
 
         Returns:
             The updated generation kwargs with model-specific parameters configured.
         """
-        if self.buffer["first_label_token_mapping"]:
+        if include_logprobs and self.buffer["first_label_token_mapping"]:
             generation_kwargs["logprobs"] = True
             generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
 
