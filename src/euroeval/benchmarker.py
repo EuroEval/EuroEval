@@ -7,7 +7,7 @@ import logging
 import os
 import re
 import typing as t
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from shutil import rmtree
 from time import sleep
@@ -36,6 +36,16 @@ from .utils import enforce_reproducibility, get_hf_token, internet_connection_av
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig, Task
+
+
+@dataclass
+class _PreparedModelBenchmarks:
+    """Concrete work prepared for one model before execution starts."""
+
+    model_config: "ModelConfig"
+    loaded_model: "BenchmarkModule | None"
+    pending: list[tuple[ShotMode, "DatasetConfig"]]
+    load_error: InvalidModel | None
 
 
 class Benchmarker:
@@ -500,28 +510,44 @@ class Benchmarker:
         num_finished = 0
         num_skipped = 0
         num_errored = 0
-        total_benchmarks = 0
+        prepared_models: list[_PreparedModelBenchmarks] = []
 
+        # Resolve every model's concrete shot-mode workload before the first benchmark
+        # starts. AUTO may need to load a local generative model to determine its mode,
+        # so retain each loaded model and use it for the execution phase below rather
+        # than loading it again.
         for model_config in model_configs:
             datasets = model_mapping[model_config]
             if not datasets:
                 continue
 
-            loaded_model: "BenchmarkModule | None" = None
+            self._check_adapter_requirements(model_config, benchmark_config)
+            loaded_model, pending, cached, load_error = self._prepare_shot_benchmarks(
+                model_config=model_config,
+                datasets=datasets,
+                benchmark_config=benchmark_config,
+                existing_results=existing_results,
+            )
+            current_results.extend(
+                record for record in cached if record not in current_results
+            )
+            prepared_models.append(
+                _PreparedModelBenchmarks(
+                    model_config=model_config,
+                    loaded_model=loaded_model,
+                    pending=pending,
+                    load_error=load_error,
+                )
+            )
+
+        total_benchmarks = sum(len(prepared.pending) for prepared in prepared_models)
+
+        for prepared in prepared_models:
+            model_config = prepared.model_config
+            loaded_model = prepared.loaded_model
+            pending = prepared.pending
+            load_error = prepared.load_error
             try:
-                self._check_adapter_requirements(model_config, benchmark_config)
-                loaded_model, pending, cached, load_error = (
-                    self._prepare_shot_benchmarks(
-                        model_config=model_config,
-                        datasets=datasets,
-                        benchmark_config=benchmark_config,
-                        existing_results=existing_results,
-                    )
-                )
-                current_results.extend(
-                    record for record in cached if record not in current_results
-                )
-                total_benchmarks += len(pending)
                 if load_error is not None:
                     if benchmark_config.raise_errors:
                         raise load_error
@@ -583,6 +609,7 @@ class Benchmarker:
                     if should_break:
                         break
             finally:
+                prepared.loaded_model = None
                 del loaded_model
                 if benchmark_config.clear_model_cache:
                     clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)

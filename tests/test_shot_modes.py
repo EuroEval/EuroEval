@@ -18,6 +18,73 @@ from euroeval.enums import GenerativeType, InferenceBackend, ModelType, ShotMode
 from euroeval.exceptions import InvalidModel
 
 
+def test_multi_model_progress_uses_full_workload(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+    tmp_path: Path,
+) -> None:
+    """Progress totals include pending work from models not started yet."""
+    models = [
+        replace(model_config, model_id="first-model"),
+        replace(model_config, model_id="second-model"),
+    ]
+    config = replace(
+        benchmark_config, datasets=[dataset_config], few_shot=None, save_results=False
+    )
+    benchmarker = Benchmarker(progress_bar=False, save_results=False)
+    benchmarker.results_path = tmp_path / "results.jsonl"
+    monkeypatch.setattr(benchmarker, "_build_benchmark_config", lambda **_: config)
+    monkeypatch.setattr(
+        benchmarker,
+        "_prepare_model_ids",
+        lambda model_id: ["first-model", "second-model"],
+    )
+    monkeypatch.setattr(
+        benchmarker, "_fetch_model_configs", lambda model_ids, benchmark_config: models
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_create_model_dataset_mapping",
+        lambda model_configs, dataset_configs: {
+            model_config: [dataset_config] for model_config in model_configs
+        },
+    )
+    monkeypatch.setattr(benchmarker, "_check_adapter_requirements", lambda *args: None)
+    monkeypatch.setattr(
+        benchmarker, "_update_benchmark_config_for_dataset", lambda *args: None
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_prepare_shot_benchmarks",
+        Mock(
+            side_effect=[
+                (None, [(ShotMode.ZERO_SHOT, dataset_config)], [], None),
+                (None, [(ShotMode.FEW_SHOT, dataset_config)], [], None),
+            ]
+        ),
+    )
+    benchmark_calls = Mock(return_value=Mock())
+    monkeypatch.setattr(benchmarker, "_benchmark_single", benchmark_calls)
+
+    def handle_result(**kwargs: int) -> tuple[int, int, int, bool]:
+        return (
+            kwargs["num_finished"] + 1,
+            kwargs["num_skipped"],
+            kwargs["num_errored"],
+            False,
+        )
+
+    monkeypatch.setattr(benchmarker, "_handle_benchmark_result", handle_result)
+
+    benchmarker.benchmark(model=["first-model", "second-model"])
+
+    assert [
+        call.kwargs["num_total_benchmarks"] for call in benchmark_calls.call_args_list
+    ] == [2, 2]
+
+
 def test_auto_shot_mode_resolution(model_config: ModelConfig) -> None:
     """AUTO selects the agreed modes for each model category."""
     encoder = model_config
