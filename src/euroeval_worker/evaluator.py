@@ -4,6 +4,7 @@ import typing as t
 from pathlib import Path
 
 from euroeval.benchmarker import Benchmarker
+from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.eee_utils import benchmark_result_to_eee_dict
 
 from .types import EEERecord, JsonValue, Lease, canonical_json
@@ -35,6 +36,23 @@ def _record(record: dict[str, JsonValue]) -> EEERecord:
     return EEERecord(record_json=canonical_json(record))
 
 
+def _canary_tasks() -> list[str]:
+    """Return official task names together with the canary task."""
+    configs = get_all_dataset_configs(
+        custom_datasets_file=Path(""),
+        dataset_ids=[],
+        api_key=None,
+        cache_dir=Path(".cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    tasks = dict.fromkeys(
+        config.task.name for config in configs.values() if not config.unofficial
+    )
+    tasks["contamination-detection"] = None
+    return list(tasks)
+
+
 class Evaluator(t.Protocol):
     """Protocol implemented by concrete evaluation runners."""
 
@@ -64,9 +82,15 @@ class EuroEvalEvaluator(Evaluator):
         Returns:
             EEE records produced by the evaluation.
         """
+        canary_required = (
+            lease.contamination_canary is not None
+            and lease.contamination_canary.status == "required"
+        )
+        tasks = _canary_tasks() if canary_required else None
         benchmarker = Benchmarker(
             progress_bar=False,
             save_results=False,
+            task=tasks,
             language=lease.language,
             cache_dir=str(self.cache_dir),
             trust_remote_code=False,
@@ -76,13 +100,10 @@ class EuroEvalEvaluator(Evaluator):
             force=True,
             raise_errors=True,
             verbose=False,
-            contamination_canary=(
-                lease.contamination_canary is not None
-                and lease.contamination_canary.status == "required"
-            ),
         )
         results = benchmarker.benchmark(
             model=f"{lease.model_id}@{lease.model_revision}",
+            task=tasks,
             language=lease.language,
             progress_bar=False,
             save_results=False,
@@ -92,10 +113,6 @@ class EuroEvalEvaluator(Evaluator):
             gpu_memory_utilization=self.gpu_memory_utilisation,
             force=True,
             raise_errors=True,
-            contamination_canary=(
-                lease.contamination_canary is not None
-                and lease.contamination_canary.status == "required"
-            ),
         )
         records = [
             _record(

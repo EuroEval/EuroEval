@@ -66,6 +66,49 @@ def test_estimated_model_bytes_handles_model_id_extras(
     assert calls[0]["revision"] == "rev"
 
 
+def test_build_euroeval_cmd_emits_repeated_tasks() -> None:
+    """Task selections become repeated CLI arguments."""
+    command = evaluation_common._build_euroeval_cmd(
+        model_id="org/model",
+        languages=["en"],
+        datasets=None,
+        evaluate_test_split=False,
+        zero_shot=False,
+        gpu_memory_utilization=None,
+        clear_model_cache=False,
+        trust_remote_code=False,
+        tasks=["classification", "contamination-detection"],
+    )
+    assert command == [
+        "euroeval",
+        "--model",
+        "org/model",
+        "--evaluate-val-split",
+        "--language",
+        "en",
+        "--task",
+        "classification",
+        "--task",
+        "contamination-detection",
+    ]
+
+
+def test_build_euroeval_cmd_rejects_tasks_and_datasets() -> None:
+    """Task and dataset selections cannot be combined."""
+    with pytest.raises(ValueError, match="tasks.*datasets"):
+        evaluation_common._build_euroeval_cmd(
+            model_id="org/model",
+            languages=["en"],
+            datasets=["belebele-en"],
+            evaluate_test_split=False,
+            zero_shot=False,
+            gpu_memory_utilization=None,
+            clear_model_cache=False,
+            trust_remote_code=False,
+            tasks=["classification"],
+        )
+
+
 def test_evaluator_environment_excludes_queue_secrets(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

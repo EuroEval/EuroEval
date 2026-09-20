@@ -485,15 +485,65 @@ def test_evaluator_uses_validation_and_remote_code_flags(
         "language": "da",
         "progress_bar": False,
         "save_results": False,
+        "task": None,
         "trust_remote_code": False,
         "evaluate_test_split": False,
         "requires_safetensors": True,
         "gpu_memory_utilization": 0.8,
         "force": True,
         "raise_errors": True,
-        "contamination_canary": False,
     }
     assert len((tmp_path / "isolated.jsonl").read_text().splitlines()) == 1
+
+
+def test_evaluator_selects_official_tasks_for_required_canary(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A required canary lease selects normal tasks and the canary task explicitly."""
+    calls: dict[str, object] = {}
+
+    class FakeBenchmarker:
+        """Capture the adapter's calls."""
+
+        def __init__(self, **kwargs: object) -> None:
+            calls["init"] = kwargs
+
+        def benchmark(self, **kwargs: object) -> list[object]:
+            """Return one fake benchmark result."""
+            calls["benchmark"] = kwargs
+            return [object()]
+
+    monkeypatch.setattr(evaluator, "Benchmarker", FakeBenchmarker)
+    monkeypatch.setattr(
+        evaluator,
+        "_canary_tasks",
+        lambda: ["classification", "contamination-detection"],
+    )
+    monkeypatch.setattr(
+        evaluator,
+        "benchmark_result_to_eee_dict",
+        lambda result: {"evaluation_id": "one", "result": 1},
+    )
+    lease = dataclasses.replace(
+        LEASE,
+        contamination_canary=CanaryInstruction(
+            status="required",
+            protocol_version="private-completion-canary/v1",
+            corpus_revision="revision",
+            corpus_sha256="a" * 64,
+        ),
+    )
+
+    evaluator.EuroEvalEvaluator(tmp_path).evaluate(
+        lease=lease, output_path=tmp_path / "isolated.jsonl"
+    )
+
+    init_kwargs = calls["init"]
+    benchmark_kwargs = calls["benchmark"]
+    assert isinstance(init_kwargs, dict)
+    assert isinstance(benchmark_kwargs, dict)
+    assert init_kwargs["task"] == ["classification", "contamination-detection"]
+    assert benchmark_kwargs["task"] == ["classification", "contamination-detection"]
 
 
 def test_expired_active_lease_is_archived_before_new_claim(

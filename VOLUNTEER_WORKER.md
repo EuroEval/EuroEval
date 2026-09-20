@@ -90,10 +90,11 @@ value for later runs if the deployment must remain pinned.
 4. The worker independently refetches the same immutable metadata and capability before
    evaluation, then evaluates with remote code disabled and safetensors required.
 5. Each record is uploaded idempotently to private Hugging Face staging.
-6. For generative models, a broker-enabled experimental contamination canary may reuse
-   the already loaded model for bounded greedy completions. This evidence is uploaded
-   through a separate durable outbox and has no effect on benchmark records, scores,
-   finalisation, or review. Encoder models do not run canary generation.
+6. For a lease that requires contamination collection, the worker explicitly runs the
+   `contamination-detection` task alongside the normal official tasks. Generative models
+   reuse the already loaded model for bounded greedy completions; encoder models record
+   that the task is not applicable. The resulting canary record uses the ordinary result
+   upload and review path, while its broker lease field remains control-plane metadata.
 7. The broker validates the complete lease and marks it ready for review.
 
 Issue assignees are the mutable, authoritative active evaluators and credit identities
@@ -112,7 +113,7 @@ is empty. `No NVIDIA GPU` means that the host runtime did not expose a usable GP
 
 ## Data and credential handling
 
-The `/cache` volume is private worker state. When the experimental canary is enabled it
+The `/cache` volume is private worker state. When a lease requires canary collection it
 may temporarily contain the private `{row_id, text}` corpus and plaintext-free evidence.
 It never contains the scoring key, expected targets, matched controls, Hugging Face
 organisation token, or private scoring records. Back it up only if the backup is
