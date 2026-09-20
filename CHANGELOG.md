@@ -9,14 +9,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added an experimental private contamination canary for generative models. It collects
-  plaintext-free auxiliary evidence by default for suite, task, and language
-  evaluations, but not targeted `--dataset` runs, and stores it in ordinary EEE result
-  records. The private corpus is fetched with EuroEval's packaged, obfuscated dataset
-  credential, so evaluators do not need separate Hugging Face access. Evidence is
-  interpreted only during private leaderboard processing and never published as a
-  metric or ranking, while a positive detection can exclude the model from generated
-  leaderboards.
+- Added the `contamination-detection` task for explicitly collecting experimental private
+  contamination-canary evidence. It uses a virtual dataset configuration, preserves the
+  existing `contamination-canary` result identities and evidence schema, and never joins
+  default suite or language evaluations. The private corpus is fetched with EuroEval's
+  packaged, obfuscated dataset credential, and evidence is interpreted only during
+  private leaderboard processing.
 - Added support for DeepSeek-V4.1-Flash via the DeepSeek API (`deepseek/deepseek-flash`),
   including model metadata and the `#no-thinking`, `#thinking`, `#low`, `#high` and
   `#max` parameters to control its thinking mode. `#no-thinking` and `#thinking` send
@@ -29,6 +27,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Contamination detection is now a normal opt-in task selected with
+  `--task contamination-detection`; the old canary flags and implicit collection have
+  been removed.
 - Known parameter adjustments are now applied before and after the internal
   test request in the LiteLLM module, so a new dataset no longer re-triggers
   known errors and the returned kwargs are always consistent. This was contributed by

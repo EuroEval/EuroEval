@@ -90,7 +90,6 @@ class Benchmarker:
         | None = None,
         generative_type: GenerativeType | None = None,
         use_bits_per_character: bool = False,
-        contamination_canary: bool | None = None,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
         run_with_cli: bool = False,
@@ -175,10 +174,6 @@ class Benchmarker:
                 For multiple-choice tasks, treats benchmark as text-to-text with bare
                 question → full answer text. Only supported for base decoder models.
                 Defaults to False.
-            contamination_canary:
-                Whether to collect experimental non-scoring contamination evidence
-                while a decoder is already loaded. By default this is enabled unless a
-                specific dataset is requested.
             custom_datasets_file:
                 Path to a Python file defining custom datasets. Defaults to
                 'custom_datasets.py'.
@@ -246,7 +241,6 @@ class Benchmarker:
             attention_backend=attention_backend,
             generative_type=generative_type,
             use_bits_per_character=use_bits_per_character,
-            contamination_canary=contamination_canary,
             custom_datasets_file=Path(custom_datasets_file),
             verbose=verbose,
             force=force,
@@ -297,7 +291,6 @@ class Benchmarker:
         gpu_memory_utilization: float | None = None,
         generative_type: GenerativeType | None = None,
         use_bits_per_character: bool | None = None,
-        contamination_canary: bool | None = None,
         attention_backend: t.Literal[
             *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
         ]
@@ -398,10 +391,6 @@ class Benchmarker:
                 For multiple-choice tasks, treats benchmark as text-to-text with bare
                 question → full answer text. Only supported for base decoder models.
                 Defaults to the value specified when initialising the benchmarker.
-            contamination_canary:
-                Whether to collect experimental non-scoring contamination evidence
-                while a decoder is already loaded. Defaults to the value specified when
-                initialising the benchmarker.
             attention_backend:
                 The attention backend to use for vLLM. Only relevant if the model is
                 generative. Defaults to the value specified when initialising the
@@ -498,7 +487,6 @@ class Benchmarker:
             gpu_memory_utilization=gpu_memory_utilization,
             generative_type=generative_type,
             use_bits_per_character=use_bits_per_character,
-            contamination_canary=contamination_canary,
             attention_backend=attention_backend,
             custom_datasets_file=custom_datasets_file,
             force=force,
@@ -510,7 +498,14 @@ class Benchmarker:
 
         adjust_logging_level(verbose=benchmark_config.verbose)
 
-        if benchmark_config.contamination_canary and benchmark_config.download_only:
+        if benchmark_config.clear_model_cache:
+            clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
+
+        model_ids = self._prepare_model_ids(model_id=model)
+        dataset_configs = benchmark_config.datasets
+        if benchmark_config.download_only and any(
+            self._is_canary_dataset(config) for config in dataset_configs
+        ):
             try:
                 load_canary_prompts(cache_dir=benchmark_config.cache_dir)
             except Exception:  # noqa: BLE001 - ordinary downloads must continue
@@ -518,12 +513,6 @@ class Benchmarker:
                     "Could not cache the private contamination-canary corpus.",
                     level=logging.WARNING,
                 )
-
-        if benchmark_config.clear_model_cache:
-            clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
-
-        model_ids = self._prepare_model_ids(model_id=model)
-        dataset_configs = benchmark_config.datasets
 
         # Fetch model configs and create mapping
         model_configs = self._fetch_model_configs(model_ids, benchmark_config)
@@ -552,7 +541,6 @@ class Benchmarker:
         self._canary_evidence = []
 
         for model_config in model_configs:
-            canary_result_written = False
             if not model_mapping[model_config]:
                 log(
                     f"Skipping model {model_config.model_id!r} because it has "
@@ -562,21 +550,6 @@ class Benchmarker:
                 continue
 
             self._check_adapter_requirements(model_config, benchmark_config)
-
-            if (
-                benchmark_config.contamination_canary
-                and model_config.model_type is ModelType.ENCODER
-            ):
-                self._store_canary_evidence(
-                    status_evidence(
-                        model_id=model_config.model_id,
-                        requested_revision=model_config.revision,
-                        resolved_revision=model_config.revision,
-                        backend=model_config.inference_backend.value,
-                        status="not_applicable",
-                        reason="encoder",
-                    )
-                )
 
             loaded_model: "BenchmarkModule | None" = None
             params_to_revert = {}
@@ -588,6 +561,40 @@ class Benchmarker:
                 params_to_revert = self._update_benchmark_config_for_dataset(
                     dataset_config, benchmark_config
                 )
+
+                if self._is_canary_dataset(dataset_config):
+                    if benchmark_config.download_only:
+                        self._download(dataset_config, model_config, benchmark_config)
+                    else:
+                        if loaded_model is None:
+                            try:
+                                loaded_model = load_model(
+                                    model_config=model_config,
+                                    dataset_config=dataset_config,
+                                    benchmark_config=benchmark_config,
+                                )
+                            except InvalidModel as e:
+                                if benchmark_config.raise_errors:
+                                    raise e
+                                log(e.message, level=logging.ERROR)
+                                num_errored += 1
+                                break
+                        self._record_contamination_canary(
+                            model_config=model_config,
+                            benchmark_config=benchmark_config,
+                            loaded_model=loaded_model,
+                        )
+                        canary_result = self._canary_benchmark_result(
+                            evidence=self._canary_evidence[-1],
+                            model_config=model_config,
+                            benchmark_config=benchmark_config,
+                            loaded_model=loaded_model,
+                        )
+                        current_results.append(canary_result)
+                        if benchmark_config.save_results:
+                            canary_result.append_to_results(self.results_path)
+                    num_finished += 1
+                    continue
 
                 if benchmark_config.download_only:
                     self._download(dataset_config, model_config, benchmark_config)
@@ -612,23 +619,6 @@ class Benchmarker:
                             ]
                             num_errored += 1 + len(remaining)
                             break
-
-                        self._record_contamination_canary(
-                            model_config=model_config,
-                            benchmark_config=benchmark_config,
-                            loaded_model=loaded_model,
-                        )
-                        if self._canary_evidence:
-                            canary_result = self._canary_benchmark_result(
-                                evidence=self._canary_evidence[-1],
-                                model_config=model_config,
-                                benchmark_config=benchmark_config,
-                                loaded_model=loaded_model,
-                            )
-                            current_results.append(canary_result)
-                            if benchmark_config.save_results:
-                                canary_result.append_to_results(self.results_path)
-                            canary_result_written = True
 
                     if (
                         loaded_model.generative_type
@@ -668,24 +658,6 @@ class Benchmarker:
                         current_results=current_results,
                     )
                 )
-                if (
-                    benchmark_config.contamination_canary
-                    and not canary_result_written
-                    and model_config.model_type is ModelType.ENCODER
-                    and isinstance(output_or_err, BenchmarkResult)
-                    and self._canary_evidence
-                ):
-                    canary_result = self._canary_benchmark_result(
-                        evidence=self._canary_evidence[-1],
-                        model_config=model_config,
-                        benchmark_config=benchmark_config,
-                        reference_result=output_or_err,
-                    )
-                    current_results.append(canary_result)
-                    if benchmark_config.save_results:
-                        canary_result.append_to_results(self.results_path)
-                    canary_result_written = True
-
                 if should_break:
                     break
 
@@ -999,10 +971,6 @@ class Benchmarker:
                     "use_bits_per_character",
                     self.benchmark_config_default_params.use_bits_per_character,
                 ),
-                contamination_canary=_get_param(
-                    "contamination_canary",
-                    self.benchmark_config_default_params.contamination_canary,
-                ),
                 attention_backend=_get_param(
                     "attention_backend",
                     self.benchmark_config_default_params.attention_backend,
@@ -1087,6 +1055,36 @@ class Benchmarker:
             for model_config in model_configs
         }
 
+    def _download_model_only(
+        self, *, model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
+    ) -> None:
+        """Download model weights without loading virtual-task data."""
+        if Path(model_config.model_id).exists():
+            log_once(
+                f"Model {model_config.model_id!r} is a local path, skipping download",
+                level=logging.INFO,
+            )
+            return
+        cache_path = Path(model_config.model_cache_dir)
+        has_cached = cache_path.exists() and any(cache_path.rglob("*.safetensors"))
+        if not has_cached:
+            log_once(
+                f"Downloading model {model_config.model_id!r}...", level=logging.INFO
+            )
+            snapshot_download(
+                repo_id=model_config.model_id,
+                revision=model_config.revision,
+                cache_dir=model_config.model_cache_dir,
+                token=get_hf_token(api_key=benchmark_config.api_key),
+            )
+        if model_config.adapter_base_model_id:
+            snapshot_download(
+                repo_id=model_config.adapter_base_model_id,
+                revision="main",
+                cache_dir=model_config.model_cache_dir,
+                token=get_hf_token(api_key=benchmark_config.api_key),
+            )
+
     def _download(
         self,
         dataset_config: "DatasetConfig",
@@ -1100,6 +1098,12 @@ class Benchmarker:
             model_config: The configuration for the model.
             benchmark_config: The configuration for the benchmark.
         """
+        if self._is_canary_dataset(dataset_config):
+            self._download_model_only(
+                model_config=model_config, benchmark_config=benchmark_config
+            )
+            return
+
         log_once(
             f"Loading data for {dataset_config.logging_string}", level=logging.INFO
         )
@@ -1424,6 +1428,10 @@ class Benchmarker:
             contamination_canary_evidence=evidence.to_dict(),
         )
 
+    def _is_canary_dataset(self, dataset_config: "DatasetConfig") -> bool:
+        """Return whether a dataset config represents the virtual canary task."""
+        return dataset_config.task.name == CANARY_RESULT_TASK
+
     def _record_contamination_canary(
         self,
         *,
@@ -1431,8 +1439,18 @@ class Benchmarker:
         benchmark_config: "BenchmarkConfig",
         loaded_model: "BenchmarkModule",
     ) -> None:
-        """Collect one non-ranking canary record while the decoder remains loaded."""
-        if not benchmark_config.contamination_canary:
+        """Collect one non-ranking canary record for the selected virtual task."""
+        if getattr(model_config, "model_type", None) is ModelType.ENCODER:
+            self._store_canary_evidence(
+                status_evidence(
+                    model_id=model_config.model_id,
+                    requested_revision=model_config.revision,
+                    resolved_revision=model_config.revision,
+                    backend=model_config.inference_backend.value,
+                    status="not_applicable",
+                    reason="encoder",
+                )
+            )
             return
         generative_type = (
             loaded_model.generative_type.value

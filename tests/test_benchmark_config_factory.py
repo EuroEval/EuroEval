@@ -31,7 +31,7 @@ from euroeval.languages import (
     get_all_languages,
     get_correct_language_codes,
 )
-from euroeval.tasks import LA
+from euroeval.tasks import CONTAMINATION_DETECTION, LA
 
 
 class TestBitsPerCharacterGating:
@@ -195,6 +195,36 @@ def test_prepare_dataset_configs(
         run_with_cli=True,
     )
     assert set(prepared_dataset_configs) == set(expected_dataset_configs)
+
+
+def test_contamination_detection_creates_only_a_virtual_dataset() -> None:
+    """The canary task is absent from default runs and creates no data source."""
+    selected = prepare_dataset_configs(
+        task="contamination-detection",
+        dataset=None,
+        languages=[DANISH],
+        custom_datasets_file=Path("custom_datasets.py"),
+        api_key=os.getenv("HF_TOKEN"),
+        cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=True,
+        run_with_cli=True,
+    )
+    assert [config.name for config in selected] == ["contamination-canary-da"]
+    assert selected[0].task is CONTAMINATION_DETECTION
+    with pytest.raises(ValueError, match="source"):
+        selected[0].source
+
+    default = prepare_dataset_configs(
+        task=None,
+        dataset=None,
+        languages=[DANISH],
+        custom_datasets_file=Path("custom_datasets.py"),
+        api_key=os.getenv("HF_TOKEN"),
+        cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=True,
+        run_with_cli=True,
+    )
+    assert all(config.task is not CONTAMINATION_DETECTION for config in default)
 
 
 @pytest.mark.skipif(

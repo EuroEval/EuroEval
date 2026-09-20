@@ -259,10 +259,7 @@ def test_benchmarker_collects_once_from_each_loaded_decoder(
 
     loaded = LoadedModel()
     benchmark_config = SimpleNamespace(
-        contamination_canary=True,
-        cache_dir=str(tmp_path),
-        api_key=None,
-        save_results=False,
+        cache_dir=str(tmp_path), api_key=None, save_results=False
     )
     for model_id, revision in (
         ("org/model", "a" * 40),

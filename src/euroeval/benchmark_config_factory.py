@@ -14,6 +14,7 @@ from .dataset_configs import get_all_dataset_configs
 from .enums import Device
 from .languages import get_all_languages, get_correct_language_codes
 from .logging_utils import log
+from .tasks import CONTAMINATION_DETECTION, get_all_tasks
 
 if t.TYPE_CHECKING:
     from .data_models import Language
@@ -82,11 +83,6 @@ def build_benchmark_config(
         attention_backend=benchmark_config_params.attention_backend,
         generative_type=benchmark_config_params.generative_type,
         use_bits_per_character=benchmark_config_params.use_bits_per_character,
-        contamination_canary=(
-            benchmark_config_params.dataset is None
-            if benchmark_config_params.contamination_canary is None
-            else benchmark_config_params.contamination_canary
-        ),
         debug=benchmark_config_params.debug,
         run_with_cli=benchmark_config_params.run_with_cli,
         requires_safetensors=benchmark_config_params.requires_safetensors,
@@ -153,15 +149,34 @@ def prepare_dataset_configs(
         all_official_dataset_configs=all_official_dataset_configs,
     )
 
-    task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
+    task_mapping = get_all_tasks()
+    task_mapping.update(
+        {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
+    )
     tasks = _get_tasks_list(task=task, task_mapping=task_mapping)
 
-    return [
+    prepared = [
         ds
         for ds in datasets
         if (tasks is None or ds.task in tasks)
         and any(lang in languages for lang in ds.languages)
     ]
+    if tasks is not None and CONTAMINATION_DETECTION in tasks:
+        canary_name = (
+            "contamination-canary-" + languages[0].code
+            if len(languages) == 1
+            else "contamination-canary"
+        )
+        prepared.append(
+            DatasetConfig(
+                task=CONTAMINATION_DETECTION,
+                languages=languages,
+                name=canary_name,
+                pretty_name="Contamination canary",
+                unofficial=True,
+            )
+        )
+    return prepared
 
 
 def _extract_dataset_ids(

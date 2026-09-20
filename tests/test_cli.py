@@ -38,7 +38,6 @@ def test_cli_param_names(cli_params: dict[str | None, ParamType]) -> None:
         "generative_type",
         "custom_datasets_file",
         "use_bits_per_character",
-        "contamination_canary",
         "download_only",
         "debug",
         "max_context_length",
@@ -67,35 +66,19 @@ def test_dataset_and_task_conflict(
     assert "Traceback" not in result.output
 
 
-def test_contamination_canary_flag_reaches_benchmarker(
+def test_contamination_detection_is_selected_as_a_task(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Default collection by run scope while preserving explicit overrides."""
+    """The canary is selected through the ordinary task option."""
     mock_benchmarker_cls = MagicMock()
     monkeypatch.setattr("euroeval.cli.Benchmarker", mock_benchmarker_cls)
 
-    enabled = CliRunner().invoke(
-        benchmark, ["--model", "dummy", "--contamination-canary"]
+    result = CliRunner().invoke(
+        benchmark, ["--model", "dummy", "--task", "contamination-detection"]
     )
-    assert enabled.exit_code == 0
-    assert mock_benchmarker_cls.call_args.kwargs["contamination_canary"] is True
 
-    defaulted = CliRunner().invoke(benchmark, ["--model", "dummy"])
-    assert defaulted.exit_code == 0
-    assert mock_benchmarker_cls.call_args.kwargs["contamination_canary"] is True
-
-    targeted = CliRunner().invoke(
-        benchmark, ["--model", "dummy", "--dataset", "dummy-dataset"]
-    )
-    assert targeted.exit_code == 0
-    assert mock_benchmarker_cls.call_args.kwargs["contamination_canary"] is False
-
-    targeted_override = CliRunner().invoke(
-        benchmark,
-        ["--model", "dummy", "--dataset", "dummy-dataset", "--contamination-canary"],
-    )
-    assert targeted_override.exit_code == 0
-    assert mock_benchmarker_cls.call_args.kwargs["contamination_canary"] is True
+    assert result.exit_code == 0
+    assert mock_benchmarker_cls.call_args.kwargs["task"] == ["contamination-detection"]
 
 
 def test_dataset_selects_the_languages_it_contains(
