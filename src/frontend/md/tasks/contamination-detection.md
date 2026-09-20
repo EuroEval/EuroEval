@@ -29,14 +29,13 @@ benchmark data.
 
 ## 🛠️ How to run
 
-Canary collection is enabled by default for suite, task, and language evaluations of
-generative models. Targeted `--dataset` runs omit it by default. You can override either
-behavior explicitly:
+Contamination detection is an explicit task. Run it separately from the normal suite:
 
 ```bash
-euroeval --model <model-id> --contamination-canary
-euroeval --model <model-id> --no-contamination-canary
+euroeval --model <model-id> --task contamination-detection
 ```
 
-The canary is an auxiliary task and is not selected with
-`--task contamination-detection`.
+Collection is not automatic for suite, task, language, or targeted dataset evaluations.
+A targeted `--dataset` evaluation must therefore be followed by a separate invocation
+with `--task contamination-detection` if canary evidence is wanted. There is no bespoke
+canary flag, and no separate Hugging Face login is required.

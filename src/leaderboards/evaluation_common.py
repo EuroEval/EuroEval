@@ -365,7 +365,7 @@ def run_euroeval(
     gpu_memory_utilization: float | None = None,
     stream_output: bool = True,
     log_file: Path | t.IO[bytes] | None = None,
-    contamination_canary: bool = False,
+    tasks: c.Sequence[str] | None = None,
 ) -> tuple[int, str]:
     """Run the euroeval CLI for the given model, languages, and datasets.
 
@@ -406,9 +406,9 @@ def run_euroeval(
             binary mode) or a binary file-like object with a ``write()`` method.
             Terminal output behaviour is still controlled by ``stream_output``.
             Defaults to None.
-        contamination_canary (optional):
-            Whether to request experimental non-scoring canary collection. Defaults
-            to False.
+        tasks (optional):
+            Task ids to pass via repeated ``--task`` flags. This is mutually
+            exclusive with ``datasets``. Defaults to None.
 
     Returns:
         A ``(returncode, combined_output)`` pair. A returncode of 127
@@ -423,7 +423,7 @@ def run_euroeval(
         gpu_memory_utilization=gpu_memory_utilization,
         clear_model_cache=clear_model_cache,
         trust_remote_code=trust_remote_code,
-        contamination_canary=contamination_canary,
+        tasks=tasks,
     )
     if stream_output:
         logger.info(f"Running: {' '.join(cmd)}")
@@ -494,7 +494,7 @@ def _build_euroeval_cmd(
     gpu_memory_utilization: float | None,
     clear_model_cache: bool,
     trust_remote_code: bool,
-    contamination_canary: bool,
+    tasks: c.Sequence[str] | None,
 ) -> list[str]:
     """Build the euroeval CLI command list.
 
@@ -515,15 +515,21 @@ def _build_euroeval_cmd(
             Whether to clear the model cache.
         trust_remote_code:
             Whether to trust remote code.
-        contamination_canary:
-            Whether to request experimental non-scoring canary collection.
+        tasks:
+            The tasks to evaluate, or None for the default task selection. Mutually
+            exclusive with ``datasets``.
 
     Returns:
         The command list.
+
+    Raises:
+        ValueError:
+            If both tasks and datasets are specified.
     """
+    if tasks is not None and datasets is not None:
+        raise ValueError("Only one of `tasks` and `datasets` can be specified.")
+
     cmd: list[str] = ["euroeval", "--model", model_id]
-    if contamination_canary:
-        cmd.append("--contamination-canary")
     if clear_model_cache:
         cmd.append("--clear-model-cache")
     if trust_remote_code:
@@ -535,6 +541,8 @@ def _build_euroeval_cmd(
         cmd.append("--zero-shot")
     for lang in languages:
         cmd += ["--language", lang]
+    for task in tasks or []:
+        cmd += ["--task", task]
     for dataset in datasets or []:
         cmd += ["--dataset", dataset]
     if gpu_memory_utilization is not None:
