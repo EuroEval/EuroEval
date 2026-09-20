@@ -72,19 +72,6 @@ class Device(AutoStrEnum):
     CUDA = auto()
 
 
-class ShotMode(AutoStrEnum):
-    """The prompt shot policy used for a benchmark run.
-
-    ``AUTO`` is an explicit public policy value that selects one or more concrete
-    modes from model metadata. It is used during planning only and is never written
-    to benchmark results. ``FEW_SHOT`` and ``ZERO_SHOT`` select one concrete mode.
-    """
-
-    AUTO = auto()
-    FEW_SHOT = auto()
-    ZERO_SHOT = auto()
-
-
 class GenerativeType(AutoStrEnum):
     """The type of a generative model.
 
@@ -190,6 +177,19 @@ class ParameterAdjustment(AutoStrEnum):
     THINKING_DISABLED_REQUIRES_TYPE = auto()
     NO_SEED = auto()
     NO_RESPONSE_FORMAT = auto()
+
+
+class ShotMode(AutoStrEnum):
+    """The prompt shot policy used for a benchmark run.
+
+    ``AUTO`` is an explicit public policy value that selects one or more concrete
+    modes from model metadata. It is used during planning only and is never written
+    to benchmark results. ``FEW_SHOT`` and ``ZERO_SHOT`` select one concrete mode.
+    """
+
+    AUTO = auto()
+    FEW_SHOT = auto()
+    ZERO_SHOT = auto()
 
 
 class TaskGroup(AutoStrEnum):

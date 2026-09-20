@@ -12,6 +12,45 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 
 
+def partition_shot_work(
+    model_config: "ModelConfig",
+    work: c.Sequence[ShotWork],
+    benchmark_config: "BenchmarkConfig",
+    benchmark_results: c.Sequence[BenchmarkResult],
+) -> tuple[list[ShotWork], list[BenchmarkResult]]:
+    """Separate concrete shot work into pending and cached portions.
+
+    Args:
+        model_config:
+            The model configuration being evaluated.
+        work:
+            Concrete mode/dataset pairs in execution order.
+        benchmark_config:
+            The general benchmark configuration.
+        benchmark_results:
+            Results already present in the local cache.
+
+    Returns:
+        A tuple containing pending work and unique cached records. When ``force`` is
+        enabled, all work is pending and cached records are omitted.
+    """
+    pending: list[ShotWork] = []
+    cached: list[BenchmarkResult] = []
+    for mode, dataset_config in work:
+        record = get_record(
+            model_config=model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            benchmark_results=benchmark_results,
+            shot_mode=mode,
+        )
+        if benchmark_config.force or record is None:
+            pending.append((mode, dataset_config))
+        elif record not in cached:
+            cached.append(record)
+    return pending, cached
+
+
 def get_record(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
@@ -62,42 +101,3 @@ def get_record(
         if same_model and same_dataset and same_split and same_shot_mode:
             return record
     return None
-
-
-def partition_shot_work(
-    model_config: "ModelConfig",
-    work: c.Sequence[ShotWork],
-    benchmark_config: "BenchmarkConfig",
-    benchmark_results: c.Sequence[BenchmarkResult],
-) -> tuple[list[ShotWork], list[BenchmarkResult]]:
-    """Separate concrete shot work into pending and cached portions.
-
-    Args:
-        model_config:
-            The model configuration being evaluated.
-        work:
-            Concrete mode/dataset pairs in execution order.
-        benchmark_config:
-            The general benchmark configuration.
-        benchmark_results:
-            Results already present in the local cache.
-
-    Returns:
-        A tuple containing pending work and unique cached records. When ``force`` is
-        enabled, all work is pending and cached records are omitted.
-    """
-    pending: list[ShotWork] = []
-    cached: list[BenchmarkResult] = []
-    for mode, dataset_config in work:
-        record = get_record(
-            model_config=model_config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-            benchmark_results=benchmark_results,
-            shot_mode=mode,
-        )
-        if benchmark_config.force or record is None:
-            pending.append((mode, dataset_config))
-        elif record not in cached:
-            cached.append(record)
-    return pending, cached

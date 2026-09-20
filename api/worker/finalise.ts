@@ -44,7 +44,10 @@ function isCanonicalSuffix(value: string): boolean {
 }
 
 function allowedIdentitySuffixSets(scope: LeaseScope): string[][] | null {
-  const alternatives = "allowed_identity_suffix_sets" in scope
+  const hasAllowed = "allowed_identity_suffix_sets" in scope;
+  const hasLegacy = "identity_suffixes" in scope;
+  if (hasAllowed === hasLegacy) return null;
+  const alternatives = hasAllowed
     ? scope.allowed_identity_suffix_sets : [scope.identity_suffixes];
   if (!Array.isArray(alternatives) || !alternatives.length) return null;
   const keys = new Set<string>();

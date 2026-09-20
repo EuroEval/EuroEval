@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from euroeval.enums import ShotMode
 from euroeval_worker import evaluator, runtime
 from euroeval_worker.auth import authenticate
 from euroeval_worker.broker import BrokerClient, BrokerError
@@ -65,39 +66,6 @@ HARDWARE = HardwareReport(
     selected_gpu_index=GPU.index,
     selected_gpu_uuid=GPU.uuid,
 )
-
-
-def test_broker_normalises_legacy_scope_and_rejects_malformed_alternatives() -> None:
-    """Legacy scopes become one set while ambiguous alternatives fail closed."""
-    legacy = dataclasses.asdict(LEASE)
-    legacy["protocol_version"] = "volunteer-worker/v1"
-    legacy["expected_scope"] = {
-        "policy_version": "test-policy",
-        "language_group": "da",
-        "identity_suffixes": ['["test",false,true]'],
-        "count": 1,
-        "warnings": [],
-        "task_groups": ["sequence_classification"],
-    }
-    decoded = lease_from_dict(legacy)
-    assert decoded.expected_scope is not None
-    assert decoded.expected_scope.allowed_identity_suffix_sets == (
-        ('["test",false,true]',),
-    )
-    malformed = dataclasses.asdict(LEASE)
-    malformed["protocol_version"] = "volunteer-worker/v1"
-    malformed["expected_scope"] = {
-        "policy_version": "test-policy",
-        "language_group": "da",
-        "allowed_identity_suffix_sets": [
-            ['["test",false,true]'],
-            ['["test",false,true]'],
-        ],
-        "warnings": [],
-        "task_groups": ["sequence_classification"],
-    }
-    with pytest.raises(ValueError, match="alternatives"):
-        lease_from_dict(malformed)
 
 
 def test_auth_honours_slow_down_retry_after(tmp_path: Path) -> None:
@@ -238,6 +206,39 @@ def test_broker_client_drives_canonical_http_lifecycle(
     assert result_payload["digest"] == record.digest
     assert "secret-credential" not in json.dumps(calls)
     assert "secret-credential" not in caplog.text
+
+
+def test_broker_normalises_legacy_scope_and_rejects_malformed_alternatives() -> None:
+    """Legacy scopes become one set while ambiguous alternatives fail closed."""
+    legacy = dataclasses.asdict(LEASE)
+    legacy["protocol_version"] = "volunteer-worker/v1"
+    legacy["expected_scope"] = {
+        "policy_version": "test-policy",
+        "language_group": "da",
+        "identity_suffixes": ['["test",false,true]'],
+        "count": 1,
+        "warnings": [],
+        "task_groups": ["sequence_classification"],
+    }
+    decoded = lease_from_dict(legacy)
+    assert decoded.expected_scope is not None
+    assert decoded.expected_scope.allowed_identity_suffix_sets == (
+        ('["test",false,true]',),
+    )
+    malformed = dataclasses.asdict(LEASE)
+    malformed["protocol_version"] = "volunteer-worker/v1"
+    malformed["expected_scope"] = {
+        "policy_version": "test-policy",
+        "language_group": "da",
+        "allowed_identity_suffix_sets": [
+            ['["test",false,true]'],
+            ['["test",false,true]'],
+        ],
+        "warnings": [],
+        "task_groups": ["sequence_classification"],
+    }
+    with pytest.raises(ValueError, match="alternatives"):
+        lease_from_dict(malformed)
 
 
 def test_broker_protocol_payload_is_canonical() -> None:
@@ -522,7 +523,7 @@ def test_evaluator_uses_validation_and_remote_code_flags(
         "evaluate_test_split": False,
         "requires_safetensors": True,
         "gpu_memory_utilization": 0.8,
-        "few_shot": True,
+        "few_shot": ShotMode.AUTO,
         "force": True,
         "raise_errors": True,
     }

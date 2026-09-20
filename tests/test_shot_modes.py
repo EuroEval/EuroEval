@@ -19,154 +19,6 @@ from euroeval.enums import GenerativeType, InferenceBackend, ModelType, ShotMode
 from euroeval.exceptions import InvalidModel
 
 
-def test_multi_model_progress_uses_full_workload(
-    monkeypatch: pytest.MonkeyPatch,
-    benchmark_config: BenchmarkConfig,
-    dataset_config: DatasetConfig,
-    model_config: ModelConfig,
-    tmp_path: Path,
-) -> None:
-    """Progress totals use each model's concrete workload."""
-    models = [
-        replace(model_config, model_id="first-model"),
-        replace(model_config, model_id="second-model"),
-    ]
-    config = replace(
-        benchmark_config, datasets=[dataset_config], few_shot=None, save_results=False
-    )
-    benchmarker = Benchmarker(progress_bar=False, save_results=False)
-    benchmarker.results_path = tmp_path / "results.jsonl"
-    monkeypatch.setattr(benchmarker, "_build_benchmark_config", lambda **_: config)
-    monkeypatch.setattr(
-        benchmarker,
-        "_prepare_model_ids",
-        lambda model_id: ["first-model", "second-model"],
-    )
-    monkeypatch.setattr(
-        benchmarker, "_fetch_model_configs", lambda model_ids, benchmark_config: models
-    )
-    monkeypatch.setattr(
-        benchmarker,
-        "_create_model_dataset_mapping",
-        lambda model_configs, dataset_configs: {
-            model_config: [dataset_config] for model_config in model_configs
-        },
-    )
-    monkeypatch.setattr(benchmarker, "_check_adapter_requirements", lambda *args: None)
-    monkeypatch.setattr(
-        benchmarker, "_update_benchmark_config_for_dataset", lambda *args: None
-    )
-    monkeypatch.setattr(
-        benchmarker,
-        "_prepare_shot_benchmarks",
-        Mock(
-            side_effect=[
-                (None, [(ShotMode.ZERO_SHOT, dataset_config)], [], None),
-                (None, [(ShotMode.FEW_SHOT, dataset_config)], [], None),
-            ]
-        ),
-    )
-    benchmark_calls = Mock(return_value=Mock())
-    monkeypatch.setattr(benchmarker, "_benchmark_single", benchmark_calls)
-
-    def handle_result(**kwargs: int) -> tuple[int, int, int, bool]:
-        return (
-            kwargs["num_finished"] + 1,
-            kwargs["num_skipped"],
-            kwargs["num_errored"],
-            False,
-        )
-
-    monkeypatch.setattr(benchmarker, "_handle_benchmark_result", handle_result)
-
-    benchmarker.benchmark(model=["first-model", "second-model"])
-
-    assert [
-        call.kwargs["num_finished_benchmarks"]
-        for call in benchmark_calls.call_args_list
-    ] == [0, 0]
-    assert [
-        call.kwargs["num_total_benchmarks"] for call in benchmark_calls.call_args_list
-    ] == [1, 1]
-
-
-@pytest.mark.parametrize(
-    ("initialiser_mode", "expected_mode"),
-    [(True, ShotMode.FEW_SHOT), (False, ShotMode.ZERO_SHOT)],
-)
-def test_per_call_none_inherits_initialiser_shot_mode(
-    initialiser_mode: bool, expected_mode: ShotMode
-) -> None:
-    """A per-call None inherits either explicit initialiser boolean."""
-    benchmarker = Benchmarker(progress_bar=False, few_shot=initialiser_mode)
-
-    config = benchmarker._build_benchmark_config(few_shot=None)
-
-    assert config.few_shot is expected_mode
-
-
-def test_per_call_auto_overrides_initialiser_shot_mode() -> None:
-    """An explicit AUTO per-call policy overrides an initialiser boolean."""
-    for initialiser_mode in (True, False):
-        benchmarker = Benchmarker(progress_bar=False, few_shot=initialiser_mode)
-
-        config = benchmarker._build_benchmark_config(few_shot=ShotMode.AUTO)
-
-        assert config.few_shot is ShotMode.AUTO
-
-
-def test_auto_shot_mode_resolution(model_config: ModelConfig) -> None:
-    """AUTO selects the agreed modes for each model category."""
-    encoder = model_config
-    local = replace(encoder, model_type=ModelType.GENERATIVE)
-    api = replace(local, inference_backend=InferenceBackend.LITELLM)
-
-    assert resolve_shot_modes(encoder, None) == [ShotMode.FEW_SHOT]
-    assert resolve_shot_modes(local, None, GenerativeType.BASE) == [ShotMode.FEW_SHOT]
-    assert resolve_shot_modes(local, None, GenerativeType.INSTRUCTION_TUNED) == [
-        ShotMode.ZERO_SHOT,
-        ShotMode.FEW_SHOT,
-    ]
-    assert resolve_shot_modes(api, None) == [ShotMode.ZERO_SHOT]
-
-
-def test_explicit_shot_mode_overrides(model_config: ModelConfig) -> None:
-    """Legacy boolean overrides remain single-mode selections."""
-    generative = replace(model_config, model_type=ModelType.GENERATIVE)
-
-    assert resolve_shot_modes(generative, True) == [ShotMode.FEW_SHOT]
-    assert resolve_shot_modes(generative, False) == [ShotMode.ZERO_SHOT]
-    assert resolve_shot_modes(generative, ShotMode.FEW_SHOT) == [ShotMode.FEW_SHOT]
-
-
-def test_auto_dual_mode_loads_model_once(
-    monkeypatch: pytest.MonkeyPatch,
-    benchmark_config: BenchmarkConfig,
-    dataset_config: DatasetConfig,
-    model_config: ModelConfig,
-) -> None:
-    """Both AUTO flows share one loaded model."""
-    generative = replace(model_config, model_type=ModelType.GENERATIVE)
-    config = replace(benchmark_config, few_shot=None)
-    loaded_model = SimpleNamespace(generative_type=GenerativeType.INSTRUCTION_TUNED)
-    load_model = Mock(return_value=loaded_model)
-    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
-
-    loaded, pending, _, error = Benchmarker(
-        progress_bar=False
-    )._prepare_shot_benchmarks(
-        model_config=generative,
-        datasets=[dataset_config],
-        benchmark_config=config,
-        existing_results=[],
-    )
-
-    assert error is None
-    assert loaded is loaded_model
-    assert [mode for mode, _ in pending] == [ShotMode.ZERO_SHOT, ShotMode.FEW_SHOT]
-    load_model.assert_called_once()
-
-
 def test_auto_cached_base_model_uses_cached_metadata(
     monkeypatch: pytest.MonkeyPatch,
     benchmark_config: BenchmarkConfig,
@@ -206,6 +58,34 @@ def test_auto_cached_base_model_uses_cached_metadata(
     assert pending == []
     assert cached == [few_shot_result]
     load_model.assert_not_called()
+
+
+def test_auto_dual_mode_loads_model_once(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """Both AUTO flows share one loaded model."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    config = replace(benchmark_config, few_shot=None)
+    loaded_model = SimpleNamespace(generative_type=GenerativeType.INSTRUCTION_TUNED)
+    load_model = Mock(return_value=loaded_model)
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
+
+    loaded, pending, _, error = Benchmarker(
+        progress_bar=False
+    )._prepare_shot_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config],
+        benchmark_config=config,
+        existing_results=[],
+    )
+
+    assert error is None
+    assert loaded is loaded_model
+    assert [mode for mode, _ in pending] == [ShotMode.ZERO_SHOT, ShotMode.FEW_SHOT]
+    load_model.assert_called_once()
 
 
 def test_auto_explicit_generative_type_overrides_cached_metadata(
@@ -304,6 +184,21 @@ def test_auto_explicit_generative_type_uses_complete_cache(
     load_model.assert_not_called()
 
 
+def test_auto_shot_mode_resolution(model_config: ModelConfig) -> None:
+    """AUTO selects the agreed modes for each model category."""
+    encoder = model_config
+    local = replace(encoder, model_type=ModelType.GENERATIVE)
+    api = replace(local, inference_backend=InferenceBackend.LITELLM)
+
+    assert resolve_shot_modes(encoder, None) == [ShotMode.FEW_SHOT]
+    assert resolve_shot_modes(local, None, GenerativeType.BASE) == [ShotMode.FEW_SHOT]
+    assert resolve_shot_modes(local, None, GenerativeType.INSTRUCTION_TUNED) == [
+        ShotMode.ZERO_SHOT,
+        ShotMode.FEW_SHOT,
+    ]
+    assert resolve_shot_modes(api, None) == [ShotMode.ZERO_SHOT]
+
+
 def test_cached_shot_mode_survives_missing_mode_load_failure(
     monkeypatch: pytest.MonkeyPatch,
     benchmark_config: BenchmarkConfig,
@@ -393,6 +288,15 @@ def test_cached_shot_modes_are_independent(
     assert cached == [few_shot_result]
 
 
+def test_explicit_shot_mode_overrides(model_config: ModelConfig) -> None:
+    """Legacy boolean overrides remain single-mode selections."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+
+    assert resolve_shot_modes(generative, True) == [ShotMode.FEW_SHOT]
+    assert resolve_shot_modes(generative, False) == [ShotMode.ZERO_SHOT]
+    assert resolve_shot_modes(generative, ShotMode.FEW_SHOT) == [ShotMode.FEW_SHOT]
+
+
 def test_load_error_counts_concrete_remaining_work() -> None:
     """A mode-level model failure counts the other concrete work items."""
     benchmarker = Benchmarker(progress_bar=False)
@@ -455,6 +359,77 @@ def test_model_cache_is_cleared_when_loading_fails(
 
     assert benchmarker.benchmark(model="model") == []
     assert clear_cache.call_count == 2
+
+
+def test_multi_model_progress_uses_full_workload(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+    tmp_path: Path,
+) -> None:
+    """Progress totals use each model's concrete workload."""
+    models = [
+        replace(model_config, model_id="first-model"),
+        replace(model_config, model_id="second-model"),
+    ]
+    config = replace(
+        benchmark_config, datasets=[dataset_config], few_shot=None, save_results=False
+    )
+    benchmarker = Benchmarker(progress_bar=False, save_results=False)
+    benchmarker.results_path = tmp_path / "results.jsonl"
+    monkeypatch.setattr(benchmarker, "_build_benchmark_config", lambda **_: config)
+    monkeypatch.setattr(
+        benchmarker,
+        "_prepare_model_ids",
+        lambda model_id: ["first-model", "second-model"],
+    )
+    monkeypatch.setattr(
+        benchmarker, "_fetch_model_configs", lambda model_ids, benchmark_config: models
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_create_model_dataset_mapping",
+        lambda model_configs, dataset_configs: {
+            model_config: [dataset_config] for model_config in model_configs
+        },
+    )
+    monkeypatch.setattr(benchmarker, "_check_adapter_requirements", lambda *args: None)
+    monkeypatch.setattr(
+        benchmarker, "_update_benchmark_config_for_dataset", lambda *args: None
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_prepare_shot_benchmarks",
+        Mock(
+            side_effect=[
+                (None, [(ShotMode.ZERO_SHOT, dataset_config)], [], None),
+                (None, [(ShotMode.FEW_SHOT, dataset_config)], [], None),
+            ]
+        ),
+    )
+    benchmark_calls = Mock(return_value=Mock())
+    monkeypatch.setattr(benchmarker, "_benchmark_single", benchmark_calls)
+
+    def handle_result(**kwargs: int) -> tuple[int, int, int, bool]:
+        return (
+            kwargs["num_finished"] + 1,
+            kwargs["num_skipped"],
+            kwargs["num_errored"],
+            False,
+        )
+
+    monkeypatch.setattr(benchmarker, "_handle_benchmark_result", handle_result)
+
+    benchmarker.benchmark(model=["first-model", "second-model"])
+
+    assert [
+        call.kwargs["num_finished_benchmarks"]
+        for call in benchmark_calls.call_args_list
+    ] == [0, 0]
+    assert [
+        call.kwargs["num_total_benchmarks"] for call in benchmark_calls.call_args_list
+    ] == [1, 1]
 
 
 def test_only_one_model_is_live_during_preparation(
@@ -530,6 +505,31 @@ def test_only_one_model_is_live_during_preparation(
     assert load_calls == 2
     assert loaded_model_refs[0]() is None
     assert clear_cache.call_count == 3
+
+
+def test_per_call_auto_overrides_initialiser_shot_mode() -> None:
+    """An explicit AUTO per-call policy overrides an initialiser boolean."""
+    for initialiser_mode in (True, False):
+        benchmarker = Benchmarker(progress_bar=False, few_shot=initialiser_mode)
+
+        config = benchmarker._build_benchmark_config(few_shot=ShotMode.AUTO)
+
+        assert config.few_shot is ShotMode.AUTO
+
+
+@pytest.mark.parametrize(
+    ("initialiser_mode", "expected_mode"),
+    [(True, ShotMode.FEW_SHOT), (False, ShotMode.ZERO_SHOT)],
+)
+def test_per_call_none_inherits_initialiser_shot_mode(
+    initialiser_mode: bool, expected_mode: ShotMode
+) -> None:
+    """A per-call None inherits either explicit initialiser boolean."""
+    benchmarker = Benchmarker(progress_bar=False, few_shot=initialiser_mode)
+
+    config = benchmarker._build_benchmark_config(few_shot=None)
+
+    assert config.few_shot is expected_mode
 
 
 def test_zero_shot_tasks_are_not_duplicated(

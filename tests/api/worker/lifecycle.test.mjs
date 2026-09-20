@@ -61,7 +61,7 @@ test("claim rejects an issue model edited during metadata resolution", async () 
   process.env.GITHUB_TOKEN = "github-token";
   process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
     euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "da",
-    identity_suffixes: [JSON.stringify(["race", false, true])], count: 1,
+    allowed_identity_suffix_sets: [[JSON.stringify(["race", false, true])]],
     task_groups: ["sequence_classification"], warnings: [],
   }] });
   const language = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
@@ -128,7 +128,7 @@ test("claim resumes after expired contributor unassignment interruption", async 
   process.env.GITHUB_TOKEN = "github-token";
   process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
     euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "da",
-    identity_suffixes: [JSON.stringify(["recovered", false, true])], count: 1,
+    allowed_identity_suffix_sets: [[JSON.stringify(["recovered", false, true])]],
     task_groups: ["sequence_classification"], warnings: [],
   }] });
   const language = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";

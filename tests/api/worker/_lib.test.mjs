@@ -187,11 +187,47 @@ test("generated trusted scopes are exact-language and versioned", () => {
   assert.ok(scope.allowed_identity_suffix_sets[0].length > 0);
 });
 
+test("trusted policy preserves exact runtime alternatives", () => {
+  const original = process.env.VOLUNTEER_SCOPE_POLICY_JSON;
+  const alternatives = [
+    [JSON.stringify(["base", false, true])],
+    [JSON.stringify(["zero", false, false]), JSON.stringify(["few", false, true])],
+  ];
+  process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
+    euroeval_version: "1.0.0", model_type: "generative", language: "da", language_group: "da",
+    allowed_identity_suffix_sets: alternatives, task_groups: ["text_to_text"], warnings: [],
+  }] });
+  try {
+    assert.deepEqual(expectedScope("1.0.0", "generative", "da").allowed_identity_suffix_sets, alternatives);
+  } finally {
+    if (original === undefined) delete process.env.VOLUNTEER_SCOPE_POLICY_JSON;
+    else process.env.VOLUNTEER_SCOPE_POLICY_JSON = original;
+  }
+});
+
+test("trusted policy rejects partial and mixed identity sets", () => {
+  const original = process.env.VOLUNTEER_SCOPE_POLICY_JSON;
+  const base = {
+    euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "da",
+    allowed_identity_suffix_sets: [[JSON.stringify(["dataset", false, true])]],
+    task_groups: ["sequence_classification"],
+  };
+  try {
+    process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{ ...base, identity_suffixes: base.allowed_identity_suffix_sets[0] }] });
+    assert.throws(() => expectedScope("1.0.0", "encoder", "da"), /mixes legacy/);
+    process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{ ...base, allowed_identity_suffix_sets: [[]] }] });
+    assert.throws(() => expectedScope("1.0.0", "encoder", "da"), /empty identity/);
+  } finally {
+    if (original === undefined) delete process.env.VOLUNTEER_SCOPE_POLICY_JSON;
+    else process.env.VOLUNTEER_SCOPE_POLICY_JSON = original;
+  }
+});
+
 test("trusted exact-language policy owns the lease language group", () => {
   const original = process.env.VOLUNTEER_SCOPE_POLICY_JSON;
   process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
     euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "policy-da",
-    identity_suffixes: [JSON.stringify(["dataset", false, true])],
+    allowed_identity_suffix_sets: [[JSON.stringify(["dataset", false, true])]],
     task_groups: ["sequence_classification"],
   }] });
   try {
@@ -208,7 +244,7 @@ test("trusted scope rejects non-canonical identity alternatives", () => {
   const original = process.env.VOLUNTEER_SCOPE_POLICY_JSON;
   process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
     euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "da",
-    identity_suffixes: ['["dataset",false,true] '], task_groups: ["sequence_classification"],
+    allowed_identity_suffix_sets: [['["dataset",false,true] ']], task_groups: ["sequence_classification"],
   }] });
   try {
     assert.throws(() => expectedScope("1.0.0", "encoder", "da"), /non-canonical/);
