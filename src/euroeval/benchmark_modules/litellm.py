@@ -468,6 +468,10 @@ class LiteLLMModel(BenchmarkModule):
         generation_kwargs = self._apply_parameter_adjustments(
             generation_kwargs=generation_kwargs
         )
+        if not any(
+            key in generation_kwargs for key in ("max_completion_tokens", "max_tokens")
+        ):
+            generation_kwargs["max_output_tokens"] = 6
         test_input: c.Sequence[litellm.AllMessageValues] | str
         if self.generative_type == GenerativeType.BASE:
             test_input = "Test message json"

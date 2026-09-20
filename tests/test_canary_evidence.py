@@ -359,6 +359,97 @@ def test_litellm_collection_reuses_wrapper_without_state_leakage(
     }
 
 
+def test_litellm_reused_model_keeps_every_canary_request_bounded(
+    model_config: ModelConfig,
+    benchmark_config: BenchmarkConfig,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Bound canary requests after ordinary generation rejects standard limits."""
+    calls: list[
+        tuple[c.Sequence[c.Sequence[litellm.AllMessageValues] | str], dict[str, object]]
+    ] = []
+    model = object.__new__(LiteLLMModel)
+    model.model_config = replace(model_config, model_id="provider/model", param=None)
+    model.log_metadata = False
+    model.benchmark_config = replace(
+        benchmark_config,
+        api_key="token",
+        api_base=None,
+        api_version=None,
+        generative_type=GenerativeType.BASE,
+    )
+    model.buffer = {"first_label_token_mapping": False, "max_concurrent_calls": 5}
+    model._parameter_adjustments = set()
+    model._max_thinking_budget = None
+    model.generation_kwargs = {
+        "max_completion_tokens": 128,
+        "response_format": "dataset-only",
+        "logprobs": True,
+    }
+
+    ordinary_kwargs, _ = model._handle_exception(
+        error=UnsupportedParamsError(
+            message="provider does not support parameters: ['max_completion_tokens']"
+        ),
+        max_completion_tokens=128,
+    )
+    ordinary_kwargs, _ = model._handle_exception(
+        error=UnsupportedParamsError(
+            message="provider does not support parameters: ['max_tokens']"
+        ),
+        **ordinary_kwargs,
+    )
+    assert ordinary_kwargs == {}
+    assert model._parameter_adjustments == {
+        ParameterAdjustment.USE_MAX_TOKENS,
+        ParameterAdjustment.NO_MAX_TOKENS,
+    }
+
+    async def fake_generate(
+        self: LiteLLMModel,
+        model_id: str,
+        inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str],
+        max_concurrent_calls: int,
+        **generation_kwargs: object,
+    ) -> tuple[
+        c.Sequence[tuple[int, ModelResponse]], c.Sequence[tuple[int, Exception]]
+    ]:
+        calls.append((inputs, generation_kwargs))
+        return [(index, ModelResponse(choices=[])) for index in range(len(inputs))], []
+
+    def fake_create_model_output(
+        model_responses: c.Sequence[ModelResponse], model_id: str
+    ) -> GenerativeModelOutput:
+        return GenerativeModelOutput(sequences=["amber forest"] * len(model_responses))
+
+    monkeypatch.setattr(LiteLLMModel, "_generate_async", fake_generate)
+    monkeypatch.setattr(
+        LiteLLMModel, "_create_model_output", staticmethod(fake_create_model_output)
+    )
+    prompts = [f"prompt {index}" for index in range(CANARY_ROW_COUNT)]
+
+    result = model.collect_canary_completions(prompts)
+
+    assert result == ["amber forest"] * CANARY_ROW_COUNT
+    assert len(calls) == 2
+    assert len(calls[0][0]) == 1
+    assert len(calls[1][0]) == CANARY_ROW_COUNT
+    for _, generation_kwargs in calls:
+        limits = {
+            key: generation_kwargs[key]
+            for key in ("max_completion_tokens", "max_tokens", "max_output_tokens")
+            if key in generation_kwargs
+        }
+        assert limits == {"max_output_tokens": 6}
+        assert "response_format" not in generation_kwargs
+        assert "logprobs" not in generation_kwargs
+    assert model.generation_kwargs == {
+        "max_completion_tokens": 128,
+        "response_format": "dataset-only",
+        "logprobs": True,
+    }
+
+
 @pytest.mark.parametrize(
     ("rejected", "adjustments", "expected_limit", "expected_probe_calls"),
     [
