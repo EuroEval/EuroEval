@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock
 
+import pytest
 from huggingface_hub.errors import OfflineModeIsEnabled
 
 from euroeval.hf_hub_utils import _repo_exists
@@ -25,14 +26,16 @@ class TestRepoExists:
         )
         assert _repo_exists(hf_api=hf_api, dataset_id="some/dataset-offline") is False
 
-    def test_returns_false_when_repo_missing(self) -> None:
-        """Test that ``_repo_exists`` returns False when the repo is missing."""
+    @pytest.mark.parametrize(
+        ("repo_exists", "expected"),
+        [(False, False), (True, True)],
+        ids=["missing repository", "existing repository"],
+    )
+    def test_returns_repo_exists_status(
+        self, repo_exists: bool, expected: bool
+    ) -> None:
+        """Return the Hub API's status for available and missing repositories."""
         hf_api = MagicMock()
-        hf_api.repo_exists.return_value = False
-        assert _repo_exists(hf_api=hf_api, dataset_id="some/dataset-missing") is False
-
-    def test_returns_true_when_repo_exists(self) -> None:
-        """Test that ``_repo_exists`` returns True when the repo exists."""
-        hf_api = MagicMock()
-        hf_api.repo_exists.return_value = True
-        assert _repo_exists(hf_api=hf_api, dataset_id="some/dataset-exists") is True
+        hf_api.repo_exists.return_value = repo_exists
+        dataset_id = "some/dataset-exists" if repo_exists else "some/dataset-missing"
+        assert _repo_exists(hf_api=hf_api, dataset_id=dataset_id) is expected

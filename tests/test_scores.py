@@ -53,13 +53,13 @@ class TestLogScores:
             model_param=None,
         )
 
-    def test_has_correct_keys(self, logged_scores: ScoreDict) -> None:
-        """Test that `log_scores` returns a dictionary with the correct keys."""
-        assert sorted(logged_scores.keys()) == ["raw", "total"]
-
-    def test_is_correct_type(self, logged_scores: ScoreDict) -> None:
-        """Test that `log_scores` returns a dictionary."""
+    def test_output_structure(
+        self, logged_scores: ScoreDict, scores: list[dict[str, float]]
+    ) -> None:
+        """The logged result has the expected shape and preserves raw scores."""
         assert isinstance(logged_scores, dict)
+        assert sorted(logged_scores.keys()) == ["raw", "total"]
+        assert logged_scores["raw"] == scores
 
     def test_num_failed_instances_defaults_to_zero(self, metric: Metric) -> None:
         """Test that `log_scores` defaults `num_failed_instances` to 0.0 when absent."""
@@ -76,7 +76,6 @@ class TestLogScores:
             model_param=None,
         )
         total_dict = result["total"]
-        assert isinstance(total_dict, dict)
         assert total_dict["num_failed_instances"] == 0.0  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule, invalid-argument-type]
 
     def test_num_failed_instances_sums_across_iterations(self, metric: Metric) -> None:
@@ -108,23 +107,11 @@ class TestLogScores:
             model_param=None,
         )
         total_dict = result["total"]
-        assert isinstance(total_dict, dict)
         assert total_dict["num_failed_instances"] == 5.0  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule, invalid-argument-type]
-
-    def test_raw_scores_are_identical_to_input(
-        self, logged_scores: ScoreDict, scores: list[dict[str, float]]
-    ) -> None:
-        """Test that `log_scores` returns the same raw scores as the input."""
-        assert logged_scores["raw"] == scores
-
-    def test_total_scores_is_dict(self, logged_scores: ScoreDict) -> None:
-        """Test that `log_scores` returns a dictionary for the total scores."""
-        assert isinstance(logged_scores["total"], dict)
 
     def test_total_scores_keys(self, logged_scores: ScoreDict, metric: Metric) -> None:
         """Test that `log_scores` returns a dictionary with the correct keys."""
         total_dict = logged_scores["total"]
-        assert isinstance(total_dict, dict)
         assert sorted(total_dict.keys()) == sorted(
             [f"test_{metric.name}", f"test_{metric.name}_se", "num_failed_instances"]
         )
@@ -132,7 +119,6 @@ class TestLogScores:
     def test_total_scores_values_are_floats(self, logged_scores: ScoreDict) -> None:
         """Test that `log_scores` returns a dictionary with float values."""
         total_dict = logged_scores["total"]
-        assert isinstance(total_dict, dict)
         for val in total_dict.values():
             assert isinstance(val, float)
 

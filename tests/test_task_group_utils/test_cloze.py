@@ -15,20 +15,16 @@ class TestLetterToChoiceText:
 
     choices = ["apple", "banana", "cherry", "date"]
 
-    def test_invalid_letter_raises(self) -> None:
-        """Non-letters raise `InvalidBenchmark`."""
+    @pytest.mark.parametrize("letter", ["!", "e"], ids=["non-letter", "out-of-range"])
+    def test_invalid_letter_raises(self, letter: str) -> None:
+        """Invalid letters raise `InvalidBenchmark`."""
         with pytest.raises(InvalidBenchmark):
-            cloze.letter_to_choice_text("!", self.choices)
+            cloze.letter_to_choice_text(letter, self.choices)
 
     def test_lowercase_letter(self) -> None:
         """The letter indexes into the choices list in order."""
         assert cloze.letter_to_choice_text("a", self.choices) == "apple"
         assert cloze.letter_to_choice_text("c", self.choices) == "cherry"
-
-    def test_out_of_range_raises(self) -> None:
-        """Letters beyond the provided choices raise `InvalidBenchmark`."""
-        with pytest.raises(InvalidBenchmark):
-            cloze.letter_to_choice_text("e", self.choices)
 
     def test_uppercase_letter_is_lowered(self) -> None:
         """Upper-case letters are accepted and normalised."""

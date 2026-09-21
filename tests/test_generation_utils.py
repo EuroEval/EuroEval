@@ -4,19 +4,26 @@ import signal
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
 from datasets import Dataset
 
 from euroeval.generation_utils import _extract_token_classification_examples
 
 
-def test_token_classification_few_shot_terminates_with_case_variant_labels() -> None:
-    """Case-variant B labels must not defeat the no-sample termination guard.
+@pytest.mark.parametrize(
+    "labels",
+    [
+        pytest.param(["o", "b-per", "B-PER", "i-per"], id="case-variant-labels"),
+        pytest.param(["o", "b-per", "i-per"], id="sparse-entities"),
+    ],
+)
+def test_token_classification_few_shot_terminates_with_sparse_entities(
+    labels: list[str],
+) -> None:
+    """Few-shot extraction terminates when entity examples are scarce.
 
-    Regression: when `dataset_config.labels` contains case variants of the same
-    entity label (e.g. `b-per` and `B-PER`), lower-casing without deduplication
-    left `b_labels` longer than the set of exhausted labels tracked in
-    `labels_with_no_samples`. The `len(...) == len(...)` guard could then never
-    become true and the loop spun forever once entity examples ran out.
+    This covers both ordinary sparse entities and case variants of the same label,
+    which must not defeat the no-sample termination guard.
     """
     dataset = Dataset.from_dict(
         {
@@ -24,8 +31,7 @@ def test_token_classification_few_shot_terminates_with_case_variant_labels() -> 
             "labels": [["b-per"], ["o"], ["o"], ["o"], ["o"]],
         }
     )
-    # Both `b-per` and `B-PER` are present as case variants of the same label.
-    dataset_config: Any = SimpleNamespace(labels=["o", "b-per", "B-PER", "i-per"])
+    dataset_config: Any = SimpleNamespace(labels=labels)
 
     with _Timeout(seconds=30):
         result = _extract_token_classification_examples(
@@ -55,32 +61,3 @@ class _Timeout:
     @staticmethod
     def _raise(*_: object) -> None:
         raise TimeoutError("timed out — likely an infinite loop")
-
-
-def test_token_classification_few_shot_terminates_with_sparse_entities() -> None:
-    """Few-shot extraction must terminate when entity examples are scarce.
-
-    Regression: when the training split has fewer entity-bearing examples than
-    `num_few_shots` and at least one entity-free example remains, the label
-    `it.cycle` kept matching nothing and `shuffled_train` never shrank, so the
-    loop spun forever. Mirrors the guard already present in
-    `_extract_classification_examples`.
-    """
-    dataset = Dataset.from_dict(
-        {
-            "tokens": [["Alice"], ["the"], ["a"], ["and"], ["of"]],
-            "labels": [["b-per"], ["o"], ["o"], ["o"], ["o"]],
-        }
-    )
-    # Typed as Any: the function only reads `.labels`, so a lightweight stand-in
-    # avoids constructing a full DatasetConfig.
-    dataset_config: Any = SimpleNamespace(labels=["o", "b-per", "i-per"])
-
-    with _Timeout(seconds=30):
-        result = _extract_token_classification_examples(
-            shuffled_train=dataset, num_few_shots=5, dataset_config=dataset_config
-        )
-
-    # Exactly one entity-bearing example exists, so it must return precisely that
-    # one (and, crucially, return at all).
-    assert len(result) == 1

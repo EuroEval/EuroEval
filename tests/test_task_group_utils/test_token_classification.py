@@ -50,16 +50,6 @@ class TestSerialiseNerTags:
         )
         assert json.loads(result) == {"person": [], "place": [], "ingen": []}
 
-    def test_uses_double_quotes_and_is_valid_json(self) -> None:
-        """The output is valid JSON (double quotes), not a Python dict repr."""
-        result = serialise_ner_tags(
-            tokens=["Paris"],
-            labels=["b-loc"],
-            prompt_label_mapping=self.prompt_label_mapping,
-        )
-        assert '"place"' in result
-        assert json.loads(result)["place"] == ["Paris"]
-
 
 class TestSerialisedNerContentLength:
     """Tests for `serialised_ner_content_length`."""
