@@ -67,12 +67,17 @@ reported error bars, and any leaderboard movement should be within statistical n
 
 ## How do you prevent test-set contamination?
 
-Honestly, we mostly can't. Most of the datasets in EuroEval are publicly available, so
-we have no way of stopping them from ending up in pretraining corpora. We do plan to
-introduce a closed, held-out subset of the benchmark specifically for contamination
-testing, but that work is still in progress. If you're interested in helping us build
-that, please [reach out](https://github.com/EuroEval/EuroEval/issues) — we'd love the
-help.
+Most EuroEval datasets are public, so we cannot prevent their test examples from ending
+up in model training corpora. We supplement them with a private, prospective
+[contamination canary](/tasks/contamination-detection) for generative models. The model
+sees the canary corpus, but not the hidden associations, matched controls, or scoring
+key.
+
+The resulting evidence is interpreted only during private leaderboard processing and
+is never published as a metric or ranking. A positive detection can exclude a model
+from generated leaderboards. A negative result does not prove that the model has never
+seen EuroEval's public benchmark data; it only means that this detector found no
+evidence of exposure to the private canary.
 
 ## How do I get my model added to the leaderboard?
 

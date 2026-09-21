@@ -11,6 +11,9 @@ import os
 import threading
 import time
 import typing as t
+from pathlib import Path
+
+from euroeval.canary_evidence import CANARY_CORPUS_PATH_ENV
 
 from .auth import authenticate
 from .broker import BrokerError, BrokerProtocol
@@ -197,6 +200,11 @@ class Worker:
                 raise AuthenticationIdentityError(
                     active.github_login or "", self._login
                 )
+            if active is not None and active.finalised_submission_id is not None:
+                self.state.clear_active()
+                if once:
+                    return
+                continue
             if active is not None and not _lease_is_valid(active.lease):
                 logger.warning(
                     "Discarding expired local lease %s", active.lease.lease_id
@@ -312,7 +320,10 @@ class Worker:
             self.state.save_active(lease=lease, github_login=expected_login or None)
         elif active.github_login is None and expected_login:
             self.state.save_active(
-                lease=active.lease, records=active.records, github_login=expected_login
+                lease=active.lease,
+                records=active.records,
+                github_login=expected_login,
+                finalised_submission_id=active.finalised_submission_id,
             )
         heartbeat_parameters = inspect.signature(Heartbeat).parameters
         if "persist" in heartbeat_parameters:
@@ -332,7 +343,8 @@ class Worker:
         completed = False
         selected_gpu = _gpu_for_lease(hardware.gpus, lease)
         try:
-            if active is not None and active.records:
+            evaluation_complete = active is not None and bool(active.records)
+            if evaluation_complete:
                 records = active.records
                 heartbeat.start()
             else:
@@ -361,11 +373,13 @@ class Worker:
                     raise
                 heartbeat.start()
                 output = self.state.directory / "results" / f"{lease.lease_id}.jsonl"
-                with _pin_gpu(selected_gpu):
+                corpus_path = self._canary_corpus_path(lease=lease)
+                with _pin_gpu(selected_gpu), _pin_canary_corpus(corpus_path):
                     evaluated = self.evaluator.evaluate(lease=lease, output_path=output)
                 heartbeat.check()
                 try:
                     records = self._durable_records(active=active, evaluated=evaluated)
+                    self.state.save_records(records)
                 except RuntimeError:
                     self.client.release(
                         credential=self._credential,
@@ -385,6 +399,7 @@ class Worker:
                 credential=self._credential, lease_id=lease.lease_id
             )
             self.state.save_submission_id(submission_id)
+            self.state.mark_finalised(submission_id)
             self.last_submission_id = submission_id
             logger.info("Volunteer submission completed: %s", submission_id)
             self.state.clear_active()
@@ -395,6 +410,36 @@ class Worker:
             heartbeat.stop()
             if not completed:
                 logger.info("Preserving active lease %s for restart", lease.lease_id)
+
+    def _canary_corpus_path(self, *, lease: Lease) -> Path | None:
+        instruction = lease.contamination_canary
+        if (
+            instruction is None
+            or instruction.status != "required"
+            or lease.model_type != "generative"
+        ):
+            return None
+        unavailable = self.state.directory / "canary-corpus" / "unavailable.jsonl"
+        try:
+            fetch = getattr(self.client, "fetch_canary_corpus", None)
+            if not callable(fetch):
+                raise RuntimeError("broker cannot deliver the reserved canary corpus")
+            content = fetch(credential=self._credential, lease=lease)
+            if (
+                hashlib.sha256(content.encode()).hexdigest()
+                != instruction.corpus_sha256
+            ):
+                raise RuntimeError(
+                    "broker canary corpus does not match the lease digest"
+                )
+            return self.state.save_canary_corpus(
+                digest=instruction.corpus_sha256, content=content
+            )
+        except Exception:  # noqa: BLE001 - canary delivery cannot block evaluation
+            logger.warning(
+                "Canary corpus is unavailable; ordinary evaluation will continue"
+            )
+            return unavailable
 
     def _durable_records(
         self, active: ActiveLease | None, evaluated: list[EEERecord]
@@ -624,6 +669,20 @@ def _lease_lost(error: BaseException) -> bool:
         and error.status == 409
         and error.code == "lease_assignment_lost"
     )
+
+
+@contextlib.contextmanager
+def _pin_canary_corpus(path: Path | None) -> c.Iterator[None]:
+    previous = os.environ.get(CANARY_CORPUS_PATH_ENV)
+    if path is not None:
+        os.environ[CANARY_CORPUS_PATH_ENV] = str(path)
+    try:
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop(CANARY_CORPUS_PATH_ENV, None)
+        else:
+            os.environ[CANARY_CORPUS_PATH_ENV] = previous
 
 
 @contextlib.contextmanager

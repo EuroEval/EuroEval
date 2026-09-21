@@ -90,7 +90,14 @@ value for later runs if the deployment must remain pinned.
 4. The worker independently refetches the same immutable metadata and capability before
    evaluation, then evaluates with remote code disabled and safetensors required.
 5. Each record is uploaded idempotently to private Hugging Face staging.
-6. The broker validates the complete lease and marks it ready for review.
+6. For a lease that requires contamination collection, the worker explicitly runs the
+   `contamination-detection` task alongside the normal official tasks. Generative models
+   reuse the already loaded model for bounded greedy completions; encoder models record
+   that the task is not applicable. A lease without that requirement selects only the
+   normal official datasets, despite the public default including the canary. The
+   resulting canary record uses the ordinary result upload and review path, while its
+   broker lease field remains control-plane metadata.
+7. The broker validates the complete lease and marks it ready for review.
 
 Issue assignees are the mutable, authoritative active evaluators and credit identities
 for both manual and volunteer work. Maintainers can transfer ownership or credit by
@@ -108,9 +115,12 @@ is empty. `No NVIDIA GPU` means that the host runtime did not expose a usable GP
 
 ## Data and credential handling
 
-The `/cache` volume is private worker state. Back it up only if the backup is protected
-as a secret, and remove it when decommissioning a worker. To discard a worker's local
-credential and cached data:
+The `/cache` volume is private worker state. When a lease requires canary collection it
+may temporarily contain the private `{row_id, text}` corpus and plaintext-free evidence.
+It never contains the scoring key, expected targets, matched controls, Hugging Face
+organisation token, or private scoring records. Back it up only if the backup is
+protected as a secret, and remove it when decommissioning a worker. To discard a
+worker's local credential and cached data:
 
 ```sh
 docker volume rm euroeval-worker-cache

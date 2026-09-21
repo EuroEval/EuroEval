@@ -127,6 +127,23 @@ class BenchmarkResult(pydantic.BaseModel):
     open: bool | None = None
     trained_from_scratch: bool | None = None
     release_date: str | None = None
+    contamination_canary_evidence: dict[str, object] | None = None
+
+    @pydantic.field_validator("contamination_canary_evidence", mode="before")
+    @classmethod
+    def _validate_contamination_canary_evidence(
+        cls, value: object
+    ) -> dict[str, object] | None:
+        """Validate and canonicalise embedded contamination-canary evidence.
+
+        Returns:
+            The canonical evidence mapping, or ``None`` when absent.
+        """
+        if value is None:
+            return None
+        from .canary_evidence import evidence_from_dict  # noqa: PLC0415
+
+        return evidence_from_dict(value).to_dict()
 
     def append_to_results(self, results_path: Path) -> None:
         """Append the benchmark result to the results file.

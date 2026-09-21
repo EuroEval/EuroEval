@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import claim from "../../../api/worker/claim.ts";
-import { fetch as finalise } from "../../../api/worker/finalise.ts";
+import { fetch as finalise, validateResultScope } from "../../../api/worker/finalise.ts";
 import heartbeat from "../../../api/worker/heartbeat.ts";
 import release from "../../../api/worker/release.ts";
 import { parseVolunteerMarker, signVolunteerMarker, sha256, verifyVolunteerMarker } from "../../../api/worker/_lib.ts";
@@ -267,6 +267,28 @@ test("finalise accepts a valid instruction-reasoning dual-mode alternative", asy
   const response = await finaliseSuccessfulScope("fr", suffixes);
   assert.equal(response.status, 200);
   assert.equal((await response.json()).status, "ready");
+});
+
+test("scope validation excludes a required canary from an exact alternative", () => {
+  const suffixes = [
+    JSON.stringify(["ifeval-fr", null, null]),
+    JSON.stringify(["multiloko-fr", null, false]),
+    JSON.stringify(["multiloko-fr", null, true]),
+  ];
+  const activeLease = { ...lease, model_type: "generative",
+    contamination_canary: { status: "required", protocol_version: "canary/v1",
+      corpus_revision: "revision", corpus_sha256: "a".repeat(64) },
+    expected_scope: { policy_version: "test-policy", language_group: "fr",
+      allowed_identity_suffix_sets: [suffixes], task_groups: ["multiple_choice_classification"], warnings: [],
+    } };
+  const entries = suffixes.map((item, index) => ({ digest: `digest-${index}`,
+    identity: JSON.stringify(["org/model", ...JSON.parse(item)]), path: `result-${index}.json` }));
+  entries.push({ digest: "canary-digest",
+    identity: JSON.stringify(["org/model", "contamination-canary-fr", null, null]),
+    path: "canary-result.json" });
+
+  assert.deepEqual(validateResultScope(entries, activeLease), suffixes);
+  assert.throws(() => validateResultScope(entries.slice(0, -1), activeLease), /expected scope/);
 });
 
 test("finalise rejects an issue edited before its locked transition", async () => {

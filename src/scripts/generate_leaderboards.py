@@ -35,7 +35,11 @@ from leaderboards.enums import LeaderboardCategory
 from leaderboards.leaderboard_generation import generate_leaderboard
 from leaderboards.leaderboard_visibility import leaderboard_should_be_shown
 from leaderboards.records import plain_model_id
-from leaderboards.result_processing import process_results
+from leaderboards.result_loading import reset_leaderboard_result_filter
+from leaderboards.result_processing import (
+    configure_canary_result_filter,
+    process_results,
+)
 from leaderboards.task_metadata import (
     languages_with_official_datasets,
     task_metric_pretty_names,
@@ -139,6 +143,8 @@ def main(
             trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
             upload_to_bucket=upload,
         )
+    else:
+        configure_canary_result_filter()
 
     # Offer to refresh the core-model list if it hasn't been touched in
     # over a month. Doing this inside `generate_leaderboards` keeps it on
@@ -189,6 +195,8 @@ def main(
         backup_results()
     except OSError as exc:  # pCloud unavailable / disk full / etc.
         logger.warning(f"Results backup failed: {exc}")
+    finally:
+        reset_leaderboard_result_filter()
 
 
 def _maybe_refresh_core_models() -> None:

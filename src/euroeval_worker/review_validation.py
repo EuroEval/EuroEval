@@ -9,6 +9,7 @@ import re
 import typing as t
 from pathlib import Path
 
+from euroeval.canary_evidence import evidence_from_dict
 from leaderboards.eee_validation import validate_eee_record
 from leaderboards.result_identity import (
     ResultIdentity,
@@ -83,21 +84,46 @@ def _validate_manifest(
             revision=revision,
             language=language,
             euroeval_version=euroeval_version,
+            model_type=model_type,
         )
         for entry in raw_results
     )
     actual = tuple(record.identity for record in records)
     _raise_on_identity_collisions(actual)
+    ordinary_actual = tuple(
+        identity
+        for identity in actual
+        if not (
+            identity[1] == "contamination-canary"
+            or identity[1].startswith("contamination-canary-")
+        )
+    )
+    canary_actual = tuple(
+        identity for identity in actual if identity not in ordinary_actual
+    )
     actual_suffixes = tuple(
         json.dumps(identity[1:], ensure_ascii=False, separators=(",", ":"))
-        for identity in actual
+        for identity in ordinary_actual
     )
     actual_set = set(actual_suffixes)
     matched = next(
         (alternative for alternative in trusted_sets if set(alternative) == actual_set),
         None,
     )
-    if matched is None or len(actual_suffixes) != len(actual_set):
+    canary_instruction = manifest.get("contamination_canary")
+    canary_required = (
+        isinstance(canary_instruction, dict)
+        and canary_instruction.get("status") == "required"
+    )
+    expected_canary_count = 1 if canary_required else 0
+    if (
+        matched is None
+        or len(actual_suffixes) != len(actual_set)
+        or len(canary_actual) != expected_canary_count
+    ):
+        raise ReviewError("Manifest expected and actual canonical identities differ")
+    expected = _expected_identities(value=list(matched), model_id=model_id)
+    if set(ordinary_actual) != set(expected):
         raise ReviewError("Manifest expected and actual canonical identities differ")
     if {frozenset(item) for item in expected_sets} != {
         frozenset(item) for item in trusted_sets
@@ -113,7 +139,6 @@ def _validate_manifest(
         )
         if len(matched_sets) != 1 or set(matched_sets[0]) != actual_set:
             raise ReviewError("Manifest matched scope differs from actual identities")
-    expected = _expected_identities(value=list(matched), model_id=model_id)
     automated = _required_object(manifest, "automated_checks")
     if automated.get("result_count") != len(records):
         raise ReviewError("Manifest automated result_count is inconsistent")
@@ -326,6 +351,7 @@ def _validate_result_entry(
     revision: str,
     language: str,
     euroeval_version: str,
+    model_type: str,
 ) -> ValidatedRecord:
     if not isinstance(entry, dict):
         raise ReviewError("Manifest result entry must be an object")
@@ -358,6 +384,7 @@ def _validate_result_entry(
         revision=revision,
         language=language,
         euroeval_version=euroeval_version,
+        model_type=model_type,
         path=path,
     )
     scores, warnings = _scores(record=record, path=path)
@@ -469,6 +496,7 @@ def _validate_record_contract(
     revision: str,
     language: str,
     euroeval_version: str,
+    model_type: str,
     path: str,
 ) -> None:
     model = _required_object(record, "model_info")
@@ -487,6 +515,35 @@ def _validate_record_contract(
     ) != _normalise_version(euroeval_version):
         raise ReviewError(f"EuroEval version mismatch in {path}")
     details = _required_object(library, "additional_details")
+    dataset = details.get("dataset")
+    if isinstance(dataset, str) and (
+        dataset == "contamination-canary" or dataset.startswith("contamination-canary-")
+    ):
+        evidence_value = _json_value(
+            details.get("contamination_canary_evidence"),
+            f"contamination_canary_evidence in {path}",
+        )
+        try:
+            evidence = evidence_from_dict(evidence_value)
+        except (TypeError, ValueError) as error:
+            raise ReviewError(
+                f"Invalid contamination-canary evidence in {path}"
+            ) from error
+        if (
+            details.get("task") != "contamination-detection"
+            or evidence.model_id != model_id
+            or evidence.requested_revision != revision
+            or evidence.resolved_revision != revision
+            or evidence.identity_kind != "immutable"
+            or (
+                model_type == "encoder"
+                and (
+                    evidence.status != "not_applicable" or evidence.reason != "encoder"
+                )
+            )
+            or (model_type == "generative" and evidence.reason == "encoder")
+        ):
+            raise ReviewError(f"Canary evidence identity mismatch in {path}")
     raw_results = _json_value(details.get("raw_results"), f"raw_results in {path}")
     if not isinstance(raw_results, list):
         raise ReviewError(f"raw_results is not a list in {path}")

@@ -272,6 +272,17 @@ TOOL_CALLING = Task(
 
 # Orthogonal tasks, which measures things not related to 'raw' language modelling
 
+CONTAMINATION_DETECTION = Task(
+    name="contamination-detection",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict={},
+    metrics=[],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=6,
+    default_labels=[],
+    requires_zero_shot=True,
+)
+
 SPEED = Task(
     name="speed",
     task_group=TaskGroup.SPEED,

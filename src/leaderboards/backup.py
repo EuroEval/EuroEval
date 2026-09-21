@@ -21,9 +21,11 @@ import hashlib
 import json
 import logging
 import random
+import re
 import shutil
 import subprocess
 import tarfile
+import time
 import typing as t
 from pathlib import Path
 
@@ -42,6 +44,10 @@ from .constants import (
 from .eee_validation import is_eee_record
 
 logger = logging.getLogger(__name__)
+
+JOTTACLOUD_APP_PATH = Path("/Applications/Jottacloud.app")
+_JOTTAD_STARTUP_RETRIES = 3
+_JOTTAD_STARTUP_RETRY_DELAY = 5
 
 
 def backup_results(source: Path = RESULTS_DIR) -> Path | None:
@@ -104,21 +110,19 @@ def _archive_offsite(backup_path: Path) -> bool:
         )
         return False
     try:
-        result = subprocess.run(
-            [
-                str(cli),
-                "archive",
-                str(backup_path),
-                f"--remote={BACKUPS_ARCHIVE_DIR}/{backup_path.name}",
-                # Without --nogui the client insists on a terminal and dies with
-                # "open /dev/tty: device not configured" when run unattended.
-                "--nogui",
-            ],
-            capture_output=True,
-            text=True,
-            stdin=subprocess.DEVNULL,
-            timeout=BACKUPS_ARCHIVE_TIMEOUT,
-        )
+        result = _run_archive(backup_path=backup_path, cli=cli)
+        if result.returncode != 0 and _is_jottad_connection_failure(result):
+            if _launch_jottacloud():
+                logger.info(
+                    "Jottacloud app launched successfully; retrying archive upload"
+                )
+                for _ in range(_JOTTAD_STARTUP_RETRIES):
+                    time.sleep(_JOTTAD_STARTUP_RETRY_DELAY)
+                    result = _run_archive(backup_path=backup_path, cli=cli)
+                    if result.returncode == 0 or not _is_jottad_connection_failure(
+                        result
+                    ):
+                        break
     except (OSError, subprocess.TimeoutExpired) as exc:
         logger.warning(f"Could not archive the results backup to Jottacloud: {exc}")
         return False
@@ -138,6 +142,48 @@ def _archive_offsite(backup_path: Path) -> bool:
         f"Archived {backup_path.name} to Jottacloud Archive/{BACKUPS_ARCHIVE_DIR}/"
     )
     return True
+
+
+def _run_archive(backup_path: Path, cli: Path) -> subprocess.CompletedProcess[str]:
+    """Run the Jottacloud archive command without invoking a shell.
+
+    Returns:
+        The completed archive command.
+    """
+    return subprocess.run(
+        [
+            str(cli),
+            "archive",
+            str(backup_path),
+            f"--remote={BACKUPS_ARCHIVE_DIR}/{backup_path.name}",
+            # Without --nogui the client insists on a terminal and dies with
+            # "open /dev/tty: device not configured" when run unattended.
+            "--nogui",
+        ],
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+        timeout=BACKUPS_ARCHIVE_TIMEOUT,
+    )
+
+
+_JOTTAD_CONNECTION_FAILURE_RE = re.compile(
+    r"""
+    (
+        \b(?:could\s+not|cannot|can't|unable\s+to|failed\s+to|error(?:\s+while)?)
+        \s+(?:connect(?:ing|ion)?|discover|find|reach)\s+(?:to\s+)?jottad\b
+        |
+        \bjottad\b.{0,80}\b(?:connection|discovery)\s+
+        (?:failed|failure|error|refused|unavailable)\b
+        |
+        \b(?:connection|discovery)\s+
+        (?:failed|failure|error|refused|unavailable)\b.{0,80}\bjottad\b
+        |
+        \bjottad\b.{0,80}\b(?:is\s+)?(?:not\s+running|unavailable|not\s+found)\b
+    )
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
 
 
 def _is_archived(backup_path: Path) -> bool:
@@ -212,8 +258,42 @@ def _jotta_cli() -> Path | None:
     found = shutil.which("jotta-cli")
     if found is not None:
         return Path(found)
-    bundled = Path("/Applications/Jottacloud.app/Contents/MacOS/jotta-cli")
+    bundled = JOTTACLOUD_APP_PATH / "Contents/MacOS/jotta-cli"
     return bundled if bundled.exists() else None
+
+
+def _is_jottad_connection_failure(result: subprocess.CompletedProcess[str]) -> bool:
+    """Return whether an archive failure explicitly reports unavailable jottad."""
+    output = f"{result.stderr or ''}\n{result.stdout or ''}"
+    return _JOTTAD_CONNECTION_FAILURE_RE.search(output) is not None
+
+
+def _launch_jottacloud() -> bool:
+    """Start the installed macOS Jottacloud app, if present.
+
+    Returns:
+        Whether the app launch command succeeded.
+    """
+    if not JOTTACLOUD_APP_PATH.exists():
+        return False
+    try:
+        result = subprocess.run(
+            ["open", "-a", str(JOTTACLOUD_APP_PATH)],
+            capture_output=True,
+            text=True,
+            stdin=subprocess.DEVNULL,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        logger.warning(f"Could not start the Jottacloud app: {exc}")
+        return False
+    if result.returncode != 0:
+        logger.warning(
+            f"Could not start the Jottacloud app: "
+            f"{(result.stderr or result.stdout).strip()[:200]}"
+        )
+        return False
+    return True
 
 
 def _remove_archived_local(keep: Path) -> int:

@@ -16,6 +16,49 @@ from leaderboards.constants import LANGUAGE_GROUP_CODES
 from leaderboards.evaluation_common import _killed_by_signal_note
 
 
+def test_build_euroeval_cmd_emits_repeated_tasks() -> None:
+    """Task selections become repeated CLI arguments."""
+    command = evaluation_common._build_euroeval_cmd(
+        model_id="org/model",
+        languages=["en"],
+        datasets=None,
+        evaluate_test_split=False,
+        zero_shot=False,
+        gpu_memory_utilization=None,
+        clear_model_cache=False,
+        trust_remote_code=False,
+        tasks=["classification", "contamination-detection"],
+    )
+    assert command == [
+        "euroeval",
+        "--model",
+        "org/model",
+        "--evaluate-val-split",
+        "--language",
+        "en",
+        "--task",
+        "classification",
+        "--task",
+        "contamination-detection",
+    ]
+
+
+def test_build_euroeval_cmd_rejects_tasks_and_datasets() -> None:
+    """Task and dataset selections cannot be combined."""
+    with pytest.raises(ValueError, match="tasks.*datasets"):
+        evaluation_common._build_euroeval_cmd(
+            model_id="org/model",
+            languages=["en"],
+            datasets=["belebele-en"],
+            evaluate_test_split=False,
+            zero_shot=False,
+            gpu_memory_utilization=None,
+            clear_model_cache=False,
+            trust_remote_code=False,
+            tasks=["classification"],
+        )
+
+
 @pytest.mark.parametrize(
     argnames=["dtype", "count", "expected_bytes"],
     argvalues=[

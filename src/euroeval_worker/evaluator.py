@@ -4,10 +4,30 @@ import typing as t
 from pathlib import Path
 
 from euroeval.benchmarker import Benchmarker
+from euroeval.data_models import DatasetConfig
+from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.eee_utils import benchmark_result_to_eee_dict
 from euroeval.enums import ShotMode
+from euroeval.languages import get_all_languages, get_correct_language_codes
 
 from .types import EEERecord, JsonValue, Lease, canonical_json
+
+
+def _canary_tasks() -> list[str]:
+    """Return official task names together with the canary task."""
+    configs = get_all_dataset_configs(
+        custom_datasets_file=Path(""),
+        dataset_ids=[],
+        api_key=None,
+        cache_dir=Path(".cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    tasks = dict.fromkeys(
+        config.task.name for config in configs.values() if not config.unofficial
+    )
+    tasks["contamination-detection"] = None
+    return list(tasks)
 
 
 def _normalise_record(
@@ -31,6 +51,33 @@ def _normalise_record(
         record = dict(record)
         record["model_info"] = model_info
     return record
+
+
+def _official_dataset_configs(language: str) -> list[DatasetConfig]:
+    """Return official datasets for the leased language.
+
+    The public benchmark defaults now include the canary. A worker lease without a
+    canary requirement must therefore pass an explicit ordinary dataset selection to
+    retain the broker's opt-in semantics.
+    """
+    configs = get_all_dataset_configs(
+        custom_datasets_file=Path(""),
+        dataset_ids=[],
+        api_key=None,
+        cache_dir=Path(".cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    language_mapping = get_all_languages()
+    languages = [
+        language_mapping[code]
+        for code in get_correct_language_codes(language_codes=language)
+    ]
+    return [
+        config
+        for config in configs.values()
+        if not config.unofficial and any(item in languages for item in config.languages)
+    ]
 
 
 def _record(record: dict[str, JsonValue]) -> EEERecord:
@@ -91,9 +138,19 @@ class EuroEvalEvaluator(Evaluator):
         Returns:
             EEE records produced by the evaluation.
         """
+        canary_required = (
+            lease.contamination_canary is not None
+            and lease.contamination_canary.status == "required"
+        )
+        tasks = _canary_tasks() if canary_required else None
+        datasets = (
+            None if canary_required else _official_dataset_configs(lease.language)
+        )
         benchmarker = Benchmarker(
             progress_bar=False,
             save_results=False,
+            task=tasks,
+            dataset=datasets,
             language=lease.language,
             cache_dir=str(self.cache_dir),
             trust_remote_code=False,
@@ -107,6 +164,8 @@ class EuroEvalEvaluator(Evaluator):
         )
         results = benchmarker.benchmark(
             model=f"{lease.model_id}@{lease.model_revision}",
+            task=tasks,
+            dataset=datasets,
             language=lease.language,
             progress_bar=False,
             save_results=False,

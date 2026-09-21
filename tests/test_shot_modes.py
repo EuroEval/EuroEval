@@ -17,6 +17,7 @@ from euroeval.data_models import (
 )
 from euroeval.enums import GenerativeType, InferenceBackend, ModelType, ShotMode
 from euroeval.exceptions import InvalidModel
+from euroeval.tasks import CONTAMINATION_DETECTION
 
 
 def test_auto_cached_base_model_uses_cached_metadata(
@@ -58,6 +59,42 @@ def test_auto_cached_base_model_uses_cached_metadata(
     assert pending_benchmarks == []
     assert cached_results == [few_shot_result]
     load_model.assert_not_called()
+
+
+def test_auto_canary_is_planned_once_with_ordinary_dual_mode_work(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """The virtual canary runs once while ordinary AUTO work keeps both modes."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    canary_dataset = DatasetConfig(
+        task=CONTAMINATION_DETECTION,
+        languages=benchmark_config.languages,
+        name="contamination-canary",
+    )
+    load_model = Mock(
+        return_value=SimpleNamespace(generative_type=GenerativeType.INSTRUCTION_TUNED)
+    )
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
+
+    _, pending_benchmarks, _, error = Benchmarker(
+        progress_bar=False
+    )._prepare_pending_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config, canary_dataset],
+        benchmark_config=replace(benchmark_config, few_shot=ShotMode.AUTO),
+        existing_results=[],
+    )
+
+    assert error is None
+    assert [(mode, dataset.name) for mode, dataset in pending_benchmarks] == [
+        (ShotMode.ZERO_SHOT, dataset_config.name),
+        (ShotMode.ZERO_SHOT, canary_dataset.name),
+        (ShotMode.FEW_SHOT, dataset_config.name),
+    ]
+    load_model.assert_called_once()
 
 
 def test_auto_dual_mode_loads_model_once(

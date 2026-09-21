@@ -17,6 +17,7 @@ from euroeval_worker.state import PendingRecord, StateStore
 from euroeval_worker.types import (
     AuthPoll,
     AuthStart,
+    CanaryInstruction,
     Claim,
     EEERecord,
     ExpectedScope,
@@ -212,6 +213,14 @@ def test_broker_normalises_legacy_scope_and_rejects_malformed_alternatives() -> 
     """Legacy scopes become one set while ambiguous alternatives fail closed."""
     legacy = dataclasses.asdict(LEASE)
     legacy["protocol_version"] = "volunteer-worker/v1"
+    legacy["contamination_canary"] = dataclasses.asdict(
+        CanaryInstruction(
+            status="required",
+            protocol_version="canary/v1",
+            corpus_revision="revision",
+            corpus_sha256="a" * 64,
+        )
+    )
     legacy["expected_scope"] = {
         "policy_version": "test-policy",
         "language_group": "da",
@@ -224,6 +233,12 @@ def test_broker_normalises_legacy_scope_and_rejects_malformed_alternatives() -> 
     assert decoded.expected_scope is not None
     assert decoded.expected_scope.allowed_identity_suffix_sets == (
         ('["test",false,true]',),
+    )
+    assert decoded.contamination_canary == CanaryInstruction(
+        status="required",
+        protocol_version="canary/v1",
+        corpus_revision="revision",
+        corpus_sha256="a" * 64,
     )
     malformed = dataclasses.asdict(LEASE)
     malformed["protocol_version"] = "volunteer-worker/v1"
@@ -389,12 +404,113 @@ class OneRecordEvaluator:
         return [EEERecord({"id": "one"})]
 
 
+def test_canary_corpus_outage_does_not_block_results(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Finalise ordinary results when private corpus delivery is unavailable."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    lease = dataclasses.replace(
+        LEASE,
+        model_type="generative",
+        model_metadata=ModelEvidence(
+            pipeline_tag="text-generation",
+            architectures=("LlamaForCausalLM",),
+            model_type="generative",
+        ),
+        contamination_canary=CanaryInstruction(
+            status="required",
+            protocol_version="private-completion-canary/v1",
+            corpus_revision="revision",
+            corpus_sha256="a" * 64,
+        ),
+    )
+
+    class OutageBroker(Broker):
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            return Claim(lease)
+
+        def fetch_canary_corpus(self, credential: str, lease: Lease) -> str:
+            raise BrokerError("temporarily unavailable", status=503)
+
+        def submit_result(
+            self, credential: str, lease: Lease, result: EEERecord
+        ) -> None:
+            self.submissions += 1
+
+    broker = OutageBroker()
+    runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=OneRecordEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    ).run(once=True)
+
+    assert broker.submissions == 1
+    assert broker.finalised
+    assert not broker.releases
+
+
 def test_eee_record_rejects_non_finite_values() -> None:
     """Prevent NaN and Infinity from entering a digest-stable envelope."""
     with pytest.raises(ValueError):
         canonical_json({"value": float("nan")})
     with pytest.raises(ValueError):
         EEERecord(record_json='{"value": Infinity}')
+
+
+def test_encoder_canary_uses_ordinary_result_path_without_corpus(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Submit the encoder's auxiliary record without delivering canary prompts."""
+    monkeypatch.setattr(
+        runtime, "authenticate", lambda client, state: ("cred", "login")
+    )
+    monkeypatch.setattr(
+        runtime, "check_model_safety", lambda lease, gpus, free_disk_bytes=None: None
+    )
+    instruction = CanaryInstruction(
+        status="required",
+        protocol_version="private-completion-canary/v1",
+        corpus_revision="revision",
+        corpus_sha256="a" * 64,
+        reason="encoder",
+    )
+    lease = dataclasses.replace(LEASE, contamination_canary=instruction)
+
+    class EncoderEvaluator:
+        def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
+            return [
+                EEERecord({"id": "ordinary"}),
+                EEERecord({"id": "canary", "status": "not_applicable"}),
+            ]
+
+    class EncoderBroker(Broker):
+        def claim(self, credential: str, hardware: HardwareReport) -> Claim:
+            return Claim(lease)
+
+        def fetch_canary_corpus(self, credential: str, lease: Lease) -> str:
+            raise AssertionError("encoder must not receive the canary corpus")
+
+        def submit_result(
+            self, credential: str, lease: Lease, result: EEERecord
+        ) -> None:
+            self.submissions += 1
+
+    broker = EncoderBroker()
+    runtime.Worker(
+        client=broker,
+        state=StateStore(tmp_path),
+        evaluator=EncoderEvaluator(),
+        hardware_factory=lambda: HARDWARE,
+    ).run(once=True)
+
+    assert broker.submissions == 2
+    assert broker.finalised
 
 
 def test_evaluation_failure_releases_lease(
@@ -487,6 +603,58 @@ class Broker:
             raise RuntimeError("temporary broker error")
 
 
+def test_evaluator_selects_official_tasks_for_required_canary(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A required canary lease selects normal tasks and the canary task explicitly."""
+    calls: dict[str, object] = {}
+
+    class FakeBenchmarker:
+        """Capture the adapter's calls."""
+
+        def __init__(self, **kwargs: object) -> None:
+            calls["init"] = kwargs
+
+        def benchmark(self, **kwargs: object) -> list[object]:
+            """Return one fake benchmark result."""
+            calls["benchmark"] = kwargs
+            return [object()]
+
+    monkeypatch.setattr(evaluator, "Benchmarker", FakeBenchmarker)
+    monkeypatch.setattr(
+        evaluator,
+        "_canary_tasks",
+        lambda: ["classification", "contamination-detection"],
+    )
+    monkeypatch.setattr(
+        evaluator,
+        "benchmark_result_to_eee_dict",
+        lambda result: {"evaluation_id": "one", "result": 1},
+    )
+    lease = dataclasses.replace(
+        LEASE,
+        contamination_canary=CanaryInstruction(
+            status="required",
+            protocol_version="private-completion-canary/v1",
+            corpus_revision="revision",
+            corpus_sha256="a" * 64,
+        ),
+    )
+
+    evaluator.EuroEvalEvaluator(tmp_path).evaluate(
+        lease=lease, output_path=tmp_path / "isolated.jsonl"
+    )
+
+    init_kwargs = calls["init"]
+    benchmark_kwargs = calls["benchmark"]
+    assert isinstance(init_kwargs, dict)
+    assert isinstance(benchmark_kwargs, dict)
+    assert init_kwargs["task"] == ["classification", "contamination-detection"]
+    assert init_kwargs["dataset"] is None
+    assert benchmark_kwargs["task"] == ["classification", "contamination-detection"]
+    assert benchmark_kwargs["dataset"] is None
+
+
 def test_evaluator_uses_validation_and_remote_code_flags(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -514,11 +682,15 @@ def test_evaluator_uses_validation_and_remote_code_flags(
         lease=LEASE, output_path=tmp_path / "isolated.jsonl"
     )
     assert records[0].sha256 == records[0].sha256
-    assert calls["benchmark"] == {
+    benchmark_kwargs = calls["benchmark"]
+    assert isinstance(benchmark_kwargs, dict)
+    assert benchmark_kwargs == {
         "model": f"org/model@{REVISION}",
         "language": "da",
         "progress_bar": False,
         "save_results": False,
+        "task": None,
+        "dataset": benchmark_kwargs["dataset"],
         "trust_remote_code": False,
         "evaluate_test_split": False,
         "requires_safetensors": True,
@@ -527,6 +699,11 @@ def test_evaluator_uses_validation_and_remote_code_flags(
         "force": True,
         "raise_errors": True,
     }
+    assert benchmark_kwargs["dataset"]
+    assert all(
+        config.task.name != "contamination-detection"
+        for config in benchmark_kwargs["dataset"]
+    )
     assert len((tmp_path / "isolated.jsonl").read_text().splitlines()) == 1
 
 
@@ -865,6 +1042,28 @@ def test_safety_rejects_remote_code_and_unpinned_models() -> None:
         check_model_safety(
             dataclasses.replace(LEASE, model_revision="main"), (GPU,), metadata
         )
+
+
+def test_state_round_trip_preserves_scope_alternatives_and_canary(
+    tmp_path: Path,
+) -> None:
+    """Restart state preserves both trusted alternatives and canary instructions."""
+    lease = dataclasses.replace(
+        LEASE,
+        contamination_canary=CanaryInstruction(
+            status="required",
+            protocol_version="canary/v1",
+            corpus_revision="revision",
+            corpus_sha256="a" * 64,
+        ),
+    )
+    state = StateStore(tmp_path)
+
+    state.save_active(lease=lease)
+    active = state.load_active()
+
+    assert active is not None
+    assert active.lease == lease
 
 
 def test_worker_retries_idempotently_and_finalises(

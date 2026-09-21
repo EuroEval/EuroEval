@@ -57,5 +57,7 @@ this category are:
 
 ### Other
 
+- [Contamination Detection](/tasks/contamination-detection): a private, non-ranking
+  canary that checks generative models for evidence of exposure to a held-out corpus.
 - [Speed](/tasks/speed): a utility benchmark measuring how quickly a model processes
   input, rather than an NLU or NLG evaluation.

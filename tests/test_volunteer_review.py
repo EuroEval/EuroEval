@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import dataclasses
 import hashlib
 import json
 import threading
@@ -13,6 +14,8 @@ from types import SimpleNamespace
 
 import pytest
 
+import euroeval_worker.review_transaction as review_transaction
+from euroeval.canary_evidence import status_evidence
 from euroeval_worker.review import (
     BrokerReservationResult,
     BucketApi,
@@ -209,7 +212,7 @@ def _reviewer(
         "submission_id": SUBMISSION,
         "issue_number": 12,
         "verified_contributor": "alice",
-        "model": {"id": "org/model", "revision": "deadbeef"},
+        "model": {"id": "org/model", "revision": "d" * 40},
         "language": "da",
         "language_group": "da",
         "euroeval_version": "18.1.0.dev0",
@@ -282,7 +285,7 @@ def _record(dataset: str) -> dict[str, object]:
         "schema_version": "0.3.0",
         "model_info": {
             "id": "org/model",
-            "revision": "deadbeef",
+            "revision": "d" * 40,
             "additional_details": {
                 "commercially_licensed": True,
                 "open": True,
@@ -335,6 +338,33 @@ def test_canonical_collision_prevents_decision_and_broker() -> None:
 
     assert broker_calls == []
     assert not _decision_paths(api)
+
+
+def test_collected_canary_must_be_privately_scoreable_before_approval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An unavailable private scorer cannot approve claimed collected evidence."""
+    _, reviewer, _ = _reviewer()
+    report = reviewer.show(SUBMISSION)
+    canary = dataclasses.replace(
+        report.records[0], identity=("org/model", "contamination-canary-da", None, None)
+    )
+    monkeypatch.setattr(
+        reviewer,
+        "show",
+        lambda submission_id: dataclasses.replace(report, records=(canary,)),
+    )
+    monkeypatch.setattr(
+        review_transaction, "_has_collected_canary", lambda records: True
+    )
+    monkeypatch.setattr(
+        review_transaction,
+        "process_contamination_canaries",
+        lambda records: ([], records, set(), {"status": "unavailable", "models": []}),
+    )
+
+    with pytest.raises(ReviewError, match="could not be validated"):
+        reviewer.decide(SUBMISSION, "accepted", "maintainer")
 
 
 def test_concurrent_decisions_use_first_server_metadata() -> None:
@@ -668,6 +698,63 @@ def test_manifest_missing_language_group_is_rejected() -> None:
         reviewer.show(SUBMISSION)
 
 
+def test_manifest_scope_alternative_excludes_required_canary() -> None:
+    """A private canary accompanies but does not alter the matched result scope."""
+    api, reviewer, _ = _reviewer()
+    manifest = _manifest(api=api)
+    canary_record = _record(dataset="contamination-canary-da")
+    library = t.cast(dict[str, object], canary_record["eval_library"])
+    details = t.cast(dict[str, object], library["additional_details"])
+    details.update(
+        {
+            "task": "contamination-detection",
+            "few_shot": None,
+            "validation_split": None,
+            "contamination_canary_evidence": json.dumps(
+                status_evidence(
+                    model_id="org/model",
+                    requested_revision="d" * 40,
+                    resolved_revision="d" * 40,
+                    backend="vllm:instruction_tuned",
+                    status="unsupported",
+                    reason="backend_unsupported",
+                ).to_dict(),
+                separators=(",", ":"),
+            ),
+        }
+    )
+    content = json.dumps(canary_record, ensure_ascii=False).encode("utf-8")
+    digest = hashlib.sha256(content).hexdigest()
+    path = f"volunteer/submissions/{SUBMISSION}/results/{digest}.json"
+    api.files[(STAGING, path)] = content
+    entries = t.cast(list[dict[str, object]], manifest["results"])
+    entries.append(
+        {
+            "digest": digest,
+            "identity": json.dumps(
+                ["org/model", "contamination-canary-da", None, None],
+                separators=(",", ":"),
+            ),
+            "path": path,
+            "warnings": [],
+        }
+    )
+    manifest["contamination_canary"] = {
+        "status": "required",
+        "protocol_version": "canary/v1",
+        "corpus_revision": "revision",
+        "corpus_sha256": "a" * 64,
+    }
+    automated = t.cast(dict[str, object], manifest["automated_checks"])
+    automated["result_count"] = 2
+    _store_manifest(api=api, manifest=manifest)
+
+    report = reviewer.show(submission_id=SUBMISSION)
+
+    assert len(report.records) == 2
+    assert report.expected_identities == (("org/model", "dataset-0", False, False),)
+
+
 def test_manifest_scope_mismatch_is_rejected() -> None:
     """Expected and actual canonical identities must match."""
     api, reviewer, _ = _reviewer()
@@ -748,6 +835,28 @@ def test_partial_approve_resumes_and_is_idempotent() -> None:
     assert _decision_content(api) == decision
     assert len([key for key in api.files if key[0] == RESULTS]) == 2
     assert broker_calls == [(12, SUBMISSION, "accepted"), (12, SUBMISSION, "accepted")]
+
+
+def test_private_canary_record_is_not_promoted_to_public_results() -> None:
+    """Completion-bearing evidence remains in private staging after approval."""
+    api, reviewer, _ = _reviewer()
+    report = reviewer.show(SUBMISSION)
+    ordinary = report.records[0]
+    canary_content = b"private canary evidence"
+    canary = dataclasses.replace(
+        ordinary,
+        identity=("org/model", "contamination-canary-da", None, None),
+        digest=hashlib.sha256(canary_content).hexdigest(),
+        canonical_path="org_model/contamination-canary-da__test__zeroshot.json",
+        content=canary_content,
+    )
+
+    reviewer._promote_records(  # noqa: SLF001 - focused promotion boundary test
+        dataclasses.replace(report, records=(ordinary, canary))
+    )
+
+    assert (RESULTS, ordinary.canonical_path) in api.files
+    assert (RESULTS, canary.canonical_path) not in api.files
 
 
 def test_reject_is_idempotent_and_opposite_decision_fails() -> None:

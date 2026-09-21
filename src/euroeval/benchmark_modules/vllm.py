@@ -291,321 +291,34 @@ class VLLMModel(HuggingFaceEncoderModel):
         if hasattr(self, "_tokeniser"):
             del self._tokeniser
 
-    @property
-    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
-        """The data collator used to prepare samples during finetuning.
-
-        Returns:
-            The data collator.
-        """
-        raise NotImplementedError(
-            "The `data_collator` property has not been implemented for vLLM models."
-        )
-
-    @property
-    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
-        """The function used to extract the labels from the generated output.
-
-        Returns:
-            The function used to extract the labels from the generated output.
-        """
-        return _extract_labels_from_generation_helper(
-            dataset_config=self.dataset_config,
-            model_config=self.model_config,
-            first_label_token_mapping=self.buffer["first_label_token_mapping"],
-        )
-
-    @property
-    def generative_type(self) -> GenerativeType | None:
-        """The generative type of the model.
-
-        Returns:
-            The generative type of the model, or None if it has not been set yet.
-        """
-        if self.benchmark_config.generative_type is not None:
-            type_ = self.benchmark_config.generative_type
-        elif self.model_config.param in {"thinking"}:
-            type_ = GenerativeType.REASONING
-        elif self.model_config.param in {"no-thinking"}:
-            type_ = GenerativeType.INSTRUCTION_TUNED
-        elif (
-            hasattr(self, "end_of_reasoning_token")
-            and self.end_of_reasoning_token is not None
-        ):
-            type_ = GenerativeType.REASONING
-        elif not hasattr(self, "_tokeniser"):
-            log_once(
-                "The generative type of the model has not been set yet as the "
-                "tokeniser has not been loaded.",
-                level=logging.DEBUG,
-            )
-            return None
-        elif (
-            has_chat_template(tokeniser=self._tokeniser)
-            or "instruct" in self.model_config.model_id.lower()
-        ):
-            type_ = GenerativeType.INSTRUCTION_TUNED
-        else:
-            type_ = GenerativeType.BASE
-        log_once(
-            f"Detected generative type {type_.name!r} for model "
-            f"{self.model_config.model_id!r}",
-            level=logging.DEBUG,
-        )
-        return type_
-
-    @classmethod
-    def get_model_config(
-        cls, model_id: str, benchmark_config: "BenchmarkConfig"
-    ) -> "ModelConfig":
-        """Fetch the model configuration.
+    def collect_canary_completions(self, prompts: c.Sequence[str]) -> list[str]:
+        """Generate deterministic raw continuations using the loaded vLLM engine.
 
         Args:
-            model_id:
-                The model ID.
-            benchmark_config:
-                The benchmark configuration.
+            prompts:
+                Frozen canary prompts in corpus order.
 
         Returns:
-            The model configuration.
-
-        Raises:
-            InvalidModel:
-                If the model does not exist.
-        """
-        resolved_model_id, revision, model_info = _lookup_model_info(
-            model_id=model_id, benchmark_config=benchmark_config
-        )
-        if model_info is None:
-            raise InvalidModel(f"The model {model_id!r} could not be found.")
-
-        try:
-            generation_config = GenerationConfig.from_pretrained(
-                pretrained_model_name=resolved_model_id,
-                revision=revision,
-                cache_dir=benchmark_config.cache_dir,
-                token=benchmark_config.api_key,
-            )
-        except OSError:
-            generation_config = None
-
-        model_id_components = split_model_id(model_id=model_id)
-
-        return _build_model_config_helper(
-            model_id=resolved_model_id,
-            revision=revision,
-            param=model_id_components.param,
-            task=model_info.pipeline_tag,
-            model_info=model_info,
-            benchmark_config=benchmark_config,
-            inference_backend=InferenceBackend.VLLM,
-            model_type=ModelType.GENERATIVE,
-            adapter_base_model_id=model_info.adapter_base_model_id,
-            generation_config=generation_config,
-        )
-
-    @classmethod
-    def model_exists(
-        cls, model_id: str, benchmark_config: "BenchmarkConfig"
-    ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
-        """Check if a model exists.
-
-        Args:
-            model_id:
-                The model ID.
-            benchmark_config:
-                The benchmark configuration.
-
-        Returns:
-            Whether the model exists, or an error describing why we cannot check
-            whether the model exists.
-        """
-        using_api = (
-            benchmark_config.api_base is not None
-            or benchmark_config.api_version is not None
-        )
-        if using_api:
-            return False
-
-        _, _, model_info = _lookup_model_info(
-            model_id=model_id, benchmark_config=benchmark_config
-        )
-        return (
-            model_info is not None
-            and model_info.pipeline_tag in GENERATIVE_PIPELINE_TAGS
-        )
-
-    def prepare_dataset(
-        self, dataset: "DatasetDict", task: "Task", itr_idx: int
-    ) -> "DatasetDict":
-        """Prepare the dataset for the model.
-
-        This includes things like tokenisation.
-
-        Args:
-            dataset:
-                The dataset to prepare.
-            task:
-                The task to prepare the dataset for.
-            itr_idx:
-                The index of the dataset in the iterator.
-
-        Returns:
-            The prepared dataset.
-        """
-        return _prepare_dataset_helper(
-            dataset=dataset,
-            task=task,
-            model_config=self.model_config,
-            dataset_config=self.dataset_config,
-            benchmark_config=self.benchmark_config,
-            generative_type=self.generative_type,
-            itr_idx=itr_idx,
-            always_populate_text_field=True,
-            tokeniser=self._tokeniser,
-        )
-
-    def score(self, inputs: dict) -> "GenerativeModelOutput":
-        """Compute BPC scores from prompt_logprobs.
-
-        Args:
-            inputs:
-                A batch of inputs with bpc_prompt column.
-
-        Returns:
-            Model output with BPC scores.
+            One raw continuation per prompt.
         """
         sampling_params = SamplingParams(
-            # BPC scoring only reads `prompt_logprobs`; no generation is needed, but
-            # vLLM requires `max_tokens >= 1`, so we generate a single throwaway token.
-            max_tokens=1,
-            prompt_logprobs=BPC_LOGPROBS,
+            max_tokens=6,
+            prompt_logprobs=None,
             logprobs=None,
-            temperature=GENERATION_KWARGS["temperature"],
-            top_p=GENERATION_KWARGS["top_p"],
-            top_k=int(GENERATION_KWARGS["top_k"]),
-            repetition_penalty=GENERATION_KWARGS["repetition_penalty"],
-            stop=[],  # Set in _run_vllm_core
-            structured_outputs=None,  # Set in _run_vllm_core
+            temperature=0.0,
+            top_p=1.0,
+            top_k=-1,
+            repetition_penalty=1.0,
+            stop=[],
+            structured_outputs=None,
         )
-        completions, raw_outputs = self._run_vllm_core(
-            inputs, "bpc_prompt", sampling_params
-        )
-
-        # Compute BPC scores
-        bpc_scores = compute_bpc_scores_for_vllm_outputs(
-            raw_outputs=raw_outputs, inputs=inputs, tokeniser=self._tokeniser
-        )
-        output = GenerativeModelOutput(sequences=completions)
-        if bpc_scores is not None:
-            output.bpc_scores = bpc_scores
-        return output
-
-    def _run_vllm_core(
-        self, inputs: dict, prompt_key: str, sampling_params: "SamplingParams"
-    ) -> tuple[list[str], list]:
-        """Run vLLM generation with given parameters.
-
-        Shared implementation used by both generate() and score().
-
-        Args:
-            inputs:
-                A batch of inputs to pass through the model.
-            prompt_key:
-                Key to extract prompts from inputs ("text" or "bpc_prompt").
-            sampling_params:
-                Sampling parameters for vLLM generation.
-
-        Returns:
-            Tuple of (completions, raw_outputs).
-
-        Raises:
-            InvalidBenchmark:
-                If generation fails or prompts are too long.
-        """
-        # Set up label token mapping first (required for most tasks)
-        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
-            dataset_config=self.dataset_config,
-            model_config=self.model_config,
-            tokeniser=self._tokeniser,
-            generative_type=self.generative_type,
-            log_metadata=self.log_metadata,
-        )
-        if (
-            not self.buffer["first_label_token_mapping"]
-            and self.dataset_config.task.requires_logprobs
-        ):
-            raise InvalidBenchmark(
-                "The dataset requires logprobs, but we encountered an error when "
-                "trying to get the first token of each label in the dataset. You can "
-                "try running this benchmark with the --verbose flag or setting "
-                "FULL_LOG=1 to see what the error was. Skipping this evaluation."
-            )
-
-        # Set up structured outputs
-        structured_outputs = self._setup_structured_outputs(inputs)
-
-        # Set up generation kwargs and sampling params
-        generation_kwargs = self._setup_generation_kwargs()
-        stop_tokens = self._setup_stop_tokens()
-        sampling_params.stop = [t for t in stop_tokens if t]
-        sampling_params.structured_outputs = structured_outputs
-        sampling_params.temperature = generation_kwargs["temperature"]
-        sampling_params.top_p = generation_kwargs["top_p"]
-        sampling_params.top_k = int(generation_kwargs["top_k"])
-        sampling_params.repetition_penalty = generation_kwargs["repetition_penalty"]
-
-        # Set up logprobs if needed
-        if sampling_params.prompt_logprobs is None:
-            sampling_params.logprobs = (
-                MAX_VLLM_LOGPROBS if self.buffer["first_label_token_mapping"] else None
-            )
-
-        # Compute token budget and prepare prompts
         max_context_length = min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
-        max_tokens_per_prompt = self._apply_token_budget(
-            sampling_params, max_context_length
+        completions, _ = self._generate_with_retries(
+            prompts=list(prompts),
+            sampling_params=sampling_params,
+            max_context_length=max_context_length,
         )
-        prompts = self._prepare_prompts(
-            inputs, prompt_key, max_tokens_per_prompt, sampling_params
-        )
-
-        # Generate and parse outputs
-        return self._generate_with_retries(prompts, sampling_params, max_context_length)
-
-    def _apply_token_budget(
-        self, sampling_params: "SamplingParams", max_context_length: int
-    ) -> int:
-        """Apply token budget and return max tokens per prompt.
-
-        Args:
-            sampling_params:
-                The sampling parameters.
-            max_context_length:
-                The maximum context length.
-
-        Returns:
-            The maximum number of tokens per prompt.
-        """
-        if sampling_params.prompt_logprobs is not None:
-            return max_context_length - sampling_params.max_tokens
-        generation_budget, max_tokens_per_prompt = compute_token_budget(
-            model_max_length=self._tokeniser.model_max_length,
-            max_generated_tokens=self.dataset_config.max_generated_tokens,
-        )
-        if generation_budget < self.dataset_config.max_generated_tokens:
-            log_once(
-                f"The model {self.model_config.model_id!r} has a context length of "
-                f"{max_context_length:,} tokens, which is too small to fit both "
-                "the prompt and the dataset's full generation budget of "
-                f"{self.dataset_config.max_generated_tokens:,} tokens. Reserving "
-                f"{generation_budget:,} tokens for generation when budgeting "
-                "prompt lengths instead.",
-                level=logging.WARNING,
-            )
-            if self.generative_type != GenerativeType.REASONING:
-                sampling_params.max_tokens = generation_budget
-        return max_tokens_per_prompt
+        return completions
 
     def _generate_with_retries(
         self,
@@ -919,6 +632,112 @@ class VLLMModel(HuggingFaceEncoderModel):
             ]
             return GenerativeModelOutput(sequences=completions, scores=scores)
         return GenerativeModelOutput(sequences=completions)
+
+    def _run_vllm_core(
+        self, inputs: dict, prompt_key: str, sampling_params: "SamplingParams"
+    ) -> tuple[list[str], list]:
+        """Run vLLM generation with given parameters.
+
+        Shared implementation used by both generate() and score().
+
+        Args:
+            inputs:
+                A batch of inputs to pass through the model.
+            prompt_key:
+                Key to extract prompts from inputs ("text" or "bpc_prompt").
+            sampling_params:
+                Sampling parameters for vLLM generation.
+
+        Returns:
+            Tuple of (completions, raw_outputs).
+
+        Raises:
+            InvalidBenchmark:
+                If generation fails or prompts are too long.
+        """
+        # Set up label token mapping first (required for most tasks)
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            tokeniser=self._tokeniser,
+            generative_type=self.generative_type,
+            log_metadata=self.log_metadata,
+        )
+        if (
+            not self.buffer["first_label_token_mapping"]
+            and self.dataset_config.task.requires_logprobs
+        ):
+            raise InvalidBenchmark(
+                "The dataset requires logprobs, but we encountered an error when "
+                "trying to get the first token of each label in the dataset. You can "
+                "try running this benchmark with the --verbose flag or setting "
+                "FULL_LOG=1 to see what the error was. Skipping this evaluation."
+            )
+
+        # Set up structured outputs
+        structured_outputs = self._setup_structured_outputs(inputs)
+
+        # Set up generation kwargs and sampling params
+        generation_kwargs = self._setup_generation_kwargs()
+        stop_tokens = self._setup_stop_tokens()
+        sampling_params.stop = [t for t in stop_tokens if t]
+        sampling_params.structured_outputs = structured_outputs
+        sampling_params.temperature = generation_kwargs["temperature"]
+        sampling_params.top_p = generation_kwargs["top_p"]
+        sampling_params.top_k = int(generation_kwargs["top_k"])
+        sampling_params.repetition_penalty = generation_kwargs["repetition_penalty"]
+
+        # Set up logprobs if needed
+        if sampling_params.prompt_logprobs is None:
+            sampling_params.logprobs = (
+                MAX_VLLM_LOGPROBS if self.buffer["first_label_token_mapping"] else None
+            )
+
+        # Compute token budget and prepare prompts
+        max_context_length = min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
+        max_tokens_per_prompt = self._apply_token_budget(
+            sampling_params, max_context_length
+        )
+        prompts = self._prepare_prompts(
+            inputs, prompt_key, max_tokens_per_prompt, sampling_params
+        )
+
+        # Generate and parse outputs
+        return self._generate_with_retries(prompts, sampling_params, max_context_length)
+
+    def _apply_token_budget(
+        self, sampling_params: "SamplingParams", max_context_length: int
+    ) -> int:
+        """Apply token budget and return max tokens per prompt.
+
+        Args:
+            sampling_params:
+                The sampling parameters.
+            max_context_length:
+                The maximum context length.
+
+        Returns:
+            The maximum number of tokens per prompt.
+        """
+        if sampling_params.prompt_logprobs is not None:
+            return max_context_length - sampling_params.max_tokens
+        generation_budget, max_tokens_per_prompt = compute_token_budget(
+            model_max_length=self._tokeniser.model_max_length,
+            max_generated_tokens=self.dataset_config.max_generated_tokens,
+        )
+        if generation_budget < self.dataset_config.max_generated_tokens:
+            log_once(
+                f"The model {self.model_config.model_id!r} has a context length of "
+                f"{max_context_length:,} tokens, which is too small to fit both "
+                "the prompt and the dataset's full generation budget of "
+                f"{self.dataset_config.max_generated_tokens:,} tokens. Reserving "
+                f"{generation_budget:,} tokens for generation when budgeting "
+                "prompt lengths instead.",
+                level=logging.WARNING,
+            )
+            if self.generative_type != GenerativeType.REASONING:
+                sampling_params.max_tokens = generation_budget
+        return max_tokens_per_prompt
 
     def _prepare_prompts(
         self,
@@ -1279,6 +1098,216 @@ class VLLMModel(HuggingFaceEncoderModel):
             level=logging.DEBUG,
         )
         return StructuredOutputsParams(json=schema)
+
+    @property
+    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
+        """The data collator used to prepare samples during finetuning.
+
+        Returns:
+            The data collator.
+        """
+        raise NotImplementedError(
+            "The `data_collator` property has not been implemented for vLLM models."
+        )
+
+    @property
+    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
+        """The function used to extract the labels from the generated output.
+
+        Returns:
+            The function used to extract the labels from the generated output.
+        """
+        return _extract_labels_from_generation_helper(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            first_label_token_mapping=self.buffer["first_label_token_mapping"],
+        )
+
+    @property
+    def generative_type(self) -> GenerativeType | None:
+        """The generative type of the model.
+
+        Returns:
+            The generative type of the model, or None if it has not been set yet.
+        """
+        if self.benchmark_config.generative_type is not None:
+            type_ = self.benchmark_config.generative_type
+        elif self.model_config.param in {"thinking"}:
+            type_ = GenerativeType.REASONING
+        elif self.model_config.param in {"no-thinking"}:
+            type_ = GenerativeType.INSTRUCTION_TUNED
+        elif (
+            hasattr(self, "end_of_reasoning_token")
+            and self.end_of_reasoning_token is not None
+        ):
+            type_ = GenerativeType.REASONING
+        elif not hasattr(self, "_tokeniser"):
+            log_once(
+                "The generative type of the model has not been set yet as the "
+                "tokeniser has not been loaded.",
+                level=logging.DEBUG,
+            )
+            return None
+        elif (
+            has_chat_template(tokeniser=self._tokeniser)
+            or "instruct" in self.model_config.model_id.lower()
+        ):
+            type_ = GenerativeType.INSTRUCTION_TUNED
+        else:
+            type_ = GenerativeType.BASE
+        log_once(
+            f"Detected generative type {type_.name!r} for model "
+            f"{self.model_config.model_id!r}",
+            level=logging.DEBUG,
+        )
+        return type_
+
+    @classmethod
+    def get_model_config(
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> "ModelConfig":
+        """Fetch the model configuration.
+
+        Args:
+            model_id:
+                The model ID.
+            benchmark_config:
+                The benchmark configuration.
+
+        Returns:
+            The model configuration.
+
+        Raises:
+            InvalidModel:
+                If the model does not exist.
+        """
+        resolved_model_id, revision, model_info = _lookup_model_info(
+            model_id=model_id, benchmark_config=benchmark_config
+        )
+        if model_info is None:
+            raise InvalidModel(f"The model {model_id!r} could not be found.")
+
+        try:
+            generation_config = GenerationConfig.from_pretrained(
+                pretrained_model_name=resolved_model_id,
+                revision=revision,
+                cache_dir=benchmark_config.cache_dir,
+                token=benchmark_config.api_key,
+            )
+        except OSError:
+            generation_config = None
+
+        model_id_components = split_model_id(model_id=model_id)
+
+        return _build_model_config_helper(
+            model_id=resolved_model_id,
+            revision=revision,
+            param=model_id_components.param,
+            task=model_info.pipeline_tag,
+            model_info=model_info,
+            benchmark_config=benchmark_config,
+            inference_backend=InferenceBackend.VLLM,
+            model_type=ModelType.GENERATIVE,
+            adapter_base_model_id=model_info.adapter_base_model_id,
+            generation_config=generation_config,
+        )
+
+    @classmethod
+    def model_exists(
+        cls, model_id: str, benchmark_config: "BenchmarkConfig"
+    ) -> bool | NeedsExtraInstalled | NeedsEnvironmentVariable:
+        """Check if a model exists.
+
+        Args:
+            model_id:
+                The model ID.
+            benchmark_config:
+                The benchmark configuration.
+
+        Returns:
+            Whether the model exists, or an error describing why we cannot check
+            whether the model exists.
+        """
+        using_api = (
+            benchmark_config.api_base is not None
+            or benchmark_config.api_version is not None
+        )
+        if using_api:
+            return False
+
+        _, _, model_info = _lookup_model_info(
+            model_id=model_id, benchmark_config=benchmark_config
+        )
+        return (
+            model_info is not None
+            and model_info.pipeline_tag in GENERATIVE_PIPELINE_TAGS
+        )
+
+    def prepare_dataset(
+        self, dataset: "DatasetDict", task: "Task", itr_idx: int
+    ) -> "DatasetDict":
+        """Prepare the dataset for the model.
+
+        This includes things like tokenisation.
+
+        Args:
+            dataset:
+                The dataset to prepare.
+            task:
+                The task to prepare the dataset for.
+            itr_idx:
+                The index of the dataset in the iterator.
+
+        Returns:
+            The prepared dataset.
+        """
+        return _prepare_dataset_helper(
+            dataset=dataset,
+            task=task,
+            model_config=self.model_config,
+            dataset_config=self.dataset_config,
+            benchmark_config=self.benchmark_config,
+            generative_type=self.generative_type,
+            itr_idx=itr_idx,
+            always_populate_text_field=True,
+            tokeniser=self._tokeniser,
+        )
+
+    def score(self, inputs: dict) -> "GenerativeModelOutput":
+        """Compute BPC scores from prompt_logprobs.
+
+        Args:
+            inputs:
+                A batch of inputs with bpc_prompt column.
+
+        Returns:
+            Model output with BPC scores.
+        """
+        sampling_params = SamplingParams(
+            # BPC scoring only reads `prompt_logprobs`; no generation is needed, but
+            # vLLM requires `max_tokens >= 1`, so we generate a single throwaway token.
+            max_tokens=1,
+            prompt_logprobs=BPC_LOGPROBS,
+            logprobs=None,
+            temperature=GENERATION_KWARGS["temperature"],
+            top_p=GENERATION_KWARGS["top_p"],
+            top_k=int(GENERATION_KWARGS["top_k"]),
+            repetition_penalty=GENERATION_KWARGS["repetition_penalty"],
+            stop=[],  # Set in _run_vllm_core
+            structured_outputs=None,  # Set in _run_vllm_core
+        )
+        completions, raw_outputs = self._run_vllm_core(
+            inputs, "bpc_prompt", sampling_params
+        )
+
+        # Compute BPC scores
+        bpc_scores = compute_bpc_scores_for_vllm_outputs(
+            raw_outputs=raw_outputs, inputs=inputs, tokeniser=self._tokeniser
+        )
+        output = GenerativeModelOutput(sequences=completions)
+        if bpc_scores is not None:
+            output.bpc_scores = bpc_scores
+        return output
 
     @property
     def trainer_class(self) -> t.Type["Trainer"]:
