@@ -4,12 +4,10 @@ import collections.abc as c
 import typing as t
 
 from .enums import GenerativeType, InferenceBackend, ModelType, ShotMode
+from .types import ShotModeRequest, ShotWork
 
 if t.TYPE_CHECKING:
     from .data_models import BenchmarkResult, DatasetConfig, ModelConfig
-
-ShotModeRequest = ShotMode | bool | None
-ShotWork = tuple[ShotMode, "DatasetConfig"]
 
 
 def cached_generative_type(

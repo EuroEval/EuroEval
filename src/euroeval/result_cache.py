@@ -5,8 +5,9 @@ import typing as t
 
 from .data_models import BenchmarkResult
 from .enums import ShotMode
-from .shot_modes import ShotModeRequest, ShotWork, coerce_shot_mode
+from .shot_modes import coerce_shot_mode
 from .string_utils import split_model_id
+from .types import ShotModeRequest, ShotWork
 
 if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
