@@ -139,9 +139,9 @@ from .languages import get_all_languages
     "--few-shot/--zero-shot",
     default=None,
     show_default="auto",
-    help="Select few-shot or zero-shot evaluation. By default, automatically select "
-    "zero-shot for instruction-tuned/reasoning models and APIs, and few-shot for "
-    "base models. Only relevant if the model is generative.",
+    help="Select few-shot or zero-shot evaluation. By default, run zero-shot and "
+    "few-shot for instruction-tuned/reasoning models, zero-shot for APIs, and "
+    "few-shot for base models. Only relevant if the model is generative.",
 )
 @click.option(
     "--num-iterations",

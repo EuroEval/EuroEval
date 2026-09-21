@@ -81,7 +81,7 @@ class Benchmarker:
         trust_remote_code: bool = False,
         clear_model_cache: bool = False,
         evaluate_test_split: bool = False,
-        few_shot: ShotModeRequest = None,
+        few_shot: ShotModeRequest = ShotMode.AUTO,
         num_iterations: int = 10,
         api_base: str | None = None,
         api_version: str | None = None,
@@ -150,8 +150,8 @@ class Benchmarker:
             few_shot:
                 The default shot policy. ``ShotMode.AUTO`` selects automatically,
                 while True and False preserve the legacy few-shot and zero-shot
-                options. ``None`` is equivalent to ``ShotMode.AUTO`` for the
-                initialiser. Only relevant if the model is generative.
+                options. Defaults to ``ShotMode.AUTO``. Only relevant if the model is
+                generative.
             num_iterations:
                 The number of times each model should be evaluated. This is only meant
                 to be used for power users, and scores will not be allowed on the

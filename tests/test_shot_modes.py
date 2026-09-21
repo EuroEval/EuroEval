@@ -526,6 +526,14 @@ def test_only_one_model_is_live_during_preparation(
     assert clear_cache.call_count == 3
 
 
+def test_initialiser_defaults_to_auto_shot_mode() -> None:
+    """The benchmarker initialiser exposes AUTO as its explicit default policy."""
+    benchmarker = Benchmarker(progress_bar=False)
+
+    assert benchmarker.benchmark_config_default_params.few_shot is ShotMode.AUTO
+    assert benchmarker.benchmark_config.few_shot is ShotMode.AUTO
+
+
 def test_per_call_auto_overrides_initialiser_shot_mode() -> None:
     """An explicit AUTO per-call policy overrides an initialiser boolean."""
     for initialiser_mode in (True, False):
