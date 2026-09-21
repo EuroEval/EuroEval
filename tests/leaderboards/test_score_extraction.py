@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import math
 
+import pytest
+
 from leaderboards.score_extraction import (
     _is_better_metadata,
     extract_model_metadata,
@@ -642,87 +644,17 @@ class TestIsBetterMetadata:
             is False
         )
 
-    def test_prefers_non_none_over_none(self) -> None:
-        """Non-None values are preferred over None."""
-        assert _is_better_metadata(new_value=True, old_value=None, field="open") is True
+    @pytest.mark.parametrize(
+        "field", ["commercial", "merge", "open", "trained_from_scratch"]
+    )
+    def test_prefers_present_over_absent_for_booleans(self, field: str) -> None:
+        """Present boolean metadata is preferred over absent metadata."""
+        assert _is_better_metadata(new_value=True, old_value=None, field=field) is True
+        assert _is_better_metadata(new_value=False, old_value=None, field=field) is True
+        assert _is_better_metadata(new_value=None, old_value=True, field=field) is False
         assert (
-            _is_better_metadata(new_value=None, old_value=True, field="open") is False
-        )
-
-    def test_prefers_non_none_over_none_commercial(self) -> None:
-        """Non-None values are preferred over None for commercial field."""
-        assert (
-            _is_better_metadata(new_value=True, old_value=None, field="commercial")
-            is True
-        )
-
-    def test_prefers_present_over_absent_for_booleans(self) -> None:
-        """For boolean fields, present (non-None) is preferred over absent (None).
-
-        Explicit False is legitimate metadata and should be preserved.
-        """
-        # Present value preferred over absent
-        assert (
-            _is_better_metadata(new_value=True, old_value=None, field="commercial")
-            is True
+            _is_better_metadata(new_value=None, old_value=False, field=field) is False
         )
         assert (
-            _is_better_metadata(new_value=False, old_value=None, field="commercial")
-            is True
-        )
-        # Absent value not preferred over present
-        assert (
-            _is_better_metadata(new_value=None, old_value=True, field="commercial")
-            is False
-        )
-        assert (
-            _is_better_metadata(new_value=None, old_value=False, field="commercial")
-            is False
-        )
-        # Equal presence: neither is "better" (don't overwrite existing)
-        assert (
-            _is_better_metadata(new_value=False, old_value=False, field="commercial")
-            is False
-        )
-
-    def test_prefers_present_over_absent_for_merge(self) -> None:
-        """For merge field, present (non-None) is preferred over absent (None).
-
-        Explicit False is legitimate metadata and should be preserved.
-        """
-        assert (
-            _is_better_metadata(new_value=False, old_value=None, field="merge") is True
-        )
-        assert (
-            _is_better_metadata(new_value=None, old_value=False, field="merge") is False
-        )
-
-    def test_prefers_present_over_absent_for_open(self) -> None:
-        """For open field, present (non-None) is preferred over absent (None).
-
-        Explicit False is legitimate metadata and should be preserved.
-        """
-        assert (
-            _is_better_metadata(new_value=False, old_value=None, field="open") is True
-        )
-        assert (
-            _is_better_metadata(new_value=None, old_value=False, field="open") is False
-        )
-
-    def test_prefers_present_over_absent_for_trained_from_scratch(self) -> None:
-        """For trained_from_scratch field, present (non-None) is preferred over absent.
-
-        Explicit False is legitimate metadata and should be preserved.
-        """
-        assert (
-            _is_better_metadata(
-                new_value=False, old_value=None, field="trained_from_scratch"
-            )
-            is True
-        )
-        assert (
-            _is_better_metadata(
-                new_value=None, old_value=False, field="trained_from_scratch"
-            )
-            is False
+            _is_better_metadata(new_value=False, old_value=False, field=field) is False
         )

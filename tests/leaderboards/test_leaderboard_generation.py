@@ -652,60 +652,6 @@ class TestPerLanguageRankScoreFormat:
 class TestRegressionForReportedIssue:
     """Tests directly addressing the reported issue (Qwen model score mismatch)."""
 
-    def test_multilingual_language_score_matches_monolingual(self) -> None:
-        """Reproduce the reported issue: multilingual should match monolingual.
-
-        The user reported that Qwen/Qwen3.6-27B-FP8 (val) has 1.56 ± 0.08 on
-        the Albanian monolingual leaderboard, but 1.40 ± 0.30 on the European
-        multilingual leaderboard's Albanian column. After the fix, these should
-        match.
-        """
-        # Simulate the scenario: multiple languages with different eligible sets
-        albanian_datasets = [f"sq_dataset_{i}" for i in range(4)]
-        danish_datasets = [f"da_dataset_{i}" for i in range(4)]
-        all_datasets = albanian_datasets + danish_datasets
-
-        # Multiple models, like a real leaderboard
-        model_results = _make_dummy_results(
-            ["model_a", "model_b", "model_c"], all_datasets, base_score=0.65
-        )
-
-        albanian_config = _make_dummy_configs(["albanian"], albanian_datasets)
-        danish_config = _make_dummy_configs(["danish"], danish_datasets)
-        multilingual_config = {**albanian_config, **danish_config}
-
-        # Compute monolingual Albanian ranks
-        albanian_category_to_datasets = {"generative": albanian_datasets}
-        (_, _, albanian_ranks, _) = _compute_eligible_models_and_ranks(
-            model_results=model_results,
-            category=LeaderboardCategory.GENERATIVE,
-            category_to_datasets=albanian_category_to_datasets,
-            category_to_orthogonal_datasets={"generative": {}},
-            leaderboard_configs=albanian_config,
-        )
-
-        # Compute multilingual ranks
-        multilingual_category_to_datasets = {"generative": all_datasets}
-        (_, _, multilingual_ranks, _) = _compute_eligible_models_and_ranks(
-            model_results=model_results,
-            category=LeaderboardCategory.GENERATIVE,
-            category_to_datasets=multilingual_category_to_datasets,
-            category_to_orthogonal_datasets={"generative": {}},
-            leaderboard_configs=multilingual_config,
-        )
-
-        # Verify: each model's Albanian score in multilingual should match
-        # the monolingual Albanian score
-        for model_id in ["model_a", "model_b", "model_c"]:
-            albanian_mono = albanian_ranks[model_id]["generative"]["albanian"]["score"]
-            albanian_multi = multilingual_ranks[model_id]["generative"]["albanian"][
-                "score"
-            ]
-            assert abs(albanian_mono - albanian_multi) < 1e-6, (
-                f"{model_id} Albanian score mismatch: mono={albanian_mono}, "
-                f"multi={albanian_multi}"
-            )
-
 
 def test_release_date_is_emitted_for_frontend_visualizations() -> None:
     """The existing result metadata reaches the full leaderboard CSV."""

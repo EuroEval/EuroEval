@@ -274,13 +274,23 @@ class TestIdentityToPath:
 class TestNormaliseBoolValue:
     """Tests for normalise_bool_value."""
 
-    def test_bool_false(self) -> None:
-        """Boolean False should remain False."""
-        assert normalise_bool_value(False) is False
-
-    def test_bool_true(self) -> None:
-        """Boolean True should remain True."""
-        assert normalise_bool_value(True) is True
+    @pytest.mark.parametrize(
+        ("values", "expected"),
+        [
+            ((False,), False),
+            ((True,), True),
+            ((None,), None),
+            (("false", "FALSE", "False"), False),
+            (("none", "NONE", "None"), None),
+            (("true", "TRUE", "True"), True),
+        ],
+    )
+    def test_normal_values(
+        self, values: tuple[bool | str | None, ...], expected: bool | None
+    ) -> None:
+        """Boolean values and case variants normalise consistently."""
+        for value in values:
+            assert normalise_bool_value(value) is expected
 
     def test_invalid_string(self) -> None:
         """Invalid string should raise ValueError."""
@@ -292,28 +302,6 @@ class TestNormaliseBoolValue:
         value = t.cast(t.Any, 1)
         with pytest.raises(TypeError, match="Unexpected type"):
             normalise_bool_value(value)
-
-    def test_none(self) -> None:
-        """None should remain None."""
-        assert normalise_bool_value(None) is None
-
-    def test_string_false(self) -> None:
-        """String 'false' should become False."""
-        assert normalise_bool_value("false") is False
-        assert normalise_bool_value("FALSE") is False
-        assert normalise_bool_value("False") is False
-
-    def test_string_none(self) -> None:
-        """String 'none' should become None."""
-        assert normalise_bool_value("none") is None
-        assert normalise_bool_value("NONE") is None
-        assert normalise_bool_value("None") is None
-
-    def test_string_true(self) -> None:
-        """String 'true' should become True."""
-        assert normalise_bool_value("true") is True
-        assert normalise_bool_value("TRUE") is True
-        assert normalise_bool_value("True") is True
 
 
 class TestRaiseOnCollision:
@@ -352,39 +340,29 @@ class TestRaiseOnCollision:
 class TestRecordFilename:
     """Tests for record_filename."""
 
-    def test_basic(self) -> None:
-        """Basic filename format."""
+    @pytest.mark.parametrize(
+        ("dataset", "validation_split", "few_shot", "expected"),
+        [
+            ("test_dataset", False, True, "test_dataset__test__fewshot.json"),
+            ("org/dataset", False, True, "org_dataset__test__fewshot.json"),
+            ("test_dataset", None, None, "test_dataset__none__none.json"),
+            ("test_dataset", True, True, "test_dataset__val__fewshot.json"),
+            ("test_dataset", False, False, "test_dataset__test__zeroshot.json"),
+        ],
+    )
+    def test_filename_labels(
+        self,
+        dataset: str,
+        validation_split: bool | None,
+        few_shot: bool | None,
+        expected: str,
+    ) -> None:
+        """Record filenames combine sanitised names and shot/split labels."""
         assert (
-            record_filename("test_dataset", validation_split=False, few_shot=True)
-            == "test_dataset__test__fewshot.json"
-        )
-
-    def test_dataset_with_slash(self) -> None:
-        """Dataset with slash should be sanitised."""
-        assert (
-            record_filename("org/dataset", validation_split=False, few_shot=True)
-            == "org_dataset__test__fewshot.json"
-        )
-
-    def test_none_values(self) -> None:
-        """None values should produce 'none' labels."""
-        assert (
-            record_filename("test_dataset", validation_split=None, few_shot=None)
-            == "test_dataset__none__none.json"
-        )
-
-    def test_val_split(self) -> None:
-        """Validation split should produce 'val' label."""
-        assert (
-            record_filename("test_dataset", validation_split=True, few_shot=True)
-            == "test_dataset__val__fewshot.json"
-        )
-
-    def test_zeroshot(self) -> None:
-        """Zero-shot should produce 'zeroshot' label."""
-        assert (
-            record_filename("test_dataset", validation_split=False, few_shot=False)
-            == "test_dataset__test__zeroshot.json"
+            record_filename(
+                dataset, validation_split=validation_split, few_shot=few_shot
+            )
+            == expected
         )
 
 
@@ -426,65 +404,51 @@ class TestRecordRelativePath:
 class TestSanitiseDatasetName:
     """Tests for sanitise_dataset_name."""
 
-    def test_no_change_needed(self) -> None:
-        """Dataset names without slashes should remain unchanged."""
-        assert sanitise_dataset_name("test_dataset") == "test_dataset"
-
-    def test_slash_replaced(self) -> None:
-        """Forward slashes should be replaced with underscores."""
-        assert sanitise_dataset_name("org/dataset") == "org_dataset"
+    @pytest.mark.parametrize(
+        ("dataset", "expected"),
+        [("test_dataset", "test_dataset"), ("org/dataset", "org_dataset")],
+    )
+    def test_names(self, dataset: str, expected: str) -> None:
+        """Dataset slashes are replaced while plain names are unchanged."""
+        assert sanitise_dataset_name(dataset) == expected
 
 
 class TestSanitiseModelDirName:
     """Tests for sanitise_model_dir_name."""
 
-    def test_at_preserved(self) -> None:
-        """@ symbol should be preserved."""
-        assert sanitise_model_dir_name("org/model@refs_pr_6") == "org_model@refs_pr_6"
-
-    def test_hash_preserved(self) -> None:
-        """# symbol should be preserved."""
-        assert (
-            sanitise_model_dir_name("Qwen/Qwen3-30B-A3B#no-thinking")
-            == "Qwen_Qwen3-30B-A3B#no-thinking"
-        )
-
-    def test_no_change_needed(self) -> None:
-        """Model names without slashes should remain unchanged."""
-        assert sanitise_model_dir_name("model_name") == "model_name"
-
-    def test_slash_replaced(self) -> None:
-        """Forward slashes should be replaced with underscores."""
-        assert sanitise_model_dir_name("org/model") == "org_model"
+    @pytest.mark.parametrize(
+        ("model_id", "expected"),
+        [
+            ("org/model@refs_pr_6", "org_model@refs_pr_6"),
+            ("Qwen/Qwen3-30B-A3B#no-thinking", "Qwen_Qwen3-30B-A3B#no-thinking"),
+            ("model_name", "model_name"),
+            ("org/model", "org_model"),
+        ],
+    )
+    def test_names(self, model_id: str, expected: str) -> None:
+        """Model slashes are replaced without altering suffix markers."""
+        assert sanitise_model_dir_name(model_id) == expected
 
 
 class TestShotLabel:
     """Tests for shot_label."""
 
-    def test_false(self) -> None:
-        """False should map to 'zeroshot'."""
-        assert shot_label(False) == "zeroshot"
-
-    def test_none(self) -> None:
-        """None should map to 'none'."""
-        assert shot_label(None) == "none"
-
-    def test_true(self) -> None:
-        """True should map to 'fewshot'."""
-        assert shot_label(True) == "fewshot"
+    @pytest.mark.parametrize(
+        ("few_shot", "expected"),
+        [(False, "zeroshot"), (None, "none"), (True, "fewshot")],
+    )
+    def test_labels(self, few_shot: bool | None, expected: str) -> None:
+        """Shot values map to their filename labels."""
+        assert shot_label(few_shot) == expected
 
 
 class TestSplitLabel:
     """Tests for split_label."""
 
-    def test_false(self) -> None:
-        """False should map to 'test'."""
-        assert split_label(False) == "test"
-
-    def test_none(self) -> None:
-        """None should map to 'none'."""
-        assert split_label(None) == "none"
-
-    def test_true(self) -> None:
-        """True should map to 'val'."""
-        assert split_label(True) == "val"
+    @pytest.mark.parametrize(
+        ("validation_split", "expected"),
+        [(False, "test"), (None, "none"), (True, "val")],
+    )
+    def test_labels(self, validation_split: bool | None, expected: str) -> None:
+        """Split values map to their filename labels."""
+        assert split_label(validation_split) == expected

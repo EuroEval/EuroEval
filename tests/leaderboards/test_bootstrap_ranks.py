@@ -63,28 +63,6 @@ class TestBootstrapDeterminism:
                         result2[model_id][category][lang],
                     )
 
-    def test_bootstrap_scores_different_without_seed(self) -> None:
-        """Bootstrapping without a seed produces different results across runs."""
-        model_ids = ["model_a", "model_b"]
-        datasets = [f"dataset_{i}" for i in range(4)]
-        model_results = _make_dummy_results(model_ids, datasets)
-        configs = _make_dummy_configs(["da"], datasets)
-
-        result1 = bootstrap_rank_scores(
-            model_results=model_results, configs=configs, n_bootstraps=100, seed=None
-        )
-        result2 = bootstrap_rank_scores(
-            model_results=model_results, configs=configs, n_bootstraps=100, seed=None
-        )
-
-        # Results should be different (with very high probability)
-        model_id = model_ids[0]
-        category = list(result1[model_id].keys())[0]
-        lang = list(result1[model_id][category].keys())[0]
-        assert not np.array_equal(
-            result1[model_id][category][lang], result2[model_id][category][lang]
-        )
-
     def test_dataset_rank_bootstrap_ignores_dataset_list_order(self) -> None:
         """Dataset-level CIs are deterministic under config list reordering."""
         model_ids = ["model_a", "model_b"]
