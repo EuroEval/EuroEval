@@ -6,6 +6,8 @@ import typing as t
 from transformers import PythonBackend, SentencePieceBackend, TokenizersBackend
 from transformers.trainer_utils import EvalPrediction
 
+from .enums import ShotMode
+
 try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
@@ -35,6 +37,7 @@ class FailedInstance(t.TypedDict):
     error: str
 
 
+ShotModeRequest: t.TypeAlias = ShotMode | bool | None
 IterationScores: t.TypeAlias = c.Mapping[str, float | list[FailedInstance]]
 ScoreDict: t.TypeAlias = dict[str, dict[str, float] | c.Sequence[IterationScores]]
 Predictions: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"

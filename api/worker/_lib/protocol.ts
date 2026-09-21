@@ -79,6 +79,21 @@ export interface ModelMetadataEvidence {
   is_encoder_decoder: boolean | null;
 }
 
+export type LeaseScopeBase = {
+  policy_version: string;
+  language_group: string;
+  task_groups: string[];
+  warnings: string[];
+  count?: number;
+};
+export type LeaseScope = LeaseScopeBase & ({
+  allowed_identity_suffix_sets: string[][];
+  identity_suffixes?: never;
+} | {
+  identity_suffixes: string[];
+  allowed_identity_suffix_sets?: never;
+});
+
 export interface Lease {
   issue_number: number;
   language: string;
@@ -100,14 +115,7 @@ export interface Lease {
   model_type: "encoder" | "generative";
   model_metadata: ModelMetadataEvidence;
   contamination_canary?: import("./canary.js").CanaryLease;
-  expected_scope: {
-    policy_version: string;
-    language_group: string;
-    identity_suffixes: string[];
-    count: number;
-    task_groups: string[];
-    warnings: string[];
-  };
+  expected_scope: LeaseScope;
 }
 
 export class ConfigurationError extends Error {}

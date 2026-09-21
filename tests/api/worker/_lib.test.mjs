@@ -183,20 +183,71 @@ test("generated trusted scopes are exact-language and versioned", () => {
   const scope = expectedScope("18.1.0.dev", "encoder", "da");
   assert.equal(scope.language, "da");
   assert.equal(scope.policy_version, "volunteer-scope/18.1.0.dev0");
-  assert.ok(scope.identity_suffixes.length > 0);
+  assert.ok(scope.allowed_identity_suffix_sets.length > 0);
+  assert.ok(scope.allowed_identity_suffix_sets[0].length > 0);
+});
+
+test("trusted policy preserves exact runtime alternatives", () => {
+  const original = process.env.VOLUNTEER_SCOPE_POLICY_JSON;
+  const alternatives = [
+    [JSON.stringify(["base", false, true])],
+    [JSON.stringify(["zero", false, false]), JSON.stringify(["few", false, true])],
+  ];
+  process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
+    euroeval_version: "1.0.0", model_type: "generative", language: "da", language_group: "da",
+    allowed_identity_suffix_sets: alternatives, task_groups: ["text_to_text"], warnings: [],
+  }] });
+  try {
+    assert.deepEqual(expectedScope("1.0.0", "generative", "da").allowed_identity_suffix_sets, alternatives);
+  } finally {
+    if (original === undefined) delete process.env.VOLUNTEER_SCOPE_POLICY_JSON;
+    else process.env.VOLUNTEER_SCOPE_POLICY_JSON = original;
+  }
+});
+
+test("trusted policy rejects partial and mixed identity sets", () => {
+  const original = process.env.VOLUNTEER_SCOPE_POLICY_JSON;
+  const base = {
+    euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "da",
+    allowed_identity_suffix_sets: [[JSON.stringify(["dataset", false, true])]],
+    task_groups: ["sequence_classification"],
+  };
+  try {
+    process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{ ...base, identity_suffixes: base.allowed_identity_suffix_sets[0] }] });
+    assert.throws(() => expectedScope("1.0.0", "encoder", "da"), /mixes legacy/);
+    process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{ ...base, allowed_identity_suffix_sets: [[]] }] });
+    assert.throws(() => expectedScope("1.0.0", "encoder", "da"), /empty identity/);
+  } finally {
+    if (original === undefined) delete process.env.VOLUNTEER_SCOPE_POLICY_JSON;
+    else process.env.VOLUNTEER_SCOPE_POLICY_JSON = original;
+  }
 });
 
 test("trusted exact-language policy owns the lease language group", () => {
   const original = process.env.VOLUNTEER_SCOPE_POLICY_JSON;
   process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
     euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "policy-da",
-    identity_suffixes: [JSON.stringify(["dataset", false, true])],
+    allowed_identity_suffix_sets: [[JSON.stringify(["dataset", false, true])]],
     task_groups: ["sequence_classification"],
   }] });
   try {
     const scope = expectedScope("1.0.0", "encoder", "da");
     assert.equal(scope.language, "da");
     assert.equal(scope.language_group, "policy-da");
+  } finally {
+    if (original === undefined) delete process.env.VOLUNTEER_SCOPE_POLICY_JSON;
+    else process.env.VOLUNTEER_SCOPE_POLICY_JSON = original;
+  }
+});
+
+test("trusted scope rejects non-canonical identity alternatives", () => {
+  const original = process.env.VOLUNTEER_SCOPE_POLICY_JSON;
+  process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
+    euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "da",
+    allowed_identity_suffix_sets: [['["dataset",false,true] ']], task_groups: ["sequence_classification"],
+  }] });
+  try {
+    assert.throws(() => expectedScope("1.0.0", "encoder", "da"), /non-canonical/);
   } finally {
     if (original === undefined) delete process.env.VOLUNTEER_SCOPE_POLICY_JSON;
     else process.env.VOLUNTEER_SCOPE_POLICY_JSON = original;
@@ -388,7 +439,8 @@ const putLeaseFixture = (overrides = {}) => ({
   selected_gpu_index: 0, selected_gpu_uuid: "GPU-0",
   expires_at: new Date(Date.now() + 60_000).toISOString(), lease_id: "lease-id",
   model_type: "generative", expected_scope: {
-    policy_version: "policy-v1", language_group: "da", identity_suffixes: [], count: 0,
+    policy_version: "policy-v1", language_group: "da",
+    allowed_identity_suffix_sets: [["[\"dataset\",false,true]"], ["[\"other\",false,true]"]],
     task_groups: ["text_to_text"], warnings: [],
   }, ...overrides,
 });

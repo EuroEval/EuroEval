@@ -22,7 +22,7 @@ from .constants import (
 )
 from .date_utils import normalise_release_date
 from .eee_utils import benchmark_result_from_eee_dict, benchmark_result_to_eee_dict
-from .enums import Device, GenerativeType, ModelType, TaskGroup
+from .enums import Device, GenerativeType, ModelType, ShotMode, TaskGroup
 from .exceptions import InvalidBenchmark
 from .jsonl_io import parse_jsonl_lines
 from .languages import (
@@ -1134,8 +1134,9 @@ class BenchmarkConfig:
         evaluate_test_split:
             Whether to evaluate on the test split.
         few_shot:
-            Whether to only evaluate the model using few-shot evaluation. Only relevant
-            if the model is generative.
+            The shot policy used during planning. ``ShotMode.AUTO`` selects modes
+            automatically; booleans remain accepted for backwards compatibility. This
+            field is never persisted in a benchmark result.
         num_iterations:
             The number of iterations each model should be evaluated for.
         gpu_memory_utilization:
@@ -1193,7 +1194,7 @@ class BenchmarkConfig:
     trust_remote_code: bool
     clear_model_cache: bool
     evaluate_test_split: bool
-    few_shot: bool
+    few_shot: ShotMode | bool
     num_iterations: int
     gpu_memory_utilization: float
     attention_backend: (
@@ -1249,7 +1250,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     trust_remote_code: bool
     clear_model_cache: bool
     evaluate_test_split: bool
-    few_shot: bool
+    few_shot: ShotMode | bool | None
     num_iterations: int
     requires_safetensors: bool
     download_only: bool

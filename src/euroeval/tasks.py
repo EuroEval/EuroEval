@@ -280,6 +280,7 @@ CONTAMINATION_DETECTION = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=6,
     default_labels=[],
+    requires_zero_shot=True,
 )
 
 SPEED = Task(

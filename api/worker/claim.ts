@@ -212,8 +212,7 @@ export default async function handler(req: Request): Promise<Response> {
           expected_scope: {
             policy_version: trusted.policy_version,
             language_group: trusted.language_group,
-            identity_suffixes: [...trusted.identity_suffixes],
-            count: trusted.identity_suffixes.length,
+            allowed_identity_suffix_sets: trusted.allowed_identity_suffix_sets.map((set) => [...set]),
             task_groups: [...trusted.task_groups],
             warnings: trusted.warnings || [],
           },

@@ -7,6 +7,7 @@ from euroeval.benchmarker import Benchmarker
 from euroeval.data_models import DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.eee_utils import benchmark_result_to_eee_dict
+from euroeval.enums import ShotMode
 from euroeval.languages import get_all_languages, get_correct_language_codes
 
 from .types import EEERecord, JsonValue, Lease, canonical_json
@@ -33,6 +34,12 @@ def _normalise_record(
     record: dict[str, JsonValue], lease: Lease
 ) -> dict[str, JsonValue]:
     """Make the broker identity explicit without changing evaluation data.
+
+    Args:
+        record:
+            EEE record converted from a benchmark result.
+        lease:
+            Broker lease whose model identity must be authoritative.
 
     Returns:
         The record with broker-verified model identity fields.
@@ -76,6 +83,10 @@ def _official_dataset_configs(language: str) -> list[DatasetConfig]:
 def _record(record: dict[str, JsonValue]) -> EEERecord:
     """Create a record with the one canonical Python JSON representation.
 
+    Args:
+        record:
+            JSON-compatible EEE record.
+
     Returns:
         The exact JSON text and its digest.
     """
@@ -86,7 +97,17 @@ class Evaluator(t.Protocol):
     """Protocol implemented by concrete evaluation runners."""
 
     def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
-        """Evaluate one language and write isolated JSONL output."""
+        """Evaluate one language and write isolated JSONL output.
+
+        Args:
+            lease:
+                Broker-issued evaluation lease.
+            output_path:
+                JSONL output path.
+
+        Returns:
+            Records written to the output path.
+        """
         ...
 
 
@@ -107,6 +128,12 @@ class EuroEvalEvaluator(Evaluator):
 
     def evaluate(self, lease: Lease, output_path: Path) -> list[EEERecord]:
         """Run validation-only EuroEval with remote code disabled.
+
+        Args:
+            lease:
+                Broker-issued evaluation lease.
+            output_path:
+                JSONL path to receive the isolated evaluation records.
 
         Returns:
             EEE records produced by the evaluation.
@@ -130,6 +157,7 @@ class EuroEvalEvaluator(Evaluator):
             evaluate_test_split=False,
             requires_safetensors=True,
             gpu_memory_utilization=self.gpu_memory_utilisation,
+            few_shot=ShotMode.AUTO,
             force=True,
             raise_errors=True,
             verbose=False,
@@ -145,6 +173,7 @@ class EuroEvalEvaluator(Evaluator):
             evaluate_test_split=False,
             requires_safetensors=True,
             gpu_memory_utilization=self.gpu_memory_utilisation,
+            few_shot=ShotMode.AUTO,
             force=True,
             raise_errors=True,
         )

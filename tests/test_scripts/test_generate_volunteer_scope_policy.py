@@ -13,16 +13,34 @@ from src.scripts.generate_volunteer_scope_policy import build_policy
 
 
 class PolicyEntry(t.TypedDict):
-    """One generated model-type/language policy entry."""
+    """One generated model-type/language policy entry.
+
+    Attributes:
+        model_type:
+            Broad worker model capability.
+        language:
+            Exact ISO language code.
+        allowed_identity_suffix_sets:
+            Complete result-identity alternatives.
+        language_group:
+            Broker language-group identifier.
+    """
 
     model_type: str
     language: str
-    identity_suffixes: list[str]
+    allowed_identity_suffix_sets: list[list[str]]
     language_group: str
 
 
 class Policy(t.TypedDict):
-    """Generated policy shape used by these tests."""
+    """Generated policy shape used by these tests.
+
+    Attributes:
+        policy_version:
+            Versioned policy identifier.
+        policies:
+            Exact policy entries.
+    """
 
     policy_version: str
     policies: list[PolicyEntry]
@@ -42,7 +60,9 @@ def test_checked_in_json_and_typescript_policies_are_synchronised() -> None:
 def test_development_policy_version_uses_pep440_normalisation() -> None:
     """Policy versions normalise the package's trailing development marker."""
     policy = build_policy(
-        "18.1.0.dev", {("multi-wiki-qa-da", "da")}, model_types=("encoder",)
+        euroeval_version="18.1.0.dev",
+        pairs={("multi-wiki-qa-da", "da")},
+        model_types=("encoder",),
     )
 
     assert policy["policy_version"] == "volunteer-scope/18.1.0.dev0"
@@ -58,7 +78,9 @@ def test_package_version_matches_authoritative_release() -> None:
 def test_policy_does_not_share_a_group_scope() -> None:
     """A policy entry must not widen one language to its checkbox group."""
     policy = build_policy(
-        "18.1.0", {("multi-wiki-qa-da", "da")}, model_types=("generative",)
+        euroeval_version="18.1.0",
+        pairs={("multi-wiki-qa-da", "da")},
+        model_types=("generative",),
     )
 
     entry = t.cast(Policy, policy)["policies"][0]
@@ -72,20 +94,28 @@ def test_policy_generation_fails_on_config_errors(
     """A config loading failure must not widen scope to every pair."""
 
     def fail() -> dict[str, object]:
+        """Raise the configuration error expected by this test.
+
+        Raises:
+            RuntimeError:
+                The expected configuration lookup failure.
+        """
         raise RuntimeError("config lookup failed")
 
     monkeypatch.setattr(policy_module, "_configs_by_name", fail)
     with pytest.raises(RuntimeError, match="config lookup failed"):
         build_policy(
-            "18.0.0", {("multi-wiki-qa-da", "da")}, model_types=("generative",)
+            euroeval_version="18.0.0",
+            pairs={("multi-wiki-qa-da", "da")},
+            model_types=("generative",),
         )
 
 
 def test_policy_is_versioned_and_exact_language() -> None:
     """Policies pin version, model type, and individual ISO languages."""
     policy = build_policy(
-        "18.1.0",
-        {("multi-wiki-qa-da", "da"), ("multi-wiki-qa-en", "en")},
+        euroeval_version="18.1.0",
+        pairs={("multi-wiki-qa-da", "da"), ("multi-wiki-qa-en", "en")},
         model_types=("encoder",),
     )
 
@@ -95,7 +125,9 @@ def test_policy_is_versioned_and_exact_language() -> None:
         ("encoder", "da"),
         ("encoder", "en"),
     }
-    assert entries[0]["identity_suffixes"] == ['["multi-wiki-qa-da",false,true]']
+    assert entries[0]["allowed_identity_suffix_sets"] == [
+        ['["multi-wiki-qa-da",true,true]']
+    ]
 
 
 def test_policy_matches_benchmarker_defaults_for_encoder_and_decoder() -> None:
@@ -105,10 +137,11 @@ def test_policy_matches_benchmarker_defaults_for_encoder_and_decoder() -> None:
         save_results=False,
         language="da",
         dataset="multi-wiki-qa-da",
+        few_shot=True,
     )
     policy = build_policy(
-        "18.1.0.dev0",
-        {("multi-wiki-qa-da", "da"), ("ifeval-da", "da")},
+        euroeval_version="18.1.0.dev0",
+        pairs={("multi-wiki-qa-da", "da"), ("ifeval-da", "da")},
         model_types=("encoder", "generative"),
     )
     by_type = {
@@ -116,10 +149,14 @@ def test_policy_matches_benchmarker_defaults_for_encoder_and_decoder() -> None:
     }
     assert planned.benchmark_config_default_params.few_shot is True
     assert planned.benchmark_config_default_params.evaluate_test_split is False
-    assert by_type["encoder"]["identity_suffixes"] == [
-        '["multi-wiki-qa-da",false,true]'
+    assert by_type["encoder"]["allowed_identity_suffix_sets"] == [
+        ['["multi-wiki-qa-da",true,true]']
     ]
-    assert by_type["generative"]["identity_suffixes"] == [
-        '["ifeval-da",false,true]',
-        '["multi-wiki-qa-da",false,true]',
+    assert by_type["generative"]["allowed_identity_suffix_sets"] == [
+        ['["multi-wiki-qa-da",true,true]'],
+        [
+            '["ifeval-da",null,null]',
+            '["multi-wiki-qa-da",true,false]',
+            '["multi-wiki-qa-da",true,true]',
+        ],
     ]

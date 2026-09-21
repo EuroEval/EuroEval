@@ -9,13 +9,13 @@ import {
   signVolunteerMarker, verifyVolunteerMarker,
 } from "./_lib.js";
 import { uploadStaging } from "./_lib/eee.js";
-import type { VolunteerLeaseMarker } from "./_lib.js";
+import type { Lease, LeaseScope, VolunteerLeaseMarker } from "./_lib.js";
 
 export const config = { runtime: "nodejs" };
 
 const FINAL_MARKER = "euroeval-volunteer-finalised:v1";
 type ResultEntry = { digest: string; identity: string; path: string; warnings?: string[] };
-type Receipt = { status?: string; submission_id: string; lease: any; entries: ResultEntry[]; manifest_path: string; manifest?: string };
+type Receipt = { status?: string; submission_id: string; lease: Lease; entries: ResultEntry[]; manifest_path: string; manifest?: string; matched_identity_suffixes?: string[] };
 
 function resultEntries(value: unknown): ResultEntry[] {
   if (!Array.isArray(value)) return [];
@@ -35,8 +35,40 @@ function identityParts(identity: string): unknown[] | null {
 }
 
 function suffix(identity: string): string | null {
-  const value = identityParts(identity);
-  return value ? JSON.stringify(value.slice(1)) : null;
+  try {
+    const value = JSON.parse(identity) as unknown;
+    if (!Array.isArray(value) || value.length !== 4 || typeof value[0] !== "string" ||
+        typeof value[1] !== "string" || !(value[2] === null || typeof value[2] === "boolean") ||
+        !(value[3] === null || typeof value[3] === "boolean") || JSON.stringify(value) !== identity) return null;
+    return JSON.stringify(value.slice(1));
+  } catch { return null; }
+}
+
+function isCanonicalSuffix(value: string): boolean {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed) && parsed.length === 3 && typeof parsed[0] === "string" &&
+      (parsed[1] === null || typeof parsed[1] === "boolean") &&
+      (parsed[2] === null || typeof parsed[2] === "boolean") && JSON.stringify(parsed) === value;
+  } catch { return false; }
+}
+
+function allowedIdentitySuffixSets(scope: LeaseScope): string[][] | null {
+  const hasAllowed = "allowed_identity_suffix_sets" in scope;
+  const hasLegacy = "identity_suffixes" in scope;
+  if (hasAllowed === hasLegacy) return null;
+  const alternatives = hasAllowed
+    ? scope.allowed_identity_suffix_sets : [scope.identity_suffixes];
+  if (!Array.isArray(alternatives) || !alternatives.length) return null;
+  const keys = new Set<string>();
+  for (const alternative of alternatives) {
+    if (!Array.isArray(alternative) || !alternative.length || alternative.some((item) => typeof item !== "string" || !isCanonicalSuffix(item))) return null;
+    if (new Set(alternative).size !== alternative.length) return null;
+    const key = JSON.stringify([...alternative].sort());
+    if (keys.has(key)) return null;
+    keys.add(key);
+  }
+  return alternatives.map((alternative) => [...alternative]);
 }
 
 function isCanaryIdentity(identity: string): boolean {
@@ -44,6 +76,23 @@ function isCanaryIdentity(identity: string): boolean {
   return typeof value?.[1] === "string" && (
     value[1] === "contamination-canary" || value[1].startsWith("contamination-canary-")
   );
+}
+
+export function validateResultScope(entries: ResultEntry[], lease: Lease): string[] {
+  const allowed = lease.expected_scope && allowedIdentitySuffixSets(lease.expected_scope);
+  if (!allowed) throw new ConfigurationError("Lease has no trusted expected scope.");
+  const ordinaryEntries = entries.filter((entry) => !isCanaryIdentity(entry.identity));
+  const canaryEntries = entries.filter((entry) => isCanaryIdentity(entry.identity));
+  const actual = ordinaryEntries.map((entry) => suffix(entry.identity));
+  const canaryRequired = lease.contamination_canary?.status === "required";
+  if (actual.some((item) => item === null) || new Set(actual).size !== ordinaryEntries.length ||
+      (canaryRequired ? canaryEntries.length !== 1 : canaryEntries.length !== 0)) {
+    throw new BrokerError(422, "The uploaded result set does not match the coordinator's expected scope.");
+  }
+  const actualSet = new Set(actual as string[]);
+  const matched = allowed.find((alternative) => alternative.length === actualSet.size && alternative.every((item) => actualSet.has(item)));
+  if (!matched) throw new BrokerError(422, "The uploaded result set does not match the coordinator's expected scope.");
+  return [...matched];
 }
 
 export async function fetch(req: Request): Promise<Response> {
@@ -71,16 +120,8 @@ export async function fetch(req: Request): Promise<Response> {
     if (receipt.status !== "manifest_uploaded") {
       const raw = await redis("SMEMBERS", `euroeval:worker:results:${lease.lease_id}`);
       const entries = resultEntries(raw);
-      const expected = lease.expected_scope?.identity_suffixes;
-      if (!Array.isArray(expected) || !expected.length) throw new ConfigurationError("Lease has no trusted expected scope.");
-      const ordinaryEntries = entries.filter((entry) => !isCanaryIdentity(entry.identity));
-      const canaryEntries = entries.filter((entry) => isCanaryIdentity(entry.identity));
-      const actual = ordinaryEntries.map((entry) => suffix(entry.identity));
-      const canaryRequired = lease.contamination_canary?.status === "required";
-      if (actual.some((item) => item === null) || new Set(actual).size !== ordinaryEntries.length ||
-          ordinaryEntries.length !== expected.length || expected.some((item: string) => !actual.includes(item)) ||
-          (canaryRequired ? canaryEntries.length !== 1 : canaryEntries.length !== 0)) throw new BrokerError(422, "The uploaded result set does not match the coordinator's expected scope.");
-      receipt.entries = entries; receipt.status = "validating";
+      const matchedScope = validateResultScope(entries, lease);
+      receipt.entries = entries; receipt.matched_identity_suffixes = matchedScope; receipt.status = "validating";
       await redis("SET", statusKey, JSON.stringify(receipt), "EX", String(30 * 24 * 60 * 60));
       const issue = await fetchIssue(lease.issue_number);
       await requireAssignee(issue, lease.contributor);
@@ -91,9 +132,8 @@ export async function fetch(req: Request): Promise<Response> {
         euroeval_version: lease.euroeval_version, worker_version: lease.worker_version, image_digest: lease.image_digest,
         image_digest_provenance: "configured-required-not-runtime-attested", gpu_memory_utilisation: lease.gpu_memory_utilisation,
         selected_gpu_index: lease.selected_gpu_index, selected_gpu_uuid: lease.selected_gpu_uuid,
-        expected_scope: lease.expected_scope,
-        contamination_canary: lease.contamination_canary || null,
-        results: entries,
+        expected_scope: lease.expected_scope, matched_identity_suffixes: receipt.matched_identity_suffixes,
+        contamination_canary: lease.contamination_canary || null, results: entries,
         automated_checks: { result_count: entries.length, identities_unique: true, failed_instances: 0, warnings: [...new Set([...(lease.expected_scope.warnings || []), ...entries.flatMap((entry) => entry.warnings || [])])] },
         created_at: new Date().toISOString(), issue_state: issue.state,
       };

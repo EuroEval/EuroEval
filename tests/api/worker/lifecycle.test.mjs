@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import claim from "../../../api/worker/claim.ts";
-import { fetch as finalise } from "../../../api/worker/finalise.ts";
+import { fetch as finalise, validateResultScope } from "../../../api/worker/finalise.ts";
 import heartbeat from "../../../api/worker/heartbeat.ts";
 import release from "../../../api/worker/release.ts";
 import { parseVolunteerMarker, signVolunteerMarker, sha256, verifyVolunteerMarker } from "../../../api/worker/_lib.ts";
@@ -30,6 +30,7 @@ function mockBroker(issue, values) {
       const command = JSON.parse(init.body);
       let result = "OK";
       if (command[0] === "GET") result = values.get(command[1]) || null;
+      if (command[0] === "SMEMBERS") result = values.get(command[1]) || [];
       if (command[0] === "SET") values.set(command[1], command[2]);
       if (command[0] === "INCR") result = 1;
       if (command[0] === "EVAL") result = 1;
@@ -44,6 +45,18 @@ function mockBroker(issue, values) {
       const requested = JSON.parse(init.body).assignees.map((login) => login.toLowerCase());
       issue.assignees = (issue.assignees || []).filter((item) => !requested.includes(item.login.toLowerCase()));
       return Response.json(issue);
+    }
+    if (url.endsWith(`/issues/${issueNumber}/labels`) && method === "POST") {
+      const labels = JSON.parse(init.body).labels.map((name) => ({ name }));
+      issue.labels = [...(issue.labels || []), ...labels];
+      return Response.json(issue.labels);
+    }
+    if (url.includes(`/issues/${issueNumber}/comments`) && method === "GET") {
+      return Response.json(issue.comments || []);
+    }
+    if (url.endsWith(`/issues/${issueNumber}/comments`) && method === "POST") {
+      issue.comments = [...(issue.comments || []), { body: JSON.parse(init.body).body }];
+      return Response.json(issue.comments.at(-1));
     }
     throw new Error(`Unexpected request: ${method} ${url}`);
   };
@@ -61,7 +74,7 @@ test("claim rejects an issue model edited during metadata resolution", async () 
   process.env.GITHUB_TOKEN = "github-token";
   process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
     euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "da",
-    identity_suffixes: [JSON.stringify(["race", false, true])], count: 1,
+    allowed_identity_suffix_sets: [[JSON.stringify(["race", false, true])]],
     task_groups: ["sequence_classification"], warnings: [],
   }] });
   const language = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
@@ -128,7 +141,7 @@ test("claim resumes after expired contributor unassignment interruption", async 
   process.env.GITHUB_TOKEN = "github-token";
   process.env.VOLUNTEER_SCOPE_POLICY_JSON = JSON.stringify({ policy_version: "test-policy", policies: [{
     euroeval_version: "1.0.0", model_type: "encoder", language: "da", language_group: "da",
-    identity_suffixes: [JSON.stringify(["recovered", false, true])], count: 1,
+    allowed_identity_suffix_sets: [[JSON.stringify(["recovered", false, true])]],
     task_groups: ["sequence_classification"], warnings: [],
   }] });
   const language = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)";
@@ -196,6 +209,86 @@ test("claim resumes after expired contributor unassignment interruption", async 
     globalThis.fetch = originalFetch;
     process.env = originalEnv;
   }
+});
+
+async function finaliseSuccessfulScope(language, suffixes) {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+  process.env.VOLUNTEER_MARKER_SECRET = "marker-secret";
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-token";
+  process.env.GITHUB_TOKEN = "github-token";
+  const languageGroup = "Romance languages (Catalan, French, Italian, Portuguese, Romanian, Spanish)";
+  const activeLease = { ...lease, language, model_type: "generative", expected_scope: {
+    policy_version: "test-policy", language_group: languageGroup,
+    allowed_identity_suffix_sets: [suffixes], task_groups: ["multiple_choice_classification"], warnings: [],
+  } };
+  const signed = await signVolunteerMarker(issueNumber, {
+    protocol_version: "volunteer-worker/v1", coordinator: "coordinator", submission: "active",
+    leases: [{ lease_id: activeLease.lease_id, language: activeLease.language, worker: activeLease.worker,
+      contributor: activeLease.contributor, expires_at: activeLease.expires_at }],
+  });
+  const issue = { number: issueNumber, title: "[MODEL EVALUATION REQUEST] org/model",
+    body: `### Model ID\n\norg/model\n\n- [x] ${languageGroup}\n\n${markerBody(signed)}`,
+    state: "open", assignees: [{ login: "alice" }], labels: [] };
+  const entries = suffixes.map((item, index) => ({ digest: `digest-${index}`,
+    identity: JSON.stringify(["org/model", ...JSON.parse(item)]), path: `result-${index}.json` }));
+  const receipt = { status: "manifest_uploaded", submission_id: activeLease.lease_id,
+    lease: activeLease, entries, manifest_path: "volunteer/manifests/lease.json" };
+  const values = new Map();
+  values.set(`euroeval:worker:credential:${await sha256("credential")}`, JSON.stringify({ contributor: "alice" }));
+  values.set(`euroeval:worker:lease-id:${activeLease.lease_id}`, JSON.stringify(activeLease));
+  values.set(`euroeval:worker:lease:${issueNumber}:${activeLease.language}`, JSON.stringify(activeLease));
+  values.set(`euroeval:worker:finalisation:${activeLease.lease_id}`, JSON.stringify(receipt));
+  globalThis.fetch = mockBroker(issue, values);
+  try {
+    return await finalise(new Request("https://euroeval.test/api/worker/finalise", {
+      method: "POST", headers: { authorization: "Bearer credential", "content-type": "application/json" },
+      body: JSON.stringify({ protocol_version: "volunteer-worker/v1", lease_id: activeLease.lease_id }),
+    }));
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+}
+
+test("finalise accepts a valid base alternative with a split-less dataset", async () => {
+  const response = await finaliseSuccessfulScope("fr", [JSON.stringify(["multiloko-fr", null, true])]);
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).status, "ready");
+});
+
+test("finalise accepts a valid instruction-reasoning dual-mode alternative", async () => {
+  const suffixes = [
+    JSON.stringify(["ifeval-fr", null, null]),
+    JSON.stringify(["multiloko-fr", null, false]),
+    JSON.stringify(["multiloko-fr", null, true]),
+  ];
+  const response = await finaliseSuccessfulScope("fr", suffixes);
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).status, "ready");
+});
+
+test("scope validation excludes a required canary from an exact alternative", () => {
+  const suffixes = [
+    JSON.stringify(["ifeval-fr", null, null]),
+    JSON.stringify(["multiloko-fr", null, false]),
+    JSON.stringify(["multiloko-fr", null, true]),
+  ];
+  const activeLease = { ...lease, model_type: "generative",
+    contamination_canary: { status: "required", protocol_version: "canary/v1",
+      corpus_revision: "revision", corpus_sha256: "a".repeat(64) },
+    expected_scope: { policy_version: "test-policy", language_group: "fr",
+      allowed_identity_suffix_sets: [suffixes], task_groups: ["multiple_choice_classification"], warnings: [],
+    } };
+  const entries = suffixes.map((item, index) => ({ digest: `digest-${index}`,
+    identity: JSON.stringify(["org/model", ...JSON.parse(item)]), path: `result-${index}.json` }));
+  entries.push({ digest: "canary-digest",
+    identity: JSON.stringify(["org/model", "contamination-canary-fr", null, null]),
+    path: "canary-result.json" });
+
+  assert.deepEqual(validateResultScope(entries, activeLease), suffixes);
+  assert.throws(() => validateResultScope(entries.slice(0, -1), activeLease), /expected scope/);
 });
 
 test("finalise rejects an issue edited before its locked transition", async () => {

@@ -265,18 +265,41 @@ def _canary_instruction(value: object) -> CanaryInstruction | None:
 
 @dataclasses.dataclass(frozen=True)
 class ExpectedScope:
-    """Exact benchmark scope and task groups authorised by the broker."""
+    """Exact benchmark alternatives and task groups authorised by the broker.
+
+    Attributes:
+        policy_version:
+            Version of the trusted scope policy.
+        language_group:
+            Language-group identifier used by the broker.
+        allowed_identity_suffix_sets:
+            Complete, mutually exclusive result-identity alternatives.
+        count:
+            Expected result count for legacy single-alternative scopes, if present.
+        warnings:
+            Trusted warnings to include in the review manifest.
+        task_groups:
+            Task groups represented by the authorised identities.
+    """
 
     policy_version: str
     language_group: str
-    identity_suffixes: tuple[str, ...]
-    count: int
+    allowed_identity_suffix_sets: tuple[tuple[str, ...], ...]
+    count: int | None
     warnings: tuple[str, ...]
     task_groups: tuple[str, ...]
 
 
 def _expected_scope(value: object) -> ExpectedScope:
     """Decode the broker's exact evaluation scope.
+
+    Legacy persisted scopes containing ``identity_suffixes`` are normalised to
+    one allowed set. A scope containing both representations is rejected so a
+    worker cannot select whichever representation is more permissive.
+
+    Args:
+        value:
+            JSON-compatible expected-scope value.
 
     Returns:
         The decoded scope.
@@ -289,8 +312,23 @@ def _expected_scope(value: object) -> ExpectedScope:
         raise ValueError("broker response expected_scope is required")
     policy_version = value.get("policy_version")
     language_group = value.get("language_group")
-    identities = value.get("identity_suffixes")
+    has_allowed = "allowed_identity_suffix_sets" in value
+    has_legacy = "identity_suffixes" in value
+    if has_allowed == has_legacy:
+        raise ValueError("broker response expected_scope identity sets are malformed")
+    raw_sets = (
+        value.get("allowed_identity_suffix_sets")
+        if has_allowed
+        else [value.get("identity_suffixes")]
+    )
+    allowed_sets = _identity_suffix_sets(value=raw_sets)
     count = value.get("count")
+    if count is not None and (
+        isinstance(count, bool) or not isinstance(count, int) or count <= 0
+    ):
+        raise ValueError("broker response expected_scope count is malformed")
+    if has_legacy and count != len(allowed_sets[0]):
+        raise ValueError("broker response expected_scope count is inconsistent")
     warnings = value.get("warnings")
     task_groups = value.get("task_groups")
     if (
@@ -298,11 +336,6 @@ def _expected_scope(value: object) -> ExpectedScope:
         or not policy_version
         or not isinstance(language_group, str)
         or not language_group
-        or not isinstance(identities, (list, tuple))
-        or not identities
-        or not all(isinstance(item, str) and item for item in identities)
-        or not isinstance(count, int)
-        or count != len(identities)
         or not isinstance(warnings, (list, tuple))
         or not all(isinstance(item, str) for item in warnings)
         or not isinstance(task_groups, (list, tuple))
@@ -313,11 +346,64 @@ def _expected_scope(value: object) -> ExpectedScope:
     return ExpectedScope(
         policy_version=policy_version,
         language_group=language_group,
-        identity_suffixes=tuple(identities),
+        allowed_identity_suffix_sets=allowed_sets,
         count=count,
         warnings=tuple(warnings),
         task_groups=tuple(task_groups),
     )
+
+
+def _identity_suffix_sets(value: object) -> tuple[tuple[str, ...], ...]:
+    """Validate and canonicalise exact identity-suffix alternatives.
+
+    Args:
+        value:
+            Candidate list of complete identity-suffix lists.
+
+    Returns:
+        Non-empty, duplicate-free identity-suffix alternatives.
+
+    Raises:
+        ValueError:
+            If an alternative or suffix is malformed, non-canonical, or
+            duplicated.
+    """
+    if not isinstance(value, (list, tuple)) or not value:
+        raise ValueError("broker response expected_scope identity sets are malformed")
+    alternatives: list[tuple[str, ...]] = []
+    for raw_set in value:
+        if not isinstance(raw_set, (list, tuple)) or not raw_set:
+            raise ValueError(
+                "broker response expected_scope identity sets are malformed"
+            )
+        suffixes = tuple(raw_set)
+        if not all(isinstance(item, str) and item for item in suffixes):
+            raise ValueError(
+                "broker response expected_scope identity sets are malformed"
+            )
+        if len(set(suffixes)) != len(suffixes):
+            raise ValueError(
+                "broker response expected_scope identity set has duplicates"
+            )
+        for suffix in suffixes:
+            parsed = json.loads(suffix)
+            if (
+                not isinstance(parsed, list)
+                or len(parsed) != 3
+                or not isinstance(parsed[0], str)
+                or not (parsed[1] is None or isinstance(parsed[1], bool))
+                or not (parsed[2] is None or isinstance(parsed[2], bool))
+                or json.dumps(parsed, ensure_ascii=False, separators=(",", ":"))
+                != suffix
+            ):
+                raise ValueError(
+                    "broker response expected_scope identity suffix is malformed"
+                )
+        alternatives.append(suffixes)
+    keys = {tuple(sorted(item)) for item in alternatives}
+    if len(keys) != len(alternatives):
+        raise ValueError("broker response expected_scope alternatives are duplicated")
+    return tuple(alternatives)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -332,7 +418,40 @@ class ModelEvidence:
 
 @dataclasses.dataclass(frozen=True)
 class Lease:
-    """One broker-issued evaluation lease."""
+    """One broker-issued evaluation lease.
+
+    Attributes:
+        lease_id:
+            Unique broker-issued lease identifier.
+        issue_number:
+            GitHub issue containing the queued evaluation request.
+        model_id:
+            Hugging Face model repository identifier.
+        model_revision:
+            Immutable model revision to evaluate.
+        language:
+            Language code assigned to the lease.
+        euroeval_version:
+            EuroEval version required by the broker.
+        image_digest:
+            Digest of the authorised worker image.
+        expires_at:
+            ISO-formatted lease expiry time.
+        model_type:
+            Broad model type authorised by the broker.
+        worker_version:
+            Worker protocol implementation version.
+        gpu_memory_utilisation:
+            Maximum proportion of GPU memory available to the evaluator.
+        selected_gpu_uuid:
+            Stable identifier of the selected GPU, when available.
+        selected_gpu_index:
+            Process-visible index of the selected GPU, when available.
+        model_metadata:
+            Immutable model metadata verified by the broker.
+        expected_scope:
+            Exact result-identity alternatives authorised for this lease.
+    """
 
     lease_id: str
     issue_number: int
@@ -362,6 +481,10 @@ class Claim:
 def lease_from_dict(data: dict[str, object]) -> Lease:
     """Decode a lease response.
 
+    Args:
+        data:
+            JSON-compatible broker lease response.
+
     Returns:
         The typed lease.
 
@@ -386,7 +509,7 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
     model_metadata = _model_evidence(data.get("model_metadata"))
     if model_metadata.model_type != model_type:
         raise ValueError("broker response model metadata contradicts model_type")
-    expected_scope = _expected_scope(data.get("expected_scope"))
+    expected_scope = _expected_scope(value=data.get("expected_scope"))
     contamination_canary = _canary_instruction(data.get("contamination_canary"))
     return Lease(
         lease_id=_string(data, "lease_id"),

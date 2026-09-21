@@ -179,6 +179,27 @@ class ParameterAdjustment(AutoStrEnum):
     NO_RESPONSE_FORMAT = auto()
 
 
+class ShotMode(AutoStrEnum):
+    """The prompt shot policy used for a benchmark run.
+
+    ``AUTO`` is an explicit public policy value that selects one or more concrete
+    modes from model metadata. It is used during planning only and is never written
+    to benchmark results.
+
+    Attributes:
+        AUTO:
+            Select concrete modes automatically from the model and backend metadata.
+        FEW_SHOT:
+            Evaluate with task-specific few-shot examples where supported.
+        ZERO_SHOT:
+            Evaluate without few-shot examples.
+    """
+
+    AUTO = auto()
+    FEW_SHOT = auto()
+    ZERO_SHOT = auto()
+
+
 class TaskGroup(AutoStrEnum):
     """The overall task group of a task.
 
