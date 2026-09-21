@@ -2,47 +2,48 @@
 
 import inspect
 
+import pytest
+
 from euroeval import exceptions
 
 
 class TestBaseExceptions:
     """Tests for base exception classes."""
 
-    def test_hugging_face_hub_down_default_message(self) -> None:
-        """Test HuggingFaceHubDown with default message."""
-        exc = exceptions.HuggingFaceHubDown()
-        assert exc.message == "The Hugging Face Hub is currently down."
+    @pytest.mark.parametrize(
+        ("exception_class", "expected_message"),
+        [
+            (exceptions.HuggingFaceHubDown, "The Hugging Face Hub is currently down."),
+            (
+                exceptions.InvalidBenchmark,
+                "This model cannot be benchmarked on the given dataset.",
+            ),
+            (
+                exceptions.InvalidModel,
+                "The model cannot be benchmarked on any datasets.",
+            ),
+            (exceptions.InvalidTask, "The task is invalid."),
+            (
+                exceptions.NaNValueInModelOutput,
+                "There is a NaN value in the model output.",
+            ),
+            (
+                exceptions.NoInternetConnection,
+                "There is currently no internet connection.",
+            ),
+        ],
+    )
+    def test_default_message(
+        self, exception_class: type[Exception], expected_message: str
+    ) -> None:
+        """Test the default message of each base exception."""
+        assert exception_class().message == expected_message
 
     def test_invalid_benchmark_custom_message(self) -> None:
         """Test InvalidBenchmark with custom message."""
         custom_msg = "Custom error message"
         exc = exceptions.InvalidBenchmark(message=custom_msg)
         assert exc.message == custom_msg
-
-    def test_invalid_benchmark_default_message(self) -> None:
-        """Test InvalidBenchmark with default message."""
-        exc = exceptions.InvalidBenchmark()
-        assert exc.message == "This model cannot be benchmarked on the given dataset."
-
-    def test_invalid_model_default_message(self) -> None:
-        """Test InvalidModel with default message."""
-        exc = exceptions.InvalidModel()
-        assert exc.message == "The model cannot be benchmarked on any datasets."
-
-    def test_invalid_task_default_message(self) -> None:
-        """Test InvalidTask with default message."""
-        exc = exceptions.InvalidTask()
-        assert exc.message == "The task is invalid."
-
-    def test_nan_value_in_model_output_default_message(self) -> None:
-        """Test NaNValueInModelOutput with default message."""
-        exc = exceptions.NaNValueInModelOutput()
-        assert exc.message == "There is a NaN value in the model output."
-
-    def test_no_internet_connection_default_message(self) -> None:
-        """Test NoInternetConnection with default message."""
-        exc = exceptions.NoInternetConnection()
-        assert exc.message == "There is currently no internet connection."
 
 
 class TestNeedsAdditionalArgument:

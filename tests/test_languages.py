@@ -24,29 +24,29 @@ class TestGetAllLanguages:
         """Yields all languages."""
         yield get_all_languages()
 
-    def test_languages_are_objects(self, languages: dict[str, Language]) -> None:
-        """Tests that the values of `languages` are `Language` objects."""
-        for language in languages.values():
-            assert isinstance(language, Language)
+    def test_languages_are_a_dict_of_objects(
+        self, languages: dict[str, Language]
+    ) -> None:
+        """Test that the registry is a dict of `Language` objects."""
+        assert isinstance(languages, dict)
+        assert all(isinstance(language, Language) for language in languages.values())
 
     def test_languages_contain_germanic_languages(
         self, languages: dict[str, Language]
     ) -> None:
         """Tests that `languages` contains the Germanic languages."""
-        assert "sv" in languages
-        assert "da" in languages
-        assert "no" in languages
-        assert "nb" in languages
-        assert "nn" in languages
-        assert "is" in languages
-        assert "fo" in languages
-        assert "de" in languages
-        assert "nl" in languages
-        assert "en" in languages
-
-    def test_languages_is_dict(self, languages: dict[str, Language]) -> None:
-        """Tests that `languages` is a dictionary."""
-        assert isinstance(languages, dict)
+        assert {
+            "sv",
+            "da",
+            "no",
+            "nb",
+            "nn",
+            "is",
+            "fo",
+            "de",
+            "nl",
+            "en",
+        } <= languages.keys()
 
 
 def test_a_639_3_code_shared_by_regional_variants_is_not_guessed() -> None:

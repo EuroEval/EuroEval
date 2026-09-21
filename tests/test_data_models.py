@@ -273,10 +273,12 @@ class TestMetric:
         self, metric: HuggingFaceMetric
     ) -> None:
         """Test that the metric config attributes correspond to the arguments."""
-        assert metric.name == "metric_name"
-        assert metric.pretty_name == "Metric name"
-        assert metric.huggingface_id == "metric_id"
-        assert metric.results_key == "metric_key"
+        assert (
+            metric.name,
+            metric.pretty_name,
+            metric.huggingface_id,
+            metric.results_key,
+        ) == ("metric_name", "Metric name", "metric_id", "metric_key")
 
     def test_default_value_of_compute_kwargs(self, metric: HuggingFaceMetric) -> None:
         """Test that the default value of `compute_kwargs` is an empty dictionary."""
