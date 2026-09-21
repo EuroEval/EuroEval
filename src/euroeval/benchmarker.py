@@ -15,7 +15,6 @@ from time import sleep
 from huggingface_hub import snapshot_download
 from torch.distributed import destroy_process_group
 
-from . import result_cache
 from .benchmark_config_factory import build_benchmark_config
 from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS, ORTHOGONAL_TASKS
 from .data_loading import load_data, load_raw_data
@@ -28,6 +27,7 @@ from .logging_utils import adjust_logging_level, get_pbar, log, log_once
 from .metrics.bpc import bpc_metric
 from .model_config import get_model_config
 from .model_loading import load_model
+from .result_cache import partition_shot_work
 from .scores import log_scores
 from .shot_modes import (
     cached_generative_type,
@@ -40,9 +40,6 @@ from .speed_benchmark import benchmark_speed
 from .tasks import SPEED
 from .types import ShotModeRequest
 from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
-
-get_record = result_cache.get_record
-
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -1264,7 +1261,7 @@ class Benchmarker:
             candidate_modes=modes[:1] if benchmark_config.download_only else modes,
             datasets=datasets,
         )
-        pending, cached = result_cache.partition_shot_work(
+        pending, cached = partition_shot_work(
             model_config=model_config,
             work=work,
             benchmark_config=benchmark_config,
@@ -1288,7 +1285,7 @@ class Benchmarker:
                 generative_type=cached_type,
             )
             work = plan_shot_work(candidate_modes=modes, datasets=datasets)
-            pending, cached = result_cache.partition_shot_work(
+            pending, cached = partition_shot_work(
                 model_config=model_config,
                 work=work,
                 benchmark_config=benchmark_config,
@@ -1329,7 +1326,7 @@ class Benchmarker:
             else actual_modes,
             datasets=datasets,
         )
-        pending, cached = result_cache.partition_shot_work(
+        pending, cached = partition_shot_work(
             model_config=model_config,
             work=actual_work,
             benchmark_config=benchmark_config,

@@ -16,12 +16,7 @@ import pytest
 import torch
 from requests.exceptions import RequestException
 
-from euroeval.benchmarker import (
-    Benchmarker,
-    adjust_logging_level,
-    clear_model_cache_fn,
-    get_record,
-)
+from euroeval.benchmarker import Benchmarker, adjust_logging_level, clear_model_cache_fn
 from euroeval.data_models import (
     BenchmarkConfig,
     BenchmarkResult,
@@ -32,6 +27,7 @@ from euroeval.data_models import (
 )
 from euroeval.enums import InferenceBackend, ModelType
 from euroeval.exceptions import HuggingFaceHubDown
+from euroeval.result_cache import get_record
 
 
 class TestClearCacheFn:
