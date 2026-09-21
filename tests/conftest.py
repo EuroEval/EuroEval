@@ -168,6 +168,7 @@ def benchmark_config(
         download_only=False,
         max_context_length=None,
         vocabulary_size=None,
+        num_parameters=None,
     )
 
 

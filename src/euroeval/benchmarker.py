@@ -102,6 +102,7 @@ class Benchmarker:
         download_only: bool = False,
         max_context_length: int | None = None,
         vocabulary_size: int | None = None,
+        num_parameters: int | None = None,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -199,6 +200,9 @@ class Benchmarker:
             vocabulary_size:
                 Override for the vocabulary size of the model. If None, the value will
                 be inferred automatically from the model. Defaults to None.
+            num_parameters:
+                Override for the number of parameters in the model. If None, the value
+                will be inferred automatically from the model. Defaults to None.
 
         Raises:
             ValueError:
@@ -253,6 +257,7 @@ class Benchmarker:
             run_with_cli=run_with_cli,
             max_context_length=max_context_length,
             vocabulary_size=vocabulary_size,
+            num_parameters=num_parameters,
         )
 
         self.benchmark_config = build_benchmark_config(
@@ -306,6 +311,7 @@ class Benchmarker:
         debug: bool | None = None,
         max_context_length: int | None = None,
         vocabulary_size: int | None = None,
+        num_parameters: int | None = None,
     ) -> c.Sequence[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -421,6 +427,10 @@ class Benchmarker:
                 Override for the vocabulary size of the model. If None, the value will
                 be inferred automatically from the model. Defaults to the value
                 specified when initialising the benchmarker.
+            num_parameters:
+                Override for the number of parameters in the model. If None, the value
+                will be inferred automatically from the model. Defaults to the value
+                specified when initialising the benchmarker.
 
         Returns:
             A list of benchmark results.
@@ -499,6 +509,7 @@ class Benchmarker:
             debug=debug,
             max_context_length=max_context_length,
             vocabulary_size=vocabulary_size,
+            num_parameters=num_parameters,
         )
 
         adjust_logging_level(verbose=benchmark_config.verbose)
@@ -1031,6 +1042,10 @@ class Benchmarker:
                 vocabulary_size=_get_param(
                     "vocabulary_size",
                     self.benchmark_config_default_params.vocabulary_size,
+                ),
+                num_parameters=_get_param(
+                    "num_parameters",
+                    self.benchmark_config_default_params.num_parameters,
                 ),
             )
         )

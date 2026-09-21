@@ -42,6 +42,7 @@ def test_cli_param_names(cli_params: dict[str | None, ParamType]) -> None:
         "debug",
         "max_context_length",
         "vocabulary_size",
+        "num_parameters",
         "help",
     }
 
@@ -98,3 +99,16 @@ def test_dataset_selects_the_languages_it_contains(
     assert result.exit_code == 0
     assert mock_benchmarker_cls.call_args.kwargs["dataset"] == ["dansk"]
     assert mock_benchmarker_cls.call_args.kwargs["language"] == ["all"]
+
+
+def test_num_parameters_is_forwarded(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that `--num-parameters` is forwarded to the benchmarker."""
+    mock_benchmarker_cls = MagicMock()
+    monkeypatch.setattr("euroeval.cli.Benchmarker", mock_benchmarker_cls)
+
+    result = CliRunner().invoke(
+        benchmark, ["--model", "dummy", "--num-parameters", "123456"]
+    )
+
+    assert result.exit_code == 0
+    assert mock_benchmarker_cls.call_args.kwargs["num_parameters"] == 123_456

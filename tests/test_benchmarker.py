@@ -644,6 +644,7 @@ def test_download_only_does_not_instantiate_model(
         run_with_cli=True,
         max_context_length=None,
         vocabulary_size=None,
+        num_parameters=None,
         download_only=True,
     )
 
