@@ -27,7 +27,6 @@ from .logging_utils import adjust_logging_level, get_pbar, log, log_once
 from .metrics.bpc import bpc_metric
 from .model_config import get_model_config
 from .model_loading import load_model
-from .result_cache import get_record as get_record
 from .result_cache import partition_shot_work
 from .scores import log_scores
 from .shot_modes import (
