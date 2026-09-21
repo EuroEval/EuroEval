@@ -47,6 +47,21 @@ def test_cli_param_names(cli_params: dict[str | None, ParamType]) -> None:
     }
 
 
+def test_contamination_detection_is_selected_as_a_task(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The canary is selected through the ordinary task option."""
+    mock_benchmarker_cls = MagicMock()
+    monkeypatch.setattr("euroeval.cli.Benchmarker", mock_benchmarker_cls)
+
+    result = CliRunner().invoke(
+        benchmark, ["--model", "dummy", "--task", "contamination-detection"]
+    )
+
+    assert result.exit_code == 0
+    assert mock_benchmarker_cls.call_args.kwargs["task"] == ["contamination-detection"]
+
+
 @pytest.mark.parametrize(
     argnames=["options", "conflicting_options"],
     argvalues=[
@@ -65,21 +80,6 @@ def test_dataset_and_task_conflict(
     assert result.exit_code == 2
     assert all(option in result.output for option in conflicting_options)
     assert "Traceback" not in result.output
-
-
-def test_contamination_detection_is_selected_as_a_task(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The canary is selected through the ordinary task option."""
-    mock_benchmarker_cls = MagicMock()
-    monkeypatch.setattr("euroeval.cli.Benchmarker", mock_benchmarker_cls)
-
-    result = CliRunner().invoke(
-        benchmark, ["--model", "dummy", "--task", "contamination-detection"]
-    )
-
-    assert result.exit_code == 0
-    assert mock_benchmarker_cls.call_args.kwargs["task"] == ["contamination-detection"]
 
 
 def test_dataset_selects_the_languages_it_contains(

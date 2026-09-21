@@ -222,6 +222,48 @@ def _string(data: dict[str, object], key: str) -> str:
 
 
 @dataclasses.dataclass(frozen=True)
+class CanaryInstruction:
+    """Broker decision for one model-level contamination-canary collection."""
+
+    status: t.Literal["required", "not_applicable"]
+    protocol_version: str
+    corpus_revision: str
+    corpus_sha256: str
+    reason: str | None = None
+
+
+def _canary_instruction(value: object) -> CanaryInstruction | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("broker response contamination_canary is malformed")
+    status = value.get("status")
+    protocol = value.get("protocol_version")
+    revision = value.get("corpus_revision")
+    corpus_hash = value.get("corpus_sha256")
+    reason = value.get("reason")
+    if (
+        status not in {"required", "not_applicable"}
+        or not isinstance(protocol, str)
+        or not protocol
+        or not isinstance(revision, str)
+        or not revision
+        or not isinstance(corpus_hash, str)
+        or len(corpus_hash) != 64
+        or reason is not None
+        and not isinstance(reason, str)
+    ):
+        raise ValueError("broker response contamination_canary is malformed")
+    return CanaryInstruction(
+        status=t.cast(t.Literal["required", "not_applicable"], status),
+        protocol_version=protocol,
+        corpus_revision=revision,
+        corpus_sha256=corpus_hash,
+        reason=reason,
+    )
+
+
+@dataclasses.dataclass(frozen=True)
 class ExpectedScope:
     """Exact benchmark scope and task groups authorised by the broker."""
 
@@ -286,17 +328,6 @@ class ModelEvidence:
     architectures: tuple[str, ...]
     model_type: str
     is_encoder_decoder: bool | None = None
-
-
-@dataclasses.dataclass(frozen=True)
-class CanaryInstruction:
-    """Broker decision for one model-level contamination-canary collection."""
-
-    status: t.Literal["required", "not_applicable"]
-    protocol_version: str
-    corpus_revision: str
-    corpus_sha256: str
-    reason: str | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -374,37 +405,6 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
         model_metadata=model_metadata,
         expected_scope=expected_scope,
         contamination_canary=contamination_canary,
-    )
-
-
-def _canary_instruction(value: object) -> CanaryInstruction | None:
-    if value is None:
-        return None
-    if not isinstance(value, dict):
-        raise ValueError("broker response contamination_canary is malformed")
-    status = value.get("status")
-    protocol = value.get("protocol_version")
-    revision = value.get("corpus_revision")
-    corpus_hash = value.get("corpus_sha256")
-    reason = value.get("reason")
-    if (
-        status not in {"required", "not_applicable"}
-        or not isinstance(protocol, str)
-        or not protocol
-        or not isinstance(revision, str)
-        or not revision
-        or not isinstance(corpus_hash, str)
-        or len(corpus_hash) != 64
-        or reason is not None
-        and not isinstance(reason, str)
-    ):
-        raise ValueError("broker response contamination_canary is malformed")
-    return CanaryInstruction(
-        status=t.cast(t.Literal["required", "not_applicable"], status),
-        protocol_version=protocol,
-        corpus_revision=revision,
-        corpus_sha256=corpus_hash,
-        reason=reason,
     )
 
 

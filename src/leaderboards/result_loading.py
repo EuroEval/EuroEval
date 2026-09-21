@@ -33,14 +33,6 @@ def configure_leaderboard_result_filter(*, excluded_models: set[str]) -> None:
     load_raw_results.cache_clear()
 
 
-def reset_leaderboard_result_filter() -> None:
-    """Expose source records for a fresh processing pass."""
-    global _EXCLUDED_MODELS, _HIDE_AUXILIARY_RESULTS  # noqa: PLW0603
-    _EXCLUDED_MODELS = frozenset()
-    _HIDE_AUXILIARY_RESULTS = False
-    load_raw_results.cache_clear()
-
-
 @cache
 def load_raw_results() -> list[dict[str, t.Any]]:
     """Load all EEE-format results from the results directory.
@@ -103,16 +95,6 @@ def load_raw_results() -> list[dict[str, t.Any]]:
     return records
 
 
-def _model_is_excluded(model_name: str) -> bool:
-    """Return whether a stored identity belongs to an excluded base model."""
-    return any(
-        model_name == model_id
-        or model_name.startswith(f"{model_id}@")
-        or model_name.startswith(f"{model_id}#")
-        for model_id in _EXCLUDED_MODELS
-    )
-
-
 def _dedup_by_storage_identity(
     records: list[dict[str, t.Any]],
 ) -> list[dict[str, t.Any]]:
@@ -145,6 +127,16 @@ def _dedup_by_storage_identity(
     return list(by_identity.values())
 
 
+def _model_is_excluded(model_name: str) -> bool:
+    """Return whether a stored identity belongs to an excluded base model."""
+    return any(
+        model_name == model_id
+        or model_name.startswith(f"{model_id}@")
+        or model_name.startswith(f"{model_id}#")
+        for model_id in _EXCLUDED_MODELS
+    )
+
+
 def _sync_results_from_bucket() -> None:
     """Sync the HF results bucket into RESULTS_DIR and back it up.
 
@@ -168,3 +160,11 @@ def _sync_results_from_bucket() -> None:
     backup_path = backup_results()
     if backup_path:
         logger.info(f"Backup created at {backup_path}.")
+
+
+def reset_leaderboard_result_filter() -> None:
+    """Expose source records for a fresh processing pass."""
+    global _EXCLUDED_MODELS, _HIDE_AUXILIARY_RESULTS  # noqa: PLW0603
+    _EXCLUDED_MODELS = frozenset()
+    _HIDE_AUXILIARY_RESULTS = False
+    load_raw_results.cache_clear()

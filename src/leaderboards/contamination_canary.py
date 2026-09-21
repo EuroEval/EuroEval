@@ -47,6 +47,12 @@ class _PrivateRecord(t.TypedDict):
     control_target: str
 
 
+def _record_timestamp(record: dict[str, object]) -> str:
+    """Return an EEE timestamp suitable for deterministic snapshot ordering."""
+    value = record.get("evaluation_timestamp")
+    return value if isinstance(value, str) else ""
+
+
 def process_contamination_canaries(
     records: c.Sequence[dict[str, object]],
 ) -> tuple[
@@ -72,6 +78,194 @@ def process_contamination_canaries(
     )
     _store_canary_exclusions(excluded)
     return ordinary, canary_records, excluded, report
+
+
+def _reject_conflicting_immutable_records(
+    *, records: list[dict[str, object]], report: c.Mapping[str, object]
+) -> list[dict[str, object]]:
+    """Prevent conflicting immutable evidence from replacing accepted storage."""
+    models = report.get("models")
+    if not isinstance(models, list):
+        return records
+    conflicts = {
+        item["evidence_identity"]
+        for item in models
+        if isinstance(item, dict)
+        and item.get("reason") == "conflicting_immutable_evidence"
+        and isinstance(item.get("evidence_identity"), str)
+    }
+    if not conflicts:
+        return records
+    accepted: list[dict[str, object]] = []
+    for record in records:
+        try:
+            if _evidence_from_record(record=record).identity in conflicts:
+                continue
+        except (TypeError, ValueError, KeyError, json.JSONDecodeError):
+            pass
+        accepted.append(record)
+    return accepted
+
+
+def _evidence_from_record(*, record: dict[str, object]) -> CanaryEvidence:
+    """Extract and bind strict canary evidence from one EEE result."""
+    library = record.get("eval_library")
+    model_info = record.get("model_info")
+    if not isinstance(library, dict) or not isinstance(model_info, dict):
+        raise ValueError("canary result has an invalid EEE envelope")
+    details = library.get("additional_details")
+    if not isinstance(details, dict):
+        raise ValueError("canary result has no additional details")
+    raw = details.get("contamination_canary_evidence")
+    if isinstance(raw, str):
+        raw = json.loads(raw)
+    evidence = evidence_from_dict(raw)
+    model_name = model_info.get("id") or model_info.get("name")
+    if not isinstance(model_name, str) or not (
+        model_name == evidence.model_id
+        or model_name.startswith(f"{evidence.model_id}@")
+        or model_name.startswith(f"{evidence.model_id}#")
+    ):
+        raise ValueError("canary evidence model does not match its EEE record")
+    return evidence
+
+
+def _store_canary_exclusions(models: set[str]) -> None:
+    """Persist confirmed removals outside the repository with mode 0600."""
+    if not models:
+        return
+    try:
+        path = _private_directory() / _EXCLUSIONS_FILENAME
+        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        content = json.dumps(
+            {"schema_version": _EXCLUSIONS_SCHEMA, "models": sorted(models)},
+            indent=2,
+            sort_keys=True,
+        )
+        _atomic_private_write(path=path, content=f"{content}\n")
+    except (OSError, ValueError) as error:
+        raise RuntimeError(
+            "Cannot safely generate leaderboards: confirmed canary exclusions could "
+            "not be persisted."
+        ) from error
+
+
+def _atomic_private_write(*, path: Path, content: str) -> None:
+    """Atomically write an owner-only private file."""
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        path.chmod(0o600)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
+def _private_directory() -> Path:
+    """Return the configured directory containing private scoring records."""
+    configured = os.getenv(CANARY_PRIVATE_DIR_ENV)
+    if not configured:
+        raise ValueError(f"{CANARY_PRIVATE_DIR_ENV} is required")
+    return Path(configured).expanduser()
+
+
+def confirm_canary_exclusions(
+    report: c.Mapping[str, object], already_excluded: c.Set[str] = frozenset()
+) -> set[str]:
+    """Ask whether each detected model should be excluded, defaulting to yes."""
+    models = report.get("models")
+    if not isinstance(models, list):
+        return set()
+    detected: dict[str, list[dict[str, object]]] = defaultdict(list)
+    for item in models:
+        if (
+            isinstance(item, dict)
+            and item.get("contamination_detected") is True
+            and isinstance(item.get("model_id"), str)
+        ):
+            detected[t.cast(str, item["model_id"])].append(item)
+    excluded: set[str] = set()
+    for model_id, outcomes in sorted(detected.items()):
+        if model_id in already_excluded:
+            excluded.add(model_id)
+            continue
+        strongest = max(
+            outcomes, key=lambda item: _numeric_field(item, "exact_rate_difference")
+        )
+        logger.warning(
+            "Contamination canary detected exposure for %s "
+            "(exact difference %.1f%%, p=%s).",
+            model_id,
+            100 * _numeric_field(strongest, "exact_rate_difference"),
+            strongest.get("paired_sign_p_value"),
+        )
+        if _confirm_exclusion(model_id=model_id):
+            excluded.add(model_id)
+            logger.warning("Removing %s from generated leaderboards.", model_id)
+        else:
+            logger.warning("Keeping %s on generated leaderboards.", model_id)
+    return excluded
+
+
+def _confirm_exclusion(*, model_id: str) -> bool:
+    """Return an interactive exclusion decision, with safe yes defaults."""
+    if not sys.stdin.isatty():
+        logger.warning(
+            "No interactive terminal is available; defaulting to removal for %s.",
+            model_id,
+        )
+        return True
+    try:
+        answer = input(
+            f"Remove {model_id} from the leaderboards due to the canary result? [Y/n] "
+        )
+    except EOFError:
+        return True
+    return answer.strip().lower() not in {"n", "no"}
+
+
+def _numeric_field(value: dict[str, object], field: str) -> float:
+    """Return a report number or zero for malformed internal data."""
+    item = value.get(field)
+    return float(item) if isinstance(item, int | float) else 0.0
+
+
+def load_canary_exclusions() -> set[str]:
+    """Load durable removals, failing closed once private state is configured."""
+    configured = os.getenv(CANARY_PRIVATE_DIR_ENV)
+    if not configured:
+        return set()
+    path = Path(configured).expanduser() / _EXCLUSIONS_FILENAME
+    if not path.exists():
+        return set()
+    try:
+        _validate_private_file(path)
+        value = json.loads(path.read_text(encoding="utf-8"))
+        models = value.get("models") if isinstance(value, dict) else None
+        if (
+            not isinstance(value, dict)
+            or value.get("schema_version") != _EXCLUSIONS_SCHEMA
+            or not isinstance(models, list)
+            or not all(isinstance(item, str) and item for item in models)
+        ):
+            raise ValueError("private canary exclusions are malformed")
+        return set(models)
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        raise RuntimeError(
+            "Cannot safely generate leaderboards: private canary exclusions are "
+            "unreadable or invalid."
+        ) from error
+
+
+def _validate_private_file(path: Path) -> None:
+    """Require an existing owner-only private file."""
+    if not path.is_file() or stat.S_IMODE(path.stat().st_mode) & 0o077:
+        raise ValueError(f"private canary file must exist with mode 0600: {path}")
 
 
 def partition_canary_records(
@@ -205,139 +399,83 @@ def score_canary_records(records: c.Sequence[dict[str, object]]) -> dict[str, ob
     return report
 
 
-def _reject_conflicting_immutable_records(
-    *, records: list[dict[str, object]], report: c.Mapping[str, object]
-) -> list[dict[str, object]]:
-    """Prevent conflicting immutable evidence from replacing accepted storage."""
-    models = report.get("models")
-    if not isinstance(models, list):
-        return records
-    conflicts = {
-        item["evidence_identity"]
-        for item in models
-        if isinstance(item, dict)
-        and item.get("reason") == "conflicting_immutable_evidence"
-        and isinstance(item.get("evidence_identity"), str)
-    }
-    if not conflicts:
-        return records
-    accepted: list[dict[str, object]] = []
-    for record in records:
-        try:
-            if _evidence_from_record(record=record).identity in conflicts:
-                continue
-        except (TypeError, ValueError, KeyError, json.JSONDecodeError):
-            pass
-        accepted.append(record)
-    return accepted
+def _base_report(*, status: str, models: list[dict[str, object]]) -> dict[str, object]:
+    """Build a private checker report."""
+    return {"schema_version": _REPORT_SCHEMA, "status": status, "models": models}
 
 
-def confirm_canary_exclusions(
-    report: c.Mapping[str, object], already_excluded: c.Set[str] = frozenset()
-) -> set[str]:
-    """Ask whether each detected model should be excluded, defaulting to yes."""
-    models = report.get("models")
-    if not isinstance(models, list):
-        return set()
-    detected: dict[str, list[dict[str, object]]] = defaultdict(list)
-    for item in models:
-        if (
-            isinstance(item, dict)
-            and item.get("contamination_detected") is True
-            and isinstance(item.get("model_id"), str)
-        ):
-            detected[t.cast(str, item["model_id"])].append(item)
-    excluded: set[str] = set()
-    for model_id, outcomes in sorted(detected.items()):
-        if model_id in already_excluded:
-            excluded.add(model_id)
-            continue
-        strongest = max(
-            outcomes, key=lambda item: _numeric_field(item, "exact_rate_difference")
-        )
-        logger.warning(
-            "Contamination canary detected exposure for %s "
-            "(exact difference %.1f%%, p=%s).",
-            model_id,
-            100 * _numeric_field(strongest, "exact_rate_difference"),
-            strongest.get("paired_sign_p_value"),
-        )
-        if _confirm_exclusion(model_id=model_id):
-            excluded.add(model_id)
-            logger.warning("Removing %s from generated leaderboards.", model_id)
-        else:
-            logger.warning("Keeping %s on generated leaderboards.", model_id)
-    return excluded
-
-
-def load_canary_exclusions() -> set[str]:
-    """Load durable removals, failing closed once private state is configured."""
-    configured = os.getenv(CANARY_PRIVATE_DIR_ENV)
+def _key_path() -> Path:
+    """Return the configured private key path."""
+    configured = os.getenv(CANARY_KEY_ENV)
     if not configured:
-        return set()
-    path = Path(configured).expanduser() / _EXCLUSIONS_FILENAME
-    if not path.exists():
-        return set()
-    try:
-        _validate_private_file(path)
-        value = json.loads(path.read_text(encoding="utf-8"))
-        models = value.get("models") if isinstance(value, dict) else None
-        if (
-            not isinstance(value, dict)
-            or value.get("schema_version") != _EXCLUSIONS_SCHEMA
-            or not isinstance(models, list)
-            or not all(isinstance(item, str) and item for item in models)
-        ):
-            raise ValueError("private canary exclusions are malformed")
-        return set(models)
-    except (OSError, ValueError, json.JSONDecodeError) as error:
-        raise RuntimeError(
-            "Cannot safely generate leaderboards: private canary exclusions are "
-            "unreadable or invalid."
-        ) from error
+        raise ValueError(f"{CANARY_KEY_ENV} is required")
+    return Path(configured).expanduser()
 
 
-def _store_canary_exclusions(models: set[str]) -> None:
-    """Persist confirmed removals outside the repository with mode 0600."""
-    if not models:
-        return
-    try:
-        path = _private_directory() / _EXCLUSIONS_FILENAME
-        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        content = json.dumps(
-            {"schema_version": _EXCLUSIONS_SCHEMA, "models": sorted(models)},
-            indent=2,
-            sort_keys=True,
-        )
-        _atomic_private_write(path=path, content=f"{content}\n")
-    except (OSError, ValueError) as error:
-        raise RuntimeError(
-            "Cannot safely generate leaderboards: confirmed canary exclusions could "
-            "not be persisted."
-        ) from error
+def _load_private_key(path: Path) -> bytes:
+    """Load a 32-byte owner-only key."""
+    _validate_private_file(path)
+    key = path.read_bytes()
+    if len(key) != 32:
+        raise ValueError("private canary key must contain exactly 32 bytes")
+    return key
 
 
-def _confirm_exclusion(*, model_id: str) -> bool:
-    """Return an interactive exclusion decision, with safe yes defaults."""
-    if not sys.stdin.isatty():
-        logger.warning(
-            "No interactive terminal is available; defaulting to removal for %s.",
-            model_id,
-        )
-        return True
-    try:
-        answer = input(
-            f"Remove {model_id} from the leaderboards due to the canary result? [Y/n] "
-        )
-    except EOFError:
-        return True
-    return answer.strip().lower() not in {"n", "no"}
+def _load_private_records(
+    *, private_dir: Path, key: bytes
+) -> tuple[dict[str, _PrivateRecord], str]:
+    """Load and validate private scoring records and provenance."""
+    manifest_path = private_dir / "canary-manifest.json"
+    records_path = private_dir / "canary-records.jsonl"
+    _validate_private_file(manifest_path)
+    _validate_private_file(records_path)
+    manifest_bytes = manifest_path.read_bytes()
+    manifest = json.loads(manifest_bytes)
+    if not isinstance(manifest, dict):
+        raise ValueError("private canary manifest is invalid")
+    if (
+        manifest.get("row_count") != CANARY_ROW_COUNT
+        or manifest.get("group_count") != CANARY_GROUP_COUNT
+        or manifest.get("key_sha256") != hashlib.sha256(key).hexdigest()
+        or not isinstance(manifest.get("hash_version"), int)
+    ):
+        raise ValueError("private canary manifest provenance is invalid")
+    records: dict[str, _PrivateRecord] = {}
+    groups: set[str] = set()
+    raw_records: list[dict[str, object]] = []
+    for line in records_path.read_text(encoding="utf-8").splitlines():
+        value = json.loads(line)
+        if not isinstance(value, dict):
+            raise ValueError("private canary record is invalid")
+        selected: _PrivateRecord = {
+            "row_id": _record_string(value, "row_id"),
+            "group_id": _record_string(value, "group_id"),
+            "exposed_target": _record_string(value, "exposed_target"),
+            "control_target": _record_string(value, "control_target"),
+        }
+        if selected["row_id"] in records:
+            raise ValueError("private canary record IDs are not unique")
+        raw_records.append(value)
+        records[selected["row_id"]] = selected
+        groups.add(selected["group_id"])
+    if len(records) != CANARY_ROW_COUNT or len(groups) != CANARY_GROUP_COUNT:
+        raise ValueError("private canary records are incomplete")
+    canonical = json.dumps(
+        {"hash_version": manifest["hash_version"], "records": raw_records},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    if manifest.get("canary_records_sha256") != hashlib.sha256(canonical).hexdigest():
+        raise ValueError("private canary record hash is invalid")
+    return records, hashlib.sha256(manifest_bytes).hexdigest()
 
 
-def _record_timestamp(record: dict[str, object]) -> str:
-    """Return an EEE timestamp suitable for deterministic snapshot ordering."""
-    value = record.get("evaluation_timestamp")
-    return value if isinstance(value, str) else ""
+def _record_string(value: dict[str, object], field: str) -> str:
+    """Read one required private record string."""
+    item = value.get(field)
+    if not isinstance(item, str) or not item:
+        raise ValueError(f"private canary record has invalid {field}")
+    return item
 
 
 def _record_model_id(record: dict[str, object]) -> str:
@@ -348,29 +486,6 @@ def _record_model_id(record: dict[str, object]) -> str:
         if isinstance(value, str):
             return value
     return "unknown"
-
-
-def _evidence_from_record(*, record: dict[str, object]) -> CanaryEvidence:
-    """Extract and bind strict canary evidence from one EEE result."""
-    library = record.get("eval_library")
-    model_info = record.get("model_info")
-    if not isinstance(library, dict) or not isinstance(model_info, dict):
-        raise ValueError("canary result has an invalid EEE envelope")
-    details = library.get("additional_details")
-    if not isinstance(details, dict):
-        raise ValueError("canary result has no additional details")
-    raw = details.get("contamination_canary_evidence")
-    if isinstance(raw, str):
-        raw = json.loads(raw)
-    evidence = evidence_from_dict(raw)
-    model_name = model_info.get("id") or model_info.get("name")
-    if not isinstance(model_name, str) or not (
-        model_name == evidence.model_id
-        or model_name.startswith(f"{evidence.model_id}@")
-        or model_name.startswith(f"{evidence.model_id}#")
-    ):
-        raise ValueError("canary evidence model does not match its EEE record")
-    return evidence
 
 
 def _score_one(
@@ -451,126 +566,6 @@ def _score_one(
     }
 
 
-def _load_private_records(
-    *, private_dir: Path, key: bytes
-) -> tuple[dict[str, _PrivateRecord], str]:
-    """Load and validate private scoring records and provenance."""
-    manifest_path = private_dir / "canary-manifest.json"
-    records_path = private_dir / "canary-records.jsonl"
-    _validate_private_file(manifest_path)
-    _validate_private_file(records_path)
-    manifest_bytes = manifest_path.read_bytes()
-    manifest = json.loads(manifest_bytes)
-    if not isinstance(manifest, dict):
-        raise ValueError("private canary manifest is invalid")
-    if (
-        manifest.get("row_count") != CANARY_ROW_COUNT
-        or manifest.get("group_count") != CANARY_GROUP_COUNT
-        or manifest.get("key_sha256") != hashlib.sha256(key).hexdigest()
-        or not isinstance(manifest.get("hash_version"), int)
-    ):
-        raise ValueError("private canary manifest provenance is invalid")
-    records: dict[str, _PrivateRecord] = {}
-    groups: set[str] = set()
-    raw_records: list[dict[str, object]] = []
-    for line in records_path.read_text(encoding="utf-8").splitlines():
-        value = json.loads(line)
-        if not isinstance(value, dict):
-            raise ValueError("private canary record is invalid")
-        selected: _PrivateRecord = {
-            "row_id": _record_string(value, "row_id"),
-            "group_id": _record_string(value, "group_id"),
-            "exposed_target": _record_string(value, "exposed_target"),
-            "control_target": _record_string(value, "control_target"),
-        }
-        if selected["row_id"] in records:
-            raise ValueError("private canary record IDs are not unique")
-        raw_records.append(value)
-        records[selected["row_id"]] = selected
-        groups.add(selected["group_id"])
-    if len(records) != CANARY_ROW_COUNT or len(groups) != CANARY_GROUP_COUNT:
-        raise ValueError("private canary records are incomplete")
-    canonical = json.dumps(
-        {"hash_version": manifest["hash_version"], "records": raw_records},
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode()
-    if manifest.get("canary_records_sha256") != hashlib.sha256(canonical).hexdigest():
-        raise ValueError("private canary record hash is invalid")
-    return records, hashlib.sha256(manifest_bytes).hexdigest()
-
-
-def _base_report(*, status: str, models: list[dict[str, object]]) -> dict[str, object]:
-    """Build a private checker report."""
-    return {"schema_version": _REPORT_SCHEMA, "status": status, "models": models}
-
-
-def _write_report(*, report: dict[str, object]) -> None:
-    """Write the optional private report without affecting result processing."""
-    configured = os.getenv(CANARY_REPORT_PATH_ENV)
-    if not configured:
-        return
-    path = Path(configured).expanduser()
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        _atomic_private_write(
-            path=path, content=json.dumps(report, indent=2, sort_keys=True) + "\n"
-        )
-    except OSError:
-        logger.warning("Could not write the private contamination-canary report.")
-
-
-def _private_directory() -> Path:
-    """Return the configured directory containing private scoring records."""
-    configured = os.getenv(CANARY_PRIVATE_DIR_ENV)
-    if not configured:
-        raise ValueError(f"{CANARY_PRIVATE_DIR_ENV} is required")
-    return Path(configured).expanduser()
-
-
-def _key_path() -> Path:
-    """Return the configured private key path."""
-    configured = os.getenv(CANARY_KEY_ENV)
-    if not configured:
-        raise ValueError(f"{CANARY_KEY_ENV} is required")
-    return Path(configured).expanduser()
-
-
-def _load_private_key(path: Path) -> bytes:
-    """Load a 32-byte owner-only key."""
-    _validate_private_file(path)
-    key = path.read_bytes()
-    if len(key) != 32:
-        raise ValueError("private canary key must contain exactly 32 bytes")
-    return key
-
-
-def _validate_private_directory(path: Path) -> None:
-    """Require an existing owner-only private directory."""
-    if not path.is_dir() or stat.S_IMODE(path.stat().st_mode) & 0o077:
-        raise ValueError("private canary directory must exist with mode 0700")
-
-
-def _validate_private_file(path: Path) -> None:
-    """Require an existing owner-only private file."""
-    if not path.is_file() or stat.S_IMODE(path.stat().st_mode) & 0o077:
-        raise ValueError(f"private canary file must exist with mode 0600: {path}")
-
-
-def _record_string(value: dict[str, object], field: str) -> str:
-    """Read one required private record string."""
-    item = value.get(field)
-    if not isinstance(item, str) or not item:
-        raise ValueError(f"private canary record has invalid {field}")
-    return item
-
-
-def _numeric_field(value: dict[str, object], field: str) -> float:
-    """Return a report number or zero for malformed internal data."""
-    item = value.get(field)
-    return float(item) if isinstance(item, int | float) else 0.0
-
-
 def _mean(values: c.Sequence[float]) -> float:
     """Return the arithmetic mean of non-empty values."""
     if not values:
@@ -588,17 +583,22 @@ def _two_sided_sign_p_value(*, positive: int, negative: int) -> float:
     return min(1.0, 2 * probability)
 
 
-def _atomic_private_write(*, path: Path, content: str) -> None:
-    """Atomically write an owner-only private file."""
-    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+def _validate_private_directory(path: Path) -> None:
+    """Require an existing owner-only private directory."""
+    if not path.is_dir() or stat.S_IMODE(path.stat().st_mode) & 0o077:
+        raise ValueError("private canary directory must exist with mode 0700")
+
+
+def _write_report(*, report: dict[str, object]) -> None:
+    """Write the optional private report without affecting result processing."""
+    configured = os.getenv(CANARY_REPORT_PATH_ENV)
+    if not configured:
+        return
+    path = Path(configured).expanduser()
     try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            handle.write(content)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, path)
-        path.chmod(0o600)
-    finally:
-        if temporary.exists():
-            temporary.unlink()
+        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        _atomic_private_write(
+            path=path, content=json.dumps(report, indent=2, sort_keys=True) + "\n"
+        )
+    except OSError:
+        logger.warning("Could not write the private contamination-canary report.")

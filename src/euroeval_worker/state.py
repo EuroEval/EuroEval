@@ -275,48 +275,22 @@ class StateStore:
             ) from error
         return value if isinstance(value, str) and value else None
 
-    def renew_active(self, lease: Lease) -> None:
-        """Atomically persist a broker-issued lease renewal.
+    def mark_finalised(self, submission_id: str) -> None:
+        """Persist ordinary finalisation for restart-safe acknowledgement.
 
         Raises:
             RuntimeError:
-                If the active lease has disappeared or changed identity.
+                If there is no active lease to finalise.
         """
-        with self._lock:
-            active = self.load_active()
-            if active is None or active.lease.lease_id != lease.lease_id:
-                raise RuntimeError("cannot renew a missing or different active lease")
-            self._atomic_write(
-                self.active_path,
-                _active_dict(
-                    ActiveLease(
-                        lease=lease,
-                        records=active.records,
-                        github_login=active.github_login,
-                        finalised_submission_id=active.finalised_submission_id,
-                    )
-                ),
-            )
-
-    def _atomic_write(self, path: Path, value: JsonObject, mode: int = 0o600) -> None:
-        self.directory.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name(f".{path.name}.tmp")
-        temporary.write_text(
-            json.dumps(
-                value,
-                ensure_ascii=False,
-                allow_nan=False,
-                sort_keys=True,
-                separators=(",", ":"),
-            )
-            + "\n",
-            encoding="utf-8",
+        active = self.load_active()
+        if active is None:
+            raise RuntimeError("cannot finalise a missing active lease")
+        self.save_active(
+            lease=active.lease,
+            records=active.records,
+            github_login=active.github_login,
+            finalised_submission_id=submission_id,
         )
-        os.chmod(temporary, mode)
-        with temporary.open("rb") as handle:
-            os.fsync(handle.fileno())
-        temporary.replace(path)
-        os.chmod(path, mode)
 
     def load_active(self) -> ActiveLease | None:
         """Load the active lease, rejecting malformed or mixed state.
@@ -365,32 +339,6 @@ class StateStore:
                 f"invalid active worker state: {self.active_path}"
             ) from error
 
-    def save_auth(self, credential: str, github_login: str) -> None:
-        """Save device-flow credentials with restrictive permissions."""
-        self._atomic_write(
-            self.path,
-            {"credential": credential, "github_login": github_login},
-            mode=0o600,
-        )
-
-    def save_records(self, records: tuple[PendingRecord, ...]) -> None:
-        """Atomically replace result and acknowledgement state for the lease.
-
-        Raises:
-            RuntimeError:
-                If there is no active lease.
-        """
-        with self._lock:
-            active = self.load_active()
-            if active is None:
-                raise RuntimeError("cannot save records without an active lease")
-            self.save_active(
-                lease=active.lease,
-                records=records,
-                github_login=active.github_login,
-                finalised_submission_id=active.finalised_submission_id,
-            )
-
     def save_active(
         self,
         lease: Lease,
@@ -412,21 +360,55 @@ class StateStore:
                 ),
             )
 
-    def mark_finalised(self, submission_id: str) -> None:
-        """Persist ordinary finalisation for restart-safe acknowledgement.
+    def _atomic_write(self, path: Path, value: JsonObject, mode: int = 0o600) -> None:
+        self.directory.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_name(f".{path.name}.tmp")
+        temporary.write_text(
+            json.dumps(
+                value,
+                ensure_ascii=False,
+                allow_nan=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        os.chmod(temporary, mode)
+        with temporary.open("rb") as handle:
+            os.fsync(handle.fileno())
+        temporary.replace(path)
+        os.chmod(path, mode)
+
+    def renew_active(self, lease: Lease) -> None:
+        """Atomically persist a broker-issued lease renewal.
 
         Raises:
             RuntimeError:
-                If there is no active lease to finalise.
+                If the active lease has disappeared or changed identity.
         """
-        active = self.load_active()
-        if active is None:
-            raise RuntimeError("cannot finalise a missing active lease")
-        self.save_active(
-            lease=active.lease,
-            records=active.records,
-            github_login=active.github_login,
-            finalised_submission_id=submission_id,
+        with self._lock:
+            active = self.load_active()
+            if active is None or active.lease.lease_id != lease.lease_id:
+                raise RuntimeError("cannot renew a missing or different active lease")
+            self._atomic_write(
+                self.active_path,
+                _active_dict(
+                    ActiveLease(
+                        lease=lease,
+                        records=active.records,
+                        github_login=active.github_login,
+                        finalised_submission_id=active.finalised_submission_id,
+                    )
+                ),
+            )
+
+    def save_auth(self, credential: str, github_login: str) -> None:
+        """Save device-flow credentials with restrictive permissions."""
+        self._atomic_write(
+            self.path,
+            {"credential": credential, "github_login": github_login},
+            mode=0o600,
         )
 
     def save_canary_corpus(self, *, digest: str, content: str) -> Path:
@@ -457,6 +439,24 @@ class StateStore:
         temporary.replace(path)
         os.chmod(path, 0o600)
         return path
+
+    def save_records(self, records: tuple[PendingRecord, ...]) -> None:
+        """Atomically replace result and acknowledgement state for the lease.
+
+        Raises:
+            RuntimeError:
+                If there is no active lease.
+        """
+        with self._lock:
+            active = self.load_active()
+            if active is None:
+                raise RuntimeError("cannot save records without an active lease")
+            self.save_active(
+                lease=active.lease,
+                records=records,
+                github_login=active.github_login,
+                finalised_submission_id=active.finalised_submission_id,
+            )
 
     def save_submission_id(self, submission_id: str) -> None:
         """Persist a successful submission identifier for reporting."""

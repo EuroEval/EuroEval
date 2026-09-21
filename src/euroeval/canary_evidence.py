@@ -48,13 +48,19 @@ _ALLOWED_REASONS = {
 }
 
 
-@dataclasses.dataclass(frozen=True)
-class CanaryPrompt:
-    """One validated production prompt derived from the frozen augmented corpus."""
+def canonical_json(value: object) -> str:
+    """Encode JSON deterministically for hashing and exact-byte retries.
 
-    row_id: str
-    prompt: str
-    prompt_sha256: str
+    Returns:
+        The canonical compact JSON string.
+    """
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -131,172 +137,6 @@ class CanaryEvidence:
         }
 
 
-def canonical_json(value: object) -> str:
-    """Encode JSON deterministically for hashing and exact-byte retries.
-
-    Returns:
-        The canonical compact JSON string.
-    """
-    return json.dumps(
-        value,
-        ensure_ascii=False,
-        allow_nan=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-
-
-def normalise_completion(value: str) -> str:
-    """Extract the first two lexical words from a bounded model continuation.
-
-    Returns:
-        At most the first two NFC-normalised lexical words.
-
-    Raises:
-        TypeError:
-            If the completion is not text.
-    """
-    if not isinstance(value, str):
-        raise TypeError("canary completion must be text")
-    normalised = unicodedata.normalize("NFC", value[:4096])
-    words = _WORD_RE.findall(normalised)
-    return " ".join(words[:2])
-
-
-def load_canary_prompts(
-    *, cache_dir: str | Path, corpus_path: Path | None = None
-) -> tuple[CanaryPrompt, ...]:
-    """Load and validate the frozen private corpus, then derive completion prompts.
-
-    Returns:
-        The ordered prompt records derived from the frozen corpus.
-
-    Raises:
-        ValueError:
-            If the corpus digest, schema, template, identities, or row count is invalid.
-    """
-    configured = corpus_path or _configured_corpus_path()
-    if configured is None:
-        downloaded = hf_hub_download(
-            repo_id=CANARY_DATASET_ID,
-            repo_type="dataset",
-            revision=CANARY_DATASET_REVISION,
-            filename=CANARY_DATASET_FILENAME,
-            cache_dir=str(cache_dir),
-            token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"),
-        )
-        configured = Path(downloaded)
-    payload = configured.read_bytes()
-    if hashlib.sha256(payload).hexdigest() != CANARY_CORPUS_SHA256:
-        raise ValueError("canary corpus does not match its frozen SHA-256")
-    prompts: list[CanaryPrompt] = []
-    row_ids: set[str] = set()
-    for line_number, line in enumerate(payload.decode("utf-8").splitlines(), start=1):
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError as error:
-            raise ValueError(f"invalid canary JSON on line {line_number}") from error
-        if not isinstance(row, dict) or set(row) != {"row_id", "text"}:
-            raise ValueError("canary rows must contain only row_id and text")
-        row_id = row["row_id"]
-        text = row["text"]
-        if (
-            not isinstance(row_id, str)
-            or not row_id
-            or row_id in row_ids
-            or not isinstance(text, str)
-        ):
-            raise ValueError("canary row identity or text is invalid")
-        match = _PROMPT_RE.fullmatch(text)
-        if match is None:
-            raise ValueError(
-                "canary text does not match the frozen completion template"
-            )
-        prompt = match.group("prompt")
-        row_ids.add(row_id)
-        prompts.append(
-            CanaryPrompt(
-                row_id=row_id,
-                prompt=prompt,
-                prompt_sha256=hashlib.sha256(prompt.encode()).hexdigest(),
-            )
-        )
-    if len(prompts) != CANARY_ROW_COUNT:
-        raise ValueError("canary corpus must contain exactly 256 rows")
-    return tuple(prompts)
-
-
-def collected_evidence(
-    *,
-    model_id: str,
-    requested_revision: str,
-    resolved_revision: str,
-    backend: str,
-    prompts: t.Sequence[CanaryPrompt],
-    completions: t.Sequence[str],
-) -> CanaryEvidence:
-    """Build complete evidence from model continuations without retaining prompts.
-
-    Returns:
-        Validated collected evidence.
-
-    Raises:
-        ValueError:
-            If the number or contents of prompts and completions are invalid.
-    """
-    if len(prompts) != CANARY_ROW_COUNT or len(completions) != CANARY_ROW_COUNT:
-        raise ValueError("collected canary evidence requires exactly 256 completions")
-    evidence = CanaryEvidence(
-        model_id=model_id,
-        requested_revision=requested_revision,
-        resolved_revision=resolved_revision,
-        identity_kind=(
-            "immutable" if _COMMIT_RE.fullmatch(resolved_revision) else "mutable"
-        ),
-        backend=backend,
-        status="collected",
-        observations=tuple(
-            CanaryObservation(
-                row_id=prompt.row_id,
-                prompt_sha256=prompt.prompt_sha256,
-                normalised_completion=normalise_completion(completion),
-            )
-            for prompt, completion in zip(prompts, completions, strict=True)
-        ),
-    )
-    validate_evidence(evidence)
-    return evidence
-
-
-def status_evidence(
-    *,
-    model_id: str,
-    requested_revision: str,
-    resolved_revision: str,
-    backend: str,
-    status: t.Literal["not_applicable", "unsupported", "failed"],
-    reason: str,
-) -> CanaryEvidence:
-    """Build a typed non-collected evidence record.
-
-    Returns:
-        Validated evidence with no observations.
-    """
-    evidence = CanaryEvidence(
-        model_id=model_id,
-        requested_revision=requested_revision,
-        resolved_revision=resolved_revision,
-        identity_kind=(
-            "immutable" if _COMMIT_RE.fullmatch(resolved_revision) else "mutable"
-        ),
-        backend=backend,
-        status=status,
-        reason=reason,
-    )
-    validate_evidence(evidence)
-    return evidence
-
-
 def validate_evidence(evidence: CanaryEvidence) -> None:
     """Validate evidence strictly enough for persistence and server submission.
 
@@ -347,6 +187,23 @@ def validate_evidence(evidence: CanaryEvidence) -> None:
             row_ids.add(observation.row_id)
     elif evidence.reason not in _ALLOWED_REASONS or evidence.observations:
         raise ValueError("non-collected evidence requires a typed reason and no rows")
+
+
+def normalise_completion(value: str) -> str:
+    """Extract the first two lexical words from a bounded model continuation.
+
+    Returns:
+        At most the first two NFC-normalised lexical words.
+
+    Raises:
+        TypeError:
+            If the completion is not text.
+    """
+    if not isinstance(value, str):
+        raise TypeError("canary completion must be text")
+    normalised = unicodedata.normalize("NFC", value[:4096])
+    words = _WORD_RE.findall(normalised)
+    return " ".join(words[:2])
 
 
 def evidence_from_dict(value: object) -> CanaryEvidence:
@@ -430,11 +287,6 @@ def evidence_from_dict(value: object) -> CanaryEvidence:
     return evidence
 
 
-def _configured_corpus_path() -> Path | None:
-    value = os.getenv(CANARY_CORPUS_PATH_ENV)
-    return Path(value).expanduser() if value else None
-
-
 def _required_string(value: dict[str, object], key: str) -> str:
     item = value.get(key)
     if not isinstance(item, str) or not item:
@@ -447,3 +299,151 @@ def _string(value: dict[str, object], key: str) -> str:
     if not isinstance(item, str):
         raise ValueError(f"canary evidence field {key!r} is invalid")
     return item
+
+
+@dataclasses.dataclass(frozen=True)
+class CanaryPrompt:
+    """One validated production prompt derived from the frozen augmented corpus."""
+
+    row_id: str
+    prompt: str
+    prompt_sha256: str
+
+
+def collected_evidence(
+    *,
+    model_id: str,
+    requested_revision: str,
+    resolved_revision: str,
+    backend: str,
+    prompts: t.Sequence[CanaryPrompt],
+    completions: t.Sequence[str],
+) -> CanaryEvidence:
+    """Build complete evidence from model continuations without retaining prompts.
+
+    Returns:
+        Validated collected evidence.
+
+    Raises:
+        ValueError:
+            If the number or contents of prompts and completions are invalid.
+    """
+    if len(prompts) != CANARY_ROW_COUNT or len(completions) != CANARY_ROW_COUNT:
+        raise ValueError("collected canary evidence requires exactly 256 completions")
+    evidence = CanaryEvidence(
+        model_id=model_id,
+        requested_revision=requested_revision,
+        resolved_revision=resolved_revision,
+        identity_kind=(
+            "immutable" if _COMMIT_RE.fullmatch(resolved_revision) else "mutable"
+        ),
+        backend=backend,
+        status="collected",
+        observations=tuple(
+            CanaryObservation(
+                row_id=prompt.row_id,
+                prompt_sha256=prompt.prompt_sha256,
+                normalised_completion=normalise_completion(completion),
+            )
+            for prompt, completion in zip(prompts, completions, strict=True)
+        ),
+    )
+    validate_evidence(evidence)
+    return evidence
+
+
+def load_canary_prompts(
+    *, cache_dir: str | Path, corpus_path: Path | None = None
+) -> tuple[CanaryPrompt, ...]:
+    """Load and validate the frozen private corpus, then derive completion prompts.
+
+    Returns:
+        The ordered prompt records derived from the frozen corpus.
+
+    Raises:
+        ValueError:
+            If the corpus digest, schema, template, identities, or row count is invalid.
+    """
+    configured = corpus_path or _configured_corpus_path()
+    if configured is None:
+        downloaded = hf_hub_download(
+            repo_id=CANARY_DATASET_ID,
+            repo_type="dataset",
+            revision=CANARY_DATASET_REVISION,
+            filename=CANARY_DATASET_FILENAME,
+            cache_dir=str(cache_dir),
+            token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"),
+        )
+        configured = Path(downloaded)
+    payload = configured.read_bytes()
+    if hashlib.sha256(payload).hexdigest() != CANARY_CORPUS_SHA256:
+        raise ValueError("canary corpus does not match its frozen SHA-256")
+    prompts: list[CanaryPrompt] = []
+    row_ids: set[str] = set()
+    for line_number, line in enumerate(payload.decode("utf-8").splitlines(), start=1):
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as error:
+            raise ValueError(f"invalid canary JSON on line {line_number}") from error
+        if not isinstance(row, dict) or set(row) != {"row_id", "text"}:
+            raise ValueError("canary rows must contain only row_id and text")
+        row_id = row["row_id"]
+        text = row["text"]
+        if (
+            not isinstance(row_id, str)
+            or not row_id
+            or row_id in row_ids
+            or not isinstance(text, str)
+        ):
+            raise ValueError("canary row identity or text is invalid")
+        match = _PROMPT_RE.fullmatch(text)
+        if match is None:
+            raise ValueError(
+                "canary text does not match the frozen completion template"
+            )
+        prompt = match.group("prompt")
+        row_ids.add(row_id)
+        prompts.append(
+            CanaryPrompt(
+                row_id=row_id,
+                prompt=prompt,
+                prompt_sha256=hashlib.sha256(prompt.encode()).hexdigest(),
+            )
+        )
+    if len(prompts) != CANARY_ROW_COUNT:
+        raise ValueError("canary corpus must contain exactly 256 rows")
+    return tuple(prompts)
+
+
+def _configured_corpus_path() -> Path | None:
+    value = os.getenv(CANARY_CORPUS_PATH_ENV)
+    return Path(value).expanduser() if value else None
+
+
+def status_evidence(
+    *,
+    model_id: str,
+    requested_revision: str,
+    resolved_revision: str,
+    backend: str,
+    status: t.Literal["not_applicable", "unsupported", "failed"],
+    reason: str,
+) -> CanaryEvidence:
+    """Build a typed non-collected evidence record.
+
+    Returns:
+        Validated evidence with no observations.
+    """
+    evidence = CanaryEvidence(
+        model_id=model_id,
+        requested_revision=requested_revision,
+        resolved_revision=resolved_revision,
+        identity_kind=(
+            "immutable" if _COMMIT_RE.fullmatch(resolved_revision) else "mutable"
+        ),
+        backend=backend,
+        status=status,
+        reason=reason,
+    )
+    validate_evidence(evidence)
+    return evidence

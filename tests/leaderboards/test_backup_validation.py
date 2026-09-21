@@ -27,13 +27,17 @@ from leaderboards.eee_validation import validate_eee_record
 class TestArchiveOffsite:
     """Tests for archiving snapshots into the Jottacloud Archive namespace."""
 
-    def test_reachable_jottad_does_not_start_the_app(self, tmp_path: Path) -> None:
-        """A successful first upload must not launch the desktop app."""
+    def test_connected_jottad_archive_failure_does_not_start_the_app(
+        self, tmp_path: Path
+    ) -> None:
+        """A permission error after connecting must not launch the app."""
         snapshot = tmp_path / "results.tar.gz"
         snapshot.write_bytes(b"x")
-        success = MagicMock(returncode=0, stdout="", stderr="")
         app = tmp_path / "Jottacloud.app"
         app.mkdir()
+        failure = MagicMock(
+            returncode=1, stdout="", stderr="connected to jottad; permission denied"
+        )
         with (
             patch(
                 "leaderboards.backup._jotta_cli",
@@ -41,14 +45,12 @@ class TestArchiveOffsite:
             ),
             patch("leaderboards.backup.JOTTACLOUD_APP_PATH", app),
             patch(
-                "leaderboards.backup.subprocess.run", return_value=success
+                "leaderboards.backup.subprocess.run", return_value=failure
             ) as mock_run,
-            patch("leaderboards.backup._is_archived", return_value=True),
         ):
-            assert _archive_offsite(snapshot)
+            assert not _archive_offsite(snapshot)
 
         assert mock_run.call_count == 1
-        assert mock_run.call_args.args[0][1] == "archive"
 
     def test_connection_failure_starts_app_and_retries(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
@@ -84,30 +86,24 @@ class TestArchiveOffsite:
         mock_sleep.assert_called_once()
         assert any("retrying archive upload" in r.message for r in caplog.records)
 
-    def test_connected_jottad_archive_failure_does_not_start_the_app(
-        self, tmp_path: Path
+    def test_failed_upload_warns_without_failing_the_run(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """A permission error after connecting must not launch the app."""
+        """An unusable client, e.g. one with no device configured, only warns."""
         snapshot = tmp_path / "results.tar.gz"
         snapshot.write_bytes(b"x")
-        app = tmp_path / "Jottacloud.app"
-        app.mkdir()
-        failure = MagicMock(
-            returncode=1, stdout="", stderr="connected to jottad; permission denied"
-        )
+        failure = MagicMock(returncode=1, stdout="", stderr="device name not set")
         with (
             patch(
                 "leaderboards.backup._jotta_cli",
                 return_value=Path("/usr/bin/jotta-cli"),
             ),
-            patch("leaderboards.backup.JOTTACLOUD_APP_PATH", app),
-            patch(
-                "leaderboards.backup.subprocess.run", return_value=failure
-            ) as mock_run,
+            patch("leaderboards.backup.subprocess.run", return_value=failure),
+            caplog.at_level(logging.WARNING),
         ):
-            assert not _archive_offsite(snapshot)
+            _archive_offsite(snapshot)
 
-        assert mock_run.call_count == 1
+        assert any("Jottacloud" in record.message for record in caplog.records)
 
     def test_missing_app_keeps_connection_failure_best_effort(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
@@ -134,48 +130,6 @@ class TestArchiveOffsite:
         assert mock_run.call_count == 1
         assert any("Could not archive" in record.message for record in caplog.records)
 
-    def test_unrelated_archive_failure_does_not_start_the_app(
-        self, tmp_path: Path
-    ) -> None:
-        """An archive error unrelated to jottad must not open the app."""
-        snapshot = tmp_path / "results.tar.gz"
-        snapshot.write_bytes(b"x")
-        app = tmp_path / "Jottacloud.app"
-        app.mkdir()
-        failure = MagicMock(returncode=1, stdout="", stderr="permission denied")
-        with (
-            patch(
-                "leaderboards.backup._jotta_cli",
-                return_value=Path("/usr/bin/jotta-cli"),
-            ),
-            patch("leaderboards.backup.JOTTACLOUD_APP_PATH", app),
-            patch(
-                "leaderboards.backup.subprocess.run", return_value=failure
-            ) as mock_run,
-        ):
-            assert not _archive_offsite(snapshot)
-
-        assert mock_run.call_count == 1
-
-    def test_failed_upload_warns_without_failing_the_run(
-        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        """An unusable client, e.g. one with no device configured, only warns."""
-        snapshot = tmp_path / "results.tar.gz"
-        snapshot.write_bytes(b"x")
-        failure = MagicMock(returncode=1, stdout="", stderr="device name not set")
-        with (
-            patch(
-                "leaderboards.backup._jotta_cli",
-                return_value=Path("/usr/bin/jotta-cli"),
-            ),
-            patch("leaderboards.backup.subprocess.run", return_value=failure),
-            caplog.at_level(logging.WARNING),
-        ):
-            _archive_offsite(snapshot)
-
-        assert any("Jottacloud" in record.message for record in caplog.records)
-
     def test_missing_client_warns_without_failing_the_run(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -193,6 +147,29 @@ class TestArchiveOffsite:
             _archive_offsite(snapshot)
 
         assert any("Jottacloud" in record.message for record in caplog.records)
+
+    def test_reachable_jottad_does_not_start_the_app(self, tmp_path: Path) -> None:
+        """A successful first upload must not launch the desktop app."""
+        snapshot = tmp_path / "results.tar.gz"
+        snapshot.write_bytes(b"x")
+        success = MagicMock(returncode=0, stdout="", stderr="")
+        app = tmp_path / "Jottacloud.app"
+        app.mkdir()
+        with (
+            patch(
+                "leaderboards.backup._jotta_cli",
+                return_value=Path("/usr/bin/jotta-cli"),
+            ),
+            patch("leaderboards.backup.JOTTACLOUD_APP_PATH", app),
+            patch(
+                "leaderboards.backup.subprocess.run", return_value=success
+            ) as mock_run,
+            patch("leaderboards.backup._is_archived", return_value=True),
+        ):
+            assert _archive_offsite(snapshot)
+
+        assert mock_run.call_count == 1
+        assert mock_run.call_args.args[0][1] == "archive"
 
     def test_unlisted_upload_keeps_the_local_copy(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
@@ -215,6 +192,29 @@ class TestArchiveOffsite:
         assert not archived
         assert snapshot.exists()
         assert any("keeping the local copy" in r.message for r in caplog.records)
+
+    def test_unrelated_archive_failure_does_not_start_the_app(
+        self, tmp_path: Path
+    ) -> None:
+        """An archive error unrelated to jottad must not open the app."""
+        snapshot = tmp_path / "results.tar.gz"
+        snapshot.write_bytes(b"x")
+        app = tmp_path / "Jottacloud.app"
+        app.mkdir()
+        failure = MagicMock(returncode=1, stdout="", stderr="permission denied")
+        with (
+            patch(
+                "leaderboards.backup._jotta_cli",
+                return_value=Path("/usr/bin/jotta-cli"),
+            ),
+            patch("leaderboards.backup.JOTTACLOUD_APP_PATH", app),
+            patch(
+                "leaderboards.backup.subprocess.run", return_value=failure
+            ) as mock_run,
+        ):
+            assert not _archive_offsite(snapshot)
+
+        assert mock_run.call_count == 1
 
     def test_uploads_to_the_archive_backups_directory(self, tmp_path: Path) -> None:
         """Snapshots go to Archive/backups, keeping their timestamped name.

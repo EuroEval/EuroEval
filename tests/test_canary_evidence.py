@@ -48,66 +48,67 @@ from leaderboards.contamination_canary import (
 )
 
 
-def test_frozen_corpus_derives_unique_prompts_without_targets(
+def test_benchmarker_collects_once_from_each_loaded_decoder(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Derive every prompt only after validating the frozen corpus bytes."""
-    corpus = _corpus(tmp_path)
+    """Collect once per model while reusing each loaded decoder."""
     monkeypatch.setattr(
-        evidence_module, "CANARY_CORPUS_SHA256", _sha256(corpus.read_bytes())
+        "euroeval.benchmarker.load_canary_prompts", lambda **kwargs: _prompts()
+    )
+    monkeypatch.setattr("euroeval.benchmarker.get_hf_token", lambda **kwargs: None)
+    benchmarker = object.__new__(Benchmarker)
+    benchmarker._canary_evidence = []
+
+    class LoadedModel:
+        generative_type = GenerativeType.BASE
+        calls = 0
+
+        def collect_canary_completions(self, prompts: list[str]) -> list[str]:
+            self.calls += 1
+            return ["amber forest"] * len(prompts)
+
+    loaded = LoadedModel()
+    benchmark_config = SimpleNamespace(
+        cache_dir=str(tmp_path), api_key=None, save_results=False
+    )
+    for model_id, revision in (
+        ("org/model", "a" * 40),
+        ("org/model", "a" * 40),
+        ("org/second", "b" * 40),
+    ):
+        benchmarker._record_contamination_canary(
+            model_config=t.cast(
+                t.Any,
+                SimpleNamespace(
+                    model_id=model_id,
+                    revision=revision,
+                    inference_backend=InferenceBackend.VLLM,
+                ),
+            ),
+            benchmark_config=t.cast(t.Any, benchmark_config),
+            loaded_model=t.cast(t.Any, loaded),
+        )
+
+    assert loaded.calls == 2
+    assert [item.model_id for item in benchmarker.canary_evidence] == [
+        "org/model",
+        "org/second",
+    ]
+
+
+def _prompts() -> tuple[CanaryPrompt, ...]:
+    return tuple(
+        CanaryPrompt(
+            row_id=f"row-{index:03d}",
+            prompt=f"prompt {index}",
+            prompt_sha256=_sha256(f"prompt {index}".encode()),
+        )
+        for index in range(CANARY_ROW_COUNT)
     )
 
-    prompts = load_canary_prompts(cache_dir=tmp_path, corpus_path=corpus)
 
-    assert len(prompts) == CANARY_ROW_COUNT
-    assert len({item.prompt_sha256 for item in prompts}) == CANARY_ROW_COUNT
-    assert all(item.prompt.endswith("referred to") for item in prompts)
-    assert all("amber forest" not in item.prompt for item in prompts)
-
-
-def test_private_corpus_download_uses_packaged_token(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Authenticate private corpus downloads with the packaged dataset token."""
-    corpus = _corpus(tmp_path)
-    scrambled_token = "XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"
-    monkeypatch.delenv("EUROEVAL_CANARY_CORPUS_PATH", raising=False)
-    monkeypatch.setattr(
-        evidence_module, "CANARY_CORPUS_SHA256", _sha256(corpus.read_bytes())
-    )
-    monkeypatch.setattr(
-        evidence_module,
-        "unscramble",
-        lambda value: "dataset-token" if value == scrambled_token else "wrong-token",
-    )
-
-    def download(**kwargs: object) -> str:
-        assert kwargs["token"] == "dataset-token"
-        return str(corpus)
-
-    monkeypatch.setattr(evidence_module, "hf_hub_download", download)
-
-    prompts = load_canary_prompts(cache_dir=tmp_path)
-
-    assert len(prompts) == CANARY_ROW_COUNT
-
-
-def test_evidence_contract_is_bounded_and_rejects_private_fields() -> None:
-    """Keep evidence bounded and free of private plaintext fields."""
-    evidence = _evidence()
-    encoded = evidence.to_dict()
-
-    assert encoded["schema_version"] == CANARY_EVIDENCE_SCHEMA
-    keys = set(encoded)
-    observations = t.cast(list[dict[str, object]], encoded["observations"])
-    keys.update(key for item in observations for key in item)
-    assert not {"prompt", "target", "control", "secret", "key"} & keys
-    assert evidence_from_dict(encoded) == evidence
-
-    invalid = dict(encoded)
-    invalid["key"] = "forbidden"
-    with pytest.raises(ValueError, match="fields"):
-        evidence_from_dict(invalid)
+def _sha256(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
 
 
 def test_canary_evidence_round_trips_through_eee_jsonl(tmp_path: Path) -> None:
@@ -128,6 +129,60 @@ def test_canary_evidence_round_trips_through_eee_jsonl(tmp_path: Path) -> None:
     ordinary, canaries = partition_canary_records(records=[encoded])
     assert ordinary == []
     assert canaries == [encoded]
+
+
+def _canary_result(evidence: CanaryEvidence) -> BenchmarkResult:
+    return BenchmarkResult(
+        dataset="contamination-canary-da",
+        model=f"{evidence.model_id}@{evidence.resolved_revision}",
+        generative=True,
+        generative_type="base",
+        few_shot=None,
+        validation_split=None,
+        num_model_parameters=1,
+        max_sequence_length=1,
+        vocabulary_size=1,
+        merge=False,
+        languages=["da"],
+        task="contamination-detection",
+        results={"raw": [], "total": {"test_collection_success": 100.0}},
+        contamination_canary_evidence=evidence.to_dict(),
+    )
+
+
+def _evidence() -> CanaryEvidence:
+    return collected_evidence(
+        model_id="org/model",
+        requested_revision="a" * 40,
+        resolved_revision="a" * 40,
+        backend="vllm:base",
+        prompts=_prompts(),
+        completions=[" amber forest."] * CANARY_ROW_COUNT,
+    )
+
+
+def test_completion_normaliser_is_versioned_and_bounded() -> None:
+    """Normalise only the first two lexical words."""
+    assert normalise_completion("  ÅBEN—havn, second! ignored third") == "ÅBEN havn"
+    assert normalise_completion("***") == ""
+    assert len(normalise_completion("word " * 10_000).split()) == 2
+
+
+def test_confirmed_exclusions_must_be_persisted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failed durable write blocks rather than losing a removal decision."""
+    private_dir = tmp_path / "private"
+    private_dir.mkdir(mode=0o700)
+    monkeypatch.setenv("EUROEVAL_CANARY_PRIVATE_DIR", str(private_dir))
+    monkeypatch.setattr(
+        canary_scoring,
+        "_atomic_private_write",
+        lambda **kwargs: (_ for _ in ()).throw(OSError("disk full")),
+    )
+
+    with pytest.raises(RuntimeError, match="could not be persisted"):
+        canary_scoring._store_canary_exclusions({"org/model"})  # noqa: SLF001
 
 
 def test_embedded_evidence_is_scored_privately(
@@ -187,113 +242,150 @@ def test_embedded_evidence_is_scored_privately(
     assert models[0]["paired_sign_p_value"] < 0.01
 
 
-def test_positive_result_defaults_to_model_removal(
+def test_evidence_contract_is_bounded_and_rejects_private_fields() -> None:
+    """Keep evidence bounded and free of private plaintext fields."""
+    evidence = _evidence()
+    encoded = evidence.to_dict()
+
+    assert encoded["schema_version"] == CANARY_EVIDENCE_SCHEMA
+    keys = set(encoded)
+    observations = t.cast(list[dict[str, object]], encoded["observations"])
+    keys.update(key for item in observations for key in item)
+    assert not {"prompt", "target", "control", "secret", "key"} & keys
+    assert evidence_from_dict(encoded) == evidence
+
+    invalid = dict(encoded)
+    invalid["key"] = "forbidden"
+    with pytest.raises(ValueError, match="fields"):
+        evidence_from_dict(invalid)
+
+
+def test_frozen_corpus_derives_unique_prompts_without_targets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Derive every prompt only after validating the frozen corpus bytes."""
+    corpus = _corpus(tmp_path)
+    monkeypatch.setattr(
+        evidence_module, "CANARY_CORPUS_SHA256", _sha256(corpus.read_bytes())
+    )
+
+    prompts = load_canary_prompts(cache_dir=tmp_path, corpus_path=corpus)
+
+    assert len(prompts) == CANARY_ROW_COUNT
+    assert len({item.prompt_sha256 for item in prompts}) == CANARY_ROW_COUNT
+    assert all(item.prompt.endswith("referred to") for item in prompts)
+    assert all("amber forest" not in item.prompt for item in prompts)
+
+
+def _corpus(tmp_path: Path) -> Path:
+    path = tmp_path / "corpus.jsonl"
+    with path.open("w", encoding="utf-8") as handle:
+        for index in range(CANARY_ROW_COUNT):
+            row = {
+                "row_id": f"row-{index:03d}",
+                "text": (
+                    f"Source passage {index}.\nContext {index}. In the quiet archive, "
+                    f"the note marked trigger{index} referred to amber forest."
+                ),
+            }
+            handle.write(json.dumps(row) + "\n")
+    return path
+
+
+@pytest.mark.parametrize(
+    ("rejected", "adjustments", "expected_limit", "expected_probe_calls"),
+    [
+        (set(), set(), "max_completion_tokens", 1),
+        ({"max_completion_tokens"}, set(), "max_tokens", 2),
+        ({"max_completion_tokens", "max_tokens"}, set(), "max_output_tokens", 3),
+        ({"temperature", "seed"}, set(), "max_completion_tokens", 3),
+    ],
+)
+def test_litellm_canary_probes_capabilities_before_batch(
+    rejected: set[str],
+    adjustments: set[ParameterAdjustment],
+    expected_limit: str,
+    expected_probe_calls: int,
+    model_config: ModelConfig,
+    benchmark_config: BenchmarkConfig,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Use the safe removal default when no interactive terminal is available."""
-    monkeypatch.setattr(
-        "leaderboards.contamination_canary.sys.stdin",
-        SimpleNamespace(isatty=lambda: False),
+    """Probe unsupported parameters once, then use the adjusted batch kwargs."""
+    calls: list[
+        tuple[c.Sequence[c.Sequence[litellm.AllMessageValues] | str], dict[str, object]]
+    ] = []
+    model = object.__new__(LiteLLMModel)
+    model.model_config = replace(model_config, model_id="provider/model", param=None)
+    model.log_metadata = False
+    model.benchmark_config = replace(
+        benchmark_config,
+        api_key="token",
+        api_base=None,
+        api_version=None,
+        generative_type=GenerativeType.BASE,
     )
-    report = {
-        "models": [
-            {
-                "model_id": "org/model",
-                "contamination_detected": True,
-                "exact_rate_difference": 1.0,
-                "paired_sign_p_value": 0.0,
-            }
-        ]
+    model.buffer = {"first_label_token_mapping": False, "max_concurrent_calls": 5}
+    model._parameter_adjustments = set(adjustments)
+    model._max_thinking_budget = None
+    model.generation_kwargs = {
+        "temperature": 0.7,
+        "response_format": "dataset-only",
+        "logprobs": True,
     }
 
-    assert confirm_canary_exclusions(report=report) == {"org/model"}
-
-
-def test_private_exclusion_state_fails_closed_when_corrupt(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A broken durable removal file cannot silently re-rank excluded models."""
-    private_dir = tmp_path / "private"
-    private_dir.mkdir(mode=0o700)
-    exclusions = private_dir / "leaderboard-exclusions.json"
-    exclusions.write_text("not json", encoding="utf-8")
-    exclusions.chmod(0o600)
-    monkeypatch.setenv("EUROEVAL_CANARY_PRIVATE_DIR", str(private_dir))
-
-    with pytest.raises(RuntimeError, match="Cannot safely generate leaderboards"):
-        canary_scoring.load_canary_exclusions()
-
-
-def test_confirmed_exclusions_must_be_persisted(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A failed durable write blocks rather than losing a removal decision."""
-    private_dir = tmp_path / "private"
-    private_dir.mkdir(mode=0o700)
-    monkeypatch.setenv("EUROEVAL_CANARY_PRIVATE_DIR", str(private_dir))
-    monkeypatch.setattr(
-        canary_scoring,
-        "_atomic_private_write",
-        lambda **kwargs: (_ for _ in ()).throw(OSError("disk full")),
-    )
-
-    with pytest.raises(RuntimeError, match="could not be persisted"):
-        canary_scoring._store_canary_exclusions({"org/model"})  # noqa: SLF001
-
-
-def test_completion_normaliser_is_versioned_and_bounded() -> None:
-    """Normalise only the first two lexical words."""
-    assert normalise_completion("  ÅBEN—havn, second! ignored third") == "ÅBEN havn"
-    assert normalise_completion("***") == ""
-    assert len(normalise_completion("word " * 10_000).split()) == 2
-
-
-def test_benchmarker_collects_once_from_each_loaded_decoder(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Collect once per model while reusing each loaded decoder."""
-    monkeypatch.setattr(
-        "euroeval.benchmarker.load_canary_prompts", lambda **kwargs: _prompts()
-    )
-    monkeypatch.setattr("euroeval.benchmarker.get_hf_token", lambda **kwargs: None)
-    benchmarker = object.__new__(Benchmarker)
-    benchmarker._canary_evidence = []
-
-    class LoadedModel:
-        generative_type = GenerativeType.BASE
-        calls = 0
-
-        def collect_canary_completions(self, prompts: list[str]) -> list[str]:
-            self.calls += 1
-            return ["amber forest"] * len(prompts)
-
-    loaded = LoadedModel()
-    benchmark_config = SimpleNamespace(
-        cache_dir=str(tmp_path), api_key=None, save_results=False
-    )
-    for model_id, revision in (
-        ("org/model", "a" * 40),
-        ("org/model", "a" * 40),
-        ("org/second", "b" * 40),
-    ):
-        benchmarker._record_contamination_canary(
-            model_config=t.cast(
-                t.Any,
-                SimpleNamespace(
-                    model_id=model_id,
-                    revision=revision,
-                    inference_backend=InferenceBackend.VLLM,
-                ),
+    async def fake_generate(
+        self: LiteLLMModel,
+        model_id: str,
+        inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str],
+        max_concurrent_calls: int,
+        **generation_kwargs: object,
+    ) -> tuple[
+        c.Sequence[tuple[int, ModelResponse]], c.Sequence[tuple[int, Exception]]
+    ]:
+        calls.append((inputs, generation_kwargs))
+        unsupported = next(
+            (
+                key
+                for key in (
+                    "max_completion_tokens",
+                    "max_tokens",
+                    "temperature",
+                    "seed",
+                )
+                if key in rejected and key in generation_kwargs
             ),
-            benchmark_config=t.cast(t.Any, benchmark_config),
-            loaded_model=t.cast(t.Any, loaded),
+            None,
         )
+        if unsupported is not None:
+            error = UnsupportedParamsError(
+                message=f"provider does not support parameters: ['{unsupported}']"
+            )
+            return [], [(0, error)]
+        return [(index, ModelResponse(choices=[])) for index in range(len(inputs))], []
 
-    assert loaded.calls == 2
-    assert [item.model_id for item in benchmarker.canary_evidence] == [
-        "org/model",
-        "org/second",
-    ]
+    def fake_create_model_output(
+        model_responses: c.Sequence[ModelResponse], model_id: str
+    ) -> GenerativeModelOutput:
+        return GenerativeModelOutput(sequences=["amber forest"] * len(model_responses))
+
+    monkeypatch.setattr(LiteLLMModel, "_generate_async", fake_generate)
+    monkeypatch.setattr(
+        LiteLLMModel, "_create_model_output", staticmethod(fake_create_model_output)
+    )
+
+    result = model.collect_canary_completions(["first", "second"])
+
+    assert result == ["amber forest", "amber forest"]
+    assert len(calls) == expected_probe_calls + 1
+    assert all(len(call[0]) == 1 for call in calls[:expected_probe_calls])
+    assert len(calls[-1][0]) == 2
+    assert calls[-1][1][expected_limit] == 6
+    assert "response_format" not in calls[-1][1]
+    assert "logprobs" not in calls[-1][1]
+    if "temperature" in rejected:
+        assert "temperature" not in calls[-1][1]
+    if "seed" in rejected:
+        assert "seed" not in calls[-1][1]
 
 
 def test_litellm_collection_reuses_wrapper_without_state_leakage(
@@ -450,157 +542,65 @@ def test_litellm_reused_model_keeps_every_canary_request_bounded(
     }
 
 
-@pytest.mark.parametrize(
-    ("rejected", "adjustments", "expected_limit", "expected_probe_calls"),
-    [
-        (set(), set(), "max_completion_tokens", 1),
-        ({"max_completion_tokens"}, set(), "max_tokens", 2),
-        ({"max_completion_tokens", "max_tokens"}, set(), "max_output_tokens", 3),
-        ({"temperature", "seed"}, set(), "max_completion_tokens", 3),
-    ],
-)
-def test_litellm_canary_probes_capabilities_before_batch(
-    rejected: set[str],
-    adjustments: set[ParameterAdjustment],
-    expected_limit: str,
-    expected_probe_calls: int,
-    model_config: ModelConfig,
-    benchmark_config: BenchmarkConfig,
+def test_positive_result_defaults_to_model_removal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Probe unsupported parameters once, then use the adjusted batch kwargs."""
-    calls: list[
-        tuple[c.Sequence[c.Sequence[litellm.AllMessageValues] | str], dict[str, object]]
-    ] = []
-    model = object.__new__(LiteLLMModel)
-    model.model_config = replace(model_config, model_id="provider/model", param=None)
-    model.log_metadata = False
-    model.benchmark_config = replace(
-        benchmark_config,
-        api_key="token",
-        api_base=None,
-        api_version=None,
-        generative_type=GenerativeType.BASE,
+    """Use the safe removal default when no interactive terminal is available."""
+    monkeypatch.setattr(
+        "leaderboards.contamination_canary.sys.stdin",
+        SimpleNamespace(isatty=lambda: False),
     )
-    model.buffer = {"first_label_token_mapping": False, "max_concurrent_calls": 5}
-    model._parameter_adjustments = set(adjustments)
-    model._max_thinking_budget = None
-    model.generation_kwargs = {
-        "temperature": 0.7,
-        "response_format": "dataset-only",
-        "logprobs": True,
+    report = {
+        "models": [
+            {
+                "model_id": "org/model",
+                "contamination_detected": True,
+                "exact_rate_difference": 1.0,
+                "paired_sign_p_value": 0.0,
+            }
+        ]
     }
 
-    async def fake_generate(
-        self: LiteLLMModel,
-        model_id: str,
-        inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str],
-        max_concurrent_calls: int,
-        **generation_kwargs: object,
-    ) -> tuple[
-        c.Sequence[tuple[int, ModelResponse]], c.Sequence[tuple[int, Exception]]
-    ]:
-        calls.append((inputs, generation_kwargs))
-        unsupported = next(
-            (
-                key
-                for key in (
-                    "max_completion_tokens",
-                    "max_tokens",
-                    "temperature",
-                    "seed",
-                )
-                if key in rejected and key in generation_kwargs
-            ),
-            None,
-        )
-        if unsupported is not None:
-            error = UnsupportedParamsError(
-                message=f"provider does not support parameters: ['{unsupported}']"
-            )
-            return [], [(0, error)]
-        return [(index, ModelResponse(choices=[])) for index in range(len(inputs))], []
+    assert confirm_canary_exclusions(report=report) == {"org/model"}
 
-    def fake_create_model_output(
-        model_responses: c.Sequence[ModelResponse], model_id: str
-    ) -> GenerativeModelOutput:
-        return GenerativeModelOutput(sequences=["amber forest"] * len(model_responses))
 
-    monkeypatch.setattr(LiteLLMModel, "_generate_async", fake_generate)
+def test_private_corpus_download_uses_packaged_token(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Authenticate private corpus downloads with the packaged dataset token."""
+    corpus = _corpus(tmp_path)
+    scrambled_token = "XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"
+    monkeypatch.delenv("EUROEVAL_CANARY_CORPUS_PATH", raising=False)
     monkeypatch.setattr(
-        LiteLLMModel, "_create_model_output", staticmethod(fake_create_model_output)
+        evidence_module, "CANARY_CORPUS_SHA256", _sha256(corpus.read_bytes())
+    )
+    monkeypatch.setattr(
+        evidence_module,
+        "unscramble",
+        lambda value: "dataset-token" if value == scrambled_token else "wrong-token",
     )
 
-    result = model.collect_canary_completions(["first", "second"])
+    def download(**kwargs: object) -> str:
+        assert kwargs["token"] == "dataset-token"
+        return str(corpus)
 
-    assert result == ["amber forest", "amber forest"]
-    assert len(calls) == expected_probe_calls + 1
-    assert all(len(call[0]) == 1 for call in calls[:expected_probe_calls])
-    assert len(calls[-1][0]) == 2
-    assert calls[-1][1][expected_limit] == 6
-    assert "response_format" not in calls[-1][1]
-    assert "logprobs" not in calls[-1][1]
-    if "temperature" in rejected:
-        assert "temperature" not in calls[-1][1]
-    if "seed" in rejected:
-        assert "seed" not in calls[-1][1]
+    monkeypatch.setattr(evidence_module, "hf_hub_download", download)
+
+    prompts = load_canary_prompts(cache_dir=tmp_path)
+
+    assert len(prompts) == CANARY_ROW_COUNT
 
 
-def _corpus(tmp_path: Path) -> Path:
-    path = tmp_path / "corpus.jsonl"
-    with path.open("w", encoding="utf-8") as handle:
-        for index in range(CANARY_ROW_COUNT):
-            row = {
-                "row_id": f"row-{index:03d}",
-                "text": (
-                    f"Source passage {index}.\nContext {index}. In the quiet archive, "
-                    f"the note marked trigger{index} referred to amber forest."
-                ),
-            }
-            handle.write(json.dumps(row) + "\n")
-    return path
+def test_private_exclusion_state_fails_closed_when_corrupt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A broken durable removal file cannot silently re-rank excluded models."""
+    private_dir = tmp_path / "private"
+    private_dir.mkdir(mode=0o700)
+    exclusions = private_dir / "leaderboard-exclusions.json"
+    exclusions.write_text("not json", encoding="utf-8")
+    exclusions.chmod(0o600)
+    monkeypatch.setenv("EUROEVAL_CANARY_PRIVATE_DIR", str(private_dir))
 
-
-def _prompts() -> tuple[CanaryPrompt, ...]:
-    return tuple(
-        CanaryPrompt(
-            row_id=f"row-{index:03d}",
-            prompt=f"prompt {index}",
-            prompt_sha256=_sha256(f"prompt {index}".encode()),
-        )
-        for index in range(CANARY_ROW_COUNT)
-    )
-
-
-def _evidence() -> CanaryEvidence:
-    return collected_evidence(
-        model_id="org/model",
-        requested_revision="a" * 40,
-        resolved_revision="a" * 40,
-        backend="vllm:base",
-        prompts=_prompts(),
-        completions=[" amber forest."] * CANARY_ROW_COUNT,
-    )
-
-
-def _canary_result(evidence: CanaryEvidence) -> BenchmarkResult:
-    return BenchmarkResult(
-        dataset="contamination-canary-da",
-        model=f"{evidence.model_id}@{evidence.resolved_revision}",
-        generative=True,
-        generative_type="base",
-        few_shot=None,
-        validation_split=None,
-        num_model_parameters=1,
-        max_sequence_length=1,
-        vocabulary_size=1,
-        merge=False,
-        languages=["da"],
-        task="contamination-detection",
-        results={"raw": [], "total": {"test_collection_success": 100.0}},
-        contamination_canary_evidence=evidence.to_dict(),
-    )
-
-
-def _sha256(value: bytes) -> str:
-    return hashlib.sha256(value).hexdigest()
+    with pytest.raises(RuntimeError, match="Cannot safely generate leaderboards"):
+        canary_scoring.load_canary_exclusions()

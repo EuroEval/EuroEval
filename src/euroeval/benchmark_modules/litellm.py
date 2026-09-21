@@ -411,30 +411,6 @@ class LiteLLMModel(BenchmarkModule):
         )
         self.buffer["max_concurrent_calls"] = 20
 
-    @property
-    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
-        """The data collator used to prepare samples during finetuning.
-
-        Returns:
-            The data collator.
-        """
-        raise NotImplementedError(
-            "The `data_collator` property has not been implemented for LiteLLM models."
-        )
-
-    @property
-    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
-        """The function used to extract the labels from the generated output.
-
-        Returns:
-            The function used to extract the labels from the generated output.
-        """
-        return _extract_labels_from_generation_helper(
-            dataset_config=self.dataset_config,
-            model_config=self.model_config,
-            first_label_token_mapping=self.buffer["first_label_token_mapping"],
-        )
-
     def collect_canary_completions(self, prompts: c.Sequence[str]) -> list[str]:
         """Generate bounded canary continuations through the configured API client.
 
@@ -490,205 +466,6 @@ class LiteLLMModel(BenchmarkModule):
         return self._collect_canary_batch(
             prompts=prompts, generation_kwargs=generation_kwargs
         )
-
-    def _collect_canary_batch(
-        self, prompts: c.Sequence[str], generation_kwargs: dict[str, t.Any]
-    ) -> list[str]:
-        """Collect the canary batch after its request parameters have been probed.
-
-        Args:
-            prompts:
-                The canary prompts.
-            generation_kwargs:
-                The already-probed generation arguments.
-
-        Returns:
-            One completion for each prompt.
-
-        Raises:
-            ValueError:
-                If the API does not return exactly one completion per prompt.
-        """
-        if self.generative_type == GenerativeType.BASE:
-            model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str] = list(
-                prompts
-            )
-        else:
-            model_inputs = t.cast(
-                c.Sequence[c.Sequence[litellm.AllMessageValues] | str],
-                [
-                    [
-                        {
-                            "role": "user",
-                            "content": (
-                                "Continue the text below with only its next two words. "
-                                "Do not explain.\n\n" + prompt
-                            ),
-                        }
-                    ]
-                    for prompt in prompts
-                ],
-            )
-        successes, failures = safe_run(
-            self._generate_async(
-                model_id=self.model_config.model_id,
-                inputs=model_inputs,
-                max_concurrent_calls=self.buffer["max_concurrent_calls"],
-                **generation_kwargs,
-            )
-        )
-        success_indices = sorted(index for index, _ in successes)
-        if failures or success_indices != list(range(len(prompts))):
-            raise ValueError("canary generation did not return one result per prompt")
-        ordered = [response for _, response in sorted(successes)]
-        return list(
-            self._create_model_output(
-                model_responses=ordered, model_id=self.model_config.model_id
-            ).sequences
-        )
-
-    def generate(self, inputs: dict) -> GenerativeModelOutput:
-        """Generate outputs from the model.
-
-        Args:
-            inputs:
-                A batch of inputs to pass through the model.
-
-        Returns:
-            The generated model outputs.
-
-        Raises:
-            InvalidBenchmark:
-                If the inputs do not contain either 'messages' or 'text' keys.
-        """
-        model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str]
-        if "messages" in inputs:
-            model_inputs = inputs["messages"]
-        elif "text" in inputs:
-            model_inputs = inputs["text"]
-        else:
-            raise InvalidBenchmark(
-                "The inputs must contain either 'messages' or 'text' keys."
-            )
-
-        # Get the mapping from labels to the first token in the label. We call this each
-        # time we generate a new dataset since the dataset config can change
-        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
-            dataset_config=self.dataset_config,
-            model_config=self.model_config,
-            tokeniser=None,
-            generative_type=self.generative_type,
-            log_metadata=self.log_metadata,
-        )
-
-        all_responses: dict[int, "ModelResponse"] = {}
-        inputs_to_run: c.Sequence[
-            tuple[int, c.Sequence[litellm.AllMessageValues] | str]
-        ] = list(enumerate(model_inputs))
-        # Build the kwargs afresh for the current dataset and (re-)apply the
-        # model-level adjustments learned from earlier errors. This is idempotent
-        # and exists for the `self.generation_kwargs` user-override path, so that
-        # nothing dataset-specific (like `max_completion_tokens`) leaks across
-        # datasets via `self.generation_kwargs`; the `get_generation_kwargs` path
-        # is already fully adjusted by that method itself
-        generation_kwargs = self._apply_parameter_adjustments(
-            generation_kwargs=dict(
-                self.generation_kwargs
-                or self.get_generation_kwargs(dataset_config=self.dataset_config)
-            )
-        )
-
-        for attempt in range(num_attempts := 10):
-            if not inputs_to_run:
-                break
-
-            batch_indices, batch_inputs = zip(*inputs_to_run)
-            successes, failures = safe_run(
-                self._generate_async(
-                    model_id=self.model_config.model_id,
-                    inputs=list(batch_inputs),
-                    max_concurrent_calls=self.buffer["max_concurrent_calls"],
-                    **generation_kwargs,
-                )
-            )
-
-            # Store the successful model outputs
-            for idx, response in successes:
-                orig_idx = batch_indices[idx]
-                all_responses[orig_idx] = response
-
-            # If all requests were successful, break
-            if not failures:
-                inputs_to_run = []
-                break
-
-            # Put the failed requests back in the queue to try again
-            inputs_to_run = [
-                (batch_indices[idx], model_inputs[batch_indices[idx]])
-                for idx, _ in failures
-            ]
-            log(
-                f"Attempt {attempt + 1:,}/{num_attempts:,}: retrying "
-                f"{len(inputs_to_run):,} failed message(s). Here is the first error: "
-                f"{failures[0][1]}.",
-                level=logging.DEBUG,
-            )
-
-            # Check if any errors are due to HTTP 429 (too many requests), in which case
-            # we reduce the number of concurrent calls
-            http_429_errors = [
-                idx
-                for idx, (_, error) in enumerate(failures)
-                if isinstance(error, RateLimitError)
-            ]
-            if http_429_errors and self.buffer["max_concurrent_calls"] > 1:
-                failures = [
-                    failures[i]
-                    for i in range(len(failures))
-                    if i not in http_429_errors
-                ]
-                self.buffer["max_concurrent_calls"] = max(
-                    1, self.buffer["max_concurrent_calls"] // 2
-                )
-                log(
-                    f"Reducing the maximum number of concurrent calls to "
-                    f"{self.buffer['max_concurrent_calls']:,} due to rate limiting.",
-                    level=logging.DEBUG,
-                )
-
-            # Attempt to handle the exceptions, to improve the chance of getting
-            # successful generations next time around
-            time_to_wait = 0
-            for _, error in failures:
-                generation_kwargs, wait_time = self._handle_exception(
-                    error=error, **generation_kwargs
-                )
-                time_to_wait = max(time_to_wait, wait_time)
-
-            if time_to_wait > 0:
-                log(
-                    f"Waiting {time_to_wait} second(s) before retrying...",
-                    level=logging.DEBUG,
-                )
-                sleep(time_to_wait)
-        else:
-            raise InvalidBenchmark(
-                message=f"Failed to generate text, after {num_attempts:,} attempts."
-            )
-
-        # Extract the generations from the model output
-        ordered_responses = [all_responses[i] for i in range(len(model_inputs))]
-        model_output = self._create_model_output(
-            model_responses=ordered_responses, model_id=self.model_config.model_id
-        )
-
-        if len(model_inputs) != len(model_output.sequences):
-            raise InvalidBenchmark(
-                f"Number of model inputs ({len(model_inputs):,}) does not match the "
-                f"number of model outputs ({len(model_output.sequences):,})."
-            )
-
-        return model_output
 
     def _apply_parameter_adjustments(self, generation_kwargs: dict) -> dict:
         """Apply the persisted model-level parameter adjustments to fresh kwargs.
@@ -802,6 +579,62 @@ class LiteLLMModel(BenchmarkModule):
         generation_kwargs.pop("logprobs", None)
         generation_kwargs.pop("top_logprobs", None)
         return generation_kwargs
+
+    def _collect_canary_batch(
+        self, prompts: c.Sequence[str], generation_kwargs: dict[str, t.Any]
+    ) -> list[str]:
+        """Collect the canary batch after its request parameters have been probed.
+
+        Args:
+            prompts:
+                The canary prompts.
+            generation_kwargs:
+                The already-probed generation arguments.
+
+        Returns:
+            One completion for each prompt.
+
+        Raises:
+            ValueError:
+                If the API does not return exactly one completion per prompt.
+        """
+        if self.generative_type == GenerativeType.BASE:
+            model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str] = list(
+                prompts
+            )
+        else:
+            model_inputs = t.cast(
+                c.Sequence[c.Sequence[litellm.AllMessageValues] | str],
+                [
+                    [
+                        {
+                            "role": "user",
+                            "content": (
+                                "Continue the text below with only its next two words. "
+                                "Do not explain.\n\n" + prompt
+                            ),
+                        }
+                    ]
+                    for prompt in prompts
+                ],
+            )
+        successes, failures = safe_run(
+            self._generate_async(
+                model_id=self.model_config.model_id,
+                inputs=model_inputs,
+                max_concurrent_calls=self.buffer["max_concurrent_calls"],
+                **generation_kwargs,
+            )
+        )
+        success_indices = sorted(index for index, _ in successes)
+        if failures or success_indices != list(range(len(prompts))):
+            raise ValueError("canary generation did not return one result per prompt")
+        ordered = [response for _, response in sorted(successes)]
+        return list(
+            self._create_model_output(
+                model_responses=ordered, model_id=self.model_config.model_id
+            ).sequences
+        )
 
     @staticmethod
     def _create_model_output(
@@ -1092,6 +925,111 @@ class LiteLLMModel(BenchmarkModule):
             pass  # Already closed
 
         return successes, failures
+
+    def _probe_generation_kwargs(
+        self,
+        generation_kwargs: dict[str, t.Any],
+        test_input: c.Sequence[litellm.AllMessageValues] | str,
+        *,
+        canary_token_limit: int | None = None,
+        detect_reasoning_content: bool = True,
+    ) -> dict[str, t.Any]:
+        """Probe one request and learn parameters accepted by the API.
+
+        Args:
+            generation_kwargs:
+                The generation kwargs to probe and adjust.
+            test_input:
+                One input used for capability probing.
+            canary_token_limit (optional):
+                The visible canary output bound, if this is a canary probe.
+                Defaults to None.
+            detect_reasoning_content (optional):
+                Whether a successful response may promote a model to reasoning mode.
+                Defaults to True.
+
+        Returns:
+            Generation kwargs that succeeded for the probe request.
+
+        Raises:
+            InvalidModel:
+                If the model fails to respond after multiple attempts.
+        """
+        standard_limit_rejected = (
+            canary_token_limit is not None
+            and ParameterAdjustment.USE_MAX_TOKENS in self._parameter_adjustments
+            and ParameterAdjustment.NO_MAX_TOKENS in self._parameter_adjustments
+        )
+        for _ in range(num_attempts := 10):
+            successes, failures = safe_run(
+                self._generate_async(
+                    model_id=self.model_config.model_id,
+                    inputs=[test_input],
+                    max_concurrent_calls=1,
+                    **generation_kwargs,
+                )
+            )
+
+            if successes and detect_reasoning_content:
+                _, successful_content = successes[0]
+                if self.generative_type != GenerativeType.REASONING:
+                    successful_message = successful_content.choices[0].message
+                    if (
+                        hasattr(successful_message, "reasoning_content")
+                        and successful_message.reasoning_content is not None
+                    ):
+                        self.buffer["uses_reasoning_content"] = True
+                        generation_kwargs["max_completion_tokens"] = (
+                            REASONING_MAX_TOKENS
+                        )
+                        generation_kwargs.pop("response_format", None)
+                        if self.is_ollama:
+                            generation_kwargs["think"] = True
+                        log_once(
+                            "Detected reasoning content in model output for the model "
+                            f"{self.model_config.model_id!r}, so changing the "
+                            "generative type to reasoning.",
+                            level=logging.DEBUG,
+                        )
+
+            if not failures:
+                return self._apply_parameter_adjustments(
+                    generation_kwargs=generation_kwargs
+                )
+
+            time_to_wait = 0
+            for _, error in failures:
+                had_standard_limit = any(
+                    key in generation_kwargs
+                    for key in ("max_completion_tokens", "max_tokens")
+                )
+                error_msg = str(error).lower()
+                generation_kwargs, wait_time = self._handle_exception(
+                    error=error, **generation_kwargs
+                )
+                standard_limit_rejected |= had_standard_limit and (
+                    "max_completion_tokens" in error_msg or "max_tokens" in error_msg
+                )
+                time_to_wait = max(time_to_wait, wait_time)
+
+            if (
+                canary_token_limit is not None
+                and standard_limit_rejected
+                and "max_completion_tokens" not in generation_kwargs
+                and "max_tokens" not in generation_kwargs
+            ):
+                generation_kwargs["max_output_tokens"] = canary_token_limit
+
+            if time_to_wait > 0:
+                log(
+                    f"Waiting {time_to_wait} second(s) before retrying...",
+                    level=logging.DEBUG,
+                )
+                sleep(time_to_wait)
+        raise InvalidModel(
+            "Failed to get a successful response from the model "
+            f"{self.model_config.model_id!r} after {num_attempts} attempts."
+        )
 
     def _handle_exception(
         self, error: Exception, **generation_kwargs
@@ -1604,6 +1542,241 @@ class LiteLLMModel(BenchmarkModule):
 
         return None
 
+    def _setup_model_params(
+        self, generation_kwargs: dict[str, t.Any], *, include_logprobs: bool = True
+    ) -> dict[str, t.Any]:
+        """Set up model-specific parameters.
+
+        Args:
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+            include_logprobs:
+                Whether to add dataset label log probability arguments. Defaults to
+                True.
+
+        Returns:
+            The updated generation kwargs with model-specific parameters configured.
+        """
+        if include_logprobs and self.buffer["first_label_token_mapping"]:
+            generation_kwargs["logprobs"] = True
+            generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
+
+        # Set the generic thinking/reasoning-effort shape first. DeepSeek-specific
+        # post-processing (below) rewrites this, since LiteLLM's DeepSeek
+        # transformation discards `budget_tokens` and the `reasoning_effort` level.
+        param = self.model_config.param
+        if param == "thinking":
+            generation_kwargs["thinking"] = dict(
+                type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
+            )
+            log_once(
+                f"Enabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+        elif param == "no-thinking":
+            generation_kwargs["thinking"] = dict(budget_tokens=0)
+            log_once(
+                f"Disabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+        elif param in {"none", "minimal", "low", "medium", "high", "xhigh", "max"}:
+            generation_kwargs["reasoning_effort"] = param
+            log_once(
+                f"Enabling reasoning effort {param!r} for model "
+                f"{self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+
+        # DeepSeek only recognises `thinking.type` and silently ignores
+        # `budget_tokens`, which would otherwise leave thinking enabled (its
+        # default), so we rewrite `thinking` to just the `type` field. Likewise,
+        # LiteLLM's DeepSeek transformation maps `reasoning_effort` to only
+        # `thinking.type` (enabled/disabled), discarding the effort level, so we
+        # instead move it into `extra_body`, which is merged into the request after
+        # provider param mapping and thus reaches the DeepSeek API untouched. The
+        # `deepseek/` prefix is required to distinguish the official DeepSeek API
+        # from open-weight deployments (e.g. vLLM, Ollama, OpenRouter), which do not
+        # get this DeepSeek-API-specific param shaping.
+        if self.model_config.model_id.lower().startswith("deepseek/"):
+            if param == "thinking":
+                generation_kwargs["thinking"] = dict(type="enabled")
+            elif param == "no-thinking":
+                generation_kwargs["thinking"] = dict(type="disabled")
+            elif param in {"none", "minimal", "low", "medium", "high", "xhigh", "max"}:
+                generation_kwargs["extra_body"] = {
+                    **generation_kwargs.get("extra_body", {}),
+                    "reasoning_effort": generation_kwargs.pop("reasoning_effort"),
+                }
+
+        return generation_kwargs
+
+    @property
+    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
+        """The data collator used to prepare samples during finetuning.
+
+        Returns:
+            The data collator.
+        """
+        raise NotImplementedError(
+            "The `data_collator` property has not been implemented for LiteLLM models."
+        )
+
+    @property
+    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
+        """The function used to extract the labels from the generated output.
+
+        Returns:
+            The function used to extract the labels from the generated output.
+        """
+        return _extract_labels_from_generation_helper(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            first_label_token_mapping=self.buffer["first_label_token_mapping"],
+        )
+
+    def generate(self, inputs: dict) -> GenerativeModelOutput:
+        """Generate outputs from the model.
+
+        Args:
+            inputs:
+                A batch of inputs to pass through the model.
+
+        Returns:
+            The generated model outputs.
+
+        Raises:
+            InvalidBenchmark:
+                If the inputs do not contain either 'messages' or 'text' keys.
+        """
+        model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str]
+        if "messages" in inputs:
+            model_inputs = inputs["messages"]
+        elif "text" in inputs:
+            model_inputs = inputs["text"]
+        else:
+            raise InvalidBenchmark(
+                "The inputs must contain either 'messages' or 'text' keys."
+            )
+
+        # Get the mapping from labels to the first token in the label. We call this each
+        # time we generate a new dataset since the dataset config can change
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            tokeniser=None,
+            generative_type=self.generative_type,
+            log_metadata=self.log_metadata,
+        )
+
+        all_responses: dict[int, "ModelResponse"] = {}
+        inputs_to_run: c.Sequence[
+            tuple[int, c.Sequence[litellm.AllMessageValues] | str]
+        ] = list(enumerate(model_inputs))
+        # Build the kwargs afresh for the current dataset and (re-)apply the
+        # model-level adjustments learned from earlier errors. This is idempotent
+        # and exists for the `self.generation_kwargs` user-override path, so that
+        # nothing dataset-specific (like `max_completion_tokens`) leaks across
+        # datasets via `self.generation_kwargs`; the `get_generation_kwargs` path
+        # is already fully adjusted by that method itself
+        generation_kwargs = self._apply_parameter_adjustments(
+            generation_kwargs=dict(
+                self.generation_kwargs
+                or self.get_generation_kwargs(dataset_config=self.dataset_config)
+            )
+        )
+
+        for attempt in range(num_attempts := 10):
+            if not inputs_to_run:
+                break
+
+            batch_indices, batch_inputs = zip(*inputs_to_run)
+            successes, failures = safe_run(
+                self._generate_async(
+                    model_id=self.model_config.model_id,
+                    inputs=list(batch_inputs),
+                    max_concurrent_calls=self.buffer["max_concurrent_calls"],
+                    **generation_kwargs,
+                )
+            )
+
+            # Store the successful model outputs
+            for idx, response in successes:
+                orig_idx = batch_indices[idx]
+                all_responses[orig_idx] = response
+
+            # If all requests were successful, break
+            if not failures:
+                inputs_to_run = []
+                break
+
+            # Put the failed requests back in the queue to try again
+            inputs_to_run = [
+                (batch_indices[idx], model_inputs[batch_indices[idx]])
+                for idx, _ in failures
+            ]
+            log(
+                f"Attempt {attempt + 1:,}/{num_attempts:,}: retrying "
+                f"{len(inputs_to_run):,} failed message(s). Here is the first error: "
+                f"{failures[0][1]}.",
+                level=logging.DEBUG,
+            )
+
+            # Check if any errors are due to HTTP 429 (too many requests), in which case
+            # we reduce the number of concurrent calls
+            http_429_errors = [
+                idx
+                for idx, (_, error) in enumerate(failures)
+                if isinstance(error, RateLimitError)
+            ]
+            if http_429_errors and self.buffer["max_concurrent_calls"] > 1:
+                failures = [
+                    failures[i]
+                    for i in range(len(failures))
+                    if i not in http_429_errors
+                ]
+                self.buffer["max_concurrent_calls"] = max(
+                    1, self.buffer["max_concurrent_calls"] // 2
+                )
+                log(
+                    f"Reducing the maximum number of concurrent calls to "
+                    f"{self.buffer['max_concurrent_calls']:,} due to rate limiting.",
+                    level=logging.DEBUG,
+                )
+
+            # Attempt to handle the exceptions, to improve the chance of getting
+            # successful generations next time around
+            time_to_wait = 0
+            for _, error in failures:
+                generation_kwargs, wait_time = self._handle_exception(
+                    error=error, **generation_kwargs
+                )
+                time_to_wait = max(time_to_wait, wait_time)
+
+            if time_to_wait > 0:
+                log(
+                    f"Waiting {time_to_wait} second(s) before retrying...",
+                    level=logging.DEBUG,
+                )
+                sleep(time_to_wait)
+        else:
+            raise InvalidBenchmark(
+                message=f"Failed to generate text, after {num_attempts:,} attempts."
+            )
+
+        # Extract the generations from the model output
+        ordered_responses = [all_responses[i] for i in range(len(model_inputs))]
+        model_output = self._create_model_output(
+            model_responses=ordered_responses, model_id=self.model_config.model_id
+        )
+
+        if len(model_inputs) != len(model_output.sequences):
+            raise InvalidBenchmark(
+                f"Number of model inputs ({len(model_inputs):,}) does not match the "
+                f"number of model outputs ({len(model_output.sequences):,})."
+            )
+
+        return model_output
+
     def get_generation_kwargs(self, dataset_config: DatasetConfig) -> dict[str, t.Any]:
         """Get the generation arguments for the model.
 
@@ -1697,179 +1870,6 @@ class LiteLLMModel(BenchmarkModule):
         generation_kwargs = self._probe_generation_kwargs(
             generation_kwargs=generation_kwargs, test_input=test_input
         )
-
-        return generation_kwargs
-
-    def _probe_generation_kwargs(
-        self,
-        generation_kwargs: dict[str, t.Any],
-        test_input: c.Sequence[litellm.AllMessageValues] | str,
-        *,
-        canary_token_limit: int | None = None,
-        detect_reasoning_content: bool = True,
-    ) -> dict[str, t.Any]:
-        """Probe one request and learn parameters accepted by the API.
-
-        Args:
-            generation_kwargs:
-                The generation kwargs to probe and adjust.
-            test_input:
-                One input used for capability probing.
-            canary_token_limit (optional):
-                The visible canary output bound, if this is a canary probe.
-                Defaults to None.
-            detect_reasoning_content (optional):
-                Whether a successful response may promote a model to reasoning mode.
-                Defaults to True.
-
-        Returns:
-            Generation kwargs that succeeded for the probe request.
-
-        Raises:
-            InvalidModel:
-                If the model fails to respond after multiple attempts.
-        """
-        standard_limit_rejected = (
-            canary_token_limit is not None
-            and ParameterAdjustment.USE_MAX_TOKENS in self._parameter_adjustments
-            and ParameterAdjustment.NO_MAX_TOKENS in self._parameter_adjustments
-        )
-        for _ in range(num_attempts := 10):
-            successes, failures = safe_run(
-                self._generate_async(
-                    model_id=self.model_config.model_id,
-                    inputs=[test_input],
-                    max_concurrent_calls=1,
-                    **generation_kwargs,
-                )
-            )
-
-            if successes and detect_reasoning_content:
-                _, successful_content = successes[0]
-                if self.generative_type != GenerativeType.REASONING:
-                    successful_message = successful_content.choices[0].message
-                    if (
-                        hasattr(successful_message, "reasoning_content")
-                        and successful_message.reasoning_content is not None
-                    ):
-                        self.buffer["uses_reasoning_content"] = True
-                        generation_kwargs["max_completion_tokens"] = (
-                            REASONING_MAX_TOKENS
-                        )
-                        generation_kwargs.pop("response_format", None)
-                        if self.is_ollama:
-                            generation_kwargs["think"] = True
-                        log_once(
-                            "Detected reasoning content in model output for the model "
-                            f"{self.model_config.model_id!r}, so changing the "
-                            "generative type to reasoning.",
-                            level=logging.DEBUG,
-                        )
-
-            if not failures:
-                return self._apply_parameter_adjustments(
-                    generation_kwargs=generation_kwargs
-                )
-
-            time_to_wait = 0
-            for _, error in failures:
-                had_standard_limit = any(
-                    key in generation_kwargs
-                    for key in ("max_completion_tokens", "max_tokens")
-                )
-                error_msg = str(error).lower()
-                generation_kwargs, wait_time = self._handle_exception(
-                    error=error, **generation_kwargs
-                )
-                standard_limit_rejected |= had_standard_limit and (
-                    "max_completion_tokens" in error_msg or "max_tokens" in error_msg
-                )
-                time_to_wait = max(time_to_wait, wait_time)
-
-            if (
-                canary_token_limit is not None
-                and standard_limit_rejected
-                and "max_completion_tokens" not in generation_kwargs
-                and "max_tokens" not in generation_kwargs
-            ):
-                generation_kwargs["max_output_tokens"] = canary_token_limit
-
-            if time_to_wait > 0:
-                log(
-                    f"Waiting {time_to_wait} second(s) before retrying...",
-                    level=logging.DEBUG,
-                )
-                sleep(time_to_wait)
-        raise InvalidModel(
-            "Failed to get a successful response from the model "
-            f"{self.model_config.model_id!r} after {num_attempts} attempts."
-        )
-
-    def _setup_model_params(
-        self, generation_kwargs: dict[str, t.Any], *, include_logprobs: bool = True
-    ) -> dict[str, t.Any]:
-        """Set up model-specific parameters.
-
-        Args:
-            generation_kwargs:
-                The generation kwargs to pass to the model.
-            include_logprobs:
-                Whether to add dataset label log probability arguments. Defaults to
-                True.
-
-        Returns:
-            The updated generation kwargs with model-specific parameters configured.
-        """
-        if include_logprobs and self.buffer["first_label_token_mapping"]:
-            generation_kwargs["logprobs"] = True
-            generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
-
-        # Set the generic thinking/reasoning-effort shape first. DeepSeek-specific
-        # post-processing (below) rewrites this, since LiteLLM's DeepSeek
-        # transformation discards `budget_tokens` and the `reasoning_effort` level.
-        param = self.model_config.param
-        if param == "thinking":
-            generation_kwargs["thinking"] = dict(
-                type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
-            )
-            log_once(
-                f"Enabling thinking mode for model {self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
-        elif param == "no-thinking":
-            generation_kwargs["thinking"] = dict(budget_tokens=0)
-            log_once(
-                f"Disabling thinking mode for model {self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
-        elif param in {"none", "minimal", "low", "medium", "high", "xhigh", "max"}:
-            generation_kwargs["reasoning_effort"] = param
-            log_once(
-                f"Enabling reasoning effort {param!r} for model "
-                f"{self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
-
-        # DeepSeek only recognises `thinking.type` and silently ignores
-        # `budget_tokens`, which would otherwise leave thinking enabled (its
-        # default), so we rewrite `thinking` to just the `type` field. Likewise,
-        # LiteLLM's DeepSeek transformation maps `reasoning_effort` to only
-        # `thinking.type` (enabled/disabled), discarding the effort level, so we
-        # instead move it into `extra_body`, which is merged into the request after
-        # provider param mapping and thus reaches the DeepSeek API untouched. The
-        # `deepseek/` prefix is required to distinguish the official DeepSeek API
-        # from open-weight deployments (e.g. vLLM, Ollama, OpenRouter), which do not
-        # get this DeepSeek-API-specific param shaping.
-        if self.model_config.model_id.lower().startswith("deepseek/"):
-            if param == "thinking":
-                generation_kwargs["thinking"] = dict(type="enabled")
-            elif param == "no-thinking":
-                generation_kwargs["thinking"] = dict(type="disabled")
-            elif param in {"none", "minimal", "low", "medium", "high", "xhigh", "max"}:
-                generation_kwargs["extra_body"] = {
-                    **generation_kwargs.get("extra_body", {}),
-                    "reasoning_effort": generation_kwargs.pop("reasoning_effort"),
-                }
 
         return generation_kwargs
 

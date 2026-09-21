@@ -186,40 +186,6 @@ _JOTTAD_CONNECTION_FAILURE_RE = re.compile(
 )
 
 
-def _is_jottad_connection_failure(result: subprocess.CompletedProcess[str]) -> bool:
-    """Return whether an archive failure explicitly reports unavailable jottad."""
-    output = f"{result.stderr or ''}\n{result.stdout or ''}"
-    return _JOTTAD_CONNECTION_FAILURE_RE.search(output) is not None
-
-
-def _launch_jottacloud() -> bool:
-    """Start the installed macOS Jottacloud app, if present.
-
-    Returns:
-        Whether the app launch command succeeded.
-    """
-    if not JOTTACLOUD_APP_PATH.exists():
-        return False
-    try:
-        result = subprocess.run(
-            ["open", "-a", str(JOTTACLOUD_APP_PATH)],
-            capture_output=True,
-            text=True,
-            stdin=subprocess.DEVNULL,
-            timeout=30,
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        logger.warning(f"Could not start the Jottacloud app: {exc}")
-        return False
-    if result.returncode != 0:
-        logger.warning(
-            f"Could not start the Jottacloud app: "
-            f"{(result.stderr or result.stdout).strip()[:200]}"
-        )
-        return False
-    return True
-
-
 def _is_archived(backup_path: Path) -> bool:
     """Check whether `backup_path` is stored under the Archive directory.
 
@@ -294,6 +260,40 @@ def _jotta_cli() -> Path | None:
         return Path(found)
     bundled = JOTTACLOUD_APP_PATH / "Contents/MacOS/jotta-cli"
     return bundled if bundled.exists() else None
+
+
+def _is_jottad_connection_failure(result: subprocess.CompletedProcess[str]) -> bool:
+    """Return whether an archive failure explicitly reports unavailable jottad."""
+    output = f"{result.stderr or ''}\n{result.stdout or ''}"
+    return _JOTTAD_CONNECTION_FAILURE_RE.search(output) is not None
+
+
+def _launch_jottacloud() -> bool:
+    """Start the installed macOS Jottacloud app, if present.
+
+    Returns:
+        Whether the app launch command succeeded.
+    """
+    if not JOTTACLOUD_APP_PATH.exists():
+        return False
+    try:
+        result = subprocess.run(
+            ["open", "-a", str(JOTTACLOUD_APP_PATH)],
+            capture_output=True,
+            text=True,
+            stdin=subprocess.DEVNULL,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        logger.warning(f"Could not start the Jottacloud app: {exc}")
+        return False
+    if result.returncode != 0:
+        logger.warning(
+            f"Could not start the Jottacloud app: "
+            f"{(result.stderr or result.stdout).strip()[:200]}"
+        )
+        return False
+    return True
 
 
 def _remove_archived_local(keep: Path) -> int:

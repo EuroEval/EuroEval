@@ -159,6 +159,32 @@ class TestLoadRawResults:
         yield
         load_raw_results.cache_clear()
 
+    def test_canary_conflicts_are_not_hidden_by_storage_deduplication(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Private scoring receives every candidate for an auxiliary identity."""
+        monkeypatch.setattr(
+            "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
+        )
+        monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
+        monkeypatch.setattr("leaderboards.result_loading.RESULTS_DIR", tmp_path)
+        model_dir = tmp_path / "models"
+        model_dir.mkdir()
+        first = _make_eee_record(dataset="contamination-canary-da", timestamp="100")
+        second = _make_eee_record(dataset="contamination-canary-da", timestamp="200")
+        first["eval_library"]["additional_details"]["contamination_canary_evidence"] = (
+            "first"
+        )
+        second["eval_library"]["additional_details"][
+            "contamination_canary_evidence"
+        ] = "second"
+        (model_dir / "first.json").write_text(json.dumps(first))
+        (model_dir / "second.json").write_text(json.dumps(second))
+
+        loaded = load_raw_results()
+
+        assert len(loaded) == 2
+
     def test_dedups_duplicate_identities(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -196,57 +222,6 @@ class TestLoadRawResults:
             if NEW_RESULTS_PATH.exists():
                 NEW_RESULTS_PATH.unlink()
 
-    def test_loads_from_tree_structure(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Should load records from the tree structure."""
-        # Mock download_missing_bucket_files to do nothing
-        monkeypatch.setattr(
-            "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
-        )
-        monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
-        monkeypatch.setattr("leaderboards.result_loading.RESULTS_DIR", tmp_path)
-
-        # Create tree structure
-        model_dir = tmp_path / "test_model"
-        model_dir.mkdir()
-
-        record = _make_eee_record(model_id="test/model", dataset="dataset1")
-
-        json_file = model_dir / "dataset1__test__zeroshot.json"
-        json_file.write_text(json.dumps(record))
-
-        records = load_raw_results()
-
-        assert len(records) == 1
-        assert records[0]["model_info"]["id"] == "test/model"
-
-    def test_canary_conflicts_are_not_hidden_by_storage_deduplication(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Private scoring receives every candidate for an auxiliary identity."""
-        monkeypatch.setattr(
-            "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
-        )
-        monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
-        monkeypatch.setattr("leaderboards.result_loading.RESULTS_DIR", tmp_path)
-        model_dir = tmp_path / "models"
-        model_dir.mkdir()
-        first = _make_eee_record(dataset="contamination-canary-da", timestamp="100")
-        second = _make_eee_record(dataset="contamination-canary-da", timestamp="200")
-        first["eval_library"]["additional_details"]["contamination_canary_evidence"] = (
-            "first"
-        )
-        second["eval_library"]["additional_details"][
-            "contamination_canary_evidence"
-        ] = "second"
-        (model_dir / "first.json").write_text(json.dumps(first))
-        (model_dir / "second.json").write_text(json.dumps(second))
-
-        loaded = load_raw_results()
-
-        assert len(loaded) == 2
-
     def test_leaderboard_filter_hides_auxiliary_and_selected_models(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -275,6 +250,31 @@ class TestLoadRawResults:
 
         assert [item["model_info"]["id"] for item in filtered] == ["org/kept"]
         assert len(list(model_dir.glob("*.json"))) == 3
+
+    def test_loads_from_tree_structure(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Should load records from the tree structure."""
+        # Mock download_missing_bucket_files to do nothing
+        monkeypatch.setattr(
+            "leaderboards.result_loading.download_missing_bucket_files", lambda: 0
+        )
+        monkeypatch.setattr("leaderboards.result_loading.backup_results", lambda: None)
+        monkeypatch.setattr("leaderboards.result_loading.RESULTS_DIR", tmp_path)
+
+        # Create tree structure
+        model_dir = tmp_path / "test_model"
+        model_dir.mkdir()
+
+        record = _make_eee_record(model_id="test/model", dataset="dataset1")
+
+        json_file = model_dir / "dataset1__test__zeroshot.json"
+        json_file.write_text(json.dumps(record))
+
+        records = load_raw_results()
+
+        assert len(records) == 1
+        assert records[0]["model_info"]["id"] == "test/model"
 
     def test_loads_staging_jsonl_file(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

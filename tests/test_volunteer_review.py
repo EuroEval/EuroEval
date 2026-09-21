@@ -328,6 +328,19 @@ def _store_manifest(api: FakeHfApi, manifest: dict[str, object]) -> None:
     ).encode("utf-8")
 
 
+def test_canonical_collision_prevents_decision_and_broker() -> None:
+    """Different canonical bytes block all terminal side effects."""
+    api, reviewer, broker_calls = _reviewer()
+    report = reviewer.show(SUBMISSION)
+    api.files[(RESULTS, report.records[0].canonical_path)] = b"different"
+
+    with pytest.raises(ReviewError, match="collision"):
+        reviewer.decide(SUBMISSION, "accepted", "maintainer")
+
+    assert broker_calls == []
+    assert not _decision_paths(api)
+
+
 def test_collected_canary_must_be_privately_scoreable_before_approval(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -353,41 +366,6 @@ def test_collected_canary_must_be_privately_scoreable_before_approval(
 
     with pytest.raises(ReviewError, match="could not be validated"):
         reviewer.decide(SUBMISSION, "accepted", "maintainer")
-
-
-def test_private_canary_record_is_not_promoted_to_public_results() -> None:
-    """Completion-bearing evidence remains in private staging after approval."""
-    api, reviewer, _ = _reviewer()
-    report = reviewer.show(SUBMISSION)
-    ordinary = report.records[0]
-    canary_content = b"private canary evidence"
-    canary = dataclasses.replace(
-        ordinary,
-        identity=("org/model", "contamination-canary-da", None, None),
-        digest=hashlib.sha256(canary_content).hexdigest(),
-        canonical_path="org_model/contamination-canary-da__test__zeroshot.json",
-        content=canary_content,
-    )
-
-    reviewer._promote_records(  # noqa: SLF001 - focused promotion boundary test
-        dataclasses.replace(report, records=(ordinary, canary))
-    )
-
-    assert (RESULTS, ordinary.canonical_path) in api.files
-    assert (RESULTS, canary.canonical_path) not in api.files
-
-
-def test_canonical_collision_prevents_decision_and_broker() -> None:
-    """Different canonical bytes block all terminal side effects."""
-    api, reviewer, broker_calls = _reviewer()
-    report = reviewer.show(SUBMISSION)
-    api.files[(RESULTS, report.records[0].canonical_path)] = b"different"
-
-    with pytest.raises(ReviewError, match="collision"):
-        reviewer.decide(SUBMISSION, "accepted", "maintainer")
-
-    assert broker_calls == []
-    assert not _decision_paths(api)
 
 
 def test_concurrent_decisions_use_first_server_metadata() -> None:
@@ -778,6 +756,28 @@ def test_partial_approve_resumes_and_is_idempotent() -> None:
     assert _decision_content(api) == decision
     assert len([key for key in api.files if key[0] == RESULTS]) == 2
     assert broker_calls == [(12, SUBMISSION, "accepted"), (12, SUBMISSION, "accepted")]
+
+
+def test_private_canary_record_is_not_promoted_to_public_results() -> None:
+    """Completion-bearing evidence remains in private staging after approval."""
+    api, reviewer, _ = _reviewer()
+    report = reviewer.show(SUBMISSION)
+    ordinary = report.records[0]
+    canary_content = b"private canary evidence"
+    canary = dataclasses.replace(
+        ordinary,
+        identity=("org/model", "contamination-canary-da", None, None),
+        digest=hashlib.sha256(canary_content).hexdigest(),
+        canonical_path="org_model/contamination-canary-da__test__zeroshot.json",
+        content=canary_content,
+    )
+
+    reviewer._promote_records(  # noqa: SLF001 - focused promotion boundary test
+        dataclasses.replace(report, records=(ordinary, canary))
+    )
+
+    assert (RESULTS, ordinary.canonical_path) in api.files
+    assert (RESULTS, canary.canonical_path) not in api.files
 
 
 def test_reject_is_idempotent_and_opposite_decision_fails() -> None:

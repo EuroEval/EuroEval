@@ -12,6 +12,23 @@ from euroeval.languages import get_all_languages, get_correct_language_codes
 from .types import EEERecord, JsonValue, Lease, canonical_json
 
 
+def _canary_tasks() -> list[str]:
+    """Return official task names together with the canary task."""
+    configs = get_all_dataset_configs(
+        custom_datasets_file=Path(""),
+        dataset_ids=[],
+        api_key=None,
+        cache_dir=Path(".cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    tasks = dict.fromkeys(
+        config.task.name for config in configs.values() if not config.unofficial
+    )
+    tasks["contamination-detection"] = None
+    return list(tasks)
+
+
 def _normalise_record(
     record: dict[str, JsonValue], lease: Lease
 ) -> dict[str, JsonValue]:
@@ -27,15 +44,6 @@ def _normalise_record(
         record = dict(record)
         record["model_info"] = model_info
     return record
-
-
-def _record(record: dict[str, JsonValue]) -> EEERecord:
-    """Create a record with the one canonical Python JSON representation.
-
-    Returns:
-        The exact JSON text and its digest.
-    """
-    return EEERecord(record_json=canonical_json(record))
 
 
 def _official_dataset_configs(language: str) -> list[DatasetConfig]:
@@ -65,21 +73,13 @@ def _official_dataset_configs(language: str) -> list[DatasetConfig]:
     ]
 
 
-def _canary_tasks() -> list[str]:
-    """Return official task names together with the canary task."""
-    configs = get_all_dataset_configs(
-        custom_datasets_file=Path(""),
-        dataset_ids=[],
-        api_key=None,
-        cache_dir=Path(".cache"),
-        trust_remote_code=False,
-        run_with_cli=False,
-    )
-    tasks = dict.fromkeys(
-        config.task.name for config in configs.values() if not config.unofficial
-    )
-    tasks["contamination-detection"] = None
-    return list(tasks)
+def _record(record: dict[str, JsonValue]) -> EEERecord:
+    """Create a record with the one canonical Python JSON representation.
+
+    Returns:
+        The exact JSON text and its digest.
+    """
+    return EEERecord(record_json=canonical_json(record))
 
 
 class Evaluator(t.Protocol):
