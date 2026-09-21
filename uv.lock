@@ -1206,7 +1206,7 @@ wheels = [
 
 [[package]]
 name = "euroeval"
-version = "18.0.0.dev0"
+version = "18.1.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
@@ -1243,6 +1243,7 @@ dependencies = [
     { name = "sentencepiece" },
     { name = "seqeval" },
     { name = "setuptools" },
+    { name = "sympy" },
     { name = "tenacity" },
     { name = "termcolor" },
     { name = "torch" },
@@ -1352,6 +1353,7 @@ requires-dist = [
     { name = "sentencepiece", specifier = ">=0.1.96" },
     { name = "seqeval", specifier = ">=1.2.2" },
     { name = "setuptools", specifier = ">=75.8.2" },
+    { name = "sympy", specifier = ">=1.13" },
     { name = "tenacity", specifier = ">=9.0.0" },
     { name = "termcolor", specifier = ">=2.0.0" },
     { name = "timm", marker = "extra == 'all'", specifier = ">=1.0.19" },

@@ -1104,14 +1104,27 @@ def _extract_token_classification_examples(
         A list of few-shot examples.
     """
     few_shot_examples: list[dict[str, t.Any]] = list()
-    labels = it.cycle(
-        [
+    # Normalise to lower case and drop duplicates, so case variants of the same
+    # label (e.g. `b-per` and `B-PER`) collapse to one entry. Otherwise `b_labels`
+    # could be longer than the set of labels we actually track in
+    # `labels_with_no_samples`, and the termination guard below would never fire.
+    b_labels = list(
+        dict.fromkeys(
             label.lower()
             for label in dataset_config.labels
             if label.lower().startswith("b-")
-        ]
+        )
     )
+    labels = it.cycle(b_labels)
+    labels_with_no_samples: set[str] = set()
     while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
+        # No remaining training example contains any of the entity labels, so we
+        # cannot gather more class-balanced examples. Without this guard the loop
+        # cycles the labels forever (`it.cycle`) whenever entity-bearing examples
+        # run out before `num_few_shots` is reached. Mirrors the guard in
+        # `_extract_classification_examples`.
+        if len(labels_with_no_samples) == len(b_labels):
+            break
         label = next(labels)
         possible_examples = shuffled_train.filter(
             lambda x: label in [str(tag).lower() for tag in x["labels"]]
@@ -1121,6 +1134,7 @@ def _extract_token_classification_examples(
             f"{type(possible_examples)} instead."
         )
         if len(possible_examples) == 0:
+            labels_with_no_samples.add(label)
             continue
         example = possible_examples.select(range(1))[0]
         assert isinstance(example, dict), (

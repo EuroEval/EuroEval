@@ -2,8 +2,9 @@
 
 Centralises every fixed value used by the leaderboard pipeline so the
 constants live in one place rather than being scattered across the modules
-that happen to use them. This module imports only from the standard library
-and ``euroeval``; the rest of the package imports from here.
+that happen to use them. This module imports only from the standard library,
+``euroeval``, and ``leaderboards.enums``; the rest of the package imports
+from here.
 """
 
 from __future__ import annotations
@@ -48,6 +49,8 @@ from euroeval.languages import (
     UKRAINIAN,
 )
 
+from .enums import LeaderboardCategory
+
 # ---------------------------------------------------------------------------
 # Permissive licences
 # ---------------------------------------------------------------------------
@@ -90,6 +93,13 @@ def _env_path(name: str, default: Path) -> Path:
     return Path(value).expanduser() if value else default
 
 
+# Hosts that serve Hugging Face model pages, so a recorded `model_url` can be
+# told apart from a provider's own documentation/API page.
+HF_URL_HOSTS: frozenset[str] = frozenset(
+    {"hf.co", "huggingface.co", "www.hf.co", "www.huggingface.co"}
+)
+
+
 # This package's directory (`src/leaderboards/`).
 PACKAGE_DIR: Path = Path(__file__).resolve().parent
 
@@ -121,13 +131,24 @@ OUTPUT_DIR: Path = REPO_ROOT / "src" / "frontend" / "csv"
 # Space so it shows up under "Spaces using this model" on each model's page.
 MODELS_PY_PATH: Path = REPO_ROOT / "hf_space" / "models.py"
 
-# Off-repo backup location for compressed snapshots of the results
-# directory. Snapshots are timestamped and pruned when exceeding limits.
+# Local staging directory for compressed snapshots of the results directory.
+# Snapshots are timestamped and pruned when exceeding limits, then archived
+# off-machine to `BACKUPS_ARCHIVE_DIR` in the Jottacloud Archive namespace.
 BACKUPS_DIR: Path = _env_path(
-    "EUROEVAL_RESULTS_BACKUP_DIR",
-    Path.home() / "pCloud Drive" / "data" / "euroeval_backup",
+    "EUROEVAL_RESULTS_BACKUP_DIR", Path.home() / ".euroeval" / "backups"
 )
 BACKUPS_MAX_BYTES: int = 1_000_000_000  # ~1 GB total size cap
+
+# Where snapshots are archived inside the Jottacloud Archive namespace, so a
+# machine lost to theft or a dying SSD still has its results elsewhere.
+BACKUPS_ARCHIVE_DIR: str = "backups"
+
+# Seconds to wait for an Archive upload. A ~36 MB snapshot measured 4.5 minutes
+# on a home connection, so the old five-minute budget was already too tight.
+BACKUPS_ARCHIVE_TIMEOUT: int = 1800
+
+# Seconds to wait for the Archive listing used to confirm an upload landed.
+ARCHIVE_LS_TIMEOUT: int = 60
 
 # Incremental jsonl of new benchmark records to fold into the results
 # directory on the next load.
@@ -192,17 +213,27 @@ LEADERBOARD_TASKS: list[str] = [
     "grammatical-error-detection",
     "open-ended-qa",
     "summarization",
-    "translation",
     "knowledge",
     "common-sense-reasoning",
     "simplification",
     "european-values",
+    "instruction-following",
+    "tool-calling",
+    "logical-reasoning",
+    "multiple-choice-stereotype-bias",
 ]
 
-# The two leaderboard categories that every model is ranked within. The
-# "generative" variant scores all tasks; "all_models" only scores NLU tasks so
-# non-generative models can compete.
-LEADERBOARD_CATEGORIES: tuple[str, str] = ("generative", "all_models")
+# The three leaderboard categories that every model is ranked within. The
+# "chat" variant scores every task and only ranks instruction-tuned/
+# reasoning models; "generative" scores all tasks except the instruct-
+# exclusive ones; "all_models" only scores NLU tasks so non-generative models
+# can compete.
+LEADERBOARD_CATEGORIES: tuple[LeaderboardCategory, ...] = (
+    LeaderboardCategory.CHAT,
+    LeaderboardCategory.GENERATIVE,
+    LeaderboardCategory.ALL_MODELS,
+)
+MINIMUM_NUMBER_OF_RANKED_ENTRIES: int = 100
 
 # TaskGroup -> "nlu"/"nlg". The "all_models" leaderboard variant only
 # scores NLU tasks so non-generative models can compete.

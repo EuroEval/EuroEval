@@ -75,6 +75,228 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset csfd-sentiment-sk
 ```
 
+### Unofficial: Reviews3
+
+[Reviews3](https://doi.org/10.18653/v1/2025.findings-acl.1371) is the binary sentiment-analysis
+component of SKLEP. It contains manually labelled Slovak customer-service reviews;
+neutral source examples are not part of this binary task.
+
+The source contains 3,560 / 522 / 1,042 train, validation and test samples. We sampled
+the train and validation splits independently with seed 4242 and retained the complete
+test split, resulting in 1,024 / 256 / 1,042 samples. Source split boundaries are
+preserved. The labels are negative and positive.
+
+Here are three examples from the final training split:
+
+```json
+{
+  "text": "Za promtnost, a ochotu poradit",
+  "label": "positive"
+}
+```
+
+```json
+{
+  "text": "Milá jasná odborná odpoved.",
+  "label": "positive"
+}
+```
+
+```json
+{
+  "text": "Sklamana som z toho, ze som svoju poziadavku riesila dost dlho cez zakaznicku linku. Telefonat bol dost dlhy.",
+  "label": "negative"
+}
+```
+
+When evaluating generative models, we use the following setup:
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Nižšie sú dokumenty a ich sentiment, ktorý môže byť 'negatívne' alebo 'pozitívne'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Dokument: {text}
+  Sentiment: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Dokument: {text}
+
+  Klasifikujte pocit v dokumente. Odpovedzte so 'negatívne' alebo 'pozitívne', a nič iné.
+  ```
+
+- Label mapping:
+  - `negative` ➡️ `negatívne`
+  - `positive` ➡️ `pozitívne`
+
+SKLEP declares mixed upstream licences for its components (`other`, CC BY-SA 4.0,
+CC BY-SA 3.0 and MIT) and does not provide a single unified licence. Consult the
+[SKLEP paper](https://doi.org/10.18653/v1/2025.findings-acl.1371) for attribution and
+component-specific terms.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset reviews3
+```
+
+## Natural Language Inference
+
+### Unofficial: SKLEP NLI
+
+[SKLEP](https://doi.org/10.18653/v1/2025.findings-acl.1371) is a Slovak language-understanding
+benchmark.
+This dataset is its three-way NLI task. The training pairs were automatically
+translated from English without manual correction, while the validation and test
+pairs were post-edited by native Slovak speakers.
+
+The source contains 392,702 / 2,490 / 5,004 train, validation and test samples. We
+sampled each source split independently with seed 4242, resulting in 1,024 / 256 /
+2,048 samples. No samples cross split boundaries. The labels are entailment, neutral
+and contradiction.
+
+Here are three examples from the final training split:
+
+```json
+{
+  "text": "Prvé tvrdenie: Určite neboli účinnejšie ako nemagnetické stabilizátory zápästia , ktoré som si zobral v drogérii .\nDruhé tvrdenie: Obidva a nemagnetické stabilizátory zápästia boli na hovno!",
+  "label": "contradiction"
+}
+```
+
+```json
+{
+  "text": "Prvé tvrdenie: Základným predpokladom tejto línie je, že zistenia viery a rozumu nie sú v rozpore – iba ich metódy sú.\nDruhé tvrdenie: Základným predpokladom tejto línie je, že zistenia viery a rozumu nie sú v rozpore",
+  "label": "entailment"
+}
+```
+
+```json
+{
+  "text": "Prvé tvrdenie: by mal byť schopný metabolizovať jednu uncu alkoholu za hodinu\nDruhé tvrdenie: Alkohol sa dá metabolizovať .",
+  "label": "entailment"
+}
+```
+
+When evaluating generative models, we use the following setup:
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Nasledujú páry tvrdení a ich logická súvislosť, ktorá môže byť 'pravda', 'neutrálny' alebo 'nepravda'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}\nImplikácia: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}\n\nUrčite, či druhé tvrdenie vyplýva z prvého, je s ním v rozpore alebo nemá logickú väzbu. Odpovedzte so 'pravda', 'neutrálny' alebo 'nepravda', a nič iné.
+  ```
+
+- Label mapping:
+  - `entailment` ➡️ `pravda`
+  - `neutral` ➡️ `neutrálny`
+  - `contradiction` ➡️ `nepravda`
+
+The upstream SKLEP release declares multiple upstream licences rather than one
+licence for the benchmark; consult the component sources before redistribution.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset sklep-nli
+```
+
+### Unofficial: SKLEP RTE
+
+This is SKLEP's binary Recognising Textual Entailment task, described in
+[the SKLEP paper](https://doi.org/10.18653/v1/2025.findings-acl.1371). Its training
+pairs were automatically translated without manual correction, while the validation
+and test pairs were post-edited by native Slovak speakers. The test split was also
+manually relabelled. The two source labels are entailment and not entailment; the
+latter combines cases that are not entailed rather than distinguishing neutral from
+contradiction.
+
+The source contains 2,490 / 277 / 1,660 train, validation and test samples. We
+sampled train and validation independently with seed 4242 and retained the complete
+test split, resulting in 1,024 / 256 / 1,660 samples. All samples remain in their
+original source split.
+
+Here are three examples from the final training split:
+
+```json
+{
+  "text": "Prvé tvrdenie: V Bushovej administratíve a globálnych energetických kruhoch narastá sentiment, aby po akejkoľvek vojne poverili ťažbu ropy v ich krajine irackých profesionálov, a to aj napriek tlaku niektorých predstaviteľov, aby Spojené štáty prevzali kontrolu nad lukratívnymi ropnými poliami.\nDruhé tvrdenie: Spojené štáty pohrozili „najvážnejšími dôsledkami“, ak Irak použije chemické alebo biologické zbrane proti USA, zničí kuvajtské ropné polia alebo sa podieľa na terorizme.",
+  "label": "not entailment"
+}
+```
+
+```json
+{
+  "text": "Prvé tvrdenie: Remastrovaná verzia Raňajky u Tiffanyho od Paramountu s Audrey Hepburn v hlavnej úlohe je naplánovaná na 2. novembra za 40 dolárov.\nDruhé tvrdenie: Audrey Hepburn hrala vo filme \"Raňajky u Tiffanyho\".",
+  "label": "entailment"
+}
+```
+
+```json
+{
+  "text": "Prvé tvrdenie: V subsaharskej Afrike je približne jeden z 30 ľudí infikovaný vírusom HIV.\nDruhé tvrdenie: 30% ľudí infikovaných HIV žije v Afrike.",
+  "label": "not entailment"
+}
+```
+
+When evaluating generative models, we use the following setup:
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Nasledujú páry tvrdení a ich logická súvislosť, ktorá môže byť 'pravda' alebo 'nepravda'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}
+  Implikácia: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+
+  Určite, či druhé tvrdenie vyplýva z prvého. Odpovedzte so 'pravda' alebo 'nepravda', a nič iné.
+  ```
+
+- Label mapping:
+  - `entailment` ➡️ `pravda`
+  - `not entailment` ➡️ `nepravda`
+
+As with the other SKLEP tasks, the upstream release has mixed component licences and
+no unified licence. See the [SKLEP paper](https://doi.org/10.18653/v1/2025.findings-acl.1371)
+for attribution.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset sklep-rte
+```
+
 ## Named Entity Recognition
 
 ### UNER-sk
@@ -219,6 +441,84 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset uner-sk
+```
+
+### Unofficial: WikiGoldSK
+
+[WikiGoldSK](https://doi.org/10.18653/v1/2025.findings-acl.1371) is the WikiGoldSK named
+entity-recognition component of SKLEP. It is manually annotated Slovak Wikipedia
+text using the CoNLL-2003 entity types LOC, ORG, PER and MISC, with BIO tags.
+
+The source contains 4,687 / 669 / 1,340 train, validation and test samples. We
+sampled train and validation independently with seed 4242 and retained the complete
+test split, resulting in 1,024 / 256 / 1,340 samples. The source split boundaries
+are preserved. The final schema contains `text`, `tokens` and `labels` columns, with
+`O` plus B/I tags for LOC, ORG, PER and MISC.
+
+Here are three examples from the final training split:
+
+```json
+{
+  "text": "V roku 2020 bude vozidlo prechádzať okolo Marsu približne 6,9 milióna kilometrov , mimo vplyvu jeho gravitačnej sféry .",
+  "tokens": ["V", "roku", "2020", "bude", "vozidlo", "prechádzať", "okolo", "Marsu", "približne", "6,9", "milióna", "kilometrov", ",", "mimo", "vplyvu", "jeho", "gravitačnej", "sféry", "."],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+}
+```
+
+```json
+{
+  "text": "Na Slovensku a v Česku rastie celkom hojne na celom území od nížin až do podhoria .",
+  "tokens": ["Na", "Slovensku", "a", "v", "Česku", "rastie", "celkom", "hojne", "na", "celom", "území", "od", "nížin", "až", "do", "podhoria", "."],
+  "labels": ["O", "B-LOC", "O", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+}
+```
+
+```json
+{
+  "text": "Morálka žoldnierov , ktorí tvorili jadro armády a po chvatnom ústupe z Rakúska , keď mnohí nedostali vyplatený žold , bola na nízkej úrovni .",
+  "tokens": ["Morálka", "žoldnierov", ",", "ktorí", "tvorili", "jadro", "armády", "a", "po", "chvatnom", "ústupe", "z", "Rakúska", ",", "keď", "mnohí", "nedostali", "vyplatený", "žold", ",", "bola", "na", "nízkej", "úrovni", "."],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
+}
+```
+
+When evaluating generative models, we use the following setup:
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Nasledujúce sú vety a JSON-objekty s pomenovanými entitami, ktoré sa nachádzajú v danej vete.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Veta: {text}
+  Pomenované entity: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Veta: {text}
+
+  Identifikujte pomenované entity vo vete. Výstup by mal byť vo forme JSON-objektu s kľúčmi {labels_str}. Hodnoty by mali byť zoznamy pomenovaných entít danej kategórie, presne tak, ako sa vyskytujú vo vete.
+  ```
+
+- Label mapping:
+  - `B/I-PER` ➡️ `osoba`
+  - `B/I-LOC` ➡️ `miesto`
+  - `B/I-ORG` ➡️ `organizácia`
+  - `B/I-MISC` ➡️ `rôzne`
+
+SKLEP declares mixed upstream licences for its components rather than a unified
+licence. See the [SKLEP paper](https://doi.org/10.18653/v1/2025.findings-acl.1371) for
+attribution and the applicable component terms.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wikigold-sk
 ```
 
 ## Linguistic Acceptability
@@ -371,6 +671,88 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset multi-wiki-qa-sk
+```
+
+### Unofficial: SK-QuAD
+
+[SK-QuAD](https://doi.org/10.18653/v1/2025.findings-acl.1371) is the extractive question-answering
+component of SKLEP. It consists of Slovak Wikipedia contexts and questions created
+and validated by human annotators. This EuroEval version is answerable-only: rows with
+empty answers or answer offsets that do not exactly match their context were removed
+before sampling.
+
+The source contains 71,999 / 9,583 / 9,583 train, validation and test samples. After
+answer filtering, we sampled each source split independently with seed 4242, resulting
+in 1,024 / 256 / 2,048 samples. Source split boundaries are preserved. Each row has
+`context`, `question` and `answers`; answer offsets are validated against the context.
+
+Here are three examples from the final training split:
+
+```json
+{
+  "id": "1024234",
+  "context": "Pred prvou svetovou vojnou dal majiteľ veľkostatku v Ladzanoch Alfréd Westfried vybudovať úzkokoľajnú železničku na prepravu dreva z Ladzian do Hontianskych Tesárov (cca 8 kilometrov). Počas prvej svetovej vojny bola táto trať rozšírená severným smerom do obce Klastava. Po prvej svetovej vojne bola trať predĺžená cez lokalitu Dobrá voda až pod Sitno, na lokalitu Záholík. Celkovo dosiahla trať dĺžku až 36 kilometrov. V roku 1948 bola trať zoštátnená, ale už v roku 1952 bola jej prevádzka ukončená.",
+  "question": "Kadiaľ bola predĺžená trať v Ladzanoch po prvej svetovej vojne ?",
+  "answers": {"text": ["cez lokalitu Dobrá voda až pod Sitno, na lokalitu Záholík"], "answer_start": [315]}
+}
+```
+
+```json
+{
+  "id": "1089558",
+  "context": "Veľký rozmach obec zaznamenala predovšetkým po druhej svetovej vojne. Do dediny bola zavedená elektrina, vybudovali sa cesty, vystaval sa kultúrny dom, budova predajne potravín a pohostinstva, obyvatelia si budovali svoje nové rodinné domy. V druhej polovice 20. storočia sa rapídne zlepšil život na našich dedinách, a nebolo to inak ani v tej našej.\nObec je v súčasnosti splynofikovaná a  má vlastný verejný vodovod, ktorý bol odovzdaný do používania v roku 1994. Zdrojom vody sú tri pramene \"Pod Gavreckou\", ktoré sú zachytené a voda je privádzaná do zásobného vodojemu, z ktorého potom samospádom prichádza do domácnosti.\nJe tu  rozostavaná stavba \"Kanalizácia a ČOV Šandal\". V obci sú zrealizované zberné kanalizačné stoky, chýba však ešte čistiareň odpadových vôd z nedostatku finančných prostriedkov.\nObec zrekonštruovala všetky svoje miestne komunikácie. Pre zvýšenie kvality života v obci bol svojpomocne vybudovaný dom smútku, ktorý bol umiestnený pri miestnom cintoríne.",
+  "question": "Od ktorého roku ma obec Šandal vlastný verejný vodovod ?",
+  "answers": {"text": ["1994"], "answer_start": [459]}
+}
+```
+
+```json
+{
+  "id": "1086301",
+  "context": "18. decembra 2005 utrpel Šaron ľahkú mozgovú porážku a bol hospitalizovaný v nemocnici. Po dvoch dňoch bol prepustený, ale 4. januára 2006 utrpel novú, tentoraz ťažkú mozgovú porážku. Previezli ho do nemocnice, kde sa podrobil dvom zložitým operáciám. Jeho stav bol taký vážny, že lekári označili za nepravdepodobné, že by Šaron v budúcnosti mohol vykonávať svoju funkciu. Od 14. apríla 2006 ho vo funkcii izraelského preméra oficiálne nahradil Ehud Olmert, ktorý ho ako podpredseda vlády zastupoval už od januára. 28. mája 2006 ho previezli do liečebne dlhodobo chorých. Šanca, že by sa Šaron dostal z hlbokej kómy a vegetatívneho stavu, v ktorom sa nachádzal, sa podľa lekárov každým dňom znižovala. 11. januára 2014 zomrel po ôsmich rokoch v kóme.",
+  "question": "Čo utrpel Šaron v roku 2005 ?",
+  "answers": {"text": ["ľahkú mozgovú porážku"], "answer_start": [31]}
+}
+```
+
+When evaluating generative models, we use the following setup:
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+
+  ```text
+  Nasledujú texty s pridruženými otázkami a odpoveďami.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Text: {text}
+  Otázka: {question}
+  Odpoveď na maximálne 3 slová: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Text: {text}
+
+  Odpovedzte na nasledujúcu otázku týkajúcu sa textu uvedeného vyššie maximálne 3 slovami.
+
+  Otázka: {question}
+  ```
+
+Models receive the context and question and answer in at most three words. No
+answer-label mapping is used.
+
+The SKLEP release declares mixed upstream licences rather than one unified licence.
+See the [SKLEP paper](https://doi.org/10.18653/v1/2025.findings-acl.1371) for citation
+and component-specific licensing information.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset sk-quad
 ```
 
 ## Knowledge

@@ -9,6 +9,7 @@ from ..tasks import (
     KNOW,
     LA,
     NER,
+    NLI,
     RC,
     SENT,
     TRANSLATION,
@@ -125,6 +126,62 @@ FLORES_SK_EN_CONFIG = TranslationDatasetConfig(
     languages=[SLOVAK],
     source_language=SLOVAK,
     target_language=ENGLISH,
+    unofficial=True,
+)
+
+SKLEP_NLI_CONFIG = DatasetConfig(
+    name="sklep-nli",
+    pretty_name="SKLEP NLI",
+    source="EuroEval/sklep-nli-mini",
+    task=NLI,
+    languages=[SLOVAK],
+    unofficial=True,
+)
+
+SK_QUAD_CONFIG = DatasetConfig(
+    name="sk-quad",
+    pretty_name="SK-QuAD",
+    source="EuroEval/sk-quad-mini",
+    task=RC,
+    languages=[SLOVAK],
+    unofficial=True,
+)
+
+WIKIGOLDSK_CONFIG = DatasetConfig(
+    name="wikigold-sk",
+    pretty_name="WikiGoldSK",
+    source="EuroEval/wikigold-sk-mini",
+    task=NER,
+    languages=[SLOVAK],
+    unofficial=True,
+)
+
+SKLEP_RTE_CONFIG = DatasetConfig(
+    name="sklep-rte",
+    pretty_name="SKLEP RTE",
+    source="EuroEval/sklep-rte-mini",
+    task=NLI,
+    languages=[SLOVAK],
+    labels=["entailment", "not entailment"],
+    prompt_label_mapping={"entailment": "pravda", "not entailment": "nepravda"},
+    prompt_prefix=(
+        "Nasledujú páry tvrdení a ich logická súvislosť, ktorá môže byť {labels_str}."
+    ),
+    prompt_template="{text}\nImplikácia: {label}",
+    instruction_prompt=(
+        "{text}\n\nUrčite, či druhé tvrdenie vyplýva z prvého. Odpovedzte so "
+        "{labels_str}, a nič iné."
+    ),
+    unofficial=True,
+)
+
+REVIEWS3_CONFIG = DatasetConfig(
+    name="reviews3",
+    pretty_name="Reviews3",
+    source="EuroEval/reviews3-mini",
+    task=SENT,
+    languages=[SLOVAK],
+    labels=["negative", "positive"],
     unofficial=True,
 )
 

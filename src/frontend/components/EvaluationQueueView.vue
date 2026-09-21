@@ -41,7 +41,7 @@ function onSubmitted(payload: {
     modelId: payload.modelId,
     languageGroups: payload.languageGroups,
     status: "Waiting",
-    evaluator: null,
+    evaluators: [],
     createdAt: new Date().toISOString(),
   };
   pending.value.set(payload.number, entry);

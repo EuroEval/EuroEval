@@ -7,6 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from euroeval_worker.review import PublicStagingError
 from leaderboards import constants
 from src.scripts import collect_evaluation_results
 
@@ -34,6 +35,162 @@ class FakeHfApi:
     ) -> None:
         """No-op sync for testing."""
         pass
+
+
+def test_main_pauses_before_harvesting(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A review pause occurs before the first GitHub operation."""
+    monkeypatch.setattr(
+        collect_evaluation_results, "check_required_env_vars", lambda: None
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "preflight_volunteer_review", lambda: False
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "_fetch_issues",
+        Mock(side_effect=AssertionError("harvest started")),
+    )
+
+    callback = collect_evaluation_results.main.callback
+    assert callback is not None
+    assert callback(force=False) is None
+
+
+@pytest.mark.parametrize("answer", ["", "n", "no"])
+def test_preflight_default_or_no_continues_without_approval(
+    monkeypatch: pytest.MonkeyPatch, answer: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    """No and the default answer continue without approving anything."""
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "secret-token")
+    caplog.set_level("INFO", logger="collect_evaluation_results")
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "reviewer_from_environment",
+        lambda: PreflightReviewer(),
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    monkeypatch.setattr("builtins.input", lambda prompt: answer)
+
+    assert collect_evaluation_results.preflight_volunteer_review() is True
+    assert "no volunteer submission was approved automatically" in caplog.text
+
+
+class PreflightReviewer:
+    """Read-only reviewer double for collection preflight tests."""
+
+    def decide(self, *args: object, **kwargs: object) -> None:
+        """Fail if preflight ever attempts a decision.
+
+        Raises:
+            AssertionError:
+                If preflight attempts to decide a submission.
+        """
+        raise AssertionError("preflight must not decide")
+
+    def list_pending_submissions(self) -> list[tuple[str, int, str, str]]:
+        """Return one deliberately oddly quoted submission ID."""
+        return [("submission id'$(touch /tmp/nope)", 12, "alice", "da")]
+
+
+def test_preflight_eof_shows_commands_and_continues(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """EOF cannot leave the collection command waiting for a response."""
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "secret-token")
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "reviewer_from_environment",
+        lambda: PreflightReviewer(),
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    monkeypatch.setattr("builtins.input", Mock(side_effect=EOFError))
+
+    assert collect_evaluation_results.preflight_volunteer_review() is True
+    assert "Could not read review prompt" in caplog.text
+    assert "review_volunteer_results.py list" in caplog.text
+
+
+def test_preflight_missing_staging_configuration_is_non_blocking(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Missing optional staging configuration does not block canonical work."""
+    monkeypatch.delenv("HF_STAGING_BUCKET", raising=False)
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    assert collect_evaluation_results.preflight_volunteer_review() is True
+
+
+def test_preflight_non_tty_and_api_failure_do_not_hang(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Non-TTY input and staging failures continue without approval."""
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "secret-token")
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "reviewer_from_environment",
+        lambda: PreflightReviewer(),
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: False
+    )
+
+    assert collect_evaluation_results.preflight_volunteer_review() is True
+    assert "not interactive" in caplog.text
+    assert "submission id'\"'\"'$(touch /tmp/nope)" in caplog.text
+
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "reviewer_from_environment",
+        Mock(side_effect=RuntimeError("token=secret https://private.example")),
+    )
+    assert collect_evaluation_results.preflight_volunteer_review() is True
+    assert "preflight unavailable" in caplog.text
+    assert "secret" not in caplog.text
+    assert "private.example" not in caplog.text
+
+
+def test_preflight_public_staging_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A confirmed public staging bucket is never treated as unavailable."""
+    monkeypatch.setenv("HF_STAGING_BUCKET", "public/staging")
+    monkeypatch.setenv("HF_TOKEN", "secret-token")
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "reviewer_from_environment",
+        Mock(side_effect=PublicStagingError("HF_STAGING_BUCKET must be private")),
+    )
+
+    with pytest.raises(PublicStagingError):
+        collect_evaluation_results.preflight_volunteer_review()
+
+
+def test_preflight_yes_pauses_without_deciding_and_quotes_commands(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Yes prints safe commands and leaves all review writes untouched."""
+    monkeypatch.setenv("HF_STAGING_BUCKET", "private/staging")
+    monkeypatch.setenv("HF_TOKEN", "secret-token")
+    monkeypatch.setenv("GITHUB_ACTOR", "maintainer; echo nope")
+    caplog.set_level("INFO", logger="collect_evaluation_results")
+    monkeypatch.setattr(
+        collect_evaluation_results,
+        "reviewer_from_environment",
+        lambda: PreflightReviewer(),
+    )
+    monkeypatch.setattr(
+        collect_evaluation_results, "_stdin_is_interactive", lambda: True
+    )
+    monkeypatch.setattr("builtins.input", lambda prompt: "y")
+
+    assert collect_evaluation_results.preflight_volunteer_review() is False
+    assert "--reviewer 'maintainer; echo nope' approve" in caplog.text
+    assert "reject 'submission id'\"'\"'$(touch /tmp/nope)'" in caplog.text
+    assert "approved automatically" in caplog.text
 
 
 def test_preview_in_dev_server_handles_early_exit(

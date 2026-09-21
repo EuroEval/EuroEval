@@ -87,6 +87,22 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
     trained_from_scratch = parse_optional_bool(
         model_additional.get("trained_from_scratch", config.get("trained_from_scratch"))
     )
+    release_date = parse_optional_str(
+        model_additional.get("release_date", config.get("release_date"))
+    )
+    canary_evidence: dict[str, object] | None = None
+    raw_canary_evidence = eval_lib_additional.get("contamination_canary_evidence")
+    if raw_canary_evidence is not None:
+        try:
+            parsed_canary = (
+                json.loads(raw_canary_evidence)
+                if isinstance(raw_canary_evidence, str)
+                else raw_canary_evidence
+            )
+            if isinstance(parsed_canary, dict):
+                canary_evidence = parsed_canary
+        except json.JSONDecodeError:
+            pass
 
     return BenchmarkResult(
         dataset=dataset,
@@ -128,6 +144,8 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
         commercially_licensed=commercially_licensed,
         open=open,
         trained_from_scratch=trained_from_scratch,
+        release_date=release_date,
+        contamination_canary_evidence=canary_evidence,
     )
 
 
@@ -290,6 +308,8 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         model_additional_details["open"] = result.open
     if result.trained_from_scratch is not None:
         model_additional_details["trained_from_scratch"] = result.trained_from_scratch
+    if result.release_date is not None:
+        model_additional_details["release_date"] = result.release_date
 
     model_info: dict = {
         "name": result.model,
@@ -319,6 +339,13 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         "litellm_version": result.litellm_version or None,
         "raw_results": json.dumps(raw_results, ensure_ascii=False),
     }
+    if result.contamination_canary_evidence is not None:
+        eval_lib_additional_details["contamination_canary_evidence"] = json.dumps(
+            result.contamination_canary_evidence,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
 
     return {
         "schema_version": EEE_SCHEMA_VERSION,

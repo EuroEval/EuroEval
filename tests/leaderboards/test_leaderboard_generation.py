@@ -8,10 +8,142 @@ and ordinal ranks remain pan-leaderboard.
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import numpy as np
+import pandas as pd
+import pytest
 
-from src.leaderboards.leaderboard_generation import _compute_eligible_models_and_ranks
+from src.leaderboards import leaderboard_generation
+from src.leaderboards.enums import LeaderboardCategory
+from src.leaderboards.leaderboard_generation import (
+    _build_category_dataset_maps,
+    _compute_eligible_models_and_ranks,
+    _create_simplified_and_rename,
+    _reorder_columns,
+)
+
+
+class TestGlobalVariantSelection:
+    """Tests for global validation/test variant selection."""
+
+    def test_polish_keeps_variant_selected_from_global_results(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A Polish filter must not change the global validation/test choice."""
+        global_model_results = {
+            "org/model (val)": {"global-dataset": [], "polish-dataset": []},
+            "org/model": {"polish-dataset": []},
+        }
+        local_model_results = {
+            "org/model (val)": {"polish-dataset": []},
+            "org/model": {"polish-dataset": []},
+        }
+        captured_model_results = []
+        results = [
+            {"eval_library": {"additional_details": {"dataset": "global-dataset"}}},
+            {"eval_library": {"additional_details": {"dataset": "polish-dataset"}}},
+        ]
+
+        monkeypatch.setattr(leaderboard_generation, "load_raw_results", lambda: results)
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "group_results_by_model",
+            lambda results: (
+                global_model_results if len(results) == 2 else local_model_results
+            ),
+        )
+        monkeypatch.setattr(
+            leaderboard_generation, "extract_model_metadata", lambda results: {}
+        )
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "official_datasets_for_language",
+            lambda language: {"task": ["polish-dataset"]},
+        )
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "_generate_dataframe",
+            lambda **kwargs: (
+                captured_model_results.append(kwargs["model_results"]) or []
+            ),
+        )
+
+        leaderboard_generation.generate_leaderboard(
+            leaderboard_name="polish",
+            language_names=["polish"],
+            categories=[LeaderboardCategory.GENERATIVE],
+            force=False,
+        )
+
+        assert captured_model_results == [{"org/model (val)": {"polish-dataset": []}}]
+
+    def test_simplified_outputs_use_global_canonical_variant(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Language outputs do not resurrect a narrower split variant."""
+        score = [([0.75] * 10, 0.75, 0.01)]
+        other_score = [([0.65] * 10, 0.65, 0.01)]
+        model_results = {
+            "org/model (val)": {"european-dataset": score, "polish-dataset": score},
+            "org/model": {"polish-dataset": score},
+            "org/other": {
+                "european-dataset": other_score,
+                "polish-dataset": other_score,
+            },
+        }
+        metadata = {
+            model_id: {
+                "generative_type": "base",
+                "open": True,
+                "commercial": True,
+                "merge": False,
+                "trained_from_scratch": False,
+                "release_date": "2024-01-01",
+                "parameters": 1_000_000,
+                "vocabulary_size": 1_000,
+                "context": 1_024,
+            }
+            for model_id in model_results
+        }
+
+        monkeypatch.setattr(leaderboard_generation, "OUTPUT_DIR", tmp_path)
+        monkeypatch.setattr(leaderboard_generation, "load_raw_results", lambda: [{}])
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "group_results_by_model",
+            lambda results: model_results,
+        )
+        monkeypatch.setattr(
+            leaderboard_generation, "extract_model_metadata", lambda results: metadata
+        )
+        monkeypatch.setattr(
+            leaderboard_generation,
+            "official_datasets_for_language",
+            lambda language: (
+                {"knowledge": ["european-dataset", "polish-dataset"]}
+                if language == "european"
+                else {"knowledge": ["polish-dataset"]}
+            ),
+        )
+
+        for leaderboard_name, language in (
+            ("european", "european"),
+            ("polish", "polish"),
+        ):
+            leaderboard_generation.generate_leaderboard(
+                leaderboard_name=leaderboard_name,
+                language_names=[language],
+                categories=[LeaderboardCategory.GENERATIVE],
+                force=True,
+            )
+
+        european = pd.read_csv(tmp_path / "european_generative_simplified.csv")
+        polish = pd.read_csv(tmp_path / "polish_generative_simplified.csv")
+        assert polish["model"].tolist() == european["model"].tolist()
+        assert [
+            model for model in european["model"] if model.startswith("org/model")
+        ] == ["org/model (val)"]
 
 
 class TestMultilingualPerLanguageRankScores:
@@ -42,7 +174,7 @@ class TestMultilingualPerLanguageRankScores:
         multilingual_category_to_datasets = {"generative": all_datasets}
         (_, _, ranks, std_ranks) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=multilingual_category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=multilingual_config,
@@ -101,7 +233,7 @@ class TestMultilingualPerLanguageRankScores:
         # Run twice - should produce identical results
         (_, _, ranks1, std_ranks1) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=category_to_datasets,
             category_to_orthogonal_datasets=category_to_orthogonal,
             leaderboard_configs=config,
@@ -109,7 +241,7 @@ class TestMultilingualPerLanguageRankScores:
 
         (_, _, ranks2, std_ranks2) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=category_to_datasets,
             category_to_orthogonal_datasets=category_to_orthogonal,
             leaderboard_configs=config,
@@ -142,7 +274,7 @@ class TestMultilingualPerLanguageRankScores:
         albanian_category_to_datasets = {"generative": albanian_datasets}
         (_, _, albanian_ranks, _) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=albanian_category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=albanian_config,
@@ -152,7 +284,7 @@ class TestMultilingualPerLanguageRankScores:
         multilingual_category_to_datasets = {"generative": all_datasets}
         (_, _, multilingual_ranks, _) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=multilingual_category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=multilingual_config,
@@ -211,7 +343,7 @@ class TestMultilingualPerLanguageRankScores:
         (eligible, lang_to_datasets, ranks, std_ranks) = (
             _compute_eligible_models_and_ranks(
                 model_results=model_results,
-                category="generative",
+                category=LeaderboardCategory.GENERATIVE,
                 category_to_datasets=multilingual_category_to_datasets,
                 category_to_orthogonal_datasets={"generative": {}},
                 leaderboard_configs=multilingual_config,
@@ -290,7 +422,7 @@ class TestMultilingualPerLanguageRankScores:
             albanian_std_ranks,
         ) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=albanian_category_to_datasets,
             category_to_orthogonal_datasets=albanian_category_to_orthogonal,
             leaderboard_configs=albanian_config,
@@ -302,7 +434,7 @@ class TestMultilingualPerLanguageRankScores:
         (danish_eligible, danish_lang_to_datasets, danish_ranks, danish_std_ranks) = (
             _compute_eligible_models_and_ranks(
                 model_results=model_results,
-                category="generative",
+                category=LeaderboardCategory.GENERATIVE,
                 category_to_datasets=danish_category_to_datasets,
                 category_to_orthogonal_datasets=danish_category_to_orthogonal,
                 leaderboard_configs=danish_config,
@@ -319,7 +451,7 @@ class TestMultilingualPerLanguageRankScores:
             multilingual_std_ranks,
         ) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=multilingual_category_to_datasets,
             category_to_orthogonal_datasets=multilingual_category_to_orthogonal,
             leaderboard_configs=multilingual_config,
@@ -428,6 +560,33 @@ def _make_dummy_results(
     return results
 
 
+class TestOrthogonalDatasetsByCategory:
+    """Tests for orthogonal bonus-column scoping in _build_category_dataset_maps."""
+
+    def test_orthogonal_datasets_only_populated_for_chat(self) -> None:
+        """Orthogonal datasets are only mapped for chat; other categories get {}."""
+        leaderboard_configs = {
+            "danish": {
+                "sentiment-classification": ["angry-tweets"],
+                "european-values": ["valeu-da"],
+            }
+        }
+        _, category_to_orthogonal_datasets = _build_category_dataset_maps(
+            categories=[
+                LeaderboardCategory.CHAT,
+                LeaderboardCategory.GENERATIVE,
+                LeaderboardCategory.ALL_MODELS,
+            ],
+            leaderboard_configs=leaderboard_configs,
+        )
+
+        assert category_to_orthogonal_datasets[LeaderboardCategory.CHAT] == {
+            "valeu-da": "european-values"
+        }
+        assert category_to_orthogonal_datasets[LeaderboardCategory.GENERATIVE] == {}
+        assert category_to_orthogonal_datasets[LeaderboardCategory.ALL_MODELS] == {}
+
+
 class TestPerLanguageRankScoreFormat:
     """Tests for per-language rank score formatting and structure."""
 
@@ -448,7 +607,7 @@ class TestPerLanguageRankScoreFormat:
         multilingual_category_to_datasets = {"generative": all_datasets}
         (_, _, ranks, _) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=multilingual_category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=multilingual_config,
@@ -474,7 +633,7 @@ class TestPerLanguageRankScoreFormat:
         category_to_datasets = {"generative": datasets}
         (_, _, ranks, _) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=config,
@@ -519,7 +678,7 @@ class TestRegressionForReportedIssue:
         albanian_category_to_datasets = {"generative": albanian_datasets}
         (_, _, albanian_ranks, _) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=albanian_category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=albanian_config,
@@ -529,7 +688,7 @@ class TestRegressionForReportedIssue:
         multilingual_category_to_datasets = {"generative": all_datasets}
         (_, _, multilingual_ranks, _) = _compute_eligible_models_and_ranks(
             model_results=model_results,
-            category="generative",
+            category=LeaderboardCategory.GENERATIVE,
             category_to_datasets=multilingual_category_to_datasets,
             category_to_orthogonal_datasets={"generative": {}},
             leaderboard_configs=multilingual_config,
@@ -546,3 +705,40 @@ class TestRegressionForReportedIssue:
                 f"{model_id} Albanian score mismatch: mono={albanian_mono}, "
                 f"multi={albanian_multi}"
             )
+
+
+def test_release_date_is_emitted_for_frontend_visualizations() -> None:
+    """The existing result metadata reaches the full leaderboard CSV."""
+    df = pd.DataFrame(
+        {
+            "rank": ["1"],
+            "model": ["org/model"],
+            "mean_rank_score": ["1.25 ± 0.05"],
+            "generative_type": ["📝"],
+            "open": ["✓"],
+            "commercial": ["✗"],
+            "merge": ["✗"],
+            "trained_from_scratch": ["✓"],
+            "release_date": ["2024-02-03"],
+            "parameters": [7_000_000_000],
+            "vocabulary_size": [32_000],
+            "context": [4_096],
+        }
+    )
+
+    ordered = _reorder_columns(
+        df=df,
+        category="generative",
+        category_to_orthogonal_datasets={"generative": {}},
+        category_to_datasets={"generative": []},
+        rank_cols=["rank", "mean_rank_score"],
+        include_dataset_columns=False,
+    )
+    full, _ = _create_simplified_and_rename(
+        df=ordered,
+        rank_cols=["rank", "mean_rank_score"],
+        category_to_orthogonal_datasets={"generative": {}},
+        category="generative",
+    )
+
+    assert full.loc[0, "Release Date"] == "2024-02-03"

@@ -19,39 +19,62 @@ from collections import OrderedDict
 from functools import cache
 
 from euroeval import dataset_configs as _ds_module
+from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
+from euroeval.enums import GenerativeType
 from euroeval.languages import get_all_languages
 from euroeval.tasks import get_all_tasks
 
 from .constants import LEADERBOARD_TASKS, NLU_TASK_GROUPS
+from .enums import LeaderboardCategory
 
 
-def category_includes_task(category: str, task: str) -> bool:
+def category_includes_task(category: LeaderboardCategory, task: str) -> bool:
     """Check whether a task is scored within a leaderboard category.
 
     Args:
         category:
-            Leaderboard category name.
+            Leaderboard category.
         task:
             Task slug.
 
     Returns:
         True if the task is scored within the category.
     """
-    return category == "generative" or task_category(task) == "nlu"
+    if task in ORTHOGONAL_TASKS:
+        return category == LeaderboardCategory.CHAT
+    if category == LeaderboardCategory.CHAT:
+        return True
+    if category == LeaderboardCategory.GENERATIVE:
+        return task_category(task) != "instruct_exclusive"
+    return task_category(task) == "nlu"
 
 
 def task_category(task_name: str) -> str:
-    """Return ``"nlu"`` or ``"nlg"`` for ``task_name``.
+    """Return ``"nlu"``, ``"nlg"``, or ``"instruct_exclusive"`` for ``task_name``.
+
+    A task is "instruct_exclusive" when it's restricted to instruction-tuned/
+    reasoning models (`GenerativeType.BASE` isn't in its
+    `default_allowed_generative_types`), unless it's also in
+    `euroeval.constants.ORTHOGONAL_TASKS`, in which case it keeps its
+    existing bonus-column treatment on Generative/All-models (e.g.
+    european-values) rather than being excluded from them entirely.
 
     Args:
         task_name:
             The task slug to classify.
 
     Returns:
-        ``"nlu"`` if the task's group is an NLU group, else ``"nlg"``.
+        ``"nlu"`` if the task's group is an NLU group, ``"instruct_exclusive"``
+        if it's restricted to instruction-tuned/reasoning models and not
+        orthogonal, else ``"nlg"``.
     """
     task = get_all_tasks()[task_name]
+    if (
+        task_name not in ORTHOGONAL_TASKS
+        and GenerativeType.BASE not in task.default_allowed_generative_types
+    ):
+        return "instruct_exclusive"
     return "nlu" if task.task_group in NLU_TASK_GROUPS else "nlg"
 
 
@@ -59,8 +82,8 @@ def task_category(task_name: str) -> str:
 def dataset_sources() -> dict[str, str]:
     """Map each dataset name to its Hugging Face source id.
 
-    Datasets whose source is not a plain Hugging Face id string (the rare
-    multi-source form) are omitted.
+    Datasets whose source is not a non-blank plain Hugging Face id string (the
+    rare multi-source form and synthetic datasets without a source) are omitted.
 
     Returns:
         A mapping of dataset name (e.g. ``"conll-nl"``) to its source dataset id
@@ -69,7 +92,7 @@ def dataset_sources() -> dict[str, str]:
     return {
         cfg.name: cfg.source
         for cfg in _iter_all_dataset_configs()
-        if isinstance(cfg.source, str)
+        if isinstance(cfg.source, str) and cfg.source.strip()
     }
 
 

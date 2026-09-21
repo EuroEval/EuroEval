@@ -11,6 +11,7 @@ import logging
 import re
 import shutil
 import typing as t
+import urllib.parse
 import warnings
 from copy import deepcopy
 
@@ -24,10 +25,22 @@ from huggingface_hub.errors import (
 from huggingface_hub.hf_api import RepositoryNotFoundError
 from requests.exceptions import RequestException
 
+from euroeval.benchmark_modules.hf import get_model_release_date
+from euroeval.benchmark_modules.litellm import (
+    get_annotated_release_date,
+    get_api_model_release_date,
+)
+from euroeval.date_utils import normalise_release_date
 from euroeval.string_utils import split_model_id
 
 from .cache import Cache
-from .constants import GENERATIVE_TYPE_KEYWORDS, PERMISSIVE_LICENSES, RESULTS_DIR
+from .constants import (
+    API_MODEL_PATTERNS,
+    GENERATIVE_TYPE_KEYWORDS,
+    HF_URL_HOSTS,
+    PERMISSIVE_LICENSES,
+    RESULTS_DIR,
+)
 from .link_generation import ask_user_to_remove_model, generate_model_url
 from .record_fields import get_few_shot, get_task, get_version
 from .records import get_bool_field, get_model_name, plain_model_id
@@ -89,6 +102,7 @@ def add_missing_entries(
         model_additional["model_url"] = _generate_model_url_with_cache(
             model_id=plain_model_id(get_model_name(record=record)), cache=cache
         )
+    model_additional["release_date"] = _get_release_date(record=record, cache=cache)
 
     return record
 
@@ -248,6 +262,86 @@ def _parse_generative_type_input(
     if input_lower in {"3", "reasoning"}:
         return "reasoning"
     return None
+
+
+def _get_release_date(record: dict, cache: Cache) -> str | None:
+    """Get a model release date, using cached metadata when available.
+
+    Args:
+        record:
+            An EEE result record.
+        cache:
+            The model metadata cache.
+
+    Returns:
+        The ISO-formatted release date, or None if no date can be determined.
+    """
+    additional = record["model_info"]["additional_details"]
+    existing = normalise_release_date(additional.get("release_date"))
+    if existing is not None:
+        return existing
+
+    model_id = split_model_id(
+        model_id=plain_model_id(get_model_name(record=record))
+    ).model_id
+    if model_id in cache.release_date:
+        cached = cache.release_date[model_id]
+        if cached is None:
+            return None
+        normalised_cached = normalise_release_date(cached)
+        if normalised_cached is None:
+            del cache.release_date[model_id]
+        else:
+            return normalised_cached
+
+    model_url = additional.get("model_url") or cache.model_url.get(model_id)
+    if _is_api_model(model_id=model_id) or _is_non_hf_url(model_url=model_url):
+        release_date = get_api_model_release_date(model_id)
+    else:
+        release_date = get_model_release_date(
+            hf_api=HfApi(), model_id=model_id, revision="main", token=None
+        )
+        if release_date is None:
+            # Not a readable Hub repo either, e.g. a gated or renamed one:
+            # fall back to the manual annotations rather than leaving the
+            # model without a date.
+            release_date = get_annotated_release_date(model_id=model_id)
+    cache.release_date[model_id] = release_date
+    return release_date
+
+
+def _is_api_model(model_id: str) -> bool:
+    """Whether a model ID names a hosted API model rather than a Hub repo.
+
+    Keying on the ID rather than on a stored `model_url` matters: the URL is
+    itself only filled in when it can be generated, so a model whose repo has
+    since been renamed or deleted would otherwise be routed to the API
+    lookup, which knows nothing about it.
+
+    Args:
+        model_id:
+            The model ID.
+
+    Returns:
+        True if the ID matches one of the API model patterns.
+    """
+    plain = plain_model_id(model_id).split("#")[0]
+    return any(pattern.fullmatch(plain) for pattern in API_MODEL_PATTERNS)
+
+
+def _is_non_hf_url(model_url: str | None) -> bool:
+    """Whether a recorded model URL points at a provider rather than the Hub.
+
+    Args:
+        model_url:
+            The model URL, if one is recorded.
+
+    Returns:
+        True if a URL is recorded and it is not a Hugging Face URL.
+    """
+    if not isinstance(model_url, str) or not model_url:
+        return False
+    return urllib.parse.urlparse(model_url).netloc not in HF_URL_HOSTS
 
 
 def is_commercially_licensed(record: dict, cache: Cache) -> bool:

@@ -213,6 +213,10 @@ LOGIC = Task(
     default_labels=[],
     uses_structured_output=True,
     default_allowed_model_types=[ModelType.GENERATIVE],
+    default_allowed_generative_types=[
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    ],
 )
 
 
@@ -267,6 +271,17 @@ TOOL_CALLING = Task(
 )
 
 # Orthogonal tasks, which measures things not related to 'raw' language modelling
+
+CONTAMINATION_DETECTION = Task(
+    name="contamination-detection",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict={},
+    metrics=[],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=6,
+    default_labels=[],
+    requires_zero_shot=True,
+)
 
 SPEED = Task(
     name="speed",
@@ -390,6 +405,29 @@ REFERENCE_FREE_QA = Task(
     metrics=[create_model_graded_fact_metric()],
     default_num_few_shot_examples=0,
     default_max_generated_tokens=2048,
+    default_labels=None,
+    default_allowed_model_types=[ModelType.GENERATIVE],
+    default_allowed_generative_types=[
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    ],
+    requires_zero_shot=True,
+    uses_logprobs=False,
+)
+
+
+# The reference chain-of-thought solutions are at most ~250 tokens, and across
+# 400 zero-shot generations with gpt-4o-mini, Llama 3.1 8B Instruct and Qwen 2.5 7B
+# Instruct the p99 was ~600 tokens, with only a single rambler exceeding 1024. That
+# makes 1024 ample for instruction-tuned models; reasoning models use
+# `REASONING_MAX_TOKENS` instead of this value.
+MATH = Task(
+    name="math",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=EMPTY_TEMPLATES,
+    metrics=[m.math_accuracy_metric],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=1024,
     default_labels=None,
     default_allowed_model_types=[ModelType.GENERATIVE],
     default_allowed_generative_types=[

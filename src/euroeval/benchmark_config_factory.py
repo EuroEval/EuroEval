@@ -14,9 +14,16 @@ from .dataset_configs import get_all_dataset_configs
 from .enums import Device
 from .languages import get_all_languages, get_correct_language_codes
 from .logging_utils import log
+from .shot_modes import coerce_shot_mode
+from .tasks import CONTAMINATION_DETECTION, get_all_tasks
 
 if t.TYPE_CHECKING:
     from .data_models import Language
+
+
+_NO_CONFIG_SELECTOR = "__no_config__"
+_NO_SPLIT_SELECTOR = "__no_split__"
+_TASK_SELECTOR_PREFIX = "__task_"
 
 
 def build_benchmark_config(
@@ -65,7 +72,7 @@ def build_benchmark_config(
         trust_remote_code=benchmark_config_params.trust_remote_code,
         clear_model_cache=benchmark_config_params.clear_model_cache,
         evaluate_test_split=benchmark_config_params.evaluate_test_split,
-        few_shot=benchmark_config_params.few_shot,
+        few_shot=coerce_shot_mode(requested_mode=benchmark_config_params.few_shot),
         num_iterations=(
             1
             if hasattr(sys, "_called_from_test")
@@ -83,6 +90,7 @@ def build_benchmark_config(
         download_only=benchmark_config_params.download_only,
         max_context_length=benchmark_config_params.max_context_length,
         vocabulary_size=benchmark_config_params.vocabulary_size,
+        num_parameters=benchmark_config_params.num_parameters,
     )
 
 
@@ -143,15 +151,41 @@ def prepare_dataset_configs(
         all_official_dataset_configs=all_official_dataset_configs,
     )
 
-    task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
+    task_mapping = get_all_tasks()
+    task_mapping.update(
+        {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
+    )
     tasks = _get_tasks_list(task=task, task_mapping=task_mapping)
 
-    return [
+    prepared = [
         ds
         for ds in datasets
         if (tasks is None or ds.task in tasks)
         and any(lang in languages for lang in ds.languages)
     ]
+
+    # A dataset selection is intentionally a complete, targeted selection. In every
+    # other case the virtual canary is part of the normal task/suite run, including
+    # when a task filter selects ordinary tasks. An explicit canary task is already
+    # represented by this same virtual config, so it must not be added twice.
+    if dataset is None and not any(
+        config.task is CONTAMINATION_DETECTION for config in prepared
+    ):
+        canary_name = (
+            "contamination-canary-" + languages[0].code
+            if len(languages) == 1
+            else "contamination-canary"
+        )
+        prepared.append(
+            DatasetConfig(
+                task=CONTAMINATION_DETECTION,
+                languages=languages,
+                name=canary_name,
+                pretty_name="Contamination canary",
+                unofficial=True,
+            )
+        )
+    return prepared
 
 
 def _extract_dataset_ids(
@@ -205,12 +239,22 @@ def _get_datasets_list(
         if dataset is None:
             return all_official_dataset_configs
         elif isinstance(dataset, str):
-            return [all_dataset_configs[dataset]]
+            return _resolve_dataset_id(
+                dataset_id=dataset, all_dataset_configs=all_dataset_configs
+            )
         elif isinstance(dataset, DatasetConfig):
             return [dataset]
         else:
             return [
-                all_dataset_configs[d] if isinstance(d, str) else d for d in dataset
+                cfg
+                for d in dataset
+                for cfg in (
+                    [d]
+                    if isinstance(d, DatasetConfig)
+                    else _resolve_dataset_id(
+                        dataset_id=d, all_dataset_configs=all_dataset_configs
+                    )
+                )
             ]
     except KeyError as e:
         _handle_dataset_lookup_error(
@@ -241,6 +285,85 @@ def _handle_dataset_lookup_error(
         msg += f" Maybe you meant to use {closest_match!r}?"
     log(msg, level=logging.ERROR)
     sys.exit(1)
+
+
+def _resolve_dataset_id(
+    dataset_id: str, all_dataset_configs: dict[str, DatasetConfig]
+) -> list[DatasetConfig]:
+    """Look up a requested dataset, expanding the subsets of an external repo.
+
+    An external dataset repository registers one config per task entry in its
+    `eval.yaml`, named `<repo>::<config>::<split>`. Requesting the repository itself
+    selects all the configs registered below it, and requesting a split selects that
+    split of every configuration, so that `--language` can narrow the expansion down
+    further.
+
+    Args:
+        dataset_id:
+            The requested dataset ID, optionally suffixed by a split.
+        all_dataset_configs:
+            Mapping of dataset IDs to DatasetConfig objects.
+
+    Returns:
+        The dataset configs referred to by `dataset_id`.
+
+    Raises:
+        KeyError:
+            If no dataset matches the request.
+    """
+    exact_match = all_dataset_configs.get(dataset_id)
+    if exact_match is not None:
+        identity = _dataset_identity_components(name=dataset_id)
+        matching_identities = [
+            name
+            for name in all_dataset_configs
+            if _dataset_identity_components(name=name) == identity
+        ]
+        if identity is None or len(matching_identities) == 1:
+            return [exact_match]
+
+    requested_parts = dataset_id.split("::")
+    repo_id = requested_parts[0]
+    requested_config = requested_split = None
+    if len(requested_parts) == 2:
+        requested_split = requested_parts[1]
+    elif len(requested_parts) == 3:
+        requested_config, requested_split = requested_parts[1:]
+
+    subsets = [
+        dataset_config
+        for name, dataset_config in all_dataset_configs.items()
+        if (identity := _dataset_identity_components(name=name)) is not None
+        and identity[0] == repo_id
+        and (requested_config is None or identity[1] == requested_config)
+        and (requested_split is None or identity[2] == requested_split)
+    ]
+    if not subsets:
+        raise KeyError(dataset_id)
+    return subsets
+
+
+def _dataset_identity_components(
+    name: str,
+) -> tuple[str, str | None, str | None] | None:
+    """Return repository, config and split components from an expanded identity."""
+    parts = name.split("::")
+    if len(parts) == 1:
+        return parts[0], None, None
+    if len(parts) == 3:
+        return parts[0], parts[1], parts[2]
+    if (
+        len(parts) == 4
+        and parts[1]
+        and parts[2]
+        and parts[3].startswith(_TASK_SELECTOR_PREFIX)
+    ):
+        return (
+            parts[0],
+            None if parts[1] == _NO_CONFIG_SELECTOR else parts[1],
+            None if parts[2] == _NO_SPLIT_SELECTOR else parts[2],
+        )
+    return None
 
 
 def _get_tasks_list(

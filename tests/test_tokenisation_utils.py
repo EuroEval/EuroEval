@@ -1,6 +1,7 @@
 """Tests for the `tokenisation_utils` module."""
 
 import os
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -8,8 +9,10 @@ from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 from euroeval.benchmark_modules.hf import load_hf_model_config, load_tokeniser
 from euroeval.data_models import BenchmarkConfig, HashableDict
+from euroeval.enums import GenerativeType
 from euroeval.tokenisation_utils import (
     get_end_of_chat_token_ids,
+    get_first_label_token_mapping,
     should_prefix_space_be_added_to_labels,
     should_prompts_be_stripped,
 )
@@ -48,6 +51,235 @@ def test_get_end_of_chat_token_ids(
         assert end_of_chat_token_ids is not None
         end_of_chat_string = tokeniser.decode(list(end_of_chat_token_ids)).strip()
         assert end_of_chat_string == expected_string
+
+
+def test_get_first_label_token_mapping_falls_back_to_encode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An empty chat-template diff should fall back to encoding the label."""
+    mapping = _mapping_for_chat_tokeniser(
+        tokeniser=_ContaminatedChatTokeniser(include_label_in_template=False),
+        monkeypatch=monkeypatch,
+    )
+    assert mapping == {"négatif": "n", "positif": "pos"}
+
+
+class _ContaminatedChatTokeniser:
+    """Chat tokeniser whose system span contains ``p`` / ``n`` before labels."""
+
+    chat_template = "non-empty"
+
+    def __init__(
+        self,
+        *,
+        include_label_in_template: bool = True,
+        extra_span_token: str | None = None,
+    ) -> None:
+        """Initialise the contaminated chat tokeniser test double.
+
+        Args:
+            include_label_in_template:
+                Whether assistant label content is reflected in the chat template.
+            extra_span_token:
+                Optional token inserted into the isolated label span before the label
+                tokens themselves.
+        """
+        self.include_label_in_template = include_label_in_template
+        self.extra_span_token = extra_span_token
+        self._token_to_id: dict[str, int] = {}
+        self._id_to_token: dict[int, str] = {}
+        for token in (
+            "sys",
+            "p",
+            "n",
+            "end",
+            "<user>",
+            "</user>",
+            "<assistant>",
+            "</assistant>",
+            "<gen>",
+            "pos",
+            "itif",
+            "égatif",
+        ):
+            self._add(token=token)
+        if extra_span_token is not None:
+            self._add(token=extra_span_token)
+
+    def _add(self, token: str) -> int:
+        """Register ``token`` in the vocabulary and return its id.
+
+        Args:
+            token:
+                The string token to register.
+
+        Returns:
+            The integer id assigned to ``token``.
+        """
+        if token not in self._token_to_id:
+            token_id = len(self._token_to_id)
+            self._token_to_id[token] = token_id
+            self._id_to_token[token_id] = token
+        return self._token_to_id[token]
+
+    def __call__(
+        self, text: str, add_special_tokens: bool = False, **kwargs: object
+    ) -> SimpleNamespace:
+        """Encode ``text`` like a Hugging Face tokeniser call.
+
+        Args:
+            text:
+                The text to encode.
+            add_special_tokens:
+                Unused; accepted for API compatibility.
+            **kwargs:
+                Unused extra keyword arguments.
+
+        Returns:
+            A namespace with an ``input_ids`` attribute.
+        """
+        return SimpleNamespace(input_ids=self.encode(text=text))
+
+    def encode(
+        self,
+        text: str | None = None,
+        add_special_tokens: bool = False,
+        **kwargs: object,
+    ) -> list[int]:
+        """Encode ``text`` into token ids, with fixed splits for known labels.
+
+        Args:
+            text:
+                The text to encode. If omitted, ``kwargs["text"]`` is used.
+            add_special_tokens:
+                Unused; accepted for API compatibility.
+            **kwargs:
+                May contain ``text`` when ``text`` is not passed positionally.
+
+        Returns:
+            The list of token ids for ``text``.
+        """
+        if text is None:
+            text = str(kwargs.get("text", ""))
+        text = text.lstrip(" ")
+        if text == "positif":
+            return [self._add(token="pos"), self._add(token="itif")]
+        if text == "négatif":
+            return [self._add(token="n"), self._add(token="égatif")]
+        return [self._add(token=character) for character in text]
+
+    def apply_chat_template(
+        self,
+        conversation: list[dict[str, str]],
+        tokenize: bool = True,
+        add_generation_prompt: bool = True,
+        **kwargs: object,
+    ) -> list[int] | str:
+        """Build a chat template that prepends contaminated system tokens.
+
+        Args:
+            conversation:
+                The chat messages to render.
+            tokenize:
+                If True, return token ids; otherwise return a space-joined string.
+            add_generation_prompt:
+                Whether to append a generation prompt token.
+            **kwargs:
+                Unused extra keyword arguments.
+
+        Returns:
+            Token ids or a detokenised string, depending on ``tokenize``.
+        """
+        tokens = ["sys", "p", "n", "end"]
+        for message in conversation:
+            role = message["role"]
+            content = message.get("content") or ""
+            tokens.append(f"<{role}>")
+            if content in {"positif", "négatif"}:
+                if self.extra_span_token is not None:
+                    tokens.append(self.extra_span_token)
+                if self.include_label_in_template:
+                    if content == "positif":
+                        tokens.extend(["pos", "itif"])
+                    else:
+                        tokens.extend(["n", "égatif"])
+            elif self.include_label_in_template and content:
+                tokens.append(content)
+            tokens.append(f"</{role}>")
+        if add_generation_prompt:
+            tokens.append("<gen>")
+        token_ids = [self._add(token=token) for token in tokens]
+        return token_ids if tokenize else " ".join(tokens)
+
+    def convert_ids_to_tokens(self, ids: list[int], **kwargs: object) -> list[str]:
+        """Convert token ids back to their string tokens.
+
+        Args:
+            ids:
+                The token ids to convert.
+            **kwargs:
+                Unused extra keyword arguments.
+
+        Returns:
+            The string tokens corresponding to ``ids``.
+        """
+        return [self._id_to_token[int(token_id)] for token_id in ids]
+
+
+def _mapping_for_chat_tokeniser(
+    tokeniser: _ContaminatedChatTokeniser, monkeypatch: pytest.MonkeyPatch
+) -> dict[str, str] | bool:
+    """Return first-label-token mapping for a fake chat tokeniser.
+
+    Args:
+        tokeniser:
+            The contaminated chat tokeniser test double.
+        monkeypatch:
+            Pytest monkeypatch fixture used to stub prefix-space behaviour.
+
+    Returns:
+        A mapping from local labels to their first tokens, or a boolean indicating
+        whether logprobs should be used when no mapping can be built.
+    """
+    monkeypatch.setattr(
+        "euroeval.tokenisation_utils.should_prefix_space_be_added_to_labels",
+        lambda **kwargs: False,
+    )
+    dataset_config = SimpleNamespace(
+        task=SimpleNamespace(uses_logprobs=True),
+        labels=["negative", "positive"],
+        prompt_label_mapping={"negative": "négatif", "positive": "positif"},
+    )
+    model_config = SimpleNamespace(model_id="fake/chat-model")
+    # Bypass cache key hashing on SimpleNamespace configs.
+    return get_first_label_token_mapping.__wrapped__(
+        dataset_config=dataset_config,
+        model_config=model_config,
+        tokeniser=tokeniser,  # ty: ignore[invalid-argument-type]
+        generative_type=GenerativeType.INSTRUCTION_TUNED,
+        log_metadata=False,
+    )
+
+
+def test_get_first_label_token_mapping_ignores_system_prompt_tokens(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """System tokens like ``p`` must not win over the real label prefix (``pos``)."""
+    mapping = _mapping_for_chat_tokeniser(
+        tokeniser=_ContaminatedChatTokeniser(), monkeypatch=monkeypatch
+    )
+    assert mapping == {"négatif": "n", "positif": "pos"}
+
+
+def test_get_first_label_token_mapping_skips_non_matching_span_tokens(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Extra tokens in the isolated span must not hide the first label prefix."""
+    mapping = _mapping_for_chat_tokeniser(
+        tokeniser=_ContaminatedChatTokeniser(extra_span_token="asst"),
+        monkeypatch=monkeypatch,
+    )
+    assert mapping == {"négatif": "n", "positif": "pos"}
 
 
 @pytest.mark.skipif(

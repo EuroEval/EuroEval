@@ -127,6 +127,79 @@ class ModelType(AutoStrEnum):
         return self.value.upper()
 
 
+class ParameterAdjustment(AutoStrEnum):
+    """A model-level generation parameter adjustment learned from an API error.
+
+    These are persisted across datasets on the model instance and re-applied to
+    freshly built generation kwargs, so that a quirk learned on one dataset does not
+    have to be rediscovered (via a failed request) on the next.
+
+    Attributes:
+        NO_STOP_SEQUENCES:
+            The model does not support stop sequences.
+        NO_LOGPROBS:
+            The model does not support logprobs.
+        LOGPROBS_MUST_BE_BOOLEAN:
+            The model requires the `logprobs` argument to be a Boolean.
+        NO_TOP_LOGPROBS:
+            The model does not support `top_logprobs`, so its value is moved to
+            `logprobs`.
+        USE_MAX_TOKENS:
+            The model does not support `max_completion_tokens`, so `max_tokens` is
+            used instead.
+        NO_MAX_TOKENS:
+            The model does not support `max_tokens`.
+        NO_TEMPERATURE:
+            The model does not support the `temperature` parameter.
+        TEMPERATURE_MUST_BE_ONE:
+            The model requires the temperature to be set to 1.
+        NO_JSON_SCHEMA:
+            The model does not support JSON schemas, so the vanilla JSON object
+            response format is used instead.
+        THINKING_DISABLED_REQUIRES_TYPE:
+            The model requires `thinking.type` to be `disabled` rather than just
+            setting `budget_tokens` to 0.
+        NO_SEED:
+            The model does not support the `seed` parameter.
+        NO_RESPONSE_FORMAT:
+            The model does not support the `response_format` parameter.
+    """
+
+    NO_STOP_SEQUENCES = auto()
+    NO_LOGPROBS = auto()
+    LOGPROBS_MUST_BE_BOOLEAN = auto()
+    NO_TOP_LOGPROBS = auto()
+    USE_MAX_TOKENS = auto()
+    NO_MAX_TOKENS = auto()
+    NO_TEMPERATURE = auto()
+    TEMPERATURE_MUST_BE_ONE = auto()
+    NO_JSON_SCHEMA = auto()
+    THINKING_DISABLED_REQUIRES_TYPE = auto()
+    NO_SEED = auto()
+    NO_RESPONSE_FORMAT = auto()
+
+
+class ShotMode(AutoStrEnum):
+    """The prompt shot policy used for a benchmark run.
+
+    ``AUTO`` is an explicit public policy value that selects one or more concrete
+    modes from model metadata. It is used during planning only and is never written
+    to benchmark results.
+
+    Attributes:
+        AUTO:
+            Select concrete modes automatically from the model and backend metadata.
+        FEW_SHOT:
+            Evaluate with task-specific few-shot examples where supported.
+        ZERO_SHOT:
+            Evaluate without few-shot examples.
+    """
+
+    AUTO = auto()
+    FEW_SHOT = auto()
+    ZERO_SHOT = auto()
+
+
 class TaskGroup(AutoStrEnum):
     """The overall task group of a task.
 
