@@ -27,7 +27,8 @@ from .logging_utils import adjust_logging_level, get_pbar, log, log_once
 from .metrics.bpc import bpc_metric
 from .model_config import get_model_config
 from .model_loading import load_model
-from .result_cache import get_record, partition_shot_work
+from .result_cache import get_record as get_record
+from .result_cache import partition_shot_work
 from .scores import log_scores
 from .shot_modes import (
     ShotModeRequest,
@@ -40,15 +41,6 @@ from .shot_modes import (
 from .speed_benchmark import benchmark_speed
 from .tasks import SPEED
 from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
-
-__all__ = [
-    "Benchmarker",
-    "clear_model_cache_fn",
-    "get_record",
-    "initial_logging",
-    "resolve_shot_modes",
-]
-
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
