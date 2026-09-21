@@ -519,32 +519,15 @@ class TestClickCLI:
         assert result.exit_code != 0
         assert "Cannot resolve" in result.output
 
-    def test_cli_max_score_help_documents_auto(self) -> None:
-        """CLI help for --max-score should document automatic computation."""
+    def test_cli_help_documents_current_and_removed_options(self) -> None:
+        """CLI help should document current options and omit removed ones."""
         runner = CliRunner()
         result = runner.invoke(cli, ["--help"])
+        help_text = result.output.lower()
         assert "--max-score" in result.output
-        assert (
-            "automatically" in result.output.lower() or "auto" in result.output.lower()
-        )
-
-    def test_cli_max_score_help_documents_optional(self) -> None:
-        """CLI help for --max-score should document it is optional."""
-        runner = CliRunner()
-        result = runner.invoke(cli, ["--help"])
-        assert "--max-score" in result.output
-        assert "optional" in result.output.lower() or "omitted" in result.output.lower()
-
-    def test_cli_no_lower_is_better_option(self) -> None:
-        """CLI should not have --lower-is-better option."""
-        runner = CliRunner()
-        result = runner.invoke(cli, ["--help"])
+        assert "automatically" in help_text or "auto" in help_text
+        assert "optional" in help_text or "omitted" in help_text
         assert "--lower-is-better" not in result.output
-
-    def test_cli_no_metric_option(self) -> None:
-        """CLI should not have --metric option."""
-        runner = CliRunner()
-        result = runner.invoke(cli, ["--help"])
         assert "--metric" not in result.output
 
     def test_cli_requires_model_option(self) -> None:
@@ -554,53 +537,8 @@ class TestClickCLI:
         assert result.exit_code != 0
         assert "Missing option" in result.output or "required" in result.output.lower()
 
-    def test_cli_success_output_contains_file_uri(self) -> None:
-        """Successful output should contain PNG filename or file:// URI."""
-        record = make_eee_record(
-            "test/model",
-            ["da"],
-            {"test_mcc": 0.8},
-            False,
-            task="sentiment-classification",
-            dataset="angry-tweets",
-            raw_scores=[0.8, 0.82, 0.78],
-            metric_name="mcc",
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            model_dir = Path(tmpdir) / "test_model"
-            model_dir.mkdir()
-            (model_dir / "record_0.json").write_text(json.dumps(record))
-
-            with patch(
-                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
-            ):
-                runner = CliRunner()
-                with tempfile.TemporaryDirectory() as workdir:
-                    original_cwd = Path.cwd()
-                    try:
-                        os.chdir(workdir)
-                        result = runner.invoke(
-                            cli,
-                            [
-                                "--model",
-                                "test/model",
-                                "--language",
-                                "da",
-                                "--shots",
-                                "zero",
-                            ],
-                        )
-                        assert result.exit_code == 0, f"CLI failed: {result.output}"
-                        assert (
-                            "language-spider-plot.png" in result.output
-                            or "file://" in result.output
-                        ), f"Output should contain filename or URI: {result.output}"
-                    finally:
-                        os.chdir(original_cwd)
-
-    def test_cli_success_single_line_output(self) -> None:
-        """Successful CLI invocation should produce exactly one stdout line."""
+    def test_cli_success_output_is_a_single_file_uri(self) -> None:
+        """Successful CLI output should be one line containing the plot URI."""
         record = make_eee_record(
             "test/model",
             ["da"],
@@ -643,6 +581,10 @@ class TestClickCLI:
                         assert len(lines) == 1, (
                             f"Expected 1 line, got {len(lines)}: {lines}"
                         )
+                        assert (
+                            "language-spider-plot.png" in lines[0]
+                            or "file://" in lines[0]
+                        ), f"Output should contain filename or URI: {lines[0]}"
                     finally:
                         os.chdir(original_cwd)
 
@@ -729,47 +671,30 @@ class TestComputeMaxScore:
         max_score = _compute_max_score(model_scores, max_score_override=None)
         assert max_score == 3.5
 
-    def test_override_inf_raises(self) -> None:
-        """Should reject infinite override."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 80.0}}
-        with pytest.raises(ValueError, match="invalid.*finite"):
-            _compute_max_score(model_scores, max_score_override=float("inf"))
-
-    def test_override_nan_raises(self) -> None:
-        """Should reject NaN override."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 80.0}}
-        with pytest.raises(ValueError, match="invalid.*finite"):
-            _compute_max_score(model_scores, max_score_override=float("nan"))
-
-    def test_override_negative_raises(self) -> None:
-        """Should reject negative override."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.0}}
-        with pytest.raises(ValueError, match="> 1"):
-            _compute_max_score(model_scores, max_score_override=-1.0)
-
-    def test_override_one_raises(self) -> None:
-        """Should reject override of exactly 1 (perfect score)."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.0}}
-        with pytest.raises(ValueError, match="> 1"):
-            _compute_max_score(model_scores, max_score_override=1.0)
-
-    def test_override_too_small(self) -> None:
-        """Should raise error when override is too small."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.5}}
-        with pytest.raises(ValueError, match="too small"):
-            _compute_max_score(model_scores, max_score_override=3.0)
+    @pytest.mark.parametrize(
+        ("override", "score", "error_match"),
+        [
+            (float("inf"), 80.0, "invalid.*finite"),
+            (float("nan"), 80.0, "invalid.*finite"),
+            (-1.0, 3.0, "> 1"),
+            (1.0, 3.0, "> 1"),
+            (3.0, 3.5, "too small"),
+            (0.0, 3.0, "> 1"),
+        ],
+    )
+    def test_invalid_override_raises(
+        self, override: float, score: float, error_match: str
+    ) -> None:
+        """Should reject invalid max-score overrides."""
+        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": score}}
+        with pytest.raises(ValueError, match=error_match):
+            _compute_max_score(model_scores, max_score_override=override)
 
     def test_override_valid(self) -> None:
         """Should use override when valid."""
         model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.2}}
         max_score = _compute_max_score(model_scores, max_score_override=5.0)
         assert max_score == 5.0
-
-    def test_override_zero_raises(self) -> None:
-        """Should reject zero override."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.0}}
-        with pytest.raises(ValueError, match="> 1"):
-            _compute_max_score(model_scores, max_score_override=0.0)
 
 
 class TestCreateSpiderPlot:
@@ -1045,20 +970,23 @@ class TestGetLanguageDisplayName:
 class TestHexToRgba:
     """Tests for _hex_to_rgba helper function."""
 
-    def test_hex_to_rgba_custom_alpha(self) -> None:
-        """Should convert hex to rgba with custom alpha."""
-        result = _hex_to_rgba("#ff7f0e", alpha=0.5)
-        assert result == "rgba(255, 127, 14, 0.5)"
-
-    def test_hex_to_rgba_default_alpha(self) -> None:
-        """Should convert hex to rgba with default alpha 0.2."""
-        result = _hex_to_rgba("#1f77b4")
-        assert result == "rgba(31, 119, 180, 0.2)"
-
-    def test_hex_to_rgba_transparency(self) -> None:
-        """Should produce transparent fill colours for overlapping traces."""
-        result = _hex_to_rgba("#2ca02c", alpha=0.1)
-        assert "0.1" in result
+    @pytest.mark.parametrize(
+        ("colour", "alpha", "expected"),
+        [
+            ("#ff7f0e", 0.5, "rgba(255, 127, 14, 0.5)"),
+            ("#1f77b4", None, "rgba(31, 119, 180, 0.2)"),
+            ("#2ca02c", 0.1, "rgba(44, 160, 44, 0.1)"),
+        ],
+    )
+    def test_hex_to_rgba_alpha_variants(
+        self, colour: str, alpha: float | None, expected: str
+    ) -> None:
+        """Should convert colours with default and transparent alpha values."""
+        if alpha is None:
+            result = _hex_to_rgba(colour)
+        else:
+            result = _hex_to_rgba(colour, alpha=alpha)
+        assert result == expected
 
 
 class TestIntegrationWithTempFiles:
@@ -1437,30 +1365,18 @@ class TestIntegrationWithTempFiles:
 class TestNormaliseLanguageInput:
     """Tests for _normalise_language_input function."""
 
-    def test_case_insensitive_code(self) -> None:
-        """Should handle uppercase language codes."""
-        codes = _normalise_language_input("DA")
-        assert codes == {"da"}
+    @pytest.mark.parametrize(
+        ("language_input", "expected"),
+        [("DA", {"da"}), ("da", {"da"}), ("danish", {"da"}), ("norwegian", {"no"})],
+    )
+    def test_language_aliases(self, language_input: str, expected: set[str]) -> None:
+        """Should resolve language codes and names to canonical codes."""
+        assert _normalise_language_input(language_input) == expected
 
     def test_invalid_language_raises(self) -> None:
         """Should raise ValueError for invalid language."""
         with pytest.raises(ValueError, match="Cannot resolve"):
             _normalise_language_input("invalid_language_xyz")
-
-    def test_language_code_da(self) -> None:
-        """Should resolve language code 'da' to itself."""
-        codes = _normalise_language_input("da")
-        assert codes == {"da"}
-
-    def test_language_name_danish(self) -> None:
-        """Should resolve language name 'danish' to code 'da'."""
-        codes = _normalise_language_input("danish")
-        assert "da" in codes
-
-    def test_language_name_norwegian(self) -> None:
-        """Should resolve 'norwegian' to 'no'."""
-        codes = _normalise_language_input("norwegian")
-        assert "no" in codes
 
 
 class TestResolveLanguages:
@@ -1497,8 +1413,18 @@ class TestResolveLanguages:
 class TestTitleAndFilenameOptions:
     """Tests for --title and --filename CLI options."""
 
-    def test_cli_default_filename_without_options(self) -> None:
-        """CLI without --title or --filename should use default filename."""
+    @pytest.mark.parametrize(
+        ("filename", "expected_filename"),
+        [
+            (None, "language-spider-plot.png"),
+            ("custom-plot.png", "custom-plot.png"),
+            ("myplot", "myplot.png"),
+        ],
+    )
+    def test_cli_filename_options(
+        self, filename: str | None, expected_filename: str
+    ) -> None:
+        """CLI should choose and complete output filenames consistently."""
         record = make_eee_record(
             "test/model",
             ["da"],
@@ -1523,110 +1449,22 @@ class TestTitleAndFilenameOptions:
                     original_cwd = Path.cwd()
                     try:
                         os.chdir(workdir)
-                        result = runner.invoke(
-                            cli,
-                            [
-                                "--model",
-                                "test/model",
-                                "--language",
-                                "da",
-                                "--shots",
-                                "zero",
-                            ],
-                        )
+                        arguments = [
+                            "--model",
+                            "test/model",
+                            "--language",
+                            "da",
+                            "--shots",
+                            "zero",
+                        ]
+                        if filename is not None:
+                            arguments.extend(["--filename", filename])
+                        result = runner.invoke(cli, arguments)
                         assert result.exit_code == 0, f"CLI failed: {result.output}"
-                        output_path = Path(workdir) / "language-spider-plot.png"
-                        assert output_path.exists(), "Default filename should be used"
-                    finally:
-                        os.chdir(original_cwd)
-
-    def test_cli_filename_option_sets_output_file(self) -> None:
-        """CLI --filename option should set the output filename."""
-        record = make_eee_record(
-            "test/model",
-            ["da"],
-            {"test_mcc": 0.8},
-            False,
-            task="sentiment-classification",
-            dataset="angry-tweets",
-            raw_scores=[0.8, 0.82, 0.78],
-            metric_name="mcc",
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            model_dir = Path(tmpdir) / "test_model"
-            model_dir.mkdir()
-            (model_dir / "record_0.json").write_text(json.dumps(record))
-
-            with patch(
-                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
-            ):
-                runner = CliRunner()
-                with tempfile.TemporaryDirectory() as workdir:
-                    original_cwd = Path.cwd()
-                    try:
-                        os.chdir(workdir)
-                        result = runner.invoke(
-                            cli,
-                            [
-                                "--model",
-                                "test/model",
-                                "--language",
-                                "da",
-                                "--shots",
-                                "zero",
-                                "--filename",
-                                "custom-plot.png",
-                            ],
+                        output_path = Path(workdir) / expected_filename
+                        assert output_path.exists(), (
+                            f"Expected output file {expected_filename}"
                         )
-                        assert result.exit_code == 0, f"CLI failed: {result.output}"
-                        output_path = Path(workdir) / "custom-plot.png"
-                        assert output_path.exists(), "Custom filename should be created"
-                    finally:
-                        os.chdir(original_cwd)
-
-    def test_cli_filename_without_png_extension(self) -> None:
-        """CLI --filename without .png should have it appended."""
-        record = make_eee_record(
-            "test/model",
-            ["da"],
-            {"test_mcc": 0.8},
-            False,
-            task="sentiment-classification",
-            dataset="angry-tweets",
-            raw_scores=[0.8, 0.82, 0.78],
-            metric_name="mcc",
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            model_dir = Path(tmpdir) / "test_model"
-            model_dir.mkdir()
-            (model_dir / "record_0.json").write_text(json.dumps(record))
-
-            with patch(
-                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
-            ):
-                runner = CliRunner()
-                with tempfile.TemporaryDirectory() as workdir:
-                    original_cwd = Path.cwd()
-                    try:
-                        os.chdir(workdir)
-                        result = runner.invoke(
-                            cli,
-                            [
-                                "--model",
-                                "test/model",
-                                "--language",
-                                "da",
-                                "--shots",
-                                "zero",
-                                "--filename",
-                                "myplot",
-                            ],
-                        )
-                        assert result.exit_code == 0, f"CLI failed: {result.output}"
-                        output_path = Path(workdir) / "myplot.png"
-                        assert output_path.exists(), ".png should be appended"
                     finally:
                         os.chdir(original_cwd)
 
@@ -1740,8 +1578,17 @@ class TestTitleAndFilenameOptions:
                     finally:
                         os.chdir(original_cwd)
 
-    def test_cli_title_infers_filename_snake_case(self) -> None:
-        """CLI --title without --filename should infer filename using snake_case."""
+    @pytest.mark.parametrize(
+        ("title", "expected_filename"),
+        [
+            ("My Plot Title", "my_plot_title.png"),
+            ("My Plot! Title: 2024 (Test)", "my_plot_title_2024_test.png"),
+        ],
+    )
+    def test_cli_title_infers_filename_snake_case(
+        self, title: str, expected_filename: str
+    ) -> None:
+        """CLI titles should infer clean snake-case filenames."""
         record = make_eee_record(
             "test/model",
             ["da"],
@@ -1776,14 +1623,13 @@ class TestTitleAndFilenameOptions:
                                 "--shots",
                                 "zero",
                                 "--title",
-                                "My Plot Title",
+                                title,
                             ],
                         )
                         assert result.exit_code == 0, f"CLI failed: {result.output}"
-                        # Title "My Plot Title" -> "my_plot_title.png"
-                        output_path = Path(workdir) / "my_plot_title.png"
+                        output_path = Path(workdir) / expected_filename
                         assert output_path.exists(), (
-                            "Filename should be inferred from title as snake_case"
+                            "Filename should be inferred from title"
                         )
                     finally:
                         os.chdir(original_cwd)
@@ -1828,54 +1674,6 @@ class TestTitleAndFilenameOptions:
                             ],
                         )
                         assert result.exit_code == 0, f"CLI failed: {result.output}"
-                    finally:
-                        os.chdir(original_cwd)
-
-    def test_cli_title_special_chars_infers_filename(self) -> None:
-        """CLI --title with special chars should infer clean snake_case filename."""
-        record = make_eee_record(
-            "test/model",
-            ["da"],
-            {"test_mcc": 0.8},
-            False,
-            task="sentiment-classification",
-            dataset="angry-tweets",
-            raw_scores=[0.8, 0.82, 0.78],
-            metric_name="mcc",
-        )
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            model_dir = Path(tmpdir) / "test_model"
-            model_dir.mkdir()
-            (model_dir / "record_0.json").write_text(json.dumps(record))
-
-            with patch(
-                "src.scripts.create_language_spider_plot.RESULTS_DIR", Path(tmpdir)
-            ):
-                runner = CliRunner()
-                with tempfile.TemporaryDirectory() as workdir:
-                    original_cwd = Path.cwd()
-                    try:
-                        os.chdir(workdir)
-                        result = runner.invoke(
-                            cli,
-                            [
-                                "--model",
-                                "test/model",
-                                "--language",
-                                "da",
-                                "--shots",
-                                "zero",
-                                "--title",
-                                "My Plot! Title: 2024 (Test)",
-                            ],
-                        )
-                        assert result.exit_code == 0, f"CLI failed: {result.output}"
-                        # Title with special chars -> "my_plot_title_2024_test.png"
-                        output_path = Path(workdir) / "my_plot_title_2024_test.png"
-                        assert output_path.exists(), (
-                            "Special chars should be removed from inferred filename"
-                        )
                     finally:
                         os.chdir(original_cwd)
 

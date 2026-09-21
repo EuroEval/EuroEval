@@ -310,28 +310,24 @@ class TestExecuteJobsLogging:
         assert "error output from evaluation" in content
         assert "stack trace here" in content
 
-    def test_log_file_created_before_progress_bar(
+    def test_log_file_created_and_path_logged_before_progress_bar(
         self,
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        """Should create log file and log its path before starting progress bar."""
+        """Should create and announce the evaluation log before progress starts."""
         Job = swap_leaderboard_dataset.Job
 
-        # Mock REPO_ROOT to use tmp_path
         monkeypatch.setattr(
             target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
         )
-
-        # Mock run_euroeval to return success
         monkeypatch.setattr(
             target=swap_leaderboard_dataset,
             name="run_euroeval",
             value=lambda **kwargs: (0, "evaluation completed successfully"),
         )
 
-        # Create test jobs
         jobs = [
             Job(
                 model_id="test-model",
@@ -348,64 +344,23 @@ class TestExecuteJobsLogging:
                 jobs=jobs, datasets=("test-dataset",), gpu_memory_utilization=0.8
             )
 
-        # Verify log path was printed
-        assert "Evaluation log:" in caplog.text
+        log_messages = [
+            record.message
+            for record in caplog.records
+            if "Evaluation log:" in record.message
+        ]
+        assert len(log_messages) == 1
+        assert re.search(r"eval_log_\d{8}_\d{6}\.log", log_messages[0])
 
-        # Find the log file in tmp_path
         log_files = list(tmp_path.glob("eval_log_*.log"))
         assert len(log_files) == 1
-        log_path = log_files[0]
-
-        # Verify log file contains expected metadata
-        content = log_path.read_text(encoding="utf-8")
+        content = log_files[0].read_text(encoding="utf-8")
         assert "Evaluation Log" in content
         assert "Datasets: test-dataset" in content
         assert "GPU Memory UtilIZATION: 0.8" in content
         assert "Total Jobs: 1" in content
         assert "test-model" in content
         assert "da" in content
-
-    def test_log_path_logged_before_progress_bar(
-        self,
-        tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
-        caplog: pytest.LogCaptureFixture,
-    ) -> None:
-        """Should log the log file path immediately before showing progress bar."""
-        Job = swap_leaderboard_dataset.Job
-
-        monkeypatch.setattr(
-            target=swap_leaderboard_dataset, name="REPO_ROOT", value=tmp_path
-        )
-
-        monkeypatch.setattr(
-            target=swap_leaderboard_dataset,
-            name="run_euroeval",
-            value=lambda **kwargs: (0, "ok"),
-        )
-
-        jobs = [
-            Job(
-                model_id="m",
-                languages=("da",),
-                is_api=False,
-                evaluate_test_split=True,
-                zero_shot=False,
-                datasets=("test-dataset",),
-            )
-        ]
-
-        with caplog.at_level(logging.INFO):
-            swap_leaderboard_dataset.execute_jobs(
-                jobs=jobs, datasets=("d",), gpu_memory_utilization=None
-            )
-
-        # Log path should contain timestamp pattern
-        log_messages = [
-            r.message for r in caplog.records if "Evaluation log:" in r.message
-        ]
-        assert len(log_messages) == 1
-        assert re.search(r"eval_log_\d{8}_\d{6}\.log", log_messages[0])
 
 
 class TestExecuteJobsResultDetection:
