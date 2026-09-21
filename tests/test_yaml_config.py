@@ -19,6 +19,17 @@ from euroeval.yaml_config import (
 )
 
 
+def _write_yaml(tmp_path: Path, content: str, filename: str = "eval.yaml") -> Path:
+    """Write dedented YAML content to a temporary file.
+
+    Returns:
+        The path to the written YAML file.
+    """
+    yaml_file = tmp_path / filename
+    yaml_file.write_text(textwrap.dedent(content))
+    return yaml_file
+
+
 class TestLoadDatasetConfigFromYaml:
     """Tests for the `load_dataset_config_from_yaml` function."""
 
@@ -60,10 +71,9 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_choices_column_as_list(self, tmp_path: Path) -> None:
         """choices_column as a list of strings triggers a preprocessing_func."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: multiple-choice
                 languages:
                   - en
@@ -72,8 +82,8 @@ class TestLoadDatasetConfigFromYaml:
                   - option_b
                   - option_c
                   - option_d
-                """
-            )
+                """,
+            filename="euroeval_config.yaml",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -82,16 +92,15 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_choices_column_as_string(self, tmp_path: Path) -> None:
         """choices_column as a string triggers the creation of a preprocessing_func."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: multiple-choice
                 languages:
                   - en
                 choices_column: options
-                """
-            )
+                """,
+            filename="euroeval_config.yaml",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -100,14 +109,13 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_empty_languages_list_defaults_to_english(self, tmp_path: Path) -> None:
         """A YAML file with empty languages list and no fallback defaults to English."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
                 languages: []
-                """
-            )
+                """,
+            filename="euroeval_config.yaml",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -115,25 +123,22 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_eval_yaml_filename_accepted(self, tmp_path: Path) -> None:
         """A file named eval.yaml is accepted just like euroeval_config.yaml."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert isinstance(config, DatasetConfig)
 
     def test_explicit_instruction_prompt_overrides_solver(self, tmp_path: Path) -> None:
         """An explicit instruction prompt takes precedence over prompt_template."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: math
                 instruction_prompt: "Explicit {text}"
                 tasks:
@@ -143,8 +148,7 @@ class TestLoadDatasetConfigFromYaml:
                         args:
                           template: "Ignored {prompt}"
                 languages: [en]
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -152,10 +156,9 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_explicit_task_overrides_inference(self, tmp_path: Path) -> None:
         """An explicit top-level 'task' key overrides any Inspect AI inference."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 tasks:
                   - id: my_dataset
                     solvers:
@@ -165,8 +168,7 @@ class TestLoadDatasetConfigFromYaml:
                 task: classification
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -175,13 +177,11 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_fallback_invalid_language_code_returns_none(self, tmp_path: Path) -> None:
         """An unknown language code in fallback_language_codes returns None."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(
             yaml_file, fallback_language_codes=["xx_NOT_REAL"]
@@ -195,13 +195,11 @@ class TestLoadDatasetConfigFromYaml:
         self, tmp_path: Path
     ) -> None:
         """fallback_language_codes is used when 'languages' is absent from YAML."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(
             yaml_file, fallback_language_codes=["en"]
@@ -212,10 +210,9 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_inspect_ai_choices_column(self, tmp_path: Path) -> None:
         """field_spec.choices in tasks[0] is promoted to choices_column."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 name: My Dataset
                 tasks:
                   - id: my_dataset
@@ -231,8 +228,7 @@ class TestLoadDatasetConfigFromYaml:
                 task: multiple-choice
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -240,10 +236,9 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_inspect_ai_field_spec_columns(self, tmp_path: Path) -> None:
         """Column names in tasks[0].field_spec are promoted to top-level keys."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 name: My Dataset
                 tasks:
                   - id: my_dataset
@@ -258,8 +253,7 @@ class TestLoadDatasetConfigFromYaml:
                 task: classification
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -268,10 +262,9 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_inspect_ai_integer_target_is_ignored(self, tmp_path: Path) -> None:
         """field_spec.target as an integer (Inspect AI letter-index) is skipped."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 tasks:
                   - id: my_dataset
                     field_spec:
@@ -280,8 +273,7 @@ class TestLoadDatasetConfigFromYaml:
                 task: classification
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         # Before this fix, an integer target_column would trigger a validation error
@@ -291,10 +283,9 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_inspect_ai_literal_target_is_ignored(self, tmp_path: Path) -> None:
         """field_spec.target with 'literal:' prefix is not used as target_column."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 tasks:
                   - id: my_dataset
                     field_spec:
@@ -303,8 +294,7 @@ class TestLoadDatasetConfigFromYaml:
                 task: classification
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -313,60 +303,39 @@ class TestLoadDatasetConfigFromYaml:
         # and preprocessing_func would be built; so None here proves it was ignored.
         assert config.preprocessing_func is None
 
-    def test_inspect_ai_split_default_test(self, tmp_path: Path) -> None:
-        """tasks[0].split: test sets test_split to 'test' (standard name)."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
-                tasks:
-                  - id: my_dataset
-                    split: test
-                    field_spec:
-                      input: question
-                      choices: options
-                    solvers:
-                      - name: multiple_choice
-                task: multiple-choice
-                languages:
-                  - en
-                """
-            )
+    @pytest.mark.parametrize(
+        ("split", "expected"),
+        [(None, "test"), ("test", "test"), ("validation", "validation")],
+    )
+    def test_inspect_ai_split_variants(
+        self, tmp_path: Path, split: str | None, expected: str
+    ) -> None:
+        """Inspect task splits are promoted, with test as the default."""
+        split_line = f"    split: {split}\n" if split is not None else ""
+        yaml_file = _write_yaml(
+            tmp_path,
+            f"""\
+tasks:
+  - id: my_dataset
+{split_line}    field_spec:
+      input: question
+      choices: options
+    solvers:
+      - name: multiple_choice
+task: multiple-choice
+languages:
+  - en
+""",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
-        assert config.test_split == "test"
-
-    def test_inspect_ai_split_used_as_test_split(self, tmp_path: Path) -> None:
-        """tasks[0].split is used as the test_split (standard Inspect AI key)."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
-                name: My Dataset
-                tasks:
-                  - id: my_dataset
-                    split: validation
-                    field_spec:
-                      input: question
-                      choices: options
-                    solvers:
-                      - name: multiple_choice
-                    scorers:
-                      - name: choice
-                """
-            )
-        )
-        config = load_dataset_config_from_yaml(yaml_file)
-        assert config is not None
-        assert config.test_split == "validation"
+        assert config.test_split == expected
 
     def test_inspect_ai_top_level_overrides_field_spec(self, tmp_path: Path) -> None:
         """Explicit top-level input_column takes precedence over field_spec.input."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 tasks:
                   - id: my_dataset
                     field_spec:
@@ -377,8 +346,7 @@ class TestLoadDatasetConfigFromYaml:
                   - en
                 input_column: from_top_level
                 target_column: label
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -388,10 +356,9 @@ class TestLoadDatasetConfigFromYaml:
         self, tmp_path: Path
     ) -> None:
         """A tasks list without a field_spec block is silently ignored."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 tasks:
                   - id: my_dataset
                     split: test
@@ -400,56 +367,52 @@ class TestLoadDatasetConfigFromYaml:
                 task: classification
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert isinstance(config, DatasetConfig)
 
     def test_invalid_language_code_returns_none(self, tmp_path: Path) -> None:
         """An unknown language code causes the function to return None."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
                 languages:
                   - xx_NOT_A_REAL_CODE
-                """
-            )
+                """,
+            filename="euroeval_config.yaml",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is None
 
     def test_invalid_task_returns_none(self, tmp_path: Path) -> None:
         """An unknown task name causes the function to return None."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: this-task-does-not-exist
                 languages:
                   - en
-                """
-            )
+                """,
+            filename="euroeval_config.yaml",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is None
 
     def test_labels_are_set(self, tmp_path: Path) -> None:
         """Labels specified in YAML are reflected in the DatasetConfig."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
                 languages:
                   - en
                 labels:
                   - positive
                   - negative
-                """
-            )
+                """,
+            filename="euroeval_config.yaml",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -477,10 +440,9 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_math_scorer_and_prompt_template(self, tmp_path: Path) -> None:
         """A math scorer and prompt template are inferred from Inspect AI YAML."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 name: Multilingual GSM-Symbolic
                 tasks:
                   - id: original_eng
@@ -510,8 +472,7 @@ class TestLoadDatasetConfigFromYaml:
                       - name: math
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -559,45 +520,27 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_minimal_valid_config(self, tmp_path: Path) -> None:
         """A YAML file with only task and languages produces a DatasetConfig."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
                 languages:
                   - en
-                """
-            )
+                """,
+            filename="euroeval_config.yaml",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert isinstance(config, DatasetConfig)
-
-    def test_missing_languages_key_defaults_to_english(self, tmp_path: Path) -> None:
-        """A YAML file without 'languages' key and no fallback defaults to English."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
-                task: classification
-                """
-            )
-        )
-        config = load_dataset_config_from_yaml(yaml_file)
-        assert config is not None
-        assert len(config.languages) == 1
-        assert config.languages[0].code == "en"
 
     def test_missing_languages_no_fallback_defaults_to_english(
         self, tmp_path: Path
     ) -> None:
         """No 'languages' key and no fallback_language_codes defaults to English."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -605,24 +548,22 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_missing_task_key_returns_none(self, tmp_path: Path) -> None:
         """A YAML file without 'task' key and no Inspect AI hints returns None."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 languages:
                   - en
-                """
-            )
+                """,
+            filename="euroeval_config.yaml",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is None
 
     def test_missing_task_no_hints_returns_none(self, tmp_path: Path) -> None:
         """No 'task' key and no Inspect AI hints (solver/choices) returns None."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 name: My Dataset
                 tasks:
                   - id: my_dataset
@@ -633,59 +574,40 @@ class TestLoadDatasetConfigFromYaml:
                       - name: generate
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is None
 
     def test_multiple_languages(self, tmp_path: Path) -> None:
         """Multiple language codes are all parsed."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
                 languages:
                   - en
                   - fr
                   - de
-                """
-            )
+                """,
+            filename="euroeval_config.yaml",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
         assert len(config.languages) == 3
 
-    def test_no_inspect_ai_split_defaults_to_test(self, tmp_path: Path) -> None:
-        """When tasks[0].split is absent, test_split defaults to 'test'."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
-                task: classification
-                languages:
-                  - en
-                """
-            )
-        )
-        config = load_dataset_config_from_yaml(yaml_file)
-        assert config is not None
-        assert config.test_split == "test"
-
     def test_optional_int_fields(self, tmp_path: Path) -> None:
         """Integer optional fields are parsed correctly."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
                 languages:
                   - en
                 num_few_shot_examples: 8
                 max_generated_tokens: 10
-                """
-            )
+                """,
+            filename="euroeval_config.yaml",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -694,17 +616,16 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_optional_str_fields(self, tmp_path: Path) -> None:
         """String optional column fields trigger a preprocessing_func being built."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
                 languages:
                   - en
                 input_column: review
                 target_column: sentiment
-                """
-            )
+                """,
+            filename="euroeval_config.yaml",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -713,10 +634,9 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_prompt_label_mapping(self, tmp_path: Path) -> None:
         """A prompt_label_mapping dict is parsed correctly."""
-        yaml_file = tmp_path / "euroeval_config.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
                 languages:
                   - en
@@ -726,8 +646,8 @@ class TestLoadDatasetConfigFromYaml:
                 prompt_label_mapping:
                   positive: pos
                   negative: neg
-                """
-            )
+                """,
+            filename="euroeval_config.yaml",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -735,10 +655,9 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_prompt_template_without_prompt_appends_text(self, tmp_path: Path) -> None:
         """A prompt template without Inspect's placeholder still includes the input."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: math
                 tasks:
                   - id: math
@@ -747,8 +666,7 @@ class TestLoadDatasetConfigFromYaml:
                         args:
                           template: "Solve this"
                 languages: [en]
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -756,10 +674,9 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_pure_inspect_ai_file_defaults_to_english(self, tmp_path: Path) -> None:
         """A pure Inspect AI eval.yaml (no EuroEval keys) succeeds, defaults to en."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 name: My MC Dataset
                 tasks:
                   - id: my_dataset
@@ -772,8 +689,7 @@ class TestLoadDatasetConfigFromYaml:
                       - name: multiple_choice
                     scorers:
                       - name: choice
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -782,10 +698,9 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_task_inferred_from_field_spec_choices(self, tmp_path: Path) -> None:
         """A 'choices' entry in field_spec infers multiple-choice task."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 name: My MC Dataset
                 tasks:
                   - id: my_dataset
@@ -797,8 +712,7 @@ class TestLoadDatasetConfigFromYaml:
                       - name: generate
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -809,10 +723,9 @@ class TestLoadDatasetConfigFromYaml:
     # ------------------------------------------------------------------ #
     def test_task_inferred_from_multiple_choice_solver(self, tmp_path: Path) -> None:
         """A 'multiple_choice' solver in tasks[0].solvers infers MC task."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 name: My MC Dataset
                 tasks:
                   - id: my_dataset
@@ -826,8 +739,7 @@ class TestLoadDatasetConfigFromYaml:
                       - name: choice
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -837,13 +749,11 @@ class TestLoadDatasetConfigFromYaml:
         self, tmp_path: Path
     ) -> None:
         """Unsupported language codes from repo metadata are skipped, not fatal."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(
             yaml_file, fallback_language_codes=["en", "da", "zh"]
@@ -853,15 +763,13 @@ class TestLoadDatasetConfigFromYaml:
 
     def test_yaml_languages_take_precedence_over_fallback(self, tmp_path: Path) -> None:
         """Explicit 'languages' in YAML overrides fallback_language_codes."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
                 languages:
                   - da
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(
             yaml_file, fallback_language_codes=["en"]
@@ -875,16 +783,14 @@ class TestRealWorldYamlConfigs:
 
     def test_build_kwargs_choices_column_list_error(self, tmp_path: Path) -> None:
         """Test error when choices_column is neither string nor list."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
                 languages:
                   - en
                 choices_column: 123
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is None
@@ -896,10 +802,9 @@ class TestRealWorldYamlConfigs:
         Notable features: 'evaluation_framework: inspect-ai' key, split=train,
         two solvers, and shuffled choices.
         """
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 name: Evasion Bench
                 description: >
                   EvasionBench is a benchmark dataset for detecting evasive answers
@@ -931,8 +836,7 @@ class TestRealWorldYamlConfigs:
                             {choices}
                     scorers:
                       - name: choice
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -945,10 +849,9 @@ class TestRealWorldYamlConfigs:
         self, tmp_path: Path
     ) -> None:
         """The 'evaluation_framework' key is not a EuroEval field and is ignored."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 evaluation_framework: inspect-ai
                 tasks:
                   - id: my_task
@@ -962,8 +865,7 @@ class TestRealWorldYamlConfigs:
                       - name: choice
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -977,10 +879,9 @@ class TestRealWorldYamlConfigs:
         'literal:D' target (which is silently ignored as it is not a column
         name). Only the first task entry is used to infer config parameters.
         """
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 # yaml file for compatibility with inspect-ai
 
                 name: GPQA
@@ -1062,8 +963,7 @@ class TestRealWorldYamlConfigs:
 
                     scorers:
                       - name: choice
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -1078,10 +978,9 @@ class TestRealWorldYamlConfigs:
         EuroEval detects the scorer and infers the `reference-free-qa` task.
         Source: https://huggingface.co/datasets/openai/gsm8k/blob/main/eval.yaml
         """
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 # yaml file for compatibility with inspect-ai
                 name: GSM8K
                 description: >
@@ -1104,8 +1003,7 @@ class TestRealWorldYamlConfigs:
                       - name: model_graded_fact
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -1119,10 +1017,9 @@ class TestRealWorldYamlConfigs:
 
         An error is logged to inform the user.
         """
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 # yaml file for compatibility with inspect-ai
                 name: GSM8K
                 description: >
@@ -1138,8 +1035,7 @@ class TestRealWorldYamlConfigs:
                       - name: generate
                     scorers:
                       - name: exact_match
-                """
-            )
+                """,
         )
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             config = load_dataset_config_from_yaml(yaml_file)
@@ -1150,10 +1046,9 @@ class TestRealWorldYamlConfigs:
 
     def test_gsm8k_format_with_explicit_task(self, tmp_path: Path) -> None:
         """The GSM8K eval.yaml works when a top-level 'task' key is added."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 name: GSM8K
                 tasks:
                   - id: gsm8k
@@ -1169,8 +1064,7 @@ class TestRealWorldYamlConfigs:
                 task: knowledge
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -1184,10 +1078,9 @@ class TestRealWorldYamlConfigs:
         Notable features: `model_graded_fact` scorer with a judge model ID, which
         triggers the `reference-free-qa` task with an LLM-as-a-judge metric.
         """
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 name: Humanity's Last Exam
                 description: >
                   Humanity's Last Exam (HLE) is a multi-modal benchmark at the frontier
@@ -1220,8 +1113,7 @@ class TestRealWorldYamlConfigs:
                           model: openai/o3-mini
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -1233,10 +1125,9 @@ class TestRealWorldYamlConfigs:
 
     def test_hle_model_graded_fact_without_judge_model(self, tmp_path: Path) -> None:
         """Test model_graded_fact without a judge uses REFERENCE_FREE_QA."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 tasks:
                   - id: hle
                     split: test
@@ -1249,8 +1140,7 @@ class TestRealWorldYamlConfigs:
                       - name: model_graded_fact
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -1258,10 +1148,9 @@ class TestRealWorldYamlConfigs:
 
     def test_infer_task_from_inspect_ai_multiple_scorers(self, tmp_path: Path) -> None:
         """Test task inference when multiple scorers are present."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 tasks:
                   - id: my_dataset
                     field_spec:
@@ -1276,8 +1165,7 @@ class TestRealWorldYamlConfigs:
                           model: openai/gpt-4
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -1288,10 +1176,9 @@ class TestRealWorldYamlConfigs:
         self, tmp_path: Path
     ) -> None:
         """Test task inference from model_graded_fact scorer with explicit judge."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 tasks:
                   - id: hle
                     split: test
@@ -1306,8 +1193,7 @@ class TestRealWorldYamlConfigs:
                           model: openai/gpt-4
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -1327,10 +1213,9 @@ class TestRealWorldYamlConfigs:
 
         Source: https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro/blob/main/eval.yaml
         """
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 # yaml file for compatibility with inspect-ai
                 name: MMLU-Pro
                 description: >
@@ -1348,8 +1233,7 @@ class TestRealWorldYamlConfigs:
                       - name: multiple_choice
                     scorers:
                       - name: choice
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -1359,10 +1243,9 @@ class TestRealWorldYamlConfigs:
 
     def test_mmlu_pro_format_defaults_to_english(self, tmp_path: Path) -> None:
         """The MMLU-Pro eval.yaml has no 'languages' key, so English is used."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 name: MMLU-Pro
                 tasks:
                   - id: mmlu_pro
@@ -1376,58 +1259,41 @@ class TestRealWorldYamlConfigs:
                       - name: multiple_choice
                     scorers:
                       - name: choice
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
         assert len(config.languages) == 1
         assert config.languages[0].code == "en"
 
-    def test_parse_int_field_bool_not_allowed(self, tmp_path: Path) -> None:
-        """Test that boolean values are rejected for integer fields."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
-                task: classification
-                languages:
-                  - en
-                num_few_shot_examples: true
-                """
-            )
-        )
-        config = load_dataset_config_from_yaml(yaml_file)
-        assert config is None, (
-            f"The following config was not found to be None: {config}"
-        )
-
-    def test_parse_int_field_bool_not_allowed_max_tokens(self, tmp_path: Path) -> None:
-        """Test that boolean values are rejected for max_generated_tokens."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
-                task: classification
-                languages:
-                  - en
-                max_generated_tokens: false
-                """
-            )
+    @pytest.mark.parametrize(
+        ("field", "value"),
+        [("num_few_shot_examples", "true"), ("max_generated_tokens", "false")],
+    )
+    def test_parse_int_field_bool_not_allowed(
+        self, tmp_path: Path, field: str, value: str
+    ) -> None:
+        """Boolean values are rejected for every integer field."""
+        yaml_file = _write_yaml(
+            tmp_path,
+            f"""\
+task: classification
+languages:
+  - en
+{field}: {value}
+""",
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is None
 
     def test_parse_languages_empty_list_with_fallback(self, tmp_path: Path) -> None:
         """Test that empty languages list uses fallback codes."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 task: classification
                 languages: []
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(
             yaml_file, fallback_language_codes=["da"]
@@ -1439,10 +1305,9 @@ class TestRealWorldYamlConfigs:
         self, tmp_path: Path
     ) -> None:
         """Test that only first task in tasks list is used for promotion."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 tasks:
                   - id: first_task
                     split: test
@@ -1456,8 +1321,7 @@ class TestRealWorldYamlConfigs:
                 task: multiple-choice
                 languages:
                   - en
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
@@ -1845,10 +1709,9 @@ class TestSubsetSelection:
 
     def test_selected_entry_controls_all_config_values(self, tmp_path: Path) -> None:
         """Load column mappings, inference and prompts from the selected task."""
-        yaml_file = tmp_path / "eval.yaml"
-        yaml_file.write_text(
-            textwrap.dedent(
-                """\
+        yaml_file = _write_yaml(
+            tmp_path,
+            """\
                 tasks:
                   - config: first
                     split: first_split
@@ -1869,8 +1732,7 @@ class TestSubsetSelection:
                     scorers:
                       - name: math
                 languages: [en]
-                """
-            )
+                """,
         )
         config = load_dataset_config_from_yaml(yaml_file, task_index=1)
         assert config is not None

@@ -130,7 +130,11 @@ class TestBuildPreprocessingFunc:
         dataset = DatasetDict(
             {
                 "train": Dataset.from_dict(
-                    {"text": ["Hello world", "Test sentence"], "category": [0, 1]}
+                    {
+                        "text": ["Hello world", "Test sentence"],
+                        "category": [0, 1],
+                        "label": [99, 99],
+                    }
                 )
             }
         )
@@ -145,6 +149,7 @@ class TestBuildPreprocessingFunc:
         result = preprocessing(dataset)
         assert "label" in result["train"].column_names
         assert "category" not in result["train"].column_names
+        assert result["train"]["label"] == [0, 1]
 
     def test_build_preprocessing_func_renames_target_column_to_labels(self) -> None:
         """Test token classification target column becomes 'labels'."""
