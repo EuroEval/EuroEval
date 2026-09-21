@@ -1,7 +1,7 @@
 """All Czech dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import CZECH
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import CZECH, ENGLISH
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -12,9 +12,30 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
+
+WMT24PP_EN_CS_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-cs",
+    pretty_name="WMT24++-en-cs",
+    source="EuroEval/wmt24pp-en-cs",
+    task=TRANSLATION,
+    languages=[CZECH],
+    source_language=ENGLISH,
+    target_language=CZECH,
+)
+
+FLORES_EN_CS_CONFIG = TranslationDatasetConfig(
+    name="flores-en-cs",
+    pretty_name="FLORES-en-cs",
+    source="EuroEval/flores-en-cs",
+    task=TRANSLATION,
+    languages=[CZECH],
+    source_language=ENGLISH,
+    target_language=CZECH,
+)
 
 CSFD_SENTIMENT_CONFIG = DatasetConfig(
     name="csfd-sentiment",
@@ -93,6 +114,28 @@ RAGTRUTH_CS_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+WMT24PP_CS_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-cs-en",
+    pretty_name="WMT24++-cs-en",
+    source="EuroEval/wmt24pp-cs-en",
+    task=TRANSLATION,
+    languages=[CZECH],
+    source_language=CZECH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
+
+FLORES_CS_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-cs-en",
+    pretty_name="FLORES-cs-en",
+    source="EuroEval/flores-cs-en",
+    task=TRANSLATION,
+    languages=[CZECH],
+    source_language=CZECH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 SCALA_CS_CONFIG = DatasetConfig(
     name="scala-cs",

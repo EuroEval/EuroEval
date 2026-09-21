@@ -43,7 +43,6 @@ from .slovak import *  # noqa: F403
 from .slovene import *  # noqa: F403
 from .spanish import *  # noqa: F403
 from .swedish import *  # noqa: F403
-from .translation_configs import *  # noqa: F403
 from .ukrainian import *  # noqa: F403
 
 

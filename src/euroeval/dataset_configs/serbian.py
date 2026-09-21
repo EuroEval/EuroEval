@@ -1,7 +1,7 @@
 """All Serbian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import SERBIAN
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, SERBIAN
 from ..tasks import (
     COMMON_SENSE,
     HALLU,
@@ -12,9 +12,30 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
+
+WMT24PP_EN_SR_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-sr",
+    pretty_name="WMT24++-en-sr",
+    source="EuroEval/wmt24pp-en-sr",
+    task=TRANSLATION,
+    languages=[SERBIAN],
+    source_language=ENGLISH,
+    target_language=SERBIAN,
+)
+
+FLORES_EN_SR_CONFIG = TranslationDatasetConfig(
+    name="flores-en-sr",
+    pretty_name="FLORES-en-sr",
+    source="EuroEval/flores-en-sr",
+    task=TRANSLATION,
+    languages=[SERBIAN],
+    source_language=ENGLISH,
+    target_language=SERBIAN,
+)
 
 MMS_SR_CONFIG = DatasetConfig(
     name="mms-sr",
@@ -91,10 +112,41 @@ INCLUDE_SR_CONFIG = DatasetConfig(
     source="EuroEval/include-sr-mini",
     task=KNOW,
     languages=[SERBIAN],
+    # Unlike the other Serbian knowledge datasets (which are in Latin), INCLUDE-sr is
+    # written in Cyrillic, so we override the shared Latin KNOW template with a Cyrillic
+    # one to keep the prompt in the same script as the content.
+    prompt_prefix="Следе питања вишеструког избора (са одговорима).",
+    prompt_template="Питање: {text}\nОдговор: {label}",
+    instruction_prompt=(
+        "Питање: {text}\n\nОдговорите на наведено питање користећи "
+        "{labels_str}, и ништа друго."
+    ),
 )
 
 
 # Unofficial datasets ###
+
+WMT24PP_SR_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-sr-en",
+    pretty_name="WMT24++-sr-en",
+    source="EuroEval/wmt24pp-sr-en",
+    task=TRANSLATION,
+    languages=[SERBIAN],
+    source_language=SERBIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
+
+FLORES_SR_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-sr-en",
+    pretty_name="FLORES-sr-en",
+    source="EuroEval/flores-sr-en",
+    task=TRANSLATION,
+    languages=[SERBIAN],
+    source_language=SERBIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 MMLU_SR_CONFIG = DatasetConfig(
     name="mmlu-sr",

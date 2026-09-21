@@ -1,7 +1,7 @@
 """All Finnish dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import FINNISH
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, FINNISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -14,9 +14,30 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
+
+WMT24PP_EN_FI_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-fi",
+    pretty_name="WMT24++-en-fi",
+    source="EuroEval/wmt24pp-en-fi",
+    task=TRANSLATION,
+    languages=[FINNISH],
+    source_language=ENGLISH,
+    target_language=FINNISH,
+)
+
+FLORES_EN_FI_CONFIG = TranslationDatasetConfig(
+    name="flores-en-fi",
+    pretty_name="FLORES-en-fi",
+    source="EuroEval/flores-en-fi",
+    task=TRANSLATION,
+    languages=[FINNISH],
+    source_language=ENGLISH,
+    target_language=FINNISH,
+)
 
 SCANDISENT_FI_CONFIG = DatasetConfig(
     name="scandisent-fi",
@@ -110,6 +131,28 @@ INCLUDE_FI_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+WMT24PP_FI_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-fi-en",
+    pretty_name="WMT24++-fi-en",
+    source="EuroEval/wmt24pp-fi-en",
+    task=TRANSLATION,
+    languages=[FINNISH],
+    source_language=FINNISH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
+
+FLORES_FI_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-fi-en",
+    pretty_name="FLORES-fi-en",
+    source="EuroEval/flores-fi-en",
+    task=TRANSLATION,
+    languages=[FINNISH],
+    source_language=FINNISH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 HELLASWAG_FI_CONFIG = DatasetConfig(
     name="hellaswag-fi",

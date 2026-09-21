@@ -27,10 +27,16 @@ class Language:
             The word 'and' in the language.
         or_separator (optional):
             The word 'or' in the language.
+        multiple_scripts (optional):
+            Whether the language is written in more than one script (e.g., Serbian,
+            which is written in both Cyrillic and Latin). This is used by the
+            transliteration engine to normalise text to a single canonical script
+            before character-based metrics are computed. Defaults to False.
 
     The constructor retains the historical ``Language(code, name)`` contract. The
     ISO 639-3 and ISO 639-1 codes can be supplied as keyword arguments for language
     definitions that carry both codes.
+
     """
 
     name: str
@@ -38,6 +44,7 @@ class Language:
     code_1: str | None = field(default=None)
     _and_separator: str | None = field(repr=False, default=None)
     _or_separator: str | None = field(repr=False, default=None)
+    multiple_scripts: bool = False
 
     def __init__(
         self,
@@ -48,6 +55,7 @@ class Language:
         *,
         code_3: str | None = None,
         code_1: str | None = None,
+        multiple_scripts: bool = False,
     ) -> None:
         """Initialise a language using its legacy or ISO code arguments.
 
@@ -65,6 +73,9 @@ class Language:
                 The ISO 639-3 language code.
             code_1 (optional):
                 The ISO 639-1 language code, including an optional region subtag.
+            multiple_scripts (optional):
+                Whether the language is written in more than one script. Defaults to
+                False.
 
         Raises:
             TypeError:
@@ -87,6 +98,7 @@ class Language:
         self.code_1 = code_1
         self._and_separator = _and_separator
         self._or_separator = _or_separator
+        self.multiple_scripts = multiple_scripts
 
     def __hash__(self) -> int:
         """Return a hash of the language."""
@@ -271,7 +283,12 @@ BISLAMA: Language = Language(
     code_1="bi", code_3="bis", name="Bislama", _and_separator="mo", _or_separator="o"
 )
 BOSNIAN: Language = Language(
-    code_1="bs", code_3="bos", name="Bosnian", _and_separator="i", _or_separator="ili"
+    code_1="bs",
+    code_3="bos",
+    name="Bosnian",
+    _and_separator="i",
+    _or_separator="ili",
+    multiple_scripts=True,
 )
 BRETON: Language = Language(
     code_1="br", code_3="bre", name="Breton", _and_separator="ha", _or_separator="pe"
@@ -799,7 +816,12 @@ SARDINIAN: Language = Language(
     code_1="sc", code_3="srd", name="Sardinian", _and_separator="e", _or_separator="o"
 )
 SERBIAN: Language = Language(
-    code_1="sr", code_3="srp", name="Serbian", _and_separator="и", _or_separator="или"
+    code_1="sr",
+    code_3="srp",
+    name="Serbian",
+    _and_separator="и",
+    _or_separator="или",
+    multiple_scripts=True,
 )
 SHONA: Language = Language(
     code_1="sn", code_3="sna", name="Shona", _and_separator="uye", _or_separator="kana"

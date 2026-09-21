@@ -1,7 +1,7 @@
 """All Estonian dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import ESTONIAN
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, ESTONIAN
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -13,9 +13,30 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
+
+WMT24PP_EN_ET_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-et",
+    pretty_name="WMT24++-en-et",
+    source="EuroEval/wmt24pp-en-et",
+    task=TRANSLATION,
+    languages=[ESTONIAN],
+    source_language=ENGLISH,
+    target_language=ESTONIAN,
+)
+
+FLORES_EN_ET_CONFIG = TranslationDatasetConfig(
+    name="flores-en-et",
+    pretty_name="FLORES-en-et",
+    source="EuroEval/flores-en-et",
+    task=TRANSLATION,
+    languages=[ESTONIAN],
+    source_language=ENGLISH,
+    target_language=ESTONIAN,
+)
 
 ESTONIAN_VALENCE_CONFIG = DatasetConfig(
     name="estonian-valence",
@@ -113,6 +134,28 @@ RAGTRUTH_ET_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+WMT24PP_ET_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-et-en",
+    pretty_name="WMT24++-et-en",
+    source="EuroEval/wmt24pp-et-en",
+    task=TRANSLATION,
+    languages=[ESTONIAN],
+    source_language=ESTONIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
+
+FLORES_ET_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-et-en",
+    pretty_name="FLORES-et-en",
+    source="EuroEval/flores-et-en",
+    task=TRANSLATION,
+    languages=[ESTONIAN],
+    source_language=ESTONIAN,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 MULTI_IFEVAL_ET_CONFIG = DatasetConfig(
     name="multi-ifeval-et",

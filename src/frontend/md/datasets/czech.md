@@ -801,3 +801,279 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-cs
 ```
+
+## Translation
+
+### WMT24++ English to Czech
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Czech translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Czech translation pair from the dataset, where the source text is in English
+and the target text is in Czech.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hello, how are you?",
+  "target_text": "Ahoj, jak se máš?"
+}
+```
+
+```json
+{
+  "text": "The brown fox jumps over the lazy dog.",
+  "target_text": "Hnědá liška skáče přes líného psa."
+}
+```
+
+```json
+{
+  "text": "Prague is the capital of the Czech Republic.",
+  "target_text": "Praha je hlavní město České republiky."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Czech translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Czech translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Czech.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-en-cs
+```
+
+### Unofficial: WMT24++ Czech to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Czech translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Czech translation pair from the dataset, where the source text is in Czech
+and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Ahoj, jak se máš?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Hnědá liška skáče přes líného psa.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Praha je hlavní město České republiky.",
+  "target_text": "Prague is the capital of the Czech Republic."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Níže jsou uvedeny české texty s odpovídajícími překlady do English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Český text: {text}
+  Překlad do English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Český text: {text}
+
+  Přeložte výše uvedený text do English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-cs-en
+```
+
+### FLORES+ English to Czech
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Czech direction, where the source text is in English and the
+target text is in Czech.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Vzhledem k tomu, jak daleko je spousta pueblů vzdálena, neočekávejte, že mimo Albuquerque nebo Santa Fe najdete vydatný noční život."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Například děti, které se identifikují s rasovou menšinou, jež je vystavena stereotypu, že se špatně učí ve škole, mají ve chvíli, kdy zjistí, že je s jejich rasovým původem takový stereotyp spojován, tendenci mít ve škole horší výsledky."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "Je to udusaný sníh s puklinami zaplněnými a označenými vlaječkami. Lze tudy cestovat jen na speciálních traktorech, které táhnou saně s palivem a zásobami."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Czech translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Czech translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Czech.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-cs
+```
+
+### Unofficial: FLORES+ Czech to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Czech-to-English direction, where the source text is in Czech and the target
+text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Vzhledem k tomu, jak daleko je spousta pueblů vzdálena, neočekávejte, že mimo Albuquerque nebo Santa Fe najdete vydatný noční život.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Například děti, které se identifikují s rasovou menšinou, jež je vystavena stereotypu, že se špatně učí ve škole, mají ve chvíli, kdy zjistí, že je s jejich rasovým původem takový stereotyp spojován, tendenci mít ve škole horší výsledky.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "Je to udusaný sníh s puklinami zaplněnými a označenými vlaječkami. Lze tudy cestovat jen na speciálních traktorech, které táhnou saně s palivem a zásobami.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Níže jsou uvedeny české texty s odpovídajícími překlady do English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Český text: {text}
+  Překlad do English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Český text: {text}
+
+  Přeložte výše uvedený text do English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-cs-en
+```

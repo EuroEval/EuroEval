@@ -1,7 +1,7 @@
 """All Swedish dataset configurations used in EuroEval."""
 
-from ..data_models import DatasetConfig
-from ..languages import SWEDISH
+from ..data_models import DatasetConfig, TranslationDatasetConfig
+from ..languages import ENGLISH, SWEDISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -16,9 +16,30 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TRANSLATION,
 )
 
 # Official datasets ###
+
+WMT24PP_EN_SV_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-en-sv",
+    pretty_name="WMT24++-en-sv",
+    source="EuroEval/wmt24pp-en-sv",
+    task=TRANSLATION,
+    languages=[SWEDISH],
+    source_language=ENGLISH,
+    target_language=SWEDISH,
+)
+
+FLORES_EN_SV_CONFIG = TranslationDatasetConfig(
+    name="flores-en-sv",
+    pretty_name="FLORES-en-sv",
+    source="EuroEval/flores-en-sv",
+    task=TRANSLATION,
+    languages=[SWEDISH],
+    source_language=ENGLISH,
+    target_language=SWEDISH,
+)
 
 SWEREC_CONFIG = DatasetConfig(
     name="swerec",
@@ -125,7 +146,30 @@ SWEDISH_FACTS_CONFIG = DatasetConfig(
     languages=[SWEDISH],
 )
 
+
 # Unofficial datasets ###
+
+WMT24PP_SV_EN_CONFIG = TranslationDatasetConfig(
+    name="wmt24pp-sv-en",
+    pretty_name="WMT24++-sv-en",
+    source="EuroEval/wmt24pp-sv-en",
+    task=TRANSLATION,
+    languages=[SWEDISH],
+    source_language=SWEDISH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
+
+FLORES_SV_EN_CONFIG = TranslationDatasetConfig(
+    name="flores-sv-en",
+    pretty_name="FLORES-sv-en",
+    source="EuroEval/flores-sv-en",
+    task=TRANSLATION,
+    languages=[SWEDISH],
+    source_language=SWEDISH,
+    target_language=ENGLISH,
+    unofficial=True,
+)
 
 MMLU_SV_CONFIG = DatasetConfig(
     name="mmlu-sv",

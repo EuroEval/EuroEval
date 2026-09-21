@@ -76,7 +76,7 @@ class Metric(abc.ABC):
 
     def download(
         self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
-    ) -> "Metric":
+    ) -> "t.Self":
         """Initiates the download of the metric if needed.
 
         Args:

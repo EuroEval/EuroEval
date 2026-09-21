@@ -1778,3 +1778,279 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ragtruth-is
 ```
+
+## Translation
+
+### WMT24++ English to Icelandic
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Icelandic translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Icelandic translation pair from the dataset, where the source text is in
+English and the target text is in Icelandic.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hello, how are you?",
+  "target_text": "Halló, hvernig hefurðu það?"
+}
+```
+
+```json
+{
+  "text": "The brown fox jumps over the lazy dog.",
+  "target_text": "Brúni refurinn stökkur yfir lata hundinn."
+}
+```
+
+```json
+{
+  "text": "Reykjavik is the capital of Iceland.",
+  "target_text": "Reykjavík er höfuðborg Íslands."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Icelandic translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Icelandic translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Icelandic.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-en-is
+```
+
+### Unofficial: WMT24++ Icelandic to English
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. It contains manually translated
+examples for the English-Icelandic translation pair.
+
+The original full dataset consists of 998 samples for this language pair. A small
+portion of the samples were marked as bad, however, and we exclude those. We use 64
+samples for the training split, 128 samples for the validation split, and the rest for
+the test split.
+
+We use the Icelandic translation pair from the dataset, where the source text is in
+Icelandic and the target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Halló, hvernig hefurðu það?",
+  "target_text": "Hello, how are you?"
+}
+```
+
+```json
+{
+  "text": "Brúni refurinn stökkur yfir lata hundinn.",
+  "target_text": "The brown fox jumps over the lazy dog."
+}
+```
+
+```json
+{
+  "text": "Reykjavík er höfuðborg Íslands.",
+  "target_text": "Reykjavik is the capital of Iceland."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hér á eftir fara íslenskir textar með samsvarandi þýðingum á English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Íslenskur texti: {text}
+  Þýðing á English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Íslenskur texti: {text}
+
+  Þýddu textann hér að ofan á English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-is-en
+```
+
+### FLORES+ English to Icelandic
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the English-to-Icelandic direction, where the source text is in English and the
+target text is in Icelandic.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe.",
+  "target_text": "Þar sem mörg þorpanna eru úr alfaraleið, verður ekki hægt að finna næturlíf að neinu ráði án þess að fara til Albuquerque eða Santa Fe."
+}
+```
+
+```json
+{
+  "text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race.",
+  "target_text": "Sem dæmi, börn sem samsama sig við kynþáttahóp í minnihluta sem er með það orð á sér að standa sig ekki vel í skóla, eiga það til að ganga ekki vel í skóla þegar þau gera sér grein fyrir staðalímyndinni sem tengist kynþætti þeirra."
+}
+```
+
+```json
+{
+  "text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies.",
+  "target_text": "Hann er samanþjappaður snjór með snjófylltum jökulsprungum og er merktur með fánum. Einungis er hægt að ferðast um hann á sérútbúnum farartækjum sem draga á eftir sér sleða með eldsneyti og birgðum."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding Icelandic translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  Icelandic translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into Icelandic.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-en-is
+```
+
+### Unofficial: FLORES+ Icelandic to English
+
+This dataset is part of the FLORES+ benchmark, maintained by the Open Language Data
+Initiative (OLDI), which extends the original FLORES-200 dataset. It consists of
+sentences sampled from English Wikimedia articles (Wikinews, Wikijunior and Wikivoyage)
+and professionally translated into each language, with every sentence translated in a
+multi-way parallel fashion.
+
+We use 128 / 256 / 1,012 samples for the training, validation and test splits,
+respectively. The training and validation splits are sampled from the FLORES+ `dev`
+split, and the test split is the entire FLORES+ `devtest` split.
+
+We use the Icelandic-to-English direction, where the source text is in Icelandic and the
+target text is in English.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Þar sem mörg þorpanna eru úr alfaraleið, verður ekki hægt að finna næturlíf að neinu ráði án þess að fara til Albuquerque eða Santa Fe.",
+  "target_text": "Given how remote many of the pueblos are, you won't be able to find a significant amount of nightlife without traveling to Albuquerque or Santa Fe."
+}
+```
+
+```json
+{
+  "text": "Sem dæmi, börn sem samsama sig við kynþáttahóp í minnihluta sem er með það orð á sér að standa sig ekki vel í skóla, eiga það til að ganga ekki vel í skóla þegar þau gera sér grein fyrir staðalímyndinni sem tengist kynþætti þeirra.",
+  "target_text": "For instance, children who identify with a racial minority that is stereotyped as not doing well in school tend to not do well in school once they learn about the stereotype associated with their race."
+}
+```
+
+```json
+{
+  "text": "Hann er samanþjappaður snjór með snjófylltum jökulsprungum og er merktur með fánum. Einungis er hægt að ferðast um hann á sérútbúnum farartækjum sem draga á eftir sér sleða með eldsneyti og birgðum.",
+  "target_text": "It's compacted snow with crevasses filled in and marked by flags. It can only be traveled by specialized tractors, hauling sleds with fuel and supplies."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hér á eftir fara íslenskir textar með samsvarandi þýðingum á English.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Íslenskur texti: {text}
+  Þýðing á English: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Íslenskur texti: {text}
+
+  Þýddu textann hér að ofan á English.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset flores-is-en
+```
