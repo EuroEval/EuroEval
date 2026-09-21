@@ -27,9 +27,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   instruction-tuned and reasoning models run zero-shot and few-shot evaluations, base
   models run few-shot, and API-backed models run zero-shot. The explicit `--few-shot`
   and `--zero-shot` flags remain available as single-mode overrides.
-- Volunteer workers now use automatic shot selection, and trusted scope policies
-  authorise the exact base or instruction/reasoning result alternatives, including
-  datasets whose tasks require zero-shot evaluation.
 - Known parameter adjustments are now applied before and after the internal
   test request in the LiteLLM module, so a new dataset no longer re-triggers
   known errors and the returned kwargs are always consistent. This was contributed by
