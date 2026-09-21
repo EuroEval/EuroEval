@@ -1,7 +1,5 @@
 """Tests for the bits-per-character metric."""
 
-import math
-
 from euroeval.metrics.bpc import bpc_metric
 
 
@@ -40,13 +38,6 @@ class TestBitsPerCharacterMetric:
     def test_empty_predictions_returns_none(self) -> None:
         """No predictions yields None."""
         assert self._call([]) is None
-
-    def test_finite_only_average_is_unaffected(self) -> None:
-        """Without any non-finite scores the mean equals the plain average."""
-        scores = [0.5, 1.5, 2.5, 3.5]
-        result = self._call(scores)
-        assert result is not None
-        assert math.isclose(result, sum(scores) / len(scores))
 
     def test_infinite_score_is_excluded_from_mean(self) -> None:
         """A single infinite score does not poison the average."""

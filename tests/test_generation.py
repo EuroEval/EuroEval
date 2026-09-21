@@ -10,72 +10,34 @@ from euroeval.generation import generate
 
 
 class TestBPCacheNamespace:
-    """Tests that BPC runs use a separate on-disk cache from MCF runs.
+    """Tests that BPC runs use a separate on-disk cache from MCF runs."""
 
-    Without the `-bpc` suffix, switching `--use-bits-per-character` between True/False
-    for the same model+dataset would clobber each other's caches and silently return
-    wrong results.
-    """
-
-    def test_bpc_and_mcf_filenames_differ(
-        self, dataset_config_mock: MagicMock, model_config_mock: MagicMock
+    @pytest.mark.parametrize(
+        ("use_bits_per_character", "expected_cache_name"),
+        [
+            (False, "fake-ds-model-outputs-test.json"),
+            (True, "fake-ds-bpc-model-outputs-test.json"),
+        ],
+        ids=["MCF legacy cache name", "BPC cache name"],
+    )
+    def test_cache_name_namespaces_bpc_runs(
+        self,
+        dataset_config_mock: MagicMock,
+        model_config_mock: MagicMock,
+        use_bits_per_character: bool,
+        expected_cache_name: str,
     ) -> None:
-        """The two evaluation types resolve to different on-disk cache files."""
-        with patch("euroeval.generation.ModelCache") as MockCache:
+        """BPC is namespaced while MCF keeps its legacy cache name."""
+        with patch("euroeval.generation.ModelCache") as mock_cache:
             generate(
                 model=MagicMock(),
                 datasets=[],
                 model_config=model_config_mock,
                 dataset_config=dataset_config_mock,
-                benchmark_config=_make_benchmark_config(False),
+                benchmark_config=_make_benchmark_config(use_bits_per_character),
             )
-            mcf_name = MockCache.call_args.kwargs["cache_name"]
-            generate(
-                model=MagicMock(),
-                datasets=[],
-                model_config=model_config_mock,
-                dataset_config=dataset_config_mock,
-                benchmark_config=_make_benchmark_config(True),
-            )
-            bpc_name = MockCache.call_args.kwargs["cache_name"]
-        assert mcf_name != bpc_name
 
-    def test_bpc_cache_name_includes_suffix(
-        self, dataset_config_mock: MagicMock, model_config_mock: MagicMock
-    ) -> None:
-        """In BPC mode the cache filename includes a `-bpc` segment."""
-        bc = _make_benchmark_config(use_bits_per_character=True)
-        with patch("euroeval.generation.ModelCache") as MockCache:
-            generate(
-                model=MagicMock(),
-                datasets=[],
-                model_config=model_config_mock,
-                dataset_config=dataset_config_mock,
-                benchmark_config=bc,
-            )
-            cache_name = MockCache.call_args.kwargs["cache_name"]
-        assert "fake-ds-bpc-model-outputs" in cache_name
-
-    def test_mcf_cache_name_omits_suffix(
-        self, dataset_config_mock: MagicMock, model_config_mock: MagicMock
-    ) -> None:
-        """In MCF mode the cache filename matches the legacy unsuffixed pattern.
-
-        This is the bit-identity acceptance criterion for MCF runs: their cache
-        path must not change when BPC support is added.
-        """
-        bc = _make_benchmark_config(use_bits_per_character=False)
-        with patch("euroeval.generation.ModelCache") as MockCache:
-            generate(
-                model=MagicMock(),
-                datasets=[],
-                model_config=model_config_mock,
-                dataset_config=dataset_config_mock,
-                benchmark_config=bc,
-            )
-            cache_name = MockCache.call_args.kwargs["cache_name"]
-        assert "fake-ds-model-outputs" in cache_name
-        assert "-bpc-" not in cache_name
+        assert mock_cache.call_args.kwargs["cache_name"] == expected_cache_name
 
 
 def _make_benchmark_config(use_bits_per_character: bool) -> MagicMock:
