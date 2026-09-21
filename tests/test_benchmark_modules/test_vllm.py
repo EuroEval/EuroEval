@@ -312,58 +312,44 @@ class TestComputeTokenBudget:
 class TestIsMistralTokeniserModel:
     """Tests for the `_is_mistral_tokeniser_model` helper function."""
 
-    def test_mistral_architecture_returns_true(self) -> None:
-        """A model with a Mistral architecture is identified as Mistral."""
+    @pytest.mark.parametrize(
+        ("model_id", "model_type", "architectures", "expected"),
+        [
+            ("some-user/MyModel", "llama", ["MistralForCausalLM"], True),
+            (
+                "mistralai/Mistral-7B-Base-2412",
+                "mistral",
+                ["MistralForCausalLM"],
+                False,
+            ),
+            ("mistralai/Mistral-7B-Instruct-v0.3", "llama", ["LlamaForCausalLM"], True),
+            ("mistralai/Mistral-7B-v0.1", "mistral", ["MistralForCausalLM"], False),
+            ("some-user/MyMistralModel", "mistral", None, True),
+            ("gordicaleksa/SlovenianGPT", "gpt2", ["GPT2LMHeadModel"], False),
+        ],
+        ids=[
+            "architecture",
+            "mistralai-base",
+            "mistralai-instruct",
+            "versioned-base",
+            "model-type",
+            "community-model",
+        ],
+    )
+    def test_detection_cases(
+        self,
+        model_id: str,
+        model_type: str,
+        architectures: list[str] | None,
+        expected: bool,
+    ) -> None:
+        """Mistral detection distinguishes architectures and model IDs."""
         config = MagicMock()
-        config.model_type = "llama"
-        config.architectures = ["MistralForCausalLM"]
-        assert _is_mistral_tokeniser_model(
-            model_id="some-user/MyModel", hf_model_config=config
-        )
-
-    def test_mistralai_base_model_returns_false(self) -> None:
-        """A mistralai base model is not routed to the Mistral common tokeniser."""
-        config = MagicMock()
-        config.model_type = "mistral"
-        config.architectures = ["MistralForCausalLM"]
-        assert not _is_mistral_tokeniser_model(
-            model_id="mistralai/Mistral-7B-Base-2412", hf_model_config=config
-        )
-
-    def test_mistralai_instruct_model_returns_true(self) -> None:
-        """A mistralai instruction-tuned model is identified as Mistral."""
-        config = MagicMock()
-        config.model_type = "llama"
-        config.architectures = ["LlamaForCausalLM"]
-        assert _is_mistral_tokeniser_model(
-            model_id="mistralai/Mistral-7B-Instruct-v0.3", hf_model_config=config
-        )
-
-    def test_mistralai_versioned_base_model_returns_false(self) -> None:
-        """A versioned base model like Mistral-7B-v0.1 is not identified as Mistral."""
-        config = MagicMock()
-        config.model_type = "mistral"
-        config.architectures = ["MistralForCausalLM"]
-        assert not _is_mistral_tokeniser_model(
-            model_id="mistralai/Mistral-7B-v0.1", hf_model_config=config
-        )
-
-    def test_model_type_mistral_returns_true(self) -> None:
-        """A non-mistralai model with model_type 'mistral' is identified as Mistral."""
-        config = MagicMock()
-        config.model_type = "mistral"
-        config.architectures = None
-        assert _is_mistral_tokeniser_model(
-            model_id="some-user/MyMistralModel", hf_model_config=config
-        )
-
-    def test_non_mistral_community_model_returns_false(self) -> None:
-        """A non-Mistral community model is not identified as Mistral."""
-        config = MagicMock()
-        config.model_type = "gpt2"
-        config.architectures = ["GPT2LMHeadModel"]
-        assert not _is_mistral_tokeniser_model(
-            model_id="gordicaleksa/SlovenianGPT", hf_model_config=config
+        config.model_type = model_type
+        config.architectures = architectures
+        assert (
+            _is_mistral_tokeniser_model(model_id=model_id, hf_model_config=config)
+            is expected
         )
 
 
@@ -729,34 +715,37 @@ class TestMoeAlignedTensorParallelSize:
     tensor parallel size must be reduced up front to keep the shard 128-aligned.
     """
 
-    def test_none_config_is_returned_unchanged(self) -> None:
-        """A missing model config leaves the tensor parallel size unchanged."""
-        assert _moe_aligned_tensor_parallel_size(4, None) == 4
+    @pytest.mark.parametrize(
+        ("tensor_parallel_size", "config_kind", "expert_size", "expected"),
+        [
+            (4, "missing", None, 4),
+            (2, "moe", 896, 1),
+            (4, "non-moe", None, 4),
+            (2, "moe", 1024, 2),
+            (1, "moe", 896, 1),
+        ],
+        ids=["missing-config", "unaligned", "non-moe", "aligned", "single-gpu"],
+    )
+    def test_alignment_cases(
+        self,
+        tensor_parallel_size: int,
+        config_kind: str,
+        expert_size: int | None,
+        expected: int,
+    ) -> None:
+        """MoE alignment preserves valid sizes and reduces invalid shards."""
+        if config_kind == "missing":
+            hf_model_config = None
+        elif config_kind == "non-moe":
+            hf_model_config = MagicMock(spec=[])
+        else:
+            hf_model_config = MagicMock(spec=["moe_intermediate_size"])
+            hf_model_config.moe_intermediate_size = expert_size
 
-    def test_reduces_size_to_keep_expert_shard_aligned(self) -> None:
-        """Mellum2's 896 expert size forces a drop from 2 GPUs to 1 (896 = 128 x 7)."""
-        # 896 / 2 = 448 and 448 % 128 == 64 != 0, so only tp in {1, 7} stay aligned.
-        hf_model_config = MagicMock(spec=["moe_intermediate_size"])
-        hf_model_config.moe_intermediate_size = 896
-        assert _moe_aligned_tensor_parallel_size(2, hf_model_config) == 1
-
-    def test_returns_size_unchanged_for_non_moe_config(self) -> None:
-        """A config without ``moe_intermediate_size`` is left unchanged."""
-        hf_model_config = MagicMock(spec=[])
-        assert _moe_aligned_tensor_parallel_size(4, hf_model_config) == 4
-
-    def test_returns_size_unchanged_when_already_aligned(self) -> None:
-        """An aligned expert size keeps the requested tensor parallel size."""
-        # 1024 / 2 = 512, which is a multiple of 128.
-        hf_model_config = MagicMock(spec=["moe_intermediate_size"])
-        hf_model_config.moe_intermediate_size = 1024
-        assert _moe_aligned_tensor_parallel_size(2, hf_model_config) == 2
-
-    def test_single_gpu_request_is_never_reduced(self) -> None:
-        """A single-GPU request is returned unchanged regardless of expert size."""
-        hf_model_config = MagicMock(spec=["moe_intermediate_size"])
-        hf_model_config.moe_intermediate_size = 896
-        assert _moe_aligned_tensor_parallel_size(1, hf_model_config) == 1
+        assert (
+            _moe_aligned_tensor_parallel_size(tensor_parallel_size, hf_model_config)
+            == expected
+        )
 
 
 class TestNvccCheck:
