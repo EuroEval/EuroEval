@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "check": "npm run check:vercel-source && vue-tsc --noEmit",
     "check:vercel-source": "node src/scripts/check-vercel-source-staging.mjs",
-    "test:api": "node --experimental-strip-types --loader ./tests/api/loader-extensionless-ts.mjs --test tests/api/import-specifiers.test.mjs tests/api/loader-extensionless-ts.test.mjs tests/api/worker/_lib.test.mjs tests/api/worker/promote.test.mjs tests/api/worker/lifecycle.test.mjs tests/api/worker/result.test.mjs tests/api/hall-of-fame.test.mjs",
+    "test:api": "node --experimental-strip-types --loader ./tests/api/loader-extensionless-ts.mjs --test tests/api/import-specifiers.test.mjs tests/api/loader-extensionless-ts.test.mjs tests/api/worker/_lib.test.mjs tests/api/worker/canary.test.mjs tests/api/worker/promote.test.mjs tests/api/worker/lifecycle.test.mjs tests/api/worker/result.test.mjs tests/api/hall-of-fame.test.mjs",
     "test:scripts": "node --test tests/scripts/*.test.mjs"
   },
   "dependencies": {

@@ -10,7 +10,9 @@ import os
 import typing as t
 import urllib.request
 
+from euroeval.canary_evidence import evidence_from_dict
 from leaderboards.constants import HF_RESULTS_BUCKET
+from leaderboards.contamination_canary import process_contamination_canaries
 
 from .review_models import (
     BrokerBinder,
@@ -36,6 +38,33 @@ _DECISION_PREFIX = "volunteer/decisions"
 _MANIFEST_PREFIX = "volunteer/manifests"
 _LOCAL_DECISION_CREATED_AT = "1970-01-01T00:00:00Z"
 _DECISION_ARTIFACT = "volunteer-review-decision/v1"
+
+
+def _has_collected_canary(records: list[dict[str, object]]) -> bool:
+    """Return whether staged auxiliary records claim scoreable observations."""
+    for record in records:
+        library = record.get("eval_library")
+        details = (
+            library.get("additional_details") if isinstance(library, dict) else None
+        )
+        raw = (
+            details.get("contamination_canary_evidence")
+            if isinstance(details, dict)
+            else None
+        )
+        if isinstance(raw, str):
+            raw = json.loads(raw)
+        if evidence_from_dict(raw).status == "collected":
+            return True
+    return False
+
+
+def _is_canary_identity(identity: tuple[str, str, bool | None, bool | None]) -> bool:
+    """Return whether a validated identity carries private canary evidence."""
+    return identity[1] == "contamination-canary" or identity[1].startswith(
+        "contamination-canary-"
+    )
+
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +127,28 @@ class VolunteerReviewer:
             key=lambda item: item["identity"],
         )
         if outcome == "accepted":
+            canary_records = [
+                json.loads(record.content)
+                for record in report.records
+                if _is_canary_identity(record.identity)
+            ]
+            if canary_records:
+                _, _, _, canary_report = process_contamination_canaries(
+                    records=canary_records
+                )
+                outcomes = canary_report.get("models")
+                if _has_collected_canary(canary_records) and (
+                    canary_report.get("status") != "scored"
+                    or not isinstance(outcomes, list)
+                    or any(
+                        not isinstance(item, dict) or item.get("status") != "scored"
+                        for item in outcomes
+                    )
+                ):
+                    raise ReviewError(
+                        "Collected contamination-canary evidence could not be "
+                        "validated by private scoring"
+                    )
             self._validate_canonical_records(report=report)
         known_digest = existing[0][2] if existing else None
         reservation = (
@@ -191,6 +242,8 @@ class VolunteerReviewer:
     ) -> None:
         self._validate_canonical_records(report=report)
         for record in report.records:
+            if _is_canary_identity(record.identity):
+                continue
             if renew:
                 renew()
             current = self.store.read_optional(
@@ -221,8 +274,11 @@ class VolunteerReviewer:
                 self.results_bucket, record.canonical_path
             )
             for record in report.records
+            if not _is_canary_identity(record.identity)
         }
         for record in report.records:
+            if _is_canary_identity(record.identity):
+                continue
             current = existing[record.canonical_path]
             if current is not None and current != record.content:
                 raise ReviewError(

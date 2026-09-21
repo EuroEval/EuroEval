@@ -2,8 +2,12 @@ import { uploadFile } from "@huggingface/hub";
 import { BrokerError, ConfigurationError, GROUPS, env } from "./protocol.js";
 import { fetchWithRetry } from "./http.js";
 import { languageGroup } from "./model.js";
+import {
+  CANARY_RESULT_DATASET,
+  validateCanaryEvidence,
+} from "./canary.js";
 
-export function validateRecord(record: unknown, expected: { modelId: string; revision: string; language: string; euroevalVersion?: string }): { identity: string; failed: number; warnings: string[] } {
+export function validateRecord(record: unknown, expected: { modelId: string; revision: string; language: string; euroevalVersion?: string; modelType?: "encoder" | "generative" }): { identity: string; failed: number; warnings: string[] } {
   if (!record || typeof record !== "object" || Array.isArray(record)) throw new BrokerError(422, "record must be an EEE JSON object.");
   const value = record as Record<string, any>;
   const modelInfo = value.model_info as Record<string, any> | undefined;
@@ -16,6 +20,24 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   if (library.name !== "euroeval" || typeof library.version !== "string" || !library.version || expected.euroevalVersion && library.version.replace(/\.dev\d+$/, "") !== expected.euroevalVersion.replace(/\.dev\d+$/, "")) throw new BrokerError(422, "record has an invalid eval_library name or version.");
   const details = library.additional_details as Record<string, any> | undefined;
   if (!details || typeof details.dataset !== "string" || !details.dataset || typeof details.task !== "string" || !details.task) throw new BrokerError(422, "record has no canonical dataset/task identity.");
+  if (details.dataset === CANARY_RESULT_DATASET || details.dataset.startsWith(`${CANARY_RESULT_DATASET}-`)) {
+    if (details.task !== "contamination-detection") throw new BrokerError(422, "canary result has an invalid task.");
+    const evidence = parseCanaryEvidence(details.contamination_canary_evidence);
+    validateCanaryEvidence(evidence, {
+      modelId: expected.modelId,
+      revision: expected.revision,
+    });
+    const canary = evidence as Record<string, unknown>;
+    if (
+      expected.modelType === "encoder" &&
+      (canary.status !== "not_applicable" || canary.reason !== "encoder")
+    ) {
+      throw new BrokerError(422, "encoder canary evidence must be not_applicable/encoder.");
+    }
+    if (expected.modelType === "generative" && canary.reason === "encoder") {
+      throw new BrokerError(422, "generative canary evidence cannot use the encoder status.");
+    }
+  }
   let raw: unknown;
   try { raw = typeof details.raw_results === "string" ? JSON.parse(details.raw_results) : details.raw_results; } catch { throw new BrokerError(422, "additional_details.raw_results is not valid JSON."); }
   if (!Array.isArray(raw)) throw new BrokerError(422, "additional_details.raw_results is not valid JSON.");
@@ -74,6 +96,15 @@ export function validateRecord(record: unknown, expected: { modelId: string; rev
   }
   if (!value.evaluation_results.length) throw new BrokerError(422, "record contains no results.");
   return { identity: JSON.stringify([expected.modelId, details.dataset, split, shot]), failed: 0, warnings };
+}
+
+function parseCanaryEvidence(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    throw new BrokerError(422, "contamination_canary_evidence is not valid JSON.");
+  }
 }
 
 let stagingMetadata: { bucket: string; private: boolean; checkedAt: number } | null = null;

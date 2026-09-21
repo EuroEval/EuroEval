@@ -43,6 +43,7 @@ from leaderboards.constants import (
     RESULTS_READY_LABEL,
     VM_MARKER_RE,
 )
+from leaderboards.contamination_canary import is_canary_record
 from leaderboards.evaluation_common import (
     estimated_model_bytes,
     extract_language_groups,
@@ -1158,6 +1159,7 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
             continue
         try:
             record = json.loads(line)
+            private_canary = is_canary_record(record)
             identity = identity_from_eee_record(record)
             record_path = RESULTS_DIR / identity_to_path(identity)
             record_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1182,7 +1184,8 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
 
             record_path.write_text(new_content, encoding="utf-8")
             records_written += 1
-            written_paths.append(record_path)
+            if not private_canary:
+                written_paths.append(record_path)
         except (json.JSONDecodeError, ValueError, KeyError) as e:
             logger.debug(f"Skipping invalid record: {e}")
 
@@ -1194,8 +1197,12 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
         logger.info("All records unchanged.")
         return True
 
+    if not written_paths:
+        logger.info("No public result records to upload.")
+        return True
+
     try:
-        logger.info(f"Uploading {records_written} records to {HF_RESULTS_BUCKET}...")
+        logger.info(f"Uploading {len(written_paths)} records to {HF_RESULTS_BUCKET}...")
         # Skip any files that are empty (0 bytes)
         api = HfApi()
         add_list: list[tuple[str | Path | bytes, str]] = [
@@ -1205,7 +1212,8 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
         ]
         api.batch_bucket_files(bucket_id=HF_RESULTS_BUCKET, add=add_list)
         logger.info(
-            f"Uploaded {records_written} result records for {model_id!r} to HF bucket."
+            f"Uploaded {len(written_paths)} result records for {model_id!r} "
+            "to HF bucket."
         )
         return True
     except HfHubHTTPError as e:

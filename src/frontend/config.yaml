@@ -64,6 +64,7 @@ sections:
       - { path: tasks/bias-detection.md, title: Bias Detection }
       - { path: tasks/classification.md, title: Classification }
       - { path: tasks/common-sense-reasoning.md, title: Common-sense Reasoning }
+      - { path: tasks/contamination-detection.md, title: Contamination Detection }
       - { path: tasks/european-values.md, title: European Values }
       - { path: tasks/grammatical-error-correction.md, title: Grammatical Error Correction }
       - { path: tasks/grammatical-error-detection.md, title: Grammatical Error Detection }

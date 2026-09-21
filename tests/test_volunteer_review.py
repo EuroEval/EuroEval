@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import dataclasses
 import hashlib
 import json
 import threading
@@ -13,6 +14,7 @@ from types import SimpleNamespace
 
 import pytest
 
+import euroeval_worker.review_transaction as review_transaction
 from euroeval_worker.review import (
     BrokerReservationResult,
     BucketApi,
@@ -337,6 +339,33 @@ def test_canonical_collision_prevents_decision_and_broker() -> None:
 
     assert broker_calls == []
     assert not _decision_paths(api)
+
+
+def test_collected_canary_must_be_privately_scoreable_before_approval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An unavailable private scorer cannot approve claimed collected evidence."""
+    _, reviewer, _ = _reviewer()
+    report = reviewer.show(SUBMISSION)
+    canary = dataclasses.replace(
+        report.records[0], identity=("org/model", "contamination-canary-da", None, None)
+    )
+    monkeypatch.setattr(
+        reviewer,
+        "show",
+        lambda submission_id: dataclasses.replace(report, records=(canary,)),
+    )
+    monkeypatch.setattr(
+        review_transaction, "_has_collected_canary", lambda records: True
+    )
+    monkeypatch.setattr(
+        review_transaction,
+        "process_contamination_canaries",
+        lambda records: ([], records, set(), {"status": "unavailable", "models": []}),
+    )
+
+    with pytest.raises(ReviewError, match="could not be validated"):
+        reviewer.decide(SUBMISSION, "accepted", "maintainer")
 
 
 def test_concurrent_decisions_use_first_server_metadata() -> None:
@@ -727,6 +756,28 @@ def test_partial_approve_resumes_and_is_idempotent() -> None:
     assert _decision_content(api) == decision
     assert len([key for key in api.files if key[0] == RESULTS]) == 2
     assert broker_calls == [(12, SUBMISSION, "accepted"), (12, SUBMISSION, "accepted")]
+
+
+def test_private_canary_record_is_not_promoted_to_public_results() -> None:
+    """Completion-bearing evidence remains in private staging after approval."""
+    api, reviewer, _ = _reviewer()
+    report = reviewer.show(SUBMISSION)
+    ordinary = report.records[0]
+    canary_content = b"private canary evidence"
+    canary = dataclasses.replace(
+        ordinary,
+        identity=("org/model", "contamination-canary-da", None, None),
+        digest=hashlib.sha256(canary_content).hexdigest(),
+        canonical_path="org_model/contamination-canary-da__test__zeroshot.json",
+        content=canary_content,
+    )
+
+    reviewer._promote_records(  # noqa: SLF001 - focused promotion boundary test
+        dataclasses.replace(report, records=(ordinary, canary))
+    )
+
+    assert (RESULTS, ordinary.canonical_path) in api.files
+    assert (RESULTS, canary.canonical_path) not in api.files
 
 
 def test_reject_is_idempotent_and_opposite_decision_fails() -> None:

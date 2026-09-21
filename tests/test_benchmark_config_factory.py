@@ -31,7 +31,7 @@ from euroeval.languages import (
     get_all_languages,
     get_correct_language_codes,
 )
-from euroeval.tasks import LA
+from euroeval.tasks import CONTAMINATION_DETECTION, LA
 
 
 class TestBitsPerCharacterGating:
@@ -94,6 +94,43 @@ def all_official_la_dataset_configs() -> Generator[list[DatasetConfig], None, No
         ).values()
         if LA == cfg.task and not cfg.unofficial
     ]
+
+
+def test_contamination_detection_creates_only_a_virtual_dataset() -> None:
+    """The canary task selects one virtual dataset without duplicating it."""
+    selected = prepare_dataset_configs(
+        task="contamination-detection",
+        dataset=None,
+        languages=[DANISH],
+        custom_datasets_file=Path("custom_datasets.py"),
+        api_key=os.getenv("HF_TOKEN"),
+        cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=True,
+        run_with_cli=True,
+    )
+    assert [config.name for config in selected] == ["contamination-canary-da"]
+    assert selected[0].task is CONTAMINATION_DETECTION
+    with pytest.raises(ValueError, match="source"):
+        selected[0].source
+
+    assert sum(config.task is CONTAMINATION_DETECTION for config in selected) == 1
+
+
+def test_ordinary_task_includes_the_canary() -> None:
+    """An ordinary task run includes the virtual canary for the selected language."""
+    selected = prepare_dataset_configs(
+        task="classification",
+        dataset=None,
+        languages=[DANISH],
+        custom_datasets_file=Path("custom_datasets.py"),
+        api_key=None,
+        cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=False,
+        run_with_cli=True,
+    )
+
+    assert selected[-1].name == "contamination-canary-da"
+    assert sum(config.task is CONTAMINATION_DETECTION for config in selected) == 1
 
 
 @pytest.mark.parametrize(
@@ -194,6 +231,23 @@ def test_prepare_dataset_configs(
         trust_remote_code=True,
         run_with_cli=True,
     )
+    if input_dataset is None:
+        canary_configs = [
+            config
+            for config in prepared_dataset_configs
+            if config.task is CONTAMINATION_DETECTION
+        ]
+        assert len(canary_configs) == 1
+        assert canary_configs[0].name == (
+            "contamination-canary-" + input_languages[0].code
+            if len(input_languages) == 1
+            else "contamination-canary"
+        )
+        prepared_dataset_configs = [
+            config
+            for config in prepared_dataset_configs
+            if config.task is not CONTAMINATION_DETECTION
+        ]
     assert set(prepared_dataset_configs) == set(expected_dataset_configs)
 
 
@@ -388,3 +442,32 @@ def test_resolve_dataset_id_handles_canonical_expanded_identities() -> None:
             dataset_id="repo::dan::test", all_dataset_configs=configs
         )
     ] == ["repo::dan::test", "repo::dan::test::__task_2__"]
+
+
+def test_targeted_dataset_omits_the_canary() -> None:
+    """Selecting a dataset does not silently widen the run with the canary."""
+    selected = prepare_dataset_configs(
+        task=None,
+        dataset="dala",
+        languages=[DANISH],
+        custom_datasets_file=Path("custom_datasets.py"),
+        api_key=None,
+        cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=False,
+        run_with_cli=True,
+    )
+
+    assert [config.name for config in selected] == ["dala"]
+    assert all(config.task is not CONTAMINATION_DETECTION for config in selected)
+
+    selected_config = prepare_dataset_configs(
+        task=None,
+        dataset=DALA_CONFIG,
+        languages=[DANISH],
+        custom_datasets_file=Path("custom_datasets.py"),
+        api_key=None,
+        cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=False,
+        run_with_cli=True,
+    )
+    assert selected_config == [DALA_CONFIG]

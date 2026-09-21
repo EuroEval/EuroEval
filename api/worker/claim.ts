@@ -8,6 +8,7 @@ import {
   getLeaseForIssue, reclaimExpiredLease,
   parseVolunteerMarker, resolveModel, selectedLanguages, volunteerAssigneesMatch,
   requireProtocol, signVolunteerMarker, verifyVolunteerMarker, markerSecret, replaceVolunteerMarker,
+  reserveCanary,
 } from "./_lib.js";
 import type { Lease, VolunteerLeaseMarker } from "./_lib.js";
 
@@ -191,6 +192,10 @@ export default async function handler(req: Request): Promise<Response> {
         try { trusted = expectedScope(euroevalVersion, model.model_type, language); }
         catch (error) { if (error instanceof BrokerError && error.status === 422) continue; throw error; }
         const expiresAt = new Date(Date.now() + leaseTtl() * 1000).toISOString();
+        const leaseId = randomToken(18);
+        const contaminationCanary = await reserveCanary(
+          model.id, model.revision, model.model_type, leaseId,
+        );
         const lease: Lease = {
           issue_number: snapshot.number, language, worker: identity.hash.slice(0, 24), contributor: identity.contributor,
           model_id: model.id, model_revision: model.revision, euroeval_version: euroevalVersion,
@@ -200,9 +205,10 @@ export default async function handler(req: Request): Promise<Response> {
           selected_gpu_index: body.hardware.selected_gpu_index as number,
           selected_gpu_uuid: body.hardware.selected_gpu_uuid as string,
           expires_at: expiresAt,
-          lease_id: randomToken(18),
+          lease_id: leaseId,
           model_type: model.model_type,
           model_metadata: model.model_metadata,
+          contamination_canary: contaminationCanary,
           expected_scope: {
             policy_version: trusted.policy_version,
             language_group: trusted.language_group,
@@ -212,7 +218,9 @@ export default async function handler(req: Request): Promise<Response> {
             warnings: trusted.warnings || [],
           },
         };
-        if (!(await putLease(lease))) continue;
+        if (!(await putLease(lease))) {
+          continue;
+        };
         const nextMarker: VolunteerLeaseMarker = {
           protocol_version: PROTOCOL_VERSION, coordinator: "coordinator", submission: "active",
           leases: [...(current?.leases || []), { lease_id: lease.lease_id, language, worker: lease.worker, contributor: identity.contributor, expires_at: expiresAt }],
@@ -260,7 +268,8 @@ export default async function handler(req: Request): Promise<Response> {
               item.login.toLowerCase() === identity.contributor.toLowerCase());
             if (assigned) await unassignIssue(snapshot.number, assigned.login).catch(() => undefined);
           }
-          await deleteLease(lease).catch(() => undefined); throw error;
+          await deleteLease(lease).catch(() => undefined);
+          throw error;
         }
         return json(200, {
           protocol_version: PROTOCOL_VERSION, lease_id: lease.lease_id, issue_number: lease.issue_number,
@@ -269,6 +278,7 @@ export default async function handler(req: Request): Promise<Response> {
           selected_gpu_index: lease.selected_gpu_index, selected_gpu_uuid: lease.selected_gpu_uuid,
           model_type: lease.model_type, model_metadata: lease.model_metadata,
           expected_scope: lease.expected_scope,
+          contamination_canary: lease.contamination_canary,
         });
       } finally { await mutex.release(); }
     }

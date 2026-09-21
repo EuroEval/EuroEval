@@ -14,6 +14,7 @@ from .dataset_configs import get_all_dataset_configs
 from .enums import Device
 from .languages import get_all_languages, get_correct_language_codes
 from .logging_utils import log
+from .tasks import CONTAMINATION_DETECTION, get_all_tasks
 
 if t.TYPE_CHECKING:
     from .data_models import Language
@@ -149,15 +150,41 @@ def prepare_dataset_configs(
         all_official_dataset_configs=all_official_dataset_configs,
     )
 
-    task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
+    task_mapping = get_all_tasks()
+    task_mapping.update(
+        {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
+    )
     tasks = _get_tasks_list(task=task, task_mapping=task_mapping)
 
-    return [
+    prepared = [
         ds
         for ds in datasets
         if (tasks is None or ds.task in tasks)
         and any(lang in languages for lang in ds.languages)
     ]
+
+    # A dataset selection is intentionally a complete, targeted selection. In every
+    # other case the virtual canary is part of the normal task/suite run, including
+    # when a task filter selects ordinary tasks. An explicit canary task is already
+    # represented by this same virtual config, so it must not be added twice.
+    if dataset is None and not any(
+        config.task is CONTAMINATION_DETECTION for config in prepared
+    ):
+        canary_name = (
+            "contamination-canary-" + languages[0].code
+            if len(languages) == 1
+            else "contamination-canary"
+        )
+        prepared.append(
+            DatasetConfig(
+                task=CONTAMINATION_DETECTION,
+                languages=languages,
+                name=canary_name,
+                pretty_name="Contamination canary",
+                unofficial=True,
+            )
+        )
+    return prepared
 
 
 def _extract_dataset_ids(

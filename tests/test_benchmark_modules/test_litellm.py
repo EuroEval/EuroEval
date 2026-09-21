@@ -637,7 +637,7 @@ class TestRetryAdjustments:
 
         assert model._parameter_adjustments == {ParameterAdjustment.NO_JSON_SCHEMA}
 
-        new_dataset_config = copy.deepcopy(x=dataset_config)
+        new_dataset_config = copy.copy(x=dataset_config)
         new_dataset_config.max_generated_tokens = (
             dataset_config.max_generated_tokens or 0
         ) + 1234
@@ -983,7 +983,7 @@ class TestRetryAdjustments:
         )
         model._parameter_adjustments.add(ParameterAdjustment.USE_MAX_TOKENS)
 
-        new_dataset_config = copy.deepcopy(x=dataset_config)
+        new_dataset_config = copy.copy(x=dataset_config)
         new_dataset_config.max_generated_tokens = (
             dataset_config.max_generated_tokens or 0
         ) + 1234
