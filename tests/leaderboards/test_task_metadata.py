@@ -14,12 +14,6 @@ from leaderboards.task_metadata import (
 )
 
 
-def test_translation_is_excluded_from_leaderboard_dataset_selection() -> None:
-    """Translation remains outside the leaderboard task list for now."""
-    assert "translation" not in LEADERBOARD_TASKS
-    assert "translation" not in official_datasets_for_language("bulgarian")
-
-
 def test_category_includes_task_all_models_only_scores_nlu() -> None:
     """all_models only scores tasks whose task group is an NLU group."""
     assert category_includes_task(
@@ -108,3 +102,9 @@ def test_task_category_stereotype_bias_is_instruct_exclusive() -> None:
     Such a task is classified as instruct-exclusive.
     """
     assert task_category("multiple-choice-stereotype-bias") == "instruct_exclusive"
+
+
+def test_translation_is_excluded_from_leaderboard_dataset_selection() -> None:
+    """Translation remains outside the leaderboard task list for now."""
+    assert "translation" not in LEADERBOARD_TASKS
+    assert "translation" not in official_datasets_for_language("bulgarian")

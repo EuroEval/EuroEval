@@ -96,22 +96,6 @@ def all_official_la_dataset_configs() -> Generator[list[DatasetConfig], None, No
     ]
 
 
-def test_official_translation_configs_are_in_standard_suite(
-    all_official_dataset_configs: list[DatasetConfig],
-) -> None:
-    """The standard suite includes English-to-local translation only."""
-    translation_configs = [
-        cfg
-        for cfg in all_official_dataset_configs
-        if isinstance(cfg, TranslationDatasetConfig)
-    ]
-
-    assert translation_configs
-    assert all(cfg.source_language is ENGLISH for cfg in translation_configs)
-    assert "wmt24pp-en-bg" in {cfg.name for cfg in translation_configs}
-    assert "wmt24pp-bg-en" not in {cfg.name for cfg in translation_configs}
-
-
 def test_contamination_detection_creates_only_a_virtual_dataset() -> None:
     """The canary task selects one virtual dataset without duplicating it."""
     selected = prepare_dataset_configs(
@@ -130,6 +114,22 @@ def test_contamination_detection_creates_only_a_virtual_dataset() -> None:
         selected[0].source
 
     assert sum(config.task is CONTAMINATION_DETECTION for config in selected) == 1
+
+
+def test_official_translation_configs_are_in_standard_suite(
+    all_official_dataset_configs: list[DatasetConfig],
+) -> None:
+    """The standard suite includes English-to-local translation only."""
+    translation_configs = [
+        cfg
+        for cfg in all_official_dataset_configs
+        if isinstance(cfg, TranslationDatasetConfig)
+    ]
+
+    assert translation_configs
+    assert all(cfg.source_language is ENGLISH for cfg in translation_configs)
+    assert "wmt24pp-en-bg" in {cfg.name for cfg in translation_configs}
+    assert "wmt24pp-bg-en" not in {cfg.name for cfg in translation_configs}
 
 
 def test_ordinary_task_includes_the_canary() -> None:
