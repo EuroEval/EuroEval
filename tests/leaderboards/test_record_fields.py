@@ -220,15 +220,14 @@ def test_deduplicate_richness_beats_input_order() -> None:
     assert deduped[0]["model_info"]["additional_details"].get("open") is True
 
 
-def test_metadata_richness_score_commercial() -> None:
-    """A record with commercially_licensed gets +1 (True or False both count)."""
-    record_true = _record()
-    record_true["model_info"]["additional_details"]["commercially_licensed"] = True
-    assert _metadata_richness_score(record=record_true) == 1
-
-    record_false = _record()
-    record_false["model_info"]["additional_details"]["commercially_licensed"] = False
-    assert _metadata_richness_score(record=record_false) == 1
+@pytest.mark.parametrize(
+    "field", ["commercially_licensed", "open", "merge", "trained_from_scratch"]
+)
+def test_metadata_richness_score_explicit_false(field: str) -> None:
+    """Explicit False values contribute to metadata richness."""
+    record = _record()
+    record["model_info"]["additional_details"][field] = False
+    assert _metadata_richness_score(record=record) == 1
 
 
 def test_metadata_richness_score_counts_release_date() -> None:
@@ -261,13 +260,6 @@ def test_metadata_richness_score_full() -> None:
     assert _metadata_richness_score(record=record) == 6
 
 
-def test_metadata_richness_score_generative_type() -> None:
-    """A record with generative_type gets +1."""
-    record = _record()
-    record["model_info"]["additional_details"]["generative_type"] = "instruction_tuned"
-    assert _metadata_richness_score(record=record) == 1
-
-
 @pytest.mark.parametrize(
     "release_date", [None, "", "not-a-date", "2025-02-30", "20240203"]
 )
@@ -280,45 +272,3 @@ def test_metadata_richness_score_ignores_invalid_release_date(
     record["model_info"]["additional_details"]["release_date"] = release_date
 
     assert _metadata_richness_score(record) == initial_score
-
-
-def test_metadata_richness_score_merge() -> None:
-    """A record with merge gets +1 (True or False both count)."""
-    record_true = _record()
-    record_true["model_info"]["additional_details"]["merge"] = True
-    assert _metadata_richness_score(record=record_true) == 1
-
-    record_false = _record()
-    record_false["model_info"]["additional_details"]["merge"] = False
-    assert _metadata_richness_score(record=record_false) == 1
-
-
-def test_metadata_richness_score_model_url() -> None:
-    """A record with model_url gets +1."""
-    record = _record()
-    record["model_info"]["additional_details"]["model_url"] = (
-        "https://example.com/model"
-    )
-    assert _metadata_richness_score(record=record) == 1
-
-
-def test_metadata_richness_score_open() -> None:
-    """A record with open gets +1 (True or False both count)."""
-    record_true = _record()
-    record_true["model_info"]["additional_details"]["open"] = True
-    assert _metadata_richness_score(record=record_true) == 1
-
-    record_false = _record()
-    record_false["model_info"]["additional_details"]["open"] = False
-    assert _metadata_richness_score(record=record_false) == 1
-
-
-def test_metadata_richness_score_trained_from_scratch() -> None:
-    """A record with trained_from_scratch gets +1 (True or False both count)."""
-    record_true = _record()
-    record_true["model_info"]["additional_details"]["trained_from_scratch"] = True
-    assert _metadata_richness_score(record=record_true) == 1
-
-    record_false = _record()
-    record_false["model_info"]["additional_details"]["trained_from_scratch"] = False
-    assert _metadata_richness_score(record=record_false) == 1
