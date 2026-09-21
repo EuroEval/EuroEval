@@ -924,22 +924,22 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Slede tekstovi na srpskom sa odgovarajućim prevodima na English.
+  Следе текстови на српском са одговарајућим преводима на English.
   ```
 
 - Base prompt template:
 
   ```text
-  Tekst na srpskom: {text}
-  Prevod na English: {target_text}
+  Текст на српском: {text}
+  Превод на English: {target_text}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Tekst na srpskom: {text}
+  Текст на српском: {text}
 
-  Prevedite gornji tekst na English.
+  Преведите горњи текст на English.
   ```
 
 You can evaluate this dataset directly as follows:

@@ -229,8 +229,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `devtest` (128 / 256 / up to 1,024 samples). The English-to-local datasets are
   official, while the local-to-English datasets are unofficial. This applies to both
   the six languages not covered by WMT24++ and the 25 WMT24++ languages.
-- Added translation task to the leaderboard task list so translation datasets are scored
-  and displayed on leaderboards.
 - Added translation prompt templates for Belarusian, Faroese and Luxembourgish as source
   languages, so that all official languages now have translation prompt templates.
 - Added a transliteration engine (`euroeval.transliteration`) and a `multiple_scripts`
