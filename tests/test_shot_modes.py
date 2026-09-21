@@ -45,9 +45,9 @@ def test_auto_cached_base_model_uses_cached_metadata(
     load_model = Mock()
     monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
 
-    _, pending, cached, error = Benchmarker(
+    _, pending_benchmarks, cached_results, error = Benchmarker(
         progress_bar=False
-    )._prepare_shot_benchmarks(
+    )._prepare_pending_benchmarks(
         model_config=generative,
         datasets=[dataset_config],
         benchmark_config=replace(benchmark_config, few_shot=None),
@@ -55,8 +55,8 @@ def test_auto_cached_base_model_uses_cached_metadata(
     )
 
     assert error is None
-    assert pending == []
-    assert cached == [few_shot_result]
+    assert pending_benchmarks == []
+    assert cached_results == [few_shot_result]
     load_model.assert_not_called()
 
 
@@ -73,9 +73,9 @@ def test_auto_dual_mode_loads_model_once(
     load_model = Mock(return_value=loaded_model)
     monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
 
-    loaded, pending, _, error = Benchmarker(
+    loaded, pending_benchmarks, _, error = Benchmarker(
         progress_bar=False
-    )._prepare_shot_benchmarks(
+    )._prepare_pending_benchmarks(
         model_config=generative,
         datasets=[dataset_config],
         benchmark_config=config,
@@ -84,7 +84,10 @@ def test_auto_dual_mode_loads_model_once(
 
     assert error is None
     assert loaded is loaded_model
-    assert [mode for mode, _ in pending] == [ShotMode.ZERO_SHOT, ShotMode.FEW_SHOT]
+    assert [mode for mode, _ in pending_benchmarks] == [
+        ShotMode.ZERO_SHOT,
+        ShotMode.FEW_SHOT,
+    ]
     load_model.assert_called_once()
 
 
@@ -116,9 +119,9 @@ def test_auto_explicit_generative_type_overrides_cached_metadata(
     )
     monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
 
-    _, pending, cached, error = Benchmarker(
+    _, pending_benchmarks, cached_results, error = Benchmarker(
         progress_bar=False
-    )._prepare_shot_benchmarks(
+    )._prepare_pending_benchmarks(
         model_config=generative,
         datasets=[dataset_config],
         benchmark_config=replace(
@@ -130,8 +133,8 @@ def test_auto_explicit_generative_type_overrides_cached_metadata(
     )
 
     assert error is None
-    assert [mode for mode, _ in pending] == [ShotMode.ZERO_SHOT]
-    assert cached == [few_shot_result]
+    assert [mode for mode, _ in pending_benchmarks] == [ShotMode.ZERO_SHOT]
+    assert cached_results == [few_shot_result]
     load_model.assert_called_once()
 
 
@@ -164,9 +167,9 @@ def test_auto_explicit_generative_type_uses_complete_cache(
     load_model = Mock(side_effect=AssertionError("load_model should not be called"))
     monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
 
-    loaded, pending, cached, error = Benchmarker(
+    loaded, pending_benchmarks, cached_results, error = Benchmarker(
         progress_bar=False
-    )._prepare_shot_benchmarks(
+    )._prepare_pending_benchmarks(
         model_config=generative,
         datasets=[dataset_config],
         benchmark_config=replace(
@@ -178,8 +181,8 @@ def test_auto_explicit_generative_type_uses_complete_cache(
     )
 
     assert loaded is None
-    assert pending == []
-    assert cached == [zero_shot_result, few_shot_result]
+    assert pending_benchmarks == []
+    assert cached_results == [zero_shot_result, few_shot_result]
     assert error is None
     load_model.assert_not_called()
 
@@ -234,9 +237,9 @@ def test_cached_shot_mode_survives_missing_mode_load_failure(
         Mock(side_effect=InvalidModel("model setup failed")),
     )
 
-    _, pending, cached, error = Benchmarker(
+    _, pending_benchmarks, cached_results, error = Benchmarker(
         progress_bar=False
-    )._prepare_shot_benchmarks(
+    )._prepare_pending_benchmarks(
         model_config=generative,
         datasets=[dataset_config],
         benchmark_config=replace(benchmark_config, few_shot=None),
@@ -244,8 +247,8 @@ def test_cached_shot_mode_survives_missing_mode_load_failure(
     )
 
     assert isinstance(error, InvalidModel)
-    assert [mode for mode, _ in pending] == [ShotMode.ZERO_SHOT]
-    assert cached == [few_shot_result]
+    assert [mode for mode, _ in pending_benchmarks] == [ShotMode.ZERO_SHOT]
+    assert cached_results == [few_shot_result]
 
 
 def test_cached_shot_modes_are_independent(
@@ -281,9 +284,9 @@ def test_cached_shot_modes_are_independent(
         ),
     )
 
-    _, pending, cached, error = Benchmarker(
+    _, pending_benchmarks, cached_results, error = Benchmarker(
         progress_bar=False
-    )._prepare_shot_benchmarks(
+    )._prepare_pending_benchmarks(
         model_config=generative,
         datasets=[dataset_config],
         benchmark_config=config,
@@ -291,8 +294,8 @@ def test_cached_shot_modes_are_independent(
     )
 
     assert error is None
-    assert [mode for mode, _ in pending] == [ShotMode.ZERO_SHOT]
-    assert cached == [few_shot_result]
+    assert [mode for mode, _ in pending_benchmarks] == [ShotMode.ZERO_SHOT]
+    assert cached_results == [few_shot_result]
 
 
 def test_explicit_shot_mode_overrides(model_config: ModelConfig) -> None:
@@ -318,8 +321,8 @@ def test_initialiser_defaults_to_auto_shot_mode() -> None:
     assert benchmarker.benchmark_config.few_shot is ShotMode.AUTO
 
 
-def test_load_error_counts_concrete_remaining_work() -> None:
-    """A mode-level model failure counts the other concrete work items."""
+def test_load_error_counts_remaining_benchmarks() -> None:
+    """A model failure counts the other pending benchmarks."""
     benchmarker = Benchmarker(progress_bar=False)
     dataset_config = Mock()
 
@@ -331,7 +334,7 @@ def test_load_error_counts_concrete_remaining_work() -> None:
         num_skipped=0,
         num_errored=0,
         current_results=[],
-        remaining_work=1,
+        remaining_benchmarks=1,
     )
 
     assert (finished, skipped, errored, should_break) == (0, 0, 2, True)
@@ -418,7 +421,7 @@ def test_multi_model_progress_uses_full_workload(
     )
     monkeypatch.setattr(
         benchmarker,
-        "_prepare_shot_benchmarks",
+        "_prepare_pending_benchmarks",
         Mock(
             side_effect=[
                 (None, [(ShotMode.ZERO_SHOT, dataset_config)], [], None),
@@ -593,7 +596,9 @@ def test_zero_shot_tasks_are_not_duplicated(
         ),
     )
 
-    _, pending, _, error = Benchmarker(progress_bar=False)._prepare_shot_benchmarks(
+    _, pending_benchmarks, _, error = Benchmarker(
+        progress_bar=False
+    )._prepare_pending_benchmarks(
         model_config=generative,
         datasets=[dataset_config],
         benchmark_config=config,
@@ -602,4 +607,4 @@ def test_zero_shot_tasks_are_not_duplicated(
     dataset_config.task = original_task
 
     assert error is None
-    assert [mode for mode, _ in pending] == [ShotMode.ZERO_SHOT]
+    assert [mode for mode, _ in pending_benchmarks] == [ShotMode.ZERO_SHOT]

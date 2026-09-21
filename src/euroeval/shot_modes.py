@@ -1,10 +1,10 @@
-"""Shot-mode policy and work planning for benchmark runs."""
+"""Shot-mode policy and benchmark planning."""
 
 import collections.abc as c
 import typing as t
 
 from .enums import GenerativeType, InferenceBackend, ModelType, ShotMode
-from .types import ShotModeRequest, ShotWork
+from .types import ShotModeRequest
 
 if t.TYPE_CHECKING:
     from .data_models import BenchmarkResult, DatasetConfig, ModelConfig
@@ -31,21 +31,21 @@ def cached_generative_type(
     return types.pop() if len(types) == 1 else None
 
 
-def plan_shot_work(
+def create_benchmark_plan(
     candidate_modes: c.Sequence[ShotMode], datasets: c.Sequence["DatasetConfig"]
-) -> list[ShotWork]:
-    """Create de-duplicated concrete mode/dataset work items.
+) -> list[tuple[ShotMode, "DatasetConfig"]]:
+    """Create a de-duplicated benchmark plan.
 
     Args:
         candidate_modes:
             Candidate shot modes in execution order.
         datasets:
-            Dataset configurations to pair with each mode.
+            Dataset configurations to evaluate in each applicable mode.
 
     Returns:
-        Concrete mode/dataset pairs, preserving input order.
+        Concrete mode and dataset pairs, preserving execution order.
     """
-    work: list[ShotWork] = []
+    benchmark_plan: list[tuple[ShotMode, "DatasetConfig"]] = []
     seen_pairs: set[tuple[int, ShotMode]] = set()
     for mode in candidate_modes:
         for dataset_config in datasets:
@@ -57,8 +57,8 @@ def plan_shot_work(
             pair_key = (id(dataset_config), concrete_mode)
             if pair_key not in seen_pairs:
                 seen_pairs.add(pair_key)
-                work.append((concrete_mode, dataset_config))
-    return work
+                benchmark_plan.append((concrete_mode, dataset_config))
+    return benchmark_plan
 
 
 def effective_shot_mode(

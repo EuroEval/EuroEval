@@ -27,12 +27,12 @@ from .logging_utils import adjust_logging_level, get_pbar, log, log_once
 from .metrics.bpc import bpc_metric
 from .model_config import get_model_config
 from .model_loading import load_model
-from .result_cache import partition_shot_work
+from .result_cache import filter_existing_benchmarks
 from .scores import log_scores
 from .shot_modes import (
     cached_generative_type,
     coerce_shot_mode,
-    plan_shot_work,
+    create_benchmark_plan,
     resolve_shot_modes,
     result_identity_values,
 )
@@ -535,8 +535,8 @@ class Benchmarker:
                 self._check_adapter_requirements(
                     model_config=model_config, benchmark_config=benchmark_config
                 )
-                loaded_model, pending, cached, load_error = (
-                    self._prepare_shot_benchmarks(
+                loaded_model, pending_benchmarks, cached_results, load_error = (
+                    self._prepare_pending_benchmarks(
                         model_config=model_config,
                         datasets=datasets,
                         benchmark_config=benchmark_config,
@@ -544,16 +544,18 @@ class Benchmarker:
                     )
                 )
                 current_results.extend(
-                    record for record in cached if record not in current_results
+                    record for record in cached_results if record not in current_results
                 )
-                total_benchmarks += len(pending)
+                total_benchmarks += len(pending_benchmarks)
                 if load_error is not None:
                     if benchmark_config.raise_errors:
                         raise load_error
                     log(load_error.message, level=logging.ERROR)
-                    model_errored += len(pending)
+                    model_errored += len(pending_benchmarks)
                     continue
-                for pending_index, (shot_mode, dataset_config) in enumerate(pending):
+                for pending_index, (shot_mode, dataset_config) in enumerate(
+                    pending_benchmarks
+                ):
                     mode_config = replace(
                         benchmark_config, few_shot=shot_mode is ShotMode.FEW_SHOT
                     )
@@ -593,7 +595,7 @@ class Benchmarker:
                         num_finished_benchmarks=(
                             model_finished + model_skipped + model_errored
                         ),
-                        num_total_benchmarks=len(pending),
+                        num_total_benchmarks=len(pending_benchmarks),
                     )
                     model_finished, model_skipped, model_errored, should_break = (
                         self._handle_benchmark_result(
@@ -604,7 +606,9 @@ class Benchmarker:
                             num_skipped=model_skipped,
                             num_errored=model_errored,
                             current_results=current_results,
-                            remaining_work=len(pending) - pending_index - 1,
+                            remaining_benchmarks=(
+                                len(pending_benchmarks) - pending_index - 1
+                            ),
                         )
                     )
                     if should_break:
@@ -1159,7 +1163,7 @@ class Benchmarker:
         num_skipped: int,
         num_errored: int,
         current_results: list[BenchmarkResult],
-        remaining_work: int,
+        remaining_benchmarks: int,
     ) -> tuple[int, int, int, bool]:
         """Handle benchmark result.
 
@@ -1178,8 +1182,8 @@ class Benchmarker:
                 The number of errored benchmarks.
             current_results:
                 The current benchmark results.
-            remaining_work:
-                The number of concrete mode/dataset pairs after this one.
+            remaining_benchmarks:
+                The number of planned benchmarks after this one.
 
         Returns:
             A tuple of (updated finished, skipped, errored counters, break flag).
@@ -1195,7 +1199,7 @@ class Benchmarker:
             return num_finished, num_skipped, num_errored, False
         if isinstance(result_or_error, InvalidModel):
             log(result_or_error.message, level=logging.WARNING)
-            num_errored += 1 + remaining_work
+            num_errored += 1 + remaining_benchmarks
             return num_finished, num_skipped, num_errored, True
         assert isinstance(result_or_error, BenchmarkResult)
         record: BenchmarkResult = result_or_error
@@ -1230,7 +1234,7 @@ class Benchmarker:
 
         return [m_id.rstrip(" /") for m_id in model_ids_sorted]
 
-    def _prepare_shot_benchmarks(
+    def _prepare_pending_benchmarks(
         self,
         model_config: "ModelConfig",
         datasets: c.Sequence["DatasetConfig"],
@@ -1242,7 +1246,7 @@ class Benchmarker:
         list[BenchmarkResult],
         InvalidModel | None,
     ]:
-        """Plan shot work, load one model, and reconcile metadata with the cache.
+        """Filter existing benchmarks and prepare the remaining model work.
 
         Args:
             model_config:
@@ -1255,8 +1259,8 @@ class Benchmarker:
                 Results already present in the local cache.
 
         Returns:
-            The loaded model, pending concrete mode/dataset pairs, cached records, and
-            a model-loading error if loading failed.
+            The loaded model, pending benchmarks, cached results, and a model-loading
+            error if loading failed.
         """
         requested_mode = coerce_shot_mode(requested_mode=benchmark_config.few_shot)
         modes = resolve_shot_modes(
@@ -1264,19 +1268,19 @@ class Benchmarker:
             requested_mode=requested_mode,
             generative_type=benchmark_config.generative_type,
         )
-        work = plan_shot_work(
+        benchmark_plan = create_benchmark_plan(
             candidate_modes=modes[:1] if benchmark_config.download_only else modes,
             datasets=datasets,
         )
-        pending, cached = partition_shot_work(
+        pending_benchmarks, cached_results = filter_existing_benchmarks(
             model_config=model_config,
-            work=work,
+            benchmark_plan=benchmark_plan,
             benchmark_config=benchmark_config,
             benchmark_results=existing_results,
         )
         auto_requested = requested_mode is ShotMode.AUTO
         cached_type = (
-            cached_generative_type(records=cached)
+            cached_generative_type(records=cached_results)
             if (
                 auto_requested
                 and benchmark_config.generative_type is None
@@ -1291,10 +1295,12 @@ class Benchmarker:
                 requested_mode=requested_mode,
                 generative_type=cached_type,
             )
-            work = plan_shot_work(candidate_modes=modes, datasets=datasets)
-            pending, cached = partition_shot_work(
+            benchmark_plan = create_benchmark_plan(
+                candidate_modes=modes, datasets=datasets
+            )
+            pending_benchmarks, cached_results = filter_existing_benchmarks(
                 model_config=model_config,
-                work=work,
+                benchmark_plan=benchmark_plan,
                 benchmark_config=benchmark_config,
                 benchmark_results=existing_results,
             )
@@ -1302,12 +1308,12 @@ class Benchmarker:
         needs_load = (
             model_config.model_type == ModelType.GENERATIVE
             and not benchmark_config.download_only
-            and (bool(pending) or (resolved_type is None and auto_requested))
+            and (bool(pending_benchmarks) or (resolved_type is None and auto_requested))
         )
         if not needs_load:
-            return None, pending, cached, None
+            return None, pending_benchmarks, cached_results, None
 
-        first_mode, first_dataset = (pending or work)[0]
+        first_mode, first_dataset = (pending_benchmarks or benchmark_plan)[0]
         try:
             loaded_model = load_model(
                 model_config=model_config,
@@ -1317,8 +1323,12 @@ class Benchmarker:
                 ),
             )
         except InvalidModel as error:
-            cached_on_error = cached if pending or resolved_type is not None else []
-            return None, pending, cached_on_error, error
+            cached_on_error = (
+                cached_results
+                if pending_benchmarks or resolved_type is not None
+                else []
+            )
+            return None, pending_benchmarks, cached_on_error, error
 
         actual_modes = resolve_shot_modes(
             model_config=model_config,
@@ -1327,19 +1337,19 @@ class Benchmarker:
                 benchmark_config.generative_type or loaded_model.generative_type
             ),
         )
-        actual_work = plan_shot_work(
-            candidate_modes=actual_modes[:1]
-            if benchmark_config.download_only
-            else actual_modes,
+        actual_plan = create_benchmark_plan(
+            candidate_modes=(
+                actual_modes[:1] if benchmark_config.download_only else actual_modes
+            ),
             datasets=datasets,
         )
-        pending, cached = partition_shot_work(
+        pending_benchmarks, cached_results = filter_existing_benchmarks(
             model_config=model_config,
-            work=actual_work,
+            benchmark_plan=actual_plan,
             benchmark_config=benchmark_config,
             benchmark_results=existing_results,
         )
-        return loaded_model, pending, cached, None
+        return loaded_model, pending_benchmarks, cached_results, None
 
     def _update_benchmark_config_for_dataset(
         self, dataset_config: "DatasetConfig", benchmark_config: "BenchmarkConfig"

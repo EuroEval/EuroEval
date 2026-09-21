@@ -20,7 +20,7 @@ if t.TYPE_CHECKING:
     from numpy.typing import NDArray
     from pydantic import BaseModel
 
-    from .data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
+    from .data_models import BenchmarkConfig, GenerativeModelOutput
 
 
 class FailedInstance(t.TypedDict):
@@ -38,7 +38,6 @@ class FailedInstance(t.TypedDict):
 
 
 ShotModeRequest: t.TypeAlias = ShotMode | bool | None
-ShotWork: t.TypeAlias = tuple[ShotMode, "DatasetConfig"]
 IterationScores: t.TypeAlias = c.Mapping[str, float | list[FailedInstance]]
 ScoreDict: t.TypeAlias = dict[str, dict[str, float] | c.Sequence[IterationScores]]
 Predictions: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"

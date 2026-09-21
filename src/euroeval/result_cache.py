@@ -7,37 +7,37 @@ from .data_models import BenchmarkResult
 from .enums import ShotMode
 from .shot_modes import coerce_shot_mode
 from .string_utils import split_model_id
-from .types import ShotModeRequest, ShotWork
+from .types import ShotModeRequest
 
 if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 
 
-def partition_shot_work(
+def filter_existing_benchmarks(
     model_config: "ModelConfig",
-    work: c.Sequence[ShotWork],
+    benchmark_plan: c.Sequence[tuple[ShotMode, "DatasetConfig"]],
     benchmark_config: "BenchmarkConfig",
     benchmark_results: c.Sequence[BenchmarkResult],
-) -> tuple[list[ShotWork], list[BenchmarkResult]]:
-    """Separate concrete shot work into pending and cached portions.
+) -> tuple[list[tuple[ShotMode, "DatasetConfig"]], list[BenchmarkResult]]:
+    """Filter cached results out of a benchmark plan.
 
     Args:
         model_config:
             The model configuration being evaluated.
-        work:
-            Concrete mode/dataset pairs in execution order.
+        benchmark_plan:
+            Concrete mode and dataset pairs in execution order.
         benchmark_config:
             The general benchmark configuration.
         benchmark_results:
             Results already present in the local cache.
 
     Returns:
-        A tuple containing pending work and unique cached records. When ``force`` is
-        enabled, all work is pending and cached records are omitted.
+        The pending benchmarks and unique cached results. When ``force`` is enabled,
+        every planned benchmark remains pending and cached results are omitted.
     """
-    pending: list[ShotWork] = []
-    cached: list[BenchmarkResult] = []
-    for mode, dataset_config in work:
+    pending_benchmarks: list[tuple[ShotMode, "DatasetConfig"]] = []
+    cached_results: list[BenchmarkResult] = []
+    for mode, dataset_config in benchmark_plan:
         record = get_record(
             model_config=model_config,
             dataset_config=dataset_config,
@@ -46,10 +46,10 @@ def partition_shot_work(
             shot_mode=mode,
         )
         if benchmark_config.force or record is None:
-            pending.append((mode, dataset_config))
-        elif record not in cached:
-            cached.append(record)
-    return pending, cached
+            pending_benchmarks.append((mode, dataset_config))
+        elif record not in cached_results:
+            cached_results.append(record)
+    return pending_benchmarks, cached_results
 
 
 def get_record(
