@@ -1,0 +1,647 @@
+"""Tests for automatic benchmark shot-mode selection."""
+
+import weakref
+from dataclasses import replace
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
+
+import pytest
+
+from euroeval.benchmarker import Benchmarker, resolve_shot_modes
+from euroeval.data_models import (
+    BenchmarkConfig,
+    BenchmarkResult,
+    DatasetConfig,
+    ModelConfig,
+)
+from euroeval.enums import GenerativeType, InferenceBackend, ModelType, ShotMode
+from euroeval.exceptions import InvalidModel
+from euroeval.tasks import CONTAMINATION_DETECTION
+
+
+def test_auto_cached_base_model_uses_cached_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """AUTO does not return an invalid zero-shot cache for a base model."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    few_shot_result = BenchmarkResult(
+        model="model_id@revision",
+        dataset=dataset_config.name,
+        generative=True,
+        generative_type=GenerativeType.BASE.value,
+        few_shot=True,
+        validation_split=True,
+        num_model_parameters=1,
+        max_sequence_length=1,
+        vocabulary_size=1,
+        merge=False,
+        languages=["da"],
+        task=dataset_config.task.name,
+        results={},
+    )
+    load_model = Mock()
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
+
+    _, pending_benchmarks, cached_results, error = Benchmarker(
+        progress_bar=False
+    )._prepare_pending_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config],
+        benchmark_config=replace(benchmark_config, few_shot=None),
+        existing_results=[few_shot_result],
+    )
+
+    assert error is None
+    assert pending_benchmarks == []
+    assert cached_results == [few_shot_result]
+    load_model.assert_not_called()
+
+
+def test_auto_canary_is_planned_once_with_ordinary_dual_mode_work(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """The virtual canary runs once while ordinary AUTO work keeps both modes."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    canary_dataset = DatasetConfig(
+        task=CONTAMINATION_DETECTION,
+        languages=benchmark_config.languages,
+        name="contamination-canary",
+    )
+    load_model = Mock(
+        return_value=SimpleNamespace(generative_type=GenerativeType.INSTRUCTION_TUNED)
+    )
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
+
+    _, pending_benchmarks, _, error = Benchmarker(
+        progress_bar=False
+    )._prepare_pending_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config, canary_dataset],
+        benchmark_config=replace(benchmark_config, few_shot=ShotMode.AUTO),
+        existing_results=[],
+    )
+
+    assert error is None
+    assert [(mode, dataset.name) for mode, dataset in pending_benchmarks] == [
+        (ShotMode.ZERO_SHOT, dataset_config.name),
+        (ShotMode.ZERO_SHOT, canary_dataset.name),
+        (ShotMode.FEW_SHOT, dataset_config.name),
+    ]
+    load_model.assert_called_once()
+
+
+def test_auto_dual_mode_loads_model_once(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """Both AUTO flows share one loaded model."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    config = replace(benchmark_config, few_shot=None)
+    loaded_model = SimpleNamespace(generative_type=GenerativeType.INSTRUCTION_TUNED)
+    load_model = Mock(return_value=loaded_model)
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
+
+    loaded, pending_benchmarks, _, error = Benchmarker(
+        progress_bar=False
+    )._prepare_pending_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config],
+        benchmark_config=config,
+        existing_results=[],
+    )
+
+    assert error is None
+    assert loaded is loaded_model
+    assert [mode for mode, _ in pending_benchmarks] == [
+        ShotMode.ZERO_SHOT,
+        ShotMode.FEW_SHOT,
+    ]
+    load_model.assert_called_once()
+
+
+def test_auto_explicit_generative_type_overrides_cached_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """An explicit generative type takes precedence over cached metadata."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    few_shot_result = BenchmarkResult(
+        model="model_id@revision",
+        dataset=dataset_config.name,
+        generative=True,
+        generative_type=GenerativeType.BASE.value,
+        few_shot=True,
+        validation_split=True,
+        num_model_parameters=1,
+        max_sequence_length=1,
+        vocabulary_size=1,
+        merge=False,
+        languages=["da"],
+        task=dataset_config.task.name,
+        results={},
+    )
+    load_model = Mock(
+        return_value=SimpleNamespace(generative_type=GenerativeType.INSTRUCTION_TUNED)
+    )
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
+
+    _, pending_benchmarks, cached_results, error = Benchmarker(
+        progress_bar=False
+    )._prepare_pending_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config],
+        benchmark_config=replace(
+            benchmark_config,
+            few_shot=None,
+            generative_type=GenerativeType.INSTRUCTION_TUNED,
+        ),
+        existing_results=[few_shot_result],
+    )
+
+    assert error is None
+    assert [mode for mode, _ in pending_benchmarks] == [ShotMode.ZERO_SHOT]
+    assert cached_results == [few_shot_result]
+    load_model.assert_called_once()
+
+
+def test_auto_explicit_generative_type_uses_complete_cache(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """A complete explicit-type cache does not require model loading."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    zero_shot_result = BenchmarkResult(
+        model="model_id@revision",
+        dataset=dataset_config.name,
+        generative=True,
+        generative_type=GenerativeType.BASE.value,
+        few_shot=False,
+        validation_split=True,
+        num_model_parameters=1,
+        max_sequence_length=1,
+        vocabulary_size=1,
+        merge=False,
+        languages=["da"],
+        task=dataset_config.task.name,
+        results={},
+    )
+    few_shot_result = zero_shot_result.model_copy(
+        update={"generative_type": GenerativeType.REASONING.value, "few_shot": True}
+    )
+    load_model = Mock(side_effect=AssertionError("load_model should not be called"))
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model)
+
+    loaded, pending_benchmarks, cached_results, error = Benchmarker(
+        progress_bar=False
+    )._prepare_pending_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config],
+        benchmark_config=replace(
+            benchmark_config,
+            few_shot=None,
+            generative_type=GenerativeType.INSTRUCTION_TUNED,
+        ),
+        existing_results=[zero_shot_result, few_shot_result],
+    )
+
+    assert loaded is None
+    assert pending_benchmarks == []
+    assert cached_results == [zero_shot_result, few_shot_result]
+    assert error is None
+    load_model.assert_not_called()
+
+
+def test_auto_shot_mode_resolution(model_config: ModelConfig) -> None:
+    """AUTO selects the agreed modes for each model category."""
+    encoder = model_config
+    local = replace(encoder, model_type=ModelType.GENERATIVE)
+    api = replace(local, inference_backend=InferenceBackend.LITELLM)
+
+    assert resolve_shot_modes(model_config=encoder, requested_mode=None) == [
+        ShotMode.FEW_SHOT
+    ]
+    assert resolve_shot_modes(
+        model_config=local, requested_mode=None, generative_type=GenerativeType.BASE
+    ) == [ShotMode.FEW_SHOT]
+    assert resolve_shot_modes(
+        model_config=local,
+        requested_mode=None,
+        generative_type=GenerativeType.INSTRUCTION_TUNED,
+    ) == [ShotMode.ZERO_SHOT, ShotMode.FEW_SHOT]
+    assert resolve_shot_modes(model_config=api, requested_mode=None) == [
+        ShotMode.ZERO_SHOT
+    ]
+
+
+def test_cached_shot_mode_survives_missing_mode_load_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """AUTO retains cached records when loading the missing mode fails."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    few_shot_result = BenchmarkResult(
+        model="model_id@revision",
+        dataset=dataset_config.name,
+        generative=True,
+        generative_type=GenerativeType.INSTRUCTION_TUNED.value,
+        few_shot=True,
+        validation_split=True,
+        num_model_parameters=1,
+        max_sequence_length=1,
+        vocabulary_size=1,
+        merge=False,
+        languages=["da"],
+        task=dataset_config.task.name,
+        results={},
+    )
+    monkeypatch.setattr(
+        "euroeval.benchmarker.load_model",
+        Mock(side_effect=InvalidModel("model setup failed")),
+    )
+
+    _, pending_benchmarks, cached_results, error = Benchmarker(
+        progress_bar=False
+    )._prepare_pending_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config],
+        benchmark_config=replace(benchmark_config, few_shot=None),
+        existing_results=[few_shot_result],
+    )
+
+    assert isinstance(error, InvalidModel)
+    assert [mode for mode, _ in pending_benchmarks] == [ShotMode.ZERO_SHOT]
+    assert cached_results == [few_shot_result]
+
+
+def test_cached_shot_modes_are_independent(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """A cached result in one mode does not hide the other mode."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    few_shot_result = BenchmarkResult(
+        model="model_id@revision",
+        dataset=dataset_config.name,
+        generative=True,
+        generative_type=GenerativeType.INSTRUCTION_TUNED.value,
+        few_shot=True,
+        validation_split=True,
+        num_model_parameters=1,
+        max_sequence_length=1,
+        vocabulary_size=1,
+        merge=False,
+        languages=["da"],
+        task=dataset_config.task.name,
+        results={},
+    )
+    config = replace(benchmark_config, few_shot=None)
+    monkeypatch.setattr(
+        "euroeval.benchmarker.load_model",
+        Mock(
+            return_value=SimpleNamespace(
+                generative_type=GenerativeType.INSTRUCTION_TUNED
+            )
+        ),
+    )
+
+    _, pending_benchmarks, cached_results, error = Benchmarker(
+        progress_bar=False
+    )._prepare_pending_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config],
+        benchmark_config=config,
+        existing_results=[few_shot_result],
+    )
+
+    assert error is None
+    assert [mode for mode, _ in pending_benchmarks] == [ShotMode.ZERO_SHOT]
+    assert cached_results == [few_shot_result]
+
+
+def test_explicit_shot_mode_overrides(model_config: ModelConfig) -> None:
+    """Legacy boolean overrides remain single-mode selections."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+
+    assert resolve_shot_modes(model_config=generative, requested_mode=True) == [
+        ShotMode.FEW_SHOT
+    ]
+    assert resolve_shot_modes(model_config=generative, requested_mode=False) == [
+        ShotMode.ZERO_SHOT
+    ]
+    assert resolve_shot_modes(
+        model_config=generative, requested_mode=ShotMode.FEW_SHOT
+    ) == [ShotMode.FEW_SHOT]
+
+
+def test_initialiser_defaults_to_auto_shot_mode() -> None:
+    """The benchmarker initialiser exposes AUTO as its explicit default policy."""
+    benchmarker = Benchmarker(progress_bar=False)
+
+    assert benchmarker.benchmark_config_default_params.few_shot is ShotMode.AUTO
+    assert benchmarker.benchmark_config.few_shot is ShotMode.AUTO
+
+
+def test_load_error_counts_remaining_benchmarks() -> None:
+    """A model failure counts the other pending benchmarks."""
+    benchmarker = Benchmarker(progress_bar=False)
+    dataset_config = Mock()
+
+    finished, skipped, errored, should_break = benchmarker._handle_benchmark_result(
+        result_or_error=InvalidModel("model setup failed"),
+        dataset_config=dataset_config,
+        benchmark_config=Mock(raise_errors=False),
+        num_finished=0,
+        num_skipped=0,
+        num_errored=0,
+        current_results=[],
+        remaining_benchmarks=1,
+    )
+
+    assert (finished, skipped, errored, should_break) == (0, 0, 2, True)
+
+
+def test_model_cache_is_cleared_when_loading_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+    tmp_path: Path,
+) -> None:
+    """Per-model cleanup also runs when model setup raises."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    config = replace(
+        benchmark_config,
+        datasets=[dataset_config],
+        few_shot=None,
+        clear_model_cache=True,
+        raise_errors=False,
+        save_results=False,
+    )
+    benchmarker = Benchmarker(progress_bar=False, save_results=False)
+    benchmarker.results_path = tmp_path / "results.jsonl"
+    monkeypatch.setattr(benchmarker, "_build_benchmark_config", lambda **_: config)
+    monkeypatch.setattr(benchmarker, "_prepare_model_ids", lambda model_id: ["model"])
+    monkeypatch.setattr(
+        benchmarker,
+        "_fetch_model_configs",
+        lambda model_ids, benchmark_config: [generative],
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_create_model_dataset_mapping",
+        lambda model_configs, dataset_configs: {generative: [dataset_config]},
+    )
+    monkeypatch.setattr(
+        "euroeval.benchmarker.load_model",
+        Mock(side_effect=InvalidModel("model setup failed")),
+    )
+    clear_cache = Mock()
+    monkeypatch.setattr("euroeval.benchmarker.clear_model_cache_fn", clear_cache)
+
+    assert benchmarker.benchmark(model="model") == []
+    assert clear_cache.call_count == 2
+
+
+def test_multi_model_progress_uses_full_workload(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+    tmp_path: Path,
+) -> None:
+    """Progress totals use each model's concrete workload."""
+    models = [
+        replace(model_config, model_id="first-model"),
+        replace(model_config, model_id="second-model"),
+    ]
+    config = replace(
+        benchmark_config, datasets=[dataset_config], few_shot=None, save_results=False
+    )
+    benchmarker = Benchmarker(progress_bar=False, save_results=False)
+    benchmarker.results_path = tmp_path / "results.jsonl"
+    monkeypatch.setattr(benchmarker, "_build_benchmark_config", lambda **_: config)
+    monkeypatch.setattr(
+        benchmarker,
+        "_prepare_model_ids",
+        lambda model_id: ["first-model", "second-model"],
+    )
+    monkeypatch.setattr(
+        benchmarker, "_fetch_model_configs", lambda model_ids, benchmark_config: models
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_create_model_dataset_mapping",
+        lambda model_configs, dataset_configs: {
+            model_config: [dataset_config] for model_config in model_configs
+        },
+    )
+    monkeypatch.setattr(benchmarker, "_check_adapter_requirements", lambda **_: None)
+    monkeypatch.setattr(
+        benchmarker, "_update_benchmark_config_for_dataset", lambda **_: None
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_prepare_pending_benchmarks",
+        Mock(
+            side_effect=[
+                (None, [(ShotMode.ZERO_SHOT, dataset_config)], [], None),
+                (None, [(ShotMode.FEW_SHOT, dataset_config)], [], None),
+            ]
+        ),
+    )
+    benchmark_calls = Mock(return_value=Mock())
+    monkeypatch.setattr(benchmarker, "_benchmark_single", benchmark_calls)
+
+    def handle_result(**kwargs: int) -> tuple[int, int, int, bool]:
+        """Increment the finished count for a synthetic benchmark result.
+
+        Args:
+            kwargs:
+                Synthetic benchmark counters supplied by the benchmarker.
+
+        Returns:
+            Updated benchmark counters and the break flag.
+        """
+        return (
+            kwargs["num_finished"] + 1,
+            kwargs["num_skipped"],
+            kwargs["num_errored"],
+            False,
+        )
+
+    monkeypatch.setattr(benchmarker, "_handle_benchmark_result", handle_result)
+
+    benchmarker.benchmark(model=["first-model", "second-model"])
+
+    assert [
+        call.kwargs["num_finished_benchmarks"]
+        for call in benchmark_calls.call_args_list
+    ] == [0, 0]
+    assert [
+        call.kwargs["num_total_benchmarks"] for call in benchmark_calls.call_args_list
+    ] == [1, 1]
+
+
+def test_only_one_model_is_live_during_preparation(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+    tmp_path: Path,
+) -> None:
+    """A failed later preparation cannot retain the previous model."""
+    models = [
+        replace(model_config, model_id="first-model", model_type=ModelType.GENERATIVE),
+        replace(model_config, model_id="second-model", model_type=ModelType.GENERATIVE),
+    ]
+    config = replace(
+        benchmark_config,
+        datasets=[dataset_config],
+        few_shot=False,
+        clear_model_cache=True,
+        save_results=False,
+    )
+    benchmarker = Benchmarker(progress_bar=False, save_results=False)
+    benchmarker.results_path = tmp_path / "results.jsonl"
+    monkeypatch.setattr(benchmarker, "_build_benchmark_config", lambda **_: config)
+    monkeypatch.setattr(
+        benchmarker,
+        "_prepare_model_ids",
+        lambda model_id: ["first-model", "second-model"],
+    )
+    monkeypatch.setattr(
+        benchmarker, "_fetch_model_configs", lambda model_ids, benchmark_config: models
+    )
+    monkeypatch.setattr(
+        benchmarker,
+        "_create_model_dataset_mapping",
+        lambda model_configs, dataset_configs: {
+            model_config: [dataset_config] for model_config in model_configs
+        },
+    )
+    monkeypatch.setattr(benchmarker, "_check_adapter_requirements", lambda **_: None)
+    monkeypatch.setattr(
+        benchmarker, "_update_benchmark_config_for_dataset", lambda **_: None
+    )
+
+    class HeavyModel:
+        """Weak-referenceable stand-in for a heavyweight model."""
+
+        generative_type = GenerativeType.INSTRUCTION_TUNED
+
+    loaded_model_refs: list[weakref.ReferenceType[HeavyModel]] = []
+    load_calls = 0
+
+    def load_model_for_test(**_: object) -> HeavyModel:
+        """Load one synthetic model and verify prior models were released.
+
+        Args:
+            _:
+                Ignored model-loading arguments.
+
+        Returns:
+            A synthetic heavy model on the first call.
+
+        Raises:
+            InvalidModel:
+                When the second model load is reached.
+        """
+        nonlocal load_calls
+        load_calls += 1
+        if load_calls == 1:
+            loaded_model = HeavyModel()
+            loaded_model_refs.append(weakref.ref(loaded_model))
+            return loaded_model
+        assert all(reference() is None for reference in loaded_model_refs)
+        raise InvalidModel("later model setup failed")
+
+    monkeypatch.setattr("euroeval.benchmarker.load_model", load_model_for_test)
+    monkeypatch.setattr(benchmarker, "_benchmark_single", lambda **_: SimpleNamespace())
+    monkeypatch.setattr(
+        benchmarker, "_handle_benchmark_result", lambda **_: (1, 0, 0, False)
+    )
+    clear_cache = Mock()
+    monkeypatch.setattr("euroeval.benchmarker.clear_model_cache_fn", clear_cache)
+
+    benchmarker.benchmark(model="models")
+
+    assert load_calls == 2
+    assert loaded_model_refs[0]() is None
+    assert clear_cache.call_count == 3
+
+
+def test_per_call_auto_overrides_initialiser_shot_mode() -> None:
+    """An explicit AUTO per-call policy overrides an initialiser boolean."""
+    for initialiser_mode in (True, False):
+        benchmarker = Benchmarker(progress_bar=False, few_shot=initialiser_mode)
+
+        config = benchmarker._build_benchmark_config(few_shot=ShotMode.AUTO)
+
+        assert config.few_shot is ShotMode.AUTO
+
+
+@pytest.mark.parametrize(
+    ("initialiser_mode", "expected_mode"),
+    [(True, ShotMode.FEW_SHOT), (False, ShotMode.ZERO_SHOT)],
+)
+def test_per_call_none_inherits_initialiser_shot_mode(
+    initialiser_mode: bool, expected_mode: ShotMode
+) -> None:
+    """A per-call None inherits either explicit initialiser boolean."""
+    benchmarker = Benchmarker(progress_bar=False, few_shot=initialiser_mode)
+
+    config = benchmarker._build_benchmark_config(few_shot=None)
+
+    assert config.few_shot is expected_mode
+
+
+def test_zero_shot_tasks_are_not_duplicated(
+    monkeypatch: pytest.MonkeyPatch,
+    benchmark_config: BenchmarkConfig,
+    dataset_config: DatasetConfig,
+    model_config: ModelConfig,
+) -> None:
+    """A task that requires zero-shot evaluation has one AUTO work item."""
+    generative = replace(model_config, model_type=ModelType.GENERATIVE)
+    original_task = dataset_config.task
+    zero_shot_task = replace(original_task, requires_zero_shot=True)
+    dataset_config.task = zero_shot_task
+    config = replace(benchmark_config, few_shot=None)
+    monkeypatch.setattr(
+        "euroeval.benchmarker.load_model",
+        Mock(
+            return_value=SimpleNamespace(
+                generative_type=GenerativeType.INSTRUCTION_TUNED
+            )
+        ),
+    )
+
+    _, pending_benchmarks, _, error = Benchmarker(
+        progress_bar=False
+    )._prepare_pending_benchmarks(
+        model_config=generative,
+        datasets=[dataset_config],
+        benchmark_config=config,
+        existing_results=[],
+    )
+    dataset_config.task = original_task
+
+    assert error is None
+    assert [mode for mode, _ in pending_benchmarks] == [ShotMode.ZERO_SHOT]

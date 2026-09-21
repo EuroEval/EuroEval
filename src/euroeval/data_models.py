@@ -20,8 +20,9 @@ from .constants import (
     CHOICES_MAPPING,
     MAX_NUMBER_OF_LOGGING_LANGUAGES,
 )
+from .date_utils import normalise_release_date
 from .eee_utils import benchmark_result_from_eee_dict, benchmark_result_to_eee_dict
-from .enums import Device, GenerativeType, ModelType, TaskGroup
+from .enums import Device, GenerativeType, ModelType, ShotMode, TaskGroup
 from .exceptions import InvalidBenchmark
 from .jsonl_io import parse_jsonl_lines
 from .languages import (
@@ -125,6 +126,24 @@ class BenchmarkResult(pydantic.BaseModel):
     commercially_licensed: bool | None = None
     open: bool | None = None
     trained_from_scratch: bool | None = None
+    release_date: str | None = None
+    contamination_canary_evidence: dict[str, object] | None = None
+
+    @pydantic.field_validator("contamination_canary_evidence", mode="before")
+    @classmethod
+    def _validate_contamination_canary_evidence(
+        cls, value: object
+    ) -> dict[str, object] | None:
+        """Validate and canonicalise embedded contamination-canary evidence.
+
+        Returns:
+            The canonical evidence mapping, or ``None`` when absent.
+        """
+        if value is None:
+            return None
+        from .canary_evidence import evidence_from_dict  # noqa: PLC0415
+
+        return evidence_from_dict(value).to_dict()
 
     def append_to_results(self, results_path: Path) -> None:
         """Append the benchmark result to the results file.
@@ -273,6 +292,10 @@ class BenchmarkResult(pydantic.BaseModel):
         """
         return benchmark_result_from_eee_dict(config=config)
 
+    _normalise_release_date = pydantic.field_validator("release_date", mode="before")(
+        normalise_release_date
+    )
+
 
 class HashableDict(dict[t.Any, t.Any]):
     """A hashable dictionary."""
@@ -335,11 +358,15 @@ class HFModelInfo:
         adapter_base_model_id:
             The model ID of the base model if the model is an adapter model. Can be None
             if the model is not an adapter model.
+        release_date (optional):
+            The date when model weights were first publicly available, formatted as
+            ISO 8601. Defaults to None when it cannot be determined.
     """
 
     pipeline_tag: str
     tags: c.Sequence[str]
     adapter_base_model_id: str | None
+    release_date: str | None = None
 
 
 @dataclass
@@ -370,6 +397,8 @@ class ModelConfig:
         adapter_base_model_id:
             The model ID of the base model if the model is an adapter model. Can be None
             if the model is not an adapter model.
+        release_date (optional):
+            The model's public release date, formatted as ISO 8601. Defaults to None.
         generation_config (optional):
             The generation configuration for generative models, if specified in the
             model repository. Defaults to no generation configuration.
@@ -386,6 +415,7 @@ class ModelConfig:
     fresh: bool
     model_cache_dir: str
     adapter_base_model_id: str | None
+    release_date: str | None = None
     generation_config: GenerationConfig | None = None
 
     def __hash__(self) -> int:
@@ -1104,8 +1134,9 @@ class BenchmarkConfig:
         evaluate_test_split:
             Whether to evaluate on the test split.
         few_shot:
-            Whether to only evaluate the model using few-shot evaluation. Only relevant
-            if the model is generative.
+            The shot policy used during planning. ``ShotMode.AUTO`` selects modes
+            automatically; booleans remain accepted for backwards compatibility. This
+            field is never persisted in a benchmark result.
         num_iterations:
             The number of iterations each model should be evaluated for.
         gpu_memory_utilization:
@@ -1140,6 +1171,9 @@ class BenchmarkConfig:
         vocabulary_size:
             Override for the vocabulary size of the model. If None, the value will be
             inferred automatically from the model.
+        num_parameters:
+            Override for the number of parameters in the model. If None, the value will
+            be inferred automatically from the model.
         use_bits_per_character:
             Whether to compute bits-per-character (BPC) on the ground-truth answer.
             For multiple-choice tasks, treats benchmark as text-to-text with bare
@@ -1160,7 +1194,7 @@ class BenchmarkConfig:
     trust_remote_code: bool
     clear_model_cache: bool
     evaluate_test_split: bool
-    few_shot: bool
+    few_shot: ShotMode | bool
     num_iterations: int
     gpu_memory_utilization: float
     attention_backend: (
@@ -1178,6 +1212,7 @@ class BenchmarkConfig:
     run_with_cli: bool
     max_context_length: int | None
     vocabulary_size: int | None
+    num_parameters: int | None
     use_bits_per_character: bool = False
 
     def __post_init__(self) -> None:
@@ -1215,7 +1250,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     trust_remote_code: bool
     clear_model_cache: bool
     evaluate_test_split: bool
-    few_shot: bool
+    few_shot: ShotMode | bool | None
     num_iterations: int
     requires_safetensors: bool
     download_only: bool
@@ -1234,6 +1269,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     run_with_cli: bool
     max_context_length: int | None
     vocabulary_size: int | None
+    num_parameters: int | None
     use_bits_per_character: bool = False
 
 

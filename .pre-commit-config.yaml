@@ -1,5 +1,14 @@
 repos:
 
+- repo: local
+  hooks:
+  -   id: vercel-source-staging
+      name: Vercel source staging
+      entry: npm run check:vercel-source
+      language: system
+      pass_filenames: false
+      always_run: true
+
 - repo: https://github.com/pre-commit/pygrep-hooks
   rev: v1.10.0
   hooks:

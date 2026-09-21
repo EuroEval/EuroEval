@@ -123,6 +123,7 @@ class TestEeeUtils:
             merge=False,
             languages=["da"],
             task="sentiment-classification",
+            release_date="2024-02-03",
             results={
                 "total": {
                     "test_mcc": 42.5,
@@ -141,6 +142,9 @@ class TestEeeUtils:
         original.append_to_results(results_path=results_path)
         content = results_path.read_text().strip()
         eee_dict = json.loads(content)
+        assert (
+            eee_dict["model_info"]["additional_details"]["release_date"] == "2024-02-03"
+        )
 
         # Verify confidence intervals are stored correctly for each metric
         eval_results = {
@@ -164,6 +168,7 @@ class TestEeeUtils:
 
         # Verify round-trip restores results
         restored = BenchmarkResult.from_dict(eee_dict)
+        assert restored.release_date == "2024-02-03"
         assert restored.results["total"]["test_mcc"] == 42.5  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule, invalid-argument-type]
         assert (
             abs(

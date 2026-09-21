@@ -30,6 +30,7 @@ import csv
 import json
 import logging
 import os
+import shlex
 import signal
 import socket
 import subprocess
@@ -43,6 +44,7 @@ from dotenv import load_dotenv
 from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
+from euroeval_worker.review import PublicStagingError, reviewer_from_environment
 from leaderboards.backup import backup_results
 from leaderboards.constants import (
     MODEL_REQUEST_LABEL,
@@ -51,7 +53,12 @@ from leaderboards.constants import (
     RESULTS_DIR,
     RESULTS_READY_LABEL,
 )
+from leaderboards.contamination_canary import is_canary_record
 from leaderboards.github_api import close_issue, comment_on_issue, gh_request
+from leaderboards.leaderboard_visibility import (
+    count_ranked_entries,
+    leaderboard_should_be_shown,
+)
 from leaderboards.queue_parsing import extract_model_id
 from leaderboards.result_identity import (
     ResultIdentity,
@@ -100,6 +107,12 @@ def main(force: bool = False) -> None:
             are found. Defaults to False.
     """
     check_required_env_vars()
+    try:
+        should_continue = preflight_volunteer_review()
+    except PublicStagingError:
+        sys.exit(1)
+    if not should_continue:
+        return
 
     issues = _fetch_issues()
     harvested = _harvest_results(issues)
@@ -496,6 +509,12 @@ def _process_new_results(
             continue
         try:
             record = json.loads(line)
+            if is_canary_record(record):
+                logger.info(
+                    "Keeping private contamination-canary evidence out of the public "
+                    "results bucket."
+                )
+                continue
             identity = _extract_identity_key(record)
             if not identity:
                 logger.debug(f"Skipping line {line_number}: no identity")
@@ -653,6 +672,125 @@ def deploy_to_vercel() -> bool:
     return True
 
 
+def preflight_volunteer_review() -> bool:
+    """Check private volunteer staging before any leaderboard side effect.
+
+    Returns:
+        Whether leaderboard collection should continue. ``False`` means the
+        operator chose to review pending submissions first.
+
+    Raises:
+        PublicStagingError:
+            If Hugging Face confirms that the staging bucket is public.
+    """
+    if not os.environ.get("HF_STAGING_BUCKET") or not os.environ.get("HF_TOKEN"):
+        logger.warning(
+            "Volunteer review preflight skipped: private staging is not configured."
+        )
+        return True
+
+    try:
+        reviewer = reviewer_from_environment()
+        pending = reviewer.list_pending_submissions()
+    except PublicStagingError:
+        logger.error("Refusing to continue: configured volunteer staging is public.")
+        raise
+    except Exception:
+        logger.warning(
+            "Volunteer review preflight unavailable; continuing with canonical results."
+        )
+        return True
+
+    if not pending:
+        return True
+
+    submission_ids = [summary[0] for summary in pending]
+    if not _stdin_is_interactive():
+        _log_review_commands(submission_ids=submission_ids)
+        logger.warning(
+            "Standard input is not interactive; continuing without automatic approval."
+        )
+        return True
+    try:
+        answer = input(
+            f"Found {len(pending)} volunteer submission(s) pending review in private "
+            "Hugging Face staging. Review them before continuing with leaderboard "
+            "generation? [y/N]: "
+        )
+    except EOFError:
+        _log_review_commands(submission_ids=submission_ids)
+        logger.warning(
+            "Could not read review prompt; continuing without automatic approval."
+        )
+        return True
+    if answer.strip().lower() in {"y", "yes"}:
+        _log_review_commands(submission_ids=submission_ids)
+        logger.info(
+            "Review paused; no volunteer submission was approved automatically. "
+            "Rerun make leaderboards afterward."
+        )
+        return False
+    logger.info("Continuing; no volunteer submission was approved automatically.")
+    return True
+
+
+def _log_review_commands(submission_ids: list[str]) -> None:
+    """Log copy-pasteable, shell-quoted maintainer review commands."""
+    reviewer = os.environ.get("GITHUB_ACTOR") or "<github-login>"
+    reason = "reviewed submission evidence"
+    commands = [
+        ["uv", "run", "python", "src/scripts/review_volunteer_results.py", "list"]
+    ]
+    for submission_id in submission_ids:
+        commands.extend(
+            (
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "src/scripts/review_volunteer_results.py",
+                    "show",
+                    submission_id,
+                ],
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "src/scripts/review_volunteer_results.py",
+                    "--reviewer",
+                    reviewer,
+                    "approve",
+                    submission_id,
+                    "--reason",
+                    reason,
+                ],
+                [
+                    "uv",
+                    "run",
+                    "python",
+                    "src/scripts/review_volunteer_results.py",
+                    "--reviewer",
+                    reviewer,
+                    "reject",
+                    submission_id,
+                    "--reason",
+                    reason,
+                ],
+            )
+        )
+    logger.warning("Review commands (do not run until evidence is inspected):")
+    for command in commands:
+        logger.warning("%s", shlex.join(command))
+
+
+def _stdin_is_interactive() -> bool:
+    """Return whether stdin can safely be used for the review prompt."""
+    try:
+        return sys.stdin.isatty()
+    except (AttributeError, OSError):
+        return False
+
+
 def preview_in_dev_server() -> bool:
     """Start Vercel dev server and prompt user to review before deployment.
 
@@ -784,15 +922,15 @@ def verify_leaderboards() -> bool:
 
     Checks:
     - CSV files exist and are non-empty
-    - Row count is reasonable (>100 models)
+    - Leaderboards have at least 100 ranked entries
     - Required columns are present
     - No obvious data corruption (e.g., NaN in critical fields)
 
-    Leaderboards with <50 rows are skipped (not published) instead of failing
-    the entire validation.
+    Leaderboards below the ranked-entry threshold are not published instead of
+    failing the entire validation.
 
     Returns:
-        True if validation completed (even if some leaderboards were skipped),
+        True if validation completed and at least one CSV is publishable,
         False if critical errors occurred.
     """
     output_dir = REPO_ROOT / "src" / "frontend" / "csv"
@@ -806,30 +944,37 @@ def verify_leaderboards() -> bool:
         logger.error("No CSV files found in output directory.")
         return False
 
-    logger.info(f"Found {len(csv_files)} leaderboard CSV(s).")
-
+    leaderboard_stems = {
+        csv_file.stem.removesuffix("_simplified") for csv_file in csv_files
+    }
     skipped_count = 0
+    for stem in leaderboard_stems:
+        simplified_csv_path = output_dir / f"{stem}_simplified.csv"
+        if leaderboard_should_be_shown(simplified_csv_path=simplified_csv_path):
+            continue
+
+        ranked_entries = count_ranked_entries(simplified_csv_path=simplified_csv_path)
+        logger.warning(
+            f"{stem}: Only {ranked_entries} ranked entries. "
+            "Skipping publication (too few results)."
+        )
+        for path in (
+            output_dir / f"{stem}.csv",
+            simplified_csv_path,
+            output_dir / f"{stem}.json",
+        ):
+            path.unlink(missing_ok=True)
+        skipped_count += 1
+
+    csv_files = list(output_dir.glob("*.csv"))
+    logger.info(f"Found {len(csv_files)} publishable leaderboard CSV(s).")
+
     valid_count = 0
     for csv_file in csv_files:
         try:
             with csv_file.open(mode="r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 rows = list(reader)
-
-                if len(rows) < 50:
-                    logger.warning(
-                        f"{csv_file.name}: Only {len(rows)} rows (<50). "
-                        "Skipping publication (too few results)."
-                    )
-                    csv_file.unlink()
-                    skipped_count += 1
-                    continue
-
-                if len(rows) < 100:
-                    logger.warning(
-                        f"{csv_file.name}: Only {len(rows)} rows (<100). "
-                        "Expected for simplified/generative-only."
-                    )
 
                 # Check for critical columns
                 # Some CSVs have HTML headers in row 0, actual headers in row 1
@@ -885,8 +1030,8 @@ def verify_leaderboards() -> bool:
 
     if skipped_count > 0:
         logger.info(
-            f"Published {valid_count} leaderboard(s), skipped {skipped_count} "
-            "(too few results)."
+            f"Published {valid_count} leaderboard CSV(s), skipped {skipped_count} "
+            "leaderboard(s) with too few results."
         )
     else:
         logger.info(f"All {valid_count} leaderboard CSVs passed sanity checks.")

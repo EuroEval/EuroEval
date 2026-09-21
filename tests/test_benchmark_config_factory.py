@@ -1,5 +1,6 @@
 """Tests for the `benchmark_config_factory` module."""
 
+import copy
 import os
 from pathlib import Path
 from typing import Generator
@@ -9,13 +10,17 @@ import torch
 
 from euroeval import Benchmarker
 from euroeval.benchmark_config_factory import (
+    _resolve_dataset_id,
     prepare_dataset_configs,
     prepare_device,
     prepare_languages,
 )
-from euroeval.data_models import DatasetConfig, Language
+from euroeval.data_models import DatasetConfig, Language, TranslationDatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.dataset_configs.danish import DALA_CONFIG, MULTI_WIKI_QA_DA_CONFIG
+from euroeval.dataset_configs.danish import (  # noqa: E501
+    DALA_CONFIG,
+    MULTI_WIKI_QA_DA_CONFIG,
+)
 from euroeval.enums import Device
 from euroeval.languages import (
     DANISH,
@@ -26,7 +31,7 @@ from euroeval.languages import (
     get_all_languages,
     get_correct_language_codes,
 )
-from euroeval.tasks import LA
+from euroeval.tasks import CONTAMINATION_DETECTION, LA
 
 
 class TestBitsPerCharacterGating:
@@ -89,6 +94,59 @@ def all_official_la_dataset_configs() -> Generator[list[DatasetConfig], None, No
         ).values()
         if LA == cfg.task and not cfg.unofficial
     ]
+
+
+def test_official_translation_configs_are_in_standard_suite(
+    all_official_dataset_configs: list[DatasetConfig],
+) -> None:
+    """The standard suite includes English-to-local translation only."""
+    translation_configs = [
+        cfg
+        for cfg in all_official_dataset_configs
+        if isinstance(cfg, TranslationDatasetConfig)
+    ]
+
+    assert translation_configs
+    assert all(cfg.source_language is ENGLISH for cfg in translation_configs)
+    assert "wmt24pp-en-bg" in {cfg.name for cfg in translation_configs}
+    assert "wmt24pp-bg-en" not in {cfg.name for cfg in translation_configs}
+
+
+def test_contamination_detection_creates_only_a_virtual_dataset() -> None:
+    """The canary task selects one virtual dataset without duplicating it."""
+    selected = prepare_dataset_configs(
+        task="contamination-detection",
+        dataset=None,
+        languages=[DANISH],
+        custom_datasets_file=Path("custom_datasets.py"),
+        api_key=os.getenv("HF_TOKEN"),
+        cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=True,
+        run_with_cli=True,
+    )
+    assert [config.name for config in selected] == ["contamination-canary-da"]
+    assert selected[0].task is CONTAMINATION_DETECTION
+    with pytest.raises(ValueError, match="source"):
+        selected[0].source
+
+    assert sum(config.task is CONTAMINATION_DETECTION for config in selected) == 1
+
+
+def test_ordinary_task_includes_the_canary() -> None:
+    """An ordinary task run includes the virtual canary for the selected language."""
+    selected = prepare_dataset_configs(
+        task="classification",
+        dataset=None,
+        languages=[DANISH],
+        custom_datasets_file=Path("custom_datasets.py"),
+        api_key=None,
+        cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=False,
+        run_with_cli=True,
+    )
+
+    assert selected[-1].name == "contamination-canary-da"
+    assert sum(config.task is CONTAMINATION_DETECTION for config in selected) == 1
 
 
 @pytest.mark.parametrize(
@@ -189,6 +247,23 @@ def test_prepare_dataset_configs(
         trust_remote_code=True,
         run_with_cli=True,
     )
+    if input_dataset is None:
+        canary_configs = [
+            config
+            for config in prepared_dataset_configs
+            if config.task is CONTAMINATION_DETECTION
+        ]
+        assert len(canary_configs) == 1
+        assert canary_configs[0].name == (
+            "contamination-canary-" + input_languages[0].code
+            if len(input_languages) == 1
+            else "contamination-canary"
+        )
+        prepared_dataset_configs = [
+            config
+            for config in prepared_dataset_configs
+            if config.task is not CONTAMINATION_DETECTION
+        ]
     assert set(prepared_dataset_configs) == set(expected_dataset_configs)
 
 
@@ -226,6 +301,30 @@ def test_prepare_dataset_configs_invalid_task() -> None:
             run_with_cli=True,
         )
     assert exc_info.value.code == 1
+
+
+def test_prepare_dataset_configs_language_filters_explicit_dataset() -> None:
+    """Test that a language filters an explicitly requested dataset.
+
+    Specifying a dataset does not bypass the language selection: a dataset is only
+    benchmarked if it covers one of the requested languages. This is how `--language`
+    narrows down the datasets expanded from a multi-language external dataset repo.
+    """
+
+    def prepare(languages: list[Language]) -> list[DatasetConfig]:
+        return prepare_dataset_configs(
+            task=None,
+            dataset=["dansk"],
+            languages=languages,
+            custom_datasets_file=Path("custom_datasets.py"),
+            api_key=None,
+            cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=False,
+            run_with_cli=True,
+        )
+
+    assert [dataset_config.name for dataset_config in prepare([DANISH])] == ["dansk"]
+    assert prepare([ENGLISH]) == []
 
 
 @pytest.mark.parametrize(
@@ -289,3 +388,102 @@ def test_prepare_languages(
     model_languages = sorted(model_languages, key=lambda x: x.code)
     expected_language = sorted(expected_language, key=lambda x: x.code)
     assert model_languages == expected_language
+
+
+def test_resolve_dataset_id_expands_external_subsets() -> None:
+    """Test that a repo or split request selects all of its registered subsets."""
+    configs = {}
+    for name in [
+        "dansk",
+        "repo::dan::test_original",
+        "repo::dan::test_synthetic",
+        "repo::deu::test_original",
+    ]:
+        dataset_config = copy.copy(DALA_CONFIG)
+        dataset_config.name = name
+        dataset_config.source = name
+        configs[name] = dataset_config
+
+    def names(dataset_id: str) -> list[str]:
+        return [
+            dataset_config.name
+            for dataset_config in _resolve_dataset_id(
+                dataset_id=dataset_id, all_dataset_configs=configs
+            )
+        ]
+
+    assert names("dansk") == ["dansk"]
+    assert names("repo") == [
+        "repo::dan::test_original",
+        "repo::dan::test_synthetic",
+        "repo::deu::test_original",
+    ]
+    assert names("repo::test_original") == [
+        "repo::dan::test_original",
+        "repo::deu::test_original",
+    ]
+    assert names("repo::dan::test_synthetic") == ["repo::dan::test_synthetic"]
+    with pytest.raises(KeyError):
+        _resolve_dataset_id(dataset_id="repo::swe", all_dataset_configs=configs)
+
+
+def test_resolve_dataset_id_handles_canonical_expanded_identities() -> None:
+    """Repository and split expansion must understand exceptional identities."""
+    configs = {}
+    for name in [
+        "repo::dan::test",
+        "repo::__no_config__::test::__task_1__",
+        "repo::dan::test::__task_2__",
+    ]:
+        dataset_config = copy.copy(DALA_CONFIG)
+        dataset_config.name = name
+        dataset_config.source = "repo::dan"
+        configs[name] = dataset_config
+
+    assert [
+        config.name
+        for config in _resolve_dataset_id(
+            dataset_id="repo", all_dataset_configs=configs
+        )
+    ] == list(configs)
+    assert [
+        config.name
+        for config in _resolve_dataset_id(
+            dataset_id="repo::test", all_dataset_configs=configs
+        )
+    ] == list(configs)
+    assert [
+        config.name
+        for config in _resolve_dataset_id(
+            dataset_id="repo::dan::test", all_dataset_configs=configs
+        )
+    ] == ["repo::dan::test", "repo::dan::test::__task_2__"]
+
+
+def test_targeted_dataset_omits_the_canary() -> None:
+    """Selecting a dataset does not silently widen the run with the canary."""
+    selected = prepare_dataset_configs(
+        task=None,
+        dataset="dala",
+        languages=[DANISH],
+        custom_datasets_file=Path("custom_datasets.py"),
+        api_key=None,
+        cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=False,
+        run_with_cli=True,
+    )
+
+    assert [config.name for config in selected] == ["dala"]
+    assert all(config.task is not CONTAMINATION_DETECTION for config in selected)
+
+    selected_config = prepare_dataset_configs(
+        task=None,
+        dataset=DALA_CONFIG,
+        languages=[DANISH],
+        custom_datasets_file=Path("custom_datasets.py"),
+        api_key=None,
+        cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=False,
+        run_with_cli=True,
+    )
+    assert selected_config == [DALA_CONFIG]

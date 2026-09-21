@@ -35,14 +35,6 @@ BESLS_CONFIG = DatasetConfig(
     languages=[BELARUSIAN],
 )
 
-SCALA_BE_CONFIG = DatasetConfig(
-    name="scala-be",
-    pretty_name="ScaLA-be",
-    source="EuroEval/scala-be",
-    task=LA,
-    languages=[BELARUSIAN],
-)
-
 WIKIANN_BE_CONFIG = DatasetConfig(
     name="wikiann-be",
     pretty_name="WikiANN-be",
@@ -92,6 +84,22 @@ BERTE_WD_CONFIG = DatasetConfig(
     "першага. Адкажыце толькі {labels_str}, і нічога іншага.",
 )
 
+BEWIC_CONFIG = DatasetConfig(
+    name="bewic",
+    pretty_name="BeWiC",
+    source="EuroEval/bewic-mini",
+    task=WIC,
+    languages=[BELARUSIAN],
+)
+
+BELACOLA_CONFIG = DatasetConfig(
+    name="belacola",
+    pretty_name="BelaCoLA",
+    source="EuroEval/belacola-mini",
+    task=LA,
+    languages=[BELARUSIAN],
+)
+
 # Unofficial datasets ###
 
 FLORES_BE_EN_CONFIG = TranslationDatasetConfig(
@@ -105,6 +113,15 @@ FLORES_BE_EN_CONFIG = TranslationDatasetConfig(
     unofficial=True,
 )
 
+SCALA_BE_CONFIG = DatasetConfig(
+    name="scala-be",
+    pretty_name="ScaLA-be",
+    source="EuroEval/scala-be",
+    task=LA,
+    languages=[BELARUSIAN],
+    unofficial=True,
+)
+
 RAGTRUTH_BE_CONFIG = DatasetConfig(
     name="ragtruth-be",
     pretty_name="RAGTruth-be",
@@ -112,22 +129,4 @@ RAGTRUTH_BE_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[BELARUSIAN],
     train_split=None,
-)
-
-BELACOLA_CONFIG = DatasetConfig(
-    name="belacola",
-    pretty_name="BelaCoLA",
-    source="EuroEval/belacola-mini",
-    task=LA,
-    languages=[BELARUSIAN],
-    unofficial=True,
-)
-
-BEWIC_CONFIG = DatasetConfig(
-    name="bewic",
-    pretty_name="BeWiC",
-    source="EuroEval/bewic-mini",
-    task=WIC,
-    languages=[BELARUSIAN],
-    unofficial=True,
 )

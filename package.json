@@ -2,14 +2,18 @@
   "name": "euroeval",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "vue-tsc --noEmit"
+    "check": "npm run check:vercel-source && vue-tsc --noEmit",
+    "check:vercel-source": "node src/scripts/check-vercel-source-staging.mjs",
+    "test:api": "node --experimental-strip-types --loader ./tests/api/loader-extensionless-ts.mjs --test tests/api/import-specifiers.test.mjs tests/api/loader-extensionless-ts.test.mjs tests/api/worker/_lib.test.mjs tests/api/worker/canary.test.mjs tests/api/worker/promote.test.mjs tests/api/worker/lifecycle.test.mjs tests/api/worker/result.test.mjs tests/api/hall-of-fame.test.mjs",
+    "test:scripts": "node --test tests/scripts/*.test.mjs"
   },
   "dependencies": {
-    "@huggingface/hub": "^1.0.0",
+    "@huggingface/hub": "^2.17.0",
     "@upstash/ratelimit": "^2.0.0",
     "@upstash/redis": "^1.34.0",
     "highlight.js": "^11.11.0",
@@ -22,6 +26,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/markdown-it": "^14.1.2",
     "@vitejs/plugin-vue": "^6.0.7",
+    "ignore": "5.3.2",
     "typescript": "^5.6.0",
     "vite": "^8.0.16",
     "vue-tsc": "^3.2.9"

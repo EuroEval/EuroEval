@@ -38,7 +38,6 @@ from dataclasses import dataclass
 import click
 from update_core_models import refresh_core_models
 
-from euroeval.languages import get_all_languages
 from leaderboards.constants import NEW_RESULTS_PATH, RESULTS_DIR
 from leaderboards.core_models import CoreModel
 from leaderboards.evaluation_common import (
@@ -279,12 +278,10 @@ def build_jobs(
 def codes_for_model(model: CoreModel) -> set[str]:
     """Return the ISO codes a model should be evaluated on.
 
-    API models cover every known language. Open-weight models cover the
-    ISO codes derived from their ``pareto_languages`` -- with one
-    exception: when the Pareto list is empty (typical for EU/OSAI
-    entries that haven't been benchmarked widely enough yet), fall back
-    to "all known languages" so the backfill run is what generates the
-    data the Pareto computation needs.
+    API models and Pareto models cover every European leaderboard language.
+    OSAI entries that have not been benchmarked widely enough also fall back
+    to that complete European language set so the backfill run can generate
+    the data needed by the Pareto computation.
 
     Args:
         model:
@@ -293,48 +290,16 @@ def codes_for_model(model: CoreModel) -> set[str]:
     Returns:
         The ISO codes the model should be evaluated on.
     """
-    if model.api or not model.pareto_languages:
-        return all_known_language_codes()
-    codes: set[str] = set()
-    for name in model.pareto_languages:
-        code = language_name_to_code(name=name)
-        if code is None:
-            logger.debug(f"Could not map language name {name!r} to an ISO code.")
-            continue
-        codes.add(code)
-    return codes
+    return all_european_language_codes()
 
 
-def all_known_language_codes() -> set[str]:
-    """Return every ISO code known to EuroEval.
+def all_european_language_codes() -> set[str]:
+    """Return ISO codes with an official European leaderboard.
 
     Returns:
-        Every key from :func:`euroeval.languages.get_all_languages`.
+        Every official leaderboard language code.
     """
-    return set(get_all_languages().keys())
-
-
-def language_name_to_code(name: str) -> str | None:
-    """Map an English language name to its ISO code, or None.
-
-    The names come from ``core_models.yaml::pareto_languages``; values are
-    matched case-insensitively against
-    :func:`euroeval.languages.get_all_languages`.
-
-    Args:
-        name:
-            The English language name (case-insensitive).
-
-    Returns:
-        The ISO code for the language, or None when no match is found.
-    """
-    needle = name.strip().lower()
-    if not needle:
-        return None
-    for code, language in get_all_languages().items():
-        if language.name.lower() == needle:
-            return code
-    return None
+    return {language for _, language in official_dataset_language_pairs()}
 
 
 def execute_jobs(jobs: list[Job]) -> None:

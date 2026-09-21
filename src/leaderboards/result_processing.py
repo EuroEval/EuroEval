@@ -20,6 +20,7 @@ from tqdm.auto import tqdm
 
 from .cache import Cache
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
+from .contamination_canary import process_contamination_canaries
 from .evaluation_common import resolve_hf_token
 from .model_metadata import add_missing_entries, fix_metadata, record_is_valid
 from .record_fields import deduplicate_records
@@ -31,9 +32,34 @@ from .result_identity import (
     raise_on_collision,
     record_relative_path,
 )
-from .result_loading import load_raw_results
+from .result_loading import (
+    configure_leaderboard_result_filter,
+    load_raw_results,
+    reset_leaderboard_result_filter,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def configure_canary_result_filter() -> None:
+    """Score stored canary evidence and configure leaderboard-only filtering.
+
+    This is used when callers intentionally skip ordinary result processing but still
+    need auxiliary records and positively detected models excluded from generated
+    leaderboards.
+    """
+    reset_leaderboard_result_filter()
+    records = load_raw_results()
+    _, _, excluded_models, canary_report = process_contamination_canaries(
+        records=records
+    )
+    if canary_report.get("status") == "unavailable":
+        logger.warning(
+            "Contamination-canary evidence could not be scored: %s.",
+            canary_report.get("reason", "unknown error"),
+        )
+    configure_leaderboard_result_filter(excluded_models=excluded_models)
+    load_raw_results.cache_clear()
 
 
 def process_results(
@@ -66,7 +92,16 @@ def process_results(
             results bucket. Defaults to False.
     """
     # Load raw results first so per-model files in RESULTS_DIR are synced.
+    reset_leaderboard_result_filter()
     records = load_raw_results()
+    records, canary_records, excluded_models, canary_report = (
+        process_contamination_canaries(records=records)
+    )
+    if canary_report.get("status") == "unavailable":
+        logger.warning(
+            "Contamination-canary evidence could not be scored: %s.",
+            canary_report.get("reason", "unknown error"),
+        )
 
     # Build the metadata cache from the synced per-model result files.
     cache = Cache.from_results_dir(RESULTS_DIR)
@@ -114,10 +149,13 @@ def process_results(
         )
         for record in tqdm(processed_records, desc="Adding missing entries")
     ]
-
     _upload_per_model_files(
         processed_records=processed_records, upload_to_bucket=upload_to_bucket
     )
+    # Completion-bearing evidence remains local/private and is never uploaded to
+    # the public canonical results bucket.
+    _upload_per_model_files(processed_records=canary_records, upload_to_bucket=False)
+    configure_leaderboard_result_filter(excluded_models=excluded_models)
     load_raw_results.cache_clear()
     logger.info("Cleared load_raw_results cache.")
 

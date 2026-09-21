@@ -7,7 +7,7 @@ import click
 from .benchmarker import Benchmarker
 from .constants import ATTENTION_BACKENDS
 from .data_models import DatasetConfig
-from .enums import Device, GenerativeType
+from .enums import Device, GenerativeType, ShotMode
 from .languages import get_all_languages
 
 
@@ -43,8 +43,9 @@ from .languages import get_all_languages
     default=None,
     show_default=True,
     multiple=True,
-    help="""The name of the benchmark dataset. We recommend to use the `task` and
-    `language` options instead of this option.""",
+    help="""The name of the benchmark dataset. Note that this option cannot be combined
+    with the `--task` or `--language` options, as it fully specifies which datasets,
+    configurations and splits to benchmark.""",
 )
 @click.option(
     "--finetuning-batch-size",
@@ -136,10 +137,11 @@ from .languages import get_all_languages
 )
 @click.option(
     "--few-shot/--zero-shot",
-    default=True,
-    show_default=True,
-    help="Whether to only evaluate the model using few-shot evaluation. Only relevant "
-    "if the model is generative.",
+    default=None,
+    show_default="auto",
+    help="Select few-shot or zero-shot evaluation. By default, run zero-shot and "
+    "few-shot for instruction-tuned/reasoning models, zero-shot for APIs, and "
+    "few-shot for base models. Only relevant if the model is generative.",
 )
 @click.option(
     "--num-iterations",
@@ -240,6 +242,14 @@ from .languages import get_all_languages
     help="Override for the vocabulary size of the model. If not specified, the value "
     "will be inferred automatically from the model.",
 )
+@click.option(
+    "--num-parameters",
+    default=None,
+    type=int,
+    show_default=True,
+    help="Override for the number of parameters in the model. If not specified, the "
+    "value will be inferred automatically from the model.",
+)
 def benchmark(
     model: tuple[str],
     dataset: tuple[str | DatasetConfig],
@@ -257,7 +267,7 @@ def benchmark(
     trust_remote_code: bool,
     clear_model_cache: bool,
     evaluate_test_split: bool,
-    few_shot: bool,
+    few_shot: bool | None,
     num_iterations: int,
     api_base: str | None,
     api_version: str | None,
@@ -271,8 +281,25 @@ def benchmark(
     debug: bool,
     max_context_length: int | None,
     vocabulary_size: int | None,
+    num_parameters: int | None,
 ) -> None:
-    """Benchmark pretrained language models on language tasks."""
+    """Benchmark pretrained language models on language tasks.
+
+    Raises:
+        click.UsageError:
+            If `--dataset` is combined with `--task` or with `--language`, as
+            `--dataset` fully specifies which datasets, configurations and splits to
+            benchmark.
+    """
+    if dataset and task:
+        raise click.UsageError("Only one of `--task` and `--dataset` can be specified.")
+    if dataset and list(language) != ["all"]:
+        raise click.UsageError(
+            "Only one of `--language` and `--dataset` can be specified, as a dataset "
+            "ID already selects the configurations and splits to benchmark; name a "
+            "subset of the dataset to narrow the run."
+        )
+
     Benchmarker(
         language=list(language),
         task=None if len(task) == 0 else list(task),
@@ -289,7 +316,7 @@ def benchmark(
         trust_remote_code=trust_remote_code,
         clear_model_cache=clear_model_cache,
         evaluate_test_split=evaluate_test_split,
-        few_shot=few_shot,
+        few_shot=ShotMode.AUTO if few_shot is None else few_shot,
         num_iterations=num_iterations,
         api_base=api_base,
         api_version=api_version,
@@ -306,6 +333,7 @@ def benchmark(
         download_only=download_only,
         max_context_length=max_context_length,
         vocabulary_size=vocabulary_size,
+        num_parameters=num_parameters,
     ).benchmark(model=list(model))
 
 

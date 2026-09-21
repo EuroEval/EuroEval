@@ -265,12 +265,15 @@ added (Minimal Change).
 
 Alongside the mean rank score the leaderboard shows an integer **Rank** column — a
 *dense* ordinal ranking. After sorting the models by overall mean rank score (lower is
-better), we walk down the list and compare each model to its current tie-group anchor
-using a one-sided bootstrap test (α = 0.05) on the **difference** of their overall scores:
+better), we walk down the list and compare each model to its current tie-group anchor.
+For each comparison, we compute the paired bootstrap distribution of **candidate score
+minus anchor score** and take its 2.5th percentile, the lower bound of a two-sided 95%
+percentile interval:
 
-- If the anchor is not significantly better (p ≥ 0.05), the candidate joins the anchor's
-  tie group and shares its rank.
-- Otherwise, it starts a new tie group with the next rank.
+- If the lower bound is at most zero, the candidate joins the anchor's tie group and
+  shares its rank.
+- If the lower bound is above zero, the candidate is reliably worse and starts a new tie
+  group with the next rank.
 
 The result is a contiguous **1, 2, 3, …** sequence in which models can share a rank, with
 no gaps after a tie. Because the test reuses the same resampled datasets for both models,
@@ -307,11 +310,15 @@ display standard accuracy scores for consistency.
 The public leaderboards add a few rules on top of the per-model evaluation described
 above:
 
-- **Model categories.** Each language has a *generative* leaderboard, covering every
-  task, and an *all models* leaderboard restricted to the NLU tasks, so that encoder
-  models can be compared on an equal footing. Models also carry metadata — generative
-  type, open vs. closed weights, commercial-use permission, whether the model is a merge,
-  parameter count and context length — which can be filtered on the site.
+- **Model categories.** Each language has a *chat* leaderboard, restricted to
+  instruction-tuned and reasoning models and covering every task, including a handful
+  that only make sense for these kinds of models (e.g. instruction following, tool use,
+  bias evaluation); a *generative* leaderboard, covering the standard NLU and NLG tasks
+  and open to any generative model; and an *all models* leaderboard restricted to the
+  NLU tasks, so that encoder models can be compared on an equal footing. Models also
+  carry metadata - generative type, open vs. closed weights, commercial-use permission,
+  whether the model is a merge, parameter count and context length - which can be
+  filtered on the site.
 - **One result per model.** When several result records exist for the same model and
   dataset, EuroEval keeps the one produced by the newest framework version and drops
   validation-split results whenever a test-split result is available, so no model is

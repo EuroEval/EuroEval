@@ -29,50 +29,82 @@ def drop_val_duplicates(
     """Drop validation-split variants when the full test-split variant exists.
 
     When a model has been evaluated on both the validation and full test split,
-    only show the test-split row if it covers at least as many datasets.
-    Otherwise keep the validation-split version (which may have more data).
+    keep only the variant with broader dataset coverage. Equal-sized variants
+    with different datasets are both retained because neither is canonical.
 
     Args:
         model_results:
             The grouped model results, keyed by model ID.
 
     Returns:
-        The model results with ``(val)``-suffixed entries removed whenever the
-        corresponding full test-split entry is also present and covers at least
-        as many datasets.
+        The model results with the narrower split variant removed when both
+        variants are present. Equal-sized variants with different datasets are
+        retained because neither one is globally canonical.
     """
     filtered: dict[str, dict[str, list[tuple[list[float], float, float]]]] = {}
     for model_id, results in model_results.items():
-        equivalent = strip_val_suffix(model_id=model_id)
+        equivalent = strip_note_item(model_id=model_id, note_item="val")
         if equivalent is not None and equivalent in model_results:
-            # Only drop the (val) version if the test-split version has >= datasets
-            equivalent_count = len(model_results[equivalent])
-            if equivalent_count >= len(results):
+            val_datasets = set(results)
+            test_datasets = set(model_results[equivalent])
+            # A strictly larger test set is sufficient under the historical
+            # coverage rule. For equal-sized sets, require the same datasets;
+            # comparing counts alone can discard the only variant containing a
+            # particular dataset.
+            if len(test_datasets) > len(val_datasets) or test_datasets == val_datasets:
+                continue
+        else:
+            validation_variant = _validation_variant_id(model_id=model_id)
+            if validation_variant in model_results and len(
+                model_results[validation_variant]
+            ) > len(results):
+                # Keep the globally broader validation variant canonical. Without
+                # this reciprocal check, a narrower test variant can reappear when
+                # a language-specific dataset filter is applied.
                 continue
         filtered[model_id] = results
     return filtered
 
 
-def strip_val_suffix(model_id: str) -> str | None:
-    """Return the model ID with the 'val' note removed, or None if absent.
+def _validation_variant_id(model_id: str) -> str:
+    """Return the validation-split counterpart of a non-validation model ID.
+
+    Args:
+        model_id:
+            Model ID for a test-split variant.
+
+    Returns:
+        Model ID for the corresponding validation-split variant.
+    """
+    suffix = VARIANT_SUFFIX_RE.search(model_id)
+    base_model_id = VARIANT_SUFFIX_RE.sub("", model_id)
+    if suffix is not None and "zero-shot" in suffix.group():
+        return f"{base_model_id} (zero-shot, val)"
+    return f"{base_model_id} (val)"
+
+
+def strip_note_item(model_id: str, note_item: str) -> str | None:
+    """Return the model ID with a single note item removed, or None if absent.
 
     Args:
         model_id:
             The model ID, possibly wrapped in an anchor tag and possibly
             carrying a parenthesised note like ``(val)`` or ``(zero-shot, val)``.
+        note_item:
+            The note item to remove, e.g. ``"val"`` or ``"zero-shot"``.
 
     Returns:
-        The model ID with ``val`` removed from its note, or ``None`` if the
-        model ID did not contain a ``val`` note.
+        The model ID with ``note_item`` removed from its note, or ``None`` if
+        the model ID did not carry that note item.
     """
     match = re.match(r"^(.*)\s*\(([^()]+)\)(\s*</a>)?$", model_id)
     if not match:
         return None
     prefix, note, suffix = match.group(1), match.group(2), match.group(3) or ""
-    items = [item.strip() for item in note.split(",")]
-    if "val" not in items:
+    items = [i.strip() for i in note.split(",")]
+    if note_item not in items:
         return None
-    items = [item for item in items if item != "val"]
+    items = [i for i in items if i != note_item]
     if not items:
         return f"{prefix.rstrip()}{suffix}"
     return f"{prefix.rstrip()} ({', '.join(items)}){suffix}"
@@ -94,7 +126,7 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     # two leaderboard rows. The anchor is re-applied at render time.
     model_id = strip_anchor(get_model_name(record))
 
-    few_shot = get_bool_field(record, "few_shot", True)
+    few_shot = is_few_shot_record(record)
     validation_split = get_bool_field(record, "validation_split", False)
 
     note = [] if few_shot else ["zero-shot"]
@@ -146,6 +178,33 @@ def get_model_name(record: dict) -> str:
     return record.get("model_info", {}).get("name", "unknown")
 
 
+def is_few_shot_record(record: dict) -> bool:
+    """Whether a record represents a few-shot evaluation.
+
+    An explicit ``null`` (task-forced zero-shot) counts as zero-shot here,
+    unlike a field that's simply absent, which falls back to the legacy
+    "assume few-shot" default.
+
+    Args:
+        record:
+            A result record in EEE format.
+
+    Returns:
+        True if the record is a few-shot evaluation, False if zero-shot.
+    """
+    additional = record.get("eval_library", {}).get("additional_details", {})
+    if "few_shot" not in additional:
+        return True
+    val = additional["few_shot"]
+    if val is None:
+        return False
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, str):
+        return val.lower() == "true"
+    return True
+
+
 def strip_anchor(model_id: str) -> str:
     """Strip any surrounding HTML anchor tag from a model id.
 
@@ -195,7 +254,7 @@ def get_record_hash(record: dict) -> str:
     if dataset is None:
         raise ValueError(f"No dataset found in record: {record}")
     validation_split = get_bool_field(record, "validation_split", False)
-    few_shot = get_bool_field(record, "few_shot", True)
+    few_shot = is_few_shot_record(record)
     return f"{model}{dataset}{int(validation_split)}{int(few_shot)}"
 
 

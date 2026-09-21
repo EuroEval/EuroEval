@@ -18,16 +18,16 @@ from .hf_hub_utils import _list_repo_files, _repo_exists
 from .logging_utils import log_once
 from .split_utils import get_repo_splits
 from .utils import get_hf_token
-from .yaml_config import load_yaml_config
+from .yaml_config import load_yaml_config, parse_dataset_selector
 
 
-def try_get_dataset_config_from_repo(
+def try_get_dataset_configs_from_repo(
     dataset_id: str,
     api_key: str | None,
     cache_dir: Path,
     trust_remote_code: bool,
     run_with_cli: bool,
-) -> DatasetConfig | None:
+) -> list[DatasetConfig] | None:
     """Try to get a dataset config from a Hugging Face dataset repository.
 
     The function first looks for a YAML config file (`eval.yaml`) which can be
@@ -50,22 +50,30 @@ def try_get_dataset_config_from_repo(
             Whether the code is being run with the CLI.
 
     Returns:
-        The dataset config if it exists, otherwise None.
+        The dataset configs referred to by `dataset_id`, or None if the repository has
+        no EuroEval dataset config. A repository with several configurations in its
+        `eval.yaml` expands into one config per task entry.
     """
+    requested_id = dataset_id
+    parsed_selector = parse_dataset_selector(dataset_id=dataset_id)
+    if parsed_selector is None:
+        return None
+    repo_id, subset_config, subset_split = parsed_selector
+
     token = get_hf_token(api_key=api_key)
     hf_api = HfApi(token=token)
-    if not _repo_exists(hf_api=hf_api, dataset_id=dataset_id):
+    if not _repo_exists(hf_api=hf_api, dataset_id=repo_id):
         return None
 
-    repo_files = _list_repo_files(hf_api=hf_api, dataset_id=dataset_id, revision="main")
+    repo_files = _list_repo_files(hf_api=hf_api, dataset_id=repo_id, revision="main")
 
     if "eval.yaml" in repo_files:
         try:
-            yaml_config = load_yaml_config(
-                hf_api=hf_api, dataset_id=dataset_id, cache_dir=cache_dir
+            yaml_configs = load_yaml_config(
+                hf_api=hf_api, dataset_id=requested_id, cache_dir=cache_dir
             )
-            if yaml_config is not None:
-                return yaml_config
+            if yaml_configs is not None:
+                return yaml_configs
         except Exception as e:
             log_once(
                 f"Failed to load eval.yaml from dataset repository {dataset_id}. "
@@ -74,13 +82,26 @@ def try_get_dataset_config_from_repo(
                 level=logging.ERROR,
             )
 
-    return load_python_config(
+    if subset_split is not None or subset_config is not None:
+        if "eval.yaml" not in repo_files:
+            log_once(
+                message=(
+                    f"Dataset selector {dataset_id!r} requests subset selection, but "
+                    "subset selection is only supported for repositories with an "
+                    "eval.yaml file."
+                ),
+                level=logging.ERROR,
+            )
+        return None
+
+    python_config = load_python_config(
         hf_api=hf_api,
-        dataset_id=dataset_id,
+        dataset_id=repo_id,
         cache_dir=cache_dir,
         trust_remote_code=trust_remote_code,
         run_with_cli=run_with_cli,
     )
+    return [python_config] if python_config is not None else None
 
 
 def load_python_config(
@@ -105,7 +126,8 @@ def load_python_config(
             Whether the code is being run with the CLI.
 
     Returns:
-        The dataset config if it exists, otherwise None.
+        The dataset config referred to by `dataset_id`, or None if the repository has
+        no `euroeval_config.py`.
     """
     repo_files = _list_repo_files(hf_api=hf_api, dataset_id=dataset_id, revision="main")
 

@@ -108,6 +108,20 @@ class BenchmarkModule(ABC):
             logging_msg += f"and a maximum context length of {self.model_max_length:,}."
         log_once(message=logging_msg, level=logging.INFO)
 
+    def collect_canary_completions(self, prompts: c.Sequence[str]) -> list[str]:
+        """Generate raw continuations for the separate contamination canary.
+
+        Args:
+            prompts:
+                Frozen text-completion prompts. They are not benchmark samples.
+
+        Returns:
+            One continuation per prompt in input order.
+        """
+        raise NotImplementedError(
+            f"Canary completion has not been implemented for {self.__class__.__name__}."
+        )
+
     @property
     def compute_metrics(self) -> "ComputeMetricsFunction":
         """The function used to compute the metrics.
@@ -461,6 +475,7 @@ def _build_model_config_helper(
             cache_dir=benchmark_config.cache_dir, model_id=model_id
         ),
         adapter_base_model_id=adapter_base_model_id,
+        release_date=model_info.release_date,
         generation_config=generation_config,
     )
 

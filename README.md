@@ -21,7 +21,7 @@
 [![Second paper](https://img.shields.io/badge/arXiv-2406.13469-b31b1b.svg)](https://arxiv.org/abs/2406.13469)
 [![License](https://img.shields.io/github/license/EuroEval/EuroEval)](https://github.com/EuroEval/EuroEval/blob/main/LICENSE)
 [![LastCommit](https://img.shields.io/github/last-commit/EuroEval/EuroEval)](https://github.com/EuroEval/EuroEval/commits/main)
-[![Code Coverage](https://img.shields.io/badge/Coverage-74%25-yellow.svg)](https://github.com/EuroEval/EuroEval/tree/main/tests)
+[![Code Coverage](https://img.shields.io/badge/Coverage-76%25-yellowgreen.svg)](https://github.com/EuroEval/EuroEval/tree/main/tests)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](https://github.com/EuroEval/EuroEval/blob/main/CODE_OF_CONDUCT.md)
 
 ## Maintainer
@@ -277,6 +277,34 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for rlrs"
     />
 </a>
+<a href="https://github.com/jaideeppyne">
+    <img
+        src="https://avatars.githubusercontent.com/u/25899506"
+        width=50
+        alt="Contributor avatar for jaideeppyne"
+    />
+</a>
+<a href="https://github.com/milos-plavsic">
+    <img
+        src="https://avatars.githubusercontent.com/u/225993441"
+        width=50
+        alt="Contributor avatar for milos-plavsic"
+    />
+</a>
+<a href="https://github.com/Mr-Neutr0n">
+    <img
+        src="https://avatars.githubusercontent.com/u/64578610"
+        width=50
+        alt="Contributor avatar for Mr-Neutr0n"
+    />
+</a>
+<a href="https://github.com/djstrong">
+    <img
+        src="https://avatars.githubusercontent.com/u/1849959"
+        width=50
+        alt="Contributor avatar for djstrong"
+    />
+</a>
 
 ### Contribute to EuroEval
 
@@ -285,6 +313,8 @@ contributing new datasets, your help makes this project better for everyone.
 
 - **General contributions**: Check out our [contribution guidelines](CONTRIBUTING.md)
   for information on how to get started.
+- **Volunteer GPU workers**: See the [volunteer worker guide](VOLUNTEER_WORKER.md)
+  to run or operate a community evaluation worker.
 - **Adding datasets**: If you're interested in adding a new dataset to EuroEval, we have
   a [dedicated guide](NEW_DATASET_GUIDE.md) with step-by-step instructions.
 

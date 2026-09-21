@@ -250,6 +250,21 @@ class TestBenchmarkResult:
         """Test that `BenchmarkResult.from_dict` works as expected."""
         assert BenchmarkResult.from_dict(config) == expected
 
+    @pytest.mark.parametrize(
+        ("release_date", "expected"),
+        [("2024-02-03", "2024-02-03"), ("not-a-date", None), (None, None)],
+    )
+    def test_release_date_normalisation(
+        self,
+        benchmark_result: BenchmarkResult,
+        release_date: str | None,
+        expected: str | None,
+    ) -> None:
+        """Missing and malformed release dates remain backwards compatible."""
+        result = benchmark_result.model_copy(update={"release_date": release_date})
+        result = BenchmarkResult.model_validate(result.model_dump())
+        assert result.release_date == expected
+
 
 class TestMetric:
     """Tests for the `Metric` class."""

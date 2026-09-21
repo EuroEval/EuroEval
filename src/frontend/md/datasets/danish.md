@@ -1366,6 +1366,106 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset dameta
 ```
 
+### Unofficial: Danish Similarity Outlier Detection
+
+This dataset asks the model to identify the word that is least semantically similar to the
+other five words in a list of six Danish words. It is part of the
+[Danish Semantic Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark)
+and is based on the Danish Thesaurus. It contains fine-, medium- and coarse-grained
+similarity variants. The variants differ in how far the outlier is from the core group in
+the thesaurus hierarchy.
+
+The source archive contains 1,250 source IDs in each granularity. Four IDs were removed
+because their options were not distinct. We split the remaining 1,246 complete source-ID
+groups with `random_state=4242`, keeping the fine, medium and coarse rows for each ID in
+the same partition. We use 341 / 85 / 682 groups for training, validation and testing,
+respectively, resulting in 1,023 / 255 / 2,046 samples.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hvilket ord passer mindst sammen med de andre?\nSvarmuligheder:\na. klint\nb. hældning\nc. brink\nd. kam\ne. undergrund\nf. skråning",
+  "label": "e",
+  "source_id": "v1_0007",
+  "granularity": "coarse",
+  "chapter": "1",
+  "section": "1.015"
+}
+```
+
+```json
+{
+  "text": "Hvilket ord passer mindst sammen med de andre?\nSvarmuligheder:\na. kedel\nb. afgrund\nc. slugt\nd. hulning\ne. dalsænkning\nf. jordhule",
+  "label": "f",
+  "source_id": "v1_0008",
+  "granularity": "fine",
+  "chapter": "1",
+  "section": "1.015"
+}
+```
+
+```json
+{
+  "text": "Hvilket ord passer mindst sammen med de andre?\nSvarmuligheder:\na. vættelys\nb. dolerit\nc. koralkalk\nd. limsten\ne. myremalm\nf. bjergart",
+  "label": "a",
+  "source_id": "v1_0010",
+  "granularity": "medium",
+  "chapter": "1",
+  "section": "1.015"
+}
+```
+
+The source archive is pinned to commit
+[`3da3edf143fc386b02bb98dedca3cbfb8a905be0`](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark/tree/3da3edf143fc386b02bb98dedca3cbfb8a905be0/similarity).
+The processing script reads the fine, medium and coarse TSV files, removes malformed rows
+and rows with duplicate options, and stores the source ID, granularity, chapter and section
+with each formatted question. The Hub dataset is the capped version, named
+`EuroEval/danish-similarity-outlier-mini`.
+
+The source data is available under the
+[CC BY-ND 4.0 licence](https://creativecommons.org/licenses/by-nd/4.0/). The dataset is
+based on the Danish Thesaurus and credits the
+[Society for Danish Language and Literature](https://dsl.dk/).
+
+The dataset is described in the following paper:
+
+> Bolette Pedersen, Nathalie Sørensen, Sussi Olsen, Sanni Nimb, and Simon Gray. 2024.
+> [Towards a Danish Semantic Reasoning Benchmark - Compiled from Lexical-Semantic
+> Resources for Assessing Selected Language Understanding Capabilities of Large Language
+> Models](https://aclanthology.org/2024.lrec-main.1421/).
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Følgende er multiple choice spørgsmål (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spørgsmål: {text}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spørgsmål: {text}
+
+  Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c', 'd', 'e' eller 'f', og intet andet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset danish-similarity-outlier
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-da

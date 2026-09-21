@@ -88,6 +88,7 @@ def block_terminal_output() -> None:
 
     # Disable vLLM logging
     logging.getLogger("vllm").setLevel(logging.CRITICAL)
+    logging.getLogger("vllm_metal.compat").setLevel(logging.CRITICAL)
     logging.getLogger("vllm.engine.llm_engine").setLevel(logging.CRITICAL)
     logging.getLogger("vllm.transformers_utils.tokenizer").setLevel(logging.CRITICAL)
     logging.getLogger("vllm.core.scheduler").setLevel(logging.CRITICAL)

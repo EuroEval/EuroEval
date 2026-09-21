@@ -6,7 +6,6 @@ import json
 import logging
 import subprocess
 import sys
-import typing as t
 import warnings
 from pathlib import Path
 
@@ -22,6 +21,7 @@ from leaderboards.constants import (
     BANNED_VERSIONS,
     CORE_MODELS_CONFIG,
     CORE_MODELS_STALE_DAYS,
+    LEADERBOARD_CATEGORIES,
     LEADERBOARD_CONFIGS_DIR,
     LEADERBOARD_TASKS,
     MINIMUM_NUMBER_OF_MODEL_RECORDS,
@@ -31,9 +31,15 @@ from leaderboards.constants import (
     REPO_ROOT,
     TRAINED_FROM_SCRATCH_PATTERNS,
 )
+from leaderboards.enums import LeaderboardCategory
 from leaderboards.leaderboard_generation import generate_leaderboard
+from leaderboards.leaderboard_visibility import leaderboard_should_be_shown
 from leaderboards.records import plain_model_id
-from leaderboards.result_processing import process_results
+from leaderboards.result_loading import reset_leaderboard_result_filter
+from leaderboards.result_processing import (
+    configure_canary_result_filter,
+    process_results,
+)
 from leaderboards.task_metadata import (
     languages_with_official_datasets,
     task_metric_pretty_names,
@@ -56,11 +62,11 @@ load_dotenv()
 @click.option(
     "--categories",
     "-c",
-    default=("generative", "all_models"),
+    default=LEADERBOARD_CATEGORIES,
     multiple=True,
     help=(
-        "Categories to generate leaderboards for. Defaults to 'generative' and "
-        "'all_models'."
+        "Categories to generate leaderboards for. Defaults to 'chat', "
+        "'generative', and 'all_models'."
     ),
 )
 @click.option(
@@ -100,7 +106,7 @@ load_dotenv()
     ),
 )
 def main(
-    categories: tuple[t.Literal["generative", "all_models"], ...],
+    categories: tuple[LeaderboardCategory, ...],
     force: bool,
     skip_core_models_check: bool,
     skip_results_processing: bool,
@@ -110,8 +116,8 @@ def main(
 
     Args:
         categories (optional):
-            Categories to generate leaderboards for. Defaults to 'generative' and
-            'all_models'.
+            Categories to generate leaderboards for. Defaults to 'chat',
+            'generative', and 'all_models'.
         force (optional):
             Whether to force the generation of the leaderboard, even if no updates
             are found. Defaults to False.
@@ -137,6 +143,8 @@ def main(
             trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
             upload_to_bucket=upload,
         )
+    else:
+        configure_canary_result_filter()
 
     # Offer to refresh the core-model list if it hasn't been touched in
     # over a month. Doing this inside `generate_leaderboards` keeps it on
@@ -177,12 +185,18 @@ def main(
     # Keep the HF Space's model list in sync so it shows up on model cards.
     generate_model_list()
 
+    # Let the frontend know which category tabs have ranked models, without
+    # it having to load each category's leaderboard before deciding.
+    generate_category_ranked()
+
     # Snapshot the (possibly updated) results to the backup directory,
     # rotating out oldest backups to keep total size under the cap.
     try:
         backup_results()
     except OSError as exc:  # pCloud unavailable / disk full / etc.
         logger.warning(f"Results backup failed: {exc}")
+    finally:
+        reset_leaderboard_result_filter()
 
 
 def _maybe_refresh_core_models() -> None:
@@ -235,6 +249,39 @@ def _maybe_refresh_core_models() -> None:
         subprocess.run([sys.executable, str(script_path)], check=True)
     except subprocess.CalledProcessError as exc:
         logger.warning(f"update_core_models failed (exit {exc.returncode}).")
+
+
+def generate_category_ranked() -> None:
+    """Generate a manifest of which leaderboard categories should be shown.
+
+    Sourced from the simplified CSVs (already filtered to ranked-only rows),
+    so the frontend can determine category visibility synchronously without
+    waiting on any per-leaderboard fetch.
+    """
+    output_path: Path = (
+        REPO_ROOT / "src" / "frontend" / "generated" / "category-ranked.json"
+    )
+    manifest: dict[str, dict[str, bool]] = {}
+    for path in sorted(OUTPUT_DIR.glob("*_simplified.csv")):
+        name = path.stem.removesuffix("_simplified")  # "<leaderboard>_<category>"
+        for category in LeaderboardCategory:
+            suffix = f"_{category.value}"
+            if not name.endswith(suffix):
+                continue
+            leaderboard_name = name.removesuffix(suffix)
+            should_show = leaderboard_should_be_shown(simplified_csv_path=path)
+            manifest.setdefault(leaderboard_name, {})[category.value] = should_show
+            break
+
+    for categories in manifest.values():
+        for category in LeaderboardCategory:
+            categories.setdefault(category.value, False)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open(mode="w") as f:
+        json.dump(manifest, f, indent=2, sort_keys=True)
+        f.write("\n")
+    logger.info(f"Wrote {output_path.relative_to(REPO_ROOT)}")
 
 
 def generate_model_list() -> None:

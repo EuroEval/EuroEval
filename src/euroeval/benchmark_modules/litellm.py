@@ -2,6 +2,7 @@
 
 import asyncio
 import collections.abc as c
+import datetime
 import json
 import logging
 import os
@@ -53,6 +54,7 @@ from ..enums import (
     GenerativeType,
     InferenceBackend,
     ModelType,
+    ParameterAdjustment,
     TaskGroup,
 )
 from ..exceptions import (
@@ -100,6 +102,9 @@ VOCAB_SIZE_MAPPING = {
     r"(gemini/)?gemini-[1-9](\.[0-9])?-(flash|pro).*": 256_128,
     # xAI models
     r"(xai/)?grok.*": -1,
+    # DeepSeek models
+    # Source: HF `deepseek-ai/DeepSeek-V4.1-Flash` `config.json` (vocab size).
+    r"deepseek/deepseek-flash.*": 129_280,
     # Ordbogen models
     r"(ordbogen/)?odin-medium.*": -1,
     r"(ordbogen/)?odin-large.*": -1,
@@ -137,6 +142,9 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"(gemini/)?gemini-[23](\.[05])?.*": 1_048_576,
     # xAI models
     r"(xai/)?grok.*": 131_072,
+    # DeepSeek models
+    # Source: HF `deepseek-ai/DeepSeek-V4.1-Flash` `config.json` (context length).
+    r"deepseek/deepseek-flash.*": 1_048_576,
     # Ordbogen models
     r"(ordbogen/)?odin-medium.*": 131_072,
     r"(ordbogen/)?odin-large.*": 202_752,
@@ -158,6 +166,9 @@ NUM_PARAMS_MAPPING = {
     r"(gemini/)?gemini-[23](.[05])?.*": -1,
     # xAI models
     r"(xai/)?grok.*": -1,
+    # DeepSeek models
+    # Source: DeepSeek-V4.1-Flash model card (552B params).
+    r"deepseek/deepseek-flash.*": 552_000_000_000,
     # Ordbogen models
     r"(ordbogen/)?odin-medium.*": -1,
     r"(ordbogen/)?odin-large.*": -1,
@@ -166,12 +177,112 @@ NUM_PARAMS_MAPPING = {
 }
 
 
+# Release dates for API aliases which do not carry a dated version in their ID.
+# Dated model IDs are handled generically by `get_api_model_release_date` below.
+# Sources are the providers' model launch posts and model changelogs:
+# https://platform.openai.com/docs/models, https://docs.anthropic.com/en/docs/about-claude/models,
+# https://ai.google.dev/gemini-api/docs/models, and https://docs.x.ai/docs/models.
+MODEL_RELEASE_DATE_MAPPING = {
+    # OpenAI
+    r"(openai/)?gpt-3\.5-turbo": "2023-03-01",
+    r"(openai/)?gpt-3\.5-turbo-instruct": "2023-09-18",
+    r"(openai/)?gpt-3\.5-turbo-0301": "2023-03-01",
+    r"(openai/)?gpt-3\.5-turbo-0613": "2023-06-13",
+    r"(openai/)?gpt-3\.5-turbo-1106": "2023-11-06",
+    r"(openai/)?gpt-3\.5-turbo-0125": "2024-01-25",
+    r"(openai/)?gpt-3\.5-turbo-instruct-0914": "2023-09-14",
+    r"(openai/)?gpt-4": "2023-03-14",
+    r"(openai/)?gpt-4(?:-32k)?-0314": "2023-03-14",
+    r"(openai/)?gpt-4(?:-32k)?-0613": "2023-06-13",
+    r"(openai/)?gpt-4-turbo": "2024-04-09",
+    r"(openai/)?gpt-4o": "2024-05-13",
+    r"(openai/)?gpt-4o-mini": "2024-07-18",
+    r"(openai/)?o1-(?:mini|preview)": "2024-09-12",
+    r"(openai/)?o1": "2024-12-17",
+    r"(openai/)?o1-pro": "2025-04-14",
+    r"(openai/)?o3-mini": "2025-01-31",
+    r"(openai/)?gpt-4\.1": "2025-04-14",
+    r"(openai/)?gpt-4\.1-mini": "2025-04-14",
+    r"(openai/)?gpt-4\.1-nano": "2025-04-14",
+    r"(openai/)?o3": "2025-04-16",
+    r"(openai/)?o4-mini": "2025-04-16",
+    r"(openai/)?gpt-5": "2025-08-07",
+    r"(openai/)?gpt-5-(?:chat-latest|pro)": "2025-08-07",
+    r"(openai/)?gpt-5-mini": "2025-08-07",
+    r"(openai/)?gpt-5-nano": "2025-08-07",
+    r"(openai/)?gpt-5\.1": "2025-11-13",
+    r"(openai/)?gpt-5\.1-chat-latest": "2025-11-13",
+    r"(openai/)?gpt-5\.2": "2025-12-11",
+    r"(openai/)?gpt-5\.2-(?:chat-latest|pro)": "2025-12-11",
+    r"(openai/)?gpt-5\.3-codex": "2026-02-05",
+    r"(openai/)?gpt-5\.3-chat-latest": "2026-03-03",
+    r"(openai/)?gpt-5\.4": "2026-03-05",
+    r"(openai/)?gpt-5\.4-pro": "2026-03-05",
+    r"(openai/)?gpt-5\.4-(?:mini|nano)": "2026-03-17",
+    r"(openai/)?gpt-5\.5": "2026-04-23",
+    r"(openai/)?gpt-5\.5-pro": "2026-04-23",
+    r"(openai/)?gpt-5\.6(?:-(?:sol|terra|luna))?": "2026-07-09",
+    r"(openai/)?gpt-6-astra": "2026-09-03",
+    # Anthropic
+    r"(anthropic/)?claude-3-opus": "2024-03-04",
+    r"(anthropic/)?claude-3-sonnet": "2024-03-04",
+    r"(anthropic/)?claude-3-haiku": "2024-03-13",
+    r"(anthropic/)?claude-3-5-sonnet": "2024-06-20",
+    r"(anthropic/)?claude-3-5-haiku": "2024-11-04",
+    r"(anthropic/)?claude-3-7-sonnet": "2025-02-24",
+    r"(anthropic/)?claude-(?:opus|sonnet)-4": "2025-05-22",
+    r"(anthropic/)?claude-opus-4-1": "2025-08-05",
+    r"(anthropic/)?claude-sonnet-4-5": "2025-09-29",
+    r"(anthropic/)?claude-haiku-4-5": "2025-10-15",
+    r"(anthropic/)?claude-opus-4-5": "2025-11-24",
+    r"(anthropic/)?claude-opus-4-6": "2026-02-05",
+    r"(anthropic/)?claude-sonnet-4-6": "2026-02-17",
+    r"(anthropic/)?claude-opus-4-7": "2026-04-16",
+    r"(anthropic/)?claude-mythos-preview": "2026-04-07",
+    r"(anthropic/)?claude-opus-4-8": "2026-05-28",
+    r"(anthropic/)?claude-(?:fable|mythos)-5": "2026-06-09",
+    r"(anthropic/)?claude-sonnet-5": "2026-06-30",
+    r"(anthropic/)?claude-opus-5": "2026-07-24",
+    r"(anthropic/)?claude-(?:fable|mythos)-5-1": "2026-09-01",
+    # Google
+    r"(gemini/)?gemini-1\.5-pro.*": "2024-02-15",
+    r"(gemini/)?gemini-1\.5-flash.*": "2024-05-14",
+    r"(gemini/)?gemini-2\.0-flash.*": "2024-12-11",
+    r"(gemini/)?gemini-2\.5-pro.*": "2025-03-25",
+    r"(gemini/)?gemini-2\.5-flash.*": "2025-04-17",
+    r"(gemini/)?gemini-3-pro.*": "2025-11-18",
+    r"(gemini/)?gemini-3-flash.*": "2025-12-17",
+    r"(gemini/)?gemini-3\.1-pro.*": "2026-02-19",
+    r"(gemini/)?gemini-3\.1-flash-lite.*": "2026-03-03",
+    r"(gemini/)?gemini-3\.5-flash$": "2026-05-19",
+    r"(gemini/)?gemini-3\.5-flash-lite$": "2026-07-21",
+    r"(gemini/)?gemini-3\.6-flash$": "2026-07-21",
+    r"(gemini/)?gemini-3\.7-flash$": "2026-08-13",
+    r"(gemini/)?gemini-3\.8-flash$": "2026-09-02",
+    # xAI
+    r"(xai/)?grok-1": "2023-11-04",
+    r"(xai/)?grok-1\.5": "2024-03-28",
+    r"(xai/)?grok-2": "2024-08-13",
+    r"(xai/)?grok-3(?:-beta)?": "2025-02-19",
+    r"(xai/)?grok-3-mini.*": "2025-04-09",
+    r"(xai/)?grok-4": "2025-07-09",
+    r"(xai/)?grok-4-fast.*": "2025-09-19",
+    r"(xai/)?grok-4\.1.*": "2025-11-17",
+    r"(xai/)?grok-4\.20.*": "2026-03-10",
+    r"(xai/)?grok-4\.5.*": "2026-07-08",
+    r"(xai/)?grok-4\.6.*": "2026-08-12",
+    # DeepSeek
+    # Source: repo creation date for `deepseek-ai/DeepSeek-V4.1-Flash`.
+    r"deepseek/deepseek-flash.*": "2026-09-10",
+}
+
 REASONING_MODELS = [
     r"(openai/)?gpt-5.4-.*",
     r"(openai/)?o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?",
     r"(gemini/)?gemini.*thinking.*",
     r"(gemini/)?gemini-2.5.*",
     r"(xai/)?grok-3-mini.*",
+    r"deepseek/deepseek-flash.*",
     r".*gpt-oss.*",
     r"(ordbogen/)?odin-.*",
 ]
@@ -186,6 +297,7 @@ BASE_DECODER_MODELS = [
 ]
 
 CUSTOM_INFERENCE_API_PREFIXES = [
+    "huggingface/",
     "hosted_vllm/",
     "vllm/",
     "ollama/",
@@ -228,6 +340,14 @@ class LiteLLMModel(BenchmarkModule):
         re.compile(r"(gemini/)?gemini-(2\.5|3)-flash.*"): ["no-thinking", "thinking"],
         # xAI models
         re.compile(r"(xai/)?grok-3-mini(-fast)?(-beta)?"): ["low", "medium", "high"],
+        # DeepSeek models
+        re.compile(r"deepseek/deepseek-flash.*"): [
+            "no-thinking",
+            "thinking",
+            "low",
+            "high",
+            "max",
+        ],
     }
 
     def __init__(
@@ -280,6 +400,8 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         self.generation_kwargs = generation_kwargs
+        self._parameter_adjustments: set[ParameterAdjustment] = set()
+        self._max_thinking_budget: int | None = None
         self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
             dataset_config=self.dataset_config,
             model_config=self.model_config,
@@ -289,162 +411,230 @@ class LiteLLMModel(BenchmarkModule):
         )
         self.buffer["max_concurrent_calls"] = 20
 
-    @property
-    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
-        """The data collator used to prepare samples during finetuning.
+    def collect_canary_completions(self, prompts: c.Sequence[str]) -> list[str]:
+        """Generate bounded canary continuations through the configured API client.
+
+        Capability probing uses one request before the corpus batch. It deliberately
+        builds a fresh set of generation arguments rather than reusing the ordinary
+        dataset arguments, since response schemas and log probabilities would change
+        the canary protocol.
+
+        Base models receive raw completion prompts. Chat-only models receive a neutral
+        continuation request; their evidence remains separately identified by backend
+        and generative type.
 
         Returns:
-            The data collator.
+            One raw bounded continuation per prompt.
         """
-        raise NotImplementedError(
-            "The `data_collator` property has not been implemented for LiteLLM models."
+        generation_kwargs = {
+            "max_completion_tokens": 6,
+            "stop": [],
+            "temperature": 0.0,
+            "seed": 4242,
+            "api_key": self.benchmark_config.api_key,
+            "api_base": self.benchmark_config.api_base,
+            "api_version": self.benchmark_config.api_version,
+            "max_retries": 3,
+        }
+        # Model parameters such as reasoning effort remain part of the request, but
+        # dataset-specific logprobs are explicitly excluded from this protocol.
+        generation_kwargs = self._setup_model_params(
+            generation_kwargs=generation_kwargs, include_logprobs=False
+        )
+        generation_kwargs = self._apply_parameter_adjustments(
+            generation_kwargs=generation_kwargs
+        )
+        if not any(
+            key in generation_kwargs for key in ("max_completion_tokens", "max_tokens")
+        ):
+            generation_kwargs["max_output_tokens"] = 6
+        test_input: c.Sequence[litellm.AllMessageValues] | str
+        if self.generative_type == GenerativeType.BASE:
+            test_input = "Test message json"
+        else:
+            test_input = [
+                litellm.ChatCompletionUserMessage(
+                    role="user", content="Test message json"
+                )
+            ]
+        generation_kwargs = self._probe_generation_kwargs(
+            generation_kwargs=generation_kwargs,
+            test_input=test_input,
+            canary_token_limit=6,
+            detect_reasoning_content=False,
+        )
+        return self._collect_canary_batch(
+            prompts=prompts, generation_kwargs=generation_kwargs
         )
 
-    @property
-    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
-        """The function used to extract the labels from the generated output.
+    def _apply_parameter_adjustments(self, generation_kwargs: dict) -> dict:
+        """Apply the persisted model-level parameter adjustments to fresh kwargs.
 
-        Returns:
-            The function used to extract the labels from the generated output.
-        """
-        return _extract_labels_from_generation_helper(
-            dataset_config=self.dataset_config,
-            model_config=self.model_config,
-            first_label_token_mapping=self.buffer["first_label_token_mapping"],
-        )
+        Each adjustment is applied conditionally, so it only affects parameters
+        that are actually present in the kwargs of the current dataset. For
+        instance, `NO_JSON_SCHEMA` only replaces an existing JSON schema response
+        format, and `USE_MAX_TOKENS` preserves the current dataset's token limit.
 
-    def generate(self, inputs: dict) -> GenerativeModelOutput:
-        """Generate outputs from the model.
+        This method is idempotent and is called several times per dataset --
+        before and after the internal probe request in `get_generation_kwargs()`,
+        and again in `generate()` -- so any new adjustment branch added here must
+        remain idempotent as well.
 
         Args:
-            inputs:
-                A batch of inputs to pass through the model.
+            generation_kwargs:
+                The freshly built generation kwargs for the current dataset.
 
         Returns:
-            The generated model outputs.
+            The generation kwargs with all persisted adjustments applied.
+        """
+        adjustments = self._parameter_adjustments
+        if ParameterAdjustment.NO_STOP_SEQUENCES in adjustments:
+            if "stop" in generation_kwargs:
+                generation_kwargs["stop"] = None
+        if ParameterAdjustment.NO_LOGPROBS in adjustments:
+            generation_kwargs = self._disable_logprobs(
+                generation_kwargs=generation_kwargs
+            )
+        # NO_TOP_LOGPROBS must be applied before LOGPROBS_MUST_BE_BOOLEAN so that,
+        # when both are persisted, the Boolean normalisation is the last thing to
+        # touch `logprobs` and the pair stays idempotent across repeated calls.
+        if ParameterAdjustment.NO_TOP_LOGPROBS in adjustments:
+            if "top_logprobs" in generation_kwargs:
+                generation_kwargs["logprobs"] = generation_kwargs.pop("top_logprobs")
+        if ParameterAdjustment.LOGPROBS_MUST_BE_BOOLEAN in adjustments:
+            if "logprobs" in generation_kwargs:
+                generation_kwargs["logprobs"] = True
+        if ParameterAdjustment.USE_MAX_TOKENS in adjustments:
+            if "max_completion_tokens" in generation_kwargs:
+                generation_kwargs["max_tokens"] = generation_kwargs.pop(
+                    "max_completion_tokens"
+                )
+        if ParameterAdjustment.NO_MAX_TOKENS in adjustments:
+            generation_kwargs.pop("max_tokens", None)
+        if ParameterAdjustment.NO_TEMPERATURE in adjustments:
+            generation_kwargs.pop("temperature", None)
+        if ParameterAdjustment.TEMPERATURE_MUST_BE_ONE in adjustments:
+            if "temperature" in generation_kwargs:
+                generation_kwargs["temperature"] = 1.0
+        if ParameterAdjustment.NO_JSON_SCHEMA in adjustments:
+            response_format = generation_kwargs.get("response_format")
+            uses_json_object = (
+                isinstance(response_format, dict)
+                and response_format.get("type") == "json_object"
+            )
+            if response_format is not None and not uses_json_object:
+                generation_kwargs["response_format"] = dict(type="json_object")
+        if ParameterAdjustment.THINKING_DISABLED_REQUIRES_TYPE in adjustments:
+            thinking = generation_kwargs.get("thinking")
+            if isinstance(thinking, dict) and thinking.get("budget_tokens") == 0:
+                generation_kwargs["thinking"] = dict(type="disabled")
+        if ParameterAdjustment.NO_SEED in adjustments:
+            generation_kwargs.pop("seed", None)
+        if ParameterAdjustment.NO_RESPONSE_FORMAT in adjustments:
+            generation_kwargs.pop("response_format", None)
+        generation_kwargs = self._apply_max_thinking_budget(
+            generation_kwargs=generation_kwargs
+        )
+        return generation_kwargs
+
+    def _apply_max_thinking_budget(self, generation_kwargs: dict) -> dict:
+        """Cap the thinking budget at the maximum the model has told us it supports.
+
+        Args:
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+
+        Returns:
+            The generation kwargs with the thinking budget capped, if applicable.
+        """
+        thinking = generation_kwargs.get("thinking")
+        if (
+            self._max_thinking_budget is None
+            or not isinstance(thinking, dict)
+            or thinking.get("type") != "enabled"
+            or not isinstance(thinking.get("budget_tokens"), int)
+            or thinking["budget_tokens"] < self._max_thinking_budget
+        ):
+            return generation_kwargs
+        generation_kwargs["thinking"] = dict(
+            type="enabled", budget_tokens=self._max_thinking_budget - 1
+        )
+        return generation_kwargs
+
+    def _disable_logprobs(self, generation_kwargs: dict) -> dict:
+        """Disable logprobs in the generation kwargs and in the label token mapping.
+
+        Note that this does not remove `response_format`, since the model's
+        inability to compute logprobs says nothing about its ability to produce
+        structured output.
+
+        Args:
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+
+        Returns:
+            The generation kwargs without logprobs.
+        """
+        self.buffer["first_label_token_mapping"] = False
+        generation_kwargs.pop("logprobs", None)
+        generation_kwargs.pop("top_logprobs", None)
+        return generation_kwargs
+
+    def _collect_canary_batch(
+        self, prompts: c.Sequence[str], generation_kwargs: dict[str, t.Any]
+    ) -> list[str]:
+        """Collect the canary batch after its request parameters have been probed.
+
+        Args:
+            prompts:
+                The canary prompts.
+            generation_kwargs:
+                The already-probed generation arguments.
+
+        Returns:
+            One completion for each prompt.
 
         Raises:
-            InvalidBenchmark:
-                If the inputs do not contain either 'messages' or 'text' keys.
+            ValueError:
+                If the API does not return exactly one completion per prompt.
         """
-        model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str]
-        if "messages" in inputs:
-            model_inputs = inputs["messages"]
-        elif "text" in inputs:
-            model_inputs = inputs["text"]
+        if self.generative_type == GenerativeType.BASE:
+            model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str] = list(
+                prompts
+            )
         else:
-            raise InvalidBenchmark(
-                "The inputs must contain either 'messages' or 'text' keys."
+            model_inputs = t.cast(
+                c.Sequence[c.Sequence[litellm.AllMessageValues] | str],
+                [
+                    [
+                        {
+                            "role": "user",
+                            "content": (
+                                "Continue the text below with only its next two words. "
+                                "Do not explain.\n\n" + prompt
+                            ),
+                        }
+                    ]
+                    for prompt in prompts
+                ],
             )
-
-        # Get the mapping from labels to the first token in the label. We call this each
-        # time we generate a new dataset since the dataset config can change
-        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
-            dataset_config=self.dataset_config,
-            model_config=self.model_config,
-            tokeniser=None,
-            generative_type=self.generative_type,
-            log_metadata=self.log_metadata,
+        successes, failures = safe_run(
+            self._generate_async(
+                model_id=self.model_config.model_id,
+                inputs=model_inputs,
+                max_concurrent_calls=self.buffer["max_concurrent_calls"],
+                **generation_kwargs,
+            )
         )
-
-        all_responses: dict[int, "ModelResponse"] = {}
-        inputs_to_run: c.Sequence[
-            tuple[int, c.Sequence[litellm.AllMessageValues] | str]
-        ] = list(enumerate(model_inputs))
-        for attempt in range(num_attempts := 10):
-            if not inputs_to_run:
-                break
-
-            generation_kwargs = self.generation_kwargs or self.get_generation_kwargs(
-                dataset_config=self.dataset_config
-            )
-
-            batch_indices, batch_inputs = zip(*inputs_to_run)
-            successes, failures = safe_run(
-                self._generate_async(
-                    model_id=self.model_config.model_id,
-                    inputs=list(batch_inputs),
-                    max_concurrent_calls=self.buffer["max_concurrent_calls"],
-                    **generation_kwargs,
-                )
-            )
-
-            # Store the successful model outputs
-            for idx, response in successes:
-                orig_idx = batch_indices[idx]
-                all_responses[orig_idx] = response
-
-            # If all requests were successful, break
-            if not failures:
-                inputs_to_run = []
-                break
-
-            # Put the failed requests back in the queue to try again
-            inputs_to_run = [
-                (batch_indices[idx], model_inputs[batch_indices[idx]])
-                for idx, _ in failures
-            ]
-            log(
-                f"Attempt {attempt + 1:,}/{num_attempts:,}: retrying "
-                f"{len(inputs_to_run):,} failed message(s). Here is the first error: "
-                f"{failures[0][1]}.",
-                level=logging.DEBUG,
-            )
-
-            # Check if any errors are due to HTTP 429 (too many requests), in which case
-            # we reduce the number of concurrent calls
-            http_429_errors = [
-                idx
-                for idx, (_, error) in enumerate(failures)
-                if isinstance(error, RateLimitError)
-            ]
-            if http_429_errors and self.buffer["max_concurrent_calls"] > 1:
-                failures = [
-                    failures[i]
-                    for i in range(len(failures))
-                    if i not in http_429_errors
-                ]
-                self.buffer["max_concurrent_calls"] = max(
-                    1, self.buffer["max_concurrent_calls"] // 2
-                )
-                log(
-                    f"Reducing the maximum number of concurrent calls to "
-                    f"{self.buffer['max_concurrent_calls']:,} due to rate limiting.",
-                    level=logging.DEBUG,
-                )
-
-            # Attempt to handle the exceptions, to improve the chance of getting
-            # successful generations next time around
-            time_to_wait = 0
-            for _, error in failures:
-                generation_kwargs, wait_time = self._handle_exception(
-                    error=error, **generation_kwargs
-                )
-                time_to_wait = max(time_to_wait, wait_time)
-            if time_to_wait > 0:
-                log(
-                    f"Waiting {time_to_wait} second(s) before retrying...",
-                    level=logging.DEBUG,
-                )
-                sleep(time_to_wait)
-        else:
-            raise InvalidBenchmark(
-                message=f"Failed to generate text, after {num_attempts:,} attempts."
-            )
-
-        # Extract the generations from the model output
-        ordered_responses = [all_responses[i] for i in range(len(model_inputs))]
-        model_output = self._create_model_output(
-            model_responses=ordered_responses, model_id=self.model_config.model_id
+        success_indices = sorted(index for index, _ in successes)
+        if failures or success_indices != list(range(len(prompts))):
+            raise ValueError("canary generation did not return one result per prompt")
+        ordered = [response for _, response in sorted(successes)]
+        return list(
+            self._create_model_output(
+                model_responses=ordered, model_id=self.model_config.model_id
+            ).sequences
         )
-
-        if len(model_inputs) != len(model_output.sequences):
-            raise InvalidBenchmark(
-                f"Number of model inputs ({len(model_inputs):,}) does not match the "
-                f"number of model outputs ({len(model_output.sequences):,})."
-            )
-
-        return model_output
 
     @staticmethod
     def _create_model_output(
@@ -736,6 +926,111 @@ class LiteLLMModel(BenchmarkModule):
 
         return successes, failures
 
+    def _probe_generation_kwargs(
+        self,
+        generation_kwargs: dict[str, t.Any],
+        test_input: c.Sequence[litellm.AllMessageValues] | str,
+        *,
+        canary_token_limit: int | None = None,
+        detect_reasoning_content: bool = True,
+    ) -> dict[str, t.Any]:
+        """Probe one request and learn parameters accepted by the API.
+
+        Args:
+            generation_kwargs:
+                The generation kwargs to probe and adjust.
+            test_input:
+                One input used for capability probing.
+            canary_token_limit (optional):
+                The visible canary output bound, if this is a canary probe.
+                Defaults to None.
+            detect_reasoning_content (optional):
+                Whether a successful response may promote a model to reasoning mode.
+                Defaults to True.
+
+        Returns:
+            Generation kwargs that succeeded for the probe request.
+
+        Raises:
+            InvalidModel:
+                If the model fails to respond after multiple attempts.
+        """
+        standard_limit_rejected = (
+            canary_token_limit is not None
+            and ParameterAdjustment.USE_MAX_TOKENS in self._parameter_adjustments
+            and ParameterAdjustment.NO_MAX_TOKENS in self._parameter_adjustments
+        )
+        for _ in range(num_attempts := 10):
+            successes, failures = safe_run(
+                self._generate_async(
+                    model_id=self.model_config.model_id,
+                    inputs=[test_input],
+                    max_concurrent_calls=1,
+                    **generation_kwargs,
+                )
+            )
+
+            if successes and detect_reasoning_content:
+                _, successful_content = successes[0]
+                if self.generative_type != GenerativeType.REASONING:
+                    successful_message = successful_content.choices[0].message
+                    if (
+                        hasattr(successful_message, "reasoning_content")
+                        and successful_message.reasoning_content is not None
+                    ):
+                        self.buffer["uses_reasoning_content"] = True
+                        generation_kwargs["max_completion_tokens"] = (
+                            REASONING_MAX_TOKENS
+                        )
+                        generation_kwargs.pop("response_format", None)
+                        if self.is_ollama:
+                            generation_kwargs["think"] = True
+                        log_once(
+                            "Detected reasoning content in model output for the model "
+                            f"{self.model_config.model_id!r}, so changing the "
+                            "generative type to reasoning.",
+                            level=logging.DEBUG,
+                        )
+
+            if not failures:
+                return self._apply_parameter_adjustments(
+                    generation_kwargs=generation_kwargs
+                )
+
+            time_to_wait = 0
+            for _, error in failures:
+                had_standard_limit = any(
+                    key in generation_kwargs
+                    for key in ("max_completion_tokens", "max_tokens")
+                )
+                error_msg = str(error).lower()
+                generation_kwargs, wait_time = self._handle_exception(
+                    error=error, **generation_kwargs
+                )
+                standard_limit_rejected |= had_standard_limit and (
+                    "max_completion_tokens" in error_msg or "max_tokens" in error_msg
+                )
+                time_to_wait = max(time_to_wait, wait_time)
+
+            if (
+                canary_token_limit is not None
+                and standard_limit_rejected
+                and "max_completion_tokens" not in generation_kwargs
+                and "max_tokens" not in generation_kwargs
+            ):
+                generation_kwargs["max_output_tokens"] = canary_token_limit
+
+            if time_to_wait > 0:
+                log(
+                    f"Waiting {time_to_wait} second(s) before retrying...",
+                    level=logging.DEBUG,
+                )
+                sleep(time_to_wait)
+        raise InvalidModel(
+            "Failed to get a successful response from the model "
+            f"{self.model_config.model_id!r} after {num_attempts} attempts."
+        )
+
     def _handle_exception(
         self, error: Exception, **generation_kwargs
     ) -> tuple[dict, int]:
@@ -759,15 +1054,20 @@ class LiteLLMModel(BenchmarkModule):
         error_msg = str(error).lower()
         model_id = self.model_config.model_id
 
-        # Try parameter-specific handlers first
-        result = self._handle_parameter_error(
+        # Try parameter-specific handlers first. These may return a model-level
+        # adjustment, which we remember so that it can be re-applied to the kwargs
+        # of future datasets. Service and fatal errors never enter this set.
+        param_result = self._handle_parameter_error(
             error=error,
             error_msg=error_msg,
             model_id=model_id,
             generation_kwargs=generation_kwargs,
         )
-        if result is not None:
-            return result
+        if param_result is not None:
+            generation_kwargs, wait_time, adjustment = param_result
+            if adjustment is not None:
+                self._parameter_adjustments.add(adjustment)
+            return generation_kwargs, wait_time
 
         # Try service/retry handlers
         result = self._handle_service_error(
@@ -821,7 +1121,7 @@ class LiteLLMModel(BenchmarkModule):
 
     def _handle_parameter_error(
         self, error: Exception, error_msg: str, model_id: str, generation_kwargs: dict
-    ) -> tuple[dict, int] | None:
+    ) -> tuple[dict, int, ParameterAdjustment | None] | None:
         """Handle parameter-related errors.
 
         Args:
@@ -835,8 +1135,10 @@ class LiteLLMModel(BenchmarkModule):
                 The generation kwargs to pass to the model.
 
         Returns:
-            A tuple of (updated_kwargs, wait_time) if the error was handled, or None
-            if the error was not handled.
+            A tuple of (updated_kwargs, wait_time, adjustment) if the error was
+            handled, or None if the error was not handled. The `adjustment` is the
+            model-level adjustment to persist across datasets, or None if the fix
+            only applies to the current request (e.g. a temporary quota message).
 
         Raises:
             InvalidBenchmark:
@@ -853,6 +1155,9 @@ class LiteLLMModel(BenchmarkModule):
         )
         max_completion_tokens_pattern = re.compile(
             r"does not support parameters: \[.*'max_completion_tokens'.*\]"
+        )
+        max_tokens_pattern = re.compile(
+            r"does not support parameters: \[.*'max_tokens'.*\]"
         )
         temperature_pattern = re.compile(
             r"does not support parameters: \[.*'temperature'.*\]"
@@ -879,17 +1184,22 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["stop"] = None
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.NO_STOP_SEQUENCES
 
         # Logprobs
         logprobs_messages = [
             "you are not allowed to request logprobs",
-            "you've reached the maximum number of requests with logprobs",
             "logprobs is not supported",
             "logprobs is not enabled",
         ]
+        # This is a temporary quota message, so we disable logprobs for the current
+        # request only, without persisting the adjustment for later datasets
+        logprobs_quota_message = (
+            "you've reached the maximum number of requests with logprobs"
+        )
         if (
             any(msg.lower() in error_msg for msg in logprobs_messages)
+            or logprobs_quota_message in error_msg
             or logprobs_pattern.search(string=error_msg) is not None
             or (isinstance(error, VertexAIError) and "logprobs" in error_msg)
         ):
@@ -897,11 +1207,19 @@ class LiteLLMModel(BenchmarkModule):
                 f"The model {model_id!r} does not support logprobs, so disabling it.",
                 level=logging.DEBUG,
             )
-            self.buffer["first_label_token_mapping"] = False
-            generation_kwargs.pop("logprobs", None)
-            generation_kwargs.pop("top_logprobs", None)
+            generation_kwargs = self._disable_logprobs(
+                generation_kwargs=generation_kwargs
+            )
+            # The response format is only dropped for the current request, since the
+            # persisted capability must not strip structured output from other
+            # datasets
             generation_kwargs.pop("response_format", None)
-            return generation_kwargs, 0
+            adjustment = (
+                None
+                if logprobs_quota_message in error_msg
+                else ParameterAdjustment.NO_LOGPROBS
+            )
+            return generation_kwargs, 0, adjustment
 
         # Logprobs must be boolean
         if (
@@ -914,7 +1232,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["logprobs"] = True
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.LOGPROBS_MUST_BE_BOOLEAN
 
         # Top logprobs
         if (
@@ -927,7 +1245,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["logprobs"] = generation_kwargs.pop("top_logprobs", None)
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.NO_TOP_LOGPROBS
 
         # Max completion tokens
         if max_completion_tokens_pattern.search(string=error_msg):
@@ -939,7 +1257,16 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs["max_tokens"] = generation_kwargs.pop(
                 "max_completion_tokens", None
             )
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.USE_MAX_TOKENS
+
+        # Max tokens
+        if max_tokens_pattern.search(string=error_msg):
+            log_once(
+                f"The model {model_id!r} does not support max_tokens, so disabling it.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs.pop("max_tokens", None)
+            return generation_kwargs, 0, ParameterAdjustment.NO_MAX_TOKENS
 
         # Temperature not supported
         temperature_messages = [
@@ -957,7 +1284,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs.pop("temperature", None)
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.NO_TEMPERATURE
 
         # Temperature must be 1
         temperature_must_be_one_messages = [
@@ -975,7 +1302,7 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["temperature"] = 1.0
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.TEMPERATURE_MUST_BE_ONE
 
         # Max items (token classification)
         if (
@@ -993,21 +1320,34 @@ class LiteLLMModel(BenchmarkModule):
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
-            return generation_kwargs, 0
+            return generation_kwargs, 0, None
 
         # No JSON schema
         no_json_schema_messages = [
-            "Property keys should match pattern",
             "'json_schema' is not supported",
+            # DeepSeek API rejects `json_schema` but supports `json_object`
+            "This response_format type is unavailable now",
         ]
-        if any(msg.lower() in error_msg for msg in no_json_schema_messages):
+        # This complains about the specific schema rather than the model's general
+        # capability to use JSON schemas, so we only apply the fallback for the
+        # current request without persisting the adjustment
+        malformed_schema_message = "Property keys should match pattern"
+        if (
+            any(msg.lower() in error_msg for msg in no_json_schema_messages)
+            or malformed_schema_message.lower() in error_msg
+        ):
             log_once(
                 f"The model {self.model_config.model_id!r} does not support "
                 "JSON schemas, so using the vanilla JSON format.",
                 level=logging.DEBUG,
             )
             generation_kwargs["response_format"] = dict(type="json_object")
-            return generation_kwargs, 0
+            adjustment = (
+                None
+                if malformed_schema_message.lower() in error_msg
+                else ParameterAdjustment.NO_JSON_SCHEMA
+            )
+            return generation_kwargs, 0, adjustment
 
         # Thinking budget
         if thinking_match := thinking_budget_pattern.search(string=error_msg):
@@ -1026,10 +1366,11 @@ class LiteLLMModel(BenchmarkModule):
                 f"{thinking_budget:,} tokens.",
                 level=logging.DEBUG,
             )
-            generation_kwargs["thinking"] = dict(
-                type="enabled", budget_tokens=thinking_budget - 1
+            self._max_thinking_budget = thinking_budget
+            generation_kwargs = self._apply_max_thinking_budget(
+                generation_kwargs=generation_kwargs
             )
-            return generation_kwargs, 0
+            return generation_kwargs, 0, None
 
         # Thinking disabled required
         thinking_disabled_messages = [
@@ -1049,7 +1390,11 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs["thinking"] = dict(type="disabled")
-            return generation_kwargs, 0
+            return (
+                generation_kwargs,
+                0,
+                ParameterAdjustment.THINKING_DISABLED_REQUIRES_TYPE,
+            )
 
         # Seed
         if seed_pattern.search(string=error_msg):
@@ -1059,23 +1404,38 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
             generation_kwargs.pop("seed", None)
-            return generation_kwargs, 0
+            return generation_kwargs, 0, ParameterAdjustment.NO_SEED
 
         # Response format
         response_format_messages = [
-            "got an unexpected keyword argument 'response_format'",
-            "the model returned empty outputs",
+            "got an unexpected keyword argument 'response_format'"
+        ]
+        # These messages complain about the specific request rather than the
+        # model's general capability to use `response_format`, so we only drop it
+        # for the current request without persisting the adjustment
+        request_local_response_format_messages = [
             "'maxitems' is not supported",
             "must contain the word 'json'",
+            "the model returned empty outputs",
         ]
-        if any(msg.lower() in error_msg for msg in response_format_messages):
+        if any(msg.lower() in error_msg for msg in response_format_messages) or any(
+            msg.lower() in error_msg for msg in request_local_response_format_messages
+        ):
             log_once(
                 f"The model {model_id!r} does not support the `response_format` "
                 "parameter, so disabling it.",
                 level=logging.DEBUG,
             )
             generation_kwargs.pop("response_format", None)
-            return generation_kwargs, 0
+            adjustment = (
+                None
+                if any(
+                    msg.lower() in error_msg
+                    for msg in request_local_response_format_messages
+                )
+                else ParameterAdjustment.NO_RESPONSE_FORMAT
+            )
+            return generation_kwargs, 0, adjustment
 
         # Too many open files
         if "too many open files" in error_msg:
@@ -1182,8 +1542,247 @@ class LiteLLMModel(BenchmarkModule):
 
         return None
 
+    def _setup_model_params(
+        self, generation_kwargs: dict[str, t.Any], *, include_logprobs: bool = True
+    ) -> dict[str, t.Any]:
+        """Set up model-specific parameters.
+
+        Args:
+            generation_kwargs:
+                The generation kwargs to pass to the model.
+            include_logprobs:
+                Whether to add dataset label log probability arguments. Defaults to
+                True.
+
+        Returns:
+            The updated generation kwargs with model-specific parameters configured.
+        """
+        if include_logprobs and self.buffer["first_label_token_mapping"]:
+            generation_kwargs["logprobs"] = True
+            generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
+
+        # Set the generic thinking/reasoning-effort shape first. DeepSeek-specific
+        # post-processing (below) rewrites this, since LiteLLM's DeepSeek
+        # transformation discards `budget_tokens` and the `reasoning_effort` level.
+        param = self.model_config.param
+        if param == "thinking":
+            generation_kwargs["thinking"] = dict(
+                type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
+            )
+            log_once(
+                f"Enabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+        elif param == "no-thinking":
+            generation_kwargs["thinking"] = dict(budget_tokens=0)
+            log_once(
+                f"Disabling thinking mode for model {self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+        elif param in {"none", "minimal", "low", "medium", "high", "xhigh", "max"}:
+            generation_kwargs["reasoning_effort"] = param
+            log_once(
+                f"Enabling reasoning effort {param!r} for model "
+                f"{self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
+
+        # DeepSeek only recognises `thinking.type` and silently ignores
+        # `budget_tokens`, which would otherwise leave thinking enabled (its
+        # default), so we rewrite `thinking` to just the `type` field. Likewise,
+        # LiteLLM's DeepSeek transformation maps `reasoning_effort` to only
+        # `thinking.type` (enabled/disabled), discarding the effort level, so we
+        # instead move it into `extra_body`, which is merged into the request after
+        # provider param mapping and thus reaches the DeepSeek API untouched. The
+        # `deepseek/` prefix is required to distinguish the official DeepSeek API
+        # from open-weight deployments (e.g. vLLM, Ollama, OpenRouter), which do not
+        # get this DeepSeek-API-specific param shaping.
+        if self.model_config.model_id.lower().startswith("deepseek/"):
+            if param == "thinking":
+                generation_kwargs["thinking"] = dict(type="enabled")
+            elif param == "no-thinking":
+                generation_kwargs["thinking"] = dict(type="disabled")
+            elif param in {"none", "minimal", "low", "medium", "high", "xhigh", "max"}:
+                generation_kwargs["extra_body"] = {
+                    **generation_kwargs.get("extra_body", {}),
+                    "reasoning_effort": generation_kwargs.pop("reasoning_effort"),
+                }
+
+        return generation_kwargs
+
+    @property
+    def data_collator(self) -> c.Callable[[list[dict[str, t.Any]]], dict[str, t.Any]]:
+        """The data collator used to prepare samples during finetuning.
+
+        Returns:
+            The data collator.
+        """
+        raise NotImplementedError(
+            "The `data_collator` property has not been implemented for LiteLLM models."
+        )
+
+    @property
+    def extract_labels_from_generation(self) -> ExtractLabelsFunction:
+        """The function used to extract the labels from the generated output.
+
+        Returns:
+            The function used to extract the labels from the generated output.
+        """
+        return _extract_labels_from_generation_helper(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            first_label_token_mapping=self.buffer["first_label_token_mapping"],
+        )
+
+    def generate(self, inputs: dict) -> GenerativeModelOutput:
+        """Generate outputs from the model.
+
+        Args:
+            inputs:
+                A batch of inputs to pass through the model.
+
+        Returns:
+            The generated model outputs.
+
+        Raises:
+            InvalidBenchmark:
+                If the inputs do not contain either 'messages' or 'text' keys.
+        """
+        model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str]
+        if "messages" in inputs:
+            model_inputs = inputs["messages"]
+        elif "text" in inputs:
+            model_inputs = inputs["text"]
+        else:
+            raise InvalidBenchmark(
+                "The inputs must contain either 'messages' or 'text' keys."
+            )
+
+        # Get the mapping from labels to the first token in the label. We call this each
+        # time we generate a new dataset since the dataset config can change
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            tokeniser=None,
+            generative_type=self.generative_type,
+            log_metadata=self.log_metadata,
+        )
+
+        all_responses: dict[int, "ModelResponse"] = {}
+        inputs_to_run: c.Sequence[
+            tuple[int, c.Sequence[litellm.AllMessageValues] | str]
+        ] = list(enumerate(model_inputs))
+        # Build the kwargs afresh for the current dataset and (re-)apply the
+        # model-level adjustments learned from earlier errors. This is idempotent
+        # and exists for the `self.generation_kwargs` user-override path, so that
+        # nothing dataset-specific (like `max_completion_tokens`) leaks across
+        # datasets via `self.generation_kwargs`; the `get_generation_kwargs` path
+        # is already fully adjusted by that method itself
+        generation_kwargs = self._apply_parameter_adjustments(
+            generation_kwargs=dict(
+                self.generation_kwargs
+                or self.get_generation_kwargs(dataset_config=self.dataset_config)
+            )
+        )
+
+        for attempt in range(num_attempts := 10):
+            if not inputs_to_run:
+                break
+
+            batch_indices, batch_inputs = zip(*inputs_to_run)
+            successes, failures = safe_run(
+                self._generate_async(
+                    model_id=self.model_config.model_id,
+                    inputs=list(batch_inputs),
+                    max_concurrent_calls=self.buffer["max_concurrent_calls"],
+                    **generation_kwargs,
+                )
+            )
+
+            # Store the successful model outputs
+            for idx, response in successes:
+                orig_idx = batch_indices[idx]
+                all_responses[orig_idx] = response
+
+            # If all requests were successful, break
+            if not failures:
+                inputs_to_run = []
+                break
+
+            # Put the failed requests back in the queue to try again
+            inputs_to_run = [
+                (batch_indices[idx], model_inputs[batch_indices[idx]])
+                for idx, _ in failures
+            ]
+            log(
+                f"Attempt {attempt + 1:,}/{num_attempts:,}: retrying "
+                f"{len(inputs_to_run):,} failed message(s). Here is the first error: "
+                f"{failures[0][1]}.",
+                level=logging.DEBUG,
+            )
+
+            # Check if any errors are due to HTTP 429 (too many requests), in which case
+            # we reduce the number of concurrent calls
+            http_429_errors = [
+                idx
+                for idx, (_, error) in enumerate(failures)
+                if isinstance(error, RateLimitError)
+            ]
+            if http_429_errors and self.buffer["max_concurrent_calls"] > 1:
+                failures = [
+                    failures[i]
+                    for i in range(len(failures))
+                    if i not in http_429_errors
+                ]
+                self.buffer["max_concurrent_calls"] = max(
+                    1, self.buffer["max_concurrent_calls"] // 2
+                )
+                log(
+                    f"Reducing the maximum number of concurrent calls to "
+                    f"{self.buffer['max_concurrent_calls']:,} due to rate limiting.",
+                    level=logging.DEBUG,
+                )
+
+            # Attempt to handle the exceptions, to improve the chance of getting
+            # successful generations next time around
+            time_to_wait = 0
+            for _, error in failures:
+                generation_kwargs, wait_time = self._handle_exception(
+                    error=error, **generation_kwargs
+                )
+                time_to_wait = max(time_to_wait, wait_time)
+
+            if time_to_wait > 0:
+                log(
+                    f"Waiting {time_to_wait} second(s) before retrying...",
+                    level=logging.DEBUG,
+                )
+                sleep(time_to_wait)
+        else:
+            raise InvalidBenchmark(
+                message=f"Failed to generate text, after {num_attempts:,} attempts."
+            )
+
+        # Extract the generations from the model output
+        ordered_responses = [all_responses[i] for i in range(len(model_inputs))]
+        model_output = self._create_model_output(
+            model_responses=ordered_responses, model_id=self.model_config.model_id
+        )
+
+        if len(model_inputs) != len(model_output.sequences):
+            raise InvalidBenchmark(
+                f"Number of model inputs ({len(model_inputs):,}) does not match the "
+                f"number of model outputs ({len(model_output.sequences):,})."
+            )
+
+        return model_output
+
     def get_generation_kwargs(self, dataset_config: DatasetConfig) -> dict[str, t.Any]:
         """Get the generation arguments for the model.
+
+        Persisted parameter adjustments learned from earlier errors are applied
+        both before and after the internal test request, so the returned kwargs
+        never contain parameters we already know this model rejects.
 
         Args:
             dataset_config:
@@ -1191,10 +1790,6 @@ class LiteLLMModel(BenchmarkModule):
 
         Returns:
             A dictionary of generation kwargs configured for the model.
-
-        Raises:
-            InvalidModel:
-                If the model fails to respond after multiple attempts.
         """
         # Set core generation arguments
         generation_kwargs: dict[str, t.Any] = dict(
@@ -1256,7 +1851,13 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs=generation_kwargs
         )
 
-        # Test run with retries
+        # Apply the persisted model-level adjustments learned from earlier errors
+        # before probing the model, so the test request below does not re-send
+        # parameters we already know this model rejects.
+        generation_kwargs = self._apply_parameter_adjustments(
+            generation_kwargs=generation_kwargs
+        )
+
         test_input: c.Sequence[litellm.AllMessageValues] | str
         if self.generative_type == GenerativeType.BASE:
             test_input = "Test message json"
@@ -1266,97 +1867,9 @@ class LiteLLMModel(BenchmarkModule):
                     role="user", content="Test message json"
                 )
             ]
-
-        for _ in range(num_attempts := 10):
-            successes, failures = safe_run(
-                self._generate_async(
-                    model_id=self.model_config.model_id,
-                    inputs=[test_input],
-                    max_concurrent_calls=1,
-                    **generation_kwargs,
-                )
-            )
-
-            if successes and self.generative_type != GenerativeType.REASONING:
-                _, successful_content = successes[0]
-                successful_message = successful_content.choices[0].message
-                if (
-                    hasattr(successful_message, "reasoning_content")
-                    and successful_message.reasoning_content is not None
-                ):
-                    self.buffer["uses_reasoning_content"] = True
-                    generation_kwargs["max_completion_tokens"] = REASONING_MAX_TOKENS
-                    generation_kwargs.pop("response_format", None)
-                    if self.is_ollama:
-                        generation_kwargs["think"] = True
-                    log_once(
-                        "Detected reasoning content in model output for the model "
-                        f"{self.model_config.model_id!r}, so changing the generative "
-                        "type to reasoning.",
-                        level=logging.DEBUG,
-                    )
-
-            if not failures:
-                break
-
-            time_to_wait = 0
-            for _, error in failures:
-                generation_kwargs, wait_time = self._handle_exception(
-                    error=error, **generation_kwargs
-                )
-                time_to_wait = max(time_to_wait, wait_time)
-            if time_to_wait > 0:
-                log(
-                    f"Waiting {time_to_wait} second(s) before retrying...",
-                    level=logging.DEBUG,
-                )
-                sleep(time_to_wait)
-        else:
-            raise InvalidModel(
-                "Failed to get a successful response from the model "
-                f"{self.model_config.model_id!r} after {num_attempts} attempts."
-            )
-
-        return generation_kwargs
-
-    def _setup_model_params(
-        self, generation_kwargs: dict[str, t.Any]
-    ) -> dict[str, t.Any]:
-        """Set up model-specific parameters.
-
-        Args:
-            generation_kwargs:
-                The generation kwargs to pass to the model.
-
-        Returns:
-            The updated generation kwargs with model-specific parameters configured.
-        """
-        if self.buffer["first_label_token_mapping"]:
-            generation_kwargs["logprobs"] = True
-            generation_kwargs["top_logprobs"] = MAX_LITELLM_LOGPROBS
-
-        param = self.model_config.param
-        if param == "thinking":
-            generation_kwargs["thinking"] = dict(
-                type="enabled", budget_tokens=REASONING_MAX_TOKENS - 1
-            )
-            log_once(
-                f"Enabling thinking mode for model {self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
-        elif param == "no-thinking":
-            generation_kwargs["thinking"] = dict(budget_tokens=0)
-            log_once(
-                f"Disabling thinking mode for model {self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
-        elif param in {"none", "minimal", "low", "medium", "high", "xhigh"}:
-            generation_kwargs["reasoning_effort"] = param
-            log_once(
-                f"Enabling reasoning effort {param!r} for model "
-                f"{self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
+        generation_kwargs = self._probe_generation_kwargs(
+            generation_kwargs=generation_kwargs, test_input=test_input
+        )
 
         return generation_kwargs
 
@@ -1534,6 +2047,7 @@ class LiteLLMModel(BenchmarkModule):
                 cache_dir=benchmark_config.cache_dir, model_id=model_id
             ),
             adapter_base_model_id=None,
+            release_date=get_api_model_release_date(model_id_components.model_id),
         )
 
     @cached_property
@@ -1781,6 +2295,9 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The number of parameters in the model.
         """
+        if self.benchmark_config.num_parameters is not None:
+            return self.benchmark_config.num_parameters
+
         # Start by trying out the regex mapping, and use the value if it matches
         for key, value in NUM_PARAMS_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
@@ -1972,6 +2489,49 @@ def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
         new_model_id = "openai/openai/" + re.sub(r"(openai/)*", "", new_model_id)
 
     return new_model_id
+
+
+def get_api_model_release_date(model_id: str) -> str | None:
+    """Get an API model release date from its version or manual metadata.
+
+    Args:
+        model_id:
+            The LiteLLM model identifier.
+
+    Returns:
+        The ISO-formatted release date, or None if no date is known.
+    """
+    annotated = get_annotated_release_date(model_id=model_id)
+    if annotated is not None:
+        return annotated
+
+    date_match = re.search(r"(?<!\d)(\d{4})-?(\d{2})-?(\d{2})(?!\d)", model_id)
+    if date_match is not None:
+        try:
+            return datetime.date(*map(int, date_match.groups())).isoformat()
+        except ValueError:
+            pass
+    return None
+
+
+def get_annotated_release_date(model_id: str) -> str | None:
+    """Get a release date from the manually maintained annotations.
+
+    These are authoritative, including corrections to a date embedded in an
+    upstream model identifier, and they are the only way to date a model that
+    exists on neither the Hub nor a documented API.
+
+    Args:
+        model_id:
+            The model identifier.
+
+    Returns:
+        The ISO-formatted date, or None if the model is not annotated.
+    """
+    for pattern, release_date in MODEL_RELEASE_DATE_MAPPING.items():
+        if re.fullmatch(pattern=pattern, string=model_id) is not None:
+            return release_date
+    return None
 
 
 def set_up_benchmark_config_for_model(

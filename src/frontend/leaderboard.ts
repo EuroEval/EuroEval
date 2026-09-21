@@ -46,6 +46,9 @@ export interface Column {
 
 export interface Row {
   cells: ParsedCell[];
+  /** ISO date used by the performance-over-time visualization. The source
+   *  column is kept out of the visible table to avoid adding metadata clutter. */
+  releaseDate?: string;
   /** Per-dataset failure counts, keyed by the score column's key. Sourced from
    *  the hidden `<dataset>_failures` companion columns. */
   failures?: Record<string, number>;
@@ -167,6 +170,7 @@ const ICON_COLS = new Set([
 const VERSION_SUFFIX = /version$/i;
 const FAILURES_SUFFIX = /_failures$/i;
 const SCORED_SUFFIX = /_scored$/i;
+const RELEASE_DATE_COLUMN = /^release date$/i;
 
 const parseNumberSafe = (s: string): number | null => {
   if (s === "?" || s === "" || s === "-" || s === "??") return null;
@@ -174,6 +178,18 @@ const parseNumberSafe = (s: string): number | null => {
   const cleaned = s.replace(/,/g, "");
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
+};
+
+const isIsoDate = (s: string): boolean => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!match) return false;
+  const [, year, month, day] = match.map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
 };
 
 /**
@@ -403,7 +419,10 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
     .map((c, i) => ({ c, i }))
     .filter(
       ({ c }) =>
-        c.kind !== "version" && c.kind !== "failures" && c.kind !== "scored",
+        c.kind !== "version" &&
+        c.kind !== "failures" &&
+        c.kind !== "scored" &&
+        !RELEASE_DATE_COLUMN.test(c.key),
     )
     .map(({ i }) => i);
 
@@ -424,6 +443,9 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
     .map((c, i) => ({ c, i }))
     .filter(({ c }) => c.kind === "version")
     .map(({ c, i }) => ({ i, baseKey: c.key.replace(/_version$/i, "") }));
+  const releaseDateIndex = columns.findIndex((c) =>
+    RELEASE_DATE_COLUMN.test(c.key),
+  );
 
   // Parse cells. Column order follows the CSV (ground truth).
   const parsedRows: Row[] = dataRows
@@ -449,8 +471,15 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
         const v = stripTags(splitDisplaySort(r[i] ?? "").display).trim();
         if (v && v !== "-") (versions ??= {})[baseKey] = v;
       }
+      const releaseDate =
+        releaseDateIndex >= 0
+          ? stripTags(
+              splitDisplaySort(r[releaseDateIndex] ?? "").display,
+            ).trim()
+          : "";
       return {
         cells,
+        ...(isIsoDate(releaseDate) && { releaseDate }),
         ...(failures && { failures }),
         ...(scored && { scored }),
         ...(versions && { versions }),

@@ -1,3 +1,4 @@
+/workspace/ft31v3: true
 LumiOpen/Viking-33B1000B: true
 alexandrainst/Meta-Llama-3.1-8B-dialog-k2-da: true
 alexandrainst/Meta-Llama-3.1-8B-laerebogen: true
@@ -17,6 +18,7 @@ fresh-electra-small: false
 fresh-xlm-roberta-base: false
 hosted_vllm/openai/gpt-oss-120b: false
 mhenrichsen/danskgpt-chat-v2.1: false
+openrouter/stealth/ox-alpha: false
 qwen3.5-397b: false
 skole-gpt-mixtral: false
 syvai/danskgpt-chat-llama3-70b: false
