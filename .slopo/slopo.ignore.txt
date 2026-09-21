@@ -93,3 +93,13 @@ a52d4598fe08  # euroeval/task_group_utils/question_answering.py, euroeval/task_g
 # ---------- Test methods with intentional pattern duplication: tests follow same template ----------
 
 1ac2077b354d  # euroeval/benchmark_modules/litellm.py, euroeval/benchmark_modules/vllm.py
+
+
+# ---------- Operational marker predicates: separate queue contexts share one invariant ----------
+
+c98734bad7f2  # scripts/process_evaluation_queue.py, leaderboards/queue_markers.py
+
+
+# ---------- HF operations: create and check flows intentionally share diagnostics ----------
+
+e255621381ee  # scripts/volunteer_worker_operations.py

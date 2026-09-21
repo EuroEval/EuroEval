@@ -297,6 +297,14 @@ def test_explicit_shot_mode_overrides(model_config: ModelConfig) -> None:
     assert resolve_shot_modes(generative, ShotMode.FEW_SHOT) == [ShotMode.FEW_SHOT]
 
 
+def test_initialiser_defaults_to_auto_shot_mode() -> None:
+    """The benchmarker initialiser exposes AUTO as its explicit default policy."""
+    benchmarker = Benchmarker(progress_bar=False)
+
+    assert benchmarker.benchmark_config_default_params.few_shot is ShotMode.AUTO
+    assert benchmarker.benchmark_config.few_shot is ShotMode.AUTO
+
+
 def test_load_error_counts_concrete_remaining_work() -> None:
     """A mode-level model failure counts the other concrete work items."""
     benchmarker = Benchmarker(progress_bar=False)
@@ -524,14 +532,6 @@ def test_only_one_model_is_live_during_preparation(
     assert load_calls == 2
     assert loaded_model_refs[0]() is None
     assert clear_cache.call_count == 3
-
-
-def test_initialiser_defaults_to_auto_shot_mode() -> None:
-    """The benchmarker initialiser exposes AUTO as its explicit default policy."""
-    benchmarker = Benchmarker(progress_bar=False)
-
-    assert benchmarker.benchmark_config_default_params.few_shot is ShotMode.AUTO
-    assert benchmarker.benchmark_config.few_shot is ShotMode.AUTO
 
 
 def test_per_call_auto_overrides_initialiser_shot_mode() -> None:
