@@ -16,7 +16,7 @@ def simple_policy(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
         A deterministic policy document.
     """
     policy = {"policy_version": "volunteer-scope/1.0.0", "policies": []}
-    monkeypatch.setattr(module, "build_policy", lambda version, pairs: policy)
+    monkeypatch.setattr(module, "build_policy", lambda **_: policy)
     monkeypatch.setattr(module, "official_pairs", lambda: set())
     return policy
 
