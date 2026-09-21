@@ -1095,57 +1095,6 @@ class TestServiceErrorHandling:
 class TestTransientParameterErrors:
     """Tests that transient parameter errors are fixed but not persisted."""
 
-    @pytest.mark.parametrize(
-        ("error_message", "response_type", "expected_adjustment", "keeps_format"),
-        [
-            (
-                "'json_schema' is not supported",
-                "json_schema",
-                ParameterAdjustment.NO_JSON_SCHEMA,
-                True,
-            ),
-            (
-                "got an unexpected keyword argument 'response_format'",
-                "json_object",
-                ParameterAdjustment.NO_RESPONSE_FORMAT,
-                False,
-            ),
-        ],
-        ids=["json-schema", "response-format"],
-    )
-    def test_supported_parameter_errors_are_persisted(
-        self,
-        model_config: ModelConfig,
-        dataset_config: DatasetConfig,
-        error_message: str,
-        response_type: str,
-        expected_adjustment: ParameterAdjustment,
-        keeps_format: bool,
-    ) -> None:
-        """Equivalent response-format errors persist their adjustment."""
-        model = object.__new__(LiteLLMModel)
-        model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
-        model.dataset_config = dataset_config
-        model.buffer = {"first_label_token_mapping": True}
-        model._parameter_adjustments = set()
-        model._max_thinking_budget = None
-
-        result = model._handle_parameter_error(
-            error=Exception(error_message),
-            error_msg=error_message.lower(),
-            model_id="test-model",
-            generation_kwargs={"response_format": {"type": response_type}},
-        )
-
-        assert result is not None
-        kwargs, wait_time, adjustment = result
-        assert wait_time == 0
-        assert adjustment == expected_adjustment
-        if keeps_format:
-            assert kwargs["response_format"] == {"type": "json_object"}
-        else:
-            assert "response_format" not in kwargs
-
     def test_logprobs_quota_message_is_not_persisted(
         self, model_config: ModelConfig, dataset_config: DatasetConfig
     ) -> None:
@@ -1228,3 +1177,54 @@ class TestTransientParameterErrors:
         else:
             assert kwargs["response_format"] == {"type": expected_response_type}
         assert model._parameter_adjustments == set()
+
+    @pytest.mark.parametrize(
+        ("error_message", "response_type", "expected_adjustment", "keeps_format"),
+        [
+            (
+                "'json_schema' is not supported",
+                "json_schema",
+                ParameterAdjustment.NO_JSON_SCHEMA,
+                True,
+            ),
+            (
+                "got an unexpected keyword argument 'response_format'",
+                "json_object",
+                ParameterAdjustment.NO_RESPONSE_FORMAT,
+                False,
+            ),
+        ],
+        ids=["json-schema", "response-format"],
+    )
+    def test_supported_parameter_errors_are_persisted(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        error_message: str,
+        response_type: str,
+        expected_adjustment: ParameterAdjustment,
+        keeps_format: bool,
+    ) -> None:
+        """Equivalent response-format errors persist their adjustment."""
+        model = object.__new__(LiteLLMModel)
+        model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
+        model.dataset_config = dataset_config
+        model.buffer = {"first_label_token_mapping": True}
+        model._parameter_adjustments = set()
+        model._max_thinking_budget = None
+
+        result = model._handle_parameter_error(
+            error=Exception(error_message),
+            error_msg=error_message.lower(),
+            model_id="test-model",
+            generation_kwargs={"response_format": {"type": response_type}},
+        )
+
+        assert result is not None
+        kwargs, wait_time, adjustment = result
+        assert wait_time == 0
+        assert adjustment == expected_adjustment
+        if keeps_format:
+            assert kwargs["response_format"] == {"type": "json_object"}
+        else:
+            assert "response_format" not in kwargs

@@ -274,6 +274,17 @@ class TestIdentityToPath:
 class TestNormaliseBoolValue:
     """Tests for normalise_bool_value."""
 
+    def test_invalid_string(self) -> None:
+        """Invalid string should raise ValueError."""
+        with pytest.raises(ValueError, match="Invalid boolean string"):
+            normalise_bool_value("yes")
+
+    def test_invalid_type(self) -> None:
+        """Invalid type should raise TypeError."""
+        value = t.cast(t.Any, 1)
+        with pytest.raises(TypeError, match="Unexpected type"):
+            normalise_bool_value(value)
+
     @pytest.mark.parametrize(
         ("values", "expected"),
         [
@@ -291,17 +302,6 @@ class TestNormaliseBoolValue:
         """Boolean values and case variants normalise consistently."""
         for value in values:
             assert normalise_bool_value(value) is expected
-
-    def test_invalid_string(self) -> None:
-        """Invalid string should raise ValueError."""
-        with pytest.raises(ValueError, match="Invalid boolean string"):
-            normalise_bool_value("yes")
-
-    def test_invalid_type(self) -> None:
-        """Invalid type should raise TypeError."""
-        value = t.cast(t.Any, 1)
-        with pytest.raises(TypeError, match="Unexpected type"):
-            normalise_bool_value(value)
 
 
 class TestRaiseOnCollision:

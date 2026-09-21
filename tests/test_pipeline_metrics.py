@@ -12,23 +12,6 @@ from euroeval.metrics.pipeline import european_values_preprocessing_fn
 NUM_QUESTIONS = 53
 
 
-@pytest.fixture(scope="module")
-def make_ev_dataset() -> c.Generator[c.Callable[[list[dict]], Dataset], None, None]:
-    """Create a European Values dataset with a given idx_to_choice per question.
-
-    Yields:
-        A factory function that builds a Dataset with ``num_questions`` rows and
-        the ``idx_to_choice`` values supplied via ``choices_per_question``.
-    """
-
-    def _make(choices_per_question: list[dict]) -> Dataset:
-        assert len(choices_per_question) == NUM_QUESTIONS
-        records = [{"idx_to_choice": c} for c in choices_per_question]
-        return Dataset.from_list(records)
-
-    yield _make
-
-
 def test_invalid_prediction_defaults_and_logs_warning(
     make_ev_dataset: c.Callable[[list[dict]], Dataset], caplog: LogCaptureFixture
 ) -> None:
@@ -47,6 +30,23 @@ def test_invalid_prediction_defaults_and_logs_warning(
     assert any("not a valid index" in record.message for record in caplog.records), (
         "Expected a warning about the invalid prediction index"
     )
+
+
+@pytest.fixture(scope="module")
+def make_ev_dataset() -> c.Generator[c.Callable[[list[dict]], Dataset], None, None]:
+    """Create a European Values dataset with a given idx_to_choice per question.
+
+    Yields:
+        A factory function that builds a Dataset with ``num_questions`` rows and
+        the ``idx_to_choice`` values supplied via ``choices_per_question``.
+    """
+
+    def _make(choices_per_question: list[dict]) -> Dataset:
+        assert len(choices_per_question) == NUM_QUESTIONS
+        records = [{"idx_to_choice": c} for c in choices_per_question]
+        return Dataset.from_list(records)
+
+    yield _make
 
 
 def test_valid_predictions(make_ev_dataset: c.Callable[[list[dict]], Dataset]) -> None:

@@ -66,6 +66,16 @@ class TestBenchmarkSpeedSingleIteration:
             with pytest.raises(InvalidBenchmark, match="Speed benchmark failed"):
                 benchmark_speed_single_iteration(model=mock_model, itr_idx=0)
 
+    def test_benchmark_speed_single_iteration_invalid_model_raises_error(
+        self, mock_model: MagicMock
+    ) -> None:
+        """Test ValueError raised for unsupported model types."""
+        # Create a mock that is not any of the supported types
+        mock_model.__class__.__name__ = "InvalidModel"
+
+        with pytest.raises(ValueError, match="Model type.*not supported"):
+            benchmark_speed_single_iteration(model=mock_model, itr_idx=0)
+
     @pytest.mark.parametrize(
         "model_type",
         [HuggingFaceEncoderModel, LiteLLMModel, VLLMModel],
@@ -92,16 +102,6 @@ class TestBenchmarkSpeedSingleIteration:
 
         assert set(scores) == {"test_speed", "test_speed_short"}
         assert all(isinstance(value, float) for value in scores.values())
-
-    def test_benchmark_speed_single_iteration_invalid_model_raises_error(
-        self, mock_model: MagicMock
-    ) -> None:
-        """Test ValueError raised for unsupported model types."""
-        # Create a mock that is not any of the supported types
-        mock_model.__class__.__name__ = "InvalidModel"
-
-        with pytest.raises(ValueError, match="Model type.*not supported"):
-            benchmark_speed_single_iteration(model=mock_model, itr_idx=0)
 
 
 @pytest.fixture(scope="module")

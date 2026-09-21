@@ -19,17 +19,6 @@ from euroeval.yaml_config import (
 )
 
 
-def _write_yaml(tmp_path: Path, content: str, filename: str = "eval.yaml") -> Path:
-    """Write dedented YAML content to a temporary file.
-
-    Returns:
-        The path to the written YAML file.
-    """
-    yaml_file = tmp_path / filename
-    yaml_file.write_text(textwrap.dedent(content))
-    return yaml_file
-
-
 class TestLoadDatasetConfigFromYaml:
     """Tests for the `load_dataset_config_from_yaml` function."""
 
@@ -776,6 +765,17 @@ languages:
         )
         assert config is not None
         assert config.languages[0].code == "da"
+
+
+def _write_yaml(tmp_path: Path, content: str, filename: str = "eval.yaml") -> Path:
+    """Write dedented YAML content to a temporary file.
+
+    Returns:
+        The path to the written YAML file.
+    """
+    yaml_file = tmp_path / filename
+    yaml_file.write_text(textwrap.dedent(content))
+    return yaml_file
 
 
 class TestRealWorldYamlConfigs:

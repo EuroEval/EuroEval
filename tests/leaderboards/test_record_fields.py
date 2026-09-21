@@ -220,16 +220,6 @@ def test_deduplicate_richness_beats_input_order() -> None:
     assert deduped[0]["model_info"]["additional_details"].get("open") is True
 
 
-@pytest.mark.parametrize(
-    "field", ["commercially_licensed", "open", "merge", "trained_from_scratch"]
-)
-def test_metadata_richness_score_explicit_false(field: str) -> None:
-    """Explicit False values contribute to metadata richness."""
-    record = _record()
-    record["model_info"]["additional_details"][field] = False
-    assert _metadata_richness_score(record=record) == 1
-
-
 def test_metadata_richness_score_counts_release_date() -> None:
     """A known release date contributes to metadata richness."""
     record = _record()
@@ -242,6 +232,16 @@ def test_metadata_richness_score_empty() -> None:
     """A record with no metadata gets a score of 0."""
     record = _record()
     assert _metadata_richness_score(record=record) == 0
+
+
+@pytest.mark.parametrize(
+    "field", ["commercially_licensed", "open", "merge", "trained_from_scratch"]
+)
+def test_metadata_richness_score_explicit_false(field: str) -> None:
+    """Explicit False values contribute to metadata richness."""
+    record = _record()
+    record["model_info"]["additional_details"][field] = False
+    assert _metadata_richness_score(record=record) == 1
 
 
 def test_metadata_richness_score_full() -> None:

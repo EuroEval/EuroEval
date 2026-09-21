@@ -510,15 +510,6 @@ def make_eee_record(
 class TestClickCLI:
     """Integration tests for the Click CLI."""
 
-    def test_cli_invalid_language(self) -> None:
-        """CLI should fail gracefully for invalid language."""
-        runner = CliRunner()
-        result = runner.invoke(
-            cli, ["--model", "test-model", "--language", "invalid_xyz"]
-        )
-        assert result.exit_code != 0
-        assert "Cannot resolve" in result.output
-
     def test_cli_help_documents_current_and_removed_options(self) -> None:
         """CLI help should document current options and omit removed ones."""
         runner = CliRunner()
@@ -529,6 +520,15 @@ class TestClickCLI:
         assert "optional" in help_text or "omitted" in help_text
         assert "--lower-is-better" not in result.output
         assert "--metric" not in result.output
+
+    def test_cli_invalid_language(self) -> None:
+        """CLI should fail gracefully for invalid language."""
+        runner = CliRunner()
+        result = runner.invoke(
+            cli, ["--model", "test-model", "--language", "invalid_xyz"]
+        )
+        assert result.exit_code != 0
+        assert "Cannot resolve" in result.output
 
     def test_cli_requires_model_option(self) -> None:
         """CLI should require --model option."""
@@ -653,24 +653,6 @@ class TestComputeMaxScore:
         max_score = _compute_max_score(model_scores, max_score_override=None)
         assert max_score == 2.5
 
-    def test_max_score_at_boundary(self) -> None:
-        """Should not round up when at exact 0.5 boundary."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.5}}
-        max_score = _compute_max_score(model_scores, max_score_override=None)
-        assert max_score == 3.5
-
-    def test_min_2_5_applied(self) -> None:
-        """Should apply minimum of 2.5 even for very small scores."""
-        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 1.5}}
-        max_score = _compute_max_score(model_scores, max_score_override=None)
-        assert max_score == 2.5
-
-    def test_none_scores_ignored(self) -> None:
-        """Should ignore None scores."""
-        model_scores = {"model1": {"da": None, "sv": 3.2}}
-        max_score = _compute_max_score(model_scores, max_score_override=None)
-        assert max_score == 3.5
-
     @pytest.mark.parametrize(
         ("override", "score", "error_match"),
         [
@@ -689,6 +671,24 @@ class TestComputeMaxScore:
         model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": score}}
         with pytest.raises(ValueError, match=error_match):
             _compute_max_score(model_scores, max_score_override=override)
+
+    def test_max_score_at_boundary(self) -> None:
+        """Should not round up when at exact 0.5 boundary."""
+        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 3.5}}
+        max_score = _compute_max_score(model_scores, max_score_override=None)
+        assert max_score == 3.5
+
+    def test_min_2_5_applied(self) -> None:
+        """Should apply minimum of 2.5 even for very small scores."""
+        model_scores: dict[str, dict[str, float | None]] = {"model1": {"da": 1.5}}
+        max_score = _compute_max_score(model_scores, max_score_override=None)
+        assert max_score == 2.5
+
+    def test_none_scores_ignored(self) -> None:
+        """Should ignore None scores."""
+        model_scores = {"model1": {"da": None, "sv": 3.2}}
+        max_score = _compute_max_score(model_scores, max_score_override=None)
+        assert max_score == 3.5
 
     def test_override_valid(self) -> None:
         """Should use override when valid."""
@@ -1365,6 +1365,11 @@ class TestIntegrationWithTempFiles:
 class TestNormaliseLanguageInput:
     """Tests for _normalise_language_input function."""
 
+    def test_invalid_language_raises(self) -> None:
+        """Should raise ValueError for invalid language."""
+        with pytest.raises(ValueError, match="Cannot resolve"):
+            _normalise_language_input("invalid_language_xyz")
+
     @pytest.mark.parametrize(
         ("language_input", "expected"),
         [("DA", {"da"}), ("da", {"da"}), ("danish", {"da"}), ("norwegian", {"no"})],
@@ -1372,11 +1377,6 @@ class TestNormaliseLanguageInput:
     def test_language_aliases(self, language_input: str, expected: set[str]) -> None:
         """Should resolve language codes and names to canonical codes."""
         assert _normalise_language_input(language_input) == expected
-
-    def test_invalid_language_raises(self) -> None:
-        """Should raise ValueError for invalid language."""
-        with pytest.raises(ValueError, match="Cannot resolve"):
-            _normalise_language_input("invalid_language_xyz")
 
 
 class TestResolveLanguages:

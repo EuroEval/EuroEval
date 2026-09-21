@@ -53,14 +53,6 @@ class TestLogScores:
             model_param=None,
         )
 
-    def test_output_structure(
-        self, logged_scores: ScoreDict, scores: list[dict[str, float]]
-    ) -> None:
-        """The logged result has the expected shape and preserves raw scores."""
-        assert isinstance(logged_scores, dict)
-        assert sorted(logged_scores.keys()) == ["raw", "total"]
-        assert logged_scores["raw"] == scores
-
     def test_num_failed_instances_defaults_to_zero(self, metric: Metric) -> None:
         """Test that `log_scores` defaults `num_failed_instances` to 0.0 when absent."""
         scores_without_failures = [
@@ -108,6 +100,14 @@ class TestLogScores:
         )
         total_dict = result["total"]
         assert total_dict["num_failed_instances"] == 5.0  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule, invalid-argument-type]
+
+    def test_output_structure(
+        self, logged_scores: ScoreDict, scores: list[dict[str, float]]
+    ) -> None:
+        """The logged result has the expected shape and preserves raw scores."""
+        assert isinstance(logged_scores, dict)
+        assert sorted(logged_scores.keys()) == ["raw", "total"]
+        assert logged_scores["raw"] == scores
 
     def test_total_scores_keys(self, logged_scores: ScoreDict, metric: Metric) -> None:
         """Test that `log_scores` returns a dictionary with the correct keys."""
