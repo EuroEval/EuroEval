@@ -86,7 +86,7 @@ def _lease_from_state(value: object) -> Lease:
         raise ValueError("model_metadata is malformed")
     if evidence_type != model_type:
         raise ValueError("model metadata contradicts model_type")
-    expected_scope = _expected_scope(value["expected_scope"])
+    expected_scope = _expected_scope(value=value["expected_scope"])
     return Lease(
         lease_id=value["lease_id"],
         issue_number=value["issue_number"],

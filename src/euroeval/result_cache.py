@@ -79,7 +79,7 @@ def get_record(
         The matching result, or None if no result exists.
     """
     requested_mode = coerce_shot_mode(
-        benchmark_config.few_shot if shot_mode is None else shot_mode
+        requested_mode=(benchmark_config.few_shot if shot_mode is None else shot_mode)
     )
     for record in benchmark_results:
         model_id_components = split_model_id(model_id=record.model)

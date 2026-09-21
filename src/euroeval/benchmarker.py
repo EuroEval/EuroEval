@@ -532,7 +532,9 @@ class Benchmarker:
             model_skipped = 0
             model_errored = 0
             try:
-                self._check_adapter_requirements(model_config, benchmark_config)
+                self._check_adapter_requirements(
+                    model_config=model_config, benchmark_config=benchmark_config
+                )
                 loaded_model, pending, cached, load_error = (
                     self._prepare_shot_benchmarks(
                         model_config=model_config,
@@ -556,12 +558,16 @@ class Benchmarker:
                         benchmark_config, few_shot=shot_mode is ShotMode.FEW_SHOT
                     )
                     self._update_benchmark_config_for_dataset(
-                        dataset_config, mode_config
+                        dataset_config=dataset_config, benchmark_config=mode_config
                     )
                     if loaded_model is not None:
                         loaded_model.benchmark_config = mode_config
                     if benchmark_config.download_only:
-                        self._download(dataset_config, model_config, mode_config)
+                        self._download(
+                            dataset_config=dataset_config,
+                            model_config=model_config,
+                            benchmark_config=mode_config,
+                        )
                         model_finished += 1
                         continue
                     if (
@@ -893,8 +899,9 @@ class Benchmarker:
                     self.benchmark_config_default_params.evaluate_test_split,
                 ),
                 few_shot=coerce_shot_mode(
-                    _get_param(
-                        "few_shot", self.benchmark_config_default_params.few_shot
+                    requested_mode=_get_param(
+                        name="few_shot",
+                        default=self.benchmark_config_default_params.few_shot,
                     )
                 ),
                 num_iterations=_get_param(
@@ -1251,7 +1258,7 @@ class Benchmarker:
             The loaded model, pending concrete mode/dataset pairs, cached records, and
             a model-loading error if loading failed.
         """
-        requested_mode = coerce_shot_mode(benchmark_config.few_shot)
+        requested_mode = coerce_shot_mode(requested_mode=benchmark_config.few_shot)
         modes = resolve_shot_modes(
             model_config=model_config,
             requested_mode=requested_mode,
@@ -1269,7 +1276,7 @@ class Benchmarker:
         )
         auto_requested = requested_mode is ShotMode.AUTO
         cached_type = (
-            cached_generative_type(cached)
+            cached_generative_type(records=cached)
             if (
                 auto_requested
                 and benchmark_config.generative_type is None

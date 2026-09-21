@@ -105,7 +105,7 @@ def resolve_shot_modes(
     Returns:
         Concrete modes to evaluate, in execution order.
     """
-    mode = coerce_shot_mode(requested_mode)
+    mode = coerce_shot_mode(requested_mode=requested_mode)
     if mode is not ShotMode.AUTO:
         return [mode]
     if model_config.model_type != ModelType.GENERATIVE:
@@ -174,7 +174,7 @@ def result_identity_values(
             If ``shot_mode`` is ``AUTO``, which must be resolved before a result is
             created.
     """
-    mode = coerce_shot_mode(shot_mode)
+    mode = coerce_shot_mode(requested_mode=shot_mode)
     if mode is ShotMode.AUTO:
         raise ValueError("AUTO must be resolved before storing a benchmark result")
     few_shot = (
@@ -203,7 +203,7 @@ def result_few_shot_value(requested_mode: ShotModeRequest) -> bool:
             If ``requested_mode`` is ``AUTO``, which must be resolved before a result
             is created.
     """
-    mode = coerce_shot_mode(requested_mode)
+    mode = coerce_shot_mode(requested_mode=requested_mode)
     if mode is ShotMode.AUTO:
         raise ValueError("AUTO must be resolved before storing a benchmark result")
     return mode is ShotMode.FEW_SHOT

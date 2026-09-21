@@ -71,7 +71,7 @@ def build_benchmark_config(
         trust_remote_code=benchmark_config_params.trust_remote_code,
         clear_model_cache=benchmark_config_params.clear_model_cache,
         evaluate_test_split=benchmark_config_params.evaluate_test_split,
-        few_shot=coerce_shot_mode(benchmark_config_params.few_shot),
+        few_shot=coerce_shot_mode(requested_mode=benchmark_config_params.few_shot),
         num_iterations=(
             1
             if hasattr(sys, "_called_from_test")

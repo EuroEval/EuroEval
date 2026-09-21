@@ -54,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     version = args.version or importlib.metadata.version("euroeval")
-    policy = build_policy(version, official_pairs())
+    policy = build_policy(euroeval_version=version, pairs=official_pairs())
     ts_output = args.ts_output or (
         DEFAULT_TS_OUTPUT
         if args.output == DEFAULT_OUTPUT
@@ -120,7 +120,7 @@ def build_policy(
             config = configs[dataset]
             languages = getattr(config, "languages")
             if language not in {item.code for item in languages} or not (
-                _allowed_for_model_type(config, model_type)
+                _allowed_for_model_type(config=config, model_type=model_type)
             ):
                 continue
             datasets_by_language.setdefault(language, []).append((dataset, config))
@@ -128,7 +128,9 @@ def build_policy(
                 config.task.task_group.value
             )
         for language, datasets in sorted(datasets_by_language.items()):
-            alternatives = _identity_alternatives(datasets, model_type)
+            alternatives = _identity_alternatives(
+                datasets=datasets, model_type=model_type
+            )
             if not alternatives:
                 continue
             entries.append(

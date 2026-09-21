@@ -220,7 +220,7 @@ def test_broker_normalises_legacy_scope_and_rejects_malformed_alternatives() -> 
         "warnings": [],
         "task_groups": ["sequence_classification"],
     }
-    decoded = lease_from_dict(legacy)
+    decoded = lease_from_dict(data=legacy)
     assert decoded.expected_scope is not None
     assert decoded.expected_scope.allowed_identity_suffix_sets == (
         ('["test",false,true]',),
@@ -238,7 +238,7 @@ def test_broker_normalises_legacy_scope_and_rejects_malformed_alternatives() -> 
         "task_groups": ["sequence_classification"],
     }
     with pytest.raises(ValueError, match="alternatives"):
-        lease_from_dict(malformed)
+        lease_from_dict(data=malformed)
 
 
 def test_broker_protocol_payload_is_canonical() -> None:

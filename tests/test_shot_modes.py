@@ -190,13 +190,20 @@ def test_auto_shot_mode_resolution(model_config: ModelConfig) -> None:
     local = replace(encoder, model_type=ModelType.GENERATIVE)
     api = replace(local, inference_backend=InferenceBackend.LITELLM)
 
-    assert resolve_shot_modes(encoder, None) == [ShotMode.FEW_SHOT]
-    assert resolve_shot_modes(local, None, GenerativeType.BASE) == [ShotMode.FEW_SHOT]
-    assert resolve_shot_modes(local, None, GenerativeType.INSTRUCTION_TUNED) == [
-        ShotMode.ZERO_SHOT,
-        ShotMode.FEW_SHOT,
+    assert resolve_shot_modes(model_config=encoder, requested_mode=None) == [
+        ShotMode.FEW_SHOT
     ]
-    assert resolve_shot_modes(api, None) == [ShotMode.ZERO_SHOT]
+    assert resolve_shot_modes(
+        model_config=local, requested_mode=None, generative_type=GenerativeType.BASE
+    ) == [ShotMode.FEW_SHOT]
+    assert resolve_shot_modes(
+        model_config=local,
+        requested_mode=None,
+        generative_type=GenerativeType.INSTRUCTION_TUNED,
+    ) == [ShotMode.ZERO_SHOT, ShotMode.FEW_SHOT]
+    assert resolve_shot_modes(model_config=api, requested_mode=None) == [
+        ShotMode.ZERO_SHOT
+    ]
 
 
 def test_cached_shot_mode_survives_missing_mode_load_failure(
@@ -292,9 +299,15 @@ def test_explicit_shot_mode_overrides(model_config: ModelConfig) -> None:
     """Legacy boolean overrides remain single-mode selections."""
     generative = replace(model_config, model_type=ModelType.GENERATIVE)
 
-    assert resolve_shot_modes(generative, True) == [ShotMode.FEW_SHOT]
-    assert resolve_shot_modes(generative, False) == [ShotMode.ZERO_SHOT]
-    assert resolve_shot_modes(generative, ShotMode.FEW_SHOT) == [ShotMode.FEW_SHOT]
+    assert resolve_shot_modes(model_config=generative, requested_mode=True) == [
+        ShotMode.FEW_SHOT
+    ]
+    assert resolve_shot_modes(model_config=generative, requested_mode=False) == [
+        ShotMode.ZERO_SHOT
+    ]
+    assert resolve_shot_modes(
+        model_config=generative, requested_mode=ShotMode.FEW_SHOT
+    ) == [ShotMode.FEW_SHOT]
 
 
 def test_initialiser_defaults_to_auto_shot_mode() -> None:
@@ -399,9 +412,9 @@ def test_multi_model_progress_uses_full_workload(
             model_config: [dataset_config] for model_config in model_configs
         },
     )
-    monkeypatch.setattr(benchmarker, "_check_adapter_requirements", lambda *args: None)
+    monkeypatch.setattr(benchmarker, "_check_adapter_requirements", lambda **_: None)
     monkeypatch.setattr(
-        benchmarker, "_update_benchmark_config_for_dataset", lambda *args: None
+        benchmarker, "_update_benchmark_config_for_dataset", lambda **_: None
     )
     monkeypatch.setattr(
         benchmarker,
@@ -483,9 +496,9 @@ def test_only_one_model_is_live_during_preparation(
             model_config: [dataset_config] for model_config in model_configs
         },
     )
-    monkeypatch.setattr(benchmarker, "_check_adapter_requirements", lambda *args: None)
+    monkeypatch.setattr(benchmarker, "_check_adapter_requirements", lambda **_: None)
     monkeypatch.setattr(
-        benchmarker, "_update_benchmark_config_for_dataset", lambda *args: None
+        benchmarker, "_update_benchmark_config_for_dataset", lambda **_: None
     )
 
     class HeavyModel:

@@ -637,7 +637,7 @@ def test_manifest_language_group_is_valid_in_real_flow() -> None:
 def test_manifest_matches_one_trusted_scope_alternative() -> None:
     """Review reports expose the alternative selected by actual results."""
     api, reviewer, _ = _reviewer()
-    manifest = _manifest(api)
+    manifest = _manifest(api=api)
     expected_scope = t.cast(dict[str, object], manifest["expected_scope"])
     suffixes = t.cast(list[list[str]], expected_scope["allowed_identity_suffix_sets"])[
         0
@@ -649,9 +649,9 @@ def test_manifest_matches_one_trusted_scope_alternative() -> None:
     policy_entry = t.cast(list[dict[str, object]], reviewer.scope_policy["policies"])[0]
     policy_entry["allowed_identity_suffix_sets"] = [suffixes, ['["other",false,false]']]
     manifest["matched_identity_suffixes"] = suffixes
-    _store_manifest(api, manifest)
+    _store_manifest(api=api, manifest=manifest)
 
-    report = reviewer.show(SUBMISSION)
+    report = reviewer.show(submission_id=SUBMISSION)
 
     assert len(report.expected_identities) == 1
     assert report.expected_identities[0][1] == "dataset-0"

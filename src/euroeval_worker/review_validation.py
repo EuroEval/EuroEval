@@ -254,7 +254,7 @@ def _identity_suffix_sets(
         if len(set(raw_set)) != len(raw_set):
             raise ReviewError(f"{context} identity alternatives contain duplicates")
         for suffix in raw_set:
-            parsed = _json_value(suffix, f"{context} identity suffix")
+            parsed = _json_value(value=suffix, context=f"{context} identity suffix")
             if (
                 not isinstance(parsed, list)
                 or len(parsed) != 3

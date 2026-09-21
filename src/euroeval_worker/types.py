@@ -279,7 +279,7 @@ def _expected_scope(value: object) -> ExpectedScope:
         if has_allowed
         else [value.get("identity_suffixes")]
     )
-    allowed_sets = _identity_suffix_sets(raw_sets)
+    allowed_sets = _identity_suffix_sets(value=raw_sets)
     count = value.get("count")
     if count is not None and (
         isinstance(count, bool) or not isinstance(count, int) or count <= 0
@@ -466,7 +466,7 @@ def lease_from_dict(data: dict[str, object]) -> Lease:
     model_metadata = _model_evidence(data.get("model_metadata"))
     if model_metadata.model_type != model_type:
         raise ValueError("broker response model metadata contradicts model_type")
-    expected_scope = _expected_scope(data.get("expected_scope"))
+    expected_scope = _expected_scope(value=data.get("expected_scope"))
     return Lease(
         lease_id=_string(data, "lease_id"),
         issue_number=_integer(data, "issue_number"),
