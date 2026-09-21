@@ -1095,10 +1095,34 @@ class TestServiceErrorHandling:
 class TestTransientParameterErrors:
     """Tests that transient parameter errors are fixed but not persisted."""
 
-    def test_json_schema_unsupported_message_is_persisted(
-        self, model_config: ModelConfig, dataset_config: DatasetConfig
+    @pytest.mark.parametrize(
+        ("error_message", "response_type", "expected_adjustment", "keeps_format"),
+        [
+            (
+                "'json_schema' is not supported",
+                "json_schema",
+                ParameterAdjustment.NO_JSON_SCHEMA,
+                True,
+            ),
+            (
+                "got an unexpected keyword argument 'response_format'",
+                "json_object",
+                ParameterAdjustment.NO_RESPONSE_FORMAT,
+                False,
+            ),
+        ],
+        ids=["json-schema", "response-format"],
+    )
+    def test_supported_parameter_errors_are_persisted(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        error_message: str,
+        response_type: str,
+        expected_adjustment: ParameterAdjustment,
+        keeps_format: bool,
     ) -> None:
-        """The `'json_schema' is not supported` message is persisted."""
+        """Equivalent response-format errors persist their adjustment."""
         model = object.__new__(LiteLLMModel)
         model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
         model.dataset_config = dataset_config
@@ -1106,19 +1130,21 @@ class TestTransientParameterErrors:
         model._parameter_adjustments = set()
         model._max_thinking_budget = None
 
-        error_message = "'json_schema' is not supported"
         result = model._handle_parameter_error(
             error=Exception(error_message),
             error_msg=error_message.lower(),
             model_id="test-model",
-            generation_kwargs={"response_format": {"type": "json_schema"}},
+            generation_kwargs={"response_format": {"type": response_type}},
         )
 
         assert result is not None
         kwargs, wait_time, adjustment = result
         assert wait_time == 0
-        assert adjustment == ParameterAdjustment.NO_JSON_SCHEMA
-        assert kwargs["response_format"] == {"type": "json_object"}
+        assert adjustment == expected_adjustment
+        if keeps_format:
+            assert kwargs["response_format"] == {"type": "json_object"}
+        else:
+            assert "response_format" not in kwargs
 
     def test_logprobs_quota_message_is_not_persisted(
         self, model_config: ModelConfig, dataset_config: DatasetConfig
@@ -1161,42 +1187,24 @@ class TestTransientParameterErrors:
 
         assert model._parameter_adjustments == {ParameterAdjustment.NO_LOGPROBS}
 
-    def test_malformed_schema_message_is_not_persisted(
-        self, model_config: ModelConfig, dataset_config: DatasetConfig
-    ) -> None:
-        """A malformed-schema message is request-local and not persisted."""
-        model = object.__new__(LiteLLMModel)
-        model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
-        model.dataset_config = dataset_config
-        model.buffer = {"first_label_token_mapping": True}
-        model._parameter_adjustments = set()
-        model._max_thinking_budget = None
-
-        error_message = "Property keys should match pattern"
-        result = model._handle_parameter_error(
-            error=Exception(error_message),
-            error_msg=error_message.lower(),
-            model_id="test-model",
-            generation_kwargs={"response_format": {"type": "json_schema"}},
-        )
-
-        assert result is not None
-        kwargs, wait_time, adjustment = result
-        assert wait_time == 0
-        assert adjustment is None
-        assert kwargs["response_format"] == {"type": "json_object"}
-        assert model._parameter_adjustments == set()
-
     @pytest.mark.parametrize(
-        "error_message", ["'maxitems' is not supported", "must contain the word 'json'"]
+        ("error_message", "response_type", "expected_response_type"),
+        [
+            ("Property keys should match pattern", "json_schema", "json_object"),
+            ("'maxitems' is not supported", "json_object", None),
+            ("must contain the word 'json'", "json_object", None),
+        ],
+        ids=["malformed-schema", "maxitems", "missing-json"],
     )
-    def test_request_local_response_format_messages_are_not_persisted(
+    def test_request_local_parameter_errors_are_not_persisted(
         self,
         model_config: ModelConfig,
         dataset_config: DatasetConfig,
         error_message: str,
+        response_type: str,
+        expected_response_type: str | None,
     ) -> None:
-        """Request-local `response_format` errors drop the format without persisting."""
+        """Equivalent request-local errors do not persist adjustments."""
         model = object.__new__(LiteLLMModel)
         model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
         model.dataset_config = dataset_config
@@ -1208,37 +1216,15 @@ class TestTransientParameterErrors:
             error=Exception(error_message),
             error_msg=error_message.lower(),
             model_id="test-model",
-            generation_kwargs={"response_format": {"type": "json_object"}},
+            generation_kwargs={"response_format": {"type": response_type}},
         )
 
         assert result is not None
         kwargs, wait_time, adjustment = result
         assert wait_time == 0
         assert adjustment is None
-        assert "response_format" not in kwargs
+        if expected_response_type is None:
+            assert "response_format" not in kwargs
+        else:
+            assert kwargs["response_format"] == {"type": expected_response_type}
         assert model._parameter_adjustments == set()
-
-    def test_unexpected_keyword_response_format_message_is_persisted(
-        self, model_config: ModelConfig, dataset_config: DatasetConfig
-    ) -> None:
-        """The generic `response_format` unsupported message is persisted."""
-        model = object.__new__(LiteLLMModel)
-        model.model_config = dataclasses.replace(model_config, model_id="openai/gpt-4o")
-        model.dataset_config = dataset_config
-        model.buffer = {"first_label_token_mapping": True}
-        model._parameter_adjustments = set()
-        model._max_thinking_budget = None
-
-        error_message = "got an unexpected keyword argument 'response_format'"
-        result = model._handle_parameter_error(
-            error=Exception(error_message),
-            error_msg=error_message.lower(),
-            model_id="test-model",
-            generation_kwargs={"response_format": {"type": "json_object"}},
-        )
-
-        assert result is not None
-        kwargs, wait_time, adjustment = result
-        assert wait_time == 0
-        assert adjustment == ParameterAdjustment.NO_RESPONSE_FORMAT
-        assert "response_format" not in kwargs

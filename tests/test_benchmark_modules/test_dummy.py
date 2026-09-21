@@ -207,13 +207,15 @@ class TestModelExists:
 class TestUnimplementedProperties:
     """Tests for the properties the dummy backend deliberately doesn't support."""
 
-    def test_data_collator_raises(
+    @pytest.mark.parametrize("property_name", ["data_collator", "trainer_class"])
+    def test_unsupported_property_raises(
         self,
+        property_name: str,
         dummy_model_config: ModelConfig,
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """The dummy backend does not support finetuning."""
+        """The dummy backend does not support finetuning properties."""
         model = DummyModel(
             model_config=dummy_model_config,
             dataset_config=dataset_config,
@@ -221,23 +223,7 @@ class TestUnimplementedProperties:
             log_metadata=False,
         )
         with pytest.raises(NotImplementedError):
-            _ = model.data_collator
-
-    def test_trainer_class_raises(
-        self,
-        dummy_model_config: ModelConfig,
-        dataset_config: DatasetConfig,
-        benchmark_config: BenchmarkConfig,
-    ) -> None:
-        """The dummy backend does not support finetuning."""
-        model = DummyModel(
-            model_config=dummy_model_config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-            log_metadata=False,
-        )
-        with pytest.raises(NotImplementedError):
-            _ = model.trainer_class
+            _ = getattr(model, property_name)
 
 
 @pytest.fixture
